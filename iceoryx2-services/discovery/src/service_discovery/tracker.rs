@@ -18,7 +18,7 @@ use alloc::vec::Vec;
 use iceoryx2::{
     config::Config,
     prelude::CallbackProgression,
-    service::{service_id::ServiceId, Service, ServiceDetails, ServiceListError},
+    service::{service_hash::ServiceHash, Service, ServiceDetails, ServiceListError},
 };
 
 /// Errors that can occur during service synchronization.
@@ -59,7 +59,7 @@ impl From<ServiceListError> for SyncError {
 #[derive(Debug, Default)]
 pub struct Tracker<S: Service> {
     config: Config,
-    services: BTreeMap<ServiceId, ServiceDetails<S>>,
+    services: BTreeMap<ServiceHash, ServiceDetails<S>>,
 }
 
 impl<S: Service> Tracker<S> {
@@ -88,12 +88,12 @@ impl<S: Service> Tracker<S> {
     ///   retrievable with `Tracker::get()`
     /// * A vector of service details for services that are no longer available, these details are
     ///   no longer stored in the tracker
-    pub fn sync(&mut self) -> Result<(Vec<ServiceId>, Vec<ServiceDetails<S>>), SyncError> {
-        let mut discovered_ids = BTreeSet::<ServiceId>::new();
-        let mut added_ids = Vec::<ServiceId>::new();
+    pub fn sync(&mut self) -> Result<(Vec<ServiceHash>, Vec<ServiceDetails<S>>), SyncError> {
+        let mut discovered_ids = BTreeSet::<ServiceHash>::new();
+        let mut added_ids = Vec::<ServiceHash>::new();
 
         S::list(&self.config, |service| {
-            let id = *service.static_details.service_id();
+            let id = *service.static_details.service_hash();
             discovered_ids.insert(id);
 
             // Track new services.
@@ -106,7 +106,7 @@ impl<S: Service> Tracker<S> {
 
         // Get the details of the services not discovered
         let mut removed_services = Vec::new();
-        let undiscovered_ids: Vec<ServiceId> = self
+        let undiscovered_ids: Vec<ServiceHash> = self
             .services
             .keys()
             .filter(|&id| !discovered_ids.contains(id))
@@ -131,7 +131,7 @@ impl<S: Service> Tracker<S> {
     /// # Returns
     ///
     /// An `Option` containing a reference to the service details if tracked, or `None` if not tracked
-    pub fn get(&self, id: &ServiceId) -> Option<&ServiceDetails<S>> {
+    pub fn get(&self, id: &ServiceHash) -> Option<&ServiceDetails<S>> {
         self.services.get(id)
     }
 

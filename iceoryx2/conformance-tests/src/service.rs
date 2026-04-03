@@ -15,9 +15,9 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod service {
+    use alloc::{format, vec, vec::Vec};
     use core::marker::PhantomData;
     use core::time::Duration;
-    use std::sync::Barrier;
 
     use iceoryx2::node::NodeView;
     use iceoryx2::prelude::*;
@@ -32,23 +32,18 @@ pub mod service {
     use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2::service::port_factory::{blackboard, event, publish_subscribe, request_response};
     use iceoryx2::service::{ServiceDetailsError, ServiceListError};
+    use iceoryx2::testing::generate_service_name;
     use iceoryx2::testing::*;
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
+    use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
+    use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+    use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_log::{set_log_level, LogLevel};
-
-    fn generate_name() -> ServiceName {
-        ServiceName::new(&format!(
-            "service_tests_{}",
-            UniqueSystemId::new().unwrap().value()
-        ))
-        .unwrap()
-    }
 
     pub trait SutFactory<Sut: Service>: Send + Sync {
         type Factory: PortFactory;
@@ -372,7 +367,7 @@ pub mod service {
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_pub_sub = node_1
@@ -414,17 +409,22 @@ pub mod service {
         const NUMBER_OF_ITERATIONS: usize = 25;
         let test = Factory::new();
 
-        let barrier_enter = Barrier::new(number_of_threads);
-        let barrier_exit = Barrier::new(number_of_threads);
+        let handle_enter = BarrierHandle::new();
+        let handle_exit = BarrierHandle::new();
+        let barrier_enter = BarrierBuilder::new(number_of_threads as _)
+            .create(&handle_enter)
+            .unwrap();
+        let barrier_exit = BarrierBuilder::new(number_of_threads as _)
+            .create(&handle_exit)
+            .unwrap();
 
         let config = generate_isolated_config();
-        std::thread::scope(|s| {
-            let mut threads = vec![];
+        thread_scope(|s| {
             for _ in 0..number_of_threads {
-                threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
                     for _ in 0..NUMBER_OF_ITERATIONS {
-                        let service_name = generate_name();
+                        let service_name = generate_service_name();
                         barrier_enter.wait();
 
                         let _sut = test
@@ -433,13 +433,12 @@ pub mod service {
 
                         barrier_exit.wait();
                     }
-                }));
+                })?;
             }
 
-            for thread in threads {
-                thread.join().unwrap();
-            }
-        });
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]
@@ -453,15 +452,20 @@ pub mod service {
         let test = Factory::new();
 
         let success_counter = AtomicU64::new(0);
-        let barrier_enter = Barrier::new(number_of_threads);
-        let barrier_exit = Barrier::new(number_of_threads);
-        let service_name = generate_name();
+        let handle_enter = BarrierHandle::new();
+        let handle_exit = BarrierHandle::new();
+        let barrier_enter = BarrierBuilder::new(number_of_threads as _)
+            .create(&handle_enter)
+            .unwrap();
+        let barrier_exit = BarrierBuilder::new(number_of_threads as _)
+            .create(&handle_exit)
+            .unwrap();
+        let service_name = generate_service_name();
 
         let config = generate_isolated_config();
-        std::thread::scope(|s| {
-            let mut threads = vec![];
+        thread_scope(|s| {
             for _ in 0..number_of_threads {
-                threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
                     for _ in 0..NUMBER_OF_ITERATIONS {
                         barrier_enter.wait();
@@ -478,18 +482,17 @@ pub mod service {
 
                         barrier_exit.wait();
                     }
-                }));
+                })?;
             }
 
-            for thread in threads {
-                thread.join().unwrap();
-            }
+            Ok(())
+        })
+        .unwrap();
 
-            assert_that!(
-                success_counter.load(Ordering::Relaxed),
-                eq(NUMBER_OF_ITERATIONS as u64)
-            );
-        });
+        assert_that!(
+            success_counter.load(Ordering::Relaxed),
+            eq(NUMBER_OF_ITERATIONS as u64)
+        );
     }
 
     #[conformance_test]
@@ -504,17 +507,24 @@ pub mod service {
         let number_of_threads = NUMBER_OF_CLOSE_THREADS + number_of_open_threads;
         let test = Factory::new();
 
-        let barrier_enter = Barrier::new(number_of_threads);
-        let barrier_exit = Barrier::new(number_of_threads);
+        let handle_enter = BarrierHandle::new();
+        let handle_exit = BarrierHandle::new();
+        let barrier_enter = BarrierBuilder::new(number_of_threads as _)
+            .create(&handle_enter)
+            .unwrap();
+        let barrier_exit = BarrierBuilder::new(number_of_threads as _)
+            .create(&handle_exit)
+            .unwrap();
 
         const NUMBER_OF_ITERATIONS: usize = 100;
-        let service_names: Vec<_> = (0..NUMBER_OF_ITERATIONS).map(|_| generate_name()).collect();
+        let service_names: Vec<_> = (0..NUMBER_OF_ITERATIONS)
+            .map(|_| generate_service_name())
+            .collect();
         let service_names = &service_names;
 
         let config = generate_isolated_config();
-        std::thread::scope(|s| {
-            let mut threads = vec![];
-            threads.push(s.spawn(|| {
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
                 let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
                 for service_name in service_names {
                     let sut = test
@@ -525,10 +535,10 @@ pub mod service {
                     drop(sut);
                     barrier_exit.wait();
                 }
-            }));
+            })?;
 
             for _ in 0..number_of_open_threads {
-                threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
                     for service_name in service_names {
                         barrier_enter.wait();
@@ -543,13 +553,12 @@ pub mod service {
 
                         barrier_exit.wait();
                     }
-                }));
+                })?;
             }
 
-            for thread in threads {
-                thread.join().unwrap();
-            }
-        });
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]
@@ -558,7 +567,7 @@ pub mod service {
         Factory: SutFactory<Sut>,
     >() {
         let test = Factory::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let defined_attributes = AttributeSpecifier::new()
             .define(
                 &"1. Hello".try_into().unwrap(),
@@ -594,7 +603,7 @@ pub mod service {
     #[conformance_test]
     pub fn opener_succeeds_when_attributes_do_match<Sut: Service, Factory: SutFactory<Sut>>() {
         let test = Factory::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -657,7 +666,7 @@ pub mod service {
         Factory: SutFactory<Sut>,
     >() {
         let test = Factory::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -697,7 +706,7 @@ pub mod service {
         Factory: SutFactory<Sut>,
     >() {
         let test = Factory::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -737,7 +746,7 @@ pub mod service {
         Factory: SutFactory<Sut>,
     >() {
         let test = Factory::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -787,7 +796,7 @@ pub mod service {
         Factory: SutFactory<Sut>,
     >() {
         let test = Factory::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -824,7 +833,7 @@ pub mod service {
         Factory: SutFactory<Sut>,
     >() {
         let test = Factory::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -894,29 +903,29 @@ pub mod service {
 
         let config = generate_isolated_config();
         let mut services = vec![];
-        let mut service_ids = vec![];
+        let mut service_hashs = vec![];
         let mut nodes = vec![];
         for _ in 0..NUMBER_OF_SERVICES {
-            let service_name = generate_name();
+            let service_name = generate_service_name();
             let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
             let sut = test
                 .create(&node, &service_name, &AttributeSpecifier::new())
                 .unwrap();
 
-            service_ids.push(*sut.service_id());
+            service_hashs.push(*sut.service_hash());
             services.push(sut);
             nodes.push(node);
         }
 
         let mut listed_services = vec![];
         let result = Sut::list(&config, |service| {
-            listed_services.push(*service.static_details.service_id());
+            listed_services.push(*service.static_details.service_hash());
             CallbackProgression::Continue
         });
         assert_that!(result, is_ok);
 
         for s in listed_services {
-            assert_that!(service_ids, contains s);
+            assert_that!(service_hashs, contains s);
         }
     }
 
@@ -932,7 +941,7 @@ pub mod service {
 
         let mut services = vec![];
         for _ in 0..NUMBER_OF_SERVICES {
-            let service_name = generate_name();
+            let service_name = generate_service_name();
             let sut = test
                 .create(&node, &service_name, &AttributeSpecifier::new())
                 .unwrap();
@@ -955,25 +964,27 @@ pub mod service {
         let test = Factory::new();
         let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         const NUMBER_OF_ITERATIONS: usize = 40;
-        let barrier = Barrier::new(number_of_creators);
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(number_of_creators as _)
+            .create(&handle)
+            .unwrap();
 
         let config = generate_isolated_config();
-        std::thread::scope(|s| {
-            let mut threads = vec![];
+        thread_scope(|s| {
             for _ in 0..number_of_creators {
-                threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
                     barrier.wait();
 
                     for _ in 0..NUMBER_OF_ITERATIONS {
-                        let service_name = generate_name();
+                        let service_name = generate_service_name();
                         let sut = test
                             .create(&node, &service_name, &AttributeSpecifier::new())
                             .unwrap();
 
                         let mut found_me = false;
                         let result = Sut::list(&config, |s| {
-                            if sut.service_id() == s.static_details.service_id() {
+                            if sut.service_hash() == s.static_details.service_hash() {
                                 found_me = true;
                             }
                             CallbackProgression::Continue
@@ -982,13 +993,12 @@ pub mod service {
                         assert_that!(result, is_ok);
                         assert_that!(found_me, eq true);
                     }
-                }));
+                })?;
             }
 
-            for t in threads {
-                t.join().unwrap();
-            }
-        });
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]
@@ -1000,18 +1010,20 @@ pub mod service {
         let test = Factory::new();
         let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         const NUMBER_OF_ITERATIONS: usize = 30;
-        let barrier = Barrier::new(number_of_creators);
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(number_of_creators as _)
+            .create(&handle)
+            .unwrap();
 
         let config = generate_isolated_config();
         let main_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let attributes = AttributeVerifier::new();
         let _service = test.create(&main_node, &service_name, &AttributeSpecifier::new());
 
-        std::thread::scope(|s| {
-            let mut threads = vec![];
+        thread_scope(|s| {
             for _ in 0..number_of_creators {
-                threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     barrier.wait();
 
                     for _ in 0..NUMBER_OF_ITERATIONS {
@@ -1046,13 +1058,12 @@ pub mod service {
                         assert_that!(result, is_ok);
                         assert_that!(found_me, eq true);
                     }
-                }));
+                })?;
             }
 
-            for thread in threads {
-                thread.join().unwrap();
-            }
-        });
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]
@@ -1064,18 +1075,20 @@ pub mod service {
         let test = Factory::new();
         let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         const NUMBER_OF_ITERATIONS: usize = 30;
-        let barrier = Barrier::new(number_of_creators);
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(number_of_creators as _)
+            .create(&handle)
+            .unwrap();
 
         let config = generate_isolated_config();
         let main_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let attributes = AttributeVerifier::new();
         let _service = test.create(&main_node, &service_name, &AttributeSpecifier::new());
 
-        std::thread::scope(|s| {
-            let mut threads = vec![];
+        thread_scope(|s| {
             for _ in 0..number_of_creators {
-                threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     barrier.wait();
 
                     for _ in 0..NUMBER_OF_ITERATIONS {
@@ -1115,13 +1128,12 @@ pub mod service {
                         }
                         assert_that!(found_me, eq true);
                     }
-                }));
+                })?;
             }
 
-            for thread in threads {
-                thread.join().unwrap();
-            }
-        });
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]
@@ -1131,7 +1143,7 @@ pub mod service {
 
         let config = generate_isolated_config();
         let main_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let attributes = AttributeVerifier::new();
         let main_service = test
             .create(&main_node, &service_name, &AttributeSpecifier::new())
@@ -1191,7 +1203,7 @@ pub mod service {
     #[conformance_test]
     pub fn node_can_open_same_service_without_limits<Sut: Service, Factory: SutFactory<Sut>>() {
         let test = Factory::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         const REPETITIONS: usize = 128;
 
         let config = generate_isolated_config();
@@ -1210,9 +1222,12 @@ pub mod service {
     }
 
     #[conformance_test]
-    pub fn uuid_is_equal_in_within_all_opened_instances<Sut: Service, Factory: SutFactory<Sut>>() {
+    pub fn service_hash_is_equal_in_within_all_opened_instances<
+        Sut: Service,
+        Factory: SutFactory<Sut>,
+    >() {
         let test = Factory::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -1223,6 +1238,6 @@ pub mod service {
             .open(&node, &service_name, &AttributeVerifier::new())
             .unwrap();
 
-        assert_that!(sut.service_id(), eq sut2.service_id());
+        assert_that!(sut.service_hash(), eq sut2.service_hash());
     }
 }

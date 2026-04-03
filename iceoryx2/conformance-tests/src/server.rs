@@ -15,8 +15,8 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod server {
+    use alloc::vec;
     use core::time::Duration;
-    use std::sync::Barrier;
 
     use iceoryx2::port::ReceiveError;
     use iceoryx2::prelude::*;
@@ -25,6 +25,11 @@ pub mod server {
     use iceoryx2_bb_concurrency::atomic::AtomicBool;
     use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
+    use iceoryx2_bb_posix::barrier::BarrierBuilder;
+    use iceoryx2_bb_posix::barrier::BarrierHandle;
+    use iceoryx2_bb_posix::clock::nanosleep;
+    use iceoryx2_bb_posix::ipc_capable::Handle;
+    use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
 
@@ -313,12 +318,14 @@ pub mod server {
             .create()
             .unwrap();
         let client = service.client_builder().create().unwrap();
-        let barrier = Barrier::new(2);
-        let send_barrier = Barrier::new(2);
+        let handle = BarrierHandle::new();
+        let send_handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
+        let send_barrier = BarrierBuilder::new(2).create(&send_handle).unwrap();
 
         let has_sent_response = AtomicBool::new(false);
-        std::thread::scope(|s| {
-            s.spawn(|| {
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
                 let sut = service
                     .server_builder()
                     .unable_to_deliver_strategy(UnableToDeliverStrategy::Block)
@@ -332,13 +339,13 @@ pub mod server {
 
                 assert_that!(active_request.send_copy(654), is_ok);
                 has_sent_response.store(true, Ordering::Relaxed);
-            });
+            })?;
 
             barrier.wait();
             let pending_response = client.send_copy(123).unwrap();
             send_barrier.wait();
 
-            std::thread::sleep(TIMEOUT);
+            nanosleep(TIMEOUT).unwrap();
 
             assert_that!(has_sent_response.load(Ordering::Relaxed), eq false);
             let response = pending_response.receive().unwrap().unwrap();
@@ -347,7 +354,9 @@ pub mod server {
 
             let response = pending_response.receive().unwrap().unwrap();
             assert_that!(*response, eq 654);
-        });
+
+            Ok(())
+        }).unwrap();
     }
 
     #[conformance_test]

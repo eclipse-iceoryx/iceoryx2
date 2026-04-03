@@ -10,6 +10,17 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
+[features]
+default = []
+
+std = [
+  "iceoryx2-log/std",  
+  "iceoryx2-bb-concurrency/std",  
+  "iceoryx2-bb-derive-macros/std",  
+  "iceoryx2-bb-elementary/std",  
+  "iceoryx2-bb-loggers/std",
+]
+
 [dependencies]
 iceoryx2-log = { workspace = true }
 iceoryx2-bb-derive-macros = { workspace = true }
@@ -20,8 +31,12 @@ iceoryx2-bb-concurrency = { workspace = true }
 serde = { workspace = true }
 
 [dev-dependencies]
-iceoryx2-bb-loggers = { workspace = true }
-iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-loggers = { workspace = true, features = ["std"] }
+iceoryx2-bb-container-tests-common = { workspace = true, features = ["std"] }
+iceoryx2-bb-testing = { workspace = true, features = ["std"] }
 
-generic-tests = { workspace = true }
 serde_test = { workspace = true }
+
+[[test]]
+name = "tests"
+harness = false

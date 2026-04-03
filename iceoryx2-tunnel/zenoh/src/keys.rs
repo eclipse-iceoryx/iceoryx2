@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::service::service_id::ServiceId;
+use iceoryx2::service::service_hash::ServiceHash;
 
 /// The zenoh key for discovering available service details.
 pub fn service_discovery() -> String {
@@ -18,16 +18,16 @@ pub fn service_discovery() -> String {
 }
 
 /// The zenoh key at which the service details for the given service id can be received.
-pub fn service_details(service_id: &ServiceId) -> String {
-    format!("iox2/service_details/{}", service_id.as_str())
+pub fn service_details(service_hash: &ServiceHash) -> String {
+    format!("iox2/service_details/{}", service_hash.as_str())
 }
 
 /// The zenoh key at which payloads for a given publish-subscribe service id can be received.
-pub fn publish_subscribe(service_id: &ServiceId) -> String {
-    format!("iox2/publish_subscribe/{}", service_id.as_str())
+pub fn publish_subscribe(service_hash: &ServiceHash) -> String {
+    format!("iox2/publish_subscribe/{}", service_hash.as_str())
 }
 
 /// The zenoh key at which notifications for a given event service can be received.
-pub fn event(service_id: &ServiceId) -> String {
-    format!("iox2/event/{}", service_id.as_str())
+pub fn event(service_hash: &ServiceHash) -> String {
+    format!("iox2/event/{}", service_hash.as_str())
 }

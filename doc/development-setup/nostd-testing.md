@@ -13,15 +13,17 @@ of `no_std` targets, including bare metal.
 The following requirements steered the design of the solution:
 
 1. Test logic must not be duplicated
-1. All tests must be executable with the standard test framework
-1. All `no_std` tests must be executable with the custom test framework
+1. No manual boilerplate maintenance when adding tests
+1. All `std` tests must be executable using the usual `cargo test` command
+1. All `std` tests must be executable using `nextest`
+1. All `no_std` tests must be executable on the `no_std` targets
 
 ## Design
 
 ### Definitions
 
 1. **Test Harness:** Boilerplate for test entrypoints, test discovery
-1. **Test Runner:** Test orechestration, result reporting
+1. **Test Runner:** Test orchestration, result reporting
 1. **Test Framework:** Combination of a test harness and test runner
 
 NOTE: This terminology seems to be inconsistent in literature on this topic
@@ -30,30 +32,26 @@ NOTE: This terminology seems to be inconsistent in literature on this topic
 
 ### Background
 
-Whilst Rust provides the mechanisms to both disable the standard test harness
-for test binaries, and to specify custom test runners, these features have
-limitations which make them not desirable for our use-case:
+The following constraints were considered in the design of the solution:
 
-1. Disabling the standard test harness must be done per-test-binary making it
-   clunky to simultaneously support the standard and a custom test framework
-1. The mechanism for providing a custom test runner is only available on
-   the `unstable` toolchain
+1. Disabling the standard test harness (`harness = false`) must be done
+   per-test-binary
+1. The `#![feature(custom_test_frameworks)]`  mechanism for providing a custom
+   test runner is only available on the `nightly` toolchain
 1. The standard test framework does not provide the mechanism for testing a
    library with different feature flags enabled - only the default feature set
-   is used
-    * **NOTE:** This has been observed but seems to be an odd limitation.
-            More research required.
+   is used, making it impossible to test a `no_std` configuration directly
 
 ### Structure
 
 #### Common Library
 
-To facilitate reuse of test case logic in the different contexts (standard
-framework vs. custom framework), test cases are implemented and exported as
-functions in a common library. The convention used for naming these libraries
-is: `${crate-name}-tests-common`.
+To facilitate reuse of test case logic in both `std` and `no_std` contexts,
+test cases are implemented and exported as functions in a common library.
 
-The common test library must exposed an `std` feature, which is forwarded
+The convention used for naming these libraries is: `${crate-name}-tests-common`
+
+The common test library must expose an `std` feature, which must be forwarded
 to `iceoryx2-bb-testing` to ensure compatibility with `no_std` testing:
 
 ```toml
@@ -62,36 +60,65 @@ default = []
 std = [
   "my-crate/std",
   "iceoryx2-bb-testing/std",
+  "iceoryx2-bb-testing-macros/std",
 ]
 ```
 
-All test cases must then use the `assert_that` macro for assertions, which is
-compatible with `no_std` testing.
+Test functions are annotated with the custom `#[test]` attribute to make them
+discoverable by the custom test framework:
 
 ```rust
+use iceoryx2_bb_testing_macros::test;
+
+#[test]
 pub fn my_test_case() {
     // ... test logic
     assert_that!( /* .. */ )
 }
 ```
 
-Test cases that rely on `std` functionality can be annotated so that they
-can be appropriately handled by the `no_std` framework, or skipped.
-These annotations are ignored by the standard testing framework.
+When many tests share the same type list, annotate the containing module with
+`#[tests(...)]`:
 
 ```rust
-use iceoryx2_bb_testing_nostd_macros::requires_std;
+use iceoryx2_bb_testing_macros::tests;
 
-#[requires_std("panics")]
-pub fn my_test_case_that_panics() {
-    // ... test logic
-    assert_that!( /* .. */ )
+#[tests(TypeA, TypeB)]
+pub mod generic {
+    #[test]
+    pub fn my_generic_test<T>() {
+        // ... test logic
+    }
+
+    #[test]
+    pub fn another_generic_test<T>() {
+        // ... test logic
+    }
 }
+```
 
-#[requires_std("threading")]
-pub fn my_test_case_that_panics() {
+Test cases that rely on `std` functionality can be annotated so that they
+are skipped in `no_std` contexts:
+
+```rust
+use iceoryx2_bb_testing_macros::requires_std;
+
+#[test]
+#[requires_std("optional reason")]
+pub fn my_test_case_using_threads() {
     // ... test logic
-    assert_that!( /* .. */ )
+}
+```
+
+The `#[should_panic]` attribute can be used. The panic is handled in the
+`std` runner (via `catch_unwind`) but the test is skipped in the `no_std`
+runner.
+
+```rust
+#[test]
+#[should_panic]
+pub fn my_test_that_panics() {
+    // ... test logic that is expected to panic
 }
 ```
 
@@ -102,114 +129,88 @@ crate:
 my-crate-tests-common/
 └── src/
     ├── lib.rs
-    ├── module_a.rs
-    └── module_b.rs
+    ├── module_a_tests.rs
+    └── module_b_tests.rs
 ```
 
-#### Standard Test Framework
+#### `std` Testing
 
-The convention for defining (integration) tests in the `tests` directory of the
-crate is followed.
-
-For every module in the common test library, a corresponding test binary that
-uses the standard test framework is produced.
-This is achieved by creating a file in the `tests` directory for each module
-in the common test library.
+A single `tests/tests.rs` file that sets up the test harness is all that is
+required. Additionally, the common library should be linked so that all
+annotated test functions are registered for execution.
 
 ```console
 my-crate/
 ├── src/
 └── tests/
-    ├── module_a_tests.rs
-    └── module_b_tests.rs
+    └── main.rs
 ```
-
-The tests defined by the standard test framework delegate to the common library
-for the test logic.
 
 ```rust
-use my_crate_tests_common::module_a::*;
+extern crate my_crate_tests_common;
 
-#[test]
-fn my_test_case() {
-    module_a::my_test_case();
-}
+iceoryx2_bb_testing::test_harness!();
 ```
 
-All annotations that the standard test framework works with can be
-used as usual.
-
-The common test library must be depended on with the `std` feature enabled to
-ensure the tested crate and its tests use the `std` module instead of
-`no_std` work-arounds:
+The `Cargo.toml` for the crate must declare this test binary with
+`harness = false` to disable the standard test harness:
 
 ```toml
 [dev-dependencies]
 my-crate-tests-common = { workspace = true, features = ["std"] }
+iceoryx2-bb-testing = { workspace = true, features = ["std"] }
+
+[[test]]
+name = "tests"
+harness = false
 ```
 
-#### Custom Test Framework
+Running tests works as usual with the custom test framework:
+
+```console
+cargo test --package my-crate
+```
+
+The tests can also be executed via the `just` script available in the
+repository. This option only exists for consistency with running tests
+using the custom framework.
+
+```console
+just test my_crate
+```
+
+Note that this approach produces single test binary to execute all tests.
+To isolate each test in separate processes, `nextest` can be used:
+
+```console
+cargo nextest run --package my-crate
+```
+
+#### `no_std` Testing
 
 For every crate that defines tests for `no_std` targets, an additional binary
-crate is created with the naming convention: `${crate-name}-tests-nostd`
-The binary produced by this crate utilizes the `no_std` test harness and test
-runner.
+crate is created with the naming convention: `${crate-name}-tests-nostd`.
 
-Like defining the tests for the standard test framework, a separate file is
-created (but this time in the `src` directory) for each module in the common
-test framework.
+Again, a single `main.rs` file is required to set up the test harness and
+link to the common test library so that all annotated test functions
+are registered for execution.
+
+If the tests require heap allocation, a global allocator must also be defined
+here:
 
 ```console
 my-crate-tests-nostd/
 └── src/
-    ├── main.rs
-    ├── module_a_tests.rs
-    └── module_b_tests.rs
+    └── main.rs
 ```
 
-Again like integration with the standard test framework, the test cases
-defined for `no_std` delegate to the common library for the test logic.
-A different annotation is used to integrate with the `no_std` test framework:
-
 ```rust
-use iceoryx2_bb_testing_nostd_macros::inventory_test;
-use my_crate_tests_common::module_a::*;
+#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(feature = "std"), no_main)]
 
-#[inventory_test]
-fn my_test_case() {
-    module_a::my_test_case();
-}
-```
+extern crate my_crate_tests_common;
 
-A macro for defining generic tests for the `no_std` test framework is also
-available.
-
-```rust
-#[inventory_test_generic(TypeA, TypeB)]
-fn my_test_case() {
-    module_a::my_test_case();
-}
-```
-
-In the `main.rs`, all test modules are imported and the harness and runner is
-bootstrapped via a provided convenience macro:
-
-```rust
-
-mod modula_a_tests;
-mod module_b_tests;
-
-iceoryx2_bb_testing_nostd::bootstrap!();
-```
-
-> [!NOTE]
-> All `no_std` tests cannot be defined below the `iceoryx2-bb` architecture
-> layer. To test components in lower levels (i.e. `iceoryx2-pal`, components
-> must be re-exported at the `iceoryx2-bb` layer)
-
-If the tests require the `alloc` crate, a global allocator must be defined:
-
-```rust
+// Required if tests use heap allocation:
 use core::{
     alloc::{GlobalAlloc, Layout},
     ptr::NonNull,
@@ -217,7 +218,6 @@ use core::{
 use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 
-#[derive(Debug)]
 pub struct GlobalHeapAllocator(HeapAllocator);
 
 impl GlobalHeapAllocator {
@@ -243,13 +243,19 @@ unsafe impl GlobalAlloc for GlobalHeapAllocator {
 
 #[global_allocator]
 static GLOBAL: GlobalHeapAllocator = GlobalHeapAllocator::new();
+
+iceoryx2_bb_testing::test_harness!();
 ```
 
+> [!NOTE]
+> All `no_std` tests cannot be defined below the `iceoryx2-bb` architecture
+> layer. To test components in lower levels (i.e. `iceoryx2-pal`), components
+> must be re-exported at the `iceoryx2-bb` layer to be tested.
+
 Although the crate is specifically for `no_std` testing, it must provide an
-`std` feature, and it must be enabled by default. This feature must be
-propagated to the `iceoryx2-bb-testing-nostd*` crates. This is to ensure that
-the crate is still successfully built in `std` workspace builds. If not done,
-the linker will complain about symbol clashes (e.g. the panic handler).
+`std` feature enabled by default. This ensures the crate builds successfully
+in `std` workspace builds, avoiding linker symbol clashes (e.g. the panic
+handler):
 
 ```toml
 [features]
@@ -257,50 +263,26 @@ the linker will complain about symbol clashes (e.g. the panic handler).
 default = ["std"]
 
 std = [
-  "iceoryx2-bb-testing-nostd-macros/std",
-  "iceoryx2-bb-testing-nostd/std"
+  "iceoryx2-bb-testing-macros/std",
+  "iceoryx2-bb-testing/std"
 ]
+
+[dependencies]
+my-crate-tests-common = { workspace = true, features = [] }
+iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-testing-macros = { workspace = true }
 ```
 
-However, the crate must depend on the common test library with the `std`
-feature disabled to ensure the tested crate and its tests do not use the
-`std` module:
-
-```toml
-[dev-dependencies]
-my-crate-tests-common = { workspace = true }
-```
-
-## Running
-
-### Standard Framework
-
-Tests using the standard framework are executed as usual with `cargo`:
-
-```console
-cargo test my_crate
-```
-
-The tests can also be executed via the `just` script available in the
-repository. This option only exists for consistency with running tests
-using the custom framework.
-
-```console
-just test my_crate
-```
-
-### Custom Framework
-
-Tests using the custom `no_std` framework are executed via the binary produced
+Tests using the `no_std` framework are executed via the binary produced
 by the crate containing the `no_std` tests. In addition, the `core` and `alloc`
 libraries must be built with `panic=abort`:
 
 ```console
 RUSTC_BOOTSTRAP=1 RUSTFLAGS="-C panic=abort" \
-  cargo run \ 
+  cargo run \
   --package my-crate-tests-nostd \
   --no-default-features \
-  -Zbuild-std=core,alloc 
+  -Zbuild-std=core,alloc
 ```
 
 The tests can also be executed via the `just` script available in the
@@ -311,11 +293,9 @@ the complexity of the command:
 just test my_crate --no_std
 ```
 
-Additionally, all `no_std` tests can also be executed with the `just` script:
+Additionally, all `no_std` tests in the workspace can also be executed with the
+`just` script:
 
 ```console
 just test workspace --no_std
 ```
-
-Note that this will not execute all tests with the `no_std` framework, only
-the tests specifically integrated as per the approach defined above.

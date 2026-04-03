@@ -22,7 +22,7 @@
 //!     .open_or_create()?;
 //!
 //! println!("name: {:?}", req_res.name());
-//! println!("service id: {:?}", req_res.service_id());
+//! println!("service id: {:?}", req_res.service_hash());
 //! println!("request type details: {:?}", req_res.static_config().request_message_type_details());
 //! println!("response type details: {:?}", req_res.static_config().response_message_type_details());
 //! println!("max active requests per client: {:?}", req_res.static_config().max_active_requests_per_client());
@@ -45,10 +45,11 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 use crate::{
+    identifiers::ServiceId,
     node::NodeListFailure,
     prelude::AttributeSet,
     service::{
-        self, dynamic_config, service_id::ServiceId, service_name::ServiceName, static_config,
+        self, dynamic_config, service_hash::ServiceHash, service_name::ServiceName, static_config,
         NoResource, ServiceState,
     },
 };
@@ -137,8 +138,12 @@ impl<
         self.service.static_config.name()
     }
 
-    fn service_id(&self) -> &ServiceId {
+    fn service_id(&self) -> ServiceId {
         self.service.static_config.service_id()
+    }
+
+    fn service_hash(&self) -> &ServiceHash {
+        self.service.static_config.service_hash()
     }
 
     fn attributes(&self) -> &AttributeSet {

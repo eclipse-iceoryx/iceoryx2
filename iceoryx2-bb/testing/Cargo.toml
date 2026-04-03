@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-bb-testing"
-description = "iceoryx2: [internal] simple testing primitives"
+description = "iceoryx2: [internal] testing primitives"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -16,9 +16,17 @@ default = []
 std = [
   "iceoryx2-pal-concurrency-sync/std",
   "iceoryx2-pal-testing/std",
+  "iceoryx2-pal-print/std",
+  "iceoryx2-pal-posix/std",
+  "dep:libtest-mimic",
 ]
 
 [dependencies]
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 iceoryx2-pal-testing = { workspace = true }
+iceoryx2-pal-print = { workspace = true }
+iceoryx2-pal-posix = { workspace = true }
+
+inventory = { workspace = true }
+libtest-mimic = { workspace = true, optional = true }

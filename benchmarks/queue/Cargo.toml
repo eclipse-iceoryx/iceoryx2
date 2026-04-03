@@ -11,8 +11,8 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [dependencies]
-iceoryx2-bb-lock-free = { workspace = true }
+iceoryx2-bb-lock-free = { workspace = true, features = ["std"] }
 iceoryx2-bb-posix = { workspace = true, features = ["std"] }
-iceoryx2-bb-loggers = { workspace = true }
+iceoryx2-bb-loggers = { workspace = true, features = ["std"] }
 
 clap = { workspace = true }

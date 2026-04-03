@@ -39,9 +39,9 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
         if attachment_id.has_event_from(&guard) {
-            while let Some(response) = pending_response.receive().unwrap() {
+            if let Some(response) = pending_response.receive().unwrap() {
                 for service in response.payload().iter() {
-                    coutln!("Service ID: {:?}", service.service_id().as_str());
+                    coutln!("Service Hash: {:?}", service.service_hash().as_str());
                     coutln!("Service Name: {:?}", service.name().as_str());
                 }
                 coutln!("exit");

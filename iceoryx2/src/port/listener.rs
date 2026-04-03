@@ -78,7 +78,7 @@ use crate::service::config_scheme::event_config;
 use crate::service::dynamic_config::event::ListenerDetails;
 use crate::service::naming_scheme::event_concept_name;
 use crate::service::{NoResource, ServiceState};
-use crate::{port::port_identifiers::UniqueListenerId, service};
+use crate::{identifiers::UniqueListenerId, service};
 
 use super::event_id::EventId;
 

@@ -14,6 +14,7 @@ version = { workspace = true }
 default = []
 
 std = [
+  "iceoryx2-log/std",  
   "iceoryx2-bb-elementary/std",
   "iceoryx2-bb-concurrency/std",
   "iceoryx2-bb-lock-free/std",
@@ -30,4 +31,9 @@ iceoryx2-bb-posix = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-loggers = { workspace = true }
-iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-testing = { workspace = true, features = ["std"] }
+iceoryx2-bb-memory-tests-common = { workspace = true, features = ["std"] }
+
+[[test]]
+name = "tests"
+harness = false

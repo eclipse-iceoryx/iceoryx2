@@ -19,6 +19,9 @@ std = [
   "iceoryx2-bb-loggers/std",
   "iceoryx2-bb-loggers/console",
   "iceoryx2-bb-concurrency/std",
+  "iceoryx2-bb-container/std",
+  "iceoryx2-bb-elementary/std",
+  "iceoryx2-bb-derive-macros/std",  
   "iceoryx2-bb-memory/std",
   "iceoryx2-bb-lock-free/std",
   "iceoryx2-bb-system-types/std",
@@ -52,5 +55,10 @@ toml = { workspace = true }
 tiny-fn = { workspace = true }
 
 [dev-dependencies]
-iceoryx2-bb-loggers = { workspace = true }
-iceoryx2-bb-testing = { workspace = true }
+iceoryx2-tests-common = { workspace = true, features = ["std"] }
+iceoryx2-bb-loggers = { workspace = true, features = ["std"] }
+iceoryx2-bb-testing = { workspace = true, features = ["std"] }
+
+[[test]]
+name = "tests"
+harness = false

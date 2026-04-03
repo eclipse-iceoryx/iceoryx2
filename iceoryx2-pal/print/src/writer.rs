@@ -14,25 +14,20 @@ use core::fmt::{self, Write};
 
 use crate::IsTerminal;
 
+/// Zero-sized stateless handle to STDOUT.
 pub struct Stdout;
+
+/// Zero-sized stateless handle to STDERR.
 pub struct Stderr;
 
-pub fn stdout() -> &'static mut Stdout {
-    static mut STDOUT: Stdout = Stdout;
-
-    unsafe {
-        #[allow(static_mut_refs)]
-        &mut STDOUT
-    }
+/// Convenience function to retrieve a handle to stdout.
+pub fn stdout() -> Stdout {
+    Stdout
 }
 
-pub fn stderr() -> &'static mut Stderr {
-    static mut STDERR: Stderr = Stderr;
-
-    unsafe {
-        #[allow(static_mut_refs)]
-        &mut STDERR
-    }
+/// Convenience function to retrieve a handle to stderr.
+pub fn stderr() -> Stderr {
+    Stderr
 }
 
 #[cfg(feature = "std")]

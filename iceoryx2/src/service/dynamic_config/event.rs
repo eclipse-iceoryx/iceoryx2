@@ -34,8 +34,8 @@ use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_log::fatal_panic;
 
 use crate::{
+    identifiers::{UniqueListenerId, UniqueNotifierId, UniquePortId},
     node::NodeId,
-    port::port_identifiers::{UniqueListenerId, UniqueNotifierId, UniquePortId},
 };
 
 use super::PortCleanupAction;

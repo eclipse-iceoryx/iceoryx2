@@ -27,6 +27,10 @@ set timeout 10
 # Spawn a process that creates a node
 spawn cargo run --example publish_subscribe_subscriber
 set id_subscriber $spawn_id
+# Wait for the subscriber to fully start up and clean the dead nodes,
+# else there is a race with "iox2-node -- list", which might find a dead node
+# and use that ID for the detailed lookup
+expect_output_from $id_subscriber {Subscriber ready to receive data!}
 
 # List nodes to get the node id
 set list_output [exec cargo run --bin iox2-node -- list 2>@1]
@@ -43,10 +47,10 @@ set id_iox2_node $spawn_id
 
 #### Test Assertion
 
-expect_output_from $id_iox2_node "state"
+expect_output_from $id_iox2_node {"state": Alive}
 expect_output_from $id_iox2_node "id"
 expect_output_from $id_iox2_node "pid"
-expect_output_from $id_iox2_node "executable"
+expect_output_from $id_iox2_node {"executable": "publish_subscribe_subscriber"}
 expect_output_from $id_iox2_node "name"
 expect_output_from $id_iox2_node "config"
 

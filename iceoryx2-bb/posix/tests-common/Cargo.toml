@@ -1,0 +1,44 @@
+[package]
+name = "iceoryx2-bb-posix-tests-common"
+description = "iceoryx2: [internal] common test definitions for iceoryx2-bb-posix"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[lints]
+workspace = true
+
+[features]
+default = []
+std = [
+  "iceoryx2-bb-loggers/std",
+  "iceoryx2-bb-concurrency/std",
+  "iceoryx2-bb-container/std",
+  "iceoryx2-bb-elementary/std",
+  "iceoryx2-bb-posix/std",
+  "iceoryx2-bb-system-types/std",
+  "iceoryx2-bb-testing-macros/std",
+  "iceoryx2-bb-testing/std",
+  "iceoryx2-pal-posix/std",
+  "iceoryx2-pal-print/std",
+]
+
+[dependencies]
+iceoryx2-bb-loggers = { workspace = true }
+iceoryx2-bb-container = { workspace = true }
+iceoryx2-bb-concurrency = { workspace = true }
+iceoryx2-bb-elementary = { workspace = true }
+iceoryx2-bb-system-types = { workspace = true }
+iceoryx2-bb-posix = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-testing-macros = { workspace = true }
+iceoryx2-pal-configuration = { workspace = true }
+iceoryx2-pal-posix = { workspace = true }
+iceoryx2-pal-print = { workspace = true }
+
+enum-iterator = { workspace = true }

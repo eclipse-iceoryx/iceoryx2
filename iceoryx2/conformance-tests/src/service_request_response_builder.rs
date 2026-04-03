@@ -15,6 +15,8 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod service_request_response_builder {
+    use alloc::vec;
+
     use iceoryx2::node::NodeBuilder;
     use iceoryx2::prelude::*;
     use iceoryx2::service::attribute::*;

@@ -295,11 +295,11 @@ dependencies = [
 
 [[package]]
 name = "bitflags"
-version = "2.6.0"
+version = "2.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b048fb63fd8b5923fc5aa7b340d8e156aec7ec02f0c78fa8a6ddc2613f6f71de"
+checksum = "843867be96c8daad0d758b57df9392b6d8d271134fce549de6ce169ff98a92af"
 dependencies = [
- "serde",
+ "serde_core",
 ]
 
 [[package]]
@@ -906,6 +906,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "escape8259"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5692dd7b5a1978a5aeb0ce83b7655c58ca8efdcb79d21036ea249da95afec2c6"
+
+[[package]]
 name = "event-listener"
 version = "5.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -922,6 +928,7 @@ version = "0.8.999"
 dependencies = [
  "clap",
  "iceoryx2",
+ "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
@@ -1332,6 +1339,7 @@ dependencies = [
  "iceoryx2-cal",
  "iceoryx2-log",
  "iceoryx2-pal-configuration",
+ "iceoryx2-tests-common",
  "serde",
  "tiny-fn",
  "toml 0.9.8",
@@ -1341,7 +1349,6 @@ dependencies = [
 name = "iceoryx2-bb-concurrency"
 version = "0.8.999"
 dependencies = [
- "generic-tests",
  "iceoryx2-bb-concurrency-tests-common",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
@@ -1355,8 +1362,10 @@ version = "0.8.999"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-pal-print",
 ]
 
@@ -1368,8 +1377,8 @@ dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
- "iceoryx2-bb-testing-nostd",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
 ]
 
 [[package]]
@@ -1385,8 +1394,8 @@ dependencies = [
 name = "iceoryx2-bb-container"
 version = "0.8.999"
 dependencies = [
- "generic-tests",
  "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-container-tests-common",
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
@@ -1398,12 +1407,40 @@ dependencies = [
 ]
 
 [[package]]
-name = "iceoryx2-bb-derive-macros"
+name = "iceoryx2-bb-container-tests-common"
 version = "0.8.999"
 dependencies = [
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-container",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-pal-print",
+ "serde_test",
+ "sha1_smol",
+]
+
+[[package]]
+name = "iceoryx2-bb-container-tests-nostd"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-container-tests-common",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+]
+
+[[package]]
+name = "iceoryx2-bb-derive-macros"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-derive-macros-tests-common",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-testing",
  "proc-macro2",
  "quote",
@@ -1411,16 +1448,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-bb-derive-macros-tests-common"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-derive-macros",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-pal-concurrency-sync",
+]
+
+[[package]]
+name = "iceoryx2-bb-derive-macros-tests-nostd"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-derive-macros-tests-common",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+]
+
+[[package]]
 name = "iceoryx2-bb-elementary"
 version = "0.8.999"
 dependencies = [
- "generic-tests",
  "iceoryx2-bb-elementary-tests-common",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-testing",
- "iceoryx2-bb-testing-nostd",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-pal-concurrency-sync",
 ]
 
@@ -1431,7 +1490,9 @@ dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
 ]
 
 [[package]]
@@ -1442,8 +1503,8 @@ dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
- "iceoryx2-bb-testing-nostd",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
 ]
 
 [[package]]
@@ -1469,15 +1530,41 @@ dependencies = [
 name = "iceoryx2-bb-lock-free"
 version = "0.8.999"
 dependencies = [
- "generic-tests",
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-lock-free-tests-common",
  "iceoryx2-bb-loggers",
- "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-log",
  "loom",
+]
+
+[[package]]
+name = "iceoryx2-bb-lock-free-tests-common"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-lock-free",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-pal-concurrency-sync",
+ "iceoryx2-pal-print",
+]
+
+[[package]]
+name = "iceoryx2-bb-lock-free-tests-nostd"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-lock-free-tests-common",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
 ]
 
 [[package]]
@@ -1501,9 +1588,35 @@ dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-lock-free",
  "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory-tests-common",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-log",
+]
+
+[[package]]
+name = "iceoryx2-bb-memory-tests-common"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-elementary",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-pal-print",
+]
+
+[[package]]
+name = "iceoryx2-bb-memory-tests-nostd"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-memory-tests-common",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
 ]
 
 [[package]]
@@ -1511,13 +1624,13 @@ name = "iceoryx2-bb-posix"
 version = "0.8.999"
 dependencies = [
  "enum-iterator",
- "generic-tests",
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
+ "iceoryx2-bb-posix-tests-common",
  "iceoryx2-bb-print",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
@@ -1526,6 +1639,38 @@ dependencies = [
  "iceoryx2-pal-posix",
  "serde",
  "tiny-fn",
+]
+
+[[package]]
+name = "iceoryx2-bb-posix-tests-common"
+version = "0.8.999"
+dependencies = [
+ "enum-iterator",
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-container",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-system-types",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-pal-configuration",
+ "iceoryx2-pal-posix",
+ "iceoryx2-pal-print",
+]
+
+[[package]]
+name = "iceoryx2-bb-posix-tests-nostd"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-posix-tests-common",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-pal-print",
 ]
 
 [[package]]
@@ -1544,6 +1689,7 @@ dependencies = [
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
+ "iceoryx2-bb-system-types-tests-common",
  "iceoryx2-bb-testing",
  "iceoryx2-log",
  "iceoryx2-pal-configuration",
@@ -1552,28 +1698,46 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-bb-system-types-tests-common"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-container",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-system-types",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+]
+
+[[package]]
+name = "iceoryx2-bb-system-types-tests-nostd"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-system-types-tests-common",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+]
+
+[[package]]
 name = "iceoryx2-bb-testing"
 version = "0.8.999"
 dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-pal-concurrency-sync",
- "iceoryx2-pal-testing",
-]
-
-[[package]]
-name = "iceoryx2-bb-testing-nostd"
-version = "0.8.999"
-dependencies = [
  "iceoryx2-pal-posix",
  "iceoryx2-pal-print",
+ "iceoryx2-pal-testing",
  "inventory",
+ "libtest-mimic",
 ]
 
 [[package]]
-name = "iceoryx2-bb-testing-nostd-macros"
+name = "iceoryx2-bb-testing-macros"
 version = "0.8.999"
 dependencies = [
- "iceoryx2-bb-testing-nostd",
+ "iceoryx2-bb-testing",
  "iceoryx2-pal-print",
  "proc-macro2",
  "quote",
@@ -1599,9 +1763,10 @@ name = "iceoryx2-bb-threadsafe-tests-common"
 version = "0.8.999"
 dependencies = [
  "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-bb-threadsafe",
  "iceoryx2-pal-print",
 ]
@@ -1613,8 +1778,8 @@ dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
- "iceoryx2-bb-testing-nostd",
- "iceoryx2-bb-testing-nostd-macros",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-bb-threadsafe-tests-common",
 ]
 
@@ -1622,7 +1787,31 @@ dependencies = [
 name = "iceoryx2-bb-trait-tests"
 version = "0.8.999"
 dependencies = [
- "generic-tests",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-trait-tests-common",
+]
+
+[[package]]
+name = "iceoryx2-bb-trait-tests-common"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-container",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-lock-free",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-system-types",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-cal",
+ "iceoryx2-pal-print",
+]
+
+[[package]]
+name = "iceoryx2-bb-trait-tests-nostd"
+version = "0.8.999"
+dependencies = [
  "iceoryx2-bb-container",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
@@ -1631,6 +1820,8 @@ dependencies = [
  "iceoryx2-bb-memory",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-bb-trait-tests-common",
  "iceoryx2-cal",
 ]
 
@@ -1638,7 +1829,6 @@ dependencies = [
 name = "iceoryx2-cal"
 version = "0.8.999"
 dependencies = [
- "generic-tests",
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
@@ -1651,6 +1841,7 @@ dependencies = [
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
+ "iceoryx2-cal-tests-common",
  "iceoryx2-log",
  "postcard",
  "serde",
@@ -1667,17 +1858,77 @@ dependencies = [
  "iceoryx2-bb-conformance-test-macros",
  "iceoryx2-bb-container",
  "iceoryx2-bb-elementary-traits",
- "iceoryx2-bb-lock-free",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-cal",
+ "iceoryx2-cal-conformance-tests-common",
  "iceoryx2-pal-posix",
+ "iceoryx2-pal-print",
  "postcard",
  "serde",
  "toml 0.9.8",
+]
+
+[[package]]
+name = "iceoryx2-cal-conformance-tests-common"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-lock-free",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-cal",
+ "iceoryx2-cal-conformance-tests",
+ "iceoryx2-pal-print",
+]
+
+[[package]]
+name = "iceoryx2-cal-conformance-tests-nostd"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-cal",
+ "iceoryx2-cal-conformance-tests",
+ "iceoryx2-cal-conformance-tests-common",
+ "iceoryx2-pal-print",
+]
+
+[[package]]
+name = "iceoryx2-cal-tests-common"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-container",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-system-types",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-cal",
+]
+
+[[package]]
+name = "iceoryx2-cal-tests-nostd"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-cal-tests-common",
 ]
 
 [[package]]
@@ -1728,8 +1979,37 @@ dependencies = [
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-cal",
+ "iceoryx2-conformance-tests-common",
  "iceoryx2-log",
+ "iceoryx2-pal-print",
+]
+
+[[package]]
+name = "iceoryx2-conformance-tests-common"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-conformance-tests",
+ "iceoryx2-pal-print",
+]
+
+[[package]]
+name = "iceoryx2-conformance-tests-nostd"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-testing",
+ "iceoryx2-conformance-tests",
+ "iceoryx2-conformance-tests-common",
 ]
 
 [[package]]
@@ -1747,11 +2027,13 @@ dependencies = [
  "iceoryx2-bb-lock-free",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
+ "iceoryx2-bb-print",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
  "iceoryx2-ffi-macros",
  "iceoryx2-log",
+ "iceoryx2-pal-posix",
 ]
 
 [[package]]
@@ -1853,6 +2135,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-tests-common"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-derive-macros",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+]
+
+[[package]]
+name = "iceoryx2-tests-nostd"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-tests-common",
+]
+
+[[package]]
 name = "iceoryx2-tunnel"
 version = "0.8.999"
 dependencies = [
@@ -1907,6 +2215,7 @@ dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-log",
  "iceoryx2-tunnel-backend",
  "iceoryx2-tunnel-conformance-tests",
@@ -2110,9 +2419,9 @@ dependencies = [
 
 [[package]]
 name = "inventory"
-version = "0.3.22"
+version = "0.3.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "009ae045c87e7082cb72dab0ccd01ae075dd00141ddc108f43a0ea150a9e7227"
+checksum = "a4f0c30c76f2f4ccee3fe55a2435f691ca00c0e4bd87abe4f4a851b1d4dac39b"
 dependencies = [
  "rustversion",
 ]
@@ -2228,9 +2537,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.180"
+version = "0.2.183"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bcc35a38544a891a5f7c865aca548a982ccb3b8650a5b06d0fd33a10283c56fc"
+checksum = "b5b646652bf6661599e1da8901b3b9522896f01e736bad5f723fe7a3a27f899d"
 
 [[package]]
 name = "libloading"
@@ -2256,6 +2565,18 @@ checksum = "c0ff37bd590ca25063e35af745c343cb7a0271906fb7b37e4813e8f79f00268d"
 dependencies = [
  "bitflags",
  "libc",
+]
+
+[[package]]
+name = "libtest-mimic"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5297962ef19edda4ce33aaa484386e0a5b3d7f2f4e037cbeee00503ef6b29d33"
+dependencies = [
+ "anstream",
+ "anstyle",
+ "clap",
+ "escape8259",
 ]
 
 [[package]]
@@ -2300,10 +2621,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "lz4_flex"
-version = "0.11.3"
+name = "lru-slab"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75761162ae2b0e580d7e7c390558127e5f01b4194debd6221fd8c207fc80e3f5"
+checksum = "112b39cec0b298b6c1999fee3e31427f74f676e4cb9879ed1a121b43661a4154"
+
+[[package]]
+name = "lz4_flex"
+version = "0.11.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "373f5eceeeab7925e0c1098212f2fbc4d416adec9d35051a6ab251e824c1854a"
 dependencies = [
  "twox-hash",
 ]
@@ -2857,12 +3184,13 @@ dependencies = [
 
 [[package]]
 name = "quinn-proto"
-version = "0.11.11"
+version = "0.11.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bcbafbbdbb0f638fe3f35f3c56739f77a8a1d070cb25603226c83339b391472b"
+checksum = "434b42fec591c96ef50e21e886936e66d3cc3f737104fdb9b737c40ffb94c098"
 dependencies = [
  "bytes",
  "getrandom 0.3.2",
+ "lru-slab",
  "rand 0.9.1",
  "ring",
  "rustc-hash",
@@ -3186,9 +3514,9 @@ dependencies = [
 
 [[package]]
 name = "rustls-platform-verifier"
-version = "0.5.3"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19787cda76408ec5404443dc8b31795c87cd8fec49762dc75fa727740d34acc1"
+checksum = "1d99feebc72bae7ab76ba994bb5e121b8d83d910ca40b36e0921f53becc41784"
 dependencies = [
  "core-foundation",
  "core-foundation-sys",
@@ -3201,8 +3529,8 @@ dependencies = [
  "rustls-webpki",
  "security-framework",
  "security-framework-sys",
- "webpki-root-certs 0.26.11",
- "windows-sys 0.59.0",
+ "webpki-root-certs",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -3213,9 +3541,9 @@ checksum = "f87165f0995f63a9fbeea62b64d10b4d9d8e78ec6d7d51fb2125fda7bb36788f"
 
 [[package]]
 name = "rustls-webpki"
-version = "0.103.8"
+version = "0.103.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2ffdfa2f5286e2247234e03f680868ac2815974dc39e00ea15adc445d0aafe52"
+checksum = "df33b2b81ac578cabaf06b89b0631153a3f416b0a886e8a7a1707fb51abbd1ef"
 dependencies = [
  "ring",
  "rustls-pki-types",
@@ -3314,9 +3642,9 @@ dependencies = [
 
 [[package]]
 name = "security-framework"
-version = "3.2.0"
+version = "3.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "271720403f46ca04f7ba6f55d438f8bd878d6b8ca0a1046e8228c4145bcbb316"
+checksum = "b7f4bc775c73d9a02cde8bf7b2ec4c9d12743edf609006c7facc23998404cd1d"
 dependencies = [
  "bitflags",
  "core-foundation",
@@ -3327,9 +3655,9 @@ dependencies = [
 
 [[package]]
 name = "security-framework-sys"
-version = "2.14.0"
+version = "2.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49db231d56a190491cb4aeda9527f1ad45345af50b0851622a7adb8c03b01c32"
+checksum = "6ce2691df843ecc5d231c0b14ece2acc3efb62c0a398c7e1d875f3983ce020e3"
 dependencies = [
  "core-foundation-sys",
  "libc",
@@ -3653,12 +3981,6 @@ name = "stable_deref_trait"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
-
-[[package]]
-name = "static_assertions"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "strsim"
@@ -4109,13 +4431,9 @@ dependencies = [
 
 [[package]]
 name = "twox-hash"
-version = "1.6.3"
+version = "2.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
-dependencies = [
- "cfg-if",
- "static_assertions",
-]
+checksum = "9ea3136b675547379c4bd395ca6b938e5ad3c3d20fad76e7fe85f9e0d011419c"
 
 [[package]]
 name = "typeid"
@@ -4374,15 +4692,6 @@ dependencies = [
 
 [[package]]
 name = "webpki-root-certs"
-version = "0.26.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75c7f0ef91146ebfb530314f5f1d24528d7f0767efbfd31dce919275413e393e"
-dependencies = [
- "webpki-root-certs 1.0.0",
-]
-
-[[package]]
-name = "webpki-root-certs"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "01a83f7e1a9f8712695c03eabe9ed3fbca0feff0152f33f12593e5a6303cb1a4"
@@ -4421,7 +4730,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]

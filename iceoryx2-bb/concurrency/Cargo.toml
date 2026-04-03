@@ -26,4 +26,6 @@ iceoryx2-bb-loggers = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-testing = { workspace = true, features = ["std"] }
 
-generic-tests = { workspace = true }
+[[test]]
+name = "tests"
+harness = false

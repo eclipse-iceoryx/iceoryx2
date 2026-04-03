@@ -18,10 +18,12 @@ pub type DefaultAllocator = PoolAllocator;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod shared_memory_trait {
+    use alloc::vec;
     use core::alloc::Layout;
 
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
+    use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_cal::named_concept::*;
@@ -43,7 +45,7 @@ pub mod shared_memory_trait {
 
     #[conformance_test]
     pub fn size_of_zero_fails<Sut: SharedMemory<DefaultAllocator>>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_create = Sut::Builder::new(&name)
@@ -64,7 +66,7 @@ pub mod shared_memory_trait {
 
     #[conformance_test]
     pub fn non_zero_size_works<Sut: SharedMemory<DefaultAllocator>>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_create = Sut::Builder::new(&name)
@@ -80,7 +82,7 @@ pub mod shared_memory_trait {
 
     #[conformance_test]
     pub fn create_after_drop_works<Sut: SharedMemory<DefaultAllocator>>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_create = Sut::Builder::new(&name)
@@ -101,7 +103,7 @@ pub mod shared_memory_trait {
 
     #[conformance_test]
     pub fn creating_it_twice_fails<Sut: SharedMemory<DefaultAllocator>>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_create1 = Sut::Builder::new(&name)
@@ -124,7 +126,7 @@ pub mod shared_memory_trait {
 
     #[conformance_test]
     pub fn opening_non_existing_fails<Sut: SharedMemory<DefaultAllocator>>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_open = Sut::Builder::new(&name).config(&config).open();
@@ -136,7 +138,7 @@ pub mod shared_memory_trait {
 
     #[conformance_test]
     pub fn allocation_with_creator_works<Sut: SharedMemory<DefaultAllocator>>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
         let mut chunks = vec![];
 
@@ -169,7 +171,7 @@ pub mod shared_memory_trait {
 
     #[conformance_test]
     pub fn allocation_with_creator_and_client_works<Sut: SharedMemory<DefaultAllocator>>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
         let mut chunks = vec![];
 
@@ -209,7 +211,7 @@ pub mod shared_memory_trait {
 
     #[conformance_test]
     pub fn allocated_chunks_have_correct_alignment<Sut: SharedMemory<DefaultAllocator>>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         for i in 0..12 {
@@ -244,7 +246,7 @@ pub mod shared_memory_trait {
 
         for i in 0..LIMIT {
             assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len i);
-            storage_names.push(generate_name());
+            storage_names.push(generate_file_path().file_name());
             assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_names[i], &config), eq Ok(false));
             storages.push(
                 Sut::Builder::new(&storage_names[i])
@@ -291,7 +293,7 @@ pub mod shared_memory_trait {
             .suffix(unsafe { &FileName::new_unchecked(b".s1") });
         let config_2 = config.suffix(unsafe { &FileName::new_unchecked(b".s2") });
 
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
 
         assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_name, &config_1), eq Ok(false));
         assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_name, &config_2), eq Ok(false));
@@ -348,8 +350,8 @@ pub mod shared_memory_trait {
         test_requires!(Sut::does_support_persistency());
         let config = generate_isolated_config::<Sut>();
 
-        let name_1 = generate_name();
-        let name_2 = generate_name();
+        let name_1 = generate_file_path().file_name();
+        let name_2 = generate_file_path().file_name();
 
         let sut_1 = Sut::Builder::new(&name_1)
             .size(1024)
@@ -383,7 +385,7 @@ pub mod shared_memory_trait {
     pub fn acquired_ownership_leads_to_cleaned_up_resources<Sut: SharedMemory<DefaultAllocator>>() {
         test_requires!(Sut::does_support_persistency());
 
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&name)

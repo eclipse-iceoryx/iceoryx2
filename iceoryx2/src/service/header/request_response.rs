@@ -15,8 +15,8 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
 use crate::{
+    identifiers::{UniqueClientId, UniqueServerId},
     node::NodeId,
-    port::port_identifiers::{UniqueClientId, UniqueServerId},
 };
 
 /// Request header used by

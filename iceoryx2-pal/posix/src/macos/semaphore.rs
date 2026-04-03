@@ -24,7 +24,7 @@ pub unsafe fn sem_create(name: *const c_char, oflag: int, mode: mode_t, value: u
 }
 
 pub unsafe fn sem_post(sem: *mut sem_t) -> int {
-    if (*sem).semaphore.value() == u32::MAX {
+    if (*sem).semaphore.value() >= u32::MAX as _ {
         Errno::set(Errno::EOVERFLOW);
         return -1;
     }

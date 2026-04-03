@@ -24,7 +24,7 @@
 //!     .create()?;
 //!
 //! println!("name:                             {:?}", blackboard.name());
-//! println!("service id:                       {:?}", blackboard.service_id());
+//! println!("service id:                       {:?}", blackboard.service_hash());
 //! println!("type details:                     {:?}", blackboard.static_config().type_details());
 //! println!("max nodes:                        {:?}", blackboard.static_config().max_nodes());
 //! println!("max readers:                      {:?}", blackboard.static_config().max_readers());
@@ -41,11 +41,12 @@ use super::nodes;
 use super::reader::PortFactoryReader;
 use super::writer::PortFactoryWriter;
 use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
+use crate::identifiers::ServiceId;
 use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
 use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
 use crate::service::builder::CustomKeyMarker;
-use crate::service::service_id::ServiceId;
+use crate::service::service_hash::ServiceHash;
 use crate::service::service_name::ServiceName;
 use crate::service::{self, dynamic_config, static_config, ServiceState};
 use core::fmt::Debug;
@@ -84,8 +85,12 @@ impl<
         self.service.static_config.name()
     }
 
-    fn service_id(&self) -> &ServiceId {
+    fn service_id(&self) -> ServiceId {
         self.service.static_config.service_id()
+    }
+
+    fn service_hash(&self) -> &ServiceHash {
+        self.service.static_config.service_hash()
     }
 
     fn attributes(&self) -> &AttributeSet {

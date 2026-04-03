@@ -15,9 +15,9 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod client {
-    use std::ops::Deref;
-    use std::sync::Barrier;
-    use std::time::Duration;
+    use alloc::vec;
+    use core::ops::Deref;
+    use core::time::Duration;
 
     use iceoryx2::port::client::RequestSendError;
     use iceoryx2::port::LoanError;
@@ -26,6 +26,11 @@ pub mod client {
     use iceoryx2_bb_concurrency::atomic::AtomicBool;
     use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
+    use iceoryx2_bb_posix::barrier::BarrierBuilder;
+    use iceoryx2_bb_posix::barrier::BarrierHandle;
+    use iceoryx2_bb_posix::clock::nanosleep;
+    use iceoryx2_bb_posix::ipc_capable::Handle;
+    use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -153,10 +158,11 @@ pub mod client {
             .unwrap();
         let server = service.server_builder().create().unwrap();
         let has_sent_request = AtomicBool::new(false);
-        let barrier = Barrier::new(2);
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
 
-        std::thread::scope(|s| {
-            s.spawn(|| {
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
                 let sut = service
                     .client_builder()
                     .unable_to_deliver_strategy(UnableToDeliverStrategy::Block)
@@ -173,15 +179,17 @@ pub mod client {
                 let request = sut.send_copy(123);
                 has_sent_request.store(true, Ordering::Relaxed);
                 assert_that!(request, is_ok);
-            });
+            })?;
 
             barrier.wait();
-            std::thread::sleep(TIMEOUT);
+            nanosleep(TIMEOUT).unwrap();
             assert_that!(has_sent_request.load(Ordering::Relaxed), eq false);
             let data = server.receive();
             assert_that!(data, is_ok);
             assert_that!(|| has_sent_request.load(Ordering::Relaxed), eq true, before Watchdog::default());
-        });
+
+            Ok(())
+        }).unwrap();
     }
 
     #[conformance_test]

@@ -10,7 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -55,24 +55,12 @@ rust_library(
     ],
 )
 
-rust_test_suite(
+rust_test(
     name = "iceoryx2-cal-tests",
-    srcs = glob(["tests/**/*.rs"]),
-    proc_macro_deps = [
-        "@crate_index//:generic-tests",
-    ],
+    srcs = ["tests/tests.rs"],
+    use_libtest_harness = False,
     deps = [
-        ":iceoryx2-cal",
-        "//iceoryx2-bb/container:iceoryx2-bb-container",
-        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
-        "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
-        "//iceoryx2-bb/lock-free:iceoryx2-bb-lock-free",
-        "//iceoryx2-bb/memory:iceoryx2-bb-memory",
-        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
-        "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
+        "//iceoryx2-cal/tests-common:iceoryx2-cal-tests-common",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
-        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
-        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
-        "@crate_index//:serde",
     ],
 )

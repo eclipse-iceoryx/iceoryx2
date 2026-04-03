@@ -1,0 +1,27 @@
+[package]
+name = "iceoryx2-tests-nostd"
+description = "iceoryx2: [internal] nostd deployment of iceoryx2 tests"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[features]
+# Default to noop to support std workspace builds
+default = ["std"]
+
+std = [
+  "iceoryx2-bb-testing-macros/std",
+  "iceoryx2-bb-testing/std"
+]
+
+[dependencies]
+iceoryx2-tests-common = { workspace = true, features = [] }
+iceoryx2-bb-elementary-traits = { workspace = true }
+iceoryx2-bb-memory = { workspace = true, features = [] }
+iceoryx2-bb-testing-macros = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }

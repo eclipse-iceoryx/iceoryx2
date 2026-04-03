@@ -118,8 +118,10 @@ impl BarrierBuilder {
             }
         }
 
-        match unsafe { posix::pthread_barrier_init(barrier, attr.get(), self.number_of_waiters) }
-            .into()
+        match unsafe {
+            posix::pthread_barrier_init(barrier, attr.get(), self.number_of_waiters as _)
+        }
+        .into()
         {
             Errno::ESUCCES => (),
             Errno::ENOMEM => {

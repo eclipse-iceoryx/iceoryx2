@@ -15,14 +15,15 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod shm_allocator_trait {
+    use alloc::collections::btree_set::BTreeSet;
+    use core::{alloc::Layout, ptr::NonNull};
     use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+    use iceoryx2_bb_posix::ipc_capable::Handle;
+    use iceoryx2_bb_posix::mutex::{Mutex, MutexBuilder, MutexHandle};
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::shm_allocator::{ShmAllocator, *};
-
-    use core::{alloc::Layout, ptr::NonNull};
-    use std::{collections::HashSet, sync::Mutex};
 
     const MEMORY_SIZE: usize = 4096;
     const MGMT_SIZE: usize = 4096;
@@ -174,8 +175,13 @@ pub mod shm_allocator_trait {
 
     #[conformance_test]
     pub fn allocator_id_is_unique<Sut: ShmAllocator>() {
-        static ALLOCATOR_IDS: LazyLock<Mutex<HashSet<u8>>> =
-            LazyLock::new(|| Mutex::new(HashSet::new()));
+        static MTX_HANDLE: LazyLock<MutexHandle<BTreeSet<u8>>> = LazyLock::new(MutexHandle::new);
+        static ALLOCATOR_IDS: LazyLock<Mutex<'static, 'static, BTreeSet<u8>>> =
+            LazyLock::new(|| {
+                MutexBuilder::new()
+                    .create(BTreeSet::new(), &MTX_HANDLE)
+                    .unwrap()
+            });
 
         let uid = Sut::unique_id();
         let mut guard = ALLOCATOR_IDS.lock().unwrap();

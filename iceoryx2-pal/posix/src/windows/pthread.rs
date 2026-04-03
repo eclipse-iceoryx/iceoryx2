@@ -22,7 +22,7 @@ use std::{
 };
 use windows_sys::Win32::Foundation::ERROR_INVALID_HANDLE;
 
-use iceoryx2_pal_concurrency_sync::atomic::AtomicU32;
+use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
 use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
 use iceoryx2_pal_concurrency_sync::strategy::rwlock::*;
 use iceoryx2_pal_concurrency_sync::strategy::{barrier::Barrier, mutex::Mutex};
@@ -88,8 +88,8 @@ impl ThreadStates {
         self.mtx.lock(|atomic, value| {
             unsafe {
                 win32call! { WaitOnAddress(
-                    (atomic as *const AtomicU32).cast(),
-                    (value as *const u32).cast(),
+                    (atomic as *const AtomicU64).cast(),
+                    (value as *const u64).cast(),
                     4,
                     INFINITE,
                 ) };
@@ -100,7 +100,7 @@ impl ThreadStates {
 
     fn unlock(&self) {
         self.mtx.unlock(|atomic| unsafe {
-            WakeByAddressSingle((atomic as *const AtomicU32).cast());
+            WakeByAddressSingle((atomic as *const AtomicU64).cast());
         });
     }
 
@@ -160,14 +160,14 @@ unsafe fn barrier_wait(barrier: &Barrier) {
     barrier.wait(
         |atomic, value| {
             win32call! { WaitOnAddress(
-                (atomic as *const AtomicU32).cast(),
-                (value as *const u32).cast(),
+                (atomic as *const AtomicU64).cast(),
+                (value as *const u64).cast(),
                 4,
                 INFINITE,
             ) };
         },
         |atomic| {
-            win32call! { WakeByAddressAll((atomic as *const AtomicU32).cast()) };
+            win32call! { WakeByAddressAll((atomic as *const AtomicU64).cast()) };
         },
     );
 }
@@ -478,8 +478,8 @@ pub unsafe fn pthread_rwlock_rdlock(lock: *mut pthread_rwlock_t) -> int {
     match (*lock).lock {
         RwLockType::PreferReader(ref l) => l.read_lock(|atomic, value| {
             win32call! { WaitOnAddress(
-                (atomic as *const AtomicU32).cast(),
-                (value as *const u32).cast(),
+                (atomic as *const AtomicU64).cast(),
+                (value as *const u64).cast(),
                 4,
                 INFINITE,
             )};
@@ -487,8 +487,8 @@ pub unsafe fn pthread_rwlock_rdlock(lock: *mut pthread_rwlock_t) -> int {
         }),
         RwLockType::PreferWriter(ref l) => l.read_lock(|atomic, value| {
             win32call! {WaitOnAddress(
-                (atomic as *const AtomicU32).cast(),
-                (value as *const u32).cast(),
+                (atomic as *const AtomicU64).cast(),
+                (value as *const u64).cast(),
                 4,
                 INFINITE,
             )};
@@ -521,14 +521,14 @@ pub unsafe fn pthread_rwlock_tryrdlock(lock: *mut pthread_rwlock_t) -> int {
 pub unsafe fn pthread_rwlock_unlock(lock: *mut pthread_rwlock_t) -> int {
     match (*lock).lock {
         RwLockType::PreferReader(ref l) => l.unlock(|atomic| {
-            WakeByAddressSingle((atomic as *const AtomicU32).cast());
+            WakeByAddressSingle((atomic as *const AtomicU64).cast());
         }),
         RwLockType::PreferWriter(ref l) => l.unlock(
             |atomic| {
-                WakeByAddressSingle((atomic as *const AtomicU32).cast());
+                WakeByAddressSingle((atomic as *const AtomicU64).cast());
             },
             |atomic| {
-                WakeByAddressAll((atomic as *const AtomicU32).cast());
+                WakeByAddressAll((atomic as *const AtomicU64).cast());
             },
         ),
         _ => {
@@ -543,8 +543,8 @@ pub unsafe fn pthread_rwlock_wrlock(lock: *mut pthread_rwlock_t) -> int {
     match (*lock).lock {
         RwLockType::PreferReader(ref l) => l.write_lock(|atomic, value| {
             win32call! {WaitOnAddress(
-                (atomic as *const AtomicU32).cast(),
-                (value as *const u32).cast(),
+                (atomic as *const AtomicU64).cast(),
+                (value as *const u64).cast(),
                 4,
                 INFINITE,
             )};
@@ -553,18 +553,18 @@ pub unsafe fn pthread_rwlock_wrlock(lock: *mut pthread_rwlock_t) -> int {
         RwLockType::PreferWriter(ref l) => l.write_lock(
             |atomic, value| {
                 win32call! {WaitOnAddress(
-                    (atomic as *const AtomicU32).cast(),
-                    (value as *const u32).cast(),
+                    (atomic as *const AtomicU64).cast(),
+                    (value as *const u64).cast(),
                     4,
                     INFINITE,
                 )};
                 WaitAction::Continue
             },
             |atomic| {
-                win32call! { WakeByAddressSingle((atomic as *const AtomicU32).cast()) };
+                win32call! { WakeByAddressSingle((atomic as *const AtomicU64).cast()) };
             },
             |atomic| {
-                WakeByAddressAll((atomic as *const AtomicU32).cast());
+                WakeByAddressAll((atomic as *const AtomicU64).cast());
             },
         ),
         _ => {
@@ -681,8 +681,8 @@ pub unsafe fn pthread_mutex_lock(mtx: *mut pthread_mutex_t) -> int {
 
     (*mtx).mtx.lock(|atomic, value| {
         win32call! { WaitOnAddress(
-            (atomic as *const AtomicU32).cast(),
-            (value as *const u32).cast(),
+            (atomic as *const AtomicU64).cast(),
+            (value as *const u64).cast(),
             4,
             INFINITE,
         ) };
@@ -721,8 +721,8 @@ pub unsafe fn pthread_mutex_timedlock(
     #[allow(clippy::blocks_in_conditions)]
     match (*mtx).mtx.lock(|atomic, value| {
         win32call! { WaitOnAddress(
-            (atomic as *const AtomicU32).cast(),
-            (value as *const u32).cast(),
+            (atomic as *const AtomicU64).cast(),
+            (value as *const u64).cast(),
             4,
             timeout as _,
         ), ignore ERROR_TIMEOUT };
@@ -803,7 +803,7 @@ pub unsafe fn pthread_mutex_unlock(mtx: *mut pthread_mutex_t) -> int {
 
     if unlock_thread {
         (*mtx).mtx.unlock(|atomic| {
-            WakeByAddressSingle((atomic as *const AtomicU32).cast());
+            WakeByAddressSingle((atomic as *const AtomicU64).cast());
         });
     }
 

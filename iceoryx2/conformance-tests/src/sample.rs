@@ -21,18 +21,10 @@ pub mod sample {
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
     use iceoryx2::service::Service;
+    use iceoryx2::testing::generate_service_name;
     use iceoryx2::testing::*;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
-
-    fn generate_name() -> ServiceName {
-        ServiceName::new(&format!(
-            "service_tests_{}",
-            UniqueSystemId::new().unwrap().value()
-        ))
-        .unwrap()
-    }
 
     struct TestContext<Sut: Service> {
         node: Node<Sut>,
@@ -46,7 +38,7 @@ pub mod sample {
     impl<Sut: Service> TestContext<Sut> {
         fn new(config: &Config) -> Self {
             let node = NodeBuilder::new().config(config).create::<Sut>().unwrap();
-            let service_name = generate_name();
+            let service_name = generate_service_name();
             let service = node
                 .service_builder(&service_name)
                 .publish_subscribe::<u64>()

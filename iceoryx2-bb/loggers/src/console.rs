@@ -12,9 +12,9 @@
 
 //! The default [`Logger`] implementation.
 
+use alloc::string::String;
 use alloc::string::ToString;
 
-use iceoryx2_bb_print::cerr;
 use iceoryx2_bb_print::cerrln;
 use iceoryx2_bb_print::stderr;
 use iceoryx2_bb_print::IsTerminal;
@@ -146,28 +146,23 @@ impl Logger {
         }
     }
 
-    fn print(separator: &str, color: &str, output: &str) {
-        if is_terminal() {
-            cerr!("{color}");
-        }
+    fn format_entry(log_level: LogLevel, prefix: &str, origin: &str, message: &str) -> String {
+        let line_end = if is_terminal() { "\x1b[0m" } else { " " };
 
-        cerr!("{separator}{output}");
-
-        if is_terminal() {
-            cerrln!("\x1b[0m");
+        if origin.is_empty() {
+            alloc::format!(
+                "{prefix}{} {}{message}{line_end}",
+                Logger::log_level_string(log_level),
+                Logger::message_color(log_level),
+            )
         } else {
-            cerrln!(" ");
+            alloc::format!(
+                "{prefix}{} {}{origin}{line_end}\n| {}{message}{line_end}",
+                Logger::log_level_string(log_level),
+                Logger::origin_color(log_level),
+                Logger::message_color(log_level),
+            )
         }
-    }
-
-    fn print_message(log_level: LogLevel, formatted_message: &str) {
-        Self::print("", Self::message_color(log_level), formatted_message);
-    }
-
-    fn print_origin(log_level: LogLevel, origin: &str) {
-        cerr!("{} ", Logger::log_level_string(log_level));
-        Self::print("", Logger::origin_color(log_level), origin);
-        cerr!("| ");
     }
 }
 
@@ -183,47 +178,24 @@ impl Log for Logger {
         let origin_str = origin.to_string();
         let msg_str = formatted_message.to_string();
 
-        match self.ordering_mode {
+        let prefix = match self.ordering_mode {
             ConsoleLogOrder::Time => {
                 let time = duration_since_epoch();
-
-                match origin_str.is_empty() {
-                    false => {
-                        cerr!(
-                            "{}{}.{:0>9} ",
-                            Logger::counter_color(log_level),
-                            time.as_secs(),
-                            time.subsec_nanos(),
-                        );
-                        Self::print_origin(log_level, &origin_str);
-                    }
-                    true => {
-                        cerr!(
-                            "{}{}.{:0>9} {} ",
-                            Logger::counter_color(log_level),
-                            time.as_secs(),
-                            time.subsec_nanos(),
-                            Logger::log_level_string(log_level),
-                        );
-                    }
-                }
+                alloc::format!(
+                    "{}{}.{:0>9} ",
+                    Logger::counter_color(log_level),
+                    time.as_secs(),
+                    time.subsec_nanos(),
+                )
             }
-            ConsoleLogOrder::Counter => match origin.to_string().is_empty() {
-                false => {
-                    cerr!("{}{} ", Logger::counter_color(log_level), counter);
-                    Self::print_origin(log_level, &origin_str);
-                }
-                true => {
-                    cerr!(
-                        "{}{} {} ",
-                        Logger::counter_color(log_level),
-                        counter,
-                        Logger::log_level_string(log_level),
-                    );
-                }
-            },
-        }
+            ConsoleLogOrder::Counter => {
+                alloc::format!("{}{} ", Logger::counter_color(log_level), counter)
+            }
+        };
 
-        Self::print_message(log_level, &msg_str);
+        cerrln!(
+            "{}",
+            Self::format_entry(log_level, &prefix, &origin_str, &msg_str)
+        );
     }
 }

@@ -26,6 +26,12 @@ jobs:
           toolchain: 1.92.0
           components: llvm-tools
 
+      - name: Download artifact cargo-nextest
+        uses: ./.github/actions/download-cached-rust-tool
+        with:
+          artifact-bin-name: cargo-nextest
+          artifact-upload-name: ubuntu-latest-cargo-nextest
+
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
 
@@ -47,16 +53,19 @@ jobs:
           artifact-bin-name: grcov
           artifact-upload-name: ${{ runner.os }}-grcov
 
+      - name: Install just
+        uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
+
       - name: Save disk space
         uses: ./.github/actions/save-disk-space
         with:
           mode: "remove-unneeded-software-from-runner"
 
-      - name: Generate raw coverage results
-        run: ./internal/scripts/generate-cov-report.sh --generate
+      - name: Generate coverage profile
+        run: just coverage generate-profile
 
-      - name: Generate coverage results for html artifacts
-        run: ./internal/scripts/generate-cov-report.sh --html
+      - name: Generate coverage report for html artifacts
+        run: just coverage generate-report --html
 
       - name: Archive coverage-html artifacts
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # version: v6.0.0
@@ -65,8 +74,8 @@ jobs:
           path: target/ff/coverage/html/*
           retention-days: 90
 
-      - name: Generate coverage reports for Codecov
-        run: ./internal/scripts/generate-cov-report.sh --lcov
+      - name: Generate coverage report for Codecov
+        run: just coverage generate-report --lcov
 
       - name: Upload Rust coverage to Codecov
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # version: v5.5.2

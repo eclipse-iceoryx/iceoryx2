@@ -22,6 +22,7 @@ pub mod publish_subscribe_discovery {
     use iceoryx2::prelude::*;
     use iceoryx2::testing::*;
 
+    use iceoryx2::testing::generate_service_name;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_services_discovery::service_discovery::Config as DiscoveryConfig;
@@ -29,17 +30,6 @@ pub mod publish_subscribe_discovery {
     use iceoryx2_tunnel::Tunnel;
     use iceoryx2_tunnel_backend::traits::testing::Testing;
     use iceoryx2_tunnel_backend::traits::Backend;
-
-    // TODO: Move to iceoryx2::testing
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-
-    fn generate_service_name() -> ServiceName {
-        ServiceName::new(&format!(
-            "publish_subscribe_discovery_tests_{}",
-            UniqueSystemId::new().unwrap().value()
-        ))
-        .unwrap()
-    }
 
     #[conformance_test]
     pub fn discovers_services_via_subscriber<S: Service, B: Backend<S> + Debug, T: Testing>() {
@@ -79,7 +69,7 @@ pub mod publish_subscribe_discovery {
         tunnel.discover_over_iceoryx().unwrap();
 
         assert_that!(tunnel.tunneled_services().len(), eq 1);
-        assert_that!(tunnel.tunneled_services().contains(service.service_id()), eq true);
+        assert_that!(tunnel.tunneled_services().contains(service.service_hash()), eq true);
     }
 
     #[conformance_test]
@@ -107,7 +97,7 @@ pub mod publish_subscribe_discovery {
         tunnel.discover_over_iceoryx().unwrap();
 
         assert_that!(tunnel.tunneled_services().len(), eq 1);
-        assert_that!(tunnel.tunneled_services().contains(service.service_id()), eq true);
+        assert_that!(tunnel.tunneled_services().contains(service.service_hash()), eq true);
     }
 
     #[conformance_test]
@@ -150,7 +140,7 @@ pub mod publish_subscribe_discovery {
 
         tunnel_b.discover_over_iceoryx().unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 1);
-        assert_that!(tunnel_b.tunneled_services().contains(service_b.service_id()), eq true);
+        assert_that!(tunnel_b.tunneled_services().contains(service_b.service_hash()), eq true);
 
         const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
         const MAX_RETRIES: usize = 5;
@@ -171,6 +161,6 @@ pub mod publish_subscribe_discovery {
         .unwrap();
 
         assert_that!(tunnel_a.tunneled_services().len(), eq 1);
-        assert_that!(tunnel_a.tunneled_services().contains(service_b.service_id()), eq true);
+        assert_that!(tunnel_a.tunneled_services().contains(service_b.service_hash()), eq true);
     }
 }

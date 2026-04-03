@@ -87,7 +87,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
     type Relay = Relay<S>;
 
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
-        let key = keys::event(self.static_config.service_id());
+        let key = keys::event(self.static_config.service_hash());
 
         let notifier = fail!(
             from self,

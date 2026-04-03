@@ -653,7 +653,8 @@ impl<
                             "{} since the configuration could not be serialized.", msg);
 
                 // create the payload data segment for the writer
-                let name = blackboard_name(self.builder.base.service_config.service_id().as_str());
+                let name =
+                    blackboard_name(self.builder.base.service_config.service_hash().as_str());
                 let shm_config =
                     blackboard_data_config::<ServiceType>(self.builder.base.shared_node.config());
                 let mut payload_size = 0;
@@ -996,7 +997,7 @@ impl<
                         MessagingPattern::Blackboard(blackboard_static_config);
 
                     let name =
-                        blackboard_name(self.builder.base.service_config.service_id().as_str());
+                        blackboard_name(self.builder.base.service_config.service_hash().as_str());
                     let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt>(
                         self.builder.base.shared_node.config(),
                     );

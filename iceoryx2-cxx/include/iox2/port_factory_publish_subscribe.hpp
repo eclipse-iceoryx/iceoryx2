@@ -24,7 +24,7 @@
 #include "iox2/node_state.hpp"
 #include "iox2/port_factory_publisher.hpp"
 #include "iox2/port_factory_subscriber.hpp"
-#include "iox2/service_id.hpp"
+#include "iox2/service_hash.hpp"
 #include "iox2/service_name.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/static_config_publish_subscribe.hpp"
@@ -46,8 +46,8 @@ class PortFactoryPublishSubscribe {
     /// Returns the [`ServiceName`] of the service
     auto name() const -> ServiceNameView;
 
-    /// Returns the [`ServiceId`] of the [`Service`]
-    auto service_id() const -> ServiceId;
+    /// Returns the [`ServiceHash`] of the [`Service`]
+    auto service_hash() const -> ServiceHash;
 
     /// Returns the attributes defined in the [`Service`]
     auto attributes() const -> AttributeSetView;
@@ -127,12 +127,12 @@ inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::name() const ->
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::service_id() const -> ServiceId {
-    iox2::legacy::UninitializedArray<char, IOX2_SERVICE_ID_LENGTH> buffer;
-    iox2_port_factory_pub_sub_service_id(&m_handle, &buffer[0], IOX2_SERVICE_ID_LENGTH);
+inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::service_hash() const -> ServiceHash {
+    iox2::legacy::UninitializedArray<char, IOX2_SERVICE_HASH_LENGTH> buffer;
+    iox2_port_factory_pub_sub_service_hash(&m_handle, &buffer[0], IOX2_SERVICE_HASH_LENGTH);
 
-    return ServiceId(iox2::bb::StaticString<IOX2_SERVICE_ID_LENGTH>::from_utf8_null_terminated_unchecked_truncated(
-        &buffer[0], IOX2_SERVICE_ID_LENGTH));
+    return ServiceHash(iox2::bb::StaticString<IOX2_SERVICE_HASH_LENGTH>::from_utf8_null_terminated_unchecked_truncated(
+        &buffer[0], IOX2_SERVICE_HASH_LENGTH));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

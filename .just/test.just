@@ -15,18 +15,53 @@
 # =============================================================================
 
 [private]
-_test-dispatch target *flags:
+_parse-test-args *flags:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    eval $(just _parse-build-flags {{flags}})
+    TOOLCHAIN=""
+    HAS_NOSTD="false"
+    TARGET_TRIPLET=""
 
-    case "{{target}}" in
+    set -- {{flags}}
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            +*)         TOOLCHAIN="$1";                    shift ;;
+            --no_std)   HAS_NOSTD="true";                  shift ;;
+            --target=*) TARGET_TRIPLET="${1#--target=}";   shift ;;
+            *)          shift ;;
+        esac
+    done
+
+    echo "TOOLCHAIN='$TOOLCHAIN'"
+    echo "HAS_NOSTD='$HAS_NOSTD'"
+    echo "TARGET_TRIPLET='$TARGET_TRIPLET'"
+
+[private]
+_test-dispatch what *flags:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    eval $(just _parse-test-args {{flags}})
+
+    case "{{what}}" in
+        "")
+            echo "Usage: just test <what> [flags]"
+            echo ""
+            echo "  workspace              run all tests"
+            echo "  <package>              run tests for a specific package"
+            echo ""
+            echo "Flags:"
+            echo "  --no_std               test without std"
+            echo "  +<toolchain>           use a specific toolchain"
+            echo "  --target=<triplet>     cross-compile for target"
+            exit 1
+            ;;
         workspace)
             just _test-workspace "$TOOLCHAIN" "$HAS_NOSTD" "$TARGET_TRIPLET"
             ;;
         *)
-            just _test-package "{{target}}" "$TOOLCHAIN" "$HAS_NOSTD" "$TARGET_TRIPLET"
+            just _test-package "{{what}}" "$TOOLCHAIN" "$HAS_NOSTD" "$TARGET_TRIPLET"
             ;;
     esac
 
@@ -93,7 +128,7 @@ _test-workspace toolchain has_nostd target_triplet:
             exit 1
         fi
     else
-        cargo {{toolchain}} test --workspace
+        cargo {{toolchain}} nextest run --workspace
     fi
 
 [private]
@@ -123,5 +158,5 @@ _test-package package toolchain has_nostd target_triplet:
                 -Zbuild-std=core,alloc \
                 $TARGET_ARG
     else
-        cargo {{toolchain}} test --package {{package}}
+        cargo {{toolchain}} nextest run --package {{package}}
     fi

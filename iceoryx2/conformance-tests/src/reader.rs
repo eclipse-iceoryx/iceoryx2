@@ -15,6 +15,10 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod reader {
+    use alloc::boxed::Box;
+    use alloc::collections::BTreeSet;
+    use alloc::vec;
+
     use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
     use iceoryx2::port::reader::*;
     use iceoryx2::prelude::*;
@@ -22,23 +26,14 @@ pub mod reader {
     use iceoryx2::service::builder::CustomKeyMarker;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
+    use iceoryx2::testing::generate_service_name;
     use iceoryx2::testing::*;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
-    use std::collections::HashSet;
-
-    fn generate_name() -> ServiceName {
-        ServiceName::new(&format!(
-            "service_tests_{}",
-            UniqueSystemId::new().unwrap().value()
-        ))
-        .unwrap()
-    }
 
     #[conformance_test]
     pub fn id_is_unique<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         const MAX_READERS: usize = 8;
@@ -52,7 +47,7 @@ pub mod reader {
             .unwrap();
 
         let mut readers = vec![];
-        let mut reader_id_set = HashSet::new();
+        let mut reader_id_set = BTreeSet::new();
 
         for _ in 0..MAX_READERS {
             let reader = sut.reader_builder().create().unwrap();
@@ -64,7 +59,7 @@ pub mod reader {
     #[conformance_test]
     pub fn handle_can_be_acquired_for_existing_key_value_pair<Sut: Service>() {
         type ValueType = u64;
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -83,7 +78,7 @@ pub mod reader {
 
     #[conformance_test]
     pub fn handle_cannot_be_acquired_for_non_existing_key<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -105,7 +100,7 @@ pub mod reader {
 
     #[conformance_test]
     pub fn handle_cannot_be_acquired_for_wrong_value_type<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -148,7 +143,7 @@ pub mod reader {
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
 
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -199,7 +194,7 @@ pub mod reader {
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
 
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -242,7 +237,7 @@ pub mod reader {
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
 
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 

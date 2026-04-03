@@ -15,21 +15,27 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod reactor_trait {
+    use alloc::vec;
+    use core::time::Duration;
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
+    use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
+    use iceoryx2_bb_posix::barrier::BarrierBuilder;
+    use iceoryx2_bb_posix::barrier::BarrierHandle;
+    use iceoryx2_bb_posix::clock::nanosleep;
+    use iceoryx2_bb_posix::clock::Time;
     use iceoryx2_bb_posix::file_descriptor::FileDescriptorBased;
+    use iceoryx2_bb_posix::ipc_capable::Handle;
+    use iceoryx2_bb_posix::mutex::MutexBuilder;
+    use iceoryx2_bb_posix::mutex::MutexHandle;
+    use iceoryx2_bb_posix::testing::generate_file_path;
+    use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::event::unix_datagram_socket::*;
     use iceoryx2_cal::event::{Listener, ListenerBuilder, Notifier, NotifierBuilder};
     use iceoryx2_cal::reactor::{Reactor, *};
-    use iceoryx2_cal::testing::{generate_isolated_config, generate_name};
+    use iceoryx2_cal::testing::generate_isolated_config;
 
-    use core::time::Duration;
-    use iceoryx2_bb_concurrency::atomic::Ordering;
-    use std::sync::{Barrier, Mutex};
-    use std::time::Instant;
-
-    const TIMEOUT: Duration = Duration::from_millis(50);
     const INFINITE_TIMEOUT: Duration = Duration::from_secs(3600 * 24);
     const NUMBER_OF_ATTACHMENTS: usize = 32;
 
@@ -40,7 +46,7 @@ pub mod reactor_trait {
 
     impl NotifierListenerPair {
         fn new() -> Self {
-            let name = generate_name();
+            let name = generate_file_path().file_name();
             let config = generate_isolated_config::<unix_datagram_socket::EventImpl>();
             let listener = unix_datagram_socket::ListenerBuilder::new(&name)
                 .config(&config)
@@ -63,7 +69,7 @@ pub mod reactor_trait {
         let mut listeners = vec![];
         let mut guards = vec![];
         for _ in 0..NUMBER_OF_ATTACHMENTS {
-            let name = generate_name();
+            let name = generate_file_path().file_name();
             listeners.push(
                 unix_datagram_socket::ListenerBuilder::new(&name)
                     .config(&config)
@@ -93,7 +99,7 @@ pub mod reactor_trait {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
         let config = generate_isolated_config::<unix_datagram_socket::EventImpl>();
 
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let listener = unix_datagram_socket::ListenerBuilder::new(&name)
             .config(&config)
             .create()
@@ -347,6 +353,8 @@ pub mod reactor_trait {
 
     #[conformance_test]
     pub fn timed_wait_blocks_for_at_least_timeout<Sut: Reactor>() {
+        const TIMEOUT: Duration = Duration::from_millis(50);
+
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let attachment = NotifierListenerPair::new();
@@ -354,7 +362,7 @@ pub mod reactor_trait {
         let _guard = sut.attach(&attachment.listener);
 
         let mut triggered_fds = vec![];
-        let start = Instant::now();
+        let start = Time::now().unwrap();
         assert_that!(
             sut.timed_wait(
                 |fd| triggered_fds.push(unsafe { fd.native_handle() }),
@@ -362,7 +370,7 @@ pub mod reactor_trait {
             ),
             eq Ok(0)
         );
-        assert_that!(start.elapsed(), time_at_least TIMEOUT);
+        assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
 
         assert_that!(triggered_fds, len 0);
     }
@@ -492,13 +500,23 @@ pub mod reactor_trait {
 
     #[conformance_test]
     pub fn timed_wait_blocks_until_triggered<Sut: Reactor>() {
-        let name = generate_name();
-        let barrier = Barrier::new(2);
-        let counter = AtomicU64::new(0);
-        let config = Mutex::new(generate_isolated_config::<unix_datagram_socket::EventImpl>());
+        const TIMEOUT: Duration = Duration::from_millis(50);
 
-        std::thread::scope(|s| {
-            let t = s.spawn(|| {
+        let name = generate_file_path().file_name();
+        let barrier_handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(2).create(&barrier_handle).unwrap();
+        let counter = AtomicU64::new(0);
+        let counter_old = AtomicU64::new(0);
+        let mutex_handle = MutexHandle::new();
+        let config = MutexBuilder::new()
+            .create(
+                generate_isolated_config::<unix_datagram_socket::EventImpl>(),
+                &mutex_handle,
+            )
+            .unwrap();
+
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
                 let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
                 let listener = unix_datagram_socket::ListenerBuilder::new(&name)
                     .config(&config.lock().unwrap())
@@ -517,32 +535,44 @@ pub mod reactor_trait {
 
                 assert_that!(triggered_fds, len 1);
                 assert_that!(timed_wait_result, is_ok);
-            });
+            })?;
 
             barrier.wait();
-            std::thread::sleep(TIMEOUT);
-            let counter_old = counter.load(Ordering::Relaxed);
+            nanosleep(TIMEOUT).unwrap();
+            counter_old.store(counter.load(Ordering::Relaxed), Ordering::Relaxed);
 
             let notifier = unix_datagram_socket::NotifierBuilder::new(&name)
                 .config(&config.lock().unwrap())
                 .open()
                 .unwrap();
             notifier.notify(TriggerId::new(123)).unwrap();
-            t.join().unwrap();
 
-            assert_that!(counter_old, eq 0);
-        });
+            Ok(())
+        })
+        .unwrap();
+
+        assert_that!(counter_old.load(Ordering::Relaxed), eq 0);
     }
 
     #[conformance_test]
     pub fn blocking_wait_blocks_until_triggered<Sut: Reactor>() {
-        let name = generate_name();
-        let barrier = Barrier::new(2);
-        let counter = AtomicU64::new(0);
-        let config = Mutex::new(generate_isolated_config::<unix_datagram_socket::EventImpl>());
+        const TIMEOUT: Duration = Duration::from_millis(50);
 
-        std::thread::scope(|s| {
-            let t = s.spawn(|| {
+        let name = generate_file_path().file_name();
+        let barrier_handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(2).create(&barrier_handle).unwrap();
+        let counter = AtomicU64::new(0);
+        let counter_old = AtomicU64::new(0);
+        let mutex_handle = MutexHandle::new();
+        let config = MutexBuilder::new()
+            .create(
+                generate_isolated_config::<unix_datagram_socket::EventImpl>(),
+                &mutex_handle,
+            )
+            .unwrap();
+
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
                 let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
                 let listener = unix_datagram_socket::ListenerBuilder::new(&name)
                     .config(&config.lock().unwrap())
@@ -559,20 +589,22 @@ pub mod reactor_trait {
 
                 assert_that!(triggered_fds, len 1);
                 assert_that!(blocking_wait_result, is_ok);
-            });
+            })?;
 
             barrier.wait();
-            std::thread::sleep(TIMEOUT);
-            let counter_old = counter.load(Ordering::Relaxed);
+            nanosleep(TIMEOUT).unwrap();
+            counter_old.store(counter.load(Ordering::Relaxed), Ordering::Relaxed);
 
             let notifier = unix_datagram_socket::NotifierBuilder::new(&name)
                 .config(&config.lock().unwrap())
                 .open()
                 .unwrap();
             notifier.notify(TriggerId::new(123)).unwrap();
-            t.join().unwrap();
 
-            assert_that!(counter_old, eq 0);
-        });
+            Ok(())
+        })
+        .unwrap();
+
+        assert_that!(counter_old.load(Ordering::Relaxed), eq 0);
     }
 }

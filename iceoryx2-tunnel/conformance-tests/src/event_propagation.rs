@@ -15,25 +15,19 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod event_propagation {
+    use alloc::string::ToString;
     use core::fmt::Debug;
     use core::time::Duration;
 
     use iceoryx2::prelude::*;
     use iceoryx2::testing::*;
 
+    use iceoryx2::testing::generate_service_name;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+    use iceoryx2_bb_posix::clock::nanosleep;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_tunnel::Tunnel;
     use iceoryx2_tunnel_backend::traits::{testing::Testing, Backend};
-
-    fn generate_service_name() -> ServiceName {
-        ServiceName::new(&format!(
-            "publish_subscribe_relay_tests_{}",
-            UniqueSystemId::new().unwrap().value()
-        ))
-        .unwrap()
-    }
 
     fn propagate_events<S: Service, B: Backend<S> + Debug, T: Testing>(num: usize) {
         const TIMEOUT: Duration = Duration::from_millis(250);
@@ -64,7 +58,7 @@ pub mod event_propagation {
 
         tunnel_a.discover_over_iceoryx().unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 1);
-        assert_that!(tunnel_a.tunneled_services().contains(service_a.service_id()), eq true);
+        assert_that!(tunnel_a.tunneled_services().contains(service_a.service_hash()), eq true);
 
         // --- Host B ---
         let iceoryx_config_b = generate_isolated_config();
@@ -87,7 +81,7 @@ pub mod event_propagation {
             Some(MAX_ATTEMPTS),
         )
         .unwrap();
-        T::sync(service_a.service_id().as_str().to_string(), TIMEOUT);
+        T::sync(service_a.service_hash().as_str().to_string(), TIMEOUT);
 
         // Create a listener to connect to the discovered service
         let node_b = NodeBuilder::new()
@@ -166,7 +160,7 @@ pub mod event_propagation {
 
         tunnel_a.discover_over_iceoryx().unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 1);
-        assert_that!(tunnel_a.tunneled_services().contains(service_a.service_id()), eq true);
+        assert_that!(tunnel_a.tunneled_services().contains(service_a.service_hash()), eq true);
 
         // --- Host B ---
         let tunnel_config_b = iceoryx2_tunnel::Config::default();
@@ -194,7 +188,7 @@ pub mod event_propagation {
         )
         .unwrap();
 
-        T::sync(service_a.service_id().as_str().to_string(), TIMEOUT);
+        T::sync(service_a.service_hash().as_str().to_string(), TIMEOUT);
 
         let node_b = NodeBuilder::new()
             .config(&iceoryx_config_b)
@@ -237,7 +231,7 @@ pub mod event_propagation {
         for _ in 0..5 {
             tunnel_a.propagate().unwrap();
             tunnel_b.propagate().unwrap();
-            std::thread::sleep(Duration::from_millis(100));
+            nanosleep(Duration::from_millis(100)).unwrap();
         }
 
         // Notification should not have looped back from b to a
@@ -278,7 +272,7 @@ pub mod event_propagation {
 
         tunnel_a.discover_over_iceoryx().unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 1);
-        assert_that!(tunnel_a.tunneled_services().contains(service_a.service_id()), eq true);
+        assert_that!(tunnel_a.tunneled_services().contains(service_a.service_hash()), eq true);
 
         // --- Host B ---
         let tunnel_config_b = iceoryx2_tunnel::Config::default();
@@ -305,7 +299,7 @@ pub mod event_propagation {
         )
         .unwrap();
 
-        T::sync(service_a.service_id().as_str().to_string(), TIMEOUT);
+        T::sync(service_a.service_hash().as_str().to_string(), TIMEOUT);
 
         let node_b = NodeBuilder::new()
             .config(&iceoryx_config_b)

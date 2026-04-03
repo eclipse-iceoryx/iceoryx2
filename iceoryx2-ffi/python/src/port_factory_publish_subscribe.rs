@@ -23,7 +23,7 @@ use crate::node_state::{
 use crate::parc::Parc;
 use crate::port_factory_publisher::PortFactoryPublisher;
 use crate::port_factory_subscriber::PortFactorySubscriber;
-use crate::service_id::ServiceId;
+use crate::service_hash::ServiceHash;
 use crate::service_name::ServiceName;
 use crate::static_config_publish_subscribe::StaticConfigPublishSubscribe;
 use crate::type_storage::TypeStorage;
@@ -80,11 +80,11 @@ impl PortFactoryPublishSubscribe {
     }
 
     #[getter]
-    /// Returns the `ServiceId` of the `Service`
-    pub fn service_id(&self) -> ServiceId {
+    /// Returns the `ServiceHash` of the `Service`
+    pub fn service_hash(&self) -> ServiceHash {
         match &*self.value.lock() {
-            PortFactoryPublishSubscribeType::Ipc(v) => ServiceId(*v.service_id()),
-            PortFactoryPublishSubscribeType::Local(v) => ServiceId(*v.service_id()),
+            PortFactoryPublishSubscribeType::Ipc(v) => ServiceHash(*v.service_hash()),
+            PortFactoryPublishSubscribeType::Local(v) => ServiceHash(*v.service_hash()),
         }
     }
 

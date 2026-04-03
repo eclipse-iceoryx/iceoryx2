@@ -11,50 +11,66 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::hint::spin_loop;
+use core::panic;
 
-use crate::atomic::AtomicU32;
+use crate::atomic::AtomicU64;
 use crate::atomic::Ordering;
 use crate::SPIN_REPETITIONS;
 
 #[derive(Debug)]
 pub struct Barrier {
-    waiters: AtomicU32,
+    waiters: AtomicU64,
+    number_of_waiters: u32,
+}
+
+fn pack(epoch: u32, count: u32) -> u64 {
+    ((epoch as u64) << 32) | (count as u64)
+}
+
+fn unpack(value: u64) -> (u32, u32) {
+    ((value >> 32) as u32, value as u32)
 }
 
 impl Barrier {
     pub fn new(number_of_waiters: u32) -> Self {
         Self {
-            waiters: AtomicU32::new(number_of_waiters),
+            number_of_waiters,
+            waiters: AtomicU64::new(0),
         }
     }
 
-    pub fn wait<Wait: Fn(&AtomicU32, &u32), WakeAll: Fn(&AtomicU32)>(
+    pub fn wait<Wait: Fn(&AtomicU64, &u64), WakeAll: Fn(&AtomicU64)>(
         &self,
         wait: Wait,
         wake_all: WakeAll,
     ) {
-        if self.waiters.fetch_sub(1, Ordering::AcqRel) == 1 {
+        let (wait_epoch, previous_count) = unpack(self.waiters.fetch_add(1, Ordering::Release));
+
+        let wait_count = previous_count + 1;
+        if wait_count == self.number_of_waiters {
+            self.waiters
+                .store(pack(wait_epoch.wrapping_add(1), 0), Ordering::Release);
             wake_all(&self.waiters);
             return;
+        } else if wait_count > self.number_of_waiters {
+            panic!("Barrier::wait() contract violation! More threads than configured call Barrier::wait() concurrently.");
         }
 
         let mut retry_counter = 0;
-        while self.waiters.load(Ordering::Acquire) > 0 {
-            spin_loop();
-            retry_counter += 1;
-
-            if SPIN_REPETITIONS == retry_counter {
-                break;
-            }
-        }
-
         loop {
             let current_value = self.waiters.load(Ordering::Acquire);
-            if current_value == 0 {
+            let (current_epoch, _) = unpack(current_value);
+
+            if current_epoch != wait_epoch {
                 return;
             }
 
-            wait(&self.waiters, &current_value);
+            if retry_counter < SPIN_REPETITIONS {
+                spin_loop();
+                retry_counter += 1;
+            } else {
+                wait(&self.waiters, &current_value);
+            }
         }
     }
 }

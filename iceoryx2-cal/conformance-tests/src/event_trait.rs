@@ -17,16 +17,18 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod event_trait {
+    use alloc::collections::btree_set::BTreeSet;
+    use alloc::{vec, vec::Vec};
     use core::time::Duration;
-    use iceoryx2_bb_concurrency::atomic::Ordering;
-    use std::collections::HashSet;
-    use std::sync::{Barrier, Mutex};
-    use std::time::Instant;
-
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
+    use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::barrier::*;
+    use iceoryx2_bb_posix::clock::{nanosleep, Time};
+    use iceoryx2_bb_posix::mutex::{MutexBuilder, MutexHandle};
+    use iceoryx2_bb_posix::testing::generate_file_path;
+    use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_requires};
@@ -38,7 +40,7 @@ pub mod event_trait {
 
     #[conformance_test]
     pub fn create_works<Sut: Event>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
@@ -56,7 +58,7 @@ pub mod event_trait {
 
     #[conformance_test]
     pub fn listener_cleans_up_when_out_of_scope<Sut: Event>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq false);
@@ -72,7 +74,7 @@ pub mod event_trait {
 
     #[conformance_test]
     pub fn cannot_be_created_twice<Sut: Event>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let _sut = Sut::ListenerBuilder::new(&name)
@@ -87,7 +89,7 @@ pub mod event_trait {
 
     #[conformance_test]
     pub fn cannot_open_non_existing<Sut: Event>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::NotifierBuilder::new(&name).config(&config).open();
@@ -100,7 +102,7 @@ pub mod event_trait {
     pub fn notify_with_same_id_does_not_lead_to_non_blocking_timed_wait<Sut: Event>() {
         let _watchdog = Watchdog::new();
         const REPETITIONS: u64 = 8;
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
@@ -120,13 +122,13 @@ pub mod event_trait {
 
         assert_that!(sut_listener.try_wait_one().unwrap(), is_some);
 
-        let now = Instant::now();
+        let now = Time::now().unwrap();
         let result = sut_listener.timed_wait_one(TIMEOUT).unwrap();
 
         if result.is_some() {
             assert_that!(result, eq Some(trigger_id));
         } else {
-            assert_that!(now.elapsed(), time_at_least TIMEOUT );
+            assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT );
         }
     }
 
@@ -138,7 +140,7 @@ pub mod event_trait {
     ) {
         let _watchdog = Watchdog::new();
         const REPETITIONS: usize = 8;
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
@@ -179,7 +181,7 @@ pub mod event_trait {
         wait_call: F,
     ) {
         const REPETITIONS: usize = 8;
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
@@ -195,7 +197,7 @@ pub mod event_trait {
             sut_notifier.notify(TriggerId::new(i)).unwrap();
         }
 
-        let mut ids = HashSet::new();
+        let mut ids = BTreeSet::new();
         for _ in 0..REPETITIONS {
             let result = wait_call(&sut_listener).unwrap();
             assert_that!(result, is_some);
@@ -230,7 +232,7 @@ pub mod event_trait {
     ) {
         const REPETITIONS: usize = 2;
         const SOURCES: usize = 4;
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
         let mut sources = vec![];
 
@@ -294,7 +296,7 @@ pub mod event_trait {
 
     #[conformance_test]
     pub fn try_wait_does_not_block<Sut: Event>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
@@ -312,7 +314,7 @@ pub mod event_trait {
 
     #[conformance_test]
     pub fn timed_wait_does_block_for_at_least_timeout<Sut: Event>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
@@ -324,24 +326,28 @@ pub mod event_trait {
             .open()
             .unwrap();
 
-        let start = Instant::now();
+        let start = Time::now().unwrap();
         let result = sut_listener.timed_wait_one(TIMEOUT).unwrap();
         assert_that!(result, is_none);
-        assert_that!(start.elapsed(), time_at_least TIMEOUT);
+        assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
     }
 
     #[conformance_test]
     pub fn blocking_wait_blocks_until_notification_arrives<Sut: Event>() {
         let _watchdog = Watchdog::new();
-        let name = generate_name();
-        let config = Mutex::new(generate_isolated_config::<Sut>());
+        let name = generate_file_path().file_name();
+        let handle = MutexHandle::new();
+        let config = MutexBuilder::new()
+            .create(generate_isolated_config::<Sut>(), &handle)
+            .unwrap();
 
         let counter = AtomicU64::new(0);
+        let counter_old = AtomicU64::new(0);
         let handle = BarrierHandle::new();
         let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
 
-        std::thread::scope(|s| {
-            let t = s.spawn(|| {
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
                 let sut_listener = Sut::ListenerBuilder::new(&name)
                     .config(&config.lock().unwrap())
                     .create()
@@ -351,21 +357,22 @@ pub mod event_trait {
                 counter.store(1, Ordering::SeqCst);
                 assert_that!(result, is_some);
                 assert_that!(result.unwrap(), eq TriggerId::new(89));
-            });
+            })?;
 
             barrier.wait();
             let sut_notifier = Sut::NotifierBuilder::new(&name)
                 .config(&config.lock().unwrap())
                 .open()
                 .unwrap();
-            std::thread::sleep(TIMEOUT);
-            let counter_old = counter.load(Ordering::SeqCst);
+            nanosleep(TIMEOUT).unwrap();
+            counter_old.store(counter.load(Ordering::SeqCst), Ordering::SeqCst);
             sut_notifier.notify(TriggerId::new(89)).unwrap();
-            t.join().unwrap();
 
-            assert_that!(counter_old, eq 0);
-            assert_that!(counter.load(Ordering::SeqCst), eq 1);
-        });
+            Ok(())
+        })
+        .unwrap();
+        assert_that!(counter_old.load(Ordering::SeqCst), eq 0);
+        assert_that!(counter.load(Ordering::SeqCst), eq 1);
     }
 
     /// windows sporadically instantly wakes up in a timed receive operation
@@ -373,15 +380,19 @@ pub mod event_trait {
     #[conformance_test]
     pub fn timed_wait_blocks_until_notification_arrives<Sut: Event>() {
         let _watchdog = Watchdog::new();
-        let name = generate_name();
-        let config = Mutex::new(generate_isolated_config::<Sut>());
+        let name = generate_file_path().file_name();
+        let handle = MutexHandle::new();
+        let config = MutexBuilder::new()
+            .create(generate_isolated_config::<Sut>(), &handle)
+            .unwrap();
 
         let counter = AtomicU64::new(0);
+        let counter_old = AtomicU64::new(0);
         let handle = BarrierHandle::new();
         let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
 
-        std::thread::scope(|s| {
-            let t = s.spawn(|| {
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
                 let sut_listener = Sut::ListenerBuilder::new(&name)
                     .config(&config.lock().unwrap())
                     .create()
@@ -391,21 +402,22 @@ pub mod event_trait {
                 counter.store(1, Ordering::SeqCst);
                 assert_that!(result, is_some);
                 assert_that!(result.unwrap(), eq TriggerId::new(82));
-            });
+            })?;
 
             barrier.wait();
             let sut_notifier = Sut::NotifierBuilder::new(&name)
                 .config(&config.lock().unwrap())
                 .open()
                 .unwrap();
-            std::thread::sleep(TIMEOUT);
-            let counter_old = counter.load(Ordering::SeqCst);
+            nanosleep(TIMEOUT).unwrap();
+            counter_old.store(counter.load(Ordering::SeqCst), Ordering::SeqCst);
             sut_notifier.notify(TriggerId::new(82)).unwrap();
-            t.join().unwrap();
 
-            assert_that!(counter_old, eq 0);
-            assert_that!(counter.load(Ordering::SeqCst), eq 1);
-        });
+            Ok(())
+        })
+        .unwrap();
+        assert_that!(counter_old.load(Ordering::SeqCst), eq 0);
+        assert_that!(counter.load(Ordering::SeqCst), eq 1);
     }
 
     #[conformance_test]
@@ -416,7 +428,7 @@ pub mod event_trait {
 
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
         for i in 0..LIMIT {
-            sut_names.push(generate_name());
+            sut_names.push(generate_file_path().file_name());
             assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_names[i], &config), eq Ok(false));
             core::mem::forget(
                 Sut::ListenerBuilder::new(&sut_names[i])
@@ -457,7 +469,7 @@ pub mod event_trait {
             .suffix(unsafe { &FileName::new_unchecked(b".suffix_1") });
         let config_2 = config.suffix(unsafe { &FileName::new_unchecked(b".suffix_2") });
 
-        let sut_name = generate_name();
+        let sut_name = generate_file_path().file_name();
 
         assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_1), eq Ok(false));
         assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_2), eq Ok(false));
@@ -512,7 +524,7 @@ pub mod event_trait {
         test_requires!(Sut::has_trigger_id_limit());
 
         const TRIGGER_ID_MAX: TriggerId = TriggerId::new(1234);
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let _sut_listener = Sut::ListenerBuilder::new(&name)
@@ -537,7 +549,7 @@ pub mod event_trait {
         test_requires!(Sut::has_trigger_id_limit());
 
         const TRIGGER_ID_MAX: TriggerId = TriggerId::new(1024);
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
@@ -561,7 +573,7 @@ pub mod event_trait {
             NotifierNotifyError::TriggerIdOutOfBounds
         );
 
-        let mut ids = HashSet::new();
+        let mut ids = BTreeSet::new();
         for _ in 0..TRIGGER_ID_MAX.as_value() {
             let event_id = sut_listener.try_wait_one().unwrap().unwrap();
 
@@ -578,7 +590,7 @@ pub mod event_trait {
     ) {
         let _watchdog = Watchdog::new();
         const REPETITIONS: usize = 8;
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
@@ -630,7 +642,7 @@ pub mod event_trait {
     #[conformance_test]
     pub fn try_wait_all_does_not_block<Sut: Event>() {
         let _watchdog = Watchdog::new();
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
@@ -648,7 +660,7 @@ pub mod event_trait {
     #[conformance_test]
     pub fn timed_wait_all_does_block_for_at_least_timeout<Sut: Event>() {
         let _watchdog = Watchdog::new();
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
@@ -657,29 +669,34 @@ pub mod event_trait {
             .unwrap();
 
         let mut callback_called = false;
-        let now = Instant::now();
+        let now = Time::now().unwrap();
         sut_listener
             .timed_wait_all(|_| callback_called = true, TIMEOUT)
             .unwrap();
         assert_that!(callback_called, eq false);
-        assert_that!(now.elapsed(), time_at_least TIMEOUT);
+        assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
     }
 
     fn wait_all_wakes_up_on_notify<
         Sut: Event,
         F: FnMut(&mut Vec<TriggerId>, &Sut::Listener) + Send,
     >(
-        mut wait_call: F,
+        wait_call: F,
     ) {
+        let mut wait_call = wait_call;
         let _watchdog = Watchdog::new();
-        let name = generate_name();
-        let barrier = Barrier::new(2);
+        let name = generate_file_path().file_name();
+        let barrier_handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(2).create(&barrier_handle).unwrap();
         let counter = AtomicU64::new(0);
         let id = TriggerId::new(5);
-        let config = Mutex::new(generate_isolated_config::<Sut>());
+        let mutex_handle = MutexHandle::new();
+        let config = MutexBuilder::new()
+            .create(generate_isolated_config::<Sut>(), &mutex_handle)
+            .unwrap();
 
-        std::thread::scope(|s| {
-            let t1 = s.spawn(|| {
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
                 let sut_listener = Sut::ListenerBuilder::new(&name)
                     .config(&config.lock().unwrap())
                     .create()
@@ -692,19 +709,21 @@ pub mod event_trait {
 
                 assert_that!(id_vec, len 1);
                 assert_that!(id_vec[0], eq id);
-            });
+            })?;
 
             barrier.wait();
             let sut_notifier = Sut::NotifierBuilder::new(&name)
                 .config(&config.lock().unwrap())
                 .open()
                 .unwrap();
-            std::thread::sleep(TIMEOUT);
+            nanosleep(TIMEOUT).unwrap();
             assert_that!(counter.load(Ordering::Relaxed), eq 0);
             sut_notifier.notify(id).unwrap();
-            t1.join().unwrap();
-            assert_that!(counter.load(Ordering::Relaxed), eq 1);
-        });
+
+            Ok(())
+        })
+        .unwrap();
+        assert_that!(counter.load(Ordering::Relaxed), eq 1);
     }
 
     #[conformance_test]
@@ -723,7 +742,7 @@ pub mod event_trait {
 
     #[conformance_test]
     pub fn out_of_scope_listener_shall_not_corrupt_notifier<Sut: Event>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)

@@ -15,6 +15,7 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod writer {
+    use alloc::boxed::Box;
 
     use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
     use iceoryx2::port::writer::*;
@@ -23,27 +24,21 @@ pub mod writer {
     use iceoryx2::service::builder::CustomKeyMarker;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
+    use iceoryx2::testing::generate_service_name;
     use iceoryx2::testing::*;
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
+    use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
+    use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+    use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
-    use std::sync::Barrier;
-
-    fn generate_name() -> ServiceName {
-        ServiceName::new(&format!(
-            "service_tests_{}",
-            UniqueSystemId::new().unwrap().value()
-        ))
-        .unwrap()
-    }
 
     #[conformance_test]
     pub fn handle_can_be_acquired_for_existing_key_value_pair<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -61,7 +56,7 @@ pub mod writer {
 
     #[conformance_test]
     pub fn handle_cannot_be_acquired_for_non_existing_key<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -83,7 +78,7 @@ pub mod writer {
 
     #[conformance_test]
     pub fn handle_cannot_be_acquired_for_wrong_value_type<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -105,7 +100,7 @@ pub mod writer {
 
     #[conformance_test]
     pub fn entry_handle_mut_cannot_be_acquired_twice<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -133,7 +128,7 @@ pub mod writer {
 
     #[conformance_test]
     pub fn entry_handle_mut_prevents_another_writer<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -158,7 +153,7 @@ pub mod writer {
     pub fn entry_value_can_still_be_used_after_every_previous_service_state_owner_was_dropped<
         Sut: Service,
     >() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -183,11 +178,17 @@ pub mod writer {
     pub fn concurrent_writer_creation_succeeds_only_once<Sut: Service>() {
         let _watch_dog = Watchdog::new();
         let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
-        let barrier_start = Barrier::new(number_of_threads);
-        let barrier_end = Barrier::new(number_of_threads);
+        let handle_start = BarrierHandle::new();
+        let handle_end = BarrierHandle::new();
+        let barrier_start = BarrierBuilder::new(number_of_threads as _)
+            .create(&handle_start)
+            .unwrap();
+        let barrier_end = BarrierBuilder::new(number_of_threads as _)
+            .create(&handle_end)
+            .unwrap();
         let counter = AtomicU64::new(0);
 
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let _sut = node
@@ -197,10 +198,9 @@ pub mod writer {
             .create()
             .unwrap();
 
-        std::thread::scope(|s| {
-            let mut threads = vec![];
+        thread_scope(|s| {
             for _ in 0..number_of_threads {
-                threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     let sut = node
                         .service_builder(&service_name)
                         .blackboard_opener::<u64>()
@@ -215,12 +215,12 @@ pub mod writer {
                         Err(e) => assert_that!(e, eq WriterCreateError::ExceedsMaxSupportedWriters),
                     }
                     barrier_end.wait();
-                }));
+                })?;
             }
-            for t in threads {
-                t.join().unwrap();
-            }
-        });
+
+            Ok(())
+        })
+        .unwrap();
 
         assert_that!(counter.load(Ordering::Relaxed), eq 1);
     }
@@ -251,7 +251,7 @@ pub mod writer {
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
 
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -292,7 +292,7 @@ pub mod writer {
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
 
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -335,7 +335,7 @@ pub mod writer {
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
 
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -378,7 +378,7 @@ pub mod writer {
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
 
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -429,7 +429,7 @@ pub mod writer {
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
 
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -475,7 +475,7 @@ pub mod writer {
         let default_value = ValueType::default();
         let value_ptr: *const ValueType = &default_value;
 
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 

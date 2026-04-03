@@ -12,7 +12,10 @@
 
 #[generic_tests::define]
 mod node {
-    use crate::tests::*;
+    use crate::api::*;
+    use crate::tests::{create_node, ServiceTypeMapping};
+    use iceoryx2::prelude::*;
+    use iceoryx2_bb_testing::assert_that;
 
     use core::ffi::c_char;
     use core::{slice, str};
@@ -37,7 +40,7 @@ mod node {
 
             let config = iox2_node_config(&node_handle);
 
-            assert_that!(*(config as *const Config), eq(*expected_config));
+            assert_that!(*config, eq(*expected_config));
 
             iox2_node_drop(node_handle);
         }
@@ -45,7 +48,7 @@ mod node {
 
     #[test]
     fn basic_node_name_test<S: Service + ServiceTypeMapping>(
-    ) -> Result<(), Box<dyn core::error::Error>> {
+    ) -> Result<(), alloc::boxed::Box<dyn core::error::Error>> {
         unsafe {
             let node_handle = create_node::<S>("hypnotoad");
 

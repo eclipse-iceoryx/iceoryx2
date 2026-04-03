@@ -10,50 +10,50 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_testing_nostd_macros::requires_std;
+use core::time::Duration;
 
-#[cfg(feature = "std")]
-pub use std_testing::*;
+use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
+use iceoryx2_bb_concurrency::internal::strategy::mutex::*;
+use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
+use iceoryx2_bb_posix::clock::{nanosleep, Time};
+use iceoryx2_bb_posix::thread::thread_scope;
+use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::test;
 
-#[cfg(feature = "std")]
-mod std_testing {
-    pub use core::time::Duration;
+pub const TIMEOUT: Duration = Duration::from_millis(25);
 
-    pub use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
-    pub use iceoryx2_bb_concurrency::internal::strategy::mutex::*;
-    pub use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
-    pub use iceoryx2_bb_testing::assert_that;
-
-    pub const TIMEOUT: Duration = Duration::from_millis(25);
-}
-
-#[requires_std("threading")]
-pub fn strategy_mutex_lock_blocks() {
+#[test]
+pub fn lock_blocks() {
     let sut = Mutex::new();
     let counter = AtomicU32::new(0);
 
-    std::thread::scope(|s| {
+    thread_scope(|s| {
         sut.try_lock();
 
-        let t1 = s.spawn(|| {
-            let lock_result = sut.lock(|_, _| WaitAction::Continue);
-            assert_that!(lock_result, eq WaitResult::Success);
-            counter.fetch_add(1, Ordering::Relaxed);
-            sut.unlock(|_| {});
-        });
+        s.thread_builder()
+            .spawn(|| {
+                let lock_result = sut.lock(|_, _| WaitAction::Continue);
+                assert_that!(lock_result, eq WaitResult::Success);
+                counter.fetch_add(1, Ordering::Relaxed);
+                sut.unlock(|_| {});
+            })
+            .expect("failed to spawn thread");
 
-        std::thread::sleep(TIMEOUT);
+        nanosleep(TIMEOUT).unwrap();
         let counter_old = counter.load(Ordering::Relaxed);
         sut.unlock(|_| {});
 
-        assert_that!(t1.join(), is_ok);
         assert_that!(counter_old, eq 0);
-        assert_that!(counter.load(Ordering::Relaxed), eq 1);
-    });
+
+        Ok(())
+    })
+    .expect("failed to spawn thread");
+
+    assert_that!(counter.load(Ordering::Relaxed), eq 1);
 }
 
-#[requires_std("time")]
-pub fn strategy_mutex_lock_with_timeout_and_fails_after_timeout() {
+#[test]
+pub fn lock_with_timeout_and_fails_after_timeout() {
     const TIMEOUT: Duration = Duration::from_millis(25);
 
     let sut = Mutex::new();
@@ -61,9 +61,9 @@ pub fn strategy_mutex_lock_with_timeout_and_fails_after_timeout() {
     sut.try_lock();
 
     assert_that!(sut.lock(|atomic, value| {
-        let start = std::time::Instant::now();
+        let start = Time::now().expect("failure retrieving current time");
         while atomic.load(Ordering::Relaxed) == *value {
-            if start.elapsed() > TIMEOUT {
+            if start.elapsed().expect("failed to get elapsed time") > TIMEOUT {
                 return WaitAction::Abort;
             }
         }

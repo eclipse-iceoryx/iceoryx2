@@ -185,7 +185,7 @@ use crate::service::builder::{Builder, OpenDynamicStorageFailure};
 use crate::service::config_scheme::{
     node_details_path, node_monitoring_config, service_tag_config,
 };
-use crate::service::service_id::ServiceId;
+use crate::service::service_hash::ServiceHash;
 use crate::service::service_name::ServiceName;
 use crate::service::{
     self, remove_service_tag, remove_static_service_config, ServiceRemoveNodeError,
@@ -551,10 +551,10 @@ impl<Service: service::Service> DeadNodeView<Service> {
         let cleaner = cleaner.unwrap();
 
         let mut cleanup_failure = Ok(());
-        let remove_node_from_service = |service_id: &ServiceId| {
-            match Service::__internal_remove_node_from_service(self.id(), service_id, config) {
+        let remove_node_from_service = |service_hash: &ServiceHash| {
+            match Service::__internal_remove_node_from_service(self.id(), service_hash, config) {
                 Ok(()) => {
-                    if let Err(e) = remove_service_tag::<Service>(self.id(), service_id, config) {
+                    if let Err(e) = remove_service_tag::<Service>(self.id(), service_hash, config) {
                         debug!(from self,
                                     "The service tag could not be removed from the dead node ({:?}).",
                                     e);
@@ -569,11 +569,11 @@ impl<Service: service::Service> DeadNodeView<Service> {
                     debug!(from self,
                         "{msg} since the service itself is corrupted. Trying to remove the corrupted remainders of the service.");
                     match unsafe {
-                        remove_static_service_config::<Service>(config, &service_id.0.into())
+                        remove_static_service_config::<Service>(config, &service_hash.0.into())
                     } {
                         Ok(v) => {
                             if let Err(e) =
-                                remove_service_tag::<Service>(self.id(), service_id, config)
+                                remove_service_tag::<Service>(self.id(), service_hash, config)
                             {
                                 debug!(from self,
                                     "The service tag could not be removed from the dead node ({:?}).",
@@ -744,7 +744,7 @@ fn remove_node<Service: service::Service>(
 
 #[derive(Debug)]
 pub(crate) struct RegisteredServices {
-    handle: MutexHandle<BTreeMap<ServiceId, (ContainerHandle, u64)>>,
+    handle: MutexHandle<BTreeMap<ServiceHash, (ContainerHandle, u64)>>,
 }
 
 unsafe impl Send for RegisteredServices {}
@@ -768,30 +768,30 @@ impl RegisteredServices {
     }
 
     fn insert(
-        services: &mut BTreeMap<ServiceId, (ContainerHandle, u64)>,
-        service_id: ServiceId,
+        services: &mut BTreeMap<ServiceHash, (ContainerHandle, u64)>,
+        service_hash: ServiceHash,
         handle: ContainerHandle,
     ) {
-        if services.insert(service_id, (handle, 1)).is_some() {
+        if services.insert(service_hash, (handle, 1)).is_some() {
             fatal_panic!(from "RegisteredServices::insert()",
                 "This should never happen! The service with the {:?} was already registered.",
-                service_id);
+                service_hash);
         }
     }
 
-    pub(crate) fn add(&self, service_id: &ServiceId, handle: ContainerHandle) {
+    pub(crate) fn add(&self, service_hash: &ServiceHash, handle: ContainerHandle) {
         let mut guard = fatal_panic!(
             from self,
             when self.mutex().lock(),
             "Failed to lock mutex"
         );
 
-        Self::insert(&mut guard, *service_id, handle);
+        Self::insert(&mut guard, *service_hash, handle);
     }
 
     pub(crate) fn add_or<F: FnMut() -> Result<ContainerHandle, OpenDynamicStorageFailure>>(
         &self,
-        service_id: &ServiceId,
+        service_hash: &ServiceHash,
         mut or_callback: F,
     ) -> Result<(), OpenDynamicStorageFailure> {
         let mut guard = fatal_panic!(
@@ -800,13 +800,13 @@ impl RegisteredServices {
             "Failed to lock mutex"
         );
 
-        match guard.get_mut(service_id) {
+        match guard.get_mut(service_hash) {
             Some(entry) => {
                 entry.1 += 1;
             }
             None => {
                 let new_handle = or_callback()?;
-                Self::insert(&mut guard, *service_id, new_handle);
+                Self::insert(&mut guard, *service_hash, new_handle);
             }
         };
         Ok(())
@@ -814,27 +814,27 @@ impl RegisteredServices {
 
     pub(crate) fn remove<F: FnMut(ContainerHandle)>(
         &self,
-        service_id: &ServiceId,
+        service_hash: &ServiceHash,
         mut cleanup_call: F,
     ) {
         let mut guard = self.mutex().lock().expect("Failed to lock mutex");
 
-        if let Some(entry) = guard.get_mut(service_id) {
+        if let Some(entry) = guard.get_mut(service_hash) {
             entry.1 -= 1;
             if entry.1 == 0 {
                 let handle = entry.0;
                 cleanup_call(handle);
-                guard.remove(service_id);
+                guard.remove(service_hash);
             }
         } else {
             fatal_panic!(from "RegisteredServices::remove()",
-                "This should never happen! The service with the {:?} was not registered.", service_id);
+                "This should never happen! The service with the {:?} was not registered.", service_hash);
         }
 
         drop(guard);
     }
 
-    fn mutex(&self) -> Mutex<'_, '_, BTreeMap<ServiceId, (ContainerHandle, u64)>> {
+    fn mutex(&self) -> Mutex<'_, '_, BTreeMap<ServiceHash, (ContainerHandle, u64)>> {
         // Safe - the mutex is initialized when constructing the struct and
         // not interacted with by anything else.
         unsafe { Mutex::from_handle(&self.handle) }
@@ -1201,7 +1201,7 @@ impl<Service: service::Service> Node<Service> {
         Ok(Some(node_details))
     }
 
-    fn service_tags<F: FnMut(&ServiceId) -> CallbackProgression>(
+    fn service_tags<F: FnMut(&ServiceHash) -> CallbackProgression>(
         config: &Config,
         node_id: &NodeId,
         mut callback: F,
@@ -1214,7 +1214,7 @@ impl<Service: service::Service> Node<Service> {
             Ok(tags) => {
                 for tag in &tags {
                     if let Ok(v) = tag.try_into() {
-                        if callback(&ServiceId(v)) == CallbackProgression::Stop {
+                        if callback(&ServiceHash(v)) == CallbackProgression::Stop {
                             break;
                         }
                     } else {

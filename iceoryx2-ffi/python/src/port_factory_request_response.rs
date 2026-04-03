@@ -23,7 +23,7 @@ use crate::node_state::{
 use crate::parc::Parc;
 use crate::port_factory_client::PortFactoryClient;
 use crate::port_factory_server::PortFactoryServer;
-use crate::service_id::ServiceId;
+use crate::service_hash::ServiceHash;
 use crate::service_name::ServiceName;
 use crate::static_config_request_response::StaticConfigRequestResponse;
 use crate::type_storage::TypeStorage;
@@ -73,11 +73,11 @@ impl PortFactoryRequestResponse {
     }
 
     #[getter]
-    /// Returns the `ServiceId` of the `Service`
-    pub fn service_id(&self) -> ServiceId {
+    /// Returns the `ServiceHash` of the `Service`
+    pub fn service_hash(&self) -> ServiceHash {
         match &*self.value.lock() {
-            PortFactoryRequestResponseType::Ipc(v) => ServiceId(*v.service_id()),
-            PortFactoryRequestResponseType::Local(v) => ServiceId(*v.service_id()),
+            PortFactoryRequestResponseType::Ipc(v) => ServiceHash(*v.service_hash()),
+            PortFactoryRequestResponseType::Local(v) => ServiceHash(*v.service_hash()),
         }
     }
 

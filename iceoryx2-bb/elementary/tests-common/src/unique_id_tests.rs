@@ -12,7 +12,9 @@
 
 use iceoryx2_bb_elementary::unique_id::*;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::test;
 
+#[test]
 pub fn unique_id_is_unique() {
     let a = UniqueId::new();
     let b = UniqueId::new();
@@ -23,6 +25,7 @@ pub fn unique_id_is_unique() {
     assert_that!(b, ne c);
 }
 
+#[test]
 pub fn typed_unique_id_is_unique() {
     let a = TypedUniqueId::<u64>::new();
     let b = TypedUniqueId::<u64>::new();

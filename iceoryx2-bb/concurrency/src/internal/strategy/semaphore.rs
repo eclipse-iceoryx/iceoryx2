@@ -15,7 +15,7 @@
 pub struct Semaphore(internal::Semaphore);
 
 impl Semaphore {
-    pub fn new(initial_value: u32) -> Self {
+    pub fn new(initial_value: u64) -> Self {
         Self(internal::Semaphore::new(initial_value))
     }
 }

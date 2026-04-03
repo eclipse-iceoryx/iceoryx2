@@ -12,7 +12,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 
 filegroup(
     name = "all_srcs",
@@ -30,27 +30,31 @@ rust_library(
     }),
     deps = [
         "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
-        "//iceoryx2-log/log:iceoryx2-log",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "//iceoryx2-cal:iceoryx2-cal",
-        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
+        "//iceoryx2-log/log:iceoryx2-log",
+        "//iceoryx2-pal/print:iceoryx2-pal-print",
     ],
     proc_macro_deps = [
         "//iceoryx2-bb/conformance-test-macros:iceoryx2-bb-conformance-test-macros",
         "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
+        "//iceoryx2-bb/testing-macros:iceoryx2-bb-testing-macros",
     ],
 )
 
-rust_test_suite(
+rust_test(
     name = "iceoryx2-conformance-tests-tests",
-    srcs = glob(["tests/**/*.rs"]),
+    srcs = glob(["tests/tests.rs"]),
+    use_libtest_harness = False,
     crate_features = ["std"],
     deps = [
         ":iceoryx2-conformance-tests",
         "//iceoryx2:iceoryx2",
+        "//iceoryx2/conformance-tests/tests-common:iceoryx2-conformance-tests-common",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
     ],
 )

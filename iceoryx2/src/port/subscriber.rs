@@ -62,9 +62,9 @@ use crate::{raw_sample::RawSample, sample::Sample, service};
 use super::details::chunk::Chunk;
 use super::details::chunk_details::ChunkDetails;
 use super::details::receiver::*;
-use super::port_identifiers::UniqueSubscriberId;
 use super::update_connections::ConnectionFailure;
 use super::ReceiveError;
+use crate::identifiers::UniqueSubscriberId;
 
 use alloc::sync::Arc;
 

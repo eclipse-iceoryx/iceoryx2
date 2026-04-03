@@ -12,15 +12,19 @@
 
 use iceoryx2_bb_elementary::math::*;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::test;
 
+#[test]
 pub fn math_align_returns_input_when_already_aligned() {
     assert_that!(align(25, 5), eq 25);
 }
 
+#[test]
 pub fn math_align_returns_input_to_next_greater_value() {
     assert_that!(align(30, 7), eq 35);
 }
 
+#[test]
 pub fn math_dec_to_64() {
     assert_that!(0u64.to_b64(), eq "0");
     assert_that!(9u64.to_b64(), eq "9");
@@ -45,6 +49,7 @@ pub fn math_dec_to_64() {
     assert_that!(262144u64.to_b64(), eq "0001");
 }
 
+#[test]
 pub fn const_max_works() {
     const MIN_VALUE: usize = 13;
     const MAX_VALUE: usize = 42;

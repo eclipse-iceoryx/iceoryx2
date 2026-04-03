@@ -15,23 +15,23 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod waitset {
+    use alloc::vec;
     use core::time::Duration;
-    use std::time::Instant;
 
     use iceoryx2::port::listener::Listener;
     use iceoryx2::port::notifier::Notifier;
     use iceoryx2::prelude::{WaitSetBuilder, *};
+    use iceoryx2::testing::generate_service_name;
     use iceoryx2::testing::*;
     use iceoryx2::waitset::{WaitSetAttachmentError, WaitSetRunError};
     use iceoryx2_bb_conformance_test_macros::conformance_test;
-    use iceoryx2_bb_posix::config::TEST_DIRECTORY;
-    use iceoryx2_bb_posix::directory::Directory;
-    use iceoryx2_bb_posix::file::Permission;
+    use iceoryx2_bb_posix::clock::{nanosleep, Time};
+    use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_posix::unix_datagram_socket::{
         UnixDatagramReceiver, UnixDatagramSender, UnixDatagramSenderBuilder,
     };
     use iceoryx2_bb_posix::{
-        file_descriptor_set::SynchronousMultiplexing, unique_system_id::UniqueSystemId,
+        file_descriptor_set::SynchronousMultiplexing,
         unix_datagram_socket::UnixDatagramReceiverBuilder,
     };
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -40,29 +40,8 @@ pub mod waitset {
 
     const TIMEOUT: Duration = Duration::from_millis(100);
 
-    fn generate_name() -> ServiceName {
-        ServiceName::new(&format!(
-            "waitset_tests_{}",
-            UniqueSystemId::new().unwrap().value()
-        ))
-        .unwrap()
-    }
-
-    fn generate_uds_name() -> FilePath {
-        let mut path = TEST_DIRECTORY;
-        Directory::create(&path, Permission::OWNER_ALL).unwrap();
-        let _ = path.add_path_entry(
-            &Path::new(
-                format!("waitset_tests_{}", UniqueSystemId::new().unwrap().value()).as_bytes(),
-            )
-            .unwrap(),
-        );
-
-        FilePath::new(path.as_bytes()).unwrap()
-    }
-
     fn create_event<S: Service>(node: &Node<S>) -> (Listener<S>, Notifier<S>) {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let service = node
             .service_builder(&service_name)
             .event()
@@ -75,7 +54,7 @@ pub mod waitset {
     }
 
     fn create_socket() -> (UnixDatagramReceiver, UnixDatagramSender) {
-        let uds_name = generate_uds_name();
+        let uds_name = generate_file_path();
 
         let receiver = UnixDatagramReceiverBuilder::new(&uds_name)
             .create()
@@ -241,7 +220,7 @@ pub mod waitset {
         let tick_guard = sut.attach_interval(TIMEOUT).unwrap();
 
         let mut callback_called = false;
-        let start = Instant::now();
+        let start = Time::now().unwrap();
         sut.wait_and_process_once(|id| {
             callback_called = true;
             assert_that!(id.has_event_from(&tick_guard), eq true);
@@ -251,7 +230,7 @@ pub mod waitset {
         .unwrap();
 
         assert_that!(callback_called, eq true);
-        assert_that!(start.elapsed(), time_at_least TIMEOUT);
+        assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
     }
 
     #[conformance_test]
@@ -267,14 +246,14 @@ pub mod waitset {
         let (listener, _) = create_event::<S>(&node);
         let guard = sut.attach_deadline(&listener, TIMEOUT).unwrap();
 
-        let start = Instant::now();
+        let start = Time::now().unwrap();
         sut.wait_and_process_once(|id| {
             assert_that!(id.has_missed_deadline(&guard), eq true);
             CallbackProgression::Continue
         })
         .unwrap();
 
-        assert_that!(start.elapsed(), time_at_least TIMEOUT);
+        assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
     }
 
     #[conformance_test]
@@ -288,7 +267,7 @@ pub mod waitset {
         let _tick_guard = sut.attach_interval(Duration::MAX).unwrap();
 
         let mut callback_called = false;
-        let start = Instant::now();
+        let start = Time::now().unwrap();
         sut.wait_and_process_once_with_timeout(
             |_| {
                 callback_called = true;
@@ -299,7 +278,7 @@ pub mod waitset {
         .unwrap();
 
         assert_that!(callback_called, eq false);
-        assert_that!(start.elapsed(), time_at_least TIMEOUT);
+        assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
     }
 
     #[conformance_test]
@@ -317,7 +296,7 @@ pub mod waitset {
 
         for _ in 0..3 {
             let mut callback_called = false;
-            let start = Instant::now();
+            let start = Time::now().unwrap();
             sut.wait_and_process_once_with_timeout(
                 |_| {
                     callback_called = true;
@@ -328,7 +307,7 @@ pub mod waitset {
             .unwrap();
 
             assert_that!(callback_called, eq false);
-            assert_that!(start.elapsed(), time_at_least TIMEOUT);
+            assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
         }
     }
 
@@ -343,7 +322,7 @@ pub mod waitset {
         let _tick_guard = sut.attach_interval(TIMEOUT).unwrap();
 
         let mut callback_called = false;
-        let start = Instant::now();
+        let start = Time::now().unwrap();
         sut.wait_and_process_once(|_| {
             callback_called = true;
             CallbackProgression::Continue
@@ -351,7 +330,7 @@ pub mod waitset {
         .unwrap();
 
         assert_that!(callback_called, eq true);
-        assert_that!(start.elapsed(), time_at_least TIMEOUT);
+        assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
     }
 
     #[conformance_test]
@@ -377,7 +356,7 @@ pub mod waitset {
             .attach_deadline(&receiver_2, Duration::from_nanos(1))
             .unwrap();
 
-        std::thread::sleep(TIMEOUT);
+        nanosleep(TIMEOUT).unwrap();
 
         notifier_1.notify().unwrap();
         sender_1.try_send(b"bla").unwrap();
@@ -422,7 +401,7 @@ pub mod waitset {
         let tick_3_guard = sut.attach_interval(TIMEOUT * 1000).unwrap();
         let tick_4_guard = sut.attach_interval(TIMEOUT * 1000).unwrap();
 
-        std::thread::sleep(TIMEOUT);
+        nanosleep(TIMEOUT).unwrap();
 
         let mut tick_1_triggered = false;
         let mut tick_2_triggered = false;
@@ -464,7 +443,7 @@ pub mod waitset {
         let _tick_3_guard = sut.attach_interval(TIMEOUT * 1000).unwrap();
         let _tick_4_guard = sut.attach_interval(TIMEOUT * 1000).unwrap();
 
-        std::thread::sleep(TIMEOUT);
+        nanosleep(TIMEOUT).unwrap();
 
         let mut counter = 0;
 
@@ -500,7 +479,7 @@ pub mod waitset {
             .attach_deadline(&listener_4, Duration::from_nanos(1))
             .unwrap();
 
-        std::thread::sleep(TIMEOUT);
+        nanosleep(TIMEOUT).unwrap();
 
         notifier_1.notify().unwrap();
         notifier_3.notify().unwrap();
@@ -562,7 +541,7 @@ pub mod waitset {
 
         let deadline_1_guard = sut.attach_deadline(&listener_1, TIMEOUT).unwrap();
 
-        std::thread::sleep(TIMEOUT + TIMEOUT / 10);
+        nanosleep(TIMEOUT + TIMEOUT / 10).unwrap();
         notifier_1.notify().unwrap();
 
         // first we get informed by the waitset that we missed a deadline
@@ -594,18 +573,18 @@ pub mod waitset {
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
 
         let _interval_guard = sut.attach_interval(TIMEOUT).unwrap();
-        let now = Instant::now();
+        let now = Time::now().unwrap();
 
         sut.wait_and_process_once(|_| CallbackProgression::Continue)
             .unwrap();
 
-        assert_that!(now.elapsed(), time_at_least TIMEOUT);
-        let now = Instant::now();
+        assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
+        let now = Time::now().unwrap();
 
         sut.wait_and_process_once(|_| CallbackProgression::Continue)
             .unwrap();
 
-        assert_that!(now.elapsed(), time_at_least TIMEOUT / 2);
+        assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT / 2);
     }
 
     #[conformance_test]

@@ -190,6 +190,7 @@ pub const SOCK_DGRAM: int = crate::internal::SOCK_DGRAM as _;
 pub const IPPROTO_UDP: int = crate::internal::IPPROTO_UDP as _;
 pub const SOCK_NONBLOCK: int = O_NONBLOCK;
 pub const MSG_PEEK: int = crate::internal::MSG_PEEK as _;
+pub const MSG_NOSIGNAL: int = crate::internal::MSG_NOSIGNAL as _;
 pub const SCM_MAX_FD: u32 = 253;
 pub const SCM_RIGHTS: int = crate::internal::SCM_RIGHTS as _;
 pub const SOL_SOCKET: int = crate::internal::SOL_SOCKET as _;

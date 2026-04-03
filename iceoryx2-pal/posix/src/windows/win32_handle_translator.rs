@@ -21,7 +21,7 @@ use crate::posix::{c_string_length, types::*};
 use core::fmt::Debug;
 use core::panic;
 use iceoryx2_pal_concurrency_sync::atomic::Ordering;
-use iceoryx2_pal_concurrency_sync::atomic::{AtomicBool, AtomicU32, AtomicUsize};
+use iceoryx2_pal_concurrency_sync::atomic::{AtomicBool, AtomicU64, AtomicUsize};
 use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
 use iceoryx2_pal_concurrency_sync::strategy::mutex::Mutex;
 use iceoryx2_pal_concurrency_sync::WaitAction;
@@ -189,8 +189,8 @@ impl HandleTranslator {
         self.mtx.lock(|atomic, value| {
             unsafe {
                 WaitOnAddress(
-                    (atomic as *const AtomicU32).cast(),
-                    (value as *const u32).cast(),
+                    (atomic as *const AtomicU64).cast(),
+                    (value as *const u64).cast(),
                     4,
                     INFINITE,
                 );
@@ -201,7 +201,7 @@ impl HandleTranslator {
 
     fn unlock(&self) {
         self.mtx.unlock(|atomic| unsafe {
-            WakeByAddressSingle((atomic as *const AtomicU32).cast());
+            WakeByAddressSingle((atomic as *const AtomicU64).cast());
         });
     }
 

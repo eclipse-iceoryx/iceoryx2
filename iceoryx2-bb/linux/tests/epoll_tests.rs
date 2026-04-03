@@ -15,12 +15,9 @@ extern crate iceoryx2_bb_loggers;
 #[cfg(target_os = "linux")]
 pub mod tests {
 
-    use std::{
-        sync::{atomic::Ordering, Barrier},
-        time::Instant,
-    };
+    use std::{sync::Barrier, time::Instant};
 
-    use iceoryx2_bb_concurrency::atomic::AtomicBool;
+    use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
     use iceoryx2_bb_linux::epoll::*;
     use iceoryx2_bb_posix::{
         file_descriptor::FileDescriptorBased,
@@ -47,9 +44,9 @@ pub mod tests {
         }
 
         let mut guards = vec![];
-        for n in 0..NUMBER_OF_ATTACHMENTS {
+        for (n, socket) in sockets.iter().enumerate().take(NUMBER_OF_ATTACHMENTS) {
             assert_that!(sut.len(), eq n);
-            guards.push(sut.add(sockets[n].file_descriptor()).attach().unwrap());
+            guards.push(sut.add(socket.file_descriptor()).attach().unwrap());
         }
     }
 
@@ -67,8 +64,8 @@ pub mod tests {
         }
 
         let mut guards = vec![];
-        for n in 0..NUMBER_OF_ATTACHMENTS {
-            guards.push(sut.add(sockets[n].file_descriptor()).attach().unwrap());
+        for socket in sockets.iter().take(NUMBER_OF_ATTACHMENTS) {
+            guards.push(sut.add(socket.file_descriptor()).attach().unwrap());
         }
 
         for n in 0..NUMBER_OF_ATTACHMENTS {
@@ -194,9 +191,9 @@ pub mod tests {
         }
 
         let mut guards = vec![];
-        for n in 0..NUMBER_OF_ATTACHMENTS {
+        for socket in sockets.iter().take(NUMBER_OF_ATTACHMENTS) {
             guards.push(
-                sut.add(sockets[n].file_descriptor())
+                sut.add(socket.file_descriptor())
                     .event_type(EventType::ReadyToRead)
                     .attach()
                     .unwrap(),

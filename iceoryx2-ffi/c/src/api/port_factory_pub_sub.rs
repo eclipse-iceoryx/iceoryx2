@@ -411,7 +411,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_service_name(
     }
 }
 
-/// Stores the service id in the provided buffer
+/// Stores the service hash in the provided buffer
 ///
 /// # Safety
 ///
@@ -420,7 +420,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_service_name(
 /// * `buffer` must be non-zero and point to a valid memory location
 /// * `buffer_len` must define the actual size of the memory location `buffer` is pointing to
 #[no_mangle]
-pub unsafe extern "C" fn iox2_port_factory_pub_sub_service_id(
+pub unsafe extern "C" fn iox2_port_factory_pub_sub_service_hash(
     handle: iox2_port_factory_pub_sub_h_ref,
     buffer: *mut c_char,
     buffer_len: usize,
@@ -431,13 +431,13 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_service_id(
     handle.assert_non_null();
 
     let port_factory = &mut *handle.as_type();
-    let service_id = match port_factory.service_type {
-        iox2_service_type_e::IPC => port_factory.value.as_ref().ipc.service_id(),
-        iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.service_id(),
+    let service_hash = match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory.value.as_ref().ipc.service_hash(),
+        iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.service_hash(),
     };
 
-    let len = buffer_len.min(service_id.as_str().len());
-    core::ptr::copy_nonoverlapping(service_id.as_str().as_ptr(), buffer.cast(), len);
+    let len = buffer_len.min(service_hash.as_str().len());
+    core::ptr::copy_nonoverlapping(service_hash.as_str().as_ptr(), buffer.cast(), len);
     buffer.add(len).write(0);
 }
 

@@ -15,7 +15,10 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod monitoring_trait {
+    use alloc::vec;
+
     use iceoryx2_bb_conformance_test_macros::conformance_test;
+    use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_system_types::file_name::*;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::monitoring::*;
@@ -24,7 +27,7 @@ pub mod monitoring_trait {
 
     #[conformance_test]
     pub fn create_works<Sut: Monitoring>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_token = Sut::Builder::new(&name).config(&config).token();
@@ -34,7 +37,7 @@ pub mod monitoring_trait {
 
     #[conformance_test]
     pub fn create_same_token_twice_fails<Sut: Monitoring>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_token_1 = Sut::Builder::new(&name).config(&config).token();
@@ -50,7 +53,7 @@ pub mod monitoring_trait {
 
     #[conformance_test]
     pub fn token_removes_resources_when_going_out_of_scope<Sut: Monitoring>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_token_1 = Sut::Builder::new(&name).config(&config).token();
@@ -63,7 +66,7 @@ pub mod monitoring_trait {
 
     #[conformance_test]
     pub fn create_cleaner_fails_when_token_does_not_exist<Sut: Monitoring>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_cleaner = Sut::Builder::new(&name).config(&config).cleaner();
@@ -79,7 +82,7 @@ pub mod monitoring_trait {
     )))]
     #[conformance_test]
     pub fn monitor_works<Sut: Monitoring>() {
-        let name = generate_name();
+        let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_monitor = Sut::Builder::new(&name).config(&config).monitor().unwrap();
@@ -101,7 +104,7 @@ pub mod monitoring_trait {
 
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
         for i in 0..LIMIT {
-            sut_names.push(generate_name());
+            sut_names.push(generate_file_path().file_name());
             assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_names[i], &config), eq Ok(false));
             core::mem::forget(Sut::Builder::new(&sut_names[i]).config(&config).token());
             assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_names[i], &config), eq Ok(true));
@@ -138,7 +141,7 @@ pub mod monitoring_trait {
             .suffix(unsafe { &FileName::new_unchecked(b".suffix_1") });
         let config_2 = config.suffix(unsafe { &FileName::new_unchecked(b".suffix_2") });
 
-        let sut_name = generate_name();
+        let sut_name = generate_file_path().file_name();
 
         assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_1), eq Ok(false));
         assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_2), eq Ok(false));

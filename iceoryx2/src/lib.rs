@@ -527,6 +527,9 @@ pub(crate) mod raw_sample;
 /// previously received [`RequestMut`](crate::request_mut::RequestMut).
 pub mod active_request;
 
+/// Defines unique ids for every entity in iceoryx2.
+pub mod identifiers;
+
 /// Represents a "connection" to a [`Server`](crate::port::server::Server) that corresponds to a
 /// previously sent [`RequestMut`](crate::request_mut::RequestMut).
 pub mod pending_response;

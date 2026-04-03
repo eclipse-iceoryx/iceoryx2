@@ -68,7 +68,7 @@ pub struct Producer<'a, PointerType: PointerTrait<UnsafeCell<u64>>> {
 
 impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Producer<'_, PointerType> {
     /// Adds a new value to the [`SafelyOverflowingIndexQueue`]/[`FixedSizeSafelyOverflowingIndexQueue`].
-    /// If the queue is full it returns false, otherwise true.
+    /// If the queue is full it returns the oldest index.
     pub fn push(&mut self, t: u64) -> Option<u64> {
         unsafe { self.queue.push(t) }
     }

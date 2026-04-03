@@ -13,7 +13,9 @@
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
 use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::test;
 
+#[test]
 pub fn relocatable_pointer_works() {
     let mut sut = RelocatablePointer::<i32>::new(0);
     let _o2: i32 = 0;

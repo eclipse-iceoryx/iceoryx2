@@ -10,12 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::tests::*;
+use crate::api::*;
+use iceoryx2::prelude::*;
+use iceoryx2_bb_testing::assert_that;
 
 use core::{slice, str};
 
 #[test]
-fn basic_service_name_test() -> Result<(), Box<dyn core::error::Error>> {
+fn basic_service_name_test() -> Result<(), alloc::boxed::Box<dyn core::error::Error>> {
     unsafe {
         let expected_service_name = ServiceName::new("all/glory/to/hypnotaod")?;
 

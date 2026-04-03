@@ -12,7 +12,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 
 filegroup(
     name = "all_srcs",
@@ -34,16 +34,12 @@ rust_library(
     ],
 )
 
-rust_test_suite(
+rust_test(
     name = "iceoryx2-bb-threadsafe-tests",
-    srcs = glob(["tests/**/*.rs"]),
+    srcs = ["tests/tests.rs"],
+    use_libtest_harness = False,
     deps = [
         "//iceoryx2-bb/threadsafe/tests-common:iceoryx2-bb-threadsafe-tests-common",
-        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
-        "//iceoryx2-pal/posix:iceoryx2-pal-posix",
-    ],
-    proc_macro_deps = [
-        "@crate_index//:generic-tests",
     ],
 )

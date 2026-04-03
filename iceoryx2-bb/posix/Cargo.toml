@@ -17,28 +17,37 @@ workspace = true
 default = []
 
 std = [
+  "iceoryx2-log/std",  
   "iceoryx2-bb-concurrency/std",
-  "iceoryx2-pal-posix/std"
+  "iceoryx2-bb-container/std",  
+  "iceoryx2-bb-elementary/std",  
+  "iceoryx2-bb-derive-macros/std",  
+  "iceoryx2-bb-print/std",  
+  "iceoryx2-bb-system-types/std",  
+  "iceoryx2-pal-posix/std",
 ]
 
 [dependencies]
 iceoryx2-log = { workspace = true }
-iceoryx2-bb-print = { workspace = true }
 iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
-iceoryx2-bb-system-types = { workspace = true }
+iceoryx2-bb-derive-macros = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
+iceoryx2-bb-system-types = { workspace = true }
+iceoryx2-bb-print = { workspace = true }
 iceoryx2-pal-posix = { workspace = true }
 iceoryx2-pal-configuration = { workspace = true }
-iceoryx2-bb-derive-macros = { workspace = true }
 
 enum-iterator = { workspace = true }
 tiny-fn = { workspace = true }
 serde = { workspace = true }
 
 [dev-dependencies]
-iceoryx2-bb-loggers = { workspace = true }
+iceoryx2-bb-posix-tests-common = { workspace = true, features = ["std"] }
+iceoryx2-bb-loggers = { workspace = true, features = ["std"] }
 iceoryx2-bb-testing = { workspace = true, features = ["std"] }
 
-generic-tests = { workspace = true }
+[[test]]
+name = "tests"
+harness = false

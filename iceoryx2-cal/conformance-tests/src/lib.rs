@@ -10,6 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![cfg_attr(not(any(test, feature = "std")), no_std)]
+#![warn(clippy::alloc_instead_of_core)]
+#![warn(clippy::std_instead_of_alloc)]
+#![warn(clippy::std_instead_of_core)]
+
+extern crate alloc;
+
 pub mod arc_sync_policy_trait;
 pub mod communication_channel_trait;
 pub mod dynamic_storage_trait;

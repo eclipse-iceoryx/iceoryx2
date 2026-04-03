@@ -26,7 +26,7 @@ use iceoryx2_pal_posix::*;
 /// structure which has a file handle representation. Every struct which implements the
 /// [`crate::file_descriptor::FileDescriptorManagement`] trait can emit a [`Metadata`].
 /// One struct is for instance [`crate::file::File`].
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Metadata {
     file_type: FileType,
     uid: Uid,

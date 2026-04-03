@@ -21,7 +21,7 @@ use crate::{
     parc::Parc,
     port_factory_listener::PortFactoryListener,
     port_factory_notifier::PortFactoryNotifier,
-    service_id::ServiceId,
+    service_hash::ServiceHash,
     service_name::ServiceName,
     static_config_event::StaticConfigEvent,
 };
@@ -48,11 +48,11 @@ impl PortFactoryEvent {
     }
 
     #[getter]
-    /// Returns the `ServiceId` of the `Service`
-    pub fn service_id(&self) -> ServiceId {
+    /// Returns the `ServiceHash` of the `Service`
+    pub fn service_hash(&self) -> ServiceHash {
         match &*self.0.lock() {
-            PortFactoryEventType::Ipc(v) => ServiceId(*v.service_id()),
-            PortFactoryEventType::Local(v) => ServiceId(*v.service_id()),
+            PortFactoryEventType::Ipc(v) => ServiceHash(*v.service_hash()),
+            PortFactoryEventType::Local(v) => ServiceHash(*v.service_hash()),
         }
     }
 

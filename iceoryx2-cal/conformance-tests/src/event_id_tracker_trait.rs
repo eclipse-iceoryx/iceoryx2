@@ -15,16 +15,17 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod event_id_tracker_trait {
-    use std::collections::HashSet;
+    use alloc::boxed::Box;
+    use alloc::collections::btree_set::BTreeSet;
+    use core::ptr::NonNull;
 
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::event::{id_tracker::IdTracker, TriggerId};
 
-    use core::ptr::NonNull;
     use iceoryx2_bb_memory::bump_allocator::*;
 
-    const MEMORY_SIZE: usize = 1024 * 1024;
+    const MEMORY_SIZE: usize = 1024 * 64;
 
     fn memory() -> Box<[u8; MEMORY_SIZE]> {
         Box::new([0u8; MEMORY_SIZE])
@@ -74,7 +75,7 @@ pub mod event_id_tracker_trait {
             assert_that!(unsafe { sut.add(id) }, is_ok);
         }
 
-        let mut ids = HashSet::new();
+        let mut ids = BTreeSet::new();
         for _ in 0..CAPACITY {
             let result = unsafe { sut.acquire().unwrap() };
             assert_that!(result, le sut.trigger_id_max());
@@ -97,7 +98,7 @@ pub mod event_id_tracker_trait {
             assert_that!(unsafe { sut.add(id) }, is_ok);
         }
 
-        let mut ids = HashSet::new();
+        let mut ids = BTreeSet::new();
         unsafe {
             sut.acquire_all(|id| {
                 assert_that!(id, le sut.trigger_id_max());
@@ -125,7 +126,7 @@ pub mod event_id_tracker_trait {
             assert_that!(unsafe { sut.add(id) }, is_ok);
         }
 
-        let mut ids = HashSet::new();
+        let mut ids = BTreeSet::new();
         for _ in 0..CAPACITY / 2 {
             let result = unsafe { sut.acquire().unwrap() };
             assert_that!(result, le sut.trigger_id_max());

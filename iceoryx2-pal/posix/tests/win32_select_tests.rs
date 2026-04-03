@@ -37,9 +37,9 @@ mod win32_select {
         }
 
         for fd in socket_fd {
-            assert_eq!(unsafe { FD_ISSET(fd, &sut) }, false);
+            assert!(!unsafe { FD_ISSET(fd, &sut) });
             unsafe { FD_SET(fd, &mut sut) }
-            assert_eq!(unsafe { FD_ISSET(fd, &sut) }, true);
+            assert!(unsafe { FD_ISSET(fd, &sut) });
         }
     }
 
@@ -65,7 +65,7 @@ mod win32_select {
         unsafe { FD_ZERO(&mut sut) };
 
         for fd in &socket_fd {
-            assert_eq!(unsafe { FD_ISSET(*fd, &sut) }, false);
+            assert!(!unsafe { FD_ISSET(*fd, &sut) });
         }
     }
 
@@ -89,9 +89,9 @@ mod win32_select {
         }
 
         for fd in &socket_fd {
-            assert_eq!(unsafe { FD_ISSET(*fd, &sut) }, true);
+            assert!(unsafe { FD_ISSET(*fd, &sut) });
             unsafe { FD_CLR(*fd, &mut sut) }
-            assert_eq!(unsafe { FD_ISSET(*fd, &sut) }, false);
+            assert!(!unsafe { FD_ISSET(*fd, &sut) });
         }
     }
 
@@ -115,9 +115,9 @@ mod win32_select {
         }
 
         for fd in socket_fd.iter().rev() {
-            assert_eq!(unsafe { FD_ISSET(*fd, &sut) }, true);
+            assert!(unsafe { FD_ISSET(*fd, &sut) });
             unsafe { FD_CLR(*fd, &mut sut) }
-            assert_eq!(unsafe { FD_ISSET(*fd, &sut) }, false);
+            assert!(!unsafe { FD_ISSET(*fd, &sut) });
         }
     }
 }

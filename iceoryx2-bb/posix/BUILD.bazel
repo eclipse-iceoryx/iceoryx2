@@ -12,7 +12,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 
 filegroup(
     name = "all_srcs",
@@ -47,27 +47,14 @@ rust_library(
     ],
 )
 
-rust_test_suite(
+rust_test(
     name = "iceoryx2-bb-posix-tests",
-    srcs = glob(["tests/**/*.rs"]),
+    srcs = ["tests/tests.rs"],
+    use_libtest_harness = False,
     crate_features = ["std"],
-    deps = [
-        ":iceoryx2-bb-posix",
-        "//iceoryx2-log/log:iceoryx2-log",
-        "//iceoryx2-bb/container:iceoryx2-bb-container",
-        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
-        "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
-        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
-        "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
-        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
-        "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
-        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
-        "//iceoryx2-pal/posix:iceoryx2-pal-posix",
-        "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
-        "@crate_index//:enum-iterator",
-    ],
     tags = ["exclusive"],
-    proc_macro_deps = [
-        "@crate_index//:generic-tests",
+    deps = [
+        "//iceoryx2-bb/posix/tests-common:iceoryx2-bb-posix-tests-common",
+        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
     ],
 )

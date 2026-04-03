@@ -16,6 +16,7 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[conformance_test_module]
 pub mod event_discovery {
 
+    use alloc::format;
     use core::fmt::Debug;
     use core::time::Duration;
 
@@ -77,7 +78,7 @@ pub mod event_discovery {
         tunnel.discover_over_iceoryx().unwrap();
 
         assert_that!(tunnel.tunneled_services().len(), eq 1);
-        assert_that!(tunnel.tunneled_services().contains(service.service_id()), eq true);
+        assert_that!(tunnel.tunneled_services().contains(service.service_hash()), eq true);
     }
 
     #[conformance_test]
@@ -103,7 +104,7 @@ pub mod event_discovery {
         tunnel.discover_over_iceoryx().unwrap();
 
         assert_that!(tunnel.tunneled_services().len(), eq 1);
-        assert_that!(tunnel.tunneled_services().contains(service.service_id()), eq true);
+        assert_that!(tunnel.tunneled_services().contains(service.service_hash()), eq true);
     }
 
     #[conformance_test]
@@ -144,7 +145,7 @@ pub mod event_discovery {
 
         tunnel_b.discover_over_iceoryx().unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 1);
-        assert_that!(tunnel_b.tunneled_services().contains(service_b.service_id()), eq true);
+        assert_that!(tunnel_b.tunneled_services().contains(service_b.service_hash()), eq true);
 
         const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
         const MAX_RETRIES: usize = 5;
@@ -165,6 +166,6 @@ pub mod event_discovery {
         .unwrap();
 
         assert_that!(tunnel_a.tunneled_services().len(), eq 1);
-        assert_that!(tunnel_a.tunneled_services().contains(service_b.service_id()), eq true);
+        assert_that!(tunnel_a.tunneled_services().contains(service_b.service_hash()), eq true);
     }
 }

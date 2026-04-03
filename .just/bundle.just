@@ -15,16 +15,61 @@
 # =============================================================================
 
 [private]
-_bundle-dispatch target *flags:
+_parse-bundle-args *flags:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    if [ "{{target}}" != "tests" ]; then
-        echo "Error: bundle command currently only supports 'tests' as target" >&2
-        exit 1
-    fi
+    TOOLCHAIN=""
+    TARGET_TRIPLET=""
+    DO_STRIP="false"
+    DO_COMPRESS="false"
+    HAS_NOSTD="false"
 
-    eval $(just _parse-bundle-flags {{flags}})
+    set -- {{flags}}
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            +*)         TOOLCHAIN="$1";                    shift ;;
+            --no_std)   HAS_NOSTD="true";                  shift ;;
+            --target=*) TARGET_TRIPLET="${1#--target=}";   shift ;;
+            --strip)    DO_STRIP="true";                   shift ;;
+            --compress) DO_COMPRESS="true";                shift ;;
+            *)          shift ;;
+        esac
+    done
+
+    echo "TOOLCHAIN='$TOOLCHAIN'"
+    echo "TARGET_TRIPLET='$TARGET_TRIPLET'"
+    echo "DO_STRIP='$DO_STRIP'"
+    echo "DO_COMPRESS='$DO_COMPRESS'"
+    echo "HAS_NOSTD='$HAS_NOSTD'"
+
+[private]
+_bundle-dispatch what *flags:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    case "{{what}}" in
+        "")
+            echo "Usage: just bundle <what> [flags]"
+            echo ""
+            echo "  tests                  bundle no_std tests for deployment"
+            echo ""
+            echo "Flags:"
+            echo "  --no_std               bundle without std"
+            echo "  --strip                strip debug symbols"
+            echo "  --compress             create compressed tarball"
+            echo "  +<toolchain>           use a specific toolchain"
+            echo "  --target=<triplet>     bundle for target"
+            exit 1
+            ;;
+        tests) ;;
+        *)
+            echo "error: unknown bundle target '{{what}}'" >&2
+            exit 1
+            ;;
+    esac
+
+    eval $(just _parse-bundle-args {{flags}})
 
     if [ "$HAS_NOSTD" != "true" ]; then
         echo "Error: bundle command currently only supports 'tests --no_std'" >&2
@@ -167,7 +212,7 @@ _strip-binaries bundle_dir:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    if command -v strip &> /dev/null; then
+    if which strip &> /dev/null; then
         echo ""
         echo "Stripping binaries..."
         strip "{{bundle_dir}}"/*-tests-nostd 2>/dev/null || true

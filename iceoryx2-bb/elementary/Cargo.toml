@@ -26,9 +26,10 @@ iceoryx2-pal-concurrency-sync = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-elementary-tests-common = { workspace = true, features = ["std"] }
-iceoryx2-bb-loggers = { workspace = true }
-iceoryx2-bb-testing = { workspace = true }
-iceoryx2-bb-testing-nostd-macros = { workspace = true }
-iceoryx2-bb-testing-nostd = { workspace = true }
+iceoryx2-bb-loggers = { workspace = true, features = ["std"] }
+iceoryx2-bb-testing = { workspace = true, features = ["std"] }
+iceoryx2-bb-testing-macros = { workspace = true, features = ["std"] }
 
-generic-tests = { workspace = true }
+[[test]]
+name = "tests"
+harness = false

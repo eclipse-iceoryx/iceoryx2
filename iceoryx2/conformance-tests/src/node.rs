@@ -15,9 +15,10 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod node {
+    use alloc::collections::{BTreeSet, VecDeque};
+    use alloc::string::ToString;
+    use alloc::{format, vec};
     use core::time::Duration;
-    use std::collections::{HashSet, VecDeque};
-    use std::sync::Barrier;
 
     use iceoryx2::config::Config;
     use iceoryx2::node::{
@@ -27,7 +28,10 @@ pub mod node {
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
+    use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
+    use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
+    use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_fail};
 
@@ -187,7 +191,7 @@ pub mod node {
         let config = generate_isolated_config();
 
         let mut nodes = vec![];
-        let mut node_ids = HashSet::new();
+        let mut node_ids = BTreeSet::new();
         for i in 0..NUMBER_OF_NODES {
             let node_name = generate_node_name(
                 i,
@@ -283,15 +287,17 @@ pub mod node {
         let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
         let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
         const NUMBER_OF_ITERATIONS: usize = 100;
-        let barrier = Barrier::new(number_of_creators);
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(number_of_creators as _)
+            .create(&handle)
+            .unwrap();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
         config.global.node.cleanup_dead_nodes_on_destruction = false;
 
-        std::thread::scope(|s| {
-            let mut threads = vec![];
+        thread_scope(|s| {
             for _ in 0..number_of_creators {
-                threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     barrier.wait();
                     for _ in 0..NUMBER_OF_ITERATIONS {
                         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
@@ -325,13 +331,12 @@ pub mod node {
                         assert_that!(found_self, eq true);
                         assert_that!(result, is_ok);
                     }
-                }));
+                })?;
             }
 
-            for thread in threads {
-                thread.join().unwrap();
-            }
-        });
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]

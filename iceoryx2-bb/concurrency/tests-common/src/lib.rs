@@ -13,6 +13,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
+extern crate iceoryx2_bb_loggers;
 
 pub mod atomic_tests;
 pub mod lazy_lock_tests;

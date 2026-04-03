@@ -220,8 +220,8 @@ pub mod port_factory;
 /// Represents the name of a [`Service`]
 pub mod service_name;
 
-/// Represents the unique id of a [`Service`]
-pub mod service_id;
+/// Represents the unique hash of a [`Service`]
+pub mod service_hash;
 
 /// Represents the static configuration of a [`Service`]. These are the settings that never change
 /// during the runtime of a service, like:
@@ -288,7 +288,7 @@ use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
 use iceoryx2_cal::static_storage::*;
 use iceoryx2_cal::zero_copy_connection::ZeroCopyConnection;
 use iceoryx2_log::{debug, fail, trace, warn};
-use service_id::ServiceId;
+use service_hash::ServiceHash;
 
 use self::dynamic_config::DeregisterNodeState;
 use self::messaging_pattern::MessagingPattern;
@@ -411,7 +411,7 @@ impl<S: Service, R: ServiceResource> ServiceState<S, R> {
             additional_resource,
         };
         trace!(from "Service::open()", "open service: {} ({:?})",
-            new_self.static_config.name(), new_self.static_config.service_id());
+            new_self.static_config.name(), new_self.static_config.service_hash());
         new_self
     }
 }
@@ -419,9 +419,9 @@ impl<S: Service, R: ServiceResource> ServiceState<S, R> {
 impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
     fn drop(&mut self) {
         let origin = "ServiceState::drop()";
-        let id = self.static_config.service_id();
-        self.shared_node.registered_services().remove(id, |handle| {
-            if let Err(e) = remove_service_tag::<S>(self.shared_node.id(), id, self.shared_node.config())
+        let hash = self.static_config.service_hash();
+        self.shared_node.registered_services().remove(hash, |handle| {
+            if let Err(e) = remove_service_tag::<S>(self.shared_node.id(), hash, self.shared_node.config())
             {
                 debug!(from origin, "The service tag could not be removed from the node {:?} ({:?}).",
                         self.shared_node.id(), e);
@@ -430,14 +430,14 @@ impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
             match self.dynamic_storage.get().deregister_node_id(handle) {
                 DeregisterNodeState::HasOwners => {
                     trace!(from origin, "close service: {} ({:?})",
-                            self.static_config.name(), id);
+                            self.static_config.name(), hash);
                 }
                 DeregisterNodeState::NoMoreOwners => {
                     self.static_storage.acquire_ownership();
                     self.dynamic_storage.acquire_ownership();
                     self.additional_resource.acquire_ownership();
                     trace!(from origin, "close and remove service: {} ({:?})",
-                            self.static_config.name(), id);
+                            self.static_config.name(), hash);
                 }
             }
         });
@@ -453,11 +453,9 @@ pub mod internal {
     use port_factory::PortFactory;
 
     use crate::{
+        identifiers::UniquePortId,
         node::{NodeBuilder, NodeId},
-        port::{
-            listener::remove_connection_of_listener, notifier::Notifier,
-            port_identifiers::UniquePortId,
-        },
+        port::{listener::remove_connection_of_listener, notifier::Notifier},
         prelude::EventId,
         service::stale_resource_cleanup::{
             remove_data_segment_of_port, remove_receiver_port_from_all_connections,
@@ -470,16 +468,16 @@ pub mod internal {
     #[derive(Debug)]
     struct CleanupFailure;
 
-    fn send_dead_node_signal<S: Service>(service_id: &ServiceId, config: &config::Config) {
+    fn send_dead_node_signal<S: Service>(service_hash: &ServiceHash, config: &config::Config) {
         let origin = "send_dead_node_signal()";
 
-        let service_details = match __internal_details::<S>(config, &service_id.0.into()) {
+        let service_details = match __internal_details::<S>(config, &service_hash.0.into()) {
             Ok(Some(service_details)) => service_details,
             Ok(None) => return,
             Err(e) => {
                 warn!(from origin,
                     "Unable to acquire service details to emit dead node signal to waiting listeners for the service id {:?} due to ({:?})",
-                    service_id, e);
+                    service_hash, e);
                 return;
             }
         };
@@ -635,13 +633,14 @@ pub mod internal {
     pub trait ServiceInternal<S: Service> {
         fn __internal_remove_node_from_service(
             node_id: &NodeId,
-            service_id: &ServiceId,
+            service_hash: &ServiceHash,
             config: &config::Config,
         ) -> Result<(), ServiceRemoveNodeError> {
-            let origin = format!("Service::remove_node_from_service({node_id:?}, {service_id:?})");
+            let origin =
+                format!("Service::remove_node_from_service({node_id:?}, {service_hash:?})");
             let msg = "Unable to remove node from service";
 
-            let dynamic_config = match open_dynamic_config::<S>(config, service_id) {
+            let dynamic_config = match open_dynamic_config::<S>(config, service_hash) {
                 Ok(Some(c)) => c,
                 Ok(None) => {
                     fail!(from origin,
@@ -737,7 +736,7 @@ pub mod internal {
             if remove_service {
                 // check if service was a blackboard service to remove its additional resources
                 let blackboard_name =
-                    crate::service::naming_scheme::blackboard_name(service_id.as_str());
+                    crate::service::naming_scheme::blackboard_name(service_hash.as_str());
                 let blackboard_payload_config =
                     crate::service::config_scheme::blackboard_data_config::<S>(config);
                 let blackboard_payload = <S::BlackboardPayload as NamedConceptMgmt>::does_exist_cfg(
@@ -749,7 +748,7 @@ pub mod internal {
                 if let Ok(true) = blackboard_payload {
                     is_blackboard = true;
 
-                    let details = match __internal_details::<S>(config, &service_id.0.into()) {
+                    let details = match __internal_details::<S>(config, &service_hash.0.into()) {
                         Ok(Some(d)) => d,
                         _ => {
                             fail!(from origin,
@@ -765,7 +764,7 @@ pub mod internal {
                     // IMPORTANT: The static service config must be removed first. If it cannot be
                     // removed, the process may lack sufficient permissions and should not remove
                     // any other resources.
-                    remove_static_service_config::<S>(config, &service_id.0.into())
+                    remove_static_service_config::<S>(config, &service_hash.0.into())
                 } {
                     Ok(_) => {
                         trace!(from origin, "Remove unused service.");
@@ -790,7 +789,7 @@ pub mod internal {
                     }
                 }
             } else if number_of_dead_node_notifications != 0 {
-                send_dead_node_signal::<S>(service_id, config);
+                send_dead_node_signal::<S>(service_hash, config);
             }
 
             Ok(())
@@ -917,8 +916,9 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
         config: &config::Config,
         messaging_pattern: MessagingPattern,
     ) -> Result<Option<ServiceDetails<Self>>, ServiceDetailsError> {
-        let service_id = ServiceId::new::<Self::ServiceNameHasher>(service_name, messaging_pattern);
-        __internal_details::<Self>(config, &service_id.0.into())
+        let service_hash =
+            ServiceHash::new::<Self::ServiceNameHasher>(service_name, messaging_pattern);
+        __internal_details::<Self>(config, &service_hash.0.into())
     }
 
     /// Returns a list of all services created under a given [`config::Config`].
@@ -1022,13 +1022,13 @@ pub fn __internal_details<S: Service>(
             }
         };
 
-    if uuid.as_bytes() != service_config.service_id().0.as_bytes() {
+    if uuid.as_bytes() != service_config.service_hash().0.as_bytes() {
         fail!(from origin, with ServiceDetailsError::ServiceInInconsistentState,
                 "{} since the service {:?} has an inconsistent hash of {} according to config {:?}",
                 msg, service_config, uuid, config);
     }
 
-    let dynamic_config = open_dynamic_config::<S>(config, service_config.service_id())?;
+    let dynamic_config = open_dynamic_config::<S>(config, service_config.service_hash())?;
     let dynamic_details = if let Some(d) = dynamic_config {
         let mut nodes = vec![];
         d.get().list_node_ids(|node_id| {
@@ -1056,12 +1056,12 @@ pub fn __internal_details<S: Service>(
 
 fn open_dynamic_config<S: Service>(
     config: &config::Config,
-    service_id: &ServiceId,
+    service_hash: &ServiceHash,
 ) -> Result<Option<S::DynamicStorage>, ServiceDetailsError> {
     let origin = format!(
         "Service::open_dynamic_details<{}>({:?})",
         core::any::type_name::<S>(),
-        service_id
+        service_hash
     );
     let msg = "Unable to open the services dynamic config";
     match
@@ -1069,7 +1069,7 @@ fn open_dynamic_config<S: Service>(
                     DynamicConfig,
                 >>::Builder<'_> as NamedConceptBuilder<
                     S::DynamicStorage,
-                >>::new(&service_id.0.into())
+                >>::new(&service_hash.0.into())
                     .config(&dynamic_config_storage_config::<S>(config))
                 .has_ownership(false)
                 .open() {
@@ -1088,19 +1088,19 @@ fn open_dynamic_config<S: Service>(
 
 pub(crate) fn remove_service_tag<S: Service>(
     node_id: &NodeId,
-    service_id: &ServiceId,
+    service_hash: &ServiceHash,
     config: &config::Config,
 ) -> Result<(), ServiceRemoveTagError> {
     let origin = format!(
-        "remove_service_tag<{}>({:?}, service_id: {:?})",
+        "remove_service_tag<{}>({:?}, service_hash: {:?})",
         core::any::type_name::<S>(),
         node_id,
-        service_id
+        service_hash
     );
 
     match unsafe {
         <S::StaticStorage as NamedConceptMgmt>::remove_cfg(
-            &service_id.0.into(),
+            &service_hash.0.into(),
             &service_tag_config::<S>(config, node_id),
         )
     } {

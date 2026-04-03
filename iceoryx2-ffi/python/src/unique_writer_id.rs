@@ -15,7 +15,7 @@ use pyo3::prelude::*;
 #[pyclass(eq, str = "{0:?}")]
 #[derive(PartialEq, Eq)]
 /// The system-wide unique id of a `Writer`.
-pub struct UniqueWriterId(pub(crate) iceoryx2::port::port_identifiers::UniqueWriterId);
+pub struct UniqueWriterId(pub(crate) iceoryx2::identifiers::UniqueWriterId);
 
 #[pymethods]
 impl UniqueWriterId {

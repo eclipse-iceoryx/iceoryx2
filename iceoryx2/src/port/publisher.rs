@@ -142,8 +142,8 @@ use crate::service::{self, NoResource, ServiceState};
 
 use super::details::data_segment::{DataSegment, DataSegmentType};
 use super::details::segment_state::SegmentState;
-use super::port_identifiers::UniquePublisherId;
 use super::{LoanError, SendError};
+use crate::identifiers::UniquePublisherId;
 
 /// Defines a failure that can occur when a [`Publisher`] is created with
 /// [`crate::service::port_factory::publisher::PortFactoryPublisher`].

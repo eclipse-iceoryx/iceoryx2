@@ -16,13 +16,18 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[conformance_test_module]
 pub mod event_signal_mechanism_trait {
     use core::time::Duration;
-    use std::sync::Barrier;
-
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
-    use iceoryx2_bb_posix::clock::Time;
+    use iceoryx2_bb_posix::clock::nanosleep;
+    use iceoryx2_bb_posix::ipc_capable::Handle;
+    use iceoryx2_bb_posix::thread::thread_scope;
+    use iceoryx2_bb_posix::{
+        barrier::{BarrierBuilder, BarrierHandle},
+        clock::Time,
+    };
     use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
     use iceoryx2_cal::event::signal_mechanism::SignalMechanism;
+
     const TIMEOUT: Duration = Duration::from_millis(25);
 
     #[conformance_test]
@@ -59,27 +64,30 @@ pub mod event_signal_mechanism_trait {
     pub fn wait_blocks<Sut: SignalMechanism, F: FnOnce(&Sut) -> bool + Send>(wait_call: F) {
         let _watchdog = Watchdog::new();
         let mut sut = Sut::new();
-        let barrier = Barrier::new(2);
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
         let counter = AtomicU64::new(0);
 
         unsafe {
             assert_that!(sut.init(), is_ok);
 
-            std::thread::scope(|s| {
-                let t = s.spawn(|| {
+            thread_scope(|s| {
+                s.thread_builder().spawn(|| {
                     barrier.wait();
                     assert_that!(wait_call(&sut), eq true);
                     counter.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
-                });
+                })?;
 
                 barrier.wait();
-                std::thread::sleep(TIMEOUT);
+                nanosleep(TIMEOUT).unwrap();
                 assert_that!(counter.load(core::sync::atomic::Ordering::Relaxed), eq 0);
                 sut.notify().unwrap();
-                t.join().unwrap();
 
-                assert_that!(counter.load(core::sync::atomic::Ordering::Relaxed), eq 1);
-            });
+                Ok(())
+            })
+            .unwrap();
+
+            assert_that!(counter.load(core::sync::atomic::Ordering::Relaxed), eq 1);
         }
     }
 

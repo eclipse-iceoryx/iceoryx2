@@ -10,9 +10,28 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use alloc::sync::Arc;
+use alloc::vec;
+use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::AtomicI64;
+use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_conformance_test_macros::conformance_test;
 use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_bb_container::semantic_string::*;
+use iceoryx2_bb_elementary_traits::allocator::*;
+use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
+use iceoryx2_bb_posix::clock::{nanosleep, Time};
+use iceoryx2_bb_posix::ipc_capable::Handle;
+use iceoryx2_bb_posix::testing::generate_file_path;
+use iceoryx2_bb_posix::thread::thread_scope;
+use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
+use iceoryx2_bb_testing::watchdog::Watchdog;
+use iceoryx2_bb_testing::{assert_that, test_requires};
+use iceoryx2_cal::dynamic_storage::*;
+use iceoryx2_cal::named_concept::*;
+use iceoryx2_cal::testing::*;
+use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
 #[derive(Debug)]
 pub struct TestData {
@@ -48,22 +67,6 @@ unsafe impl Sync for TestData {}
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod dynamic_storage_trait {
-    use iceoryx2_bb_concurrency::atomic::Ordering;
-    use iceoryx2_bb_conformance_test_macros::conformance_test;
-    use iceoryx2_bb_container::semantic_string::*;
-    use iceoryx2_bb_elementary_traits::allocator::*;
-    use iceoryx2_bb_system_types::file_name::FileName;
-    use iceoryx2_bb_testing::watchdog::Watchdog;
-    use iceoryx2_bb_testing::{assert_that, test_requires};
-    use iceoryx2_cal::dynamic_storage::*;
-    use iceoryx2_cal::named_concept::*;
-    use iceoryx2_cal::testing::*;
-    use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
-    use std::sync::{Arc, Barrier};
-    use std::time::{Duration, Instant};
-
-    const TIMEOUT: Duration = Duration::from_millis(100);
-
     use super::*;
 
     #[conformance_test]
@@ -71,7 +74,7 @@ pub mod dynamic_storage_trait {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
@@ -102,7 +105,7 @@ pub mod dynamic_storage_trait {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name).config(&config).open();
@@ -116,7 +119,7 @@ pub mod dynamic_storage_trait {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
@@ -135,7 +138,7 @@ pub mod dynamic_storage_trait {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let _sut1 = Sut::Builder::new(&storage_name)
@@ -159,7 +162,7 @@ pub mod dynamic_storage_trait {
     >() {
         test_requires!(Sut::does_support_persistency());
 
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
@@ -196,7 +199,7 @@ pub mod dynamic_storage_trait {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         const NUMBER_OF_OPENERS: u64 = 64;
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
@@ -235,7 +238,7 @@ pub mod dynamic_storage_trait {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         test_requires!(Sut::does_support_persistency());
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
@@ -268,7 +271,7 @@ pub mod dynamic_storage_trait {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         test_requires!(Sut::does_support_persistency());
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
@@ -301,7 +304,7 @@ pub mod dynamic_storage_trait {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         test_requires!(Sut::does_support_persistency());
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
@@ -319,7 +322,7 @@ pub mod dynamic_storage_trait {
 
     #[conformance_test]
     pub fn does_exist_works<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(false));
@@ -345,7 +348,7 @@ pub mod dynamic_storage_trait {
     pub fn has_ownership_works<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
         test_requires!(Sut::does_support_persistency());
 
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
@@ -373,7 +376,7 @@ pub mod dynamic_storage_trait {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
@@ -429,36 +432,37 @@ pub mod dynamic_storage_trait {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
-        let storage_name = generate_name();
+        const TIMEOUT: Duration = Duration::from_millis(100);
+
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
         let _watchdog = Watchdog::new();
-        let barrier_1 = Arc::new(Barrier::new(2));
+        let handle = BarrierHandle::new();
+        let barrier_1 = Arc::new(BarrierBuilder::new(2).create(&handle).unwrap());
         let barrier_2 = barrier_1.clone();
 
-        std::thread::scope(|s| {
-            let tstorage_name = storage_name;
+        thread_scope(|s| {
             let config_1 = config.clone();
-            s.spawn(move || {
+            s.thread_builder().spawn(move || {
                 barrier_1.wait();
-                let _sut = Sut::Builder::new(&tstorage_name)
+                let _sut = Sut::Builder::new(&storage_name)
                     .config(&config_1)
                     .supplementary_size(0)
                     .has_ownership(false)
                     .initializer(|value, _| {
-                        std::thread::sleep(TIMEOUT);
+                        nanosleep(TIMEOUT).unwrap();
                         value.value.store(789, Ordering::Relaxed);
                         true
                     })
                     .create(TestData::new(123))
                     .unwrap();
-            });
+            })?;
 
-            let tstorage_name = storage_name;
             let config_2 = config.clone();
-            s.spawn(move || {
+            s.thread_builder().spawn(move || {
                 barrier_2.wait();
                 loop {
-                let sut2 = Sut::Builder::new(&tstorage_name).config(&config_2).open();
+                let sut2 = Sut::Builder::new(&storage_name).config(&config_2).open();
                 if let Ok(res) = sut2 {
                     assert_that!(res.get().value.load(Ordering::Relaxed), eq 789);
                     break;
@@ -466,8 +470,10 @@ pub mod dynamic_storage_trait {
                     let err = sut2.err().unwrap();
                     assert_that!(err == DynamicStorageOpenError::DoesNotExist || err == DynamicStorageOpenError::InitializationNotYetFinalized, eq true);
                 }
-            }});
-        });
+            }})?;
+
+            Ok(())
+        }).unwrap();
 
         if POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY {
             assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
@@ -480,41 +486,47 @@ pub mod dynamic_storage_trait {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
-        let storage_name = generate_name();
+        const TIMEOUT: Duration = Duration::from_millis(100);
+
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
-        let barrier = Arc::new(Barrier::new(2));
+        let handle = BarrierHandle::new();
+        let barrier = Arc::new(BarrierBuilder::new(2).create(&handle).unwrap());
         let _watchdog = Watchdog::new();
 
-        std::thread::scope(|s| {
+        thread_scope(|s| {
             let tstorage_name = storage_name;
             let config_1 = config.clone();
             let barrier_1 = barrier.clone();
-            s.spawn(move || {
+            s.thread_builder().spawn(move || {
                 let _sut = Sut::Builder::new(&tstorage_name)
                     .config(&config_1)
                     .supplementary_size(0)
                     .initializer(|_, _| {
                         barrier_1.wait();
-                        std::thread::sleep(TIMEOUT * 2);
+                        nanosleep(TIMEOUT * 2).unwrap();
                         true
                     })
                     .create(TestData::new(123))
                     .unwrap();
-            });
+            })?;
 
             let config_2 = config.clone();
             let barrier_2 = barrier.clone();
-            s.spawn(move || {
+            s.thread_builder().spawn(move || {
                 barrier_2.wait();
-                let start = Instant::now();
+                let start = Time::now().unwrap();
                 let _sut = Sut::Builder::new(&storage_name)
                     .config(&config_2)
                     .timeout(TIMEOUT)
                     .open();
 
-                assert_that!(start.elapsed(), time_at_least TIMEOUT);
-            });
-        });
+                assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
+            })?;
+
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]
@@ -522,7 +534,7 @@ pub mod dynamic_storage_trait {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
@@ -550,7 +562,7 @@ pub mod dynamic_storage_trait {
 
         for i in 0..LIMIT {
             assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len i );
-            sut_names.push(generate_name());
+            sut_names.push(generate_file_path().file_name());
             assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_names[i], &config), eq Ok(false));
             suts.push(
                 Sut::Builder::new(&sut_names[i])
@@ -599,7 +611,7 @@ pub mod dynamic_storage_trait {
             .suffix(unsafe { &FileName::new_unchecked(b".s1") });
         let config_2 = config.suffix(unsafe { &FileName::new_unchecked(b".s2") });
 
-        let sut_name = generate_name();
+        let sut_name = generate_file_path().file_name();
 
         assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_1), eq Ok(false));
         assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_2), eq Ok(false));
@@ -659,7 +671,7 @@ pub mod dynamic_storage_trait {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
-        let sut_name = generate_name();
+        let sut_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         assert_that!(Sut::does_exist_cfg(&sut_name, &config), eq Ok(false));
@@ -686,7 +698,7 @@ pub mod dynamic_storage_trait {
     >() {
         let state = LifetimeTracker::start_tracking();
 
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
@@ -707,7 +719,7 @@ pub mod dynamic_storage_trait {
     >() {
         let state = LifetimeTracker::start_tracking();
 
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
@@ -731,7 +743,7 @@ pub mod dynamic_storage_trait {
 
         test_requires!(Sut::does_support_persistency());
 
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
@@ -752,7 +764,7 @@ pub mod dynamic_storage_trait {
     >() {
         let state = LifetimeTracker::start_tracking();
 
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
@@ -782,7 +794,7 @@ pub mod dynamic_storage_trait {
             != core::any::TypeId::of::<iceoryx2_cal::dynamic_storage::process_local::Storage<TestData>>(
             )
         {
-            let storage_name = generate_name();
+            let storage_name = generate_file_path().file_name();
 
             let _ = Sut::Builder::new(&storage_name)
                 .has_ownership(false)
@@ -800,7 +812,7 @@ pub mod dynamic_storage_trait {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
         let wrong_type_config = WrongTypeSut::Configuration::default()
             .prefix(config.get_prefix())
@@ -832,7 +844,7 @@ pub mod dynamic_storage_trait {
             .suffix(config.get_suffix())
             .path_hint(config.get_path_hint());
         for _ in 0..NUMBER_OF_TESTDATA_STORAGES {
-            let storage_name = generate_name();
+            let storage_name = generate_file_path().file_name();
             testdata_storages.push(
                 Sut::Builder::new(&storage_name)
                     .config(&config)
@@ -852,7 +864,7 @@ pub mod dynamic_storage_trait {
         }
 
         for _ in 0..NUMBER_OF_U64_STORAGES {
-            let storage_name = generate_name();
+            let storage_name = generate_file_path().file_name();
             u64_storages.push(
                 WrongTypeSut::Builder::new(&storage_name)
                     .config(&wrong_type_config)
@@ -882,7 +894,7 @@ pub mod dynamic_storage_trait {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
         let wrong_type_config = WrongTypeSut::Configuration::default()
             .prefix(config.get_prefix())
@@ -904,7 +916,7 @@ pub mod dynamic_storage_trait {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
-        let storage_name = generate_name();
+        let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
         let wrong_type_config = WrongTypeSut::Configuration::default()
             .prefix(config.get_prefix())

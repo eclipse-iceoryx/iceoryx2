@@ -142,17 +142,19 @@ impl Node {
 
     /// Waits for a given `cycle_time`.
     /// On failure it emits a `NodeWaitFailure`.
-    pub fn wait(&self, cycle_time: &Duration) -> PyResult<()> {
-        match &*self.0.lock() {
-            NodeType::Ipc(node) => node
-                .wait(cycle_time.0)
-                .map_err(|e| NodeWaitFailure::new_err(format!("{e:?}")))?,
-            NodeType::Local(node) => node
-                .wait(cycle_time.0)
-                .map_err(|e| NodeWaitFailure::new_err(format!("{e:?}")))?,
-        };
+    pub fn wait(&self, cycle_time: &Duration, py: Python<'_>) -> PyResult<()> {
+        py.detach(move || {
+            match &*self.0.lock() {
+                NodeType::Ipc(node) => node
+                    .wait(cycle_time.0)
+                    .map_err(|e| NodeWaitFailure::new_err(format!("{e:?}")))?,
+                NodeType::Local(node) => node
+                    .wait(cycle_time.0)
+                    .map_err(|e| NodeWaitFailure::new_err(format!("{e:?}")))?,
+            };
 
-        Ok(())
+            Ok(())
+        })
     }
 
     #[getter]

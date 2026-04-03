@@ -11,9 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::alloc::{GlobalAlloc, Layout};
-use core::cell::UnsafeCell;
 use core::ptr::{null_mut, NonNull};
 
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_memory::bump_allocator::BaseAllocator;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 

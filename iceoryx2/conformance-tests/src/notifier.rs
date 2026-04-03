@@ -15,7 +15,8 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod notifier {
-    use std::collections::HashSet;
+    use alloc::collections::BTreeSet;
+    use alloc::{format, vec};
 
     use iceoryx2::testing::*;
     use iceoryx2::{
@@ -53,7 +54,7 @@ pub mod notifier {
             .unwrap();
 
         let mut listeners = vec![];
-        let mut listener_id_set = HashSet::new();
+        let mut listener_id_set = BTreeSet::new();
 
         for _ in 0..MAX_LISTENERS {
             let listener = sut.listener_builder().create().unwrap();

@@ -15,7 +15,7 @@ use pyo3::prelude::*;
 #[pyclass(eq, str = "{0:?}")]
 #[derive(PartialEq, Eq)]
 /// The system-wide unique id of a `Notifier`.
-pub struct UniqueNotifierId(pub(crate) iceoryx2::port::port_identifiers::UniqueNotifierId);
+pub struct UniqueNotifierId(pub(crate) iceoryx2::identifiers::UniqueNotifierId);
 
 #[pymethods]
 impl UniqueNotifierId {

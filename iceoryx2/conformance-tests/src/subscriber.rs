@@ -15,32 +15,16 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod subscriber {
+    use alloc::collections::BTreeSet;
+    use alloc::{format, vec};
     use iceoryx2::port::ReceiveError;
     use iceoryx2_bb_conformance_test_macros::conformance_test;
-    use std::collections::HashSet;
 
-    #[cfg(debug_assertions)]
-    use iceoryx2::service::{
-        builder::CustomPayloadMarker,
-        static_config::message_type_details::{TypeDetail, TypeVariant},
-    };
-
+    use iceoryx2::testing::generate_service_name;
     use iceoryx2::{
-        node::NodeBuilder,
-        port::subscriber::SubscriberCreateError,
-        service::{service_name::ServiceName, Service},
-        testing,
+        node::NodeBuilder, port::subscriber::SubscriberCreateError, service::Service, testing,
     };
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
-
-    fn generate_name() -> ServiceName {
-        ServiceName::new(&format!(
-            "listener_tests_{}",
-            UniqueSystemId::new().unwrap().value()
-        ))
-        .unwrap()
-    }
 
     #[conformance_test]
     pub fn receive_error_display_works<S: Service>() {
@@ -58,7 +42,7 @@ pub mod subscriber {
 
     #[conformance_test]
     pub fn id_is_unique<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         const MAX_SUBSCRIBERS: usize = 8;
@@ -71,7 +55,7 @@ pub mod subscriber {
             .unwrap();
 
         let mut subscribers = vec![];
-        let mut subscriber_id_set = HashSet::new();
+        let mut subscriber_id_set = BTreeSet::new();
 
         for _ in 0..MAX_SUBSCRIBERS {
             let subscriber = sut.subscriber_builder().create().unwrap();
@@ -86,8 +70,14 @@ pub mod subscriber {
     pub fn subscriber_with_custom_payload_details_panics_when_calling_non_custom_receive<
         Sut: Service,
     >() {
+        #[cfg(debug_assertions)]
+        use iceoryx2::service::{
+            builder::CustomPayloadMarker,
+            static_config::message_type_details::{TypeDetail, TypeVariant},
+        };
+
         const TYPE_SIZE_OVERRIDE: usize = 128;
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let mut type_detail = TypeDetail::new::<u8>(TypeVariant::FixedSize);

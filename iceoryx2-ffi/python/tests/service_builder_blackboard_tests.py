@@ -581,7 +581,7 @@ def test_open_uses_predefined_settings_when_nothing_is_specified(
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_service_id_is_unique_per_service(
+def test_service_hash_is_unique_per_service(
     service_type: iox2.ServiceType,
 ) -> None:
     config = iox2.testing.generate_isolated_config()
@@ -607,8 +607,8 @@ def test_service_id_is_unique_per_service(
         .create()
     )
 
-    assert service_1_create.service_id.as_str == service_1_open.service_id.as_str
-    assert service_1_create.service_id.as_str != service_2.service_id.as_str
+    assert service_1_create.service_hash.as_str == service_1_open.service_hash.as_str
+    assert service_1_create.service_hash.as_str != service_2.service_hash.as_str
 
 
 @pytest.mark.parametrize("service_type", service_types)

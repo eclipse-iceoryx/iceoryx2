@@ -15,10 +15,14 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[allow(clippy::module_inception)]
 #[conformance_test_module]
 pub mod service_event {
+    use alloc::collections::BTreeSet;
+    use alloc::{format, vec};
     use core::time::Duration;
-    use std::collections::HashSet;
-    use std::sync::Barrier;
-    use std::time::Instant;
+    use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
+    use iceoryx2_bb_posix::clock::nanosleep;
+    use iceoryx2_bb_posix::clock::Time;
+    use iceoryx2_bb_posix::ipc_capable::Handle;
+    use iceoryx2_bb_posix::thread::thread_scope;
 
     use iceoryx2::port::listener::{Listener, ListenerCreateError};
     use iceoryx2::port::notifier::{NotifierCreateError, NotifierNotifyError};
@@ -28,23 +32,14 @@ pub mod service_event {
     use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
     use iceoryx2_bb_conformance_test_macros::conformance_test;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
 
     const TIMEOUT: Duration = Duration::from_millis(50);
 
-    fn generate_name() -> ServiceName {
-        ServiceName::new(&format!(
-            "service_tests_{}",
-            UniqueSystemId::new().unwrap().value()
-        ))
-        .unwrap()
-    }
-
     #[conformance_test]
     pub fn creating_non_existing_service_works<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node.service_builder(&service_name).event().create();
@@ -56,7 +51,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn creating_same_service_twice_fails<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node.service_builder(&service_name).event().create();
@@ -72,7 +67,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn recreate_after_drop_works<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node.service_builder(&service_name).event().create();
@@ -86,7 +81,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn open_fails_when_service_does_not_exist<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node.service_builder(&service_name).event().open();
@@ -96,7 +91,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn open_succeeds_when_service_does_exist<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node.service_builder(&service_name).event().create();
@@ -108,7 +103,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn open_fails_when_service_does_not_satisfy_opener_notifier_requirements<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
@@ -140,7 +135,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn open_fails_when_service_does_not_satisfy_opener_listener_requirements<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
@@ -172,7 +167,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn set_max_nodes_to_zero_adjusts_it_to_one<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
@@ -187,7 +182,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn set_max_listeners_to_zero_adjusts_it_to_one<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
@@ -202,7 +197,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn set_max_notifiers_to_zero_adjusts_it_to_one<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
@@ -217,7 +212,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn open_fails_when_service_does_not_satisfy_opener_node_requirements<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
@@ -249,7 +244,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn open_fails_when_service_does_not_satisfy_event_id_requirements<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         const EVENT_ID_MAX_VALUE: usize = 78;
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -280,7 +275,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn open_uses_predefined_settings_when_nothing_is_specified<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
@@ -312,7 +307,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn settings_can_be_modified_via_custom_config<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let mut custom_config = generate_isolated_config();
         custom_config.defaults.event.max_nodes = 13;
         custom_config.defaults.event.max_notifiers = 9;
@@ -339,7 +334,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn simple_communication_works_listener_created_first<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let event_id = EventId::new(32);
@@ -371,7 +366,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn simple_communication_works_notifier_created_first<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let event_id = EventId::new(23);
@@ -403,7 +398,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn notifier_emits_create_and_dropped_event_id<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -437,7 +432,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn notifier_emits_nothing_when_no_events_are_configured<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let notifier_created = EventId::new(31);
@@ -478,7 +473,7 @@ pub mod service_event {
         const MAX_LISTENERS: usize = 4;
         const MAX_NOTIFIERS: usize = 6;
         const NUMBER_OF_ITERATIONS: u64 = 128;
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -527,7 +522,7 @@ pub mod service_event {
         const MAX_LISTENERS: usize = 5;
         const MAX_NOTIFIERS: usize = 7;
         const NUMBER_OF_ITERATIONS: u64 = 128;
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -576,7 +571,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn number_of_notifiers_works<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         const MAX_NOTIFIERS: usize = 8;
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -619,7 +614,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn number_of_listeners_works<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         const MAX_LISTENERS: usize = 8;
@@ -662,7 +657,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn number_of_nodes_works<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let main_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         const MAX_NODES: usize = 8;
@@ -700,7 +695,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn max_event_id_works<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         const EVENT_ID_MAX_VALUE: usize = 78;
@@ -739,23 +734,29 @@ pub mod service_event {
         const EVENT_ID: EventId = EventId::new(8);
 
         let keep_running = AtomicBool::new(true);
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let barrier = Barrier::new(number_of_notifier_threads + number_of_listener_threads);
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(number_of_notifier_threads + number_of_listener_threads)
+            .create(&handle)
+            .unwrap();
+        let finish_handle = BarrierHandle::new();
+        let finish_barrier = BarrierBuilder::new(number_of_listener_threads + 1)
+            .create(&finish_handle)
+            .unwrap();
 
         let sut = node
             .service_builder(&service_name)
             .event()
-            .max_listeners(number_of_listener_threads)
-            .max_notifiers(number_of_notifier_threads)
+            .max_listeners(number_of_listener_threads as _)
+            .max_notifiers(number_of_notifier_threads as _)
             .create()
             .unwrap();
 
-        std::thread::scope(|s| {
-            let mut listener_threads = vec![];
+        thread_scope(|s| {
             for _ in 0..number_of_listener_threads {
-                listener_threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     let listener = sut.listener_builder().create().unwrap();
                     barrier.wait();
 
@@ -767,26 +768,28 @@ pub mod service_event {
                             assert_that!(id, eq EVENT_ID);
                         }
                     }
-                }));
+
+                    finish_barrier.wait();
+                })?;
             }
 
             for _ in 0..number_of_notifier_threads {
-                s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     barrier.wait();
 
                     while keep_running.load(Ordering::Relaxed) {
                         let notifier = sut.notifier_builder().create().unwrap();
                         assert_that!(notifier.notify_with_custom_event_id(EVENT_ID), is_ok);
                     }
-                });
+                })?;
             }
 
-            for thread in listener_threads {
-                thread.join().unwrap();
-            }
-
+            finish_barrier.wait();
             keep_running.store(false, Ordering::Relaxed);
-        });
+
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]
@@ -799,23 +802,29 @@ pub mod service_event {
         const EVENT_ID: EventId = EventId::new(8);
 
         let keep_running = AtomicBool::new(true);
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let barrier = Barrier::new(number_of_listener_threads + number_of_notifier_threads);
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(number_of_listener_threads + number_of_notifier_threads)
+            .create(&handle)
+            .unwrap();
+        let finish_handle = BarrierHandle::new();
+        let finish_barrier = BarrierBuilder::new(number_of_listener_threads + 1)
+            .create(&finish_handle)
+            .unwrap();
 
         let sut = node
             .service_builder(&service_name)
             .event()
-            .max_listeners(number_of_listener_threads * 2)
-            .max_notifiers(number_of_notifier_threads)
+            .max_listeners((number_of_listener_threads * 2) as _)
+            .max_notifiers(number_of_notifier_threads as _)
             .create()
             .unwrap();
 
-        std::thread::scope(|s| {
-            let mut listener_threads = vec![];
+        thread_scope(|s| {
             for _ in 0..number_of_listener_threads {
-                listener_threads.push(s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     barrier.wait();
 
                     let mut counter = 0;
@@ -828,33 +837,35 @@ pub mod service_event {
                             listener = sut.listener_builder().create().unwrap();
                         }
                     }
-                }));
+
+                    finish_barrier.wait();
+                })?;
             }
 
             for _ in 0..number_of_notifier_threads {
-                s.spawn(|| {
+                s.thread_builder().spawn(|| {
                     let notifier = sut.notifier_builder().create().unwrap();
                     barrier.wait();
 
                     while keep_running.load(Ordering::Relaxed) {
                         assert_that!(notifier.notify_with_custom_event_id(EVENT_ID), is_ok);
                     }
-                });
+                })?;
             }
 
-            for thread in listener_threads {
-                thread.join().unwrap();
-            }
-
+            finish_barrier.wait();
             keep_running.store(false, Ordering::Relaxed);
-        });
+
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]
     pub fn service_persists_when_service_object_is_dropped_but_endpoints_are_still_alive<
         Sut: Service,
     >() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let event_id = EventId::new(12);
@@ -888,7 +899,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn ports_of_dropped_service_block_new_service_creation<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
@@ -922,7 +933,7 @@ pub mod service_event {
     #[conformance_test]
     pub fn service_can_be_opened_when_there_is_a_notifier<Sut: Service>() {
         let event_id = EventId::new(76);
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
@@ -960,7 +971,7 @@ pub mod service_event {
     #[conformance_test]
     pub fn service_can_be_opened_when_there_is_a_listener<Sut: Service>() {
         let event_id = EventId::new(93);
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
@@ -998,7 +1009,7 @@ pub mod service_event {
     #[conformance_test]
     pub fn try_wait_does_not_block<Sut: Service>() {
         let _watch_dog = Watchdog::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -1015,7 +1026,7 @@ pub mod service_event {
     #[conformance_test]
     pub fn timed_wait_blocks_for_at_least_timeout<Sut: Service>() {
         let _watch_dog = Watchdog::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -1027,16 +1038,16 @@ pub mod service_event {
 
         let listener = sut.listener_builder().create().unwrap();
 
-        let now = Instant::now();
+        let now = Time::now().unwrap();
         assert_that!(listener.timed_wait_one(TIMEOUT), is_ok);
-        assert_that!(now.elapsed(), time_at_least TIMEOUT);
+        assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
     }
 
     fn wait_blocks_until_notification<Sut: Service, F: FnMut(&Listener<Sut>) + Send>(
         mut wait_call: F,
     ) {
         let _watch_dog = Watchdog::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -1047,24 +1058,28 @@ pub mod service_event {
             .unwrap();
         let notifier = sut.notifier_builder().create().unwrap();
         let counter = AtomicU64::new(0);
-        let barrier = Barrier::new(2);
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
 
-        std::thread::scope(|s| {
-            let t = s.spawn(|| {
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
                 let listener = sut.listener_builder().create().unwrap();
                 barrier.wait();
                 wait_call(&listener);
                 counter.fetch_add(1, Ordering::Relaxed);
-            });
+            })?;
 
             barrier.wait();
-            std::thread::sleep(TIMEOUT);
+            nanosleep(TIMEOUT).unwrap();
             assert_that!(counter.load(Ordering::Relaxed), eq 0);
 
             assert_that!(notifier.notify_with_custom_event_id(EventId::new(13)).unwrap(), eq 1);
-            t.join().unwrap();
-            assert_that!(counter.load(Ordering::Relaxed), eq 1);
-        });
+
+            Ok(())
+        })
+        .unwrap();
+
+        assert_that!(counter.load(Ordering::Relaxed), eq 1);
     }
 
     #[conformance_test]
@@ -1118,7 +1133,7 @@ pub mod service_event {
     #[conformance_test]
     pub fn try_wait_all_does_not_block<Sut: Service>() {
         let _watch_dog = Watchdog::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -1138,7 +1153,7 @@ pub mod service_event {
     #[conformance_test]
     pub fn timed_wait_all_blocks_for_at_least_timeout<Sut: Service>() {
         let _watch_dog = Watchdog::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -1150,13 +1165,13 @@ pub mod service_event {
 
         let listener = sut.listener_builder().create().unwrap();
 
-        let now = Instant::now();
+        let now = Time::now().unwrap();
         let mut callback_called = false;
         assert_that!(
             listener.timed_wait_all(|_| callback_called = true, TIMEOUT),
             is_ok
         );
-        assert_that!(now.elapsed(), time_at_least TIMEOUT);
+        assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
         assert_that!(callback_called, eq false);
     }
 
@@ -1195,13 +1210,13 @@ pub mod service_event {
 
     fn wait_collects_all_notifications<
         Sut: Service,
-        F: FnMut(&Listener<Sut>, &mut HashSet<EventId>),
+        F: FnMut(&Listener<Sut>, &mut BTreeSet<EventId>),
     >(
         number_of_notifications: usize,
         mut wait_call: F,
     ) {
         let _watch_dog = Watchdog::new();
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -1218,7 +1233,7 @@ pub mod service_event {
             assert_that!(notifier.notify_with_custom_event_id(EventId::new(i)).unwrap(), eq 1);
         }
 
-        let mut id_set = HashSet::new();
+        let mut id_set = BTreeSet::new();
         wait_call(&listener, &mut id_set);
     }
 
@@ -1288,7 +1303,7 @@ pub mod service_event {
     #[conformance_test]
     pub fn deadline_can_be_set<S: Service>() {
         const DEADLINE: Duration = Duration::from_secs(556);
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let mut config = generate_isolated_config();
         config.defaults.event.deadline = None;
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
@@ -1318,7 +1333,7 @@ pub mod service_event {
     #[conformance_test]
     pub fn deadline_can_be_disabled<S: Service>() {
         const DEADLINE: Duration = Duration::from_secs(556);
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let mut config = generate_isolated_config();
         config.defaults.event.deadline = Some(DEADLINE);
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
@@ -1349,7 +1364,7 @@ pub mod service_event {
     pub fn notifier_is_informed_when_deadline_was_missed<S: Service>() {
         const DEADLINE: Duration = Duration::from_nanos(1);
         const TIMEOUT: Duration = Duration::from_millis(10);
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
@@ -1366,12 +1381,12 @@ pub mod service_event {
         let sut_open = node.service_builder(&service_name).event().open().unwrap();
         let notifier_open = sut_open.notifier_builder().create().unwrap();
 
-        std::thread::sleep(TIMEOUT);
+        nanosleep(TIMEOUT).unwrap();
         let result = notifier_create.notify();
         assert_that!(result.err(), eq Some(NotifierNotifyError::MissedDeadline));
         assert_that!(listener.try_wait_one().unwrap(), is_some);
 
-        std::thread::sleep(TIMEOUT);
+        nanosleep(TIMEOUT).unwrap();
         let result = notifier_open.notify();
         assert_that!(result.err(), eq Some(NotifierNotifyError::MissedDeadline));
         assert_that!(listener.try_wait_one().unwrap(), is_some);
@@ -1381,7 +1396,7 @@ pub mod service_event {
     pub fn when_deadline_is_not_missed_notification_works<S: Service>() {
         const DEADLINE: Duration = Duration::from_secs(3600);
         const TIMEOUT: Duration = Duration::from_millis(10);
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
@@ -1398,11 +1413,11 @@ pub mod service_event {
         let sut_open = node.service_builder(&service_name).event().open().unwrap();
         let notifier_open = sut_open.notifier_builder().create().unwrap();
 
-        std::thread::sleep(TIMEOUT);
+        nanosleep(TIMEOUT).unwrap();
         assert_that!(notifier_create.notify(), is_ok);
         assert_that!(listener.try_wait_one().unwrap(), is_some);
 
-        std::thread::sleep(TIMEOUT);
+        nanosleep(TIMEOUT).unwrap();
         assert_that!(notifier_open.notify(), is_ok);
         assert_that!(listener.try_wait_one().unwrap(), is_some);
     }
@@ -1410,7 +1425,7 @@ pub mod service_event {
     #[conformance_test]
     pub fn listing_all_notifiers_works<S: Service>() {
         const NUMBER_OF_NOTIFIERS: usize = 18;
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
@@ -1442,7 +1457,7 @@ pub mod service_event {
     #[conformance_test]
     pub fn listing_all_notifiers_stops_on_request<S: Service>() {
         const NUMBER_OF_NOTIFIERS: usize = 11;
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
@@ -1471,7 +1486,7 @@ pub mod service_event {
     #[conformance_test]
     pub fn listing_all_listeners_works<S: Service>() {
         const NUMBER_OF_LISTENERS: usize = 14;
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
@@ -1503,7 +1518,7 @@ pub mod service_event {
     #[conformance_test]
     pub fn listing_all_listeners_stops_on_request<S: Service>() {
         const NUMBER_OF_LISTENERS: usize = 11;
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
@@ -1531,7 +1546,7 @@ pub mod service_event {
 
     #[conformance_test]
     pub fn notifier_does_not_notify_listener_from_same_node_id_when_requested<Sut: Service>() {
-        let service_name = generate_name();
+        let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
