@@ -538,9 +538,9 @@ impl<
     pub fn max_loaned_samples(&self) -> usize {
         self.publisher_shared_state
             .lock()
-            .sender.sender_max_borrowed_samples
+            .sender
+            .sender_max_borrowed_samples
     }
-
 }
 
 ////////////////////////

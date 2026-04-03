@@ -13,9 +13,9 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    iox2_service_type_e, iox2_unable_to_deliver_strategy_e, iox2_allocation_strategy_e, iox2_unique_publisher_id_h,
-    iox2_unique_publisher_id_t, AssertNonNullHandle, HandleToType, PayloadFfi,
-    SampleMutUninitUnion, UserHeaderFfi, IOX2_OK,
+    iox2_allocation_strategy_e, iox2_service_type_e, iox2_unable_to_deliver_strategy_e,
+    iox2_unique_publisher_id_h, iox2_unique_publisher_id_t, AssertNonNullHandle, HandleToType,
+    PayloadFfi, SampleMutUninitUnion, UserHeaderFfi, IOX2_OK,
 };
 
 use iceoryx2::port::publisher::Publisher;
@@ -319,7 +319,6 @@ pub unsafe extern "C" fn iox2_publisher_unable_to_deliver_strategy(
     }
 }
 
-
 /// Returns the strategy the publisher follows when the slice length requested exceeds the current slice buffer
 ///
 /// # Arguments
@@ -340,21 +339,10 @@ pub unsafe extern "C" fn iox2_publisher_allocation_strategy(
     let publisher = &mut *publisher_handle.as_type();
 
     match publisher.service_type {
-        iox2_service_type_e::IPC => publisher
-            .value
-            .as_mut()
-            .ipc
-            .allocation_strategy()
-            .into(),
-        iox2_service_type_e::LOCAL => publisher
-            .value
-            .as_mut()
-            .local
-            .allocation_strategy()
-            .into(),
+        iox2_service_type_e::IPC => publisher.value.as_mut().ipc.allocation_strategy().into(),
+        iox2_service_type_e::LOCAL => publisher.value.as_mut().local.allocation_strategy().into(),
     }
 }
-
 
 /// Returns the maximum `[u8]` length that can be loaned in one sample, i.e. the max number of
 /// elements in the `[u8]` payload type used by the C binding.
@@ -403,8 +391,10 @@ pub unsafe extern "C" fn iox2_publisher_max_loaned_samples(
 
     let publisher = &mut *publisher_handle.as_type();
     match publisher.service_type {
-        iox2_service_type_e::IPC => {publisher.value.as_mut().ipc.max_loaned_samples() as c_size_t},
-        iox2_service_type_e::LOCAL => {publisher.value.as_mut().local.max_loaned_samples() as c_size_t},
+        iox2_service_type_e::IPC => publisher.value.as_mut().ipc.max_loaned_samples() as c_size_t,
+        iox2_service_type_e::LOCAL => {
+            publisher.value.as_mut().local.max_loaned_samples() as c_size_t
+        }
     }
 }
 
