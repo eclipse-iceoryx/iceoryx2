@@ -1674,28 +1674,31 @@ TYPED_TEST(ServicePublishSubscribeTest, only_max_subscribers_can_be_created) {
 
 TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_max_loaned_samples) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    constexpr uint64_t MAX_LOANED_SAMPLES_TEST_VALUE = 100;
+    constexpr uint64_t MAX_LOANED_SAMPLES_TEST_VALUE_1 = 100;
+    constexpr uint64_t MAX_LOANED_SAMPLES_TEST_VALUE_100 = 100;
+    constexpr uint64_t MAX_PUBLISHERS = 2;
 
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template publish_subscribe<uint64_t>()
-                       .max_publishers(3) // Allow multiple publishers for this test
+                       .max_publishers(MAX_PUBLISHERS)
                        .create()
                        .value();
 
     // Test with max_loaned_samples = 1
-    auto publisher_1 = service.publisher_builder().max_loaned_samples(1).create().value();
-    ASSERT_THAT(publisher_1.max_loaned_samples(), Eq(1));
+    auto publisher_1 = service.publisher_builder().max_loaned_samples(MAX_LOANED_SAMPLES_TEST_VALUE_1).create().value();
+    ASSERT_THAT(publisher_1.max_loaned_samples(), Eq(MAX_LOANED_SAMPLES_TEST_VALUE_1));
 
     // Test with max_loaned_samples = 100
-    auto publisher_100 = service.publisher_builder().max_loaned_samples(MAX_LOANED_SAMPLES_TEST_VALUE).create().value();
-    ASSERT_THAT(publisher_100.max_loaned_samples(), Eq(MAX_LOANED_SAMPLES_TEST_VALUE));
+    auto publisher_100 = service.publisher_builder().max_loaned_samples(MAX_LOANED_SAMPLES_TEST_VALUE_100).create().value();
+    ASSERT_THAT(publisher_100.max_loaned_samples(), Eq(MAX_LOANED_SAMPLES_TEST_VALUE_100));
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_allocation_strategy) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t MAX_PUBLISHERS = 4;
     using ValueType = uint8_t;
 
     const auto service_name = iox2_testing::generate_service_name();
@@ -1703,7 +1706,7 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_allocation_strategy) {
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name)
                        .template publish_subscribe<bb::Slice<ValueType>>()
-                       .max_publishers(5) // Allow multiple publishers for this test
+                       .max_publishers(MAX_PUBLISHERS)
                        .create()
                        .value();
 
