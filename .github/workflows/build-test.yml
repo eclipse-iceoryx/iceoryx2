@@ -8,6 +8,9 @@ on:
     types: [opened, ready_for_review, reopened, synchronize]
   workflow_dispatch:
 
+env:
+  CARGO_INCREMENTAL: "0" # incremental builds create many additional small files, which slow down builds on Windows and are not needed in the CI
+
 jobs:
   changes:
     if: github.event.pull_request.draft == false
