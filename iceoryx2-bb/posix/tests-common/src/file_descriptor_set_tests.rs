@@ -134,7 +134,7 @@ pub fn timed_wait_works() {
     let fd_set = FileDescriptorSet::new();
     let _guard = fd_set.add(&sut_receiver).unwrap();
     let send_data: Vec<u8> = vec![1u8, 3u8, 3u8, 7u8, 13u8, 37u8];
-    sut_sender.blocking_send(send_data.as_slice()).unwrap();
+    sut_sender.try_send(send_data.as_slice()).unwrap();
 
     let mut result = vec![];
     let number_of_notifications = fd_set
@@ -165,7 +165,7 @@ pub fn blocking_wait_immediately_returns_notifications() {
     let fd_set = FileDescriptorSet::new();
     let _guard = fd_set.add(&sut_receiver).unwrap();
     let send_data: Vec<u8> = vec![1u8, 3u8, 3u8, 7u8, 13u8, 37u8];
-    sut_sender.blocking_send(send_data.as_slice()).unwrap();
+    sut_sender.try_send(send_data.as_slice()).unwrap();
 
     let mut result = vec![];
     let number_of_notifications = fd_set

@@ -80,7 +80,7 @@ pub fn send_receive_works() {
         .unwrap();
 
     let send_data: Vec<u8> = vec![1u8, 3u8, 3u8, 7u8, 13u8, 37u8];
-    sut_sender.blocking_send(send_data.as_slice()).unwrap();
+    sut_sender.try_send(send_data.as_slice()).unwrap();
 
     let mut receive_data: Vec<u8> = vec![0; 6];
     sut_receiver
@@ -167,7 +167,7 @@ fn blocking_receive_blocks() {
 
         nanosleep(TIMEOUT).unwrap();
         let received_message_old = received_message.load(Ordering::Relaxed);
-        sut_sender.blocking_send(send_data.as_slice()).unwrap();
+        sut_sender.try_send(send_data.as_slice()).unwrap();
 
         assert_that!(received_message_old, eq false);
 
@@ -176,85 +176,6 @@ fn blocking_receive_blocks() {
     .expect("failed to spawn thread");
 
     assert_that!(received_message.load(Ordering::Relaxed), eq true);
-}
-
-#[test]
-fn blocking_send_blocks() {
-    let _watchdog = Watchdog::new();
-
-    create_test_directory();
-    let socket_name = generate_file_path();
-    let handle = BarrierHandle::new();
-    let handle_2 = BarrierHandle::new();
-    let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
-    let barrier_2 = BarrierBuilder::new(2).create(&handle_2).unwrap();
-    let send_data: Vec<u8> = vec![1u8, 3u8, 3u8, 7u8, 13u8, 73u8];
-
-    thread_scope(|s| {
-        s.thread_builder().spawn(|| {
-            barrier.wait();
-            let sut_sender = UnixDatagramSenderBuilder::new(&socket_name)
-                .create()
-                .unwrap();
-
-            while let Ok(true) = sut_sender.try_send(send_data.as_slice()) {}
-
-            let start = Time::now().unwrap();
-            barrier_2.wait();
-
-            let result = sut_sender.blocking_send(send_data.as_slice());
-
-            assert_that!(result, is_ok);
-            assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
-        })?;
-
-        let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
-            .permission(Permission::OWNER_ALL)
-            .creation_mode(CreationMode::PurgeAndCreate)
-            .create()
-            .unwrap();
-        barrier.wait();
-        barrier_2.wait();
-
-        nanosleep(TIMEOUT).unwrap();
-
-        let mut receive_data: Vec<u8> = vec![0, 0, 0, 0, 0, 0];
-        while let Ok(count) = sut_receiver.try_receive(receive_data.as_mut_slice()) {
-            if count == 0 {
-                break;
-            }
-        }
-
-        Ok(())
-    })
-    .unwrap();
-}
-
-#[test]
-fn timed_send_blocks_at_least_for_timeout() {
-    let _watchdog = Watchdog::new();
-
-    create_test_directory();
-    let socket_name = generate_file_path();
-    let send_data: Vec<u8> = vec![1u8, 3u8, 3u8, 7u8, 13u8, 173u8];
-
-    let _sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
-        .permission(Permission::OWNER_ALL)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
-    let sut_sender = UnixDatagramSenderBuilder::new(&socket_name)
-        .create()
-        .unwrap();
-
-    while let Ok(true) = sut_sender.try_send(send_data.as_slice()) {}
-
-    let start = Time::now().unwrap();
-
-    let result = sut_sender.timed_send(send_data.as_slice(), TIMEOUT);
-
-    assert_that!(result, is_ok);
-    assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
 }
 
 #[test]
@@ -370,7 +291,7 @@ pub fn sending_receiving_credentials_works() {
     let mut msg = SocketAncillary::new();
     msg.set_creds(&send_credentials);
 
-    sut_sender.blocking_send_msg(&mut msg).unwrap();
+    sut_sender.try_send_msg(&mut msg).unwrap();
 
     let mut received_msg = SocketAncillary::new();
     sut_receiver.try_receive_msg(&mut received_msg).unwrap();

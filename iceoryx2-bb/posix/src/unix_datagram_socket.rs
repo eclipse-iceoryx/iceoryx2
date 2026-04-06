@@ -581,7 +581,7 @@ impl UnixDatagramSender {
         self.socket.set_non_blocking(value)
     }
 
-    fn set_timeout(&self, timeout: Duration) -> Result<(), UnixDatagramSetSocketOptionError> {
+    fn _set_timeout(&self, timeout: Duration) -> Result<(), UnixDatagramSetSocketOptionError> {
         self.socket.set_socket_option(
             "Unable to set send timeout",
             &timeout.as_timeval(),
@@ -657,34 +657,9 @@ impl UnixDatagramSender {
         self.send_msg(uds_msg)
     }
 
-    /// Blocks until the [`SocketAncillary`] message can be sent or the timeout has passed.
-    /// Returns true if the message was sent, otherwise false.
-    pub fn timed_send_msg(
-        &self,
-        uds_msg: &mut SocketAncillary,
-        timeout: Duration,
-    ) -> Result<bool, UnixDatagramSendMsgError> {
-        let msg = "Unable to timed send message";
-        fail!(from self, when self.set_non_blocking(false),
-                "{} since the socket could not bet set into blocking state.", msg);
-        fail!(from self, when  self.set_timeout(timeout),
-                "{} since the socket timeout could not be set.", msg);
-        self.send_msg(uds_msg)
-    }
-
-    /// Blocks until the [`SocketAncillary`] message can be sent.
-    pub fn blocking_send_msg(
-        &self,
-        uds_msg: &mut SocketAncillary,
-    ) -> Result<(), UnixDatagramSendMsgError> {
-        let msg = "Unable to blocking send message";
-        fail!(from self, when self.set_non_blocking(false),
-                "{} since the socket could not bet set into blocking state.", msg);
-        fail!(from self, when  self.set_timeout(BLOCKING_TIMEOUT),
-                "{} since the socket blocking timeout could not be set.", msg);
-        self.send_msg(uds_msg)?;
-        Ok(())
-    }
+    // NOTE: 'timed_send_msg' and 'blocking_send_msg' do not work on all platforms, most notably FreeBSD and Windows;
+    //       on FreeBSD, instead of blocking when the buffer is full, the `send` call immediately returns with ENOBUFS;
+    //       since theses calls are not used in our code base, they were removed
 
     fn send(&self, data: &[u8]) -> Result<bool, UnixDatagramSendError> {
         let bytes_sent = unsafe {
@@ -731,28 +706,9 @@ impl UnixDatagramSender {
         self.send(data)
     }
 
-    /// Blocks until the data was sent or the timeout has passed.
-    /// If the data was sent it returns true, otherwise false.
-    pub fn timed_send(&self, data: &[u8], timeout: Duration) -> Result<(), UnixDatagramSendError> {
-        let msg = "Unable to timed send data";
-        fail!(from self, when self.set_non_blocking(false),
-                "{} since the socket could not bet set into blocking state.", msg);
-        fail!(from self, when  self.set_timeout(timeout),
-                "{} since the socket timeout could not be set.", msg);
-        self.send(data)?;
-        Ok(())
-    }
-
-    /// Blocks until the data was sent.
-    pub fn blocking_send(&self, data: &[u8]) -> Result<(), UnixDatagramSendError> {
-        let msg = "Unable to blocking send data";
-        fail!(from self, when self.set_non_blocking(false),
-                "{} since the socket could not bet set into blocking state.", msg);
-        fail!(from self, when  self.set_timeout(BLOCKING_TIMEOUT),
-                "{} since the socket blocking timeout could not be set.", msg);
-        self.send(data)?;
-        Ok(())
-    }
+    // NOTE: 'timed_send' and 'blocking_send' do not work on all platforms, most notably FreeBSD and Windows;
+    //       on FreeBSD, instead of blocking when the buffer is full, the `send` call immediately returns with ENOBUFS;
+    //       since theses calls are not used in our code base, they were removed
 }
 
 impl FileDescriptorBased for UnixDatagramSender {
