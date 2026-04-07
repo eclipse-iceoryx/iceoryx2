@@ -13,6 +13,8 @@
 #ifndef IOX2_INCLUDE_GUARD_BB_STL_OPTIONAL_HPP
 #define IOX2_INCLUDE_GUARD_BB_STL_OPTIONAL_HPP
 
+#include "iox2/bb/detail/attributes.hpp"
+
 #include <cstdlib>
 #include <memory>
 #include <type_traits>
@@ -79,10 +81,7 @@ class OptionalValueHolder {
         }
     }
 
-#if __cplusplus >= 202002L
-    constexpr
-#endif
-        ~OptionalValueHolder() {
+    IOX2_CONSTEXPR_DTOR ~OptionalValueHolder() {
         reset();
     }
 
@@ -210,10 +209,7 @@ class Optional {
     }
 
     // destructor
-#if __cplusplus >= 202002L
-    constexpr
-#endif
-        ~Optional() = default;
+    IOX2_CONSTEXPR_DTOR ~Optional() = default;
 
     // assignment
     constexpr auto operator=(NulloptT& /* unused */) noexcept -> Optional& {
