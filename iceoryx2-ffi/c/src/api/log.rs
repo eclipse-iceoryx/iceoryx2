@@ -15,12 +15,12 @@
 
 // BEGIN type definition
 
-use core::ffi::{c_char, CStr};
+use core::ffi::{CStr, c_char};
 
 use alloc::string::ToString;
 
 use iceoryx2_log::{
-    get_log_level, set_log_level, set_logger, Log, LogLevel, __internal_print_log_msg,
+    __internal_print_log_msg, Log, LogLevel, get_log_level, set_log_level, set_logger,
 };
 
 use iceoryx2_bb_concurrency::once::Once;
@@ -127,7 +127,7 @@ pub type iox2_log_callback = extern "C" fn(iox2_log_level_e, *const c_char, *con
 ///
 ///  * origin must be either NULL or a valid pointer to a string.
 ///  * message must be a valid pointer to a string
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_log(
     log_level: iox2_log_level_e,
     origin: *const c_char,
@@ -152,7 +152,7 @@ pub unsafe extern "C" fn iox2_log(
 
 /// Sets the log level from environment variable or defaults it if variable does not exist
 #[cfg(feature = "std")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_set_log_level_from_env_or_default() {
     use iceoryx2_log::set_log_level_from_env_or_default;
 
@@ -161,7 +161,7 @@ pub unsafe extern "C" fn iox2_set_log_level_from_env_or_default() {
 
 /// Sets the log level from environment variable or to a user given value if variable does not exist
 #[cfg(feature = "std")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_set_log_level_from_env_or(v: iox2_log_level_e) {
     use iceoryx2_log::set_log_level_from_env_or;
 
@@ -169,13 +169,13 @@ pub unsafe extern "C" fn iox2_set_log_level_from_env_or(v: iox2_log_level_e) {
 }
 
 /// Sets the log level.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_set_log_level(v: iox2_log_level_e) {
     set_log_level(v.into());
 }
 
 /// Returns the current log level.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_get_log_level() -> iox2_log_level_e {
     get_log_level().into()
 }
@@ -183,7 +183,7 @@ pub unsafe extern "C" fn iox2_get_log_level() -> iox2_log_level_e {
 /// Sets the logger that shall be used. This function can only be called once and must be called
 /// before any log message was created.
 /// It returns true if the logger was set, otherwise false.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_set_logger(logger: iox2_log_callback) -> bool {
     INIT.call_once(|| {
         LOGGER = Some(CLogger::new(logger));

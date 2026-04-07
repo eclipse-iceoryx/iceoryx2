@@ -13,8 +13,8 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
-use crate::posix::types::*;
 use crate::ErrnoEnumGenerator;
+use crate::posix::types::*;
 use core::{ffi::CStr, fmt::Display};
 
 use iceoryx2_pal_concurrency_sync::cell::Cell;

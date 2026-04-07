@@ -52,7 +52,7 @@ use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
 use crate::service::service_hash::ServiceHash;
 use crate::service::service_name::ServiceName;
-use crate::service::{self, dynamic_config, static_config, NoResource, ServiceState};
+use crate::service::{self, NoResource, ServiceState, dynamic_config, static_config};
 use alloc::sync::Arc;
 
 use super::nodes;
@@ -75,25 +75,25 @@ pub struct PortFactory<
 }
 
 unsafe impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: Debug + ZeroCopySend,
-    > Send for PortFactory<Service, Payload, UserHeader>
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Send for PortFactory<Service, Payload, UserHeader>
 {
 }
 unsafe impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: Debug + ZeroCopySend,
-    > Sync for PortFactory<Service, Payload, UserHeader>
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Sync for PortFactory<Service, Payload, UserHeader>
 {
 }
 
 impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: Debug + ZeroCopySend,
-    > crate::service::port_factory::PortFactory for PortFactory<Service, Payload, UserHeader>
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> crate::service::port_factory::PortFactory for PortFactory<Service, Payload, UserHeader>
 {
     type Service = Service;
     type StaticConfig = static_config::publish_subscribe::StaticConfig;
@@ -136,10 +136,10 @@ impl<
 }
 
 impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: Debug + ZeroCopySend,
-    > PortFactory<Service, Payload, UserHeader>
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> PortFactory<Service, Payload, UserHeader>
 {
     pub(crate) fn new(service: ServiceState<Service, NoResource>) -> Self {
         Self {

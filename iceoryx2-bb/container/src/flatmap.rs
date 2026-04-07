@@ -38,9 +38,9 @@ use crate::slotmap::{MetaSlotMap, RelocatableSlotMap};
 use core::fmt::Debug;
 use core::mem::MaybeUninit;
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
-use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
 use iceoryx2_bb_elementary_traits::owning_pointer::GenericOwningPointer;
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
@@ -99,11 +99,13 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
     #[inline(always)]
     fn verify_init(&self, source: &str) {
         debug_assert!(
-                self.is_initialized
-                    .load(core::sync::atomic::Ordering::Relaxed),
-                "From: MetaFlatMap<{}, {}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
-                core::any::type_name::<K>(), core::any::type_name::<V>(), source
-            );
+            self.is_initialized
+                .load(core::sync::atomic::Ordering::Relaxed),
+            "From: MetaFlatMap<{}, {}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
+            core::any::type_name::<K>(),
+            core::any::type_name::<V>(),
+            source
+        );
     }
 
     pub(crate) unsafe fn insert_impl<F: Fn(*const u8, *const u8) -> bool + ?Sized>(

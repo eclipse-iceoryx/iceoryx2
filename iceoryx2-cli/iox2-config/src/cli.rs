@@ -15,8 +15,8 @@ use clap::Subcommand;
 
 use clap::ValueEnum;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
-use iceoryx2_cli::help_template;
 use iceoryx2_cli::HelpOptions;
+use iceoryx2_cli::help_template;
 
 #[derive(Parser)]
 #[command(

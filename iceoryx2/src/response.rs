@@ -72,20 +72,20 @@ pub struct Response<
 }
 
 unsafe impl<
-        Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Send for Response<Service, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Send for Response<Service, ResponsePayload, ResponseHeader>
 where
     Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>: Send + Sync,
 {
 }
 
 impl<
-        Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Drop for Response<Service, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Drop for Response<Service, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
         self.client_shared_state
@@ -96,10 +96,10 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Debug for Response<Service, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Debug for Response<Service, ResponsePayload, ResponseHeader>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
@@ -114,10 +114,10 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Deref for Response<Service, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Deref for Response<Service, ResponsePayload, ResponseHeader>
 {
     type Target = ResponsePayload;
     fn deref(&self) -> &Self::Target {
@@ -126,10 +126,10 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Response<Service, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Response<Service, ResponsePayload, ResponseHeader>
 {
     /// Returns a reference to the
     /// [`ResponseHeader`](service::header::request_response::ResponseHeader).

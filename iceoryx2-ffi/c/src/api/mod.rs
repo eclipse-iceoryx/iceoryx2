@@ -289,7 +289,7 @@ trait AssertNonNullHandle {
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_semantic_string_error_string(
     error: iox2_semantic_string_error_e,
 ) -> *const c_char {

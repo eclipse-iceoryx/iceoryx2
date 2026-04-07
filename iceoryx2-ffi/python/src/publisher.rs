@@ -164,10 +164,10 @@ impl Publisher {
     /// After this call the `Publisher` is no longer usable!
     pub fn delete(&mut self) {
         match &mut *self.value.lock() {
-            PublisherType::Ipc(ref mut v) => {
+            PublisherType::Ipc(v) => {
                 v.take();
             }
-            PublisherType::Local(ref mut v) => {
+            PublisherType::Local(v) => {
                 v.take();
             }
         }

@@ -15,13 +15,13 @@
 use core::ffi::{c_int, c_void};
 use core::mem::ManuallyDrop;
 
-use crate::api::{IntoCInt, ResponseMutUninitUnion};
 use crate::IOX2_OK;
+use crate::api::{IntoCInt, ResponseMutUninitUnion};
 
 use super::{
-    c_size_t, iox2_request_header_h, iox2_request_header_t, iox2_response_mut_h,
-    iox2_response_mut_t, iox2_send_error_e, iox2_service_type_e, AssertNonNullHandle, HandleToType,
-    PayloadFfi, UserHeaderFfi,
+    AssertNonNullHandle, HandleToType, PayloadFfi, UserHeaderFfi, c_size_t, iox2_request_header_h,
+    iox2_request_header_t, iox2_response_mut_h, iox2_response_mut_t, iox2_send_error_e,
+    iox2_service_type_e,
 };
 use iceoryx2::active_request::ActiveRequest;
 use iceoryx2::prelude::*;
@@ -146,7 +146,7 @@ impl HandleToType for iox2_active_request_h_ref {
 /// # Safety
 ///
 /// * `handle` must be a valid handle
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_active_request_has_disconnect_hint(
     handle: iox2_active_request_h_ref,
 ) -> bool {
@@ -170,7 +170,7 @@ pub unsafe extern "C" fn iox2_active_request_has_disconnect_hint(
 /// # Safety
 ///
 /// * `handle` must be a valid handle
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_active_request_is_connected(
     handle: iox2_active_request_h_ref,
 ) -> bool {
@@ -193,7 +193,7 @@ pub unsafe extern "C" fn iox2_active_request_is_connected(
 /// * `header_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
 ///   [`iox2_request_header_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `header_handle_ptr` valid pointer to a [`iox2_request_header_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_active_request_header(
     handle: iox2_active_request_h_ref,
     header_struct_ptr: *mut iox2_request_header_t,
@@ -228,7 +228,7 @@ pub unsafe extern "C" fn iox2_active_request_header(
 ///
 /// * `handle` - Must be a valid [`iox2_active_request_h_ref`]
 ///   obtained by [`iox2_server_receive`](crate::iox2_server_receive).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_active_request_user_header(
     handle: iox2_active_request_h_ref,
     header_ptr: *mut *const c_void,
@@ -254,7 +254,7 @@ pub unsafe extern "C" fn iox2_active_request_user_header(
 ///   obtained by [`iox2_server_receive`](crate::iox2_server_receive).
 /// * `payload_ptr` a valid, non-null pointer pointing to a `*const c_void` pointer.
 /// * `number_of_elements` (optional) either a null pointer or a valid pointer pointing to a [`c_size_t`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_active_request_payload(
     handle: iox2_active_request_h_ref,
     payload_ptr: *mut *const c_void,
@@ -315,7 +315,7 @@ pub unsafe extern "C" fn iox2_active_request_payload(
 ///
 /// * `active_request_handle` is valid and non-null
 /// * The `response_handle_ptr` is pointing to a valid [`iox2_response_mut_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_active_request_loan_slice_uninit(
     active_request_handle: iox2_active_request_h_ref,
     response_struct_ptr: *mut iox2_response_mut_t,
@@ -422,7 +422,7 @@ unsafe fn send_copy<S: Service>(
 ///
 /// * `active_request_handle` is valid and non-null
 /// * `data_ptr` non-null pointer to a valid position in memory
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_active_request_send_copy(
     active_request_handle: iox2_active_request_h_ref,
     data_ptr: *const c_void,
@@ -462,7 +462,7 @@ pub unsafe extern "C" fn iox2_active_request_send_copy(
 /// * The `handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_active_request_t`] can be re-used with a call to
 ///   [`iox2_server_receive`](crate::iox2_server_receive)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_active_request_drop(handle: iox2_active_request_h) {
     debug_assert!(!handle.is_null());
 

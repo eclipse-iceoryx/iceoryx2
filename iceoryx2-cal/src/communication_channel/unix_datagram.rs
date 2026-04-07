@@ -274,7 +274,7 @@ impl<T: Copy + Debug> Connector<T> {
                     "{} since another instance is already connected.", msg);
             }
             Err(UnixDatagramSenderCreationError::DoesNotExist) => {
-                return Err(CommunicationChannelOpenError::DoesNotExist)
+                return Err(CommunicationChannelOpenError::DoesNotExist);
             }
             _ => {
                 fail!(from self, with CommunicationChannelOpenError::InternalFailure,

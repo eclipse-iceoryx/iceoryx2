@@ -58,25 +58,24 @@ pub struct RequestMutUninit<
 }
 
 unsafe impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Send
-    for RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Send for RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 where
     Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>: Send + Sync,
 {
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Debug
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Debug
     for RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -85,12 +84,12 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     /// Returns a reference to the iceoryx2 internal
     /// [`service::header::request_response::RequestHeader`]
@@ -120,12 +119,12 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    >
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+>
     RequestMutUninit<
         Service,
         MaybeUninit<RequestPayload>,
@@ -189,12 +188,12 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    >
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+>
     RequestMutUninit<
         Service,
         [MaybeUninit<RequestPayload>],
@@ -293,12 +292,12 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + Copy + ZeroCopySend,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    >
+    Service: crate::service::Service,
+    RequestPayload: Debug + Copy + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+>
     RequestMutUninit<
         Service,
         [MaybeUninit<RequestPayload>],

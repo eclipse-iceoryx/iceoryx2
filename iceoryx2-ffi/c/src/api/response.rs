@@ -20,8 +20,8 @@ use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use super::{
-    c_size_t, iox2_response_header_h, iox2_response_header_t, iox2_service_type_e,
-    AssertNonNullHandle, HandleToType, PayloadFfi, UserHeaderFfi,
+    AssertNonNullHandle, HandleToType, PayloadFfi, UserHeaderFfi, c_size_t, iox2_response_header_h,
+    iox2_response_header_t, iox2_service_type_e,
 };
 
 pub(super) union ResponseUnion {
@@ -120,7 +120,7 @@ impl HandleToType for iox2_response_h_ref {
 /// * `dest_struct_ptr` must not be `null` and the struct it is pointing to must not contain valid data, i.e. initialized. It can be moved or dropped, though.
 /// * `dest_handle_ptr` must not be `null`
 #[doc(hidden)]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_response_move(
     source_struct_ptr: *mut iox2_response_t,
     dest_struct_ptr: *mut iox2_response_t,
@@ -154,7 +154,7 @@ pub unsafe extern "C" fn iox2_response_move(
 /// * `header_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
 ///   [`iox2_response_header_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `header_handle_ptr` valid pointer to a [`iox2_response_header_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_response_header(
     handle: iox2_response_h_ref,
     header_struct_ptr: *mut iox2_response_header_t,
@@ -189,7 +189,7 @@ pub unsafe extern "C" fn iox2_response_header(
 ///
 /// * `handle` obtained by [`iox2_pending_response_receive()`](crate::iox2_pending_response_receive())
 /// * `header_ptr` valid pointer to a `*const c_void`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_response_user_header(
     handle: iox2_response_h_ref,
     header_ptr: *mut *const c_void,
@@ -213,7 +213,7 @@ pub unsafe extern "C" fn iox2_response_user_header(
 ///
 /// * `handle` obtained by [`iox2_pending_response_receive()`](crate::iox2_pending_response_receive())
 /// * `payload_ptr` valid pointer to a `*const c_void`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_response_payload(
     handle: iox2_response_h_ref,
     payload_ptr: *mut *const c_void,
@@ -244,7 +244,7 @@ pub unsafe extern "C" fn iox2_response_payload(
 /// # Safety
 ///
 /// * `handle` obtained by [`iox2_pending_response_receive()`](crate::iox2_pending_response_receive())
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_response_drop(handle: iox2_response_h) {
     debug_assert!(!handle.is_null());
 

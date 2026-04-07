@@ -14,19 +14,19 @@
 
 use core::mem::ManuallyDrop;
 
-use crate::api::ServerUnion;
 use crate::IOX2_OK;
+use crate::api::ServerUnion;
 
-use super::{
-    c_size_t, iox2_allocation_strategy_e, iox2_server_h, iox2_server_t, iox2_service_type_e,
-    iox2_unable_to_deliver_strategy_e, IntoCInt, PayloadFfi, UserHeaderFfi,
-};
 use super::{AssertNonNullHandle, HandleToType};
+use super::{
+    IntoCInt, PayloadFfi, UserHeaderFfi, c_size_t, iox2_allocation_strategy_e, iox2_server_h,
+    iox2_server_t, iox2_service_type_e, iox2_unable_to_deliver_strategy_e,
+};
 use core::ffi::{c_char, c_int};
 use iceoryx2::service::port_factory::server::{PortFactoryServer, ServerCreateError};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_ffi_macros::{iceoryx2_ffi, CStrRepr};
+use iceoryx2_ffi_macros::{CStrRepr, iceoryx2_ffi};
 
 // BEGIN types definition
 #[repr(C)]
@@ -189,7 +189,7 @@ impl HandleToType for iox2_port_factory_server_builder_h_ref {
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_server_create_error_string(
     error: iox2_server_create_error_e,
 ) -> *const c_char {
@@ -207,7 +207,7 @@ pub unsafe extern "C" fn iox2_server_create_error_string(
 /// # Safety
 ///
 /// * `port_factory_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_server_builder_set_allocation_strategy(
     port_factory_handle: iox2_port_factory_server_builder_h_ref,
     value: iox2_allocation_strategy_e,
@@ -244,7 +244,7 @@ pub unsafe extern "C" fn iox2_port_factory_server_builder_set_allocation_strateg
 /// # Safety
 ///
 /// * `port_factory_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_server_builder_set_initial_max_slice_len(
     port_factory_handle: iox2_port_factory_server_builder_h_ref,
     value: c_size_t,
@@ -281,7 +281,7 @@ pub unsafe extern "C" fn iox2_port_factory_server_builder_set_initial_max_slice_
 /// # Safety
 ///
 /// * `port_factory_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_server_builder_set_max_loaned_responses_per_request(
     port_factory_handle: iox2_port_factory_server_builder_h_ref,
     value: c_size_t,
@@ -318,7 +318,7 @@ pub unsafe extern "C" fn iox2_port_factory_server_builder_set_max_loaned_respons
 /// # Safety
 ///
 /// * `port_factory_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_server_builder_unable_to_deliver_strategy(
     port_factory_handle: iox2_port_factory_server_builder_h_ref,
     value: iox2_unable_to_deliver_strategy_e,
@@ -359,7 +359,7 @@ pub unsafe extern "C" fn iox2_port_factory_server_builder_unable_to_deliver_stra
 /// * The `port_factory_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_port_factory_server_builder_t`]
 ///   can be re-used with a call to  [`iox2_port_factory_request_response_server_builder`](crate::iox2_port_factory_request_response_server_builder)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_server_builder_create(
     port_factory_handle: iox2_port_factory_server_builder_h,
     struct_ptr: *mut iox2_server_t,

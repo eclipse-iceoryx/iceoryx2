@@ -14,8 +14,8 @@
 #![allow(dead_code)]
 
 use crate::api::{
-    iox2_callback_context, iox2_event_id_t, iox2_service_type_e, iox2_unique_listener_id_h,
-    iox2_unique_listener_id_t, AssertNonNullHandle, HandleToType, IntoCInt, IOX2_OK,
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, iox2_callback_context, iox2_event_id_t,
+    iox2_service_type_e, iox2_unique_listener_id_h, iox2_unique_listener_id_t,
 };
 use crate::iox2_file_descriptor_ptr;
 
@@ -24,8 +24,8 @@ use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
 use iceoryx2_cal::event::ListenerWaitError;
-use iceoryx2_ffi_macros::iceoryx2_ffi;
 use iceoryx2_ffi_macros::CStrRepr;
+use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
@@ -182,7 +182,7 @@ pub type iox2_listener_wait_all_callback =
 /// # Safety
 ///
 /// * The returned pointer must not be modified or freed and is only valid as long as the program runs
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_listener_wait_error_string(
     error: iox2_listener_wait_error_e,
 ) -> *const c_char {
@@ -200,7 +200,7 @@ pub unsafe extern "C" fn iox2_listener_wait_error_string(
 /// * The `listener_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_listener_t`] can be re-used with a call to
 ///   [`iox2_port_factory_listener_builder_create`](crate::iox2_port_factory_listener_builder_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_listener_drop(listener_handle: iox2_listener_h) {
     listener_handle.assert_non_null();
 
@@ -227,7 +227,7 @@ pub unsafe extern "C" fn iox2_listener_drop(listener_handle: iox2_listener_h) {
 /// # Safety
 ///
 /// * The `listener_handle` must be a valid handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_listener_get_file_descriptor(
     listener_handle: iox2_listener_h_ref,
 ) -> iox2_file_descriptor_ptr {
@@ -267,7 +267,7 @@ pub unsafe extern "C" fn iox2_listener_get_file_descriptor(
 ///
 /// * The `listener_handle` must be a valid handle.
 /// * The `callback` must be a valid function pointer.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_listener_try_wait_all(
     listener_handle: iox2_listener_h_ref,
     callback: iox2_listener_wait_all_callback,
@@ -307,7 +307,7 @@ pub unsafe extern "C" fn iox2_listener_try_wait_all(
 ///
 /// * The `listener_handle` must be a valid handle.
 /// * The `callback` must be a valid function pointer.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_listener_timed_wait_all(
     listener_handle: iox2_listener_h_ref,
     callback: iox2_listener_wait_all_callback,
@@ -354,7 +354,7 @@ pub unsafe extern "C" fn iox2_listener_timed_wait_all(
 ///
 /// * `listener_handle` is valid, non-null and was obtained via [`iox2_port_factory_listener_builder_create`](crate::iox2_port_factory_listener_builder_create)
 /// * `id` is valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_listener_id(
     listener_handle: iox2_listener_h_ref,
     id_struct_ptr: *mut iox2_unique_listener_id_t,
@@ -392,7 +392,7 @@ pub unsafe extern "C" fn iox2_listener_id(
 /// * `listener_handle` is valid, non-null and was obtained via [`iox2_port_factory_listener_builder_create`](crate::iox2_port_factory_listener_builder_create)
 /// * `seconds` is pointing to a valid memory location and non-null
 /// * `nanoseconds` is pointing to a valid memory location and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_listener_deadline(
     listener_handle: iox2_listener_h_ref,
     seconds: *mut u64,
@@ -431,7 +431,7 @@ pub unsafe extern "C" fn iox2_listener_deadline(
 ///
 /// * The `listener_handle` must be a valid handle.
 /// * The `callback` must be a valid function pointer.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_listener_blocking_wait_all(
     listener_handle: iox2_listener_h_ref,
     callback: iox2_listener_wait_all_callback,
@@ -470,7 +470,7 @@ pub unsafe extern "C" fn iox2_listener_blocking_wait_all(
 /// # Safety
 ///
 /// * All input arguments must be non-null.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_listener_try_wait_one(
     listener_handle: iox2_listener_h_ref,
     event_id: *mut iox2_event_id_t,
@@ -520,7 +520,7 @@ pub unsafe extern "C" fn iox2_listener_try_wait_one(
 /// # Safety
 ///
 /// * All input arguments must be non-null.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_listener_timed_wait_one(
     listener_handle: iox2_listener_h_ref,
     event_id: *mut iox2_event_id_t,
@@ -570,7 +570,7 @@ pub unsafe extern "C" fn iox2_listener_timed_wait_one(
 /// # Safety
 ///
 /// * All input arguments must be non-null.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_listener_blocking_wait_one(
     listener_handle: iox2_listener_h_ref,
     event_id: *mut iox2_event_id_t,

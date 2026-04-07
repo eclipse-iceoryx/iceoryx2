@@ -16,39 +16,39 @@
 
 use windows_sys::Win32::{
     Foundation::{
-        CloseHandle, DuplicateHandle, DUPLICATE_SAME_ACCESS, ERROR_FILE_NOT_FOUND,
+        CloseHandle, DUPLICATE_SAME_ACCESS, DuplicateHandle, ERROR_FILE_NOT_FOUND,
         ERROR_NO_MORE_FILES, FALSE, HANDLE, INVALID_HANDLE_VALUE, TRUE,
     },
     Networking::WinSock::{
-        closesocket, WSADuplicateSocketA, WSASocketA, INVALID_SOCKET, SOCKET_ERROR,
-        WSAPROTOCOL_INFOA,
+        INVALID_SOCKET, SOCKET_ERROR, WSADuplicateSocketA, WSAPROTOCOL_INFOA, WSASocketA,
+        closesocket,
     },
     Storage::FileSystem::{
-        FlushFileBuffers, GetFileAttributesA, ReadFile, RemoveDirectoryA, SetEndOfFile,
-        SetFilePointerEx, WriteFile, FILE_ATTRIBUTE_DIRECTORY, FILE_ATTRIBUTE_READONLY, FILE_BEGIN,
-        FILE_CURRENT, FILE_END, INVALID_FILE_ATTRIBUTES,
+        FILE_ATTRIBUTE_DIRECTORY, FILE_ATTRIBUTE_READONLY, FILE_BEGIN, FILE_CURRENT, FILE_END,
+        FlushFileBuffers, GetFileAttributesA, INVALID_FILE_ATTRIBUTES, ReadFile, RemoveDirectoryA,
+        SetEndOfFile, SetFilePointerEx, WriteFile,
     },
     System::{
         Diagnostics::ToolHelp::{
-            CreateToolhelp32Snapshot, Process32First, Process32Next, PROCESSENTRY32,
+            CreateToolhelp32Snapshot, PROCESSENTRY32, Process32First, Process32Next,
             TH32CS_SNAPPROCESS,
         },
+        IO::OVERLAPPED,
         ProcessStatus::GetModuleFileNameExA,
         SystemInformation::{GetSystemInfo, SYSTEM_INFO},
         Threading::{
             GetCurrentProcess, GetCurrentProcessId, OpenProcess, PROCESS_QUERY_INFORMATION,
             PROCESS_VM_READ,
         },
-        IO::OVERLAPPED,
     },
 };
 
 use crate::posix::{
+    Errno, MemZeroedStruct,
     constants::*,
     shm_set_size,
     types::*,
     win32_handle_translator::{FdHandleEntry, FileHandle},
-    Errno, MemZeroedStruct,
 };
 
 use super::{

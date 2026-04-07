@@ -122,7 +122,7 @@ macro_rules! test_harness {
 #[macro_export]
 macro_rules! test_harness {
     () => {
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         pub extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
             run_tests()
         }
@@ -148,7 +148,7 @@ macro_rules! test_harness {
             loop {}
         }
 
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         extern "C" fn rust_eh_personality() {}
 
         fn run_tests() -> isize {
@@ -219,11 +219,7 @@ macro_rules! test_harness {
             $crate::internal::cout!(" failed");
             $crate::internal::coutln!("");
 
-            if failed > 0 {
-                1
-            } else {
-                0
-            }
+            if failed > 0 { 1 } else { 0 }
         }
     };
 }

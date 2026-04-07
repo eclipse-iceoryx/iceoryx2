@@ -36,17 +36,18 @@ use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::CStrRepr;
 
 use crate::{
+    IOX2_OK,
     api::{
         AssertNonNullHandle, HandleToType, PortFactoryRequestResponseUnion, ServiceBuilderUnion,
     },
-    iox2_service_type_e, iox2_type_detail_error_e, IOX2_OK,
+    iox2_service_type_e, iox2_type_detail_error_e,
 };
 
 use super::{
-    c_size_t, iox2_attribute_specifier_h_ref, iox2_attribute_verifier_h_ref,
-    iox2_port_factory_request_response_h, iox2_port_factory_request_response_t,
-    iox2_service_builder_request_response_h, iox2_service_builder_request_response_h_ref,
-    iox2_type_variant_e, IntoCInt, PayloadFfi, UserHeaderFfi,
+    IntoCInt, PayloadFfi, UserHeaderFfi, c_size_t, iox2_attribute_specifier_h_ref,
+    iox2_attribute_verifier_h_ref, iox2_port_factory_request_response_h,
+    iox2_port_factory_request_response_t, iox2_service_builder_request_response_h,
+    iox2_service_builder_request_response_h_ref, iox2_type_variant_e,
 };
 
 // BEGIN types definition
@@ -192,7 +193,7 @@ impl IntoCInt for RequestResponseOpenOrCreateError {
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_request_response_open_or_create_error_string(
     error: iox2_request_response_open_or_create_error_e,
 ) -> *const c_char {
@@ -254,7 +255,7 @@ pub(crate) unsafe fn create_type_details(
 /// * `service_builder_handle` must be valid handles
 /// * `type_name_str` must be a valid pointer to an utf8 string
 /// * `size` and `alignment` must satisfy the Rust `Layout` type requirements
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_set_request_header_type_details(
     service_builder_handle: iox2_service_builder_request_response_h_ref,
     type_variant: iox2_type_variant_e,
@@ -315,7 +316,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_set_request_heade
 /// * `service_builder_handle` must be valid handles
 /// * `type_name_str` must be a valid pointer to an utf8 string
 /// * `size` and `alignment` must satisfy the Rust `Layout` type requirements
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_set_response_header_type_details(
     service_builder_handle: iox2_service_builder_request_response_h_ref,
     type_variant: iox2_type_variant_e,
@@ -376,7 +377,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_set_response_head
 /// * `service_builder_handle` must be valid handles
 /// * `type_name_str` must be a valid pointer to an utf8 string
 /// * `size` and `alignment` must satisfy the Rust `Layout` type requirements
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_set_request_payload_type_details(
     service_builder_handle: iox2_service_builder_request_response_h_ref,
     type_variant: iox2_type_variant_e,
@@ -438,7 +439,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_set_request_paylo
 /// * `service_builder_handle` must be valid handles
 /// * `type_name_str` must be a valid pointer to an utf8 string
 /// * `size` and `alignment` must satisfy the Rust `Layout` type requirements
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_set_response_payload_type_details(
     service_builder_handle: iox2_service_builder_request_response_h_ref,
     type_variant: iox2_type_variant_e,
@@ -488,7 +489,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_set_response_payl
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h_ref`]
 ///   obtained by
 ///   [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_enable_fire_and_forget_requests(
     service_builder_handle: iox2_service_builder_request_response_h_ref,
     value: bool,
@@ -526,7 +527,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_enable_fire_and_f
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h_ref`]
 ///   obtained by
 ///   [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_enable_safe_overflow_for_requests(
     service_builder_handle: iox2_service_builder_request_response_h_ref,
     value: bool,
@@ -564,7 +565,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_enable_safe_overf
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h_ref`]
 ///   obtained by
 ///   [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_enable_safe_overflow_for_responses(
     service_builder_handle: iox2_service_builder_request_response_h_ref,
     value: bool,
@@ -602,7 +603,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_enable_safe_overf
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h_ref`]
 ///   obtained by
 ///   [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_max_active_requests_per_client(
     service_builder_handle: iox2_service_builder_request_response_h_ref,
     value: c_size_t,
@@ -640,7 +641,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_max_active_reques
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h_ref`]
 ///   obtained by
 ///   [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_max_borrowed_responses_per_pending_response(
     service_builder_handle: iox2_service_builder_request_response_h_ref,
     value: c_size_t,
@@ -678,7 +679,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_max_borrowed_resp
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h_ref`]
 ///   obtained by
 ///   [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_max_clients(
     service_builder_handle: iox2_service_builder_request_response_h_ref,
     value: c_size_t,
@@ -716,7 +717,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_max_clients(
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h_ref`]
 ///   obtained by
 ///   [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_max_loaned_requests(
     service_builder_handle: iox2_service_builder_request_response_h_ref,
     value: c_size_t,
@@ -754,7 +755,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_max_loaned_reques
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h_ref`]
 ///   obtained by
 ///   [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_set_max_nodes(
     service_builder_handle: iox2_service_builder_request_response_h_ref,
     value: c_size_t,
@@ -792,7 +793,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_set_max_nodes(
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h_ref`]
 ///   obtained by
 ///   [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_max_response_buffer_size(
     service_builder_handle: iox2_service_builder_request_response_h_ref,
     value: c_size_t,
@@ -830,7 +831,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_max_response_buff
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h_ref`]
 ///   obtained by
 ///   [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_max_servers(
     service_builder_handle: iox2_service_builder_request_response_h_ref,
     value: c_size_t,
@@ -868,7 +869,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_max_servers(
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h_ref`]
 ///   obtained by
 ///   [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_request_payload_alignment(
     service_builder_handle: iox2_service_builder_request_response_h_ref,
     value: c_size_t,
@@ -910,7 +911,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_request_payload_a
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h_ref`]
 ///   obtained by
 ///   [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_response_payload_alignment(
     service_builder_handle: iox2_service_builder_request_response_h_ref,
     value: c_size_t,
@@ -962,7 +963,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_response_payload_
 /// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_open_or_create(
     service_builder_handle: iox2_service_builder_request_response_h,
     port_factory_struct_ptr: *mut iox2_port_factory_request_response_t,
@@ -998,7 +999,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_open_or_create(
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
 /// * The `attribute_verifier_handle` must be valid.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_open_or_create_with_attributes(
     service_builder_handle: iox2_service_builder_request_response_h,
     attribute_verifier_handle: iox2_attribute_verifier_h_ref,
@@ -1034,7 +1035,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_open_or_create_wi
 /// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_open(
     service_builder_handle: iox2_service_builder_request_response_h,
     port_factory_struct_ptr: *mut iox2_port_factory_request_response_t,
@@ -1069,7 +1070,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_open(
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
 /// * The `attribute_verifier_handle` must be valid.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_open_with_attributes(
     service_builder_handle: iox2_service_builder_request_response_h,
     attribute_verifier_handle: iox2_attribute_verifier_h_ref,
@@ -1105,7 +1106,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_open_with_attribu
 /// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_create(
     service_builder_handle: iox2_service_builder_request_response_h,
     port_factory_struct_ptr: *mut iox2_port_factory_request_response_t,
@@ -1140,7 +1141,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_create(
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
 /// * The `attribute_specifier_handle` must be valid.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response_create_with_attributes(
     service_builder_handle: iox2_service_builder_request_response_h,
     attribute_specifier_handle: iox2_attribute_specifier_h_ref,

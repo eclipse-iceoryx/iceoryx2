@@ -15,19 +15,20 @@
 use core::{ffi::c_char, ffi::c_int, mem::ManuallyDrop, time::Duration};
 
 use crate::{
-    c_size_t, iox2_callback_context, iox2_callback_progression_e, iox2_file_descriptor_ptr,
-    iox2_service_type_e, iox2_waitset_attachment_id_h, iox2_waitset_attachment_id_t,
-    iox2_waitset_guard_h, iox2_waitset_guard_t, AttachmentIdUnion, GuardUnion, IOX2_OK,
+    AttachmentIdUnion, GuardUnion, IOX2_OK, c_size_t, iox2_callback_context,
+    iox2_callback_progression_e, iox2_file_descriptor_ptr, iox2_service_type_e,
+    iox2_waitset_attachment_id_h, iox2_waitset_attachment_id_t, iox2_waitset_guard_h,
+    iox2_waitset_guard_t,
 };
 
-use super::{iox2_signal_handling_mode_e, AssertNonNullHandle, HandleToType, IntoCInt};
+use super::{AssertNonNullHandle, HandleToType, IntoCInt, iox2_signal_handling_mode_e};
 use iceoryx2::waitset::{
     WaitSet, WaitSetAttachmentError, WaitSetCreateError, WaitSetRunError, WaitSetRunResult,
 };
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_ffi_macros::iceoryx2_ffi;
 use iceoryx2_ffi_macros::CStrRepr;
+use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 // BEGIN types definition
 
@@ -230,7 +231,7 @@ pub type iox2_waitset_run_callback = extern "C" fn(
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_create_error_string(
     error: iox2_waitset_create_error_e,
 ) -> *const c_char {
@@ -251,7 +252,7 @@ pub unsafe extern "C" fn iox2_waitset_create_error_string(
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_attachment_error_string(
     error: iox2_waitset_attachment_error_e,
 ) -> *const c_char {
@@ -272,7 +273,7 @@ pub unsafe extern "C" fn iox2_waitset_attachment_error_string(
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_run_error_string(
     error: iox2_waitset_run_error_e,
 ) -> *const c_char {
@@ -285,7 +286,7 @@ pub unsafe extern "C" fn iox2_waitset_run_error_string(
 ///
 ///  * `handle` must be valid and acquired with
 ///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_drop(handle: iox2_waitset_h) {
     handle.assert_non_null();
 
@@ -308,7 +309,7 @@ pub unsafe extern "C" fn iox2_waitset_drop(handle: iox2_waitset_h) {
 ///
 ///  * `handle` must be valid and acquired with
 ///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_is_empty(handle: iox2_waitset_h_ref) -> bool {
     handle.assert_non_null();
 
@@ -326,7 +327,7 @@ pub unsafe extern "C" fn iox2_waitset_is_empty(handle: iox2_waitset_h_ref) -> bo
 ///
 ///  * `handle` must be valid and acquired with
 ///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_signal_handling_mode(
     handle: iox2_waitset_h_ref,
 ) -> iox2_signal_handling_mode_e {
@@ -344,7 +345,7 @@ pub unsafe extern "C" fn iox2_waitset_signal_handling_mode(
 ///
 ///  * `handle` must be valid and acquired with
 ///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_len(handle: iox2_waitset_h_ref) -> c_size_t {
     handle.assert_non_null();
 
@@ -362,7 +363,7 @@ pub unsafe extern "C" fn iox2_waitset_len(handle: iox2_waitset_h_ref) -> c_size_
 ///
 ///  * `handle` must be valid and acquired with
 ///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_capacity(handle: iox2_waitset_h_ref) -> c_size_t {
     handle.assert_non_null();
 
@@ -394,7 +395,7 @@ pub unsafe extern "C" fn iox2_waitset_capacity(handle: iox2_waitset_h_ref) -> c_
 ///    position or `null`
 ///  * `guard_handle_ptr` must be pointing to valid uninitialized memory.
 ///  * `guard_handle_ptr` must be released with [`iox2_waitset_guard_drop()`](crate::iox2_waitset_guard_drop()).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_attach_notification(
     handle: iox2_waitset_h_ref,
     fd: iox2_file_descriptor_ptr,
@@ -473,7 +474,7 @@ pub unsafe extern "C" fn iox2_waitset_attach_notification(
 ///    position or `null`
 ///  * `guard_handle_ptr` must be pointing to valid uninitialized memory.
 ///  * `guard_handle_ptr` must be released with [`iox2_waitset_guard_drop()`](crate::iox2_waitset_guard_drop()).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_attach_deadline(
     handle: iox2_waitset_h_ref,
     fd: iox2_file_descriptor_ptr,
@@ -558,7 +559,7 @@ pub unsafe extern "C" fn iox2_waitset_attach_deadline(
 ///    position or `null`
 ///  * `guard_handle_ptr` must be pointing to valid uninitialized memory.
 ///  * `guard_handle_ptr` must be released with [`iox2_waitset_guard_drop()`](crate::iox2_waitset_guard_drop()).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_attach_interval(
     handle: iox2_waitset_h_ref,
     seconds: u64,
@@ -643,7 +644,7 @@ pub unsafe extern "C" fn iox2_waitset_attach_interval(
 ///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
 ///  * the provided [`iox2_waitset_attachment_id_h`] in the callback must be released via
 ///    [`iox2_waitset_attachment_id_drop()`](crate::iox2_waitset_attachment_id_drop())
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_wait_and_process_once(
     handle: iox2_waitset_h_ref,
     callback: iox2_waitset_run_callback,
@@ -725,7 +726,7 @@ pub unsafe extern "C" fn iox2_waitset_wait_and_process_once(
 ///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
 ///  * the provided [`iox2_waitset_attachment_id_h`] in the callback must be released via
 ///    [`iox2_waitset_attachment_id_drop()`](crate::iox2_waitset_attachment_id_drop())
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_wait_and_process_once_with_timeout(
     handle: iox2_waitset_h_ref,
     callback: iox2_waitset_run_callback,
@@ -810,7 +811,7 @@ pub unsafe extern "C" fn iox2_waitset_wait_and_process_once_with_timeout(
 ///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
 ///  * the provided [`iox2_waitset_attachment_id_h`] in the callback must be released via
 ///    [`iox2_waitset_attachment_id_drop()`](crate::iox2_waitset_attachment_id_drop())
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_wait_and_process(
     handle: iox2_waitset_h_ref,
     callback: iox2_waitset_run_callback,

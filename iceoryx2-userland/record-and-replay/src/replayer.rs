@@ -82,15 +82,15 @@ use iceoryx2_bb_posix::file::File;
 use iceoryx2_bb_posix::file::FileBuilder;
 use iceoryx2_bb_posix::file::FileReadLineState;
 use iceoryx2_bb_system_types::file_path::FilePath;
-use iceoryx2_cal::serialize::toml::Toml;
 use iceoryx2_cal::serialize::Serialize;
+use iceoryx2_cal::serialize::toml::Toml;
 use iceoryx2_log::fail;
 
 use crate::hex_conversion::HexToBytesConversionError;
 use crate::record::DataRepresentation;
+use crate::record::HEX_START_RECORD_MARKER;
 use crate::record::Record;
 use crate::record::RecordReader;
-use crate::record::HEX_START_RECORD_MARKER;
 use crate::record_header::RecordHeader;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

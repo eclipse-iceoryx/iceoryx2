@@ -16,17 +16,17 @@ use super::{
     iox2_writer_details_ptr,
 };
 use crate::api::{
-    iox2_port_factory_reader_builder_h, iox2_port_factory_reader_builder_t,
-    iox2_port_factory_writer_builder_h, iox2_port_factory_writer_builder_t, iox2_service_type_e,
-    iox2_static_config_blackboard_t, AssertNonNullHandle, HandleToType, IntoCInt, KeyFfi,
-    PortFactoryReaderBuilderUnion, PortFactoryWriterBuilderUnion,
+    AssertNonNullHandle, HandleToType, IntoCInt, KeyFfi, PortFactoryReaderBuilderUnion,
+    PortFactoryWriterBuilderUnion, iox2_port_factory_reader_builder_h,
+    iox2_port_factory_reader_builder_t, iox2_port_factory_writer_builder_h,
+    iox2_port_factory_writer_builder_t, iox2_service_type_e, iox2_static_config_blackboard_t,
 };
-use crate::{iox2_node_list_impl, IOX2_OK};
+use crate::{IOX2_OK, iox2_node_list_impl};
 use core::ffi::{c_char, c_int, c_void};
 use core::mem::ManuallyDrop;
 use iceoryx2::service::dynamic_config::blackboard::{ReaderDetails, WriterDetails};
 use iceoryx2::service::port_factory::blackboard::PortFactory;
-use iceoryx2_bb_elementary::{static_assert::*, CallbackProgression};
+use iceoryx2_bb_elementary::{CallbackProgression, static_assert::*};
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 // BEGIN types definition
@@ -156,7 +156,7 @@ pub type iox2_list_writers_callback =
 /// # Safety
 ///
 /// * The `port_factory_handle` is still valid after the return of this function and can be used in another function call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_blackboard_writer_builder(
     port_factory_handle: iox2_port_factory_blackboard_h_ref,
     writer_builder_struct_ptr: *mut iox2_port_factory_writer_builder_t,
@@ -209,7 +209,7 @@ pub unsafe extern "C" fn iox2_port_factory_blackboard_writer_builder(
 /// # Safety
 ///
 /// * The `port_factory_handle` is still valid after the return of this function and can be used in another function call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_blackboard_reader_builder(
     port_factory_handle: iox2_port_factory_blackboard_h_ref,
     reader_builder_struct_ptr: *mut iox2_port_factory_reader_builder_t,
@@ -253,7 +253,7 @@ pub unsafe extern "C" fn iox2_port_factory_blackboard_reader_builder(
 /// # Safety
 ///
 /// * The `port_factory_handle` must live longer than the returned `iox2_attribute_set_ptr`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_blackboard_attributes(
     port_factory_handle: iox2_port_factory_blackboard_h_ref,
 ) -> iox2_attribute_set_ptr {
@@ -275,7 +275,7 @@ pub unsafe extern "C" fn iox2_port_factory_blackboard_attributes(
 /// * The `port_factory_handle` must be valid and obtained by [`iox2_service_builder_blackboard_open`](crate::iox2_service_builder_blackboard_open) or
 ///   [`iox2_service_builder_blackboard_create`](crate::iox2_service_builder_blackboard_create)!
 /// * The `static_config` must be a valid pointer and non-null.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_blackboard_static_config(
     port_factory_handle: iox2_port_factory_blackboard_h_ref,
     static_config: *mut iox2_static_config_blackboard_t,
@@ -300,7 +300,7 @@ pub unsafe extern "C" fn iox2_port_factory_blackboard_static_config(
 ///
 /// * The `handle` must be valid and obtained by [`iox2_service_builder_blackboard_open`](crate::iox2_service_builder_blackboard_open) or
 ///   [`iox2_service_builder_blackboard_create`](crate::iox2_service_builder_blackboard_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_blackboard_dynamic_config_number_of_writers(
     handle: iox2_port_factory_blackboard_h_ref,
 ) -> usize {
@@ -341,7 +341,7 @@ pub unsafe extern "C" fn iox2_port_factory_blackboard_dynamic_config_number_of_w
 ///   [`iox2_service_builder_blackboard_create`](crate::iox2_service_builder_blackboard_create)!
 /// * `callback` - A valid callback with [`iox2_node_list_callback`} signature
 /// * `callback_ctx` - An optional callback context [`iox2_callback_context`} to e.g. store information across callback iterations
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_blackboard_nodes(
     handle: iox2_port_factory_blackboard_h_ref,
     callback: iox2_node_list_callback,
@@ -378,7 +378,7 @@ pub unsafe extern "C" fn iox2_port_factory_blackboard_nodes(
 ///
 /// * The `handle` must be valid and obtained by [`iox2_service_builder_blackboard_open`](crate::iox2_service_builder_blackboard_open) or
 ///   [`iox2_service_builder_blackboard_create`](crate::iox2_service_builder_blackboard_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_blackboard_service_name(
     handle: iox2_port_factory_blackboard_h_ref,
 ) -> iox2_service_name_ptr {
@@ -402,7 +402,7 @@ pub unsafe extern "C" fn iox2_port_factory_blackboard_service_name(
 ///   [`iox2_service_builder_blackboard_create`](crate::iox2_service_builder_blackboard_create)!
 /// * `buffer` must be non-zero and point to a valid memory location
 /// * `buffer_len` must define the actual size of the memory location `buffer` is pointing to
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_blackboard_service_hash(
     handle: iox2_port_factory_blackboard_h_ref,
     buffer: *mut c_char,
@@ -430,7 +430,7 @@ pub unsafe extern "C" fn iox2_port_factory_blackboard_service_hash(
 ///
 /// * The `handle` must be valid and obtained by [`iox2_service_builder_blackboard_open`](crate::iox2_service_builder_blackboard_open) or
 ///   [`iox2_service_builder_blackboard_create`](crate::iox2_service_builder_blackboard_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_blackboard_dynamic_config_number_of_readers(
     handle: iox2_port_factory_blackboard_h_ref,
 ) -> usize {
@@ -466,7 +466,7 @@ pub unsafe extern "C" fn iox2_port_factory_blackboard_dynamic_config_number_of_r
 /// * `callback_ctx` - An optional callback context [`iox2_callback_context`] to e.g. store
 ///   information across callback iterations. Must be either `NULL` or point to a valid memory
 ///   location
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_blackboard_dynamic_config_list_readers(
     handle: iox2_port_factory_blackboard_h_ref,
     callback: iox2_list_readers_callback,
@@ -504,7 +504,7 @@ pub unsafe extern "C" fn iox2_port_factory_blackboard_dynamic_config_list_reader
 /// * `callback_ctx` - An optional callback context [`iox2_callback_context`] to e.g. store
 ///   information across callback iterations. Must be either `NULL` or point to a valid memory
 ///   location
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_blackboard_dynamic_config_list_writers(
     handle: iox2_port_factory_blackboard_h_ref,
     callback: iox2_list_writers_callback,
@@ -543,7 +543,7 @@ pub unsafe extern "C" fn iox2_port_factory_blackboard_dynamic_config_list_writer
 /// * The corresponding [`iox2_port_factory_blackboard_t`] can be re-used with a call to
 ///   [`iox2_service_builder_blackboard_create`](crate::iox2_service_builder_blackboard_create) or
 ///   [`iox2_service_builder_blackboard_open`](crate::iox2_service_builder_blackboard_open)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_blackboard_drop(
     port_factory_handle: iox2_port_factory_blackboard_h,
 ) {
@@ -579,7 +579,7 @@ fn list_keys_callback(
 ///   [`iox2_service_builder_blackboard_create`](crate::iox2_service_builder_blackboard_create)!
 /// * `callback` - A valid callback with [`iox2_port_factory_blackboard_list_keys_callback`} signature
 /// * `callback_ctx` - An optional callback context [`iox2_callback_context`} to e.g. store information across callback iterations
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_blackboard_list_keys(
     handle: iox2_port_factory_blackboard_h_ref,
     callback: iox2_port_factory_blackboard_list_keys_callback,

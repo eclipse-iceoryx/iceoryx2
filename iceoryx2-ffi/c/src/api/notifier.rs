@@ -13,15 +13,15 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    c_size_t, iox2_event_id_t, iox2_service_type_e, iox2_unique_notifier_id_h,
-    iox2_unique_notifier_id_t, AssertNonNullHandle, HandleToType, IntoCInt, IOX2_OK,
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, c_size_t, iox2_event_id_t,
+    iox2_service_type_e, iox2_unique_notifier_id_h, iox2_unique_notifier_id_t,
 };
 
 use iceoryx2::port::notifier::{Notifier, NotifierNotifyError};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_ffi_macros::iceoryx2_ffi;
 use iceoryx2_ffi_macros::CStrRepr;
+use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
@@ -150,7 +150,7 @@ impl HandleToType for iox2_notifier_h_ref {
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_notifier_notify_error_string(
     error: iox2_notifier_notify_error_e,
 ) -> *const c_char {
@@ -165,7 +165,7 @@ pub unsafe extern "C" fn iox2_notifier_notify_error_string(
 /// * `id_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_unique_notifier_id_t`].
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `id_handle_ptr` valid pointer to a [`iox2_unique_notifier_id_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_notifier_id(
     notifier_handle: iox2_notifier_h_ref,
     id_struct_ptr: *mut iox2_unique_notifier_id_t,
@@ -203,7 +203,7 @@ pub unsafe extern "C" fn iox2_notifier_id(
 /// * `notifier_handle` is valid, non-null and was obtained via [`iox2_port_factory_listener_builder_create`](crate::iox2_port_factory_listener_builder_create)
 /// * `seconds` is pointing to a valid memory location and non-null
 /// * `nanoseconds` is pointing to a valid memory location and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_notifier_deadline(
     notifier_handle: iox2_notifier_h_ref,
     seconds: *mut u64,
@@ -242,7 +242,7 @@ pub unsafe extern "C" fn iox2_notifier_deadline(
 /// # Safety
 ///
 /// `notifier_handle` must be a valid handle and is still valid after the return of this function and can be use in another function call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_notifier_notify(
     notifier_handle: iox2_notifier_h_ref,
     number_of_notified_listener_ptr: *mut c_size_t,
@@ -286,7 +286,7 @@ pub unsafe extern "C" fn iox2_notifier_notify(
 ///
 /// `notifier_handle` must be a valid handle and is still valid after the return of this function and can be use in another function call.
 /// `custom_event_id_ptr` must not be a NULL pointer.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_notifier_notify_with_custom_event_id(
     notifier_handle: iox2_notifier_h_ref,
     custom_event_id_ptr: *const iox2_event_id_t,
@@ -336,7 +336,7 @@ pub unsafe extern "C" fn iox2_notifier_notify_with_custom_event_id(
 /// * The `notifier_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_notifier_t`] can be re-used with a call to
 ///   [`iox2_port_factory_notifier_builder_create`](crate::iox2_port_factory_notifier_builder_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_notifier_drop(notifier_handle: iox2_notifier_h) {
     debug_assert!(!notifier_handle.is_null());
 

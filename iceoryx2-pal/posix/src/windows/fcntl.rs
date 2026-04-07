@@ -20,27 +20,27 @@ use windows_sys::Win32::{
         ERROR_PATH_NOT_FOUND, FALSE, GENERIC_READ, GENERIC_WRITE, HANDLE, INVALID_HANDLE_VALUE,
     },
     Security::{
-        GetFileSecurityA, SetFileSecurityA, DACL_SECURITY_INFORMATION, GROUP_SECURITY_INFORMATION,
-        OWNER_SECURITY_INFORMATION, SECURITY_ATTRIBUTES,
+        DACL_SECURITY_INFORMATION, GROUP_SECURITY_INFORMATION, GetFileSecurityA,
+        OWNER_SECURITY_INFORMATION, SECURITY_ATTRIBUTES, SetFileSecurityA,
     },
     Storage::FileSystem::{
-        CreateFileA, GetFileInformationByHandle, GetFileSize, GetFinalPathNameByHandleA,
-        LockFileEx, UnlockFileEx, BY_HANDLE_FILE_INFORMATION, CREATE_NEW, FILE_ATTRIBUTE_DIRECTORY,
+        BY_HANDLE_FILE_INFORMATION, CREATE_NEW, CreateFileA, FILE_ATTRIBUTE_DIRECTORY,
         FILE_ATTRIBUTE_NORMAL, FILE_NAME_NORMALIZED, FILE_SHARE_DELETE, FILE_SHARE_READ,
-        FILE_SHARE_WRITE, INVALID_FILE_SIZE, LOCKFILE_EXCLUSIVE_LOCK, LOCKFILE_FAIL_IMMEDIATELY,
-        OPEN_ALWAYS, OPEN_EXISTING,
+        FILE_SHARE_WRITE, GetFileInformationByHandle, GetFileSize, GetFinalPathNameByHandleA,
+        INVALID_FILE_SIZE, LOCKFILE_EXCLUSIVE_LOCK, LOCKFILE_FAIL_IMMEDIATELY, LockFileEx,
+        OPEN_ALWAYS, OPEN_EXISTING, UnlockFileEx,
     },
-    System::{SystemServices::MAXWORD, IO::OVERLAPPED},
+    System::{IO::OVERLAPPED, SystemServices::MAXWORD},
 };
 
 use crate::{
-    posix::types::*,
     posix::Errno,
     posix::MemZeroedStruct,
+    posix::types::*,
     posix::{
-        shm_get_size, win32_security_attributes::from_security_attributes_to_mode, F_GETFD,
-        F_GETFL, F_GETLK, F_RDLCK, F_SETFL, F_SETLK, F_SETLKW, F_UNLCK, F_WRLCK, O_NONBLOCK,
-        S_IFDIR, S_IFREG,
+        F_GETFD, F_GETFL, F_GETLK, F_RDLCK, F_SETFL, F_SETLK, F_SETLKW, F_UNLCK, F_WRLCK,
+        O_NONBLOCK, S_IFDIR, S_IFREG, shm_get_size,
+        win32_security_attributes::from_security_attributes_to_mode,
     },
 };
 

@@ -90,8 +90,8 @@
 use core::alloc::Layout;
 use core::fmt::Debug;
 
-use iceoryx2_bb_concurrency::atomic::fence;
 use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_concurrency::atomic::fence;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
@@ -350,11 +350,7 @@ impl UniqueIndexSet {
     /// Returns the current len.
     pub fn borrowed_indices(&self) -> usize {
         let s = HeadDetails::from(self.head.load(Ordering::Relaxed)).borrowed_indices;
-        if s == LOCK_ACQUIRE {
-            0
-        } else {
-            s as usize
-        }
+        if s == LOCK_ACQUIRE { 0 } else { s as usize }
     }
 
     /// Returns if the [`UniqueIndexSet`] is locked or not. If the set is locked no more indices

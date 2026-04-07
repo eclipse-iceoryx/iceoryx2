@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{iox2_service_type_e, AssertNonNullHandle, HandleToType};
+use crate::api::{AssertNonNullHandle, HandleToType, iox2_service_type_e};
 use crate::{
     iox2_service_builder_pub_sub_set_user_header_type_details,
     iox2_service_builder_request_response_set_request_header_type_details,
@@ -21,10 +21,10 @@ use crate::{
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::builder::{
-    blackboard::Creator as ServiceBuilderBlackboardCreator,
+    Builder as ServiceBuilderBase, blackboard::Creator as ServiceBuilderBlackboardCreator,
     blackboard::Opener as ServiceBuilderBlackboardOpener, event::Builder as ServiceBuilderEvent,
     publish_subscribe::Builder as ServiceBuilderPubSub,
-    request_response::Builder as ServiceBuilderRequestResponse, Builder as ServiceBuilderBase,
+    request_response::Builder as ServiceBuilderRequestResponse,
 };
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomKeyMarker, CustomPayloadMarker};
 use iceoryx2_bb_elementary::static_assert::*;
@@ -436,7 +436,7 @@ impl HandleToType for iox2_service_builder_blackboard_opener_h_ref {
 /// # Safety
 ///
 /// * The `service_builder_handle` is invalid after this call; The corresponding `iox2_service_builder_t` is now owned by the returned handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event(
     service_builder_handle: iox2_service_builder_h,
 ) -> iox2_service_builder_event_h {
@@ -478,7 +478,7 @@ pub unsafe extern "C" fn iox2_service_builder_event(
 /// # Safety
 ///
 /// * The `service_builder_handle` is invalid after this call; The corresponding `iox2_service_builder_t` is now owned by the returned handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub(
     service_builder_handle: iox2_service_builder_h,
 ) -> iox2_service_builder_pub_sub_h {
@@ -536,7 +536,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub(
 /// # Safety
 ///
 /// * The `service_builder_handle` is invalid after this call; The corresponding `iox2_service_builder_t` is now owned by the returned handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response(
     service_builder_handle: iox2_service_builder_h,
 ) -> iox2_service_builder_request_response_h {
@@ -606,7 +606,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response(
 /// # Safety
 ///
 /// * The `service_builder_handle` is invalid after this call; The corresponding `iox2_service_builder_t` is now owned by the returned handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_creator(
     service_builder_handle: iox2_service_builder_h,
 ) -> iox2_service_builder_blackboard_creator_h {
@@ -649,7 +649,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator(
 /// # Safety
 ///
 /// * The `service_builder_handle` is invalid after this call; The corresponding `iox2_service_builder_t` is now owned by the returned handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_opener(
     service_builder_handle: iox2_service_builder_h,
 ) -> iox2_service_builder_blackboard_opener_h {

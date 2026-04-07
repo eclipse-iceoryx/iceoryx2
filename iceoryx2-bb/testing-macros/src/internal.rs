@@ -11,12 +11,13 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
+use quote::{ToTokens, quote};
 use syn::{
+    Attribute, Expr, ExprLit, GenericArgument, Ident, ItemFn, Lit, MetaNameValue, ReturnType,
+    Signature, Token, Type,
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
-    token, Attribute, Expr, ExprLit, GenericArgument, Ident, ItemFn, Lit, MetaNameValue,
-    ReturnType, Signature, Token, Type,
+    token,
 };
 
 enum MacroParameters {

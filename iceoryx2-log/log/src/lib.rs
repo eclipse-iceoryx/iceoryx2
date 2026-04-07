@@ -201,7 +201,7 @@ pub fn set_logger(logger: &'static dyn Log) -> bool {
 
 #[cfg(feature = "std")]
 mod from_env {
-    use super::{set_log_level, LogLevel, DEFAULT_LOG_LEVEL};
+    use super::{DEFAULT_LOG_LEVEL, LogLevel, set_log_level};
     use std::env;
 
     fn get_log_level_from_str_fuzzy(
@@ -254,6 +254,6 @@ pub fn __internal_print_log_msg(
     }
 }
 
-extern "Rust" {
+unsafe extern "Rust" {
     fn __internal_default_logger() -> &'static dyn Log;
 }

@@ -13,8 +13,8 @@
 #![allow(non_camel_case_types, non_snake_case)]
 #![allow(clippy::missing_safety_doc)]
 
-use crate::posix::types::*;
 use crate::posix::MemZeroedStruct;
+use crate::posix::types::*;
 
 pub unsafe fn stat(path: *const c_char, buf: *mut stat_t) -> int {
     let mut os_specific_buffer = native_stat_t::new_zeroed();

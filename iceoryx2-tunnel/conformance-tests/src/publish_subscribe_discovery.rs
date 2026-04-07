@@ -28,8 +28,8 @@ pub mod publish_subscribe_discovery {
     use iceoryx2_services_discovery::service_discovery::Config as DiscoveryConfig;
     use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
     use iceoryx2_tunnel::Tunnel;
-    use iceoryx2_tunnel_backend::traits::testing::Testing;
     use iceoryx2_tunnel_backend::traits::Backend;
+    use iceoryx2_tunnel_backend::traits::testing::Testing;
 
     #[conformance_test]
     pub fn discovers_services_via_subscriber<S: Service, B: Backend<S> + Debug, T: Testing>() {

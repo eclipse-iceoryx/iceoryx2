@@ -13,10 +13,10 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    c_size_t, iox2_port_factory_pub_sub_h, iox2_port_factory_pub_sub_t,
-    iox2_service_builder_pub_sub_h, iox2_service_builder_pub_sub_h_ref, iox2_service_type_e,
-    AssertNonNullHandle, HandleToType, IntoCInt, PayloadFfi, PortFactoryPubSubUnion,
-    ServiceBuilderUnion, UserHeaderFfi, IOX2_OK,
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, PayloadFfi, PortFactoryPubSubUnion,
+    ServiceBuilderUnion, UserHeaderFfi, c_size_t, iox2_port_factory_pub_sub_h,
+    iox2_port_factory_pub_sub_t, iox2_service_builder_pub_sub_h,
+    iox2_service_builder_pub_sub_h_ref, iox2_service_type_e,
 };
 use crate::create_type_details;
 
@@ -245,7 +245,7 @@ pub enum iox2_type_detail_error_e {
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_pub_sub_open_or_create_error_string(
     error: iox2_pub_sub_open_or_create_error_e,
 ) -> *const c_char {
@@ -271,7 +271,7 @@ pub unsafe extern "C" fn iox2_pub_sub_open_or_create_error_string(
 /// * `service_builder_handle` must be valid handles
 /// * `type_name_str` must be a valid pointer to an utf8 string
 /// * `size` and `alignment` must satisfy the Rust `Layout` type requirements
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_user_header_type_details(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     type_variant: iox2_type_variant_e,
@@ -333,7 +333,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_user_header_type_detai
 /// * `service_builder_handle` must be valid handles
 /// * `type_name_str` must be a valid pointer to an utf8 string
 /// * `size` and `alignment` must satisfy the Rust `Layout` type requirements
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_payload_type_details(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     type_variant: iox2_type_variant_e,
@@ -387,7 +387,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_payload_type_details(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_nodes(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: c_size_t,
@@ -429,7 +429,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_nodes(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_publishers(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: c_size_t,
@@ -471,7 +471,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_publishers(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_subscribers(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: c_size_t,
@@ -513,7 +513,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_subscribers(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_payload_alignment(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: c_size_t,
@@ -559,7 +559,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_payload_alignment(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_history_size(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: c_size_t,
@@ -601,7 +601,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_history_size(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_subscriber_max_buffer_size(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: c_size_t,
@@ -643,7 +643,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_subscriber_max_buffer_
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_subscriber_max_borrowed_samples(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: c_size_t,
@@ -685,7 +685,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_subscriber_max_borrowe
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_enable_safe_overflow(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: bool,
@@ -733,7 +733,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_enable_safe_overflow(
 /// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_open_or_create(
     service_builder_handle: iox2_service_builder_pub_sub_h,
     port_factory_struct_ptr: *mut iox2_port_factory_pub_sub_t,
@@ -768,7 +768,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open_or_create(
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
 /// * The `attribute_verifier_handle` must be valid.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_open_or_create_with_attributes(
     service_builder_handle: iox2_service_builder_pub_sub_h,
     attribute_verifier_handle: iox2_attribute_verifier_h_ref,
@@ -804,7 +804,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open_or_create_with_attrib
 /// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_open(
     service_builder_handle: iox2_service_builder_pub_sub_h,
     port_factory_struct_ptr: *mut iox2_port_factory_pub_sub_t,
@@ -838,7 +838,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open(
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
 /// * The `attribute_verifier_handle` must be valid.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_open_with_attributes(
     service_builder_handle: iox2_service_builder_pub_sub_h,
     attribute_verifier_handle: iox2_attribute_verifier_h_ref,
@@ -874,7 +874,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open_with_attributes(
 /// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_create(
     service_builder_handle: iox2_service_builder_pub_sub_h,
     port_factory_struct_ptr: *mut iox2_port_factory_pub_sub_t,
@@ -908,7 +908,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_create(
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
 /// * The `attribute_verifier_handle` must be valid.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_create_with_attributes(
     service_builder_handle: iox2_service_builder_pub_sub_h,
     attribute_specifier_handle: iox2_attribute_specifier_h_ref,

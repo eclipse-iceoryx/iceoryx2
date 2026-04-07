@@ -16,9 +16,9 @@
 
 use core::{sync::atomic::Ordering, unimplemented};
 
+use iceoryx2_pal_concurrency_sync::WaitAction;
 use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
 use iceoryx2_pal_concurrency_sync::strategy::mutex::Mutex;
-use iceoryx2_pal_concurrency_sync::WaitAction;
 
 use crate::posix::*;
 
@@ -87,7 +87,9 @@ impl ThreadStates {
         self.unlock();
 
         if index == usize::MAX {
-            panic!("With this thread the maximum number of supported thread ({MAX_NUMBER_OF_THREADS}) of the system is exceeded.");
+            panic!(
+                "With this thread the maximum number of supported thread ({MAX_NUMBER_OF_THREADS}) of the system is exceeded."
+            );
         }
         index
     }

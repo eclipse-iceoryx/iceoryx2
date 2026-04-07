@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::mem::MaybeUninit;
-use iceoryx2_bb_container::vector::{static_vec::*, VectorModificationError};
+use iceoryx2_bb_container::vector::{VectorModificationError, static_vec::*};
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
@@ -86,7 +86,7 @@ pub fn placement_default_works() {
 #[test]
 #[requires_std("serde_test")]
 pub fn serialization_works() {
-    use serde_test::{assert_tokens, Token};
+    use serde_test::{Token, assert_tokens};
 
     let mut sut = StaticVec::<usize, SUT_CAPACITY>::new();
     assert_that!(sut.push(44617), is_ok);

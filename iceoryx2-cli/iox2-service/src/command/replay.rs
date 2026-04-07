@@ -24,7 +24,7 @@ use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_cli::Format;
 use iceoryx2_userland_record_and_replay::prelude::*;
 use iceoryx2_userland_record_and_replay::record_header::{
-    RecordHeaderDetails, FILE_FORMAT_HUMAN_READABLE_VERSION, FILE_FORMAT_IOX2_DUMP_VERSION,
+    FILE_FORMAT_HUMAN_READABLE_VERSION, FILE_FORMAT_IOX2_DUMP_VERSION, RecordHeaderDetails,
 };
 
 pub(crate) fn replay(options: ReplayOptions, _format: Format) -> Result<()> {

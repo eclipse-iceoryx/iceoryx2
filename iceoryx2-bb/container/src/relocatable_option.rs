@@ -21,7 +21,7 @@ use iceoryx2_bb_elementary_traits::{
     placement_default::PlacementDefault, zero_copy_send::ZeroCopySend,
 };
 use iceoryx2_log::fatal_panic;
-use serde::{de::Visitor, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::Visitor};
 
 /// Implementation of an [`Option`] that is shared-memory compatible,
 /// has a stable memory layout and can be used for zero-copy cross-language
@@ -206,7 +206,7 @@ impl<T> RelocatableOption<T> {
     /// it holds a value, otherwise it contains nothing.
     pub fn as_mut(&mut self) -> RelocatableOption<&mut T> {
         match self {
-            Self::Some(ref mut v) => RelocatableOption::Some(v),
+            Self::Some(v) => RelocatableOption::Some(v),
             Self::None => RelocatableOption::None,
         }
     }
@@ -215,7 +215,7 @@ impl<T> RelocatableOption<T> {
     /// a value, otherwise it contains nothing.
     pub fn as_ref(&self) -> RelocatableOption<&T> {
         match self {
-            Self::Some(ref v) => RelocatableOption::Some(v),
+            Self::Some(v) => RelocatableOption::Some(v),
             Self::None => RelocatableOption::None,
         }
     }

@@ -15,7 +15,7 @@ use iceoryx2_bb_concurrency::spin_lock::SpinLock as Mutex;
 #[cfg(feature = "std")]
 use std::sync::Mutex;
 
-use alloc::alloc::{alloc, dealloc, Layout};
+use alloc::alloc::{Layout, alloc, dealloc};
 use core::ptr::addr_of;
 
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};

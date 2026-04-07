@@ -39,8 +39,8 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
-use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
@@ -59,11 +59,11 @@ use crate::service::static_config::publish_subscribe::StaticConfig;
 use crate::service::{NoResource, ServiceState};
 use crate::{raw_sample::RawSample, sample::Sample, service};
 
+use super::ReceiveError;
 use super::details::chunk::Chunk;
 use super::details::chunk_details::ChunkDetails;
 use super::details::receiver::*;
 use super::update_connections::ConnectionFailure;
-use super::ReceiveError;
 use crate::identifiers::UniqueSubscriberId;
 
 use alloc::sync::Arc;
@@ -114,30 +114,30 @@ pub struct Subscriber<
 }
 
 unsafe impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: Debug + ZeroCopySend,
-    > Send for Subscriber<Service, Payload, UserHeader>
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Send for Subscriber<Service, Payload, UserHeader>
 where
     Service::ArcThreadSafetyPolicy<SubscriberSharedState<Service>>: Send + Sync,
 {
 }
 
 unsafe impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: Debug + ZeroCopySend,
-    > Sync for Subscriber<Service, Payload, UserHeader>
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Sync for Subscriber<Service, Payload, UserHeader>
 where
     Service::ArcThreadSafetyPolicy<SubscriberSharedState<Service>>: Send + Sync,
 {
 }
 
 impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: Debug + ZeroCopySend,
-    > Drop for Subscriber<Service, Payload, UserHeader>
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Drop for Subscriber<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_subscriber_handle {
@@ -154,10 +154,10 @@ impl<
 }
 
 impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: Debug + ZeroCopySend,
-    > Subscriber<Service, Payload, UserHeader>
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Subscriber<Service, Payload, UserHeader>
 {
     pub(crate) fn new(
         service: Arc<ServiceState<Service, NoResource>>,
@@ -341,10 +341,10 @@ impl<
 }
 
 impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: Debug + ZeroCopySend,
-    > UpdateConnections for Subscriber<Service, Payload, UserHeader>
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> UpdateConnections for Subscriber<Service, Payload, UserHeader>
 {
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
         let subscriber_shared_state = self.subscriber_shared_state.lock();
@@ -366,11 +366,8 @@ impl<
     }
 }
 
-impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend,
-        UserHeader: Debug + ZeroCopySend,
-    > Subscriber<Service, Payload, UserHeader>
+impl<Service: service::Service, Payload: Debug + ZeroCopySend, UserHeader: Debug + ZeroCopySend>
+    Subscriber<Service, Payload, UserHeader>
 {
     /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
     /// received [`None`] is returned. If a failure occurs [`ReceiveError`] is returned.
@@ -389,11 +386,8 @@ impl<
     }
 }
 
-impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend,
-        UserHeader: Debug + ZeroCopySend,
-    > Subscriber<Service, [Payload], UserHeader>
+impl<Service: service::Service, Payload: Debug + ZeroCopySend, UserHeader: Debug + ZeroCopySend>
+    Subscriber<Service, [Payload], UserHeader>
 {
     /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
     /// received [`None`] is returned. If a failure occurs [`ReceiveError`] is returned.

@@ -150,7 +150,7 @@ pub trait DynamicStorageBuilder<'builder, T: Send + Sync, D: DynamicStorage<T>>:
     /// which provides access to the supplementary memory. If the initialization failed it
     /// shall return false, otherwise true.
     fn initializer<F: FnMut(&mut T, &mut BumpAllocator) -> bool + 'builder>(self, value: F)
-        -> Self;
+    -> Self;
 
     /// Creates a new [`DynamicStorage`]. The returned object has the ownership of the
     /// [`DynamicStorage`] and when it goes out of scope the underlying resources shall be

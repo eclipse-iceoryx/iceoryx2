@@ -79,40 +79,45 @@ unsafe impl<T1: ZeroCopySend, T2: ZeroCopySend, T3: ZeroCopySend, T4: ZeroCopySe
     for (T1, T2, T3, T4)
 {
 }
-unsafe impl<T1: ZeroCopySend, T2: ZeroCopySend, T3: ZeroCopySend, T4: ZeroCopySend, T5: ZeroCopySend>
-    ZeroCopySend for (T1, T2, T3, T4, T5)
+unsafe impl<
+    T1: ZeroCopySend,
+    T2: ZeroCopySend,
+    T3: ZeroCopySend,
+    T4: ZeroCopySend,
+    T5: ZeroCopySend,
+> ZeroCopySend for (T1, T2, T3, T4, T5)
 {
 }
 unsafe impl<
-        T1: ZeroCopySend,
-        T2: ZeroCopySend,
-        T3: ZeroCopySend,
-        T4: ZeroCopySend,
-        T5: ZeroCopySend,
-        T6: ZeroCopySend,
-    > ZeroCopySend for (T1, T2, T3, T4, T5, T6)
+    T1: ZeroCopySend,
+    T2: ZeroCopySend,
+    T3: ZeroCopySend,
+    T4: ZeroCopySend,
+    T5: ZeroCopySend,
+    T6: ZeroCopySend,
+> ZeroCopySend for (T1, T2, T3, T4, T5, T6)
 {
 }
 unsafe impl<
-        T1: ZeroCopySend,
-        T2: ZeroCopySend,
-        T3: ZeroCopySend,
-        T4: ZeroCopySend,
-        T5: ZeroCopySend,
-        T6: ZeroCopySend,
-        T7: ZeroCopySend,
-    > ZeroCopySend for (T1, T2, T3, T4, T5, T6, T7)
+    T1: ZeroCopySend,
+    T2: ZeroCopySend,
+    T3: ZeroCopySend,
+    T4: ZeroCopySend,
+    T5: ZeroCopySend,
+    T6: ZeroCopySend,
+    T7: ZeroCopySend,
+> ZeroCopySend for (T1, T2, T3, T4, T5, T6, T7)
 {
 }
 unsafe impl<
-        T1: ZeroCopySend,
-        T2: ZeroCopySend,
-        T3: ZeroCopySend,
-        T4: ZeroCopySend,
-        T5: ZeroCopySend,
-        T6: ZeroCopySend,
-        T7: ZeroCopySend,
-        T8: ZeroCopySend,
-    > ZeroCopySend for (T1, T2, T3, T4, T5, T6, T7, T8)
+    T1: ZeroCopySend,
+    T2: ZeroCopySend,
+    T3: ZeroCopySend,
+    T4: ZeroCopySend,
+    T5: ZeroCopySend,
+    T6: ZeroCopySend,
+    T7: ZeroCopySend,
+    T8: ZeroCopySend,
+> ZeroCopySend for (T1, T2, T3, T4, T5, T6, T7, T8)
 {
 }

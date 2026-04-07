@@ -28,8 +28,8 @@ pub mod details {
             DynamicStorageOpenError,
         },
         event::{
-            id_tracker::IdTracker, signal_mechanism::SignalMechanism, Event, ListenerCreateError,
-            NotifierCreateError, NotifierNotifyError, TriggerId,
+            Event, ListenerCreateError, NotifierCreateError, NotifierNotifyError, TriggerId,
+            id_tracker::IdTracker, signal_mechanism::SignalMechanism,
         },
         named_concept::{
             NamedConcept, NamedConceptBuilder, NamedConceptConfiguration, NamedConceptMgmt,
@@ -62,10 +62,10 @@ pub mod details {
     }
 
     impl<
-            Tracker: IdTracker,
-            WaitMechanism: SignalMechanism,
-            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-        > Default for Configuration<Tracker, WaitMechanism, Storage>
+        Tracker: IdTracker,
+        WaitMechanism: SignalMechanism,
+        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+    > Default for Configuration<Tracker, WaitMechanism, Storage>
     {
         fn default() -> Self {
             Self {
@@ -80,10 +80,10 @@ pub mod details {
     }
 
     impl<
-            Tracker: IdTracker,
-            WaitMechanism: SignalMechanism,
-            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-        > Configuration<Tracker, WaitMechanism, Storage>
+        Tracker: IdTracker,
+        WaitMechanism: SignalMechanism,
+        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+    > Configuration<Tracker, WaitMechanism, Storage>
     {
         fn convert(&self) -> <Storage as NamedConceptMgmt>::Configuration {
             <Storage as NamedConceptMgmt>::Configuration::default()
@@ -94,10 +94,10 @@ pub mod details {
     }
 
     impl<
-            Tracker: IdTracker,
-            WaitMechanism: SignalMechanism,
-            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-        > Debug for Configuration<Tracker, WaitMechanism, Storage>
+        Tracker: IdTracker,
+        WaitMechanism: SignalMechanism,
+        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+    > Debug for Configuration<Tracker, WaitMechanism, Storage>
     {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
             write!(
@@ -114,10 +114,10 @@ pub mod details {
     }
 
     impl<
-            Tracker: IdTracker,
-            WaitMechanism: SignalMechanism,
-            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-        > Clone for Configuration<Tracker, WaitMechanism, Storage>
+        Tracker: IdTracker,
+        WaitMechanism: SignalMechanism,
+        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+    > Clone for Configuration<Tracker, WaitMechanism, Storage>
     {
         fn clone(&self) -> Self {
             Self {
@@ -132,10 +132,10 @@ pub mod details {
     }
 
     impl<
-            Tracker: IdTracker,
-            WaitMechanism: SignalMechanism,
-            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-        > NamedConceptConfiguration for Configuration<Tracker, WaitMechanism, Storage>
+        Tracker: IdTracker,
+        WaitMechanism: SignalMechanism,
+        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+    > NamedConceptConfiguration for Configuration<Tracker, WaitMechanism, Storage>
     {
         fn prefix(mut self, value: &FileName) -> Self {
             self.prefix = *value;
@@ -177,10 +177,10 @@ pub mod details {
     }
 
     impl<
-            Tracker: IdTracker,
-            WaitMechanism: SignalMechanism,
-            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-        > NamedConceptMgmt for EventImpl<Tracker, WaitMechanism, Storage>
+        Tracker: IdTracker,
+        WaitMechanism: SignalMechanism,
+        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+    > NamedConceptMgmt for EventImpl<Tracker, WaitMechanism, Storage>
     {
         type Configuration = Configuration<Tracker, WaitMechanism, Storage>;
 
@@ -219,10 +219,10 @@ pub mod details {
     }
 
     impl<
-            Tracker: IdTracker,
-            WaitMechanism: SignalMechanism,
-            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-        > Event for EventImpl<Tracker, WaitMechanism, Storage>
+        Tracker: IdTracker,
+        WaitMechanism: SignalMechanism,
+        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+    > Event for EventImpl<Tracker, WaitMechanism, Storage>
     {
         type Notifier = Notifier<Tracker, WaitMechanism, Storage>;
         type NotifierBuilder = NotifierBuilder<Tracker, WaitMechanism, Storage>;
@@ -246,10 +246,10 @@ pub mod details {
     }
 
     impl<
-            Tracker: IdTracker,
-            WaitMechanism: SignalMechanism,
-            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-        > Drop for Notifier<Tracker, WaitMechanism, Storage>
+        Tracker: IdTracker,
+        WaitMechanism: SignalMechanism,
+        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+    > Drop for Notifier<Tracker, WaitMechanism, Storage>
     {
         fn drop(&mut self) {
             if self
@@ -265,10 +265,10 @@ pub mod details {
     }
 
     impl<
-            Tracker: IdTracker,
-            WaitMechanism: SignalMechanism,
-            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-        > NamedConcept for Notifier<Tracker, WaitMechanism, Storage>
+        Tracker: IdTracker,
+        WaitMechanism: SignalMechanism,
+        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+    > NamedConcept for Notifier<Tracker, WaitMechanism, Storage>
     {
         fn name(&self) -> &FileName {
             self.storage.name()
@@ -276,10 +276,10 @@ pub mod details {
     }
 
     impl<
-            Tracker: IdTracker,
-            WaitMechanism: SignalMechanism,
-            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-        > crate::event::Notifier for Notifier<Tracker, WaitMechanism, Storage>
+        Tracker: IdTracker,
+        WaitMechanism: SignalMechanism,
+        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+    > crate::event::Notifier for Notifier<Tracker, WaitMechanism, Storage>
     {
         fn trigger_id_max(&self) -> TriggerId {
             self.storage.get().id_tracker.trigger_id_max()
@@ -316,10 +316,10 @@ pub mod details {
     }
 
     impl<
-            Tracker: IdTracker,
-            WaitMechanism: SignalMechanism,
-            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-        > NamedConceptBuilder<EventImpl<Tracker, WaitMechanism, Storage>>
+        Tracker: IdTracker,
+        WaitMechanism: SignalMechanism,
+        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+    > NamedConceptBuilder<EventImpl<Tracker, WaitMechanism, Storage>>
         for NotifierBuilder<Tracker, WaitMechanism, Storage>
     {
         fn new(name: &FileName) -> Self {
@@ -340,10 +340,10 @@ pub mod details {
     }
 
     impl<
-            Tracker: IdTracker,
-            WaitMechanism: SignalMechanism,
-            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-        > crate::event::NotifierBuilder<EventImpl<Tracker, WaitMechanism, Storage>>
+        Tracker: IdTracker,
+        WaitMechanism: SignalMechanism,
+        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+    > crate::event::NotifierBuilder<EventImpl<Tracker, WaitMechanism, Storage>>
         for NotifierBuilder<Tracker, WaitMechanism, Storage>
     {
         fn timeout(mut self, timeout: Duration) -> Self {
@@ -423,10 +423,10 @@ pub mod details {
     }
 
     impl<
-            Tracker: IdTracker,
-            WaitMechanism: SignalMechanism,
-            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-        > Drop for Listener<Tracker, WaitMechanism, Storage>
+        Tracker: IdTracker,
+        WaitMechanism: SignalMechanism,
+        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+    > Drop for Listener<Tracker, WaitMechanism, Storage>
     {
         fn drop(&mut self) {
             self.storage
@@ -447,10 +447,10 @@ pub mod details {
     }
 
     impl<
-            Tracker: IdTracker,
-            WaitMechanism: SignalMechanism,
-            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-        > NamedConcept for Listener<Tracker, WaitMechanism, Storage>
+        Tracker: IdTracker,
+        WaitMechanism: SignalMechanism,
+        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+    > NamedConcept for Listener<Tracker, WaitMechanism, Storage>
     {
         fn name(&self) -> &FileName {
             self.storage.name()
@@ -458,10 +458,10 @@ pub mod details {
     }
 
     impl<
-            Tracker: IdTracker,
-            WaitMechanism: SignalMechanism,
-            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-        > crate::event::Listener for Listener<Tracker, WaitMechanism, Storage>
+        Tracker: IdTracker,
+        WaitMechanism: SignalMechanism,
+        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+    > crate::event::Listener for Listener<Tracker, WaitMechanism, Storage>
     {
         fn try_wait_one(
             &self,
@@ -551,10 +551,10 @@ pub mod details {
     }
 
     impl<
-            Tracker: IdTracker,
-            WaitMechanism: SignalMechanism,
-            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-        > NamedConceptBuilder<EventImpl<Tracker, WaitMechanism, Storage>>
+        Tracker: IdTracker,
+        WaitMechanism: SignalMechanism,
+        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+    > NamedConceptBuilder<EventImpl<Tracker, WaitMechanism, Storage>>
         for ListenerBuilder<Tracker, WaitMechanism, Storage>
     {
         fn new(name: &FileName) -> Self {
@@ -575,10 +575,10 @@ pub mod details {
     }
 
     impl<
-            Tracker: IdTracker,
-            WaitMechanism: SignalMechanism,
-            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-        > ListenerBuilder<Tracker, WaitMechanism, Storage>
+        Tracker: IdTracker,
+        WaitMechanism: SignalMechanism,
+        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+    > ListenerBuilder<Tracker, WaitMechanism, Storage>
     {
         fn init(
             mgmt: &mut Management<Tracker, WaitMechanism>,
@@ -599,10 +599,10 @@ pub mod details {
     }
 
     impl<
-            Tracker: IdTracker,
-            WaitMechanism: SignalMechanism,
-            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-        > crate::event::ListenerBuilder<EventImpl<Tracker, WaitMechanism, Storage>>
+        Tracker: IdTracker,
+        WaitMechanism: SignalMechanism,
+        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+    > crate::event::ListenerBuilder<EventImpl<Tracker, WaitMechanism, Storage>>
         for ListenerBuilder<Tracker, WaitMechanism, Storage>
     {
         fn trigger_id_max(mut self, id: crate::event::TriggerId) -> Self {

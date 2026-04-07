@@ -75,8 +75,8 @@ pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContain
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic};
 
-use crate::vector::internal;
 pub use crate::vector::Vector;
+use crate::vector::internal;
 
 /// **Non-movable** relocatable shared-memory compatible vector with runtime fixed size capacity.
 #[repr(C)]
@@ -158,10 +158,11 @@ impl<T> RelocatableVec<T> {
     #[inline(always)]
     fn verify_init(&self, source: &str) {
         debug_assert!(
-                self.data_ptr.is_initialized(),
-                "From: RelocatableVec<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
-                core::any::type_name::<T>(), source
-            );
+            self.data_ptr.is_initialized(),
+            "From: RelocatableVec<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
+            core::any::type_name::<T>(),
+            source
+        );
     }
 
     /// Returns the required memory size for a vec with a specified capacity

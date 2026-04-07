@@ -115,7 +115,7 @@ impl HandleToType for iox2_waitset_guard_h_ref {
 /// # Safety
 ///
 /// * `handle` must be valid and non null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_guard_drop(handle: iox2_waitset_guard_h) {
     handle.assert_non_null();
 

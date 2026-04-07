@@ -38,8 +38,9 @@ use crate::{
 };
 
 use super::{
-    testing::__InternalMonitoringTokenTestable, Monitoring, MonitoringBuilder, MonitoringCleaner,
-    MonitoringCreateTokenError, MonitoringMonitor, MonitoringStateError, MonitoringToken,
+    Monitoring, MonitoringBuilder, MonitoringCleaner, MonitoringCreateTokenError,
+    MonitoringMonitor, MonitoringStateError, MonitoringToken,
+    testing::__InternalMonitoringTokenTestable,
 };
 
 #[cfg(not(feature = "dev_permissions"))]

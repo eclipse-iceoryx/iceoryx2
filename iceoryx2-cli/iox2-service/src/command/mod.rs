@@ -32,7 +32,7 @@ pub(crate) use record::*;
 pub(crate) use replay::*;
 pub(crate) use subscribe::*;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2::{
     prelude::*,
@@ -75,7 +75,7 @@ pub(crate) fn get_pubsub_service_types(
         None => {
             return Err(anyhow!(
                 "unable to access service \"{service_name}\", does it exist?",
-            ))
+            ));
         }
     };
 

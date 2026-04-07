@@ -19,7 +19,7 @@ pub mod details {
     use alloc::vec;
     use alloc::vec::Vec;
 
-    use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicU8, AtomicUsize};
+    use iceoryx2_bb_concurrency::atomic::{AtomicU8, AtomicU64, AtomicUsize};
     use iceoryx2_bb_concurrency::cell::UnsafeCell;
     use iceoryx2_bb_container::vector::relocatable_vec::*;
     use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};

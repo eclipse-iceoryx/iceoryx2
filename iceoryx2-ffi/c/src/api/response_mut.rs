@@ -18,11 +18,11 @@ use iceoryx2::response_mut_uninit::ResponseMutUninit;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
-use crate::{api::IntoCInt, IOX2_OK};
+use crate::{IOX2_OK, api::IntoCInt};
 
 use super::{
-    c_size_t, iox2_response_header_h, iox2_response_header_t, iox2_service_type_e,
-    AssertNonNullHandle, HandleToType, UninitPayloadFfi, UserHeaderFfi,
+    AssertNonNullHandle, HandleToType, UninitPayloadFfi, UserHeaderFfi, c_size_t,
+    iox2_response_header_h, iox2_response_header_t, iox2_service_type_e,
 };
 
 // BEGIN types definition
@@ -124,7 +124,7 @@ impl HandleToType for iox2_response_mut_h_ref {
 /// * `dest_struct_ptr` must not be `null` and the struct it is pointing to must not contain valid data, i.e. initialized. It can be moved or dropped, though.
 /// * `dest_handle_ptr` must not be `null`
 #[doc(hidden)]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_response_mut_move(
     source_struct_ptr: *mut iox2_response_mut_t,
     dest_struct_ptr: *mut iox2_response_mut_t,
@@ -159,7 +159,7 @@ pub unsafe extern "C" fn iox2_response_mut_move(
 /// * `header_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
 ///   [`iox2_response_header_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `header_handle_ptr` valid pointer to a [`iox2_response_header_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_response_mut_header(
     handle: iox2_response_mut_h_ref,
     header_struct_ptr: *mut iox2_response_header_t,
@@ -195,7 +195,7 @@ pub unsafe extern "C" fn iox2_response_mut_header(
 /// * `handle` obtained by
 ///   [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
 /// * `header_ptr` valid pointer to a `*const c_void`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_response_mut_user_header(
     handle: iox2_response_mut_h_ref,
     header_ptr: *mut *const c_void,
@@ -220,7 +220,7 @@ pub unsafe extern "C" fn iox2_response_mut_user_header(
 /// * `handle` obtained by
 ///   [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
 /// * `header_ptr` valid pointer to a `*mut c_void`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_response_mut_user_header_mut(
     handle: iox2_response_mut_h_ref,
     header_ptr: *mut *mut c_void,
@@ -245,7 +245,7 @@ pub unsafe extern "C" fn iox2_response_mut_user_header_mut(
 /// * `handle` obtained by
 ///   [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
 /// * `payload_ptr` valid pointer to a `*const c_void`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_response_mut_payload(
     handle: iox2_response_mut_h_ref,
     payload_ptr: *mut *const c_void,
@@ -279,7 +279,7 @@ pub unsafe extern "C" fn iox2_response_mut_payload(
 /// * `handle` obtained by
 ///   [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
 /// * `payload_ptr` valid pointer to a `*mut c_void`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_response_mut_payload_mut(
     handle: iox2_response_mut_h_ref,
     payload_ptr: *mut *mut c_void,
@@ -313,7 +313,7 @@ pub unsafe extern "C" fn iox2_response_mut_payload_mut(
 ///
 /// * `response_handle` obtained by
 ///   [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_response_mut_send(response_handle: iox2_response_mut_h) -> c_int {
     debug_assert!(!response_handle.is_null());
 
@@ -351,7 +351,7 @@ pub unsafe extern "C" fn iox2_response_mut_send(response_handle: iox2_response_m
 ///
 /// * `response_handle` obtained by
 ///   [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_response_mut_drop(response_handle: iox2_response_mut_h) {
     debug_assert!(!response_handle.is_null());
 

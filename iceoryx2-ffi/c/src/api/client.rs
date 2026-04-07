@@ -20,11 +20,16 @@ use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
+use crate::IOX2_OK;
 use crate::api::IntoCInt;
 use crate::api::RequestMutUninitUnion;
 use crate::c_size_t;
-use crate::IOX2_OK;
 
+use super::AssertNonNullHandle;
+use super::HandleToType;
+use super::PayloadFfi;
+use super::PendingResponseUnion;
+use super::UserHeaderFfi;
 use super::iox2_pending_response_h;
 use super::iox2_pending_response_t;
 use super::iox2_request_mut_h;
@@ -34,11 +39,6 @@ use super::iox2_service_type_e;
 use super::iox2_unable_to_deliver_strategy_e;
 use super::iox2_unique_client_id_h;
 use super::iox2_unique_client_id_t;
-use super::AssertNonNullHandle;
-use super::HandleToType;
-use super::PayloadFfi;
-use super::PendingResponseUnion;
-use super::UserHeaderFfi;
 use core::ffi::c_int;
 
 // BEGIN types definition
@@ -147,7 +147,7 @@ impl HandleToType for iox2_client_h_ref {
 /// # Safety
 ///
 /// * `handle` is valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_client_unable_to_deliver_strategy(
     handle: iox2_client_h_ref,
 ) -> iox2_unable_to_deliver_strategy_e {
@@ -180,7 +180,7 @@ pub unsafe extern "C" fn iox2_client_unable_to_deliver_strategy(
 /// # Safety
 ///
 /// * `handle` is valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_client_initial_max_slice_len(handle: iox2_client_h_ref) -> c_size_t {
     handle.assert_non_null();
 
@@ -206,7 +206,7 @@ pub unsafe extern "C" fn iox2_client_initial_max_slice_len(handle: iox2_client_h
 ///
 /// * `handle` is valid and non-null
 /// * `id` is valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_client_id(
     handle: iox2_client_h_ref,
     id_struct_ptr: *mut iox2_unique_client_id_t,
@@ -251,7 +251,7 @@ pub unsafe extern "C" fn iox2_client_id(
 ///
 /// * `client_handle` is valid and non-null
 /// * The `request_handle_ptr` is pointing to a valid [`iox2_request_mut_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_client_loan_slice_uninit(
     client_handle: iox2_client_h_ref,
     request_struct_ptr: *mut iox2_request_mut_t,
@@ -363,7 +363,7 @@ unsafe fn send_copy<S: Service>(
 /// * `data_ptr` non-null pointer to a valid position in memory
 /// * `data_len` the size of the payload memory
 /// * The `pending_response_handle_ptr` is pointing to a valid [`iox2_pending_response_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_client_send_copy(
     client_handle: iox2_client_h_ref,
     data_ptr: *const c_void,
@@ -445,7 +445,7 @@ pub unsafe extern "C" fn iox2_client_send_copy(
 /// * The `client_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_client_t`] can be re-used with a call to
 ///   [`iox2_port_factory_client_builder_create`](crate::iox2_port_factory_client_builder_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_client_drop(client_handle: iox2_client_h) {
     client_handle.assert_non_null();
 

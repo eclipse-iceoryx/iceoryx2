@@ -89,7 +89,7 @@
 pub mod dynamic;
 pub mod recommended;
 
-pub use crate::shm_allocator::{pool_allocator::PoolAllocator, AllocationStrategy};
+pub use crate::shm_allocator::{AllocationStrategy, pool_allocator::PoolAllocator};
 
 use core::alloc::Layout;
 use core::fmt::Debug;

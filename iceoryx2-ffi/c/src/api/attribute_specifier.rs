@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{AssertNonNullHandle, HandleToType, IntoCInt, IOX2_OK};
+use crate::api::{AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt};
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::attribute::{AttributeKey, AttributeValue};
@@ -108,7 +108,7 @@ impl HandleToType for iox2_attribute_specifier_h_ref {
 /// # Safety
 ///
 /// * The `handle_ptr` must point to an uninitialized [`iox2_attribute_specifier_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_specifier_new(
     struct_ptr: *mut iox2_attribute_specifier_t,
     handle_ptr: *mut iox2_attribute_specifier_h,
@@ -140,7 +140,7 @@ pub unsafe extern "C" fn iox2_attribute_specifier_new(
 /// # Safety
 ///
 /// * The `handle` must point to an initialized [`iox2_attribute_specifier_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_specifier_drop(handle: iox2_attribute_specifier_h) {
     debug_assert!(!handle.is_null());
 
@@ -160,7 +160,7 @@ pub unsafe extern "C" fn iox2_attribute_specifier_drop(handle: iox2_attribute_sp
 /// * The `handle` must point to an initialized [`iox2_attribute_specifier_h`].
 /// * The `key` must point to a valid null-terminated string.
 /// * The `value` must point to a valid null-terminated string.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_specifier_define(
     handle: iox2_attribute_specifier_h_ref,
     key: *const c_char,
@@ -197,7 +197,7 @@ pub unsafe extern "C" fn iox2_attribute_specifier_define(
 ///
 /// * The `handle` must point to an initialized [`iox2_attribute_specifier_h`].
 /// * The `handle` must live at least as long as the returned [`iox2_attribute_set_ptr`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_specifier_attributes(
     handle: iox2_attribute_specifier_h_ref,
 ) -> iox2_attribute_set_ptr {

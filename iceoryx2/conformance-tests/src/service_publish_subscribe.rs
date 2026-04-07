@@ -18,10 +18,10 @@ pub mod service_publish_subscribe {
     use alloc::{format, vec, vec::Vec};
 
     use iceoryx2::config::Config;
+    use iceoryx2::port::LoanError;
     use iceoryx2::port::publisher::PublisherCreateError;
     use iceoryx2::port::subscriber::SubscriberCreateError;
     use iceoryx2::port::update_connections::UpdateConnections;
-    use iceoryx2::port::LoanError;
     use iceoryx2::prelude::{AllocationStrategy, *};
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
@@ -35,15 +35,15 @@ pub mod service_publish_subscribe {
     use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize};
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_derive_macros::ZeroCopySend;
-    use iceoryx2_bb_elementary::alignment::Alignment;
     use iceoryx2_bb_elementary::CallbackProgression;
+    use iceoryx2_bb_elementary::alignment::Alignment;
     use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
     use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::mutex::{MutexBuilder, MutexHandle};
     use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
-    use iceoryx2_log::{set_log_level, LogLevel};
+    use iceoryx2_log::{LogLevel, set_log_level};
 
     #[derive(Debug, ZeroCopySend)]
     #[repr(C)]

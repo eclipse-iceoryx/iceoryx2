@@ -57,8 +57,8 @@ pub fn configure_builder(builder: bindgen::Builder) -> bindgen::Builder {
         }
         _ => {
             panic!(
-                    "Unsupported QNX target environment: {target_env}. Only nto71 and nto80 are supported.",
-                );
+                "Unsupported QNX target environment: {target_env}. Only nto71 and nto80 are supported.",
+            );
         }
     }
 

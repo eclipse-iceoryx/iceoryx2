@@ -26,8 +26,8 @@ use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_bb_system_types::path::*;
 use iceoryx2_log::trace;
 use iceoryx2_log::{debug, fail, fatal_panic, warn};
-use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
+use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::*;
 
 use crate::{

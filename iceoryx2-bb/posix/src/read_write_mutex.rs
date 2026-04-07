@@ -60,8 +60,8 @@ use alloc::format;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::{enum_gen, scope_guard::ScopeGuardBuilder};
 use iceoryx2_log::{fail, fatal_panic, warn};
-use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
+use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::*;
 
 use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};

@@ -147,10 +147,11 @@ impl<T, Ptr: GenericPointer> MetaVec<T, Ptr> {
     #[inline(always)]
     fn verify_init(&self, source: &str) {
         debug_assert!(
-                self.data_ptr.is_initialized(),
-                "From: MetaVec<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
-                core::any::type_name::<T>(), source
-            );
+            self.data_ptr.is_initialized(),
+            "From: MetaVec<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
+            core::any::type_name::<T>(),
+            source
+        );
     }
 
     /// Returns the capacity of the vector

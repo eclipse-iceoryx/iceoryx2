@@ -13,8 +13,8 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    iox2_entry_handle_mut_h, iox2_entry_handle_mut_t, iox2_service_type_e, AssertNonNullHandle,
-    EntryHandleMutUnion, HandleToType,
+    AssertNonNullHandle, EntryHandleMutUnion, HandleToType, iox2_entry_handle_mut_h,
+    iox2_entry_handle_mut_t, iox2_service_type_e,
 };
 use core::ffi::c_void;
 use core::mem::ManuallyDrop;
@@ -121,7 +121,7 @@ impl HandleToType for iox2_entry_value_uninit_h_ref {
 /// * `dest_struct_ptr` must not be `null` and the struct it is pointing to must not contain valid data, i.e. initialized. It can be moved or dropped, though.
 /// * `dest_handle_ptr` must not be `null`
 #[doc(hidden)]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_entry_value_uninit_move(
     source_struct_ptr: *mut iox2_entry_value_uninit_t,
     dest_struct_ptr: *mut iox2_entry_value_uninit_t,
@@ -153,7 +153,7 @@ pub unsafe extern "C" fn iox2_entry_value_uninit_move(
 ///
 /// * `entry_value_uninit_handle` obtained by [`iox2_entry_handle_mut_loan_uninit()`](crate::iox2_entry_handle_mut_loan_uninit())
 /// * `value_ptr` a valid, non-null pointer pointing to a [`*mut c_void`] pointer.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_entry_value_uninit_value_mut(
     entry_value_uninit_handle: iox2_entry_value_uninit_h_ref,
     value_ptr: *mut *mut c_void,
@@ -176,7 +176,7 @@ pub unsafe extern "C" fn iox2_entry_value_uninit_value_mut(
 /// * `entry_value_uninit_handle` obtained by [`iox2_entry_handle_mut_loan_uninit()`](crate::iox2_entry_handle_mut_loan_uninit()), it's invalid after the return of this function
 /// * `entry_handle_mut_struct_ptr` must be either a NULL pointer or a pointer to a valid [`iox2_entry_handle_mut_t`](crate::iox2_entry_handle_mut_t)
 /// * `entry_handle_mut_handle_ptr` a valid, non-null [`*mut iox2_entry_handle_mut_h`] pointer which will be initialized by this function call
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_entry_value_uninit_update(
     entry_value_uninit_handle: iox2_entry_value_uninit_h,
     entry_handle_mut_struct_ptr: *mut iox2_entry_handle_mut_t,
@@ -245,7 +245,7 @@ pub unsafe extern "C" fn iox2_entry_value_uninit_update(
 /// * `entry_value_uninit_handle` obtained by [`iox2_entry_handle_mut_loan_uninit()`](crate::iox2_entry_handle_mut_loan_uninit()), it's invalid after the return of this function
 /// * `entry_handle_mut_struct_ptr` must be either a NULL pointer or a pointer to a valid [`iox2_entry_handle_mut_t`]
 /// * `entry_handle_mut_handle_ptr` a valid, non-null [`*mut iox2_entry_handle_mut_h`] pointer which will be initialized by this function call
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_entry_value_uninit_discard(
     entry_value_uninit_handle: iox2_entry_value_uninit_h,
     entry_handle_mut_struct_ptr: *mut iox2_entry_handle_mut_t,
@@ -318,7 +318,7 @@ pub unsafe extern "C" fn iox2_entry_value_uninit_discard(
 /// * The `entry_value_uninit_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_entry_value_uninit_t`] can be re-used with a call to
 ///   [`iox2_entry_handle_mut_loan_uninit()`](crate::iox2_entry_handle_mut_loan_uninit())!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_entry_value_uninit_drop(
     entry_value_uninit_handle: iox2_entry_value_uninit_h,
 ) {

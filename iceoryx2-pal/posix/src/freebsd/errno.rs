@@ -12,8 +12,8 @@
 
 #![allow(clippy::missing_safety_doc)]
 
-use crate::posix::types::*;
 use crate::ErrnoEnumGenerator;
+use crate::posix::types::*;
 use core::{ffi::CStr, fmt::Display};
 
 ErrnoEnumGenerator!(

@@ -234,10 +234,10 @@ pub struct Builder<
 }
 
 impl<
-        Payload: Debug + ?Sized + ZeroCopySend,
-        UserHeader: Debug + ZeroCopySend,
-        ServiceType: service::Service,
-    > Clone for Builder<Payload, UserHeader, ServiceType>
+    Payload: Debug + ?Sized + ZeroCopySend,
+    UserHeader: Debug + ZeroCopySend,
+    ServiceType: service::Service,
+> Clone for Builder<Payload, UserHeader, ServiceType>
 {
     fn clone(&self) -> Self {
         Self {
@@ -259,10 +259,10 @@ impl<
 }
 
 impl<
-        Payload: Debug + ?Sized + ZeroCopySend,
-        UserHeader: Debug + ZeroCopySend,
-        ServiceType: service::Service,
-    > Builder<Payload, UserHeader, ServiceType>
+    Payload: Debug + ?Sized + ZeroCopySend,
+    UserHeader: Debug + ZeroCopySend,
+    ServiceType: service::Service,
+> Builder<Payload, UserHeader, ServiceType>
 {
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         let mut new_self = Self {
@@ -458,7 +458,7 @@ impl<
 
         let required_settings = self.base.service_config.publish_subscribe();
         let existing_settings = match &existing_settings.messaging_pattern {
-            MessagingPattern::PublishSubscribe(ref v) => v,
+            MessagingPattern::PublishSubscribe(v) => v,
             p => {
                 fail!(from self, with PublishSubscribeOpenError::IncompatibleMessagingPattern,
                 "{} since a service with the messaging pattern {:?} exists but MessagingPattern::PublishSubscribe is required.", msg, p);
@@ -784,11 +784,8 @@ impl<Payload: Debug + ?Sized + ZeroCopySend, ServiceType: service::Service>
     }
 }
 
-impl<
-        Payload: Debug + ZeroCopySend,
-        UserHeader: Debug + ZeroCopySend,
-        ServiceType: service::Service,
-    > Builder<Payload, UserHeader, ServiceType>
+impl<Payload: Debug + ZeroCopySend, UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
+    Builder<Payload, UserHeader, ServiceType>
 {
     fn prepare_config_details(&mut self) {
         self.config_details_mut().message_type_details =
@@ -879,11 +876,8 @@ impl<
     }
 }
 
-impl<
-        Payload: Debug + ZeroCopySend,
-        UserHeader: Debug + ZeroCopySend,
-        ServiceType: service::Service,
-    > Builder<[Payload], UserHeader, ServiceType>
+impl<Payload: Debug + ZeroCopySend, UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
+    Builder<[Payload], UserHeader, ServiceType>
 {
     fn prepare_config_details(&mut self) {
         self.config_details_mut().message_type_details =

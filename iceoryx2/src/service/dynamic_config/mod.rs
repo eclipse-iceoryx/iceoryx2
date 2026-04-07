@@ -135,10 +135,10 @@ impl DynamicConfig {
         fatal_panic!(from self, when self.nodes.init(allocator),
             "This should never happen! Unable to initialize NodeId container.");
         match &mut self.messaging_pattern {
-            MessagingPattern::PublishSubscribe(ref mut v) => v.init(allocator),
-            MessagingPattern::Event(ref mut v) => v.init(allocator),
-            MessagingPattern::RequestResponse(ref mut v) => v.init(allocator),
-            MessagingPattern::Blackboard(ref mut v) => v.init(allocator),
+            MessagingPattern::PublishSubscribe(v) => v.init(allocator),
+            MessagingPattern::Event(v) => v.init(allocator),
+            MessagingPattern::RequestResponse(v) => v.init(allocator),
+            MessagingPattern::Blackboard(v) => v.init(allocator),
         }
     }
 
@@ -216,7 +216,7 @@ impl DynamicConfig {
 
     pub(crate) fn request_response(&self) -> &request_response::DynamicConfig {
         match &self.messaging_pattern {
-            MessagingPattern::RequestResponse(ref v) => v,
+            MessagingPattern::RequestResponse(v) => v,
             m => {
                 fatal_panic!(from self, "This should never happen! Trying to access request_response::DynamicConfig when the messaging pattern is actually {:?}.", m);
             }
@@ -225,7 +225,7 @@ impl DynamicConfig {
 
     pub(crate) fn publish_subscribe(&self) -> &publish_subscribe::DynamicConfig {
         match &self.messaging_pattern {
-            MessagingPattern::PublishSubscribe(ref v) => v,
+            MessagingPattern::PublishSubscribe(v) => v,
             m => {
                 fatal_panic!(from self, "This should never happen! Trying to access publish_subscribe::DynamicConfig when the messaging pattern is actually {:?}.", m);
             }
@@ -234,7 +234,7 @@ impl DynamicConfig {
 
     pub(crate) fn event(&self) -> &event::DynamicConfig {
         match &self.messaging_pattern {
-            MessagingPattern::Event(ref v) => v,
+            MessagingPattern::Event(v) => v,
             m => {
                 fatal_panic!(from self, "This should never happen! Trying to access event::DynamicConfig when the messaging pattern is actually {:?}.", m);
             }
@@ -243,7 +243,7 @@ impl DynamicConfig {
 
     pub(crate) fn blackboard(&self) -> &blackboard::DynamicConfig {
         match &self.messaging_pattern {
-            MessagingPattern::Blackboard(ref v) => v,
+            MessagingPattern::Blackboard(v) => v,
             m => {
                 fatal_panic!(from self, "This should never happen! Trying to access blackboard::DynamicConfig when the messaging pattern is actually {:?}.", m);
             }

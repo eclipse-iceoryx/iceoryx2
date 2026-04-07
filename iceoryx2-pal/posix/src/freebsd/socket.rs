@@ -13,8 +13,8 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 
-use crate::posix::types::*;
 use crate::posix::Errno;
+use crate::posix::types::*;
 
 pub unsafe fn socketpair(
     domain: int,

@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{AssertNonNullHandle, HandleToType, IntoCInt, IOX2_OK};
+use crate::api::{AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt};
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::attribute::{AttributeKey, AttributeValue, AttributeVerificationError};
@@ -109,7 +109,7 @@ impl HandleToType for iox2_attribute_verifier_h_ref {
 /// # Safety
 ///
 /// * The `handle_ptr` must point to an uninitialized [`iox2_attribute_verifier_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_verifier_new(
     struct_ptr: *mut iox2_attribute_verifier_t,
     handle_ptr: *mut iox2_attribute_verifier_h,
@@ -141,7 +141,7 @@ pub unsafe extern "C" fn iox2_attribute_verifier_new(
 /// # Safety
 ///
 /// * The `handle` must point to an initialized [`iox2_attribute_verifier_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_verifier_drop(handle: iox2_attribute_verifier_h) {
     debug_assert!(!handle.is_null());
 
@@ -161,7 +161,7 @@ pub unsafe extern "C" fn iox2_attribute_verifier_drop(handle: iox2_attribute_ver
 /// * The `handle` must point to an initialized [`iox2_attribute_verifier_h`].
 /// * The `key` must point to a valid null-terminated string.
 /// * The `value` must point to a valid null-terminated string.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_verifier_require(
     handle: iox2_attribute_verifier_h_ref,
     key: *const c_char,
@@ -201,7 +201,7 @@ pub unsafe extern "C" fn iox2_attribute_verifier_require(
 ///
 /// * The `handle` must point to an initialized [`iox2_attribute_verifier_h`].
 /// * The `key` must point to a valid null-terminated string.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_verifier_require_key(
     handle: iox2_attribute_verifier_h_ref,
     key: *const c_char,
@@ -235,7 +235,7 @@ pub unsafe extern "C" fn iox2_attribute_verifier_require_key(
 ///
 /// * The `handle` must point to an initialized [`iox2_attribute_verifier_h`].
 /// * The `handle` must live at least as long as the returned [`iox2_attribute_set_ptr`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_verifier_attributes(
     handle: iox2_attribute_verifier_h_ref,
 ) -> iox2_attribute_set_ptr {
@@ -260,7 +260,7 @@ pub unsafe extern "C" fn iox2_attribute_verifier_attributes(
 /// * The `rhs` must be valid.
 /// * `incompatible_key_buffer` must be either null or point to a valid memory location of size
 ///   `incompatible_key_buffer_len`
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_verifier_verify_requirements(
     handle: iox2_attribute_verifier_h_ref,
     rhs: iox2_attribute_set_ptr,
@@ -303,7 +303,7 @@ pub unsafe extern "C" fn iox2_attribute_verifier_verify_requirements(
 /// # Safety
 ///
 /// * The `handle` must point to an initialized [`iox2_attribute_verifier_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_verifier_number_of_keys(
     handle: iox2_attribute_verifier_h_ref,
 ) -> usize {
@@ -319,7 +319,7 @@ pub unsafe extern "C" fn iox2_attribute_verifier_number_of_keys(
 ///
 /// * The `handle` must point to an initialized [`iox2_attribute_verifier_h`].
 /// * `key_index` < [`iox2_attribute_verifier_number_of_keys()`]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_verifier_key_len(
     handle: iox2_attribute_verifier_h_ref,
     key_index: usize,
@@ -339,7 +339,7 @@ pub unsafe extern "C" fn iox2_attribute_verifier_key_len(
 /// * The `handle` must point to an initialized [`iox2_attribute_verifier_h`].
 /// * `key_index` < [`iox2_attribute_verifier_number_of_keys()`]
 /// * `key_value_buffer` must point to a valid memory location of size `key_value_buffer_len`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_verifier_key(
     handle: iox2_attribute_verifier_h_ref,
     key_index: usize,

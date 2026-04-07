@@ -37,8 +37,8 @@ use iceoryx2_log::fail;
 
 use crate::{
     port::{
-        subscriber::{Subscriber, SubscriberCreateError},
         DegradationAction, DegradationCallback,
+        subscriber::{Subscriber, SubscriberCreateError},
     },
     service,
 };
@@ -66,19 +66,19 @@ pub struct PortFactorySubscriber<
 }
 
 unsafe impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: Debug + ZeroCopySend,
-    > Send for PortFactorySubscriber<'_, Service, Payload, UserHeader>
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Send for PortFactorySubscriber<'_, Service, Payload, UserHeader>
 {
 }
 
 impl<
-        'factory,
-        Service: service::Service,
-        PayloadType: Debug + ZeroCopySend + ?Sized,
-        UserHeader: Debug + ZeroCopySend,
-    > PortFactorySubscriber<'factory, Service, PayloadType, UserHeader>
+    'factory,
+    Service: service::Service,
+    PayloadType: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> PortFactorySubscriber<'factory, Service, PayloadType, UserHeader>
 {
     #[doc(hidden)]
     /// # Safety

@@ -13,9 +13,9 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    c_size_t, iox2_entry_handle_mut_h, iox2_entry_handle_mut_t, iox2_service_type_e,
-    iox2_type_variant_e, iox2_unique_writer_id_h, iox2_unique_writer_id_t, AssertNonNullHandle,
-    EntryHandleMutUnion, HandleToType, IntoCInt, KeyFfi, IOX2_OK,
+    AssertNonNullHandle, EntryHandleMutUnion, HandleToType, IOX2_OK, IntoCInt, KeyFfi, c_size_t,
+    iox2_entry_handle_mut_h, iox2_entry_handle_mut_t, iox2_service_type_e, iox2_type_variant_e,
+    iox2_unique_writer_id_h, iox2_unique_writer_id_t,
 };
 use crate::create_type_details;
 use core::ffi::{c_char, c_int, c_void};
@@ -23,7 +23,7 @@ use core::mem::ManuallyDrop;
 use iceoryx2::port::writer::{EntryHandleMutError, Writer};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_ffi_macros::{iceoryx2_ffi, CStrRepr};
+use iceoryx2_ffi_macros::{CStrRepr, iceoryx2_ffi};
 
 // BEGIN types definition
 
@@ -147,7 +147,7 @@ impl HandleToType for iox2_writer_h_ref {
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_entry_handle_mut_error_string(
     error: iox2_entry_handle_mut_error_e,
 ) -> *const c_char {
@@ -167,7 +167,7 @@ pub unsafe extern "C" fn iox2_entry_handle_mut_error_string(
 ///
 /// * `writer_handle` is valid, non-null and was obtained via [`iox2_port_factory_writer_builder_create`](crate::iox2_port_factory_writer_builder_create)
 /// * `id` is valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_writer_id(
     writer_handle: iox2_writer_h_ref,
     id_struct_ptr: *mut iox2_unique_writer_id_t,
@@ -213,7 +213,7 @@ pub unsafe extern "C" fn iox2_writer_id(
 ///
 /// * `writer_handle` must be non-null and valid
 /// * `entry_handle_mut_handle_ptr` must be non-null and valid
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_writer_entry(
     writer_handle: iox2_writer_h_ref,
     entry_handle_mut_struct_ptr: *mut iox2_entry_handle_mut_t,
@@ -311,7 +311,7 @@ pub unsafe extern "C" fn iox2_writer_entry(
 /// * The `writer_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_writer_t`] can be re-used with a call to
 ///   [`iox2_port_factory_writer_builder_create`](crate::iox2_port_factory_writer_builder_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_writer_drop(writer_handle: iox2_writer_h) {
     writer_handle.assert_non_null();
 

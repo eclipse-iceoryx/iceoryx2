@@ -12,7 +12,7 @@
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Item, ItemMod};
+use syn::{Item, ItemMod, parse_macro_input};
 
 use crate::internal::instantiate_tests;
 

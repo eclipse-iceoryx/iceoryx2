@@ -18,10 +18,10 @@ use alloc::format;
 use alloc::string::String;
 
 use iceoryx2::node::{Node, NodeBuilder, NodeId};
-use iceoryx2::service::service_hash::ServiceHash;
-use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
-use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::Service;
+use iceoryx2::service::service_hash::ServiceHash;
+use iceoryx2::service::static_config::StaticConfig;
+use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2_log::{fail, info, trace, warn};
 use iceoryx2_tunnel_backend::traits::{
     Backend, Discovery, EventRelay, PublishSubscribeRelay, RelayBuilder, RelayFactory,

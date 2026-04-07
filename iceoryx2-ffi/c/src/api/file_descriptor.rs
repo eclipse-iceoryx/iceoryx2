@@ -115,7 +115,7 @@ impl HandleToType for iox2_file_descriptor_h_ref {
 /// # Safety
 ///
 /// * `handle` must be valid and acquired with [`iox2_file_descriptor_new()`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_cast_file_descriptor_ptr(
     handle: iox2_file_descriptor_h,
 ) -> iox2_file_descriptor_ptr {
@@ -129,7 +129,7 @@ pub unsafe extern "C" fn iox2_cast_file_descriptor_ptr(
 /// # Safety
 ///
 /// * `handle` must be valid and acquired with [`iox2_file_descriptor_new()`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_file_descriptor_drop(handle: iox2_file_descriptor_h) {
     handle.assert_non_null();
 
@@ -145,7 +145,7 @@ pub unsafe extern "C" fn iox2_file_descriptor_drop(handle: iox2_file_descriptor_
 /// # Safety
 ///
 /// * `handle` must be valid and acquired with [`iox2_file_descriptor_new()`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_file_descriptor_native_handle(
     handle: iox2_file_descriptor_ptr,
 ) -> i32 {
@@ -165,7 +165,7 @@ pub unsafe extern "C" fn iox2_file_descriptor_native_handle(
 /// * `struct_ptr` must be either null or pointing to a valid uninitialized memory location
 /// * `handle_ptr` must be non-null and pointing to valid uninitialized memory
 /// * `handle_ptr` must be cleaned up with [`iox2_file_descriptor_drop()`]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_file_descriptor_new(
     value: i32,
     is_owned: bool,

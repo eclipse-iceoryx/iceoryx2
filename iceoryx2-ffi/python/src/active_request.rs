@@ -165,10 +165,10 @@ impl ActiveRequest {
     /// After this call the `ActiveRequest` is no longer usable!
     pub fn delete(&mut self) {
         match &mut *self.value.lock() {
-            ActiveRequestType::Ipc(ref mut v) => {
+            ActiveRequestType::Ipc(v) => {
                 v.take();
             }
-            ActiveRequestType::Local(ref mut v) => {
+            ActiveRequestType::Local(v) => {
                 v.take();
             }
         }

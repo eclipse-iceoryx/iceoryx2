@@ -136,11 +136,12 @@ impl<T, Ptr: GenericPointer> MetaSlotMap<T, Ptr> {
     #[inline(always)]
     fn verify_init(&self, source: &str) {
         debug_assert!(
-                self.is_initialized
-                    .load(core::sync::atomic::Ordering::Relaxed),
-                "From: MetaSlotMap<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
-                core::any::type_name::<T>(), source
-            );
+            self.is_initialized
+                .load(core::sync::atomic::Ordering::Relaxed),
+            "From: MetaSlotMap<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
+            core::any::type_name::<T>(),
+            source
+        );
     }
 
     fn next_available_key_after(&self, start: SlotMapKey) -> Option<(SlotMapKey, &T)> {

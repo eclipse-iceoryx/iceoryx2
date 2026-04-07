@@ -93,25 +93,24 @@ pub struct PendingResponse<
 }
 
 unsafe impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Send
-    for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Send for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 where
     Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>: Send + Sync,
 {
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Drop
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Drop
     for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
@@ -125,12 +124,12 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Deref
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Deref
     for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     type Target = RequestPayload;
@@ -140,12 +139,12 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Debug
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Debug
     for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -163,12 +162,12 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn close(&self) {
         self.request
@@ -254,12 +253,12 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     /// Receives a [`Response`] from one of the [`Server`](crate::port::server::Server)s that
     /// received the [`RequestMut`].
@@ -323,12 +322,12 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
-        ResponseHeader: Debug + ZeroCopySend,
-    > PendingResponse<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+> PendingResponse<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
 {
     /// Receives a [`Response`] from one of the [`Server`](crate::port::server::Server)s that
     /// received the [`RequestMut`].
@@ -399,10 +398,10 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponseHeader: Debug + ZeroCopySend,
-    >
+    Service: crate::service::Service,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+>
     PendingResponse<
         Service,
         [CustomPayloadMarker],

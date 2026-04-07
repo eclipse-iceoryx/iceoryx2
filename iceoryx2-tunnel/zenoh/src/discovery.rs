@@ -15,10 +15,10 @@ use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2_log::{error, fail, warn};
 use zenoh::{
+    Session, Wait,
     handlers::FifoChannelHandler,
     query::{Querier, Reply},
     sample::Locality,
-    Session, Wait,
 };
 
 use crate::keys;

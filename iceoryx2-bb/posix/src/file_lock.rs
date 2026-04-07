@@ -49,8 +49,8 @@ use iceoryx2_bb_concurrency::atomic::AtomicI64;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_log::fail;
-use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
+use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::*;
 
 use crate::clock::NanosleepError;
@@ -369,13 +369,13 @@ impl<'a, T: FileDescriptorBased + Debug> FileLock<'a, T> {
                 return Ok(LockState {
                     lock_type: LockType::Read,
                     pid: Process::from_self().id(),
-                })
+                });
             }
             core::cmp::Ordering::Greater => {
                 return Ok(LockState {
                     lock_type: LockType::Write,
                     pid: Process::from_self().id(),
-                })
+                });
             }
             core::cmp::Ordering::Equal => (),
         }

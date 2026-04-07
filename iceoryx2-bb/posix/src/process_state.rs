@@ -763,7 +763,7 @@ impl ProcessMonitor {
 
     fn read_state_from_file(&self) -> Result<ProcessState, ProcessMonitorStateError> {
         let file = match unsafe { &*self.file.as_ptr() } {
-            Some(ref f) => f,
+            Some(f) => f,
             None => return Ok(ProcessState::Starting),
         };
 

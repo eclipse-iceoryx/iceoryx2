@@ -28,7 +28,7 @@ pub mod publish_subscribe_propagation {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::test_fail;
     use iceoryx2_tunnel::Tunnel;
-    use iceoryx2_tunnel_backend::traits::{testing::Testing, Backend};
+    use iceoryx2_tunnel_backend::traits::{Backend, testing::Testing};
 
     #[derive(Default, Debug, Clone, PartialEq, ZeroCopySend)]
     #[repr(C)]

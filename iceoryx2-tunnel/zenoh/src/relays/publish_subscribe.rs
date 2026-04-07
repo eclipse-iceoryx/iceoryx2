@@ -11,9 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::service::{
+    Service,
     builder::{CustomHeaderMarker, CustomPayloadMarker},
     static_config::StaticConfig,
-    Service,
 };
 use iceoryx2_log::{fail, trace};
 use iceoryx2_tunnel_backend::{
@@ -21,12 +21,12 @@ use iceoryx2_tunnel_backend::{
     types::publish_subscribe::{LoanFn, SampleMut},
 };
 use zenoh::{
+    Session, Wait,
     bytes::ZBytes,
     handlers::{FifoChannel, FifoChannelHandler},
     pubsub::{Publisher, Subscriber},
     qos::Reliability,
     sample::{Locality, Sample},
-    Session, Wait,
 };
 
 use crate::keys;

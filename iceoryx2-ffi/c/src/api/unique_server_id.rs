@@ -99,7 +99,7 @@ impl HandleToType for iox2_unique_server_id_h_ref {
 /// * `handle` must be a valid, non-null pointer
 /// * `id_ptr` must be a valid, non-null pointer to a buffer of at least `id_length` bytes
 /// * `id_length` must be large enough to hold the ID value
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe extern "C" fn iox2_unique_server_id_value(
     handle: iox2_unique_server_id_h,
     id_ptr: *mut u8,
@@ -133,7 +133,7 @@ unsafe extern "C" fn iox2_unique_server_id_value(
 /// # Safety
 ///
 /// * The `handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_unique_server_id_drop(handle: iox2_unique_server_id_h) {
     handle.assert_non_null();
 
@@ -148,7 +148,7 @@ pub unsafe extern "C" fn iox2_unique_server_id_drop(handle: iox2_unique_server_i
 ///
 /// * `lhs` - Must be a valid [`iox2_unique_server_id_h_ref`]
 /// * `rhs` - Must be a valid [`iox2_unique_server_id_h_ref`]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_unique_server_id_eq(
     lhs: iox2_unique_server_id_h_ref,
     rhs: iox2_unique_server_id_h_ref,
@@ -168,7 +168,7 @@ pub unsafe extern "C" fn iox2_unique_server_id_eq(
 ///
 /// * `lhs` - Must be a valid [`iox2_unique_server_id_h_ref`]
 /// * `rhs` - Must be a valid [`iox2_unique_server_id_h_ref`]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_unique_server_id_less(
     lhs: iox2_unique_server_id_h_ref,
     rhs: iox2_unique_server_id_h_ref,

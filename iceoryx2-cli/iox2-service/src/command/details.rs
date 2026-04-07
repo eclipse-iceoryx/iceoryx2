@@ -12,9 +12,9 @@
 
 use anyhow::{Error, Result};
 use iceoryx2::prelude::*;
+use iceoryx2_cli::Format;
 use iceoryx2_cli::filter::Filter;
 use iceoryx2_cli::output::ServiceDescription;
-use iceoryx2_cli::Format;
 
 use crate::cli::OutputFilter;
 

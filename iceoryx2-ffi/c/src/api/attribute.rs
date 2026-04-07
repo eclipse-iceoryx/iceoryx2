@@ -37,7 +37,7 @@ pub type iox2_attribute_h_ref = *const iox2_attribute_h_t;
 /// # Safety
 ///
 /// * The `handle` must be a valid handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_key_len(handle: iox2_attribute_h_ref) -> usize {
     debug_assert!(!handle.is_null());
 
@@ -52,7 +52,7 @@ pub unsafe extern "C" fn iox2_attribute_key_len(handle: iox2_attribute_h_ref) ->
 /// * `handle` - A valid [`iox2_attribute_h_ref`],
 /// * `buffer` - Must be non-null and pointing to a valid memory location,
 /// * `buffer_len` - Must be the length of the provided `buffer`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_key(
     handle: iox2_attribute_h_ref,
     buffer: *mut c_char,
@@ -76,7 +76,7 @@ pub unsafe extern "C" fn iox2_attribute_key(
 /// # Safety
 ///
 /// * The `handle` must be a valid handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_value_len(handle: iox2_attribute_h_ref) -> usize {
     debug_assert!(!handle.is_null());
 
@@ -91,7 +91,7 @@ pub unsafe extern "C" fn iox2_attribute_value_len(handle: iox2_attribute_h_ref) 
 /// * `handle` - A valid [`iox2_attribute_h_ref`],
 /// * `buffer` - Must be non-null and pointing to a valid memory location,
 /// * `buffer_len` - Must be the length of the provided `buffer`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_value(
     handle: iox2_attribute_h_ref,
     buffer: *mut c_char,

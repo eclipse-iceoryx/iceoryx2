@@ -13,22 +13,22 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
+    AssertNonNullHandle, HandleToType, IOX2_OK, PayloadFfi, SampleMutUninitUnion, UserHeaderFfi,
     iox2_service_type_e, iox2_unable_to_deliver_strategy_e, iox2_unique_publisher_id_h,
-    iox2_unique_publisher_id_t, AssertNonNullHandle, HandleToType, PayloadFfi,
-    SampleMutUninitUnion, UserHeaderFfi, IOX2_OK,
+    iox2_unique_publisher_id_t,
 };
 
-use iceoryx2::port::publisher::Publisher;
-use iceoryx2::port::update_connections::UpdateConnections;
 use iceoryx2::port::LoanError;
 use iceoryx2::port::SendError;
+use iceoryx2::port::publisher::Publisher;
+use iceoryx2::port::update_connections::UpdateConnections;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_ffi_macros::iceoryx2_ffi;
 use iceoryx2_ffi_macros::CStrRepr;
+use iceoryx2_ffi_macros::iceoryx2_ffi;
 
-use super::{iox2_sample_mut_h, iox2_sample_mut_t, IntoCInt};
+use super::{IntoCInt, iox2_sample_mut_h, iox2_sample_mut_t};
 
 use crate::c_size_t;
 use core::ffi::{c_char, c_int, c_void};
@@ -259,7 +259,7 @@ unsafe fn send_slice_copy<S: Service>(
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_send_error_string(error: iox2_send_error_e) -> *const c_char {
     error.as_const_cstr().as_ptr() as *const c_char
 }
@@ -278,7 +278,7 @@ pub unsafe extern "C" fn iox2_send_error_string(error: iox2_send_error_e) -> *co
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_loan_error_string(error: iox2_loan_error_e) -> *const c_char {
     error.as_const_cstr().as_ptr() as *const c_char
 }
@@ -295,7 +295,7 @@ pub unsafe extern "C" fn iox2_loan_error_string(error: iox2_loan_error_e) -> *co
 /// # Safety
 ///
 /// * `publisher_handle` is valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publisher_unable_to_deliver_strategy(
     publisher_handle: iox2_publisher_h_ref,
 ) -> iox2_unable_to_deliver_strategy_e {
@@ -331,7 +331,7 @@ pub unsafe extern "C" fn iox2_publisher_unable_to_deliver_strategy(
 /// # Safety
 ///
 /// * `publisher_handle` is valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publisher_initial_max_slice_len(
     publisher_handle: iox2_publisher_h_ref,
 ) -> c_size_t {
@@ -361,7 +361,7 @@ pub unsafe extern "C" fn iox2_publisher_initial_max_slice_len(
 ///
 /// * `publisher_handle` is valid and non-null
 /// * `id` is valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publisher_id(
     publisher_handle: iox2_publisher_h_ref,
     id_struct_ptr: *mut iox2_unique_publisher_id_t,
@@ -411,7 +411,7 @@ pub unsafe extern "C" fn iox2_publisher_id(
 /// * `size_of_element` must be the correct size of each element in bytes
 /// * `number_of_elements` must accurately represent the number of elements in the slice
 /// * `number_of_recipients` can be null, otherwise it must be a valid pointer to a `usize`
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publisher_send_slice_copy(
     publisher_handle: iox2_publisher_h_ref,
     data_ptr: *const c_void,
@@ -460,7 +460,7 @@ pub unsafe extern "C" fn iox2_publisher_send_slice_copy(
 /// * `data_ptr` non-null pointer to a valid position in memory
 /// * `data_len` the size of the payload memory
 /// * `number_of_recipients` can be null, otherwise a valid pointer to an [`usize`]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publisher_send_copy(
     publisher_handle: iox2_publisher_h_ref,
     data_ptr: *const c_void,
@@ -505,7 +505,7 @@ pub unsafe extern "C" fn iox2_publisher_send_copy(
 ///
 /// * `publisher_handle` is valid and non-null
 /// * The `sample_handle_ptr` is pointing to a valid [`iox2_sample_mut_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publisher_loan_slice_uninit(
     publisher_handle: iox2_publisher_h_ref,
     sample_struct_ptr: *mut iox2_sample_mut_t,
@@ -583,7 +583,7 @@ pub unsafe extern "C" fn iox2_publisher_loan_slice_uninit(
 /// # Safety
 ///
 /// * The `publisher_handle` is still valid after the return of this function and can be use in another function call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publisher_update_connections(
     publisher_handle: iox2_publisher_h_ref,
 ) -> c_int {
@@ -614,7 +614,7 @@ pub unsafe extern "C" fn iox2_publisher_update_connections(
 /// * The `publisher_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_publisher_t`] can be re-used with a call to
 ///   [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publisher_drop(publisher_handle: iox2_publisher_h) {
     publisher_handle.assert_non_null();
 

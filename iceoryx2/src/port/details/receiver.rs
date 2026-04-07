@@ -26,10 +26,10 @@ use iceoryx2_log::{error, fail, warn};
 
 use crate::port::update_connections::ConnectionFailure;
 use crate::port::{DegradationAction, DegradationCallback, ReceiveError};
-use crate::service::naming_scheme::data_segment_name;
-use crate::service::static_config::message_type_details::MessageTypeDetails;
 use crate::service::NoResource;
 use crate::service::ServiceState;
+use crate::service::naming_scheme::data_segment_name;
+use crate::service::static_config::message_type_details::MessageTypeDetails;
 use crate::service::{self, config_scheme::connection_config, naming_scheme::connection_name};
 
 use super::channel_management::ChannelManagement;

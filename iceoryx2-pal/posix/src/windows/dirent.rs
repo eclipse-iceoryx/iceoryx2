@@ -16,10 +16,9 @@
 
 use crate::{
     posix::{
-        self,
+        self, MemZeroedStruct,
         types::*,
         win32_handle_translator::{DirectoryHandle, FdHandleEntry, HandleTranslator},
-        MemZeroedStruct,
     },
     win32call,
 };

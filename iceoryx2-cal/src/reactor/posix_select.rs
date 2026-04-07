@@ -15,7 +15,7 @@ use core::{fmt::Debug, time::Duration};
 use alloc::format;
 
 use iceoryx2_bb_posix::{
-    clock::{nanosleep, NanosleepError},
+    clock::{NanosleepError, nanosleep},
     file_descriptor::FileDescriptor,
     file_descriptor_set::{
         FileDescriptorSet, FileDescriptorSetAddError, FileDescriptorSetGuard,

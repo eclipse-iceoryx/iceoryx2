@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::{
-    api::{c_size_t, iox2_service_type_e, AssertNonNullHandle, HandleToType},
+    api::{AssertNonNullHandle, HandleToType, c_size_t, iox2_service_type_e},
     iox2_event_id_t,
 };
 use core::ffi::c_void;
@@ -118,7 +118,7 @@ impl HandleToType for iox2_entry_handle_h_ref {
 /// * `value_ptr` a valid, non-null [`*mut c_void`] pointer
 /// * `value_size` the size of the value type
 /// * `value_alignment` the alignment of the value type
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_entry_handle_get(
     entry_handle_handle: iox2_entry_handle_h_ref,
     value_ptr: *mut c_void,
@@ -153,7 +153,7 @@ pub unsafe extern "C" fn iox2_entry_handle_get(
 /// # Safety
 ///
 /// * `entry_handle_handle` obtained by [`iox2_reader_entry()`](crate::iox2_reader_entry())
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_entry_handle_is_up_to_date(
     entry_handle_handle: iox2_entry_handle_h_ref,
     generation_counter: u64,
@@ -182,7 +182,7 @@ pub unsafe extern "C" fn iox2_entry_handle_is_up_to_date(
 ///
 /// * `entry_handle_handle` obtained by [`iox2_reader_entry()`](crate::iox2_reader_entry())
 /// * `entry_id` a valid, non-null pointer pointing to a [`iox2_event_id_t`]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_entry_handle_entry_id(
     entry_handle_handle: iox2_entry_handle_h_ref,
     entry_id: *mut iox2_event_id_t,
@@ -211,7 +211,7 @@ pub unsafe extern "C" fn iox2_entry_handle_entry_id(
 /// * The `entry_handle_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_entry_handle_t`] can be re-used with a call to
 ///   [`iox2_reader_entry`](crate::iox2_reader_entry)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_entry_handle_drop(entry_handle_handle: iox2_entry_handle_h) {
     entry_handle_handle.assert_non_null();
 

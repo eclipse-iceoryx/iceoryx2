@@ -13,9 +13,9 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    c_size_t, iox2_port_factory_event_h, iox2_port_factory_event_t, iox2_service_builder_event_h,
-    iox2_service_builder_event_h_ref, iox2_service_type_e, AssertNonNullHandle, HandleToType,
-    IntoCInt, PortFactoryEventUnion, ServiceBuilderUnion, IOX2_OK,
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, PortFactoryEventUnion,
+    ServiceBuilderUnion, c_size_t, iox2_port_factory_event_h, iox2_port_factory_event_t,
+    iox2_service_builder_event_h, iox2_service_builder_event_h_ref, iox2_service_type_e,
 };
 
 use iceoryx2::prelude::*;
@@ -197,7 +197,7 @@ impl IntoCInt for EventOpenOrCreateError {
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_event_open_or_create_error_string(
     error: iox2_event_open_or_create_error_e,
 ) -> *const c_char {
@@ -217,7 +217,7 @@ pub unsafe extern "C" fn iox2_event_open_or_create_error_string(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_set_deadline(
     service_builder_handle: iox2_service_builder_event_h_ref,
     seconds: u64,
@@ -237,7 +237,7 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_deadline(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_disable_deadline(
     service_builder_handle: iox2_service_builder_event_h_ref,
 ) {
@@ -286,7 +286,7 @@ unsafe fn iox2_service_builder_event_set_deadline_impl(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_set_notifier_dead_event(
     service_builder_handle: iox2_service_builder_event_h_ref,
     value: c_size_t,
@@ -307,14 +307,14 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_notifier_dead_event(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_disable_notifier_dead_event(
     service_builder_handle: iox2_service_builder_event_h_ref,
 ) {
     iox2_service_builder_event_set_notifier_dead_event_impl(service_builder_handle, None);
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe fn iox2_service_builder_event_set_notifier_dead_event_impl(
     service_builder_handle: iox2_service_builder_event_h_ref,
     value: Option<EventId>,
@@ -358,7 +358,7 @@ unsafe fn iox2_service_builder_event_set_notifier_dead_event_impl(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_set_notifier_created_event(
     service_builder_handle: iox2_service_builder_event_h_ref,
     value: c_size_t,
@@ -379,7 +379,7 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_notifier_created_event(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_disable_notifier_created_event(
     service_builder_handle: iox2_service_builder_event_h_ref,
 ) {
@@ -429,7 +429,7 @@ unsafe fn iox2_service_builder_event_set_notifier_created_event_impl(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_set_notifier_dropped_event(
     service_builder_handle: iox2_service_builder_event_h_ref,
     value: c_size_t,
@@ -450,14 +450,14 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_notifier_dropped_event(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_disable_notifier_dropped_event(
     service_builder_handle: iox2_service_builder_event_h_ref,
 ) {
     iox2_service_builder_event_set_notifier_dropped_event_impl(service_builder_handle, None);
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe fn iox2_service_builder_event_set_notifier_dropped_event_impl(
     service_builder_handle: iox2_service_builder_event_h_ref,
     value: Option<EventId>,
@@ -501,7 +501,7 @@ unsafe fn iox2_service_builder_event_set_notifier_dropped_event_impl(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_set_max_notifiers(
     service_builder_handle: iox2_service_builder_event_h_ref,
     value: c_size_t,
@@ -543,7 +543,7 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_max_notifiers(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_set_max_nodes(
     service_builder_handle: iox2_service_builder_event_h_ref,
     value: c_size_t,
@@ -585,7 +585,7 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_max_nodes(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_set_event_id_max_value(
     service_builder_handle: iox2_service_builder_event_h_ref,
     value: c_size_t,
@@ -627,7 +627,7 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_event_id_max_value(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_set_max_listeners(
     service_builder_handle: iox2_service_builder_event_h_ref,
     value: c_size_t,
@@ -675,7 +675,7 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_max_listeners(
 /// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_open_or_create(
     service_builder_handle: iox2_service_builder_event_h,
     port_factory_struct_ptr: *mut iox2_port_factory_event_t,
@@ -710,7 +710,7 @@ pub unsafe extern "C" fn iox2_service_builder_event_open_or_create(
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
 /// * The `attribute_verifier_handle` must be valid.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_open_or_create_with_attributes(
     service_builder_handle: iox2_service_builder_event_h,
     attribute_verifier_handle: iox2_attribute_verifier_h_ref,
@@ -746,7 +746,7 @@ pub unsafe extern "C" fn iox2_service_builder_event_open_or_create_with_attribut
 /// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_open(
     service_builder_handle: iox2_service_builder_event_h,
     port_factory_struct_ptr: *mut iox2_port_factory_event_t,
@@ -780,7 +780,7 @@ pub unsafe extern "C" fn iox2_service_builder_event_open(
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
 /// * The `attribute_verifier_handle` must be valid.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_open_with_attributes(
     service_builder_handle: iox2_service_builder_event_h,
     attribute_verifier_handle: iox2_attribute_verifier_h_ref,
@@ -816,7 +816,7 @@ pub unsafe extern "C" fn iox2_service_builder_event_open_with_attributes(
 /// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_create(
     service_builder_handle: iox2_service_builder_event_h,
     port_factory_struct_ptr: *mut iox2_port_factory_event_t,
@@ -850,7 +850,7 @@ pub unsafe extern "C" fn iox2_service_builder_event_create(
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
 /// * The `attribute_verifier_handle` must be valid.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_create_with_attributes(
     service_builder_handle: iox2_service_builder_event_h,
     attribute_specifier_handle: iox2_attribute_specifier_h_ref,

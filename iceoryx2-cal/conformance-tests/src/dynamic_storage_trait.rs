@@ -20,7 +20,7 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary_traits::allocator::*;
 use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
-use iceoryx2_bb_posix::clock::{nanosleep, Time};
+use iceoryx2_bb_posix::clock::{Time, nanosleep};
 use iceoryx2_bb_posix::ipc_capable::Handle;
 use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_posix::thread::thread_scope;
@@ -606,10 +606,10 @@ pub mod dynamic_storage_trait {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let config = generate_isolated_config::<Sut>();
-        let config_1 = config
-            .clone()
-            .suffix(unsafe { &FileName::new_unchecked(b".s1") });
-        let config_2 = config.suffix(unsafe { &FileName::new_unchecked(b".s2") });
+        let file_name_1 = unsafe { &FileName::new_unchecked(b".s1") };
+        let file_name_2 = unsafe { &FileName::new_unchecked(b".s2") };
+        let config_1 = config.clone().suffix(file_name_1);
+        let config_2 = config.suffix(file_name_2);
 
         let sut_name = generate_file_path().file_name();
 

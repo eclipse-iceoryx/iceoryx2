@@ -21,7 +21,7 @@ mod service_discovery_service {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::test_fail;
     use iceoryx2_services_discovery::service_discovery::{
-        service_name, Config, Discovery, Payload, Service,
+        Config, Discovery, Payload, Service, service_name,
     };
 
     #[test]

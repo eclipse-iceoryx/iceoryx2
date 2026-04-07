@@ -11,8 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::alloc::Layout;
-use core::mem::size_of;
 use core::mem::MaybeUninit;
+use core::mem::size_of;
 use core::ptr::copy_nonoverlapping;
 
 extern crate alloc;
@@ -23,7 +23,7 @@ use alloc::format;
 use alloc::rc::Rc;
 
 use iceoryx2::prelude::{
-    ipc, set_log_level_from_env_or, LogLevel, NodeBuilder, WaitSetAttachmentId, WaitSetBuilder,
+    LogLevel, NodeBuilder, WaitSetAttachmentId, WaitSetBuilder, ipc, set_log_level_from_env_or,
 };
 use iceoryx2_bb_posix::clock::*;
 use iceoryx2_log::info;

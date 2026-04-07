@@ -112,8 +112,8 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::queue::Queue;
-use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -316,30 +316,30 @@ pub struct Publisher<
 }
 
 unsafe impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: Debug + ZeroCopySend,
-    > Send for Publisher<Service, Payload, UserHeader>
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Send for Publisher<Service, Payload, UserHeader>
 where
     Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>: Send + Sync,
 {
 }
 
 unsafe impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: Debug + ZeroCopySend,
-    > Sync for Publisher<Service, Payload, UserHeader>
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Sync for Publisher<Service, Payload, UserHeader>
 where
     Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>: Send + Sync,
 {
 }
 
 impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: Debug + ZeroCopySend,
-    > Drop for Publisher<Service, Payload, UserHeader>
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Drop for Publisher<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
         let shared_state = self.publisher_shared_state.lock();
@@ -357,10 +357,10 @@ impl<
 }
 
 impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: Debug + ZeroCopySend,
-    > Publisher<Service, Payload, UserHeader>
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Publisher<Service, Payload, UserHeader>
 {
     pub(crate) fn new(
         service: Arc<ServiceState<Service, NoResource>>,
@@ -531,10 +531,10 @@ impl<
 // BEGIN: typed API
 ////////////////////////
 impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend + Sized,
-        UserHeader: Default + Debug + ZeroCopySend,
-    > Publisher<Service, Payload, UserHeader>
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + Sized,
+    UserHeader: Default + Debug + ZeroCopySend,
+> Publisher<Service, Payload, UserHeader>
 {
     /// Copies the input `value` into a [`crate::sample_mut::SampleMut`] and delivers it.
     /// On success it returns the number of [`crate::port::subscriber::Subscriber`]s that received
@@ -621,10 +621,10 @@ impl<
 }
 
 impl<
-        Service: service::Service,
-        Payload: Default + Debug + ZeroCopySend + Sized,
-        UserHeader: Default + Debug + ZeroCopySend,
-    > Publisher<Service, Payload, UserHeader>
+    Service: service::Service,
+    Payload: Default + Debug + ZeroCopySend + Sized,
+    UserHeader: Default + Debug + ZeroCopySend,
+> Publisher<Service, Payload, UserHeader>
 {
     /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`]
     /// and initialize it with the default value. This can be a performance hit and [`Publisher::loan_uninit`]
@@ -665,10 +665,10 @@ impl<
 // BEGIN: sliced API
 ////////////////////////
 impl<
-        Service: service::Service,
-        Payload: Default + Debug + ZeroCopySend,
-        UserHeader: Default + Debug + ZeroCopySend,
-    > Publisher<Service, [Payload], UserHeader>
+    Service: service::Service,
+    Payload: Default + Debug + ZeroCopySend,
+    UserHeader: Default + Debug + ZeroCopySend,
+> Publisher<Service, [Payload], UserHeader>
 {
     /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`]
     /// and initializes all slice elements with the default value. This can be a performance hit
@@ -710,11 +710,8 @@ impl<
     }
 }
 
-impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend,
-        UserHeader: Debug + ZeroCopySend,
-    > Publisher<Service, [Payload], UserHeader>
+impl<Service: service::Service, Payload: Debug + ZeroCopySend, UserHeader: Debug + ZeroCopySend>
+    Publisher<Service, [Payload], UserHeader>
 {
     /// Returns the maximum initial slice length configured for this [`Publisher`].
     pub fn initial_max_slice_len(&self) -> usize {
@@ -726,10 +723,10 @@ impl<
 }
 
 impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend,
-        UserHeader: Default + Debug + ZeroCopySend,
-    > Publisher<Service, [Payload], UserHeader>
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend,
+    UserHeader: Default + Debug + ZeroCopySend,
+> Publisher<Service, [Payload], UserHeader>
 {
     /// Loans/allocates a [`SampleMutUninit`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
@@ -844,10 +841,10 @@ impl<Service: service::Service> Publisher<Service, [CustomPayloadMarker], Custom
 ////////////////////////
 
 impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: Debug + ZeroCopySend,
-    > UpdateConnections for Publisher<Service, Payload, UserHeader>
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> UpdateConnections for Publisher<Service, Payload, UserHeader>
 {
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
         self.publisher_shared_state.lock().update_connections()

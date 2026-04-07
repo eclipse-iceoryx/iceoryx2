@@ -145,9 +145,5 @@ impl<const N: usize> ToB64 for [u8; N] {
 ///
 /// Once const traits are stable, this should become a generic implementation for `T: PartialOrd`
 pub const fn max(a: usize, b: usize) -> usize {
-    if a > b {
-        a
-    } else {
-        b
-    }
+    if a > b { a } else { b }
 }

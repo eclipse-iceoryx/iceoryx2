@@ -18,7 +18,7 @@ pub(crate) use execute::*;
 pub(crate) use list::*;
 pub(crate) use paths::*;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use cargo_metadata::MetadataCommand;
 use std::env;
 use std::fs;

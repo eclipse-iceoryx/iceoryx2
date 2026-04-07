@@ -12,10 +12,10 @@
 
 use anyhow::{Context, Error, Result};
 use iceoryx2::prelude::*;
+use iceoryx2_cli::Format;
 use iceoryx2_cli::filter::Filter;
 use iceoryx2_cli::filter::NodeIdentifier;
 use iceoryx2_cli::output::NodeDescription;
-use iceoryx2_cli::Format;
 
 use crate::cli::OutputFilter;
 

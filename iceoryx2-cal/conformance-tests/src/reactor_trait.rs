@@ -22,8 +22,8 @@ pub mod reactor_trait {
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::barrier::BarrierBuilder;
     use iceoryx2_bb_posix::barrier::BarrierHandle;
-    use iceoryx2_bb_posix::clock::nanosleep;
     use iceoryx2_bb_posix::clock::Time;
+    use iceoryx2_bb_posix::clock::nanosleep;
     use iceoryx2_bb_posix::file_descriptor::FileDescriptorBased;
     use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::mutex::MutexBuilder;

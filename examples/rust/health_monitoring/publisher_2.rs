@@ -15,7 +15,7 @@ use core::time::Duration;
 extern crate alloc;
 use alloc::boxed::Box;
 
-use examples_common::{open_service, PubSubEvent};
+use examples_common::{PubSubEvent, open_service};
 use iceoryx2::prelude::*;
 
 const CYCLE_TIME: Duration = Duration::from_millis(1500);

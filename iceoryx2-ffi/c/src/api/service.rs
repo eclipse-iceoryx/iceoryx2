@@ -18,16 +18,16 @@
 use core::ffi::{c_char, c_int};
 
 use iceoryx2::service::{
-    messaging_pattern::MessagingPattern, Service, ServiceDetails, ServiceDetailsError,
-    ServiceListError,
+    Service, ServiceDetails, ServiceDetailsError, ServiceListError,
+    messaging_pattern::MessagingPattern,
 };
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::CStrRepr;
 
 use crate::{
-    iox2_callback_context, iox2_callback_progression_e, iox2_config_ptr, iox2_service_name_ptr,
-    iox2_static_config_t, IOX2_OK,
+    IOX2_OK, iox2_callback_context, iox2_callback_progression_e, iox2_config_ptr,
+    iox2_service_name_ptr, iox2_static_config_t,
 };
 
 use super::IntoCInt;
@@ -161,7 +161,7 @@ pub type iox2_service_list_callback = extern "C" fn(
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_details_error_string(
     error: iox2_service_details_error_e,
 ) -> *const c_char {
@@ -182,7 +182,7 @@ pub unsafe extern "C" fn iox2_service_details_error_string(
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_list_error_string(
     error: iox2_service_list_error_e,
 ) -> *const c_char {
@@ -198,7 +198,7 @@ pub unsafe extern "C" fn iox2_service_list_error_string(
 /// * The `service_name` must be valid and non-null
 /// * The `config` must be valid and non-null
 /// * The `does_exist` must be valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_does_exist(
     service_type: iox2_service_type_e,
     service_name: iox2_service_name_ptr,
@@ -240,7 +240,7 @@ pub unsafe extern "C" fn iox2_service_does_exist(
 /// * The `config` must be valid and non-null
 /// * The `service_details` must be valid and non-null
 /// * The `does_exist` must be valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_details(
     service_type: iox2_service_type_e,
     service_name: iox2_service_name_ptr,
@@ -306,7 +306,7 @@ fn list_callback<S: Service>(
 ///
 /// * The `config` must be valid and non-null
 /// * The `callback` must be valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_list(
     service_type: iox2_service_type_e,
     config_ptr: iox2_config_ptr,

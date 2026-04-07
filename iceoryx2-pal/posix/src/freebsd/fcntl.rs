@@ -13,8 +13,8 @@
 #![allow(non_camel_case_types, non_snake_case)]
 #![allow(clippy::missing_safety_doc)]
 
-use crate::posix::types::*;
 use crate::posix::MemZeroedStruct;
+use crate::posix::types::*;
 
 pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) -> int {
     crate::internal::open(pathname, flags, mode as core::ffi::c_uint)

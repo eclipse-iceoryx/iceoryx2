@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    c_size_t, iox2_semantic_string_error_e, AssertNonNullHandle, HandleToType, IntoCInt, IOX2_OK,
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, c_size_t, iox2_semantic_string_error_e,
 };
 
 use iceoryx2::prelude::*;
@@ -101,7 +101,7 @@ impl HandleToType for iox2_node_name_h_ref {
 ///
 /// * Terminates if `node_name_str` or `node_name_handle_ptr` is a NULL pointer!
 /// * It is undefined behavior to pass a `node_name_len` which is larger than the actual length of `node_name_str`!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_node_name_new(
     node_name_struct_ptr: *mut iox2_node_name_t,
     node_name_str: *const c_char,
@@ -164,7 +164,7 @@ pub unsafe extern "C" fn iox2_node_name_new(
 ///
 /// * The `node_name_handle` must be a valid handle.
 /// * The `node_name_handle` is still valid after the call to this function.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_cast_node_name_ptr(
     node_name_handle: iox2_node_name_h,
 ) -> iox2_node_name_ptr {
@@ -186,7 +186,7 @@ pub unsafe extern "C" fn iox2_cast_node_name_ptr(
 ///
 /// * The `node_name_ptr` must be a valid pointer to a node name.
 /// * The `node_name_len` must be a valid pointer to a size_t.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_node_name_as_chars(
     node_name_ptr: iox2_node_name_ptr,
     node_name_len: *mut c_size_t,
@@ -217,7 +217,7 @@ pub unsafe extern "C" fn iox2_node_name_as_chars(
 ///
 /// * The `node_name_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_node_name_t`] can be re-used with a call to [`iox2_node_name_new`]!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_node_name_drop(node_name_handle: iox2_node_name_h) {
     debug_assert!(!node_name_handle.is_null());
 

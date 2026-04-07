@@ -13,18 +13,18 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, PayloadFfi, SampleUnion, UserHeaderFfi,
     c_size_t, iox2_sample_h, iox2_sample_t, iox2_service_type_e, iox2_unique_subscriber_id_h,
-    iox2_unique_subscriber_id_t, AssertNonNullHandle, HandleToType, IntoCInt, PayloadFfi,
-    SampleUnion, UserHeaderFfi, IOX2_OK,
+    iox2_unique_subscriber_id_t,
 };
 
+use iceoryx2::port::ReceiveError;
 use iceoryx2::port::subscriber::Subscriber;
 use iceoryx2::port::update_connections::ConnectionFailure;
-use iceoryx2::port::ReceiveError;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_ffi_macros::iceoryx2_ffi;
 use iceoryx2_ffi_macros::CStrRepr;
+use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
@@ -177,7 +177,7 @@ impl HandleToType for iox2_subscriber_h_ref {
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_receive_error_string(error: iox2_receive_error_e) -> *const c_char {
     error.as_const_cstr().as_ptr() as *const c_char
 }
@@ -196,7 +196,7 @@ pub unsafe extern "C" fn iox2_receive_error_string(error: iox2_receive_error_e) 
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_connection_failure_string(
     error: iox2_connection_failure_e,
 ) -> *const c_char {
@@ -213,7 +213,7 @@ pub unsafe extern "C" fn iox2_connection_failure_string(
 /// # Safety
 ///
 /// * `subscriber_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_subscriber_buffer_size(
     subscriber_handle: iox2_subscriber_h_ref,
 ) -> c_size_t {
@@ -240,7 +240,7 @@ pub unsafe extern "C" fn iox2_subscriber_buffer_size(
 ///
 /// * `subscriber_handle` is valid, non-null and was obtained via [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create)
 /// * `id` is valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_subscriber_id(
     subscriber_handle: iox2_subscriber_h_ref,
     id_struct_ptr: *mut iox2_unique_subscriber_id_t,
@@ -288,7 +288,7 @@ pub unsafe extern "C" fn iox2_subscriber_id(
 ///
 /// * The `subscriber_handle` is still valid after the return of this function and can be use in another function call.
 /// * The `sample_handle_ptr` is pointing to a valid [`iox2_sample_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_subscriber_receive(
     subscriber_handle: iox2_subscriber_h_ref,
     sample_struct_ptr: *mut iox2_sample_t,
@@ -363,7 +363,7 @@ pub unsafe extern "C" fn iox2_subscriber_receive(
 ///
 /// * The `subscriber_handle` is still valid after the return of this function and can be use in another function call.
 /// * The `result_ptr` is pointing to a valid bool.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_subscriber_has_samples(
     subscriber_handle: iox2_subscriber_h_ref,
     result_ptr: *mut bool,
@@ -402,7 +402,7 @@ pub unsafe extern "C" fn iox2_subscriber_has_samples(
 /// * The `subscriber_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_subscriber_t`] can be re-used with a call to
 ///   [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_subscriber_drop(subscriber_handle: iox2_subscriber_h) {
     subscriber_handle.assert_non_null();
 

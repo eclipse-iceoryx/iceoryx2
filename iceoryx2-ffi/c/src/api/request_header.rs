@@ -96,7 +96,7 @@ impl HandleToType for iox2_request_header_h_ref {
 ///
 /// * The `handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_request_header_t`] can be re-used
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_request_header_drop(handle: iox2_request_header_h) {
     debug_assert!(!handle.is_null());
 
@@ -120,7 +120,7 @@ pub unsafe extern "C" fn iox2_request_header_drop(handle: iox2_request_header_h)
 /// * `header_handle` is valid and non-null
 /// * `id_struct_ptr` is either null or valid and non-null
 /// * `id_handle_ptr` is valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_request_header_client_id(
     header_handle: iox2_request_header_h_ref,
     id_struct_ptr: *mut iox2_unique_client_id_t,
@@ -160,7 +160,7 @@ pub unsafe extern "C" fn iox2_request_header_client_id(
 /// # Safety
 ///
 /// * `header_handle` is valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_request_header_number_of_elements(
     header_handle: iox2_request_header_h_ref,
 ) -> u64 {

@@ -21,7 +21,7 @@ pub mod event_id_tracker_trait {
 
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_cal::event::{id_tracker::IdTracker, TriggerId};
+    use iceoryx2_cal::event::{TriggerId, id_tracker::IdTracker};
 
     use iceoryx2_bb_memory::bump_allocator::*;
 

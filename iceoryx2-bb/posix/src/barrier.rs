@@ -43,8 +43,8 @@ pub use crate::ipc_capable::{Handle, IpcCapable};
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
 use iceoryx2_log::{fail, fatal_panic, warn};
-use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
+use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::*;
 
 use crate::handle_errno;

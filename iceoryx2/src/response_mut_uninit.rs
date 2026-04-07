@@ -66,20 +66,20 @@ pub struct ResponseMutUninit<
 }
 
 unsafe impl<
-        Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Send for ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Send for ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
 where
     Service::ArcThreadSafetyPolicy<SharedServerState<Service>>: Send + Sync,
 {
 }
 
 impl<
-        Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Debug for ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Debug for ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "ResponseMut {{ response: {:?} }}", self.response)
@@ -87,10 +87,10 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
 {
     /// Returns a reference to the
     /// [`ResponseHeader`](service::header::request_response::ResponseHeader).
@@ -231,10 +231,10 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend,
-        ResponseHeader: Debug + ZeroCopySend,
-    > ResponseMutUninit<Service, MaybeUninit<ResponsePayload>, ResponseHeader>
+    Service: crate::service::Service,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+> ResponseMutUninit<Service, MaybeUninit<ResponsePayload>, ResponseHeader>
 {
     /// Writes the provided payload into the [`ResponseMutUninit`] and returns an initialized
     /// [`ResponseMut`] that is ready to be sent.
@@ -306,10 +306,10 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend,
-        ResponseHeader: Debug + ZeroCopySend,
-    > ResponseMutUninit<Service, [MaybeUninit<ResponsePayload>], ResponseHeader>
+    Service: crate::service::Service,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+> ResponseMutUninit<Service, [MaybeUninit<ResponsePayload>], ResponseHeader>
 {
     /// Converts the [`ResponseMutUninit`] into [`ResponseMut`]. This shall be done after the
     /// payload was written into the [`ResponseMutUninit`].
@@ -393,10 +393,10 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        ResponsePayload: Debug + Copy + ZeroCopySend,
-        ResponseHeader: Debug + ZeroCopySend,
-    > ResponseMutUninit<Service, [MaybeUninit<ResponsePayload>], ResponseHeader>
+    Service: crate::service::Service,
+    ResponsePayload: Debug + Copy + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+> ResponseMutUninit<Service, [MaybeUninit<ResponsePayload>], ResponseHeader>
 {
     /// Writes the payload by mem copying the provided slice into the [`ResponseMutUninit`].
     ///

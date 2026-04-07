@@ -13,9 +13,9 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, ServiceBuilderUnion,
     iox2_callback_context, iox2_callback_progression_e, iox2_config_ptr, iox2_node_name_ptr,
     iox2_service_builder_h, iox2_service_builder_t, iox2_service_name_ptr, iox2_service_type_e,
-    AssertNonNullHandle, HandleToType, IntoCInt, ServiceBuilderUnion, IOX2_OK,
 };
 
 use iceoryx2::node::{
@@ -25,8 +25,8 @@ use iceoryx2::prelude::*;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_ffi_macros::iceoryx2_ffi;
 use iceoryx2_ffi_macros::CStrRepr;
+use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use alloc::ffi::CString;
 use core::ffi::{c_char, c_int};
@@ -231,7 +231,7 @@ pub type iox2_node_list_callback = extern "C" fn(
 /// # Safety
 ///
 /// * The returned pointer is valid as long as the program runs and must not be modified or freed
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_node_list_failure_string(
     error: iox2_node_list_failure_e,
 ) -> *const c_char {
@@ -252,7 +252,7 @@ pub unsafe extern "C" fn iox2_node_list_failure_string(
 /// # Safety
 ///
 /// * The returned pointer is valid as long as the program runs and must not be modified or freed
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_node_wait_failure_string(
     error: iox2_node_wait_failure_e,
 ) -> *const c_char {
@@ -264,7 +264,7 @@ pub unsafe extern "C" fn iox2_node_wait_failure_string(
 /// # Safety
 ///
 /// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_h_ref) -> iox2_node_name_ptr {
     node_handle.assert_non_null();
 
@@ -282,7 +282,7 @@ pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_h_ref) -> iox2_no
 /// # Safety
 ///
 /// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_node_wait(
     node_handle: iox2_node_h_ref,
     cycle_time_sec: u64,
@@ -310,7 +310,7 @@ pub unsafe extern "C" fn iox2_node_wait(
 /// # Safety
 ///
 /// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_h_ref) -> iox2_config_ptr {
     node_handle.assert_non_null();
 
@@ -327,7 +327,7 @@ pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_h_ref) -> iox2_
 /// # Safety
 ///
 /// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_node_signal_handling_mode(
     node_handle: iox2_node_h_ref,
 ) -> iox2_signal_handling_mode_e {
@@ -346,7 +346,7 @@ pub unsafe extern "C" fn iox2_node_signal_handling_mode(
 /// # Safety
 ///
 /// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_node_id(
     node_handle: iox2_node_h_ref,
     service_type: iox2_service_type_e,
@@ -370,7 +370,7 @@ pub unsafe extern "C" fn iox2_node_id(
 /// * The `node_id` must be valid
 /// * The `config` must be valid
 /// * `has_success` must point to a valid memory location
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_dead_node_remove_stale_resources(
     service_type: iox2_service_type_e,
     node_id: iox2_node_id_h_ref,
@@ -459,7 +459,7 @@ pub(crate) fn iox2_node_list_impl<S: Service>(
             )
             .into()
         }
-        NodeState::Inaccessible(ref node_id) => callback(
+        NodeState::Inaccessible(node_id) => callback(
             iox2_node_state_e::INACCESSIBLE,
             node_id,
             unknown_executable.as_bytes_with_nul().as_ptr().cast(),
@@ -468,7 +468,7 @@ pub(crate) fn iox2_node_list_impl<S: Service>(
             callback_ctx,
         )
         .into(),
-        NodeState::Undefined(ref node_id) => callback(
+        NodeState::Undefined(node_id) => callback(
             iox2_node_state_e::UNDEFINED,
             node_id,
             unknown_executable.as_bytes_with_nul().as_ptr().cast(),
@@ -495,7 +495,7 @@ pub(crate) fn iox2_node_list_impl<S: Service>(
 /// # Safety
 ///
 /// * The `config_ptr` must be valid and obtained by ether [`iox2_node_config`] or [`iox2_config_global_config`](crate::iox2_config_global_config)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_node_list(
     service_type: iox2_service_type_e,
     config_ptr: iox2_config_ptr,
@@ -536,7 +536,7 @@ pub unsafe extern "C" fn iox2_node_list(
 /// # Safety
 ///
 /// * The `node_handle` is still valid after the return of this function and can be use in another function call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_node_service_builder(
     node_handle: iox2_node_h_ref,
     service_builder_struct_ptr: *mut iox2_service_builder_t,
@@ -591,7 +591,7 @@ pub unsafe extern "C" fn iox2_node_service_builder(
 ///
 /// * The `node_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_node_t`] can be re-used with a call to [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_node_drop(node_handle: iox2_node_h) {
     node_handle.assert_non_null();
 

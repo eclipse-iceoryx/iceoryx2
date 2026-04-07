@@ -16,13 +16,13 @@ use iceoryx2_bb_conformance_test_macros::conformance_test_module;
 #[conformance_test_module]
 pub mod sample_mut {
     use alloc::vec;
+    use iceoryx2::port::LoanError;
     use iceoryx2::port::publisher::Publisher;
     use iceoryx2::port::subscriber::Subscriber;
-    use iceoryx2::port::LoanError;
     use iceoryx2::prelude::*;
+    use iceoryx2::service::Service;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
-    use iceoryx2::service::Service;
     use iceoryx2::testing::generate_service_name;
     use iceoryx2::testing::*;
     use iceoryx2_bb_conformance_test_macros::conformance_test;

@@ -116,7 +116,7 @@ impl HandleToType for iox2_waitset_attachment_id_h_ref {
 ///
 /// # Safety
 ///  * `handle` must be valid and provided by the previously mentioned functions.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_attachment_id_drop(handle: iox2_waitset_attachment_id_h) {
     handle.assert_non_null();
 
@@ -138,7 +138,7 @@ pub unsafe extern "C" fn iox2_waitset_attachment_id_drop(handle: iox2_waitset_at
 /// # Safety
 ///  * `lhs` must be valid and non-null.
 ///  * `rhs` must be valid and non-null.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_attachment_id_equal(
     lhs: iox2_waitset_attachment_id_h_ref,
     rhs: iox2_waitset_attachment_id_h_ref,
@@ -166,7 +166,7 @@ pub unsafe extern "C" fn iox2_waitset_attachment_id_equal(
 /// # Safety
 ///  * `lhs` must be valid and non-null.
 ///  * `rhs` must be valid and non-null.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_attachment_id_less(
     lhs: iox2_waitset_attachment_id_h_ref,
     rhs: iox2_waitset_attachment_id_h_ref,
@@ -195,7 +195,7 @@ pub unsafe extern "C" fn iox2_waitset_attachment_id_less(
 /// # Safety
 ///  * `handle` must be valid and non-null.
 ///  * `guard` must be valid and non-null.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_attachment_id_has_event_from(
     handle: iox2_waitset_attachment_id_h_ref,
     guard: iox2_waitset_guard_h_ref,
@@ -226,7 +226,7 @@ pub unsafe extern "C" fn iox2_waitset_attachment_id_has_event_from(
 /// # Safety
 ///  * `handle` must be valid and non-null.
 ///  * `guard` must be valid and non-null.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_attachment_id_has_missed_deadline(
     handle: iox2_waitset_attachment_id_h_ref,
     guard: iox2_waitset_guard_h_ref,
@@ -259,7 +259,7 @@ pub unsafe extern "C" fn iox2_waitset_attachment_id_has_missed_deadline(
 ///    location.
 ///  * `attachment_id_handle_ptr` must point to a valid uninitialized memory location
 ///  * `attachment_id_handle_ptr` must be released with [`iox2_waitset_attachment_id_drop()`]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_attachment_id_from_guard(
     guard: iox2_waitset_guard_h_ref,
     attachment_id_struct_ptr: *mut iox2_waitset_attachment_id_t,
@@ -311,7 +311,7 @@ pub unsafe extern "C" fn iox2_waitset_attachment_id_from_guard(
 ///  * `handle` must be valid and non-null.
 ///  * `debug_output` must be valid and provide enough memory
 ///  * `debug_len` the provided memory length of `debug_output`
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_attachment_id_debug(
     handle: iox2_waitset_attachment_id_h_ref,
     debug_output: *mut c_char,
@@ -345,7 +345,7 @@ pub unsafe extern "C" fn iox2_waitset_attachment_id_debug(
 ///
 /// # Safety
 ///  * `handle` must be valid and non-null.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_attachment_id_debug_len(
     handle: iox2_waitset_attachment_id_h_ref,
 ) -> c_size_t {

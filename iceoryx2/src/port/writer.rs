@@ -42,8 +42,8 @@
 
 use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
 use crate::prelude::EventId;
-use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
 use crate::service::builder::CustomKeyMarker;
+use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
 use crate::service::dynamic_config::blackboard::WriterDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, ServiceState};
@@ -79,9 +79,9 @@ struct WriterSharedState<
 }
 
 impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-    > Drop for WriterSharedState<Service, KeyType>
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+> Drop for WriterSharedState<Service, KeyType>
 {
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_writer_handle {
@@ -126,9 +126,9 @@ pub struct Writer<
 }
 
 impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
-    > Writer<Service, KeyType>
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
+> Writer<Service, KeyType>
 {
     pub(crate) fn new(
         service: Arc<ServiceState<Service, BlackboardResources<Service>>>,
@@ -308,25 +308,25 @@ pub struct EntryHandleMut<
 // Safe since the producer implements Send + Sync and shared_state ensures the lifetime of the
 // producer (struct fields are dropped in the same order as declared)
 unsafe impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-        ValueType: Copy + 'static,
-    > Send for EntryHandleMut<Service, KeyType, ValueType>
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+    ValueType: Copy + 'static,
+> Send for EntryHandleMut<Service, KeyType, ValueType>
 {
 }
 unsafe impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-        ValueType: Copy + 'static,
-    > Sync for EntryHandleMut<Service, KeyType, ValueType>
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+    ValueType: Copy + 'static,
+> Sync for EntryHandleMut<Service, KeyType, ValueType>
 {
 }
 
 impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-        ValueType: Copy + 'static,
-    > EntryHandleMut<Service, KeyType, ValueType>
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+    ValueType: Copy + 'static,
+> EntryHandleMut<Service, KeyType, ValueType>
 {
     fn new(
         writer_state: Arc<WriterSharedState<Service, KeyType>>,
@@ -423,25 +423,25 @@ pub struct EntryValueUninit<
 // the memory address ptr is pointing to remains valid, and all methods of EntryValueUninit are
 // consuming.
 unsafe impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-        ValueType: Copy + 'static,
-    > Send for EntryValueUninit<Service, KeyType, ValueType>
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+    ValueType: Copy + 'static,
+> Send for EntryValueUninit<Service, KeyType, ValueType>
 {
 }
 unsafe impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-        ValueType: Copy + 'static,
-    > Sync for EntryValueUninit<Service, KeyType, ValueType>
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+    ValueType: Copy + 'static,
+> Sync for EntryValueUninit<Service, KeyType, ValueType>
 {
 }
 
 impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-        ValueType: Copy + 'static,
-    > EntryValueUninit<Service, KeyType, ValueType>
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+    ValueType: Copy + 'static,
+> EntryValueUninit<Service, KeyType, ValueType>
 {
     fn new(entry_handle_mut: EntryHandleMut<Service, KeyType, ValueType>) -> Self {
         let ptr = unsafe { entry_handle_mut.producer.__internal_get_ptr_to_write_cell() };

@@ -339,11 +339,12 @@ impl<T, Ptr: GenericPointer> MetaQueue<T, Ptr> {
     #[inline(always)]
     fn verify_init(&self, source: &str) {
         debug_assert!(
-                self.is_initialized
-                    .load(core::sync::atomic::Ordering::Relaxed),
-                "From: MetaQueue<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
-                core::any::type_name::<T>(), source
-            );
+            self.is_initialized
+                .load(core::sync::atomic::Ordering::Relaxed),
+            "From: MetaQueue<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
+            core::any::type_name::<T>(),
+            source
+        );
     }
 
     /// Returns true if the queue is empty, otherwise false

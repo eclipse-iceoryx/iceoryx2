@@ -78,7 +78,7 @@ use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_log::{fail, fatal_panic};
 
-use crate::string::{as_escaped_string, internal, String};
+use crate::string::{String, as_escaped_string, internal};
 
 /// **Non-movable** relocatable shared-memory compatible string with runtime fixed size capacity.
 #[repr(C)]
@@ -198,10 +198,10 @@ impl RelocatableString {
     #[inline(always)]
     fn verify_init(&self, source: &str) {
         debug_assert!(
-                self.data_ptr.is_initialized(),
-                "From: RelocatableString::{}, Undefined behavior - the object was not initialized with 'init' before.",
-                source
-            );
+            self.data_ptr.is_initialized(),
+            "From: RelocatableString::{}, Undefined behavior - the object was not initialized with 'init' before.",
+            source
+        );
     }
 
     /// Returns the required memory size for a string with a specified capacity

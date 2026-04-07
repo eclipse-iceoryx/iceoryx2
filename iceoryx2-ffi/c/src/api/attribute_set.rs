@@ -20,17 +20,17 @@ use iceoryx2_ffi_macros::CStrRepr;
 
 use iceoryx2::service::attribute::{Attribute, AttributeKey, AttributeSet};
 use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
-use crate::api::IntoCInt;
 use crate::IOX2_OK;
+use crate::api::IntoCInt;
 
 use super::{
-    iox2_attribute_h_ref, iox2_callback_context, iox2_callback_progression_e, AssertNonNullHandle,
-    HandleToType,
+    AssertNonNullHandle, HandleToType, iox2_attribute_h_ref, iox2_callback_context,
+    iox2_callback_progression_e,
 };
 
 #[repr(C)]
@@ -151,7 +151,7 @@ pub type iox2_attribute_set_get_callback =
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_definition_error_create_error_string(
     error: iox2_attribute_definition_error_e,
 ) -> *const c_char {
@@ -172,7 +172,7 @@ pub unsafe extern "C" fn iox2_attribute_definition_error_create_error_string(
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_verification_error_create_error_string(
     error: iox2_attribute_verification_error_e,
 ) -> *const c_char {
@@ -187,7 +187,7 @@ pub unsafe extern "C" fn iox2_attribute_verification_error_create_error_string(
 /// * `source_ptr` - Must be valid pointer to a [`iox2_attribute_set_ptr`].
 /// * `handle_ptr` - An uninitialized or dangling [`iox2_attribute_set_h`] handle which will be initialized by this function call.
 ///
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_set_new_clone(
     struct_ptr: *mut iox2_attribute_set_t,
     source_ptr: iox2_attribute_set_ptr,
@@ -225,7 +225,7 @@ pub unsafe extern "C" fn iox2_attribute_set_new_clone(
 /// * `handle` - A valid [`iox2_attribute_set_h`] created with [`iox2_attribute_set_new_clone()`].
 /// * The `handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_attribute_set_t`] can be re-used with a call to [`iox2_attribute_set_new_clone()`]!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_set_drop(handle: iox2_attribute_set_h) {
     debug_assert!(!handle.is_null());
 
@@ -244,7 +244,7 @@ pub unsafe extern "C" fn iox2_attribute_set_drop(handle: iox2_attribute_set_h) {
 /// * `handle` obtained by [`iox2_attribute_set_new_clone()`]
 /// * The `handle` must be a valid handle.
 /// * The `handle` is still valid after the call to this function.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_cast_attribute_set_ptr(
     handle: iox2_attribute_set_h,
 ) -> iox2_attribute_set_ptr {
@@ -258,7 +258,7 @@ pub unsafe extern "C" fn iox2_cast_attribute_set_ptr(
 /// # Safety
 ///
 /// * The `handle` must be a valid handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_set_number_of_attributes(
     handle: iox2_attribute_set_ptr,
 ) -> usize {
@@ -273,7 +273,7 @@ pub unsafe extern "C" fn iox2_attribute_set_number_of_attributes(
 ///
 /// * The `handle` must be a valid handle.
 /// * The `index` < [`iox2_attribute_set_number_of_attributes()`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_set_index(
     handle: iox2_attribute_set_ptr,
     index: usize,
@@ -291,7 +291,7 @@ pub unsafe extern "C" fn iox2_attribute_set_index(
 ///
 /// * The `handle` must be a valid handle.
 /// * `key` must be non-zero and contain a null-terminated string
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_set_number_of_key_values(
     handle: iox2_attribute_set_ptr,
     key: *const c_char,
@@ -319,7 +319,7 @@ pub unsafe extern "C" fn iox2_attribute_set_number_of_key_values(
 /// * `key` must be non-zero and contain a null-terminated string
 /// * `buffer` must point to a valid memory location
 /// * `buffer_len` must define the length of the memory pointed by `buffer`
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_set_key_value(
     handle: iox2_attribute_set_ptr,
     key: *const c_char,
@@ -359,7 +359,7 @@ pub unsafe extern "C" fn iox2_attribute_set_key_value(
 /// * The `handle` must be a valid handle.
 /// * The `key` must be a valid null-terminated string.
 /// * The `callback` must point to a function with the required signature.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_set_iter_key_values(
     handle: iox2_attribute_set_ptr,
     key: *const c_char,

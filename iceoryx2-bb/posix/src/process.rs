@@ -46,7 +46,7 @@ use core::fmt::Display;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_log::{fail, trace};
-use iceoryx2_pal_posix::posix::{errno::Errno, MemZeroedStruct};
+use iceoryx2_pal_posix::posix::{MemZeroedStruct, errno::Errno};
 use iceoryx2_pal_posix::*;
 
 use crate::{

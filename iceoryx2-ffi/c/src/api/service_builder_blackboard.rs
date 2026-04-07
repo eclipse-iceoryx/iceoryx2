@@ -27,11 +27,11 @@ use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::CStrRepr;
 
 use crate::api::{
-    c_size_t, iox2_port_factory_blackboard_h, iox2_port_factory_blackboard_t,
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, KeyFfi, PortFactoryBlackboardUnion,
+    ServiceBuilderUnion, c_size_t, iox2_port_factory_blackboard_h, iox2_port_factory_blackboard_t,
     iox2_service_builder_blackboard_creator_h, iox2_service_builder_blackboard_creator_h_ref,
     iox2_service_builder_blackboard_opener_h, iox2_service_builder_blackboard_opener_h_ref,
-    iox2_service_type_e, AssertNonNullHandle, HandleToType, IntoCInt, KeyFfi,
-    PortFactoryBlackboardUnion, ServiceBuilderUnion, IOX2_OK,
+    iox2_service_type_e,
 };
 use crate::create_type_details;
 
@@ -180,7 +180,7 @@ impl IntoCInt for BlackboardCreateError {
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_blackboard_open_error_string(
     error: iox2_blackboard_open_error_e,
 ) -> *const c_char {
@@ -201,7 +201,7 @@ pub unsafe extern "C" fn iox2_blackboard_open_error_string(
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_blackboard_create_error_string(
     error: iox2_blackboard_create_error_e,
 ) -> *const c_char {
@@ -227,7 +227,7 @@ pub unsafe extern "C" fn iox2_blackboard_create_error_string(
 /// * `service_builder_handle` must be a valid handle
 /// * `type_name_str` must be a valid pointer to an utf8 string
 /// * `size` and `alignment` must satisfy the Rust `Layout` type requirements
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_key_type_details(
     service_builder_handle: iox2_service_builder_blackboard_creator_h_ref,
     type_name_str: *const c_char,
@@ -293,7 +293,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_key_type_de
 /// * `service_builder_handle` must be a valid handle
 /// * `type_name_str` must be a valid pointer to an utf8 string
 /// * `size` and `alignment` must satisfy the Rust `Layout` type requirements
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_key_type_details(
     service_builder_handle: iox2_service_builder_blackboard_opener_h_ref,
     type_name_str: *const c_char,
@@ -352,7 +352,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_key_type_det
 /// # Safety
 ///
 /// * `service_builder_handle` must be a valid handle
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_key_eq_comparison_function(
     service_builder_handle: iox2_service_builder_blackboard_creator_h_ref,
     key_eq_func: iox2_service_blackboard_key_eq_cmp_func,
@@ -403,7 +403,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_key_eq_comp
 /// # Safety
 ///
 /// * `service_builder_handle` must be a valid and non-null handle
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_max_readers(
     service_builder_handle: iox2_service_builder_blackboard_creator_h_ref,
     value: c_size_t,
@@ -446,7 +446,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_max_readers
 /// # Safety
 ///
 /// * `service_builder_handle` must be a valid and non-null handle
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_max_readers(
     service_builder_handle: iox2_service_builder_blackboard_opener_h_ref,
     value: c_size_t,
@@ -489,7 +489,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_max_readers(
 /// # Safety
 ///
 /// * `service_builder_handle` must be a valid and non-null handle
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_max_nodes(
     service_builder_handle: iox2_service_builder_blackboard_creator_h_ref,
     value: c_size_t,
@@ -532,7 +532,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_max_nodes(
 /// # Safety
 ///
 /// * `service_builder_handle` must be a valid and non-null handle
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_max_nodes(
     service_builder_handle: iox2_service_builder_blackboard_opener_h_ref,
     value: c_size_t,
@@ -584,7 +584,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_max_nodes(
 /// * `value_ptr` is valid and non-null
 /// * `release_callback` must take care of the cleanup for `value_ptr`
 /// * `type_name`, `type_name_len`, `type_size` and `type_align` must satisfy the type details of the value type
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
     service_builder_handle: iox2_service_builder_blackboard_creator_h_ref,
     key: *const c_void,
@@ -664,7 +664,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
 /// # Safety
 ///
 /// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_open(
     service_builder_handle: iox2_service_builder_blackboard_opener_h,
     port_factory_struct_ptr: *mut iox2_port_factory_blackboard_t,
@@ -697,7 +697,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_open(
 ///
 /// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The `attribute_verifier_handle` must be valid.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_open_with_attributes(
     service_builder_handle: iox2_service_builder_blackboard_opener_h,
     attribute_verifier_handle: iox2_attribute_verifier_h_ref,
@@ -732,7 +732,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_open_with_attributes(
 /// # Safety
 ///
 /// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_create(
     service_builder_handle: iox2_service_builder_blackboard_creator_h,
     port_factory_struct_ptr: *mut iox2_port_factory_blackboard_t,
@@ -768,7 +768,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_create(
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
 /// * The `attribute_verifier_handle` must be valid.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_create_with_attributes(
     service_builder_handle: iox2_service_builder_blackboard_creator_h,
     attribute_specifier_handle: iox2_attribute_specifier_h_ref,

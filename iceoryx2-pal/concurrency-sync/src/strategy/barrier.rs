@@ -13,9 +13,9 @@
 use core::hint::spin_loop;
 use core::panic;
 
+use crate::SPIN_REPETITIONS;
 use crate::atomic::AtomicU64;
 use crate::atomic::Ordering;
-use crate::SPIN_REPETITIONS;
 
 #[derive(Debug)]
 pub struct Barrier {
@@ -53,7 +53,9 @@ impl Barrier {
             wake_all(&self.waiters);
             return;
         } else if wait_count > self.number_of_waiters {
-            panic!("Barrier::wait() contract violation! More threads than configured call Barrier::wait() concurrently.");
+            panic!(
+                "Barrier::wait() contract violation! More threads than configured call Barrier::wait() concurrently."
+            );
         }
 
         let mut retry_counter = 0;

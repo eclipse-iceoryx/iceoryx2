@@ -68,6 +68,6 @@ mod no_std {
         }
     }
 
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub extern "C" fn rust_eh_personality() {}
 }

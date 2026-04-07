@@ -15,20 +15,20 @@
 #![allow(unused_variables)]
 
 use crate::posix::{
-    constants::*, settings::*, to_dir_search_string, types::*, Errno, MemZeroedStruct,
+    Errno, MemZeroedStruct, constants::*, settings::*, to_dir_search_string, types::*,
 };
 use crate::win32call;
 
+use iceoryx2_pal_concurrency_sync::WaitAction;
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
 use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
 use iceoryx2_pal_concurrency_sync::strategy::mutex::Mutex;
-use iceoryx2_pal_concurrency_sync::WaitAction;
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 use windows_sys::Win32::Foundation::ERROR_FILE_EXISTS;
 use windows_sys::Win32::Storage::FileSystem::{
-    FindClose, FindFirstFileA, FindNextFileA, FILE_ATTRIBUTE_DIRECTORY, WIN32_FIND_DATAA,
+    FILE_ATTRIBUTE_DIRECTORY, FindClose, FindFirstFileA, FindNextFileA, WIN32_FIND_DATAA,
 };
-use windows_sys::Win32::System::Threading::{WaitOnAddress, WakeByAddressSingle, INFINITE};
+use windows_sys::Win32::System::Threading::{INFINITE, WaitOnAddress, WakeByAddressSingle};
 use windows_sys::Win32::{
     Foundation::{
         CloseHandle, ERROR_ACCESS_DENIED, ERROR_ALREADY_EXISTS, ERROR_FILE_NOT_FOUND, FALSE,
@@ -36,11 +36,10 @@ use windows_sys::Win32::{
     },
     Security::SECURITY_ATTRIBUTES,
     Storage::FileSystem::{
-        CreateFileA, DeleteFileA, ReadFile, SetFilePointer, WriteFile, CREATE_NEW,
-        FILE_ATTRIBUTE_NORMAL, FILE_BEGIN, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
-        OPEN_EXISTING,
+        CREATE_NEW, CreateFileA, DeleteFileA, FILE_ATTRIBUTE_NORMAL, FILE_BEGIN, FILE_SHARE_DELETE,
+        FILE_SHARE_READ, FILE_SHARE_WRITE, OPEN_EXISTING, ReadFile, SetFilePointer, WriteFile,
     },
-    System::{Memory::*, IO::OVERLAPPED},
+    System::{IO::OVERLAPPED, Memory::*},
 };
 
 use super::win32_handle_translator::{FdHandleEntry, FileHandle, HandleTranslator, ShmHandle};
@@ -371,7 +370,9 @@ pub(crate) unsafe fn shm_set_size(fd_handle: HANDLE, shm_size: u64) {
     }
 
     if shm_size > MAX_SUPPORTED_SHM_SIZE {
-        eprintln!("Trying to allocate {shm_size} which is larger than the maximum supported shared memory size of {MAX_SUPPORTED_SHM_SIZE}");
+        eprintln!(
+            "Trying to allocate {shm_size} which is larger than the maximum supported shared memory size of {MAX_SUPPORTED_SHM_SIZE}"
+        );
     }
 
     let mut bytes_written = 0;

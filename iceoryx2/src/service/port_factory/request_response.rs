@@ -49,8 +49,8 @@ use crate::{
     node::NodeListFailure,
     prelude::AttributeSet,
     service::{
-        self, dynamic_config, service_hash::ServiceHash, service_name::ServiceName, static_config,
-        NoResource, ServiceState,
+        self, NoResource, ServiceState, dynamic_config, service_hash::ServiceHash,
+        service_name::ServiceName, static_config,
     },
 };
 
@@ -80,35 +80,32 @@ pub struct PortFactory<
 }
 
 unsafe impl<
-        Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Send
-    for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Send for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
 }
 
 unsafe impl<
-        Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Sync
-    for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Sync for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
 }
 
 impl<
-        Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Clone
-    for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Clone for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn clone(&self) -> Self {
         Self {
@@ -122,12 +119,12 @@ impl<
 }
 
 impl<
-        Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > crate::service::port_factory::PortFactory
+    Service: service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> crate::service::port_factory::PortFactory
     for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     type Service = Service;
@@ -171,12 +168,12 @@ impl<
 }
 
 impl<
-        Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     pub(crate) fn new(service: ServiceState<Service, NoResource>) -> Self {
         Self {

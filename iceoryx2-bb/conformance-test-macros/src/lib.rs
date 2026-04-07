@@ -26,7 +26,7 @@
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, ItemMod};
+use syn::{ItemMod, parse_macro_input};
 
 /// Attribute macro for marking functions as conformance tests.
 ///

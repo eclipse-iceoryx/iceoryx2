@@ -64,7 +64,7 @@
 //! ```
 
 use crate::{
-    port::publisher::PublisherSharedState, port::SendError, raw_sample::RawSampleMut,
+    port::SendError, port::publisher::PublisherSharedState, raw_sample::RawSampleMut,
     service::header::publish_subscribe::Header,
 };
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -94,20 +94,20 @@ pub struct SampleMut<
 }
 
 unsafe impl<
-        Service: crate::service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: ZeroCopySend,
-    > Send for SampleMut<Service, Payload, UserHeader>
+    Service: crate::service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: ZeroCopySend,
+> Send for SampleMut<Service, Payload, UserHeader>
 where
     Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>: Send + Sync,
 {
 }
 
 impl<
-        Service: crate::service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: ZeroCopySend,
-    > Deref for SampleMut<Service, Payload, UserHeader>
+    Service: crate::service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: ZeroCopySend,
+> Deref for SampleMut<Service, Payload, UserHeader>
 {
     type Target = Payload;
     fn deref(&self) -> &Self::Target {
@@ -116,10 +116,10 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: ZeroCopySend,
-    > DerefMut for SampleMut<Service, Payload, UserHeader>
+    Service: crate::service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: ZeroCopySend,
+> DerefMut for SampleMut<Service, Payload, UserHeader>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.ptr.as_payload_mut()
@@ -127,10 +127,10 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: ZeroCopySend,
-    > Debug for SampleMut<Service, Payload, UserHeader>
+    Service: crate::service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: ZeroCopySend,
+> Debug for SampleMut<Service, Payload, UserHeader>
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         write!(
@@ -147,10 +147,10 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: ZeroCopySend,
-    > Drop for SampleMut<Service, Payload, UserHeader>
+    Service: crate::service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: ZeroCopySend,
+> Drop for SampleMut<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
         self.publisher_shared_state
@@ -161,10 +161,10 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        M: Debug + ZeroCopySend + ?Sized, // `M` is either a `Payload` or a `MaybeUninit<Payload>`
-        UserHeader: ZeroCopySend,
-    > SampleMut<Service, M, UserHeader>
+    Service: crate::service::Service,
+    M: Debug + ZeroCopySend + ?Sized, // `M` is either a `Payload` or a `MaybeUninit<Payload>`
+    UserHeader: ZeroCopySend,
+> SampleMut<Service, M, UserHeader>
 {
     /// Returns a reference to the header of the sample.
     ///

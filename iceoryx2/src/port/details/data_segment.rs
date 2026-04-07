@@ -21,8 +21,8 @@ use iceoryx2_cal::{
         SharedMemoryOpenError, ShmPointer,
     },
     shm_allocator::{
-        self, pool_allocator::PoolAllocator, AllocationError, AllocationStrategy, PointerOffset,
-        SegmentId, ShmAllocationError,
+        self, AllocationError, AllocationStrategy, PointerOffset, SegmentId, ShmAllocationError,
+        pool_allocator::PoolAllocator,
     },
 };
 use iceoryx2_log::fail;

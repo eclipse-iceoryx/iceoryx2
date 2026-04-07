@@ -13,14 +13,15 @@
 #![allow(non_camel_case_types)]
 
 use crate::{
+    IOX2_OK,
     api::{
-        iox2_port_factory_publisher_builder_h, iox2_port_factory_publisher_builder_t,
-        iox2_port_factory_subscriber_builder_h, iox2_port_factory_subscriber_builder_t,
-        iox2_service_type_e, iox2_static_config_publish_subscribe_t, AssertNonNullHandle,
-        HandleToType, IntoCInt, PayloadFfi, PortFactoryPublisherBuilderUnion,
-        PortFactorySubscriberBuilderUnion, UserHeaderFfi,
+        AssertNonNullHandle, HandleToType, IntoCInt, PayloadFfi, PortFactoryPublisherBuilderUnion,
+        PortFactorySubscriberBuilderUnion, UserHeaderFfi, iox2_port_factory_publisher_builder_h,
+        iox2_port_factory_publisher_builder_t, iox2_port_factory_subscriber_builder_h,
+        iox2_port_factory_subscriber_builder_t, iox2_service_type_e,
+        iox2_static_config_publish_subscribe_t,
     },
-    iox2_node_list_impl, IOX2_OK,
+    iox2_node_list_impl,
 };
 
 use iceoryx2::service::dynamic_config::publish_subscribe::SubscriberDetails;
@@ -172,7 +173,7 @@ pub type iox2_list_publishers_callback =
 /// # Safety
 ///
 /// * The `port_factory_handle` is still valid after the return of this function and can be use in another function call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_pub_sub_publisher_builder(
     port_factory_handle: iox2_port_factory_pub_sub_h_ref,
     publisher_builder_struct_ptr: *mut iox2_port_factory_publisher_builder_t,
@@ -225,7 +226,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_publisher_builder(
 /// # Safety
 ///
 /// * The `port_factory_handle` is still valid after the return of this function and can be use in another function call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_pub_sub_subscriber_builder(
     port_factory_handle: iox2_port_factory_pub_sub_h_ref,
     subscriber_builder_struct_ptr: *mut iox2_port_factory_subscriber_builder_t,
@@ -270,7 +271,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_subscriber_builder(
 ///
 /// * The `port_factory_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The `port_factory_handle` must live longer than the returned `iox2_attribute_set_h_ref`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_pub_sub_attributes(
     port_factory_handle: iox2_port_factory_pub_sub_h_ref,
 ) -> iox2_attribute_set_ptr {
@@ -292,7 +293,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_attributes(
 /// * The `_handle` must be valid and obtained by [`iox2_service_builder_pub_sub_open`](crate::iox2_service_builder_pub_sub_open) or
 ///   [`iox2_service_builder_pub_sub_open_or_create`](crate::iox2_service_builder_pub_sub_open_or_create)!
 /// * The `static_config` must be a valid pointer and non-null.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_pub_sub_static_config(
     port_factory_handle: iox2_port_factory_pub_sub_h_ref,
     static_config: *mut iox2_static_config_publish_subscribe_t,
@@ -317,7 +318,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_static_config(
 ///
 /// * The `handle` must be valid and obtained by [`iox2_service_builder_pub_sub_open`](crate::iox2_service_builder_pub_sub_open) or
 ///   [`iox2_service_builder_pub_sub_open_or_create`](crate::iox2_service_builder_pub_sub_open_or_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_pub_sub_dynamic_config_number_of_publishers(
     handle: iox2_port_factory_pub_sub_h_ref,
 ) -> usize {
@@ -358,7 +359,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_dynamic_config_number_of_publ
 ///   [`iox2_service_builder_pub_sub_open_or_create`](crate::iox2_service_builder_pub_sub_open_or_create)!
 /// * `callback` - A valid callback with [`iox2_node_list_callback`} signature
 /// * `callback_ctx` - An optional callback context [`iox2_callback_context`} to e.g. store information across callback iterations
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_pub_sub_nodes(
     handle: iox2_port_factory_pub_sub_h_ref,
     callback: iox2_node_list_callback,
@@ -395,7 +396,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_nodes(
 ///
 /// * The `handle` must be valid and obtained by [`iox2_service_builder_pub_sub_open`](crate::iox2_service_builder_pub_sub_open) or
 ///   [`iox2_service_builder_pub_sub_open_or_create`](crate::iox2_service_builder_pub_sub_open_or_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_pub_sub_service_name(
     handle: iox2_port_factory_pub_sub_h_ref,
 ) -> iox2_service_name_ptr {
@@ -419,7 +420,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_service_name(
 ///   [`iox2_service_builder_pub_sub_open_or_create`](crate::iox2_service_builder_pub_sub_open_or_create)!
 /// * `buffer` must be non-zero and point to a valid memory location
 /// * `buffer_len` must define the actual size of the memory location `buffer` is pointing to
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_pub_sub_service_hash(
     handle: iox2_port_factory_pub_sub_h_ref,
     buffer: *mut c_char,
@@ -447,7 +448,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_service_hash(
 ///
 /// * The `handle` must be valid and obtained by [`iox2_service_builder_pub_sub_open`](crate::iox2_service_builder_pub_sub_open) or
 ///   [`iox2_service_builder_pub_sub_open_or_create`](crate::iox2_service_builder_pub_sub_open_or_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_pub_sub_dynamic_config_number_of_subscribers(
     handle: iox2_port_factory_pub_sub_h_ref,
 ) -> usize {
@@ -483,7 +484,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_dynamic_config_number_of_subs
 /// * `callback_ctx` - An optional callback context [`iox2_callback_context`] to e.g. store
 ///   information across callback iterations. Must be either `NULL` or point to a valid memory
 ///   location
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_pub_sub_dynamic_config_list_subscribers(
     handle: iox2_port_factory_pub_sub_h_ref,
     callback: iox2_list_subscribers_callback,
@@ -521,7 +522,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_dynamic_config_list_subscribe
 /// * `callback_ctx` - An optional callback context [`iox2_callback_context`] to e.g. store
 ///   information across callback iterations. Must be either `NULL` or point to a valid memory
 ///   location
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_pub_sub_dynamic_config_list_publishers(
     handle: iox2_port_factory_pub_sub_h_ref,
     callback: iox2_list_publishers_callback,
@@ -560,7 +561,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_dynamic_config_list_publisher
 /// * The corresponding [`iox2_port_factory_pub_sub_t`] can be re-used with a call to
 ///   [`iox2_service_builder_pub_sub_open_or_create`](crate::iox2_service_builder_pub_sub_open_or_create) or
 ///   [`iox2_service_builder_pub_sub_open`](crate::iox2_service_builder_pub_sub_open)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_pub_sub_drop(
     port_factory_handle: iox2_port_factory_pub_sub_h,
 ) {

@@ -39,7 +39,7 @@ pub(crate) fn generate_local(force: bool) -> Result<()> {
         None => {
             return Err(anyhow::anyhow!(
                 "User config directory not available on this platform!"
-            ))
+            ));
         }
     };
     user_config_path.add_path_entry(&iceoryx2::config::Config::relative_config_path())?;

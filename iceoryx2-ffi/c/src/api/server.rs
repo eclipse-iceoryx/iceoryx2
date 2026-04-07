@@ -12,12 +12,12 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{ActiveRequestUnion, IntoCInt};
 use crate::IOX2_OK;
+use crate::api::{ActiveRequestUnion, IntoCInt};
 
 use super::{
-    c_size_t, iox2_active_request_h, iox2_active_request_t, iox2_service_type_e,
-    iox2_unique_server_id_h, iox2_unique_server_id_t, AssertNonNullHandle, HandleToType,
+    AssertNonNullHandle, HandleToType, c_size_t, iox2_active_request_h, iox2_active_request_t,
+    iox2_service_type_e, iox2_unique_server_id_h, iox2_unique_server_id_t,
 };
 use super::{PayloadFfi, UserHeaderFfi};
 use core::ffi::c_int;
@@ -134,7 +134,7 @@ impl HandleToType for iox2_server_h_ref {
 ///
 /// * `handle` is valid, non-null and was obtained via [`iox2_port_factory_server_builder_create`](crate::iox2_port_factory_server_builder_create)
 /// * `id_handle_ptr` is valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_server_id(
     handle: iox2_server_h_ref,
     id_struct_ptr: *mut iox2_unique_server_id_t,
@@ -178,7 +178,7 @@ pub unsafe extern "C" fn iox2_server_id(
 ///
 /// * The `handle` is still valid after the return of this function and can be use in another function call.
 /// * The `result_ptr` is pointing to a valid bool.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_server_has_requests(
     handle: iox2_server_h_ref,
     result_ptr: *mut bool,
@@ -213,7 +213,7 @@ pub unsafe extern "C" fn iox2_server_has_requests(
 ///
 /// * `handle` - Must be a valid [`iox2_server_h_ref`]
 ///   obtained by [`iox2_port_factory_server_builder_create`](crate::iox2_port_factory_server_builder_create).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_server_initial_max_slice_len(handle: iox2_server_h_ref) -> c_size_t {
     handle.assert_non_null();
 
@@ -244,7 +244,7 @@ pub unsafe extern "C" fn iox2_server_initial_max_slice_len(handle: iox2_server_h
 ///
 /// * The `server_handle` is still valid after the return of this function and can be used in another function call.
 /// * The `active_request_handle_ptr` is pointing to a valid [`iox2_active_request_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_server_receive(
     server_handle: iox2_server_h_ref,
     active_request_struct_ptr: *mut iox2_active_request_t,
@@ -315,7 +315,7 @@ pub unsafe extern "C" fn iox2_server_receive(
 /// * The `handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_server_t`] can be re-used with a call to
 ///   [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_server_drop(handle: iox2_server_h) {
     handle.assert_non_null();
 

@@ -466,10 +466,10 @@ pub mod static_storage_trait {
 
     #[conformance_test]
     pub fn custom_suffix_keeps_storages_separated<Sut: StaticStorage>() {
-        let config_1 = <Sut as NamedConceptMgmt>::Configuration::default()
-            .suffix(unsafe { &FileName::new_unchecked(b".static_storage_1") });
-        let config_2 = <Sut as NamedConceptMgmt>::Configuration::default()
-            .suffix(unsafe { &FileName::new_unchecked(b".static_storage_2") });
+        let file_name_1 = unsafe { &FileName::new_unchecked(b".static_storage_1") };
+        let file_name_2 = unsafe { &FileName::new_unchecked(b".static_storage_2") };
+        let config_1 = <Sut as NamedConceptMgmt>::Configuration::default().suffix(file_name_1);
+        let config_2 = <Sut as NamedConceptMgmt>::Configuration::default().suffix(file_name_2);
 
         let storage_name = generate_file_path().file_name();
 

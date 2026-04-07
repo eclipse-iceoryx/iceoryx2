@@ -39,10 +39,10 @@ use iceoryx2_bb_elementary_traits::{
     placement_default::PlacementDefault, zero_copy_send::ZeroCopySend,
 };
 use iceoryx2_log::fail;
-use serde::{de::Visitor, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::Visitor};
 
 pub use crate::vector::Vector;
-use crate::vector::{internal, VectorModificationError};
+use crate::vector::{VectorModificationError, internal};
 
 /// Relocatable shared-memory compatible vector with compile time fixed size
 /// capacity. It is memory-layout compatible to the C++ container in the

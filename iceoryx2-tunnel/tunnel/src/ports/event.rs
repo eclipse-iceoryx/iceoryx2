@@ -17,7 +17,7 @@ use iceoryx2::{
     node::Node,
     port::{listener::Listener, notifier::Notifier},
     prelude::EventId,
-    service::{static_config::StaticConfig, Service},
+    service::{Service, static_config::StaticConfig},
 };
 use iceoryx2_log::{fail, trace};
 

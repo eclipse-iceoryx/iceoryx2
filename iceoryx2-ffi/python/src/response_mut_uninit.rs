@@ -118,10 +118,10 @@ impl ResponseMutUninit {
     /// After this call the `ResponseMutUninit` is no longer usable!
     pub fn delete(&mut self) {
         match &mut *self.value.lock() {
-            ResponseMutUninitType::Ipc(ref mut v) => {
+            ResponseMutUninitType::Ipc(v) => {
                 v.take();
             }
-            ResponseMutUninitType::Local(ref mut v) => {
+            ResponseMutUninitType::Local(v) => {
                 v.take();
             }
         }
@@ -131,7 +131,7 @@ impl ResponseMutUninit {
     /// payload was written into the `ResponseMutUninit`.
     pub fn assume_init(&self) -> ResponseMut {
         match &mut *self.value.lock() {
-            ResponseMutUninitType::Ipc(ref mut v) => {
+            ResponseMutUninitType::Ipc(v) => {
                 let response = v.take().unwrap();
                 ResponseMut {
                     value: Parc::new(ResponseMutType::Ipc(Some(unsafe {
@@ -141,7 +141,7 @@ impl ResponseMutUninit {
                     response_payload_type_details: self.response_payload_type_details.clone(),
                 }
             }
-            ResponseMutUninitType::Local(ref mut v) => {
+            ResponseMutUninitType::Local(v) => {
                 let response = v.take().unwrap();
                 ResponseMut {
                     value: Parc::new(ResponseMutType::Local(Some(unsafe {

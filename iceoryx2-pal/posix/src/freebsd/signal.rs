@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 use crate::posix::types::*;
-use crate::posix::{sighandler_t, MemZeroedStruct};
+use crate::posix::{MemZeroedStruct, sighandler_t};
 
 #[derive(Copy, Clone)]
 #[repr(transparent)]

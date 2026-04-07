@@ -15,7 +15,7 @@ use core::time::Duration;
 extern crate alloc;
 use alloc::boxed::Box;
 
-use examples_common::{open_service, PubSubEvent};
+use examples_common::{PubSubEvent, open_service};
 use iceoryx2::{
     node::NodeView,
     port::{listener::Listener, subscriber::Subscriber},

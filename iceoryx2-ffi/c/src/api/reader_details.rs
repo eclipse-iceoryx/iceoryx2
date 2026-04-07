@@ -27,7 +27,7 @@ pub type iox2_reader_details_ptr = *const ReaderDetails;
 /// * `id_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_unique_reader_id_t`].
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `id_handle_ptr` valid pointer to a [`iox2_unique_reader_id_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_reader_details_reader_id(
     handle: iox2_reader_details_ptr,
     id_struct_ptr: *mut iox2_unique_reader_id_t,
@@ -56,7 +56,7 @@ pub unsafe extern "C" fn iox2_reader_details_reader_id(
 /// # Safety
 ///
 /// * `handle` valid pointer to the reader details
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_reader_details_node_id(
     handle: iox2_reader_details_ptr,
 ) -> iox2_node_id_ptr {

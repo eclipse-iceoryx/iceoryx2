@@ -14,24 +14,24 @@
 
 use crate::api::PendingResponseUnion;
 use crate::api::{
-    c_size_t, iox2_service_type_e, AssertNonNullHandle, HandleToType, IntoCInt, UserHeaderFfi,
-    IOX2_OK,
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, UserHeaderFfi, c_size_t,
+    iox2_service_type_e,
 };
 
-use iceoryx2::port::client::RequestSendError;
 use iceoryx2::port::LoanError;
 use iceoryx2::port::SendError;
+use iceoryx2::port::client::RequestSendError;
 use iceoryx2::request_mut_uninit::RequestMutUninit;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_ffi_macros::{iceoryx2_ffi, CStrRepr};
+use iceoryx2_ffi_macros::{CStrRepr, iceoryx2_ffi};
 
 use core::ffi::{c_char, c_int, c_void};
 use core::mem::ManuallyDrop;
 
 use super::iox2_pending_response_h;
 use super::iox2_pending_response_t;
-use super::{iox2_request_header_h, iox2_request_header_t, PayloadFfi, UninitPayloadFfi};
+use super::{PayloadFfi, UninitPayloadFfi, iox2_request_header_h, iox2_request_header_t};
 
 // BEGIN types definition
 #[repr(C)]
@@ -210,7 +210,7 @@ impl HandleToType for iox2_request_mut_h_ref {
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_request_send_error_string(
     error: iox2_request_send_error_e,
 ) -> *const c_char {
@@ -225,7 +225,7 @@ pub unsafe extern "C" fn iox2_request_send_error_string(
 /// * `dest_struct_ptr` must not be `null` and the struct it is pointing to must not contain valid data, i.e. initialized. It can be moved or dropped, though.
 /// * `dest_handle_ptr` must not be `null`
 #[doc(hidden)]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_request_mut_move(
     source_struct_ptr: *mut iox2_request_mut_t,
     dest_struct_ptr: *mut iox2_request_mut_t,
@@ -257,7 +257,7 @@ pub unsafe extern "C" fn iox2_request_mut_move(
 ///
 /// * `handle` obtained by [`iox2_client_loan_slice_uninit()`](crate::iox2_client_loan_slice_uninit())
 /// * `header_ptr` a valid, non-null pointer pointing to a `*const c_void` pointer.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_request_mut_user_header(
     handle: iox2_request_mut_h_ref,
     header_ptr: *mut *const c_void,
@@ -283,7 +283,7 @@ pub unsafe extern "C" fn iox2_request_mut_user_header(
 /// * `header_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
 ///   [`iox2_request_header_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `header_handle_ptr` valid pointer to a [`iox2_request_header_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_request_mut_header(
     handle: iox2_request_mut_h_ref,
     header_struct_ptr: *mut iox2_request_header_t,
@@ -318,7 +318,7 @@ pub unsafe extern "C" fn iox2_request_mut_header(
 ///
 /// * `handle` obtained by [`iox2_client_loan_slice_uninit()`](crate::iox2_client_loan_slice_uninit())
 /// * `header_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_request_mut_user_header_mut(
     handle: iox2_request_mut_h_ref,
     header_ptr: *mut *mut c_void,
@@ -343,7 +343,7 @@ pub unsafe extern "C" fn iox2_request_mut_user_header_mut(
 /// * `handle` obtained by [`iox2_client_loan_slice_uninit()`](crate::iox2_client_loan_slice_uninit())
 /// * `payload_ptr` a valid, non-null pointer pointing to a `*mut c_void` pointer.
 /// * `number_of_elements` (optional) either a null pointer or a valid pointer pointing to a [`c_size_t`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_request_mut_payload_mut(
     handle: iox2_request_mut_h_ref,
     payload_ptr: *mut *mut c_void,
@@ -377,7 +377,7 @@ pub unsafe extern "C" fn iox2_request_mut_payload_mut(
 /// * `handle` obtained by [`iox2_client_loan_slice_uninit()`](crate::iox2_client_loan_slice_uninit())
 /// * `payload_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
 /// * `number_of_elements` (optional) either a null pointer or a valid pointer pointing to a [`c_size_t`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_request_mut_payload(
     handle: iox2_request_mut_h_ref,
     payload_ptr: *mut *const c_void,
@@ -411,7 +411,7 @@ pub unsafe extern "C" fn iox2_request_mut_payload(
 /// * `handle` obtained by [`iox2_client_loan_slice_uninit()`](crate::iox2_client_loan_slice_uninit())
 /// * The `pending_response_handle_ptr` is pointing to a valid [`iox2_pending_response_h`].
 ///
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_request_mut_send(
     handle: iox2_request_mut_h,
     pending_response_struct_ptr: *mut iox2_pending_response_t,
@@ -493,7 +493,7 @@ pub unsafe extern "C" fn iox2_request_mut_send(
 /// * The `handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_request_mut_t`] can be re-used with a call to
 ///   [`iox2_client_loan_slice_uninit`](crate::iox2_client_loan_slice_uninit)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_request_mut_drop(handle: iox2_request_mut_h) {
     debug_assert!(!handle.is_null());
 

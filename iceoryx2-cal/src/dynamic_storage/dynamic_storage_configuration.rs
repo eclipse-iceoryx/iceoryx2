@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::{
-    hash::{sha1::Sha1, Hash},
+    hash::{Hash, sha1::Sha1},
     named_concept::NamedConceptConfiguration,
 };
 use iceoryx2_bb_system_types::{file_name::*, file_path::FilePath, path::Path};

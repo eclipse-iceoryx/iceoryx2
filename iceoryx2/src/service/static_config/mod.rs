@@ -160,7 +160,7 @@ impl StaticConfig {
     /// Unwrap the RequestResponse static configuration.
     pub fn request_response(&self) -> &request_response::StaticConfig {
         match &self.messaging_pattern {
-            MessagingPattern::RequestResponse(ref v) => v,
+            MessagingPattern::RequestResponse(v) => v,
             m => {
                 fatal_panic!(from self, "This should never happen! Trying to access request_response::StaticConfig when the messaging pattern is actually {:?}!", m)
             }
@@ -170,7 +170,7 @@ impl StaticConfig {
     pub(crate) fn request_response_mut(&mut self) -> &mut request_response::StaticConfig {
         let origin = format!("{self:?}");
         match &mut self.messaging_pattern {
-            MessagingPattern::RequestResponse(ref mut v) => v,
+            MessagingPattern::RequestResponse(v) => v,
             m => {
                 fatal_panic!(from origin, "This should never happen! Trying to access request_response::StaticConfig when the messaging pattern is actually {:?}!", m)
             }
@@ -180,7 +180,7 @@ impl StaticConfig {
     /// Unwrap the Event static configuration.
     pub fn event(&self) -> &event::StaticConfig {
         match &self.messaging_pattern {
-            MessagingPattern::Event(ref v) => v,
+            MessagingPattern::Event(v) => v,
             m => {
                 fatal_panic!(from self, "This should never happen! Trying to access event::StaticConfig when the messaging pattern is actually {:?}!", m)
             }
@@ -190,7 +190,7 @@ impl StaticConfig {
     pub(crate) fn event_mut(&mut self) -> &mut event::StaticConfig {
         let origin = format!("{self:?}");
         match &mut self.messaging_pattern {
-            MessagingPattern::Event(ref mut v) => v,
+            MessagingPattern::Event(v) => v,
             m => {
                 fatal_panic!(from origin, "This should never happen! Trying to access event::StaticConfig when the messaging pattern is actually {:?}!", m)
             }
@@ -200,7 +200,7 @@ impl StaticConfig {
     /// Unwrap the PublishSubscribe static configuration.
     pub fn publish_subscribe(&self) -> &publish_subscribe::StaticConfig {
         match &self.messaging_pattern {
-            MessagingPattern::PublishSubscribe(ref v) => v,
+            MessagingPattern::PublishSubscribe(v) => v,
             m => {
                 fatal_panic!(from self, "This should never happen! Trying to access publish_subscribe::StaticConfig when the messaging pattern is actually {:?}!", m)
             }
@@ -210,7 +210,7 @@ impl StaticConfig {
     pub(crate) fn publish_subscribe_mut(&mut self) -> &mut publish_subscribe::StaticConfig {
         let origin = format!("{self:?}");
         match &mut self.messaging_pattern {
-            MessagingPattern::PublishSubscribe(ref mut v) => v,
+            MessagingPattern::PublishSubscribe(v) => v,
             m => {
                 fatal_panic!(from origin, "This should never happen! Trying to access publish_subscribe::StaticConfig when the messaging pattern is actually {:?}!", m)
             }
@@ -220,7 +220,7 @@ impl StaticConfig {
     /// Unwrap the Blackboard static configuration.
     pub fn blackboard(&self) -> &blackboard::StaticConfig {
         match &self.messaging_pattern {
-            MessagingPattern::Blackboard(ref v) => v,
+            MessagingPattern::Blackboard(v) => v,
             m => {
                 fatal_panic!(from self, "This should never happen! Trying to access blackboard::StaticConfig when the messaging pattern is actually {:?}!", m)
             }
@@ -230,7 +230,7 @@ impl StaticConfig {
     pub(crate) fn blackboard_mut(&mut self) -> &mut blackboard::StaticConfig {
         let origin = format!("{self:?}");
         match &mut self.messaging_pattern {
-            MessagingPattern::Blackboard(ref mut v) => v,
+            MessagingPattern::Blackboard(v) => v,
             m => {
                 fatal_panic!(from origin, "This should never happen! Trying to access blackboard::StaticConfig when the messaging pattern is actually {:?}!", m)
             }
