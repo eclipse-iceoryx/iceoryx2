@@ -2,7 +2,7 @@
 name = "bare-metal-nostd-publish-subscribe"
 description = "a bare metal application that runs on qemu emulating the r5"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [features]
 default = []
