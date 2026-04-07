@@ -23,6 +23,7 @@ fn zero_copy_send_derive_does_not_work_when_type_is_not_annotated_with_repr_c() 
 
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
 /// struct Foo(u16);
 ///
@@ -38,6 +39,7 @@ fn zero_copy_send_derive_does_not_work_for_named_struct_when_not_all_members_imp
 
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
 /// struct Foo(u16);
 ///
@@ -50,6 +52,7 @@ fn zero_copy_send_derive_does_not_work_for_unnamed_struct_when_not_all_members_i
 
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
 /// #[repr(C)]
 /// #[derive(ZeroCopySend)]
@@ -80,6 +83,7 @@ fn zero_copy_send_derive_does_not_work_for_generic_named_struct_when_not_all_mem
 
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
 /// #[repr(C)]
 /// #[derive(ZeroCopySend)]
@@ -105,6 +109,7 @@ fn zero_copy_send_derive_does_not_work_for_generic_unnamed_struct_when_not_all_m
 
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
 /// #[repr(C)]
 /// #[derive(ZeroCopySend)]
@@ -279,9 +284,11 @@ fn zero_copy_send_derive_works_for_enum_with_nested_zero_copy_send_types() {}
 
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
 /// struct Foo(u16);
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// enum TestEnum {
 ///     Variant1,
@@ -294,9 +301,11 @@ fn zero_copy_send_derive_does_not_work_for_enum_when_not_all_members_implement_i
 
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
 /// struct Foo(u16);
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// enum TestEnum {
 ///     Variant1,
@@ -308,9 +317,11 @@ fn zero_copy_send_derive_does_not_work_for_tuple_variant_when_not_all_members_im
 
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
 /// struct Foo(u16);
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// enum TestEnum {
 ///     Variant1,
@@ -322,7 +333,9 @@ fn zero_copy_send_derive_does_not_work_for_struct_variant_when_not_all_members_i
 
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// enum GenericEnum<T1, T2> {
 ///     Variant1,
@@ -337,6 +350,7 @@ fn zero_copy_send_derive_does_not_work_for_generic_enum_when_members_do_not_impl
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 /// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// enum GenericEnum<T1: ZeroCopySend, T2> {
 ///     Variant1,
@@ -351,7 +365,9 @@ fn zero_copy_send_derive_does_not_work_for_generic_enum_when_not_all_members_imp
 
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
+/// #[derive(Copy, Clone)]
 /// struct Foo(u16);
 ///
 /// #[repr(C)]
@@ -366,10 +382,11 @@ fn zero_copy_send_derive_does_not_work_for_union_when_not_all_members_implement_
 
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
 /// #[repr(C)]
 /// #[derive(ZeroCopySend)]
-/// union GenericUnion<T1, T2> {
+/// union GenericUnion<T1: Copy, T2: Copy> {
 ///     val1: T1,
 ///     val2: T2,
 /// }
@@ -383,7 +400,7 @@ fn zero_copy_send_derive_does_not_work_for_generic_union_when_members_do_not_imp
 ///
 /// #[repr(C)]
 /// #[derive(ZeroCopySend)]
-/// union GenericUnion<T1: ZeroCopySend, T2> {
+/// union GenericUnion<T1: Copy + ZeroCopySend, T2: Copy> {
 ///     val1: T1,
 ///     val2: T2,
 /// }
@@ -412,5 +429,3 @@ fn zero_copy_send_derive_does_not_work_for_generic_union_when_not_all_members_im
 #[cfg(doctest)]
 fn blub() {}
 // TODO: test with members that contain padding bytes
-
-// TODO: check if tests fail because of missing include
