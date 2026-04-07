@@ -29,6 +29,7 @@ use iceoryx2_bb_posix::unix_datagram_socket::*;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::test;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA;
 
@@ -79,7 +80,7 @@ pub fn send_receive_works() {
         .unwrap();
 
     let send_data: Vec<u8> = vec![1u8, 3u8, 3u8, 7u8, 13u8, 37u8];
-    sut_sender.blocking_send(send_data.as_slice()).unwrap();
+    sut_sender.try_send(send_data.as_slice()).unwrap();
 
     let mut receive_data: Vec<u8> = vec![0; 6];
     sut_receiver
@@ -131,7 +132,9 @@ pub fn non_blocking_mode_returns_zero_when_nothing_was_received() {
 }
 
 #[test]
-pub fn blocking_mode_blocks() {
+fn blocking_receive_blocks() {
+    let _watchdog = Watchdog::new();
+
     create_test_directory();
     let socket_name = generate_file_path();
     let received_message = AtomicBool::new(false);
@@ -164,7 +167,7 @@ pub fn blocking_mode_blocks() {
 
         nanosleep(TIMEOUT).unwrap();
         let received_message_old = received_message.load(Ordering::Relaxed);
-        sut_sender.blocking_send(send_data.as_slice()).unwrap();
+        sut_sender.try_send(send_data.as_slice()).unwrap();
 
         assert_that!(received_message_old, eq false);
 
@@ -176,7 +179,9 @@ pub fn blocking_mode_blocks() {
 }
 
 #[test]
-pub fn timeout_blocks_at_least() {
+fn timed_receive_blocks_at_least_for_timeout() {
+    let _watchdog = Watchdog::new();
+
     create_test_directory();
     let socket_name = generate_file_path();
     let handle = BarrierHandle::new();
@@ -286,7 +291,7 @@ pub fn sending_receiving_credentials_works() {
     let mut msg = SocketAncillary::new();
     msg.set_creds(&send_credentials);
 
-    sut_sender.blocking_send_msg(&mut msg).unwrap();
+    sut_sender.try_send_msg(&mut msg).unwrap();
 
     let mut received_msg = SocketAncillary::new();
     sut_receiver.try_receive_msg(&mut received_msg).unwrap();

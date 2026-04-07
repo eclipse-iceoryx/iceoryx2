@@ -73,13 +73,7 @@ pub unsafe fn sendto(
     dest_addr: *const sockaddr,
     dest_len: socklen_t,
 ) -> ssize_t {
-    let result = crate::internal::sendto(socket, message, length, flags, dest_addr, dest_len);
-
-    if result == -1 {
-        Errno::correct_errno(Errno::ENOBUFS, Errno::EAGAIN);
-    }
-
-    result
+    crate::internal::sendto(socket, message, length, flags, dest_addr, dest_len)
 }
 
 pub unsafe fn send(socket: int, message: *const void, length: size_t, flags: int) -> ssize_t {
