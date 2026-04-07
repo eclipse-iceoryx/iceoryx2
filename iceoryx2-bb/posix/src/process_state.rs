@@ -154,6 +154,7 @@ use crate::{
     file_descriptor::{FileDescriptorBased, FileDescriptorManagement},
     file_lock::LockType,
     permission::Permission,
+    process::{Process, UniqueProcessId},
     unix_datagram_socket::CreationMode,
 };
 
@@ -278,7 +279,7 @@ impl ProcessGuardBuilder {
                 | Permission::GROUP_EXEC
                 | Permission::OTHERS_READ
                 | Permission::OTHERS_EXEC,
-            guard_permissions: Permission::OWNER_ALL,
+            guard_permissions: Permission::OWNER_READ | Permission::OWNER_WRITE,
         }
     }
 
@@ -328,10 +329,17 @@ impl ProcessGuardBuilder {
 
         let owner_lock_file = fail!(from origin, when Self::create_file(&owner_lock_path, self.guard_permissions),
                                     "{} since the owner_lock file \"{}\" could not be created.", msg, owner_lock_path);
-        let mut file = fail!(from origin, when Self::create_file(path, INIT_PERMISSION),
+
+        let mut state_file = fail!(from origin, when Self::create_file(path, INIT_PERMISSION),
                                 "{} since the state file \"{}\" could not be created.", msg, path);
 
-        match Self::lock_state_file(&file) {
+        state_file.write(unsafe {
+            &core::mem::transmute::<UniqueProcessId, [u8; core::mem::size_of::<UniqueProcessId>()]>(
+                Process::unique_id(),
+            )
+        });
+
+        match Self::lock_state_file(&state_file) {
             Ok(()) => (),
             Err(lock_error) => match lock_error {
                 ProcessGuardLockError::Interrupt => {
@@ -349,11 +357,11 @@ impl ProcessGuardBuilder {
             },
         };
 
-        match file.set_permission(self.guard_permissions) {
+        match state_file.set_permission(self.guard_permissions) {
             Ok(_) => {
                 trace!(from "ProcessGuard::new()", "create process state \"{}\" for monitoring", path);
                 Ok(ProcessGuard {
-                    file,
+                    file: state_file,
                     owner_lock_file,
                 })
             }
@@ -762,12 +770,29 @@ impl ProcessMonitor {
     }
 
     fn read_state_from_file(&self) -> Result<ProcessState, ProcessMonitorStateError> {
-        let file = match unsafe { &*self.file.as_ptr() } {
+        let file = match unsafe { &mut *self.file.as_ptr() } {
             Some(ref f) => f,
             None => return Ok(ProcessState::Starting),
         };
 
         let msg = format!("Unable to read state from file {file:?}");
+        println!("1. read state");
+        let mut buffer = [0u8; 16];
+        println!("fd: {}", unsafe { file.file_descriptor().native_handle() });
+
+        let result = file.read(&mut buffer);
+        println!("  result {:?}", result);
+        let unique_process_id =
+            unsafe { core::mem::transmute::<[u8; 16], UniqueProcessId>(buffer) };
+
+        println!("2. read state");
+        println!("  id {:?} == {:?}", unique_process_id, Process::unique_id());
+        if unique_process_id == Process::unique_id() {
+            println!("3. read state");
+            return Ok(ProcessState::Alive);
+        }
+        println!("4. read state");
+
         let lock_state = fail!(from self, when Self::get_lock_state(file),
                             "{} since the lock state of the state file could not be acquired.", msg);
 
@@ -822,7 +847,7 @@ impl ProcessMonitor {
         let origin = "ProcessMonitor::new()";
         let msg = format!("Unable to open ProcessMonitor state file \"{path}\"");
 
-        match FileBuilder::new(path).open_existing(AccessMode::Write) {
+        match FileBuilder::new(path).open_existing(AccessMode::ReadWrite) {
             Ok(f) => Ok(Some(f)),
             Err(FileOpenError::FileDoesNotExist) => Ok(None),
             Err(FileOpenError::IsDirectory) => {

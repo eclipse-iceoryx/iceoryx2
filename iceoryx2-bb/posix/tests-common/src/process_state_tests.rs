@@ -284,12 +284,6 @@ pub fn cleaner_keeps_state_files_when_abandoned() {
 // from the same thread os the fcntl SETLK call. If it is called from a different thread GETLK
 // blocks despite it should be non-blocking.
 
-#[cfg(not(any(
-    target_os = "linux",
-    target_os = "freebsd",
-    target_os = "macos",
-    target_os = "nto"
-)))]
 #[test]
 pub fn monitor_detects_alive_state_from_existing_process() {
     create_test_directory();
@@ -303,12 +297,7 @@ pub fn monitor_detects_alive_state_from_existing_process() {
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
 }
 
-#[cfg(not(any(
-    target_os = "linux",
-    target_os = "freebsd",
-    target_os = "macos",
-    target_os = "nto"
-)))]
+#[test]
 pub fn owner_lock_cannot_be_acquired_from_living_process() {
     create_test_directory();
     let path = generate_file_path();
@@ -322,12 +311,6 @@ pub fn owner_lock_cannot_be_acquired_from_living_process() {
     );
 }
 
-#[cfg(not(any(
-    target_os = "linux",
-    target_os = "freebsd",
-    target_os = "macos",
-    target_os = "nto"
-)))]
 #[test]
 pub fn owner_lock_cannot_be_acquired_twice() {
     create_test_directory();

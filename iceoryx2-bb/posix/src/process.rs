@@ -43,12 +43,14 @@
 //! ```
 use core::fmt::Display;
 
+use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::file_path::*;
-use iceoryx2_log::{fail, trace};
+use iceoryx2_log::{fail, fatal_panic, trace};
 use iceoryx2_pal_posix::posix::{errno::Errno, MemZeroedStruct};
 use iceoryx2_pal_posix::*;
 
+use crate::unique_system_id::UniqueSystemId;
 use crate::{
     scheduler::{Scheduler, SchedulerConversionError},
     signal::Signal,
@@ -110,6 +112,10 @@ impl ProcessExt for posix::pid_t {
         Process::from_pid(ProcessId::new(*self))
     }
 }
+
+/// Represents a system wide unique process id.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct UniqueProcessId(UniqueSystemId);
 
 /// Represents a process id.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -174,6 +180,18 @@ impl Process {
     /// Returns the id of the process.
     pub fn id(&self) -> ProcessId {
         self.pid
+    }
+
+    /// Returns a [`UniqueProcessId`]. It is similar to the pid except that this id is unique at all time.
+    /// Now future [`Process`] on the same machine will ever have the same [`UniqueProcessId`] again.
+    pub fn unique_id() -> UniqueProcessId {
+        static UNIQUE_PROCESS_ID: LazyLock<UniqueProcessId> = LazyLock::new(|| {
+            let unique_system_id = fatal_panic!(from "Process::unique_id()",
+                    when UniqueSystemId::new(),
+                    "This should never happen! Unable to create unique id for the process.");
+            UniqueProcessId(unique_system_id)
+        });
+        *UNIQUE_PROCESS_ID
     }
 
     /// Returns the executable path of the [`Process`].
