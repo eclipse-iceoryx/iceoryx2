@@ -1,5 +1,5 @@
 {
-  "checksum": "560e6b6d2bdfc274ab6db5b35bc572887f5cabd6b8165af207ebedf6aa233024",
+  "checksum": "193d60d0b7d10d902052012dad7c1f571aebb178dd3016b96e28f0f1234499f9",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -10889,7 +10889,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "proc_macro_deps_dev": {
           "common": [
             {
