@@ -2,7 +2,7 @@
 name = "iceoryx2-tunnel-zenoh"
 description = "iceoryx2: zenoh backend for the tunnel"
 categories = { workspace = true }
-edition = { workspace = true }
+edition = "2024"
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }

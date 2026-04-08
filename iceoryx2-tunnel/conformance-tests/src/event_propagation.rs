@@ -27,7 +27,7 @@ pub mod event_propagation {
     use iceoryx2_bb_posix::clock::nanosleep;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_tunnel::Tunnel;
-    use iceoryx2_tunnel_backend::traits::{testing::Testing, Backend};
+    use iceoryx2_tunnel_backend::traits::{Backend, testing::Testing};
 
     fn propagate_events<S: Service, B: Backend<S> + Debug, T: Testing>(num: usize) {
         const TIMEOUT: Duration = Duration::from_millis(250);

@@ -59,16 +59,16 @@ use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_posix::file::{CreationMode, FileCreationError, FileWriteError};
 use iceoryx2_bb_posix::file::{File, FileBuilder};
 use iceoryx2_bb_system_types::file_path::FilePath;
-use iceoryx2_cal::serialize::toml::Toml;
 use iceoryx2_cal::serialize::Serialize;
+use iceoryx2_cal::serialize::toml::Toml;
 use iceoryx2_log::fail;
 
-use crate::record::RecordWriter;
 use crate::record::HEX_START_RECORD_MARKER;
+use crate::record::RecordWriter;
 use crate::record::{DataRepresentation, RawRecord};
 use crate::record_header::{
-    RecordHeader, RecordHeaderDetails, FILE_FORMAT_HUMAN_READABLE_VERSION,
-    FILE_FORMAT_IOX2_DUMP_VERSION,
+    FILE_FORMAT_HUMAN_READABLE_VERSION, FILE_FORMAT_IOX2_DUMP_VERSION, RecordHeader,
+    RecordHeaderDetails,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

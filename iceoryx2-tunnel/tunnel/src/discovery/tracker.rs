@@ -12,7 +12,7 @@
 
 use iceoryx2::{
     config::Config,
-    service::{static_config::StaticConfig, Service},
+    service::{Service, static_config::StaticConfig},
 };
 use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_log::{fail, fatal_panic};
