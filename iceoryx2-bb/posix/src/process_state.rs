@@ -155,6 +155,7 @@ use crate::{
     file_lock::LockType,
     permission::Permission,
     process::{Process, UniqueProcessId},
+    unique_system_id::UniqueSystemId,
     unix_datagram_socket::CreationMode,
 };
 
@@ -582,7 +583,10 @@ impl ProcessGuard {
         }
     }
 
-    pub(crate) fn staged_death(self) {
+    pub(crate) fn staged_death(mut self) {
+        self.file.write_at(0, &[0u8; 16]);
+        self.file.flush();
+
         self.file.release_ownership();
         self.owner_lock_file.release_ownership();
     }
@@ -686,7 +690,9 @@ impl ProcessMonitor {
             owner_lock_path,
         };
 
-        new_self.file.set(Self::open_file(&new_self.path)?);
+        new_self
+            .file
+            .set(Self::open_file(&new_self.path, AccessMode::Write)?);
         Ok(new_self)
     }
 
@@ -735,7 +741,8 @@ impl ProcessMonitor {
             Some(_) => self.read_state_from_file(),
             None => match File::does_exist(&self.path) {
                 Ok(true) => {
-                    self.file.set(Self::open_file(&self.path)?);
+                    self.file
+                        .set(Self::open_file(&self.path, AccessMode::ReadWrite)?);
                     self.read_state_from_file()
                 }
                 Ok(false) => Ok(ProcessState::DoesNotExist),
@@ -776,22 +783,25 @@ impl ProcessMonitor {
         };
 
         let msg = format!("Unable to read state from file {file:?}");
-        println!("1. read state");
         let mut buffer = [0u8; 16];
-        println!("fd: {}", unsafe { file.file_descriptor().native_handle() });
 
-        let result = file.read(&mut buffer);
-        println!("  result {:?}", result);
+        if file.permission().unwrap() == INIT_PERMISSION {
+            return Ok(ProcessState::Starting);
+        }
+
+        if let Err(_) = file.read(&mut buffer) {
+            self.file
+                .set(Self::open_file(&self.path, AccessMode::ReadWrite).unwrap());
+        };
+        file.read(&mut buffer);
         let unique_process_id =
             unsafe { core::mem::transmute::<[u8; 16], UniqueProcessId>(buffer) };
 
-        println!("2. read state");
-        println!("  id {:?} == {:?}", unique_process_id, Process::unique_id());
+        println!("{:?} == {:?}", unique_process_id, Process::unique_id());
         if unique_process_id == Process::unique_id() {
-            println!("3. read state");
+            println!("process is alive");
             return Ok(ProcessState::Alive);
         }
-        println!("4. read state");
 
         let lock_state = fail!(from self, when Self::get_lock_state(file),
                             "{} since the lock state of the state file could not be acquired.", msg);
@@ -803,7 +813,7 @@ impl ProcessMonitor {
                     Ok(INIT_PERMISSION) => Ok(ProcessState::Starting),
                     Err(_) | Ok(_) => {
                         self.file.set(None);
-                        match Self::open_file(&self.owner_lock_path)? {
+                        match Self::open_file(&self.owner_lock_path, AccessMode::Write)? {
                             Some(f) => {
                                 let lock_state = fail!(from self, when Self::get_lock_state(&f),
                                                 "{} since the lock state of the owner_lock file could not be acquired.", msg);
@@ -843,11 +853,14 @@ impl ProcessMonitor {
         }
     }
 
-    fn open_file(path: &FilePath) -> Result<Option<File>, ProcessMonitorCreateError> {
+    fn open_file(
+        path: &FilePath,
+        access_mode: AccessMode,
+    ) -> Result<Option<File>, ProcessMonitorCreateError> {
         let origin = "ProcessMonitor::new()";
         let msg = format!("Unable to open ProcessMonitor state file \"{path}\"");
 
-        match FileBuilder::new(path).open_existing(AccessMode::ReadWrite) {
+        match FileBuilder::new(path).open_existing(access_mode) {
             Ok(f) => Ok(Some(f)),
             Err(FileOpenError::FileDoesNotExist) => Ok(None),
             Err(FileOpenError::IsDirectory) => {
@@ -890,7 +903,7 @@ impl ProcessMonitor {
 /// ```
 #[derive(Debug)]
 pub struct ProcessCleaner {
-    file: File,
+    state_file: File,
     owner_lock_file: File,
 }
 
@@ -901,26 +914,8 @@ impl ProcessCleaner {
     pub fn new(path: &FilePath) -> Result<Self, ProcessCleanerCreateError> {
         let msg = format!("Unable to instantiate ProcessCleaner \"{path}\"");
         let origin = "ProcessCleaner::new()";
-        let owner_lock_path = match generate_owner_lock_path(path) {
-            Ok(f) => f,
-            Err(e) => {
-                fail!(from origin, with ProcessCleanerCreateError::InvalidCleanerPathName,
-                "{} since the corresponding owner_lock path name would be invalid ({:?}).", msg, e);
-            }
-        };
-
-        let owner_lock_file = match fail!(from origin, when ProcessMonitor::open_file(&owner_lock_path),
-            with ProcessCleanerCreateError::UnableToOpenCleanerFile,
-            "{} since the owner_lock file could not be opened.", msg)
-        {
-            Some(f) => f,
-            None => {
-                fail!(from origin, with ProcessCleanerCreateError::DoesNotExist,
-                "{} since the process owner_lock file does not exist.", msg);
-            }
-        };
-
-        let file = match fail!(from origin, when ProcessMonitor::open_file(path),
+        let state_file = match fail!(from origin,
+            when ProcessMonitor::open_file(path, AccessMode::ReadWrite),
             with ProcessCleanerCreateError::UnableToOpenStateFile,
             "{} since the state file could not be opened.", msg)
         {
@@ -931,7 +926,16 @@ impl ProcessCleaner {
             }
         };
 
-        let lock_state = fail!(from origin, when ProcessMonitor::get_lock_state(&file),
+        let mut buffer = [0u8; 16];
+        state_file.read(&mut buffer).unwrap();
+        let process_id = unsafe { core::mem::transmute::<[u8; 16], UniqueProcessId>(buffer) };
+
+        if process_id == Process::unique_id() {
+            fail!(from origin, with ProcessCleanerCreateError::ProcessIsStillAlive,
+                "{} since the corresponding process is still alive.", msg);
+        }
+
+        let lock_state = fail!(from origin, when ProcessMonitor::get_lock_state(&state_file),
             with ProcessCleanerCreateError::FailedToAcquireLockState,
             "{} since the lock state could not be acquired.", msg);
 
@@ -940,12 +944,31 @@ impl ProcessCleaner {
                 "{} since the corresponding process is still alive.", msg);
         }
 
+        let owner_lock_path = match generate_owner_lock_path(path) {
+            Ok(f) => f,
+            Err(e) => {
+                fail!(from origin, with ProcessCleanerCreateError::InvalidCleanerPathName,
+                "{} since the corresponding owner_lock path name would be invalid ({:?}).", msg, e);
+            }
+        };
+
+        let owner_lock_file = match fail!(from origin, when ProcessMonitor::open_file(&owner_lock_path, AccessMode::Write),
+            with ProcessCleanerCreateError::UnableToOpenCleanerFile,
+            "{} since the owner_lock file could not be opened.", msg)
+        {
+            Some(f) => f,
+            None => {
+                fail!(from origin, with ProcessCleanerCreateError::DoesNotExist,
+                "{} since the process owner_lock file does not exist.", msg);
+            }
+        };
+
         match ProcessGuardBuilder::lock_state_file(&owner_lock_file) {
             Ok(()) => {
-                file.acquire_ownership();
+                state_file.acquire_ownership();
                 owner_lock_file.acquire_ownership();
                 Ok(Self {
-                    file,
+                    state_file,
                     owner_lock_file,
                 })
             }
@@ -968,7 +991,7 @@ impl ProcessCleaner {
     /// when another process tried to cleanup the stale resources of the dead process but is unable
     /// to due to insufficient permissions.
     pub fn abandon(self) {
-        self.file.release_ownership();
+        self.state_file.release_ownership();
         self.owner_lock_file.release_ownership();
     }
 }

@@ -277,13 +277,6 @@ pub fn cleaner_keeps_state_files_when_abandoned() {
     assert_that!(File::does_exist(&owner_lock_path).unwrap(), eq true);
 }
 
-// START: OS with IPC only lock detection
-//
-// the lock detection does work on some OS only in the inter process context.
-// In the process local context the lock is not detected when the fcntl GETLK call is originating
-// from the same thread os the fcntl SETLK call. If it is called from a different thread GETLK
-// blocks despite it should be non-blocking.
-
 #[test]
 pub fn monitor_detects_alive_state_from_existing_process() {
     create_test_directory();
@@ -311,6 +304,18 @@ pub fn owner_lock_cannot_be_acquired_from_living_process() {
     );
 }
 
+// START: OS with IPC only lock detection
+//
+// the lock detection does work on some OS only in the inter process context.
+// In the process local context the lock is not detected when the fcntl GETLK call is originating
+// from the same thread os the fcntl SETLK call. If it is called from a different thread GETLK
+// blocks despite it should be non-blocking.
+#[cfg(not(any(
+    target_os = "linux",
+    target_os = "freebsd",
+    target_os = "macos",
+    target_os = "nto"
+)))]
 #[test]
 pub fn owner_lock_cannot_be_acquired_twice() {
     create_test_directory();
