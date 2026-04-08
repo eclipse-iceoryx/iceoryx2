@@ -748,10 +748,10 @@ impl ProcessMonitor {
             }
         };
 
+        // first we need to open the owner_lock_file with AccessMode::Write only since it could
+        // be in init mode. After the initialization we can open it with AccessMode::ReadWrite
         let mut has_owner_lock_file = false;
-        if let Some(owner_lock_file) =
-            Self::open_file(&self.owner_lock_path, AccessMode::ReadWrite)?
-        {
+        if let Some(owner_lock_file) = Self::open_file(&self.owner_lock_path, AccessMode::Write)? {
             let lock_state = fail!(from self, when Self::get_lock_state(&owner_lock_file),
                                                         "{} since the lock state of the owner_lock file could not be acquired.", msg);
             if lock_state == posix::F_WRLCK as _ {
@@ -762,6 +762,12 @@ impl ProcessMonitor {
                 return Ok(ProcessState::Starting);
             }
 
+            has_owner_lock_file = true;
+        }
+
+        if let Some(owner_lock_file) =
+            Self::open_file(&self.owner_lock_path, AccessMode::ReadWrite)?
+        {
             let other_process_id: UniqueProcessId = match owner_lock_file.read_val() {
                 Ok(v) => v,
                 Err(e) => {
@@ -773,7 +779,6 @@ impl ProcessMonitor {
             if my_process_id == other_process_id {
                 return Ok(ProcessState::Alive);
             }
-            has_owner_lock_file = true;
         }
 
         // IMPORTANT: it is essential that the state file is only then opened when it is ensured that the
