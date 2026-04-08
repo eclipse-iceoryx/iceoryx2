@@ -13,6 +13,8 @@
 #ifndef IOX2_INCLUDE_GUARD_BB_DETAIL_RAW_BYTE_STORAGE_HPP
 #define IOX2_INCLUDE_GUARD_BB_DETAIL_RAW_BYTE_STORAGE_HPP
 
+#include "iox2/bb/detail/attributes.hpp"
+
 #include <algorithm>
 #include <cstdint>
 #include <memory>
@@ -76,10 +78,7 @@ class RawByteStorage {
         }
     }
 
-#if __cplusplus >= 202002L
-    constexpr
-#endif
-        ~RawByteStorage() {
+    IOX2_CONSTEXPR_DTOR ~RawByteStorage() {
         for (uint64_t i = m_size; i != 0; --i) {
             uint64_t const index = i - 1;
             pointer_from_index(index)->~T();

@@ -13,6 +13,7 @@
 #ifndef IOX2_INCLUDE_GUARD_BB_STATIC_VECTOR_HPP
 #define IOX2_INCLUDE_GUARD_BB_STATIC_VECTOR_HPP
 
+#include "iox2/bb/detail/attributes.hpp"
 #include "iox2/bb/optional.hpp"
 
 #include "iox2/bb/detail/raw_byte_storage.hpp"
@@ -151,10 +152,7 @@ class StaticVector {
     }
 
     // destructor
-#if __cplusplus >= 202002L
-    constexpr
-#endif
-        ~StaticVector() = default;
+    IOX2_CONSTEXPR_DTOR ~StaticVector() = default;
 
     // assignment
     auto operator=(StaticVector const&) -> StaticVector& = default;

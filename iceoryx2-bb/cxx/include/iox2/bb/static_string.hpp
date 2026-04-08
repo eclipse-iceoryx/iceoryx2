@@ -13,6 +13,7 @@
 #ifndef IOX2_INCLUDE_GUARD_BB_STATIC_STRING_HPP
 #define IOX2_INCLUDE_GUARD_BB_STATIC_STRING_HPP
 
+#include "iox2/bb/detail/attributes.hpp"
 #include "iox2/bb/detail/string_internal.hpp"
 #include "iox2/bb/optional.hpp"
 #include "iox2/legacy/type_traits.hpp"
@@ -425,10 +426,7 @@ class StaticString {
     }
 
     // destructor
-#if __cplusplus >= 202002L
-    constexpr
-#endif
-        ~StaticString() = default;
+    IOX2_CONSTEXPR_DTOR ~StaticString() = default;
 
     // assignment
     constexpr auto operator=(StaticString const&) noexcept -> StaticString& = default;

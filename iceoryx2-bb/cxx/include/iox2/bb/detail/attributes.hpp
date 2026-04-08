@@ -42,9 +42,18 @@ inline void iox2_discard_result_impl(T&& /* unused */) noexcept {
 /// @endcode
 #define IOX2_DISCARD_RESULT(expr) ::iox2::bb::detail::iox2_discard_result_impl(expr)
 
+/// @brief IOX2_CXX_STANDARD_VERSION resolves the effective C++ language level.
+/// @note MSVC historically reports an outdated `__cplusplus` value unless `/Zc:__cplusplus` is enabled,
+///       therefore `_MSVC_LANG` must be preferred when it reports a newer standard level.
+#if defined(_MSVC_LANG) && (_MSVC_LANG > __cplusplus)
+#define IOX2_CXX_STANDARD_VERSION _MSVC_LANG
+#else
+#define IOX2_CXX_STANDARD_VERSION __cplusplus
+#endif
+
 /// @brief IOX2_NO_DISCARD adds the [[nodiscard]] keyword if it is available for the current compiler.
 
-#if __cplusplus >= 201703L
+#if IOX2_CXX_STANDARD_VERSION >= 201703L
 #define IOX2_NO_DISCARD [[nodiscard]]
 #else
 #define IOX2_NO_DISCARD
@@ -56,7 +65,7 @@ inline void iox2_discard_result_impl(T&& /* unused */) noexcept {
 ///   [[fallthrough]] supported since clang 3.9 (https://clang.llvm.org/cxx_status.html)
 ///   activate keywords for gcc>=7 or clang>=4
 
-#if __cplusplus >= 201703L
+#if IOX2_CXX_STANDARD_VERSION >= 201703L
 // clang prints a warning therefore we exclude it here
 #define IOX2_FALLTHROUGH [[fallthrough]]
 #elif (defined(__GNUC__) && (__GNUC__ >= 7)) || defined(__clang__)
@@ -67,12 +76,22 @@ inline void iox2_discard_result_impl(T&& /* unused */) noexcept {
 
 /// @brief IOX2_MAYBE_UNUSED adds the [[gnu::unused]] attribute when it is available for the current
 /// compiler or uses C++17's 'maybe_unused'.
-#if __cplusplus >= 201703L
+#if IOX2_CXX_STANDARD_VERSION >= 201703L
 #define IOX2_MAYBE_UNUSED [[maybe_unused]]
 #elif (defined(__GNUC__) && (__GNUC__ >= 7)) || defined(__clang__)
 #define IOX2_MAYBE_UNUSED [[gnu::unused]]
 #else
 #define IOX2_MAYBE_UNUSED
+#endif
+
+/// @brief IOX2_CONSTEXPR_DTOR adds `constexpr` to destructors when the active compiler mode supports it.
+/// @note `constexpr` destructors are only supported since C++20.
+#if IOX2_CXX_STANDARD_VERSION >= 202002L
+#define IOX2_HAS_CONSTEXPR_DTOR 1
+#define IOX2_CONSTEXPR_DTOR constexpr
+#else
+#define IOX2_HAS_CONSTEXPR_DTOR 0
+#define IOX2_CONSTEXPR_DTOR
 #endif
 
 // NOLINTEND(cppcoreguidelines-macro-usage)
