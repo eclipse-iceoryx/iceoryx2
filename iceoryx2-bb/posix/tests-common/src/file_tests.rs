@@ -486,7 +486,7 @@ pub fn simple_read_at_write_at_of_a_value_works() {
         value3: 77777,
     };
     let mut file = test.create_file(&test.file);
-    // write 128 byte so that the offset position is available
+    // write more bytes than OFFSET so that the offset position is available
     file.write(&[255u8; OFFSET * 2]).unwrap();
 
     file.write_val_at(OFFSET as u64, &value_written).unwrap();

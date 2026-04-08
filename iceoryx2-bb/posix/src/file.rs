@@ -677,7 +677,7 @@ impl File {
                     Ok(unsafe { uninit_val.assume_init() })
                 } else {
                     fail!(from self, with FileReadValError::FileSizeTooSmallToContainValue,
-                    "{msg} {start} from file since the value as a size of {size_of_t} bytes and only {n} bytes were read.");
+                    "{msg} {start} from file since the value has a size of {size_of_t} bytes and only {n} bytes were read.");
                 }
             }
             Err(e) => {
@@ -703,7 +703,7 @@ impl File {
                     Ok(unsafe { uninit_val.assume_init() })
                 } else {
                     fail!(from self, with FileReadValError::FileSizeTooSmallToContainValue,
-                    "{msg} since the value as a size of {size_of_t} bytes and only {n} bytes were read.");
+                    "{msg} since the value has a size of {size_of_t} bytes and only {n} bytes were read.");
                 }
             }
             Err(e) => {

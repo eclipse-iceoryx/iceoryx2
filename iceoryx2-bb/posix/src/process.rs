@@ -186,7 +186,7 @@ impl Process {
     }
 
     /// Returns a [`UniqueProcessId`]. It is similar to the pid except that this id is unique at all time.
-    /// Now future [`Process`] on the same machine will ever have the same [`UniqueProcessId`] again.
+    /// No future [`Process`] on the same machine will ever have the same [`UniqueProcessId`] again.
     pub fn unique_id() -> Result<UniqueProcessId, UniqueSystemIdCreationError> {
         static UNIQUE_PROCESS_ID: LazyLock<Result<UniqueProcessId, UniqueSystemIdCreationError>> =
             LazyLock::new(|| UniqueSystemId::new().map(UniqueProcessId));

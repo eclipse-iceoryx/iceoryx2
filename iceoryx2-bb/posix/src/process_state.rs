@@ -180,8 +180,7 @@ enum_gen! {
     ContractViolation,
     Interrupt,
     InvalidCleanerPathName,
-    PartiallyWrittenUniqueProcessIdInStateFile,
-    FailedToWriteUniqueProcessIdInStateFile,
+    FailedToWriteUniqueProcessIdIntoStateFile,
     FailedToAcquireUniqueProcessId,
     UnknownError(i32)
 }
@@ -347,7 +346,7 @@ impl ProcessGuardBuilder {
 
         fail!(from origin,
               when state_file.write_val(&unique_process_id),
-              with ProcessGuardCreateError::FailedToWriteUniqueProcessIdInStateFile,
+              with ProcessGuardCreateError::FailedToWriteUniqueProcessIdIntoStateFile,
               "{msg} since the unique process could not be written to the state file.");
 
         match Self::lock_state_file(&state_file) {
