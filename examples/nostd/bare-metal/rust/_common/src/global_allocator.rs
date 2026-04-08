@@ -11,13 +11,13 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::alloc::{GlobalAlloc, Layout};
-use core::ptr::{null_mut, NonNull};
+use core::ptr::{NonNull, null_mut};
 
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_memory::bump_allocator::BaseAllocator;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 
-extern "C" {
+unsafe extern "C" {
     static _heap_start: u8;
     static _heap_end: u8;
 }
@@ -36,28 +36,31 @@ impl IceoryxBumpAllocator {
     }
 
     pub unsafe fn init(&self) {
-        let start = &_heap_start as *const u8 as usize;
-        let end = &_heap_end as *const u8 as usize;
-        let size = end - start;
+        unsafe {
+            let start = &_heap_start as *const u8 as usize;
+            let end = &_heap_end as *const u8 as usize;
+            let size = end - start;
+            let ptr = NonNull::new_unchecked(start as *mut u8);
+            let allocator = BumpAllocator::new(ptr, size);
 
-        let ptr = NonNull::new_unchecked(start as *mut u8);
-        let allocator = BumpAllocator::new(ptr, size);
-
-        *self.inner.get() = Some(allocator);
+            *self.inner.get() = Some(allocator);
+        }
     }
 }
 
 unsafe impl GlobalAlloc for IceoryxBumpAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        let inner = &*self.inner.get();
+        unsafe {
+            let inner = &*self.inner.get();
 
-        if let Some(allocator) = inner {
-            match allocator.allocate(layout) {
-                Ok(ptr) => ptr.as_ptr() as *mut u8,
-                Err(_) => null_mut(),
+            if let Some(allocator) = inner {
+                match allocator.allocate(layout) {
+                    Ok(ptr) => ptr.as_ptr() as *mut u8,
+                    Err(_) => null_mut(),
+                }
+            } else {
+                null_mut()
             }
-        } else {
-            null_mut()
         }
     }
 

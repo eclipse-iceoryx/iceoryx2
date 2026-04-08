@@ -15,15 +15,17 @@ const SYS_EXIT: usize = 0x18;
 
 #[inline(always)]
 pub unsafe fn syscall(operation: usize, arg: usize) -> usize {
-    let result: usize;
-    core::arch::asm!(
-        "svc 0x123456",
-        inout("r0") operation => result,
-        in("r1") arg,
-        options(nostack)
-    );
+    unsafe {
+        let result: usize;
+        core::arch::asm!(
+            "svc 0x123456",
+            inout("r0") operation => result,
+            in("r1") arg,
+            options(nostack)
+        );
 
-    result
+        result
+    }
 }
 
 pub fn write0(s: &str) {
