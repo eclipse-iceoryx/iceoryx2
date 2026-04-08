@@ -151,13 +151,15 @@ impl HandleToType for iox2_pending_response_h_ref {
 pub unsafe extern "C" fn iox2_pending_response_is_connected(
     handle: iox2_pending_response_h_ref,
 ) -> bool {
-    handle.assert_non_null();
+    unsafe {
+        handle.assert_non_null();
 
-    let pending_response = &mut *handle.as_type();
+        let pending_response = &mut *handle.as_type();
 
-    match pending_response.service_type {
-        iox2_service_type_e::IPC => pending_response.value.as_ref().ipc.is_connected(),
-        iox2_service_type_e::LOCAL => pending_response.value.as_ref().local.is_connected(),
+        match pending_response.service_type {
+            iox2_service_type_e::IPC => pending_response.value.as_ref().ipc.is_connected(),
+            iox2_service_type_e::LOCAL => pending_response.value.as_ref().local.is_connected(),
+        }
     }
 }
 
@@ -178,13 +180,17 @@ pub unsafe extern "C" fn iox2_pending_response_is_connected(
 pub unsafe extern "C" fn iox2_pending_response_set_disconnect_hint(
     handle: iox2_pending_response_h_ref,
 ) {
-    handle.assert_non_null();
+    unsafe {
+        handle.assert_non_null();
 
-    let pending_response = &mut *handle.as_type();
+        let pending_response = &mut *handle.as_type();
 
-    match pending_response.service_type {
-        iox2_service_type_e::IPC => pending_response.value.as_ref().ipc.set_disconnect_hint(),
-        iox2_service_type_e::LOCAL => pending_response.value.as_ref().local.set_disconnect_hint(),
+        match pending_response.service_type {
+            iox2_service_type_e::IPC => pending_response.value.as_ref().ipc.set_disconnect_hint(),
+            iox2_service_type_e::LOCAL => {
+                pending_response.value.as_ref().local.set_disconnect_hint()
+            }
+        }
     }
 }
 
@@ -202,21 +208,23 @@ pub unsafe extern "C" fn iox2_pending_response_set_disconnect_hint(
 pub unsafe extern "C" fn iox2_pending_response_number_of_server_connections(
     handle: iox2_pending_response_h_ref,
 ) -> c_size_t {
-    handle.assert_non_null();
+    unsafe {
+        handle.assert_non_null();
 
-    let pending_response = &mut *handle.as_type();
+        let pending_response = &mut *handle.as_type();
 
-    match pending_response.service_type {
-        iox2_service_type_e::IPC => pending_response
-            .value
-            .as_ref()
-            .ipc
-            .number_of_server_connections(),
-        iox2_service_type_e::LOCAL => pending_response
-            .value
-            .as_ref()
-            .local
-            .number_of_server_connections(),
+        match pending_response.service_type {
+            iox2_service_type_e::IPC => pending_response
+                .value
+                .as_ref()
+                .ipc
+                .number_of_server_connections(),
+            iox2_service_type_e::LOCAL => pending_response
+                .value
+                .as_ref()
+                .local
+                .number_of_server_connections(),
+        }
     }
 }
 
@@ -234,13 +242,15 @@ pub unsafe extern "C" fn iox2_pending_response_number_of_server_connections(
 pub unsafe extern "C" fn iox2_pending_response_has_response(
     handle: iox2_pending_response_h_ref,
 ) -> bool {
-    handle.assert_non_null();
+    unsafe {
+        handle.assert_non_null();
 
-    let pending_response = &mut *handle.as_type();
+        let pending_response = &mut *handle.as_type();
 
-    match pending_response.service_type {
-        iox2_service_type_e::IPC => pending_response.value.as_ref().ipc.has_response(),
-        iox2_service_type_e::LOCAL => pending_response.value.as_ref().local.has_response(),
+        match pending_response.service_type {
+            iox2_service_type_e::IPC => pending_response.value.as_ref().ipc.has_response(),
+            iox2_service_type_e::LOCAL => pending_response.value.as_ref().local.has_response(),
+        }
     }
 }
 
@@ -259,27 +269,29 @@ pub unsafe extern "C" fn iox2_pending_response_header(
     header_struct_ptr: *mut iox2_request_header_t,
     header_handle_ptr: *mut iox2_request_header_h,
 ) {
-    handle.assert_non_null();
-    debug_assert!(!header_handle_ptr.is_null());
+    unsafe {
+        handle.assert_non_null();
+        debug_assert!(!header_handle_ptr.is_null());
 
-    fn no_op(_: *mut iox2_request_header_t) {}
-    let mut deleter: fn(*mut iox2_request_header_t) = no_op;
-    let mut storage_ptr = header_struct_ptr;
-    if header_struct_ptr.is_null() {
-        deleter = iox2_request_header_t::dealloc;
-        storage_ptr = iox2_request_header_t::alloc();
+        fn no_op(_: *mut iox2_request_header_t) {}
+        let mut deleter: fn(*mut iox2_request_header_t) = no_op;
+        let mut storage_ptr = header_struct_ptr;
+        if header_struct_ptr.is_null() {
+            deleter = iox2_request_header_t::dealloc;
+            storage_ptr = iox2_request_header_t::alloc();
+        }
+        debug_assert!(!storage_ptr.is_null());
+
+        let sample = &mut *handle.as_type();
+
+        let header = *match sample.service_type {
+            iox2_service_type_e::IPC => sample.value.as_mut().ipc.header(),
+            iox2_service_type_e::LOCAL => sample.value.as_mut().local.header(),
+        };
+
+        (*storage_ptr).init(header, deleter);
+        *header_handle_ptr = (*storage_ptr).as_handle();
     }
-    debug_assert!(!storage_ptr.is_null());
-
-    let sample = &mut *handle.as_type();
-
-    let header = *match sample.service_type {
-        iox2_service_type_e::IPC => sample.value.as_mut().ipc.header(),
-        iox2_service_type_e::LOCAL => sample.value.as_mut().local.header(),
-    };
-
-    (*storage_ptr).init(header, deleter);
-    *header_handle_ptr = (*storage_ptr).as_handle();
 }
 
 /// Acquires the requests user header.
@@ -294,17 +306,19 @@ pub unsafe extern "C" fn iox2_pending_response_user_header(
     handle: iox2_pending_response_h_ref,
     header_ptr: *mut *const c_void,
 ) {
-    handle.assert_non_null();
-    debug_assert!(!header_ptr.is_null());
+    unsafe {
+        handle.assert_non_null();
+        debug_assert!(!header_ptr.is_null());
 
-    let pending_response = &mut *handle.as_type();
+        let pending_response = &mut *handle.as_type();
 
-    let header = match pending_response.service_type {
-        iox2_service_type_e::IPC => pending_response.value.as_mut().ipc.user_header(),
-        iox2_service_type_e::LOCAL => pending_response.value.as_mut().local.user_header(),
-    };
+        let header = match pending_response.service_type {
+            iox2_service_type_e::IPC => pending_response.value.as_mut().ipc.user_header(),
+            iox2_service_type_e::LOCAL => pending_response.value.as_mut().local.user_header(),
+        };
 
-    *header_ptr = (header as *const UserHeaderFfi).cast();
+        *header_ptr = (header as *const UserHeaderFfi).cast();
+    }
 }
 
 /// Acquires the requests payload.
@@ -321,47 +335,49 @@ pub unsafe extern "C" fn iox2_pending_response_payload(
     payload_ptr: *mut *const c_void,
     number_of_elements: *mut c_size_t,
 ) {
-    handle.assert_non_null();
-    debug_assert!(!payload_ptr.is_null());
+    unsafe {
+        handle.assert_non_null();
+        debug_assert!(!payload_ptr.is_null());
 
-    let pending_response = &mut *handle.as_type();
-    let number_of_elements_value;
+        let pending_response = &mut *handle.as_type();
+        let number_of_elements_value;
 
-    match pending_response.service_type {
-        iox2_service_type_e::IPC => {
-            *payload_ptr = pending_response
-                .value
-                .as_mut()
-                .ipc
-                .payload()
-                .as_ptr()
-                .cast();
-            number_of_elements_value = pending_response
-                .value
-                .as_mut()
-                .ipc
-                .header()
-                .number_of_elements();
+        match pending_response.service_type {
+            iox2_service_type_e::IPC => {
+                *payload_ptr = pending_response
+                    .value
+                    .as_mut()
+                    .ipc
+                    .payload()
+                    .as_ptr()
+                    .cast();
+                number_of_elements_value = pending_response
+                    .value
+                    .as_mut()
+                    .ipc
+                    .header()
+                    .number_of_elements();
+            }
+            iox2_service_type_e::LOCAL => {
+                *payload_ptr = pending_response
+                    .value
+                    .as_mut()
+                    .local
+                    .payload()
+                    .as_ptr()
+                    .cast();
+                number_of_elements_value = pending_response
+                    .value
+                    .as_mut()
+                    .local
+                    .header()
+                    .number_of_elements();
+            }
+        };
+
+        if !number_of_elements.is_null() {
+            *number_of_elements = number_of_elements_value as c_size_t;
         }
-        iox2_service_type_e::LOCAL => {
-            *payload_ptr = pending_response
-                .value
-                .as_mut()
-                .local
-                .payload()
-                .as_ptr()
-                .cast();
-            number_of_elements_value = pending_response
-                .value
-                .as_mut()
-                .local
-                .header()
-                .number_of_elements();
-        }
-    };
-
-    if !number_of_elements.is_null() {
-        *number_of_elements = number_of_elements_value as c_size_t;
     }
 }
 
@@ -388,67 +404,69 @@ pub unsafe extern "C" fn iox2_pending_response_receive(
     response_struct_ptr: *mut iox2_response_t,
     response_handle_ptr: *mut iox2_response_h,
 ) -> c_int {
-    handle.assert_non_null();
-    debug_assert!(!response_handle_ptr.is_null());
+    unsafe {
+        handle.assert_non_null();
+        debug_assert!(!response_handle_ptr.is_null());
 
-    *response_handle_ptr = core::ptr::null_mut();
+        *response_handle_ptr = core::ptr::null_mut();
 
-    let init_response_struct_ptr = |response_struct_ptr: *mut iox2_response_t| {
-        let mut response_struct_ptr = response_struct_ptr;
-        fn no_op(_: *mut iox2_response_t) {}
-        let mut deleter: fn(*mut iox2_response_t) = no_op;
-        if response_struct_ptr.is_null() {
-            response_struct_ptr = iox2_response_t::alloc();
-            deleter = iox2_response_t::dealloc;
-        }
-        debug_assert!(!response_struct_ptr.is_null());
+        let init_response_struct_ptr = |response_struct_ptr: *mut iox2_response_t| {
+            let mut response_struct_ptr = response_struct_ptr;
+            fn no_op(_: *mut iox2_response_t) {}
+            let mut deleter: fn(*mut iox2_response_t) = no_op;
+            if response_struct_ptr.is_null() {
+                response_struct_ptr = iox2_response_t::alloc();
+                deleter = iox2_response_t::dealloc;
+            }
+            debug_assert!(!response_struct_ptr.is_null());
 
-        (response_struct_ptr, deleter)
-    };
+            (response_struct_ptr, deleter)
+        };
 
-    let pending_response = &mut *handle.as_type();
+        let pending_response = &mut *handle.as_type();
 
-    match pending_response.service_type {
-        iox2_service_type_e::IPC => {
-            match pending_response.value.as_ref().ipc.receive_custom_payload() {
-                Ok(Some(response)) => {
-                    let (response_struct_ptr, deleter) =
-                        init_response_struct_ptr(response_struct_ptr);
-                    (*response_struct_ptr).init(
-                        pending_response.service_type,
-                        ResponseUnion::new_ipc(response),
-                        deleter,
-                    );
-                    *response_handle_ptr = (*response_struct_ptr).as_handle();
+        match pending_response.service_type {
+            iox2_service_type_e::IPC => {
+                match pending_response.value.as_ref().ipc.receive_custom_payload() {
+                    Ok(Some(response)) => {
+                        let (response_struct_ptr, deleter) =
+                            init_response_struct_ptr(response_struct_ptr);
+                        (*response_struct_ptr).init(
+                            pending_response.service_type,
+                            ResponseUnion::new_ipc(response),
+                            deleter,
+                        );
+                        *response_handle_ptr = (*response_struct_ptr).as_handle();
+                    }
+                    Ok(None) => (),
+                    Err(error) => return error.into_c_int(),
                 }
-                Ok(None) => (),
-                Err(error) => return error.into_c_int(),
+            }
+            iox2_service_type_e::LOCAL => {
+                match pending_response
+                    .value
+                    .as_ref()
+                    .local
+                    .receive_custom_payload()
+                {
+                    Ok(Some(response)) => {
+                        let (response_struct_ptr, deleter) =
+                            init_response_struct_ptr(response_struct_ptr);
+                        (*response_struct_ptr).init(
+                            pending_response.service_type,
+                            ResponseUnion::new_local(response),
+                            deleter,
+                        );
+                        *response_handle_ptr = (*response_struct_ptr).as_handle();
+                    }
+                    Ok(None) => (),
+                    Err(error) => return error.into_c_int(),
+                }
             }
         }
-        iox2_service_type_e::LOCAL => {
-            match pending_response
-                .value
-                .as_ref()
-                .local
-                .receive_custom_payload()
-            {
-                Ok(Some(response)) => {
-                    let (response_struct_ptr, deleter) =
-                        init_response_struct_ptr(response_struct_ptr);
-                    (*response_struct_ptr).init(
-                        pending_response.service_type,
-                        ResponseUnion::new_local(response),
-                        deleter,
-                    );
-                    *response_handle_ptr = (*response_struct_ptr).as_handle();
-                }
-                Ok(None) => (),
-                Err(error) => return error.into_c_int(),
-            }
-        }
+
+        IOX2_OK
     }
-
-    IOX2_OK
 }
 
 /// This function needs to be called to destroy the pending response!
@@ -464,18 +482,20 @@ pub unsafe extern "C" fn iox2_pending_response_receive(
 ///   [`iox2_request_mut_send`](crate::iox2_request_mut_send)!
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_pending_response_drop(handle: iox2_pending_response_h) {
-    debug_assert!(!handle.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
 
-    let pending_response = &mut *handle.as_type();
+        let pending_response = &mut *handle.as_type();
 
-    match pending_response.service_type {
-        iox2_service_type_e::IPC => {
-            ManuallyDrop::drop(&mut pending_response.value.as_mut().ipc);
+        match pending_response.service_type {
+            iox2_service_type_e::IPC => {
+                ManuallyDrop::drop(&mut pending_response.value.as_mut().ipc);
+            }
+            iox2_service_type_e::LOCAL => {
+                ManuallyDrop::drop(&mut pending_response.value.as_mut().local);
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            ManuallyDrop::drop(&mut pending_response.value.as_mut().local);
-        }
+        (pending_response.deleter)(pending_response);
     }
-    (pending_response.deleter)(pending_response);
 }
 // END C API

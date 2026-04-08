@@ -423,36 +423,38 @@ where
         name: &FileName,
         config: &Shm::Configuration,
     ) -> Result<bool, NamedConceptRemoveError> {
-        let origin = "resizable_shared_memory::Dynamic::remove_cfg()";
-        let msg = format!("Unable to remove ResizableSharedMemory {name:?}");
+        unsafe {
+            let origin = "resizable_shared_memory::Dynamic::remove_cfg()";
+            let msg = format!("Unable to remove ResizableSharedMemory {name:?}");
 
-        let mgmt_name = Self::managment_segment_name(name);
-        let mut shm_removed = fail!(from origin, when Shm::remove_cfg(&mgmt_name, config),
+            let mgmt_name = Self::managment_segment_name(name);
+            let mut shm_removed = fail!(from origin, when Shm::remove_cfg(&mgmt_name, config),
             "{msg} since the underlying managment segment could not be removed.");
 
-        let raw_names = match Shm::list_cfg(config) {
-            Ok(names) => names,
-            Err(NamedConceptListError::InsufficientPermissions) => {
-                fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
+            let raw_names = match Shm::list_cfg(config) {
+                Ok(names) => names,
+                Err(NamedConceptListError::InsufficientPermissions) => {
+                    fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
                     "{msg} due to insufficient permissions while listing the underlying SharedMemories.");
-            }
-            Err(e) => {
-                fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
+                }
+                Err(e) => {
+                    fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
                     "{msg} due to an internal error ({:?}) while listing the underlying SharedMemories.", e);
-            }
-        };
+                }
+            };
 
-        for raw_name in &raw_names {
-            if let Some((extracted_name, _)) = Self::extract_name_and_segment_id(raw_name) {
-                if *name == extracted_name {
-                    fail!(from origin, when Shm::remove_cfg(raw_name, config),
+            for raw_name in &raw_names {
+                if let Some((extracted_name, _)) = Self::extract_name_and_segment_id(raw_name) {
+                    if *name == extracted_name {
+                        fail!(from origin, when Shm::remove_cfg(raw_name, config),
                         "{msg} since the underlying SharedMemory could not be removed.");
-                    shm_removed = true;
+                        shm_removed = true;
+                    }
                 }
             }
-        }
 
-        Ok(shm_removed)
+            Ok(shm_removed)
+        }
     }
 
     fn does_exist_cfg(
@@ -702,7 +704,9 @@ where
     Shm::Builder: Debug,
 {
     unsafe fn deallocate_bucket(&self, offset: PointerOffset) {
-        self.perform_deallocation(offset, |entry| entry.shm.deallocate_bucket(offset));
+        unsafe {
+            self.perform_deallocation(offset, |entry| entry.shm.deallocate_bucket(offset));
+        }
     }
 
     fn bucket_size(&self, segment_id: SegmentId) -> usize {
@@ -755,6 +759,8 @@ where
     }
 
     unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
-        self.perform_deallocation(offset, |entry| entry.shm.deallocate(offset, layout));
+        unsafe {
+            self.perform_deallocation(offset, |entry| entry.shm.deallocate(offset, layout));
+        }
     }
 }

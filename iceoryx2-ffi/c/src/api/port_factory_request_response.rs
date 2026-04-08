@@ -186,38 +186,40 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_server_builder(
     port_factory_handle: iox2_port_factory_request_response_h_ref,
     builder_struct_ptr: *mut iox2_port_factory_server_builder_t,
 ) -> iox2_port_factory_server_builder_h {
-    port_factory_handle.assert_non_null();
+    unsafe {
+        port_factory_handle.assert_non_null();
 
-    let mut builder_struct_ptr = builder_struct_ptr;
-    fn no_op(_: *mut iox2_port_factory_server_builder_t) {}
-    let mut deleter: fn(*mut iox2_port_factory_server_builder_t) = no_op;
-    if builder_struct_ptr.is_null() {
-        builder_struct_ptr = iox2_port_factory_server_builder_t::alloc();
-        deleter = iox2_port_factory_server_builder_t::dealloc;
+        let mut builder_struct_ptr = builder_struct_ptr;
+        fn no_op(_: *mut iox2_port_factory_server_builder_t) {}
+        let mut deleter: fn(*mut iox2_port_factory_server_builder_t) = no_op;
+        if builder_struct_ptr.is_null() {
+            builder_struct_ptr = iox2_port_factory_server_builder_t::alloc();
+            deleter = iox2_port_factory_server_builder_t::dealloc;
+        }
+        debug_assert!(!builder_struct_ptr.is_null());
+
+        let port_factory = &mut *port_factory_handle.as_type();
+        match port_factory.service_type {
+            iox2_service_type_e::IPC => {
+                let server_builder = port_factory.value.as_ref().ipc.server_builder();
+                (*builder_struct_ptr).init(
+                    port_factory.service_type,
+                    PortFactoryServerBuilderUnion::new_ipc(server_builder),
+                    deleter,
+                );
+            }
+            iox2_service_type_e::LOCAL => {
+                let server_builder = port_factory.value.as_ref().local.server_builder();
+                (*builder_struct_ptr).init(
+                    port_factory.service_type,
+                    PortFactoryServerBuilderUnion::new_local(server_builder),
+                    deleter,
+                );
+            }
+        };
+
+        (*builder_struct_ptr).as_handle()
     }
-    debug_assert!(!builder_struct_ptr.is_null());
-
-    let port_factory = &mut *port_factory_handle.as_type();
-    match port_factory.service_type {
-        iox2_service_type_e::IPC => {
-            let server_builder = port_factory.value.as_ref().ipc.server_builder();
-            (*builder_struct_ptr).init(
-                port_factory.service_type,
-                PortFactoryServerBuilderUnion::new_ipc(server_builder),
-                deleter,
-            );
-        }
-        iox2_service_type_e::LOCAL => {
-            let server_builder = port_factory.value.as_ref().local.server_builder();
-            (*builder_struct_ptr).init(
-                port_factory.service_type,
-                PortFactoryServerBuilderUnion::new_local(server_builder),
-                deleter,
-            );
-        }
-    };
-
-    (*builder_struct_ptr).as_handle()
 }
 
 /// Instantiates a [`iox2_port_factory_client_builder_h`] to build a client.
@@ -239,38 +241,40 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_client_builder(
     port_factory_handle: iox2_port_factory_request_response_h_ref,
     builder_struct_ptr: *mut iox2_port_factory_client_builder_t,
 ) -> iox2_port_factory_client_builder_h {
-    port_factory_handle.assert_non_null();
+    unsafe {
+        port_factory_handle.assert_non_null();
 
-    let mut builder_struct_ptr = builder_struct_ptr;
-    fn no_op(_: *mut iox2_port_factory_client_builder_t) {}
-    let mut deleter: fn(*mut iox2_port_factory_client_builder_t) = no_op;
-    if builder_struct_ptr.is_null() {
-        builder_struct_ptr = iox2_port_factory_client_builder_t::alloc();
-        deleter = iox2_port_factory_client_builder_t::dealloc;
+        let mut builder_struct_ptr = builder_struct_ptr;
+        fn no_op(_: *mut iox2_port_factory_client_builder_t) {}
+        let mut deleter: fn(*mut iox2_port_factory_client_builder_t) = no_op;
+        if builder_struct_ptr.is_null() {
+            builder_struct_ptr = iox2_port_factory_client_builder_t::alloc();
+            deleter = iox2_port_factory_client_builder_t::dealloc;
+        }
+        debug_assert!(!builder_struct_ptr.is_null());
+
+        let port_factory = &mut *port_factory_handle.as_type();
+        match port_factory.service_type {
+            iox2_service_type_e::IPC => {
+                let client_builder = port_factory.value.as_ref().ipc.client_builder();
+                (*builder_struct_ptr).init(
+                    port_factory.service_type,
+                    PortFactoryClientBuilderUnion::new_ipc(client_builder),
+                    deleter,
+                );
+            }
+            iox2_service_type_e::LOCAL => {
+                let client_builder = port_factory.value.as_ref().local.client_builder();
+                (*builder_struct_ptr).init(
+                    port_factory.service_type,
+                    PortFactoryClientBuilderUnion::new_local(client_builder),
+                    deleter,
+                );
+            }
+        };
+
+        (*builder_struct_ptr).as_handle()
     }
-    debug_assert!(!builder_struct_ptr.is_null());
-
-    let port_factory = &mut *port_factory_handle.as_type();
-    match port_factory.service_type {
-        iox2_service_type_e::IPC => {
-            let client_builder = port_factory.value.as_ref().ipc.client_builder();
-            (*builder_struct_ptr).init(
-                port_factory.service_type,
-                PortFactoryClientBuilderUnion::new_ipc(client_builder),
-                deleter,
-            );
-        }
-        iox2_service_type_e::LOCAL => {
-            let client_builder = port_factory.value.as_ref().local.client_builder();
-            (*builder_struct_ptr).init(
-                port_factory.service_type,
-                PortFactoryClientBuilderUnion::new_local(client_builder),
-                deleter,
-            );
-        }
-    };
-
-    (*builder_struct_ptr).as_handle()
 }
 
 /// Returns the services attributes.
@@ -283,14 +287,16 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_client_builder(
 pub unsafe extern "C" fn iox2_port_factory_request_response_attributes(
     port_factory_handle: iox2_port_factory_request_response_h_ref,
 ) -> iox2_attribute_set_ptr {
-    use iceoryx2::prelude::PortFactory;
+    unsafe {
+        use iceoryx2::prelude::PortFactory;
 
-    port_factory_handle.assert_non_null();
+        port_factory_handle.assert_non_null();
 
-    let port_factory = &mut *port_factory_handle.as_type();
-    match port_factory.service_type {
-        iox2_service_type_e::IPC => port_factory.value.as_ref().ipc.attributes(),
-        iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.attributes(),
+        let port_factory = &mut *port_factory_handle.as_type();
+        match port_factory.service_type {
+            iox2_service_type_e::IPC => port_factory.value.as_ref().ipc.attributes(),
+            iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.attributes(),
+        }
     }
 }
 
@@ -306,18 +312,20 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_static_config(
     port_factory_handle: iox2_port_factory_request_response_h_ref,
     static_config: *mut iox2_static_config_request_response_t,
 ) {
-    port_factory_handle.assert_non_null();
-    debug_assert!(!static_config.is_null());
+    unsafe {
+        port_factory_handle.assert_non_null();
+        debug_assert!(!static_config.is_null());
 
-    let port_factory = &mut *port_factory_handle.as_type();
+        let port_factory = &mut *port_factory_handle.as_type();
 
-    use iceoryx2::prelude::PortFactory;
-    let config = match port_factory.service_type {
-        iox2_service_type_e::IPC => port_factory.value.as_ref().ipc.static_config(),
-        iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.static_config(),
-    };
+        use iceoryx2::prelude::PortFactory;
+        let config = match port_factory.service_type {
+            iox2_service_type_e::IPC => port_factory.value.as_ref().ipc.static_config(),
+            iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.static_config(),
+        };
 
-    *static_config = config.into();
+        *static_config = config.into();
+    }
 }
 
 /// Returns how many server ports are currently connected.
@@ -330,24 +338,26 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_static_config(
 pub unsafe extern "C" fn iox2_port_factory_request_response_dynamic_config_number_of_servers(
     handle: iox2_port_factory_request_response_h_ref,
 ) -> usize {
-    handle.assert_non_null();
+    unsafe {
+        handle.assert_non_null();
 
-    let port_factory = &mut *handle.as_type();
+        let port_factory = &mut *handle.as_type();
 
-    use iceoryx2::prelude::PortFactory;
-    match port_factory.service_type {
-        iox2_service_type_e::IPC => port_factory
-            .value
-            .as_ref()
-            .ipc
-            .dynamic_config()
-            .number_of_servers(),
-        iox2_service_type_e::LOCAL => port_factory
-            .value
-            .as_ref()
-            .local
-            .dynamic_config()
-            .number_of_servers(),
+        use iceoryx2::prelude::PortFactory;
+        match port_factory.service_type {
+            iox2_service_type_e::IPC => port_factory
+                .value
+                .as_ref()
+                .ipc
+                .dynamic_config()
+                .number_of_servers(),
+            iox2_service_type_e::LOCAL => port_factory
+                .value
+                .as_ref()
+                .local
+                .dynamic_config()
+                .number_of_servers(),
+        }
     }
 }
 
@@ -361,24 +371,26 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_dynamic_config_numbe
 pub unsafe extern "C" fn iox2_port_factory_request_response_dynamic_config_number_of_clients(
     handle: iox2_port_factory_request_response_h_ref,
 ) -> usize {
-    handle.assert_non_null();
+    unsafe {
+        handle.assert_non_null();
 
-    let port_factory = &mut *handle.as_type();
+        let port_factory = &mut *handle.as_type();
 
-    use iceoryx2::prelude::PortFactory;
-    match port_factory.service_type {
-        iox2_service_type_e::IPC => port_factory
-            .value
-            .as_ref()
-            .ipc
-            .dynamic_config()
-            .number_of_clients(),
-        iox2_service_type_e::LOCAL => port_factory
-            .value
-            .as_ref()
-            .local
-            .dynamic_config()
-            .number_of_clients(),
+        use iceoryx2::prelude::PortFactory;
+        match port_factory.service_type {
+            iox2_service_type_e::IPC => port_factory
+                .value
+                .as_ref()
+                .ipc
+                .dynamic_config()
+                .number_of_clients(),
+            iox2_service_type_e::LOCAL => port_factory
+                .value
+                .as_ref()
+                .local
+                .dynamic_config()
+                .number_of_clients(),
+        }
     }
 }
 
@@ -404,28 +416,30 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_nodes(
     callback: iox2_node_list_callback,
     callback_ctx: iox2_callback_context,
 ) -> c_int {
-    use iceoryx2::prelude::PortFactory;
+    unsafe {
+        use iceoryx2::prelude::PortFactory;
 
-    handle.assert_non_null();
+        handle.assert_non_null();
 
-    let port_factory = &mut *handle.as_type();
+        let port_factory = &mut *handle.as_type();
 
-    let list_result = match port_factory.service_type {
-        iox2_service_type_e::IPC => port_factory
-            .value
-            .as_ref()
-            .ipc
-            .nodes(|node_state| iox2_node_list_impl(&node_state, callback, callback_ctx)),
-        iox2_service_type_e::LOCAL => port_factory
-            .value
-            .as_ref()
-            .local
-            .nodes(|node_state| iox2_node_list_impl(&node_state, callback, callback_ctx)),
-    };
+        let list_result = match port_factory.service_type {
+            iox2_service_type_e::IPC => port_factory
+                .value
+                .as_ref()
+                .ipc
+                .nodes(|node_state| iox2_node_list_impl(&node_state, callback, callback_ctx)),
+            iox2_service_type_e::LOCAL => port_factory
+                .value
+                .as_ref()
+                .local
+                .nodes(|node_state| iox2_node_list_impl(&node_state, callback, callback_ctx)),
+        };
 
-    match list_result {
-        Ok(_) => IOX2_OK,
-        Err(e) => e.into_c_int(),
+        match list_result {
+            Ok(_) => IOX2_OK,
+            Err(e) => e.into_c_int(),
+        }
     }
 }
 
@@ -439,15 +453,17 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_nodes(
 pub unsafe extern "C" fn iox2_port_factory_request_response_service_name(
     handle: iox2_port_factory_request_response_h_ref,
 ) -> iox2_service_name_ptr {
-    use iceoryx2::prelude::PortFactory;
+    unsafe {
+        use iceoryx2::prelude::PortFactory;
 
-    handle.assert_non_null();
+        handle.assert_non_null();
 
-    let port_factory = &mut *handle.as_type();
+        let port_factory = &mut *handle.as_type();
 
-    match port_factory.service_type {
-        iox2_service_type_e::IPC => port_factory.value.as_ref().ipc.name(),
-        iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.name(),
+        match port_factory.service_type {
+            iox2_service_type_e::IPC => port_factory.value.as_ref().ipc.name(),
+            iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.name(),
+        }
     }
 }
 
@@ -465,20 +481,22 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_service_hash(
     buffer: *mut c_char,
     buffer_len: usize,
 ) {
-    use iceoryx2::prelude::PortFactory;
+    unsafe {
+        use iceoryx2::prelude::PortFactory;
 
-    debug_assert!(!buffer.is_null());
-    handle.assert_non_null();
+        debug_assert!(!buffer.is_null());
+        handle.assert_non_null();
 
-    let port_factory = &mut *handle.as_type();
-    let service_hash = match port_factory.service_type {
-        iox2_service_type_e::IPC => port_factory.value.as_ref().ipc.service_hash(),
-        iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.service_hash(),
-    };
+        let port_factory = &mut *handle.as_type();
+        let service_hash = match port_factory.service_type {
+            iox2_service_type_e::IPC => port_factory.value.as_ref().ipc.service_hash(),
+            iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.service_hash(),
+        };
 
-    let len = buffer_len.min(service_hash.as_str().len());
-    core::ptr::copy_nonoverlapping(service_hash.as_str().as_ptr(), buffer.cast(), len);
-    buffer.add(len).write(0);
+        let len = buffer_len.min(service_hash.as_str().len());
+        core::ptr::copy_nonoverlapping(service_hash.as_str().as_ptr(), buffer.cast(), len);
+        buffer.add(len).write(0);
+    }
 }
 
 /// Calls the callback repeatedly for every connected [`iox2_server_h`](crate::iox2_server_h)
@@ -498,25 +516,27 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_dynamic_config_list_
     callback: iox2_list_servers_callback,
     callback_ctx: iox2_callback_context,
 ) {
-    handle.assert_non_null();
-    use iceoryx2::prelude::PortFactory;
+    unsafe {
+        handle.assert_non_null();
+        use iceoryx2::prelude::PortFactory;
 
-    let port_factory = &mut *handle.as_type();
-    let callback_tr = |server: &ServerDetails| callback(callback_ctx, server).into();
-    match port_factory.service_type {
-        iox2_service_type_e::IPC => port_factory
-            .value
-            .as_ref()
-            .ipc
-            .dynamic_config()
-            .list_servers(callback_tr),
-        iox2_service_type_e::LOCAL => port_factory
-            .value
-            .as_ref()
-            .local
-            .dynamic_config()
-            .list_servers(callback_tr),
-    };
+        let port_factory = &mut *handle.as_type();
+        let callback_tr = |server: &ServerDetails| callback(callback_ctx, server).into();
+        match port_factory.service_type {
+            iox2_service_type_e::IPC => port_factory
+                .value
+                .as_ref()
+                .ipc
+                .dynamic_config()
+                .list_servers(callback_tr),
+            iox2_service_type_e::LOCAL => port_factory
+                .value
+                .as_ref()
+                .local
+                .dynamic_config()
+                .list_servers(callback_tr),
+        };
+    }
 }
 
 /// Calls the callback repeatedly with for every connected [`iox2_client_h`](crate::iox2_client_h)
@@ -536,25 +556,27 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_dynamic_config_list_
     callback: iox2_list_clients_callback,
     callback_ctx: iox2_callback_context,
 ) {
-    handle.assert_non_null();
-    use iceoryx2::prelude::PortFactory;
+    unsafe {
+        handle.assert_non_null();
+        use iceoryx2::prelude::PortFactory;
 
-    let port_factory = &mut *handle.as_type();
-    let callback_tr = |client: &ClientDetails| callback(callback_ctx, client).into();
-    match port_factory.service_type {
-        iox2_service_type_e::IPC => port_factory
-            .value
-            .as_ref()
-            .ipc
-            .dynamic_config()
-            .list_clients(callback_tr),
-        iox2_service_type_e::LOCAL => port_factory
-            .value
-            .as_ref()
-            .local
-            .dynamic_config()
-            .list_clients(callback_tr),
-    };
+        let port_factory = &mut *handle.as_type();
+        let callback_tr = |client: &ClientDetails| callback(callback_ctx, client).into();
+        match port_factory.service_type {
+            iox2_service_type_e::IPC => port_factory
+                .value
+                .as_ref()
+                .ipc
+                .dynamic_config()
+                .list_clients(callback_tr),
+            iox2_service_type_e::LOCAL => port_factory
+                .value
+                .as_ref()
+                .local
+                .dynamic_config()
+                .list_clients(callback_tr),
+        };
+    }
 }
 
 /// This function needs to be called to destroy the port factory!
@@ -573,18 +595,20 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_dynamic_config_list_
 pub unsafe extern "C" fn iox2_port_factory_request_response_drop(
     port_factory_handle: iox2_port_factory_request_response_h,
 ) {
-    debug_assert!(!port_factory_handle.is_null());
+    unsafe {
+        debug_assert!(!port_factory_handle.is_null());
 
-    let port_factory = &mut *port_factory_handle.as_type();
+        let port_factory = &mut *port_factory_handle.as_type();
 
-    match port_factory.service_type {
-        iox2_service_type_e::IPC => {
-            ManuallyDrop::drop(&mut port_factory.value.as_mut().ipc);
+        match port_factory.service_type {
+            iox2_service_type_e::IPC => {
+                ManuallyDrop::drop(&mut port_factory.value.as_mut().ipc);
+            }
+            iox2_service_type_e::LOCAL => {
+                ManuallyDrop::drop(&mut port_factory.value.as_mut().local);
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            ManuallyDrop::drop(&mut port_factory.value.as_mut().local);
-        }
+        (port_factory.deleter)(port_factory);
     }
-    (port_factory.deleter)(port_factory);
 }
 // END C API

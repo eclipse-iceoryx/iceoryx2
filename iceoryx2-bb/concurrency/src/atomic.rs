@@ -86,7 +86,7 @@ macro_rules! Impl {
 
         impl PlacementDefault for $type_name {
             unsafe fn placement_default(ptr: *mut Self) {
-                ptr.write(<$type_name>::default())
+                unsafe { ptr.write(<$type_name>::default()) }
             }
         }
 
@@ -142,7 +142,7 @@ impl<T: internal::AtomicInteger> DerefMut for Atomic<T> {
 
 impl<T: internal::AtomicInteger> PlacementDefault for Atomic<T> {
     unsafe fn placement_default(ptr: *mut Self) {
-        ptr.write(<Atomic<T>>::default())
+        unsafe { ptr.write(<Atomic<T>>::default()) }
     }
 }
 

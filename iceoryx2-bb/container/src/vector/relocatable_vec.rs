@@ -173,10 +173,12 @@ impl<T> RelocatableVec<T> {
 
 impl<T> RelocatableContainer for RelocatableVec<T> {
     unsafe fn new_uninit(capacity: usize) -> Self {
-        Self {
-            data_ptr: RelocatablePointer::new_uninit(),
-            capacity: capacity as u64,
-            len: 0,
+        unsafe {
+            Self {
+                data_ptr: RelocatablePointer::new_uninit(),
+                capacity: capacity as u64,
+                len: 0,
+            }
         }
     }
 
@@ -184,27 +186,29 @@ impl<T> RelocatableContainer for RelocatableVec<T> {
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
-        if self.data_ptr.is_initialized() {
-            let origin = format!("RelocatableVec<{}>::init()", core::any::type_name::<T>());
-            fatal_panic!(from origin,
-                "Memory already initialized. Initializing it twice may lead to undefined behavior.");
-        }
-
-        let ptr = match allocator.allocate(Layout::from_size_align_unchecked(
-            core::mem::size_of::<T>() * self.capacity as usize,
-            core::mem::align_of::<T>(),
-        )) {
-            Ok(ptr) => ptr,
-            Err(e) => {
+        unsafe {
+            if self.data_ptr.is_initialized() {
                 let origin = format!("RelocatableVec<{}>::init()", core::any::type_name::<T>());
-                fail!(from origin, with e,
-                    "Failed to initialize since the allocation of the data memory failed.");
+                fatal_panic!(from origin,
+                "Memory already initialized. Initializing it twice may lead to undefined behavior.");
             }
-        };
 
-        self.data_ptr.init(ptr);
+            let ptr = match allocator.allocate(Layout::from_size_align_unchecked(
+                core::mem::size_of::<T>() * self.capacity as usize,
+                core::mem::align_of::<T>(),
+            )) {
+                Ok(ptr) => ptr,
+                Err(e) => {
+                    let origin = format!("RelocatableVec<{}>::init()", core::any::type_name::<T>());
+                    fail!(from origin, with e,
+                    "Failed to initialize since the allocation of the data memory failed.");
+                }
+            };
 
-        Ok(())
+            self.data_ptr.init(ptr);
+
+            Ok(())
+        }
     }
 
     fn memory_size(capacity: usize) -> usize {
@@ -219,8 +223,10 @@ impl<T> internal::VectorView<T> for RelocatableVec<T> {
     }
 
     unsafe fn data_mut(&mut self) -> &mut [MaybeUninit<T>] {
-        self.verify_init("data_mut()");
-        core::slice::from_raw_parts_mut(self.data_ptr.as_mut_ptr(), self.capacity())
+        unsafe {
+            self.verify_init("data_mut()");
+            core::slice::from_raw_parts_mut(self.data_ptr.as_mut_ptr(), self.capacity())
+        }
     }
 
     unsafe fn set_len(&mut self, len: u64) {

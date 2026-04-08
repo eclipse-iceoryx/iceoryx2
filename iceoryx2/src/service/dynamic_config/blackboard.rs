@@ -87,12 +87,14 @@ impl DynamicConfig {
     }
 
     pub(crate) unsafe fn init(&mut self, allocator: &BumpAllocator) {
-        fatal_panic!(from self,
+        unsafe {
+            fatal_panic!(from self,
             when self.readers.init(allocator),
             "This should never happen! Unable to initialize reader port id container.");
-        fatal_panic!(from self,
+            fatal_panic!(from self,
             when self.writers.init(allocator),
             "This should never happen! Unable to initialize writer port id container.");
+        }
     }
 
     pub(crate) fn memory_size(config: &DynamicConfigSettings) -> usize {
@@ -137,29 +139,31 @@ impl DynamicConfig {
         node_id: &NodeId,
         mut port_cleanup_callback: PortCleanup,
     ) {
-        self.readers
-            .get_state()
-            .for_each(|handle: ContainerHandle, registered_reader| {
-                if registered_reader.node_id == *node_id
-                    && port_cleanup_callback(UniquePortId::Reader(registered_reader.reader_id))
-                        == PortCleanupAction::RemovePort
-                {
-                    self.release_reader_handle(handle);
-                }
-                CallbackProgression::Continue
-            });
+        unsafe {
+            self.readers
+                .get_state()
+                .for_each(|handle: ContainerHandle, registered_reader| {
+                    if registered_reader.node_id == *node_id
+                        && port_cleanup_callback(UniquePortId::Reader(registered_reader.reader_id))
+                            == PortCleanupAction::RemovePort
+                    {
+                        self.release_reader_handle(handle);
+                    }
+                    CallbackProgression::Continue
+                });
 
-        self.writers
-            .get_state()
-            .for_each(|handle: ContainerHandle, registered_writer| {
-                if registered_writer.node_id == *node_id
-                    && port_cleanup_callback(UniquePortId::Writer(registered_writer.writer_id))
-                        == PortCleanupAction::RemovePort
-                {
-                    self.release_writer_handle(handle);
-                }
-                CallbackProgression::Continue
-            });
+            self.writers
+                .get_state()
+                .for_each(|handle: ContainerHandle, registered_writer| {
+                    if registered_writer.node_id == *node_id
+                        && port_cleanup_callback(UniquePortId::Writer(registered_writer.writer_id))
+                            == PortCleanupAction::RemovePort
+                    {
+                        self.release_writer_handle(handle);
+                    }
+                    CallbackProgression::Continue
+                });
+        }
     }
 
     pub(crate) fn add_reader_id(&self, id: ReaderDetails) -> Option<ContainerHandle> {

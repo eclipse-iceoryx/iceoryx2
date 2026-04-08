@@ -175,25 +175,28 @@ pub unsafe extern "C" fn iox2_port_factory_notifier_builder_set_default_event_id
     port_factory_handle: iox2_port_factory_notifier_builder_h_ref,
     value: *const iox2_event_id_t,
 ) {
-    port_factory_handle.assert_non_null();
+    unsafe {
+        port_factory_handle.assert_non_null();
 
-    let value = (*value).into();
+        let value = (*value).into();
 
-    let port_factory_struct = unsafe { &mut *port_factory_handle.as_type() };
-    match port_factory_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
+        let port_factory_struct = &mut *port_factory_handle.as_type();
+        match port_factory_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
 
-            port_factory_struct.set(PortFactoryNotifierBuilderUnion::new_ipc(
-                port_factory.default_event_id(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
+                port_factory_struct.set(PortFactoryNotifierBuilderUnion::new_ipc(
+                    port_factory.default_event_id(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let port_factory =
+                    ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
 
-            port_factory_struct.set(PortFactoryNotifierBuilderUnion::new_local(
-                port_factory.default_event_id(value),
-            ));
+                port_factory_struct.set(PortFactoryNotifierBuilderUnion::new_local(
+                    port_factory.default_event_id(value),
+                ));
+            }
         }
     }
 }
@@ -219,69 +222,71 @@ pub unsafe extern "C" fn iox2_port_factory_notifier_builder_create(
     notifier_struct_ptr: *mut iox2_notifier_t,
     notifier_handle_ptr: *mut iox2_notifier_h,
 ) -> c_int {
-    debug_assert!(!port_factory_handle.is_null());
-    debug_assert!(!notifier_handle_ptr.is_null());
+    unsafe {
+        debug_assert!(!port_factory_handle.is_null());
+        debug_assert!(!notifier_handle_ptr.is_null());
 
-    let mut notifier_struct_ptr = notifier_struct_ptr;
-    fn no_op(_: *mut iox2_notifier_t) {}
-    let mut deleter: fn(*mut iox2_notifier_t) = no_op;
-    if notifier_struct_ptr.is_null() {
-        notifier_struct_ptr = iox2_notifier_t::alloc();
-        deleter = iox2_notifier_t::dealloc;
-    }
-    debug_assert!(!notifier_struct_ptr.is_null());
+        let mut notifier_struct_ptr = notifier_struct_ptr;
+        fn no_op(_: *mut iox2_notifier_t) {}
+        let mut deleter: fn(*mut iox2_notifier_t) = no_op;
+        if notifier_struct_ptr.is_null() {
+            notifier_struct_ptr = iox2_notifier_t::alloc();
+            deleter = iox2_notifier_t::dealloc;
+        }
+        debug_assert!(!notifier_struct_ptr.is_null());
 
-    let notifier_builder_struct = unsafe { &mut *port_factory_handle.as_type() };
-    let service_type = notifier_builder_struct.service_type;
-    let notifier_builder = notifier_builder_struct
-        .value
-        .as_option_mut()
-        .take()
-        .unwrap_or_else(|| {
-            panic!("Trying to use an invalid 'iox2_port_factory_notifier_builder_h'!")
-        });
-    (notifier_builder_struct.deleter)(notifier_builder_struct);
+        let notifier_builder_struct = &mut *port_factory_handle.as_type();
+        let service_type = notifier_builder_struct.service_type;
+        let notifier_builder = notifier_builder_struct
+            .value
+            .as_option_mut()
+            .take()
+            .unwrap_or_else(|| {
+                panic!("Trying to use an invalid 'iox2_port_factory_notifier_builder_h'!")
+            });
+        (notifier_builder_struct.deleter)(notifier_builder_struct);
 
-    match service_type {
-        iox2_service_type_e::IPC => {
-            let notifier_builder = ManuallyDrop::into_inner(notifier_builder.ipc);
+        match service_type {
+            iox2_service_type_e::IPC => {
+                let notifier_builder = ManuallyDrop::into_inner(notifier_builder.ipc);
 
-            match notifier_builder.create() {
-                Ok(notifier) => {
-                    (*notifier_struct_ptr).init(
-                        service_type,
-                        NotifierUnion::new_ipc(notifier),
-                        deleter,
-                    );
+                match notifier_builder.create() {
+                    Ok(notifier) => {
+                        (*notifier_struct_ptr).init(
+                            service_type,
+                            NotifierUnion::new_ipc(notifier),
+                            deleter,
+                        );
+                    }
+                    Err(error) => {
+                        deleter(notifier_struct_ptr);
+                        return error.into_c_int();
+                    }
                 }
-                Err(error) => {
-                    deleter(notifier_struct_ptr);
-                    return error.into_c_int();
+            }
+            iox2_service_type_e::LOCAL => {
+                let notifier_builder = ManuallyDrop::into_inner(notifier_builder.local);
+
+                match notifier_builder.create() {
+                    Ok(notifier) => {
+                        (*notifier_struct_ptr).init(
+                            service_type,
+                            NotifierUnion::new_local(notifier),
+                            deleter,
+                        );
+                    }
+                    Err(error) => {
+                        deleter(notifier_struct_ptr);
+                        return error.into_c_int();
+                    }
                 }
             }
         }
-        iox2_service_type_e::LOCAL => {
-            let notifier_builder = ManuallyDrop::into_inner(notifier_builder.local);
 
-            match notifier_builder.create() {
-                Ok(notifier) => {
-                    (*notifier_struct_ptr).init(
-                        service_type,
-                        NotifierUnion::new_local(notifier),
-                        deleter,
-                    );
-                }
-                Err(error) => {
-                    deleter(notifier_struct_ptr);
-                    return error.into_c_int();
-                }
-            }
-        }
+        *notifier_handle_ptr = (*notifier_struct_ptr).as_handle();
+
+        IOX2_OK
     }
-
-    *notifier_handle_ptr = (*notifier_struct_ptr).as_handle();
-
-    IOX2_OK
 }
 
 // END C API

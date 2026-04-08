@@ -288,19 +288,21 @@ pub unsafe extern "C" fn iox2_waitset_run_error_string(
 ///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_drop(handle: iox2_waitset_h) {
-    handle.assert_non_null();
+    unsafe {
+        handle.assert_non_null();
 
-    let waitset = &mut *handle.as_type();
+        let waitset = &mut *handle.as_type();
 
-    match waitset.service_type {
-        iox2_service_type_e::IPC => {
-            ManuallyDrop::drop(&mut waitset.value.as_mut().ipc);
+        match waitset.service_type {
+            iox2_service_type_e::IPC => {
+                ManuallyDrop::drop(&mut waitset.value.as_mut().ipc);
+            }
+            iox2_service_type_e::LOCAL => {
+                ManuallyDrop::drop(&mut waitset.value.as_mut().local);
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            ManuallyDrop::drop(&mut waitset.value.as_mut().local);
-        }
+        (waitset.deleter)(waitset);
     }
-    (waitset.deleter)(waitset);
 }
 
 /// Returns `true` if the [`iox2_waitset_h`] is empty, otherwise false.
@@ -311,13 +313,15 @@ pub unsafe extern "C" fn iox2_waitset_drop(handle: iox2_waitset_h) {
 ///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_is_empty(handle: iox2_waitset_h_ref) -> bool {
-    handle.assert_non_null();
+    unsafe {
+        handle.assert_non_null();
 
-    let waitset = &mut *handle.as_type();
+        let waitset = &mut *handle.as_type();
 
-    match waitset.service_type {
-        iox2_service_type_e::IPC => waitset.value.as_ref().ipc.is_empty(),
-        iox2_service_type_e::LOCAL => waitset.value.as_ref().local.is_empty(),
+        match waitset.service_type {
+            iox2_service_type_e::IPC => waitset.value.as_ref().ipc.is_empty(),
+            iox2_service_type_e::LOCAL => waitset.value.as_ref().local.is_empty(),
+        }
     }
 }
 
@@ -331,11 +335,15 @@ pub unsafe extern "C" fn iox2_waitset_is_empty(handle: iox2_waitset_h_ref) -> bo
 pub unsafe extern "C" fn iox2_waitset_signal_handling_mode(
     handle: iox2_waitset_h_ref,
 ) -> iox2_signal_handling_mode_e {
-    let waitset = &mut *handle.as_type();
+    unsafe {
+        let waitset = &mut *handle.as_type();
 
-    match waitset.service_type {
-        iox2_service_type_e::IPC => waitset.value.as_ref().ipc.signal_handling_mode().into(),
-        iox2_service_type_e::LOCAL => waitset.value.as_ref().local.signal_handling_mode().into(),
+        match waitset.service_type {
+            iox2_service_type_e::IPC => waitset.value.as_ref().ipc.signal_handling_mode().into(),
+            iox2_service_type_e::LOCAL => {
+                waitset.value.as_ref().local.signal_handling_mode().into()
+            }
+        }
     }
 }
 
@@ -347,13 +355,15 @@ pub unsafe extern "C" fn iox2_waitset_signal_handling_mode(
 ///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_len(handle: iox2_waitset_h_ref) -> c_size_t {
-    handle.assert_non_null();
+    unsafe {
+        handle.assert_non_null();
 
-    let waitset = &mut *handle.as_type();
+        let waitset = &mut *handle.as_type();
 
-    match waitset.service_type {
-        iox2_service_type_e::IPC => waitset.value.as_ref().ipc.len(),
-        iox2_service_type_e::LOCAL => waitset.value.as_ref().local.len(),
+        match waitset.service_type {
+            iox2_service_type_e::IPC => waitset.value.as_ref().ipc.len(),
+            iox2_service_type_e::LOCAL => waitset.value.as_ref().local.len(),
+        }
     }
 }
 
@@ -365,13 +375,15 @@ pub unsafe extern "C" fn iox2_waitset_len(handle: iox2_waitset_h_ref) -> c_size_
 ///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_capacity(handle: iox2_waitset_h_ref) -> c_size_t {
-    handle.assert_non_null();
+    unsafe {
+        handle.assert_non_null();
 
-    let waitset = &mut *handle.as_type();
+        let waitset = &mut *handle.as_type();
 
-    match waitset.service_type {
-        iox2_service_type_e::IPC => waitset.value.as_ref().ipc.capacity(),
-        iox2_service_type_e::LOCAL => waitset.value.as_ref().local.capacity(),
+        match waitset.service_type {
+            iox2_service_type_e::IPC => waitset.value.as_ref().ipc.capacity(),
+            iox2_service_type_e::LOCAL => waitset.value.as_ref().local.capacity(),
+        }
     }
 }
 
@@ -402,53 +414,61 @@ pub unsafe extern "C" fn iox2_waitset_attach_notification(
     guard_struct_ptr: *mut iox2_waitset_guard_t,
     guard_handle_ptr: *mut iox2_waitset_guard_h,
 ) -> c_int {
-    handle.assert_non_null();
-    debug_assert!(!guard_handle_ptr.is_null());
+    unsafe {
+        handle.assert_non_null();
+        debug_assert!(!guard_handle_ptr.is_null());
 
-    let waitset = &mut *handle.as_type();
+        let waitset = &mut *handle.as_type();
 
-    let mut guard_struct_ptr = guard_struct_ptr;
-    fn no_op(_: *mut iox2_waitset_guard_t) {}
-    let mut deleter: fn(*mut iox2_waitset_guard_t) = no_op;
-    let mut alloc_memory = || {
-        if guard_struct_ptr.is_null() {
-            guard_struct_ptr = iox2_waitset_guard_t::alloc();
-            deleter = iox2_waitset_guard_t::dealloc;
-        }
-        debug_assert!(!guard_struct_ptr.is_null());
-    };
-
-    match waitset.service_type {
-        iox2_service_type_e::IPC => match waitset.value.as_ref().ipc.attach_notification(&*fd) {
-            Ok(guard) => {
-                alloc_memory();
-
-                (*guard_struct_ptr).init(waitset.service_type, GuardUnion::new_ipc(guard), deleter);
+        let mut guard_struct_ptr = guard_struct_ptr;
+        fn no_op(_: *mut iox2_waitset_guard_t) {}
+        let mut deleter: fn(*mut iox2_waitset_guard_t) = no_op;
+        let mut alloc_memory = || {
+            if guard_struct_ptr.is_null() {
+                guard_struct_ptr = iox2_waitset_guard_t::alloc();
+                deleter = iox2_waitset_guard_t::dealloc;
             }
-            Err(e) => {
-                return e.into_c_int();
-            }
-        },
-        iox2_service_type_e::LOCAL => {
-            match waitset.value.as_ref().local.attach_notification(&*fd) {
-                Ok(guard) => {
-                    alloc_memory();
-                    (*guard_struct_ptr).init(
-                        waitset.service_type,
-                        GuardUnion::new_local(guard),
-                        deleter,
-                    );
-                }
-                Err(e) => {
-                    return e.into_c_int();
+            debug_assert!(!guard_struct_ptr.is_null());
+        };
+
+        match waitset.service_type {
+            iox2_service_type_e::IPC => {
+                match waitset.value.as_ref().ipc.attach_notification(&*fd) {
+                    Ok(guard) => {
+                        alloc_memory();
+
+                        (*guard_struct_ptr).init(
+                            waitset.service_type,
+                            GuardUnion::new_ipc(guard),
+                            deleter,
+                        );
+                    }
+                    Err(e) => {
+                        return e.into_c_int();
+                    }
                 }
             }
+            iox2_service_type_e::LOCAL => {
+                match waitset.value.as_ref().local.attach_notification(&*fd) {
+                    Ok(guard) => {
+                        alloc_memory();
+                        (*guard_struct_ptr).init(
+                            waitset.service_type,
+                            GuardUnion::new_local(guard),
+                            deleter,
+                        );
+                    }
+                    Err(e) => {
+                        return e.into_c_int();
+                    }
+                }
+            }
         }
+
+        *guard_handle_ptr = (*guard_struct_ptr).as_handle();
+
+        IOX2_OK
     }
-
-    *guard_handle_ptr = (*guard_struct_ptr).as_handle();
-
-    IOX2_OK
 }
 
 /// Attaches a provided [`iox2_file_descriptor_ptr`] as deadline to the
@@ -483,61 +503,63 @@ pub unsafe extern "C" fn iox2_waitset_attach_deadline(
     guard_struct_ptr: *mut iox2_waitset_guard_t,
     guard_handle_ptr: *mut iox2_waitset_guard_h,
 ) -> c_int {
-    handle.assert_non_null();
-    debug_assert!(!guard_handle_ptr.is_null());
+    unsafe {
+        handle.assert_non_null();
+        debug_assert!(!guard_handle_ptr.is_null());
 
-    let waitset = &mut *handle.as_type();
-    let interval = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as _);
+        let waitset = &mut *handle.as_type();
+        let interval = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as _);
 
-    let mut guard_struct_ptr = guard_struct_ptr;
-    fn no_op(_: *mut iox2_waitset_guard_t) {}
-    let mut deleter: fn(*mut iox2_waitset_guard_t) = no_op;
-    let mut alloc_memory = || {
-        if guard_struct_ptr.is_null() {
-            guard_struct_ptr = iox2_waitset_guard_t::alloc();
-            deleter = iox2_waitset_guard_t::dealloc;
-        }
-        debug_assert!(!guard_struct_ptr.is_null());
-    };
+        let mut guard_struct_ptr = guard_struct_ptr;
+        fn no_op(_: *mut iox2_waitset_guard_t) {}
+        let mut deleter: fn(*mut iox2_waitset_guard_t) = no_op;
+        let mut alloc_memory = || {
+            if guard_struct_ptr.is_null() {
+                guard_struct_ptr = iox2_waitset_guard_t::alloc();
+                deleter = iox2_waitset_guard_t::dealloc;
+            }
+            debug_assert!(!guard_struct_ptr.is_null());
+        };
 
-    match waitset.service_type {
-        iox2_service_type_e::IPC => {
-            match waitset.value.as_ref().ipc.attach_deadline(&*fd, interval) {
-                Ok(guard) => {
-                    alloc_memory();
+        match waitset.service_type {
+            iox2_service_type_e::IPC => {
+                match waitset.value.as_ref().ipc.attach_deadline(&*fd, interval) {
+                    Ok(guard) => {
+                        alloc_memory();
 
-                    (*guard_struct_ptr).init(
-                        waitset.service_type,
-                        GuardUnion::new_ipc(guard),
-                        deleter,
-                    );
+                        (*guard_struct_ptr).init(
+                            waitset.service_type,
+                            GuardUnion::new_ipc(guard),
+                            deleter,
+                        );
+                    }
+                    Err(e) => {
+                        return e.into_c_int();
+                    }
                 }
-                Err(e) => {
-                    return e.into_c_int();
+            }
+            iox2_service_type_e::LOCAL => {
+                match waitset.value.as_ref().local.attach_deadline(&*fd, interval) {
+                    Ok(guard) => {
+                        alloc_memory();
+
+                        (*guard_struct_ptr).init(
+                            waitset.service_type,
+                            GuardUnion::new_local(guard),
+                            deleter,
+                        );
+                    }
+                    Err(e) => {
+                        return e.into_c_int();
+                    }
                 }
             }
         }
-        iox2_service_type_e::LOCAL => {
-            match waitset.value.as_ref().local.attach_deadline(&*fd, interval) {
-                Ok(guard) => {
-                    alloc_memory();
 
-                    (*guard_struct_ptr).init(
-                        waitset.service_type,
-                        GuardUnion::new_local(guard),
-                        deleter,
-                    );
-                }
-                Err(e) => {
-                    return e.into_c_int();
-                }
-            }
-        }
+        *guard_handle_ptr = (*guard_struct_ptr).as_handle();
+
+        IOX2_OK
     }
-
-    *guard_handle_ptr = (*guard_struct_ptr).as_handle();
-
-    IOX2_OK
 }
 
 /// Attaches an interval to the [`iox2_waitset_h`]. As soon as the interval has passed
@@ -567,55 +589,63 @@ pub unsafe extern "C" fn iox2_waitset_attach_interval(
     guard_struct_ptr: *mut iox2_waitset_guard_t,
     guard_handle_ptr: *mut iox2_waitset_guard_h,
 ) -> c_int {
-    handle.assert_non_null();
-    debug_assert!(!guard_handle_ptr.is_null());
+    unsafe {
+        handle.assert_non_null();
+        debug_assert!(!guard_handle_ptr.is_null());
 
-    let waitset = &mut *handle.as_type();
-    let interval = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as _);
+        let waitset = &mut *handle.as_type();
+        let interval = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as _);
 
-    let mut guard_struct_ptr = guard_struct_ptr;
-    fn no_op(_: *mut iox2_waitset_guard_t) {}
-    let mut deleter: fn(*mut iox2_waitset_guard_t) = no_op;
-    let mut alloc_memory = || {
-        if guard_struct_ptr.is_null() {
-            guard_struct_ptr = iox2_waitset_guard_t::alloc();
-            deleter = iox2_waitset_guard_t::dealloc;
-        }
-        debug_assert!(!guard_struct_ptr.is_null());
-    };
-
-    match waitset.service_type {
-        iox2_service_type_e::IPC => match waitset.value.as_ref().ipc.attach_interval(interval) {
-            Ok(guard) => {
-                alloc_memory();
-
-                (*guard_struct_ptr).init(waitset.service_type, GuardUnion::new_ipc(guard), deleter);
+        let mut guard_struct_ptr = guard_struct_ptr;
+        fn no_op(_: *mut iox2_waitset_guard_t) {}
+        let mut deleter: fn(*mut iox2_waitset_guard_t) = no_op;
+        let mut alloc_memory = || {
+            if guard_struct_ptr.is_null() {
+                guard_struct_ptr = iox2_waitset_guard_t::alloc();
+                deleter = iox2_waitset_guard_t::dealloc;
             }
-            Err(e) => {
-                return e.into_c_int();
-            }
-        },
-        iox2_service_type_e::LOCAL => {
-            match waitset.value.as_ref().local.attach_interval(interval) {
-                Ok(guard) => {
-                    alloc_memory();
+            debug_assert!(!guard_struct_ptr.is_null());
+        };
 
-                    (*guard_struct_ptr).init(
-                        waitset.service_type,
-                        GuardUnion::new_local(guard),
-                        deleter,
-                    );
-                }
-                Err(e) => {
-                    return e.into_c_int();
+        match waitset.service_type {
+            iox2_service_type_e::IPC => {
+                match waitset.value.as_ref().ipc.attach_interval(interval) {
+                    Ok(guard) => {
+                        alloc_memory();
+
+                        (*guard_struct_ptr).init(
+                            waitset.service_type,
+                            GuardUnion::new_ipc(guard),
+                            deleter,
+                        );
+                    }
+                    Err(e) => {
+                        return e.into_c_int();
+                    }
                 }
             }
+            iox2_service_type_e::LOCAL => {
+                match waitset.value.as_ref().local.attach_interval(interval) {
+                    Ok(guard) => {
+                        alloc_memory();
+
+                        (*guard_struct_ptr).init(
+                            waitset.service_type,
+                            GuardUnion::new_local(guard),
+                            deleter,
+                        );
+                    }
+                    Err(e) => {
+                        return e.into_c_int();
+                    }
+                }
+            }
         }
+
+        *guard_handle_ptr = (*guard_struct_ptr).as_handle();
+
+        IOX2_OK
     }
-
-    *guard_handle_ptr = (*guard_struct_ptr).as_handle();
-
-    IOX2_OK
 }
 
 /// Waits until an event arrives on the [`iox2_waitset_h`], then
@@ -651,52 +681,54 @@ pub unsafe extern "C" fn iox2_waitset_wait_and_process_once(
     callback_ctx: iox2_callback_context,
     result: *mut iox2_waitset_run_result_e,
 ) -> c_int {
-    handle.assert_non_null();
-    debug_assert!(!result.is_null());
+    unsafe {
+        handle.assert_non_null();
+        debug_assert!(!result.is_null());
 
-    let waitset = &mut *handle.as_type();
+        let waitset = &mut *handle.as_type();
 
-    let run_once_result = match waitset.service_type {
-        iox2_service_type_e::IPC => {
-            waitset
-                .value
-                .as_ref()
-                .ipc
-                .wait_and_process_once(|attachment_id| {
-                    let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
-                    (*attachment_id_ptr).init(
-                        waitset.service_type,
-                        AttachmentIdUnion::new_ipc(attachment_id),
-                        iox2_waitset_attachment_id_t::dealloc,
-                    );
-                    let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-                    callback(attachment_id_handle_ptr, callback_ctx).into()
-                })
-        }
-        iox2_service_type_e::LOCAL => {
-            waitset
-                .value
-                .as_ref()
-                .local
-                .wait_and_process_once(|attachment_id| {
-                    let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
-                    (*attachment_id_ptr).init(
-                        waitset.service_type,
-                        AttachmentIdUnion::new_local(attachment_id),
-                        iox2_waitset_attachment_id_t::dealloc,
-                    );
-                    let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-                    callback(attachment_id_handle_ptr, callback_ctx).into()
-                })
-        }
-    };
+        let run_once_result = match waitset.service_type {
+            iox2_service_type_e::IPC => {
+                waitset
+                    .value
+                    .as_ref()
+                    .ipc
+                    .wait_and_process_once(|attachment_id| {
+                        let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
+                        (*attachment_id_ptr).init(
+                            waitset.service_type,
+                            AttachmentIdUnion::new_ipc(attachment_id),
+                            iox2_waitset_attachment_id_t::dealloc,
+                        );
+                        let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
+                        callback(attachment_id_handle_ptr, callback_ctx).into()
+                    })
+            }
+            iox2_service_type_e::LOCAL => {
+                waitset
+                    .value
+                    .as_ref()
+                    .local
+                    .wait_and_process_once(|attachment_id| {
+                        let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
+                        (*attachment_id_ptr).init(
+                            waitset.service_type,
+                            AttachmentIdUnion::new_local(attachment_id),
+                            iox2_waitset_attachment_id_t::dealloc,
+                        );
+                        let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
+                        callback(attachment_id_handle_ptr, callback_ctx).into()
+                    })
+            }
+        };
 
-    match run_once_result {
-        Ok(v) => {
-            *result = v.into();
-            IOX2_OK
+        match run_once_result {
+            Ok(v) => {
+                *result = v.into();
+                IOX2_OK
+            }
+            Err(e) => e.into_c_int(),
         }
-        Err(e) => e.into_c_int(),
     }
 }
 
@@ -735,55 +767,57 @@ pub unsafe extern "C" fn iox2_waitset_wait_and_process_once_with_timeout(
     nanoseconds: u32,
     result: *mut iox2_waitset_run_result_e,
 ) -> c_int {
-    handle.assert_non_null();
-    debug_assert!(!result.is_null());
+    unsafe {
+        handle.assert_non_null();
+        debug_assert!(!result.is_null());
 
-    let waitset = &mut *handle.as_type();
-    let timeout = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as u64);
+        let waitset = &mut *handle.as_type();
+        let timeout = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as u64);
 
-    let run_once_result = match waitset.service_type {
-        iox2_service_type_e::IPC => waitset
-            .value
-            .as_ref()
-            .ipc
-            .wait_and_process_once_with_timeout(
-                |attachment_id| {
-                    let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
-                    (*attachment_id_ptr).init(
-                        waitset.service_type,
-                        AttachmentIdUnion::new_ipc(attachment_id),
-                        iox2_waitset_attachment_id_t::dealloc,
-                    );
-                    let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-                    callback(attachment_id_handle_ptr, callback_ctx).into()
-                },
-                timeout,
-            ),
-        iox2_service_type_e::LOCAL => waitset
-            .value
-            .as_ref()
-            .local
-            .wait_and_process_once_with_timeout(
-                |attachment_id| {
-                    let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
-                    (*attachment_id_ptr).init(
-                        waitset.service_type,
-                        AttachmentIdUnion::new_local(attachment_id),
-                        iox2_waitset_attachment_id_t::dealloc,
-                    );
-                    let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-                    callback(attachment_id_handle_ptr, callback_ctx).into()
-                },
-                timeout,
-            ),
-    };
+        let run_once_result = match waitset.service_type {
+            iox2_service_type_e::IPC => waitset
+                .value
+                .as_ref()
+                .ipc
+                .wait_and_process_once_with_timeout(
+                    |attachment_id| {
+                        let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
+                        (*attachment_id_ptr).init(
+                            waitset.service_type,
+                            AttachmentIdUnion::new_ipc(attachment_id),
+                            iox2_waitset_attachment_id_t::dealloc,
+                        );
+                        let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
+                        callback(attachment_id_handle_ptr, callback_ctx).into()
+                    },
+                    timeout,
+                ),
+            iox2_service_type_e::LOCAL => waitset
+                .value
+                .as_ref()
+                .local
+                .wait_and_process_once_with_timeout(
+                    |attachment_id| {
+                        let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
+                        (*attachment_id_ptr).init(
+                            waitset.service_type,
+                            AttachmentIdUnion::new_local(attachment_id),
+                            iox2_waitset_attachment_id_t::dealloc,
+                        );
+                        let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
+                        callback(attachment_id_handle_ptr, callback_ctx).into()
+                    },
+                    timeout,
+                ),
+        };
 
-    match run_once_result {
-        Ok(v) => {
-            *result = v.into();
-            IOX2_OK
+        match run_once_result {
+            Ok(v) => {
+                *result = v.into();
+                IOX2_OK
+            }
+            Err(e) => e.into_c_int(),
         }
-        Err(e) => e.into_c_int(),
     }
 }
 
@@ -818,50 +852,54 @@ pub unsafe extern "C" fn iox2_waitset_wait_and_process(
     callback_ctx: iox2_callback_context,
     result: *mut iox2_waitset_run_result_e,
 ) -> c_int {
-    handle.assert_non_null();
-    debug_assert!(!result.is_null());
+    unsafe {
+        handle.assert_non_null();
+        debug_assert!(!result.is_null());
 
-    let waitset = &mut *handle.as_type();
+        let waitset = &mut *handle.as_type();
 
-    let run_result = match waitset.service_type {
-        iox2_service_type_e::IPC => waitset
-            .value
-            .as_ref()
-            .ipc
-            .wait_and_process(|attachment_id| {
-                let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
-                (*attachment_id_ptr).init(
-                    waitset.service_type,
-                    AttachmentIdUnion::new_ipc(attachment_id),
-                    iox2_waitset_attachment_id_t::dealloc,
-                );
-                let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-                callback(attachment_id_handle_ptr, callback_ctx).into()
-            }),
-        iox2_service_type_e::LOCAL => {
-            waitset
-                .value
-                .as_ref()
-                .local
-                .wait_and_process(|attachment_id| {
-                    let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
-                    (*attachment_id_ptr).init(
-                        waitset.service_type,
-                        AttachmentIdUnion::new_local(attachment_id),
-                        iox2_waitset_attachment_id_t::dealloc,
-                    );
-                    let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-                    callback(attachment_id_handle_ptr, callback_ctx).into()
-                })
+        let run_result = match waitset.service_type {
+            iox2_service_type_e::IPC => {
+                waitset
+                    .value
+                    .as_ref()
+                    .ipc
+                    .wait_and_process(|attachment_id| {
+                        let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
+                        (*attachment_id_ptr).init(
+                            waitset.service_type,
+                            AttachmentIdUnion::new_ipc(attachment_id),
+                            iox2_waitset_attachment_id_t::dealloc,
+                        );
+                        let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
+                        callback(attachment_id_handle_ptr, callback_ctx).into()
+                    })
+            }
+            iox2_service_type_e::LOCAL => {
+                waitset
+                    .value
+                    .as_ref()
+                    .local
+                    .wait_and_process(|attachment_id| {
+                        let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
+                        (*attachment_id_ptr).init(
+                            waitset.service_type,
+                            AttachmentIdUnion::new_local(attachment_id),
+                            iox2_waitset_attachment_id_t::dealloc,
+                        );
+                        let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
+                        callback(attachment_id_handle_ptr, callback_ctx).into()
+                    })
+            }
+        };
+
+        match run_result {
+            Ok(v) => {
+                (*result) = v.into();
+                IOX2_OK
+            }
+            Err(e) => e.into_c_int(),
         }
-    };
-
-    match run_result {
-        Ok(v) => {
-            (*result) = v.into();
-            IOX2_OK
-        }
-        Err(e) => e.into_c_int(),
     }
 }
 

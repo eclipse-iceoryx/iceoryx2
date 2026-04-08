@@ -118,19 +118,21 @@ impl HandleToType for iox2_waitset_attachment_id_h_ref {
 ///  * `handle` must be valid and provided by the previously mentioned functions.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_attachment_id_drop(handle: iox2_waitset_attachment_id_h) {
-    handle.assert_non_null();
+    unsafe {
+        handle.assert_non_null();
 
-    let attachment_id = &mut *handle.as_type();
+        let attachment_id = &mut *handle.as_type();
 
-    match attachment_id.service_type {
-        iox2_service_type_e::IPC => {
-            ManuallyDrop::drop(&mut attachment_id.value.as_mut().ipc);
+        match attachment_id.service_type {
+            iox2_service_type_e::IPC => {
+                ManuallyDrop::drop(&mut attachment_id.value.as_mut().ipc);
+            }
+            iox2_service_type_e::LOCAL => {
+                ManuallyDrop::drop(&mut attachment_id.value.as_mut().local);
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            ManuallyDrop::drop(&mut attachment_id.value.as_mut().local);
-        }
+        (attachment_id.deleter)(attachment_id);
     }
-    (attachment_id.deleter)(attachment_id);
 }
 
 /// Checks if two provided [`iox2_waitset_attachment_id_h_ref`] are semantically equal.
@@ -143,20 +145,24 @@ pub unsafe extern "C" fn iox2_waitset_attachment_id_equal(
     lhs: iox2_waitset_attachment_id_h_ref,
     rhs: iox2_waitset_attachment_id_h_ref,
 ) -> bool {
-    lhs.assert_non_null();
-    rhs.assert_non_null();
+    unsafe {
+        lhs.assert_non_null();
+        rhs.assert_non_null();
 
-    let lhs_type = &mut *lhs.as_type();
-    let rhs_type = &mut *rhs.as_type();
+        let lhs_type = &mut *lhs.as_type();
+        let rhs_type = &mut *rhs.as_type();
 
-    if lhs_type.service_type != rhs_type.service_type {
-        return false;
-    }
+        if lhs_type.service_type != rhs_type.service_type {
+            return false;
+        }
 
-    match lhs_type.service_type {
-        iox2_service_type_e::IPC => *lhs_type.value.as_ref().ipc == *rhs_type.value.as_ref().ipc,
-        iox2_service_type_e::LOCAL => {
-            *lhs_type.value.as_ref().local == *rhs_type.value.as_ref().local
+        match lhs_type.service_type {
+            iox2_service_type_e::IPC => {
+                *lhs_type.value.as_ref().ipc == *rhs_type.value.as_ref().ipc
+            }
+            iox2_service_type_e::LOCAL => {
+                *lhs_type.value.as_ref().local == *rhs_type.value.as_ref().local
+            }
         }
     }
 }
@@ -171,20 +177,22 @@ pub unsafe extern "C" fn iox2_waitset_attachment_id_less(
     lhs: iox2_waitset_attachment_id_h_ref,
     rhs: iox2_waitset_attachment_id_h_ref,
 ) -> bool {
-    lhs.assert_non_null();
-    rhs.assert_non_null();
+    unsafe {
+        lhs.assert_non_null();
+        rhs.assert_non_null();
 
-    let lhs_type = &mut *lhs.as_type();
-    let rhs_type = &mut *rhs.as_type();
+        let lhs_type = &mut *lhs.as_type();
+        let rhs_type = &mut *rhs.as_type();
 
-    if lhs_type.service_type != rhs_type.service_type {
-        return false;
-    }
+        if lhs_type.service_type != rhs_type.service_type {
+            return false;
+        }
 
-    match lhs_type.service_type {
-        iox2_service_type_e::IPC => *lhs_type.value.as_ref().ipc < *rhs_type.value.as_ref().ipc,
-        iox2_service_type_e::LOCAL => {
-            *lhs_type.value.as_ref().local < *rhs_type.value.as_ref().local
+        match lhs_type.service_type {
+            iox2_service_type_e::IPC => *lhs_type.value.as_ref().ipc < *rhs_type.value.as_ref().ipc,
+            iox2_service_type_e::LOCAL => {
+                *lhs_type.value.as_ref().local < *rhs_type.value.as_ref().local
+            }
         }
     }
 }
@@ -200,23 +208,25 @@ pub unsafe extern "C" fn iox2_waitset_attachment_id_has_event_from(
     handle: iox2_waitset_attachment_id_h_ref,
     guard: iox2_waitset_guard_h_ref,
 ) -> bool {
-    handle.assert_non_null();
-    guard.assert_non_null();
+    unsafe {
+        handle.assert_non_null();
+        guard.assert_non_null();
 
-    let attachment_id = &mut *handle.as_type();
-    let guard = &*guard.as_type();
+        let attachment_id = &mut *handle.as_type();
+        let guard = &*guard.as_type();
 
-    match attachment_id.service_type {
-        iox2_service_type_e::IPC => attachment_id
-            .value
-            .as_ref()
-            .ipc
-            .has_event_from(&*guard.value.as_ref().ipc),
-        iox2_service_type_e::LOCAL => attachment_id
-            .value
-            .as_ref()
-            .local
-            .has_event_from(&*guard.value.as_ref().local),
+        match attachment_id.service_type {
+            iox2_service_type_e::IPC => attachment_id
+                .value
+                .as_ref()
+                .ipc
+                .has_event_from(&*guard.value.as_ref().ipc),
+            iox2_service_type_e::LOCAL => attachment_id
+                .value
+                .as_ref()
+                .local
+                .has_event_from(&*guard.value.as_ref().local),
+        }
     }
 }
 
@@ -231,23 +241,25 @@ pub unsafe extern "C" fn iox2_waitset_attachment_id_has_missed_deadline(
     handle: iox2_waitset_attachment_id_h_ref,
     guard: iox2_waitset_guard_h_ref,
 ) -> bool {
-    handle.assert_non_null();
-    guard.assert_non_null();
+    unsafe {
+        handle.assert_non_null();
+        guard.assert_non_null();
 
-    let attachment_id = &mut *handle.as_type();
-    let guard = &*guard.as_type();
+        let attachment_id = &mut *handle.as_type();
+        let guard = &*guard.as_type();
 
-    match attachment_id.service_type {
-        iox2_service_type_e::IPC => attachment_id
-            .value
-            .as_ref()
-            .ipc
-            .has_missed_deadline(&*guard.value.as_ref().ipc),
-        iox2_service_type_e::LOCAL => attachment_id
-            .value
-            .as_ref()
-            .local
-            .has_missed_deadline(&*guard.value.as_ref().local),
+        match attachment_id.service_type {
+            iox2_service_type_e::IPC => attachment_id
+                .value
+                .as_ref()
+                .ipc
+                .has_missed_deadline(&*guard.value.as_ref().ipc),
+            iox2_service_type_e::LOCAL => attachment_id
+                .value
+                .as_ref()
+                .local
+                .has_missed_deadline(&*guard.value.as_ref().local),
+        }
     }
 }
 
@@ -265,42 +277,44 @@ pub unsafe extern "C" fn iox2_waitset_attachment_id_from_guard(
     attachment_id_struct_ptr: *mut iox2_waitset_attachment_id_t,
     attachment_id_handle_ptr: *mut iox2_waitset_attachment_id_h,
 ) {
-    guard.assert_non_null();
-    debug_assert!(!attachment_id_handle_ptr.is_null());
+    unsafe {
+        guard.assert_non_null();
+        debug_assert!(!attachment_id_handle_ptr.is_null());
 
-    let guard = &*guard.as_type();
+        let guard = &*guard.as_type();
 
-    let mut attachment_id_struct_ptr = attachment_id_struct_ptr;
-    fn no_op(_: *mut iox2_waitset_attachment_id_t) {}
-    let mut deleter: fn(*mut iox2_waitset_attachment_id_t) = no_op;
-    if attachment_id_struct_ptr.is_null() {
-        attachment_id_struct_ptr = iox2_waitset_attachment_id_t::alloc();
-        deleter = iox2_waitset_attachment_id_t::dealloc;
+        let mut attachment_id_struct_ptr = attachment_id_struct_ptr;
+        fn no_op(_: *mut iox2_waitset_attachment_id_t) {}
+        let mut deleter: fn(*mut iox2_waitset_attachment_id_t) = no_op;
+        if attachment_id_struct_ptr.is_null() {
+            attachment_id_struct_ptr = iox2_waitset_attachment_id_t::alloc();
+            deleter = iox2_waitset_attachment_id_t::dealloc;
+        }
+        debug_assert!(!attachment_id_struct_ptr.is_null());
+
+        match guard.service_type {
+            iox2_service_type_e::IPC => {
+                (*attachment_id_struct_ptr).init(
+                    guard.service_type,
+                    AttachmentIdUnion::new_ipc(WaitSetAttachmentId::from_guard(
+                        &*guard.value.as_ref().ipc,
+                    )),
+                    deleter,
+                );
+            }
+            iox2_service_type_e::LOCAL => {
+                (*attachment_id_struct_ptr).init(
+                    guard.service_type,
+                    AttachmentIdUnion::new_local(WaitSetAttachmentId::from_guard(
+                        &*guard.value.as_ref().local,
+                    )),
+                    deleter,
+                );
+            }
+        };
+
+        *attachment_id_handle_ptr = (*attachment_id_struct_ptr).as_handle();
     }
-    debug_assert!(!attachment_id_struct_ptr.is_null());
-
-    match guard.service_type {
-        iox2_service_type_e::IPC => {
-            (*attachment_id_struct_ptr).init(
-                guard.service_type,
-                AttachmentIdUnion::new_ipc(WaitSetAttachmentId::from_guard(
-                    &*guard.value.as_ref().ipc,
-                )),
-                deleter,
-            );
-        }
-        iox2_service_type_e::LOCAL => {
-            (*attachment_id_struct_ptr).init(
-                guard.service_type,
-                AttachmentIdUnion::new_local(WaitSetAttachmentId::from_guard(
-                    &*guard.value.as_ref().local,
-                )),
-                deleter,
-            );
-        }
-    };
-
-    *attachment_id_handle_ptr = (*attachment_id_struct_ptr).as_handle();
 }
 
 /// Stores the debug output in the provided `debug_output` variable that must provide enough
@@ -317,27 +331,29 @@ pub unsafe extern "C" fn iox2_waitset_attachment_id_debug(
     debug_output: *mut c_char,
     debug_len: c_size_t,
 ) -> bool {
-    handle.assert_non_null();
-    debug_assert!(!debug_output.is_null());
+    unsafe {
+        handle.assert_non_null();
+        debug_assert!(!debug_output.is_null());
 
-    let attachment_id = &mut *handle.as_type();
+        let attachment_id = &mut *handle.as_type();
 
-    let raw_str = match attachment_id.service_type {
-        iox2_service_type_e::IPC => format!("{:?}\0", *attachment_id.value.as_mut().ipc),
-        iox2_service_type_e::LOCAL => format!("{:?}\0", *attachment_id.value.as_mut().local),
-    };
+        let raw_str = match attachment_id.service_type {
+            iox2_service_type_e::IPC => format!("{:?}\0", *attachment_id.value.as_mut().ipc),
+            iox2_service_type_e::LOCAL => format!("{:?}\0", *attachment_id.value.as_mut().local),
+        };
 
-    if debug_len < raw_str.len() {
-        return false;
+        if debug_len < raw_str.len() {
+            return false;
+        }
+
+        core::ptr::copy_nonoverlapping(
+            raw_str.as_bytes().as_ptr().cast(),
+            debug_output,
+            raw_str.len(),
+        );
+
+        true
     }
-
-    core::ptr::copy_nonoverlapping(
-        raw_str.as_bytes().as_ptr().cast(),
-        debug_output,
-        raw_str.len(),
-    );
-
-    true
 }
 
 /// Returns the length of the debug output. Shall be used before calling
@@ -349,13 +365,17 @@ pub unsafe extern "C" fn iox2_waitset_attachment_id_debug(
 pub unsafe extern "C" fn iox2_waitset_attachment_id_debug_len(
     handle: iox2_waitset_attachment_id_h_ref,
 ) -> c_size_t {
-    handle.assert_non_null();
+    unsafe {
+        handle.assert_non_null();
 
-    let attachment_id = &mut *handle.as_type();
+        let attachment_id = &mut *handle.as_type();
 
-    match attachment_id.service_type {
-        iox2_service_type_e::IPC => format!("{:?}\0", *attachment_id.value.as_mut().ipc).len(),
-        iox2_service_type_e::LOCAL => format!("{:?}\0", *attachment_id.value.as_mut().local).len(),
+        match attachment_id.service_type {
+            iox2_service_type_e::IPC => format!("{:?}\0", *attachment_id.value.as_mut().ipc).len(),
+            iox2_service_type_e::LOCAL => {
+                format!("{:?}\0", *attachment_id.value.as_mut().local).len()
+            }
+        }
     }
 }
 

@@ -110,17 +110,19 @@ pub(crate) mod internal {
         ///    [`IpcCapable::cleanup()`] - is allowed to operate on the [`IpcCapable`].
         ///
         pub unsafe fn cleanup<F: FnOnce(&mut T)>(&self, cleanup: F) {
-            debug_assert!(
-                self.is_initialized.load(Ordering::Relaxed),
-                "The handle must be initialized before it can be cleaned up."
-            );
+            unsafe {
+                debug_assert!(
+                    self.is_initialized.load(Ordering::Relaxed),
+                    "The handle must be initialized before it can be cleaned up."
+                );
 
-            cleanup(self.get());
+                cleanup(self.get());
 
-            // does not need to sync any memory since the construct is not allowed to
-            // be shared with any other thread before it is initialized
-            // -> Ordering::Relaxed
-            self.is_initialized.store(false, Ordering::Relaxed);
+                // does not need to sync any memory since the construct is not allowed to
+                // be shared with any other thread before it is initialized
+                // -> Ordering::Relaxed
+                self.is_initialized.store(false, Ordering::Relaxed);
+            }
         }
 
         /// Returns a mutable reference to the underlying handle.

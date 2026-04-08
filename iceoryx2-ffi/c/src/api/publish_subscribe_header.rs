@@ -105,12 +105,14 @@ impl HandleToType for iox2_publish_subscribe_header_h_ref {
 pub unsafe extern "C" fn iox2_publish_subscribe_header_drop(
     handle: iox2_publish_subscribe_header_h,
 ) {
-    debug_assert!(!handle.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
 
-    let header = &mut *handle.as_type();
-    core::ptr::drop_in_place(header.value.as_option_mut());
+        let header = &mut *handle.as_type();
+        core::ptr::drop_in_place(header.value.as_option_mut());
 
-    (header.deleter)(header);
+        (header.deleter)(header);
+    }
 }
 
 /// Returns the unique publisher id of the source of the sample.
@@ -134,24 +136,26 @@ pub unsafe extern "C" fn iox2_publish_subscribe_header_publisher_id(
     id_struct_ptr: *mut iox2_unique_publisher_id_t,
     id_handle_ptr: *mut iox2_unique_publisher_id_h,
 ) {
-    header_handle.assert_non_null();
-    debug_assert!(!id_handle_ptr.is_null());
+    unsafe {
+        header_handle.assert_non_null();
+        debug_assert!(!id_handle_ptr.is_null());
 
-    fn no_op(_: *mut iox2_unique_publisher_id_t) {}
-    let mut deleter: fn(*mut iox2_unique_publisher_id_t) = no_op;
-    let mut storage_ptr = id_struct_ptr;
-    if id_struct_ptr.is_null() {
-        deleter = iox2_unique_publisher_id_t::dealloc;
-        storage_ptr = iox2_unique_publisher_id_t::alloc();
+        fn no_op(_: *mut iox2_unique_publisher_id_t) {}
+        let mut deleter: fn(*mut iox2_unique_publisher_id_t) = no_op;
+        let mut storage_ptr = id_struct_ptr;
+        if id_struct_ptr.is_null() {
+            deleter = iox2_unique_publisher_id_t::dealloc;
+            storage_ptr = iox2_unique_publisher_id_t::alloc();
+        }
+        debug_assert!(!storage_ptr.is_null());
+
+        let header = &mut *header_handle.as_type();
+
+        let id = header.value.as_ref().publisher_id();
+
+        (*storage_ptr).init(id, deleter);
+        *id_handle_ptr = (*storage_ptr).as_handle();
     }
-    debug_assert!(!storage_ptr.is_null());
-
-    let header = &mut *header_handle.as_type();
-
-    let id = header.value.as_ref().publisher_id();
-
-    (*storage_ptr).init(id, deleter);
-    *id_handle_ptr = (*storage_ptr).as_handle();
 }
 
 /// Returns the number of elements of the payload.
@@ -173,10 +177,12 @@ pub unsafe extern "C" fn iox2_publish_subscribe_header_publisher_id(
 pub unsafe extern "C" fn iox2_publish_subscribe_header_number_of_elements(
     header_handle: iox2_publish_subscribe_header_h_ref,
 ) -> u64 {
-    header_handle.assert_non_null();
+    unsafe {
+        header_handle.assert_non_null();
 
-    let header = &mut *header_handle.as_type();
+        let header = &mut *header_handle.as_type();
 
-    header.value.as_ref().number_of_elements()
+        header.value.as_ref().number_of_elements()
+    }
 }
 // END C API

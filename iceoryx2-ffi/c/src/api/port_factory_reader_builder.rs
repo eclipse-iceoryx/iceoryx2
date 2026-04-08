@@ -176,64 +176,70 @@ pub unsafe extern "C" fn iox2_port_factory_reader_builder_create(
     reader_struct_ptr: *mut iox2_reader_t,
     reader_handle_ptr: *mut iox2_reader_h,
 ) -> c_int {
-    debug_assert!(!port_factory_handle.is_null());
-    debug_assert!(!reader_handle_ptr.is_null());
+    unsafe {
+        debug_assert!(!port_factory_handle.is_null());
+        debug_assert!(!reader_handle_ptr.is_null());
 
-    let mut reader_struct_ptr = reader_struct_ptr;
-    fn no_op(_: *mut iox2_reader_t) {}
-    let mut deleter: fn(*mut iox2_reader_t) = no_op;
-    if reader_struct_ptr.is_null() {
-        reader_struct_ptr = iox2_reader_t::alloc();
-        deleter = iox2_reader_t::dealloc;
-    }
-    debug_assert!(!reader_struct_ptr.is_null());
+        let mut reader_struct_ptr = reader_struct_ptr;
+        fn no_op(_: *mut iox2_reader_t) {}
+        let mut deleter: fn(*mut iox2_reader_t) = no_op;
+        if reader_struct_ptr.is_null() {
+            reader_struct_ptr = iox2_reader_t::alloc();
+            deleter = iox2_reader_t::dealloc;
+        }
+        debug_assert!(!reader_struct_ptr.is_null());
 
-    let reader_builder_struct = unsafe { &mut *port_factory_handle.as_type() };
-    let service_type = reader_builder_struct.service_type;
-    let reader_builder = reader_builder_struct
-        .value
-        .as_option_mut()
-        .take()
-        .unwrap_or_else(|| {
-            panic!("Trying to use an invalid 'iox2_port_factory_reader_builder_h'!")
-        });
-    (reader_builder_struct.deleter)(reader_builder_struct);
+        let reader_builder_struct = &mut *port_factory_handle.as_type();
+        let service_type = reader_builder_struct.service_type;
+        let reader_builder = reader_builder_struct
+            .value
+            .as_option_mut()
+            .take()
+            .unwrap_or_else(|| {
+                panic!("Trying to use an invalid 'iox2_port_factory_reader_builder_h'!")
+            });
+        (reader_builder_struct.deleter)(reader_builder_struct);
 
-    match service_type {
-        iox2_service_type_e::IPC => {
-            let reader_builder = ManuallyDrop::into_inner(reader_builder.ipc);
+        match service_type {
+            iox2_service_type_e::IPC => {
+                let reader_builder = ManuallyDrop::into_inner(reader_builder.ipc);
 
-            match reader_builder.create() {
-                Ok(reader) => {
-                    (*reader_struct_ptr).init(service_type, ReaderUnion::new_ipc(reader), deleter);
+                match reader_builder.create() {
+                    Ok(reader) => {
+                        (*reader_struct_ptr).init(
+                            service_type,
+                            ReaderUnion::new_ipc(reader),
+                            deleter,
+                        );
+                    }
+                    Err(error) => {
+                        deleter(reader_struct_ptr);
+                        return error.into_c_int();
+                    }
                 }
-                Err(error) => {
-                    deleter(reader_struct_ptr);
-                    return error.into_c_int();
+            }
+            iox2_service_type_e::LOCAL => {
+                let reader_builder = ManuallyDrop::into_inner(reader_builder.local);
+
+                match reader_builder.create() {
+                    Ok(reader) => {
+                        (*reader_struct_ptr).init(
+                            service_type,
+                            ReaderUnion::new_local(reader),
+                            deleter,
+                        );
+                    }
+                    Err(error) => {
+                        deleter(reader_struct_ptr);
+                        return error.into_c_int();
+                    }
                 }
             }
         }
-        iox2_service_type_e::LOCAL => {
-            let reader_builder = ManuallyDrop::into_inner(reader_builder.local);
 
-            match reader_builder.create() {
-                Ok(reader) => {
-                    (*reader_struct_ptr).init(
-                        service_type,
-                        ReaderUnion::new_local(reader),
-                        deleter,
-                    );
-                }
-                Err(error) => {
-                    deleter(reader_struct_ptr);
-                    return error.into_c_int();
-                }
-            }
-        }
+        *reader_handle_ptr = (*reader_struct_ptr).as_handle();
+
+        IOX2_OK
     }
-
-    *reader_handle_ptr = (*reader_struct_ptr).as_handle();
-
-    IOX2_OK
 }
 // END C API

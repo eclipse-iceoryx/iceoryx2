@@ -33,22 +33,24 @@ pub unsafe extern "C" fn iox2_subscriber_details_subscriber_id(
     id_struct_ptr: *mut iox2_unique_subscriber_id_t,
     id_handle_ptr: *mut iox2_unique_subscriber_id_h,
 ) {
-    debug_assert!(!handle.is_null());
-    debug_assert!(!id_handle_ptr.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
+        debug_assert!(!id_handle_ptr.is_null());
 
-    fn no_op(_: *mut iox2_unique_subscriber_id_t) {}
-    let mut deleter: fn(*mut iox2_unique_subscriber_id_t) = no_op;
-    let mut storage_ptr = id_struct_ptr;
-    if id_struct_ptr.is_null() {
-        deleter = iox2_unique_subscriber_id_t::dealloc;
-        storage_ptr = iox2_unique_subscriber_id_t::alloc();
+        fn no_op(_: *mut iox2_unique_subscriber_id_t) {}
+        let mut deleter: fn(*mut iox2_unique_subscriber_id_t) = no_op;
+        let mut storage_ptr = id_struct_ptr;
+        if id_struct_ptr.is_null() {
+            deleter = iox2_unique_subscriber_id_t::dealloc;
+            storage_ptr = iox2_unique_subscriber_id_t::alloc();
+        }
+        debug_assert!(!storage_ptr.is_null());
+
+        let id = (*handle).subscriber_id;
+
+        (*storage_ptr).init(id, deleter);
+        *id_handle_ptr = (*storage_ptr).as_handle();
     }
-    debug_assert!(!storage_ptr.is_null());
-
-    let id = (*handle).subscriber_id;
-
-    (*storage_ptr).init(id, deleter);
-    *id_handle_ptr = (*storage_ptr).as_handle();
 }
 
 /// Returns the [`iox2_node_id_ptr`](crate::iox2_node_id_ptr), an immutable pointer to the node id.
@@ -60,9 +62,11 @@ pub unsafe extern "C" fn iox2_subscriber_details_subscriber_id(
 pub unsafe extern "C" fn iox2_subscriber_details_node_id(
     handle: iox2_subscriber_details_ptr,
 ) -> iox2_node_id_ptr {
-    debug_assert!(!handle.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
 
-    &(*handle).node_id
+        &(*handle).node_id
+    }
 }
 
 /// Returns the size of the receive buffer that stores the incoming samples.
@@ -74,7 +78,9 @@ pub unsafe extern "C" fn iox2_subscriber_details_node_id(
 pub unsafe extern "C" fn iox2_subscriber_details_buffer_size(
     handle: iox2_subscriber_details_ptr,
 ) -> c_size_t {
-    debug_assert!(!handle.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
 
-    (*handle).buffer_size as _
+        (*handle).buffer_size as _
+    }
 }

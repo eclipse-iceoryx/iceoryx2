@@ -202,19 +202,21 @@ pub unsafe extern "C" fn iox2_listener_wait_error_string(
 ///   [`iox2_port_factory_listener_builder_create`](crate::iox2_port_factory_listener_builder_create)!
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_listener_drop(listener_handle: iox2_listener_h) {
-    listener_handle.assert_non_null();
+    unsafe {
+        listener_handle.assert_non_null();
 
-    let listener = &mut *listener_handle.as_type();
+        let listener = &mut *listener_handle.as_type();
 
-    match listener.service_type {
-        iox2_service_type_e::IPC => {
-            ManuallyDrop::drop(&mut listener.value.as_mut().ipc);
+        match listener.service_type {
+            iox2_service_type_e::IPC => {
+                ManuallyDrop::drop(&mut listener.value.as_mut().ipc);
+            }
+            iox2_service_type_e::LOCAL => {
+                ManuallyDrop::drop(&mut listener.value.as_mut().local);
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            ManuallyDrop::drop(&mut listener.value.as_mut().local);
-        }
+        (listener.deleter)(listener);
     }
-    (listener.deleter)(listener);
 }
 
 /// Returns the underlying non-owning file descriptor of the [`iox2_listener_h`] if the
@@ -231,23 +233,25 @@ pub unsafe extern "C" fn iox2_listener_drop(listener_handle: iox2_listener_h) {
 pub unsafe extern "C" fn iox2_listener_get_file_descriptor(
     listener_handle: iox2_listener_h_ref,
 ) -> iox2_file_descriptor_ptr {
-    listener_handle.assert_non_null();
+    unsafe {
+        listener_handle.assert_non_null();
 
-    let listener = &mut *listener_handle.as_type();
+        let listener = &mut *listener_handle.as_type();
 
-    match listener.service_type {
-        iox2_service_type_e::IPC => {
-            let hopper = AcquireFileDescriptorHopper::new(&*listener.value.as_ref().ipc);
-            match hopper.acquire_file_descriptor() {
-                Some(fd) => (fd as *const FileDescriptor).cast(),
-                None => core::ptr::null::<CFileDescriptor>(),
+        match listener.service_type {
+            iox2_service_type_e::IPC => {
+                let hopper = AcquireFileDescriptorHopper::new(&*listener.value.as_ref().ipc);
+                match hopper.acquire_file_descriptor() {
+                    Some(fd) => (fd as *const FileDescriptor).cast(),
+                    None => core::ptr::null::<CFileDescriptor>(),
+                }
             }
-        }
-        iox2_service_type_e::LOCAL => {
-            let hopper = AcquireFileDescriptorHopper::new(&*listener.value.as_ref().local);
-            match hopper.acquire_file_descriptor() {
-                Some(fd) => (fd as *const FileDescriptor).cast(),
-                None => core::ptr::null::<CFileDescriptor>(),
+            iox2_service_type_e::LOCAL => {
+                let hopper = AcquireFileDescriptorHopper::new(&*listener.value.as_ref().local);
+                match hopper.acquire_file_descriptor() {
+                    Some(fd) => (fd as *const FileDescriptor).cast(),
+                    None => core::ptr::null::<CFileDescriptor>(),
+                }
             }
         }
     }
@@ -273,22 +277,24 @@ pub unsafe extern "C" fn iox2_listener_try_wait_all(
     callback: iox2_listener_wait_all_callback,
     callback_ctx: iox2_callback_context,
 ) -> c_int {
-    listener_handle.assert_non_null();
+    unsafe {
+        listener_handle.assert_non_null();
 
-    let listener = &mut *listener_handle.as_type();
+        let listener = &mut *listener_handle.as_type();
 
-    let wait_result = match listener.service_type {
-        iox2_service_type_e::IPC => listener.value.as_mut().ipc.try_wait_all(|event_id| {
-            callback(&event_id.into(), callback_ctx);
-        }),
-        iox2_service_type_e::LOCAL => listener.value.as_mut().local.try_wait_all(|event_id| {
-            callback(&event_id.into(), callback_ctx);
-        }),
-    };
+        let wait_result = match listener.service_type {
+            iox2_service_type_e::IPC => listener.value.as_mut().ipc.try_wait_all(|event_id| {
+                callback(&event_id.into(), callback_ctx);
+            }),
+            iox2_service_type_e::LOCAL => listener.value.as_mut().local.try_wait_all(|event_id| {
+                callback(&event_id.into(), callback_ctx);
+            }),
+        };
 
-    match wait_result {
-        Ok(()) => IOX2_OK,
-        Err(e) => e.into_c_int(),
+        match wait_result {
+            Ok(()) => IOX2_OK,
+            Err(e) => e.into_c_int(),
+        }
     }
 }
 
@@ -315,29 +321,31 @@ pub unsafe extern "C" fn iox2_listener_timed_wait_all(
     seconds: u64,
     nanoseconds: u32,
 ) -> c_int {
-    listener_handle.assert_non_null();
+    unsafe {
+        listener_handle.assert_non_null();
 
-    let listener = &mut *listener_handle.as_type();
-    let timeout = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as u64);
+        let listener = &mut *listener_handle.as_type();
+        let timeout = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as u64);
 
-    let wait_result = match listener.service_type {
-        iox2_service_type_e::IPC => listener.value.as_mut().ipc.timed_wait_all(
-            |event_id| {
-                callback(&event_id.into(), callback_ctx);
-            },
-            timeout,
-        ),
-        iox2_service_type_e::LOCAL => listener.value.as_mut().local.timed_wait_all(
-            |event_id| {
-                callback(&event_id.into(), callback_ctx);
-            },
-            timeout,
-        ),
-    };
+        let wait_result = match listener.service_type {
+            iox2_service_type_e::IPC => listener.value.as_mut().ipc.timed_wait_all(
+                |event_id| {
+                    callback(&event_id.into(), callback_ctx);
+                },
+                timeout,
+            ),
+            iox2_service_type_e::LOCAL => listener.value.as_mut().local.timed_wait_all(
+                |event_id| {
+                    callback(&event_id.into(), callback_ctx);
+                },
+                timeout,
+            ),
+        };
 
-    match wait_result {
-        Ok(()) => IOX2_OK,
-        Err(e) => e.into_c_int(),
+        match wait_result {
+            Ok(()) => IOX2_OK,
+            Err(e) => e.into_c_int(),
+        }
     }
 }
 
@@ -360,27 +368,29 @@ pub unsafe extern "C" fn iox2_listener_id(
     id_struct_ptr: *mut iox2_unique_listener_id_t,
     id_handle_ptr: *mut iox2_unique_listener_id_h,
 ) {
-    listener_handle.assert_non_null();
-    debug_assert!(!id_handle_ptr.is_null());
+    unsafe {
+        listener_handle.assert_non_null();
+        debug_assert!(!id_handle_ptr.is_null());
 
-    fn no_op(_: *mut iox2_unique_listener_id_t) {}
-    let mut deleter: fn(*mut iox2_unique_listener_id_t) = no_op;
-    let mut storage_ptr = id_struct_ptr;
-    if id_struct_ptr.is_null() {
-        deleter = iox2_unique_listener_id_t::dealloc;
-        storage_ptr = iox2_unique_listener_id_t::alloc();
+        fn no_op(_: *mut iox2_unique_listener_id_t) {}
+        let mut deleter: fn(*mut iox2_unique_listener_id_t) = no_op;
+        let mut storage_ptr = id_struct_ptr;
+        if id_struct_ptr.is_null() {
+            deleter = iox2_unique_listener_id_t::dealloc;
+            storage_ptr = iox2_unique_listener_id_t::alloc();
+        }
+        debug_assert!(!storage_ptr.is_null());
+
+        let listener = &mut *listener_handle.as_type();
+
+        let id = match listener.service_type {
+            iox2_service_type_e::IPC => listener.value.as_mut().ipc.id(),
+            iox2_service_type_e::LOCAL => listener.value.as_mut().local.id(),
+        };
+
+        (*storage_ptr).init(id, deleter);
+        *id_handle_ptr = (*storage_ptr).as_handle();
     }
-    debug_assert!(!storage_ptr.is_null());
-
-    let listener = &mut *listener_handle.as_type();
-
-    let id = match listener.service_type {
-        iox2_service_type_e::IPC => listener.value.as_mut().ipc.id(),
-        iox2_service_type_e::LOCAL => listener.value.as_mut().local.id(),
-    };
-
-    (*storage_ptr).init(id, deleter);
-    *id_handle_ptr = (*storage_ptr).as_handle();
 }
 
 /// Returns the deadline of the listener's service. If there is a deadline set, the provided
@@ -398,23 +408,25 @@ pub unsafe extern "C" fn iox2_listener_deadline(
     seconds: *mut u64,
     nanoseconds: *mut u32,
 ) -> bool {
-    listener_handle.assert_non_null();
-    debug_assert!(!seconds.is_null());
-    debug_assert!(!nanoseconds.is_null());
+    unsafe {
+        listener_handle.assert_non_null();
+        debug_assert!(!seconds.is_null());
+        debug_assert!(!nanoseconds.is_null());
 
-    let listener = &mut *listener_handle.as_type();
+        let listener = &mut *listener_handle.as_type();
 
-    let deadline = match listener.service_type {
-        iox2_service_type_e::IPC => listener.value.as_mut().ipc.deadline(),
-        iox2_service_type_e::LOCAL => listener.value.as_mut().local.deadline(),
-    };
+        let deadline = match listener.service_type {
+            iox2_service_type_e::IPC => listener.value.as_mut().ipc.deadline(),
+            iox2_service_type_e::LOCAL => listener.value.as_mut().local.deadline(),
+        };
 
-    deadline
-        .map(|v| {
-            *seconds = v.as_secs();
-            *nanoseconds = v.subsec_nanos();
-        })
-        .is_some()
+        deadline
+            .map(|v| {
+                *seconds = v.as_secs();
+                *nanoseconds = v.subsec_nanos();
+            })
+            .is_some()
+    }
 }
 
 /// Blocks the listener until at least one event was received and then calls the callback for
@@ -437,22 +449,26 @@ pub unsafe extern "C" fn iox2_listener_blocking_wait_all(
     callback: iox2_listener_wait_all_callback,
     callback_ctx: iox2_callback_context,
 ) -> c_int {
-    listener_handle.assert_non_null();
+    unsafe {
+        listener_handle.assert_non_null();
 
-    let listener = &mut *listener_handle.as_type();
+        let listener = &mut *listener_handle.as_type();
 
-    let wait_result = match listener.service_type {
-        iox2_service_type_e::IPC => listener.value.as_mut().ipc.blocking_wait_all(|event_id| {
-            callback(&event_id.into(), callback_ctx);
-        }),
-        iox2_service_type_e::LOCAL => listener.value.as_mut().local.blocking_wait_all(|event_id| {
-            callback(&event_id.into(), callback_ctx);
-        }),
-    };
+        let wait_result = match listener.service_type {
+            iox2_service_type_e::IPC => listener.value.as_mut().ipc.blocking_wait_all(|event_id| {
+                callback(&event_id.into(), callback_ctx);
+            }),
+            iox2_service_type_e::LOCAL => {
+                listener.value.as_mut().local.blocking_wait_all(|event_id| {
+                    callback(&event_id.into(), callback_ctx);
+                })
+            }
+        };
 
-    match wait_result {
-        Ok(()) => IOX2_OK,
-        Err(e) => e.into_c_int(),
+        match wait_result {
+            Ok(()) => IOX2_OK,
+            Err(e) => e.into_c_int(),
+        }
     }
 }
 
@@ -476,31 +492,33 @@ pub unsafe extern "C" fn iox2_listener_try_wait_one(
     event_id: *mut iox2_event_id_t,
     has_received_one: *mut bool,
 ) -> c_int {
-    listener_handle.assert_non_null();
-    debug_assert!(!event_id.is_null());
-    debug_assert!(!has_received_one.is_null());
+    unsafe {
+        listener_handle.assert_non_null();
+        debug_assert!(!event_id.is_null());
+        debug_assert!(!has_received_one.is_null());
 
-    let listener = &mut *listener_handle.as_type();
+        let listener = &mut *listener_handle.as_type();
 
-    let wait_result = match listener.service_type {
-        iox2_service_type_e::IPC => listener.value.as_mut().ipc.try_wait_one(),
-        iox2_service_type_e::LOCAL => listener.value.as_mut().local.try_wait_one(),
-    };
+        let wait_result = match listener.service_type {
+            iox2_service_type_e::IPC => listener.value.as_mut().ipc.try_wait_one(),
+            iox2_service_type_e::LOCAL => listener.value.as_mut().local.try_wait_one(),
+        };
 
-    *has_received_one = false;
+        *has_received_one = false;
 
-    match wait_result {
-        Ok(Some(e)) => {
-            *event_id = e.into();
-            *has_received_one = true;
+        match wait_result {
+            Ok(Some(e)) => {
+                *event_id = e.into();
+                *has_received_one = true;
+            }
+            Ok(None) => (),
+            Err(error) => {
+                return error.into_c_int();
+            }
         }
-        Ok(None) => (),
-        Err(error) => {
-            return error.into_c_int();
-        }
+
+        IOX2_OK
     }
-
-    IOX2_OK
 }
 
 /// Blocks on the listener until an event id was received or the provided timeout has passed.
@@ -528,32 +546,34 @@ pub unsafe extern "C" fn iox2_listener_timed_wait_one(
     seconds: u64,
     nanoseconds: u32,
 ) -> c_int {
-    listener_handle.assert_non_null();
-    debug_assert!(!event_id.is_null());
-    debug_assert!(!has_received_one.is_null());
+    unsafe {
+        listener_handle.assert_non_null();
+        debug_assert!(!event_id.is_null());
+        debug_assert!(!has_received_one.is_null());
 
-    let listener = &mut *listener_handle.as_type();
-    *has_received_one = false;
+        let listener = &mut *listener_handle.as_type();
+        *has_received_one = false;
 
-    let timeout = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as u64);
+        let timeout = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as u64);
 
-    let wait_result = match listener.service_type {
-        iox2_service_type_e::IPC => listener.value.as_mut().ipc.timed_wait_one(timeout),
-        iox2_service_type_e::LOCAL => listener.value.as_mut().local.timed_wait_one(timeout),
-    };
+        let wait_result = match listener.service_type {
+            iox2_service_type_e::IPC => listener.value.as_mut().ipc.timed_wait_one(timeout),
+            iox2_service_type_e::LOCAL => listener.value.as_mut().local.timed_wait_one(timeout),
+        };
 
-    match wait_result {
-        Ok(Some(e)) => {
-            *event_id = e.into();
-            *has_received_one = true;
+        match wait_result {
+            Ok(Some(e)) => {
+                *event_id = e.into();
+                *has_received_one = true;
+            }
+            Ok(None) => (),
+            Err(error) => {
+                return error.into_c_int();
+            }
         }
-        Ok(None) => (),
-        Err(error) => {
-            return error.into_c_int();
-        }
+
+        IOX2_OK
     }
-
-    IOX2_OK
 }
 
 /// Blocks on the listener until an event id was received. When no event id was received and the
@@ -576,30 +596,32 @@ pub unsafe extern "C" fn iox2_listener_blocking_wait_one(
     event_id: *mut iox2_event_id_t,
     has_received_one: *mut bool,
 ) -> c_int {
-    listener_handle.assert_non_null();
-    debug_assert!(!event_id.is_null());
-    debug_assert!(!has_received_one.is_null());
+    unsafe {
+        listener_handle.assert_non_null();
+        debug_assert!(!event_id.is_null());
+        debug_assert!(!has_received_one.is_null());
 
-    let listener = &mut *listener_handle.as_type();
-    *has_received_one = false;
+        let listener = &mut *listener_handle.as_type();
+        *has_received_one = false;
 
-    let wait_result = match listener.service_type {
-        iox2_service_type_e::IPC => listener.value.as_mut().ipc.blocking_wait_one(),
-        iox2_service_type_e::LOCAL => listener.value.as_mut().local.blocking_wait_one(),
-    };
+        let wait_result = match listener.service_type {
+            iox2_service_type_e::IPC => listener.value.as_mut().ipc.blocking_wait_one(),
+            iox2_service_type_e::LOCAL => listener.value.as_mut().local.blocking_wait_one(),
+        };
 
-    match wait_result {
-        Ok(Some(e)) => {
-            *event_id = e.into();
-            *has_received_one = true;
+        match wait_result {
+            Ok(Some(e)) => {
+                *event_id = e.into();
+                *has_received_one = true;
+            }
+            Ok(None) => (),
+            Err(error) => {
+                return error.into_c_int();
+            }
         }
-        Ok(None) => (),
-        Err(error) => {
-            return error.into_c_int();
-        }
+
+        IOX2_OK
     }
-
-    IOX2_OK
 }
 
 // END C API

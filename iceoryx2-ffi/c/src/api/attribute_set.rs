@@ -193,29 +193,27 @@ pub unsafe extern "C" fn iox2_attribute_set_new_clone(
     source_ptr: iox2_attribute_set_ptr,
     handle_ptr: *mut iox2_attribute_set_h,
 ) {
-    debug_assert!(!handle_ptr.is_null());
-    debug_assert!(!source_ptr.is_null());
-
-    *handle_ptr = core::ptr::null_mut();
-
-    let mut struct_ptr = struct_ptr;
-    fn no_op(_: *mut iox2_attribute_set_t) {}
-    let mut deleter: fn(*mut iox2_attribute_set_t) = no_op;
-    if struct_ptr.is_null() {
-        struct_ptr = iox2_attribute_set_t::alloc();
-        deleter = iox2_attribute_set_t::dealloc;
-    }
-    debug_assert!(!struct_ptr.is_null());
-
     unsafe {
+        debug_assert!(!handle_ptr.is_null());
+        debug_assert!(!source_ptr.is_null());
+
+        *handle_ptr = core::ptr::null_mut();
+
+        let mut struct_ptr = struct_ptr;
+        fn no_op(_: *mut iox2_attribute_set_t) {}
+        let mut deleter: fn(*mut iox2_attribute_set_t) = no_op;
+        if struct_ptr.is_null() {
+            struct_ptr = iox2_attribute_set_t::alloc();
+            deleter = iox2_attribute_set_t::dealloc;
+        }
+        debug_assert!(!struct_ptr.is_null());
+
         (*struct_ptr).deleter = deleter;
-    }
 
-    unsafe {
         (*struct_ptr).value.init((*source_ptr).clone());
-    }
 
-    *handle_ptr = (*struct_ptr).as_handle();
+        *handle_ptr = (*struct_ptr).as_handle();
+    }
 }
 
 /// This function needs to be called to destroy the attribute set!
@@ -227,12 +225,14 @@ pub unsafe extern "C" fn iox2_attribute_set_new_clone(
 /// * The corresponding [`iox2_attribute_set_t`] can be re-used with a call to [`iox2_attribute_set_new_clone()`]!
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_set_drop(handle: iox2_attribute_set_h) {
-    debug_assert!(!handle.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
 
-    let attribute_set = &mut *handle.as_type();
+        let attribute_set = &mut *handle.as_type();
 
-    core::ptr::drop_in_place(attribute_set.value.as_option_mut());
-    (attribute_set.deleter)(attribute_set);
+        core::ptr::drop_in_place(attribute_set.value.as_option_mut());
+        (attribute_set.deleter)(attribute_set);
+    }
 }
 
 /// This function casts a [`iox2_attribute_set_h`] into a [`iox2_attribute_set_ptr`]
@@ -248,9 +248,11 @@ pub unsafe extern "C" fn iox2_attribute_set_drop(handle: iox2_attribute_set_h) {
 pub unsafe extern "C" fn iox2_cast_attribute_set_ptr(
     handle: iox2_attribute_set_h,
 ) -> iox2_attribute_set_ptr {
-    debug_assert!(!handle.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
 
-    (*handle.as_type()).value.as_ref()
+        (*handle.as_type()).value.as_ref()
+    }
 }
 
 /// Returns the number of attributes in the attribute set.
@@ -262,9 +264,11 @@ pub unsafe extern "C" fn iox2_cast_attribute_set_ptr(
 pub unsafe extern "C" fn iox2_attribute_set_number_of_attributes(
     handle: iox2_attribute_set_ptr,
 ) -> usize {
-    debug_assert!(!handle.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
 
-    (*handle).iter().len()
+        (*handle).iter().len()
+    }
 }
 
 /// Returns a [`iox2_attribute_h_ref`] to the attribute stored at the provided index.
@@ -278,10 +282,12 @@ pub unsafe extern "C" fn iox2_attribute_set_index(
     handle: iox2_attribute_set_ptr,
     index: usize,
 ) -> iox2_attribute_h_ref {
-    debug_assert!(!handle.is_null());
-    debug_assert!(index < iox2_attribute_set_number_of_attributes(handle));
+    unsafe {
+        debug_assert!(!handle.is_null());
+        debug_assert!(index < iox2_attribute_set_number_of_attributes(handle));
 
-    (&(&(*handle))[index] as *const Attribute).cast()
+        (&(&(*handle))[index] as *const Attribute).cast()
+    }
 }
 
 /// Returns the number of values stored under a specific key. If the key does not exist it
@@ -296,16 +302,18 @@ pub unsafe extern "C" fn iox2_attribute_set_number_of_key_values(
     handle: iox2_attribute_set_ptr,
     key: *const c_char,
 ) -> usize {
-    debug_assert!(!handle.is_null());
-    debug_assert!(!key.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
+        debug_assert!(!key.is_null());
 
-    let key = AttributeKey::from_c_str(key);
-    if key.is_err() {
-        return 0;
+        let key = AttributeKey::from_c_str(key);
+        if key.is_err() {
+            return 0;
+        }
+        let key = key.unwrap();
+
+        (*handle).number_of_key_values(&key)
     }
-    let key = key.unwrap();
-
-    (*handle).number_of_key_values(&key)
 }
 
 /// Returns a value of a key at a specific index. The index enumerates the values of the key
@@ -328,26 +336,28 @@ pub unsafe extern "C" fn iox2_attribute_set_key_value(
     buffer_len: usize,
     has_value: *mut bool,
 ) {
-    debug_assert!(!handle.is_null());
-    debug_assert!(!key.is_null());
-    debug_assert!(!buffer.is_null());
-    debug_assert!(0 < buffer_len);
+    unsafe {
+        debug_assert!(!handle.is_null());
+        debug_assert!(!key.is_null());
+        debug_assert!(!buffer.is_null());
+        debug_assert!(0 < buffer_len);
 
-    *has_value = false;
-    let key = AttributeKey::from_c_str(key);
-    if key.is_err() {
-        return;
-    }
-    let key = key.unwrap();
+        *has_value = false;
+        let key = AttributeKey::from_c_str(key);
+        if key.is_err() {
+            return;
+        }
+        let key = key.unwrap();
 
-    if let Some(v) = (*handle).key_value(&key, index) {
-        if let Ok(value) = CString::new(v.as_bytes()) {
-            core::ptr::copy_nonoverlapping(
-                value.as_ptr(),
-                buffer,
-                buffer_len.min(value.count_bytes() + 1 /* null terminator */),
-            );
-            *has_value = true;
+        if let Some(v) = (*handle).key_value(&key, index) {
+            if let Ok(value) = CString::new(v.as_bytes()) {
+                core::ptr::copy_nonoverlapping(
+                    value.as_ptr(),
+                    buffer,
+                    buffer_len.min(value.count_bytes() + 1 /* null terminator */),
+                );
+                *has_value = true;
+            }
         }
     }
 }
@@ -366,20 +376,22 @@ pub unsafe extern "C" fn iox2_attribute_set_iter_key_values(
     callback: iox2_attribute_set_get_callback,
     callback_ctx: iox2_callback_context,
 ) {
-    debug_assert!(!handle.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
 
-    let key = AttributeKey::from_c_str(key);
-    if key.is_err() {
-        return;
-    }
-    let key = key.unwrap();
-
-    (*handle).iter_key_values(&key, |value| {
-        if let Ok(value) = CString::new(value.as_bytes()) {
-            callback(value.as_ptr(), callback_ctx).into()
-        } else {
-            CallbackProgression::Continue
+        let key = AttributeKey::from_c_str(key);
+        if key.is_err() {
+            return;
         }
-    });
+        let key = key.unwrap();
+
+        (*handle).iter_key_values(&key, |value| {
+            if let Ok(value) = CString::new(value.as_bytes()) {
+                callback(value.as_ptr(), callback_ctx).into()
+            } else {
+                CallbackProgression::Continue
+            }
+        });
+    }
 }
 // END C API

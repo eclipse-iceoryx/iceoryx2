@@ -23,7 +23,7 @@ pub struct iox2_attribute_h_t;
 
 impl iox2_attribute_h_t {
     pub(crate) unsafe fn underlying_type(&self) -> &Attribute {
-        &*(self as *const iox2_attribute_h_t).cast()
+        unsafe { &*(self as *const iox2_attribute_h_t).cast() }
     }
 }
 
@@ -39,10 +39,12 @@ pub type iox2_attribute_h_ref = *const iox2_attribute_h_t;
 /// * The `handle` must be a valid handle.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_key_len(handle: iox2_attribute_h_ref) -> usize {
-    debug_assert!(!handle.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
 
-    let attribute = (*handle).underlying_type();
-    attribute.key().len()
+        let attribute = (*handle).underlying_type();
+        attribute.key().len()
+    }
 }
 
 /// Copies the keys value into the provided buffer.
@@ -58,16 +60,18 @@ pub unsafe extern "C" fn iox2_attribute_key(
     buffer: *mut c_char,
     buffer_len: usize,
 ) {
-    debug_assert!(!handle.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
 
-    let attribute = (*handle).underlying_type();
-    if let Ok(key) = CString::new(attribute.key().as_bytes()) {
-        let copied_key_length = buffer_len.min(key.as_bytes_with_nul().len());
-        core::ptr::copy_nonoverlapping(
-            key.as_bytes_with_nul().as_ptr(),
-            buffer.cast(),
-            copied_key_length,
-        );
+        let attribute = (*handle).underlying_type();
+        if let Ok(key) = CString::new(attribute.key().as_bytes()) {
+            let copied_key_length = buffer_len.min(key.as_bytes_with_nul().len());
+            core::ptr::copy_nonoverlapping(
+                key.as_bytes_with_nul().as_ptr(),
+                buffer.cast(),
+                copied_key_length,
+            );
+        }
     }
 }
 
@@ -78,10 +82,12 @@ pub unsafe extern "C" fn iox2_attribute_key(
 /// * The `handle` must be a valid handle.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_value_len(handle: iox2_attribute_h_ref) -> usize {
-    debug_assert!(!handle.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
 
-    let attribute = (*handle).underlying_type();
-    attribute.value().len()
+        let attribute = (*handle).underlying_type();
+        attribute.value().len()
+    }
 }
 
 /// Copies the values value into the provided buffer.
@@ -97,16 +103,18 @@ pub unsafe extern "C" fn iox2_attribute_value(
     buffer: *mut c_char,
     buffer_len: usize,
 ) {
-    debug_assert!(!handle.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
 
-    let attribute = (*handle).underlying_type();
-    if let Ok(value) = CString::new(attribute.value().as_bytes()) {
-        let copied_value_length = buffer_len.min(value.as_bytes_with_nul().len());
-        core::ptr::copy_nonoverlapping(
-            value.as_bytes_with_nul().as_ptr(),
-            buffer.cast(),
-            copied_value_length,
-        );
+        let attribute = (*handle).underlying_type();
+        if let Ok(value) = CString::new(attribute.value().as_bytes()) {
+            let copied_value_length = buffer_len.min(value.as_bytes_with_nul().len());
+            core::ptr::copy_nonoverlapping(
+                value.as_bytes_with_nul().as_ptr(),
+                buffer.cast(),
+                copied_value_length,
+            );
+        }
     }
 }
 // END C API

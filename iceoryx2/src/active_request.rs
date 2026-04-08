@@ -618,17 +618,19 @@ impl<Service: crate::service::Service>
         ResponseMutUninit<Service, [MaybeUninit<CustomPayloadMarker>], CustomHeaderMarker>,
         LoanError,
     > {
-        let shared_state = self.shared_state.lock();
-        // TypeVariant::Dynamic == slice and only here it makes sense to loan more than one element
-        debug_assert!(
-            slice_len == 1
-                || shared_state.response_sender.payload_type_variant() == TypeVariant::Dynamic
-        );
+        unsafe {
+            let shared_state = self.shared_state.lock();
+            // TypeVariant::Dynamic == slice and only here it makes sense to loan more than one element
+            debug_assert!(
+                slice_len == 1
+                    || shared_state.response_sender.payload_type_variant() == TypeVariant::Dynamic
+            );
 
-        self.loan_slice_uninit_impl(
-            slice_len,
-            shared_state.response_sender.payload_size() * slice_len,
-        )
+            self.loan_slice_uninit_impl(
+                slice_len,
+                shared_state.response_sender.payload_size() * slice_len,
+            )
+        }
     }
 }
 ////////////////////////

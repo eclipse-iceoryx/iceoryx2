@@ -273,39 +273,43 @@ impl HeadDetails {
 
 impl RelocatableContainer for UniqueIndexSet {
     unsafe fn new_uninit(capacity: usize) -> Self {
-        debug_assert!(
-            capacity < 2usize.pow(24) - 1,
-            "The provided capacity exceeds the maximum supported capacity of the UniqueIndexSet"
-        );
+        unsafe {
+            debug_assert!(
+                capacity < 2usize.pow(24) - 1,
+                "The provided capacity exceeds the maximum supported capacity of the UniqueIndexSet"
+            );
 
-        Self {
-            data_ptr: RelocatablePointer::new_uninit(),
-            capacity: capacity as u32,
-            head: AtomicU64::new(0),
-            is_memory_initialized: AtomicBool::new(false),
+            Self {
+                data_ptr: RelocatablePointer::new_uninit(),
+                capacity: capacity as u32,
+                head: AtomicU64::new(0),
+                is_memory_initialized: AtomicBool::new(false),
+            }
         }
     }
 
     unsafe fn init<T: BaseAllocator>(&mut self, allocator: &T) -> Result<(), AllocationError> {
-        if self.is_memory_initialized.load(Ordering::Relaxed) {
-            fatal_panic!(from self, "Memory already initialized. Initializing it twice may lead to undefined behavior.");
+        unsafe {
+            if self.is_memory_initialized.load(Ordering::Relaxed) {
+                fatal_panic!(from self, "Memory already initialized. Initializing it twice may lead to undefined behavior.");
+            }
+
+            self.data_ptr.init(fail!(from self, when allocator
+                .allocate(Layout::from_size_align_unchecked(
+                    core::mem::size_of::<u32>() * (self.capacity + 1) as usize,
+                    core::mem::align_of::<u32>())),
+                "Failed to initialize since the allocation of the data memory failed."
+            ));
+
+            for i in 0..self.capacity + 1 {
+                (self.data_ptr.as_ptr() as *mut UnsafeCell<u32>)
+                    .offset(i as isize)
+                    .write(UnsafeCell::new(i + 1));
+            }
+
+            self.is_memory_initialized.store(true, Ordering::Relaxed);
+            Ok(())
         }
-
-        self.data_ptr.init(fail!(from self, when allocator
-            .allocate(Layout::from_size_align_unchecked(
-                core::mem::size_of::<u32>() * (self.capacity + 1) as usize,
-                core::mem::align_of::<u32>())),
-            "Failed to initialize since the allocation of the data memory failed."
-        ));
-
-        for i in 0..self.capacity + 1 {
-            (self.data_ptr.as_ptr() as *mut UnsafeCell<u32>)
-                .offset(i as isize)
-                .write(UnsafeCell::new(i + 1));
-        }
-
-        self.is_memory_initialized.store(true, Ordering::Relaxed);
-        Ok(())
     }
 
     fn memory_size(capacity: usize) -> usize {
@@ -594,7 +598,7 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
     ///    [`FixedSizeUniqueIndexSet::release_raw_index()`]
     ///
     pub unsafe fn acquire_raw_index(&self) -> Result<u32, UniqueIndexSetAcquireFailure> {
-        self.state.acquire_raw_index()
+        unsafe { self.state.acquire_raw_index() }
     }
 
     /// See [`UniqueIndexSet::release_raw_index()`]
@@ -606,7 +610,7 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
     ///  * The index should not be released twice
     ///
     pub unsafe fn release_raw_index(&self, index: u32, mode: ReleaseMode) -> ReleaseState {
-        self.state.release_raw_index(index, mode)
+        unsafe { self.state.release_raw_index(index, mode) }
     }
 
     /// Returns the current len.

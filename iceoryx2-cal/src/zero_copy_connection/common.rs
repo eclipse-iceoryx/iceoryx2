@@ -153,7 +153,7 @@ pub mod details {
         }
 
         unsafe fn init<T: BaseAllocator>(&mut self, allocator: &T) -> Result<(), AllocationError> {
-            self.used_chunk_list.init(allocator)
+            unsafe { self.used_chunk_list.init(allocator) }
         }
     }
 
@@ -986,9 +986,11 @@ pub mod details {
             name: &FileName,
             cfg: &Self::Configuration,
         ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
-            Ok(fail!(from "ZeroCopyConnection::remove_cfg()",
+            unsafe {
+                Ok(fail!(from "ZeroCopyConnection::remove_cfg()",
                     when Storage::remove_cfg(name, &cfg.dynamic_storage_config),
                     "Failed to remove ZeroCopyConnection \"{}\".", name))
+            }
         }
 
         fn remove_path_hint(_value: &Path) -> Result<(), NamedConceptPathHintRemoveError> {

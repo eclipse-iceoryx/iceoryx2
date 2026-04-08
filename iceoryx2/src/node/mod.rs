@@ -965,7 +965,7 @@ impl<Service: service::Service> Node<Service> {
     }
 
     pub(crate) unsafe fn staged_death(&mut self) -> <Service::Monitoring as Monitoring>::Token {
-        (*self.shared.monitoring_token.get()).take().unwrap()
+        unsafe { (*self.shared.monitoring_token.get()).take().unwrap() }
     }
 
     fn handle_termination_request(&self, error_msg: &str) -> Result<(), NodeWaitFailure> {

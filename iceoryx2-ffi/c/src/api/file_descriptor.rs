@@ -119,9 +119,11 @@ impl HandleToType for iox2_file_descriptor_h_ref {
 pub unsafe extern "C" fn iox2_cast_file_descriptor_ptr(
     handle: iox2_file_descriptor_h,
 ) -> iox2_file_descriptor_ptr {
-    debug_assert!(!handle.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
 
-    (*handle.as_type()).value.as_ref()
+        (*handle.as_type()).value.as_ref()
+    }
 }
 
 /// Releases a [`iox2_file_descriptor_h`].
@@ -131,11 +133,13 @@ pub unsafe extern "C" fn iox2_cast_file_descriptor_ptr(
 /// * `handle` must be valid and acquired with [`iox2_file_descriptor_new()`].
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_file_descriptor_drop(handle: iox2_file_descriptor_h) {
-    handle.assert_non_null();
+    unsafe {
+        handle.assert_non_null();
 
-    let file_descriptor = &mut *handle.as_type();
-    core::ptr::drop_in_place(file_descriptor.value.as_option_mut());
-    (file_descriptor.deleter)(file_descriptor);
+        let file_descriptor = &mut *handle.as_type();
+        core::ptr::drop_in_place(file_descriptor.value.as_option_mut());
+        (file_descriptor.deleter)(file_descriptor);
+    }
 }
 
 /// Returns the underlying native file descriptor value. When the
@@ -149,8 +153,10 @@ pub unsafe extern "C" fn iox2_file_descriptor_drop(handle: iox2_file_descriptor_
 pub unsafe extern "C" fn iox2_file_descriptor_native_handle(
     handle: iox2_file_descriptor_ptr,
 ) -> i32 {
-    debug_assert!(!handle.is_null());
-    (*handle).file_descriptor().native_handle()
+    unsafe {
+        debug_assert!(!handle.is_null());
+        (*handle).file_descriptor().native_handle()
+    }
 }
 
 /// Creates a new [`iox2_file_descriptor_t`].
@@ -172,24 +178,26 @@ pub unsafe extern "C" fn iox2_file_descriptor_new(
     struct_ptr: *mut iox2_file_descriptor_t,
     handle_ptr: *mut iox2_file_descriptor_h,
 ) -> bool {
-    debug_assert!(!handle_ptr.is_null());
+    unsafe {
+        debug_assert!(!handle_ptr.is_null());
 
-    if FileDescriptor::non_owning_new(value).is_none() {
-        return false;
+        if FileDescriptor::non_owning_new(value).is_none() {
+            return false;
+        }
+
+        let mut struct_ptr = struct_ptr;
+        fn no_op(_: *mut iox2_file_descriptor_t) {}
+        let mut deleter: fn(*mut iox2_file_descriptor_t) = no_op;
+        if struct_ptr.is_null() {
+            struct_ptr = iox2_file_descriptor_t::alloc();
+            deleter = iox2_file_descriptor_t::dealloc;
+        }
+        debug_assert!(!struct_ptr.is_null());
+
+        (*struct_ptr).init(CFileDescriptor { value, is_owned }, deleter);
+        *handle_ptr = (*struct_ptr).as_handle();
+
+        true
     }
-
-    let mut struct_ptr = struct_ptr;
-    fn no_op(_: *mut iox2_file_descriptor_t) {}
-    let mut deleter: fn(*mut iox2_file_descriptor_t) = no_op;
-    if struct_ptr.is_null() {
-        struct_ptr = iox2_file_descriptor_t::alloc();
-        deleter = iox2_file_descriptor_t::dealloc;
-    }
-    debug_assert!(!struct_ptr.is_null());
-
-    (*struct_ptr).init(CFileDescriptor { value, is_owned }, deleter);
-    *handle_ptr = (*struct_ptr).as_handle();
-
-    true
 }
 // END C API

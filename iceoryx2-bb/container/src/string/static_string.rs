@@ -283,14 +283,16 @@ impl<const CAPACITY: usize> StaticString<CAPACITY> {
     ///  * all unicode code points must be smaller 128 and not 0.
     ///
     pub const unsafe fn from_bytes_unchecked_restricted(bytes: &[u8], len: usize) -> Self {
-        debug_assert!(bytes.len() <= CAPACITY);
-        debug_assert!(len <= bytes.len());
+        unsafe {
+            debug_assert!(bytes.len() <= CAPACITY);
+            debug_assert!(len <= bytes.len());
 
-        let mut new_self = Self::new();
-        core::ptr::copy_nonoverlapping(bytes.as_ptr(), new_self.data.as_mut_ptr().cast(), len);
-        core::ptr::write::<u8>(new_self.data.as_mut_ptr().add(len).cast(), 0);
-        new_self.len = len as u64;
-        new_self
+            let mut new_self = Self::new();
+            core::ptr::copy_nonoverlapping(bytes.as_ptr(), new_self.data.as_mut_ptr().cast(), len);
+            core::ptr::write::<u8>(new_self.data.as_mut_ptr().add(len).cast(), 0);
+            new_self.len = len as u64;
+            new_self
+        }
     }
 
     /// Creates a new [`StaticString`]. The user has to ensure that the string can hold the
@@ -302,9 +304,11 @@ impl<const CAPACITY: usize> StaticString<CAPACITY> {
     ///  * all unicode code points must be smaller 128 and not 0.
     ///
     pub const unsafe fn from_bytes_unchecked(bytes: &[u8]) -> Self {
-        debug_assert!(bytes.len() <= CAPACITY);
+        unsafe {
+            debug_assert!(bytes.len() <= CAPACITY);
 
-        Self::from_bytes_unchecked_restricted(bytes, bytes.len())
+            Self::from_bytes_unchecked_restricted(bytes, bytes.len())
+        }
     }
 
     /// Creates a new [`StaticString`] from a byte slice
@@ -339,12 +343,14 @@ impl<const CAPACITY: usize> StaticString<CAPACITY> {
     pub unsafe fn from_c_str(
         ptr: *const core::ffi::c_char,
     ) -> Result<Self, StringModificationError> {
-        let string_length = strnlen(ptr, CAPACITY + 1);
-        if CAPACITY < string_length {
-            return Err(StringModificationError::InsertWouldExceedCapacity);
-        }
+        unsafe {
+            let string_length = strnlen(ptr, CAPACITY + 1);
+            if CAPACITY < string_length {
+                return Err(StringModificationError::InsertWouldExceedCapacity);
+            }
 
-        Self::from_bytes(core::slice::from_raw_parts(ptr.cast(), string_length))
+            Self::from_bytes(core::slice::from_raw_parts(ptr.cast(), string_length))
+        }
     }
 
     /// Returns the capacity of the [`StaticString`]

@@ -21,58 +21,60 @@ pub(crate) unsafe fn scandir_impl(
     path: *const c_char,
     namelist: *mut *mut *mut crate::posix::types::dirent,
 ) -> int {
-    let dirfd = opendir(path);
-    if dirfd.is_null() {
-        return -1;
-    }
-
-    *namelist = core::ptr::null_mut::<*mut dirent>();
-    let mut entries = vec![];
-
-    let cleanup = |entries: &mut Vec<*mut void>, namelist: *mut *mut *mut dirent| {
-        entries.drain(..).for_each(|entry| {
-            free(entry);
-        });
-
-        if !(*namelist).is_null() {
-            free((*namelist).cast());
+    unsafe {
+        let dirfd = opendir(path);
+        if dirfd.is_null() {
+            return -1;
         }
-        *namelist = core::ptr::null_mut();
-    };
 
-    loop {
-        let dirent_ptr = malloc(dirent_size());
+        *namelist = core::ptr::null_mut::<*mut dirent>();
+        let mut entries = vec![];
 
-        let mut result_ptr: *mut dirent = core::ptr::null_mut();
+        let cleanup = |entries: &mut Vec<*mut void>, namelist: *mut *mut *mut dirent| {
+            entries.drain(..).for_each(|entry| {
+                free(entry);
+            });
 
-        if readdir_r(dirfd, dirent_ptr.cast(), &mut result_ptr as _) != 0 {
-            free(dirent_ptr);
+            if !(*namelist).is_null() {
+                free((*namelist).cast());
+            }
+            *namelist = core::ptr::null_mut();
+        };
+
+        loop {
+            let dirent_ptr = malloc(dirent_size());
+
+            let mut result_ptr: *mut dirent = core::ptr::null_mut();
+
+            if readdir_r(dirfd, dirent_ptr.cast(), &mut result_ptr as _) != 0 {
+                free(dirent_ptr);
+                cleanup(&mut entries, namelist);
+
+                closedir(dirfd);
+                return -1;
+            }
+
+            if result_ptr.is_null() {
+                free(dirent_ptr);
+                break;
+            }
+
+            entries.push(dirent_ptr);
+        }
+
+        let num_entries = entries.len();
+        *namelist = malloc(core::mem::size_of::<*mut *mut dirent>() * num_entries).cast();
+        if (*namelist).is_null() {
             cleanup(&mut entries, namelist);
-
             closedir(dirfd);
             return -1;
         }
 
-        if result_ptr.is_null() {
-            free(dirent_ptr);
-            break;
-        }
+        entries.drain(..).enumerate().for_each(|(n, entry)| {
+            (*namelist).add(n).write(entry.cast());
+        });
 
-        entries.push(dirent_ptr);
-    }
-
-    let num_entries = entries.len();
-    *namelist = malloc(core::mem::size_of::<*mut *mut dirent>() * num_entries).cast();
-    if (*namelist).is_null() {
-        cleanup(&mut entries, namelist);
         closedir(dirfd);
-        return -1;
+        num_entries as _
     }
-
-    entries.drain(..).enumerate().for_each(|(n, entry)| {
-        (*namelist).add(n).write(entry.cast());
-    });
-
-    closedir(dirfd);
-    num_entries as _
 }

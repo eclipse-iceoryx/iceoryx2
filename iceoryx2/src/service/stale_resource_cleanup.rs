@@ -41,25 +41,27 @@ pub(crate) unsafe fn remove_data_segment_of_port<Service: service::Service>(
     port_id: u128,
     config: &config::Config,
 ) -> Result<(), NamedConceptRemoveError> {
-    let origin = format!(
-        "remove_data_segment_of_port::<{}>::({:?})",
-        core::any::type_name::<Service>(),
-        port_id
-    );
+    unsafe {
+        let origin = format!(
+            "remove_data_segment_of_port::<{}>::({:?})",
+            core::any::type_name::<Service>(),
+            port_id
+        );
 
-    fail!(from origin, when <Service::SharedMemory as NamedConceptMgmt>::remove_cfg(
-            &data_segment_name(port_id),
-            &data_segment_config::<Service>(config),
-        ), "Unable to remove the ports ({port_id}) data segment."
-    );
+        fail!(from origin, when <Service::SharedMemory as NamedConceptMgmt>::remove_cfg(
+                &data_segment_name(port_id),
+                &data_segment_config::<Service>(config),
+            ), "Unable to remove the ports ({port_id}) data segment."
+        );
 
-    fail!(from origin, when <Service::ResizableSharedMemory as NamedConceptMgmt>::remove_cfg(
-            &data_segment_name(port_id),
-            &resizable_data_segment_config::<Service>(config),
-        ), "Unable to remove the ports ({port_id}) resizable data segment."
-    );
+        fail!(from origin, when <Service::ResizableSharedMemory as NamedConceptMgmt>::remove_cfg(
+                &data_segment_name(port_id),
+                &resizable_data_segment_config::<Service>(config),
+            ), "Unable to remove the ports ({port_id}) resizable data segment."
+        );
 
-    Ok(())
+        Ok(())
+    }
 }
 
 fn connections<Service: service::Service>(
@@ -119,68 +121,72 @@ pub(crate) unsafe fn remove_sender_port_from_all_connections<Service: service::S
     port_id: u128,
     config: &config::Config,
 ) -> Result<(), RemovePortFromAllConnectionsError> {
-    let origin = format!(
-        "remove_sender_port_from_all_connections::<{}>::({:?})",
-        core::any::type_name::<Service>(),
-        port_id
-    );
-    let msg = "Unable to remove the sender port from all connections";
+    unsafe {
+        let origin = format!(
+            "remove_sender_port_from_all_connections::<{}>::({:?})",
+            core::any::type_name::<Service>(),
+            port_id
+        );
+        let msg = "Unable to remove the sender port from all connections";
 
-    let connection_config = connection_config::<Service>(config);
-    let connection_list = connections::<Service>(&origin, msg, &connection_config)?;
+        let connection_config = connection_config::<Service>(config);
+        let connection_list = connections::<Service>(&origin, msg, &connection_config)?;
 
-    let mut ret_val = Ok(());
-    for connection in connection_list {
-        if let Some(sender_port_id) = extract_sender_port_id_from_connection(&connection) {
-            if sender_port_id == port_id {
-                let result = handle_port_remove_error(
-                    Service::Connection::remove_sender(&connection, &connection_config),
-                    &origin,
-                    msg,
-                    &connection,
-                );
+        let mut ret_val = Ok(());
+        for connection in connection_list {
+            if let Some(sender_port_id) = extract_sender_port_id_from_connection(&connection) {
+                if sender_port_id == port_id {
+                    let result = handle_port_remove_error(
+                        Service::Connection::remove_sender(&connection, &connection_config),
+                        &origin,
+                        msg,
+                        &connection,
+                    );
 
-                if ret_val.is_ok() {
-                    ret_val = result;
+                    if ret_val.is_ok() {
+                        ret_val = result;
+                    }
                 }
             }
         }
-    }
 
-    ret_val
+        ret_val
+    }
 }
 
 pub(crate) unsafe fn remove_receiver_port_from_all_connections<Service: service::Service>(
     port_id: u128,
     config: &config::Config,
 ) -> Result<(), RemovePortFromAllConnectionsError> {
-    let origin = format!(
-        "remove_receiver_port_from_all_connections::<{}>::({:?})",
-        core::any::type_name::<Service>(),
-        port_id
-    );
-    let msg = "Unable to remove the receiver port from all connections";
+    unsafe {
+        let origin = format!(
+            "remove_receiver_port_from_all_connections::<{}>::({:?})",
+            core::any::type_name::<Service>(),
+            port_id
+        );
+        let msg = "Unable to remove the receiver port from all connections";
 
-    let connection_config = connection_config::<Service>(config);
-    let connection_list = connections::<Service>(&origin, msg, &connection_config)?;
+        let connection_config = connection_config::<Service>(config);
+        let connection_list = connections::<Service>(&origin, msg, &connection_config)?;
 
-    let mut ret_val = Ok(());
-    for connection in connection_list {
-        if let Some(receiver_port_id) = extract_receiver_port_id_from_connection(&connection) {
-            if receiver_port_id == port_id {
-                let result = handle_port_remove_error(
-                    Service::Connection::remove_receiver(&connection, &connection_config),
-                    &origin,
-                    msg,
-                    &connection,
-                );
+        let mut ret_val = Ok(());
+        for connection in connection_list {
+            if let Some(receiver_port_id) = extract_receiver_port_id_from_connection(&connection) {
+                if receiver_port_id == port_id {
+                    let result = handle_port_remove_error(
+                        Service::Connection::remove_receiver(&connection, &connection_config),
+                        &origin,
+                        msg,
+                        &connection,
+                    );
 
-                if ret_val.is_ok() {
-                    ret_val = result;
+                    if ret_val.is_ok() {
+                        ret_val = result;
+                    }
                 }
             }
         }
-    }
 
-    ret_val
+        ret_val
+    }
 }

@@ -114,25 +114,27 @@ pub unsafe extern "C" fn iox2_attribute_verifier_new(
     struct_ptr: *mut iox2_attribute_verifier_t,
     handle_ptr: *mut iox2_attribute_verifier_h,
 ) -> c_int {
-    debug_assert!(!handle_ptr.is_null());
+    unsafe {
+        debug_assert!(!handle_ptr.is_null());
 
-    *handle_ptr = core::ptr::null_mut();
+        *handle_ptr = core::ptr::null_mut();
 
-    let mut struct_ptr = struct_ptr;
-    fn no_op(_: *mut iox2_attribute_verifier_t) {}
-    let mut deleter: fn(*mut iox2_attribute_verifier_t) = no_op;
-    if struct_ptr.is_null() {
-        struct_ptr = iox2_attribute_verifier_t::alloc();
-        deleter = iox2_attribute_verifier_t::dealloc;
+        let mut struct_ptr = struct_ptr;
+        fn no_op(_: *mut iox2_attribute_verifier_t) {}
+        let mut deleter: fn(*mut iox2_attribute_verifier_t) = no_op;
+        if struct_ptr.is_null() {
+            struct_ptr = iox2_attribute_verifier_t::alloc();
+            deleter = iox2_attribute_verifier_t::dealloc;
+        }
+        debug_assert!(!struct_ptr.is_null());
+
+        (*struct_ptr).deleter = deleter;
+        (*struct_ptr).value.init(AttributeVerifierType::new());
+
+        *handle_ptr = (*struct_ptr).as_handle();
+
+        IOX2_OK
     }
-    debug_assert!(!struct_ptr.is_null());
-
-    unsafe { (*struct_ptr).deleter = deleter };
-    unsafe { (*struct_ptr).value.init(AttributeVerifierType::new()) };
-
-    *handle_ptr = (*struct_ptr).as_handle();
-
-    IOX2_OK
 }
 
 /// Deletes a [`iox2_attribute_verifier_h`]. It must be created with
@@ -143,12 +145,14 @@ pub unsafe extern "C" fn iox2_attribute_verifier_new(
 /// * The `handle` must point to an initialized [`iox2_attribute_verifier_h`].
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_verifier_drop(handle: iox2_attribute_verifier_h) {
-    debug_assert!(!handle.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
 
-    let attribute_verifier = &mut *handle.as_type();
+        let attribute_verifier = &mut *handle.as_type();
 
-    ManuallyDrop::drop(&mut attribute_verifier.value.as_mut().0);
-    (attribute_verifier.deleter)(attribute_verifier);
+        ManuallyDrop::drop(&mut attribute_verifier.value.as_mut().0);
+        (attribute_verifier.deleter)(attribute_verifier);
+    }
 }
 
 /// Defines a attribute (key / value pair) that is required.
@@ -167,27 +171,30 @@ pub unsafe extern "C" fn iox2_attribute_verifier_require(
     key: *const c_char,
     value: *const c_char,
 ) -> c_int {
-    debug_assert!(!handle.is_null());
-    debug_assert!(!key.is_null());
-    debug_assert!(!value.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
+        debug_assert!(!key.is_null());
+        debug_assert!(!value.is_null());
 
-    let key = AttributeKey::from_c_str(key);
-    let value = AttributeValue::from_c_str(value);
+        let key = AttributeKey::from_c_str(key);
+        let value = AttributeValue::from_c_str(value);
 
-    debug_assert!(key.is_ok() && value.is_ok());
+        debug_assert!(key.is_ok() && value.is_ok());
 
-    let attribute_verifier_struct = &mut *handle.as_type();
-    let attribute_verifier = ManuallyDrop::take(&mut attribute_verifier_struct.value.as_mut().0);
+        let attribute_verifier_struct = &mut *handle.as_type();
+        let attribute_verifier =
+            ManuallyDrop::take(&mut attribute_verifier_struct.value.as_mut().0);
 
-    let attribute_verifier_clone = attribute_verifier.clone();
-    match attribute_verifier_clone.require(&key.unwrap(), &value.unwrap()) {
-        Ok(v) => {
-            attribute_verifier_struct.set(AttributeVerifierType::from(v));
-            IOX2_OK
-        }
-        Err(e) => {
-            attribute_verifier_struct.set(AttributeVerifierType::from(attribute_verifier));
-            e.into_c_int()
+        let attribute_verifier_clone = attribute_verifier.clone();
+        match attribute_verifier_clone.require(&key.unwrap(), &value.unwrap()) {
+            Ok(v) => {
+                attribute_verifier_struct.set(AttributeVerifierType::from(v));
+                IOX2_OK
+            }
+            Err(e) => {
+                attribute_verifier_struct.set(AttributeVerifierType::from(attribute_verifier));
+                e.into_c_int()
+            }
         }
     }
 }
@@ -206,25 +213,28 @@ pub unsafe extern "C" fn iox2_attribute_verifier_require_key(
     handle: iox2_attribute_verifier_h_ref,
     key: *const c_char,
 ) -> c_int {
-    debug_assert!(!handle.is_null());
-    debug_assert!(!key.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
+        debug_assert!(!key.is_null());
 
-    let key = AttributeKey::from_c_str(key);
+        let key = AttributeKey::from_c_str(key);
 
-    debug_assert!(key.is_ok());
+        debug_assert!(key.is_ok());
 
-    let attribute_verifier_struct = &mut *handle.as_type();
-    let attribute_verifier = ManuallyDrop::take(&mut attribute_verifier_struct.value.as_mut().0);
+        let attribute_verifier_struct = &mut *handle.as_type();
+        let attribute_verifier =
+            ManuallyDrop::take(&mut attribute_verifier_struct.value.as_mut().0);
 
-    let attribute_verifier_clone = attribute_verifier.clone();
-    match attribute_verifier_clone.require_key(&key.unwrap()) {
-        Ok(v) => {
-            attribute_verifier_struct.set(AttributeVerifierType::from(v));
-            IOX2_OK
-        }
-        Err(e) => {
-            attribute_verifier_struct.set(AttributeVerifierType::from(attribute_verifier));
-            e.into_c_int()
+        let attribute_verifier_clone = attribute_verifier.clone();
+        match attribute_verifier_clone.require_key(&key.unwrap()) {
+            Ok(v) => {
+                attribute_verifier_struct.set(AttributeVerifierType::from(v));
+                IOX2_OK
+            }
+            Err(e) => {
+                attribute_verifier_struct.set(AttributeVerifierType::from(attribute_verifier));
+                e.into_c_int()
+            }
         }
     }
 }
@@ -239,14 +249,16 @@ pub unsafe extern "C" fn iox2_attribute_verifier_require_key(
 pub unsafe extern "C" fn iox2_attribute_verifier_attributes(
     handle: iox2_attribute_verifier_h_ref,
 ) -> iox2_attribute_set_ptr {
-    debug_assert!(!handle.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
 
-    let attribute_verifier_struct = &mut *handle.as_type();
-    attribute_verifier_struct
-        .value
-        .as_ref()
-        .0
-        .required_attributes()
+        let attribute_verifier_struct = &mut *handle.as_type();
+        attribute_verifier_struct
+            .value
+            .as_ref()
+            .0
+            .required_attributes()
+    }
 }
 
 /// Verifies if the [`iox2_attribute_set_ptr`] contains all required keys and key-value pairs.
@@ -267,33 +279,35 @@ pub unsafe extern "C" fn iox2_attribute_verifier_verify_requirements(
     incompatible_key_buffer: *mut c_char,
     incompatible_key_buffer_len: usize,
 ) -> c_int {
-    debug_assert!(!handle.is_null());
-    debug_assert!(!rhs.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
+        debug_assert!(!rhs.is_null());
 
-    let attribute_verifier_struct = &mut *handle.as_type();
-    let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
+        let attribute_verifier_struct = &mut *handle.as_type();
+        let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
 
-    let write_key = |incompatible_key: AttributeKey| {
-        if let Ok(incompatible_key) = CString::new(incompatible_key.as_bytes()) {
-            if incompatible_key_buffer_len != 0 && !incompatible_key_buffer.is_null() {
-                core::ptr::copy_nonoverlapping(
-                    incompatible_key.as_bytes_with_nul().as_ptr(),
-                    incompatible_key_buffer.cast(),
-                    incompatible_key_buffer_len.min(incompatible_key.as_bytes_with_nul().len()),
-                );
+        let write_key = |incompatible_key: AttributeKey| {
+            if let Ok(incompatible_key) = CString::new(incompatible_key.as_bytes()) {
+                if incompatible_key_buffer_len != 0 && !incompatible_key_buffer.is_null() {
+                    core::ptr::copy_nonoverlapping(
+                        incompatible_key.as_bytes_with_nul().as_ptr(),
+                        incompatible_key_buffer.cast(),
+                        incompatible_key_buffer_len.min(incompatible_key.as_bytes_with_nul().len()),
+                    );
+                }
             }
-        }
-    };
+        };
 
-    match attribute_verifier.verify_requirements(&*rhs) {
-        Ok(()) => IOX2_OK,
-        Err(e) => {
-            let error_value = e.clone().into_c_int();
-            match e {
-                AttributeVerificationError::NonExistingKey(key) => write_key(key),
-                AttributeVerificationError::IncompatibleAttribute((key, _)) => write_key(key),
+        match attribute_verifier.verify_requirements(&*rhs) {
+            Ok(()) => IOX2_OK,
+            Err(e) => {
+                let error_value = e.clone().into_c_int();
+                match e {
+                    AttributeVerificationError::NonExistingKey(key) => write_key(key),
+                    AttributeVerificationError::IncompatibleAttribute((key, _)) => write_key(key),
+                }
+                error_value
             }
-            error_value
         }
     }
 }
@@ -307,10 +321,12 @@ pub unsafe extern "C" fn iox2_attribute_verifier_verify_requirements(
 pub unsafe extern "C" fn iox2_attribute_verifier_number_of_keys(
     handle: iox2_attribute_verifier_h_ref,
 ) -> usize {
-    debug_assert!(!handle.is_null());
-    let attribute_verifier_struct = &mut *handle.as_type();
-    let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
-    attribute_verifier.required_keys().len()
+    unsafe {
+        debug_assert!(!handle.is_null());
+        let attribute_verifier_struct = &mut *handle.as_type();
+        let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
+        attribute_verifier.required_keys().len()
+    }
 }
 
 /// Returns the length of a required key at a specific key index.
@@ -324,12 +340,14 @@ pub unsafe extern "C" fn iox2_attribute_verifier_key_len(
     handle: iox2_attribute_verifier_h_ref,
     key_index: usize,
 ) -> usize {
-    debug_assert!(!handle.is_null());
-    let attribute_verifier_struct = &mut *handle.as_type();
-    let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
+    unsafe {
+        debug_assert!(!handle.is_null());
+        let attribute_verifier_struct = &mut *handle.as_type();
+        let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
 
-    debug_assert!(key_index < attribute_verifier.required_keys().len());
-    attribute_verifier.required_keys()[key_index].len()
+        debug_assert!(key_index < attribute_verifier.required_keys().len());
+        attribute_verifier.required_keys()[key_index].len()
+    }
 }
 
 /// Copies the key value at a specific key index into the provided buffer.
@@ -346,25 +364,27 @@ pub unsafe extern "C" fn iox2_attribute_verifier_key(
     key_value_buffer: *mut c_char,
     key_value_buffer_len: usize,
 ) -> usize {
-    debug_assert!(!handle.is_null());
-    debug_assert!(!key_value_buffer.is_null());
-    let attribute_verifier_struct = &mut *handle.as_type();
-    let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
+    unsafe {
+        debug_assert!(!handle.is_null());
+        debug_assert!(!key_value_buffer.is_null());
+        let attribute_verifier_struct = &mut *handle.as_type();
+        let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
 
-    debug_assert!(key_index < attribute_verifier.required_keys().len());
+        debug_assert!(key_index < attribute_verifier.required_keys().len());
 
-    if let Ok(key) = CString::new(attribute_verifier.required_keys()[key_index].as_bytes()) {
-        let copied_length = key_value_buffer_len.min(key.as_bytes_with_nul().len());
+        if let Ok(key) = CString::new(attribute_verifier.required_keys()[key_index].as_bytes()) {
+            let copied_length = key_value_buffer_len.min(key.as_bytes_with_nul().len());
 
-        core::ptr::copy_nonoverlapping(
-            key.as_bytes_with_nul().as_ptr(),
-            key_value_buffer.cast(),
-            copied_length,
-        );
+            core::ptr::copy_nonoverlapping(
+                key.as_bytes_with_nul().as_ptr(),
+                key_value_buffer.cast(),
+                copied_length,
+            );
 
-        copied_length
-    } else {
-        0
+            copied_length
+        } else {
+            0
+        }
     }
 }
 // END C API

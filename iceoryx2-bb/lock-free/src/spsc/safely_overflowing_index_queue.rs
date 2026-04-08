@@ -168,14 +168,16 @@ pub mod details {
 
     impl RelocatableContainer for SafelyOverflowingIndexQueue<RelocatablePointer<UnsafeCell<u64>>> {
         unsafe fn new_uninit(capacity: usize) -> Self {
-            Self {
-                data_ptr: RelocatablePointer::new_uninit(),
-                capacity,
-                write_position: AtomicU64::new(0),
-                read_position: AtomicU64::new(0),
-                has_producer: AtomicBool::new(true),
-                has_consumer: AtomicBool::new(true),
-                is_memory_initialized: AtomicBool::new(false),
+            unsafe {
+                Self {
+                    data_ptr: RelocatablePointer::new_uninit(),
+                    capacity,
+                    write_position: AtomicU64::new(0),
+                    read_position: AtomicU64::new(0),
+                    has_producer: AtomicBool::new(true),
+                    has_consumer: AtomicBool::new(true),
+                    is_memory_initialized: AtomicBool::new(false),
+                }
             }
         }
 
@@ -183,24 +185,26 @@ pub mod details {
             &mut self,
             allocator: &T,
         ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
-            if self.is_memory_initialized.load(Ordering::Relaxed) {
-                fatal_panic!(from self, "Memory already initialized. Initializing it twice may lead to undefined behavior.");
-            }
+            unsafe {
+                if self.is_memory_initialized.load(Ordering::Relaxed) {
+                    fatal_panic!(from self, "Memory already initialized. Initializing it twice may lead to undefined behavior.");
+                }
 
-            self.data_ptr.init(fail!(from self, when allocator
+                self.data_ptr.init(fail!(from self, when allocator
             .allocate( Layout::from_size_align_unchecked(
                     core::mem::size_of::<u64>() * (self.capacity + 1),
                     core::mem::align_of::<u64>())),
             "Failed to initialize since the allocation of the data memory failed."));
 
-            for i in 0..self.capacity + 1 {
-                (self.data_ptr.as_ptr() as *mut UnsafeCell<usize>)
-                    .add(i)
-                    .write(UnsafeCell::new(0));
-            }
+                for i in 0..self.capacity + 1 {
+                    (self.data_ptr.as_ptr() as *mut UnsafeCell<usize>)
+                        .add(i)
+                        .write(UnsafeCell::new(0));
+                }
 
-            self.is_memory_initialized.store(true, Ordering::Relaxed);
-            Ok(())
+                self.is_memory_initialized.store(true, Ordering::Relaxed);
+                Ok(())
+            }
         }
 
         fn memory_size(capacity: usize) -> usize {
@@ -505,7 +509,7 @@ impl<const CAPACITY: usize> FixedSizeSafelyOverflowingIndexQueue<CAPACITY> {
     /// * It must be ensured that no other thread/process calls this method concurrently
     ///
     pub unsafe fn push(&self, value: u64) -> Option<u64> {
-        self.state.push(value)
+        unsafe { self.state.push(value) }
     }
 
     /// See [`SafelyOverflowingIndexQueue::pop()`]
@@ -515,7 +519,7 @@ impl<const CAPACITY: usize> FixedSizeSafelyOverflowingIndexQueue<CAPACITY> {
     /// * It must be ensured that no other thread/process calls this method concurrently
     ///
     pub unsafe fn pop(&self) -> Option<u64> {
-        self.state.pop()
+        unsafe { self.state.pop() }
     }
 
     /// See [`SafelyOverflowingIndexQueue::capacity()`]

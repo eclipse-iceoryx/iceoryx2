@@ -140,7 +140,7 @@ impl FetchableSignalSet {
     ///  * do not manually close the file descriptor with a sys call
     ///
     pub unsafe fn native_handle(&self) -> &posix::sigset_t {
-        self.signal_set.native_handle()
+        unsafe { self.signal_set.native_handle() }
     }
 
     /// Creates a new [`FetchableSignalSet`] that contains all pending signals, e.g.

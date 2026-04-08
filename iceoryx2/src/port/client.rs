@@ -1008,18 +1008,20 @@ impl<Service: service::Service>
         >,
         LoanError,
     > {
-        let client_shared_state = self.client_shared_state.lock();
-        // TypeVariant::Dynamic == slice and only here it makes sense to loan more than one element
-        debug_assert!(
-            slice_len == 1
-                || client_shared_state.request_sender.payload_type_variant()
-                    == TypeVariant::Dynamic
-        );
+        unsafe {
+            let client_shared_state = self.client_shared_state.lock();
+            // TypeVariant::Dynamic == slice and only here it makes sense to loan more than one element
+            debug_assert!(
+                slice_len == 1
+                    || client_shared_state.request_sender.payload_type_variant()
+                        == TypeVariant::Dynamic
+            );
 
-        self.loan_slice_uninit_impl(
-            slice_len,
-            client_shared_state.request_sender.payload_size() * slice_len,
-        )
+            self.loan_slice_uninit_impl(
+                slice_len,
+                client_shared_state.request_sender.payload_size() * slice_len,
+            )
+        }
     }
 }
 ////////////////////////

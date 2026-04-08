@@ -103,12 +103,14 @@ impl DynamicConfig {
     }
 
     pub(crate) unsafe fn init(&mut self, allocator: &BumpAllocator) {
-        fatal_panic!(from self,
+        unsafe {
+            fatal_panic!(from self,
             when self.subscribers.init(allocator),
             "This should never happen! Unable to initialize subscriber port id container.");
-        fatal_panic!(from self,
+            fatal_panic!(from self,
             when self.publishers.init(allocator),
             "This should never happen! Unable to initialize publisher port id container.");
+        }
     }
 
     pub(crate) fn memory_size(config: &DynamicConfigSettings) -> usize {
@@ -123,31 +125,33 @@ impl DynamicConfig {
         node_id: &NodeId,
         mut port_cleanup_callback: PortCleanup,
     ) {
-        self.publishers
-            .get_state()
-            .for_each(|handle: ContainerHandle, registered_publisher| {
-                if registered_publisher.node_id == *node_id
-                    && port_cleanup_callback(UniquePortId::Publisher(
-                        registered_publisher.publisher_id,
-                    )) == PortCleanupAction::RemovePort
-                {
-                    self.release_publisher_handle(handle);
-                }
-                CallbackProgression::Continue
-            });
+        unsafe {
+            self.publishers.get_state().for_each(
+                |handle: ContainerHandle, registered_publisher| {
+                    if registered_publisher.node_id == *node_id
+                        && port_cleanup_callback(UniquePortId::Publisher(
+                            registered_publisher.publisher_id,
+                        )) == PortCleanupAction::RemovePort
+                    {
+                        self.release_publisher_handle(handle);
+                    }
+                    CallbackProgression::Continue
+                },
+            );
 
-        self.subscribers
-            .get_state()
-            .for_each(|handle: ContainerHandle, registered_subscriber| {
-                if registered_subscriber.node_id == *node_id
-                    && port_cleanup_callback(UniquePortId::Subscriber(
-                        registered_subscriber.subscriber_id,
-                    )) == PortCleanupAction::RemovePort
-                {
-                    self.release_subscriber_handle(handle);
-                }
-                CallbackProgression::Continue
-            });
+            self.subscribers.get_state().for_each(
+                |handle: ContainerHandle, registered_subscriber| {
+                    if registered_subscriber.node_id == *node_id
+                        && port_cleanup_callback(UniquePortId::Subscriber(
+                            registered_subscriber.subscriber_id,
+                        )) == PortCleanupAction::RemovePort
+                    {
+                        self.release_subscriber_handle(handle);
+                    }
+                    CallbackProgression::Continue
+                },
+            );
+        }
     }
 
     /// Returns how many [`crate::port::publisher::Publisher`] ports are currently connected.

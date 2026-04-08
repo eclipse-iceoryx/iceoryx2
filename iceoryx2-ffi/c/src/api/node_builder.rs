@@ -141,19 +141,21 @@ pub unsafe extern "C" fn iox2_node_creation_failure_string(
 pub unsafe extern "C" fn iox2_node_builder_new(
     node_builder_struct_ptr: *mut iox2_node_builder_t,
 ) -> iox2_node_builder_h {
-    let mut node_builder_struct_ptr = node_builder_struct_ptr;
-    fn no_op(_: *mut iox2_node_builder_t) {}
-    let mut deleter: fn(*mut iox2_node_builder_t) = no_op;
-    if node_builder_struct_ptr.is_null() {
-        node_builder_struct_ptr = iox2_node_builder_t::alloc();
-        deleter = iox2_node_builder_t::dealloc;
+    unsafe {
+        let mut node_builder_struct_ptr = node_builder_struct_ptr;
+        fn no_op(_: *mut iox2_node_builder_t) {}
+        let mut deleter: fn(*mut iox2_node_builder_t) = no_op;
+        if node_builder_struct_ptr.is_null() {
+            node_builder_struct_ptr = iox2_node_builder_t::alloc();
+            deleter = iox2_node_builder_t::dealloc;
+        }
+        debug_assert!(!node_builder_struct_ptr.is_null());
+
+        (*node_builder_struct_ptr).deleter = deleter;
+        (*node_builder_struct_ptr).value.init(NodeBuilder::new());
+
+        (*node_builder_struct_ptr).as_handle()
     }
-    debug_assert!(!node_builder_struct_ptr.is_null());
-
-    (*node_builder_struct_ptr).deleter = deleter;
-    (*node_builder_struct_ptr).value.init(NodeBuilder::new());
-
-    (*node_builder_struct_ptr).as_handle()
 }
 
 /// Sets the node name for the builder
@@ -172,14 +174,16 @@ pub unsafe extern "C" fn iox2_node_builder_set_name(
     node_builder_handle: iox2_node_builder_h_ref,
     node_name_ptr: iox2_node_name_ptr,
 ) {
-    node_builder_handle.assert_non_null();
-    debug_assert!(!node_name_ptr.is_null());
+    unsafe {
+        node_builder_handle.assert_non_null();
+        debug_assert!(!node_name_ptr.is_null());
 
-    let node_builder_struct = &mut *node_builder_handle.as_type();
+        let node_builder_struct = &mut *node_builder_handle.as_type();
 
-    let node_builder = node_builder_struct.take().unwrap();
-    let node_builder = node_builder.name(&*node_name_ptr);
-    node_builder_struct.set(node_builder);
+        let node_builder = node_builder_struct.take().unwrap();
+        let node_builder = node_builder.name(&*node_name_ptr);
+        node_builder_struct.set(node_builder);
+    }
 }
 
 /// Sets the [`iox2_signal_handling_mode_e`] for the [`iox2_node_h`].
@@ -196,13 +200,15 @@ pub unsafe extern "C" fn iox2_node_builder_set_signal_handling_mode(
     node_builder_handle: iox2_node_builder_h_ref,
     signal_handling_mode: iox2_signal_handling_mode_e,
 ) {
-    node_builder_handle.assert_non_null();
+    unsafe {
+        node_builder_handle.assert_non_null();
 
-    let node_builder_struct = &mut *node_builder_handle.as_type();
+        let node_builder_struct = &mut *node_builder_handle.as_type();
 
-    let node_builder = node_builder_struct.take().unwrap();
-    let node_builder = node_builder.signal_handling_mode(signal_handling_mode.into());
-    node_builder_struct.set(node_builder);
+        let node_builder = node_builder_struct.take().unwrap();
+        let node_builder = node_builder.signal_handling_mode(signal_handling_mode.into());
+        node_builder_struct.set(node_builder);
+    }
 }
 
 /// Sets the node config for the builder
@@ -219,24 +225,28 @@ pub unsafe extern "C" fn iox2_node_builder_set_config(
     node_builder_handle: iox2_node_builder_h_ref,
     config_handle: iox2_config_h_ref,
 ) {
-    node_builder_handle.assert_non_null();
-    config_handle.assert_non_null();
+    unsafe {
+        node_builder_handle.assert_non_null();
+        config_handle.assert_non_null();
 
-    let node_builder_struct = &mut *node_builder_handle.as_type();
-    let config = &*config_handle.as_type();
+        let node_builder_struct = &mut *node_builder_handle.as_type();
+        let config = &*config_handle.as_type();
 
-    let node_builder = node_builder_struct.take().unwrap();
-    let node_builder = node_builder.config(&config.value.as_ref().value);
-    node_builder_struct.set(node_builder);
+        let node_builder = node_builder_struct.take().unwrap();
+        let node_builder = node_builder.config(&config.value.as_ref().value);
+        node_builder_struct.set(node_builder);
+    }
 }
 
 // intentionally not public API
 unsafe fn iox2_node_builder_drop(node_builder_handle: iox2_node_builder_h) {
-    debug_assert!(!node_builder_handle.is_null());
+    unsafe {
+        debug_assert!(!node_builder_handle.is_null());
 
-    let node_builder = &mut *node_builder_handle.as_type();
-    core::ptr::drop_in_place(node_builder.value.as_option_mut());
-    (node_builder.deleter)(node_builder);
+        let node_builder = &mut *node_builder_handle.as_type();
+        core::ptr::drop_in_place(node_builder.value.as_option_mut());
+        (node_builder.deleter)(node_builder);
+    }
 }
 
 /// Creates a node and consumes the builder
@@ -261,53 +271,55 @@ pub unsafe extern "C" fn iox2_node_builder_create(
     service_type: iox2_service_type_e,
     node_handle_ptr: *mut iox2_node_h,
 ) -> c_int {
-    debug_assert!(!node_builder_handle.is_null());
-    debug_assert!(!node_handle_ptr.is_null());
+    unsafe {
+        debug_assert!(!node_builder_handle.is_null());
+        debug_assert!(!node_handle_ptr.is_null());
 
-    match service_type as usize {
-        0 => (),
-        1 => (),
-        _ => fatal_panic!(from "iox2_node_builder_create",
+        match service_type as usize {
+            0 => (),
+            1 => (),
+            _ => fatal_panic!(from "iox2_node_builder_create",
                             "The provided service_type has an invalid value."),
-    }
+        }
 
-    let node_builder_struct = &mut *node_builder_handle.as_type();
-    let node_builder = node_builder_struct.take().unwrap();
-    iox2_node_builder_drop(node_builder_handle);
+        let node_builder_struct = &mut *node_builder_handle.as_type();
+        let node_builder = node_builder_struct.take().unwrap();
+        iox2_node_builder_drop(node_builder_handle);
 
-    let mut node_struct_ptr = node_struct_ptr;
-    fn no_op(_: *mut iox2_node_t) {}
-    let mut deleter: fn(*mut iox2_node_t) = no_op;
-    if node_struct_ptr.is_null() {
-        node_struct_ptr = iox2_node_t::alloc();
-        deleter = iox2_node_t::dealloc;
-    }
-    debug_assert!(!node_struct_ptr.is_null());
+        let mut node_struct_ptr = node_struct_ptr;
+        fn no_op(_: *mut iox2_node_t) {}
+        let mut deleter: fn(*mut iox2_node_t) = no_op;
+        if node_struct_ptr.is_null() {
+            node_struct_ptr = iox2_node_t::alloc();
+            deleter = iox2_node_t::dealloc;
+        }
+        debug_assert!(!node_struct_ptr.is_null());
 
-    match service_type {
-        iox2_service_type_e::IPC => match node_builder.create::<crate::IpcService>() {
-            Ok(node) => unsafe {
-                (*node_struct_ptr).init(service_type, NodeUnion::new_ipc(node), deleter);
+        match service_type {
+            iox2_service_type_e::IPC => match node_builder.create::<crate::IpcService>() {
+                Ok(node) => {
+                    (*node_struct_ptr).init(service_type, NodeUnion::new_ipc(node), deleter)
+                }
+                Err(error) => {
+                    deleter(node_struct_ptr);
+                    return error.into_c_int();
+                }
             },
-            Err(error) => {
-                deleter(node_struct_ptr);
-                return error.into_c_int();
-            }
-        },
-        iox2_service_type_e::LOCAL => match node_builder.create::<crate::LocalService>() {
-            Ok(node) => unsafe {
-                (*node_struct_ptr).init(service_type, NodeUnion::new_local(node), deleter);
+            iox2_service_type_e::LOCAL => match node_builder.create::<crate::LocalService>() {
+                Ok(node) => {
+                    (*node_struct_ptr).init(service_type, NodeUnion::new_local(node), deleter)
+                }
+                Err(error) => {
+                    deleter(node_struct_ptr);
+                    return error.into_c_int();
+                }
             },
-            Err(error) => {
-                deleter(node_struct_ptr);
-                return error.into_c_int();
-            }
-        },
+        }
+
+        *node_handle_ptr = (*node_struct_ptr).as_handle();
+
+        IOX2_OK
     }
-
-    *node_handle_ptr = (*node_struct_ptr).as_handle();
-
-    IOX2_OK
 }
 
 // END C API

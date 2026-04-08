@@ -68,8 +68,10 @@ mod posix_platform {
     /// `panic!` is not async-signal-safe (it may allocate and unwind), so
     /// [`posix::abort()`] is used instead to terminate immediately.
     unsafe extern "C" fn handler(_sig: int) {
-        signal_safe_write(EXPIRY_MESSAGE);
-        posix::abort();
+        unsafe {
+            signal_safe_write(EXPIRY_MESSAGE);
+            posix::abort();
+        }
     }
 
     impl Watchdog {

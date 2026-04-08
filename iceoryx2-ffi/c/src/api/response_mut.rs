@@ -130,24 +130,26 @@ pub unsafe extern "C" fn iox2_response_mut_move(
     dest_struct_ptr: *mut iox2_response_mut_t,
     dest_handle_ptr: *mut iox2_response_mut_h,
 ) {
-    debug_assert!(!source_struct_ptr.is_null());
-    debug_assert!(!dest_struct_ptr.is_null());
-    debug_assert!(!dest_handle_ptr.is_null());
+    unsafe {
+        debug_assert!(!source_struct_ptr.is_null());
+        debug_assert!(!dest_struct_ptr.is_null());
+        debug_assert!(!dest_handle_ptr.is_null());
 
-    let source = &mut *source_struct_ptr;
-    let dest = &mut *dest_struct_ptr;
+        let source = &mut *source_struct_ptr;
+        let dest = &mut *dest_struct_ptr;
 
-    dest.service_type = source.service_type;
-    dest.value.init(
-        source
-            .value
-            .as_option_mut()
-            .take()
-            .expect("Source must have a valid response"),
-    );
-    dest.deleter = source.deleter;
+        dest.service_type = source.service_type;
+        dest.value.init(
+            source
+                .value
+                .as_option_mut()
+                .take()
+                .expect("Source must have a valid response"),
+        );
+        dest.deleter = source.deleter;
 
-    *dest_handle_ptr = (*dest_struct_ptr).as_handle();
+        *dest_handle_ptr = (*dest_struct_ptr).as_handle();
+    }
 }
 
 /// Acquires the responses header.
@@ -165,27 +167,29 @@ pub unsafe extern "C" fn iox2_response_mut_header(
     header_struct_ptr: *mut iox2_response_header_t,
     header_handle_ptr: *mut iox2_response_header_h,
 ) {
-    handle.assert_non_null();
-    debug_assert!(!header_handle_ptr.is_null());
+    unsafe {
+        handle.assert_non_null();
+        debug_assert!(!header_handle_ptr.is_null());
 
-    fn no_op(_: *mut iox2_response_header_t) {}
-    let mut deleter: fn(*mut iox2_response_header_t) = no_op;
-    let mut storage_ptr = header_struct_ptr;
-    if header_struct_ptr.is_null() {
-        deleter = iox2_response_header_t::dealloc;
-        storage_ptr = iox2_response_header_t::alloc();
+        fn no_op(_: *mut iox2_response_header_t) {}
+        let mut deleter: fn(*mut iox2_response_header_t) = no_op;
+        let mut storage_ptr = header_struct_ptr;
+        if header_struct_ptr.is_null() {
+            deleter = iox2_response_header_t::dealloc;
+            storage_ptr = iox2_response_header_t::alloc();
+        }
+        debug_assert!(!storage_ptr.is_null());
+
+        let response = &mut *handle.as_type();
+
+        let header = *match response.service_type {
+            iox2_service_type_e::IPC => response.value.as_mut().ipc.header(),
+            iox2_service_type_e::LOCAL => response.value.as_mut().local.header(),
+        };
+
+        (*storage_ptr).init(header, deleter);
+        *header_handle_ptr = (*storage_ptr).as_handle();
     }
-    debug_assert!(!storage_ptr.is_null());
-
-    let response = &mut *handle.as_type();
-
-    let header = *match response.service_type {
-        iox2_service_type_e::IPC => response.value.as_mut().ipc.header(),
-        iox2_service_type_e::LOCAL => response.value.as_mut().local.header(),
-    };
-
-    (*storage_ptr).init(header, deleter);
-    *header_handle_ptr = (*storage_ptr).as_handle();
 }
 
 /// Acquires the responses user header.
@@ -200,17 +204,19 @@ pub unsafe extern "C" fn iox2_response_mut_user_header(
     handle: iox2_response_mut_h_ref,
     header_ptr: *mut *const c_void,
 ) {
-    handle.assert_non_null();
-    debug_assert!(!header_ptr.is_null());
+    unsafe {
+        handle.assert_non_null();
+        debug_assert!(!header_ptr.is_null());
 
-    let response = &mut *handle.as_type();
+        let response = &mut *handle.as_type();
 
-    let header = match response.service_type {
-        iox2_service_type_e::IPC => response.value.as_mut().ipc.user_header(),
-        iox2_service_type_e::LOCAL => response.value.as_mut().local.user_header(),
-    };
+        let header = match response.service_type {
+            iox2_service_type_e::IPC => response.value.as_mut().ipc.user_header(),
+            iox2_service_type_e::LOCAL => response.value.as_mut().local.user_header(),
+        };
 
-    *header_ptr = (header as *const UserHeaderFfi).cast();
+        *header_ptr = (header as *const UserHeaderFfi).cast();
+    }
 }
 
 /// Acquires the responses mutable user header.
@@ -225,17 +231,19 @@ pub unsafe extern "C" fn iox2_response_mut_user_header_mut(
     handle: iox2_response_mut_h_ref,
     header_ptr: *mut *mut c_void,
 ) {
-    handle.assert_non_null();
-    debug_assert!(!header_ptr.is_null());
+    unsafe {
+        handle.assert_non_null();
+        debug_assert!(!header_ptr.is_null());
 
-    let response = &mut *handle.as_type();
+        let response = &mut *handle.as_type();
 
-    let header = match response.service_type {
-        iox2_service_type_e::IPC => response.value.as_mut().ipc.user_header_mut(),
-        iox2_service_type_e::LOCAL => response.value.as_mut().local.user_header_mut(),
-    };
+        let header = match response.service_type {
+            iox2_service_type_e::IPC => response.value.as_mut().ipc.user_header_mut(),
+            iox2_service_type_e::LOCAL => response.value.as_mut().local.user_header_mut(),
+        };
 
-    *header_ptr = (header as *mut UserHeaderFfi).cast();
+        *header_ptr = (header as *mut UserHeaderFfi).cast();
+    }
 }
 
 /// Acquires the responses payload.
@@ -251,24 +259,26 @@ pub unsafe extern "C" fn iox2_response_mut_payload(
     payload_ptr: *mut *const c_void,
     number_of_elements: *mut c_size_t,
 ) {
-    handle.assert_non_null();
-    debug_assert!(!payload_ptr.is_null());
+    unsafe {
+        handle.assert_non_null();
+        debug_assert!(!payload_ptr.is_null());
 
-    let response = &mut *handle.as_type();
-    let payload = response.value.as_mut().ipc.payload_mut();
+        let response = &mut *handle.as_type();
+        let payload = response.value.as_mut().ipc.payload_mut();
 
-    match response.service_type {
-        iox2_service_type_e::IPC => {
-            *payload_ptr = payload.as_mut_ptr().cast();
+        match response.service_type {
+            iox2_service_type_e::IPC => {
+                *payload_ptr = payload.as_mut_ptr().cast();
+            }
+            iox2_service_type_e::LOCAL => {
+                *payload_ptr = payload.as_mut_ptr().cast();
+            }
+        };
+
+        if !number_of_elements.is_null() {
+            *number_of_elements =
+                response.value.as_mut().local.header().number_of_elements() as c_size_t;
         }
-        iox2_service_type_e::LOCAL => {
-            *payload_ptr = payload.as_mut_ptr().cast();
-        }
-    };
-
-    if !number_of_elements.is_null() {
-        *number_of_elements =
-            response.value.as_mut().local.header().number_of_elements() as c_size_t;
     }
 }
 
@@ -285,24 +295,26 @@ pub unsafe extern "C" fn iox2_response_mut_payload_mut(
     payload_ptr: *mut *mut c_void,
     number_of_elements: *mut c_size_t,
 ) {
-    handle.assert_non_null();
-    debug_assert!(!payload_ptr.is_null());
+    unsafe {
+        handle.assert_non_null();
+        debug_assert!(!payload_ptr.is_null());
 
-    let response = &mut *handle.as_type();
-    let payload = response.value.as_mut().ipc.payload_mut();
+        let response = &mut *handle.as_type();
+        let payload = response.value.as_mut().ipc.payload_mut();
 
-    match response.service_type {
-        iox2_service_type_e::IPC => {
-            *payload_ptr = payload.as_mut_ptr().cast();
+        match response.service_type {
+            iox2_service_type_e::IPC => {
+                *payload_ptr = payload.as_mut_ptr().cast();
+            }
+            iox2_service_type_e::LOCAL => {
+                *payload_ptr = payload.as_mut_ptr().cast();
+            }
+        };
+
+        if !number_of_elements.is_null() {
+            *number_of_elements =
+                response.value.as_mut().local.header().number_of_elements() as c_size_t;
         }
-        iox2_service_type_e::LOCAL => {
-            *payload_ptr = payload.as_mut_ptr().cast();
-        }
-    };
-
-    if !number_of_elements.is_null() {
-        *number_of_elements =
-            response.value.as_mut().local.header().number_of_elements() as c_size_t;
     }
 }
 
@@ -315,31 +327,33 @@ pub unsafe extern "C" fn iox2_response_mut_payload_mut(
 ///   [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_response_mut_send(response_handle: iox2_response_mut_h) -> c_int {
-    debug_assert!(!response_handle.is_null());
+    unsafe {
+        debug_assert!(!response_handle.is_null());
 
-    let response_struct = &mut *response_handle.as_type();
-    let service_type = response_struct.service_type;
+        let response_struct = &mut *response_handle.as_type();
+        let service_type = response_struct.service_type;
 
-    let response = response_struct
-        .value
-        .as_option_mut()
-        .take()
-        .unwrap_or_else(|| panic!("Trying to send an already sent response!"));
-    (response_struct.deleter)(response_struct);
+        let response = response_struct
+            .value
+            .as_option_mut()
+            .take()
+            .unwrap_or_else(|| panic!("Trying to send an already sent response!"));
+        (response_struct.deleter)(response_struct);
 
-    match service_type {
-        iox2_service_type_e::IPC => {
-            let response = ManuallyDrop::into_inner(response.ipc);
-            match response.assume_init().send() {
-                Ok(()) => IOX2_OK,
-                Err(e) => e.into_c_int(),
+        match service_type {
+            iox2_service_type_e::IPC => {
+                let response = ManuallyDrop::into_inner(response.ipc);
+                match response.assume_init().send() {
+                    Ok(()) => IOX2_OK,
+                    Err(e) => e.into_c_int(),
+                }
             }
-        }
-        iox2_service_type_e::LOCAL => {
-            let response = ManuallyDrop::into_inner(response.local);
-            match response.assume_init().send() {
-                Ok(()) => IOX2_OK,
-                Err(e) => e.into_c_int(),
+            iox2_service_type_e::LOCAL => {
+                let response = ManuallyDrop::into_inner(response.local);
+                match response.assume_init().send() {
+                    Ok(()) => IOX2_OK,
+                    Err(e) => e.into_c_int(),
+                }
             }
         }
     }
@@ -353,18 +367,20 @@ pub unsafe extern "C" fn iox2_response_mut_send(response_handle: iox2_response_m
 ///   [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_response_mut_drop(response_handle: iox2_response_mut_h) {
-    debug_assert!(!response_handle.is_null());
+    unsafe {
+        debug_assert!(!response_handle.is_null());
 
-    let response = &mut *response_handle.as_type();
+        let response = &mut *response_handle.as_type();
 
-    match response.service_type {
-        iox2_service_type_e::IPC => {
-            ManuallyDrop::drop(&mut response.value.as_mut().ipc);
+        match response.service_type {
+            iox2_service_type_e::IPC => {
+                ManuallyDrop::drop(&mut response.value.as_mut().ipc);
+            }
+            iox2_service_type_e::LOCAL => {
+                ManuallyDrop::drop(&mut response.value.as_mut().local);
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            ManuallyDrop::drop(&mut response.value.as_mut().local);
-        }
+        (response.deleter)(response);
     }
-    (response.deleter)(response);
 }
 // END C API

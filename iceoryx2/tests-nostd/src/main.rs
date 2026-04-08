@@ -41,8 +41,10 @@ unsafe impl GlobalAlloc for GlobalHeapAllocator {
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        if let Some(non_null) = NonNull::new(ptr) {
-            self.0.deallocate(non_null, layout);
+        unsafe {
+            if let Some(non_null) = NonNull::new(ptr) {
+                self.0.deallocate(non_null, layout);
+            }
         }
     }
 }

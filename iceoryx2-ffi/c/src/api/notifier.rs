@@ -171,27 +171,29 @@ pub unsafe extern "C" fn iox2_notifier_id(
     id_struct_ptr: *mut iox2_unique_notifier_id_t,
     id_handle_ptr: *mut iox2_unique_notifier_id_h,
 ) {
-    notifier_handle.assert_non_null();
-    debug_assert!(!id_handle_ptr.is_null());
+    unsafe {
+        notifier_handle.assert_non_null();
+        debug_assert!(!id_handle_ptr.is_null());
 
-    fn no_op(_: *mut iox2_unique_notifier_id_t) {}
-    let mut deleter: fn(*mut iox2_unique_notifier_id_t) = no_op;
-    let mut storage_ptr = id_struct_ptr;
-    if id_struct_ptr.is_null() {
-        deleter = iox2_unique_notifier_id_t::dealloc;
-        storage_ptr = iox2_unique_notifier_id_t::alloc();
+        fn no_op(_: *mut iox2_unique_notifier_id_t) {}
+        let mut deleter: fn(*mut iox2_unique_notifier_id_t) = no_op;
+        let mut storage_ptr = id_struct_ptr;
+        if id_struct_ptr.is_null() {
+            deleter = iox2_unique_notifier_id_t::dealloc;
+            storage_ptr = iox2_unique_notifier_id_t::alloc();
+        }
+        debug_assert!(!storage_ptr.is_null());
+
+        let notifier = &mut *notifier_handle.as_type();
+
+        let id = match notifier.service_type {
+            iox2_service_type_e::IPC => notifier.value.as_mut().ipc.id(),
+            iox2_service_type_e::LOCAL => notifier.value.as_mut().local.id(),
+        };
+
+        (*storage_ptr).init(id, deleter);
+        *id_handle_ptr = (*storage_ptr).as_handle();
     }
-    debug_assert!(!storage_ptr.is_null());
-
-    let notifier = &mut *notifier_handle.as_type();
-
-    let id = match notifier.service_type {
-        iox2_service_type_e::IPC => notifier.value.as_mut().ipc.id(),
-        iox2_service_type_e::LOCAL => notifier.value.as_mut().local.id(),
-    };
-
-    (*storage_ptr).init(id, deleter);
-    *id_handle_ptr = (*storage_ptr).as_handle();
 }
 
 /// Returns the deadline of the notifier's service. If there is a deadline set, the provided
@@ -209,23 +211,25 @@ pub unsafe extern "C" fn iox2_notifier_deadline(
     seconds: *mut u64,
     nanoseconds: *mut u32,
 ) -> bool {
-    notifier_handle.assert_non_null();
-    debug_assert!(!seconds.is_null());
-    debug_assert!(!nanoseconds.is_null());
+    unsafe {
+        notifier_handle.assert_non_null();
+        debug_assert!(!seconds.is_null());
+        debug_assert!(!nanoseconds.is_null());
 
-    let notifier = &mut *notifier_handle.as_type();
+        let notifier = &mut *notifier_handle.as_type();
 
-    let deadline = match notifier.service_type {
-        iox2_service_type_e::IPC => notifier.value.as_mut().ipc.deadline(),
-        iox2_service_type_e::LOCAL => notifier.value.as_mut().local.deadline(),
-    };
+        let deadline = match notifier.service_type {
+            iox2_service_type_e::IPC => notifier.value.as_mut().ipc.deadline(),
+            iox2_service_type_e::LOCAL => notifier.value.as_mut().local.deadline(),
+        };
 
-    deadline
-        .map(|v| {
-            *seconds = v.as_secs();
-            *nanoseconds = v.subsec_nanos();
-        })
-        .is_some()
+        deadline
+            .map(|v| {
+                *seconds = v.as_secs();
+                *nanoseconds = v.subsec_nanos();
+            })
+            .is_some()
+    }
 }
 
 /// Notifies all [`iox2_listener_h`](crate::iox2_listener_h) connected to the service
@@ -247,27 +251,29 @@ pub unsafe extern "C" fn iox2_notifier_notify(
     notifier_handle: iox2_notifier_h_ref,
     number_of_notified_listener_ptr: *mut c_size_t,
 ) -> c_int {
-    notifier_handle.assert_non_null();
+    unsafe {
+        notifier_handle.assert_non_null();
 
-    let notifier = &mut *notifier_handle.as_type();
+        let notifier = &mut *notifier_handle.as_type();
 
-    let notify_result = match notifier.service_type {
-        iox2_service_type_e::IPC => notifier.value.as_mut().ipc.notify(),
-        iox2_service_type_e::LOCAL => notifier.value.as_mut().local.notify(),
-    };
+        let notify_result = match notifier.service_type {
+            iox2_service_type_e::IPC => notifier.value.as_mut().ipc.notify(),
+            iox2_service_type_e::LOCAL => notifier.value.as_mut().local.notify(),
+        };
 
-    match notify_result {
-        Ok(count) => {
-            if !number_of_notified_listener_ptr.is_null() {
-                *number_of_notified_listener_ptr = count;
+        match notify_result {
+            Ok(count) => {
+                if !number_of_notified_listener_ptr.is_null() {
+                    *number_of_notified_listener_ptr = count;
+                }
+            }
+            Err(error) => {
+                return error.into_c_int();
             }
         }
-        Err(error) => {
-            return error.into_c_int();
-        }
-    }
 
-    IOX2_OK
+        IOX2_OK
+    }
 }
 
 /// Notifies all [`iox2_listener_h`](crate::iox2_listener_h) connected to the service
@@ -292,37 +298,39 @@ pub unsafe extern "C" fn iox2_notifier_notify_with_custom_event_id(
     custom_event_id_ptr: *const iox2_event_id_t,
     number_of_notified_listener_ptr: *mut c_size_t,
 ) -> c_int {
-    notifier_handle.assert_non_null();
-    debug_assert!(!custom_event_id_ptr.is_null());
+    unsafe {
+        notifier_handle.assert_non_null();
+        debug_assert!(!custom_event_id_ptr.is_null());
 
-    let event_id = (*custom_event_id_ptr).into();
+        let event_id = (*custom_event_id_ptr).into();
 
-    let notifier = &mut *notifier_handle.as_type();
-    let notify_result = match notifier.service_type {
-        iox2_service_type_e::IPC => notifier
-            .value
-            .as_mut()
-            .ipc
-            .notify_with_custom_event_id(event_id),
-        iox2_service_type_e::LOCAL => notifier
-            .value
-            .as_mut()
-            .local
-            .notify_with_custom_event_id(event_id),
-    };
+        let notifier = &mut *notifier_handle.as_type();
+        let notify_result = match notifier.service_type {
+            iox2_service_type_e::IPC => notifier
+                .value
+                .as_mut()
+                .ipc
+                .notify_with_custom_event_id(event_id),
+            iox2_service_type_e::LOCAL => notifier
+                .value
+                .as_mut()
+                .local
+                .notify_with_custom_event_id(event_id),
+        };
 
-    match notify_result {
-        Ok(count) => {
-            if !number_of_notified_listener_ptr.is_null() {
-                *number_of_notified_listener_ptr = count;
+        match notify_result {
+            Ok(count) => {
+                if !number_of_notified_listener_ptr.is_null() {
+                    *number_of_notified_listener_ptr = count;
+                }
+            }
+            Err(error) => {
+                return error.into_c_int();
             }
         }
-        Err(error) => {
-            return error.into_c_int();
-        }
-    }
 
-    IOX2_OK
+        IOX2_OK
+    }
 }
 
 /// This function needs to be called to destroy the notifier!
@@ -338,19 +346,21 @@ pub unsafe extern "C" fn iox2_notifier_notify_with_custom_event_id(
 ///   [`iox2_port_factory_notifier_builder_create`](crate::iox2_port_factory_notifier_builder_create)!
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_notifier_drop(notifier_handle: iox2_notifier_h) {
-    debug_assert!(!notifier_handle.is_null());
+    unsafe {
+        debug_assert!(!notifier_handle.is_null());
 
-    let notifier = &mut *notifier_handle.as_type();
+        let notifier = &mut *notifier_handle.as_type();
 
-    match notifier.service_type {
-        iox2_service_type_e::IPC => {
-            ManuallyDrop::drop(&mut notifier.value.as_mut().ipc);
+        match notifier.service_type {
+            iox2_service_type_e::IPC => {
+                ManuallyDrop::drop(&mut notifier.value.as_mut().ipc);
+            }
+            iox2_service_type_e::LOCAL => {
+                ManuallyDrop::drop(&mut notifier.value.as_mut().local);
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            ManuallyDrop::drop(&mut notifier.value.as_mut().local);
-        }
+        (notifier.deleter)(notifier);
     }
-    (notifier.deleter)(notifier);
 }
 
 // END C API

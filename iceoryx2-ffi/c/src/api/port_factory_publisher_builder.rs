@@ -242,23 +242,26 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_allocation_stra
     port_factory_handle: iox2_port_factory_publisher_builder_h_ref,
     value: iox2_allocation_strategy_e,
 ) {
-    port_factory_handle.assert_non_null();
+    unsafe {
+        port_factory_handle.assert_non_null();
 
-    let port_factory_struct = unsafe { &mut *port_factory_handle.as_type() };
-    match port_factory_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
+        let port_factory_struct = &mut *port_factory_handle.as_type();
+        match port_factory_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
 
-            port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_ipc(
-                port_factory.allocation_strategy(value.into()),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
+                port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_ipc(
+                    port_factory.allocation_strategy(value.into()),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let port_factory =
+                    ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
 
-            port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_local(
-                port_factory.allocation_strategy(value.into()),
-            ));
+                port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_local(
+                    port_factory.allocation_strategy(value.into()),
+                ));
+            }
         }
     }
 }
@@ -279,23 +282,26 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_initial_max_sli
     port_factory_handle: iox2_port_factory_publisher_builder_h_ref,
     value: c_size_t,
 ) {
-    port_factory_handle.assert_non_null();
+    unsafe {
+        port_factory_handle.assert_non_null();
 
-    let port_factory_struct = unsafe { &mut *port_factory_handle.as_type() };
-    match port_factory_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
+        let port_factory_struct = &mut *port_factory_handle.as_type();
+        match port_factory_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
 
-            port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_ipc(
-                port_factory.initial_max_slice_len(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
+                port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_ipc(
+                    port_factory.initial_max_slice_len(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let port_factory =
+                    ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
 
-            port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_local(
-                port_factory.initial_max_slice_len(value),
-            ));
+                port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_local(
+                    port_factory.initial_max_slice_len(value),
+                ));
+            }
         }
     }
 }
@@ -316,23 +322,26 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_max_loaned_samp
     port_factory_handle: iox2_port_factory_publisher_builder_h_ref,
     value: c_size_t,
 ) {
-    port_factory_handle.assert_non_null();
+    unsafe {
+        port_factory_handle.assert_non_null();
 
-    let port_factory_struct = unsafe { &mut *port_factory_handle.as_type() };
-    match port_factory_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
+        let port_factory_struct = &mut *port_factory_handle.as_type();
+        match port_factory_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
 
-            port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_ipc(
-                port_factory.max_loaned_samples(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
+                port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_ipc(
+                    port_factory.max_loaned_samples(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let port_factory =
+                    ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
 
-            port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_local(
-                port_factory.max_loaned_samples(value),
-            ));
+                port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_local(
+                    port_factory.max_loaned_samples(value),
+                ));
+            }
         }
     }
 }
@@ -355,23 +364,25 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_unable_to_deliver_s
     port_factory_handle: iox2_port_factory_publisher_builder_h_ref,
     value: iox2_unable_to_deliver_strategy_e,
 ) {
-    port_factory_handle.assert_non_null();
+    unsafe {
+        port_factory_handle.assert_non_null();
 
-    let handle = unsafe { &mut *port_factory_handle.as_type() };
-    match handle.service_type {
-        iox2_service_type_e::IPC => {
-            let builder = ManuallyDrop::take(&mut handle.value.as_mut().ipc);
+        let handle = &mut *port_factory_handle.as_type();
+        match handle.service_type {
+            iox2_service_type_e::IPC => {
+                let builder = ManuallyDrop::take(&mut handle.value.as_mut().ipc);
 
-            handle.set(PortFactoryPublisherBuilderUnion::new_ipc(
-                builder.unable_to_deliver_strategy(value.into()),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let builder = ManuallyDrop::take(&mut handle.value.as_mut().local);
+                handle.set(PortFactoryPublisherBuilderUnion::new_ipc(
+                    builder.unable_to_deliver_strategy(value.into()),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let builder = ManuallyDrop::take(&mut handle.value.as_mut().local);
 
-            handle.set(PortFactoryPublisherBuilderUnion::new_local(
-                builder.unable_to_deliver_strategy(value.into()),
-            ));
+                handle.set(PortFactoryPublisherBuilderUnion::new_local(
+                    builder.unable_to_deliver_strategy(value.into()),
+                ));
+            }
         }
     }
 }
@@ -397,69 +408,71 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_create(
     publisher_struct_ptr: *mut iox2_publisher_t,
     publisher_handle_ptr: *mut iox2_publisher_h,
 ) -> c_int {
-    debug_assert!(!port_factory_handle.is_null());
-    debug_assert!(!publisher_handle_ptr.is_null());
+    unsafe {
+        debug_assert!(!port_factory_handle.is_null());
+        debug_assert!(!publisher_handle_ptr.is_null());
 
-    let mut publisher_struct_ptr = publisher_struct_ptr;
-    fn no_op(_: *mut iox2_publisher_t) {}
-    let mut deleter: fn(*mut iox2_publisher_t) = no_op;
-    if publisher_struct_ptr.is_null() {
-        publisher_struct_ptr = iox2_publisher_t::alloc();
-        deleter = iox2_publisher_t::dealloc;
-    }
-    debug_assert!(!publisher_struct_ptr.is_null());
+        let mut publisher_struct_ptr = publisher_struct_ptr;
+        fn no_op(_: *mut iox2_publisher_t) {}
+        let mut deleter: fn(*mut iox2_publisher_t) = no_op;
+        if publisher_struct_ptr.is_null() {
+            publisher_struct_ptr = iox2_publisher_t::alloc();
+            deleter = iox2_publisher_t::dealloc;
+        }
+        debug_assert!(!publisher_struct_ptr.is_null());
 
-    let publisher_builder_struct = unsafe { &mut *port_factory_handle.as_type() };
-    let service_type = publisher_builder_struct.service_type;
-    let publisher_builder = publisher_builder_struct
-        .value
-        .as_option_mut()
-        .take()
-        .unwrap_or_else(|| {
-            panic!("Trying to use an invalid 'iox2_port_factory_publisher_builder_h'!")
-        });
-    (publisher_builder_struct.deleter)(publisher_builder_struct);
+        let publisher_builder_struct = &mut *port_factory_handle.as_type();
+        let service_type = publisher_builder_struct.service_type;
+        let publisher_builder = publisher_builder_struct
+            .value
+            .as_option_mut()
+            .take()
+            .unwrap_or_else(|| {
+                panic!("Trying to use an invalid 'iox2_port_factory_publisher_builder_h'!")
+            });
+        (publisher_builder_struct.deleter)(publisher_builder_struct);
 
-    match service_type {
-        iox2_service_type_e::IPC => {
-            let publisher_builder = ManuallyDrop::into_inner(publisher_builder.ipc);
+        match service_type {
+            iox2_service_type_e::IPC => {
+                let publisher_builder = ManuallyDrop::into_inner(publisher_builder.ipc);
 
-            match publisher_builder.create() {
-                Ok(publisher) => {
-                    (*publisher_struct_ptr).init(
-                        service_type,
-                        PublisherUnion::new_ipc(publisher),
-                        deleter,
-                    );
+                match publisher_builder.create() {
+                    Ok(publisher) => {
+                        (*publisher_struct_ptr).init(
+                            service_type,
+                            PublisherUnion::new_ipc(publisher),
+                            deleter,
+                        );
+                    }
+                    Err(error) => {
+                        deleter(publisher_struct_ptr);
+                        return error.into_c_int();
+                    }
                 }
-                Err(error) => {
-                    deleter(publisher_struct_ptr);
-                    return error.into_c_int();
+            }
+            iox2_service_type_e::LOCAL => {
+                let publisher_builder = ManuallyDrop::into_inner(publisher_builder.local);
+
+                match publisher_builder.create() {
+                    Ok(publisher) => {
+                        (*publisher_struct_ptr).init(
+                            service_type,
+                            PublisherUnion::new_local(publisher),
+                            deleter,
+                        );
+                    }
+                    Err(error) => {
+                        deleter(publisher_struct_ptr);
+                        return error.into_c_int();
+                    }
                 }
             }
         }
-        iox2_service_type_e::LOCAL => {
-            let publisher_builder = ManuallyDrop::into_inner(publisher_builder.local);
 
-            match publisher_builder.create() {
-                Ok(publisher) => {
-                    (*publisher_struct_ptr).init(
-                        service_type,
-                        PublisherUnion::new_local(publisher),
-                        deleter,
-                    );
-                }
-                Err(error) => {
-                    deleter(publisher_struct_ptr);
-                    return error.into_c_int();
-                }
-            }
-        }
+        *publisher_handle_ptr = (*publisher_struct_ptr).as_handle();
+
+        IOX2_OK
     }
-
-    *publisher_handle_ptr = (*publisher_struct_ptr).as_handle();
-
-    IOX2_OK
 }
 
 // END C API

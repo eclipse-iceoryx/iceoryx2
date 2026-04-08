@@ -122,12 +122,14 @@ pub mod details {
 
     impl RelocatableContainer for BitSet<RelocatablePointer<BitsetElement>> {
         unsafe fn new_uninit(capacity: usize) -> Self {
-            Self {
-                data_ptr: RelocatablePointer::new_uninit(),
-                capacity,
-                array_capacity: Self::array_capacity(capacity),
-                is_memory_initialized: AtomicBool::new(false),
-                reset_position: AtomicUsize::new(0),
+            unsafe {
+                Self {
+                    data_ptr: RelocatablePointer::new_uninit(),
+                    capacity,
+                    array_capacity: Self::array_capacity(capacity),
+                    is_memory_initialized: AtomicBool::new(false),
+                    reset_position: AtomicUsize::new(0),
+                }
             }
         }
 
@@ -135,33 +137,33 @@ pub mod details {
             &mut self,
             allocator: &T,
         ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
-            if self.is_memory_initialized.load(Ordering::Relaxed) {
-                fatal_panic!(from self,
+            unsafe {
+                if self.is_memory_initialized.load(Ordering::Relaxed) {
+                    fatal_panic!(from self,
                 "Memory already initialized. Initializing it twice may lead to undefined behavior.");
-            }
+                }
 
-            let memory = fail!(from self, when allocator
+                let memory = fail!(from self, when allocator
             .allocate(Layout::from_size_align_unchecked(
                     core::mem::size_of::<BitsetElement>() * self.array_capacity,
                     core::mem::align_of::<BitsetElement>())),
             "Failed to initialize since the allocation of the data memory failed.");
 
-            self.data_ptr.init(memory);
+                self.data_ptr.init(memory);
 
-            for i in 0..self.array_capacity {
-                unsafe {
+                for i in 0..self.array_capacity {
                     (self.data_ptr.as_ptr() as *mut BitsetElement)
                         .add(i)
-                        .write(BitsetElement::new(0))
-                };
+                        .write(BitsetElement::new(0));
+                }
+
+                // relaxed is sufficient since no relocatable container can be used
+                // before init was called. Meaning, it is not allowed to send or share
+                // the container with other threads when it is in an uninitialized state.
+                self.is_memory_initialized.store(true, Ordering::Relaxed);
+
+                Ok(())
             }
-
-            // relaxed is sufficient since no relocatable container can be used
-            // before init was called. Meaning, it is not allowed to send or share
-            // the container with other threads when it is in an uninitialized state.
-            self.is_memory_initialized.store(true, Ordering::Relaxed);
-
-            Ok(())
         }
 
         fn memory_size(capacity: usize) -> usize {

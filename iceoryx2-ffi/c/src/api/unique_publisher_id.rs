@@ -105,17 +105,18 @@ unsafe extern "C" fn iox2_unique_publisher_id_value(
     id_ptr: *mut u8,
     id_length: usize,
 ) {
-    debug_assert!(!id_ptr.is_null());
-    handle.assert_non_null();
+    unsafe {
+        debug_assert!(!id_ptr.is_null());
+        handle.assert_non_null();
 
-    let h = &mut *handle.as_type();
+        let h = &mut *handle.as_type();
 
-    if let Some(Some(id)) = (h.value.internal.as_ptr() as *const Option<UniquePublisherId>).as_ref()
-    {
-        let bytes = id.value().to_ne_bytes();
-        debug_assert!(bytes.len() <= id_length, "id_length is too small");
+        if let Some(Some(id)) =
+            (h.value.internal.as_ptr() as *const Option<UniquePublisherId>).as_ref()
+        {
+            let bytes = id.value().to_ne_bytes();
+            debug_assert!(bytes.len() <= id_length, "id_length is too small");
 
-        unsafe {
             core::ptr::copy_nonoverlapping(
                 bytes.as_ptr(),
                 id_ptr,
@@ -136,11 +137,13 @@ unsafe extern "C" fn iox2_unique_publisher_id_value(
 /// * The `handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_unique_publisher_id_drop(handle: iox2_unique_publisher_id_h) {
-    handle.assert_non_null();
+    unsafe {
+        handle.assert_non_null();
 
-    let h = &mut *handle.as_type();
-    core::ptr::drop_in_place(h.value.as_option_mut());
-    (h.deleter)(h);
+        let h = &mut *handle.as_type();
+        core::ptr::drop_in_place(h.value.as_option_mut());
+        (h.deleter)(h);
+    }
 }
 
 /// Checks two [`iox2_unique_publisher_id_t`] for equality.
@@ -154,13 +157,15 @@ pub unsafe extern "C" fn iox2_unique_publisher_id_eq(
     lhs: iox2_unique_publisher_id_h_ref,
     rhs: iox2_unique_publisher_id_h_ref,
 ) -> bool {
-    lhs.assert_non_null();
-    rhs.assert_non_null();
+    unsafe {
+        lhs.assert_non_null();
+        rhs.assert_non_null();
 
-    let lhs = &mut *lhs.as_type();
-    let rhs = &mut *rhs.as_type();
+        let lhs = &mut *lhs.as_type();
+        let rhs = &mut *rhs.as_type();
 
-    lhs.value.as_ref() == rhs.value.as_ref()
+        lhs.value.as_ref() == rhs.value.as_ref()
+    }
 }
 
 /// Checks the ordering of two [`iox2_unique_publisher_id_t`].
@@ -174,13 +179,15 @@ pub unsafe extern "C" fn iox2_unique_publisher_id_less(
     lhs: iox2_unique_publisher_id_h_ref,
     rhs: iox2_unique_publisher_id_h_ref,
 ) -> bool {
-    lhs.assert_non_null();
-    rhs.assert_non_null();
+    unsafe {
+        lhs.assert_non_null();
+        rhs.assert_non_null();
 
-    let lhs = &mut *lhs.as_type();
-    let rhs = &mut *rhs.as_type();
+        let lhs = &mut *lhs.as_type();
+        let rhs = &mut *rhs.as_type();
 
-    lhs.value.as_ref() < rhs.value.as_ref()
+        lhs.value.as_ref() < rhs.value.as_ref()
+    }
 }
 
 // END C API

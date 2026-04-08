@@ -24,5 +24,5 @@ pub unsafe fn signalfd(
     mask: *const posix::sigset_t,
     flags: posix::int,
 ) -> posix::int {
-    libc::signalfd(fd, mask.cast(), flags)
+    unsafe { libc::signalfd(fd, mask.cast(), flags) }
 }

@@ -117,18 +117,20 @@ impl HandleToType for iox2_waitset_guard_h_ref {
 /// * `handle` must be valid and non null
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_guard_drop(handle: iox2_waitset_guard_h) {
-    handle.assert_non_null();
+    unsafe {
+        handle.assert_non_null();
 
-    let guard = &mut *handle.as_type();
+        let guard = &mut *handle.as_type();
 
-    match guard.service_type {
-        iox2_service_type_e::IPC => {
-            ManuallyDrop::drop(&mut guard.value.as_mut().ipc);
+        match guard.service_type {
+            iox2_service_type_e::IPC => {
+                ManuallyDrop::drop(&mut guard.value.as_mut().ipc);
+            }
+            iox2_service_type_e::LOCAL => {
+                ManuallyDrop::drop(&mut guard.value.as_mut().local);
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            ManuallyDrop::drop(&mut guard.value.as_mut().local);
-        }
+        (guard.deleter)(guard);
     }
-    (guard.deleter)(guard);
 }
 // END C API

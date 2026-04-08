@@ -795,52 +795,55 @@ impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
         value_details: TypeDetail,
         value_cleanup: Box<dyn FnMut()>,
     ) -> Self {
-        let key_type_details = match self.builder.override_key_type {
-            None => {
-                fatal_panic!(from self, "The key type details were not set when __internal_add was called!")
-            }
-            Some(details) => details,
-        };
-        let key_layout = match Layout::from_size_align(
-            key_type_details.size,
-            key_type_details.alignment,
-        ) {
-            Ok(layout) => layout,
-            Err(_) => {
-                fatal_panic!(from self, "This should never happen! Key size/alignment is invalid!")
-            }
-        };
-        let key_mem = match KeyMemory::try_from_ptr(key, key_layout) {
-            Ok(mem) => mem,
-            Err(_) => fatal_panic!(from self, "The key type has the wrong size/alignment!"),
-        };
+        unsafe {
+            let key_type_details = match self.builder.override_key_type {
+                None => {
+                    fatal_panic!(from self, "The key type details were not set when __internal_add was called!")
+                }
+                Some(details) => details,
+            };
+            let key_layout = match Layout::from_size_align(
+                key_type_details.size,
+                key_type_details.alignment,
+            ) {
+                Ok(layout) => layout,
+                Err(_) => {
+                    fatal_panic!(from self, "This should never happen! Key size/alignment is invalid!")
+                }
+            };
+            let key_mem = match KeyMemory::try_from_ptr(key, key_layout) {
+                Ok(mem) => mem,
+                Err(_) => fatal_panic!(from self, "The key type has the wrong size/alignment!"),
+            };
 
-        let value_writer = Box::new(move |raw_memory_ptr: *mut u8| {
-            let ptrs = __internal_calculate_atomic_mgmt_and_payload_ptr(
-                raw_memory_ptr,
+            let value_writer = Box::new(move |raw_memory_ptr: *mut u8| {
+                let ptrs = __internal_calculate_atomic_mgmt_and_payload_ptr(
+                    raw_memory_ptr,
+                    value_details.alignment,
+                );
+                core::ptr::copy_nonoverlapping(value, ptrs.atomic_payload_ptr, value_details.size);
+            });
+            let value_size = UnrestrictedAtomicMgmt::__internal_get_unrestricted_atomic_size(
+                value_details.size,
                 value_details.alignment,
             );
-            core::ptr::copy_nonoverlapping(value, ptrs.atomic_payload_ptr, value_details.size);
-        });
-        let value_size = UnrestrictedAtomicMgmt::__internal_get_unrestricted_atomic_size(
-            value_details.size,
-            value_details.alignment,
-        );
-        let value_alignment = UnrestrictedAtomicMgmt::__internal_get_unrestricted_atomic_alignment(
-            value_details.alignment,
-        );
+            let value_alignment =
+                UnrestrictedAtomicMgmt::__internal_get_unrestricted_atomic_alignment(
+                    value_details.alignment,
+                );
 
-        let internals = BuilderInternals::new(
-            key_mem,
-            value_details,
-            value_writer,
-            value_size,
-            value_alignment,
-            value_cleanup,
-        );
+            let internals = BuilderInternals::new(
+                key_mem,
+                value_details,
+                value_writer,
+                value_size,
+                value_alignment,
+                value_cleanup,
+            );
 
-        self.builder.internals.push(internals);
-        self
+            self.builder.internals.push(internals);
+            self
+        }
     }
 }
 

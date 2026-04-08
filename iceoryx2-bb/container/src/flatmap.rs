@@ -114,22 +114,24 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
         value: V,
         eq_func: &F,
     ) -> Result<(), FlatMapError> {
-        self.verify_init("insert()");
+        unsafe {
+            self.verify_init("insert()");
 
-        let msg = "Unable to insert key-value pair into FlatMap";
-        let origin = "MetaFlatMap::insert_impl()";
+            let msg = "Unable to insert key-value pair into FlatMap";
+            let origin = "MetaFlatMap::insert_impl()";
 
-        let mut iter = self
-            .map
-            .iter_impl()
-            .skip_while(|kv| !__internal_eq_comparison_wrapper(&kv.1.id, &id, eq_func));
-        if iter.next().is_some() {
-            fail!(from origin, with FlatMapError::KeyAlreadyExists, "{msg} since the passed key already exists.");
+            let mut iter = self
+                .map
+                .iter_impl()
+                .skip_while(|kv| !__internal_eq_comparison_wrapper(&kv.1.id, &id, eq_func));
+            if iter.next().is_some() {
+                fail!(from origin, with FlatMapError::KeyAlreadyExists, "{msg} since the passed key already exists.");
+            }
+            if self.map.insert_impl(Entry { id, value }).is_none() {
+                fail!(from origin, with FlatMapError::IsFull, "{msg} since the FlatMap is full.");
+            }
+            Ok(())
         }
-        if self.map.insert_impl(Entry { id, value }).is_none() {
-            fail!(from origin, with FlatMapError::IsFull, "{msg} since the FlatMap is full.");
-        }
-        Ok(())
     }
 
     pub(crate) unsafe fn get_impl<F: Fn(*const u8, *const u8) -> bool + ?Sized>(
@@ -137,9 +139,11 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
         id: &K,
         eq_func: &F,
     ) -> Option<V> {
-        self.verify_init("get()");
+        unsafe {
+            self.verify_init("get()");
 
-        self.get_ref_impl(id, eq_func).cloned()
+            self.get_ref_impl(id, eq_func).cloned()
+        }
     }
 
     pub(crate) unsafe fn get_ref_impl<F: Fn(*const u8, *const u8) -> bool + ?Sized>(
@@ -147,13 +151,15 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
         id: &K,
         eq_func: &F,
     ) -> Option<&V> {
-        self.verify_init("get_ref()");
+        unsafe {
+            self.verify_init("get_ref()");
 
-        let mut iter = self
-            .map
-            .iter_impl()
-            .skip_while(|kv| !__internal_eq_comparison_wrapper(&kv.1.id, id, eq_func));
-        iter.next().map(|kv| &kv.1.value)
+            let mut iter = self
+                .map
+                .iter_impl()
+                .skip_while(|kv| !__internal_eq_comparison_wrapper(&kv.1.id, id, eq_func));
+            iter.next().map(|kv| &kv.1.value)
+        }
     }
 
     pub(crate) unsafe fn get_mut_ref_impl<F: Fn(*const u8, *const u8) -> bool>(
@@ -161,15 +167,17 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
         id: &K,
         eq_func: &F,
     ) -> Option<&mut V> {
-        self.verify_init("get_mut_ref()");
+        unsafe {
+            self.verify_init("get_mut_ref()");
 
-        let slot_map_entry = self
-            .map
-            .iter_impl()
-            .find(|kv| __internal_eq_comparison_wrapper(&kv.1.id, id, eq_func))?;
-        self.map
-            .get_mut_impl(slot_map_entry.0)
-            .map(|flat_map_entry| &mut flat_map_entry.value)
+            let slot_map_entry = self
+                .map
+                .iter_impl()
+                .find(|kv| __internal_eq_comparison_wrapper(&kv.1.id, id, eq_func))?;
+            self.map
+                .get_mut_impl(slot_map_entry.0)
+                .map(|flat_map_entry| &mut flat_map_entry.value)
+        }
     }
 
     pub(crate) unsafe fn remove_impl<F: Fn(*const u8, *const u8) -> bool>(
@@ -177,17 +185,19 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
         id: &K,
         eq_func: &F,
     ) -> Option<V> {
-        self.verify_init("remove()");
+        unsafe {
+            self.verify_init("remove()");
 
-        let mut iter = self
-            .map
-            .iter_impl()
-            .skip_while(|kv| !__internal_eq_comparison_wrapper(&kv.1.id, id, eq_func));
-        if let Some(kv) = iter.next() {
-            let key = kv.0;
-            self.map.remove_impl(key).map(|e| e.value)
-        } else {
-            None
+            let mut iter = self
+                .map
+                .iter_impl()
+                .skip_while(|kv| !__internal_eq_comparison_wrapper(&kv.1.id, id, eq_func));
+            if let Some(kv) = iter.next() {
+                let key = kv.0;
+                self.map.remove_impl(key).map(|e| e.value)
+            } else {
+                None
+            }
         }
     }
 
@@ -204,9 +214,11 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
         id: &K,
         eq_func: &F,
     ) -> bool {
-        self.verify_init("contains()");
+        unsafe {
+            self.verify_init("contains()");
 
-        self.get_ref_impl(id, eq_func).is_some()
+            self.get_ref_impl(id, eq_func).is_some()
+        }
     }
 
     pub(crate) fn len_impl(&self) -> usize {
@@ -217,9 +229,11 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
         &self,
         mut callback: F,
     ) {
-        for (_, kv) in self.map.iter_impl() {
-            if callback(&kv.id) == CallbackProgression::Stop {
-                break;
+        unsafe {
+            for (_, kv) in self.map.iter_impl() {
+                if callback(&kv.id) == CallbackProgression::Stop {
+                    break;
+                }
             }
         }
     }
@@ -276,7 +290,7 @@ impl<K: Eq, V: Clone> FlatMap<K, V> {
         value: V,
         eq_func: &F,
     ) -> Result<(), FlatMapError> {
-        self.insert_impl(id, value, eq_func)
+        unsafe { self.insert_impl(id, value, eq_func) }
     }
 
     /// Returns a copy of the value corresponding to the given key. If there is no such key,
@@ -299,7 +313,7 @@ impl<K: Eq, V: Clone> FlatMap<K, V> {
         id: &K,
         eq_func: &F,
     ) -> Option<V> {
-        self.get_impl(id, eq_func)
+        unsafe { self.get_impl(id, eq_func) }
     }
 
     /// Returns a reference to the value corresponding to the given key. If there is no such
@@ -322,7 +336,7 @@ impl<K: Eq, V: Clone> FlatMap<K, V> {
         id: &K,
         eq_func: &F,
     ) -> Option<&V> {
-        self.get_ref_impl(id, eq_func)
+        unsafe { self.get_ref_impl(id, eq_func) }
     }
 
     /// Returns a mutable reference to the value corresponding to the given key. If there is
@@ -345,7 +359,7 @@ impl<K: Eq, V: Clone> FlatMap<K, V> {
         id: &K,
         eq_func: &F,
     ) -> Option<&mut V> {
-        self.get_mut_ref_impl(id, eq_func)
+        unsafe { self.get_mut_ref_impl(id, eq_func) }
     }
 
     /// Removes a key (`id`) from the [`FlatMap`], returning the Some(value) at the key if the key
@@ -369,7 +383,7 @@ impl<K: Eq, V: Clone> FlatMap<K, V> {
         id: &K,
         eq_func: &F,
     ) -> Option<V> {
-        self.remove_impl(id, eq_func)
+        unsafe { self.remove_impl(id, eq_func) }
     }
 
     /// Returns true if the [`FlatMap`] is empty, otherwise false.
@@ -401,7 +415,7 @@ impl<K: Eq, V: Clone> FlatMap<K, V> {
         id: &K,
         eq_func: &F,
     ) -> bool {
-        self.contains_impl(id, eq_func)
+        unsafe { self.contains_impl(id, eq_func) }
     }
 
     /// Returns the number of stored key-value pairs.
@@ -417,9 +431,11 @@ impl<K: Eq, V: Clone> FlatMap<K, V> {
 
 impl<K: Eq, V: Clone> RelocatableContainer for RelocatableFlatMap<K, V> {
     unsafe fn new_uninit(capacity: usize) -> Self {
-        Self {
-            map: RelocatableSlotMap::new_uninit(capacity),
-            is_initialized: AtomicBool::new(false),
+        unsafe {
+            Self {
+                map: RelocatableSlotMap::new_uninit(capacity),
+                is_initialized: AtomicBool::new(false),
+            }
         }
     }
 
@@ -427,17 +443,19 @@ impl<K: Eq, V: Clone> RelocatableContainer for RelocatableFlatMap<K, V> {
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
-        if self
-            .is_initialized
-            .load(core::sync::atomic::Ordering::Relaxed)
-        {
-            fatal_panic!(from "RelocatableFlatMap::init()", "Memory already initialized. Initializing it twice may lead to undefined behavior.");
+        unsafe {
+            if self
+                .is_initialized
+                .load(core::sync::atomic::Ordering::Relaxed)
+            {
+                fatal_panic!(from "RelocatableFlatMap::init()", "Memory already initialized. Initializing it twice may lead to undefined behavior.");
+            }
+            let msg = "Unable to initialize RelocatableFlatMap";
+            fail!(from "RelocatableFlatMap::init()", when self.map.init(allocator), "{msg} since the underlying RelocatableSlotMap could not be initialized.");
+            self.is_initialized
+                .store(true, core::sync::atomic::Ordering::Relaxed);
+            Ok(())
         }
-        let msg = "Unable to initialize RelocatableFlatMap";
-        fail!(from "RelocatableFlatMap::init()", when self.map.init(allocator), "{msg} since the underlying RelocatableSlotMap could not be initialized.");
-        self.is_initialized
-            .store(true, core::sync::atomic::Ordering::Relaxed);
-        Ok(())
     }
 
     fn memory_size(capacity: usize) -> usize {
@@ -465,7 +483,7 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
     ///  * [`RelocatableFlatMap::init()`] must be called once before
     ///
     pub unsafe fn insert(&mut self, id: K, value: V) -> Result<(), FlatMapError> {
-        self.insert_impl(id, value, &__internal_default_eq_comparison::<K>)
+        unsafe { self.insert_impl(id, value, &__internal_default_eq_comparison::<K>) }
     }
 
     #[doc(hidden)]
@@ -486,7 +504,7 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
         value: V,
         eq_func: &F,
     ) -> Result<(), FlatMapError> {
-        self.insert_impl(id, value, eq_func)
+        unsafe { self.insert_impl(id, value, eq_func) }
     }
 
     /// Returns a copy of the value corresponding to the given key. If there is no such key,
@@ -497,7 +515,7 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
     ///  * [`RelocatableFlatMap::init()`] must be called once before
     ///
     pub unsafe fn get(&self, id: &K) -> Option<V> {
-        self.get_impl(id, &__internal_default_eq_comparison::<K>)
+        unsafe { self.get_impl(id, &__internal_default_eq_comparison::<K>) }
     }
 
     #[doc(hidden)]
@@ -516,7 +534,7 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
         id: &K,
         eq_func: &F,
     ) -> Option<V> {
-        self.get_impl(id, eq_func)
+        unsafe { self.get_impl(id, eq_func) }
     }
 
     /// Returns a reference to the value corresponding to the given key. If there is no such
@@ -527,7 +545,7 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
     ///  * [`RelocatableFlatMap::init()`] must be called once before
     ///
     pub unsafe fn get_ref(&self, id: &K) -> Option<&V> {
-        self.get_ref_impl(id, &__internal_default_eq_comparison::<K>)
+        unsafe { self.get_ref_impl(id, &__internal_default_eq_comparison::<K>) }
     }
 
     #[doc(hidden)]
@@ -546,7 +564,7 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
         id: &K,
         eq_func: &F,
     ) -> Option<&V> {
-        self.get_ref_impl(id, eq_func)
+        unsafe { self.get_ref_impl(id, eq_func) }
     }
 
     /// Returns a mutable reference to the value corresponding to the given key. If there is
@@ -557,7 +575,7 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
     ///  * [`RelocatableFlatMap::init()`] must be called once before
     ///
     pub unsafe fn get_mut_ref(&mut self, id: &K) -> Option<&mut V> {
-        self.get_mut_ref_impl(id, &__internal_default_eq_comparison::<K>)
+        unsafe { self.get_mut_ref_impl(id, &__internal_default_eq_comparison::<K>) }
     }
 
     #[doc(hidden)]
@@ -576,7 +594,7 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
         id: &K,
         eq_func: &F,
     ) -> Option<&mut V> {
-        self.get_mut_ref_impl(id, eq_func)
+        unsafe { self.get_mut_ref_impl(id, eq_func) }
     }
 
     /// Removes a key (`id`) from the map, returning the Some(value) at the key if the key
@@ -586,7 +604,7 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
     ///  * [`RelocatableFlatMap::init()`] must be called once before
     ///
     pub unsafe fn remove(&mut self, id: &K) -> Option<V> {
-        self.remove_impl(id, &__internal_default_eq_comparison::<K>)
+        unsafe { self.remove_impl(id, &__internal_default_eq_comparison::<K>) }
     }
 
     #[doc(hidden)]
@@ -606,7 +624,7 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
         id: &K,
         eq_func: &F,
     ) -> Option<V> {
-        self.remove_impl(id, eq_func)
+        unsafe { self.remove_impl(id, eq_func) }
     }
 
     /// Returns true if the map is empty, otherwise false.
@@ -626,7 +644,7 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
     ///  * [`RelocatableFlatMap::init()`] must be called once before
     ///
     pub unsafe fn contains(&self, id: &K) -> bool {
-        self.contains_impl(id, &__internal_default_eq_comparison::<K>)
+        unsafe { self.contains_impl(id, &__internal_default_eq_comparison::<K>) }
     }
 
     #[doc(hidden)]
@@ -645,7 +663,7 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
         id: &K,
         eq_func: &F,
     ) -> bool {
-        self.contains_impl(id, eq_func)
+        unsafe { self.contains_impl(id, eq_func) }
     }
 
     /// Returns the number of stored key-value pairs.
@@ -676,13 +694,15 @@ unsafe impl<K: Eq + ZeroCopySend, V: Clone + ZeroCopySend, const CAPACITY: usize
 
 impl<K: Eq, V: Clone, const CAPACITY: usize> PlacementDefault for FixedSizeFlatMap<K, V, CAPACITY> {
     unsafe fn placement_default(ptr: *mut Self) {
-        let map_ptr = core::ptr::addr_of_mut!((*ptr).map);
-        map_ptr.write(unsafe { RelocatableFlatMap::new_uninit(CAPACITY) });
-        let allocator = BumpAllocator::new((*ptr)._idx_to_data.as_mut_ptr().cast());
-        (*ptr)
-            .map
-            .init(&allocator)
-            .expect("All required memory is preallocated.");
+        unsafe {
+            let map_ptr = core::ptr::addr_of_mut!((*ptr).map);
+            map_ptr.write(RelocatableFlatMap::new_uninit(CAPACITY));
+            let allocator = BumpAllocator::new((*ptr)._idx_to_data.as_mut_ptr().cast());
+            (*ptr)
+                .map
+                .init(&allocator)
+                .expect("All required memory is preallocated.");
+        }
     }
 }
 
@@ -749,7 +769,7 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
         value: V,
         eq_func: &F,
     ) -> Result<(), FlatMapError> {
-        self.map.__internal_insert(id, value, eq_func)
+        unsafe { self.map.__internal_insert(id, value, eq_func) }
     }
 
     /// Returns a copy of the value corresponding to the given key. If there is no such key,
@@ -772,7 +792,7 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
         id: &K,
         eq_func: &F,
     ) -> Option<V> {
-        self.map.__internal_get(id, eq_func)
+        unsafe { self.map.__internal_get(id, eq_func) }
     }
 
     /// Returns a reference to the value corresponding to the given key. If there is no such
@@ -796,7 +816,7 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
         id: &K,
         eq_func: &F,
     ) -> Option<&V> {
-        self.map.__internal_get_ref(id, eq_func)
+        unsafe { self.map.__internal_get_ref(id, eq_func) }
     }
 
     /// Returns a mutable reference to the value corresponding to the given key. If there is
@@ -820,7 +840,7 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
         id: &K,
         eq_func: &F,
     ) -> Option<&mut V> {
-        self.map.__internal_get_mut_ref(id, eq_func)
+        unsafe { self.map.__internal_get_mut_ref(id, eq_func) }
     }
 
     /// Removes a key (`id`) from the [`FixedSizeFlatMap`], returning the Some(value) at the key
@@ -845,7 +865,7 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
         id: &K,
         eq_func: &F,
     ) -> Option<V> {
-        self.map.__internal_remove(id, eq_func)
+        unsafe { self.map.__internal_remove(id, eq_func) }
     }
 
     /// Returns true if the [`FixedSizeFlatMap`] is empty, otherwise false.
@@ -877,7 +897,7 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
         id: &K,
         eq_func: &F,
     ) -> bool {
-        self.map.__internal_contains(id, eq_func)
+        unsafe { self.map.__internal_contains(id, eq_func) }
     }
 
     /// Returns the number of stored key-value pairs.

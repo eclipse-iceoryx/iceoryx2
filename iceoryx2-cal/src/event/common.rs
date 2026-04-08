@@ -206,9 +206,11 @@ pub mod details {
             name: &FileName,
             cfg: &Self::Configuration,
         ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
-            Ok(fail!(from "Event::remove_cfg()",
+            unsafe {
+                Ok(fail!(from "Event::remove_cfg()",
                     when Storage::remove_cfg(name, &cfg.convert()),
                     "Failed to remove Event \"{}\".", name))
+            }
         }
 
         fn remove_path_hint(

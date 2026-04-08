@@ -107,8 +107,10 @@ pub mod heap {
     }
 
     unsafe fn extract_address(addr: usize) -> usize {
-        let memory = addr as *const usize;
-        *memory.offset(-1)
+        unsafe {
+            let memory = addr as *const usize;
+            *memory.offset(-1)
+        }
     }
 
     /// Allocates an aligned piece of memory on the heap with a size specified in layout.
@@ -154,28 +156,30 @@ pub mod heap {
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, MemoryError> {
-        let msg = "Unable to resize heap memory to";
-        check_precondition(msg, new_layout)?;
+        unsafe {
+            let msg = "Unable to resize heap memory to";
+            check_precondition(msg, new_layout)?;
 
-        if old_layout.align() < new_layout.align() {
-            fail!(from "heap::resize", with MemoryError::AlignmentFailure,
-                "{} {} since the new layouts alignment was increased from {} to {}.",
-                msg,
-                new_layout.size(),
-                old_layout.align(),
-                new_layout.align()
-            );
+            if old_layout.align() < new_layout.align() {
+                fail!(from "heap::resize", with MemoryError::AlignmentFailure,
+                    "{} {} since the new layouts alignment was increased from {} to {}.",
+                    msg,
+                    new_layout.size(),
+                    old_layout.align(),
+                    new_layout.align()
+                );
+            }
+
+            let alignment_adjustment_buffer = new_layout.align() - 1;
+
+            let current_unaligned_start = extract_address(ptr.as_ptr() as usize);
+            let new_unaligned_start = posix::realloc(
+                current_unaligned_start as *mut posix::void,
+                new_layout.size() + alignment_adjustment_buffer + MEMORY_START_STORAGE_SPACE,
+            ) as usize;
+
+            setup_and_align(msg, new_unaligned_start, new_layout)
         }
-
-        let alignment_adjustment_buffer = new_layout.align() - 1;
-
-        let current_unaligned_start = extract_address(ptr.as_ptr() as usize);
-        let new_unaligned_start = posix::realloc(
-            current_unaligned_start as *mut posix::void,
-            new_layout.size() + alignment_adjustment_buffer + MEMORY_START_STORAGE_SPACE,
-        ) as usize;
-
-        setup_and_align(msg, new_unaligned_start, new_layout)
     }
 
     /// Deallocates a previously allocated piece of memory.
@@ -187,6 +191,6 @@ pub mod heap {
     ///    or [`heap::allocate_zeroed()`] or when it was resized the current layout
     ///
     pub unsafe fn deallocate(ptr: NonNull<u8>, _layout: Layout) {
-        posix::free(extract_address(ptr.as_ptr() as usize) as *mut posix::void)
+        unsafe { posix::free(extract_address(ptr.as_ptr() as usize) as *mut posix::void) }
     }
 }

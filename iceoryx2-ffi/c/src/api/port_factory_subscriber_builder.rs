@@ -187,23 +187,26 @@ pub unsafe extern "C" fn iox2_port_factory_subscriber_builder_set_buffer_size(
     port_factory_handle: iox2_port_factory_subscriber_builder_h_ref,
     value: c_size_t,
 ) {
-    port_factory_handle.assert_non_null();
+    unsafe {
+        port_factory_handle.assert_non_null();
 
-    let port_factory_struct = unsafe { &mut *port_factory_handle.as_type() };
-    match port_factory_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
+        let port_factory_struct = { &mut *port_factory_handle.as_type() };
+        match port_factory_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
 
-            port_factory_struct.set(PortFactorySubscriberBuilderUnion::new_ipc(
-                port_factory.buffer_size(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
+                port_factory_struct.set(PortFactorySubscriberBuilderUnion::new_ipc(
+                    port_factory.buffer_size(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let port_factory =
+                    ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
 
-            port_factory_struct.set(PortFactorySubscriberBuilderUnion::new_local(
-                port_factory.buffer_size(value),
-            ));
+                port_factory_struct.set(PortFactorySubscriberBuilderUnion::new_local(
+                    port_factory.buffer_size(value),
+                ));
+            }
         }
     }
 }
@@ -231,69 +234,71 @@ pub unsafe extern "C" fn iox2_port_factory_subscriber_builder_create(
     subscriber_struct_ptr: *mut iox2_subscriber_t,
     subscriber_handle_ptr: *mut iox2_subscriber_h,
 ) -> c_int {
-    debug_assert!(!port_factory_handle.is_null());
-    debug_assert!(!subscriber_handle_ptr.is_null());
+    unsafe {
+        debug_assert!(!port_factory_handle.is_null());
+        debug_assert!(!subscriber_handle_ptr.is_null());
 
-    let mut subscriber_struct_ptr = subscriber_struct_ptr;
-    fn no_op(_: *mut iox2_subscriber_t) {}
-    let mut deleter: fn(*mut iox2_subscriber_t) = no_op;
-    if subscriber_struct_ptr.is_null() {
-        subscriber_struct_ptr = iox2_subscriber_t::alloc();
-        deleter = iox2_subscriber_t::dealloc;
-    }
-    debug_assert!(!subscriber_struct_ptr.is_null());
+        let mut subscriber_struct_ptr = subscriber_struct_ptr;
+        fn no_op(_: *mut iox2_subscriber_t) {}
+        let mut deleter: fn(*mut iox2_subscriber_t) = no_op;
+        if subscriber_struct_ptr.is_null() {
+            subscriber_struct_ptr = iox2_subscriber_t::alloc();
+            deleter = iox2_subscriber_t::dealloc;
+        }
+        debug_assert!(!subscriber_struct_ptr.is_null());
 
-    let subscriber_builder_struct = unsafe { &mut *port_factory_handle.as_type() };
-    let service_type = subscriber_builder_struct.service_type;
-    let subscriber_builder = subscriber_builder_struct
-        .value
-        .as_option_mut()
-        .take()
-        .unwrap_or_else(|| {
-            panic!("Trying to use an invalid 'iox2_port_factory_subscriber_builder_h'!")
-        });
-    (subscriber_builder_struct.deleter)(subscriber_builder_struct);
+        let subscriber_builder_struct = { &mut *port_factory_handle.as_type() };
+        let service_type = subscriber_builder_struct.service_type;
+        let subscriber_builder = subscriber_builder_struct
+            .value
+            .as_option_mut()
+            .take()
+            .unwrap_or_else(|| {
+                panic!("Trying to use an invalid 'iox2_port_factory_subscriber_builder_h'!")
+            });
+        (subscriber_builder_struct.deleter)(subscriber_builder_struct);
 
-    match service_type {
-        iox2_service_type_e::IPC => {
-            let subscriber_builder = ManuallyDrop::into_inner(subscriber_builder.ipc);
+        match service_type {
+            iox2_service_type_e::IPC => {
+                let subscriber_builder = ManuallyDrop::into_inner(subscriber_builder.ipc);
 
-            match subscriber_builder.create() {
-                Ok(subscriber) => {
-                    (*subscriber_struct_ptr).init(
-                        service_type,
-                        SubscriberUnion::new_ipc(subscriber),
-                        deleter,
-                    );
+                match subscriber_builder.create() {
+                    Ok(subscriber) => {
+                        (*subscriber_struct_ptr).init(
+                            service_type,
+                            SubscriberUnion::new_ipc(subscriber),
+                            deleter,
+                        );
+                    }
+                    Err(error) => {
+                        deleter(subscriber_struct_ptr);
+                        return error.into_c_int();
+                    }
                 }
-                Err(error) => {
-                    deleter(subscriber_struct_ptr);
-                    return error.into_c_int();
+            }
+            iox2_service_type_e::LOCAL => {
+                let subscriber_builder = ManuallyDrop::into_inner(subscriber_builder.local);
+
+                match subscriber_builder.create() {
+                    Ok(subscriber) => {
+                        (*subscriber_struct_ptr).init(
+                            service_type,
+                            SubscriberUnion::new_local(subscriber),
+                            deleter,
+                        );
+                    }
+                    Err(error) => {
+                        deleter(subscriber_struct_ptr);
+                        return error.into_c_int();
+                    }
                 }
             }
         }
-        iox2_service_type_e::LOCAL => {
-            let subscriber_builder = ManuallyDrop::into_inner(subscriber_builder.local);
 
-            match subscriber_builder.create() {
-                Ok(subscriber) => {
-                    (*subscriber_struct_ptr).init(
-                        service_type,
-                        SubscriberUnion::new_local(subscriber),
-                        deleter,
-                    );
-                }
-                Err(error) => {
-                    deleter(subscriber_struct_ptr);
-                    return error.into_c_int();
-                }
-            }
-        }
+        *subscriber_handle_ptr = (*subscriber_struct_ptr).as_handle();
+
+        IOX2_OK
     }
-
-    *subscriber_handle_ptr = (*subscriber_struct_ptr).as_handle();
-
-    IOX2_OK
 }
 
 // END C API

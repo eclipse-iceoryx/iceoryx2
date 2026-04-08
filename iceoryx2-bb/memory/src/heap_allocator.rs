@@ -47,7 +47,9 @@ impl BaseAllocator for HeapAllocator {
     }
 
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        heap::deallocate(ptr, layout);
+        unsafe {
+            heap::deallocate(ptr, layout);
+        }
     }
 }
 
@@ -58,14 +60,16 @@ impl Allocator for HeapAllocator {
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocationGrowError> {
-        if old_layout.size() >= new_layout.size() {
-            fail!(from self, with AllocationGrowError::GrowWouldShrink,
+        unsafe {
+            if old_layout.size() >= new_layout.size() {
+                fail!(from self, with AllocationGrowError::GrowWouldShrink,
                 "Failed to grow memory from (size: {}, align: {}) to (size: {}, align: {}).", old_layout.size(),old_layout.align(), new_layout.size(), new_layout.align());
-        }
-        Ok(
-            fail!(from self, when heap::resize(ptr, old_layout, new_layout),
+            }
+            Ok(
+                fail!(from self, when heap::resize(ptr, old_layout, new_layout),
                 "Failed to grow memory from (size: {}, align: {}) to (size: {}, align: {}).", old_layout.size(),old_layout.align(), new_layout.size(), new_layout.align()),
-        )
+            )
+        }
     }
 
     unsafe fn shrink(
@@ -74,13 +78,15 @@ impl Allocator for HeapAllocator {
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocationShrinkError> {
-        if old_layout.size() <= new_layout.size() {
-            fail!(from self, with AllocationShrinkError::ShrinkWouldGrow,
+        unsafe {
+            if old_layout.size() <= new_layout.size() {
+                fail!(from self, with AllocationShrinkError::ShrinkWouldGrow,
                 "Failed to shrink memory from (size: {}, align: {}) to (size: {}, align: {}).", old_layout.size(),old_layout.align(), new_layout.size(), new_layout.align());
-        }
-        Ok(
-            fail!(from self, when heap::resize(ptr, old_layout, new_layout),
+            }
+            Ok(
+                fail!(from self, when heap::resize(ptr, old_layout, new_layout),
                 "Failed to shrink memory from (size: {}, align: {}) to (size: {}, align: {}).", old_layout.size(),old_layout.align(), new_layout.size(), new_layout.align()),
-        )
+            )
+        }
     }
 }

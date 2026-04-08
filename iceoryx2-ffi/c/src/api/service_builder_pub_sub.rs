@@ -280,38 +280,45 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_user_header_type_detai
     size: c_size_t,
     alignment: c_size_t,
 ) -> c_int {
-    service_builder_handle.assert_non_null();
+    unsafe {
+        service_builder_handle.assert_non_null();
 
-    let value =
-        match create_type_details(type_variant, type_name_str, type_name_len, size, alignment) {
+        let value = match create_type_details(
+            type_variant,
+            type_name_str,
+            type_name_len,
+            size,
+            alignment,
+        ) {
             Ok(v) => v,
             Err(e) => return e,
         };
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
-                service_builder.__internal_set_user_header_type_details(&value),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                    service_builder.__internal_set_user_header_type_details(&value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                    service_builder.__internal_set_user_header_type_details(&value),
+                ));
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
-                service_builder.__internal_set_user_header_type_details(&value),
-            ));
-        }
+        IOX2_OK
     }
-
-    IOX2_OK
 }
 
 /// Sets the payload type details for the builder
@@ -342,38 +349,45 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_payload_type_details(
     size: c_size_t,
     alignment: c_size_t,
 ) -> c_int {
-    service_builder_handle.assert_non_null();
+    unsafe {
+        service_builder_handle.assert_non_null();
 
-    let value =
-        match create_type_details(type_variant, type_name_str, type_name_len, size, alignment) {
+        let value = match create_type_details(
+            type_variant,
+            type_name_str,
+            type_name_len,
+            size,
+            alignment,
+        ) {
             Ok(v) => v,
             Err(e) => return e,
         };
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
-                service_builder.__internal_set_payload_type_details(&value),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                    service_builder.__internal_set_payload_type_details(&value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                    service_builder.__internal_set_payload_type_details(&value),
+                ));
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
-                service_builder.__internal_set_payload_type_details(&value),
-            ));
-        }
+        IOX2_OK
     }
-
-    IOX2_OK
 }
 
 /// Sets the max nodes for the builder
@@ -392,28 +406,30 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_nodes(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: c_size_t,
 ) {
-    service_builder_handle.assert_non_null();
+    unsafe {
+        service_builder_handle.assert_non_null();
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
-                service_builder.max_nodes(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                    service_builder.max_nodes(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
-                service_builder.max_nodes(value),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                    service_builder.max_nodes(value),
+                ));
+            }
         }
     }
 }
@@ -434,28 +450,30 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_publishers(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: c_size_t,
 ) {
-    service_builder_handle.assert_non_null();
+    unsafe {
+        service_builder_handle.assert_non_null();
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
-                service_builder.max_publishers(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                    service_builder.max_publishers(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
-                service_builder.max_publishers(value),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                    service_builder.max_publishers(value),
+                ));
+            }
         }
     }
 }
@@ -476,28 +494,30 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_subscribers(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: c_size_t,
 ) {
-    service_builder_handle.assert_non_null();
+    unsafe {
+        service_builder_handle.assert_non_null();
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
-                service_builder.max_subscribers(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                    service_builder.max_subscribers(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
-                service_builder.max_subscribers(value),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                    service_builder.max_subscribers(value),
+                ));
+            }
         }
     }
 }
@@ -518,32 +538,34 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_payload_alignment(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: c_size_t,
 ) {
-    service_builder_handle.assert_non_null();
+    unsafe {
+        service_builder_handle.assert_non_null();
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
-                service_builder.payload_alignment(
-                    Alignment::new(value).unwrap_or(Alignment::new_unchecked(8)),
-                ),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                    service_builder.payload_alignment(
+                        Alignment::new(value).unwrap_or(Alignment::new_unchecked(8)),
+                    ),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
-                service_builder.payload_alignment(
-                    Alignment::new(value).unwrap_or(Alignment::new_unchecked(8)),
-                ),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                    service_builder.payload_alignment(
+                        Alignment::new(value).unwrap_or(Alignment::new_unchecked(8)),
+                    ),
+                ));
+            }
         }
     }
 }
@@ -564,28 +586,30 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_history_size(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: c_size_t,
 ) {
-    service_builder_handle.assert_non_null();
+    unsafe {
+        service_builder_handle.assert_non_null();
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
-                service_builder.history_size(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                    service_builder.history_size(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
-                service_builder.history_size(value),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                    service_builder.history_size(value),
+                ));
+            }
         }
     }
 }
@@ -606,28 +630,30 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_subscriber_max_buffer_
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: c_size_t,
 ) {
-    service_builder_handle.assert_non_null();
+    unsafe {
+        service_builder_handle.assert_non_null();
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
-                service_builder.subscriber_max_buffer_size(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                    service_builder.subscriber_max_buffer_size(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
-                service_builder.subscriber_max_buffer_size(value),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                    service_builder.subscriber_max_buffer_size(value),
+                ));
+            }
         }
     }
 }
@@ -648,28 +674,30 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_subscriber_max_borrowe
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: c_size_t,
 ) {
-    service_builder_handle.assert_non_null();
+    unsafe {
+        service_builder_handle.assert_non_null();
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
-                service_builder.subscriber_max_borrowed_samples(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                    service_builder.subscriber_max_borrowed_samples(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
-                service_builder.subscriber_max_borrowed_samples(value),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                    service_builder.subscriber_max_borrowed_samples(value),
+                ));
+            }
         }
     }
 }
@@ -690,28 +718,30 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_enable_safe_overflow(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: bool,
 ) {
-    service_builder_handle.assert_non_null();
+    unsafe {
+        service_builder_handle.assert_non_null();
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
-                service_builder.enable_safe_overflow(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                    service_builder.enable_safe_overflow(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
-                service_builder.enable_safe_overflow(value),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                    service_builder.enable_safe_overflow(value),
+                ));
+            }
         }
     }
 }
@@ -739,13 +769,15 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open_or_create(
     port_factory_struct_ptr: *mut iox2_port_factory_pub_sub_t,
     port_factory_handle_ptr: *mut iox2_port_factory_pub_sub_h,
 ) -> c_int {
-    iox2_service_builder_pub_sub_open_create_impl(
-        service_builder_handle,
-        port_factory_struct_ptr,
-        port_factory_handle_ptr,
-        |service_builder| service_builder.open_or_create(),
-        |service_builder| service_builder.open_or_create(),
-    )
+    unsafe {
+        iox2_service_builder_pub_sub_open_create_impl(
+            service_builder_handle,
+            port_factory_struct_ptr,
+            port_factory_handle_ptr,
+            |service_builder| service_builder.open_or_create(),
+            |service_builder| service_builder.open_or_create(),
+        )
+    }
 }
 
 /// Opens a publish-subscribe service or creates the service if it does not exist and returns a port factory to create publishers and subscribers.
@@ -775,16 +807,18 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open_or_create_with_attrib
     port_factory_struct_ptr: *mut iox2_port_factory_pub_sub_t,
     port_factory_handle_ptr: *mut iox2_port_factory_pub_sub_h,
 ) -> c_int {
-    let attribute_verifier_struct = &mut *attribute_verifier_handle.as_type();
-    let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
+    unsafe {
+        let attribute_verifier_struct = &mut *attribute_verifier_handle.as_type();
+        let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
 
-    iox2_service_builder_pub_sub_open_create_impl(
-        service_builder_handle,
-        port_factory_struct_ptr,
-        port_factory_handle_ptr,
-        |service_builder| service_builder.open_or_create_with_attributes(attribute_verifier),
-        |service_builder| service_builder.open_or_create_with_attributes(attribute_verifier),
-    )
+        iox2_service_builder_pub_sub_open_create_impl(
+            service_builder_handle,
+            port_factory_struct_ptr,
+            port_factory_handle_ptr,
+            |service_builder| service_builder.open_or_create_with_attributes(attribute_verifier),
+            |service_builder| service_builder.open_or_create_with_attributes(attribute_verifier),
+        )
+    }
 }
 
 /// Opens a publish-subscribe service and returns a port factory to create publishers and subscribers.
@@ -810,13 +844,15 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open(
     port_factory_struct_ptr: *mut iox2_port_factory_pub_sub_t,
     port_factory_handle_ptr: *mut iox2_port_factory_pub_sub_h,
 ) -> c_int {
-    iox2_service_builder_pub_sub_open_create_impl(
-        service_builder_handle,
-        port_factory_struct_ptr,
-        port_factory_handle_ptr,
-        |service_builder| service_builder.open(),
-        |service_builder| service_builder.open(),
-    )
+    unsafe {
+        iox2_service_builder_pub_sub_open_create_impl(
+            service_builder_handle,
+            port_factory_struct_ptr,
+            port_factory_handle_ptr,
+            |service_builder| service_builder.open(),
+            |service_builder| service_builder.open(),
+        )
+    }
 }
 
 /// Opens a publish-subscribe service and returns a port factory to create publishers and subscribers.
@@ -845,16 +881,18 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open_with_attributes(
     port_factory_struct_ptr: *mut iox2_port_factory_pub_sub_t,
     port_factory_handle_ptr: *mut iox2_port_factory_pub_sub_h,
 ) -> c_int {
-    let attribute_verifier_struct = &mut *attribute_verifier_handle.as_type();
-    let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
+    unsafe {
+        let attribute_verifier_struct = &mut *attribute_verifier_handle.as_type();
+        let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
 
-    iox2_service_builder_pub_sub_open_create_impl(
-        service_builder_handle,
-        port_factory_struct_ptr,
-        port_factory_handle_ptr,
-        |service_builder| service_builder.open_with_attributes(attribute_verifier),
-        |service_builder| service_builder.open_with_attributes(attribute_verifier),
-    )
+        iox2_service_builder_pub_sub_open_create_impl(
+            service_builder_handle,
+            port_factory_struct_ptr,
+            port_factory_handle_ptr,
+            |service_builder| service_builder.open_with_attributes(attribute_verifier),
+            |service_builder| service_builder.open_with_attributes(attribute_verifier),
+        )
+    }
 }
 
 /// Creates a publish-subscribe service and returns a port factory to create publishers and subscribers.
@@ -880,13 +918,15 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_create(
     port_factory_struct_ptr: *mut iox2_port_factory_pub_sub_t,
     port_factory_handle_ptr: *mut iox2_port_factory_pub_sub_h,
 ) -> c_int {
-    iox2_service_builder_pub_sub_open_create_impl(
-        service_builder_handle,
-        port_factory_struct_ptr,
-        port_factory_handle_ptr,
-        |service_builder| service_builder.create(),
-        |service_builder| service_builder.create(),
-    )
+    unsafe {
+        iox2_service_builder_pub_sub_open_create_impl(
+            service_builder_handle,
+            port_factory_struct_ptr,
+            port_factory_handle_ptr,
+            |service_builder| service_builder.create(),
+            |service_builder| service_builder.create(),
+        )
+    }
 }
 
 /// Creates a publish-subscribe service and returns a port factory to create publishers and subscribers.
@@ -915,16 +955,18 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_create_with_attributes(
     port_factory_struct_ptr: *mut iox2_port_factory_pub_sub_t,
     port_factory_handle_ptr: *mut iox2_port_factory_pub_sub_h,
 ) -> c_int {
-    let attribute_specifier_struct = &mut *attribute_specifier_handle.as_type();
-    let attribute_specifier = &attribute_specifier_struct.value.as_ref().0;
+    unsafe {
+        let attribute_specifier_struct = &mut *attribute_specifier_handle.as_type();
+        let attribute_specifier = &attribute_specifier_struct.value.as_ref().0;
 
-    iox2_service_builder_pub_sub_open_create_impl(
-        service_builder_handle,
-        port_factory_struct_ptr,
-        port_factory_handle_ptr,
-        |service_builder| service_builder.create_with_attributes(attribute_specifier),
-        |service_builder| service_builder.create_with_attributes(attribute_specifier),
-    )
+        iox2_service_builder_pub_sub_open_create_impl(
+            service_builder_handle,
+            port_factory_struct_ptr,
+            port_factory_handle_ptr,
+            |service_builder| service_builder.create_with_attributes(attribute_specifier),
+            |service_builder| service_builder.create_with_attributes(attribute_specifier),
+        )
+    }
 }
 
 unsafe fn iox2_service_builder_pub_sub_open_create_impl<E: IntoCInt>(
@@ -939,78 +981,80 @@ unsafe fn iox2_service_builder_pub_sub_open_create_impl<E: IntoCInt>(
     )
         -> Result<PortFactory<crate::LocalService, PayloadFfi, UserHeaderFfi>, E>,
 ) -> c_int {
-    service_builder_handle.assert_non_null();
-    debug_assert!(!port_factory_handle_ptr.is_null());
+    unsafe {
+        service_builder_handle.assert_non_null();
+        debug_assert!(!port_factory_handle_ptr.is_null());
 
-    let init_port_factory_struct_ptr =
-        |port_factory_struct_ptr: *mut iox2_port_factory_pub_sub_t| {
-            let mut port_factory_struct_ptr = port_factory_struct_ptr;
-            fn no_op(_: *mut iox2_port_factory_pub_sub_t) {}
-            let mut deleter: fn(*mut iox2_port_factory_pub_sub_t) = no_op;
-            if port_factory_struct_ptr.is_null() {
-                port_factory_struct_ptr = iox2_port_factory_pub_sub_t::alloc();
-                deleter = iox2_port_factory_pub_sub_t::dealloc;
-            }
-            debug_assert!(!port_factory_struct_ptr.is_null());
-
-            (port_factory_struct_ptr, deleter)
-        };
-
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
-    let service_type = service_builder_struct.service_type;
-    let service_builder = service_builder_struct
-        .value
-        .as_option_mut()
-        .take()
-        .unwrap_or_else(|| {
-            panic!("Trying to use an invalid 'iox2_service_builder_pub_sub_h'!");
-        });
-    (service_builder_struct.deleter)(service_builder_struct);
-
-    match service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder = ManuallyDrop::into_inner(service_builder.ipc);
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
-
-            match func_ipc(service_builder) {
-                Ok(port_factory) => {
-                    let (port_factory_struct_ptr, deleter) =
-                        init_port_factory_struct_ptr(port_factory_struct_ptr);
-                    (*port_factory_struct_ptr).init(
-                        service_type,
-                        PortFactoryPubSubUnion::new_ipc(port_factory),
-                        deleter,
-                    );
-                    *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
+        let init_port_factory_struct_ptr =
+            |port_factory_struct_ptr: *mut iox2_port_factory_pub_sub_t| {
+                let mut port_factory_struct_ptr = port_factory_struct_ptr;
+                fn no_op(_: *mut iox2_port_factory_pub_sub_t) {}
+                let mut deleter: fn(*mut iox2_port_factory_pub_sub_t) = no_op;
+                if port_factory_struct_ptr.is_null() {
+                    port_factory_struct_ptr = iox2_port_factory_pub_sub_t::alloc();
+                    deleter = iox2_port_factory_pub_sub_t::dealloc;
                 }
-                Err(error) => {
-                    return error.into_c_int();
+                debug_assert!(!port_factory_struct_ptr.is_null());
+
+                (port_factory_struct_ptr, deleter)
+            };
+
+        let service_builder_struct = &mut *service_builder_handle.as_type();
+        let service_type = service_builder_struct.service_type;
+        let service_builder = service_builder_struct
+            .value
+            .as_option_mut()
+            .take()
+            .unwrap_or_else(|| {
+                panic!("Trying to use an invalid 'iox2_service_builder_pub_sub_h'!");
+            });
+        (service_builder_struct.deleter)(service_builder_struct);
+
+        match service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder = ManuallyDrop::into_inner(service_builder.ipc);
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+
+                match func_ipc(service_builder) {
+                    Ok(port_factory) => {
+                        let (port_factory_struct_ptr, deleter) =
+                            init_port_factory_struct_ptr(port_factory_struct_ptr);
+                        (*port_factory_struct_ptr).init(
+                            service_type,
+                            PortFactoryPubSubUnion::new_ipc(port_factory),
+                            deleter,
+                        );
+                        *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
+                    }
+                    Err(error) => {
+                        return error.into_c_int();
+                    }
+                }
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder = ManuallyDrop::into_inner(service_builder.local);
+                let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+
+                match func_local(service_builder) {
+                    Ok(port_factory) => {
+                        let (port_factory_struct_ptr, deleter) =
+                            init_port_factory_struct_ptr(port_factory_struct_ptr);
+                        (*port_factory_struct_ptr).init(
+                            service_type,
+                            PortFactoryPubSubUnion::new_local(port_factory),
+                            deleter,
+                        );
+                        *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
+                    }
+                    Err(error) => {
+                        return error.into_c_int();
+                    }
                 }
             }
         }
-        iox2_service_type_e::LOCAL => {
-            let service_builder = ManuallyDrop::into_inner(service_builder.local);
-            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
 
-            match func_local(service_builder) {
-                Ok(port_factory) => {
-                    let (port_factory_struct_ptr, deleter) =
-                        init_port_factory_struct_ptr(port_factory_struct_ptr);
-                    (*port_factory_struct_ptr).init(
-                        service_type,
-                        PortFactoryPubSubUnion::new_local(port_factory),
-                        deleter,
-                    );
-                    *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
-                }
-                Err(error) => {
-                    return error.into_c_int();
-                }
-            }
-        }
+        IOX2_OK
     }
-
-    IOX2_OK
 }
 
 // END C API

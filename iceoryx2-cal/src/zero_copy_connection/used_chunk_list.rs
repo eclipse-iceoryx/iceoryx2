@@ -63,10 +63,12 @@ pub mod details {
 
     impl RelocatableContainer for UsedChunkList<RelocatablePointer<AtomicBool>> {
         unsafe fn new_uninit(capacity: usize) -> Self {
-            Self {
-                data_ptr: RelocatablePointer::new_uninit(),
-                capacity,
-                is_memory_initialized: AtomicBool::new(false),
+            unsafe {
+                Self {
+                    data_ptr: RelocatablePointer::new_uninit(),
+                    capacity,
+                    is_memory_initialized: AtomicBool::new(false),
+                }
             }
         }
 
@@ -74,33 +76,33 @@ pub mod details {
             &mut self,
             allocator: &T,
         ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
-            if self.is_memory_initialized.load(Ordering::Relaxed) {
-                fatal_panic!(from self,
+            unsafe {
+                if self.is_memory_initialized.load(Ordering::Relaxed) {
+                    fatal_panic!(from self,
                 "Memory already initialized. Initializing it twice may lead to undefined behavior.");
-            }
+                }
 
-            let memory = fail!(from self, when allocator
+                let memory = fail!(from self, when allocator
             .allocate(Layout::from_size_align_unchecked(
                     core::mem::size_of::<AtomicBool>() * self.capacity,
                     core::mem::align_of::<AtomicBool>())),
             "Failed to initialize since the allocation of the data memory failed.");
 
-            self.data_ptr.init(memory);
+                self.data_ptr.init(memory);
 
-            for i in 0..self.capacity {
-                unsafe {
+                for i in 0..self.capacity {
                     (self.data_ptr.as_ptr() as *mut AtomicBool)
                         .add(i)
-                        .write(AtomicBool::new(false))
-                };
+                        .write(AtomicBool::new(false));
+                }
+
+                // relaxed is sufficient since no relocatable container can be used
+                // before init was called. Meaning, it is not allowed to send or share
+                // the container with other threads when it is in an uninitialized state.
+                self.is_memory_initialized.store(true, Ordering::Relaxed);
+
+                Ok(())
             }
-
-            // relaxed is sufficient since no relocatable container can be used
-            // before init was called. Meaning, it is not allowed to send or share
-            // the container with other threads when it is in an uninitialized state.
-            self.is_memory_initialized.store(true, Ordering::Relaxed);
-
-            Ok(())
         }
 
         fn memory_size(capacity: usize) -> usize {

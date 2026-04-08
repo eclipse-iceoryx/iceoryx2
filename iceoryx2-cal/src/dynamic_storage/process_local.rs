@@ -259,33 +259,35 @@ impl<T: Send + Sync + Debug + 'static> NamedConceptMgmt for Storage<T> {
         name: &FileName,
         cfg: &Self::Configuration,
     ) -> Result<bool, NamedConceptRemoveError> {
-        let storage_name = cfg.path_for(name);
+        unsafe {
+            let storage_name = cfg.path_for(name);
 
-        let msg = "Unable to remove dynamic_storage::process_local";
-        let origin = "dynamic_storage::process_local::Storage::remove_cfg()";
+            let msg = "Unable to remove dynamic_storage::process_local";
+            let origin = "dynamic_storage::process_local::Storage::remove_cfg()";
 
-        let mut guard = fail!(from origin, when PROCESS_LOCAL_STORAGE.lock(),
+            let mut guard = fail!(from origin, when PROCESS_LOCAL_STORAGE.lock(),
                                 with NamedConceptRemoveError::InternalError,
                                 "{} since the lock could not be acquired.", msg);
 
-        let mut entry = guard.get_mut(&storage_name);
-        if entry.is_none() {
-            return Ok(false);
+            let mut entry = guard.get_mut(&storage_name);
+            if entry.is_none() {
+                return Ok(false);
+            }
+
+            let details = entry
+                .as_mut()
+                .unwrap()
+                .content
+                .clone()
+                .downcast::<StorageDetails<T>>()
+                .unwrap();
+
+            if details.call_drop_on_destruction {
+                core::ptr::drop_in_place(details.data_ptr);
+            }
+
+            Ok(guard.remove(&storage_name).is_some())
         }
-
-        let details = entry
-            .as_mut()
-            .unwrap()
-            .content
-            .clone()
-            .downcast::<StorageDetails<T>>()
-            .unwrap();
-
-        if details.call_drop_on_destruction {
-            core::ptr::drop_in_place(details.data_ptr);
-        }
-
-        Ok(guard.remove(&storage_name).is_some())
     }
 
     fn remove_path_hint(

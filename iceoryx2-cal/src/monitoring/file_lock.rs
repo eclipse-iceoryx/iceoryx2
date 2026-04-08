@@ -124,18 +124,20 @@ impl NamedConceptMgmt for FileLockMonitoring {
         name: &FileName,
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::named_concept::NamedConceptRemoveError> {
-        let process_state_path = cfg.path_for(name);
-        let msg = format!("Unable to remove FileLockMonitoring \"{process_state_path}\"");
-        let origin = "FileLockMonitoring::remove_cfg()";
-        match ProcessGuard::remove(&process_state_path) {
-            Ok(v) => Ok(v),
-            Err(FileRemoveError::InsufficientPermissions) => {
-                fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
+        unsafe {
+            let process_state_path = cfg.path_for(name);
+            let msg = format!("Unable to remove FileLockMonitoring \"{process_state_path}\"");
+            let origin = "FileLockMonitoring::remove_cfg()";
+            match ProcessGuard::remove(&process_state_path) {
+                Ok(v) => Ok(v),
+                Err(FileRemoveError::InsufficientPermissions) => {
+                    fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
                         "{} due to insufficient permissions.", msg);
-            }
-            Err(v) => {
-                fail!(from origin, with NamedConceptRemoveError::InternalError,
+                }
+                Err(v) => {
+                    fail!(from origin, with NamedConceptRemoveError::InternalError,
                         "{} due to an internal failure ({:?}).", msg, v);
+                }
             }
         }
     }

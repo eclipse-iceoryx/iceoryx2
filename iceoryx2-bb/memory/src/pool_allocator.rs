@@ -109,10 +109,12 @@ impl PoolAllocator {
     ///    [`PoolAllocator::allocate_zeroed()`]
     ///
     pub unsafe fn deallocate_bucket(&self, ptr: NonNull<u8>) {
-        self.verify_init("deallocate");
+        unsafe {
+            self.verify_init("deallocate");
 
-        self.buckets
-            .release_raw_index(self.get_index(ptr), ReleaseMode::Default);
+            self.buckets
+                .release_raw_index(self.get_index(ptr), ReleaseMode::Default);
+        }
     }
 
     /// # Safety
@@ -143,18 +145,20 @@ impl PoolAllocator {
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), AllocationError> {
-        if self.is_memory_initialized.load(Ordering::Relaxed) {
-            fatal_panic!(
-                from self,
-                "Memory already initialized. Initializing it twice may lead to undefined behavior."
-            );
-        }
+        unsafe {
+            if self.is_memory_initialized.load(Ordering::Relaxed) {
+                fatal_panic!(
+                    from self,
+                    "Memory already initialized. Initializing it twice may lead to undefined behavior."
+                );
+            }
 
-        fail!(from self, when self.buckets.init(allocator),
+            fail!(from self, when self.buckets.init(allocator),
                 "Unable to initialize pool allocator");
 
-        self.is_memory_initialized.store(true, Ordering::Relaxed);
-        Ok(())
+            self.is_memory_initialized.store(true, Ordering::Relaxed);
+            Ok(())
+        }
     }
 
     pub fn memory_size(bucket_layout: Layout, size: usize) -> usize {
@@ -218,7 +222,9 @@ impl BaseAllocator for PoolAllocator {
     }
 
     unsafe fn deallocate(&self, ptr: NonNull<u8>, _layout: Layout) {
-        self.deallocate_bucket(ptr);
+        unsafe {
+            self.deallocate_bucket(ptr);
+        }
     }
 }
 
@@ -364,7 +370,9 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> BaseAllocator
     }
 
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        self.state.deallocate(ptr, layout);
+        unsafe {
+            self.state.deallocate(ptr, layout);
+        }
     }
 }
 
@@ -378,7 +386,7 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> Allocator
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocationGrowError> {
-        self.state.grow(ptr, old_layout, new_layout)
+        unsafe { self.state.grow(ptr, old_layout, new_layout) }
     }
 
     unsafe fn shrink(
@@ -387,6 +395,6 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> Allocator
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocationShrinkError> {
-        self.state.shrink(ptr, old_layout, new_layout)
+        unsafe { self.state.shrink(ptr, old_layout, new_layout) }
     }
 }

@@ -33,8 +33,10 @@ struct Fuu(u64);
 
 impl PlacementDefault for Fuu {
     unsafe fn placement_default(ptr: *mut Self) {
-        DEFAULT_CTOR_COUNT.fetch_add(1, Ordering::Relaxed);
-        ptr.write(Self(FUU_VALUE.load(Ordering::Relaxed)))
+        unsafe {
+            DEFAULT_CTOR_COUNT.fetch_add(1, Ordering::Relaxed);
+            ptr.write(Self(FUU_VALUE.load(Ordering::Relaxed)))
+        }
     }
 }
 
@@ -44,10 +46,12 @@ struct Bar {
 
 impl PlacementDefault for Bar {
     unsafe fn placement_default(ptr: *mut Self) {
-        DEFAULT_CTOR_COUNT.fetch_add(1, Ordering::Relaxed);
-        ptr.write(Self {
-            value: BAR_VALUE.load(Ordering::Relaxed),
-        })
+        unsafe {
+            DEFAULT_CTOR_COUNT.fetch_add(1, Ordering::Relaxed);
+            ptr.write(Self {
+                value: BAR_VALUE.load(Ordering::Relaxed),
+            })
+        }
     }
 }
 

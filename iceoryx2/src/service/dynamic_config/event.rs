@@ -91,12 +91,14 @@ impl DynamicConfig {
     }
 
     pub(crate) unsafe fn init(&mut self, allocator: &BumpAllocator) {
-        fatal_panic!(from "event::DynamicConfig::init",
+        unsafe {
+            fatal_panic!(from "event::DynamicConfig::init",
             when self.listeners.init(allocator),
             "This should never happen! Unable to initialize listener port id container.");
-        fatal_panic!(from "event::DynamicConfig::init",
+            fatal_panic!(from "event::DynamicConfig::init",
             when self.notifiers.init(allocator),
             "This should never happen! Unable to initialize notifier port id container.");
+        }
     }
 
     pub(crate) fn memory_size(config: &DynamicConfigSettings) -> usize {
@@ -147,31 +149,33 @@ impl DynamicConfig {
         node_id: &NodeId,
         mut port_cleanup_callback: PortCleanup,
     ) {
-        self.listeners
-            .get_state()
-            .for_each(|handle: ContainerHandle, registered_listener| {
-                if registered_listener.node_id == *node_id
-                    && port_cleanup_callback(UniquePortId::Listener(
-                        registered_listener.listener_id,
-                    )) == PortCleanupAction::RemovePort
-                {
-                    self.release_listener_handle(handle);
-                }
-                CallbackProgression::Continue
-            });
+        unsafe {
+            self.listeners
+                .get_state()
+                .for_each(|handle: ContainerHandle, registered_listener| {
+                    if registered_listener.node_id == *node_id
+                        && port_cleanup_callback(UniquePortId::Listener(
+                            registered_listener.listener_id,
+                        )) == PortCleanupAction::RemovePort
+                    {
+                        self.release_listener_handle(handle);
+                    }
+                    CallbackProgression::Continue
+                });
 
-        self.notifiers
-            .get_state()
-            .for_each(|handle: ContainerHandle, registered_notifier| {
-                if registered_notifier.node_id == *node_id
-                    && port_cleanup_callback(UniquePortId::Notifier(
-                        registered_notifier.notifier_id,
-                    )) == PortCleanupAction::RemovePort
-                {
-                    self.release_notifier_handle(handle);
-                }
-                CallbackProgression::Continue
-            });
+            self.notifiers
+                .get_state()
+                .for_each(|handle: ContainerHandle, registered_notifier| {
+                    if registered_notifier.node_id == *node_id
+                        && port_cleanup_callback(UniquePortId::Notifier(
+                            registered_notifier.notifier_id,
+                        )) == PortCleanupAction::RemovePort
+                    {
+                        self.release_notifier_handle(handle);
+                    }
+                    CallbackProgression::Continue
+                });
+        }
     }
 
     pub(crate) fn add_listener_id(&self, id: ListenerDetails) -> Option<ContainerHandle> {

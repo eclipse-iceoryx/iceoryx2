@@ -132,13 +132,15 @@ impl DynamicConfig {
     }
 
     pub(crate) unsafe fn init(&mut self, allocator: &BumpAllocator) {
-        fatal_panic!(from self, when self.nodes.init(allocator),
+        unsafe {
+            fatal_panic!(from self, when self.nodes.init(allocator),
             "This should never happen! Unable to initialize NodeId container.");
-        match &mut self.messaging_pattern {
-            MessagingPattern::PublishSubscribe(v) => v.init(allocator),
-            MessagingPattern::Event(v) => v.init(allocator),
-            MessagingPattern::RequestResponse(v) => v.init(allocator),
-            MessagingPattern::Blackboard(v) => v.init(allocator),
+            match &mut self.messaging_pattern {
+                MessagingPattern::PublishSubscribe(v) => v.init(allocator),
+                MessagingPattern::Event(v) => v.init(allocator),
+                MessagingPattern::RequestResponse(v) => v.init(allocator),
+                MessagingPattern::Blackboard(v) => v.init(allocator),
+            }
         }
     }
 
@@ -149,32 +151,36 @@ impl DynamicConfig {
         node_id: &NodeId,
         port_cleanup_callback: PortCleanup,
     ) -> Result<DeregisterNodeState, RemoveDeadNodeResult> {
-        match self.messaging_pattern {
-            MessagingPattern::PublishSubscribe(ref v) => {
-                v.remove_dead_node_id(node_id, port_cleanup_callback)
-            }
-            MessagingPattern::Event(ref v) => v.remove_dead_node_id(node_id, port_cleanup_callback),
-            MessagingPattern::RequestResponse(ref v) => {
-                v.remove_dead_node_id(node_id, port_cleanup_callback)
-            }
-            MessagingPattern::Blackboard(ref v) => {
-                v.remove_dead_node_id(node_id, port_cleanup_callback)
-            }
-        };
-
-        let mut ret_val = Err(RemoveDeadNodeResult::NodeNotRegistered);
-        self.nodes
-            .get_state()
-            .for_each(|handle: ContainerHandle, registered_node_id| {
-                if registered_node_id == node_id {
-                    ret_val = Ok(self.deregister_node_id(handle));
-                    CallbackProgression::Stop
-                } else {
-                    CallbackProgression::Continue
+        unsafe {
+            match self.messaging_pattern {
+                MessagingPattern::PublishSubscribe(ref v) => {
+                    v.remove_dead_node_id(node_id, port_cleanup_callback)
                 }
-            });
+                MessagingPattern::Event(ref v) => {
+                    v.remove_dead_node_id(node_id, port_cleanup_callback)
+                }
+                MessagingPattern::RequestResponse(ref v) => {
+                    v.remove_dead_node_id(node_id, port_cleanup_callback)
+                }
+                MessagingPattern::Blackboard(ref v) => {
+                    v.remove_dead_node_id(node_id, port_cleanup_callback)
+                }
+            };
 
-        ret_val
+            let mut ret_val = Err(RemoveDeadNodeResult::NodeNotRegistered);
+            self.nodes
+                .get_state()
+                .for_each(|handle: ContainerHandle, registered_node_id| {
+                    if registered_node_id == node_id {
+                        ret_val = Ok(self.deregister_node_id(handle));
+                        CallbackProgression::Stop
+                    } else {
+                        CallbackProgression::Continue
+                    }
+                });
+
+            ret_val
+        }
     }
 
     pub(crate) fn register_node_id(

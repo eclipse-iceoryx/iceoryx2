@@ -151,7 +151,7 @@ unsafe impl<T: ZeroCopySend> ZeroCopySend for RelocatableOption<T> {}
 
 impl<T: PlacementDefault> PlacementDefault for RelocatableOption<T> {
     unsafe fn placement_default(ptr: *mut Self) {
-        ptr.write(RelocatableOption::None)
+        unsafe { ptr.write(RelocatableOption::None) }
     }
 }
 

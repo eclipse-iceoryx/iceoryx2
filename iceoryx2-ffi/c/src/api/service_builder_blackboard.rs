@@ -235,43 +235,45 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_key_type_de
     size: c_size_t,
     alignment: c_size_t,
 ) -> c_int {
-    service_builder_handle.assert_non_null();
+    unsafe {
+        service_builder_handle.assert_non_null();
 
-    let value = match create_type_details(
-        iox2_type_variant_e::FIXED_SIZE,
-        type_name_str,
-        type_name_len,
-        size,
-        alignment,
-    ) {
-        Ok(v) => v,
-        Err(e) => return e,
-    };
+        let value = match create_type_details(
+            iox2_type_variant_e::FIXED_SIZE,
+            type_name_str,
+            type_name_len,
+            size,
+            alignment,
+        ) {
+            Ok(v) => v,
+            Err(e) => return e,
+        };
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
-                service_builder.__internal_set_key_type_details(&value),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
+                    service_builder.__internal_set_key_type_details(&value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
+                    service_builder.__internal_set_key_type_details(&value),
+                ));
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
-                service_builder.__internal_set_key_type_details(&value),
-            ));
-        }
+        IOX2_OK
     }
-
-    IOX2_OK
 }
 
 /// Sets the key type details for the opener. The key type must be fixed size.
@@ -301,43 +303,45 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_key_type_det
     size: c_size_t,
     alignment: c_size_t,
 ) -> c_int {
-    service_builder_handle.assert_non_null();
+    unsafe {
+        service_builder_handle.assert_non_null();
 
-    let value = match create_type_details(
-        iox2_type_variant_e::FIXED_SIZE,
-        type_name_str,
-        type_name_len,
-        size,
-        alignment,
-    ) {
-        Ok(v) => v,
-        Err(e) => return e,
-    };
+        let value = match create_type_details(
+            iox2_type_variant_e::FIXED_SIZE,
+            type_name_str,
+            type_name_len,
+            size,
+            alignment,
+        ) {
+            Ok(v) => v,
+            Err(e) => return e,
+        };
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_opener(
-                service_builder.__internal_set_key_type_details(&value),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_opener(
+                    service_builder.__internal_set_key_type_details(&value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_opener(
+                    service_builder.__internal_set_key_type_details(&value),
+                ));
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_opener(
-                service_builder.__internal_set_key_type_details(&value),
-            ));
-        }
+        IOX2_OK
     }
-
-    IOX2_OK
 }
 
 /// Sets the key eqaulity comparison function.
@@ -357,36 +361,38 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_key_eq_comp
     service_builder_handle: iox2_service_builder_blackboard_creator_h_ref,
     key_eq_func: iox2_service_blackboard_key_eq_cmp_func,
 ) {
-    service_builder_handle.assert_non_null();
+    unsafe {
+        service_builder_handle.assert_non_null();
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    let eq_func = Box::new(move |lhs: *const u8, rhs: *const u8| {
-        key_eq_func(lhs as *const c_void, rhs as *const c_void)
-    });
+        let eq_func = Box::new(move |lhs: *const u8, rhs: *const u8| {
+            key_eq_func(lhs as *const c_void, rhs as *const c_void)
+        });
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
-                service_builder.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
-                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &*eq_func)
-                })),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
+                    service_builder.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                        KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &*eq_func)
+                    })),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
-                service_builder.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
-                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &*eq_func)
-                })),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
+                    service_builder.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                        KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &*eq_func)
+                    })),
+                ));
+            }
         }
     }
 }
@@ -408,28 +414,30 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_max_readers
     service_builder_handle: iox2_service_builder_blackboard_creator_h_ref,
     value: c_size_t,
 ) {
-    service_builder_handle.assert_non_null();
+    unsafe {
+        service_builder_handle.assert_non_null();
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
-                service_builder.max_readers(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
+                    service_builder.max_readers(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
-                service_builder.max_readers(value),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
+                    service_builder.max_readers(value),
+                ));
+            }
         }
     }
 }
@@ -451,28 +459,30 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_max_readers(
     service_builder_handle: iox2_service_builder_blackboard_opener_h_ref,
     value: c_size_t,
 ) {
-    service_builder_handle.assert_non_null();
+    unsafe {
+        service_builder_handle.assert_non_null();
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_opener(
-                service_builder.max_readers(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_opener(
+                    service_builder.max_readers(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_opener(
-                service_builder.max_readers(value),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_opener(
+                    service_builder.max_readers(value),
+                ));
+            }
         }
     }
 }
@@ -494,28 +504,30 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_max_nodes(
     service_builder_handle: iox2_service_builder_blackboard_creator_h_ref,
     value: c_size_t,
 ) {
-    service_builder_handle.assert_non_null();
+    unsafe {
+        service_builder_handle.assert_non_null();
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
-                service_builder.max_nodes(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
+                    service_builder.max_nodes(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
-                service_builder.max_nodes(value),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
+                    service_builder.max_nodes(value),
+                ));
+            }
         }
     }
 }
@@ -537,28 +549,30 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_max_nodes(
     service_builder_handle: iox2_service_builder_blackboard_opener_h_ref,
     value: c_size_t,
 ) {
-    service_builder_handle.assert_non_null();
+    unsafe {
+        service_builder_handle.assert_non_null();
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_opener(
-                service_builder.max_nodes(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_opener(
+                    service_builder.max_nodes(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_opener(
-                service_builder.max_nodes(value),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_opener(
+                    service_builder.max_nodes(value),
+                ));
+            }
         }
     }
 }
@@ -595,56 +609,58 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
     type_size: usize,
     type_align: usize,
 ) {
-    service_builder_handle.assert_non_null();
-    debug_assert!(!value_ptr.is_null());
+    unsafe {
+        service_builder_handle.assert_non_null();
+        debug_assert!(!value_ptr.is_null());
 
-    let mut type_details = TypeDetail::new::<()>(TypeVariant::FixedSize);
-    iceoryx2::testing::type_detail_set_name(
-        &mut type_details,
-        TypeName::from_bytes_unchecked(core::slice::from_raw_parts(
-            type_name.cast(),
-            type_name_len.min(TypeName::capacity()),
-        )),
-    );
-    iceoryx2::testing::type_detail_set_size(&mut type_details, type_size);
-    iceoryx2::testing::type_detail_set_alignment(&mut type_details, type_align);
+        let mut type_details = TypeDetail::new::<()>(TypeVariant::FixedSize);
+        iceoryx2::testing::type_detail_set_name(
+            &mut type_details,
+            TypeName::from_bytes_unchecked(core::slice::from_raw_parts(
+                type_name.cast(),
+                type_name_len.min(TypeName::capacity()),
+            )),
+        );
+        iceoryx2::testing::type_detail_set_size(&mut type_details, type_size);
+        iceoryx2::testing::type_detail_set_alignment(&mut type_details, type_align);
 
-    let value_cleanup = Box::new(move || {
-        if let Some(callback) = release_callback {
-            callback(value_ptr);
-        }
-    });
+        let value_cleanup = Box::new(move || {
+            if let Some(callback) = release_callback {
+                callback(value_ptr);
+            }
+        });
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
-                service_builder.__internal_add(
-                    key as *const u8,
-                    value_ptr as *mut u8,
-                    type_details,
-                    value_cleanup,
-                ),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
+                    service_builder.__internal_add(
+                        key as *const u8,
+                        value_ptr as *mut u8,
+                        type_details,
+                        value_cleanup,
+                    ),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
-                service_builder.__internal_add(
-                    key as *const u8,
-                    value_ptr as *mut u8,
-                    type_details,
-                    value_cleanup,
-                ),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
+                    service_builder.__internal_add(
+                        key as *const u8,
+                        value_ptr as *mut u8,
+                        type_details,
+                        value_cleanup,
+                    ),
+                ));
+            }
         }
     }
 }
@@ -670,13 +686,15 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_open(
     port_factory_struct_ptr: *mut iox2_port_factory_blackboard_t,
     port_factory_handle_ptr: *mut iox2_port_factory_blackboard_h,
 ) -> c_int {
-    iox2_service_builder_blackboard_open_impl(
-        service_builder_handle,
-        port_factory_struct_ptr,
-        port_factory_handle_ptr,
-        |service_builder| service_builder.open(),
-        |service_builder| service_builder.open(),
-    )
+    unsafe {
+        iox2_service_builder_blackboard_open_impl(
+            service_builder_handle,
+            port_factory_struct_ptr,
+            port_factory_handle_ptr,
+            |service_builder| service_builder.open(),
+            |service_builder| service_builder.open(),
+        )
+    }
 }
 
 /// Opens a blackboard service and returns a port factory to create writers and readers.
@@ -704,16 +722,18 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_open_with_attributes(
     port_factory_struct_ptr: *mut iox2_port_factory_blackboard_t,
     port_factory_handle_ptr: *mut iox2_port_factory_blackboard_h,
 ) -> c_int {
-    let attribute_verifier_struct = &mut *attribute_verifier_handle.as_type();
-    let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
+    unsafe {
+        let attribute_verifier_struct = &mut *attribute_verifier_handle.as_type();
+        let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
 
-    iox2_service_builder_blackboard_open_impl(
-        service_builder_handle,
-        port_factory_struct_ptr,
-        port_factory_handle_ptr,
-        |service_builder| service_builder.open_with_attributes(attribute_verifier),
-        |service_builder| service_builder.open_with_attributes(attribute_verifier),
-    )
+        iox2_service_builder_blackboard_open_impl(
+            service_builder_handle,
+            port_factory_struct_ptr,
+            port_factory_handle_ptr,
+            |service_builder| service_builder.open_with_attributes(attribute_verifier),
+            |service_builder| service_builder.open_with_attributes(attribute_verifier),
+        )
+    }
 }
 
 /// Creates a blackboard service and returns a port factory to create writers and readers.
@@ -738,13 +758,15 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_create(
     port_factory_struct_ptr: *mut iox2_port_factory_blackboard_t,
     port_factory_handle_ptr: *mut iox2_port_factory_blackboard_h,
 ) -> c_int {
-    iox2_service_builder_blackboard_create_impl(
-        service_builder_handle,
-        port_factory_struct_ptr,
-        port_factory_handle_ptr,
-        |service_builder| service_builder.create(),
-        |service_builder| service_builder.create(),
-    )
+    unsafe {
+        iox2_service_builder_blackboard_create_impl(
+            service_builder_handle,
+            port_factory_struct_ptr,
+            port_factory_handle_ptr,
+            |service_builder| service_builder.create(),
+            |service_builder| service_builder.create(),
+        )
+    }
 }
 
 /// Creates a service if it does not exist and returns a port factory to create writers and readers.
@@ -775,16 +797,18 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_create_with_attributes(
     port_factory_struct_ptr: *mut iox2_port_factory_blackboard_t,
     port_factory_handle_ptr: *mut iox2_port_factory_blackboard_h,
 ) -> c_int {
-    let attribute_specifier_struct = &mut *attribute_specifier_handle.as_type();
-    let attribute_specifier = &attribute_specifier_struct.value.as_ref().0;
+    unsafe {
+        let attribute_specifier_struct = &mut *attribute_specifier_handle.as_type();
+        let attribute_specifier = &attribute_specifier_struct.value.as_ref().0;
 
-    iox2_service_builder_blackboard_create_impl(
-        service_builder_handle,
-        port_factory_struct_ptr,
-        port_factory_handle_ptr,
-        |service_builder| service_builder.create_with_attributes(attribute_specifier),
-        |service_builder| service_builder.create_with_attributes(attribute_specifier),
-    )
+        iox2_service_builder_blackboard_create_impl(
+            service_builder_handle,
+            port_factory_struct_ptr,
+            port_factory_handle_ptr,
+            |service_builder| service_builder.create_with_attributes(attribute_specifier),
+            |service_builder| service_builder.create_with_attributes(attribute_specifier),
+        )
+    }
 }
 
 unsafe fn iox2_service_builder_blackboard_open_impl<E: IntoCInt>(
@@ -798,78 +822,80 @@ unsafe fn iox2_service_builder_blackboard_open_impl<E: IntoCInt>(
         Opener<KeyFfi, crate::LocalService>,
     ) -> Result<PortFactory<crate::LocalService, KeyFfi>, E>,
 ) -> c_int {
-    debug_assert!(!service_builder_handle.is_null());
-    debug_assert!(!port_factory_handle_ptr.is_null());
+    unsafe {
+        debug_assert!(!service_builder_handle.is_null());
+        debug_assert!(!port_factory_handle_ptr.is_null());
 
-    let init_port_factory_struct_ptr =
-        |port_factory_struct_ptr: *mut iox2_port_factory_blackboard_t| {
-            let mut port_factory_struct_ptr = port_factory_struct_ptr;
-            fn no_op(_: *mut iox2_port_factory_blackboard_t) {}
-            let mut deleter: fn(*mut iox2_port_factory_blackboard_t) = no_op;
-            if port_factory_struct_ptr.is_null() {
-                port_factory_struct_ptr = iox2_port_factory_blackboard_t::alloc();
-                deleter = iox2_port_factory_blackboard_t::dealloc;
-            }
-            debug_assert!(!port_factory_struct_ptr.is_null());
-
-            (port_factory_struct_ptr, deleter)
-        };
-
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
-    let service_type = service_builder_struct.service_type;
-    let service_builder = service_builder_struct
-        .value
-        .as_option_mut()
-        .take()
-        .unwrap_or_else(|| {
-            panic!("Trying to use an invalid 'iox2_service_builder_blackboard_opener_h'!");
-        });
-    (service_builder_struct.deleter)(service_builder_struct);
-
-    match service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder = ManuallyDrop::into_inner(service_builder.ipc);
-            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
-
-            match func_ipc(service_builder) {
-                Ok(port_factory) => {
-                    let (port_factory_struct_ptr, deleter) =
-                        init_port_factory_struct_ptr(port_factory_struct_ptr);
-                    (*port_factory_struct_ptr).init(
-                        service_type,
-                        PortFactoryBlackboardUnion::new_ipc(port_factory),
-                        deleter,
-                    );
-                    *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
+        let init_port_factory_struct_ptr =
+            |port_factory_struct_ptr: *mut iox2_port_factory_blackboard_t| {
+                let mut port_factory_struct_ptr = port_factory_struct_ptr;
+                fn no_op(_: *mut iox2_port_factory_blackboard_t) {}
+                let mut deleter: fn(*mut iox2_port_factory_blackboard_t) = no_op;
+                if port_factory_struct_ptr.is_null() {
+                    port_factory_struct_ptr = iox2_port_factory_blackboard_t::alloc();
+                    deleter = iox2_port_factory_blackboard_t::dealloc;
                 }
-                Err(error) => {
-                    return error.into_c_int();
+                debug_assert!(!port_factory_struct_ptr.is_null());
+
+                (port_factory_struct_ptr, deleter)
+            };
+
+        let service_builder_struct = &mut *service_builder_handle.as_type();
+        let service_type = service_builder_struct.service_type;
+        let service_builder = service_builder_struct
+            .value
+            .as_option_mut()
+            .take()
+            .unwrap_or_else(|| {
+                panic!("Trying to use an invalid 'iox2_service_builder_blackboard_opener_h'!");
+            });
+        (service_builder_struct.deleter)(service_builder_struct);
+
+        match service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder = ManuallyDrop::into_inner(service_builder.ipc);
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
+
+                match func_ipc(service_builder) {
+                    Ok(port_factory) => {
+                        let (port_factory_struct_ptr, deleter) =
+                            init_port_factory_struct_ptr(port_factory_struct_ptr);
+                        (*port_factory_struct_ptr).init(
+                            service_type,
+                            PortFactoryBlackboardUnion::new_ipc(port_factory),
+                            deleter,
+                        );
+                        *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
+                    }
+                    Err(error) => {
+                        return error.into_c_int();
+                    }
+                }
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder = ManuallyDrop::into_inner(service_builder.local);
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
+
+                match func_local(service_builder) {
+                    Ok(port_factory) => {
+                        let (port_factory_struct_ptr, deleter) =
+                            init_port_factory_struct_ptr(port_factory_struct_ptr);
+                        (*port_factory_struct_ptr).init(
+                            service_type,
+                            PortFactoryBlackboardUnion::new_local(port_factory),
+                            deleter,
+                        );
+                        *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
+                    }
+                    Err(error) => {
+                        return error.into_c_int();
+                    }
                 }
             }
         }
-        iox2_service_type_e::LOCAL => {
-            let service_builder = ManuallyDrop::into_inner(service_builder.local);
-            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
 
-            match func_local(service_builder) {
-                Ok(port_factory) => {
-                    let (port_factory_struct_ptr, deleter) =
-                        init_port_factory_struct_ptr(port_factory_struct_ptr);
-                    (*port_factory_struct_ptr).init(
-                        service_type,
-                        PortFactoryBlackboardUnion::new_local(port_factory),
-                        deleter,
-                    );
-                    *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
-                }
-                Err(error) => {
-                    return error.into_c_int();
-                }
-            }
-        }
+        IOX2_OK
     }
-
-    IOX2_OK
 }
 
 unsafe fn iox2_service_builder_blackboard_create_impl<E: IntoCInt>(
@@ -883,77 +909,79 @@ unsafe fn iox2_service_builder_blackboard_create_impl<E: IntoCInt>(
         Creator<KeyFfi, crate::LocalService>,
     ) -> Result<PortFactory<crate::LocalService, KeyFfi>, E>,
 ) -> c_int {
-    debug_assert!(!service_builder_handle.is_null());
-    debug_assert!(!port_factory_handle_ptr.is_null());
+    unsafe {
+        debug_assert!(!service_builder_handle.is_null());
+        debug_assert!(!port_factory_handle_ptr.is_null());
 
-    let init_port_factory_struct_ptr =
-        |port_factory_struct_ptr: *mut iox2_port_factory_blackboard_t| {
-            let mut port_factory_struct_ptr = port_factory_struct_ptr;
-            fn no_op(_: *mut iox2_port_factory_blackboard_t) {}
-            let mut deleter: fn(*mut iox2_port_factory_blackboard_t) = no_op;
-            if port_factory_struct_ptr.is_null() {
-                port_factory_struct_ptr = iox2_port_factory_blackboard_t::alloc();
-                deleter = iox2_port_factory_blackboard_t::dealloc;
-            }
-            debug_assert!(!port_factory_struct_ptr.is_null());
-
-            (port_factory_struct_ptr, deleter)
-        };
-
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
-    let service_type = service_builder_struct.service_type;
-    let service_builder = service_builder_struct
-        .value
-        .as_option_mut()
-        .take()
-        .unwrap_or_else(|| {
-            panic!("Trying to use an invalid 'iox2_service_builder_blackboard_creator_h'!");
-        });
-    (service_builder_struct.deleter)(service_builder_struct);
-
-    match service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder = ManuallyDrop::into_inner(service_builder.ipc);
-            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
-
-            match func_ipc(service_builder) {
-                Ok(port_factory) => {
-                    let (port_factory_struct_ptr, deleter) =
-                        init_port_factory_struct_ptr(port_factory_struct_ptr);
-                    (*port_factory_struct_ptr).init(
-                        service_type,
-                        PortFactoryBlackboardUnion::new_ipc(port_factory),
-                        deleter,
-                    );
-                    *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
+        let init_port_factory_struct_ptr =
+            |port_factory_struct_ptr: *mut iox2_port_factory_blackboard_t| {
+                let mut port_factory_struct_ptr = port_factory_struct_ptr;
+                fn no_op(_: *mut iox2_port_factory_blackboard_t) {}
+                let mut deleter: fn(*mut iox2_port_factory_blackboard_t) = no_op;
+                if port_factory_struct_ptr.is_null() {
+                    port_factory_struct_ptr = iox2_port_factory_blackboard_t::alloc();
+                    deleter = iox2_port_factory_blackboard_t::dealloc;
                 }
-                Err(error) => {
-                    return error.into_c_int();
+                debug_assert!(!port_factory_struct_ptr.is_null());
+
+                (port_factory_struct_ptr, deleter)
+            };
+
+        let service_builder_struct = &mut *service_builder_handle.as_type();
+        let service_type = service_builder_struct.service_type;
+        let service_builder = service_builder_struct
+            .value
+            .as_option_mut()
+            .take()
+            .unwrap_or_else(|| {
+                panic!("Trying to use an invalid 'iox2_service_builder_blackboard_creator_h'!");
+            });
+        (service_builder_struct.deleter)(service_builder_struct);
+
+        match service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder = ManuallyDrop::into_inner(service_builder.ipc);
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
+
+                match func_ipc(service_builder) {
+                    Ok(port_factory) => {
+                        let (port_factory_struct_ptr, deleter) =
+                            init_port_factory_struct_ptr(port_factory_struct_ptr);
+                        (*port_factory_struct_ptr).init(
+                            service_type,
+                            PortFactoryBlackboardUnion::new_ipc(port_factory),
+                            deleter,
+                        );
+                        *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
+                    }
+                    Err(error) => {
+                        return error.into_c_int();
+                    }
+                }
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder = ManuallyDrop::into_inner(service_builder.local);
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
+
+                match func_local(service_builder) {
+                    Ok(port_factory) => {
+                        let (port_factory_struct_ptr, deleter) =
+                            init_port_factory_struct_ptr(port_factory_struct_ptr);
+                        (*port_factory_struct_ptr).init(
+                            service_type,
+                            PortFactoryBlackboardUnion::new_local(port_factory),
+                            deleter,
+                        );
+                        *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
+                    }
+                    Err(error) => {
+                        return error.into_c_int();
+                    }
                 }
             }
         }
-        iox2_service_type_e::LOCAL => {
-            let service_builder = ManuallyDrop::into_inner(service_builder.local);
-            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
 
-            match func_local(service_builder) {
-                Ok(port_factory) => {
-                    let (port_factory_struct_ptr, deleter) =
-                        init_port_factory_struct_ptr(port_factory_struct_ptr);
-                    (*port_factory_struct_ptr).init(
-                        service_type,
-                        PortFactoryBlackboardUnion::new_local(port_factory),
-                        deleter,
-                    );
-                    *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
-                }
-                Err(error) => {
-                    return error.into_c_int();
-                }
-            }
-        }
+        IOX2_OK
     }
-
-    IOX2_OK
 }
 // END C API

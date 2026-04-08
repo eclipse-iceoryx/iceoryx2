@@ -22,7 +22,9 @@ pub struct Cell<T: ?Sized>(internal::Cell<T>);
 
 impl<T: Default> PlacementDefault for Cell<T> {
     unsafe fn placement_default(ptr: *mut Self) {
-        ptr.write(Cell::default());
+        unsafe {
+            ptr.write(Cell::default());
+        }
     }
 }
 
@@ -46,7 +48,9 @@ impl<T> Cell<T> {
 
 impl<T: Default> PlacementDefault for OnceCell<T> {
     unsafe fn placement_default(ptr: *mut Self) {
-        ptr.write(OnceCell::default());
+        unsafe {
+            ptr.write(OnceCell::default());
+        }
     }
 }
 
@@ -70,7 +74,9 @@ impl<T> RefCell<T> {
 
 impl<T: Default> PlacementDefault for RefCell<T> {
     unsafe fn placement_default(ptr: *mut Self) {
-        ptr.write(RefCell::default());
+        unsafe {
+            ptr.write(RefCell::default());
+        }
     }
 }
 
@@ -94,7 +100,9 @@ impl<T> UnsafeCell<T> {
 
 impl<T: Default> PlacementDefault for UnsafeCell<T> {
     unsafe fn placement_default(ptr: *mut Self) {
-        ptr.write(UnsafeCell::default());
+        unsafe {
+            ptr.write(UnsafeCell::default());
+        }
     }
 }
 

@@ -565,10 +565,12 @@ impl<
     /// # }
     /// ```
     pub unsafe fn assume_init_and_update(self) -> EntryHandleMut<Service, KeyType, ValueType> {
-        self.entry_handle_mut
-            .producer
-            .__internal_update_write_cell();
-        self.entry_handle_mut
+        unsafe {
+            self.entry_handle_mut
+                .producer
+                .__internal_update_write_cell();
+            self.entry_handle_mut
+        }
     }
 }
 

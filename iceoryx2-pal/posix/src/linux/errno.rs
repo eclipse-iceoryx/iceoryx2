@@ -155,23 +155,25 @@ impl Errno {
 }
 
 pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
-    use iceoryx2_pal_concurrency_sync::atomic::AtomicBool;
-    use iceoryx2_pal_concurrency_sync::atomic::Ordering;
-    static IS_LOCKED: AtomicBool = AtomicBool::new(false);
+    unsafe {
+        use iceoryx2_pal_concurrency_sync::atomic::AtomicBool;
+        use iceoryx2_pal_concurrency_sync::atomic::Ordering;
+        static IS_LOCKED: AtomicBool = AtomicBool::new(false);
 
-    while IS_LOCKED
-        .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
-        .is_err()
-    {}
+        while IS_LOCKED
+            .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+            .is_err()
+        {}
 
-    let raw_string = strerror(errnum);
-    crate::posix::string::strncpy(buf, raw_string, buflen);
+        let raw_string = strerror(errnum);
+        crate::posix::string::strncpy(buf, raw_string, buflen);
 
-    IS_LOCKED.store(false, Ordering::Relaxed);
+        IS_LOCKED.store(false, Ordering::Relaxed);
 
-    0
+        0
+    }
 }
 
 pub unsafe fn strerror(errnum: int) -> *const c_char {
-    libc::strerror(errnum)
+    unsafe { libc::strerror(errnum) }
 }

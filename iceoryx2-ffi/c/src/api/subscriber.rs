@@ -217,13 +217,15 @@ pub unsafe extern "C" fn iox2_connection_failure_string(
 pub unsafe extern "C" fn iox2_subscriber_buffer_size(
     subscriber_handle: iox2_subscriber_h_ref,
 ) -> c_size_t {
-    subscriber_handle.assert_non_null();
+    unsafe {
+        subscriber_handle.assert_non_null();
 
-    let subscriber = &mut *subscriber_handle.as_type();
+        let subscriber = &mut *subscriber_handle.as_type();
 
-    match subscriber.service_type {
-        iox2_service_type_e::IPC => subscriber.value.as_ref().ipc.buffer_size(),
-        iox2_service_type_e::LOCAL => subscriber.value.as_ref().local.buffer_size(),
+        match subscriber.service_type {
+            iox2_service_type_e::IPC => subscriber.value.as_ref().ipc.buffer_size(),
+            iox2_service_type_e::LOCAL => subscriber.value.as_ref().local.buffer_size(),
+        }
     }
 }
 
@@ -246,27 +248,29 @@ pub unsafe extern "C" fn iox2_subscriber_id(
     id_struct_ptr: *mut iox2_unique_subscriber_id_t,
     id_handle_ptr: *mut iox2_unique_subscriber_id_h,
 ) {
-    subscriber_handle.assert_non_null();
-    debug_assert!(!id_handle_ptr.is_null());
+    unsafe {
+        subscriber_handle.assert_non_null();
+        debug_assert!(!id_handle_ptr.is_null());
 
-    fn no_op(_: *mut iox2_unique_subscriber_id_t) {}
-    let mut deleter: fn(*mut iox2_unique_subscriber_id_t) = no_op;
-    let mut storage_ptr = id_struct_ptr;
-    if id_struct_ptr.is_null() {
-        deleter = iox2_unique_subscriber_id_t::dealloc;
-        storage_ptr = iox2_unique_subscriber_id_t::alloc();
+        fn no_op(_: *mut iox2_unique_subscriber_id_t) {}
+        let mut deleter: fn(*mut iox2_unique_subscriber_id_t) = no_op;
+        let mut storage_ptr = id_struct_ptr;
+        if id_struct_ptr.is_null() {
+            deleter = iox2_unique_subscriber_id_t::dealloc;
+            storage_ptr = iox2_unique_subscriber_id_t::alloc();
+        }
+        debug_assert!(!storage_ptr.is_null());
+
+        let subscriber = &mut *subscriber_handle.as_type();
+
+        let id = match subscriber.service_type {
+            iox2_service_type_e::IPC => subscriber.value.as_mut().ipc.id(),
+            iox2_service_type_e::LOCAL => subscriber.value.as_mut().local.id(),
+        };
+
+        (*storage_ptr).init(id, deleter);
+        *id_handle_ptr = (*storage_ptr).as_handle();
     }
-    debug_assert!(!storage_ptr.is_null());
-
-    let subscriber = &mut *subscriber_handle.as_type();
-
-    let id = match subscriber.service_type {
-        iox2_service_type_e::IPC => subscriber.value.as_mut().ipc.id(),
-        iox2_service_type_e::LOCAL => subscriber.value.as_mut().local.id(),
-    };
-
-    (*storage_ptr).init(id, deleter);
-    *id_handle_ptr = (*storage_ptr).as_handle();
 }
 
 // TODO [#210] add all the other setter methods
@@ -294,58 +298,64 @@ pub unsafe extern "C" fn iox2_subscriber_receive(
     sample_struct_ptr: *mut iox2_sample_t,
     sample_handle_ptr: *mut iox2_sample_h,
 ) -> c_int {
-    subscriber_handle.assert_non_null();
-    debug_assert!(!sample_handle_ptr.is_null());
+    unsafe {
+        subscriber_handle.assert_non_null();
+        debug_assert!(!sample_handle_ptr.is_null());
 
-    *sample_handle_ptr = core::ptr::null_mut();
+        *sample_handle_ptr = core::ptr::null_mut();
 
-    let init_sample_struct_ptr = |sample_struct_ptr: *mut iox2_sample_t| {
-        let mut sample_struct_ptr = sample_struct_ptr;
-        fn no_op(_: *mut iox2_sample_t) {}
-        let mut deleter: fn(*mut iox2_sample_t) = no_op;
-        if sample_struct_ptr.is_null() {
-            sample_struct_ptr = iox2_sample_t::alloc();
-            deleter = iox2_sample_t::dealloc;
-        }
-        debug_assert!(!sample_struct_ptr.is_null());
-
-        (sample_struct_ptr, deleter)
-    };
-
-    let subscriber = &mut *subscriber_handle.as_type();
-
-    match subscriber.service_type {
-        iox2_service_type_e::IPC => match subscriber.value.as_ref().ipc.receive_custom_payload() {
-            Ok(Some(sample)) => {
-                let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
-                (*sample_struct_ptr).init(
-                    subscriber.service_type,
-                    SampleUnion::new_ipc(sample),
-                    deleter,
-                );
-                *sample_handle_ptr = (*sample_struct_ptr).as_handle();
+        let init_sample_struct_ptr = |sample_struct_ptr: *mut iox2_sample_t| {
+            let mut sample_struct_ptr = sample_struct_ptr;
+            fn no_op(_: *mut iox2_sample_t) {}
+            let mut deleter: fn(*mut iox2_sample_t) = no_op;
+            if sample_struct_ptr.is_null() {
+                sample_struct_ptr = iox2_sample_t::alloc();
+                deleter = iox2_sample_t::dealloc;
             }
-            Ok(None) => (),
-            Err(error) => return error.into_c_int(),
-        },
-        iox2_service_type_e::LOCAL => {
-            match subscriber.value.as_ref().local.receive_custom_payload() {
-                Ok(Some(sample)) => {
-                    let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
-                    (*sample_struct_ptr).init(
-                        subscriber.service_type,
-                        SampleUnion::new_local(sample),
-                        deleter,
-                    );
-                    *sample_handle_ptr = (*sample_struct_ptr).as_handle();
+            debug_assert!(!sample_struct_ptr.is_null());
+
+            (sample_struct_ptr, deleter)
+        };
+
+        let subscriber = &mut *subscriber_handle.as_type();
+
+        match subscriber.service_type {
+            iox2_service_type_e::IPC => {
+                match subscriber.value.as_ref().ipc.receive_custom_payload() {
+                    Ok(Some(sample)) => {
+                        let (sample_struct_ptr, deleter) =
+                            init_sample_struct_ptr(sample_struct_ptr);
+                        (*sample_struct_ptr).init(
+                            subscriber.service_type,
+                            SampleUnion::new_ipc(sample),
+                            deleter,
+                        );
+                        *sample_handle_ptr = (*sample_struct_ptr).as_handle();
+                    }
+                    Ok(None) => (),
+                    Err(error) => return error.into_c_int(),
                 }
-                Ok(None) => (),
-                Err(error) => return error.into_c_int(),
+            }
+            iox2_service_type_e::LOCAL => {
+                match subscriber.value.as_ref().local.receive_custom_payload() {
+                    Ok(Some(sample)) => {
+                        let (sample_struct_ptr, deleter) =
+                            init_sample_struct_ptr(sample_struct_ptr);
+                        (*sample_struct_ptr).init(
+                            subscriber.service_type,
+                            SampleUnion::new_local(sample),
+                            deleter,
+                        );
+                        *sample_handle_ptr = (*sample_struct_ptr).as_handle();
+                    }
+                    Ok(None) => (),
+                    Err(error) => return error.into_c_int(),
+                }
             }
         }
-    }
 
-    IOX2_OK
+        IOX2_OK
+    }
 }
 
 /// Returns true when the subscriber has samples that can be acquired with [`iox2_subscriber_receive`], otherwise false.
@@ -368,26 +378,28 @@ pub unsafe extern "C" fn iox2_subscriber_has_samples(
     subscriber_handle: iox2_subscriber_h_ref,
     result_ptr: *mut bool,
 ) -> c_int {
-    subscriber_handle.assert_non_null();
-    debug_assert!(!result_ptr.is_null());
+    unsafe {
+        subscriber_handle.assert_non_null();
+        debug_assert!(!result_ptr.is_null());
 
-    let subscriber = &mut *subscriber_handle.as_type();
+        let subscriber = &mut *subscriber_handle.as_type();
 
-    match subscriber.service_type {
-        iox2_service_type_e::IPC => match subscriber.value.as_ref().ipc.has_samples() {
-            Ok(v) => {
-                *result_ptr = v;
-                IOX2_OK
-            }
-            Err(error) => error.into_c_int(),
-        },
-        iox2_service_type_e::LOCAL => match subscriber.value.as_ref().local.has_samples() {
-            Ok(v) => {
-                *result_ptr = v;
-                IOX2_OK
-            }
-            Err(error) => error.into_c_int(),
-        },
+        match subscriber.service_type {
+            iox2_service_type_e::IPC => match subscriber.value.as_ref().ipc.has_samples() {
+                Ok(v) => {
+                    *result_ptr = v;
+                    IOX2_OK
+                }
+                Err(error) => error.into_c_int(),
+            },
+            iox2_service_type_e::LOCAL => match subscriber.value.as_ref().local.has_samples() {
+                Ok(v) => {
+                    *result_ptr = v;
+                    IOX2_OK
+                }
+                Err(error) => error.into_c_int(),
+            },
+        }
     }
 }
 
@@ -404,19 +416,21 @@ pub unsafe extern "C" fn iox2_subscriber_has_samples(
 ///   [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create)!
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_subscriber_drop(subscriber_handle: iox2_subscriber_h) {
-    subscriber_handle.assert_non_null();
+    unsafe {
+        subscriber_handle.assert_non_null();
 
-    let subscriber = &mut *subscriber_handle.as_type();
+        let subscriber = &mut *subscriber_handle.as_type();
 
-    match subscriber.service_type {
-        iox2_service_type_e::IPC => {
-            ManuallyDrop::drop(&mut subscriber.value.as_mut().ipc);
+        match subscriber.service_type {
+            iox2_service_type_e::IPC => {
+                ManuallyDrop::drop(&mut subscriber.value.as_mut().ipc);
+            }
+            iox2_service_type_e::LOCAL => {
+                ManuallyDrop::drop(&mut subscriber.value.as_mut().local);
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            ManuallyDrop::drop(&mut subscriber.value.as_mut().local);
-        }
+        (subscriber.deleter)(subscriber);
     }
-    (subscriber.deleter)(subscriber);
 }
 
 // END C API

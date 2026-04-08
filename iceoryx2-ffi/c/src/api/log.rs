@@ -133,21 +133,23 @@ pub unsafe extern "C" fn iox2_log(
     origin: *const c_char,
     message: *const c_char,
 ) {
-    debug_assert!(!message.is_null());
+    unsafe {
+        debug_assert!(!message.is_null());
 
-    let empty_origin = b"\0";
-    let origin = if origin.is_null() {
-        CStr::from_bytes_with_nul(empty_origin).unwrap()
-    } else {
-        CStr::from_ptr(origin)
-    };
-    let message = CStr::from_ptr(message);
+        let empty_origin = b"\0";
+        let origin = if origin.is_null() {
+            CStr::from_bytes_with_nul(empty_origin).unwrap()
+        } else {
+            CStr::from_ptr(origin)
+        };
+        let message = CStr::from_ptr(message);
 
-    __internal_print_log_msg(
-        log_level.into(),
-        format_args!("{}", origin.to_string_lossy()),
-        format_args!("{}", message.to_string_lossy()),
-    );
+        __internal_print_log_msg(
+            log_level.into(),
+            format_args!("{}", origin.to_string_lossy()),
+            format_args!("{}", message.to_string_lossy()),
+        );
+    }
 }
 
 /// Sets the log level from environment variable or defaults it if variable does not exist
@@ -185,12 +187,14 @@ pub unsafe extern "C" fn iox2_get_log_level() -> iox2_log_level_e {
 /// It returns true if the logger was set, otherwise false.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_set_logger(logger: iox2_log_callback) -> bool {
-    INIT.call_once(|| {
-        LOGGER = Some(CLogger::new(logger));
-    });
+    unsafe {
+        INIT.call_once(|| {
+            LOGGER = Some(CLogger::new(logger));
+        });
 
-    #[allow(static_mut_refs)] // internally used and the logger is never changed once it was set
-    set_logger(LOGGER.as_ref().unwrap())
+        #[allow(static_mut_refs)] // internally used and the logger is never changed once it was set
+        set_logger(LOGGER.as_ref().unwrap())
+    }
 }
 
 // END C API

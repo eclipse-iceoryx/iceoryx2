@@ -180,10 +180,12 @@ impl<
     pub unsafe fn assume_init(
         self,
     ) -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {
-        // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
-        let initialized_request = core::mem::transmute_copy(&self.request);
-        core::mem::forget(self);
-        initialized_request
+        unsafe {
+            // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
+            let initialized_request = core::mem::transmute_copy(&self.request);
+            core::mem::forget(self);
+            initialized_request
+        }
     }
 }
 
@@ -243,10 +245,12 @@ impl<
     pub unsafe fn assume_init(
         self,
     ) -> RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader> {
-        // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
-        let initialized_request = core::mem::transmute_copy(&self.request);
-        core::mem::forget(self);
-        initialized_request
+        unsafe {
+            // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
+            let initialized_request = core::mem::transmute_copy(&self.request);
+            core::mem::forget(self);
+            initialized_request
+        }
     }
 
     /// Writes the payload to the [`RequestMutUninit`] and labels the [`RequestMutUninit`] as

@@ -179,65 +179,71 @@ pub unsafe extern "C" fn iox2_port_factory_writer_builder_create(
     writer_struct_ptr: *mut iox2_writer_t,
     writer_handle_ptr: *mut iox2_writer_h,
 ) -> c_int {
-    debug_assert!(!port_factory_handle.is_null());
-    debug_assert!(!writer_handle_ptr.is_null());
+    unsafe {
+        debug_assert!(!port_factory_handle.is_null());
+        debug_assert!(!writer_handle_ptr.is_null());
 
-    let mut writer_struct_ptr = writer_struct_ptr;
-    fn no_op(_: *mut iox2_writer_t) {}
-    let mut deleter: fn(*mut iox2_writer_t) = no_op;
-    if writer_struct_ptr.is_null() {
-        writer_struct_ptr = iox2_writer_t::alloc();
-        deleter = iox2_writer_t::dealloc;
-    }
-    debug_assert!(!writer_struct_ptr.is_null());
+        let mut writer_struct_ptr = writer_struct_ptr;
+        fn no_op(_: *mut iox2_writer_t) {}
+        let mut deleter: fn(*mut iox2_writer_t) = no_op;
+        if writer_struct_ptr.is_null() {
+            writer_struct_ptr = iox2_writer_t::alloc();
+            deleter = iox2_writer_t::dealloc;
+        }
+        debug_assert!(!writer_struct_ptr.is_null());
 
-    let writer_builder_struct = unsafe { &mut *port_factory_handle.as_type() };
-    let service_type = writer_builder_struct.service_type;
-    let writer_builder = writer_builder_struct
-        .value
-        .as_option_mut()
-        .take()
-        .unwrap_or_else(|| {
-            panic!("Trying to use an invalid 'iox2_port_factory_writer_builder_h'!")
-        });
-    (writer_builder_struct.deleter)(writer_builder_struct);
+        let writer_builder_struct = &mut *port_factory_handle.as_type();
+        let service_type = writer_builder_struct.service_type;
+        let writer_builder = writer_builder_struct
+            .value
+            .as_option_mut()
+            .take()
+            .unwrap_or_else(|| {
+                panic!("Trying to use an invalid 'iox2_port_factory_writer_builder_h'!")
+            });
+        (writer_builder_struct.deleter)(writer_builder_struct);
 
-    match service_type {
-        iox2_service_type_e::IPC => {
-            let writer_builder = ManuallyDrop::into_inner(writer_builder.ipc);
+        match service_type {
+            iox2_service_type_e::IPC => {
+                let writer_builder = ManuallyDrop::into_inner(writer_builder.ipc);
 
-            match writer_builder.create() {
-                Ok(writer) => {
-                    (*writer_struct_ptr).init(service_type, WriterUnion::new_ipc(writer), deleter);
+                match writer_builder.create() {
+                    Ok(writer) => {
+                        (*writer_struct_ptr).init(
+                            service_type,
+                            WriterUnion::new_ipc(writer),
+                            deleter,
+                        );
+                    }
+                    Err(error) => {
+                        deleter(writer_struct_ptr);
+                        return error.into_c_int();
+                    }
                 }
-                Err(error) => {
-                    deleter(writer_struct_ptr);
-                    return error.into_c_int();
+            }
+            iox2_service_type_e::LOCAL => {
+                let writer_builder = ManuallyDrop::into_inner(writer_builder.local);
+
+                match writer_builder.create() {
+                    Ok(writer) => {
+                        (*writer_struct_ptr).init(
+                            service_type,
+                            WriterUnion::new_local(writer),
+                            deleter,
+                        );
+                    }
+                    Err(error) => {
+                        deleter(writer_struct_ptr);
+                        return error.into_c_int();
+                    }
                 }
             }
         }
-        iox2_service_type_e::LOCAL => {
-            let writer_builder = ManuallyDrop::into_inner(writer_builder.local);
 
-            match writer_builder.create() {
-                Ok(writer) => {
-                    (*writer_struct_ptr).init(
-                        service_type,
-                        WriterUnion::new_local(writer),
-                        deleter,
-                    );
-                }
-                Err(error) => {
-                    deleter(writer_struct_ptr);
-                    return error.into_c_int();
-                }
-            }
-        }
+        *writer_handle_ptr = (*writer_struct_ptr).as_handle();
+
+        IOX2_OK
     }
-
-    *writer_handle_ptr = (*writer_struct_ptr).as_handle();
-
-    IOX2_OK
 }
 
 // END C API

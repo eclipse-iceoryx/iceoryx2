@@ -132,34 +132,42 @@ impl FilePath {
     /// * [`Path::len()`] + [`FileName::len()`] + 1 <= [`FilePath::max_len()`]
     ///
     pub const unsafe fn from_path_and_file_unchecked(path: &Path, file: &FileName) -> Self {
-        debug_assert!(path.as_bytes_const().len() + file.as_bytes_const().len() + 1 < PATH_LENGTH);
+        unsafe {
+            debug_assert!(
+                path.as_bytes_const().len() + file.as_bytes_const().len() + 1 < PATH_LENGTH
+            );
 
-        let mut buffer = [0u8; PATH_LENGTH];
-        let mut buffer_len = path.as_bytes_const().len();
+            let mut buffer = [0u8; PATH_LENGTH];
+            let mut buffer_len = path.as_bytes_const().len();
 
-        core::ptr::copy_nonoverlapping(
-            path.as_bytes_const().as_ptr(),
-            buffer.as_mut_ptr(),
-            buffer_len,
-        );
+            core::ptr::copy_nonoverlapping(
+                path.as_bytes_const().as_ptr(),
+                buffer.as_mut_ptr(),
+                buffer_len,
+            );
 
-        if 0 < buffer_len && path.as_bytes_const()[buffer_len - 1] != PATH_SEPARATOR {
-            core::ptr::copy_nonoverlapping(&PATH_SEPARATOR, buffer.as_mut_ptr().add(buffer_len), 1);
-            buffer_len += 1;
-        }
+            if 0 < buffer_len && path.as_bytes_const()[buffer_len - 1] != PATH_SEPARATOR {
+                core::ptr::copy_nonoverlapping(
+                    &PATH_SEPARATOR,
+                    buffer.as_mut_ptr().add(buffer_len),
+                    1,
+                );
+                buffer_len += 1;
+            }
 
-        let file_len = file.as_bytes_const().len();
-        core::ptr::copy_nonoverlapping(
-            file.as_bytes_const().as_ptr(),
-            buffer.as_mut_ptr().add(buffer_len),
-            file_len,
-        );
-        buffer_len += file_len;
+            let file_len = file.as_bytes_const().len();
+            core::ptr::copy_nonoverlapping(
+                file.as_bytes_const().as_ptr(),
+                buffer.as_mut_ptr().add(buffer_len),
+                file_len,
+            );
+            buffer_len += file_len;
 
-        Self {
-            value: iceoryx2_bb_container::string::StaticString::from_bytes_unchecked_restricted(
-                &buffer, buffer_len,
-            ),
+            Self {
+                value: iceoryx2_bb_container::string::StaticString::from_bytes_unchecked_restricted(
+                    &buffer, buffer_len,
+                ),
+            }
         }
     }
 
