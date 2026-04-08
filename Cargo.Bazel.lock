@@ -1,5 +1,5 @@
 {
-  "checksum": "52422e7b68e0d108084b9ec2c0003f9829582301e1c4f39ab5e200280b44fa1e",
+  "checksum": "9ae9316b11e106c387495a73290735dd38f2fda2350c45698bf5466866e3a2d5",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -1369,7 +1369,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -1399,7 +1399,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -1429,7 +1429,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -1459,7 +1459,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -3120,7 +3120,7 @@
         "compile_data_glob": [
           "**"
         ],
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -5555,7 +5555,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8114,7 +8114,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8155,7 +8155,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8196,7 +8196,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8224,7 +8224,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8275,7 +8275,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8334,7 +8334,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8389,7 +8389,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8417,7 +8417,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8475,7 +8475,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8516,7 +8516,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8544,7 +8544,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8585,7 +8585,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8626,7 +8626,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8654,7 +8654,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8688,7 +8688,7 @@
         "compile_data_glob": [
           "**"
         ],
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8729,7 +8729,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8781,7 +8781,7 @@
             ]
           }
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8822,7 +8822,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8850,7 +8850,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -8913,7 +8913,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "build_script_attrs": {
@@ -8965,7 +8965,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9006,7 +9006,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9034,7 +9034,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9092,7 +9092,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9142,7 +9142,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9170,7 +9170,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9211,7 +9211,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9261,7 +9261,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9302,7 +9302,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9330,7 +9330,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9384,7 +9384,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9442,7 +9442,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9483,7 +9483,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9524,7 +9524,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9552,7 +9552,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9586,7 +9586,7 @@
         "compile_data_glob": [
           "**"
         ],
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9627,7 +9627,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9655,7 +9655,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9721,7 +9721,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9784,7 +9784,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9825,7 +9825,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9853,7 +9853,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9894,7 +9894,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -9922,7 +9922,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -10041,7 +10041,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -10082,7 +10082,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -10123,7 +10123,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -10151,7 +10151,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -10213,7 +10213,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "proc_macro_deps_dev": {
           "common": [
             {
@@ -10300,7 +10300,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -10330,7 +10330,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -10371,7 +10371,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -10405,7 +10405,7 @@
         "compile_data_glob": [
           "**"
         ],
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -10457,7 +10457,7 @@
             ]
           }
         },
-        "edition": "2021",
+        "edition": "2024",
         "proc_macro_deps_dev": {
           "common": [
             {
@@ -10521,7 +10521,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "build_script_attrs": {
@@ -10582,7 +10582,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -10662,7 +10662,7 @@
             ]
           }
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "build_script_attrs": {
@@ -10727,7 +10727,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -10768,7 +10768,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -10818,7 +10818,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "proc_macro_deps_dev": {
           "common": [
             {
@@ -10868,7 +10868,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -10896,7 +10896,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -10937,7 +10937,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "proc_macro_deps_dev": {
           "common": [
             {
@@ -10987,7 +10987,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -11028,7 +11028,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -11071,7 +11071,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -11118,7 +11118,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -11165,7 +11165,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
