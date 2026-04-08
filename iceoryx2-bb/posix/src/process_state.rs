@@ -182,7 +182,8 @@ enum_gen! {
     Interrupt,
     InvalidCleanerPathName,
     PartiallyWrittenUniqueProcessIdInStateFile,
-    FaildToWriteUniqueProcessIdInStateFile,
+    FailedToWriteUniqueProcessIdInStateFile,
+    FailedToAcquireUniqueProcessId,
     UnknownError(i32)
 }
 
@@ -335,11 +336,14 @@ impl ProcessGuardBuilder {
         let mut state_file = fail!(from origin, when Self::create_file(path, INIT_PERMISSION),
                                 "{} since the state file \"{}\" could not be created.", msg, path);
 
+        let unique_process_id = fail!(from origin,
+                                      when Process::unique_id(),
+                                      with ProcessGuardCreateError::FailedToAcquireUniqueProcessId,
+                                      "{msg} since the unique process id could not be acquired.");
+
         const SIZE_OF_ID: u64 = core::mem::size_of::<UniqueProcessId>() as u64;
         match state_file.write(unsafe {
-            &core::mem::transmute::<UniqueProcessId, [u8; SIZE_OF_ID as usize]>(
-                Process::unique_id().unwrap(),
-            )
+            &core::mem::transmute::<UniqueProcessId, [u8; SIZE_OF_ID as usize]>(unique_process_id)
         }) {
             Ok(SIZE_OF_ID) => (),
             Ok(n) => {
@@ -349,7 +353,7 @@ impl ProcessGuardBuilder {
             }
             Err(e) => {
                 fail!(from origin,
-                    with ProcessGuardCreateError::FaildToWriteUniqueProcessIdInStateFile,
+                    with ProcessGuardCreateError::FailedToWriteUniqueProcessIdInStateFile,
                     "{msg} since the unique process could not be written to the state file. [{e:?}]");
             }
         }

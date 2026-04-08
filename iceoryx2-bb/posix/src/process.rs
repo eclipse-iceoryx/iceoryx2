@@ -44,7 +44,9 @@
 use core::fmt::Display;
 
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_log::{fail, trace};
 use iceoryx2_pal_posix::posix::{errno::Errno, MemZeroedStruct};
@@ -114,7 +116,8 @@ impl ProcessExt for posix::pid_t {
 }
 
 /// Represents a system wide unique process id.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, ZeroCopySend)]
+#[repr(C)]
 pub struct UniqueProcessId(UniqueSystemId);
 
 /// Represents a process id.
@@ -186,7 +189,7 @@ impl Process {
     /// Now future [`Process`] on the same machine will ever have the same [`UniqueProcessId`] again.
     pub fn unique_id() -> Result<UniqueProcessId, UniqueSystemIdCreationError> {
         static UNIQUE_PROCESS_ID: LazyLock<Result<UniqueProcessId, UniqueSystemIdCreationError>> =
-            LazyLock::new(|| UniqueSystemId::new().map(|v| UniqueProcessId(v)));
+            LazyLock::new(|| UniqueSystemId::new().map(UniqueProcessId));
 
         match *UNIQUE_PROCESS_ID {
             Ok(_) => *UNIQUE_PROCESS_ID,
