@@ -108,13 +108,21 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                 Field {
                     key: "global.node.cleanup-dead-nodes-on-creation",
                     value_type: "`true`|`false`",
-                    default_value: config.global.node.cleanup_dead_nodes_on_creation.to_string(),
+                    default_value: config
+                        .global
+                        .node
+                        .cleanup_dead_nodes_on_creation
+                        .to_string(),
                     description: "Defines if there shall be a scan for dead nodes with a following stale resource cleanup whenever a new node is created.",
                 },
                 Field {
                     key: "global.node.cleanup-dead-nodes-on-destruction",
                     value_type: "`true`|`false`",
-                    default_value: config.global.node.cleanup_dead_nodes_on_destruction.to_string(),
+                    default_value: config
+                        .global
+                        .node
+                        .cleanup_dead_nodes_on_destruction
+                        .to_string(),
                     description: "Defines if there shall be a scan for dead nodes with a following stale resource cleanup whenever a node is going out-of-scope.",
                 },
             ],
@@ -137,13 +145,19 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                 Field {
                     key: "global.service.static-config-storage-suffix",
                     value_type: "string",
-                    default_value: format!("\"{}\"", config.global.service.static_config_storage_suffix),
+                    default_value: format!(
+                        "\"{}\"",
+                        config.global.service.static_config_storage_suffix
+                    ),
                     description: "Suffix for static service configuration files.",
                 },
                 Field {
                     key: "global.service.dynamic-config-storage-suffix",
                     value_type: "string",
-                    default_value: format!("\"{}\"", config.global.service.dynamic_config_storage_suffix),
+                    default_value: format!(
+                        "\"{}\"",
+                        config.global.service.dynamic_config_storage_suffix
+                    ),
                     description: "Suffix for dynamic service configuration files.",
                 },
                 Field {
@@ -172,7 +186,7 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                 },
             ],
         },
-        Section{
+        Section {
             name: "Global: Service Creation Timeout",
             fields: vec![
                 Field {
@@ -185,7 +199,12 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                 Field {
                     key: "global.service.creation-timeout.nanos",
                     value_type: "int",
-                    default_value: config.global.service.creation_timeout.subsec_nanos().to_string(),
+                    default_value: config
+                        .global
+                        .service
+                        .creation_timeout
+                        .subsec_nanos()
+                        .to_string(),
                     description: "Additional nanoseconds for service setup timeout.\n   \
                     Attention: Both 'secs' and 'nanos' must be set together; leaving one unset will cause the configuration to be invalid.",
                 },
@@ -197,7 +216,11 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                 Field {
                     key: "defaults.publish-subscribe.max-subscribers",
                     value_type: "int",
-                    default_value: config.defaults.publish_subscribe.max_subscribers.to_string(),
+                    default_value: config
+                        .defaults
+                        .publish_subscribe
+                        .max_subscribers
+                        .to_string(),
                     description: "Maximum number of subscribers.",
                 },
                 Field {
@@ -215,43 +238,70 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                 Field {
                     key: "defaults.publish-subscribe.subscriber-max-buffer-size",
                     value_type: "int",
-                    default_value: config.defaults.publish_subscribe.subscriber_max_buffer_size.to_string(),
+                    default_value: config
+                        .defaults
+                        .publish_subscribe
+                        .subscriber_max_buffer_size
+                        .to_string(),
                     description: "Maximum buffer size of a subscriber.",
                 },
                 Field {
                     key: "defaults.publish-subscribe.subscriber-max-borrowed-samples",
                     value_type: "int",
-                    default_value: config.defaults.publish_subscribe.subscriber_max_borrowed_samples.to_string(),
+                    default_value: config
+                        .defaults
+                        .publish_subscribe
+                        .subscriber_max_borrowed_samples
+                        .to_string(),
                     description: "Maximum samples a subscriber can hold.",
                 },
                 Field {
                     key: "defaults.publish-subscribe.publisher-max-loaned-samples",
                     value_type: "int",
-                    default_value: config.defaults.publish_subscribe.publisher_max_loaned_samples.to_string(),
+                    default_value: config
+                        .defaults
+                        .publish_subscribe
+                        .publisher_max_loaned_samples
+                        .to_string(),
                     description: "Maximum samples a publisher can loan.",
                 },
                 Field {
                     key: "defaults.publish-subscribe.publisher-history-size",
                     value_type: "int",
-                    default_value: config.defaults.publish_subscribe.publisher_history_size.to_string(),
+                    default_value: config
+                        .defaults
+                        .publish_subscribe
+                        .publisher_history_size
+                        .to_string(),
                     description: "Maximum history size a subscriber can request.",
                 },
                 Field {
                     key: "defaults.publish-subscribe.enable-safe-overflow",
                     value_type: "`true`|`false`",
-                    default_value: config.defaults.publish_subscribe.enable_safe_overflow.to_string(),
+                    default_value: config
+                        .defaults
+                        .publish_subscribe
+                        .enable_safe_overflow
+                        .to_string(),
                     description: "Default overflow behavior.",
                 },
                 Field {
                     key: "defaults.publish-subscribe.unable-to-deliver-strategy",
                     value_type: "`Block`|`DiscardSample`",
-                    default_value: format!("{:?}", config.defaults.publish_subscribe.unable_to_deliver_strategy),
+                    default_value: format!(
+                        "{:?}",
+                        config.defaults.publish_subscribe.unable_to_deliver_strategy
+                    ),
                     description: "Default strategy for non-overflowing setups when delivery fails.",
                 },
                 Field {
                     key: "defaults.publish-subscribe.subscriber-expired-connection-buffer",
                     value_type: "int",
-                    default_value: config.defaults.publish_subscribe.subscriber_expired_connection_buffer.to_string(),
+                    default_value: config
+                        .defaults
+                        .publish_subscribe
+                        .subscriber_expired_connection_buffer
+                        .to_string(),
                     description: "Expired connection buffer size of the subscriber. Connections to publishers are expired when the publisher disconnected from the service and the connection contains unconsumed samples.",
                 },
             ],
@@ -286,7 +336,11 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                 Field {
                     key: "defaults.event.deadline",
                     value_type: "Option<Duration>",
-                    default_value: config.defaults.event.deadline.map_or("None".to_string(), |e| format!("{e:?}")),
+                    default_value: config
+                        .defaults
+                        .event
+                        .deadline
+                        .map_or("None".to_string(), |e| format!("{e:?}")),
                     description: "\
                     Maximum allowed time between two consecutive notifications. If not sent after \
                     this time, all listeners attached to a WaitSet will be notified.\n   \
@@ -298,19 +352,31 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                 Field {
                     key: "defaults.event.notifier-created-event",
                     value_type: "Option<int>",
-                    default_value: config.defaults.event.notifier_created_event.map_or("None".to_string(), |e| e.to_string()),
+                    default_value: config
+                        .defaults
+                        .event
+                        .notifier_created_event
+                        .map_or("None".to_string(), |e| e.to_string()),
                     description: "Event id emitted after a new notifier is created.",
                 },
                 Field {
                     key: "defaults.event.notifier-dropped-event",
                     value_type: "Option<int>",
-                    default_value: config.defaults.event.notifier_dropped_event.map_or("None".to_string(), |e| e.to_string()),
+                    default_value: config
+                        .defaults
+                        .event
+                        .notifier_dropped_event
+                        .map_or("None".to_string(), |e| e.to_string()),
                     description: "Event id emitted before a notifier is dropped.",
                 },
                 Field {
                     key: "defaults.event.notifier-dead-event",
                     value_type: "Option<int>",
-                    default_value: config.defaults.event.notifier_dead_event.map_or("None".to_string(), |e| e.to_string()),
+                    default_value: config
+                        .defaults
+                        .event
+                        .notifier_dead_event
+                        .map_or("None".to_string(), |e| e.to_string()),
                     description: "Event id emitted if a notifier is identified as dead.",
                 },
             ],
@@ -321,25 +387,41 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                 Field {
                     key: "defaults.request-response.enable-safe-overflow-for-requests",
                     value_type: "`true`|`false`",
-                    default_value: config.defaults.request_response.enable_safe_overflow_for_requests.to_string(),
+                    default_value: config
+                        .defaults
+                        .request_response
+                        .enable_safe_overflow_for_requests
+                        .to_string(),
                     description: "Defines if the request buffer of the service safely overflows.",
                 },
                 Field {
                     key: "defaults.request-response.enable-safe-overflow-for-responses",
                     value_type: "`true`|`false`",
-                    default_value: config.defaults.request_response.enable_safe_overflow_for_responses.to_string(),
+                    default_value: config
+                        .defaults
+                        .request_response
+                        .enable_safe_overflow_for_responses
+                        .to_string(),
                     description: "Defines if the response buffer of the service safely overflows.",
                 },
                 Field {
                     key: "defaults.request-response.max-active-requests-per-client",
                     value_type: "int",
-                    default_value: config.defaults.request_response.max_active_requests_per_client.to_string(),
+                    default_value: config
+                        .defaults
+                        .request_response
+                        .max_active_requests_per_client
+                        .to_string(),
                     description: "The maximum of active requests a server can hold per client.",
                 },
                 Field {
                     key: "defaults.request-response.max-response-buffer-size",
                     value_type: "int",
-                    default_value: config.defaults.request_response.max_response_buffer_size.to_string(),
+                    default_value: config
+                        .defaults
+                        .request_response
+                        .max_response_buffer_size
+                        .to_string(),
                     description: "The maximum buffer size for responses for an active request.",
                 },
                 Field {
@@ -363,49 +445,85 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                 Field {
                     key: "defaults.request-response.max-borrowed-responses-per-pending-response",
                     value_type: "int",
-                    default_value: config.defaults.request_response.max_borrowed_responses_per_pending_response.to_string(),
+                    default_value: config
+                        .defaults
+                        .request_response
+                        .max_borrowed_responses_per_pending_response
+                        .to_string(),
                     description: "The maximum number of borrowed responses a client can hold in parallel per pending response.",
                 },
                 Field {
                     key: "defaults.request-response.max-loaned-requests",
                     value_type: "int",
-                    default_value: config.defaults.request_response.max_loaned_requests.to_string(),
+                    default_value: config
+                        .defaults
+                        .request_response
+                        .max_loaned_requests
+                        .to_string(),
                     description: "Maximum number of requests a client can loan in parallel.",
                 },
                 Field {
                     key: "defaults.request-response.server-max-loaned-responses-per-request",
                     value_type: "int",
-                    default_value: config.defaults.request_response.server_max_loaned_responses_per_request.to_string(),
+                    default_value: config
+                        .defaults
+                        .request_response
+                        .server_max_loaned_responses_per_request
+                        .to_string(),
                     description: "Maximum number of responses a server can loan per request.",
                 },
                 Field {
                     key: "defaults.request-response.client-unable-to-deliver-strategy",
                     value_type: "`Block`|`DiscardSample`",
-                    default_value: format!("{:?}", config.defaults.request_response.client_unable_to_deliver_strategy),
+                    default_value: format!(
+                        "{:?}",
+                        config
+                            .defaults
+                            .request_response
+                            .client_unable_to_deliver_strategy
+                    ),
                     description: "Default strategy for non-overflowing setups when delivery fails.",
                 },
                 Field {
                     key: "defaults.request-response.server-unable-to-deliver-strategy",
                     value_type: "`Block`|`DiscardSample`",
-                    default_value: format!("{:?}", config.defaults.request_response.server_unable_to_deliver_strategy),
+                    default_value: format!(
+                        "{:?}",
+                        config
+                            .defaults
+                            .request_response
+                            .server_unable_to_deliver_strategy
+                    ),
                     description: "Default strategy for non-overflowing setups when delivery fails.",
                 },
                 Field {
                     key: "defaults.request-response.client-expired-connection-buffer",
                     value_type: "int",
-                    default_value: config.defaults.request_response.client_expired_connection_buffer.to_string(),
+                    default_value: config
+                        .defaults
+                        .request_response
+                        .client_expired_connection_buffer
+                        .to_string(),
                     description: "Expired connection buffer size of the client. Connections to servers are expired when the server disconnected from the service and the connection contains unconsumed responses.",
                 },
                 Field {
                     key: "defaults.request-response.enable-fire-and-forget-requests",
                     value_type: "`true`|`false`",
-                    default_value: config.defaults.request_response.enable_fire_and_forget_requests.to_string(),
+                    default_value: config
+                        .defaults
+                        .request_response
+                        .enable_fire_and_forget_requests
+                        .to_string(),
                     description: "Enables the client to send requests without expecting a response.",
                 },
                 Field {
                     key: "defaults.request-response.server-expired-connection-buffer",
                     value_type: "int",
-                    default_value: config.defaults.request_response.server_expired_connection_buffer.to_string(),
+                    default_value: config
+                        .defaults
+                        .request_response
+                        .server_expired_connection_buffer
+                        .to_string(),
                     description: "Expired connection buffer size of the server. Connections to clients are expired when the client disconnected from the service and the connection contains unconsumed active requests.",
                 },
             ],
@@ -457,9 +575,9 @@ mod tests {
 
     use std::collections::HashSet;
 
+    use ron::Value;
     use ron::de::from_str;
     use ron::ser::to_string;
-    use ron::Value;
 
     use iceoryx2::config::Config;
     use iceoryx2_bb_testing::assert_that;

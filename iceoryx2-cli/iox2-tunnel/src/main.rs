@@ -37,8 +37,8 @@ mod supported_platform {
     use clap::Parser;
     use cli::Cli;
 
-    use iceoryx2_log::set_log_level_from_env_or;
     use iceoryx2_log::LogLevel;
+    use iceoryx2_log::set_log_level_from_env_or;
 
     pub fn main() -> anyhow::Result<()> {
         #[cfg(not(debug_assertions))]
@@ -79,7 +79,9 @@ mod supported_platform {
                     )?;
                     #[cfg(not(feature = "tunnel_zenoh"))]
                     {
-                        println!("Zenoh transport is not available. Please rebuild with the 'tunnel_zenoh' feature enabled.");
+                        println!(
+                            "Zenoh transport is not available. Please rebuild with the 'tunnel_zenoh' feature enabled."
+                        );
                         return Ok(());
                     }
                 }

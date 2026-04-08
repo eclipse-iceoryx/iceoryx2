@@ -1,5 +1,5 @@
 {
-  "checksum": "193d60d0b7d10d902052012dad7c1f571aebb178dd3016b96e28f0f1234499f9",
+  "checksum": "4bee096bce14378e6fdb4bb174d7dd5433a5300df1e70ebf213bbfdca43f21ac",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -10111,7 +10111,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",

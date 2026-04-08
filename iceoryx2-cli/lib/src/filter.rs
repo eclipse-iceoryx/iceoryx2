@@ -16,9 +16,9 @@ use core::fmt::Debug;
 use core::str::FromStr;
 use iceoryx2::node::NodeState;
 use iceoryx2::node::NodeView;
+use iceoryx2::service::ServiceDetails;
 use iceoryx2::service::ipc::Service;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
-use iceoryx2::service::ServiceDetails;
 use iceoryx2_pal_posix::posix::pid_t;
 
 pub trait Filter<T>: Debug {
@@ -67,7 +67,7 @@ pub enum StateFilter {
 impl Filter<NodeState<Service>> for NodeIdentifier {
     fn matches(&self, node: &NodeState<Service>) -> bool {
         match self {
-            NodeIdentifier::Name(ref name) => match node {
+            NodeIdentifier::Name(name) => match node {
                 NodeState::Alive(view) => view
                     .details()
                     .as_ref()
@@ -80,7 +80,7 @@ impl Filter<NodeState<Service>> for NodeIdentifier {
                     .unwrap_or(false),
                 NodeState::Inaccessible(_) | NodeState::Undefined(_) => false,
             },
-            NodeIdentifier::Id(ref id) => match node {
+            NodeIdentifier::Id(id) => match node {
                 NodeState::Alive(view) => NodeIdString::from(view.id()) == **id,
                 NodeState::Dead(view) => NodeIdString::from(view.id()) == **id,
                 NodeState::Inaccessible(node_id) => NodeIdString::from(node_id) == **id,

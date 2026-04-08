@@ -14,11 +14,11 @@ use clap::Args;
 use clap::Parser;
 use clap::Subcommand;
 
+use iceoryx2_cli::Format;
+use iceoryx2_cli::HelpOptions;
 use iceoryx2_cli::filter::NodeIdentifier;
 use iceoryx2_cli::filter::StateFilter;
 use iceoryx2_cli::help_template;
-use iceoryx2_cli::Format;
-use iceoryx2_cli::HelpOptions;
 
 #[derive(Parser)]
 #[command(

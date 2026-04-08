@@ -24,7 +24,7 @@ use clap::Parser;
 use cli::Action;
 use cli::Cli;
 use iceoryx2_log::error;
-use iceoryx2_log::{set_log_level_from_env_or, LogLevel};
+use iceoryx2_log::{LogLevel, set_log_level_from_env_or};
 
 fn main() -> Result<()> {
     #[cfg(not(debug_assertions))]

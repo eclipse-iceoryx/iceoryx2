@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 
 use crate::command::{
     CommandExecutor, CommandFinder, Environment, HostEnvironment, IceoryxCommandExecutor,
@@ -112,7 +112,9 @@ mod tests {
             let mut paths = env::split_paths(&original_path).collect::<Vec<_>>();
             paths.push(temp_path.clone());
             let new_path = env::join_paths(paths).expect("Failed to join paths");
-            env::set_var("PATH", &new_path);
+            unsafe {
+                env::set_var("PATH", &new_path);
+            }
 
             create_file!(temp_path, format!("{}{}", IOX2_PREFIX, FOO_COMMAND));
             create_file!(temp_path, format!("{}{}.d", IOX2_PREFIX, FOO_COMMAND));
@@ -133,7 +135,9 @@ mod tests {
 
     impl Drop for TestEnv {
         fn drop(&mut self) {
-            env::set_var("PATH", &self.original_path);
+            unsafe {
+                env::set_var("PATH", &self.original_path);
+            }
         }
     }
 

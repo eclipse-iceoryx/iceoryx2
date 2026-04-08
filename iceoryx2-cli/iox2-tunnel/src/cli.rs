@@ -13,8 +13,8 @@
 use clap::Parser;
 use clap::Subcommand;
 
-use iceoryx2_cli::help_template;
 use iceoryx2_cli::HelpOptions;
+use iceoryx2_cli::help_template;
 
 #[derive(Parser)]
 #[command(
