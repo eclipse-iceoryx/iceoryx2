@@ -176,6 +176,7 @@ enum_gen! { FileReadValError
 
 enum_gen! { FileReadError
   entry:
+    OpenedWithoutReadAccessMode,
     Interrupt,
     IOerror,
     IsDirectory,
@@ -207,6 +208,7 @@ enum_gen! { FileWriteValError
 
 enum_gen! { FileWriteError
   entry:
+    OpenedWithoutWriteAccessMode,
     Interrupt,
     WriteBufferTooBig,
     IOerror,
@@ -463,6 +465,7 @@ impl FileCreationBuilder {
 pub struct File {
     path: Option<FilePath>,
     file_descriptor: FileDescriptor,
+    access_mode: AccessMode,
     has_ownership: AtomicBool,
 }
 
@@ -537,6 +540,7 @@ impl File {
                 path: Some(config.file_path),
                 file_descriptor: v,
                 has_ownership: AtomicBool::new(config.has_ownership),
+                access_mode: config.access_mode,
             });
         }
 
@@ -570,6 +574,7 @@ impl File {
                 path: Some(config.file_path),
                 file_descriptor: v,
                 has_ownership: AtomicBool::new(config.has_ownership),
+                access_mode: config.access_mode,
             });
         }
 
@@ -587,6 +592,12 @@ impl File {
             Errno::ENOMEM => (InsufficientMemory, "{} due to insufficient memory.", msg),
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).",msg, v)
         );
+    }
+
+    /// Returns the [`AccessMode`] under which the [`File`] was opened. The [`AccessMode`] defines if
+    /// the [`File`] can be read or written.
+    pub fn access_mode(&self) -> AccessMode {
+        self.access_mode
     }
 
     /// Returns `true` if the [`File`] is owned by the construct and automatically
@@ -609,12 +620,13 @@ impl File {
 
     /// Takes ownership of a [`FileDescriptor`]. When [`File`] goes out of scope the file
     /// descriptor is closed.
-    pub fn from_file_descriptor(file_descriptor: FileDescriptor) -> Self {
+    pub fn from_file_descriptor(file_descriptor: FileDescriptor, access_mode: AccessMode) -> Self {
         trace!(from "File::from_file_descriptor", "opened {:?}", file_descriptor);
         Self {
             path: None,
             file_descriptor,
             has_ownership: AtomicBool::new(false),
+            access_mode,
         }
     }
 
@@ -704,6 +716,12 @@ impl File {
     /// Reads the content of a file into a slice and returns the number of bytes read but at most
     /// `buf.len()` bytes.
     pub fn read(&self, buf: &mut [u8]) -> Result<u64, FileReadError> {
+        let msg = "Unable to read file";
+        if self.access_mode != AccessMode::Read && self.access_mode != AccessMode::ReadWrite {
+            fail!(from self, with FileReadError::OpenedWithoutReadAccessMode,
+                "{msg} since the file was not opened with AccessMode::Read or AccessMode::ReadWrite.");
+        }
+
         let bytes_read = unsafe {
             posix::read(
                 self.file_descriptor.native_handle(),
@@ -716,7 +734,6 @@ impl File {
             return Ok(bytes_read as u64);
         }
 
-        let msg = "Unable to read file";
         handle_errno!(FileReadError, from self,
             Errno::EINTR => (Interrupt, "{} since an interrupt signal was received.", msg),
             Errno::EIO => (IOerror, "{} since an I/O error occurred.", msg),
@@ -835,6 +852,13 @@ impl File {
 
     /// Writes a slice into a file and returns the number of bytes which were written.
     pub fn write(&mut self, buf: &[u8]) -> Result<u64, FileWriteError> {
+        let msg = "Unable to write content";
+
+        if self.access_mode != AccessMode::Write && self.access_mode != AccessMode::ReadWrite {
+            fail!(from self, with FileWriteError::OpenedWithoutWriteAccessMode,
+                "{msg} since the file was not opened with AccessMode::Write or AccessMode::ReadWrite.");
+        }
+
         let bytes_written = unsafe {
             posix::write(
                 self.file_descriptor.native_handle(),
@@ -847,7 +871,6 @@ impl File {
             return Ok(bytes_written as u64);
         }
 
-        let msg = "Unable to write content";
         handle_errno!(FileWriteError, from self,
             Errno::EFBIG => (WriteBufferTooBig, "{} since the file size would then exceed the internal maximum file size limit.", msg),
             Errno::EINTR => (Interrupt, "{} since an interrupt signal was received.", msg),

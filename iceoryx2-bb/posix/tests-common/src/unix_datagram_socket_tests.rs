@@ -250,7 +250,7 @@ pub fn sending_receiving_with_single_fd_works() {
     let mut fd_vec = received_msg.extract_fds();
     assert_that!(fd_vec, len 1);
 
-    let mut file_receiver = File::from_file_descriptor(fd_vec.remove(0));
+    let mut file_receiver = File::from_file_descriptor(fd_vec.remove(0), AccessMode::ReadWrite);
     let mut file_recv_content = String::new();
     file_receiver
         .read_to_string(&mut file_recv_content)
@@ -344,7 +344,7 @@ pub fn sending_receiving_with_max_supported_fd_and_credentials_works() {
     assert_that!(fd_vec, len NUMBER_OF_FILES);
 
     for send_content in file_send_content.iter().take(NUMBER_OF_FILES) {
-        let file_receiver = File::from_file_descriptor(fd_vec.remove(0));
+        let file_receiver = File::from_file_descriptor(fd_vec.remove(0), AccessMode::ReadWrite);
         let mut file_recv_content = String::new();
         file_receiver
             .read_to_string(&mut file_recv_content)

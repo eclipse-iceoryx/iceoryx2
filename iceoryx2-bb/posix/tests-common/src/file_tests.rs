@@ -529,3 +529,29 @@ pub fn when_file_does_not_contain_the_required_bytes_read_val_at_fails() {
 
     assert_that!(file.read_val_at::<TestValue>(1).err(), eq Some(FileReadValError::FileSizeTooSmallToContainValue));
 }
+
+#[test]
+pub fn cannot_read_from_file_that_was_not_opened_with_read_access_mode() {
+    let test = TestFixture::new();
+    test.create_file(&test.file);
+    let sut = FileBuilder::new(&test.file)
+        .open_existing(AccessMode::Write)
+        .unwrap();
+
+    assert_that!(sut.access_mode(), eq AccessMode::Write);
+    let mut buffer = [0u8; 8];
+    assert_that!(sut.read(&mut buffer).err(), eq Some(FileReadError::OpenedWithoutReadAccessMode));
+}
+
+#[test]
+pub fn cannot_write_to_file_that_was_not_opened_with_write_access_mode() {
+    let test = TestFixture::new();
+    test.create_file(&test.file);
+    let mut sut = FileBuilder::new(&test.file)
+        .open_existing(AccessMode::Read)
+        .unwrap();
+
+    assert_that!(sut.access_mode(), eq AccessMode::Read);
+    let buffer = [0u8; 8];
+    assert_that!(sut.write(&buffer).err(), eq Some(FileWriteError::OpenedWithoutWriteAccessMode));
+}
