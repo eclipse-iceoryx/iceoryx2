@@ -141,7 +141,6 @@ use core::fmt::Debug;
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 pub use iceoryx2_bb_system_types::file_path::FilePath;
 
-use iceoryx2_bb_concurrency::cell::Cell;
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_log::{fail, fatal_panic, trace};
@@ -150,7 +149,7 @@ use iceoryx2_pal_posix::posix::{self, Errno, MemZeroedStruct};
 use crate::{
     access_mode::AccessMode,
     directory::{Directory, DirectoryAccessError, DirectoryCreateError},
-    file::{File, FileBuilder, FileCreationError, FileOpenError, FileRemoveError},
+    file::{File, FileBuilder, FileCreationError, FileOpenError, FileRemoveError, FileStatError},
     file_descriptor::{FileDescriptorBased, FileDescriptorManagement},
     file_lock::LockType,
     permission::Permission,
@@ -224,10 +223,13 @@ enum_gen! {
   entry:
     CorruptedState,
     Interrupt,
+    FailedToAcquireUniqueProcessIdFromStateFile,
+    FailedToAcquireUniqueProcessId,
     UnknownError(i32)
 
   mapping:
-    ProcessMonitorCreateError
+    ProcessMonitorCreateError,
+    FileStatError
 }
 
 enum_gen! {
@@ -238,6 +240,8 @@ enum_gen! {
     OwnedByAnotherProcess,
     Interrupt,
     FailedToAcquireLockState,
+    FailedToAcquireUniqueProcessId,
+    FailedToAcquireUniqueProcessIdFromStateFile,
     UnableToOpenStateFile,
     UnableToOpenCleanerFile,
     InvalidCleanerPathName,
@@ -650,21 +654,10 @@ impl ProcessGuard {
 ///     ProcessState::DoesNotExist => (),
 /// }
 /// ```
+#[derive(Debug)]
 pub struct ProcessMonitor {
-    file: Cell<Option<File>>,
     path: FilePath,
     owner_lock_path: FilePath,
-}
-
-impl Debug for ProcessMonitor {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "ProcessMonitor {{ file = {:?}, path = {:?}}}",
-            unsafe { &*self.file.as_ptr() },
-            self.path
-        )
-    }
 }
 
 impl ProcessMonitor {
@@ -694,14 +687,10 @@ impl ProcessMonitor {
         };
 
         let new_self = Self {
-            file: Cell::new(None),
             path: *path,
             owner_lock_path,
         };
 
-        new_self
-            .file
-            .set(Self::open_file(&new_self.path, AccessMode::Write)?);
         Ok(new_self)
     }
 
@@ -746,18 +735,83 @@ impl ProcessMonitor {
     /// ```
     pub fn state(&self) -> Result<ProcessState, ProcessMonitorStateError> {
         let msg = "Unable to acquire ProcessState";
-        match unsafe { &*self.file.as_ptr() } {
-            Some(_) => self.read_state_from_file(),
-            None => match File::does_exist(&self.path) {
-                Ok(true) => {
-                    self.file
-                        .set(Self::open_file(&self.path, AccessMode::ReadWrite)?);
-                    self.read_state_from_file()
+
+        // we open the file in AccessMode::Write since we do not yet know if the initialization is completed
+        // if it is completed, we can open it with AccessMode::ReadWrite
+        match Self::open_file(&self.path, AccessMode::Write)? {
+            Some(file) => {
+                let permissions = fail!(from self, when file.permission(),
+                    "{msg} since the permissions of the state file could not be read.");
+                if permissions == INIT_PERMISSION {
+                    return Ok(ProcessState::Starting);
                 }
+            }
+            None => return Ok(ProcessState::DoesNotExist),
+        };
+
+        let file = match Self::open_file(&self.path, AccessMode::ReadWrite)? {
+            Some(file) => file,
+            None => return Ok(ProcessState::DoesNotExist),
+        };
+
+        let other_process_id: UniqueProcessId = match file.read_val() {
+            Ok(v) => v,
+            Err(e) => {
+                fail!(from self, with ProcessMonitorStateError::FailedToAcquireUniqueProcessIdFromStateFile,
+                    "{msg} since the unique process id contained in the state file could not be read. [{e:?}]");
+            }
+        };
+
+        let my_process_id = match Process::unique_id() {
+            Ok(v) => v,
+            Err(e) => {
+                fail!(from self, with ProcessMonitorStateError::FailedToAcquireUniqueProcessId,
+                    "{msg} since the unique process id could not be acquired. [{e:?}]");
+            }
+        };
+
+        if my_process_id == other_process_id {
+            return Ok(ProcessState::Alive);
+        }
+
+        let lock_state = fail!(from self, when Self::get_lock_state(&file),
+                            "{} since the lock state of the state file could not be acquired.", msg);
+
+        match lock_state as _ {
+            posix::F_WRLCK => Ok(ProcessState::Alive),
+            _ => match File::does_exist(&self.path) {
+                Ok(true) => match file.permission() {
+                    Ok(INIT_PERMISSION) => Ok(ProcessState::Starting),
+                    Err(_) | Ok(_) => {
+                        match Self::open_file(&self.owner_lock_path, AccessMode::Write)? {
+                            Some(f) => {
+                                let lock_state = fail!(from self, when Self::get_lock_state(&f),
+                                                "{} since the lock state of the owner_lock file could not be acquired.", msg);
+                                if lock_state == posix::F_WRLCK as _ {
+                                    return Ok(ProcessState::CleaningUp);
+                                }
+
+                                Ok(ProcessState::Dead)
+                            }
+                            None => match File::does_exist(&self.path) {
+                                Ok(true) => {
+                                    fail!(from self, with ProcessMonitorStateError::CorruptedState,
+                                    "{} since the corresponding owner_lock file \"{}\" does not exist. This indicates a corrupted state.",
+                                    msg, self.owner_lock_path);
+                                }
+                                Ok(false) => Ok(ProcessState::DoesNotExist),
+                                Err(v) => {
+                                    fail!(from self, with ProcessMonitorStateError::UnknownError(0),
+                                        "{} since an unknown failure occurred while checking if the process state file exists ({:?}).", msg, v);
+                                }
+                            },
+                        }
+                    }
+                },
                 Ok(false) => Ok(ProcessState::DoesNotExist),
                 Err(v) => {
                     fail!(from self, with ProcessMonitorStateError::UnknownError(0),
-                        "{} since an unknown failure occurred while checking if the file exists ({:?}).", msg, v);
+                            "{} since an unknown failure occurred while checking if the process state file exists ({:?}).", msg, v);
                 }
             },
         }
@@ -783,83 +837,6 @@ impl ProcessMonitor {
         }
 
         Ok(current_state.l_type as _)
-    }
-
-    fn read_state_from_file(&self) -> Result<ProcessState, ProcessMonitorStateError> {
-        let file = match unsafe { &mut *self.file.as_ptr() } {
-            Some(ref f) => f,
-            None => return Ok(ProcessState::Starting),
-        };
-
-        let msg = format!("Unable to read state from file {file:?}");
-        let mut buffer = [0u8; 16];
-
-        if file.permission().unwrap() == INIT_PERMISSION {
-            return Ok(ProcessState::Starting);
-        }
-
-        if let Err(_) = file.read(&mut buffer) {
-            self.file
-                .set(Self::open_file(&self.path, AccessMode::ReadWrite).unwrap());
-        };
-        file.read(&mut buffer);
-        let unique_process_id =
-            unsafe { core::mem::transmute::<[u8; 16], UniqueProcessId>(buffer) };
-
-        println!("{:?} == {:?}", unique_process_id, Process::unique_id());
-        if unique_process_id == Process::unique_id().unwrap() {
-            println!("process is alive");
-            return Ok(ProcessState::Alive);
-        }
-
-        let lock_state = fail!(from self, when Self::get_lock_state(file),
-                            "{} since the lock state of the state file could not be acquired.", msg);
-
-        match lock_state as _ {
-            posix::F_WRLCK => Ok(ProcessState::Alive),
-            _ => match File::does_exist(&self.path) {
-                Ok(true) => match file.permission() {
-                    Ok(INIT_PERMISSION) => Ok(ProcessState::Starting),
-                    Err(_) | Ok(_) => {
-                        self.file.set(None);
-                        match Self::open_file(&self.owner_lock_path, AccessMode::Write)? {
-                            Some(f) => {
-                                let lock_state = fail!(from self, when Self::get_lock_state(&f),
-                                                "{} since the lock state of the owner_lock file could not be acquired.", msg);
-                                if lock_state == posix::F_WRLCK as _ {
-                                    return Ok(ProcessState::CleaningUp);
-                                }
-
-                                Ok(ProcessState::Dead)
-                            }
-                            None => match File::does_exist(&self.path) {
-                                Ok(true) => {
-                                    fail!(from self, with ProcessMonitorStateError::CorruptedState,
-                                    "{} since the corresponding owner_lock file \"{}\" does not exist. This indicates a corrupted state.",
-                                    msg, self.owner_lock_path);
-                                }
-                                Ok(false) => {
-                                    self.file.set(None);
-                                    Ok(ProcessState::DoesNotExist)
-                                }
-                                Err(v) => {
-                                    fail!(from self, with ProcessMonitorStateError::UnknownError(0),
-                                        "{} since an unknown failure occurred while checking if the process state file exists ({:?}).", msg, v);
-                                }
-                            },
-                        }
-                    }
-                },
-                Ok(false) => {
-                    self.file.set(None);
-                    Ok(ProcessState::DoesNotExist)
-                }
-                Err(v) => {
-                    fail!(from self, with ProcessMonitorStateError::UnknownError(0),
-                            "{} since an unknown failure occurred while checking if the process state file exists ({:?}).", msg, v);
-                }
-            },
-        }
     }
 
     fn open_file(
@@ -935,11 +912,23 @@ impl ProcessCleaner {
             }
         };
 
-        let mut buffer = [0u8; 16];
-        state_file.read(&mut buffer).unwrap();
-        let process_id = unsafe { core::mem::transmute::<[u8; 16], UniqueProcessId>(buffer) };
+        let my_unique_process_id = match Process::unique_id() {
+            Ok(v) => v,
+            Err(e) => {
+                fail!(from origin, with ProcessCleanerCreateError::FailedToAcquireUniqueProcessId,
+                    "{msg} since the unique process id could not be acquired. [{e:?}]");
+            }
+        };
 
-        if process_id == Process::unique_id().unwrap() {
+        let other_unique_process_id = match state_file.read_val::<UniqueProcessId>() {
+            Ok(v) => v,
+            Err(e) => {
+                fail!(from origin, with ProcessCleanerCreateError::FailedToAcquireUniqueProcessIdFromStateFile,
+                    "{msg} since the unique process id could not be read from the state file. [{e:?}]");
+            }
+        };
+
+        if other_unique_process_id == my_unique_process_id {
             fail!(from origin, with ProcessCleanerCreateError::ProcessIsStillAlive,
                 "{} since the corresponding process is still alive.", msg);
         }

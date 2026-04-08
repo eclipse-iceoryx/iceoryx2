@@ -114,10 +114,11 @@ pub fn monitor_transitions_work_starting_from_non_existing_process() {
 
     let monitor = ProcessMonitor::new(&path).unwrap();
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
-    let file = FileBuilder::new(&path)
+    let mut state_file = FileBuilder::new(&path)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
+    state_file.write(&[0u8; 16]).unwrap();
 
     let cleaner_file = FileBuilder::new(&cleaner_path)
         .creation_mode(CreationMode::PurgeAndCreate)
@@ -127,7 +128,7 @@ pub fn monitor_transitions_work_starting_from_non_existing_process() {
     assert_that!(monitor.state().unwrap(), eq ProcessState::Dead);
     cleaner_file.remove_self().unwrap();
     assert_that!(monitor.state().err().unwrap(), eq ProcessMonitorStateError::CorruptedState);
-    file.remove_self().unwrap();
+    state_file.remove_self().unwrap();
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
 }
 
@@ -138,10 +139,12 @@ pub fn monitor_transitions_work_starting_from_existing_process() {
     let mut owner_lock_path = path;
     owner_lock_path.push_bytes(b"_owner_lock").unwrap();
 
-    let file = FileBuilder::new(&path)
+    let mut state_file = FileBuilder::new(&path)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
+    state_file.write(&[0u8; 16]).unwrap();
+    state_file.flush().unwrap();
     let owner_lock_file = FileBuilder::new(&owner_lock_path)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
@@ -149,16 +152,18 @@ pub fn monitor_transitions_work_starting_from_existing_process() {
 
     let monitor = ProcessMonitor::new(&path).unwrap();
     assert_that!(monitor.state().unwrap(), eq ProcessState::Dead);
-    file.remove_self().unwrap();
+    state_file.remove_self().unwrap();
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
 
-    let file = FileBuilder::new(&path)
+    let mut state_file = FileBuilder::new(&path)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
+    state_file.write(&[0u8; 16]).unwrap();
+    state_file.flush().unwrap();
     assert_that!(monitor.state().unwrap(), eq ProcessState::Dead);
 
-    file.remove_self().unwrap();
+    state_file.remove_self().unwrap();
     owner_lock_file.remove_self().unwrap();
 }
 
@@ -194,11 +199,12 @@ pub fn owner_lock_cannot_be_created_when_process_does_not_exist() {
         ProcessCleanerCreateError::DoesNotExist
     );
 
-    let file = FileBuilder::new(&path)
+    let mut state_file = FileBuilder::new(&path)
         .has_ownership(true)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
+    state_file.write(&[0u8; 16]).unwrap();
 
     let owner_lock = ProcessCleaner::new(&path);
     assert_that!(owner_lock, is_err);
@@ -206,7 +212,7 @@ pub fn owner_lock_cannot_be_created_when_process_does_not_exist() {
         owner_lock.err().unwrap(), eq
         ProcessCleanerCreateError::DoesNotExist
     );
-    drop(file);
+    drop(state_file);
     nanosleep(core::time::Duration::from_millis(100)).expect("failed to sleep");
 
     let _file = FileBuilder::new(&owner_lock_path)
@@ -230,11 +236,12 @@ pub fn cleaner_removes_state_files_on_drop() {
     let mut owner_lock_path = path;
     owner_lock_path.push_bytes(b"_owner_lock").unwrap();
 
-    let _file = FileBuilder::new(&path)
+    let mut state_file = FileBuilder::new(&path)
         .has_ownership(false)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
+    state_file.write(&[0u8; 16]).unwrap();
 
     let _owner_lock_file = FileBuilder::new(&owner_lock_path)
         .has_ownership(false)
@@ -258,11 +265,12 @@ pub fn cleaner_keeps_state_files_when_abandoned() {
     let mut owner_lock_path = path;
     owner_lock_path.push_bytes(b"_owner_lock").unwrap();
 
-    let _file = FileBuilder::new(&path)
+    let mut state_file = FileBuilder::new(&path)
         .has_ownership(true)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
+    state_file.write(&[0u8; 16]).unwrap();
 
     let _owner_lock_file = FileBuilder::new(&owner_lock_path)
         .has_ownership(true)
