@@ -14,6 +14,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "test_reporting_logstream.hpp"
+#include "iox2/bb/detail/source_location.hpp"
 
 #include <array>
 #include <bitset>
@@ -32,15 +33,16 @@ class IoxLogStream_test : public IoxLogStreamBase_test { };
 
 TEST_F(IoxLogStream_test, CTorDelegatesParameterToLogger) {
     ::testing::Test::RecordProperty("TEST_ID", "209aadb5-9ea6-4620-a6d1-f8fb2d12b97d");
-    constexpr const char* EXPECTED_FILE { "hypnotoad.hpp" };
-    constexpr const char* EXPECTED_FUNCTION { "void all_glory_to_the_hypnotoad()" };
-    constexpr uint32_t EXPECTED_LINE { 42 };
+
+    constexpr iox2::bb::detail::SourceLocation EXPECTED_LOCATION = iox2::bb::detail::SourceLocation::current();
+
     constexpr auto EXPECTED_LOG_LEVEL { iox2::legacy::log::LogLevel::Warn };
-    iox2::legacy::log::LogStream(loggerMock, EXPECTED_FILE, EXPECTED_LINE, EXPECTED_FUNCTION, EXPECTED_LOG_LEVEL) << "";
+    iox2::legacy::log::LogStream(loggerMock, EXPECTED_LOCATION, EXPECTED_LOG_LEVEL) << "";
 
     ASSERT_THAT(loggerMock.logs.size(), Eq(1U));
-    EXPECT_THAT(loggerMock.logs.back().file, StrEq(EXPECTED_FILE));
-    EXPECT_THAT(loggerMock.logs.back().function, StrEq(EXPECTED_FUNCTION));
+    EXPECT_THAT(loggerMock.logs.back().location.file_name(), StrEq(EXPECTED_LOCATION.file_name()));
+    EXPECT_THAT(loggerMock.logs.back().location.function_name(), StrEq(EXPECTED_LOCATION.function_name()));
+    EXPECT_THAT(loggerMock.logs.back().location.line(), Eq(EXPECTED_LOCATION.line()));
     EXPECT_THAT(loggerMock.logs.back().logLevel, Eq(EXPECTED_LOG_LEVEL));
     EXPECT_THAT(loggerMock.logs.back().message, Eq(""));
 }

@@ -14,7 +14,6 @@
 #ifndef IOX2_BB_REPORTING_ERROR_REPORTING_ERROR_LOGGING_HPP
 #define IOX2_BB_REPORTING_ERROR_REPORTING_ERROR_LOGGING_HPP
 
-#include "iox2/bb/detail/source_location.hpp"
 #include "iox2/legacy/logging.hpp"
 
 // with a log stream interface this could be done with functions, not macros
@@ -24,9 +23,7 @@
 /// @param location the location of the error
 /// @param msg_stream is the log message stream; multiple items can be logged by using the '<<' operator
 #define IOX2_ERROR_INTERNAL_LOG(location, msg_stream)                                                                  \
-    IOX2_LOG_INTERNAL(location.file_name(),                                                                            \
-                      location.line(),                                                                                 \
-                      location.function_name(),                                                                        \
+    IOX2_LOG_INTERNAL(location,                                                                                        \
                       iox2::legacy::log::LogLevel::Error,                                                              \
                       location.file_name() << ":" << location.line() << " " << msg_stream)
 
@@ -34,9 +31,7 @@
 /// @param location the location of the error
 /// @param msg_stream is the log message stream; multiple items can be logged by using the '<<' operator
 #define IOX2_ERROR_INTERNAL_LOG_FATAL(location, msg_stream)                                                            \
-    IOX2_LOG_INTERNAL(location.file_name(),                                                                            \
-                      location.line(),                                                                                 \
-                      location.function_name(),                                                                        \
+    IOX2_LOG_INTERNAL(location,                                                                                        \
                       iox2::legacy::log::LogLevel::Fatal,                                                              \
                       location.file_name() << ":" << location.line() << " " << msg_stream)
 

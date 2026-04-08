@@ -48,13 +48,10 @@ inline void ConsoleLogger::initLogger(const LogLevel) noexcept {
     // nothing to do in the base implementation
 }
 
-// AXIVION Next Construct AutosarC++19_03-A3.9.1 : See at declaration in header
 // AXIVION Next Construct AutosarC++19_03-M9.3.3 : This is the default implementation for a logger. The design requires
 // this to be non-static to not restrict custom implementations
-inline void ConsoleLogger::createLogMessageHeader(const char* file,
-                                                  const uint32_t line,
-                                                  const char* function,
-                                                  LogLevel logLevel) noexcept {
+inline void ConsoleLogger::createLogMessageHeader(const bb::detail::SourceLocation location,
+                                                  const LogLevel logLevel) noexcept {
     timespec timestamp { 0, 0 };
     // intentionally avoid using 'IOX2_POSIX_CALL' here to keep the logger dependency free
     // NOTE: the log message will eventually be forwarded to iceoryx2-bb-log; temporarily, we ignore the timestamp
@@ -116,9 +113,7 @@ inline void ConsoleLogger::createLogMessageHeader(const char* file,
     /// 'initLogger' with LogDebug
 
     /// @todo iox-#1755 add an option to also print file, line and function
-    unused(file);
-    unused(line);
-    unused(function);
+    unused(location);
 
     // AXIVION Next Construct AutosarC++19_03-A3.9.1 : Not used as an integer but as string literal
     // AXIVION Next Construct AutosarC++19_03-M2.13.2 : Required for the color codes; only valid octal digits are used

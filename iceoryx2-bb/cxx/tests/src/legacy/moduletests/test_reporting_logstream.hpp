@@ -13,6 +13,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/bb/detail/source_location.hpp"
 #include "iox2/legacy/log/logstream.hpp"
 #include "iox2/legacy/logging.hpp"
 #include "iox2/legacy/testing/mocks/logger_mock.hpp"
@@ -27,7 +28,8 @@ using iox2::legacy::testing::Logger_Mock;
 class LogStreamSut : public iox2::legacy::log::LogStream {
   public:
     explicit LogStreamSut(iox2::legacy::log::Logger& logger)
-        : iox2::legacy::log::LogStream(logger, "file", 42, "function", iox2::legacy::log::LogLevel::Trace) {
+        : iox2::legacy::log::LogStream(
+              logger, iox2::bb::detail::SourceLocation::current(), iox2::legacy::log::LogLevel::Trace) {
     }
 };
 

@@ -15,6 +15,7 @@
 #ifndef IOX2_BB_REPORTING_LOG_BUILDING_BLOCKS_CONSOLE_LOGGER_HPP
 #define IOX2_BB_REPORTING_LOG_BUILDING_BLOCKS_CONSOLE_LOGGER_HPP
 
+#include "iox2/bb/detail/source_location.hpp"
 #include "iox2/legacy/atomic.hpp"
 #include "iox2/legacy/log/building_blocks/logformat.hpp"
 
@@ -52,11 +53,7 @@ class ConsoleLogger {
 
     virtual void initLogger(const LogLevel) noexcept;
 
-    // AXIVION Next Construct AutosarC++19_03-A3.9.1 : file, line and function are used in conjunction with '__FILE__',
-    // '__LINE__' and '__FUNCTION__'; these are compiler intrinsic and cannot be changed to fixed width types in a
-    // platform agnostic way
-    virtual void
-    createLogMessageHeader(const char* file, const uint32_t line, const char* function, LogLevel logLevel) noexcept;
+    virtual void createLogMessageHeader(const bb::detail::SourceLocation location, const LogLevel logLevel) noexcept;
 
     virtual void flush() noexcept;
 
