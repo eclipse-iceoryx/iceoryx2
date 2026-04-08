@@ -548,7 +548,7 @@ impl ProcessGuard {
     ///
     /// # Safety
     ///
-    ///  - Users must ensure that no [`Process`](crate::process::Process) currently has
+    ///  - Users must ensure that no [`Process`] currently has
     ///    an instance of [`ProcessGuard`], [`ProcessCleaner`] and [`ProcessMonitor`] that
     ///    will be removed.
     pub unsafe fn remove(file: &FilePath) -> Result<bool, FileRemoveError> {
@@ -754,13 +754,8 @@ impl ProcessMonitor {
             None => return Ok(ProcessState::DoesNotExist),
         };
 
-        let other_process_id: UniqueProcessId = match file.read_val() {
-            Ok(v) => v,
-            Err(e) => {
-                fail!(from self, with ProcessMonitorStateError::FailedToAcquireUniqueProcessIdFromStateFile,
-                    "{msg} since the unique process id contained in the state file could not be read. [{e:?}]");
-            }
-        };
+        let lock_state = fail!(from self, when Self::get_lock_state(&file),
+                            "{} since the lock state of the state file could not be acquired.", msg);
 
         let my_process_id = match Process::unique_id() {
             Ok(v) => v,
@@ -770,50 +765,45 @@ impl ProcessMonitor {
             }
         };
 
-        if my_process_id == other_process_id {
-            return Ok(ProcessState::Alive);
-        }
-
-        let lock_state = fail!(from self, when Self::get_lock_state(&file),
-                            "{} since the lock state of the state file could not be acquired.", msg);
-
         match lock_state as _ {
             posix::F_WRLCK => Ok(ProcessState::Alive),
-            _ => match File::does_exist(&self.path) {
-                Ok(true) => match file.permission() {
-                    Ok(INIT_PERMISSION) => Ok(ProcessState::Starting),
-                    Err(_) | Ok(_) => {
-                        match Self::open_file(&self.owner_lock_path, AccessMode::Write)? {
-                            Some(f) => {
-                                let lock_state = fail!(from self, when Self::get_lock_state(&f),
-                                                "{} since the lock state of the owner_lock file could not be acquired.", msg);
-                                if lock_state == posix::F_WRLCK as _ {
-                                    return Ok(ProcessState::CleaningUp);
-                                }
+            _ => {
+                let other_process_id: UniqueProcessId = match file.read_val() {
+                    Ok(v) => v,
+                    Err(e) => {
+                        fail!(from self, with ProcessMonitorStateError::FailedToAcquireUniqueProcessIdFromStateFile,
+                            "{msg} since the unique process id contained in the state file could not be read. [{e:?}]");
+                    }
+                };
 
-                                Ok(ProcessState::Dead)
-                            }
-                            None => match File::does_exist(&self.path) {
-                                Ok(true) => {
-                                    fail!(from self, with ProcessMonitorStateError::CorruptedState,
+                if my_process_id == other_process_id {
+                    return Ok(ProcessState::Alive);
+                }
+
+                match Self::open_file(&self.owner_lock_path, AccessMode::Write)? {
+                    Some(f) => {
+                        let lock_state = fail!(from self, when Self::get_lock_state(&f),
+                                                "{} since the lock state of the owner_lock file could not be acquired.", msg);
+                        if lock_state == posix::F_WRLCK as _ {
+                            return Ok(ProcessState::CleaningUp);
+                        }
+
+                        Ok(ProcessState::Dead)
+                    }
+                    None => match File::does_exist(&self.path) {
+                        Ok(true) => {
+                            fail!(from self, with ProcessMonitorStateError::CorruptedState,
                                     "{} since the corresponding owner_lock file \"{}\" does not exist. This indicates a corrupted state.",
                                     msg, self.owner_lock_path);
-                                }
-                                Ok(false) => Ok(ProcessState::DoesNotExist),
-                                Err(v) => {
-                                    fail!(from self, with ProcessMonitorStateError::UnknownError(0),
-                                        "{} since an unknown failure occurred while checking if the process state file exists ({:?}).", msg, v);
-                                }
-                            },
                         }
-                    }
-                },
-                Ok(false) => Ok(ProcessState::DoesNotExist),
-                Err(v) => {
-                    fail!(from self, with ProcessMonitorStateError::UnknownError(0),
-                            "{} since an unknown failure occurred while checking if the process state file exists ({:?}).", msg, v);
+                        Ok(false) => Ok(ProcessState::DoesNotExist),
+                        Err(v) => {
+                            fail!(from self, with ProcessMonitorStateError::UnknownError(0),
+                                        "{} since an unknown failure occurred while checking if the process state file exists ({:?}).", msg, v);
+                        }
+                    },
                 }
-            },
+            }
         }
     }
 
