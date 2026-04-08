@@ -36,6 +36,8 @@
 * Release Python GIL (detach thread from python runtime) in blocking functions
   like `listener.blocking_wait_one()`
   [#1421](https://github.com/eclipse-iceoryx/iceoryx2/issues/1421)
+* Add missing Publisher getters
+  [#1425](https://github.com/eclipse-iceoryx/iceoryx2/issues/1425)
 
 ### Bugfixes
 

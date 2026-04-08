@@ -525,6 +525,22 @@ impl<
             .sender
             .unable_to_deliver_strategy
     }
+
+    /// Returns the strategy the [`Publisher`] follows when a [`SampleMut`] cannot be allocated.
+    pub fn allocation_strategy(&self) -> AllocationStrategy {
+        self.publisher_shared_state
+            .lock()
+            .config
+            .allocation_strategy
+    }
+
+    /// Returns the maximum number of [`SampleMut`]s that can be loaned in parallel.
+    pub fn max_loaned_samples(&self) -> usize {
+        self.publisher_shared_state
+            .lock()
+            .sender
+            .sender_max_borrowed_samples
+    }
 }
 
 ////////////////////////
