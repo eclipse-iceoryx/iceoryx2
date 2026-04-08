@@ -660,7 +660,7 @@ impl File {
         self.read_line_to_vector(unsafe { buf.as_mut_vec() })
     }
 
-    /// Reads a [`ZeroCopySend`]able value from the file at a given position. If the [`File`] could not be read
+    /// Reads a [`PlainOldData`] value from the file at a given position. If the [`File`] could not be read
     /// or did not contain enough bytes required for the construction of the value, the method will return an
     /// error.
     pub fn read_val_at<T: PlainOldData>(&self, start: u64) -> Result<T, FileReadValError> {
@@ -687,7 +687,7 @@ impl File {
         }
     }
 
-    /// Reads a [`ZeroCopySend`]able value from the file. If the [`File`] could not be read or did not contain
+    /// Reads a [`PlainOldData`] value from the file. If the [`File`] could not be read or did not contain
     /// enough bytes required for the construction of the value, the method will return an error.
     pub fn read_val<T: PlainOldData>(&self) -> Result<T, FileReadValError> {
         let msg = "Failed to read value from file";
@@ -798,7 +798,7 @@ impl File {
         self.read_range_to_vector(start, end, unsafe { buf.as_mut_vec() })
     }
 
-    /// Writes a [`ZeroCopySend`]able value into the file. If the [`File`] could not be written or not all bytes
+    /// Writes a [`PlainOldData`] value into the file. If the [`File`] could not be written or not all bytes
     /// were written, then this methods returns an error.
     pub fn write_val<T: PlainOldData>(&mut self, value: &T) -> Result<(), FileWriteValError> {
         let msg = "Failed to write value into file";
@@ -822,7 +822,7 @@ impl File {
         }
     }
 
-    /// Writes a [`ZeroCopySend`]able value into the file at the provided position. If the [`File`] could not
+    /// Writes a [`PlainOldData`] value into the file at the provided position. If the [`File`] could not
     /// be written or not all bytes were written, then this methods returns an error.
     pub fn write_val_at<T: PlainOldData>(
         &mut self,
