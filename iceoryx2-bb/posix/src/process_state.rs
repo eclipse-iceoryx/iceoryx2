@@ -144,7 +144,7 @@ pub use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_concurrency::cell::Cell;
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_log::{fail, trace};
+use iceoryx2_log::{fail, fatal_panic, trace};
 use iceoryx2_pal_posix::posix::{self, Errno, MemZeroedStruct};
 
 use crate::{
@@ -341,22 +341,10 @@ impl ProcessGuardBuilder {
                                       with ProcessGuardCreateError::FailedToAcquireUniqueProcessId,
                                       "{msg} since the unique process id could not be acquired.");
 
-        const SIZE_OF_ID: u64 = core::mem::size_of::<UniqueProcessId>() as u64;
-        match state_file.write(unsafe {
-            &core::mem::transmute::<UniqueProcessId, [u8; SIZE_OF_ID as usize]>(unique_process_id)
-        }) {
-            Ok(SIZE_OF_ID) => (),
-            Ok(n) => {
-                fail!(from origin,
-                           with ProcessGuardCreateError::PartiallyWrittenUniqueProcessIdInStateFile,
-                           "{msg} since the unique process id could only be written partially to the state file. Expected to write {SIZE_OF_ID} bytes, but {n} bytes were written.");
-            }
-            Err(e) => {
-                fail!(from origin,
-                    with ProcessGuardCreateError::FailedToWriteUniqueProcessIdInStateFile,
-                    "{msg} since the unique process could not be written to the state file. [{e:?}]");
-            }
-        }
+        fail!(from origin,
+              when state_file.write_val(&unique_process_id),
+              with ProcessGuardCreateError::FailedToWriteUniqueProcessIdInStateFile,
+              "{msg} since the unique process could not be written to the state file.");
 
         match Self::lock_state_file(&state_file) {
             Ok(()) => (),
@@ -602,8 +590,11 @@ impl ProcessGuard {
     }
 
     pub(crate) fn staged_death(mut self) {
-        self.file.write_at(0, &[0u8; 16]);
-        self.file.flush();
+        let msg = "Unable to stage death";
+        fatal_panic!(from self, when self.file.write_at(0, &[0u8; 16]),
+                "{msg} since the state file could not be overridden with zeros.");
+        fatal_panic!(from self, when self.file.flush(),
+                "{msg} since the state file could not be synced.");
 
         self.file.release_ownership();
         self.owner_lock_file.release_ownership();

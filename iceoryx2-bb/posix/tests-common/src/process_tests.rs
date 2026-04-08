@@ -67,9 +67,12 @@ pub fn the_unique_process_id_is_constant_within_between_threads() {
     let sut = Process::unique_id().unwrap();
 
     thread::thread_scope(|v| {
-        v.thread_builder().spawn(|| {
-            assert_that!(sut, eq Process::unique_id().unwrap());
-        });
+        v.thread_builder()
+            .spawn(|| {
+                assert_that!(sut, eq Process::unique_id().unwrap());
+            })
+            .unwrap();
         Ok(())
-    });
+    })
+    .unwrap();
 }
