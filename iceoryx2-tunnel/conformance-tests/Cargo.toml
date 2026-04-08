@@ -2,7 +2,7 @@
 name = "iceoryx2-tunnel-conformance-tests"
 description = "iceoryx2: Conformance tests for iceoryx2-tunnel"
 categories = { workspace = true }
-edition = { workspace = true }
+edition = "2024"
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }
@@ -15,10 +15,10 @@ default = ["std"]
 
 std = [
   "iceoryx2-bb-posix/std",
-  "iceoryx2-bb-testing/std",  
+  "iceoryx2-bb-testing/std",
   "iceoryx2-services-discovery/std",
-  "iceoryx2-tunnel-backend/std",  
-  "iceoryx2-tunnel/std",  
+  "iceoryx2-tunnel-backend/std",
+  "iceoryx2-tunnel/std",
   "iceoryx2/std",
 ]
 

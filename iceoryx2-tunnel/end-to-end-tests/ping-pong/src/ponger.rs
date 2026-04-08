@@ -17,8 +17,8 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use iceoryx2::prelude::{
-    ipc, set_log_level_from_env_or, CallbackProgression, LogLevel, NodeBuilder,
-    WaitSetAttachmentId, WaitSetBuilder,
+    CallbackProgression, LogLevel, NodeBuilder, WaitSetAttachmentId, WaitSetBuilder, ipc,
+    set_log_level_from_env_or,
 };
 use iceoryx2_log::info;
 use iceoryx2_tunnel_end_to_end_tests::cli::*;

@@ -28,8 +28,8 @@ pub mod event_discovery {
     use iceoryx2_services_discovery::service_discovery::Config as DiscoveryConfig;
     use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
     use iceoryx2_tunnel::Tunnel;
-    use iceoryx2_tunnel_backend::traits::testing::Testing;
     use iceoryx2_tunnel_backend::traits::Backend;
+    use iceoryx2_tunnel_backend::traits::testing::Testing;
 
     // TODO: Move to iceoryx2::testing
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;

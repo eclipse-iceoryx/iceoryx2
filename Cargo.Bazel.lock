@@ -1,5 +1,5 @@
 {
-  "checksum": "52422e7b68e0d108084b9ec2c0003f9829582301e1c4f39ab5e200280b44fa1e",
+  "checksum": "358eec98b9bd702dd839c66451721c8f88d3fe46e7555a81cf2b82a5f6af803f",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -8092,6 +8092,7 @@
         ],
         "crate_features": {
           "common": [
+            "console",
             "default",
             "std"
           ],
@@ -10199,6 +10200,7 @@
         ],
         "crate_features": {
           "common": [
+            "console",
             "default",
             "std"
           ],
@@ -10937,7 +10939,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "proc_macro_deps_dev": {
           "common": [
             {
@@ -10987,7 +10989,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -11028,7 +11030,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -11071,7 +11073,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",
@@ -11118,7 +11120,7 @@
           ],
           "selects": {}
         },
-        "edition": "2021",
+        "edition": "2024",
         "version": "0.8.999"
       },
       "license": "MIT OR Apache-2.0",

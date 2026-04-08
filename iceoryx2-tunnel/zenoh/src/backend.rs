@@ -17,7 +17,7 @@ use zenoh::{Config, Session, Wait};
 
 use crate::{
     discovery::Discovery,
-    relays::{event, publish_subscribe, Factory},
+    relays::{Factory, event, publish_subscribe},
 };
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]

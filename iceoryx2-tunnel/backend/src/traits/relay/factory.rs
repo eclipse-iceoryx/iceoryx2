@@ -13,7 +13,7 @@
 use core::error::Error;
 use core::fmt::Debug;
 
-use iceoryx2::service::{static_config::StaticConfig, Service};
+use iceoryx2::service::{Service, static_config::StaticConfig};
 
 use crate::traits::EventRelay;
 use crate::traits::PublishSubscribeRelay;
