@@ -231,22 +231,34 @@ class Optional {
     }
 
     constexpr auto operator*() const& noexcept -> const T& {
-        IOX2_ENFORCE(has_value(), "Trying to access the value on an empty Optional!");
+        IOX2_ENFORCE_INTERNAL(bb::detail::SourceLocation::current(),
+                              has_value(),
+                              "Optional::has_value()",
+                              "Trying to access the value on an empty Optional!");
         return m_value.unchecked_get();
     }
 
     constexpr auto operator*() & noexcept -> T& {
-        IOX2_ENFORCE(has_value(), "Trying to access the value on an empty Optional!");
+        IOX2_ENFORCE_INTERNAL(bb::detail::SourceLocation::current(),
+                              has_value(),
+                              "Optional::has_value()",
+                              "Trying to access the value on an empty Optional!");
         return m_value.unchecked_get();
     }
 
     constexpr auto operator*() && noexcept -> T&& {
-        IOX2_ENFORCE(has_value(), "Trying to access the value on an empty Optional!");
+        IOX2_ENFORCE_INTERNAL(bb::detail::SourceLocation::current(),
+                              has_value(),
+                              "Optional::has_value()",
+                              "Trying to access the value on an empty Optional!");
         return std::move(m_value).unchecked_get();
     }
 
     constexpr auto operator*() const&& noexcept -> const T&& {
-        IOX2_ENFORCE(has_value(), "Trying to access the value on an empty Optional!");
+        IOX2_ENFORCE_INTERNAL(bb::detail::SourceLocation::current(),
+                              has_value(),
+                              "Optional::has_value()",
+                              "Trying to access the value on an empty Optional!");
         return std::move(m_value).unchecked_get();
     }
 
