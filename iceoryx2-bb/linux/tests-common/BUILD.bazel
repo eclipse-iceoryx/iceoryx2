@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Contributors to the Eclipse Foundation
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -12,7 +12,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_library")
 
 filegroup(
     name = "all_srcs",
@@ -20,29 +20,17 @@ filegroup(
 )
 
 rust_library(
-    name = "iceoryx2-bb-linux",
+    name = "iceoryx2-bb-linux-tests-common",
     srcs = glob(["src/**/*.rs"]),
     deps = [
-        "//iceoryx2-bb/container:iceoryx2-bb-container",
-        "//iceoryx2-log/log:iceoryx2-log",
-        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
-        "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
-        "//iceoryx2-pal/os-api:iceoryx2-pal-os-api",
-        "//iceoryx2-pal/posix:iceoryx2-pal-posix",
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
-        "@crate_index//:enum-iterator",
-    ],
-)
-
-rust_test(
-    name = "iceoryx2-bb-linux-tests",
-    srcs = ["tests/tests.rs"],
-    deps = [
-        "//iceoryx2-bb/linux/tests-common:iceoryx2-bb-linux-tests-common",
+        "//iceoryx2-bb/linux:iceoryx2-bb-linux",
+        "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
+        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
+        "//iceoryx2-pal/print:iceoryx2-pal-print",
     ],
     proc_macro_deps = [
         "//iceoryx2-bb/testing-macros:iceoryx2-bb-testing-macros",
     ],
-    tags = ["exclusive"],
 )

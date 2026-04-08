@@ -280,6 +280,7 @@ filegroup(
         "//iceoryx2-bb/elementary/tests-common:all_srcs",
         "//iceoryx2-bb/elementary-traits:all_srcs",
         "//iceoryx2-bb/linux:all_srcs",
+        "//iceoryx2-bb/linux/tests-common:all_srcs",
         "//iceoryx2-bb/lock-free:all_srcs",
         "//iceoryx2-bb/lock-free/tests-common:all_srcs",
         "//iceoryx2-bb/memory:all_srcs",
