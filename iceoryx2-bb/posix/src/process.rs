@@ -46,7 +46,9 @@ use core::fmt::Display;
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_elementary_traits::plain_old_data::PlainOldData;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_log::{fail, trace};
 use iceoryx2_pal_posix::posix::{errno::Errno, MemZeroedStruct};
@@ -119,6 +121,9 @@ impl ProcessExt for posix::pid_t {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, ZeroCopySend)]
 #[repr(C)]
 pub struct UniqueProcessId(UniqueSystemId);
+
+unsafe impl Zeroable for UniqueProcessId {}
+unsafe impl PlainOldData for UniqueProcessId {}
 
 /// Represents a process id.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

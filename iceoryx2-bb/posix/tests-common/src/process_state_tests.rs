@@ -13,10 +13,12 @@
 use alloc::string::ToString;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
 use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::file::{File, FileBuilder};
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
+use iceoryx2_bb_posix::process::UniqueProcessId;
 use iceoryx2_bb_posix::shared_memory::Permission;
 use iceoryx2_bb_posix::testing::__internal_process_guard_staged_death;
 use iceoryx2_bb_posix::testing::create_test_directory;
@@ -123,7 +125,9 @@ pub fn monitor_transitions_work_starting_from_non_existing_process() {
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
-    owner_lock_file.write(&[0u8; 16]).unwrap();
+    owner_lock_file
+        .write_val(&UniqueProcessId::new_zeroed())
+        .unwrap();
 
     assert_that!(monitor.state().unwrap(), eq ProcessState::Dead);
     owner_lock_file.remove_self().unwrap();
@@ -147,19 +151,19 @@ pub fn monitor_transitions_work_starting_from_existing_process() {
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
-    owner_lock_file.write(&[0u8; 16]).unwrap();
+    owner_lock_file
+        .write_val(&UniqueProcessId::new_zeroed())
+        .unwrap();
 
     let monitor = ProcessMonitor::new(&path).unwrap();
     assert_that!(monitor.state().unwrap(), eq ProcessState::Dead);
     state_file.remove_self().unwrap();
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
 
-    let mut state_file = FileBuilder::new(&path)
+    let state_file = FileBuilder::new(&path)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
-    state_file.write(&[0u8; 16]).unwrap();
-    state_file.flush().unwrap();
     assert_that!(monitor.state().unwrap(), eq ProcessState::Dead);
 
     state_file.remove_self().unwrap();
@@ -218,7 +222,9 @@ pub fn owner_lock_cannot_be_created_when_process_does_not_exist() {
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
-    owner_lock_file.write(&[0u8; 16]).unwrap();
+    owner_lock_file
+        .write_val(&UniqueProcessId::new_zeroed())
+        .unwrap();
 
     let owner_lock = ProcessCleaner::new(&path);
     assert_that!(owner_lock, is_err);
@@ -246,7 +252,9 @@ pub fn cleaner_removes_state_files_on_drop() {
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
-    owner_lock_file.write(&[0u8; 16]).unwrap();
+    owner_lock_file
+        .write_val(&UniqueProcessId::new_zeroed())
+        .unwrap();
 
     let owner_lock = ProcessCleaner::new(&path);
     assert_that!(owner_lock, is_ok);
@@ -275,7 +283,9 @@ pub fn cleaner_keeps_state_files_when_abandoned() {
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
-    owner_lock_file.write(&[0u8; 16]).unwrap();
+    owner_lock_file
+        .write_val(&UniqueProcessId::new_zeroed())
+        .unwrap();
 
     let owner_lock = ProcessCleaner::new(&path).unwrap();
     owner_lock.abandon();

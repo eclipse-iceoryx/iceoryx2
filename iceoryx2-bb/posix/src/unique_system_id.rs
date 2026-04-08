@@ -43,7 +43,9 @@ use iceoryx2_bb_concurrency::atomic::AtomicU32;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_elementary_traits::plain_old_data::PlainOldData;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
 use iceoryx2_log::fail;
 use iceoryx2_pal_posix::posix;
 use serde::{Deserialize, Serialize};
@@ -75,6 +77,9 @@ pub struct UniqueSystemId {
     nanoseconds: u32,
     counter: u32,
 }
+
+unsafe impl Zeroable for UniqueSystemId {}
+unsafe impl PlainOldData for UniqueSystemId {}
 
 impl Debug for UniqueSystemId {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {

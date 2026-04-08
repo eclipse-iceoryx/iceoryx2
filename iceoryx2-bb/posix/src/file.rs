@@ -51,7 +51,7 @@ use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::plain_old_data::PlainOldData;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_log::{fail, trace, warn};
 use iceoryx2_pal_posix::posix::errno::Errno;
@@ -663,7 +663,7 @@ impl File {
     /// Reads a [`ZeroCopySend`]able value from the file at a given position. If the [`File`] could not be read
     /// or did not contain enough bytes required for the construction of the value, the method will return an
     /// error.
-    pub fn read_val_at<T: ZeroCopySend>(&self, start: u64) -> Result<T, FileReadValError> {
+    pub fn read_val_at<T: PlainOldData>(&self, start: u64) -> Result<T, FileReadValError> {
         let msg = "Failed to read value at position";
         let size_of_t = core::mem::size_of::<T>();
         let mut uninit_val = core::mem::MaybeUninit::<T>::uninit();
@@ -689,7 +689,7 @@ impl File {
 
     /// Reads a [`ZeroCopySend`]able value from the file. If the [`File`] could not be read or did not contain
     /// enough bytes required for the construction of the value, the method will return an error.
-    pub fn read_val<T: ZeroCopySend>(&self) -> Result<T, FileReadValError> {
+    pub fn read_val<T: PlainOldData>(&self) -> Result<T, FileReadValError> {
         let msg = "Failed to read value from file";
         let size_of_t = core::mem::size_of::<T>();
         let mut uninit_val = core::mem::MaybeUninit::<T>::uninit();
@@ -800,7 +800,7 @@ impl File {
 
     /// Writes a [`ZeroCopySend`]able value into the file. If the [`File`] could not be written or not all bytes
     /// were written, then this methods returns an error.
-    pub fn write_val<T: ZeroCopySend>(&mut self, value: &T) -> Result<(), FileWriteValError> {
+    pub fn write_val<T: PlainOldData>(&mut self, value: &T) -> Result<(), FileWriteValError> {
         let msg = "Failed to write value into file";
         let size_of_t = core::mem::size_of::<T>();
         let buffer =
@@ -824,7 +824,7 @@ impl File {
 
     /// Writes a [`ZeroCopySend`]able value into the file at the provided position. If the [`File`] could not
     /// be written or not all bytes were written, then this methods returns an error.
-    pub fn write_val_at<T: ZeroCopySend>(
+    pub fn write_val_at<T: PlainOldData>(
         &mut self,
         start: u64,
         value: &T,

@@ -13,6 +13,7 @@
 use alloc::collections::BTreeSet;
 use alloc::vec::Vec;
 use core::time::Duration;
+use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
 
 use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::clock::nanosleep;
@@ -101,4 +102,11 @@ pub fn concurrently_created_ids_are_unique() {
             assert_that!(all_ids.insert(*id), eq true);
         }
     }
+}
+
+#[test]
+pub fn is_zeroable() {
+    let sut = UniqueSystemId::new_zeroed();
+
+    assert_that!(sut.value(), eq 0);
 }

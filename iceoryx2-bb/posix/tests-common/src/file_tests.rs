@@ -14,7 +14,9 @@ use alloc::string::String;
 use alloc::string::ToString;
 
 use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::plain_old_data::PlainOldData;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
 use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_posix::file_descriptor::*;
 use iceoryx2_bb_posix::testing::create_test_directory;
@@ -450,12 +452,18 @@ struct TestValue {
     value3: u64,
 }
 
+unsafe impl Zeroable for TestValue {}
+unsafe impl PlainOldData for TestValue {}
+
 #[derive(ZeroCopySend, PartialEq, Eq, Debug, Copy, Clone)]
 #[repr(C)]
 struct SmallTestValue {
     value1: u64,
     value2: u64,
 }
+
+unsafe impl Zeroable for SmallTestValue {}
+unsafe impl PlainOldData for SmallTestValue {}
 
 #[test]
 pub fn simple_read_write_of_a_value_works() {
