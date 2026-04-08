@@ -23,7 +23,7 @@ use iceoryx2_bb_posix::signal::SignalHandler;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn main() -> i32 {
     let node = match NodeBuilder::new().create::<ipc::Service>() {
         Ok(node) => node,
