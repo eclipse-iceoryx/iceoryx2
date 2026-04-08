@@ -155,7 +155,6 @@ use crate::{
     file_lock::LockType,
     permission::Permission,
     process::{Process, UniqueProcessId},
-    unique_system_id::UniqueSystemId,
     unix_datagram_socket::CreationMode,
 };
 
@@ -182,6 +181,8 @@ enum_gen! {
     ContractViolation,
     Interrupt,
     InvalidCleanerPathName,
+    PartiallyWrittenUniqueProcessIdInStateFile,
+    FaildToWriteUniqueProcessIdInStateFile,
     UnknownError(i32)
 }
 
@@ -334,11 +335,24 @@ impl ProcessGuardBuilder {
         let mut state_file = fail!(from origin, when Self::create_file(path, INIT_PERMISSION),
                                 "{} since the state file \"{}\" could not be created.", msg, path);
 
-        state_file.write(unsafe {
-            &core::mem::transmute::<UniqueProcessId, [u8; core::mem::size_of::<UniqueProcessId>()]>(
-                Process::unique_id(),
+        const SIZE_OF_ID: u64 = core::mem::size_of::<UniqueProcessId>() as u64;
+        match state_file.write(unsafe {
+            &core::mem::transmute::<UniqueProcessId, [u8; SIZE_OF_ID as usize]>(
+                Process::unique_id().unwrap(),
             )
-        });
+        }) {
+            Ok(SIZE_OF_ID) => (),
+            Ok(n) => {
+                fail!(from origin,
+                           with ProcessGuardCreateError::PartiallyWrittenUniqueProcessIdInStateFile,
+                           "{msg} since the unique process id could only be written partially to the state file. Expected to write {SIZE_OF_ID} bytes, but {n} bytes were written.");
+            }
+            Err(e) => {
+                fail!(from origin,
+                    with ProcessGuardCreateError::FaildToWriteUniqueProcessIdInStateFile,
+                    "{msg} since the unique process could not be written to the state file. [{e:?}]");
+            }
+        }
 
         match Self::lock_state_file(&state_file) {
             Ok(()) => (),
@@ -798,7 +812,7 @@ impl ProcessMonitor {
             unsafe { core::mem::transmute::<[u8; 16], UniqueProcessId>(buffer) };
 
         println!("{:?} == {:?}", unique_process_id, Process::unique_id());
-        if unique_process_id == Process::unique_id() {
+        if unique_process_id == Process::unique_id().unwrap() {
             println!("process is alive");
             return Ok(ProcessState::Alive);
         }
@@ -930,7 +944,7 @@ impl ProcessCleaner {
         state_file.read(&mut buffer).unwrap();
         let process_id = unsafe { core::mem::transmute::<[u8; 16], UniqueProcessId>(buffer) };
 
-        if process_id == Process::unique_id() {
+        if process_id == Process::unique_id().unwrap() {
             fail!(from origin, with ProcessCleanerCreateError::ProcessIsStillAlive,
                 "{} since the corresponding process is still alive.", msg);
         }
