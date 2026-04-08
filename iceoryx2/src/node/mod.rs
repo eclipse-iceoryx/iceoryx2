@@ -1070,13 +1070,6 @@ impl<Service: service::Service> Node<Service> {
     }
 
     fn get_node_state(config: &Config, node_id: &UniqueNodeId) -> Result<State, NodeListFailure> {
-        let my_pid = Process::from_self().id();
-        let node_pid = node_id.0.pid();
-
-        if my_pid == node_pid {
-            return Ok(State::Alive);
-        }
-
         let config = node_monitoring_config::<Service>(config);
         let result = <Service::Monitoring as Monitoring>::Builder::new(&node_id.as_file_name())
             .config(&config)
