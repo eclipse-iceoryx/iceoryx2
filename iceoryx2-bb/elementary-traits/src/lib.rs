@@ -23,6 +23,8 @@ pub use crate::as_cstr::*;
 pub mod generic_pointer;
 pub mod owning_pointer;
 pub mod placement_default;
+pub mod plain_old_data;
 pub mod pointer_trait;
 pub mod relocatable_container;
 pub mod zero_copy_send;
+pub mod zeroable;
