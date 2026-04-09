@@ -20,7 +20,7 @@ namespace iox2 {
 class ServiceHash {
   public:
     /// Returns the maximum string length of a [`ServiceHash`]
-    auto max_number_of_characters() -> uint64_t;
+    static auto max_number_of_characters() -> uint64_t;
 
     /// Returns the string value of the [`ServiceHash`]
     auto c_str() const -> const char*;

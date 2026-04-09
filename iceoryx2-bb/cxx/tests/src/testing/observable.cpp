@@ -86,7 +86,7 @@ void DetectLeakedObservablesFixture::TearDown() {
     }
 }
 
-auto DetectLeakedObservablesFixture::has_leaked_observables() const -> bool {
+auto DetectLeakedObservablesFixture::has_leaked_observables() -> bool {
     return Observable::s_counter.total_instances != 0;
 }
 

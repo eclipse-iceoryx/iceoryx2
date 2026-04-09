@@ -68,7 +68,7 @@ class DetectLeakedObservablesFixture : public ::testing::Test {
     void TearDown() override;
 
     /// Checks whether there are currently any active instances of Observable that await destruction.
-    auto has_leaked_observables() const -> bool;
+    static auto has_leaked_observables() -> bool;
     /// Do not perform the check for leaks after this test.
     void defuse_leak_check();
 };
