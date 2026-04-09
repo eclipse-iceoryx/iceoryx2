@@ -101,6 +101,9 @@
   [#1486](https://github.com/eclipse-iceoryx/iceoryx2/issues/1486)
 * Bump cryptography from 46.0.5 to 46.0.6 in /iceoryx2-ffi/python
   [#1499](https://github.com/eclipse-iceoryx/iceoryx2/issues/1499)
+* Make `UniqueSystemId` unique accross docker containers and pid namespaces
+  by introducing `gethostpid()` in the platform.  
+  [#1518](https://github.com/eclipse-iceoryx/iceoryx2/issues/1518)
 
 ### Refactoring
 
