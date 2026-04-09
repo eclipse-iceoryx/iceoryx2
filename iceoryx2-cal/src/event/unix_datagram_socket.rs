@@ -135,10 +135,12 @@ impl NamedConceptMgmt for EventImpl {
         name: &FileName,
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
-        crate::communication_channel::unix_datagram::Channel::<TriggerId>::remove_cfg(
-            name,
-            &(cfg.clone()).into(),
-        )
+        unsafe {
+            crate::communication_channel::unix_datagram::Channel::<TriggerId>::remove_cfg(
+                name,
+                &(cfg.clone()).into(),
+            )
+        }
     }
 
     fn remove_path_hint(

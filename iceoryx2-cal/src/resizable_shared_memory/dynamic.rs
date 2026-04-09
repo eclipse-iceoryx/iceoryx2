@@ -38,8 +38,8 @@ use crate::shared_memory::{
     PointerOffset, SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError,
     SharedMemoryOpenError, ShmAllocator,
 };
-use crate::shm_allocator::pool_allocator::PoolAllocator;
 use crate::shm_allocator::ShmAllocationError;
+use crate::shm_allocator::pool_allocator::PoolAllocator;
 
 use super::{
     NamedConcept, NamedConceptBuilder, NamedConceptDoesExistError, NamedConceptListError,
@@ -427,7 +427,7 @@ where
         let msg = format!("Unable to remove ResizableSharedMemory {name:?}");
 
         let mgmt_name = Self::managment_segment_name(name);
-        let mut shm_removed = fail!(from origin, when Shm::remove_cfg(&mgmt_name, config),
+        let mut shm_removed = fail!(from origin, when unsafe {Shm::remove_cfg(&mgmt_name, config)},
             "{msg} since the underlying managment segment could not be removed.");
 
         let raw_names = match Shm::list_cfg(config) {
@@ -445,7 +445,7 @@ where
         for raw_name in &raw_names {
             if let Some((extracted_name, _)) = Self::extract_name_and_segment_id(raw_name) {
                 if *name == extracted_name {
-                    fail!(from origin, when Shm::remove_cfg(raw_name, config),
+                    fail!(from origin, when unsafe { Shm::remove_cfg(raw_name, config)},
                         "{msg} since the underlying SharedMemory could not be removed.");
                     shm_removed = true;
                 }
@@ -702,7 +702,9 @@ where
     Shm::Builder: Debug,
 {
     unsafe fn deallocate_bucket(&self, offset: PointerOffset) {
-        self.perform_deallocation(offset, |entry| entry.shm.deallocate_bucket(offset));
+        unsafe {
+            self.perform_deallocation(offset, |entry| entry.shm.deallocate_bucket(offset));
+        }
     }
 
     fn bucket_size(&self, segment_id: SegmentId) -> usize {
@@ -755,6 +757,8 @@ where
     }
 
     unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
-        self.perform_deallocation(offset, |entry| entry.shm.deallocate(offset, layout));
+        unsafe {
+            self.perform_deallocation(offset, |entry| entry.shm.deallocate(offset, layout));
+        }
     }
 }

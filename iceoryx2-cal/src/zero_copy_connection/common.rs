@@ -19,7 +19,7 @@ pub mod details {
     use alloc::vec;
     use alloc::vec::Vec;
 
-    use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicU8, AtomicUsize};
+    use iceoryx2_bb_concurrency::atomic::{AtomicU8, AtomicU64, AtomicUsize};
     use iceoryx2_bb_concurrency::cell::UnsafeCell;
     use iceoryx2_bb_container::vector::relocatable_vec::*;
     use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
@@ -153,7 +153,7 @@ pub mod details {
         }
 
         unsafe fn init<T: BaseAllocator>(&mut self, allocator: &T) -> Result<(), AllocationError> {
-            self.used_chunk_list.init(allocator)
+            unsafe { self.used_chunk_list.init(allocator) }
         }
     }
 
@@ -987,7 +987,7 @@ pub mod details {
             cfg: &Self::Configuration,
         ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
             Ok(fail!(from "ZeroCopyConnection::remove_cfg()",
-                    when Storage::remove_cfg(name, &cfg.dynamic_storage_config),
+                    when unsafe {Storage::remove_cfg(name, &cfg.dynamic_storage_config) },
                     "Failed to remove ZeroCopyConnection \"{}\".", name))
         }
 

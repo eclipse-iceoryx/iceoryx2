@@ -376,7 +376,7 @@ pub mod details {
             cfg: &Self::Configuration,
         ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
             Ok(fail!(from "shared_memory::posix::remove_cfg()",
-            when Storage::remove_cfg(name, &cfg.dynamic_storage_config),
+            when unsafe { Storage::remove_cfg(name, &cfg.dynamic_storage_config)  },
             "Unable to remove shared memory concept \"{}\".", name))
         }
 
@@ -436,11 +436,13 @@ pub mod details {
         }
 
         unsafe fn deallocate(&self, offset: PointerOffset, layout: core::alloc::Layout) {
-            self.storage
-                .get()
-                .allocator
-                .assume_init_ref()
-                .deallocate(offset, layout);
+            unsafe {
+                self.storage
+                    .get()
+                    .allocator
+                    .assume_init_ref()
+                    .deallocate(offset, layout);
+            }
         }
 
         fn payload_start_address(&self) -> usize {
@@ -452,11 +454,13 @@ pub mod details {
         for Memory<PoolAllocator, Storage>
     {
         unsafe fn deallocate_bucket(&self, offset: PointerOffset) {
-            self.storage
-                .get()
-                .allocator
-                .assume_init_ref()
-                .deallocate_bucket(offset);
+            unsafe {
+                self.storage
+                    .get()
+                    .allocator
+                    .assume_init_ref()
+                    .deallocate_bucket(offset);
+            }
         }
 
         fn bucket_size(&self) -> usize {

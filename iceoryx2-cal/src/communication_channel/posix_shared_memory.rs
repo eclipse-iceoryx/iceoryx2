@@ -55,7 +55,7 @@ impl NamedConceptMgmt for Channel {
         name: &FileName,
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
-        SharedMemory::remove_cfg(name, &(cfg.clone()).into())
+        unsafe { SharedMemory::remove_cfg(name, &(cfg.clone()).into()) }
     }
 
     fn remove_path_hint(_value: &Path) -> Result<(), NamedConceptPathHintRemoveError> {

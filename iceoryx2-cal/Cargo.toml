@@ -2,7 +2,7 @@
 name = "iceoryx2-cal"
 description = "iceoryx2: [internal] high-level traits and implementations that represents OS primitives in an exchangeable fashion"
 categories = { workspace = true }
-edition = { workspace = true }
+edition = "2024"
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }
@@ -16,14 +16,14 @@ default = []
 std = [
   "iceoryx2-bb-concurrency/std",
   "iceoryx2-bb-container/std",
-  "iceoryx2-bb-elementary/std",  
-  "iceoryx2-bb-derive-macros/std",  
-  "iceoryx2-bb-linux/std",  
-  "iceoryx2-bb-lock-free/std",  
-  "iceoryx2-bb-memory/std",  
+  "iceoryx2-bb-elementary/std",
+  "iceoryx2-bb-derive-macros/std",
+  "iceoryx2-bb-linux/std",
+  "iceoryx2-bb-lock-free/std",
+  "iceoryx2-bb-memory/std",
   "iceoryx2-bb-posix/std",
-  "iceoryx2-bb-system-types/std",  
-  "iceoryx2-log/std",  
+  "iceoryx2-bb-system-types/std",
+  "iceoryx2-log/std",
 ]
 
 # The permissions of all resources will be set to read, write, execute for everyone.
