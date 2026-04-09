@@ -19,7 +19,7 @@ pub mod zero_copy_connection_trait {
     use alloc::sync::Arc;
     use alloc::vec;
     use core::time::Duration;
-    use iceoryx2_bb_concurrency::atomic::Ordering;
+    use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::barrier::*;
@@ -846,6 +846,64 @@ pub mod zero_copy_connection_trait {
                 is_ok
             );
             assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
+
+            Ok(())
+        })
+        .unwrap();
+    }
+
+    #[conformance_test]
+    pub fn blocking_send_returns_when_connection_to_receiver_is_lost<Sut: ZeroCopyConnection>() {
+        const TIMEOUT: Duration = Duration::from_millis(25);
+
+        let id = ChannelId::new(0);
+        let _watchdog = Watchdog::new();
+        let name = generate_file_path().file_name();
+        let mutex_handle = MutexHandle::new();
+        let config = MutexBuilder::new()
+            .create(generate_isolated_config::<Sut>(), &mutex_handle)
+            .unwrap();
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .buffer_size(1)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .config(&config.lock().unwrap())
+            .create_receiver()
+            .unwrap();
+
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
+
+        let sample_offset_1 = SAMPLE_SIZE * 12;
+        let sample_offset_2 = SAMPLE_SIZE * 234;
+        let has_finished_send_thread = AtomicBool::new(false);
+
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
+                let sut_sender = Sut::Builder::new(&name)
+                    .buffer_size(1)
+                    .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+                    .config(&config.lock().unwrap())
+                    .create_sender()
+                    .unwrap();
+
+                barrier.wait();
+                assert_that!(
+                    sut_sender.blocking_send(PointerOffset::new(sample_offset_1), SAMPLE_SIZE, id),
+                    is_ok
+                );
+                assert_that!(
+                    sut_sender.blocking_send(PointerOffset::new(sample_offset_2), SAMPLE_SIZE, id).err(),
+                    eq Some(ZeroCopySendError::NoConnectedReceiver)
+                );
+                has_finished_send_thread.store(true, Ordering::Relaxed);
+            })?;
+
+            barrier.wait();
+            nanosleep(TIMEOUT).unwrap();
+            assert_that!(has_finished_send_thread.load(Ordering::Relaxed), eq false);
+
+            drop(sut_receiver);
 
             Ok(())
         })
