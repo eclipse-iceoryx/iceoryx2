@@ -427,5 +427,120 @@ fn zero_copy_send_derive_does_not_work_for_generic_union_when_not_all_members_im
 /// assert_eq!(v[2].0, 16);
 /// ```
 #[cfg(doctest)]
-fn blub() {}
-// TODO: test with members that contain padding bytes
+fn blub_struct() {}
+
+/// ```
+/// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+///
+/// #[repr(C)]
+/// #[derive(ZeroCopySend)]
+/// struct NamedTestStruct<T: ZeroCopySend> {
+///     val1: u8,
+///     val2: T,
+///     val3: u32,
+/// }
+/// let t = NamedTestStruct {val1: 0, val2: -9, val3: 0};
+/// let v = t.__get_members();
+/// assert_eq!(v[0], (0, 1));
+/// assert_eq!(v[1], (4, 4));
+/// assert_eq!(v[2], (8, 4));
+/// assert_eq!(v[2].0, 8);
+/// ```
+#[cfg(doctest)]
+fn blub_generic_struct() {}
+
+/// ```
+/// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+///
+/// #[repr(C)]
+/// #[derive(ZeroCopySend)]
+/// struct Foo(u16);
+///
+/// #[repr(C)]
+/// #[derive(ZeroCopySend)]
+/// struct UnnamedTestStruct(i32, u64, Foo);
+/// let t = UnnamedTestStruct(0, 0, Foo(0));
+/// let v = t.__get_members();
+/// assert_eq!(v[0], (0, 4));
+/// assert_eq!(v[1], (8, 8));
+/// assert_eq!(v[2], (16, 2));
+/// assert_eq!(v[2].0, 16);
+/// ```
+#[cfg(doctest)]
+fn blub_tuple_struct() {}
+
+/// ```
+/// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+///
+/// #[repr(C)]
+/// #[derive(ZeroCopySend)]
+/// struct Foo(u16);
+///
+/// #[repr(C)]
+/// #[derive(ZeroCopySend)]
+/// struct UnnamedTestStruct<T: ZeroCopySend>(i32, T, Foo);
+/// let t = UnnamedTestStruct(0, 0u64, Foo(0));
+/// let v = t.__get_members();
+/// assert_eq!(v[0], (0, 4));
+/// assert_eq!(v[1], (8, 8));
+/// assert_eq!(v[2], (16, 2));
+/// assert_eq!(v[2].0, 16);
+/// ```
+#[cfg(doctest)]
+fn blub_generic_tuple_struct() {}
+
+/// ```
+/// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+///
+/// #[repr(C)]
+/// #[derive(Copy, Clone, ZeroCopySend)]
+/// struct Foo(u16);
+///
+/// #[repr(C)]
+/// #[derive(ZeroCopySend)]
+/// union SomeUnion {
+///     val1: u64,
+///     val2: Foo,
+/// }
+///
+/// let u1 = SomeUnion {val1: 0};
+/// let v = u1.__get_members();
+/// assert_eq!(v.len(), 1);
+/// assert_eq!(v[0], (0, 8));
+/// let u2 = SomeUnion {val2: Foo(0)};
+/// let v2 = u2.__get_members();
+/// assert_eq!(v2.len(), 1);
+/// assert_eq!(v2[0], (0, 8));
+/// ```
+#[cfg(doctest)]
+fn blub_union() {}
+
+/// ```
+/// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+///
+/// #[repr(C)]
+/// #[derive(ZeroCopySend)]
+/// union GenericUnion<T1: Copy + ZeroCopySend, T2: Copy + ZeroCopySend> {
+///     val1: T1,
+///     val2: T2,
+/// }
+///
+/// let u1: GenericUnion<u32, u64> = GenericUnion {val1: 0};
+/// let v1 = u1.__get_members();
+/// assert_eq!(v1.len(), 1);
+/// assert_eq!(v1[0], (0, 8));
+/// let u2: GenericUnion<u32, u64> = GenericUnion {val2: 8};
+/// let v2 = u2.__get_members();
+/// assert_eq!(v2.len(), 1);
+/// assert_eq!(v2[0], (0, 8));
+/// ```
+#[cfg(doctest)]
+fn blub_generic_union() {}
+
+// TODO: test structs with nested fields, containing padding bytes
+// TODO: test with #[repr(align(...))]
