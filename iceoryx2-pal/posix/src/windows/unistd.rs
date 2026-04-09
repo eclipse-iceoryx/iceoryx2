@@ -122,6 +122,10 @@ pub unsafe fn getpid() -> pid_t {
     pid
 }
 
+pub unsafe fn gethostpid() -> pid_t {
+    getpid()
+}
+
 impl MemZeroedStruct for PROCESSENTRY32 {}
 
 pub unsafe fn getppid() -> pid_t {

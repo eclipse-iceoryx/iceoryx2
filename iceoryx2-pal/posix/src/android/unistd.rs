@@ -37,6 +37,10 @@ pub unsafe fn getpid() -> pid_t {
     libc::getpid()
 }
 
+pub unsafe fn gethostpid() -> pid_t {
+    libc::getpid()
+}
+
 pub unsafe fn getppid() -> pid_t {
     libc::getppid()
 }

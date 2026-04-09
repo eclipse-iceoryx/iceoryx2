@@ -39,6 +39,10 @@ pub unsafe fn getpid() -> pid_t {
     0
 }
 
+pub unsafe fn gethostpid() -> pid_t {
+    0
+}
+
 pub unsafe fn getppid() -> pid_t {
     0
 }
