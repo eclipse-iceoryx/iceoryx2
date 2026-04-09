@@ -933,7 +933,10 @@ impl File {
                 warn!(from self, "Files created from file descriptors cannot remove themselves.");
                 Ok(false)
             }
-            Some(p) => File::remove(p),
+            Some(p) => {
+                self.release_ownership();
+                File::remove(p)
+            }
         }
     }
 

@@ -137,13 +137,14 @@
 
 use alloc::format;
 use core::fmt::Debug;
+use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 pub use iceoryx2_bb_system_types::file_path::FilePath;
 
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_log::{fail, fatal_panic, trace};
+use iceoryx2_log::{fail, fatal_panic, trace, warn};
 use iceoryx2_pal_posix::posix::{self, Errno, MemZeroedStruct};
 
 use crate::{
@@ -153,9 +154,13 @@ use crate::{
     file_descriptor::{FileDescriptorBased, FileDescriptorManagement},
     file_lock::LockType,
     permission::Permission,
-    process::Process,
+    process::{Process, UniqueProcessId},
     unix_datagram_socket::CreationMode,
 };
+
+const INIT_PERMISSION: Permission = Permission::OWNER_WRITE;
+const OWNER_LOCK_SUFFIX: &[u8] = b"_owner_lock";
+const CONTEXT_SUFFIX: &[u8] = b"_context";
 
 /// Defines the current state of a process.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -180,7 +185,7 @@ enum_gen! {
     ContractViolation,
     Interrupt,
     InvalidCleanerPathName,
-    FailedToWriteUniqueProcessIdIntoStateFile,
+    FailedToWriteUniqueProcessIdIntoContextFile,
     FailedToAcquireUniqueProcessId,
     UnknownError(i32)
 }
@@ -222,7 +227,7 @@ enum_gen! {
   entry:
     CorruptedState,
     Interrupt,
-    FailedToAcquireUniqueProcessIdFromStateFile,
+    FailedToAcquireUniqueProcessIdFromContextFile,
     FailedToAcquireUniqueProcessId,
     UnknownError(i32)
 
@@ -236,16 +241,22 @@ enum_gen! {
     ProcessCleanerCreateError
   entry:
     ProcessIsStillAlive,
+    ProcessIsInitializedOrCrashedDuringInitialization,
+    ProcessIsCleanedUpOrCrashedDuringCleanup,
     OwnedByAnotherProcess,
     Interrupt,
     FailedToAcquireLockState,
     FailedToAcquireUniqueProcessId,
-    FailedToAcquireUniqueProcessIdFromStateFile,
+    FailedToAcquireUniqueProcessIdFromContextFile,
+    UnableToOpenContextFile,
     UnableToOpenStateFile,
-    UnableToOpenCleanerFile,
+    UnableToOpenOwnerLockFile,
     InvalidCleanerPathName,
     DoesNotExist,
     UnknownError
+
+  mapping:
+    ProcessMonitorStateError
 }
 
 /// The builder of the [`ProcessGuard`]
@@ -303,6 +314,18 @@ impl ProcessGuardBuilder {
         self
     }
 
+    fn create_context_permissions(&self) -> Permission {
+        let mut permission = Permission::OWNER_READ;
+        if self.guard_permissions.has(Permission::GROUP_READ) {
+            permission |= Permission::GROUP_READ;
+        }
+        if self.guard_permissions.has(Permission::OTHERS_READ) {
+            permission |= Permission::OTHERS_READ;
+        }
+
+        permission
+    }
+
     /// Creates a new [`ProcessGuard`]. As soon as it is created successfully another process can
     /// monitor the state of the process. One cannot create multiple [`ProcessGuard`]s that use the
     /// same `path`. But one can create multiple [`ProcessGuard`]s that are using different
@@ -322,16 +345,16 @@ impl ProcessGuardBuilder {
         let origin = "ProcessGuard::new()";
         let msg = format!("Unable to create new ProcessGuard with the file \"{path}\"");
 
-        let owner_lock_path = match generate_owner_lock_path(path) {
-            Ok(f) => f,
-            Err(e) => {
-                fail!(from origin, with ProcessGuardCreateError::InvalidCleanerPathName,
-                "{} since the corresponding owner_lock path name would be invalid ({:?}).", msg, e);
-            }
-        };
+        let context_path = generate_context_path(path)
+            .map_err(|_| ProcessGuardCreateError::InvalidCleanerPathName)?;
+        let owner_lock_path = generate_owner_lock_path(path)
+            .map_err(|_| ProcessGuardCreateError::InvalidCleanerPathName)?;
 
         fail!(from origin, when Self::create_directory(path, self.directory_permissions),
             "{} since the directory \"{}\" of the process guard could not be created", msg, path);
+
+        let mut context_file = fail!(from origin, when Self::create_file(&context_path, INIT_PERMISSION),
+                                "{msg} since the context file \"{context_path}\" could not be created.");
 
         let mut state_file = fail!(from origin, when Self::create_file(path, INIT_PERMISSION),
                                 "{} since the state file \"{}\" could not be created.", msg, path);
@@ -345,8 +368,8 @@ impl ProcessGuardBuilder {
                                       "{msg} since the unique process id could not be acquired.");
 
         fail!(from origin,
-              when owner_lock_file.write_val(&unique_process_id.value()),
-              with ProcessGuardCreateError::FailedToWriteUniqueProcessIdIntoStateFile,
+              when context_file.write_val(&unique_process_id.value()),
+              with ProcessGuardCreateError::FailedToWriteUniqueProcessIdIntoContextFile,
               "{msg} since the unique process could not be written to the owner file.");
 
         match Self::lock_state_file(&state_file) {
@@ -369,20 +392,26 @@ impl ProcessGuardBuilder {
 
         if let Err(e) = owner_lock_file.set_permission(self.guard_permissions) {
             fail!(from origin, with ProcessGuardCreateError::UnknownError(0),
-                "{msg} since the final permissions could not be applied due to an internal failure. [{e:?}]");
+                "{msg} since the final permissions could not be applied to the owner file \"{owner_lock_path}\" due to an internal failure. [{e:?}]");
         }
 
-        match state_file.set_permission(self.guard_permissions) {
-            Ok(_) => {
+        if let Err(e) = state_file.set_permission(self.guard_permissions) {
+            fail!(from origin, with ProcessGuardCreateError::UnknownError(0),
+                "{msg} since the final permissions could not be applied to the state file \"{path}\" due to an internal failure. [{e:?}]");
+        }
+
+        match context_file.set_permission(self.create_context_permissions()) {
+            Ok(()) => {
                 trace!(from "ProcessGuard::new()", "create process state \"{}\" for monitoring", path);
                 Ok(ProcessGuard {
-                    file: state_file,
-                    owner_lock_file,
+                    state_file: Some(state_file),
+                    owner_lock_file: Some(owner_lock_file),
+                    context_file: Some(context_file),
                 })
             }
             Err(v) => {
                 fail!(from origin, with ProcessGuardCreateError::UnknownError(0),
-                    "{} since the final permissions could not be applied due to an internal failure ({:?}).", msg, v);
+                    "{} since the final permissions could not be applied to the context file \"{context_path}\" due to an internal failure ({:?}).", msg, v);
             }
         }
     }
@@ -533,17 +562,55 @@ impl ProcessGuardBuilder {
 /// ```
 #[derive(Debug)]
 pub struct ProcessGuard {
-    file: File,
-    owner_lock_file: File,
+    state_file: Option<File>,
+    owner_lock_file: Option<File>,
+    context_file: Option<File>,
 }
 
-const INIT_PERMISSION: Permission = Permission::OWNER_WRITE;
-const OWNER_LOCK_SUFFIX: &[u8] = b"_owner_lock";
+impl Drop for ProcessGuard {
+    fn drop(&mut self) {
+        let msg = "Unable to remove the ProcessGuard";
+        let origin = format!("{:?}", self);
+        // The drop order is important, the last entry must be the context file so that we can also recover if
+        // the cleaner process dies in the middle of cleaning up the resources
+        //
+        // Therefore, we check explicitly if a file has the ownership and remove it explicitly instead of
+        // handling this via RAII
+        for file in [
+            &mut self.state_file,
+            &mut self.owner_lock_file,
+            &mut self.context_file,
+        ] {
+            let file = file
+                .take()
+                .expect("contains always a value, only removed on destruction");
+
+            if file.has_ownership() {
+                let file_path = *file
+                    .path()
+                    .expect("created from path therefore it always contains a value");
+                if let Err(e) = file.remove_self() {
+                    warn!(from origin, "{msg} since the file \"{:?}\" could not be removed. [{e:?}]", file_path)
+                }
+            }
+        }
+    }
+}
 
 fn generate_owner_lock_path(path: &FilePath) -> Result<FilePath, SemanticStringError> {
     let mut owner_lock_path = *path;
-    owner_lock_path.push_bytes(OWNER_LOCK_SUFFIX)?;
+    fail!(from "generate_owner_lock_path()",
+          when owner_lock_path.push_bytes(OWNER_LOCK_SUFFIX),
+          "Unable to construct a valid file path from \"{path}\" and the suffix and the owner lock suffix.");
     Ok(owner_lock_path)
+}
+
+fn generate_context_path(path: &FilePath) -> Result<FilePath, SemanticStringError> {
+    let mut context_path = *path;
+    fail!(from "generate_context_path()",
+          when context_path.push_bytes(CONTEXT_SUFFIX),
+          "Unable to construct a valid file path from \"{path}\" and the suffix and the owner lock suffix.");
+    Ok(context_path)
 }
 
 impl ProcessGuard {
@@ -558,15 +625,8 @@ impl ProcessGuard {
     pub unsafe fn remove(file: &FilePath) -> Result<bool, FileRemoveError> {
         let msg = "Unable to remove process guard resources";
         let origin = "ProcessGuard::remove()";
-        let owner_lock_path = match generate_owner_lock_path(file) {
-            Ok(v) => v,
-            Err(e) => {
-                fail!(from origin,
-                    with FileRemoveError::MaxSupportedPathLengthExceeded,
-                    "{msg} since the owner lock path exceeds the maximum supported path length ({e:?})."
-                );
-            }
-        };
+        let owner_lock_path = generate_owner_lock_path(file)
+            .map_err(|_| FileRemoveError::MaxSupportedPathLengthExceeded)?;
 
         let mut result = match File::remove(file) {
             Ok(v) => v,
@@ -589,23 +649,37 @@ impl ProcessGuard {
 
     /// Returns the [`FilePath`] under which the underlying file is stored.
     pub fn path(&self) -> &FilePath {
-        match self.file.path() {
-            Some(path) => path,
-            None => {
-                unreachable!()
-            }
-        }
+        self.state_file
+            .as_ref()
+            .expect("contains always a value, only removed on destruction")
+            .path()
+            .expect("file is created from path and contains always a path")
     }
 
     pub(crate) fn staged_death(mut self) {
         let msg = "Unable to stage death";
-        fatal_panic!(from self, when self.owner_lock_file.write_at(0, &[0u8; 16]),
-                "{msg} since the state file could not be overridden with zeros.");
-        fatal_panic!(from self, when self.owner_lock_file.flush(),
-                "{msg} since the state file could not be synced.");
 
-        self.file.release_ownership();
-        self.owner_lock_file.release_ownership();
+        if let Err(e) = self
+            .context_file
+            .as_mut()
+            .expect("contains always a value, only removed on destruction")
+            .write_val_at(0, &UniqueProcessId::new_zeroed())
+        {
+            fatal_panic!(from self, "{msg} since the state file could not be overridden with zeros. [{e:?}]");
+        }
+
+        self.context_file
+            .as_ref()
+            .expect("contains always a value, only removed on destruction")
+            .release_ownership();
+        self.state_file
+            .as_ref()
+            .expect("contains always a value, only removed on destruction")
+            .release_ownership();
+        self.owner_lock_file
+            .as_ref()
+            .expect("contains always a value, only removed on destruction")
+            .release_ownership();
     }
 }
 
@@ -660,8 +734,9 @@ impl ProcessGuard {
 /// ```
 #[derive(Debug)]
 pub struct ProcessMonitor {
-    path: FilePath,
+    state_path: FilePath,
     owner_lock_path: FilePath,
+    context_path: FilePath,
 }
 
 impl ProcessMonitor {
@@ -680,19 +755,15 @@ impl ProcessMonitor {
     /// let mut monitor = ProcessMonitor::new(&process_state_path).expect("");
     /// ```
     pub fn new(path: &FilePath) -> Result<Self, ProcessMonitorCreateError> {
-        let msg = format!("Unable to open process monitor \"{path}\"");
-        let origin = "ProcessMonitor::new()";
-        let owner_lock_path = match generate_owner_lock_path(path) {
-            Ok(f) => f,
-            Err(e) => {
-                fail!(from origin, with ProcessMonitorCreateError::InvalidCleanerPathName,
-                "{} since the corresponding owner_lock path name would be invalid ({:?}).", msg, e);
-            }
-        };
+        let owner_lock_path = generate_owner_lock_path(path)
+            .map_err(|_| ProcessMonitorCreateError::InvalidCleanerPathName)?;
+        let context_path = generate_context_path(path)
+            .map_err(|_| ProcessMonitorCreateError::InvalidCleanerPathName)?;
 
         let new_self = Self {
-            path: *path,
+            state_path: *path,
             owner_lock_path,
+            context_path,
         };
 
         Ok(new_self)
@@ -700,7 +771,7 @@ impl ProcessMonitor {
 
     /// Returns the path of the underlying file of the [`ProcessGuard`].
     pub fn path(&self) -> &FilePath {
-        &self.path
+        &self.state_path
     }
 
     /// Returns the current state of the process that is monitored.
@@ -748,30 +819,29 @@ impl ProcessMonitor {
             }
         };
 
-        // first we need to open the owner_lock_file with AccessMode::Write only since it could
-        // be in init mode. After the initialization we can open it with AccessMode::ReadWrite
-        let mut has_owner_lock_file = false;
-        if let Some(owner_lock_file) = Self::open_file(&self.owner_lock_path, AccessMode::Write)? {
-            let lock_state = fail!(from self, when Self::get_lock_state(&owner_lock_file),
-                                                        "{} since the lock state of the owner_lock file could not be acquired.", msg);
-            if lock_state == posix::F_WRLCK as _ {
-                return Ok(ProcessState::CleaningUp);
+        // first we need to open the context_file with AccessMode::Write only since it could
+        // be in init mode. After the initialization we can open it with AccessMode::Read
+        match Self::open_file(&self.context_path, AccessMode::Write) {
+            Ok(Some(context_file)) => {
+                if context_file.permission().unwrap() == INIT_PERMISSION {
+                    return Ok(ProcessState::Starting);
+                }
             }
-
-            if owner_lock_file.permission().unwrap() == INIT_PERMISSION {
-                return Ok(ProcessState::Starting);
+            Ok(None) => {
+                return Ok(ProcessState::DoesNotExist);
             }
-
-            has_owner_lock_file = true;
+            Err(ProcessMonitorCreateError::InsufficientPermissions) => {
+                // if the process state is initialized the permissions are read only and the file cannot be opened
+                // with `AccessMode::Write`
+            }
+            Err(e) => return Err(e.into()),
         }
 
-        if let Some(owner_lock_file) =
-            Self::open_file(&self.owner_lock_path, AccessMode::ReadWrite)?
-        {
-            let other_process_id: u128 = match owner_lock_file.read_val() {
+        if let Some(context_file) = Self::open_file(&self.context_path, AccessMode::Read)? {
+            let other_process_id: u128 = match context_file.read_val() {
                 Ok(v) => v,
                 Err(e) => {
-                    fail!(from self, with ProcessMonitorStateError::FailedToAcquireUniqueProcessIdFromStateFile,
+                    fail!(from self, with ProcessMonitorStateError::FailedToAcquireUniqueProcessIdFromContextFile,
                               "{msg} since the unique process id contained in the owner lock file could not be read. [{e:?}]");
                 }
             };
@@ -779,6 +849,22 @@ impl ProcessMonitor {
             if my_process_id.value() == other_process_id {
                 return Ok(ProcessState::Alive);
             }
+        } else {
+            return Ok(ProcessState::DoesNotExist);
+        }
+
+        if let Some(owner_lock_file) = Self::open_file(&self.owner_lock_path, AccessMode::Write)? {
+            let lock_state = fail!(from self,
+                                    when Self::get_lock_state(&owner_lock_file),
+                                    "{} since the lock state of the owner_lock file could not be acquired.", msg);
+            if lock_state == posix::F_WRLCK as _ {
+                return Ok(ProcessState::CleaningUp);
+            }
+        } else {
+            if File::does_exist(&self.state_path).unwrap() {
+                return Err(ProcessMonitorStateError::CorruptedState);
+            }
+            return Ok(ProcessState::CleaningUp);
         }
 
         // IMPORTANT: it is essential that the state file is only then opened when it is ensured that the
@@ -786,31 +872,16 @@ impl ProcessMonitor {
         // state file is closed. This is a weird case in some OSes that release a file lock as soon as
         // any file descriptor is closed to that file, even when other file descriptors to that same file
         // are still open.
-        let state_file = match Self::open_file(&self.path, AccessMode::Write)? {
+        match Self::open_file(&self.state_path, AccessMode::Write)? {
             Some(state_file) => {
-                let permissions = fail!(from self, when state_file.permission(),
-                    "{msg} since the permissions of the state file could not be read.");
-                if permissions == INIT_PERMISSION {
-                    return Ok(ProcessState::Starting);
+                let lock_state = fail!(from self, when Self::get_lock_state(&state_file),
+                                    "{} since the lock state of the state file could not be acquired.", msg);
+                match lock_state as _ {
+                    posix::F_WRLCK => Ok(ProcessState::Alive),
+                    _ => Ok(ProcessState::Dead),
                 }
-
-                if !has_owner_lock_file {
-                    fail!(from self,
-                        with ProcessMonitorStateError::CorruptedState,
-                        "{} since the corresponding owner_lock file \"{}\" does not exist. This indicates a corrupted state.",
-                        msg, self.owner_lock_path);
-                }
-                state_file
             }
-            None => return Ok(ProcessState::DoesNotExist),
-        };
-
-        let lock_state = fail!(from self, when Self::get_lock_state(&state_file),
-                            "{} since the lock state of the state file could not be acquired.", msg);
-
-        match lock_state as _ {
-            posix::F_WRLCK => Ok(ProcessState::Alive),
-            _ => Ok(ProcessState::Dead),
+            None => Ok(ProcessState::CleaningUp),
         }
     }
 
@@ -886,6 +957,7 @@ impl ProcessMonitor {
 /// ```
 #[derive(Debug)]
 pub struct ProcessCleaner {
+    context_file: File,
     state_file: File,
     owner_lock_file: File,
 }
@@ -898,60 +970,79 @@ impl ProcessCleaner {
         let msg = format!("Unable to instantiate ProcessCleaner \"{path}\"");
         let origin = "ProcessCleaner::new()";
 
-        let owner_lock_path = match generate_owner_lock_path(path) {
-            Ok(f) => f,
-            Err(e) => {
-                fail!(from origin, with ProcessCleanerCreateError::InvalidCleanerPathName,
-                "{} since the corresponding owner_lock path name would be invalid ({:?}).", msg, e);
-            }
-        };
+        let owner_lock_path = generate_owner_lock_path(path)
+            .map_err(|_| ProcessCleanerCreateError::InvalidCleanerPathName)?;
+        let context_path = generate_context_path(path)
+            .map_err(|_| ProcessCleanerCreateError::InvalidCleanerPathName)?;
 
-        let owner_lock_file = match fail!(from origin, when ProcessMonitor::open_file(&owner_lock_path, AccessMode::ReadWrite),
-            with ProcessCleanerCreateError::UnableToOpenCleanerFile,
-            "{} since the owner_lock file could not be opened.", msg)
-        {
-            Some(f) => f,
-            None => {
-                fail!(from origin, with ProcessCleanerCreateError::DoesNotExist,
-                "{} since the process owner_lock file does not exist.", msg);
-            }
-        };
-
-        let other_unique_process_id = match owner_lock_file.read_val::<u128>() {
-            Ok(v) => v,
-            Err(e) => {
-                fail!(from origin, with ProcessCleanerCreateError::FailedToAcquireUniqueProcessIdFromStateFile,
-                    "{msg} since the unique process id could not be read from the owner lock file. [{e:?}]");
-            }
-        };
-
-        let my_unique_process_id = match Process::unique_id() {
-            Ok(v) => v,
-            Err(e) => {
-                fail!(from origin, with ProcessCleanerCreateError::FailedToAcquireUniqueProcessId,
-                    "{msg} since the unique process id could not be acquired. [{e:?}]");
-            }
-        };
-
-        if other_unique_process_id == my_unique_process_id.value() {
-            fail!(from origin, with ProcessCleanerCreateError::ProcessIsStillAlive,
-                "{} since the corresponding process is still alive.", msg);
+        match (ProcessMonitor {
+            state_path: *path,
+            context_path,
+            owner_lock_path,
         }
+        .state())
+        {
+            Ok(ProcessState::Dead) => (),
+            Ok(ProcessState::Alive) => {
+                fail!(from origin, with ProcessCleanerCreateError::ProcessIsStillAlive,
+                    "{} since the corresponding process is still alive.", msg);
+            }
+            Ok(ProcessState::DoesNotExist) => {
+                fail!(from origin, with ProcessCleanerCreateError::DoesNotExist,
+                    "{} since the process state file does not exist.", msg);
+            }
+            Ok(ProcessState::CleaningUp) => {
+                fail!(from origin, with ProcessCleanerCreateError::OwnedByAnotherProcess,
+                    "{} since another process already has instantiated a ProcessCleaner.", msg);
+            }
+            Ok(ProcessState::Starting) => {
+                fail!(from origin, with ProcessCleanerCreateError::ProcessIsInitializedOrCrashedDuringInitialization,
+                    "{} since it seems that the ProcessGuard is still being created or it has crashed during initialization.", msg);
+            }
+            Err(e) => {
+                fail!(from origin, with e.into(),
+                    "{} since the process state could not be acquired. [{e:?}]", msg);
+            }
+        };
+
+        let context_file = match ProcessMonitor::open_file(&context_path, AccessMode::Read) {
+            Ok(Some(file)) => file,
+            Ok(None) => {
+                fail!(from origin, with ProcessCleanerCreateError::DoesNotExist,
+                    "{} since the process state file does not exist.", msg);
+            }
+            Err(e) => {
+                fail!(from origin, with ProcessCleanerCreateError::UnableToOpenContextFile,
+                    "{} since the context file \"{context_path}\" could not be opened. [{e:?}]", msg);
+            }
+        };
+
+        let owner_lock_file = match ProcessMonitor::open_file(&owner_lock_path, AccessMode::Write) {
+            Ok(Some(file)) => file,
+            Ok(None) => {
+                fail!(from origin, with ProcessCleanerCreateError::ProcessIsCleanedUpOrCrashedDuringCleanup,
+                    "{} since the process state is either being cleaned up or crashed during cleanup.", msg);
+            }
+            Err(e) => {
+                fail!(from origin, with ProcessCleanerCreateError::UnableToOpenOwnerLockFile,
+                    "{} since the owner lock file \"{owner_lock_path}\" could not be opened. [{e:?}]", msg);
+            }
+        };
 
         // IMPORTANT: it is essential that the state file is only then opened when it is ensured that the
         // ProcessGuard is not hold by the same process. Otherwise, the lock is released as soon as the
         // state file is closed. This is a weird case in some OSes that release a file lock as soon as
         // any file descriptor is closed to that file, even when other file descriptors to that same file
         // are still open.
-        let state_file = match fail!(from origin,
-            when ProcessMonitor::open_file(path, AccessMode::ReadWrite),
-            with ProcessCleanerCreateError::UnableToOpenStateFile,
-            "{} since the state file could not be opened.", msg)
-        {
-            Some(f) => f,
-            None => {
-                fail!(from origin, with ProcessCleanerCreateError::DoesNotExist,
-                "{} since the process state file does not exist.", msg);
+        let state_file = match ProcessMonitor::open_file(path, AccessMode::Write) {
+            Ok(Some(file)) => file,
+            Ok(None) => {
+                fail!(from origin, with ProcessCleanerCreateError::ProcessIsCleanedUpOrCrashedDuringCleanup,
+                    "{} since the process state is either being cleaned up or crashed during cleanup.", msg);
+            }
+            Err(e) => {
+                fail!(from origin, with ProcessCleanerCreateError::UnableToOpenStateFile,
+                    "{} since the state file \"{path}\" could not be opened. [{e:?}]", msg);
             }
         };
 
@@ -966,9 +1057,11 @@ impl ProcessCleaner {
 
         match ProcessGuardBuilder::lock_state_file(&owner_lock_file) {
             Ok(()) => {
+                context_file.acquire_ownership();
                 state_file.acquire_ownership();
                 owner_lock_file.acquire_ownership();
                 Ok(Self {
+                    context_file,
                     state_file,
                     owner_lock_file,
                 })
@@ -992,6 +1085,7 @@ impl ProcessCleaner {
     /// when another process tried to cleanup the stale resources of the dead process but is unable
     /// to due to insufficient permissions.
     pub fn abandon(self) {
+        self.context_file.release_ownership();
         self.state_file.release_ownership();
         self.owner_lock_file.release_ownership();
     }
