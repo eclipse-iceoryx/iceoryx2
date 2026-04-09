@@ -98,6 +98,7 @@ inline auto Layout::round_up_to(const uint64_t value, const uint64_t multiple) -
     return (value % multiple == 0) ? value : multiple * (value / multiple + 1);
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) private ctor, only used internally
 inline Layout::Layout(const uint64_t size, const uint64_t align)
     : m_size { size }
     , m_align { align } {

@@ -850,6 +850,7 @@ TYPED_TEST(ServiceBlackboardTest, write_and_read_different_value_types_works) {
 
     struct Groovy {
         Groovy() = default;
+        // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
         Groovy(bool a, uint32_t b, int64_t c)
             : m_a { a }
             , m_b { b }
@@ -1649,7 +1650,7 @@ TYPED_TEST(ServiceBlackboardTest, list_keys_works) {
 constexpr uint64_t const STRING_CAPACITY = 25;
 struct Foo {
     Foo() = default;
-    // NOLINTNEXTLINE(readability-identifier-length), come on, its a test
+    // NOLINTNEXTLINE(readability-identifier-length, bugprone-easily-swappable-parameters), come on, its a test
     Foo(uint32_t a, int16_t b, uint8_t c, const bb::StaticString<STRING_CAPACITY>& d)
         : m_a { a }
         , m_b { b }
