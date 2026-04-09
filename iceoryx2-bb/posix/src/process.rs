@@ -122,6 +122,13 @@ impl ProcessExt for posix::pid_t {
 #[repr(C)]
 pub struct UniqueProcessId(UniqueSystemId);
 
+impl UniqueProcessId {
+    /// Returns the underlying value of the [`UniqueProcessId`]
+    pub fn value(&self) -> u128 {
+        self.0.value()
+    }
+}
+
 unsafe impl Zeroable for UniqueProcessId {}
 unsafe impl PlainOldData for UniqueProcessId {}
 

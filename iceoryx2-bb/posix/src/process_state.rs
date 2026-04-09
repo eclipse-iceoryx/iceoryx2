@@ -153,7 +153,7 @@ use crate::{
     file_descriptor::{FileDescriptorBased, FileDescriptorManagement},
     file_lock::LockType,
     permission::Permission,
-    process::{Process, UniqueProcessId},
+    process::Process,
     unix_datagram_socket::CreationMode,
 };
 
@@ -345,7 +345,7 @@ impl ProcessGuardBuilder {
                                       "{msg} since the unique process id could not be acquired.");
 
         fail!(from origin,
-              when owner_lock_file.write_val(&unique_process_id),
+              when owner_lock_file.write_val(&unique_process_id.value()),
               with ProcessGuardCreateError::FailedToWriteUniqueProcessIdIntoStateFile,
               "{msg} since the unique process could not be written to the owner file.");
 
@@ -768,7 +768,7 @@ impl ProcessMonitor {
         if let Some(owner_lock_file) =
             Self::open_file(&self.owner_lock_path, AccessMode::ReadWrite)?
         {
-            let other_process_id: UniqueProcessId = match owner_lock_file.read_val() {
+            let other_process_id: u128 = match owner_lock_file.read_val() {
                 Ok(v) => v,
                 Err(e) => {
                     fail!(from self, with ProcessMonitorStateError::FailedToAcquireUniqueProcessIdFromStateFile,
@@ -776,7 +776,7 @@ impl ProcessMonitor {
                 }
             };
 
-            if my_process_id == other_process_id {
+            if my_process_id.value() == other_process_id {
                 return Ok(ProcessState::Alive);
             }
         }
@@ -917,7 +917,7 @@ impl ProcessCleaner {
             }
         };
 
-        let other_unique_process_id = match owner_lock_file.read_val::<UniqueProcessId>() {
+        let other_unique_process_id = match owner_lock_file.read_val::<u128>() {
             Ok(v) => v,
             Err(e) => {
                 fail!(from origin, with ProcessCleanerCreateError::FailedToAcquireUniqueProcessIdFromStateFile,
@@ -933,7 +933,7 @@ impl ProcessCleaner {
             }
         };
 
-        if other_unique_process_id == my_unique_process_id {
+        if other_unique_process_id == my_unique_process_id.value() {
             fail!(from origin, with ProcessCleanerCreateError::ProcessIsStillAlive,
                 "{} since the corresponding process is still alive.", msg);
         }
