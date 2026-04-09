@@ -282,9 +282,8 @@ impl<T: Send + Sync + Debug + 'static> NamedConceptMgmt for Storage<T> {
             .unwrap();
 
         if details.call_drop_on_destruction {
-            core::ptr::drop_in_place(details.data_ptr);
+            unsafe { core::ptr::drop_in_place(details.data_ptr) };
         }
-
         Ok(guard.remove(&storage_name).is_some())
     }
 

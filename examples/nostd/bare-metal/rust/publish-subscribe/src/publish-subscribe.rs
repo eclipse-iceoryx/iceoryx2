@@ -41,7 +41,7 @@ macro_rules! debug {
     }};
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn kmain() -> ! {
     debug!("\n");
     debug!("╔═════════════════════════════════╗\n");

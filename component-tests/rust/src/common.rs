@@ -67,13 +67,7 @@ pub fn wait_for_pred<F: Fn() -> bool>(
 ) -> Result<(), Box<dyn core::error::Error>> {
     wait_for(
         node,
-        &|| -> Option<()> {
-            if predicate() {
-                Some(())
-            } else {
-                None
-            }
-        },
+        &|| -> Option<()> { if predicate() { Some(()) } else { None } },
         timeout,
         cycle_time,
     )

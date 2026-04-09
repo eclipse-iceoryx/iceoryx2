@@ -17,19 +17,19 @@ use iceoryx2::{
     config::Config as IceoryxConfig,
     node::{Node, NodeBuilder, NodeCreationFailure},
     port::{
+        LoanError, SendError,
         notifier::{Notifier, NotifierCreateError, NotifierNotifyError},
         publisher::{Publisher, PublisherCreateError},
         server::Server,
-        LoanError, SendError,
     },
     prelude::ServiceName,
     service::{
+        Service as ServiceType, ServiceDetails,
         builder::{
             event::EventOpenOrCreateError, publish_subscribe::PublishSubscribeOpenOrCreateError,
         },
         port_factory::request_response::PortFactory,
         static_config::StaticConfig,
-        Service as ServiceType, ServiceDetails,
     },
 };
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;

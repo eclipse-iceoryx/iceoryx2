@@ -192,7 +192,7 @@ pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept + Send {
     ) -> Result<Option<PointerOffset>, ZeroCopySendError>;
 
     fn reclaim(&self, channel_id: ChannelId)
-        -> Result<Option<PointerOffset>, ZeroCopyReclaimError>;
+    -> Result<Option<PointerOffset>, ZeroCopyReclaimError>;
 
     /// # Safety
     ///
@@ -206,7 +206,7 @@ pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept + Send {
 pub trait ZeroCopyReceiver: Debug + ZeroCopyPortDetails + NamedConcept + Send {
     fn has_data(&self, channel_id: ChannelId) -> bool;
     fn receive(&self, channel_id: ChannelId)
-        -> Result<Option<PointerOffset>, ZeroCopyReceiveError>;
+    -> Result<Option<PointerOffset>, ZeroCopyReceiveError>;
     fn release(
         &self,
         ptr: PointerOffset,

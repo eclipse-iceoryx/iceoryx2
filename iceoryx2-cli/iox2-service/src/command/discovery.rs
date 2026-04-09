@@ -10,13 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use anyhow::anyhow;
 use anyhow::Result;
+use anyhow::anyhow;
 use iceoryx2::prelude::*;
+use iceoryx2_cli::Format;
 use iceoryx2_cli::output::DiscoveryEvent;
 use iceoryx2_cli::output::ServiceDescription;
 use iceoryx2_cli::output::ServiceDescriptor;
-use iceoryx2_cli::Format;
 use iceoryx2_services_discovery::service_discovery::Config as DiscoveryConfig;
 use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
 

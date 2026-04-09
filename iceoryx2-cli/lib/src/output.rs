@@ -16,11 +16,11 @@ use iceoryx2::node::NodeDetails as IceoryxNodeDetails;
 use iceoryx2::node::NodeId as IceoryxNodeId;
 use iceoryx2::node::NodeState as IceoryxNodeState;
 use iceoryx2::node::NodeView as IceoryxNodeView;
-use iceoryx2::service::attribute::AttributeSet as IceoryxAttributeSet;
-use iceoryx2::service::static_config::messaging_pattern::MessagingPattern as IceoryxMessagingPattern;
 use iceoryx2::service::Service as IceoryxService;
 use iceoryx2::service::ServiceDetails as IceoryxServiceDetails;
 use iceoryx2::service::ServiceDynamicDetails as IceoryxServiceDynamicDetails;
+use iceoryx2::service::attribute::AttributeSet as IceoryxAttributeSet;
+use iceoryx2::service::static_config::messaging_pattern::MessagingPattern as IceoryxMessagingPattern;
 use iceoryx2_pal_posix::posix::pid_t;
 
 #[derive(serde::Serialize, Debug, Eq, PartialEq, Ord, PartialOrd)]

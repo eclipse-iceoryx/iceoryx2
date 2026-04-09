@@ -25,7 +25,7 @@ use posix_nostd_common::transmission_data::TransmissionData;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn main() -> i32 {
     let node = match NodeBuilder::new().create::<ipc::Service>() {
         Ok(node) => node,
@@ -99,5 +99,5 @@ fn panic(info: &PanicInfo) -> ! {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rust_eh_personality() {}

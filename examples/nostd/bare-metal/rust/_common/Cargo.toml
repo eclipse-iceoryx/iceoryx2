@@ -2,7 +2,7 @@
 name = "bare-metal-nostd-common"
 description = "common components for nostd examples that run on bare metal"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [features]
 default = []

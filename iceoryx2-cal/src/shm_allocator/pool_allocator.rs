@@ -64,9 +64,11 @@ impl PoolAllocator {
     ///  * provided [`PointerOffset`] must be allocated with [`PoolAllocator::allocate()`]
     pub unsafe fn deallocate_bucket(&self, offset: PointerOffset) {
         self.number_of_used_buckets.fetch_sub(1, Ordering::Relaxed);
-        self.allocator.deallocate_bucket(NonNull::new_unchecked(
-            (offset.offset() + self.allocator.start_address()) as *mut u8,
-        ));
+        unsafe {
+            self.allocator.deallocate_bucket(NonNull::new_unchecked(
+                (offset.offset() + self.allocator.start_address()) as *mut u8,
+            ));
+        }
     }
 }
 
@@ -160,11 +162,13 @@ impl ShmAllocator for PoolAllocator {
         config: &Self::Configuration,
     ) -> Self {
         Self {
-            allocator: iceoryx2_bb_memory::pool_allocator::PoolAllocator::new_uninit(
-                config.bucket_layout,
-                unsafe { NonNull::new_unchecked(managed_memory.as_ptr() as *mut u8) },
-                managed_memory.len(),
-            ),
+            allocator: unsafe {
+                iceoryx2_bb_memory::pool_allocator::PoolAllocator::new_uninit(
+                    config.bucket_layout,
+                    NonNull::new_unchecked(managed_memory.as_ptr() as *mut u8),
+                    managed_memory.len(),
+                )
+            },
             base_address: (managed_memory.as_ptr() as *mut u8) as usize,
             max_supported_alignment_by_memory,
             number_of_used_buckets: AtomicUsize::new(0),
@@ -186,9 +190,10 @@ impl ShmAllocator for PoolAllocator {
                 msg, self.max_alignment(), self.max_supported_alignment_by_memory);
         }
 
-        fail!(from self, when self.allocator.init(mgmt_allocator),
+        fail!(from self, when unsafe { self.allocator.init(mgmt_allocator)  },
             with ShmAllocatorInitError::AllocationFailed,
             "{} since the allocation of the allocator managment memory failed.", msg);
+
         Ok(())
     }
 
@@ -212,6 +217,8 @@ impl ShmAllocator for PoolAllocator {
     }
 
     unsafe fn deallocate(&self, offset: PointerOffset, _layout: Layout) {
-        self.deallocate_bucket(offset);
+        unsafe {
+            self.deallocate_bucket(offset);
+        }
     }
 }

@@ -10,20 +10,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::missing_safety_doc)]
+
 const SYS_WRITE0: usize = 0x04;
 const SYS_EXIT: usize = 0x18;
 
 #[inline(always)]
 pub unsafe fn syscall(operation: usize, arg: usize) -> usize {
-    let result: usize;
-    core::arch::asm!(
-        "svc 0x123456",
-        inout("r0") operation => result,
-        in("r1") arg,
-        options(nostack)
-    );
+    unsafe {
+        let result: usize;
+        core::arch::asm!(
+            "svc 0x123456",
+            inout("r0") operation => result,
+            in("r1") arg,
+            options(nostack)
+        );
 
-    result
+        result
+    }
 }
 
 pub fn write0(s: &str) {
@@ -42,5 +46,7 @@ pub fn exit(code: usize) -> ! {
     unsafe {
         syscall(SYS_EXIT, code);
     }
-    loop {}
+    loop {
+        core::hint::spin_loop();
+    }
 }

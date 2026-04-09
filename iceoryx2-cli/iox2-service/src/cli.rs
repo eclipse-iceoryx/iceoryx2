@@ -15,10 +15,10 @@ use clap::Parser;
 use clap::Subcommand;
 use clap::ValueEnum;
 
-use iceoryx2_cli::filter::MessagingPatternFilter;
-use iceoryx2_cli::help_template;
 use iceoryx2_cli::Format;
 use iceoryx2_cli::HelpOptions;
+use iceoryx2_cli::filter::MessagingPatternFilter;
+use iceoryx2_cli::help_template;
 
 #[derive(Parser)]
 #[command(

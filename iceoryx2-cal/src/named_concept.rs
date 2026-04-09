@@ -187,7 +187,7 @@ pub trait NamedConceptMgmt: Debug {
     ///  * It must be ensured that no other process is using the concept.
     ///
     unsafe fn remove(name: &FileName) -> Result<bool, NamedConceptRemoveError> {
-        Self::remove_cfg(name, &Self::Configuration::default())
+        unsafe { Self::remove_cfg(name, &Self::Configuration::default()) }
     }
 
     /// Returns true if a concept with that name exists, otherwise false

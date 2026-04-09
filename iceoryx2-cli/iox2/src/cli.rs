@@ -12,7 +12,7 @@
 
 use clap::Parser;
 
-use iceoryx2_cli::{help_template, HelpOptions};
+use iceoryx2_cli::{HelpOptions, help_template};
 
 #[derive(Parser, Debug)]
 #[command(

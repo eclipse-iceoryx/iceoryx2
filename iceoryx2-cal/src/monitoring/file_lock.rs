@@ -38,8 +38,9 @@ use crate::{
 };
 
 use super::{
-    testing::__InternalMonitoringTokenTestable, Monitoring, MonitoringBuilder, MonitoringCleaner,
-    MonitoringCreateTokenError, MonitoringMonitor, MonitoringStateError, MonitoringToken,
+    Monitoring, MonitoringBuilder, MonitoringCleaner, MonitoringCreateTokenError,
+    MonitoringMonitor, MonitoringStateError, MonitoringToken,
+    testing::__InternalMonitoringTokenTestable,
 };
 
 #[cfg(not(feature = "dev_permissions"))]
@@ -126,7 +127,7 @@ impl NamedConceptMgmt for FileLockMonitoring {
         let process_state_path = cfg.path_for(name);
         let msg = format!("Unable to remove FileLockMonitoring \"{process_state_path}\"");
         let origin = "FileLockMonitoring::remove_cfg()";
-        match ProcessGuard::remove(&process_state_path) {
+        match unsafe { ProcessGuard::remove(&process_state_path) } {
             Ok(v) => Ok(v),
             Err(FileRemoveError::InsufficientPermissions) => {
                 fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,

@@ -64,7 +64,7 @@ pub mod details {
     impl RelocatableContainer for UsedChunkList<RelocatablePointer<AtomicBool>> {
         unsafe fn new_uninit(capacity: usize) -> Self {
             Self {
-                data_ptr: RelocatablePointer::new_uninit(),
+                data_ptr: unsafe { RelocatablePointer::new_uninit() },
                 capacity,
                 is_memory_initialized: AtomicBool::new(false),
             }
@@ -80,19 +80,20 @@ pub mod details {
             }
 
             let memory = fail!(from self, when allocator
-            .allocate(Layout::from_size_align_unchecked(
-                    core::mem::size_of::<AtomicBool>() * self.capacity,
-                    core::mem::align_of::<AtomicBool>())),
-            "Failed to initialize since the allocation of the data memory failed.");
+                .allocate(unsafe {
+                    Layout::from_size_align_unchecked(
+                        core::mem::size_of::<AtomicBool>() * self.capacity,
+                        core::mem::align_of::<AtomicBool>())
+                }),
+                "Failed to initialize since the allocation of the data memory failed.");
 
-            self.data_ptr.init(memory);
-
+            unsafe { self.data_ptr.init(memory) };
             for i in 0..self.capacity {
                 unsafe {
                     (self.data_ptr.as_ptr() as *mut AtomicBool)
                         .add(i)
                         .write(AtomicBool::new(false))
-                };
+                }
             }
 
             // relaxed is sufficient since no relocatable container can be used

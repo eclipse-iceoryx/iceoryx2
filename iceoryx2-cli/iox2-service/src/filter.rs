@@ -11,8 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::cli::OutputFilter;
-use iceoryx2::service::ipc::Service;
 use iceoryx2::service::ServiceDetails;
+use iceoryx2::service::ipc::Service;
 use iceoryx2_cli::filter::Filter;
 
 impl Filter<ServiceDetails<Service>> for OutputFilter {
