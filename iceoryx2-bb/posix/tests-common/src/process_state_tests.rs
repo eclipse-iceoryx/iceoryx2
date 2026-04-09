@@ -55,6 +55,17 @@ pub fn guard_can_be_created() {
 }
 
 #[test]
+pub fn guard_can_be_created_with_default() {
+    create_test_directory();
+    let path = generate_file_path();
+
+    let guard = ProcessGuardBuilder::default().create(&path).unwrap();
+
+    assert_that!(*guard.path(), eq path);
+    assert_that!(File::does_exist(&path).unwrap(), eq true);
+}
+
+#[test]
 pub fn guard_removes_file_when_dropped() {
     create_test_directory();
     let path = generate_file_path();
@@ -80,6 +91,15 @@ pub fn guard_cannot_use_already_existing_file() {
     assert_that!(guard.err().unwrap(), eq ProcessGuardCreateError::AlreadyExists);
 
     file.remove_self().unwrap();
+}
+
+#[test]
+pub fn monitor_returns_the_path_under_which_it_was_created() {
+    create_test_directory();
+    let path = generate_file_path();
+
+    let monitor = ProcessMonitor::new(&path).unwrap();
+    assert_that!(*monitor.path(), eq path);
 }
 
 #[test]
@@ -383,6 +403,75 @@ pub fn owner_lock_cannot_be_acquired_from_living_process() {
         owner_lock.err().unwrap(), eq
         ProcessCleanerCreateError::ProcessIsStillAlive
     );
+}
+
+#[test]
+pub fn cleaner_cannot_be_created_with_a_process_state_currently_being_initialized() {
+    create_test_directory();
+    let path = generate_file_path();
+    let mut context_path = path;
+    context_path.push_bytes(b"_context").unwrap();
+
+    let _context_file = FileBuilder::new(&context_path)
+        .has_ownership(true)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .permission(Permission::OWNER_WRITE)
+        .create()
+        .unwrap();
+
+    assert_that!(ProcessCleaner::new(&path).err(), eq Some(ProcessCleanerCreateError::ProcessIsInitializedOrCrashedDuringInitialization));
+}
+
+#[test]
+pub fn cleaner_cannot_be_created_when_another_process_is_currently_cleaning_up() {
+    create_test_directory();
+    let path = generate_file_path();
+    let mut owner_lock_path = path;
+    owner_lock_path.push_bytes(b"_owner_lock").unwrap();
+    let mut context_path = path;
+    context_path.push_bytes(b"_context").unwrap();
+
+    let mut context_file = FileBuilder::new(&context_path)
+        .has_ownership(true)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+    context_file
+        .write_val(&UniqueProcessId::new_zeroed())
+        .unwrap();
+
+    let _owner_lock_file = FileBuilder::new(&owner_lock_path)
+        .has_ownership(true)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+
+    assert_that!(ProcessCleaner::new(&path).err(), eq Some(ProcessCleanerCreateError::ProcessIsBeingCleanedUpOrCrashedDuringCleanup));
+}
+
+#[test]
+pub fn cleaner_cannot_acquire_a_corrupted_process() {
+    create_test_directory();
+    let path = generate_file_path();
+    let mut context_path = path;
+    context_path.push_bytes(b"_context").unwrap();
+
+    let mut context_file = FileBuilder::new(&context_path)
+        .has_ownership(true)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+    context_file
+        .write_val(&UniqueProcessId::new_zeroed())
+        .unwrap();
+
+    let _state_file = FileBuilder::new(&path)
+        .has_ownership(true)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+
+    assert_that!(ProcessCleaner::new(&path).err(), eq Some(ProcessCleanerCreateError::ProcessMonitorStateError(ProcessMonitorStateError::CorruptedState)));
 }
 
 // START: OS with IPC only lock detection

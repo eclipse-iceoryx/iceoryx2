@@ -242,7 +242,7 @@ enum_gen! {
   entry:
     ProcessIsStillAlive,
     ProcessIsInitializedOrCrashedDuringInitialization,
-    ProcessIsCleanedUpOrCrashedDuringCleanup,
+    ProcessIsBeingCleanedUpOrCrashedDuringCleanup,
     OwnedByAnotherProcess,
     Interrupt,
     FailedToAcquireLockState,
@@ -992,7 +992,7 @@ impl ProcessCleaner {
                     "{} since the process state file does not exist.", msg);
             }
             Ok(ProcessState::CleaningUp) => {
-                fail!(from origin, with ProcessCleanerCreateError::OwnedByAnotherProcess,
+                fail!(from origin, with ProcessCleanerCreateError::ProcessIsBeingCleanedUpOrCrashedDuringCleanup,
                     "{} since another process already has instantiated a ProcessCleaner.", msg);
             }
             Ok(ProcessState::Starting) => {
@@ -1020,7 +1020,7 @@ impl ProcessCleaner {
         let owner_lock_file = match ProcessMonitor::open_file(&owner_lock_path, AccessMode::Write) {
             Ok(Some(file)) => file,
             Ok(None) => {
-                fail!(from origin, with ProcessCleanerCreateError::ProcessIsCleanedUpOrCrashedDuringCleanup,
+                fail!(from origin, with ProcessCleanerCreateError::ProcessIsBeingCleanedUpOrCrashedDuringCleanup,
                     "{} since the process state is either being cleaned up or crashed during cleanup.", msg);
             }
             Err(e) => {
@@ -1037,7 +1037,7 @@ impl ProcessCleaner {
         let state_file = match ProcessMonitor::open_file(path, AccessMode::Write) {
             Ok(Some(file)) => file,
             Ok(None) => {
-                fail!(from origin, with ProcessCleanerCreateError::ProcessIsCleanedUpOrCrashedDuringCleanup,
+                fail!(from origin, with ProcessCleanerCreateError::ProcessIsBeingCleanedUpOrCrashedDuringCleanup,
                     "{} since the process state is either being cleaned up or crashed during cleanup.", msg);
             }
             Err(e) => {
