@@ -1314,7 +1314,7 @@ TEST(StaticVector, ostream_insertion_converts_contents_to_string) {
 }
 } // namespace
 
-// NOTE: the class needs to be outside to the anonymous namespace, else MSVC is not able to find the ostream operator
+// NOLINTNEXTLINE(misc-use-internal-linkage) the class needs to be outside to the anonymous namespace, else MSVC is not able to find the ostream operator
 class StaticVectorePrintable {
     static int32_t s_print_count;
 

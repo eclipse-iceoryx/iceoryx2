@@ -18,10 +18,12 @@
 #include "iox2/iceoryx2.hpp"
 #include "parse_args.hpp"
 
+namespace {
 struct ServiceNameListenerPair {
     iox2::ServiceName service_name;
     iox2::Listener<iox2::ServiceType::Ipc> listener;
 };
+} // namespace
 
 auto main(int argc, char** argv) -> int {
     using namespace iox2;

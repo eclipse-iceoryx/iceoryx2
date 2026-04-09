@@ -68,7 +68,7 @@ void drop_res(struct res* const value) { // NOLINT
     }
 }
 
-void* background_thread(void* unused) {
+static void* background_thread(void* unused) {
     (void) unused;
 
     while (iox2_node_wait(&example.node, 1, 0) == IOX2_OK) {

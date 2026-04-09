@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 
-const int BASE_10 = 10;
+static const int BASE_10 = 10;
 
 #if defined(_WIN32) || defined(WIN32) || defined(__WIN32__) || defined(_WIN64)
 #include <windows.h>

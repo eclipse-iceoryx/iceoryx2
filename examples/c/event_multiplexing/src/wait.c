@@ -27,7 +27,7 @@ struct CallbackContext {
 
 
 // the function that is called when a listener has received an event
-iox2_callback_progression_e on_event(iox2_waitset_attachment_id_h attachment_id, void* context) {
+static iox2_callback_progression_e on_event(iox2_waitset_attachment_id_h attachment_id, void* context) {
     struct CallbackContext* ctx = (struct CallbackContext*) context;
 
     iox2_event_id_t event_id;
