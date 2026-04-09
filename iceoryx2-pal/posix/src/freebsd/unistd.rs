@@ -39,6 +39,10 @@ pub unsafe fn getpid() -> pid_t {
     crate::internal::getpid()
 }
 
+pub unsafe fn gethostpid() -> pid_t {
+    crate::internal::getpid()
+}
+
 pub unsafe fn getppid() -> pid_t {
     crate::internal::getppid()
 }

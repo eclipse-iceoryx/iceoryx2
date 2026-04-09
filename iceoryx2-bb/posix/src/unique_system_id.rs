@@ -104,7 +104,7 @@ impl UniqueSystemId {
     /// Creates a new system wide unique id
     pub fn new() -> Result<Self, UniqueSystemIdCreationError> {
         let msg = "Failed to create UniqueSystemId";
-        let pid = Process::from_self().id().value() as _;
+        let pid = Process::self_host_pid().value() as _;
         let now = fail!(from "UniqueSystemId::new()",
                         when Time::now_with_clock(ClockType::default()),
                         with UniqueSystemIdCreationError::FailedToAcquireTime,

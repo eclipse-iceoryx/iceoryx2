@@ -13,10 +13,12 @@
 #![allow(non_camel_case_types, non_snake_case)]
 #![allow(clippy::missing_safety_doc)]
 
-use crate::posix::types::*;
+use crate::posix::{self, types::*};
 use alloc::borrow::ToOwned;
 use alloc::ffi::CString;
 use alloc::format;
+use alloc::string::String;
+use alloc::vec::Vec;
 
 pub unsafe fn proc_pidpath(pid: pid_t, buffer: *mut c_char, buffer_len: size_t) -> isize {
     let path = if pid == libc::getpid() {
@@ -37,6 +39,43 @@ pub unsafe fn pathconf(path: *const c_char, name: int) -> long {
 
 pub unsafe fn getpid() -> pid_t {
     libc::getpid()
+}
+
+pub unsafe fn gethostpid() -> pid_t {
+    let fd = posix::open(c"/proc/self/status".as_ptr(), posix::O_RDONLY);
+    if fd < 0 {
+        return posix::getpid();
+    }
+    let mut buffer = [0u8; 1024];
+    let number_of_bytes = posix::read(fd, buffer.as_mut_ptr().cast(), buffer.len() - 1);
+    posix::close(fd);
+
+    if number_of_bytes < 0 {
+        return posix::getpid();
+    }
+
+    let string_buffer = String::from_utf8_lossy(&buffer);
+
+    const STATUS_ENTRY: &str = "NSpid:";
+    let nspid_line = match string_buffer.lines().find(|l| l.starts_with(STATUS_ENTRY)) {
+        Some(l) => l,
+        None => return posix::getpid(),
+    };
+
+    let pids: Vec<pid_t> = nspid_line
+        .trim_start_matches(STATUS_ENTRY)
+        .split_whitespace()
+        .filter_map(|s| s.parse().ok())
+        .collect();
+
+    match pids.as_slice() {
+        // in a PID namespace, the first value is the host PID
+        [host_pid, _, ..] => *host_pid, // In a namespace, first value is host PID
+        // if there is no PID namespce, then we use the only PID listed
+        [only_pid] => *only_pid,
+        // the NSpid: field is empty and we fall back to getpid
+        [] => posix::getpid(),
+    }
 }
 
 pub unsafe fn getppid() -> pid_t {

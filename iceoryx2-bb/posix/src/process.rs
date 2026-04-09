@@ -140,6 +140,12 @@ pub struct Process {
 }
 
 impl Process {
+    /// Returns the host [`ProcessId`]. If the [`Process`] is running in an virtual environment with
+    /// PID namespaces it returns the [`ProcessId`] of the host instead of inside the container.
+    pub fn self_host_pid() -> ProcessId {
+        ProcessId(unsafe { posix::gethostpid() })
+    }
+
     /// Creates a process from a provided id. The process does not have to exists at the time of
     /// creation. But all other methods may fail when the process does not exist.
     pub fn from_pid(pid: ProcessId) -> Process {
