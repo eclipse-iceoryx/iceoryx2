@@ -15,6 +15,7 @@
 #ifndef IOX2_BB_CONTAINER_UNINITIALIZED_ARRAY_INL
 #define IOX2_BB_CONTAINER_UNINITIALIZED_ARRAY_INL
 
+// NOLINTNEXTLINE(misc-header-include-cycle) false positive; cycle prevented by include guards
 #include "iox2/legacy/uninitialized_array.hpp"
 
 namespace iox2 {
