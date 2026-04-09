@@ -156,6 +156,7 @@ impl<Service: service::Service> Sender<Service> {
         channel_id: ChannelId,
         connection_id: usize,
     ) -> Result<usize, SendError> {
+        let msg = "While delivering the sample:";
         let deliver_call = match self.unable_to_deliver_strategy {
             UnableToDeliverStrategy::Block => {
                 <Service::Connection as ZeroCopyConnection>::Sender::blocking_send
@@ -173,7 +174,17 @@ impl<Service: service::Service> Sender<Service> {
                     /* causes no problem
                      *   blocking_send => can never happen
                      *   try_send => we tried and expect that the buffer is full
+                     *
                      * */
+                }
+                Err(ZeroCopySendError::NoConnectedReceiver) => {
+                    // causes no problem, when the receiver/subscriber disconnected it will be
+                    // cleaned up in the next round and it is no failure when we skip delivering data
+                    // to subscribers that have disconnected
+                }
+                Err(ZeroCopySendError::InternalError) => {
+                    fail!(from self, with SendError::InternalError,
+                        "{msg} {:?} to receiver {:?} an internal mechanism failed and the offset was delivered only to a subset of receivers.", offset, connection.receiver_port_id);
                 }
                 Err(ZeroCopySendError::ConnectionCorrupted) => match &self.degradation_callback {
                     Some(c) => match c.call(
@@ -184,18 +195,18 @@ impl<Service: service::Service> Sender<Service> {
                         DegradationAction::Ignore => (),
                         DegradationAction::Warn => {
                             error!(from self,
-                                        "While delivering the sample: {:?} a corrupted connection was detected with receiver {:?}.",
+                                        "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
                                         offset, connection.receiver_port_id);
                         }
                         DegradationAction::Fail => {
                             fail!(from self, with SendError::ConnectionCorrupted,
-                                        "While delivering the sample: {:?} a corrupted connection was detected with receiver {:?}.",
+                                        "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
                                         offset, connection.receiver_port_id);
                         }
                     },
                     None => {
                         error!(from self,
-                                    "While delivering the sample: {:?} a corrupted connection was detected with receiver {:?}.",
+                                    "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
                                     offset, connection.receiver_port_id);
                     }
                 },

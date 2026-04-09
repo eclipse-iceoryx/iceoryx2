@@ -729,18 +729,26 @@ pub mod details {
             sample_size: usize,
             channel_id: ChannelId,
         ) -> Result<Option<PointerOffset>, ZeroCopySendError> {
+            let msg = "Unable to blocking send the offset";
             debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
 
             if !self.storage.get().enable_safe_overflow {
-                AdaptiveWaitBuilder::new()
-                    .create()
-                    .unwrap()
-                    .wait_while(|| {
-                        self.storage.get().channels[channel_id.value()]
-                            .submission_queue
-                            .is_full()
-                    })
-                    .unwrap();
+                let mut is_connected = false;
+                if let Err(e) = AdaptiveWaitBuilder::new().create().unwrap().wait_while(|| {
+                    is_connected = self.storage.get().is_connected();
+                    self.storage.get().channels[channel_id.value()]
+                        .submission_queue
+                        .is_full()
+                        && is_connected
+                }) {
+                    fail!(from self, with ZeroCopySendError::InternalError,
+                        "{msg} {ptr:?} via channel {channel_id:?} since the adaptive wait failed. [{e:?}]");
+                }
+
+                if !is_connected {
+                    fail!(from self, with ZeroCopySendError::NoConnectedReceiver,
+                        "{msg} {ptr:?} via channel {channel_id:?} since there is no connected receiver anymore.");
+                }
             }
 
             self.try_send(ptr, sample_size, channel_id)

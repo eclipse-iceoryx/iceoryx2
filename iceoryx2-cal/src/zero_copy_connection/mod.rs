@@ -76,6 +76,8 @@ pub enum ZeroCopySendError {
     ConnectionCorrupted,
     ReceiveBufferFull,
     UsedChunkListFull,
+    NoConnectedReceiver,
+    InternalError,
 }
 
 impl core::fmt::Display for ZeroCopySendError {
