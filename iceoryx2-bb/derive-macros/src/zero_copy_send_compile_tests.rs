@@ -542,5 +542,29 @@ fn blub_union() {}
 #[cfg(doctest)]
 fn blub_generic_union() {}
 
+/// ```
+/// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+///
+/// #[repr(C)]
+/// #[repr(align(16))]
+/// #[derive(ZeroCopySend)]
+/// struct AlignedU32(u32);
+///
+/// #[repr(C)]
+/// #[derive(ZeroCopySend)]
+/// struct FieldAlignedStruct {
+///     a: u8,
+///     b: AlignedU32,
+/// }
+///
+/// let t = FieldAlignedStruct { a: 3, b: AlignedU32(9) };
+/// let v = t.__get_members();
+/// assert_eq!(v.len(), 2);
+/// assert_eq!(v[0], (0, 1));
+/// assert_eq!(v[1], (16, 16));
+/// ```
+#[cfg(doctest)]
+fn blub_with_alignment_that_changes_inner_padding() {}
+
 // TODO: test structs with nested fields, containing padding bytes
-// TODO: test with #[repr(align(...))]
