@@ -98,7 +98,7 @@ template <ServiceType S, typename KeyType, typename ValueType>
 inline auto EntryHandle<S, KeyType, ValueType>::operator=(EntryHandle&& rhs) noexcept -> EntryHandle& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 

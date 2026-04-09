@@ -130,7 +130,7 @@ inline auto ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePa
     ActiveRequest&& rhs) noexcept -> ActiveRequest& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 

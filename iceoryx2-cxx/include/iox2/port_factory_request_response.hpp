@@ -111,7 +111,7 @@ PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponseP
     PortFactoryRequestResponse&& rhs) noexcept -> PortFactoryRequestResponse& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 

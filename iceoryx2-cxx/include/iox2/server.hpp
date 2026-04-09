@@ -84,7 +84,7 @@ Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>:
     -> Server& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 

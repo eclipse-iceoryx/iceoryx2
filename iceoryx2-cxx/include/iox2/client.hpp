@@ -124,7 +124,7 @@ inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, 
     Client&& rhs) noexcept -> Client& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 

@@ -18,7 +18,7 @@ WriterDetailsView::WriterDetailsView(iox2_writer_details_ptr handle)
 }
 
 WriterDetailsView::WriterDetailsView(WriterDetailsView&& rhs) noexcept
-    : m_handle { std::move(rhs.m_handle) } {
+    : m_handle { rhs.m_handle } {
     rhs.m_handle = nullptr;
 }
 

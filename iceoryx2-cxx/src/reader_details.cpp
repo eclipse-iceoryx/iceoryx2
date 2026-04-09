@@ -18,7 +18,7 @@ ReaderDetailsView::ReaderDetailsView(iox2_reader_details_ptr handle)
 }
 
 ReaderDetailsView::ReaderDetailsView(ReaderDetailsView&& rhs) noexcept
-    : m_handle { std::move(rhs.m_handle) } {
+    : m_handle { rhs.m_handle } {
     rhs.m_handle = nullptr;
 }
 

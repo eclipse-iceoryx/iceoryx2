@@ -110,7 +110,7 @@ inline auto PortFactoryBlackboard<S, KeyType>::operator=(PortFactoryBlackboard&&
     -> PortFactoryBlackboard& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 

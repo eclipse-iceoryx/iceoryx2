@@ -35,7 +35,7 @@ template <ServiceType S>
 auto WaitSetAttachmentId<S>::operator=(WaitSetAttachmentId&& rhs) noexcept -> WaitSetAttachmentId& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 
@@ -122,7 +122,7 @@ template <ServiceType S>
 auto WaitSetGuard<S>::operator=(WaitSetGuard&& rhs) noexcept -> WaitSetGuard& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 
@@ -200,7 +200,7 @@ template <ServiceType S>
 auto WaitSet<S>::operator=(WaitSet&& rhs) noexcept -> WaitSet& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 

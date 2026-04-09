@@ -18,7 +18,7 @@ SubscriberDetailsView::SubscriberDetailsView(iox2_subscriber_details_ptr handle)
 }
 
 SubscriberDetailsView::SubscriberDetailsView(SubscriberDetailsView&& rhs) noexcept
-    : m_handle { std::move(rhs.m_handle) } {
+    : m_handle { rhs.m_handle } {
     rhs.m_handle = nullptr;
 }
 

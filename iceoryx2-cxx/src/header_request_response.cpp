@@ -21,7 +21,7 @@ auto RequestHeader::operator=(RequestHeader&& rhs) noexcept -> RequestHeader& {
     if (this != &rhs) {
         drop();
 
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 
@@ -57,7 +57,7 @@ auto ResponseHeader::operator=(ResponseHeader&& rhs) noexcept -> ResponseHeader&
     if (this != &rhs) {
         drop();
 
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 

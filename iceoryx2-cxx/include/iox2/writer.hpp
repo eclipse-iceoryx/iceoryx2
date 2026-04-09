@@ -72,7 +72,7 @@ template <ServiceType S, typename KeyType>
 inline auto Writer<S, KeyType>::operator=(Writer&& rhs) noexcept -> Writer& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 

@@ -51,7 +51,7 @@ ServiceName::ServiceName(ServiceName&& rhs) noexcept {
 auto ServiceName::operator=(ServiceName&& rhs) noexcept -> ServiceName& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 

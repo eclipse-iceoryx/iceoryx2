@@ -90,8 +90,8 @@ AttributeSet::AttributeSet(iox2_attribute_set_h handle)
 }
 
 AttributeSet::AttributeSet(AttributeSet&& rhs) noexcept
-    : m_handle { std::move(rhs.m_handle) }
-    , m_view { std::move(rhs.m_view) } {
+    : m_handle { rhs.m_handle }
+    , m_view { rhs.m_view } {
     rhs.m_handle = nullptr;
     rhs.m_view.m_handle = nullptr;
 }
@@ -99,8 +99,8 @@ AttributeSet::AttributeSet(AttributeSet&& rhs) noexcept
 auto AttributeSet::operator=(AttributeSet&& rhs) noexcept -> AttributeSet& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
-        m_view = std::move(rhs.m_view);
+        m_handle = rhs.m_handle;
+        m_view = rhs.m_view;
 
         rhs.m_handle = nullptr;
         rhs.m_view.m_handle = nullptr;

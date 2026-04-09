@@ -748,6 +748,7 @@ TYPED_TEST(ServiceRequestResponseTest, write_payload_works) {
 
     auto request_uninit = sut_client.loan_uninit().value();
     uint64_t request_payload = 3;
+    // NOLINTNEXTLINE(hicpp-move-const-arg,performance-move-const-arg) required for test
     auto request = request_uninit.write_payload(std::move(request_payload));
     EXPECT_THAT(request.payload(), Eq(request_payload));
     auto pending_response = send(std::move(request)).value();
@@ -758,6 +759,7 @@ TYPED_TEST(ServiceRequestResponseTest, write_payload_works) {
 
     uint64_t response_payload = 4;
     auto response_uninit = active_request->loan_uninit().value();
+    // NOLINTNEXTLINE(hicpp-move-const-arg,performance-move-const-arg) required for test
     auto response = response_uninit.write_payload(std::move(response_payload));
     EXPECT_THAT(response.payload(), Eq(response_payload));
     send(std::move(response)).value();

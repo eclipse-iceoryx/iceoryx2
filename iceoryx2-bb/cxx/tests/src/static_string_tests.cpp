@@ -187,6 +187,7 @@ TEST(StaticString, copy_constructor_copies_string_contents) {
 TEST(StaticString, move_constructor_copies_string_contents) {
     constexpr uint64_t const STRING_SIZE = 5;
     auto test_string = *iox2::bb::StaticString<STRING_SIZE>::from_utf8("ABCD");
+    // NOLINTNEXTLINE(hicpp-move-const-arg,performance-move-const-arg) move is required for the test
     iox2::bb::StaticString<STRING_SIZE> const sut { std::move(test_string) };
     ASSERT_EQ(sut.size(), 4);
     EXPECT_STREQ(sut.unchecked_access().c_str(), "ABCD");
@@ -232,6 +233,7 @@ TEST(StaticString, move_assignment_copies_string_contents) {
     auto test_string = *iox2::bb::StaticString<STRING_SIZE>::from_utf8("ABCD");
     auto sut = *iox2::bb::StaticString<STRING_SIZE>::from_utf8("EFGHI");
     EXPECT_STREQ(sut.unchecked_access().c_str(), "EFGHI");
+    // NOLINTNEXTLINE(hicpp-move-const-arg,performance-move-const-arg) move is required for the test
     sut = std::move(test_string);
     ASSERT_EQ(sut.size(), 4);
     ASSERT_EQ(sut.unchecked_access()[4], '\0');
@@ -243,6 +245,7 @@ TEST(StaticString, move_assignment_returns_reference_to_self) {
     constexpr uint64_t const STRING_SIZE = 5;
     auto test_string = *iox2::bb::StaticString<STRING_SIZE>::from_utf8("ABCD");
     auto sut = *iox2::bb::StaticString<STRING_SIZE>::from_utf8("EFGHI");
+    // NOLINTNEXTLINE(hicpp-move-const-arg,performance-move-const-arg) move is required for the test
     ASSERT_EQ(&(sut = std::move(test_string)), &sut);
 }
 
