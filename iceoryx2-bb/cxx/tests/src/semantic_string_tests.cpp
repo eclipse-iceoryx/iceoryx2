@@ -43,7 +43,7 @@ struct TestValues {
     static const std::vector<std::string> ADD_VALID_CHARS_TO_CREATE_INVALID_CONTENT_AT_END;
 };
 
-// NOLINTBEGIN(cert-err58-cpp): Ignore "initialization with static storage duration may throw an exception that cannot be caught" in tests
+// NOLINTBEGIN(cert-err58-cpp,bugprone-throwing-static-initialization): Ignore "initialization with static storage duration may throw an exception that cannot be caught" in tests
 
 ///////////////////
 // START: FileName
@@ -163,7 +163,7 @@ const std::vector<std::string> TestValues<Path>::ADD_VALID_CHARS_TO_CREATE_INVAL
 // END: Path
 ///////////////////
 
-// NOLINTEND(cert-err58-cpp)
+// NOLINTEND(cert-err58-cpp,bugprone-throwing-static-initialization)
 
 template <typename T>
 class SemanticStringFixture : public Test {
