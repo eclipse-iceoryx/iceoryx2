@@ -80,15 +80,16 @@ pub mod details {
             }
 
             let memory = fail!(from self, when allocator
-            .allocate(unsafe {
-                Layout::from_size_align_unchecked(
+                .allocate(unsafe {
+                    Layout::from_size_align_unchecked(
                         core::mem::size_of::<AtomicBool>() * self.capacity,
                         core::mem::align_of::<AtomicBool>())
-            }  ),
-            "Failed to initialize since the allocation of the data memory failed.");
-            unsafe {
-                self.data_ptr.init(memory);
-                for i in 0..self.capacity {
+                }),
+                "Failed to initialize since the allocation of the data memory failed.");
+
+            unsafe { self.data_ptr.init(memory) };
+            for i in 0..self.capacity {
+                unsafe {
                     (self.data_ptr.as_ptr() as *mut AtomicBool)
                         .add(i)
                         .write(AtomicBool::new(false))

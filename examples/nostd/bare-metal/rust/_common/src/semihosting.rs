@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::missing_safety_doc)]
+
 const SYS_WRITE0: usize = 0x04;
 const SYS_EXIT: usize = 0x18;
 
@@ -44,5 +46,7 @@ pub fn exit(code: usize) -> ! {
     unsafe {
         syscall(SYS_EXIT, code);
     }
-    loop {}
+    loop {
+        core::hint::spin_loop();
+    }
 }
