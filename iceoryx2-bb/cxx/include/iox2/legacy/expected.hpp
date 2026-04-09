@@ -16,6 +16,7 @@
 #define IOX2_BB_VOCABULARY_EXPECTED_HPP
 
 #include "iox2/bb/detail/attributes.hpp"
+#include "iox2/bb/detail/source_location.hpp"
 #include "iox2/legacy/detail/expected_helper.hpp"
 
 namespace iox2 {
@@ -240,22 +241,23 @@ class IOX2_NO_DISCARD expected final {
     /// @brief  returns a lvalue reference to the contained error value, if the expected
     ///         does not contain an error the error handler is called
     /// @return lvalue reference to the internally contained error
-    ErrorType& error() & noexcept;
+    ErrorType& error(bb::detail::SourceLocation location = bb::detail::SourceLocation::current()) & noexcept;
 
     /// @brief  returns a const lvalue reference to the contained error value, if the expected
     ///         does not contain an error the error handler is called
     /// @return const lvalue reference to the internally contained error
-    const ErrorType& error() const& noexcept;
+    const ErrorType& error(bb::detail::SourceLocation location = bb::detail::SourceLocation::current()) const& noexcept;
 
     /// @brief  returns a rvalue reference to the contained error value, if the expected
     ///         does not contain an error the error handler is called
     /// @return rvalue reference to the internally contained error
-    ErrorType&& error() && noexcept;
+    ErrorType&& error(bb::detail::SourceLocation location = bb::detail::SourceLocation::current()) && noexcept;
 
     /// @brief  returns a const rvalue reference to the contained error value, if the expected
     ///         does not contain an error the error handler is called
     /// @return const rvalue reference to the internally contained error
-    const ErrorType&& error() const&& noexcept;
+    const ErrorType&&
+    error(bb::detail::SourceLocation location = bb::detail::SourceLocation::current()) const&& noexcept;
 
     /// @brief  returns a lvalue reference to the contained success value, if the expected
     ///         does not contain a success value the error handler is called
@@ -263,7 +265,8 @@ class IOX2_NO_DISCARD expected final {
     /// @return lvalue reference to the internally contained value
     /// @note this only works for non void ValueTypes
     template <typename U = ValueType>
-    enable_if_non_void_t<U>& value() & noexcept;
+    enable_if_non_void_t<U>&
+    value(bb::detail::SourceLocation location = bb::detail::SourceLocation::current()) & noexcept;
 
     /// @brief  returns a const lvalue reference to the contained success value, if the expected
     ///         does not contain a success value the error handler is called
@@ -271,21 +274,24 @@ class IOX2_NO_DISCARD expected final {
     /// @return const lvalue reference to the internally contained value
     /// @note this only works for non void ValueTypes
     template <typename U = ValueType>
-    const enable_if_non_void_t<U>& value() const& noexcept;
+    const enable_if_non_void_t<U>&
+    value(bb::detail::SourceLocation location = bb::detail::SourceLocation::current()) const& noexcept;
 
     /// @brief  returns a rvalue reference to the contained success value, if the expected
     ///         does not contain a success value the error handler is called
     /// @tparam U helper template parameter for SFINEA
     /// @return rvalue reference to the internally contained value
     template <typename U = ValueType>
-    enable_if_non_void_t<U>&& value() && noexcept;
+    enable_if_non_void_t<U>&&
+    value(bb::detail::SourceLocation location = bb::detail::SourceLocation::current()) && noexcept;
 
     /// @brief  returns a const rvalue reference to the contained success value, if the expected
     ///         does not contain a success value the error handler is called
     /// @tparam U helper template parameter for SFINEA
     /// @return const rvalue reference to the internally contained value
     template <typename U = ValueType>
-    const enable_if_non_void_t<U>&& value() const&& noexcept;
+    const enable_if_non_void_t<U>&&
+    value(bb::detail::SourceLocation location = bb::detail::SourceLocation::current()) const&& noexcept;
 
     /// @brief dereferencing operator which returns a reference to the contained
     ///         success value. if the expected contains an error the error handler is called
@@ -359,12 +365,12 @@ class IOX2_NO_DISCARD expected final {
 
   private:
     template <typename U = ValueType>
-    enable_if_non_void_t<U>& value_checked() & noexcept;
+    enable_if_non_void_t<U>& value_checked(bb::detail::SourceLocation location) & noexcept;
     template <typename U = ValueType>
-    const enable_if_non_void_t<U>& value_checked() const& noexcept;
+    const enable_if_non_void_t<U>& value_checked(bb::detail::SourceLocation location) const& noexcept;
 
-    ErrorType& error_checked() & noexcept;
-    const ErrorType& error_checked() const& noexcept;
+    ErrorType& error_checked(bb::detail::SourceLocation location) & noexcept;
+    const ErrorType& error_checked(bb::detail::SourceLocation location) const& noexcept;
 
   private:
     detail::expected_storage<ValueType, ErrorType> m_store;

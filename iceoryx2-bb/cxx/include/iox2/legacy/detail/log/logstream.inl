@@ -82,18 +82,13 @@ inline constexpr LogRaw raw(const void* const data, const uint64_t size) noexcep
     return LogRaw(data, size);
 }
 
-/// @todo iox-#1755 use something like 'source_location'
-// AXIVION Next Construct AutosarC++19_03-A3.9.1 : See at declaration in header
-// NOLINTNEXTLINE(readability-function-size)
-inline LogStream::LogStream(
-    Logger& logger, const char* file, const int line, const char* function, LogLevel logLevel) noexcept
+inline LogStream::LogStream(Logger& logger, const bb::detail::SourceLocation location, const LogLevel logLevel) noexcept
     : m_logger(logger) {
-    m_logger.createLogMessageHeader(file, line, function, logLevel);
+    m_logger.createLogMessageHeader(location, logLevel);
 }
 
-// AXIVION Next Construct AutosarC++19_03-A3.9.1 : See at declaration in header
-inline LogStream::LogStream(const char* file, const int line, const char* function, LogLevel logLevel) noexcept
-    : LogStream(Logger::get(), file, line, function, logLevel) {
+inline LogStream::LogStream(const bb::detail::SourceLocation location, const LogLevel logLevel) noexcept
+    : LogStream(Logger::get(), location, logLevel) {
 }
 
 inline LogStream::~LogStream() noexcept {

@@ -14,8 +14,8 @@
 #ifndef IOX2_BB_REPORTING_ERROR_REPORTING_ERROR_FORWARDING_HPP
 #define IOX2_BB_REPORTING_ERROR_REPORTING_ERROR_FORWARDING_HPP
 
+#include "iox2/bb/detail//source_location.hpp"
 #include "iox2/legacy/error_reporting/error_kind.hpp"
-#include "iox2/legacy/error_reporting/source_location.hpp"
 
 // to establish connection to the custom implementation
 #include "iox2/legacy/error_reporting/custom/error_reporting.hpp"
@@ -34,7 +34,7 @@ namespace er {
 /// @param msg the message to be forwarded
 /// @note required to enforce no return
 template <typename Message>
-[[noreturn]] inline void forwardPanic(const SourceLocation& location, Message&& msg) {
+[[noreturn]] inline void forwardPanic(const bb::detail::SourceLocation& location, Message&& msg) {
     panic(location, std::forward<Message>(msg));
     abort();
 }
@@ -43,7 +43,7 @@ namespace detail {
 // workaround for gcc 8 bug
 // see also https://github.com/eclipse-iceoryx/iceoryx2/issues/855
 template <typename T1, typename T2, typename Message>
-[[noreturn]] constexpr inline void unreachable_wrapped(const SourceLocation& location, Message&& msg) {
+[[noreturn]] constexpr inline void unreachable_wrapped(const bb::detail::SourceLocation& location, Message&& msg) {
     if (std::is_same<T1, T2>::value) {
         forwardPanic(location, std::forward<Message>(msg));
     }
@@ -56,8 +56,10 @@ template <typename T1, typename T2, typename Message>
 /// @param location the location of the error
 /// @param stringifiedCondition the condition as string if a macro with a condition was used; an empty string otherwise
 template <typename Error, typename Kind>
-[[noreturn]] inline void
-forwardFatalError(Error&& error, Kind&& kind, const SourceLocation& location, const char* stringifiedCondition) {
+[[noreturn]] inline void forwardFatalError(Error&& error,
+                                           Kind&& kind,
+                                           const bb::detail::SourceLocation& location,
+                                           const char* stringifiedCondition) {
     using K = typename std::remove_const<typename std::remove_reference<Kind>::type>::type;
     static_assert(IsFatal<K>::value, "Must forward a fatal error!");
 
@@ -72,8 +74,10 @@ forwardFatalError(Error&& error, Kind&& kind, const SourceLocation& location, co
 /// @param location the location of the error
 /// @param stringifiedCondition the condition as string if a macro with a condition was used; an empty string otherwise
 template <typename Error, typename Kind>
-inline void
-forwardNonFatalError(Error&& error, Kind&& kind, const SourceLocation& location, const char* stringifiedCondition) {
+inline void forwardNonFatalError(Error&& error,
+                                 Kind&& kind,
+                                 const bb::detail::SourceLocation& location,
+                                 const char* stringifiedCondition) {
     using K = typename std::remove_const<typename std::remove_reference<Kind>::type>::type;
     static_assert(!IsFatal<K>::value, "Must forward a non-fatal error!");
 
@@ -88,8 +92,11 @@ forwardNonFatalError(Error&& error, Kind&& kind, const SourceLocation& location,
 /// @param msg the message to be forwarded
 template <typename Error, typename Kind, typename Message>
 // NOLINTNEXTLINE(readability-function-size) Not used directly but via a macro which hides the number of parameter away
-[[noreturn]] inline void forwardFatalError(
-    Error&& error, Kind&& kind, const SourceLocation& location, const char* stringifiedCondition, Message&& msg) {
+[[noreturn]] inline void forwardFatalError(Error&& error,
+                                           Kind&& kind,
+                                           const bb::detail::SourceLocation& location,
+                                           const char* stringifiedCondition,
+                                           Message&& msg) {
     using K = typename std::remove_const<typename std::remove_reference<Kind>::type>::type;
     static_assert(IsFatal<K>::value, "Must forward a fatal error!");
 

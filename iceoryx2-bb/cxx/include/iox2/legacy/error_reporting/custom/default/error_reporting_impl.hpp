@@ -14,9 +14,9 @@
 #ifndef IOX2_BB_REPORTING_ERROR_REPORTING_CUSTOM_DEFAULT_ERROR_REPORTING_IMPL_HPP
 #define IOX2_BB_REPORTING_ERROR_REPORTING_CUSTOM_DEFAULT_ERROR_REPORTING_IMPL_HPP
 
+#include "iox2/bb/detail/source_location.hpp"
 #include "iox2/legacy/error_reporting/error_kind.hpp"
 #include "iox2/legacy/error_reporting/error_logging.hpp"
-#include "iox2/legacy/error_reporting/source_location.hpp"
 #include "iox2/legacy/error_reporting/types.hpp"
 #include "iox2/legacy/error_reporting/violation.hpp"
 
@@ -47,7 +47,7 @@ namespace er {
 }
 
 // Custom panic with location
-[[noreturn]] inline void panic(const SourceLocation& location) {
+[[noreturn]] inline void panic(const bb::detail::SourceLocation& location) {
     IOX2_ERROR_INTERNAL_LOG_PANIC(location, "[PANIC]");
     panic();
 }
@@ -57,7 +57,7 @@ namespace er {
 // beyond const char*
 template <class Message>
 // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) false positive, this is used as a universal reference
-[[noreturn]] inline void panic(const SourceLocation& location, Message&& msg) {
+[[noreturn]] inline void panic(const bb::detail::SourceLocation& location, Message&& msg) {
     IOX2_ERROR_INTERNAL_LOG_PANIC(location, "[PANIC] " << msg);
     panic();
 }
@@ -65,7 +65,7 @@ template <class Message>
 namespace detail {
 inline log::LogStream& logStringifiedCondition(log::LogStream& stream, const char* stringifiedCondition) {
     if (stringifiedCondition != nullptr && strnlen(stringifiedCondition, 1) != 0) {
-        stream << "Conditiopn: \"" << stringifiedCondition << "\" ";
+        stream << "Condition: \"" << stringifiedCondition << "\" ";
     }
     return stream;
 }
@@ -73,7 +73,8 @@ inline log::LogStream& logStringifiedCondition(log::LogStream& stream, const cha
 
 // Report any error, general version.
 template <class Kind, class Error>
-inline void report(const SourceLocation& location, Kind, const Error& error, const char* stringifiedCondition) {
+inline void
+report(const bb::detail::SourceLocation& location, Kind, const Error& error, const char* stringifiedCondition) {
     auto code = toCode(error);
     auto module = toModule(error);
     auto moduleName = toModuleName(error);
@@ -95,7 +96,7 @@ inline void report(const SourceLocation& location, Kind, const Error& error, con
 // Here the logging is subtly different and does not easily allow to factor out common parts.
 
 template <class Error>
-inline void report(const SourceLocation& location,
+inline void report(const bb::detail::SourceLocation& location,
                    iox2::legacy::er::FatalKind kind,
                    const Error& error,
                    const char* stringifiedCondition) {
@@ -118,7 +119,7 @@ namespace detail {
 template <class Kind, class Error>
 inline void
 // NOLINTNEXTLINE(readability-function-size) Not used directly but via a macro which hides the number of parameter away
-report(const SourceLocation& location, Kind kind, const Error& error, const char* stringifiedCondition) {
+report(const bb::detail::SourceLocation& location, Kind kind, const Error& error, const char* stringifiedCondition) {
     auto code = toCode(error);
     auto module = toModule(error);
     IOX2_ERROR_INTERNAL_LOG_FATAL(location,
@@ -133,7 +134,11 @@ report(const SourceLocation& location, Kind kind, const Error& error, const char
 template <class Kind, class Error, class Message>
 inline void
 // NOLINTNEXTLINE(readability-function-size) Not used directly but via a macro which hides the number of parameter away
-report(const SourceLocation& location, Kind kind, const Error& error, const char* stringifiedCondition, Message&& msg) {
+report(const bb::detail::SourceLocation& location,
+       Kind kind,
+       const Error& error,
+       const char* stringifiedCondition,
+       Message&& msg) {
     auto code = toCode(error);
     auto module = toModule(error);
     IOX2_ERROR_INTERNAL_LOG_FATAL(location,
@@ -147,7 +152,7 @@ report(const SourceLocation& location, Kind kind, const Error& error, const char
 } // namespace detail
 
 template <class Error>
-inline void report(const SourceLocation& location,
+inline void report(const bb::detail::SourceLocation& location,
                    iox2::legacy::er::AssertViolationKind kind,
                    const Error& error,
                    const char* stringifiedCondition) {
@@ -155,7 +160,7 @@ inline void report(const SourceLocation& location,
 }
 
 template <class Error>
-inline void report(const SourceLocation& location,
+inline void report(const bb::detail::SourceLocation& location,
                    iox2::legacy::er::EnforceViolationKind kind,
                    const Error& error,
                    const char* stringifiedCondition) {
@@ -164,7 +169,7 @@ inline void report(const SourceLocation& location,
 
 template <class Error, class Message>
 // NOLINTNEXTLINE(readability-function-size) Not used directly but via a macro which hides the number of parameter away
-inline void report(const SourceLocation& location,
+inline void report(const bb::detail::SourceLocation& location,
                    iox2::legacy::er::AssertViolationKind kind,
                    const Error& error,
                    const char* stringifiedCondition,
@@ -174,7 +179,7 @@ inline void report(const SourceLocation& location,
 
 template <class Error, class Message>
 // NOLINTNEXTLINE(readability-function-size) Not used directly but via a macro which hides the number of parameter away
-inline void report(const SourceLocation& location,
+inline void report(const bb::detail::SourceLocation& location,
                    iox2::legacy::er::EnforceViolationKind kind,
                    const Error& error,
                    const char* stringifiedCondition,

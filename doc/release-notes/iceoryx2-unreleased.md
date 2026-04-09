@@ -36,6 +36,9 @@
 * Release Python GIL (detach thread from python runtime) in blocking functions
   like `listener.blocking_wait_one()`
   [#1421](https://github.com/eclipse-iceoryx/iceoryx2/issues/1421)
+* Implement C++20 'source_location' based on compiler source location builtins
+  and use it for better `Expected` and `Optional` messages on contract violations
+  [#1496](https://github.com/eclipse-iceoryx/iceoryx2/issues/1496)
 
 ### Bugfixes
 

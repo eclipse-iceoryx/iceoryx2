@@ -15,6 +15,7 @@
 #ifndef IOX2_BB_REPORTING_LOG_BUILDING_BLOCKS_LOGGER_INL
 #define IOX2_BB_REPORTING_LOG_BUILDING_BLOCKS_LOGGER_INL
 
+#include "iox2/bb/detail//source_location.hpp"
 #include "iox2/legacy/log/building_blocks/logger.hpp"
 
 #include <cstdint>
@@ -123,10 +124,10 @@ inline Logger<BaseLogger>& Logger<BaseLogger>::activeLogger(Logger<BaseLogger>* 
 
     if (newLogger) {
         if (logger->m_isFinalized.load(std::memory_order_relaxed)) {
-            logger->createLogMessageHeader(__FILE__, __LINE__, __FUNCTION__, LogLevel::Error);
+            logger->createLogMessageHeader(bb::detail::SourceLocation::current(), LogLevel::Error);
             logger->logString("Trying to replace logger after already initialized!");
             logger->flush();
-            newLogger->createLogMessageHeader(__FILE__, __LINE__, __FUNCTION__, LogLevel::Error);
+            newLogger->createLogMessageHeader(bb::detail::SourceLocation::current(), LogLevel::Error);
             logger->logString("Trying to replace logger after already initialized!");
             newLogger->flush();
             /// @todo iox-#1755 call error handler after the error handler refactoring was merged
@@ -147,7 +148,7 @@ inline void Logger<BaseLogger>::initLoggerInternal(const LogLevel logLevel) noex
         BaseLogger::initLogger(logLevel);
         m_isFinalized.store(true, std::memory_order_relaxed);
     } else {
-        BaseLogger::createLogMessageHeader(__FILE__, __LINE__, __FUNCTION__, LogLevel::Error);
+        BaseLogger::createLogMessageHeader(bb::detail::SourceLocation::current(), LogLevel::Error);
         BaseLogger::logString("Multiple initLogger calls");
         BaseLogger::flush();
         /// @todo iox-#1755 call error handler after the error handler refactoring was merged

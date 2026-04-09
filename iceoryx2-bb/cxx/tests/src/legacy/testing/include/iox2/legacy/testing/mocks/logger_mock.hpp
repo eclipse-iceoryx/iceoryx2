@@ -14,6 +14,7 @@
 #ifndef IOX2_BB_MOCKS_LOGGER_MOCK_HPP
 #define IOX2_BB_MOCKS_LOGGER_MOCK_HPP
 
+#include "iox2/bb/detail/source_location.hpp"
 #include "iox2/legacy/log/logger.hpp"
 #include "iox2/legacy/log/logstream.hpp"
 #include "iox2/legacy/logging.hpp"
@@ -26,7 +27,9 @@ namespace legacy {
 namespace testing {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage) required to be able to easily test custom types
 #define IOX2_LOGSTREAM_MOCK(logger)                                                                                    \
-    iox2::legacy::log::LogStream((logger), "file", 42, "function", iox2::legacy::log::LogLevel::Trace).self()
+    iox2::legacy::log::LogStream(                                                                                      \
+        (logger), iox2::bb::detail::SourceLocation::current(), iox2::legacy::log::LogLevel::Trace)                     \
+        .self()
 
 /// @brief This mock can be used to test implementations of LogStream::operator<< for custom types. It should be used
 /// with the 'IOX2_LOGSTREAM_MOCK' macro
@@ -46,9 +49,7 @@ class Logger_Mock : public log::TestingLoggerBase {
     Logger_Mock() noexcept = default;
 
     struct LogEntry {
-        std::string file;
-        int line { 0 };
-        std::string function;
+        iox2::bb::detail::SourceLocation location { iox2::bb::detail::SourceLocation::current() };
         log::LogLevel logLevel { iox2::legacy::log::LogLevel::Off };
         std::string message;
     };
@@ -57,16 +58,12 @@ class Logger_Mock : public log::TestingLoggerBase {
 
   private:
     /// @brief Overrides the base implementation to store the
-    void createLogMessageHeader(const char* file,
-                                const int line,
-                                const char* function,
+    void createLogMessageHeader(const iox2::bb::detail::SourceLocation location,
                                 log::LogLevel logLevel) noexcept override {
         Base::assumeFlushed();
 
         LogEntry logEntry;
-        logEntry.file = file;
-        logEntry.line = line;
-        logEntry.function = function;
+        logEntry.location = location;
         logEntry.logLevel = logLevel;
 
         logs.emplace_back(std::move(logEntry));

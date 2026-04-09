@@ -12,6 +12,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/bb/detail/source_location.hpp"
 #include "iox2/legacy/logging.hpp"
 
 #include "iox2/legacy/testing/testing_logger.hpp"
@@ -76,7 +77,9 @@ TEST(LoggingLogLevelThreshold_test, LogLevel) {
                                        iox2::legacy::log::LogLevel::Trace }) {
         SCOPED_TRACE(std::string("Logger LogLevel: ") + iox2::legacy::log::asStringLiteral(loggerLogLevel));
 
-        testLogLevelThreshold(loggerLogLevel, [](auto logLevel) { IOX2_LOG_INTERNAL("", 0, "", logLevel, ""); });
+        testLogLevelThreshold(loggerLogLevel, [](auto logLevel) {
+            IOX2_LOG_INTERNAL(iox2::bb::detail::SourceLocation::current(), logLevel, "");
+        });
     }
 }
 

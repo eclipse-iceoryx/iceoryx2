@@ -11,9 +11,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/bb/detail/source_location.hpp"
 #include "iox2/legacy/error_reporting/custom/error_kind.hpp"
 #include "iox2/legacy/error_reporting/error_kind.hpp"
-#include "iox2/legacy/error_reporting/source_location.hpp"
 #include "iox2/legacy/error_reporting/violation.hpp"
 #include "module_a/errors.hpp"
 
@@ -27,6 +27,7 @@
 namespace {
 
 using namespace ::testing;
+using namespace iox2::bb::detail;
 using namespace iox2::legacy::er;
 
 constexpr auto ERROR_CODE { module_a::errors::Code::OutOfBounds };
@@ -64,7 +65,7 @@ TEST_F(ErrorReporting_test, panicWithLocationWorks) {
 #if defined _WIN32
     GTEST_SKIP() << "The 'panicWithLocationWorks' test is disabled on Windows";
 #else
-    auto f = []() { panic(IOX2_CURRENT_SOURCE_LOCATION); };
+    auto f = []() { panic(SourceLocation::current()); };
 
     iox2::legacy::testing::runInTestThread(f);
 
@@ -78,7 +79,7 @@ TEST_F(ErrorReporting_test, panicWithMessageWorks) {
 #if defined _WIN32
     GTEST_SKIP() << "The 'panicWithMessageWorks' test is disabled on Windows";
 #else
-    auto f = []() { panic(IOX2_CURRENT_SOURCE_LOCATION, "message"); };
+    auto f = []() { panic(SourceLocation::current(), "message"); };
 
     iox2::legacy::testing::runInTestThread(f);
 
@@ -91,7 +92,7 @@ TEST_F(ErrorReporting_test, reportNonFatalErrorWorks) {
 
     auto f = []() {
         constexpr const char* STRINGIFIED_CONDITION { "" };
-        report(IOX2_CURRENT_SOURCE_LOCATION, RUNTIME_ERROR, ERROR_MODULE, STRINGIFIED_CONDITION);
+        report(SourceLocation::current(), RUNTIME_ERROR, ERROR_MODULE, STRINGIFIED_CONDITION);
     };
 
     iox2::legacy::testing::runInTestThread(f);
@@ -105,7 +106,7 @@ TEST_F(ErrorReporting_test, reportFatalErrorWorks) {
 
     auto f = []() {
         constexpr const char* STRINGIFIED_CONDITION { "" };
-        report(IOX2_CURRENT_SOURCE_LOCATION, FATAL, ERROR_MODULE, STRINGIFIED_CONDITION);
+        report(SourceLocation::current(), FATAL, ERROR_MODULE, STRINGIFIED_CONDITION);
     };
 
     iox2::legacy::testing::runInTestThread(f);
@@ -122,7 +123,7 @@ TEST_F(ErrorReporting_test, reportAssertViolatonWorks) {
     auto f = []() {
         auto v = Violation::createAssertViolation();
         constexpr const char* STRINGIFIED_CONDITION { "" };
-        report(IOX2_CURRENT_SOURCE_LOCATION, ASSERT_VIOLATION, v, STRINGIFIED_CONDITION);
+        report(SourceLocation::current(), ASSERT_VIOLATION, v, STRINGIFIED_CONDITION);
     };
 
     iox2::legacy::testing::runInTestThread(f);
@@ -137,7 +138,7 @@ TEST_F(ErrorReporting_test, reportAssertViolatonWithMessageWorks) {
     auto f = []() {
         auto v = Violation::createAssertViolation();
         constexpr const char* STRINGIFIED_CONDITION { "" };
-        report(IOX2_CURRENT_SOURCE_LOCATION, ASSERT_VIOLATION, v, STRINGIFIED_CONDITION, "message");
+        report(SourceLocation::current(), ASSERT_VIOLATION, v, STRINGIFIED_CONDITION, "message");
     };
 
     iox2::legacy::testing::runInTestThread(f);
@@ -151,7 +152,7 @@ TEST_F(ErrorReporting_test, reportEnforceViolatonWorks) {
     auto f = []() {
         auto v = Violation::createEnforceViolation();
         constexpr const char* STRINGIFIED_CONDITION { "" };
-        report(IOX2_CURRENT_SOURCE_LOCATION, ENFORCE_VIOLATION, v, STRINGIFIED_CONDITION);
+        report(SourceLocation::current(), ENFORCE_VIOLATION, v, STRINGIFIED_CONDITION);
     };
 
     iox2::legacy::testing::runInTestThread(f);
@@ -166,7 +167,7 @@ TEST_F(ErrorReporting_test, reportEnforceViolatonWithMessageWorks) {
     auto f = []() {
         auto v = Violation::createEnforceViolation();
         constexpr const char* STRINGIFIED_CONDITION { "" };
-        report(IOX2_CURRENT_SOURCE_LOCATION, ENFORCE_VIOLATION, v, STRINGIFIED_CONDITION, "message");
+        report(SourceLocation::current(), ENFORCE_VIOLATION, v, STRINGIFIED_CONDITION, "message");
     };
 
     iox2::legacy::testing::runInTestThread(f);

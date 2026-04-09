@@ -15,8 +15,6 @@
 #ifndef IOX2_BB_REPORTING_LOGGING_HPP
 #define IOX2_BB_REPORTING_LOGGING_HPP
 
-#include "iox2/legacy/detail/platform_correction.hpp"
-
 #include "iox2/legacy/log/logstream.hpp"
 
 namespace iox2 {
@@ -43,9 +41,9 @@ inline auto is_log_level_active(LogLevel log_level) noexcept -> bool {
 // intended lazy evaluation technique with the if statement
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 // NOLINTBEGIN(bugprone-macro-parentheses) 'msg_stream' cannot be wrapped in parentheses due to the '<<' operator
-#define IOX2_LOG_INTERNAL(file, line, function, level, msg_stream)                                                     \
+#define IOX2_LOG_INTERNAL(location, level, msg_stream)                                                                 \
     if (iox2::legacy::log::internal::is_log_level_active(level)) {                                                     \
-        iox2::legacy::log::LogStream(file, line, function, level).self() << msg_stream;                                \
+        iox2::legacy::log::LogStream(location, level).self() << msg_stream;                                            \
     }                                                                                                                  \
     []() -> void { }() // the empty lambda forces a semicolon on the caller side
                        // NOLINTEND(bugprone-macro-parentheses)
@@ -63,8 +61,7 @@ inline auto is_log_level_active(LogLevel log_level) noexcept -> bool {
 // sufficient for debugging
 // NOLINTBEGIN(bugprone-lambda-function-name)
 #define IOX2_LOG(level, msg_stream)                                                                                    \
-    IOX2_LOG_INTERNAL(                                                                                                 \
-        __FILE__, __LINE__, static_cast<const char*>(__FUNCTION__), iox2::legacy::log::LogLevel::level, msg_stream)
+    IOX2_LOG_INTERNAL(iox2::bb::detail::SourceLocation::current(), iox2::legacy::log::LogLevel::level, msg_stream)
 // NOLINTEND(bugprone-lambda-function-name)
 
 // NOLINTEND(cppcoreguidelines-macro-usage)

@@ -16,9 +16,12 @@
 #ifndef IOX2_BB_REPORTING_LOG_LOGSTREAM_HPP
 #define IOX2_BB_REPORTING_LOG_LOGSTREAM_HPP
 
+#include "iox2/bb/detail/source_location.hpp"
+
 #include "iox2/legacy/log/logger.hpp"
 #include "iox2/legacy/type_traits.hpp"
 
+#include <cstdint>
 #include <string>
 
 namespace iox2 {
@@ -188,25 +191,15 @@ class LogStream {
     /// @brief Constructor for a LogStream object with an externally provided logger
     /// @note This is not intended for public use! Use the 'IOX2_LOG' macro instead
     /// @param[in] logger to be used by the LogStream instance
-    /// @param[in] file the file of the log message. Please use the '__FILE__' compiler intrinsic
-    /// @param[in] line the line of the log message. Please use the '__LINE__' compiler intrinsic
-    /// @param[in] function the function of the log message. Please use the '__FUNCTION__' compiler intrinsic
+    /// @param[in] location the source location of the log message
     /// @param[in] logLevel is the log level for the log message
-    // AXIVION Next Construct AutosarC++19_03-A3.9.1 : file, line and function are used in conjunction with '__FILE__',
-    // '__LINE__' and '__FUNCTION__'; these are compiler intrinsic and cannot be changed to fixed width types in a
-    // platform agnostic way
-    LogStream(Logger& logger, const char* file, const int line, const char* function, LogLevel logLevel) noexcept;
+    LogStream(Logger& logger, const bb::detail::SourceLocation location, const LogLevel logLevel) noexcept;
 
     /// @brief Constructor for a LogStream object with the logger from iox2::legacy::log::Logger::get
     /// @note This is not intended for public use! Use the 'IOX2_LOG' macro instead
-    /// @param[in] file the file of the log message. Please use the '__FILE__' compiler intrinsic
-    /// @param[in] line the line of the log message. Please use the '__LINE__' compiler intrinsic
-    /// @param[in] function the function of the log message. Please use the '__FUNCTION__' compiler intrinsic
+    /// @param[in] location the source location of the log message
     /// @param[in] logLevel is the log level for the log message
-    // AXIVION Next Construct AutosarC++19_03-A3.9.1 : file, line and function are used in conjunction with '__FILE__',
-    // '__LINE__' and '__FUNCTION__'; these are compiler intrinsic and cannot be changed to fixed width types in a
-    // platform agnostic way
-    LogStream(const char* file, const int line, const char* function, LogLevel logLevel) noexcept;
+    LogStream(const bb::detail::SourceLocation location, const LogLevel logLevel) noexcept;
 
     virtual ~LogStream() noexcept;
 
