@@ -26,14 +26,14 @@ NodeId::NodeId(const NodeId& rhs) {
 }
 
 NodeId::NodeId(NodeId&& rhs) noexcept
-    : m_handle { std::move(rhs.m_handle) } {
+    : m_handle { rhs.m_handle } {
     rhs.m_handle = nullptr;
 }
 
 auto NodeId::operator=(NodeId&& rhs) noexcept -> NodeId& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 

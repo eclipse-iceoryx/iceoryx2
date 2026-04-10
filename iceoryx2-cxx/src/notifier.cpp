@@ -27,7 +27,7 @@ template <ServiceType S>
 auto Notifier<S>::operator=(Notifier&& rhs) noexcept -> Notifier& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 

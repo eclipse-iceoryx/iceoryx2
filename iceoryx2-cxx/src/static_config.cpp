@@ -23,14 +23,14 @@ StaticConfig::StaticConfig(iox2_static_config_t value)
 }
 
 StaticConfig::StaticConfig(StaticConfig&& rhs) noexcept
-    : m_value { std::move(rhs.m_value) } {
+    : m_value { rhs.m_value } {
     rhs.m_value.attributes = nullptr;
 }
 
 auto StaticConfig::operator=(StaticConfig&& rhs) noexcept -> StaticConfig& {
     if (this != &rhs) {
         drop();
-        m_value = std::move(rhs.m_value);
+        m_value = rhs.m_value;
         rhs.m_value.attributes = nullptr;
     }
     return *this;

@@ -18,6 +18,7 @@
 #include <iostream>
 #include <utility>
 
+namespace {
 struct ComplexData {
     iox2::bb::StaticString<4> name;           // NOLINT
     iox2::bb::StaticVector<uint64_t, 4> data; // NOLINT
@@ -29,6 +30,7 @@ struct ComplexDataType {
     iox2::bb::StaticVector<uint64_t, 4> vec_of_data;                 // NOLINT
     iox2::bb::StaticVector<ComplexData, 404857> vec_of_complex_data; // NOLINT
 };
+} // namespace
 
 constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 

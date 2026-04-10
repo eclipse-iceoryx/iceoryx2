@@ -108,7 +108,7 @@ inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::operator=(PortF
     -> PortFactoryPublishSubscribe& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 
@@ -129,10 +129,13 @@ inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::name() const ->
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::service_hash() const -> ServiceHash {
     iox2::legacy::UninitializedArray<char, IOX2_SERVICE_HASH_LENGTH> buffer;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) index 0 is guaranteed to be valid
     iox2_port_factory_pub_sub_service_hash(&m_handle, &buffer[0], IOX2_SERVICE_HASH_LENGTH);
 
     return ServiceHash(iox2::bb::StaticString<IOX2_SERVICE_HASH_LENGTH>::from_utf8_null_terminated_unchecked_truncated(
-        &buffer[0], IOX2_SERVICE_HASH_LENGTH));
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) index 0 is guaranteed to be valid
+        &buffer[0],
+        IOX2_SERVICE_HASH_LENGTH));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

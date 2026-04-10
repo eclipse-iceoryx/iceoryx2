@@ -831,12 +831,12 @@ TYPED_TEST(ServiceBlackboardTest, communication_with_max_reader_and_writer_handl
     }
 
     for (uint64_t i = 0; i < MAX_HANDLES; ++i) {
-        entry_handles_mut[i].update_with_copy(VALUE);
+        entry_handles_mut.at(i).update_with_copy(VALUE);
         for (uint64_t j = 0; j < i + 1; ++j) {
-            ASSERT_THAT(*entry_handles[j].get(), Eq(VALUE));
+            ASSERT_THAT(*entry_handles.at(j).get(), Eq(VALUE));
         }
         for (uint64_t j = i + 1; j < MAX_HANDLES; ++j) {
-            ASSERT_THAT(*entry_handles[j].get(), Eq(j));
+            ASSERT_THAT(*entry_handles.at(j).get(), Eq(j));
         }
     }
 }
@@ -850,6 +850,7 @@ TYPED_TEST(ServiceBlackboardTest, write_and_read_different_value_types_works) {
 
     struct Groovy {
         Groovy() = default;
+        // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
         Groovy(bool a, uint32_t b, int64_t c)
             : m_a { a }
             , m_b { b }
@@ -1473,6 +1474,8 @@ TYPED_TEST(ServiceBlackboardTest, create_with_attributes_sets_attributes) {
     auto attributes_create = service_create.attributes();
     auto attributes_open = service_open.attributes();
 
+    // NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) indices are checked
+
     ASSERT_THAT(attributes_create.number_of_attributes(), Eq(1));
     ASSERT_THAT(attributes_create[0].key(), Eq(key));
     ASSERT_THAT(attributes_create[0].value(), Eq(value));
@@ -1480,6 +1483,8 @@ TYPED_TEST(ServiceBlackboardTest, create_with_attributes_sets_attributes) {
     ASSERT_THAT(attributes_open.number_of_attributes(), Eq(1));
     ASSERT_THAT(attributes_open[0].key(), Eq(key));
     ASSERT_THAT(attributes_open[0].value(), Eq(value));
+
+    // NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 }
 
 TYPED_TEST(ServiceBlackboardTest, open_fails_when_attributes_are_incompatible) {
@@ -1618,11 +1623,11 @@ TYPED_TEST(ServiceBlackboardTest, list_keys_works) {
     std::vector<uint64_t> keys { 0, 1, 2, 3, 4 };
     auto service = node.service_builder(service_name)
                        .template blackboard_creator<uint64_t>()
-                       .template add<uint64_t>(keys[0], 0)
-                       .template add<uint64_t>(keys[1], 0)
-                       .template add<uint64_t>(keys[2], 0)
-                       .template add<uint64_t>(keys[3], 0)
-                       .template add<uint64_t>(keys[4], 0)
+                       .template add<uint64_t>(keys.at(0), 0)
+                       .template add<uint64_t>(keys.at(1), 0)
+                       .template add<uint64_t>(keys.at(2), 0)
+                       .template add<uint64_t>(keys.at(3), 0)
+                       .template add<uint64_t>(keys.at(4), 0)
                        .create()
                        .value();
 
@@ -1643,13 +1648,13 @@ TYPED_TEST(ServiceBlackboardTest, list_keys_works) {
         return CallbackProgression::Stop;
     });
     ASSERT_EQ(listed_keys.size(), 1);
-    ASSERT_TRUE(std::find(keys.begin(), keys.end(), listed_keys[0]) != keys.end());
+    ASSERT_TRUE(std::find(keys.begin(), keys.end(), listed_keys.at(0)) != keys.end());
 }
 
 constexpr uint64_t const STRING_CAPACITY = 25;
 struct Foo {
     Foo() = default;
-    // NOLINTNEXTLINE(readability-identifier-length), come on, its a test
+    // NOLINTNEXTLINE(readability-identifier-length, bugprone-easily-swappable-parameters), come on, its a test
     Foo(uint32_t a, int16_t b, uint8_t c, const bb::StaticString<STRING_CAPACITY>& d)
         : m_a { a }
         , m_b { b }
@@ -1696,7 +1701,7 @@ TYPED_TEST(ServiceBlackboardTest, simple_communication_with_key_struct_works) {
     ASSERT_THAT(*entry_handle_1.get(), Eq(-3));
     ASSERT_THAT(*entry_handle_2.get(), Eq(3));
 
-    entry_handle_mut_1.update_with_copy((VALUE_1));
+    entry_handle_mut_1.update_with_copy(VALUE_1);
     ASSERT_THAT(*entry_handle_1.get(), Eq(VALUE_1));
     ASSERT_THAT(*entry_handle_2.get(), Eq(3));
 
@@ -1731,8 +1736,8 @@ TYPED_TEST(ServiceBlackboardTest, list_keys_with_key_struct_works) {
                             Foo(2, -3, 0, bb::StaticString<STRING_CAPACITY>::from_utf8("hatschuu").value()) };
     auto service = node.service_builder(service_name)
                        .template blackboard_creator<Foo>()
-                       .template add<int32_t>(keys[0], -3)
-                       .template add<uint32_t>(keys[1], 3)
+                       .template add<int32_t>(keys.at(0), -3)
+                       .template add<uint32_t>(keys.at(1), 3)
                        .create()
                        .value();
 
@@ -1753,7 +1758,7 @@ TYPED_TEST(ServiceBlackboardTest, list_keys_with_key_struct_works) {
         return CallbackProgression::Stop;
     });
     ASSERT_EQ(listed_keys.size(), 1);
-    ASSERT_TRUE(std::find(keys.begin(), keys.end(), listed_keys[0]) != keys.end());
+    ASSERT_TRUE(std::find(keys.begin(), keys.end(), listed_keys.at(0)) != keys.end());
 }
 
 TYPED_TEST(ServiceBlackboardTest, new_value_can_be_written_using_value_mut) {

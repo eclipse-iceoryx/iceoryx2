@@ -21,6 +21,8 @@
 namespace {
 using namespace iox2;
 
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) fine to use in tests
+
 TEST(AttributeVerifier, require_is_listed_in_attributes) {
     auto key = *Attribute::Key::from_utf8("some_key");
     auto value = *Attribute::Value::from_utf8("oh my god, its a value");
@@ -194,4 +196,7 @@ TEST(AttributeSet, to_owned_works) {
     ASSERT_THAT(attributes_owned[0].value(), Eq(value_1));
     ASSERT_THAT(attributes_owned[1].value(), Eq(value_2));
 }
+
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
+
 } // namespace

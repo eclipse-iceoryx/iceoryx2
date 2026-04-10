@@ -20,7 +20,7 @@ UniquePublisherId::UniquePublisherId(UniquePublisherId&& rhs) noexcept {
 auto UniquePublisherId::operator=(UniquePublisherId&& rhs) noexcept -> UniquePublisherId& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 
@@ -66,7 +66,7 @@ UniqueSubscriberId::UniqueSubscriberId(UniqueSubscriberId&& rhs) noexcept {
 auto UniqueSubscriberId::operator=(UniqueSubscriberId&& rhs) noexcept -> UniqueSubscriberId& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 
@@ -112,7 +112,7 @@ UniqueNotifierId::UniqueNotifierId(UniqueNotifierId&& rhs) noexcept {
 auto UniqueNotifierId::operator=(UniqueNotifierId&& rhs) noexcept -> UniqueNotifierId& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 
@@ -158,7 +158,7 @@ UniqueListenerId::UniqueListenerId(UniqueListenerId&& rhs) noexcept {
 auto UniqueListenerId::operator=(UniqueListenerId&& rhs) noexcept -> UniqueListenerId& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 
@@ -204,7 +204,7 @@ UniqueClientId::UniqueClientId(UniqueClientId&& rhs) noexcept {
 auto UniqueClientId::operator=(UniqueClientId&& rhs) noexcept -> UniqueClientId& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 
@@ -250,7 +250,7 @@ UniqueServerId::UniqueServerId(UniqueServerId&& rhs) noexcept {
 auto UniqueServerId::operator=(UniqueServerId&& rhs) noexcept -> UniqueServerId& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 
@@ -296,7 +296,7 @@ UniqueReaderId::UniqueReaderId(UniqueReaderId&& rhs) noexcept {
 auto UniqueReaderId::operator=(UniqueReaderId&& rhs) noexcept -> UniqueReaderId& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 
@@ -342,7 +342,7 @@ UniqueWriterId::UniqueWriterId(UniqueWriterId&& rhs) noexcept {
 auto UniqueWriterId::operator=(UniqueWriterId&& rhs) noexcept -> UniqueWriterId& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 

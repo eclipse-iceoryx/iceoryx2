@@ -18,7 +18,7 @@ ClientDetailsView::ClientDetailsView(iox2_client_details_ptr handle)
 }
 
 ClientDetailsView::ClientDetailsView(ClientDetailsView&& rhs) noexcept
-    : m_handle { std::move(rhs.m_handle) } {
+    : m_handle { rhs.m_handle } {
     rhs.m_handle = nullptr;
 }
 

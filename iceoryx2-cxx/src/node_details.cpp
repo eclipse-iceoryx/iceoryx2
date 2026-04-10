@@ -14,7 +14,7 @@
 
 namespace iox2 {
 NodeDetails::NodeDetails(iox2::bb::FileName executable, NodeName name, Config config)
-    : m_executable { std::move(executable) }
+    : m_executable { executable }
     , m_node_name { std::move(name) }
     , m_config { std::move(config) } {
 }

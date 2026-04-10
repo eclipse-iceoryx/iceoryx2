@@ -39,6 +39,8 @@ static_assert(std::is_standard_layout<iox2::bb::StaticString<G_ARBITRARY_CAPACIT
 static_assert(iox2::bb::StaticString<G_ARBITRARY_CAPACITY>::capacity() == G_ARBITRARY_CAPACITY,
               "Capacity must be determined by template argument");
 
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) fine to use in tests
+
 TEST(StaticString, default_constructor_initializes_to_empty) {
     constexpr uint64_t const STRING_SIZE = 5;
     iox2::bb::StaticString<STRING_SIZE> const sut;
@@ -109,10 +111,12 @@ TEST(StaticString, from_utf8_works_up_to_capacity) {
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) capacity has no significance for this test
 template <typename T, typename U = decltype(iox2::bb::StaticString<99>::from_utf8(std::declval<T&&>()))>
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) not relevant for the test
 constexpr auto can_call_from_utf8_with(T&& /* unused */) -> std::true_type {
     return {};
 }
 template <typename T, typename = std::enable_if_t<!std::is_array<std::remove_reference_t<T>>::value, bool>>
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) not relevant for the test
 constexpr auto can_call_from_utf8_with(T&& /* unused */) -> std::false_type {
     return {};
 }
@@ -187,6 +191,7 @@ TEST(StaticString, copy_constructor_copies_string_contents) {
 TEST(StaticString, move_constructor_copies_string_contents) {
     constexpr uint64_t const STRING_SIZE = 5;
     auto test_string = *iox2::bb::StaticString<STRING_SIZE>::from_utf8("ABCD");
+    // NOLINTNEXTLINE(hicpp-move-const-arg,performance-move-const-arg) move is required for the test
     iox2::bb::StaticString<STRING_SIZE> const sut { std::move(test_string) };
     ASSERT_EQ(sut.size(), 4);
     EXPECT_STREQ(sut.unchecked_access().c_str(), "ABCD");
@@ -211,6 +216,7 @@ TEST(StaticString, copy_assignment_does_not_change_value_on_self_assignment) {
     constexpr uint64_t const STRING_SIZE = 5;
     auto sut = *iox2::bb::StaticString<STRING_SIZE>::from_utf8("ABCD");
     auto* sut_again_but_we_confuse_the_compiler = &sut;
+    // NOLINTNEXTLINE(bugprone-multi-level-implicit-pointer-conversion) intended for the test
     iox2::bb::testing::opaque_use(static_cast<void*>(&sut_again_but_we_confuse_the_compiler));
     ASSERT_EQ(sut.size(), 4);
     ASSERT_STREQ(sut.unchecked_access().c_str(), "ABCD");
@@ -232,6 +238,7 @@ TEST(StaticString, move_assignment_copies_string_contents) {
     auto test_string = *iox2::bb::StaticString<STRING_SIZE>::from_utf8("ABCD");
     auto sut = *iox2::bb::StaticString<STRING_SIZE>::from_utf8("EFGHI");
     EXPECT_STREQ(sut.unchecked_access().c_str(), "EFGHI");
+    // NOLINTNEXTLINE(hicpp-move-const-arg,performance-move-const-arg) move is required for the test
     sut = std::move(test_string);
     ASSERT_EQ(sut.size(), 4);
     ASSERT_EQ(sut.unchecked_access()[4], '\0');
@@ -243,6 +250,7 @@ TEST(StaticString, move_assignment_returns_reference_to_self) {
     constexpr uint64_t const STRING_SIZE = 5;
     auto test_string = *iox2::bb::StaticString<STRING_SIZE>::from_utf8("ABCD");
     auto sut = *iox2::bb::StaticString<STRING_SIZE>::from_utf8("EFGHI");
+    // NOLINTNEXTLINE(hicpp-move-const-arg,performance-move-const-arg) move is required for the test
     ASSERT_EQ(&(sut = std::move(test_string)), &sut);
 }
 
@@ -259,6 +267,7 @@ TEST(StaticString, construction_from_smaller_capacity_copies_string_contents) {
 template <uint64_t TargetCapacity,
           typename T,
           typename U = decltype(iox2::bb::StaticString<TargetCapacity>(std::declval<T&&>()))>
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) not relevant for the test
 constexpr auto can_construct_from(T&& /* unused */) -> std::true_type {
     return {};
 }
@@ -266,6 +275,7 @@ constexpr auto can_construct_from(T&& /* unused */) -> std::true_type {
 template <uint64_t TargetCapacity,
           typename T,
           typename = std::enable_if_t<(std::remove_reference_t<T>::capacity() > TargetCapacity), bool>>
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) not relevant for the test
 constexpr auto can_construct_from(T&& /* unused */) -> std::false_type {
     return {};
 }
@@ -303,6 +313,7 @@ TEST(StaticString, assignment_from_smaller_capacity_returns_reference_to_self) {
 template <uint64_t TargetCapacity,
           typename T,
           typename U = decltype(std::declval<iox2::bb::StaticString<TargetCapacity>>() = std::declval<T&&>())>
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) not relevant for the test
 constexpr auto can_assign_from(T&& /* unused */) -> std::true_type {
     return {};
 }
@@ -310,6 +321,7 @@ constexpr auto can_assign_from(T&& /* unused */) -> std::true_type {
 template <uint64_t TargetCapacity,
           typename T,
           typename = std::enable_if_t<(std::remove_reference_t<T>::capacity() > TargetCapacity), bool>>
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) not relevant for the test
 constexpr auto can_assign_from(T&& /* unused */) -> std::false_type {
     return {};
 }
@@ -1104,4 +1116,7 @@ TEST(StaticString,
     EXPECT_STREQ(sut.unchecked_access().c_str(), "He");
     ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
+
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
+
 } // namespace

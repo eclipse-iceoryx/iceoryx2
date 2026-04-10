@@ -73,7 +73,7 @@ template <ServiceType S, typename KeyType, typename ValueType>
 inline auto EntryHandleMut<S, KeyType, ValueType>::operator=(EntryHandleMut&& rhs) noexcept -> EntryHandleMut& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 

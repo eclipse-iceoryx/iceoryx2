@@ -147,12 +147,6 @@ auto free_function_with_copyable_arg(const Arg& arg) -> int32_t {
 
 class StaticFunctionFixture : public Test {
   public:
-    void SetUp() override {
-    }
-
-    void TearDown() override {
-    }
-
     static auto static_function(int32_t num) -> int32_t {
         return num + 1;
     }

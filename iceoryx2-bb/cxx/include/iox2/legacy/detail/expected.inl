@@ -16,6 +16,7 @@
 #define IOX2_BB_VOCABULARY_EXPECTED_INL
 
 #include "iox2/bb/detail/assertions.hpp"
+// NOLINTNEXTLINE(misc-header-include-cycle) false positive; cycle prevented by include guards
 #include "iox2/legacy/expected.hpp"
 
 namespace iox2 {

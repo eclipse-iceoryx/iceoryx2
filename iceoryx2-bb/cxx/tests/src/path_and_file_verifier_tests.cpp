@@ -100,8 +100,8 @@ TEST(PathAndFileVerifier, is_valid_file_name__valid_letter_combinations_are_vali
             const uint32_t index = static_cast<uint32_t>(i) % COMBINATION_CAPACITY;
 
             // index is always in the range of [0, COMBINATION_CAPACITY] since we calculate % COMBINATION_CAPACITY
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index,readability-identifier-length)
-            auto& s = combinations[index];
+            // NOLINTNEXTLINE(readability-identifier-length)
+            auto& s = combinations.at(index);
             s.append(1, static_cast<char>(i));
 
             EXPECT_TRUE(
@@ -266,16 +266,16 @@ TEST(
         // test
         std::string invalid_character_front;
         invalid_character_front.resize(1);
-        invalid_character_front[0] = static_cast<char>(i);
+        invalid_character_front.at(0) = static_cast<char>(i);
         invalid_character_front += valid_path1 + valid_path2;
 
         std::string invalid_character_middle = valid_path1;
         invalid_character_middle.resize(invalid_character_middle.size() + 1);
-        invalid_character_middle[invalid_character_middle.size() - 1] = static_cast<char>(i);
+        invalid_character_middle.at(invalid_character_middle.size() - 1) = static_cast<char>(i);
 
         std::string invalid_character_end = valid_path1 + valid_path2;
         invalid_character_end.resize(invalid_character_end.size() + 1);
-        invalid_character_end[invalid_character_end.size() - 1] = static_cast<char>(i);
+        invalid_character_end.at(invalid_character_end.size() - 1) = static_cast<char>(i);
 
         const auto invalid_character_front_test =
             *StaticString<FILE_PATH_LENGTH>::from_utf8_null_terminated_unchecked(invalid_character_front.c_str());
@@ -438,6 +438,7 @@ TEST(PathAndFileVerifier,
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
     for (const auto separator : platform::IOX2_PATH_SEPARATORS) {
         auto sut = *StaticString<FILE_PATH_LENGTH>::from_utf8(" ");
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) index 0 is guaranteed to be valid
         sut.unchecked_access()[0] = separator;
         EXPECT_TRUE(does_end_with_path_separator(sut));
     }

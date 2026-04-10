@@ -50,12 +50,19 @@ auto AttributeSetView::key_value(const Attribute::Key& key, const uint64_t idx) 
     iox2::legacy::UninitializedArray<char, Attribute::Value::capacity()> buffer;
     bool has_value = false;
     iox2_attribute_set_key_value(
-        m_handle, key.unchecked_access().c_str(), idx, &buffer[0], Attribute::Value::capacity(), &has_value);
+        m_handle,
+        key.unchecked_access().c_str(),
+        idx,
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) index 0 is guaranteed to be valid
+        &buffer[0],
+        Attribute::Value::capacity(),
+        &has_value);
 
     if (!has_value) {
         return bb::NULLOPT;
     }
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) index 0 is guaranteed to be valid
     auto value = Attribute::Value::from_utf8_null_terminated_unchecked(&buffer[0]);
     if (!value.has_value()) {
         return bb::NULLOPT;
@@ -90,8 +97,8 @@ AttributeSet::AttributeSet(iox2_attribute_set_h handle)
 }
 
 AttributeSet::AttributeSet(AttributeSet&& rhs) noexcept
-    : m_handle { std::move(rhs.m_handle) }
-    , m_view { std::move(rhs.m_view) } {
+    : m_handle { rhs.m_handle }
+    , m_view { rhs.m_view } {
     rhs.m_handle = nullptr;
     rhs.m_view.m_handle = nullptr;
 }
@@ -99,8 +106,8 @@ AttributeSet::AttributeSet(AttributeSet&& rhs) noexcept
 auto AttributeSet::operator=(AttributeSet&& rhs) noexcept -> AttributeSet& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
-        m_view = std::move(rhs.m_view);
+        m_handle = rhs.m_handle;
+        m_view = rhs.m_view;
 
         rhs.m_handle = nullptr;
         rhs.m_view.m_handle = nullptr;
@@ -127,6 +134,7 @@ auto AttributeSet::number_of_attributes() const -> uint64_t {
 }
 
 auto AttributeSet::operator[](const uint64_t index) const -> AttributeView {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) required to implement 'operator[]'
     return m_view[index];
 }
 
@@ -151,6 +159,7 @@ void AttributeSet::iter_key_values(
 auto operator<<(std::ostream& stream, const iox2::AttributeSetView& value) -> std::ostream& {
     stream << "AttributeSetView { ";
     for (uint64_t idx = 0; idx < value.number_of_attributes(); ++idx) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) index is checked in for loop
         auto attribute = value[idx];
         stream << attribute;
     }
@@ -160,6 +169,7 @@ auto operator<<(std::ostream& stream, const iox2::AttributeSetView& value) -> st
 auto operator<<(std::ostream& stream, const iox2::AttributeSet& value) -> std::ostream& {
     stream << "AttributeSet { ";
     for (uint64_t idx = 0; idx < value.number_of_attributes(); ++idx) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) index is checked in for loop
         auto attribute = value[idx];
         stream << attribute;
     }

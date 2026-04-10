@@ -99,7 +99,7 @@ void drop_res(struct res* const value) { // NOLINT
     }
 }
 
-void* background_thread(void* unused) {
+static void* background_thread(void* unused) {
     (void) unused;
 
     // Another node is created inside this thread to communicate with the main thread

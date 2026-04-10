@@ -33,6 +33,8 @@ TEST(SliceTest, const_correctness_is_maintained) {
 
     auto elements = std::array<DummyData, SLICE_MAX_LENGTH> {};
 
+    // NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) fine in the tests
+
     auto mutable_slice = MutableSlice<DummyData>(elements.data(), SLICE_MAX_LENGTH);
     ASSERT_FALSE(std::is_const<std::remove_pointer_t<decltype(mutable_slice.begin())>>::value);
     ASSERT_FALSE(std::is_const<std::remove_pointer_t<decltype(mutable_slice.end())>>::value);
@@ -57,6 +59,8 @@ TEST(SliceTest, const_correctness_is_maintained) {
     ASSERT_TRUE(std::is_const<std::remove_pointer_t<decltype(const_immutable_slice.end())>>::value);
     ASSERT_TRUE(std::is_const<std::remove_pointer_t<decltype(const_immutable_slice.data())>>::value);
     ASSERT_TRUE(std::is_const<std::remove_reference_t<decltype(const_immutable_slice[0])>>::value);
+
+    // NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 }
 
 TEST(SliceTest, can_iterate_mutable_slice) {

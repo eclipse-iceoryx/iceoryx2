@@ -310,8 +310,8 @@ TYPED_TEST(WaitSetTest, triggering_everything_works) {
 
     auto result = sut.wait_and_process_once([&](auto attachment_id) -> CallbackProgression {
         for (uint64_t idx = 0; idx < guards.size(); ++idx) {
-            if (attachment_id.has_event_from(guards[idx])) {
-                was_triggered[idx] = true;
+            if (attachment_id.has_event_from(guards.at(idx))) {
+                was_triggered.at(idx) = true;
                 break;
             }
         }

@@ -81,6 +81,7 @@ TEST(Log, custom_logger_works) {
 
     ASSERT_THAT(log_buffer.size(), Eq(6));
 
+    // NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) indices are guaranteed to be valid
     ASSERT_TRUE(log_buffer.unchecked_access()[0].is_equal(LogLevel::Trace, "hello", "world"));
     ASSERT_TRUE(log_buffer.unchecked_access()[1].is_equal(LogLevel::Debug, "goodbye", "hypnotoad"));
     ASSERT_TRUE(log_buffer.unchecked_access()[2].is_equal(LogLevel::Info, "Who is looking for freedom?", "The Hoff!"));
@@ -88,6 +89,7 @@ TEST(Log, custom_logger_works) {
     ASSERT_TRUE(log_buffer.unchecked_access()[4].is_equal(
         LogLevel::Error, "Bluemchen should record a single with", "The almighty Hypnotoad"));
     ASSERT_TRUE(log_buffer.unchecked_access()[5].is_equal(LogLevel::Fatal, "It is the end", "my beloved toad."));
+    // NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 }
 
 TEST(Log, can_set_and_get_log_level) {

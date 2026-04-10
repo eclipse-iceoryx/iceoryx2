@@ -19,7 +19,7 @@ AttributeSpecifier::AttributeSpecifier() {
 }
 
 AttributeSpecifier::AttributeSpecifier(AttributeSpecifier&& rhs) noexcept
-    : m_handle { std::move(rhs.m_handle) } {
+    : m_handle { rhs.m_handle } {
     rhs.m_handle = nullptr;
 }
 
@@ -30,7 +30,7 @@ AttributeSpecifier::~AttributeSpecifier() {
 auto AttributeSpecifier::operator=(AttributeSpecifier&& rhs) noexcept -> AttributeSpecifier& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 

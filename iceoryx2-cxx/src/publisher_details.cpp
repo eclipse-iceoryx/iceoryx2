@@ -18,7 +18,7 @@ PublisherDetailsView::PublisherDetailsView(iox2_publisher_details_ptr handle)
 }
 
 PublisherDetailsView::PublisherDetailsView(PublisherDetailsView&& rhs) noexcept
-    : m_handle { std::move(rhs.m_handle) } {
+    : m_handle { rhs.m_handle } {
     rhs.m_handle = nullptr;
 }
 

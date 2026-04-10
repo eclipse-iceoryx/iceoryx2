@@ -16,6 +16,7 @@
 #ifndef IOX2_BB_REPORTING_LOG_LOGSTREAM_INL
 #define IOX2_BB_REPORTING_LOG_LOGSTREAM_INL
 
+// NOLINTNEXTLINE(misc-header-include-cycle) false positive; cycle prevented by include guards
 #include "iox2/legacy/log/logstream.hpp"
 
 #include <string>

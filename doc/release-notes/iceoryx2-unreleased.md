@@ -113,6 +113,8 @@
 -->
 * Remove clippy workaround
   [#223](https://github.com/eclipse-iceoryx/iceoryx2/issues/223)
+* Remove rule suppression in clang-tidy
+  [#280](https://github.com/eclipse-iceoryx/iceoryx2/issues/280)
 * Remove support for Bazel Workspaces
   [#1263](https://github.com/eclipse-iceoryx/iceoryx2/issues/1263)
 * Adjust test names to naming convention

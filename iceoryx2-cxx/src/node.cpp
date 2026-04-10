@@ -23,7 +23,7 @@ Node<T>::Node(iox2_node_h handle)
 
 template <ServiceType T>
 Node<T>::Node(Node&& rhs) noexcept
-    : m_handle { std::move(rhs.m_handle) } {
+    : m_handle { rhs.m_handle } {
     rhs.m_handle = nullptr;
 }
 
@@ -31,7 +31,7 @@ template <ServiceType T>
 auto Node<T>::operator=(Node&& rhs) noexcept -> Node& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 

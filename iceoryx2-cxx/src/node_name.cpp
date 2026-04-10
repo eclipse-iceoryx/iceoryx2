@@ -54,7 +54,7 @@ NodeName::NodeName(NodeName&& rhs) noexcept {
 auto NodeName::operator=(NodeName&& rhs) noexcept -> NodeName& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+        m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
     }
 

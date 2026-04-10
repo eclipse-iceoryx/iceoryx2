@@ -30,6 +30,7 @@ struct BlackboardKey {
 bool key_cmp(const void* lhs, const void* rhs) {
     const struct BlackboardKey LHS = *((const struct BlackboardKey*) lhs);
     const struct BlackboardKey RHS = *((const struct BlackboardKey*) rhs);
+    // NOLINTNEXTLINE(readability-implicit-bool-conversion) false positive
     return LHS.x == RHS.x && LHS.y == RHS.y && LHS.z == RHS.z;
 }
 
