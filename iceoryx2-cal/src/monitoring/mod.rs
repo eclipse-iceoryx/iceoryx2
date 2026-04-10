@@ -135,6 +135,7 @@ impl core::error::Error for MonitoringCreateCleanerError {}
 pub enum MonitoringCreateMonitorError {
     InsufficientPermissions,
     Interrupt,
+    ConceptNameNotSupportedOnPlatform,
     InternalError,
 }
 

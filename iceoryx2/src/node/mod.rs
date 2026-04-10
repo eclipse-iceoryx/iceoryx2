@@ -1090,7 +1090,8 @@ impl<Service: service::Service> Node<Service> {
                 fail!(from origin, with NodeListFailure::Interrupt,
                         "{} since an interrupt was received while acquiring the node state.", msg);
             }
-            MonitoringCreateMonitorError::InternalError => {
+            MonitoringCreateMonitorError::InternalError
+            | MonitoringCreateMonitorError::ConceptNameNotSupportedOnPlatform => {
                 fail!(from origin, with NodeListFailure::InternalError,
                         "{} since an internal failure occurred while acquiring the node state.", msg);
             }

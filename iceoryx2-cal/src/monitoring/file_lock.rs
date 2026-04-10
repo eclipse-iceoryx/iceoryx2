@@ -283,17 +283,9 @@ impl MonitoringBuilder<FileLockMonitoring> for Builder {
                 monitor,
                 name: self.name,
             }),
-            Err(ProcessMonitorCreateError::InsufficientPermissions) => {
-                fail!(from self, with MonitoringCreateMonitorError::InsufficientPermissions,
-                    "{} due to insufficient permissions.", msg);
-            }
-            Err(ProcessMonitorCreateError::Interrupt) => {
-                fail!(from self, with MonitoringCreateMonitorError::Interrupt,
-                    "{} since an interrupt signal was received.", msg);
-            }
-            Err(v) => {
-                fail!(from self, with MonitoringCreateMonitorError::InternalError,
-                    "{} due to an internal failure ({:?}).", msg, v);
+            Err(ProcessMonitorCreateError::InvalidCleanerPathName) => {
+                fail!(from self, with MonitoringCreateMonitorError::ConceptNameNotSupportedOnPlatform,
+                    "{} since the concept name \"{}\" results in a concept name that is not supported on this platform.", msg, self.name);
             }
         }
     }

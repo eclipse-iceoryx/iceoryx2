@@ -214,10 +214,16 @@ enum_gen! {
     /// Defines all errors that can occur when a new [`ProcessMonitor`] is created.
     ProcessMonitorCreateError
   entry:
+    InvalidCleanerPathName
+}
+
+enum_gen! {
+    /// Defines all errors that can occur when a new [`ProcessMonitor`] opens a management file.
+    ProcessMonitorOpenError
+  entry:
     InsufficientPermissions,
     Interrupt,
     IsDirectory,
-    InvalidCleanerPathName,
     UnknownError
 }
 
@@ -232,7 +238,7 @@ enum_gen! {
     UnknownError(i32)
 
   mapping:
-    ProcessMonitorCreateError,
+    ProcessMonitorOpenError,
     FileStatError
 }
 
@@ -830,7 +836,7 @@ impl ProcessMonitor {
             Ok(None) => {
                 return Ok(ProcessState::DoesNotExist);
             }
-            Err(ProcessMonitorCreateError::InsufficientPermissions) => {
+            Err(ProcessMonitorOpenError::InsufficientPermissions) => {
                 // if the process state is initialized the permissions are read only and the file cannot be opened
                 // with `AccessMode::Write`
             }
@@ -910,7 +916,7 @@ impl ProcessMonitor {
     fn open_file(
         path: &FilePath,
         access_mode: AccessMode,
-    ) -> Result<Option<File>, ProcessMonitorCreateError> {
+    ) -> Result<Option<File>, ProcessMonitorOpenError> {
         let origin = "ProcessMonitor::new()";
         let msg = format!("Unable to open ProcessMonitor state file \"{path}\"");
 
@@ -918,19 +924,19 @@ impl ProcessMonitor {
             Ok(f) => Ok(Some(f)),
             Err(FileOpenError::FileDoesNotExist) => Ok(None),
             Err(FileOpenError::IsDirectory) => {
-                fail!(from origin, with ProcessMonitorCreateError::IsDirectory,
+                fail!(from origin, with ProcessMonitorOpenError::IsDirectory,
                     "{} since the path is a directory.", msg);
             }
             Err(FileOpenError::InsufficientPermissions) => {
-                fail!(from origin, with ProcessMonitorCreateError::InsufficientPermissions,
+                fail!(from origin, with ProcessMonitorOpenError::InsufficientPermissions,
                     "{} due to insufficient permissions.", msg);
             }
             Err(FileOpenError::Interrupt) => {
-                fail!(from origin, with ProcessMonitorCreateError::Interrupt,
+                fail!(from origin, with ProcessMonitorOpenError::Interrupt,
                     "{} since an interrupt signal was received.", msg);
             }
             Err(v) => {
-                fail!(from origin, with ProcessMonitorCreateError::UnknownError,
+                fail!(from origin, with ProcessMonitorOpenError::UnknownError,
                     "{} since an unknown failure occurred ({:?}).", msg, v);
             }
         }
