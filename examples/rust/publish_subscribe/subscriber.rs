@@ -28,7 +28,6 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let service = node
         .service_builder(&"My/Funk/ServiceName".try_into()?)
         .publish_subscribe::<TransmissionData>()
-        .enable_safe_overflow(false)
         .open_or_create()?;
 
     let subscriber = service.subscriber_builder().create()?;

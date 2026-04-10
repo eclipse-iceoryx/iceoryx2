@@ -29,9 +29,6 @@ use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
-pub const INVALID_CHANNEL_STATE: u64 = u64::MAX;
-pub const DISCONNECT_HINT_BIT: u64 = 1u64 << 63;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ZeroCopyPortRemoveError {
     InternalError,
@@ -150,7 +147,12 @@ pub const DEFAULT_MAX_BORROWED_SAMPLES_PER_CHANNEL: usize = 4;
 pub const DEFAULT_MAX_SUPPORTED_SHARED_MEMORY_SEGMENTS: u8 = 1;
 pub const DEFAULT_NUMBER_OF_CHANNELS: usize = 1;
 pub const DEFAULT_NUMBER_OF_SAMPLES_PER_SEGMENT: usize = 8;
+/// The initial value of the channel state
 pub const INITIAL_CHANNEL_STATE: u64 = 0;
+/// A channel with an invalid state will never block in [`ZeroCopySender::blocking_send()`];
+pub const INVALID_CHANNEL_STATE: u64 = u64::MAX;
+/// Hints the channel that the other side intends to disconnect.
+pub const DISCONNECT_HINT_BIT: u64 = 1u64 << 63;
 
 pub trait ZeroCopyConnectionBuilder<C: ZeroCopyConnection>: NamedConceptBuilder<C> {
     fn buffer_size(self, value: usize) -> Self;

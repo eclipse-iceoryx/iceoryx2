@@ -159,8 +159,10 @@ pub mod client {
             .unwrap();
         let server = service.server_builder().create().unwrap();
         let has_sent_request = AtomicBool::new(false);
-        let handle = BarrierHandle::new();
-        let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
+        let init_handle = BarrierHandle::new();
+        let init_barrier = BarrierBuilder::new(2).create(&init_handle).unwrap();
+        let start_handle = BarrierHandle::new();
+        let start_barrier = BarrierBuilder::new(2).create(&start_handle).unwrap();
 
         thread_scope(|s| {
             s.thread_builder().spawn(|| {
@@ -172,17 +174,20 @@ pub mod client {
 
                 assert_that!(sut.unable_to_deliver_strategy(), eq UnableToDeliverStrategy::Block);
 
+                init_barrier.wait();
+                start_barrier.wait();
                 let request = sut.send_copy(123);
                 assert_that!(request, is_ok);
                 drop(request);
-                barrier.wait();
 
                 let request = sut.send_copy(123);
                 has_sent_request.store(true, Ordering::Relaxed);
                 assert_that!(request, is_ok);
             })?;
 
-            barrier.wait();
+            init_barrier.wait();
+            server.update_connections().unwrap();
+            start_barrier.wait();
             nanosleep(TIMEOUT).unwrap();
             assert_that!(has_sent_request.load(Ordering::Relaxed), eq false);
             let data = server.receive();

@@ -75,6 +75,8 @@
 
 use alloc::sync::Arc;
 use core::{fmt::Debug, marker::PhantomData};
+use iceoryx2_cal::zero_copy_connection::INITIAL_CHANNEL_STATE;
+use iceoryx2_cal::zero_copy_connection::INVALID_CHANNEL_STATE;
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
@@ -345,6 +347,7 @@ impl<
             degradation_callback: server_factory.request_degradation_callback,
             number_of_channels: 1,
             connection_storage: UnsafeCell::new(SlotMap::new(number_of_connections)),
+            initial_channel_state: INITIAL_CHANNEL_STATE,
         };
 
         let global_config = service.shared_node.config();
@@ -409,6 +412,7 @@ impl<
             unable_to_deliver_strategy: server_factory.config.unable_to_deliver_strategy,
             message_type_details: static_config.response_message_type_details,
             number_of_channels: number_of_requests_per_client,
+            initial_channel_state: INVALID_CHANNEL_STATE,
         };
 
         let shared_state = Service::ArcThreadSafetyPolicy::new(SharedServerState {

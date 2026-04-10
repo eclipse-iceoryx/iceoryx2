@@ -18,7 +18,7 @@ use alloc::boxed::Box;
 use examples_common::TransmissionData;
 use iceoryx2::prelude::*;
 
-const CYCLE_TIME: Duration = Duration::from_millis(10);
+const CYCLE_TIME: Duration = Duration::from_secs(1);
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
@@ -28,14 +28,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let service = node
         .service_builder(&"My/Funk/ServiceName".try_into()?)
         .publish_subscribe::<TransmissionData>()
-        .enable_safe_overflow(false)
         .open_or_create()?;
     service.service_hash();
 
-    let publisher = service
-        .publisher_builder()
-        .unable_to_deliver_strategy(UnableToDeliverStrategy::Block)
-        .create()?;
+    let publisher = service.publisher_builder().create()?;
 
     let mut counter: u64 = 0;
 

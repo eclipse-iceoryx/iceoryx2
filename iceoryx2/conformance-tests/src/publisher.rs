@@ -449,7 +449,7 @@ pub mod publisher {
     }
 
     #[conformance_test]
-    pub fn publisher_block_when_unable_to_deliver_blocks<Sut: Service>(
+    pub fn unable_to_deliver_strategy_blocks_when_subscriber_buffer_is_full<Sut: Service>(
     ) -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
         let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
@@ -521,7 +521,7 @@ pub mod publisher {
     }
 
     #[conformance_test]
-    pub fn unable_to_deliver_block_unblock_when_subscriber_disconnects<Sut: Service>(
+    pub fn unable_to_deliver_strategy_block_unblock_when_subscriber_disconnects<Sut: Service>(
     ) -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
         let _watchdog = Watchdog::new();
         let service_name = generate_service_name();

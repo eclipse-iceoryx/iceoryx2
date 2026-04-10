@@ -66,6 +66,7 @@ impl<Service: service::Service> Connection<Service> {
         number_of_samples: usize,
         max_number_of_segments: u8,
         cyclic_tagger: &CyclicTagger,
+        initial_channel_state: u64,
     ) -> Result<Self, ConnectionFailure> {
         let msg = format!(
             "Unable to establish connection to sender port {:?} from receiver port {:?}.",
@@ -82,7 +83,7 @@ impl<Service: service::Service> Connection<Service> {
                                     .enable_safe_overflow(this.enable_safe_overflow)
                                     .number_of_samples_per_segment(number_of_samples)
                                     .number_of_channels(this.number_of_channels)
-                                    .initial_channel_state(INVALID_CHANNEL_STATE)
+                                    .initial_channel_state(initial_channel_state)
                                     .max_supported_shared_memory_segments(max_number_of_segments)
                                     .timeout(global_config.global.service.creation_timeout)
                                     .create_receiver(),
@@ -126,6 +127,7 @@ pub(crate) struct Receiver<Service: service::Service> {
     pub(crate) enable_safe_overflow: bool,
     pub(crate) number_of_channels: usize,
     pub(crate) connection_storage: UnsafeCell<SlotMap<Connection<Service>>>,
+    pub(crate) initial_channel_state: u64,
 }
 
 impl<Service: service::Service> Receiver<Service> {
@@ -204,6 +206,7 @@ impl<Service: service::Service> Receiver<Service> {
             sender_details.number_of_samples,
             sender_details.max_number_of_segments,
             &self.tagger,
+            self.initial_channel_state,
         )?);
         let key = match key {
             Some(v) => v,

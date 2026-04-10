@@ -24,7 +24,7 @@ use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
     ChannelId, ZeroCopyConnection, ZeroCopyConnectionBuilder, ZeroCopyCreationError,
-    ZeroCopyPortDetails, ZeroCopySendError, ZeroCopySender, INVALID_CHANNEL_STATE,
+    ZeroCopyPortDetails, ZeroCopySendError, ZeroCopySender,
 };
 use iceoryx2_log::{error, fail, fatal_panic, warn};
 
@@ -66,6 +66,7 @@ impl<Service: service::Service> Connection<Service> {
         buffer_size: usize,
         number_of_samples: usize,
         tag: Tag,
+        initial_channel_state: u64,
     ) -> Result<Self, ZeroCopyCreationError> {
         let msg = format!(
             "Unable to establish connection to receiver port {:?} from sender port {:?}",
@@ -85,7 +86,7 @@ impl<Service: service::Service> Connection<Service> {
                                 .enable_safe_overflow(this.enable_safe_overflow)
                                 .number_of_samples_per_segment(number_of_samples)
                                 .max_supported_shared_memory_segments(this.max_number_of_segments)
-                                .initial_channel_state(INVALID_CHANNEL_STATE)
+                                .initial_channel_state(initial_channel_state)
                                 .number_of_channels(this.number_of_channels)
                                 .timeout(this.shared_node.config().global.service.creation_timeout)
                                 .create_sender(),
@@ -119,6 +120,7 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
     pub(crate) message_type_details: MessageTypeDetails,
     pub(crate) number_of_channels: usize,
+    pub(crate) initial_channel_state: u64,
 }
 
 impl<Service: service::Service> Sender<Service> {
@@ -303,6 +305,7 @@ impl<Service: service::Service> Sender<Service> {
             receiver_details.buffer_size,
             self.number_of_samples,
             self.tagger.create_tag(),
+            self.initial_channel_state,
         )?);
 
         Ok(())
