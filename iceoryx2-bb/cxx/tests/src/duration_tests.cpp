@@ -129,7 +129,7 @@ TEST(Duration, construct_duration_with_nanoseconds_max_value) {
     constexpr uint64_t MAX_NANOSECONDS_FOR_CTOR { std::numeric_limits<DurationAccessor::NanosecondsT>::max() };
     constexpr uint64_t EXPECTED_SECONDS = SECONDS + (MAX_NANOSECONDS_FOR_CTOR / NANOSECS_PER_SECOND);
     constexpr uint64_t REMAINING_NANOSECONDS = MAX_NANOSECONDS_FOR_CTOR % NANOSECS_PER_SECOND;
-    constexpr uint64_t EXPECTED_DURATION_IN_NANOSECONDS { ((EXPECTED_SECONDS) *NANOSECS_PER_SECOND)
+    constexpr uint64_t EXPECTED_DURATION_IN_NANOSECONDS { (EXPECTED_SECONDS * NANOSECS_PER_SECOND)
                                                           + REMAINING_NANOSECONDS };
 
     auto sut = create_duration(SECONDS, MAX_NANOSECONDS_FOR_CTOR);

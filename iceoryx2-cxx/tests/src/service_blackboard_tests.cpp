@@ -1701,7 +1701,7 @@ TYPED_TEST(ServiceBlackboardTest, simple_communication_with_key_struct_works) {
     ASSERT_THAT(*entry_handle_1.get(), Eq(-3));
     ASSERT_THAT(*entry_handle_2.get(), Eq(3));
 
-    entry_handle_mut_1.update_with_copy((VALUE_1));
+    entry_handle_mut_1.update_with_copy(VALUE_1);
     ASSERT_THAT(*entry_handle_1.get(), Eq(VALUE_1));
     ASSERT_THAT(*entry_handle_2.get(), Eq(3));
 
