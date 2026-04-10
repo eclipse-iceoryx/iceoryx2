@@ -180,12 +180,12 @@ impl<Service: service::Service> Receiver<Service> {
         }
     }
 
-    pub(crate) fn invalidate_channel_state(&self, channel_id: ChannelId, expected_state: u64) {
+    pub(crate) fn close_channel(&self, channel_id: ChannelId, expected_state: u64) {
         let connection_storage = unsafe { &mut *self.connection_storage.get() };
         for (_, connection) in connection_storage.iter() {
             connection
                 .receiver
-                .invalidate_channel_state(channel_id, expected_state);
+                .close_channel(channel_id, expected_state);
         }
     }
 

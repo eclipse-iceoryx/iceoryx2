@@ -177,7 +177,8 @@ impl<Service: service::Service> Sender<Service> {
                      *
                      * */
                 }
-                Err(ZeroCopySendError::NoConnectedReceiver) => {
+                Err(ZeroCopySendError::NoConnectedReceiver)
+                | Err(ZeroCopySendError::ChannelIsClosed) => {
                     // causes no problem, when the receiver/subscriber disconnected it will be
                     // cleaned up in the next round and it is no failure when we skip delivering data
                     // to subscribers that have disconnected
@@ -249,16 +250,14 @@ impl<Service: service::Service> Sender<Service> {
         }
     }
 
-    pub(crate) fn invalidate_channel_state(
+    pub(crate) fn close_channel(
         &self,
         channel_id: ChannelId,
         connection_id: usize,
         expected_state: u64,
     ) {
         if let Some(ref connection) = self.get(connection_id) {
-            connection
-                .sender
-                .invalidate_channel_state(channel_id, expected_state);
+            connection.sender.close_channel(channel_id, expected_state);
         }
     }
 

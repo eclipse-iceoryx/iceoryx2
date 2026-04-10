@@ -73,26 +73,6 @@
 //! # }
 //! ```
 
-use alloc::sync::Arc;
-use core::{fmt::Debug, marker::PhantomData};
-use iceoryx2_cal::zero_copy_connection::INITIAL_CHANNEL_STATE;
-use iceoryx2_cal::zero_copy_connection::INVALID_CHANNEL_STATE;
-
-use iceoryx2_bb_concurrency::atomic::AtomicUsize;
-use iceoryx2_bb_concurrency::atomic::Ordering;
-use iceoryx2_bb_concurrency::cell::UnsafeCell;
-use iceoryx2_bb_container::slotmap::SlotMap;
-use iceoryx2_bb_container::vector::polymorphic_vec::*;
-use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
-use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
-use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
-use iceoryx2_cal::dynamic_storage::DynamicStorage;
-use iceoryx2_cal::zero_copy_connection::ChannelId;
-use iceoryx2_log::{fail, warn};
-
 use crate::port::update_connections::UpdateConnections;
 use crate::prelude::UnableToDeliverStrategy;
 use crate::service::builder::CustomPayloadMarker;
@@ -110,6 +90,22 @@ use crate::{
         ServiceState,
     },
 };
+use alloc::sync::Arc;
+use core::{fmt::Debug, marker::PhantomData};
+use iceoryx2_bb_concurrency::atomic::AtomicUsize;
+use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
+use iceoryx2_bb_container::slotmap::SlotMap;
+use iceoryx2_bb_container::vector::polymorphic_vec::*;
+use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
+use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
+use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
+use iceoryx2_cal::dynamic_storage::DynamicStorage;
+use iceoryx2_cal::zero_copy_connection::{ChannelId, CHANNEL_STATE_CLOSED, CHANNEL_STATE_OPEN};
+use iceoryx2_log::{fail, warn};
 
 use super::details::data_segment::DataSegment;
 use super::details::segment_state::SegmentState;
@@ -347,7 +343,7 @@ impl<
             degradation_callback: server_factory.request_degradation_callback,
             number_of_channels: 1,
             connection_storage: UnsafeCell::new(SlotMap::new(number_of_connections)),
-            initial_channel_state: INITIAL_CHANNEL_STATE,
+            initial_channel_state: CHANNEL_STATE_OPEN,
         };
 
         let global_config = service.shared_node.config();
@@ -412,7 +408,7 @@ impl<
             unable_to_deliver_strategy: server_factory.config.unable_to_deliver_strategy,
             message_type_details: static_config.response_message_type_details,
             number_of_channels: number_of_requests_per_client,
-            initial_channel_state: INVALID_CHANNEL_STATE,
+            initial_channel_state: CHANNEL_STATE_CLOSED,
         };
 
         let shared_state = Service::ArcThreadSafetyPolicy::new(SharedServerState {

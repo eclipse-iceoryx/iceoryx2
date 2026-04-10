@@ -911,6 +911,63 @@ pub mod zero_copy_connection_trait {
     }
 
     #[conformance_test]
+    pub fn blocking_send_returns_when_channel_is_invalidated<Sut: ZeroCopyConnection>() {
+        const TIMEOUT: Duration = Duration::from_millis(25);
+
+        let id = ChannelId::new(0);
+        let _watchdog = Watchdog::new();
+        let name = generate_file_path().file_name();
+        let mutex_handle = MutexHandle::new();
+        let config = MutexBuilder::new()
+            .create(generate_isolated_config::<Sut>(), &mutex_handle)
+            .unwrap();
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .buffer_size(1)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .config(&config.lock().unwrap())
+            .create_receiver()
+            .unwrap();
+
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
+
+        let sample_offset_1 = SAMPLE_SIZE * 12;
+        let sample_offset_2 = SAMPLE_SIZE * 234;
+        let has_finished_send_thread = AtomicBool::new(false);
+
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
+                let sut_sender = Sut::Builder::new(&name)
+                    .buffer_size(1)
+                    .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+                    .config(&config.lock().unwrap())
+                    .create_sender()
+                    .unwrap();
+
+                barrier.wait();
+                assert_that!(
+                    sut_sender.blocking_send(PointerOffset::new(sample_offset_1), SAMPLE_SIZE, id),
+                    is_ok
+                );
+                assert_that!(
+                    sut_sender.blocking_send(PointerOffset::new(sample_offset_2), SAMPLE_SIZE, id).err(),
+                    eq Some(ZeroCopySendError::ChannelIsClosed)
+                );
+                has_finished_send_thread.store(true, Ordering::Relaxed);
+            })?;
+
+            barrier.wait();
+            nanosleep(TIMEOUT).unwrap();
+            assert_that!(has_finished_send_thread.load(Ordering::Relaxed), eq false);
+            sut_receiver.close_channel(id, CHANNEL_STATE_OPEN);
+
+            Ok(())
+        })
+        .unwrap();
+    }
+
+    #[conformance_test]
     pub fn sent_samples_can_be_acquired<Sut: ZeroCopyConnection>() {
         const NUMBER_OF_CHANNELS: usize = 6;
         const BUFFER_SIZE: usize = 10;
@@ -1933,7 +1990,7 @@ pub mod zero_copy_connection_trait {
             .unwrap();
 
         for id in 0..NUMBER_OF_CHANNELS {
-            assert_that!(sut_receiver.channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq INITIAL_CHANNEL_STATE);
+            assert_that!(sut_receiver.channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq CHANNEL_STATE_OPEN);
         }
         drop(sut_receiver);
 
@@ -1944,7 +2001,7 @@ pub mod zero_copy_connection_trait {
             .unwrap();
 
         for id in 0..NUMBER_OF_CHANNELS {
-            assert_that!(sut_sender.channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq INITIAL_CHANNEL_STATE);
+            assert_that!(sut_sender.channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq CHANNEL_STATE_OPEN);
         }
         drop(sut_sender);
     }

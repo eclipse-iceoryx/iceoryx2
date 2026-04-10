@@ -47,7 +47,7 @@
     conflicts when merging.
 -->
 
-* Publisher, Client, Server no longer deadlocks with 
+* Publisher, Client, Server no longer deadlocks with
   UnableToDeliveryStrategy::Block when the other side disconnects
   [#314](https://github.com/eclipse-iceoryx/iceoryx2/issues/314)
 * Remove timed and blocking send from `UnixDatagramSender` blocking block;

@@ -181,10 +181,11 @@ impl<
 {
     fn finish(&self) {
         if self.connection_id != INVALID_CONNECTION_ID {
-            self.shared_state
-                .lock()
-                .response_sender
-                .invalidate_channel_state(self.channel_id, self.connection_id, self.request_id);
+            self.shared_state.lock().response_sender.close_channel(
+                self.channel_id,
+                self.connection_id,
+                self.request_id,
+            );
         }
     }
 

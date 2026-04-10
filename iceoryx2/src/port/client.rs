@@ -82,7 +82,7 @@ use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
-use iceoryx2_cal::zero_copy_connection::{INITIAL_CHANNEL_STATE, INVALID_CHANNEL_STATE};
+use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_CLOSED, CHANNEL_STATE_OPEN};
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy,
     dynamic_storage::DynamicStorage,
@@ -436,7 +436,7 @@ impl<
             // but the requests have one shared buffer that the user can configure, therefore
             // one channel suffices
             number_of_channels: 1,
-            initial_channel_state: INITIAL_CHANNEL_STATE,
+            initial_channel_state: CHANNEL_STATE_OPEN,
         };
 
         let number_of_to_be_removed_connections = service
@@ -471,7 +471,7 @@ impl<
             enable_safe_overflow: static_config.enable_safe_overflow_for_responses,
             number_of_channels: number_of_requests,
             connection_storage: UnsafeCell::new(SlotMap::new(number_of_connections)),
-            initial_channel_state: INVALID_CHANNEL_STATE,
+            initial_channel_state: CHANNEL_STATE_CLOSED,
         };
 
         let client_shared_state = Service::ArcThreadSafetyPolicy::new(ClientSharedState {

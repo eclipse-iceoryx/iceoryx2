@@ -77,6 +77,7 @@ pub enum ZeroCopySendError {
     ReceiveBufferFull,
     UsedChunkListFull,
     NoConnectedReceiver,
+    ChannelIsClosed,
     InternalError,
 }
 
@@ -148,11 +149,11 @@ pub const DEFAULT_MAX_SUPPORTED_SHARED_MEMORY_SEGMENTS: u8 = 1;
 pub const DEFAULT_NUMBER_OF_CHANNELS: usize = 1;
 pub const DEFAULT_NUMBER_OF_SAMPLES_PER_SEGMENT: usize = 8;
 /// The initial value of the channel state
-pub const INITIAL_CHANNEL_STATE: u64 = 0;
+pub const CHANNEL_STATE_OPEN: u64 = 0;
 /// A channel with an invalid state will never block in [`ZeroCopySender::blocking_send()`];
-pub const INVALID_CHANNEL_STATE: u64 = u64::MAX;
+pub const CHANNEL_STATE_CLOSED: u64 = u64::MAX;
 /// Hints the channel that the other side intends to disconnect.
-pub const DISCONNECT_HINT_BIT: u64 = 1u64 << 63;
+const CHANNEL_STATE_DISCONNECT_HINT_BIT: u64 = 1u64 << 63;
 
 pub trait ZeroCopyConnectionBuilder<C: ZeroCopyConnection>: NamedConceptBuilder<C> {
     fn buffer_size(self, value: usize) -> Self;
@@ -185,7 +186,7 @@ pub trait ZeroCopyPortDetails {
     fn set_channel_state(&self, channel_id: ChannelId, state: u64) -> bool {
         self.channel_state(channel_id)
             .compare_exchange(
-                INVALID_CHANNEL_STATE,
+                CHANNEL_STATE_CLOSED,
                 state,
                 Ordering::Relaxed,
                 Ordering::Relaxed,
@@ -194,7 +195,7 @@ pub trait ZeroCopyPortDetails {
     }
 
     fn set_disconnect_hint(&self, channel_id: ChannelId, expected_state: u64) {
-        let disconnect_hint_state = expected_state | DISCONNECT_HINT_BIT;
+        let disconnect_hint_state = expected_state | CHANNEL_STATE_DISCONNECT_HINT_BIT;
 
         let _ = self.channel_state(channel_id).compare_exchange(
             expected_state,
@@ -205,30 +206,30 @@ pub trait ZeroCopyPortDetails {
     }
 
     fn has_disconnect_hint(&self, channel_id: ChannelId, expected_state: u64) -> bool {
-        let disconnect_hint_state = expected_state | DISCONNECT_HINT_BIT;
+        let disconnect_hint_state = expected_state | CHANNEL_STATE_DISCONNECT_HINT_BIT;
         disconnect_hint_state == self.channel_state(channel_id).load(Ordering::Relaxed)
     }
 
     fn has_channel_state(&self, channel_id: ChannelId, expected_state: u64) -> bool {
         let state = self.channel_state(channel_id).load(Ordering::Relaxed);
-        let state_without_disconnect_hint_bit = state & !(DISCONNECT_HINT_BIT);
+        let state_without_disconnect_hint_bit = state & !(CHANNEL_STATE_DISCONNECT_HINT_BIT);
         expected_state == state_without_disconnect_hint_bit
     }
 
-    fn invalidate_channel_state(&self, channel_id: ChannelId, expected_state: u64) {
+    fn close_channel(&self, channel_id: ChannelId, expected_state: u64) {
         match self.channel_state(channel_id).compare_exchange(
             expected_state,
-            INVALID_CHANNEL_STATE,
+            CHANNEL_STATE_CLOSED,
             Ordering::Relaxed,
             Ordering::Relaxed,
         ) {
             Ok(_) => (),
             Err(v) => {
-                let graceful_disconnect_state = expected_state | DISCONNECT_HINT_BIT;
+                let graceful_disconnect_state = expected_state | CHANNEL_STATE_DISCONNECT_HINT_BIT;
                 if v == graceful_disconnect_state {
                     let _ = self.channel_state(channel_id).compare_exchange(
                         graceful_disconnect_state,
-                        INVALID_CHANNEL_STATE,
+                        CHANNEL_STATE_CLOSED,
                         Ordering::Relaxed,
                         Ordering::Relaxed,
                     );

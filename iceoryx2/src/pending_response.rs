@@ -175,7 +175,7 @@ impl<
             .client_shared_state
             .lock()
             .response_receiver
-            .invalidate_channel_state(self.request.channel_id, self.request.header().request_id);
+            .close_channel(self.request.channel_id, self.request.header().request_id);
     }
 
     /// Marks the connection state that the [`Client`](crate::port::client::Client) wants to gracefully

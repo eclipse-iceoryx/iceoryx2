@@ -174,7 +174,7 @@ pub mod details {
                 completion_queue: unsafe {
                     RelocatableIndexQueue::new_uninit(completion_queue_capacity)
                 },
-                state: AtomicU64::new(INITIAL_CHANNEL_STATE),
+                state: AtomicU64::new(CHANNEL_STATE_OPEN),
             }
         }
 
@@ -520,7 +520,7 @@ pub mod details {
                 number_of_segments: DEFAULT_MAX_SUPPORTED_SHARED_MEMORY_SEGMENTS,
                 number_of_channels: DEFAULT_NUMBER_OF_CHANNELS,
                 config: Configuration::default(),
-                initial_channel_state: INITIAL_CHANNEL_STATE,
+                initial_channel_state: CHANNEL_STATE_OPEN,
                 timeout: Duration::ZERO,
             }
         }
@@ -735,15 +735,17 @@ pub mod details {
             let mgmt = self.storage.get();
             if !mgmt.enable_safe_overflow {
                 let mut is_connected = false;
+                let mut has_valid_channel_state = false;
 
                 if let Err(e) = AdaptiveWaitBuilder::new().create().unwrap().wait_while(|| {
                     is_connected = mgmt.is_connected();
+                    has_valid_channel_state = mgmt.channels[channel_id.value()]
+                        .state
+                        .load(Ordering::Relaxed)
+                        != CHANNEL_STATE_CLOSED;
                     mgmt.channels[channel_id.value()].submission_queue.is_full()
                         && is_connected
-                        && mgmt.channels[channel_id.value()]
-                            .state
-                            .load(Ordering::Relaxed)
-                            != INVALID_CHANNEL_STATE
+                        && has_valid_channel_state
                 }) {
                     fail!(from self, with ZeroCopySendError::InternalError,
                         "{msg} {ptr:?} via channel {channel_id:?} since the adaptive wait failed. [{e:?}]");
@@ -752,6 +754,11 @@ pub mod details {
                 if !is_connected {
                     fail!(from self, with ZeroCopySendError::NoConnectedReceiver,
                         "{msg} {ptr:?} via channel {channel_id:?} since there is no connected receiver anymore.");
+                }
+
+                if !has_valid_channel_state {
+                    fail!(from self, with ZeroCopySendError::ChannelIsClosed,
+                        "{msg} {ptr:?} via channel {channel_id:?} since the channel is closed.");
                 }
             }
 
