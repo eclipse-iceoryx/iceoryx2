@@ -492,8 +492,19 @@ pub fn owner_lock_cannot_be_acquired_twice() {
     let path = generate_file_path();
     let mut owner_lock_path = path;
     owner_lock_path.push_bytes(b"_owner_lock").unwrap();
+    let mut context_path = path;
+    context_path.push_bytes(b"_context").unwrap();
 
-    let _file = FileBuilder::new(&path)
+    let mut context_file = FileBuilder::new(&context_path)
+        .has_ownership(true)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+    context_file
+        .write_val(&UniqueProcessId::new_zeroed())
+        .unwrap();
+
+    let _state_file = FileBuilder::new(&path)
         .has_ownership(true)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
@@ -510,7 +521,7 @@ pub fn owner_lock_cannot_be_acquired_twice() {
     assert_that!(owner_lock, is_err);
     assert_that!(
         owner_lock.err().unwrap(), eq
-        ProcessCleanerCreateError::OwnedByAnotherProcess
+        ProcessCleanerCreateError::ProcessIsBeingCleanedUpOrCrashedDuringCleanup
     );
 }
 
