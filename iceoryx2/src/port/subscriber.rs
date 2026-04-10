@@ -47,7 +47,7 @@ use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
-use iceoryx2_cal::zero_copy_connection::ChannelId;
+use iceoryx2_cal::zero_copy_connection::{ChannelId, CHANNEL_STATE_OPEN};
 use iceoryx2_log::{fail, warn};
 
 use crate::port::update_connections::UpdateConnections;
@@ -218,6 +218,7 @@ impl<
                 degradation_callback: config.degradation_callback,
                 number_of_channels: 1,
                 connection_storage: UnsafeCell::new(SlotMap::new(number_of_connections)),
+                initial_channel_state: CHANNEL_STATE_OPEN,
             },
         });
 

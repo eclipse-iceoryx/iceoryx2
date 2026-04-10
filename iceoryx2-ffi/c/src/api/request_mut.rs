@@ -45,6 +45,7 @@ pub enum iox2_request_send_error_e {
     LOAN_ERROR_INTERNAL_FAILURE,
     CONNECTION_ERROR,
     EXCEEDS_MAX_ACTIVE_REQUESTS,
+    INTERNAL_ERROR,
 }
 
 impl IntoCInt for RequestSendError {
@@ -73,6 +74,9 @@ impl IntoCInt for RequestSendError {
             }
             RequestSendError::ExceedsMaxActiveRequests => {
                 iox2_request_send_error_e::EXCEEDS_MAX_ACTIVE_REQUESTS
+            }
+            RequestSendError::SendError(SendError::InternalError) => {
+                iox2_request_send_error_e::INTERNAL_ERROR
             }
         }) as c_int
     }

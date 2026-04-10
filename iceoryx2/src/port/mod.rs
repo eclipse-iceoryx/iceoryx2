@@ -112,6 +112,8 @@ pub enum SendError {
     LoanError(LoanError),
     /// A failure occurred while establishing a connection to the ports counterpart port.
     ConnectionError(ConnectionFailure),
+    /// An internal mechanisms failed and the data could not be delivered to all receivers.
+    InternalError,
 }
 
 impl From<LoanError> for SendError {

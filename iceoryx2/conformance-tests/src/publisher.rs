@@ -18,10 +18,7 @@ pub mod publisher {
     use alloc::collections::BTreeSet;
     use alloc::{format, vec};
     use core::time::Duration;
-    use iceoryx2_bb_posix::clock::{nanosleep, Time};
-    use iceoryx2_bb_posix::mutex::{MutexBuilder, MutexHandle};
-    use iceoryx2_bb_posix::thread::thread_scope;
-
+    use iceoryx2::port::update_connections::UpdateConnections;
     use iceoryx2::port::{publisher::PublisherCreateError, LoanError};
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
@@ -29,8 +26,12 @@ pub mod publisher {
     use iceoryx2::service::Service;
     use iceoryx2::testing;
     use iceoryx2::testing::generate_service_name;
+    use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
     use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::barrier::*;
+    use iceoryx2_bb_posix::clock::{nanosleep, Time};
+    use iceoryx2_bb_posix::mutex::{MutexBuilder, MutexHandle};
+    use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -448,7 +449,7 @@ pub mod publisher {
     }
 
     #[conformance_test]
-    pub fn publisher_block_when_unable_to_deliver_blocks<Sut: Service>(
+    pub fn unable_to_deliver_strategy_blocks_when_subscriber_buffer_is_full<Sut: Service>(
     ) -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
         let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
@@ -511,6 +512,75 @@ pub mod publisher {
             sut.send_copy(8192).unwrap();
             sut.send_copy(2).unwrap();
             assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
+
+            Ok(())
+        })
+        .unwrap();
+
+        Ok(())
+    }
+
+    #[conformance_test]
+    pub fn unable_to_deliver_strategy_block_unblock_when_subscriber_disconnects<Sut: Service>(
+    ) -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        let _watchdog = Watchdog::new();
+        let service_name = generate_service_name();
+        let config = testing::generate_isolated_config();
+        let handle = MutexHandle::new();
+        let node = MutexBuilder::new()
+            .create(
+                NodeBuilder::new().config(&config).create::<Sut>().unwrap(),
+                &handle,
+            )
+            .unwrap();
+        let service = node
+            .lock()
+            .unwrap()
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .subscriber_max_buffer_size(1)
+            .enable_safe_overflow(false)
+            .create()?;
+        let subscriber = service.subscriber_builder().create().unwrap();
+
+        let init_handle = BarrierHandle::new();
+        let init_barrier = BarrierBuilder::new(2).create(&init_handle).unwrap();
+        let start_handle = BarrierHandle::new();
+        let start_barrier = BarrierBuilder::new(2).create(&start_handle).unwrap();
+        let has_finished_send_thread = AtomicBool::new(false);
+
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
+                let service = node
+                    .lock()
+                    .unwrap()
+                    .service_builder(&service_name)
+                    .publish_subscribe::<u64>()
+                    .open()
+                    .unwrap();
+
+                let sut = service
+                    .publisher_builder()
+                    .unable_to_deliver_strategy(UnableToDeliverStrategy::Block)
+                    .create()
+                    .unwrap();
+
+                init_barrier.wait();
+
+                start_barrier.wait();
+
+                sut.send_copy(123).unwrap();
+                sut.send_copy(456).unwrap();
+                has_finished_send_thread.store(true, Ordering::Relaxed);
+            })?;
+
+            init_barrier.wait();
+            subscriber.update_connections().unwrap();
+
+            start_barrier.wait();
+            nanosleep(TIMEOUT * 10).unwrap();
+            assert_that!(has_finished_send_thread.load(Ordering::Relaxed), eq false);
+            drop(subscriber);
 
             Ok(())
         })

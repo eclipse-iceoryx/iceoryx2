@@ -23,8 +23,8 @@ use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
-    ChannelId, ZeroCopyConnection, ZeroCopyConnectionBuilder, ZeroCopyCreationError,
-    ZeroCopySendError, ZeroCopySender,
+    ChannelId, ChannelState, ZeroCopyConnection, ZeroCopyConnectionBuilder, ZeroCopyCreationError,
+    ZeroCopyPortDetails, ZeroCopySendError, ZeroCopySender,
 };
 use iceoryx2_log::{error, fail, fatal_panic, warn};
 
@@ -36,8 +36,6 @@ use crate::service::static_config::message_type_details::{MessageTypeDetails, Ty
 use crate::service::{NoResource, ServiceState};
 use crate::{service, service::naming_scheme::connection_name};
 
-use super::channel_management::ChannelManagement;
-use super::channel_management::INVALID_CHANNEL_STATE;
 use super::chunk::ChunkMut;
 use super::data_segment::DataSegment;
 use super::segment_state::SegmentState;
@@ -68,6 +66,7 @@ impl<Service: service::Service> Connection<Service> {
         buffer_size: usize,
         number_of_samples: usize,
         tag: Tag,
+        initial_channel_state: ChannelState,
     ) -> Result<Self, ZeroCopyCreationError> {
         let msg = format!(
             "Unable to establish connection to receiver port {:?} from sender port {:?}",
@@ -87,7 +86,7 @@ impl<Service: service::Service> Connection<Service> {
                                 .enable_safe_overflow(this.enable_safe_overflow)
                                 .number_of_samples_per_segment(number_of_samples)
                                 .max_supported_shared_memory_segments(this.max_number_of_segments)
-                                .initial_channel_state(INVALID_CHANNEL_STATE)
+                                .initial_channel_state(initial_channel_state)
                                 .number_of_channels(this.number_of_channels)
                                 .timeout(this.shared_node.config().global.service.creation_timeout)
                                 .create_sender(),
@@ -121,6 +120,7 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
     pub(crate) message_type_details: MessageTypeDetails,
     pub(crate) number_of_channels: usize,
+    pub(crate) initial_channel_state: ChannelState,
 }
 
 impl<Service: service::Service> Sender<Service> {
@@ -156,6 +156,7 @@ impl<Service: service::Service> Sender<Service> {
         channel_id: ChannelId,
         connection_id: usize,
     ) -> Result<usize, SendError> {
+        let msg = "While delivering the sample:";
         let deliver_call = match self.unable_to_deliver_strategy {
             UnableToDeliverStrategy::Block => {
                 <Service::Connection as ZeroCopyConnection>::Sender::blocking_send
@@ -173,7 +174,18 @@ impl<Service: service::Service> Sender<Service> {
                     /* causes no problem
                      *   blocking_send => can never happen
                      *   try_send => we tried and expect that the buffer is full
+                     *
                      * */
+                }
+                Err(ZeroCopySendError::NoConnectedReceiver)
+                | Err(ZeroCopySendError::ChannelIsClosed) => {
+                    // causes no problem, when the receiver/subscriber disconnected it will be
+                    // cleaned up in the next round and it is no failure when we skip delivering data
+                    // to subscribers that have disconnected
+                }
+                Err(ZeroCopySendError::InternalError) => {
+                    fail!(from self, with SendError::InternalError,
+                        "{msg} {:?} to receiver {:?} an internal mechanism failed and the offset was delivered only to a subset of receivers.", offset, connection.receiver_port_id);
                 }
                 Err(ZeroCopySendError::ConnectionCorrupted) => match &self.degradation_callback {
                     Some(c) => match c.call(
@@ -184,18 +196,18 @@ impl<Service: service::Service> Sender<Service> {
                         DegradationAction::Ignore => (),
                         DegradationAction::Warn => {
                             error!(from self,
-                                        "While delivering the sample: {:?} a corrupted connection was detected with receiver {:?}.",
+                                        "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
                                         offset, connection.receiver_port_id);
                         }
                         DegradationAction::Fail => {
                             fail!(from self, with SendError::ConnectionCorrupted,
-                                        "While delivering the sample: {:?} a corrupted connection was detected with receiver {:?}.",
+                                        "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
                                         offset, connection.receiver_port_id);
                         }
                     },
                     None => {
                         error!(from self,
-                                    "While delivering the sample: {:?} a corrupted connection was detected with receiver {:?}.",
+                                    "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
                                     offset, connection.receiver_port_id);
                     }
                 },
@@ -216,7 +228,7 @@ impl<Service: service::Service> Sender<Service> {
         &self,
         channel_id: ChannelId,
         connection_id: usize,
-        state: u64,
+        state: ChannelState,
     ) -> bool {
         if let Some(ref connection) = self.get(connection_id) {
             connection.sender.has_disconnect_hint(channel_id, state)
@@ -229,7 +241,7 @@ impl<Service: service::Service> Sender<Service> {
         &self,
         channel_id: ChannelId,
         connection_id: usize,
-        state: u64,
+        state: ChannelState,
     ) -> bool {
         if let Some(ref connection) = self.get(connection_id) {
             connection.sender.has_channel_state(channel_id, state)
@@ -238,16 +250,14 @@ impl<Service: service::Service> Sender<Service> {
         }
     }
 
-    pub(crate) fn invalidate_channel_state(
+    pub(crate) fn close_channel(
         &self,
         channel_id: ChannelId,
         connection_id: usize,
-        expected_state: u64,
+        expected_state: ChannelState,
     ) {
         if let Some(ref connection) = self.get(connection_id) {
-            connection
-                .sender
-                .invalidate_channel_state(channel_id, expected_state);
+            connection.sender.close_channel(channel_id, expected_state);
         }
     }
 
@@ -294,6 +304,7 @@ impl<Service: service::Service> Sender<Service> {
             receiver_details.buffer_size,
             self.number_of_samples,
             self.tagger.create_tag(),
+            self.initial_channel_state,
         )?);
 
         Ok(())

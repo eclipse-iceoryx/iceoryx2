@@ -55,6 +55,8 @@ enum class SendError : uint8_t {
     LoanErrorInternalFailure,
     /// A failure occurred while establishing a connection to the ports counterpart port.
     ConnectionError,
+    /// An internal mechanisms failed and the data could not be delivered to all receivers.
+    InternalError
 };
 
 /// Defines the failure that can occur when receiving data with
@@ -96,6 +98,8 @@ enum class RequestSendError : uint8_t {
     LoanErrorInternalFailure,
     /// A failure occurred while establishing a connection to the ports counterpart port.
     ConnectionError,
+    /// An internal mechanisms failed and the data could not be delivered to all receivers.
+    InternalError,
 };
 } // namespace iox2
 

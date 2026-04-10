@@ -360,6 +360,57 @@ pub mod server {
     }
 
     #[conformance_test]
+    pub fn unable_to_deliver_strategy_block_unblocks_when_pending_response_goes_out_of_scope<
+        Sut: Service,
+    >() {
+        let _watchdog = Watchdog::new();
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_response_buffer_size(1)
+            .enable_safe_overflow_for_responses(false)
+            .create()
+            .unwrap();
+        let client = service.client_builder().create().unwrap();
+        let handle = BarrierHandle::new();
+        let send_handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
+        let send_barrier = BarrierBuilder::new(2).create(&send_handle).unwrap();
+
+        let has_sent_response = AtomicBool::new(false);
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
+                let sut = service
+                    .server_builder()
+                    .unable_to_deliver_strategy(UnableToDeliverStrategy::Block)
+                    .create()
+                    .unwrap();
+                barrier.wait();
+                send_barrier.wait();
+
+                let active_request = sut.receive().unwrap().unwrap();
+                assert_that!(active_request.send_copy(321), is_ok);
+                assert_that!(active_request.send_copy(654), is_ok);
+                has_sent_response.store(true, Ordering::Relaxed);
+            })?;
+
+            barrier.wait();
+            let pending_response = client.send_copy(123).unwrap();
+            send_barrier.wait();
+
+            nanosleep(TIMEOUT).unwrap();
+
+            assert_that!(has_sent_response.load(Ordering::Relaxed), eq false);
+            drop(pending_response);
+
+            Ok(())
+        })
+        .unwrap();
+    }
+
+    #[conformance_test]
     pub fn reclaims_all_responses_delivered_to_client_after_a_client_disconnect<Sut: Service>() {
         const MAX_ACTIVE_REQUESTS: usize = 4;
         const ITERATIONS: usize = 20;

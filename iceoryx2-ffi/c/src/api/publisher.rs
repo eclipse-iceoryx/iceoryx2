@@ -46,11 +46,13 @@ pub enum iox2_send_error_e {
     LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE,
     LOAN_ERROR_INTERNAL_FAILURE,
     CONNECTION_ERROR,
+    INTERNAL_ERROR,
 }
 
 impl IntoCInt for SendError {
     fn into_c_int(self) -> c_int {
         (match self {
+            SendError::InternalError => iox2_send_error_e::INTERNAL_ERROR,
             SendError::ConnectionBrokenSinceSenderNoLongerExists => {
                 iox2_send_error_e::CONNECTION_BROKEN_SINCE_SENDER_NO_LONGER_EXISTS
             }

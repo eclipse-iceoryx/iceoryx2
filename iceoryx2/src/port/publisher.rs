@@ -121,7 +121,7 @@ use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shm_allocator::{AllocationStrategy, PointerOffset};
 use iceoryx2_cal::zero_copy_connection::{
-    ChannelId, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySender,
+    ChannelId, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySender, CHANNEL_STATE_OPEN,
 };
 use iceoryx2_log::{fail, warn};
 
@@ -453,6 +453,7 @@ impl<
                     unable_to_deliver_strategy: config.unable_to_deliver_strategy,
                     message_type_details: static_config.message_type_details,
                     number_of_channels: 1,
+                    initial_channel_state: CHANNEL_STATE_OPEN,
                 },
                 config,
                 subscriber_list_state: UnsafeCell::new(unsafe { subscriber_list.get_state() }),
