@@ -45,7 +45,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 use crate::{
-    identifiers::ServiceId,
+    identifiers::UniqueServiceId,
     node::NodeListFailure,
     prelude::AttributeSet,
     service::{
@@ -138,8 +138,8 @@ impl<
         self.service.static_config.name()
     }
 
-    fn service_id(&self) -> ServiceId {
-        self.service.static_config.service_id()
+    fn unique_service_id(&self) -> UniqueServiceId {
+        self.service.static_config.unique_service_id()
     }
 
     fn service_hash(&self) -> &ServiceHash {

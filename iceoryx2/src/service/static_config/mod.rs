@@ -39,7 +39,7 @@ use iceoryx2_log::fatal_panic;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{config, identifiers::ServiceId, service::service_hash::ServiceHash};
+use crate::{config, identifiers::UniqueServiceId, service::service_hash::ServiceHash};
 
 use self::messaging_pattern::MessagingPattern;
 
@@ -51,7 +51,7 @@ use super::{attribute::AttributeSet, service_name::ServiceName};
 pub struct StaticConfig {
     service_hash: ServiceHash,
     service_name: ServiceName,
-    service_id: ServiceId,
+    unique_service_id: UniqueServiceId,
     pub(crate) attributes: AttributeSet,
     pub(crate) messaging_pattern: MessagingPattern,
 }
@@ -68,7 +68,7 @@ impl StaticConfig {
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::RequestResponse,
             ),
-            service_id: ServiceId::new(),
+            unique_service_id: UniqueServiceId::new(),
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
@@ -85,7 +85,7 @@ impl StaticConfig {
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::Event,
             ),
-            service_id: ServiceId::new(),
+            unique_service_id: UniqueServiceId::new(),
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
@@ -103,7 +103,7 @@ impl StaticConfig {
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::PublishSubscribe,
             ),
-            service_id: ServiceId::new(),
+            unique_service_id: UniqueServiceId::new(),
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
@@ -120,7 +120,7 @@ impl StaticConfig {
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::Blackboard,
             ),
-            service_id: ServiceId::new(),
+            unique_service_id: UniqueServiceId::new(),
             service_name: *service_name,
             messaging_pattern,
             attributes: AttributeSet::new(),
@@ -138,8 +138,8 @@ impl StaticConfig {
     }
 
     /// Returns the id of the [`crate::service::Service`]
-    pub fn service_id(&self) -> ServiceId {
-        self.service_id
+    pub fn unique_service_id(&self) -> UniqueServiceId {
+        self.unique_service_id
     }
 
     /// Returns the [`ServiceName`] of the [`crate::service::Service`]

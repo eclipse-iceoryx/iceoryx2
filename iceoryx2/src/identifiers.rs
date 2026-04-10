@@ -22,27 +22,48 @@ macro_rules! generate_id {
         $id_name:ident } => {
         $(#[$documentation])*
         #[repr(C)]
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ZeroCopySend, serde::Serialize, serde::Deserialize)]
+        #[derive(
+            Debug,
+            Eq,
+            Hash,
+            PartialEq,
+            Clone,
+            Copy,
+            PartialOrd,
+            Ord,
+            ZeroCopySend,
+            serde::Serialize,
+            serde::Deserialize,
+        )]
         pub struct $id_name(pub(crate) UniqueSystemId);
 
-        impl Default for $id_name {
-            fn default() -> Self {
+        impl core::fmt::Display for $id_name {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, "0x{:032x}", self.0.value())
+            }
+        }
+
+        impl $id_name {
+            pub(crate) fn new() -> Self {
                 Self(
                     fatal_panic!(from format!("{}::new()", stringify!($id_name)), when UniqueSystemId::new(),
                         "Unable to generate required {}!", stringify!($id_name)),
                 )
             }
-        }
-
-        impl $id_name {
-            /// Creates a new instance
-            pub fn new() -> Self {
-                Self::default()
-            }
 
             /// Returns the underlying raw value of the ID
             pub fn value(&self) -> u128 {
                 self.0.value()
+            }
+
+            /// Returns the [`ProcessId`](iceoryx2_bb_posix::process::ProcessId) of the process that created the id.
+            pub fn pid(&self) -> iceoryx2_bb_posix::process::ProcessId {
+                self.0.pid()
+            }
+
+            /// Returns the [`Time`](iceoryx2_bb_posix::time::Time) the [`Node`] was created.
+            pub fn creation_time(&self) -> iceoryx2_bb_posix::clock::Time {
+                self.0.creation_time()
             }
         }
     };
@@ -83,7 +104,12 @@ generate_id! {
 
 generate_id! {
     /// The system-wide unique id of a [`Service`](crate::service::Service).
-    ServiceId
+    UniqueServiceId
+}
+
+generate_id! {
+    /// The system-wide unique id of a [`Node`](crate::node::Node).
+    UniqueNodeId
 }
 
 /// Enum that contains the unique port id

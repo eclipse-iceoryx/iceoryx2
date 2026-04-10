@@ -41,7 +41,7 @@ use super::nodes;
 use super::reader::PortFactoryReader;
 use super::writer::PortFactoryWriter;
 use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
-use crate::identifiers::ServiceId;
+use crate::identifiers::UniqueServiceId;
 use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
 use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
@@ -85,8 +85,8 @@ impl<
         self.service.static_config.name()
     }
 
-    fn service_id(&self) -> ServiceId {
-        self.service.static_config.service_id()
+    fn unique_service_id(&self) -> UniqueServiceId {
+        self.service.static_config.unique_service_id()
     }
 
     fn service_hash(&self) -> &ServiceHash {
