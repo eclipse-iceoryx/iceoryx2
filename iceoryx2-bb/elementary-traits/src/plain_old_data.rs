@@ -40,51 +40,5 @@ unsafe impl PlainOldData for i128 {}
 unsafe impl PlainOldData for f32 {}
 unsafe impl PlainOldData for f64 {}
 
-unsafe impl PlainOldData for () {}
-
 unsafe impl<T: PlainOldData, const N: usize> PlainOldData for [T; N] {}
 unsafe impl<T: PlainOldData> PlainOldData for core::mem::MaybeUninit<T> {}
-
-unsafe impl<T1: PlainOldData, T2: PlainOldData> PlainOldData for (T1, T2) {}
-unsafe impl<T1: PlainOldData, T2: PlainOldData, T3: PlainOldData> PlainOldData for (T1, T2, T3) {}
-unsafe impl<T1: PlainOldData, T2: PlainOldData, T3: PlainOldData, T4: PlainOldData> PlainOldData
-    for (T1, T2, T3, T4)
-{
-}
-unsafe impl<T1: PlainOldData, T2: PlainOldData, T3: PlainOldData, T4: PlainOldData, T5: PlainOldData>
-    PlainOldData for (T1, T2, T3, T4, T5)
-{
-}
-unsafe impl<
-        T1: PlainOldData,
-        T2: PlainOldData,
-        T3: PlainOldData,
-        T4: PlainOldData,
-        T5: PlainOldData,
-        T6: PlainOldData,
-    > PlainOldData for (T1, T2, T3, T4, T5, T6)
-{
-}
-unsafe impl<
-        T1: PlainOldData,
-        T2: PlainOldData,
-        T3: PlainOldData,
-        T4: PlainOldData,
-        T5: PlainOldData,
-        T6: PlainOldData,
-        T7: PlainOldData,
-    > PlainOldData for (T1, T2, T3, T4, T5, T6, T7)
-{
-}
-unsafe impl<
-        T1: PlainOldData,
-        T2: PlainOldData,
-        T3: PlainOldData,
-        T4: PlainOldData,
-        T5: PlainOldData,
-        T6: PlainOldData,
-        T7: PlainOldData,
-        T8: PlainOldData,
-    > PlainOldData for (T1, T2, T3, T4, T5, T6, T7, T8)
-{
-}

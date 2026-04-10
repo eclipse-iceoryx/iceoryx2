@@ -615,7 +615,7 @@ fn generate_context_path(path: &FilePath) -> Result<FilePath, SemanticStringErro
     let mut context_path = *path;
     fail!(from "generate_context_path()",
           when context_path.push_bytes(CONTEXT_SUFFIX),
-          "Unable to construct a valid file path from \"{path}\" and the suffix and the owner lock suffix.");
+          "Unable to construct a valid file path from \"{path}\" and the suffix and the context suffix.");
     Ok(context_path)
 }
 
@@ -1015,7 +1015,7 @@ impl ProcessCleaner {
             Ok(Some(file)) => file,
             Ok(None) => {
                 fail!(from origin, with ProcessCleanerCreateError::DoesNotExist,
-                    "{} since the process state file does not exist.", msg);
+                    "{} since the process context file does not exist.", msg);
             }
             Err(e) => {
                 fail!(from origin, with ProcessCleanerCreateError::UnableToOpenContextFile,
