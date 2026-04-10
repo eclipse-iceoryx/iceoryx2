@@ -103,7 +103,7 @@ Slice<T>::Slice(T* data, uint64_t number_of_elements)
 
 template <typename T>
 auto Slice<T>::number_of_bytes() const -> uint64_t {
-    return (sizeof(ValueType) * m_number_of_elements + alignof(ValueType) - 1) & ~(alignof(ValueType) - 1);
+    return ((sizeof(ValueType) * m_number_of_elements) + alignof(ValueType) - 1) & ~(alignof(ValueType) - 1);
 }
 
 template <typename T>
