@@ -732,14 +732,18 @@ pub mod details {
             let msg = "Unable to blocking send the offset";
             debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
 
-            if !self.storage.get().enable_safe_overflow {
+            let mgmt = self.storage.get();
+            if !mgmt.enable_safe_overflow {
                 let mut is_connected = false;
+
                 if let Err(e) = AdaptiveWaitBuilder::new().create().unwrap().wait_while(|| {
-                    is_connected = self.storage.get().is_connected();
-                    self.storage.get().channels[channel_id.value()]
-                        .submission_queue
-                        .is_full()
+                    is_connected = mgmt.is_connected();
+                    mgmt.channels[channel_id.value()].submission_queue.is_full()
                         && is_connected
+                        && mgmt.channels[channel_id.value()]
+                            .state
+                            .load(Ordering::Relaxed)
+                            != INVALID_CHANNEL_STATE
                 }) {
                     fail!(from self, with ZeroCopySendError::InternalError,
                         "{msg} {ptr:?} via channel {channel_id:?} since the adaptive wait failed. [{e:?}]");

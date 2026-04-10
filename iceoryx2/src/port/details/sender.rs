@@ -24,7 +24,7 @@ use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
     ChannelId, ZeroCopyConnection, ZeroCopyConnectionBuilder, ZeroCopyCreationError,
-    ZeroCopySendError, ZeroCopySender,
+    ZeroCopyPortDetails, ZeroCopySendError, ZeroCopySender, INVALID_CHANNEL_STATE,
 };
 use iceoryx2_log::{error, fail, fatal_panic, warn};
 
@@ -36,8 +36,6 @@ use crate::service::static_config::message_type_details::{MessageTypeDetails, Ty
 use crate::service::{NoResource, ServiceState};
 use crate::{service, service::naming_scheme::connection_name};
 
-use super::channel_management::ChannelManagement;
-use super::channel_management::INVALID_CHANNEL_STATE;
 use super::chunk::ChunkMut;
 use super::data_segment::DataSegment;
 use super::segment_state::SegmentState;

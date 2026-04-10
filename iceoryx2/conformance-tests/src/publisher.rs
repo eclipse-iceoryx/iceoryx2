@@ -521,9 +521,8 @@ pub mod publisher {
     }
 
     #[conformance_test]
-    pub fn publisher_unblocks_when_unable_to_deliver_blocks_and_the_subscriber_disconnects<
-        Sut: Service,
-    >() -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+    pub fn unable_to_deliver_block_unblock_when_subscriber_disconnects<Sut: Service>(
+    ) -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
         let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
         let config = testing::generate_isolated_config();

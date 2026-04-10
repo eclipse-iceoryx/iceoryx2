@@ -18,6 +18,7 @@ pub mod client {
     use alloc::vec;
     use core::ops::Deref;
     use core::time::Duration;
+    use iceoryx2::port::update_connections::UpdateConnections;
 
     use iceoryx2::port::client::RequestSendError;
     use iceoryx2::port::LoanError;
@@ -186,6 +187,60 @@ pub mod client {
             assert_that!(has_sent_request.load(Ordering::Relaxed), eq false);
             let data = server.receive();
             assert_that!(data, is_ok);
+            assert_that!(|| has_sent_request.load(Ordering::Relaxed), eq true, before Watchdog::default());
+
+            Ok(())
+        }).unwrap();
+    }
+
+    #[conformance_test]
+    pub fn unable_to_deliver_strategy_block_unblocks_when_server_disconnects<Sut: Service>() {
+        let _watchdog = Watchdog::new();
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .enable_safe_overflow_for_requests(false)
+            .max_active_requests_per_client(1)
+            .create()
+            .unwrap();
+
+        let server = service.server_builder().create().unwrap();
+        let has_sent_request = AtomicBool::new(false);
+        let init_handle = BarrierHandle::new();
+        let init_barrier = BarrierBuilder::new(2).create(&init_handle).unwrap();
+        let start_handle = BarrierHandle::new();
+        let start_barrier = BarrierBuilder::new(2).create(&start_handle).unwrap();
+
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
+                let sut = service
+                    .client_builder()
+                    .unable_to_deliver_strategy(UnableToDeliverStrategy::Block)
+                    .create()
+                    .unwrap();
+
+                assert_that!(sut.unable_to_deliver_strategy(), eq UnableToDeliverStrategy::Block);
+
+                init_barrier.wait();
+
+                start_barrier.wait();
+
+                sut.send_copy(123).unwrap();
+                sut.send_copy(456).unwrap();
+
+                has_sent_request.store(true, Ordering::Relaxed);
+            })?;
+
+            init_barrier.wait();
+            server.update_connections().unwrap();
+
+            start_barrier.wait();
+            nanosleep(TIMEOUT).unwrap();
+            assert_that!(has_sent_request.load(Ordering::Relaxed), eq false);
+
+            drop(server);
             assert_that!(|| has_sent_request.load(Ordering::Relaxed), eq true, before Watchdog::default());
 
             Ok(())

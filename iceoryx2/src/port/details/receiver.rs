@@ -32,8 +32,6 @@ use crate::service::NoResource;
 use crate::service::ServiceState;
 use crate::service::{self, config_scheme::connection_config, naming_scheme::connection_name};
 
-use super::channel_management::ChannelManagement;
-use super::channel_management::INVALID_CHANNEL_STATE;
 use super::chunk::Chunk;
 use super::chunk_details::ChunkDetails;
 use super::data_segment::{DataSegmentType, DataSegmentView};
