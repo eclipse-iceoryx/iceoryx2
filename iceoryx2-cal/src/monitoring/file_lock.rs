@@ -16,6 +16,7 @@ use alloc::vec::Vec;
 
 use iceoryx2_bb_posix::file::Permission;
 use iceoryx2_bb_posix::process_state::ProcessGuardBuilder;
+use iceoryx2_bb_posix::process_state::ProcessMonitorOpenError;
 use iceoryx2_bb_posix::{
     directory::{Directory, DirectoryOpenError, DirectoryReadError},
     file::{File, FileRemoveError},
@@ -207,9 +208,18 @@ impl MonitoringMonitor for Monitor {
             Ok(ProcessState::DoesNotExist)
             | Ok(ProcessState::CleaningUp)
             | Ok(ProcessState::Starting) => Ok(State::DoesNotExist),
-            Err(ProcessMonitorStateError::Interrupt) => {
+            Err(ProcessMonitorStateError::Interrupt)
+            | Err(ProcessMonitorStateError::ProcessMonitorOpenError(
+                ProcessMonitorOpenError::Interrupt,
+            )) => {
                 fail!(from self, with MonitoringStateError::Interrupt,
                     "{} since an interrupt signal was received.", msg);
+            }
+            Err(ProcessMonitorStateError::ProcessMonitorOpenError(
+                ProcessMonitorOpenError::InsufficientPermissions,
+            )) => {
+                fail!(from self, with MonitoringStateError::InsufficientPermissions,
+                    "{} due to insufficient permissions.", msg);
             }
             Err(v) => {
                 fail!(from self, with MonitoringStateError::InternalError,

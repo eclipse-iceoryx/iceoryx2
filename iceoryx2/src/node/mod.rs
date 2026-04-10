@@ -1058,6 +1058,10 @@ impl<Service: service::Service> Node<Service> {
         let origin = format!("Node::state_from_monitor({monitor:?})");
 
         match result.err().unwrap() {
+            MonitoringStateError::InsufficientPermissions => {
+                fail!(from origin, with NodeListFailure::InsufficientPermissions,
+                    "{} due to insufficient permissions to acquire the nodes state.", msg);
+            }
             MonitoringStateError::Interrupt => {
                 fail!(from origin, with NodeListFailure::Interrupt,
                     "{} due to an interrupt signal while acquiring the nodes state.", msg);
