@@ -76,8 +76,10 @@ auto main(int argc, char** argv) -> int {
     // NOLINTNEXTLINE(misc-const-correctness) false positive
     std::map<WaitSetAttachmentId<ServiceType::Ipc>, ServiceNameListenerPair> listeners;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) fine in the example
     listeners.emplace(WaitSetAttachmentId<ServiceType::Ipc>::from_guard(guards.unchecked_access()[0]),
                       ServiceNameListenerPair { service_name_1, std::move(listener_1) });
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) fine in the example
     listeners.emplace(WaitSetAttachmentId<ServiceType::Ipc>::from_guard(guards.unchecked_access()[1]),
                       ServiceNameListenerPair { service_name_2, std::move(listener_2) });
 

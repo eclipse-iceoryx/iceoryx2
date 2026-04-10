@@ -1072,6 +1072,8 @@ TYPED_TEST(ServiceRequestResponseTest, create_with_attributes_sets_attributes) {
     auto attributes_create = service_create.attributes();
     auto attributes_open = service_open.attributes();
 
+    // NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) indices are checked
+
     ASSERT_THAT(attributes_create.number_of_attributes(), Eq(1));
     ASSERT_THAT(attributes_create[0].key(), Eq(key));
     ASSERT_THAT(attributes_create[0].value(), Eq(value));
@@ -1079,6 +1081,8 @@ TYPED_TEST(ServiceRequestResponseTest, create_with_attributes_sets_attributes) {
     ASSERT_THAT(attributes_open.number_of_attributes(), Eq(1));
     ASSERT_THAT(attributes_open[0].key(), Eq(key));
     ASSERT_THAT(attributes_open[0].value(), Eq(value));
+
+    // NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 }
 
 TYPED_TEST(ServiceRequestResponseTest, open_fails_when_attributes_are_incompatible) {

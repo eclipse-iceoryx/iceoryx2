@@ -39,6 +39,8 @@ static_assert(std::is_standard_layout<iox2::bb::StaticString<G_ARBITRARY_CAPACIT
 static_assert(iox2::bb::StaticString<G_ARBITRARY_CAPACITY>::capacity() == G_ARBITRARY_CAPACITY,
               "Capacity must be determined by template argument");
 
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) fine to use in tests
+
 TEST(StaticString, default_constructor_initializes_to_empty) {
     constexpr uint64_t const STRING_SIZE = 5;
     iox2::bb::StaticString<STRING_SIZE> const sut;
@@ -1107,4 +1109,7 @@ TEST(StaticString,
     EXPECT_STREQ(sut.unchecked_access().c_str(), "He");
     ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
+
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
+
 } // namespace

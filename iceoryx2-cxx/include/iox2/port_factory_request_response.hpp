@@ -149,10 +149,13 @@ inline auto
 PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     service_hash() const -> ServiceHash {
     iox2::legacy::UninitializedArray<char, IOX2_SERVICE_HASH_LENGTH> buffer;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) index 0 is guaranteed to be valid
     iox2_port_factory_request_response_service_hash(&m_handle, &buffer[0], IOX2_SERVICE_HASH_LENGTH);
 
     return ServiceHash(iox2::bb::StaticString<IOX2_SERVICE_HASH_LENGTH>::from_utf8_null_terminated_unchecked_truncated(
-        &buffer[0], IOX2_SERVICE_HASH_LENGTH));
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) index 0 is guaranteed to be valid
+        &buffer[0],
+        IOX2_SERVICE_HASH_LENGTH));
 }
 
 template <ServiceType Service,

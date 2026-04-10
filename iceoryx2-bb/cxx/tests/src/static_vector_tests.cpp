@@ -34,6 +34,8 @@ int32_t const G_TEST_ARRAY[G_TEST_ARRAY_SIZE] = { 4, 9, 77, 32, -5 };
 static_assert(std::is_standard_layout<iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE>>::value,
               "StaticVector must be standard layout");
 
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) fine to use in tests
+
 TEST(StaticVector, default_constructor_initializes_to_empty) {
     iox2::bb::StaticVector<int32_t, G_TEST_ARRAY_SIZE> const sut;
     ASSERT_TRUE(sut.empty());
@@ -1355,5 +1357,7 @@ TEST(StaticVector, ostream_insertion_calls_ostream_inserter_for_values) {
     ASSERT_TRUE(sstr);
     EXPECT_EQ(sstr.str(), "StaticVector::<5> { m_size: 5, m_data: [ 7, 8, 9, 10, 11 ] }");
 }
+
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
 } // namespace

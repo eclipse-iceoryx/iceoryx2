@@ -1727,7 +1727,7 @@ TEST(Duration, log_streaming_operator) {
         IOX2_LOGSTREAM_MOCK(logger_mock) << 0_s;
     }
     ASSERT_THAT(logger_mock.logs.size(), Eq(1U));
-    EXPECT_THAT(logger_mock.logs[0].message, StrEq("0s 0ns"));
+    EXPECT_THAT(logger_mock.logs.at(0).message, StrEq("0s 0ns"));
     logger_mock.logs.clear();
 
     {
@@ -1735,7 +1735,7 @@ TEST(Duration, log_streaming_operator) {
         IOX2_LOGSTREAM_MOCK(logger_mock) << less_than_one_second;
     }
     ASSERT_THAT(logger_mock.logs.size(), Eq(1U));
-    EXPECT_THAT(logger_mock.logs[0].message, StrEq("0s 42ns"));
+    EXPECT_THAT(logger_mock.logs.at(0).message, StrEq("0s 42ns"));
     logger_mock.logs.clear();
 
     {
@@ -1743,7 +1743,7 @@ TEST(Duration, log_streaming_operator) {
         IOX2_LOGSTREAM_MOCK(logger_mock) << more_than_one_second;
     }
     ASSERT_THAT(logger_mock.logs.size(), Eq(1U));
-    EXPECT_THAT(logger_mock.logs[0].message, StrEq("13s 73037042ns"));
+    EXPECT_THAT(logger_mock.logs.at(0).message, StrEq("13s 73037042ns"));
     logger_mock.logs.clear();
 }
 
