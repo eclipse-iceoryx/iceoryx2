@@ -216,6 +216,7 @@ TEST(StaticString, copy_assignment_does_not_change_value_on_self_assignment) {
     constexpr uint64_t const STRING_SIZE = 5;
     auto sut = *iox2::bb::StaticString<STRING_SIZE>::from_utf8("ABCD");
     auto* sut_again_but_we_confuse_the_compiler = &sut;
+    // NOLINTNEXTLINE(bugprone-multi-level-implicit-pointer-conversion) intended for the test
     iox2::bb::testing::opaque_use(static_cast<void*>(&sut_again_but_we_confuse_the_compiler));
     ASSERT_EQ(sut.size(), 4);
     ASSERT_STREQ(sut.unchecked_access().c_str(), "ABCD");
