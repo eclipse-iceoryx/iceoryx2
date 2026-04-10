@@ -35,7 +35,7 @@ pub mod zero_copy_connection_trait {
     use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptMgmt};
     use iceoryx2_cal::shm_allocator::{PointerOffset, SegmentId};
     use iceoryx2_cal::testing::generate_isolated_config;
-    use iceoryx2_cal::zero_copy_connection::{ChannelId, *};
+    use iceoryx2_cal::zero_copy_connection::{ChannelId, ChannelState, *};
 
     const SAMPLE_SIZE: usize = 123;
     const NUMBER_OF_SAMPLES: usize = 2345;
@@ -1990,7 +1990,7 @@ pub mod zero_copy_connection_trait {
             .unwrap();
 
         for id in 0..NUMBER_OF_CHANNELS {
-            assert_that!(sut_receiver.channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq CHANNEL_STATE_OPEN);
+            assert_that!(sut_receiver.__internal_get_channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq CHANNEL_STATE_OPEN.value());
         }
         drop(sut_receiver);
 
@@ -2001,7 +2001,7 @@ pub mod zero_copy_connection_trait {
             .unwrap();
 
         for id in 0..NUMBER_OF_CHANNELS {
-            assert_that!(sut_sender.channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq CHANNEL_STATE_OPEN);
+            assert_that!(sut_sender.__internal_get_channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq CHANNEL_STATE_OPEN.value());
         }
         drop(sut_sender);
     }
@@ -2009,31 +2009,31 @@ pub mod zero_copy_connection_trait {
     #[conformance_test]
     pub fn initial_channel_state_can_be_defined_for_all_channels<Sut: ZeroCopyConnection>() {
         const NUMBER_OF_CHANNELS: usize = 11;
-        const CUSTOM_INITIAL_CHANNEL_STATE: u64 = 981273;
+        let custom_initial_channel_state = ChannelState::new(981273).unwrap();
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_receiver = Sut::Builder::new(&name)
             .config(&config)
             .number_of_channels(NUMBER_OF_CHANNELS)
-            .initial_channel_state(CUSTOM_INITIAL_CHANNEL_STATE)
+            .initial_channel_state(custom_initial_channel_state)
             .create_receiver()
             .unwrap();
 
         for id in 0..NUMBER_OF_CHANNELS {
-            assert_that!(sut_receiver.channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq CUSTOM_INITIAL_CHANNEL_STATE);
+            assert_that!(sut_receiver.__internal_get_channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq custom_initial_channel_state.value());
         }
         drop(sut_receiver);
 
         let sut_sender = Sut::Builder::new(&name)
             .config(&config)
             .number_of_channels(NUMBER_OF_CHANNELS)
-            .initial_channel_state(CUSTOM_INITIAL_CHANNEL_STATE)
+            .initial_channel_state(custom_initial_channel_state)
             .create_sender()
             .unwrap();
 
         for id in 0..NUMBER_OF_CHANNELS {
-            assert_that!(sut_sender.channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq CUSTOM_INITIAL_CHANNEL_STATE);
+            assert_that!(sut_sender.__internal_get_channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq custom_initial_channel_state.value());
         }
         drop(sut_sender);
     }
@@ -2049,18 +2049,18 @@ pub mod zero_copy_connection_trait {
             .create_receiver()
             .unwrap();
         sut_receiver
-            .channel_state(CHANNEL_ID)
+            .__internal_get_channel_state(CHANNEL_ID)
             .store(456, Ordering::Relaxed);
 
         let sut_sender = Sut::Builder::new(&name)
             .config(&config)
             .create_sender()
             .unwrap();
-        assert_that!(sut_sender.channel_state(CHANNEL_ID).load(Ordering::Relaxed), eq 456);
+        assert_that!(sut_sender.__internal_get_channel_state(CHANNEL_ID).load(Ordering::Relaxed), eq 456);
         sut_sender
-            .channel_state(CHANNEL_ID)
+            .__internal_get_channel_state(CHANNEL_ID)
             .store(789, Ordering::Relaxed);
 
-        assert_that!(sut_receiver.channel_state(CHANNEL_ID).load(Ordering::Relaxed), eq 789);
+        assert_that!(sut_receiver.__internal_get_channel_state(CHANNEL_ID).load(Ordering::Relaxed), eq 789);
     }
 }

@@ -66,7 +66,7 @@ impl<Service: service::Service> Connection<Service> {
         number_of_samples: usize,
         max_number_of_segments: u8,
         cyclic_tagger: &CyclicTagger,
-        initial_channel_state: u64,
+        initial_channel_state: ChannelState,
     ) -> Result<Self, ConnectionFailure> {
         let msg = format!(
             "Unable to establish connection to sender port {:?} from receiver port {:?}.",
@@ -127,7 +127,7 @@ pub(crate) struct Receiver<Service: service::Service> {
     pub(crate) enable_safe_overflow: bool,
     pub(crate) number_of_channels: usize,
     pub(crate) connection_storage: UnsafeCell<SlotMap<Connection<Service>>>,
-    pub(crate) initial_channel_state: u64,
+    pub(crate) initial_channel_state: ChannelState,
 }
 
 impl<Service: service::Service> Receiver<Service> {
@@ -148,7 +148,7 @@ impl<Service: service::Service> Receiver<Service> {
         }
     }
 
-    pub(crate) fn set_channel_state(&self, channel_id: ChannelId, state: u64) -> bool {
+    pub(crate) fn set_channel_state(&self, channel_id: ChannelId, state: ChannelState) -> bool {
         let mut ret_val = true;
         let connection_storage = unsafe { &mut *self.connection_storage.get() };
         for (_, connection) in connection_storage.iter() {
@@ -158,7 +158,11 @@ impl<Service: service::Service> Receiver<Service> {
         ret_val
     }
 
-    pub(crate) fn at_least_one_channel_has_state(&self, channel_id: ChannelId, state: u64) -> bool {
+    pub(crate) fn at_least_one_channel_has_state(
+        &self,
+        channel_id: ChannelId,
+        state: ChannelState,
+    ) -> bool {
         let mut ret_val = false;
         let connection_storage = unsafe { &mut *self.connection_storage.get() };
         for (_, connection) in connection_storage.iter() {
@@ -171,7 +175,7 @@ impl<Service: service::Service> Receiver<Service> {
         ret_val
     }
 
-    pub(crate) fn set_disconnect_hint(&self, channel_id: ChannelId, expected_state: u64) {
+    pub(crate) fn set_disconnect_hint(&self, channel_id: ChannelId, expected_state: ChannelState) {
         let connection_storage = unsafe { &mut *self.connection_storage.get() };
         for (_, connection) in connection_storage.iter() {
             connection
@@ -180,7 +184,7 @@ impl<Service: service::Service> Receiver<Service> {
         }
     }
 
-    pub(crate) fn close_channel(&self, channel_id: ChannelId, expected_state: u64) {
+    pub(crate) fn close_channel(&self, channel_id: ChannelId, expected_state: ChannelState) {
         let connection_storage = unsafe { &mut *self.connection_storage.get() };
         for (_, connection) in connection_storage.iter() {
             connection

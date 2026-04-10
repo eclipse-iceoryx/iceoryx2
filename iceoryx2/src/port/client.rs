@@ -91,6 +91,7 @@ use iceoryx2_cal::{
 };
 use iceoryx2_log::{fail, fatal_panic, warn};
 
+use crate::active_request::RequestId;
 use crate::{
     identifiers::UniqueClientId,
     pending_response::PendingResponse,
@@ -184,7 +185,7 @@ impl<Service: service::Service> Drop for ClientSharedState<Service> {
 }
 
 impl<Service: service::Service> ClientSharedState<Service> {
-    fn prepare_channel_to_receive_responses(&self, channel_id: ChannelId, request_id: u64) {
+    fn prepare_channel_to_receive_responses(&self, channel_id: ChannelId, request_id: RequestId) {
         self.response_receiver
             .set_channel_state(channel_id, request_id);
     }
@@ -194,7 +195,7 @@ impl<Service: service::Service> ClientSharedState<Service> {
         offset: PointerOffset,
         sample_size: usize,
         channel_id: ChannelId,
-        request_id: u64,
+        request_id: RequestId,
     ) -> Result<usize, RequestSendError> {
         let msg = "Unable to send request";
 
@@ -546,6 +547,17 @@ impl<
         self.client_id
     }
 
+    fn next_request_id(&self) -> RequestId {
+        RequestId::new(
+            self.request_id_counter
+                .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |v| {
+                    Some((v + 1) % RequestId::max_value())
+                })
+                .expect("We return some, therefore the Result always contains a value."),
+        )
+        .expect("With modulo RequestId::max_value() when incrementing the request id we ensure that the value is always in bounds")
+    }
+
     /// Returns the strategy the [`Client`] follows when a [`RequestMut`] cannot be delivered
     /// if the [`Server`](crate::port::server::Server)s buffer is full.
     pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
@@ -672,7 +684,7 @@ impl<
                 node_id: *client_shared_state.request_sender.shared_node.id(),
                 client_id: self.id(),
                 channel_id,
-                request_id: self.request_id_counter.fetch_add(1, Ordering::Relaxed),
+                request_id: self.next_request_id(),
                 number_of_elements: 1,
             })
         };
@@ -951,7 +963,7 @@ impl<
                 node_id: *client_shared_state.request_sender.shared_node.id(),
                 client_id: self.id(),
                 channel_id,
-                request_id: self.request_id_counter.fetch_add(1, Ordering::Relaxed),
+                request_id: self.next_request_id(),
                 number_of_elements: slice_len as _,
             })
         };

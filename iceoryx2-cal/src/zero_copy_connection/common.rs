@@ -174,7 +174,7 @@ pub mod details {
                 completion_queue: unsafe {
                     RelocatableIndexQueue::new_uninit(completion_queue_capacity)
                 },
-                state: AtomicU64::new(CHANNEL_STATE_OPEN),
+                state: AtomicU64::new(CHANNEL_STATE_OPEN.0),
             }
         }
 
@@ -370,7 +370,7 @@ pub mod details {
         number_of_samples_per_segment: usize,
         number_of_segments: u8,
         number_of_channels: usize,
-        initial_channel_state: u64,
+        initial_channel_state: ChannelState,
         timeout: Duration,
         config: Configuration<Storage>,
     }
@@ -407,7 +407,7 @@ pub mod details {
         .initializer(|data, allocator| {
             unsafe { data.init(allocator, self.submission_queue_size(), self.completion_queue_size())};
             for channel in data.channels.iter() {
-                channel.state.store(self.initial_channel_state, Ordering::Relaxed);
+                channel.state.store(self.initial_channel_state.0, Ordering::Relaxed);
             }
 
             true
@@ -539,7 +539,7 @@ pub mod details {
             self
         }
 
-        fn initial_channel_state(mut self, value: u64) -> Self {
+        fn initial_channel_state(mut self, value: ChannelState) -> Self {
             self.initial_channel_state = value;
             self
         }
@@ -653,7 +653,7 @@ pub mod details {
             self.storage.get().channels.capacity()
         }
 
-        fn channel_state(&self, channel_id: ChannelId) -> &AtomicU64 {
+        fn __internal_get_channel_state(&self, channel_id: ChannelId) -> &AtomicU64 {
             debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
             &self.storage.get().channels[channel_id.value()].state
         }
@@ -742,7 +742,7 @@ pub mod details {
                     has_valid_channel_state = mgmt.channels[channel_id.value()]
                         .state
                         .load(Ordering::Relaxed)
-                        != CHANNEL_STATE_CLOSED;
+                        != CHANNEL_STATE_CLOSED.0;
                     mgmt.channels[channel_id.value()].submission_queue.is_full()
                         && is_connected
                         && has_valid_channel_state
@@ -908,7 +908,7 @@ pub mod details {
             self.storage.get().channels.capacity()
         }
 
-        fn channel_state(&self, channel_id: ChannelId) -> &AtomicU64 {
+        fn __internal_get_channel_state(&self, channel_id: ChannelId) -> &AtomicU64 {
             debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
             &self.storage.get().channels[channel_id.value()].state
         }

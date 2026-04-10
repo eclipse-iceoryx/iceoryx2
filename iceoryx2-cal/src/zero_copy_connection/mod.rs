@@ -23,6 +23,7 @@ use core::time::Duration;
 pub use crate::shared_memory::PointerOffset;
 pub use iceoryx2_bb_system_types::file_name::*;
 pub use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_log::fail;
 
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
@@ -142,6 +143,42 @@ impl ChannelId {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ChannelStateNewError {
+    ValueOutOfBounds,
+}
+
+impl core::fmt::Display for ChannelStateNewError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}::{:?}", stringify!(Self), self)
+    }
+}
+
+impl core::error::Error for ChannelStateNewError {}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ZeroCopySend)]
+pub struct ChannelState(u64);
+
+impl ChannelState {
+    pub fn new(value: u64) -> Result<Self, ChannelStateNewError> {
+        if value > Self::max_value() {
+            fail!(from "ChannelState::new()", with ChannelStateNewError::ValueOutOfBounds,
+                "Unable to create new ChannelState since the value must be less or equal than 2^62 and this value is {value},");
+        }
+
+        Ok(Self(value))
+    }
+
+    pub const fn max_value() -> u64 {
+        2u64.pow(62)
+    }
+
+    pub fn value(&self) -> u64 {
+        self.0
+    }
+}
+
 pub const DEFAULT_BUFFER_SIZE: usize = 4;
 pub const DEFAULT_ENABLE_SAFE_OVERFLOW: bool = false;
 pub const DEFAULT_MAX_BORROWED_SAMPLES_PER_CHANNEL: usize = 4;
@@ -149,9 +186,9 @@ pub const DEFAULT_MAX_SUPPORTED_SHARED_MEMORY_SEGMENTS: u8 = 1;
 pub const DEFAULT_NUMBER_OF_CHANNELS: usize = 1;
 pub const DEFAULT_NUMBER_OF_SAMPLES_PER_SEGMENT: usize = 8;
 /// The initial value of the channel state
-pub const CHANNEL_STATE_OPEN: u64 = 0;
+pub const CHANNEL_STATE_OPEN: ChannelState = ChannelState(0);
 /// A channel with an invalid state will never block in [`ZeroCopySender::blocking_send()`];
-pub const CHANNEL_STATE_CLOSED: u64 = u64::MAX;
+pub const CHANNEL_STATE_CLOSED: ChannelState = ChannelState(u64::MAX);
 /// Hints the channel that the other side intends to disconnect.
 const CHANNEL_STATE_DISCONNECT_HINT_BIT: u64 = 1u64 << 63;
 
@@ -162,7 +199,7 @@ pub trait ZeroCopyConnectionBuilder<C: ZeroCopyConnection>: NamedConceptBuilder<
     fn max_supported_shared_memory_segments(self, value: u8) -> Self;
     fn number_of_samples_per_segment(self, value: usize) -> Self;
     fn number_of_channels(self, value: usize) -> Self;
-    fn initial_channel_state(self, value: u64) -> Self;
+    fn initial_channel_state(self, value: ChannelState) -> Self;
     /// The timeout defines how long the [`ZeroCopyConnectionBuilder`] should wait for
     /// concurrent
     /// [`ZeroCopyConnectionBuilder::create_sender()`] or
@@ -181,58 +218,71 @@ pub trait ZeroCopyPortDetails {
     fn max_borrowed_samples(&self) -> usize;
     fn max_supported_shared_memory_segments(&self) -> u8;
     fn is_connected(&self) -> bool;
-    fn channel_state(&self, channel_id: ChannelId) -> &AtomicU64;
+    #[doc(hidden)]
+    fn __internal_get_channel_state(&self, channel_id: ChannelId) -> &AtomicU64;
 
-    fn set_channel_state(&self, channel_id: ChannelId, state: u64) -> bool {
-        self.channel_state(channel_id)
+    fn set_channel_state(&self, channel_id: ChannelId, state: ChannelState) -> bool {
+        self.__internal_get_channel_state(channel_id)
             .compare_exchange(
-                CHANNEL_STATE_CLOSED,
-                state,
+                CHANNEL_STATE_CLOSED.0,
+                state.0,
                 Ordering::Relaxed,
                 Ordering::Relaxed,
             )
             .is_ok()
     }
 
-    fn set_disconnect_hint(&self, channel_id: ChannelId, expected_state: u64) {
-        let disconnect_hint_state = expected_state | CHANNEL_STATE_DISCONNECT_HINT_BIT;
+    fn set_disconnect_hint(&self, channel_id: ChannelId, expected_state: ChannelState) {
+        let disconnect_hint_state = expected_state.0 | CHANNEL_STATE_DISCONNECT_HINT_BIT;
 
-        let _ = self.channel_state(channel_id).compare_exchange(
-            expected_state,
-            disconnect_hint_state,
-            Ordering::Relaxed,
-            Ordering::Relaxed,
-        );
+        let _ = self
+            .__internal_get_channel_state(channel_id)
+            .compare_exchange(
+                expected_state.0,
+                disconnect_hint_state,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            );
     }
 
-    fn has_disconnect_hint(&self, channel_id: ChannelId, expected_state: u64) -> bool {
-        let disconnect_hint_state = expected_state | CHANNEL_STATE_DISCONNECT_HINT_BIT;
-        disconnect_hint_state == self.channel_state(channel_id).load(Ordering::Relaxed)
+    fn has_disconnect_hint(&self, channel_id: ChannelId, expected_state: ChannelState) -> bool {
+        let disconnect_hint_state = expected_state.0 | CHANNEL_STATE_DISCONNECT_HINT_BIT;
+        disconnect_hint_state
+            == self
+                .__internal_get_channel_state(channel_id)
+                .load(Ordering::Relaxed)
     }
 
-    fn has_channel_state(&self, channel_id: ChannelId, expected_state: u64) -> bool {
-        let state = self.channel_state(channel_id).load(Ordering::Relaxed);
+    fn has_channel_state(&self, channel_id: ChannelId, expected_state: ChannelState) -> bool {
+        let state = self
+            .__internal_get_channel_state(channel_id)
+            .load(Ordering::Relaxed);
         let state_without_disconnect_hint_bit = state & !(CHANNEL_STATE_DISCONNECT_HINT_BIT);
-        expected_state == state_without_disconnect_hint_bit
+        expected_state.0 == state_without_disconnect_hint_bit
     }
 
-    fn close_channel(&self, channel_id: ChannelId, expected_state: u64) {
-        match self.channel_state(channel_id).compare_exchange(
-            expected_state,
-            CHANNEL_STATE_CLOSED,
-            Ordering::Relaxed,
-            Ordering::Relaxed,
-        ) {
+    fn close_channel(&self, channel_id: ChannelId, expected_state: ChannelState) {
+        match self
+            .__internal_get_channel_state(channel_id)
+            .compare_exchange(
+                expected_state.0,
+                CHANNEL_STATE_CLOSED.0,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
             Ok(_) => (),
             Err(v) => {
-                let graceful_disconnect_state = expected_state | CHANNEL_STATE_DISCONNECT_HINT_BIT;
+                let graceful_disconnect_state =
+                    expected_state.0 | CHANNEL_STATE_DISCONNECT_HINT_BIT;
                 if v == graceful_disconnect_state {
-                    let _ = self.channel_state(channel_id).compare_exchange(
-                        graceful_disconnect_state,
-                        CHANNEL_STATE_CLOSED,
-                        Ordering::Relaxed,
-                        Ordering::Relaxed,
-                    );
+                    let _ = self
+                        .__internal_get_channel_state(channel_id)
+                        .compare_exchange(
+                            graceful_disconnect_state,
+                            CHANNEL_STATE_CLOSED.0,
+                            Ordering::Relaxed,
+                            Ordering::Relaxed,
+                        );
                 }
             }
         }

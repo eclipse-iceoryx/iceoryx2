@@ -23,7 +23,7 @@ use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
-    ChannelId, ZeroCopyConnection, ZeroCopyConnectionBuilder, ZeroCopyCreationError,
+    ChannelId, ChannelState, ZeroCopyConnection, ZeroCopyConnectionBuilder, ZeroCopyCreationError,
     ZeroCopyPortDetails, ZeroCopySendError, ZeroCopySender,
 };
 use iceoryx2_log::{error, fail, fatal_panic, warn};
@@ -66,7 +66,7 @@ impl<Service: service::Service> Connection<Service> {
         buffer_size: usize,
         number_of_samples: usize,
         tag: Tag,
-        initial_channel_state: u64,
+        initial_channel_state: ChannelState,
     ) -> Result<Self, ZeroCopyCreationError> {
         let msg = format!(
             "Unable to establish connection to receiver port {:?} from sender port {:?}",
@@ -120,7 +120,7 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
     pub(crate) message_type_details: MessageTypeDetails,
     pub(crate) number_of_channels: usize,
-    pub(crate) initial_channel_state: u64,
+    pub(crate) initial_channel_state: ChannelState,
 }
 
 impl<Service: service::Service> Sender<Service> {
@@ -228,7 +228,7 @@ impl<Service: service::Service> Sender<Service> {
         &self,
         channel_id: ChannelId,
         connection_id: usize,
-        state: u64,
+        state: ChannelState,
     ) -> bool {
         if let Some(ref connection) = self.get(connection_id) {
             connection.sender.has_disconnect_hint(channel_id, state)
@@ -241,7 +241,7 @@ impl<Service: service::Service> Sender<Service> {
         &self,
         channel_id: ChannelId,
         connection_id: usize,
-        state: u64,
+        state: ChannelState,
     ) -> bool {
         if let Some(ref connection) = self.get(connection_id) {
             connection.sender.has_channel_state(channel_id, state)
@@ -254,7 +254,7 @@ impl<Service: service::Service> Sender<Service> {
         &self,
         channel_id: ChannelId,
         connection_id: usize,
-        expected_state: u64,
+        expected_state: ChannelState,
     ) {
         if let Some(ref connection) = self.get(connection_id) {
             connection.sender.close_channel(channel_id, expected_state);

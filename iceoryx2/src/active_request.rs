@@ -41,6 +41,7 @@
 
 use alloc::sync::Arc;
 use core::{any::TypeId, fmt::Debug, marker::PhantomData, mem::MaybeUninit, ops::Deref};
+use iceoryx2_cal::zero_copy_connection::ChannelState;
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
@@ -69,6 +70,9 @@ use crate::{
     },
 };
 
+/// Represents the id of the [`RequestMut`](crate::request_mut::RequestMut)
+pub type RequestId = ChannelState;
+
 /// Represents a one-to-one connection to a [`Client`](crate::port::client::Client)
 /// holding the corresponding
 /// [`PendingResponse`](crate::pending_response::PendingResponse) that is coupled
@@ -93,7 +97,7 @@ pub struct ActiveRequest<
     pub(crate) shared_loan_counter: Arc<AtomicUsize>,
     pub(crate) max_loan_count: usize,
     pub(crate) details: ChunkDetails,
-    pub(crate) request_id: u64,
+    pub(crate) request_id: RequestId,
     pub(crate) channel_id: ChannelId,
     pub(crate) connection_id: usize,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
@@ -132,7 +136,7 @@ impl<
             core::any::type_name::<ResponsePayload>(),
             core::any::type_name::<ResponseHeader>(),
             self.details,
-            self.request_id,
+            self.request_id.value(),
             self.channel_id.value()
         )
     }

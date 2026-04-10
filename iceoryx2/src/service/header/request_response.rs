@@ -15,6 +15,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
 use crate::{
+    active_request::RequestId,
     identifiers::{UniqueClientId, UniqueServerId},
     node::NodeId,
 };
@@ -27,7 +28,7 @@ pub struct RequestHeader {
     pub(crate) node_id: NodeId,
     pub(crate) client_id: UniqueClientId,
     pub(crate) channel_id: ChannelId,
-    pub(crate) request_id: u64,
+    pub(crate) request_id: RequestId,
     pub(crate) number_of_elements: u64,
 }
 
@@ -65,7 +66,7 @@ impl RequestHeader {
 pub struct ResponseHeader {
     pub(crate) node_id: NodeId,
     pub(crate) server_id: UniqueServerId,
-    pub(crate) request_id: u64,
+    pub(crate) request_id: RequestId,
     pub(crate) number_of_elements: u64,
 }
 
