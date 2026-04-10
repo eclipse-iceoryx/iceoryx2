@@ -167,7 +167,7 @@ const std::vector<std::string> TestValues<Path>::ADD_VALID_CHARS_TO_CREATE_INVAL
 
 template <typename T>
 class SemanticStringFixture : public Test {
-  public:
+  protected:
     void SetUp() override {
         EXPECT_FALSE(TestValues<T>::VALID_VALUES.empty());
         EXPECT_FALSE(TestValues<T>::TOO_LONG_CONTENT_VALUES.empty());
@@ -180,6 +180,7 @@ class SemanticStringFixture : public Test {
         // have only invalid characters or only invalid content or neither of both
     }
 
+  public:
     using SutType = T;
     // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
     StaticString<SutType::capacity()> greater_value_str =

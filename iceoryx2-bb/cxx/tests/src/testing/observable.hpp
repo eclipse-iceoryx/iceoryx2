@@ -64,13 +64,14 @@ class DetectLeakedObservablesFixture : public ::testing::Test {
     auto operator=(DetectLeakedObservablesFixture const&) -> DetectLeakedObservablesFixture& = delete;
     auto operator=(DetectLeakedObservablesFixture&&) -> DetectLeakedObservablesFixture& = delete;
 
-    void SetUp() override;
-    void TearDown() override;
-
     /// Checks whether there are currently any active instances of Observable that await destruction.
     static auto has_leaked_observables() -> bool;
     /// Do not perform the check for leaks after this test.
     void defuse_leak_check();
+
+  protected:
+    void SetUp() override;
+    void TearDown() override;
 };
 
 // A fixture that checks all Observable counters against a set of expected values after the completion of a test.
@@ -87,11 +88,12 @@ class VerifyAllObservableInteractionsFixture : public ::testing::Test {
     auto operator=(VerifyAllObservableInteractionsFixture const&) -> VerifyAllObservableInteractionsFixture& = delete;
     auto operator=(VerifyAllObservableInteractionsFixture&&) -> VerifyAllObservableInteractionsFixture& = delete;
 
-    void SetUp() override;
-    void TearDown() override;
-
     // Retrieves the set of expected counter values that will be used for the check after this test.
     auto expected_count() -> Observable::Counters&;
+
+  protected:
+    void SetUp() override;
+    void TearDown() override;
 };
 
 } // namespace testing
