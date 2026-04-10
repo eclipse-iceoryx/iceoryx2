@@ -111,10 +111,12 @@ TEST(StaticString, from_utf8_works_up_to_capacity) {
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) capacity has no significance for this test
 template <typename T, typename U = decltype(iox2::bb::StaticString<99>::from_utf8(std::declval<T&&>()))>
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) not relevant for the test
 constexpr auto can_call_from_utf8_with(T&& /* unused */) -> std::true_type {
     return {};
 }
 template <typename T, typename = std::enable_if_t<!std::is_array<std::remove_reference_t<T>>::value, bool>>
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) not relevant for the test
 constexpr auto can_call_from_utf8_with(T&& /* unused */) -> std::false_type {
     return {};
 }
@@ -264,6 +266,7 @@ TEST(StaticString, construction_from_smaller_capacity_copies_string_contents) {
 template <uint64_t TargetCapacity,
           typename T,
           typename U = decltype(iox2::bb::StaticString<TargetCapacity>(std::declval<T&&>()))>
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) not relevant for the test
 constexpr auto can_construct_from(T&& /* unused */) -> std::true_type {
     return {};
 }
@@ -271,6 +274,7 @@ constexpr auto can_construct_from(T&& /* unused */) -> std::true_type {
 template <uint64_t TargetCapacity,
           typename T,
           typename = std::enable_if_t<(std::remove_reference_t<T>::capacity() > TargetCapacity), bool>>
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) not relevant for the test
 constexpr auto can_construct_from(T&& /* unused */) -> std::false_type {
     return {};
 }
@@ -308,6 +312,7 @@ TEST(StaticString, assignment_from_smaller_capacity_returns_reference_to_self) {
 template <uint64_t TargetCapacity,
           typename T,
           typename U = decltype(std::declval<iox2::bb::StaticString<TargetCapacity>>() = std::declval<T&&>())>
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) not relevant for the test
 constexpr auto can_assign_from(T&& /* unused */) -> std::true_type {
     return {};
 }
@@ -315,6 +320,7 @@ constexpr auto can_assign_from(T&& /* unused */) -> std::true_type {
 template <uint64_t TargetCapacity,
           typename T,
           typename = std::enable_if_t<(std::remove_reference_t<T>::capacity() > TargetCapacity), bool>>
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) not relevant for the test
 constexpr auto can_assign_from(T&& /* unused */) -> std::false_type {
     return {};
 }
