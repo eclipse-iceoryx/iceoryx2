@@ -6,6 +6,8 @@ on:
   - cron: "0 1 * * 1-5"
   workflow_dispatch:
 
+env:
+  CARGO_INCREMENTAL: "0" # incremental builds create many additional small files, which slow down builds on Windows and are not needed in the CI
 
 jobs:
   cargo-nextest-nightly:
