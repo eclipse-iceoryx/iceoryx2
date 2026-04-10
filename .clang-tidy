@@ -10,29 +10,15 @@ performance-*,
 portability-*,
 readability-*,
 
--modernize-use-nodiscard, 
 -performance-avoid-endl,
 
--readability-convert-member-functions-to-static, 
--misc-unused-parameters,
--misc-header-include-cycle,
--performance-move-const-arg,
--hicpp-move-const-arg,
--bugprone-easily-swappable-parameters,
 -misc-include-cleaner,
 -cppcoreguidelines-rvalue-reference-param-not-moved,
--modernize-concat-nested-namespaces,
 -readability-else-after-return,
 '
 
-# TODO: remove the following rule surpressions as soon as the C++ stubs are implemented
-# -readability-convert-member-functions-to-static, 
-# -misc-unused-parameters,
-# -performance-move-const-arg,
-# -hicpp-move-const-arg,
-# -misc-header-include-cycle, # TODO: caused by iceoryx inl structure, see duration.hpp
-# -bugprone-easily-swappable-parameters, # TODO: requires maybe a little refactoring with strong types
-# -misc-include-cleaner, # TODO: would be nice to have but we must be able to surpress it for certain include files
+# NOTE
+# * it would be nice to not suppress 'misc-include-cleaner' but we must be able to suppress it at least for certain include files
 
 
 WarningsAsErrors:     '' # Treat all Checks from above as errors
