@@ -46,7 +46,7 @@ use core::fmt::Display;
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_bb_elementary_traits::plain_old_data::PlainOldData;
+use iceoryx2_bb_elementary_traits::plain_old_data_without_padding::PlainOldDataWithoutPadding;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
 use iceoryx2_bb_system_types::file_path::*;
@@ -130,7 +130,7 @@ impl UniqueProcessId {
 }
 
 unsafe impl Zeroable for UniqueProcessId {}
-unsafe impl PlainOldData for UniqueProcessId {}
+unsafe impl PlainOldDataWithoutPadding for UniqueProcessId {}
 
 /// Represents a process id.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

@@ -51,7 +51,7 @@ use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_bb_elementary_traits::plain_old_data::PlainOldData;
+use iceoryx2_bb_elementary_traits::plain_old_data_without_padding::PlainOldDataWithoutPadding;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_log::{fail, trace, warn};
 use iceoryx2_pal_posix::posix::errno::Errno;
@@ -663,22 +663,21 @@ impl File {
     /// Reads a [`PlainOldData`] value from the file at a given position. If the [`File`] could not be read
     /// or did not contain enough bytes required for the construction of the value, the method will return an
     /// error.
-    pub fn read_val_at<T: PlainOldData>(&self, start: u64) -> Result<T, FileReadValError> {
+    pub fn read_val_at<T: PlainOldDataWithoutPadding>(
+        &self,
+        start: u64,
+    ) -> Result<T, FileReadValError> {
         let msg = "Failed to read value at position";
         let size_of_t = core::mem::size_of::<T>();
         let mut uninit_val = core::mem::MaybeUninit::<T>::uninit();
-        let buffer = unsafe {
-            core::slice::from_raw_parts_mut(uninit_val.as_mut_ptr() as *mut u8, size_of_t)
-        };
+        let buffer =
+            unsafe { core::slice::from_raw_parts_mut(uninit_val.as_mut_ptr().cast(), size_of_t) };
 
         match self.read_range(start, buffer) {
+            Ok(n) if n == size_of_t as u64 => Ok(unsafe { uninit_val.assume_init() }),
             Ok(n) => {
-                if n == size_of_t as u64 {
-                    Ok(unsafe { uninit_val.assume_init() })
-                } else {
-                    fail!(from self, with FileReadValError::FileSizeTooSmallToContainValue,
+                fail!(from self, with FileReadValError::FileSizeTooSmallToContainValue,
                     "{msg} {start} from file since the value has a size of {size_of_t} bytes and only {n} bytes were read.");
-                }
             }
             Err(e) => {
                 fail!(from self, with FileReadValError::FileReadError(e),
@@ -689,7 +688,7 @@ impl File {
 
     /// Reads a [`PlainOldData`] value from the file. If the [`File`] could not be read or did not contain
     /// enough bytes required for the construction of the value, the method will return an error.
-    pub fn read_val<T: PlainOldData>(&self) -> Result<T, FileReadValError> {
+    pub fn read_val<T: PlainOldDataWithoutPadding>(&self) -> Result<T, FileReadValError> {
         let msg = "Failed to read value from file";
         let size_of_t = core::mem::size_of::<T>();
         let mut uninit_val = core::mem::MaybeUninit::<T>::uninit();
@@ -800,11 +799,13 @@ impl File {
 
     /// Writes a [`PlainOldData`] value into the file. If the [`File`] could not be written or not all bytes
     /// were written, then this methods returns an error.
-    pub fn write_val<T: PlainOldData>(&mut self, value: &T) -> Result<(), FileWriteValError> {
+    pub fn write_val<T: PlainOldDataWithoutPadding>(
+        &mut self,
+        value: &T,
+    ) -> Result<(), FileWriteValError> {
         let msg = "Failed to write value into file";
         let size_of_t = core::mem::size_of::<T>();
-        let buffer =
-            unsafe { core::slice::from_raw_parts((value as *const T) as *const u8, size_of_t) };
+        let buffer = unsafe { core::slice::from_raw_parts((value as *const T).cast(), size_of_t) };
 
         match self.write(buffer) {
             Ok(n) => {
@@ -824,7 +825,7 @@ impl File {
 
     /// Writes a [`PlainOldData`] value into the file at the provided position. If the [`File`] could not
     /// be written or not all bytes were written, then this methods returns an error.
-    pub fn write_val_at<T: PlainOldData>(
+    pub fn write_val_at<T: PlainOldDataWithoutPadding>(
         &mut self,
         start: u64,
         value: &T,
