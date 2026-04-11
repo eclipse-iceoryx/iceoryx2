@@ -19,7 +19,7 @@ use crate::{zero_copy_send::ZeroCopySend, zeroable::Zeroable};
 /// 1. Any bit pattern must be valid for the type.
 /// 2. The type must not have any padding between members or at the end.
 /// 3. The type must have a C representation, `#[repr(C)]`.
-/// 4. All members must implement [`PlainOldData`]
+/// 4. All members must implement [`PlainOldDataWithoutPadding`]
 ///
 pub unsafe trait PlainOldDataWithoutPadding:
     ZeroCopySend + Zeroable + Copy + 'static

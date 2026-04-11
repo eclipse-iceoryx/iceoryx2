@@ -44,6 +44,7 @@
 
 use core::fmt::Debug;
 
+use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 
@@ -660,56 +661,50 @@ impl File {
         self.read_line_to_vector(unsafe { buf.as_mut_vec() })
     }
 
-    /// Reads a [`PlainOldData`] value from the file at a given position. If the [`File`] could not be read
-    /// or did not contain enough bytes required for the construction of the value, the method will return an
-    /// error.
-    pub fn read_val_at<T: PlainOldDataWithoutPadding>(
+    fn read_val_impl<
+        T: PlainOldDataWithoutPadding,
+        F: FnMut(&mut [u8]) -> Result<u64, FileReadError>,
+    >(
         &self,
-        start: u64,
+        mut read_func: F,
+        msg: &str,
     ) -> Result<T, FileReadValError> {
-        let msg = "Failed to read value at position";
         let size_of_t = core::mem::size_of::<T>();
-        let mut uninit_val = core::mem::MaybeUninit::<T>::uninit();
-        let buffer =
-            unsafe { core::slice::from_raw_parts_mut(uninit_val.as_mut_ptr().cast(), size_of_t) };
-
-        match self.read_range(start, buffer) {
-            Ok(n) if n == size_of_t as u64 => Ok(unsafe { uninit_val.assume_init() }),
-            Ok(n) => {
-                fail!(from self, with FileReadValError::FileSizeTooSmallToContainValue,
-                    "{msg} {start} from file since the value has a size of {size_of_t} bytes and only {n} bytes were read.");
-            }
-            Err(e) => {
-                fail!(from self, with FileReadValError::FileReadError(e),
-                    "{msg} {start} from file since the file could not be read. [{e:?}]");
-            }
-        }
-    }
-
-    /// Reads a [`PlainOldData`] value from the file. If the [`File`] could not be read or did not contain
-    /// enough bytes required for the construction of the value, the method will return an error.
-    pub fn read_val<T: PlainOldDataWithoutPadding>(&self) -> Result<T, FileReadValError> {
-        let msg = "Failed to read value from file";
-        let size_of_t = core::mem::size_of::<T>();
-        let mut uninit_val = core::mem::MaybeUninit::<T>::uninit();
+        let mut zeroed_val = T::new_zeroed();
         let buffer = unsafe {
-            core::slice::from_raw_parts_mut(uninit_val.as_mut_ptr() as *mut u8, size_of_t)
+            core::slice::from_raw_parts_mut((&mut zeroed_val as *mut T).cast(), size_of_t)
         };
 
-        match self.read(buffer) {
+        match read_func(buffer) {
+            Ok(n) if n == size_of_t as u64 => Ok(zeroed_val),
             Ok(n) => {
-                if n == size_of_t as u64 {
-                    Ok(unsafe { uninit_val.assume_init() })
-                } else {
-                    fail!(from self, with FileReadValError::FileSizeTooSmallToContainValue,
+                fail!(from self, with FileReadValError::FileSizeTooSmallToContainValue,
                     "{msg} since the value has a size of {size_of_t} bytes and only {n} bytes were read.");
-                }
             }
             Err(e) => {
                 fail!(from self, with FileReadValError::FileReadError(e),
                     "{msg} since the file could not be read. [{e:?}]");
             }
         }
+    }
+
+    /// Reads a [`PlainOldDataWithoutPadding`] value from the file at a given position. If the [`File`] could not be read
+    /// or did not contain enough bytes required for the construction of the value, the method will return an
+    /// error.
+    pub fn read_val_at<T: PlainOldDataWithoutPadding>(
+        &self,
+        start: u64,
+    ) -> Result<T, FileReadValError> {
+        self.read_val_impl(
+            |buffer| self.read_range(start, buffer),
+            "Failed to read value at position",
+        )
+    }
+
+    /// Reads a [`PlainOldDataWithoutPadding`] value from the file. If the [`File`] could not be read or did not contain
+    /// enough bytes required for the construction of the value, the method will return an error.
+    pub fn read_val<T: PlainOldDataWithoutPadding>(&self) -> Result<T, FileReadValError> {
+        self.read_val_impl(|buffer| self.read(buffer), "Failed to read value")
     }
 
     /// Reads the content of a file into a slice and returns the number of bytes read but at most
@@ -797,58 +792,63 @@ impl File {
         self.read_range_to_vector(start, end, unsafe { buf.as_mut_vec() })
     }
 
-    /// Writes a [`PlainOldData`] value into the file. If the [`File`] could not be written or not all bytes
-    /// were written, then this methods returns an error.
-    pub fn write_val<T: PlainOldDataWithoutPadding>(
-        &mut self,
+    fn write_val_impl<
+        T: PlainOldDataWithoutPadding,
+        F: FnMut(&[u8]) -> Result<u64, FileWriteError>,
+    >(
         value: &T,
+        mut write_call: F,
+        origin: &str,
+        msg: &str,
     ) -> Result<(), FileWriteValError> {
-        let msg = "Failed to write value into file";
         let size_of_t = core::mem::size_of::<T>();
         let buffer = unsafe { core::slice::from_raw_parts((value as *const T).cast(), size_of_t) };
 
-        match self.write(buffer) {
+        match write_call(buffer) {
             Ok(n) => {
                 if n != size_of_t as u64 {
-                    fail!(from self, with FileWriteValError::ValueWasWrittenOnlyPartially,
+                    fail!(from origin, with FileWriteValError::ValueWasWrittenOnlyPartially,
                         "{msg} since only {n} bytes of {size_of_t} bytes of the value were written.");
                 } else {
                     Ok(())
                 }
             }
             Err(e) => {
-                fail!(from self, with e.into(),
+                fail!(from origin, with e.into(),
                     "{msg} since the file could not be written. [{e:?}]");
             }
         }
     }
 
-    /// Writes a [`PlainOldData`] value into the file at the provided position. If the [`File`] could not
+    /// Writes a [`PlainOldDataWithoutPadding`] value into the file. If the [`File`] could not be written or not all bytes
+    /// were written, then this methods returns an error.
+    pub fn write_val<T: PlainOldDataWithoutPadding>(
+        &mut self,
+        value: &T,
+    ) -> Result<(), FileWriteValError> {
+        let origin = format!("{:?}", self);
+        Self::write_val_impl(
+            value,
+            |buffer| self.write(buffer),
+            &origin,
+            "Failed to write value into file",
+        )
+    }
+
+    /// Writes a [`PlainOldDataWithoutPadding`] value into the file at the provided position. If the [`File`] could not
     /// be written or not all bytes were written, then this methods returns an error.
     pub fn write_val_at<T: PlainOldDataWithoutPadding>(
         &mut self,
         start: u64,
         value: &T,
     ) -> Result<(), FileWriteValError> {
-        let msg = "Failed to write value at position";
-        let size_of_t = core::mem::size_of::<T>();
-        let buffer =
-            unsafe { core::slice::from_raw_parts((value as *const T) as *const u8, size_of_t) };
-
-        match self.write_at(start, buffer) {
-            Ok(n) => {
-                if n != size_of_t as u64 {
-                    fail!(from self, with FileWriteValError::ValueWasWrittenOnlyPartially,
-                        "{msg} {start} into the file since only {n} bytes of {size_of_t} bytes of the value were written.");
-                } else {
-                    Ok(())
-                }
-            }
-            Err(e) => {
-                fail!(from self, with e.into(),
-                    "{msg} {start} into the file since the file could not be written. [{e:?}]");
-            }
-        }
+        let origin = format!("{:?}", self);
+        Self::write_val_impl(
+            value,
+            |buffer| self.write_at(start, buffer),
+            &origin,
+            "Failed to write value into file at a defined position",
+        )
     }
 
     /// Writes a slice into a file and returns the number of bytes which were written.
