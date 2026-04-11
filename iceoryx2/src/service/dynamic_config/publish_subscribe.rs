@@ -32,8 +32,7 @@ use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_log::fatal_panic;
 
 use crate::{
-    identifiers::{UniquePortId, UniquePublisherId, UniqueSubscriberId},
-    node::UniqueNodeId,
+    identifiers::{UniqueNodeId, UniquePortId, UniquePublisherId, UniqueSubscriberId},
     port::details::data_segment::DataSegmentType,
 };
 

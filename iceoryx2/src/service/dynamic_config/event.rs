@@ -33,10 +33,7 @@ use iceoryx2_bb_lock_free::mpmc::{container::*, unique_index_set::ReleaseMode};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_log::fatal_panic;
 
-use crate::{
-    identifiers::{UniqueListenerId, UniqueNotifierId, UniquePortId},
-    node::UniqueNodeId,
-};
+use crate::identifiers::{UniqueListenerId, UniqueNodeId, UniqueNotifierId, UniquePortId};
 
 use super::PortCleanupAction;
 

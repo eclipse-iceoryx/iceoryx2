@@ -34,7 +34,7 @@
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
-use crate::{identifiers::UniquePublisherId, node::UniqueNodeId};
+use crate::identifiers::{UniqueNodeId, UniquePublisherId};
 
 /// Sample header used by
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe)

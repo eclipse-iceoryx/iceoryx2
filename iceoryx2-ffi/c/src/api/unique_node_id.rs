@@ -14,7 +14,7 @@
 
 use crate::api::{AssertNonNullHandle, HandleToType};
 
-use iceoryx2::node::UniqueNodeId;
+use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 

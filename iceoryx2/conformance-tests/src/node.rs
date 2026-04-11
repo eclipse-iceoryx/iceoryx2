@@ -19,10 +19,11 @@ pub mod node {
     use alloc::string::ToString;
     use alloc::{format, vec};
     use core::time::Duration;
+    use iceoryx2::identifiers::UniqueNodeId;
 
     use iceoryx2::config::Config;
     use iceoryx2::node::{
-        NodeCleanupFailure, NodeCreationFailure, NodeListFailure, NodeState, NodeView, UniqueNodeId,
+        NodeCleanupFailure, NodeCreationFailure, NodeListFailure, NodeState, NodeView,
     };
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;

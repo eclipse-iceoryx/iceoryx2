@@ -17,7 +17,8 @@ use alloc::collections::BTreeSet;
 use alloc::format;
 use alloc::string::String;
 
-use iceoryx2::node::{Node, NodeBuilder, UniqueNodeId};
+use iceoryx2::identifiers::UniqueNodeId;
+use iceoryx2::node::{Node, NodeBuilder};
 use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::static_config::StaticConfig;

@@ -12,7 +12,8 @@
 
 use alloc::format;
 
-use iceoryx2::node::{Node, UniqueNodeId};
+use iceoryx2::identifiers::UniqueNodeId;
+use iceoryx2::node::Node;
 use iceoryx2::port::LoanError;
 use iceoryx2::prelude::AllocationStrategy;
 use iceoryx2::service::{Service, static_config::StaticConfig};

@@ -164,15 +164,14 @@ use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
-use iceoryx2_bb_posix::clock::{nanosleep, NanosleepError, Time};
+use iceoryx2_bb_posix::clock::{nanosleep, NanosleepError};
 use iceoryx2_bb_posix::mutex::Handle;
 use iceoryx2_bb_posix::mutex::Mutex;
 use iceoryx2_bb_posix::mutex::MutexBuilder;
 use iceoryx2_bb_posix::mutex::MutexHandle;
 use iceoryx2_bb_posix::mutex::MutexType;
-use iceoryx2_bb_posix::process::{Process, ProcessId};
+use iceoryx2_bb_posix::process::Process;
 use iceoryx2_bb_posix::signal::SignalHandler;
-use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
 use iceoryx2_cal::{
@@ -180,6 +179,7 @@ use iceoryx2_cal::{
 };
 use iceoryx2_log::{debug, fail, fatal_panic, trace, warn};
 
+use crate::identifiers::UniqueNodeId;
 use crate::node::node_name::NodeName;
 use crate::service::builder::{Builder, OpenDynamicStorageFailure};
 use crate::service::config_scheme::{
@@ -193,42 +193,10 @@ use crate::service::{
 use crate::signal_handling_mode::SignalHandlingMode;
 use crate::{config::Config, service::config_scheme::node_details_config};
 
-/// The system-wide unique id of a [`Node`]
-#[derive(
-    Debug,
-    Eq,
-    Hash,
-    PartialEq,
-    Clone,
-    Copy,
-    PartialOrd,
-    Ord,
-    ZeroCopySend,
-    serde::Serialize,
-    serde::Deserialize,
-)]
-#[repr(C)]
-pub struct UniqueNodeId(UniqueSystemId);
-
 impl UniqueNodeId {
     pub(crate) fn as_file_name(&self) -> FileName {
         fatal_panic!(from self, when FileName::new(self.0.to_string().as_bytes()),
                         "This should never happen! The NodeId shall be always a valid FileName.")
-    }
-
-    /// Returns the underlying value of the [`NodeId`].
-    pub fn value(&self) -> u128 {
-        self.0.value()
-    }
-
-    /// Returns the [`ProcessId`] of the process that owns the [`Node`].
-    pub fn pid(&self) -> ProcessId {
-        self.0.pid()
-    }
-
-    /// Returns the time the [`Node`] was created.
-    pub fn creation_time(&self) -> Time {
-        self.0.creation_time()
     }
 }
 
@@ -1289,17 +1257,13 @@ impl NodeBuilder {
     /// Creates a new [`Node`] for a specific [`service::Service`]. All entities owned by the
     /// [`Node`] will have the same [`service::Service`].
     pub fn create<Service: service::Service>(self) -> Result<Node<Service>, NodeCreationFailure> {
-        let msg = "Unable to create node";
-        let node_id = fail!(from self, when UniqueSystemId::new(),
-                                with NodeCreationFailure::InternalError,
-                                "{msg} since the unique node id could not be generated.");
-        unsafe { self.__internal_create_with_custom_node_id(node_id) }
+        unsafe { self.__internal_create_with_custom_node_id(UniqueNodeId::new()) }
     }
 
     #[doc(hidden)]
     pub unsafe fn __internal_create_with_custom_node_id<Service: service::Service>(
         self,
-        node_id: UniqueSystemId,
+        node_id: UniqueNodeId,
     ) -> Result<Node<Service>, NodeCreationFailure> {
         let config = if let Some(ref config) = self.config {
             config.clone()
@@ -1315,12 +1279,12 @@ impl NodeBuilder {
         let monitor_name = fatal_panic!(from self, when FileName::new(node_id.value().to_string().as_bytes()),
                                 "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
         let (details_storage, details) =
-            self.create_node_details_storage::<Service>(&config, &UniqueNodeId(node_id))?;
+            self.create_node_details_storage::<Service>(&config, &node_id)?;
         let monitoring_token = self.create_token::<Service>(&config, &monitor_name)?;
 
         Ok(Node {
             shared: Arc::new(SharedNode {
-                id: UniqueNodeId(node_id),
+                id: node_id,
                 monitoring_token: UnsafeCell::new(Some(monitoring_token)),
                 registered_services: RegisteredServices::new(),
                 _details_storage: details_storage,

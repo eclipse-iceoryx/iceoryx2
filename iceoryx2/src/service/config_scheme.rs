@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::{config, node::UniqueNodeId};
+use crate::{config, identifiers::UniqueNodeId};
 use core::fmt::Debug;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::named_concept::{NamedConceptConfiguration, NamedConceptMgmt};

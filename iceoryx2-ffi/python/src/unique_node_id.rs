@@ -15,7 +15,7 @@ use pyo3::prelude::*;
 #[pyclass(str = "{0:?}", from_py_object)]
 #[derive(Clone, PartialEq)]
 /// The system-wide unique id of a `Node`
-pub struct UniqueNodeId(pub(crate) iceoryx2::node::UniqueNodeId);
+pub struct UniqueNodeId(pub(crate) iceoryx2::identifiers::UniqueNodeId);
 
 #[pymethods]
 impl UniqueNodeId {

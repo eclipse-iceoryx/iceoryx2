@@ -16,8 +16,7 @@ use iceoryx2_cal::zero_copy_connection::ChannelId;
 
 use crate::{
     active_request::RequestId,
-    identifiers::{UniqueClientId, UniqueServerId},
-    node::UniqueNodeId,
+    identifiers::{UniqueClientId, UniqueNodeId, UniqueServerId},
 };
 
 /// Request header used by

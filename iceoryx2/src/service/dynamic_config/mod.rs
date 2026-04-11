@@ -40,7 +40,7 @@ use iceoryx2_bb_lock_free::mpmc::{
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_log::{fail, fatal_panic};
 
-use crate::{identifiers::UniquePortId, node::UniqueNodeId};
+use crate::identifiers::{UniqueNodeId, UniquePortId};
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum PortCleanupAction {
@@ -195,7 +195,10 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn list_node_ids<F: FnMut(&UniqueNodeId) -> CallbackProgression>(&self, mut callback: F) {
+    pub(crate) fn list_node_ids<F: FnMut(&UniqueNodeId) -> CallbackProgression>(
+        &self,
+        mut callback: F,
+    ) {
         let state = unsafe { self.nodes.get_state() };
         state.for_each(|_, node_id| callback(node_id));
     }

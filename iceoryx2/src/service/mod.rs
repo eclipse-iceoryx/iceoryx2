@@ -264,7 +264,8 @@ use alloc::vec::Vec;
 
 use crate::config;
 use crate::constants::MAX_TYPE_NAME_LENGTH;
-use crate::node::{UniqueNodeId, NodeListFailure, NodeState, SharedNode};
+use crate::identifiers::UniqueNodeId;
+use crate::node::{NodeListFailure, NodeState, SharedNode};
 use crate::service::config_scheme::dynamic_config_storage_config;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::static_config::*;
@@ -453,8 +454,8 @@ pub mod internal {
     use port_factory::PortFactory;
 
     use crate::{
-        identifiers::UniquePortId,
-        node::{NodeBuilder, UniqueNodeId},
+        identifiers::{UniqueNodeId, UniquePortId},
+        node::NodeBuilder,
         port::{listener::remove_connection_of_listener, notifier::Notifier},
         prelude::EventId,
         service::stale_resource_cleanup::{
