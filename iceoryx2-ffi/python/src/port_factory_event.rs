@@ -16,7 +16,6 @@ use pyo3::prelude::*;
 use crate::{
     attribute_set::AttributeSet,
     error::NodeListFailure,
-    node_id::UniqueNodeId,
     node_state::{AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState},
     parc::Parc,
     port_factory_listener::PortFactoryListener,
@@ -24,6 +23,7 @@ use crate::{
     service_hash::ServiceHash,
     service_name::ServiceName,
     static_config_event::StaticConfigEvent,
+    unique_node_id::UniqueNodeId,
 };
 
 pub(crate) enum PortFactoryEventType {

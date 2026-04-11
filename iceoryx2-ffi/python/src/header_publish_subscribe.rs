@@ -12,7 +12,7 @@
 
 use pyo3::prelude::*;
 
-use crate::{node_id::UniqueNodeId, unique_publisher_id::UniquePublisherId};
+use crate::{unique_node_id::UniqueNodeId, unique_publisher_id::UniquePublisherId};
 
 #[pyclass(eq)]
 #[derive(PartialEq, Eq)]

@@ -63,7 +63,6 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/messaging_pattern.cpp
     src/node.cpp
     src/node_details.cpp
-    src/node_id.cpp
     src/node_name.cpp
     src/node_state.cpp
     src/notifier.cpp
@@ -84,6 +83,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/static_config_request_response.cpp
     src/subscriber_details.cpp
     src/type_variant.cpp
+    src/unique_node_id.cpp
     src/unique_port_id.cpp
     src/waitset.cpp
     src/writer_details.cpp

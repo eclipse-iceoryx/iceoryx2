@@ -14,8 +14,8 @@ use iceoryx2::node::NodeView;
 use pyo3::prelude::*;
 
 use crate::{
-    config::Config, error::NodeCleanupFailure, file_name::FileName, node_id::UniqueNodeId,
-    node_name::NodeName, parc::Parc,
+    config::Config, error::NodeCleanupFailure, file_name::FileName, node_name::NodeName,
+    parc::Parc, unique_node_id::UniqueNodeId,
 };
 
 #[derive(Clone)]

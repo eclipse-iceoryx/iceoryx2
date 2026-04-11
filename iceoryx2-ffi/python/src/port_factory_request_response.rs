@@ -16,7 +16,6 @@ use pyo3::prelude::*;
 
 use crate::attribute_set::AttributeSet;
 use crate::error::NodeListFailure;
-use crate::node_id::UniqueNodeId;
 use crate::node_state::{
     AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState,
 };
@@ -27,6 +26,7 @@ use crate::service_hash::ServiceHash;
 use crate::service_name::ServiceName;
 use crate::static_config_request_response::StaticConfigRequestResponse;
 use crate::type_storage::TypeStorage;
+use crate::unique_node_id::UniqueNodeId;
 
 #[derive(Clone)]
 pub(crate) enum PortFactoryRequestResponseType {

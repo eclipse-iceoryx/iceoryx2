@@ -20,7 +20,6 @@
 #include "iox2/callback_progression.hpp"
 #include "iox2/config.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/node_id.hpp"
 #include "iox2/node_name.hpp"
 #include "iox2/node_state.hpp"
 #include "iox2/node_wait_failure.hpp"
@@ -28,6 +27,7 @@
 #include "iox2/service_name.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/signal_handling_mode.hpp"
+#include "iox2/unique_node_id.hpp"
 
 namespace iox2 {
 /// The central entry point of iceoryx2. Represents a node of the iceoryx2

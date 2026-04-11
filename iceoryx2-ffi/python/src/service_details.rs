@@ -16,10 +16,10 @@ use pyo3::prelude::*;
 use crate::{
     attribute_set::AttributeSet,
     messaging_pattern::MessagingPattern,
-    node_id::UniqueNodeId,
     node_state::{AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState},
     service_hash::ServiceHash,
     service_name::ServiceName,
+    unique_node_id::UniqueNodeId,
 };
 
 #[derive(Debug)]

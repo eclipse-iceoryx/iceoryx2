@@ -16,10 +16,10 @@
 #include "iox2/bb/optional.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/node_details.hpp"
-#include "iox2/node_id.hpp"
 #include "iox2/node_name.hpp"
 #include "iox2/node_state.hpp"
 #include "iox2/service_type.hpp"
+#include "iox2/unique_node_id.hpp"
 
 namespace iox2 {
 namespace internal {

@@ -17,7 +17,6 @@ use crate::{
     config::Config,
     duration::Duration,
     error::{NodeListFailure, NodeWaitFailure},
-    node_id::UniqueNodeId,
     node_name::NodeName,
     node_state::{AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState},
     parc::Parc,
@@ -25,6 +24,7 @@ use crate::{
     service_name::ServiceName,
     service_type::ServiceType,
     signal_handling_mode::SignalHandlingMode,
+    unique_node_id::UniqueNodeId,
 };
 
 pub(crate) enum NodeType {

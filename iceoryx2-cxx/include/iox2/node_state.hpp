@@ -19,8 +19,8 @@
 #include "iox2/legacy/variant.hpp"
 #include "node_details.hpp"
 #include "node_failure_enums.hpp"
-#include "node_id.hpp"
 #include "service_type.hpp"
+#include "unique_node_id.hpp"
 
 namespace iox2 {
 /// Contains all details of a [`Node`] that is alive.
