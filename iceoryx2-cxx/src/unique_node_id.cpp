@@ -10,27 +10,27 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/node_id.hpp"
+#include "iox2/unique_node_id.hpp"
 
 #include <utility>
 
 namespace iox2 {
-NodeId::NodeId(iox2_node_id_h handle)
+UniqueNodeId::UniqueNodeId(iox2_unique_node_id_h handle)
     : m_handle { handle } {
 }
 
-NodeId::NodeId(const NodeId& rhs) {
+UniqueNodeId::UniqueNodeId(const UniqueNodeId& rhs) {
     if (rhs.m_handle != nullptr) {
-        iox2_node_id_clone_from_handle(nullptr, &rhs.m_handle, &m_handle);
+        iox2_unique_node_id_clone_from_handle(nullptr, &rhs.m_handle, &m_handle);
     }
 }
 
-NodeId::NodeId(NodeId&& rhs) noexcept
+UniqueNodeId::UniqueNodeId(UniqueNodeId&& rhs) noexcept
     : m_handle { rhs.m_handle } {
     rhs.m_handle = nullptr;
 }
 
-auto NodeId::operator=(NodeId&& rhs) noexcept -> NodeId& {
+auto UniqueNodeId::operator=(UniqueNodeId&& rhs) noexcept -> UniqueNodeId& {
     if (this != &rhs) {
         drop();
         m_handle = rhs.m_handle;
@@ -40,61 +40,61 @@ auto NodeId::operator=(NodeId&& rhs) noexcept -> NodeId& {
     return *this;
 }
 
-auto NodeId::operator=(const NodeId& rhs) -> NodeId& {
+auto UniqueNodeId::operator=(const UniqueNodeId& rhs) -> UniqueNodeId& {
     if (this != &rhs) {
         drop();
 
         if (rhs.m_handle != nullptr) {
-            iox2_node_id_clone_from_handle(nullptr, &rhs.m_handle, &m_handle);
+            iox2_unique_node_id_clone_from_handle(nullptr, &rhs.m_handle, &m_handle);
         }
     }
 
     return *this;
 }
 
-NodeId::~NodeId() {
+UniqueNodeId::~UniqueNodeId() {
     drop();
 }
 
-void NodeId::drop() {
+void UniqueNodeId::drop() {
     if (m_handle != nullptr) {
-        iox2_node_id_drop(m_handle);
+        iox2_unique_node_id_drop(m_handle);
         m_handle = nullptr;
     }
 }
 
-auto NodeId::value_high() const -> uint64_t {
-    return iox2_node_id_value_high(&m_handle);
+auto UniqueNodeId::value_high() const -> uint64_t {
+    return iox2_unique_node_id_value_high(&m_handle);
 }
 
-auto NodeId::value_low() const -> uint64_t {
-    return iox2_node_id_value_low(&m_handle);
+auto UniqueNodeId::value_low() const -> uint64_t {
+    return iox2_unique_node_id_value_low(&m_handle);
 }
 
-auto NodeId::pid() const -> int32_t {
-    return iox2_node_id_pid(&m_handle);
+auto UniqueNodeId::pid() const -> int32_t {
+    return iox2_unique_node_id_pid(&m_handle);
 }
 
-auto NodeId::creation_time() const -> timespec {
+auto UniqueNodeId::creation_time() const -> timespec {
     uint64_t seconds = 0;
     uint32_t nanoseconds = 0;
-    iox2_node_id_creation_time(&m_handle, &seconds, &nanoseconds);
+    iox2_unique_node_id_creation_time(&m_handle, &seconds, &nanoseconds);
 
     return { static_cast<decltype(timespec::tv_sec)>(seconds), static_cast<decltype(timespec::tv_nsec)>(nanoseconds) };
 }
 
-auto operator<<(std::ostream& stream, const NodeId& node) -> std::ostream& {
+auto operator<<(std::ostream& stream, const UniqueNodeId& node) -> std::ostream& {
     stream << "NodeId { value_high: " << node.value_high() << ", value_low: " << node.value_low()
            << ", pid: " << node.pid() << ", creation time: " << node.creation_time().tv_sec << "."
            << node.creation_time().tv_nsec << "s }";
     return stream;
 }
 
-auto operator==(const NodeId& lhs, const NodeId& rhs) -> bool {
+auto operator==(const UniqueNodeId& lhs, const UniqueNodeId& rhs) -> bool {
     return lhs.value_high() == rhs.value_high() && lhs.value_low() == rhs.value_low();
 }
 
-auto operator!=(const NodeId& lhs, const NodeId& rhs) -> bool {
+auto operator!=(const UniqueNodeId& lhs, const UniqueNodeId& rhs) -> bool {
     return !(lhs == rhs);
 }
 } // namespace iox2

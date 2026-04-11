@@ -34,21 +34,21 @@
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
-use crate::{identifiers::UniquePublisherId, node::NodeId};
+use crate::identifiers::{UniqueNodeId, UniquePublisherId};
 
 /// Sample header used by
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe)
 #[derive(Debug, Copy, Clone, ZeroCopySend, PartialEq, Eq)]
 #[repr(C)]
 pub struct Header {
-    node_id: NodeId,
+    node_id: UniqueNodeId,
     publisher_port_id: UniquePublisherId,
     number_of_elements: u64,
 }
 
 impl Header {
     pub(crate) fn new(
-        node_id: NodeId,
+        node_id: UniqueNodeId,
         publisher_port_id: UniquePublisherId,
         number_of_elements: u64,
     ) -> Self {
@@ -59,9 +59,9 @@ impl Header {
         }
     }
 
-    /// Returns the [`NodeId`] of the source node that published the
+    /// Returns the [`UniqueNodeId`] of the source node that published the
     /// [`Sample`](crate::sample::Sample).
-    pub fn node_id(&self) -> NodeId {
+    pub fn node_id(&self) -> UniqueNodeId {
         self.node_id
     }
 

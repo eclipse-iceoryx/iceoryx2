@@ -410,7 +410,7 @@ pub unsafe extern "C" fn iox2_port_factory_event_service_hash(
 }
 
 /// Calls the callback repeatedly with an [`iox2_node_state_e`](crate::api::iox2_node_state_e),
-/// [`iox2_node_id_ptr`](crate::api::iox2_node_id_ptr),
+/// [`iox2_unique_node_id_ptr`](crate::api::iox2_unique_node_id_ptr),
 /// [´iox2_node_name_ptr´](crate::api::iox2_node_name_ptr) and
 /// [`iox2_config_ptr`](crate::api::iox2_config_ptr) for all [`Node`](iceoryx2::node::Node)s that
 /// have opened the service.

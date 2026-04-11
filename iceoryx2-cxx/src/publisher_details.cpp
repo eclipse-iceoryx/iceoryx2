@@ -37,11 +37,11 @@ auto PublisherDetailsView::publisher_id() const -> UniquePublisherId {
     return UniquePublisherId { id_handle };
 }
 
-auto PublisherDetailsView::node_id() const -> NodeId {
+auto PublisherDetailsView::node_id() const -> UniqueNodeId {
     const auto* node_id_ptr = iox2_publisher_details_node_id(m_handle);
-    iox2_node_id_h id_handle = nullptr;
-    iox2_node_id_clone_from_ptr(nullptr, node_id_ptr, &id_handle);
-    return NodeId(id_handle);
+    iox2_unique_node_id_h id_handle = nullptr;
+    iox2_unique_node_id_clone_from_ptr(nullptr, node_id_ptr, &id_handle);
+    return UniqueNodeId(id_handle);
 }
 
 auto PublisherDetailsView::number_of_samples() const -> uint64_t {

@@ -255,8 +255,8 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         self
     }
 
-    /// If the [`Service`] is created it set the greatest supported [`NodeId`] value
-    /// If an existing [`Service`] is opened it defines the value size the [`NodeId`]
+    /// If the [`Service`] is created it set the greatest supported [`UniqueNodeId`] value
+    /// If an existing [`Service`] is opened it defines the value size the [`UniqueNodeId`]
     /// must at least support.
     pub fn event_id_max_value(mut self, value: usize) -> Self {
         self.config_details().event_id_max_value = value;

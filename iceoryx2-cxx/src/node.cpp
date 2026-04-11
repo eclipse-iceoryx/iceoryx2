@@ -61,11 +61,11 @@ auto Node<T>::config() const -> ConfigView {
 }
 
 template <ServiceType T>
-auto Node<T>::id() const -> NodeId {
-    const auto* node_id_ptr = iox2_node_id(&m_handle, iox2::bb::into<iox2_service_type_e>(T));
-    iox2_node_id_h node_id_handle = nullptr;
-    iox2_node_id_clone_from_ptr(nullptr, node_id_ptr, &node_id_handle);
-    return NodeId(node_id_handle);
+auto Node<T>::id() const -> UniqueNodeId {
+    const auto* node_id_ptr = iox2_unique_node_id(&m_handle, iox2::bb::into<iox2_service_type_e>(T));
+    iox2_unique_node_id_h node_id_handle = nullptr;
+    iox2_unique_node_id_clone_from_ptr(nullptr, node_id_ptr, &node_id_handle);
+    return UniqueNodeId(node_id_handle);
 }
 
 template <ServiceType T>

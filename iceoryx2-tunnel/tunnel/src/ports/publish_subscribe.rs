@@ -12,7 +12,8 @@
 
 use alloc::format;
 
-use iceoryx2::node::{Node, NodeId};
+use iceoryx2::identifiers::UniqueNodeId;
+use iceoryx2::node::Node;
 use iceoryx2::port::LoanError;
 use iceoryx2::prelude::AllocationStrategy;
 use iceoryx2::service::{Service, static_config::StaticConfig};
@@ -194,7 +195,7 @@ impl<S: Service> PublishSubscribePorts<S> {
 
     pub(crate) fn receive<PropagateFn, E>(
         &self,
-        node_id: &NodeId,
+        node_id: &UniqueNodeId,
         mut propagate: PropagateFn,
     ) -> Result<bool, ReceiveError>
     where

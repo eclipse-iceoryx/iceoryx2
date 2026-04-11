@@ -28,8 +28,7 @@
 //! # }
 //! ```
 
-use crate::identifiers::{UniquePortId, UniqueReaderId, UniqueWriterId};
-use crate::node::NodeId;
+use crate::identifiers::{UniqueNodeId, UniquePortId, UniqueReaderId, UniqueWriterId};
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::{container::*, unique_index_set::ReleaseMode};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
@@ -51,9 +50,9 @@ pub(crate) struct DynamicConfigSettings {
 pub struct ReaderDetails {
     /// The [`UniqueReaderId`] of the [`Reader`](crate::port::reader::Reader).
     pub reader_id: UniqueReaderId,
-    /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
+    /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Reader`](crate::port::reader::Reader) was created.
-    pub node_id: NodeId,
+    pub node_id: UniqueNodeId,
 }
 
 /// Contains the communication settings of the connected
@@ -63,9 +62,9 @@ pub struct ReaderDetails {
 pub struct WriterDetails {
     /// The [`UniqueWriterId`] of the [`Writer`](crate::port::writer::Writer).
     pub writer_id: UniqueWriterId,
-    /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
+    /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Writer`](crate::port::writer::Writer) was created.
-    pub node_id: NodeId,
+    pub node_id: UniqueNodeId,
 }
 
 /// The dynamic configuration of an
@@ -134,7 +133,7 @@ impl DynamicConfig {
         PortCleanup: FnMut(UniquePortId) -> PortCleanupAction,
     >(
         &self,
-        node_id: &NodeId,
+        node_id: &UniqueNodeId,
         mut port_cleanup_callback: PortCleanup,
     ) {
         self.readers

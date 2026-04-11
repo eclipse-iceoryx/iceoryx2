@@ -15,7 +15,7 @@
 
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/node_id.hpp"
+#include "iox2/unique_node_id.hpp"
 #include "iox2/unique_port_id.hpp"
 
 namespace iox2 {
@@ -33,7 +33,7 @@ class ListenerDetailsView {
     auto listener_id() const -> UniqueListenerId;
 
     /// The [`NodeId`] of the [`Node`] under which the [`Listener`] was created.
-    auto node_id() const -> NodeId;
+    auto node_id() const -> UniqueNodeId;
 
   private:
     template <typename T, typename>

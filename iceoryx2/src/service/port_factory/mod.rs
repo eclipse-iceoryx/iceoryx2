@@ -13,7 +13,7 @@
 use iceoryx2_bb_elementary::CallbackProgression;
 
 use crate::config::Config;
-use crate::identifiers::ServiceId;
+use crate::identifiers::UniqueServiceId;
 use crate::node::{NodeListFailure, NodeState};
 use crate::service::service_hash::ServiceHash;
 
@@ -75,8 +75,8 @@ pub trait PortFactory {
     /// Returns the [`ServiceName`] of the service
     fn name(&self) -> &ServiceName;
 
-    /// Returns the unique [`ServiceId`] of the [`crate::service::Service`]
-    fn service_id(&self) -> ServiceId;
+    /// Returns the unique [`UniqueServiceId`] of the [`crate::service::Service`]
+    fn unique_service_id(&self) -> UniqueServiceId;
 
     /// Returns the [`ServiceHash`] of the [`crate::service::Service`]
     fn service_hash(&self) -> &ServiceHash;

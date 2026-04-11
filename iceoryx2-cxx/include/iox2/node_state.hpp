@@ -19,8 +19,8 @@
 #include "iox2/legacy/variant.hpp"
 #include "node_details.hpp"
 #include "node_failure_enums.hpp"
-#include "node_id.hpp"
 #include "service_type.hpp"
+#include "unique_node_id.hpp"
 
 namespace iox2 {
 /// Contains all details of a [`Node`] that is alive.
@@ -33,17 +33,17 @@ class AliveNodeView {
     auto operator=(AliveNodeView&&) -> AliveNodeView& = default;
     ~AliveNodeView() = default;
 
-    AliveNodeView(NodeId node_id, const bb::Optional<NodeDetails>& details);
+    AliveNodeView(UniqueNodeId node_id, const bb::Optional<NodeDetails>& details);
 
     /// Returns the [`NodeId`].
-    auto id() const -> const NodeId&;
+    auto id() const -> const UniqueNodeId&;
 
     /// Returns optional [`NodeDetails`] that contains further information about the [`Node`].
     /// Can only be acquired when the process has the access right to read it.
     auto details() const -> const bb::Optional<NodeDetails>&;
 
   private:
-    NodeId m_id;
+    UniqueNodeId m_id;
     bb::Optional<NodeDetails> m_details;
 };
 
@@ -60,7 +60,7 @@ class DeadNodeView {
     explicit DeadNodeView(const AliveNodeView<T>& view);
 
     /// Returns the [`NodeId`].
-    auto id() const -> const NodeId&;
+    auto id() const -> const UniqueNodeId&;
 
     /// Returns a optional [`NodeDetails`] that contains further information about the [`Node`].
     /// Can only be acquired when the process has the access right to read it.
@@ -94,23 +94,26 @@ class NodeState {
 
     /// If the [`Node`] is inaccessible due to a lack of permissions the provided callback is
     /// called with a [`NodeId`] as argument.
-    auto inaccessible(const iox2::bb::StaticFunction<void(NodeId&)>& callback) -> NodeState&;
+    auto inaccessible(const iox2::bb::StaticFunction<void(UniqueNodeId&)>& callback) -> NodeState&;
 
     /// If the [`Node`] is files are corrupted or some essential constructs are missing the
     /// provided callback is called with a [`NodeId`] as argument.
-    auto undefined(const iox2::bb::StaticFunction<void(NodeId&)>& callback) -> NodeState&;
+    auto undefined(const iox2::bb::StaticFunction<void(UniqueNodeId&)>& callback) -> NodeState&;
 
   private:
     template <ServiceType>
-    friend auto internal::list_callback(
-        iox2_node_state_e, iox2_node_id_ptr, const char*, iox2_node_name_ptr, iox2_config_ptr, iox2_callback_context)
-        -> iox2_callback_progression_e;
+    friend auto internal::list_callback(iox2_node_state_e,
+                                        iox2_unique_node_id_ptr,
+                                        const char*,
+                                        iox2_node_name_ptr,
+                                        iox2_config_ptr,
+                                        iox2_callback_context) -> iox2_callback_progression_e;
 
     explicit NodeState(const AliveNodeView<T>& view);
     explicit NodeState(const DeadNodeView<T>& view);
-    NodeState(iox2_node_state_e node_state, const NodeId& node_id);
+    NodeState(iox2_node_state_e node_state, const UniqueNodeId& node_id);
 
-    iox2::legacy::variant<AliveNodeView<T>, DeadNodeView<T>, NodeId, NodeId> m_state;
+    iox2::legacy::variant<AliveNodeView<T>, DeadNodeView<T>, UniqueNodeId, UniqueNodeId> m_state;
 };
 } // namespace iox2
 

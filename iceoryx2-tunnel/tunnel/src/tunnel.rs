@@ -17,7 +17,8 @@ use alloc::collections::BTreeSet;
 use alloc::format;
 use alloc::string::String;
 
-use iceoryx2::node::{Node, NodeBuilder, NodeId};
+use iceoryx2::identifiers::UniqueNodeId;
+use iceoryx2::node::{Node, NodeBuilder};
 use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::static_config::StaticConfig;
@@ -414,7 +415,7 @@ fn setup_event<S: Service, B: Backend<S> + Debug>(
 }
 
 fn propagate_publish_subscribe_payloads<S: Service, B: Backend<S> + Debug>(
-    node_id: &NodeId,
+    node_id: &UniqueNodeId,
     port: &PublishSubscribePorts<S>,
     relay: &B::PublishSubscribeRelay,
 ) -> Result<(), PropagateError> {

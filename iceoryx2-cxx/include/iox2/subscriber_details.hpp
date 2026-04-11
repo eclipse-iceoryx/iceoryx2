@@ -15,7 +15,7 @@
 
 #include "iox2/internal//callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/node_id.hpp"
+#include "iox2/unique_node_id.hpp"
 #include "iox2/unique_port_id.hpp"
 
 namespace iox2 {
@@ -33,7 +33,7 @@ class SubscriberDetailsView {
     auto subscriber_id() const -> UniqueSubscriberId;
 
     /// The [`NodeId`] of the [`Node`] under which the [`Subscriber`] was created.
-    auto node_id() const -> NodeId;
+    auto node_id() const -> UniqueNodeId;
 
     /// The receive buffer size for incoming samples.
     auto buffer_size() const -> uint64_t;

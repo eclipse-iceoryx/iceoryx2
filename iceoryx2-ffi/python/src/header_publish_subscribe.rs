@@ -12,7 +12,7 @@
 
 use pyo3::prelude::*;
 
-use crate::{node_id::NodeId, unique_publisher_id::UniquePublisherId};
+use crate::{unique_node_id::UniqueNodeId, unique_publisher_id::UniquePublisherId};
 
 #[pyclass(eq)]
 #[derive(PartialEq, Eq)]
@@ -22,9 +22,9 @@ pub struct HeaderPublishSubscribe(pub(crate) iceoryx2::service::header::publish_
 #[pymethods]
 impl HeaderPublishSubscribe {
     #[getter]
-    /// Returns the `NodeId` of the source node that published the `Sample`.
-    pub fn node_id(&self) -> NodeId {
-        NodeId(self.0.node_id())
+    /// Returns the `UniqueNodeId` of the source node that published the `Sample`.
+    pub fn node_id(&self) -> UniqueNodeId {
+        UniqueNodeId(self.0.node_id())
     }
 
     #[getter]

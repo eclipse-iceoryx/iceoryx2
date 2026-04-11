@@ -17,7 +17,6 @@ use crate::{
     config::Config,
     duration::Duration,
     error::{NodeListFailure, NodeWaitFailure},
-    node_id::NodeId,
     node_name::NodeName,
     node_state::{AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState},
     parc::Parc,
@@ -25,6 +24,7 @@ use crate::{
     service_name::ServiceName,
     service_type::ServiceType,
     signal_handling_mode::SignalHandlingMode,
+    unique_node_id::UniqueNodeId,
 };
 
 pub(crate) enum NodeType {
@@ -68,10 +68,10 @@ impl Node {
 
     #[getter]
     /// Returns the unique id of the `Node`.
-    pub fn id(&self) -> NodeId {
+    pub fn id(&self) -> UniqueNodeId {
         match &*self.0.lock() {
-            NodeType::Ipc(node) => NodeId(*node.id()),
-            NodeType::Local(node) => NodeId(*node.id()),
+            NodeType::Ipc(node) => UniqueNodeId(*node.id()),
+            NodeType::Local(node) => UniqueNodeId(*node.id()),
         }
     }
 
@@ -92,10 +92,10 @@ impl Node {
                             states.push(NodeState::Dead(DeadNodeView(DeadNodeViewType::Ipc(a))))
                         }
                         iceoryx2::node::NodeState::Inaccessible(a) => {
-                            states.push(NodeState::Inaccessible(NodeId(a)))
+                            states.push(NodeState::Inaccessible(UniqueNodeId(a)))
                         }
                         iceoryx2::node::NodeState::Undefined(a) => {
-                            states.push(NodeState::Undefined(NodeId(a)))
+                            states.push(NodeState::Undefined(UniqueNodeId(a)))
                         }
                     }
 
@@ -112,10 +112,10 @@ impl Node {
                             states.push(NodeState::Dead(DeadNodeView(DeadNodeViewType::Local(a))))
                         }
                         iceoryx2::node::NodeState::Inaccessible(a) => {
-                            states.push(NodeState::Inaccessible(NodeId(a)))
+                            states.push(NodeState::Inaccessible(UniqueNodeId(a)))
                         }
                         iceoryx2::node::NodeState::Undefined(a) => {
-                            states.push(NodeState::Undefined(NodeId(a)))
+                            states.push(NodeState::Undefined(UniqueNodeId(a)))
                         }
                     }
 

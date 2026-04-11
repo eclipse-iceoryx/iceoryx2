@@ -78,7 +78,7 @@ mod node {
 
     extern "C" fn node_list_callback(
         node_state: iox2_node_state_e,
-        _node_id_ptr: iox2_node_id_ptr,
+        _node_id_ptr: iox2_unique_node_id_ptr,
         _executable: *const c_char,
         _node_name_ptr: iox2_node_name_ptr,
         _config_ptr: iox2_config_ptr,

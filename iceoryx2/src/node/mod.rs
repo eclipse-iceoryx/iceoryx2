@@ -164,15 +164,14 @@ use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
-use iceoryx2_bb_posix::clock::{nanosleep, NanosleepError, Time};
+use iceoryx2_bb_posix::clock::{nanosleep, NanosleepError};
 use iceoryx2_bb_posix::mutex::Handle;
 use iceoryx2_bb_posix::mutex::Mutex;
 use iceoryx2_bb_posix::mutex::MutexBuilder;
 use iceoryx2_bb_posix::mutex::MutexHandle;
 use iceoryx2_bb_posix::mutex::MutexType;
-use iceoryx2_bb_posix::process::{Process, ProcessId};
+use iceoryx2_bb_posix::process::Process;
 use iceoryx2_bb_posix::signal::SignalHandler;
-use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
 use iceoryx2_cal::{
@@ -180,6 +179,7 @@ use iceoryx2_cal::{
 };
 use iceoryx2_log::{debug, fail, fatal_panic, trace, warn};
 
+use crate::identifiers::UniqueNodeId;
 use crate::node::node_name::NodeName;
 use crate::service::builder::{Builder, OpenDynamicStorageFailure};
 use crate::service::config_scheme::{
@@ -193,42 +193,10 @@ use crate::service::{
 use crate::signal_handling_mode::SignalHandlingMode;
 use crate::{config::Config, service::config_scheme::node_details_config};
 
-/// The system-wide unique id of a [`Node`]
-#[derive(
-    Debug,
-    Eq,
-    Hash,
-    PartialEq,
-    Clone,
-    Copy,
-    PartialOrd,
-    Ord,
-    ZeroCopySend,
-    serde::Serialize,
-    serde::Deserialize,
-)]
-#[repr(C)]
-pub struct NodeId(UniqueSystemId);
-
-impl NodeId {
+impl UniqueNodeId {
     pub(crate) fn as_file_name(&self) -> FileName {
         fatal_panic!(from self, when FileName::new(self.0.to_string().as_bytes()),
                         "This should never happen! The NodeId shall be always a valid FileName.")
-    }
-
-    /// Returns the underlying value of the [`NodeId`].
-    pub fn value(&self) -> u128 {
-        self.0.value()
-    }
-
-    /// Returns the [`ProcessId`] of the process that owns the [`Node`].
-    pub fn pid(&self) -> ProcessId {
-        self.0.pid()
-    }
-
-    /// Returns the time the [`Node`] was created.
-    pub fn creation_time(&self) -> Time {
-        self.0.creation_time()
     }
 }
 
@@ -383,11 +351,11 @@ pub enum NodeState<Service: service::Service> {
     /// now the responsibility to cleanup all the stale resources.
     Dead(DeadNodeView<Service>),
     /// The process does not have sufficient permissions to identify the [`Node`] as dead or alive.
-    Inaccessible(NodeId),
+    Inaccessible(UniqueNodeId),
     /// The [`Node`] is in an undefined state, meaning that certain elements are missing,
     /// misconfigured or inconsistent. This can only happen due to an implementation failure or
     /// when the corresponding [`Node`] resources were altered.
-    Undefined(NodeId),
+    Undefined(UniqueNodeId),
 }
 
 impl<Service: service::Service> Clone for NodeState<Service> {
@@ -402,7 +370,10 @@ impl<Service: service::Service> Clone for NodeState<Service> {
 }
 
 impl<Service: service::Service> NodeState<Service> {
-    pub(crate) fn new(node_id: &NodeId, config: &Config) -> Result<Option<Self>, NodeListFailure> {
+    pub(crate) fn new(
+        node_id: &UniqueNodeId,
+        config: &Config,
+    ) -> Result<Option<Self>, NodeListFailure> {
         let details = Node::<Service>::get_node_details(config, node_id).unwrap_or_default();
 
         let node_view = AliveNodeView::<Service> {
@@ -423,8 +394,8 @@ impl<Service: service::Service> NodeState<Service> {
         }
     }
 
-    /// Returns the [`NodeId`] of the corresponding [`Node`].
-    pub fn node_id(&self) -> &NodeId {
+    /// Returns the [`UniqueNodeId`] of the corresponding [`Node`].
+    pub fn node_id(&self) -> &UniqueNodeId {
         match self {
             NodeState::Dead(node) => node.id(),
             NodeState::Alive(node) => node.id(),
@@ -450,8 +421,8 @@ pub struct CleanupState {
 
 /// Contains all available details of a [`Node`].
 pub trait NodeView {
-    /// Returns the [`NodeId`] of the [`Node`].
-    fn id(&self) -> &NodeId;
+    /// Returns the [`UniqueNodeId`] of the [`Node`].
+    fn id(&self) -> &UniqueNodeId;
     /// Returns the [`NodeDetails`].
     fn details(&self) -> &Option<NodeDetails>;
 }
@@ -459,7 +430,7 @@ pub trait NodeView {
 /// All the informations of a [`Node`] that is alive.
 #[derive(Debug)]
 pub struct AliveNodeView<Service: service::Service> {
-    id: NodeId,
+    id: UniqueNodeId,
     details: Option<NodeDetails>,
     _service: PhantomData<Service>,
 }
@@ -475,7 +446,7 @@ impl<Service: service::Service> Clone for AliveNodeView<Service> {
 }
 
 impl<Service: service::Service> NodeView for AliveNodeView<Service> {
-    fn id(&self) -> &NodeId {
+    fn id(&self) -> &UniqueNodeId {
         &self.id
     }
 
@@ -495,7 +466,7 @@ impl<Service: service::Service> Clone for DeadNodeView<Service> {
 }
 
 impl<Service: service::Service> NodeView for DeadNodeView<Service> {
-    fn id(&self) -> &NodeId {
+    fn id(&self) -> &UniqueNodeId {
         self.0.id()
     }
 
@@ -507,7 +478,7 @@ impl<Service: service::Service> NodeView for DeadNodeView<Service> {
 impl<Service: service::Service> DeadNodeView<Service> {
     #[doc(hidden)]
     pub fn __internal_remove_stale_resources(
-        id: NodeId,
+        id: UniqueNodeId,
         details: NodeDetails,
     ) -> Result<bool, NodeCleanupFailure> {
         DeadNodeView(AliveNodeView {
@@ -706,7 +677,7 @@ fn remove_detail_storages<Service: service::Service>(
 
 fn remove_node_details_directory<Service: service::Service>(
     config: &Config,
-    node_id: &NodeId,
+    node_id: &UniqueNodeId,
 ) -> Result<(), NodeCleanupFailure> {
     let origin = format!("remove_node_details_directory({config:?}, {node_id:?})");
     let msg = "Unable to remove node details directory";
@@ -725,7 +696,7 @@ fn remove_node_details_directory<Service: service::Service>(
 }
 
 fn remove_node<Service: service::Service>(
-    id: NodeId,
+    id: UniqueNodeId,
     config: &Config,
 ) -> Result<bool, NodeCleanupFailure> {
     let origin = format!(
@@ -843,7 +814,7 @@ impl RegisteredServices {
 
 #[derive(Debug)]
 pub(crate) struct SharedNode<Service: service::Service> {
-    id: NodeId,
+    id: UniqueNodeId,
     details: NodeDetails,
     monitoring_token: UnsafeCell<Option<<Service::Monitoring as Monitoring>::Token>>,
     registered_services: RegisteredServices,
@@ -859,7 +830,7 @@ impl<Service: service::Service> SharedNode<Service> {
         &self.details.config
     }
 
-    pub(crate) fn id(&self) -> &NodeId {
+    pub(crate) fn id(&self) -> &UniqueNodeId {
         &self.id
     }
 
@@ -906,8 +877,8 @@ impl<Service: service::Service> Node<Service> {
         &self.shared.details.config
     }
 
-    /// Returns the [`NodeId`] of the [`Node`].
-    pub fn id(&self) -> &NodeId {
+    /// Returns the [`UniqueNodeId`] of the [`Node`].
+    pub fn id(&self) -> &UniqueNodeId {
         &self.shared.id
     }
 
@@ -939,7 +910,7 @@ impl<Service: service::Service> Node<Service> {
             Ok(node_list) => {
                 for node_name in node_list {
                     let node_id = core::str::from_utf8(node_name.as_bytes()).unwrap();
-                    let node_id = NodeId(node_id.parse::<u128>().unwrap().into());
+                    let node_id = UniqueNodeId(node_id.parse::<u128>().unwrap().into());
 
                     match NodeState::new(&node_id, config) {
                         Ok(Some(node_state)) => {
@@ -1098,7 +1069,7 @@ impl<Service: service::Service> Node<Service> {
         }
     }
 
-    fn get_node_state(config: &Config, node_id: &NodeId) -> Result<State, NodeListFailure> {
+    fn get_node_state(config: &Config, node_id: &UniqueNodeId) -> Result<State, NodeListFailure> {
         let my_pid = Process::from_self().id();
         let node_pid = node_id.0.pid();
 
@@ -1135,7 +1106,7 @@ impl<Service: service::Service> Node<Service> {
 
     fn open_node_storage(
         config: &Config,
-        node_id: &NodeId,
+        node_id: &UniqueNodeId,
     ) -> Result<Option<Service::StaticStorage>, NodeReadStorageFailure> {
         let details_config = node_details_config::<Service>(config, node_id);
         let result = <Service::StaticStorage as StaticStorage>::Builder::new(
@@ -1171,7 +1142,7 @@ impl<Service: service::Service> Node<Service> {
 
     fn get_node_details(
         config: &Config,
-        node_id: &NodeId,
+        node_id: &UniqueNodeId,
     ) -> Result<Option<NodeDetails>, NodeReadStorageFailure> {
         let node_storage = if let Some(n) = Self::open_node_storage(config, node_id)? {
             n
@@ -1203,7 +1174,7 @@ impl<Service: service::Service> Node<Service> {
 
     fn service_tags<F: FnMut(&ServiceHash) -> CallbackProgression>(
         config: &Config,
-        node_id: &NodeId,
+        node_id: &UniqueNodeId,
         mut callback: F,
     ) -> Result<(), NodeReadServiceTagsFailure> {
         let origin = "Node::service_tags()";
@@ -1286,17 +1257,13 @@ impl NodeBuilder {
     /// Creates a new [`Node`] for a specific [`service::Service`]. All entities owned by the
     /// [`Node`] will have the same [`service::Service`].
     pub fn create<Service: service::Service>(self) -> Result<Node<Service>, NodeCreationFailure> {
-        let msg = "Unable to create node";
-        let node_id = fail!(from self, when UniqueSystemId::new(),
-                                with NodeCreationFailure::InternalError,
-                                "{msg} since the unique node id could not be generated.");
-        unsafe { self.__internal_create_with_custom_node_id(node_id) }
+        unsafe { self.__internal_create_with_custom_node_id(UniqueNodeId::new()) }
     }
 
     #[doc(hidden)]
     pub unsafe fn __internal_create_with_custom_node_id<Service: service::Service>(
         self,
-        node_id: UniqueSystemId,
+        node_id: UniqueNodeId,
     ) -> Result<Node<Service>, NodeCreationFailure> {
         let config = if let Some(ref config) = self.config {
             config.clone()
@@ -1312,12 +1279,12 @@ impl NodeBuilder {
         let monitor_name = fatal_panic!(from self, when FileName::new(node_id.value().to_string().as_bytes()),
                                 "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
         let (details_storage, details) =
-            self.create_node_details_storage::<Service>(&config, &NodeId(node_id))?;
+            self.create_node_details_storage::<Service>(&config, &node_id)?;
         let monitoring_token = self.create_token::<Service>(&config, &monitor_name)?;
 
         Ok(Node {
             shared: Arc::new(SharedNode {
-                id: NodeId(node_id),
+                id: node_id,
                 monitoring_token: UnsafeCell::new(Some(monitoring_token)),
                 registered_services: RegisteredServices::new(),
                 _details_storage: details_storage,
@@ -1357,7 +1324,7 @@ impl NodeBuilder {
     fn create_node_details_storage<Service: service::Service>(
         &self,
         config: &Config,
-        node_id: &NodeId,
+        node_id: &UniqueNodeId,
     ) -> Result<(Service::StaticStorage, NodeDetails), NodeCreationFailure> {
         let msg = "Unable to create node details storage";
         let details = NodeDetails::new(&self.name, config);

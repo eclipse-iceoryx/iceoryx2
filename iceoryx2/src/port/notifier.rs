@@ -52,8 +52,7 @@ use iceoryx2_cal::{event::Event, named_concept::NamedConceptBuilder};
 use iceoryx2_log::{debug, fail, warn};
 
 use crate::{
-    identifiers::{UniqueListenerId, UniqueNotifierId},
-    node::NodeId,
+    identifiers::{UniqueListenerId, UniqueNodeId, UniqueNotifierId},
     port::update_connections::UpdateConnections,
     service::{
         self,
@@ -116,7 +115,7 @@ impl core::error::Error for NotifierNotifyError {}
 struct Connection<Service: service::Service> {
     notifier: <Service::Event as Event>::Notifier,
     listener_id: UniqueListenerId,
-    node_id: NodeId,
+    node_id: UniqueNodeId,
 }
 
 #[derive(Debug)]
@@ -147,7 +146,7 @@ impl<Service: service::Service> ListenerConnections<Service> {
         new_self
     }
 
-    fn create(&self, index: usize, listener_id: UniqueListenerId, node_id: NodeId) {
+    fn create(&self, index: usize, listener_id: UniqueListenerId, node_id: UniqueNodeId) {
         let msg = "Unable to establish connection to listener";
         let event_name = event_concept_name(&listener_id);
         let event_config = event_config::<Service>(self.service_state.shared_node.config());
@@ -259,7 +258,7 @@ pub struct Notifier<Service: service::Service> {
     dynamic_notifier_handle: Option<ContainerHandle>,
     notifier_id: UniqueNotifierId,
     on_drop_notification: Option<EventId>,
-    node_id: NodeId,
+    node_id: UniqueNodeId,
 }
 
 unsafe impl<Service: service::Service> Send for Notifier<Service> where

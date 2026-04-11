@@ -40,7 +40,7 @@ use iceoryx2_bb_lock_free::mpmc::{
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_log::{fail, fatal_panic};
 
-use crate::{identifiers::UniquePortId, node::NodeId};
+use crate::identifiers::{UniqueNodeId, UniquePortId};
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum PortCleanupAction {
@@ -103,7 +103,7 @@ impl MessagingPattern {
 #[derive(Debug)]
 pub struct DynamicConfig {
     messaging_pattern: MessagingPattern,
-    nodes: Container<NodeId>,
+    nodes: Container<UniqueNodeId>,
 }
 
 impl Display for DynamicConfig {
@@ -128,7 +128,7 @@ impl DynamicConfig {
     }
 
     pub(crate) fn memory_size(max_number_of_nodes: usize) -> usize {
-        Container::<NodeId>::memory_size(max_number_of_nodes)
+        Container::<UniqueNodeId>::memory_size(max_number_of_nodes)
     }
 
     pub(crate) unsafe fn init(&mut self, allocator: &BumpAllocator) {
@@ -146,7 +146,7 @@ impl DynamicConfig {
         PortCleanup: FnMut(UniquePortId) -> PortCleanupAction,
     >(
         &self,
-        node_id: &NodeId,
+        node_id: &UniqueNodeId,
         port_cleanup_callback: PortCleanup,
     ) -> Result<DeregisterNodeState, RemoveDeadNodeResult> {
         match self.messaging_pattern {
@@ -179,7 +179,7 @@ impl DynamicConfig {
 
     pub(crate) fn register_node_id(
         &self,
-        node_id: NodeId,
+        node_id: UniqueNodeId,
     ) -> Result<ContainerHandle, RegisterNodeResult> {
         let msg = "Unable to register NodeId in service";
         match unsafe { self.nodes.add(node_id) } {
@@ -195,7 +195,10 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn list_node_ids<F: FnMut(&NodeId) -> CallbackProgression>(&self, mut callback: F) {
+    pub(crate) fn list_node_ids<F: FnMut(&UniqueNodeId) -> CallbackProgression>(
+        &self,
+        mut callback: F,
+    ) {
         let state = unsafe { self.nodes.get_state() };
         state.for_each(|_, node_id| callback(node_id));
     }

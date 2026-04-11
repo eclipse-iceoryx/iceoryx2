@@ -145,6 +145,8 @@
   [#1492](https://github.com/eclipse-iceoryx/iceoryx2/issues/1492)
 * Rename `ServiceId` into `ServiceHash`
   [#1508](https://github.com/eclipse-iceoryx/iceoryx2/issues/1508)
+* Rename `NodeId` into `UniqueNodeId`
+  [#1534](https://github.com/eclipse-iceoryx/iceoryx2/issues/1534)
 
 ### Workflow
 
@@ -232,6 +234,20 @@
         .publish_subscribe::<TransmissionData>()
         .open_or_create()?;
     service.service_hash();
+    ```
 
-    
+1. `NodeId` was renamed to `UniqueNodeId`.
+
+    ```rust
+    // old
+    use iceoryx2::*;
+
+    let node = NodeBuilder::new().create::<ipc::Service>()?;
+    let id: NodeId = node.id();
+
+    // new
+    use iceoryx2::*;
+
+    let node = NodeBuilder::new().create::<ipc::Service>()?;
+    let id: UniqueNodeId = node.id();
     ```

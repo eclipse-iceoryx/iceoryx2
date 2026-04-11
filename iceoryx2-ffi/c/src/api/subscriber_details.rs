@@ -14,7 +14,9 @@
 
 use iceoryx2::service::dynamic_config::publish_subscribe::SubscriberDetails;
 
-use super::{c_size_t, iox2_node_id_ptr, iox2_unique_subscriber_id_h, iox2_unique_subscriber_id_t};
+use super::{
+    c_size_t, iox2_unique_node_id_ptr, iox2_unique_subscriber_id_h, iox2_unique_subscriber_id_t,
+};
 
 /// The immutable pointer to the underlying `SubscriberDetails`
 pub type iox2_subscriber_details_ptr = *const SubscriberDetails;
@@ -51,7 +53,7 @@ pub unsafe extern "C" fn iox2_subscriber_details_subscriber_id(
     *id_handle_ptr = (*storage_ptr).as_handle();
 }
 
-/// Returns the [`iox2_node_id_ptr`](crate::iox2_node_id_ptr), an immutable pointer to the node id.
+/// Returns the [`iox2_unique_node_id_ptr`](crate::iox2_unique_node_id_ptr), an immutable pointer to the node id.
 ///
 /// # Safety
 ///
@@ -59,7 +61,7 @@ pub unsafe extern "C" fn iox2_subscriber_details_subscriber_id(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_subscriber_details_node_id(
     handle: iox2_subscriber_details_ptr,
-) -> iox2_node_id_ptr {
+) -> iox2_unique_node_id_ptr {
     debug_assert!(!handle.is_null());
 
     &(*handle).node_id

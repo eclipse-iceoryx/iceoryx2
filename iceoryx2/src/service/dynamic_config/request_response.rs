@@ -17,8 +17,7 @@ use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_log::fatal_panic;
 
 use crate::{
-    identifiers::{UniqueClientId, UniquePortId, UniqueServerId},
-    node::NodeId,
+    identifiers::{UniqueClientId, UniqueNodeId, UniquePortId, UniqueServerId},
     port::details::data_segment::DataSegmentType,
 };
 
@@ -31,9 +30,9 @@ use super::PortCleanupAction;
 pub struct ServerDetails {
     /// The [`UniqueServerId`] of the [`Server`](crate::port::server::Server).
     pub server_id: UniqueServerId,
-    /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
+    /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Server`](crate::port::server::Server) was created.
-    pub node_id: NodeId,
+    pub node_id: UniqueNodeId,
     /// The receive buffer size for incoming requests.
     pub request_buffer_size: usize,
     /// The total number of responses available in the
@@ -57,9 +56,9 @@ pub struct ServerDetails {
 pub struct ClientDetails {
     /// The [`UniqueClientId`] of the [`Client`](crate::port::client::Client).
     pub client_id: UniqueClientId,
-    /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
+    /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Client`](crate::port::client::Client) was created.
-    pub node_id: NodeId,
+    pub node_id: UniqueNodeId,
     /// The total number of requests available in the
     /// [`Client`](crate::port::client::Client)s data segment
     pub number_of_requests: usize,
@@ -129,7 +128,7 @@ impl DynamicConfig {
         PortCleanup: FnMut(UniquePortId) -> PortCleanupAction,
     >(
         &self,
-        node_id: &NodeId,
+        node_id: &UniqueNodeId,
         mut port_cleanup_callback: PortCleanup,
     ) {
         self.servers
