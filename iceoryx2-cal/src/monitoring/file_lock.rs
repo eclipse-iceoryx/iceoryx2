@@ -16,6 +16,7 @@ use alloc::vec::Vec;
 
 use iceoryx2_bb_posix::file::Permission;
 use iceoryx2_bb_posix::process_state::ProcessGuardBuilder;
+use iceoryx2_bb_posix::process_state::ProcessMonitorOpenError;
 use iceoryx2_bb_posix::{
     directory::{Directory, DirectoryOpenError, DirectoryReadError},
     file::{File, FileRemoveError},
@@ -207,9 +208,18 @@ impl MonitoringMonitor for Monitor {
             Ok(ProcessState::DoesNotExist)
             | Ok(ProcessState::CleaningUp)
             | Ok(ProcessState::Starting) => Ok(State::DoesNotExist),
-            Err(ProcessMonitorStateError::Interrupt) => {
+            Err(ProcessMonitorStateError::Interrupt)
+            | Err(ProcessMonitorStateError::ProcessMonitorOpenError(
+                ProcessMonitorOpenError::Interrupt,
+            )) => {
                 fail!(from self, with MonitoringStateError::Interrupt,
                     "{} since an interrupt signal was received.", msg);
+            }
+            Err(ProcessMonitorStateError::ProcessMonitorOpenError(
+                ProcessMonitorOpenError::InsufficientPermissions,
+            )) => {
+                fail!(from self, with MonitoringStateError::InsufficientPermissions,
+                    "{} due to insufficient permissions.", msg);
             }
             Err(v) => {
                 fail!(from self, with MonitoringStateError::InternalError,
@@ -283,17 +293,9 @@ impl MonitoringBuilder<FileLockMonitoring> for Builder {
                 monitor,
                 name: self.name,
             }),
-            Err(ProcessMonitorCreateError::InsufficientPermissions) => {
-                fail!(from self, with MonitoringCreateMonitorError::InsufficientPermissions,
-                    "{} due to insufficient permissions.", msg);
-            }
-            Err(ProcessMonitorCreateError::Interrupt) => {
-                fail!(from self, with MonitoringCreateMonitorError::Interrupt,
-                    "{} since an interrupt signal was received.", msg);
-            }
-            Err(v) => {
-                fail!(from self, with MonitoringCreateMonitorError::InternalError,
-                    "{} due to an internal failure ({:?}).", msg, v);
+            Err(ProcessMonitorCreateError::InvalidCleanerPathName) => {
+                fail!(from self, with MonitoringCreateMonitorError::ConceptNameNotSupportedOnPlatform,
+                    "{} since the concept name \"{}\" results in a concept name that is not supported on this platform.", msg, self.name);
             }
         }
     }

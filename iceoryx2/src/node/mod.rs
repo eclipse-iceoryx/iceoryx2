@@ -1058,6 +1058,10 @@ impl<Service: service::Service> Node<Service> {
         let origin = format!("Node::state_from_monitor({monitor:?})");
 
         match result.err().unwrap() {
+            MonitoringStateError::InsufficientPermissions => {
+                fail!(from origin, with NodeListFailure::InsufficientPermissions,
+                    "{} due to insufficient permissions to acquire the nodes state.", msg);
+            }
             MonitoringStateError::Interrupt => {
                 fail!(from origin, with NodeListFailure::Interrupt,
                     "{} due to an interrupt signal while acquiring the nodes state.", msg);
@@ -1070,13 +1074,6 @@ impl<Service: service::Service> Node<Service> {
     }
 
     fn get_node_state(config: &Config, node_id: &UniqueNodeId) -> Result<State, NodeListFailure> {
-        let my_pid = Process::from_self().id();
-        let node_pid = node_id.0.pid();
-
-        if my_pid == node_pid {
-            return Ok(State::Alive);
-        }
-
         let config = node_monitoring_config::<Service>(config);
         let result = <Service::Monitoring as Monitoring>::Builder::new(&node_id.as_file_name())
             .config(&config)
@@ -1097,7 +1094,8 @@ impl<Service: service::Service> Node<Service> {
                 fail!(from origin, with NodeListFailure::Interrupt,
                         "{} since an interrupt was received while acquiring the node state.", msg);
             }
-            MonitoringCreateMonitorError::InternalError => {
+            MonitoringCreateMonitorError::InternalError
+            | MonitoringCreateMonitorError::ConceptNameNotSupportedOnPlatform => {
                 fail!(from origin, with NodeListFailure::InternalError,
                         "{} since an internal failure occurred while acquiring the node state.", msg);
             }

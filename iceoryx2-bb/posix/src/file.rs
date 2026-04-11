@@ -51,6 +51,7 @@ use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_elementary_traits::plain_old_data_without_padding::PlainOldDataWithoutPadding;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_log::{fail, trace, warn};
 use iceoryx2_pal_posix::posix::errno::Errno;
@@ -165,8 +166,17 @@ enum_gen! { FileSetOwnerError
     UnknownError(i32)
 }
 
+enum_gen! { FileReadValError
+  entry:
+    FileSizeTooSmallToContainValue
+
+  mapping:
+    FileReadError
+}
+
 enum_gen! { FileReadError
   entry:
+    OpenedWithoutReadAccessMode,
     Interrupt,
     IOerror,
     IsDirectory,
@@ -189,8 +199,16 @@ enum_gen! { FileOffsetError
     UnknownError(i32)
 }
 
+enum_gen! { FileWriteValError
+  entry:
+    ValueWasWrittenOnlyPartially
+  mapping:
+    FileWriteError
+}
+
 enum_gen! { FileWriteError
   entry:
+    OpenedWithoutWriteAccessMode,
     Interrupt,
     WriteBufferTooBig,
     IOerror,
@@ -447,6 +465,7 @@ impl FileCreationBuilder {
 pub struct File {
     path: Option<FilePath>,
     file_descriptor: FileDescriptor,
+    access_mode: AccessMode,
     has_ownership: AtomicBool,
 }
 
@@ -521,6 +540,7 @@ impl File {
                 path: Some(config.file_path),
                 file_descriptor: v,
                 has_ownership: AtomicBool::new(config.has_ownership),
+                access_mode: config.access_mode,
             });
         }
 
@@ -554,6 +574,7 @@ impl File {
                 path: Some(config.file_path),
                 file_descriptor: v,
                 has_ownership: AtomicBool::new(config.has_ownership),
+                access_mode: config.access_mode,
             });
         }
 
@@ -571,6 +592,12 @@ impl File {
             Errno::ENOMEM => (InsufficientMemory, "{} due to insufficient memory.", msg),
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).",msg, v)
         );
+    }
+
+    /// Returns the [`AccessMode`] under which the [`File`] was opened. The [`AccessMode`] defines if
+    /// the [`File`] can be read or written.
+    pub fn access_mode(&self) -> AccessMode {
+        self.access_mode
     }
 
     /// Returns `true` if the [`File`] is owned by the construct and automatically
@@ -593,12 +620,13 @@ impl File {
 
     /// Takes ownership of a [`FileDescriptor`]. When [`File`] goes out of scope the file
     /// descriptor is closed.
-    pub fn from_file_descriptor(file_descriptor: FileDescriptor) -> Self {
+    pub fn from_file_descriptor(file_descriptor: FileDescriptor, access_mode: AccessMode) -> Self {
         trace!(from "File::from_file_descriptor", "opened {:?}", file_descriptor);
         Self {
             path: None,
             file_descriptor,
             has_ownership: AtomicBool::new(false),
+            access_mode,
         }
     }
 
@@ -632,9 +660,67 @@ impl File {
         self.read_line_to_vector(unsafe { buf.as_mut_vec() })
     }
 
+    /// Reads a [`PlainOldData`] value from the file at a given position. If the [`File`] could not be read
+    /// or did not contain enough bytes required for the construction of the value, the method will return an
+    /// error.
+    pub fn read_val_at<T: PlainOldDataWithoutPadding>(
+        &self,
+        start: u64,
+    ) -> Result<T, FileReadValError> {
+        let msg = "Failed to read value at position";
+        let size_of_t = core::mem::size_of::<T>();
+        let mut uninit_val = core::mem::MaybeUninit::<T>::uninit();
+        let buffer =
+            unsafe { core::slice::from_raw_parts_mut(uninit_val.as_mut_ptr().cast(), size_of_t) };
+
+        match self.read_range(start, buffer) {
+            Ok(n) if n == size_of_t as u64 => Ok(unsafe { uninit_val.assume_init() }),
+            Ok(n) => {
+                fail!(from self, with FileReadValError::FileSizeTooSmallToContainValue,
+                    "{msg} {start} from file since the value has a size of {size_of_t} bytes and only {n} bytes were read.");
+            }
+            Err(e) => {
+                fail!(from self, with FileReadValError::FileReadError(e),
+                    "{msg} {start} from file since the file could not be read. [{e:?}]");
+            }
+        }
+    }
+
+    /// Reads a [`PlainOldData`] value from the file. If the [`File`] could not be read or did not contain
+    /// enough bytes required for the construction of the value, the method will return an error.
+    pub fn read_val<T: PlainOldDataWithoutPadding>(&self) -> Result<T, FileReadValError> {
+        let msg = "Failed to read value from file";
+        let size_of_t = core::mem::size_of::<T>();
+        let mut uninit_val = core::mem::MaybeUninit::<T>::uninit();
+        let buffer = unsafe {
+            core::slice::from_raw_parts_mut(uninit_val.as_mut_ptr() as *mut u8, size_of_t)
+        };
+
+        match self.read(buffer) {
+            Ok(n) => {
+                if n == size_of_t as u64 {
+                    Ok(unsafe { uninit_val.assume_init() })
+                } else {
+                    fail!(from self, with FileReadValError::FileSizeTooSmallToContainValue,
+                    "{msg} since the value has a size of {size_of_t} bytes and only {n} bytes were read.");
+                }
+            }
+            Err(e) => {
+                fail!(from self, with FileReadValError::FileReadError(e),
+                    "{msg} since the file could not be read. [{e:?}]");
+            }
+        }
+    }
+
     /// Reads the content of a file into a slice and returns the number of bytes read but at most
     /// `buf.len()` bytes.
     pub fn read(&self, buf: &mut [u8]) -> Result<u64, FileReadError> {
+        let msg = "Unable to read file";
+        if self.access_mode != AccessMode::Read && self.access_mode != AccessMode::ReadWrite {
+            fail!(from self, with FileReadError::OpenedWithoutReadAccessMode,
+                "{msg} since the file was not opened with AccessMode::Read or AccessMode::ReadWrite.");
+        }
+
         let bytes_read = unsafe {
             posix::read(
                 self.file_descriptor.native_handle(),
@@ -647,7 +733,6 @@ impl File {
             return Ok(bytes_read as u64);
         }
 
-        let msg = "Unable to read file";
         handle_errno!(FileReadError, from self,
             Errno::EINTR => (Interrupt, "{} since an interrupt signal was received.", msg),
             Errno::EIO => (IOerror, "{} since an I/O error occurred.", msg),
@@ -712,8 +797,69 @@ impl File {
         self.read_range_to_vector(start, end, unsafe { buf.as_mut_vec() })
     }
 
+    /// Writes a [`PlainOldData`] value into the file. If the [`File`] could not be written or not all bytes
+    /// were written, then this methods returns an error.
+    pub fn write_val<T: PlainOldDataWithoutPadding>(
+        &mut self,
+        value: &T,
+    ) -> Result<(), FileWriteValError> {
+        let msg = "Failed to write value into file";
+        let size_of_t = core::mem::size_of::<T>();
+        let buffer = unsafe { core::slice::from_raw_parts((value as *const T).cast(), size_of_t) };
+
+        match self.write(buffer) {
+            Ok(n) => {
+                if n != size_of_t as u64 {
+                    fail!(from self, with FileWriteValError::ValueWasWrittenOnlyPartially,
+                        "{msg} since only {n} bytes of {size_of_t} bytes of the value were written.");
+                } else {
+                    Ok(())
+                }
+            }
+            Err(e) => {
+                fail!(from self, with e.into(),
+                    "{msg} since the file could not be written. [{e:?}]");
+            }
+        }
+    }
+
+    /// Writes a [`PlainOldData`] value into the file at the provided position. If the [`File`] could not
+    /// be written or not all bytes were written, then this methods returns an error.
+    pub fn write_val_at<T: PlainOldDataWithoutPadding>(
+        &mut self,
+        start: u64,
+        value: &T,
+    ) -> Result<(), FileWriteValError> {
+        let msg = "Failed to write value at position";
+        let size_of_t = core::mem::size_of::<T>();
+        let buffer =
+            unsafe { core::slice::from_raw_parts((value as *const T) as *const u8, size_of_t) };
+
+        match self.write_at(start, buffer) {
+            Ok(n) => {
+                if n != size_of_t as u64 {
+                    fail!(from self, with FileWriteValError::ValueWasWrittenOnlyPartially,
+                        "{msg} {start} into the file since only {n} bytes of {size_of_t} bytes of the value were written.");
+                } else {
+                    Ok(())
+                }
+            }
+            Err(e) => {
+                fail!(from self, with e.into(),
+                    "{msg} {start} into the file since the file could not be written. [{e:?}]");
+            }
+        }
+    }
+
     /// Writes a slice into a file and returns the number of bytes which were written.
     pub fn write(&mut self, buf: &[u8]) -> Result<u64, FileWriteError> {
+        let msg = "Unable to write content";
+
+        if self.access_mode != AccessMode::Write && self.access_mode != AccessMode::ReadWrite {
+            fail!(from self, with FileWriteError::OpenedWithoutWriteAccessMode,
+                "{msg} since the file was not opened with AccessMode::Write or AccessMode::ReadWrite.");
+        }
+
         let bytes_written = unsafe {
             posix::write(
                 self.file_descriptor.native_handle(),
@@ -726,7 +872,6 @@ impl File {
             return Ok(bytes_written as u64);
         }
 
-        let msg = "Unable to write content";
         handle_errno!(FileWriteError, from self,
             Errno::EFBIG => (WriteBufferTooBig, "{} since the file size would then exceed the internal maximum file size limit.", msg),
             Errno::EINTR => (Interrupt, "{} since an interrupt signal was received.", msg),
@@ -789,7 +934,10 @@ impl File {
                 warn!(from self, "Files created from file descriptors cannot remove themselves.");
                 Ok(false)
             }
-            Some(p) => File::remove(p),
+            Some(p) => {
+                self.release_ownership();
+                File::remove(p)
+            }
         }
     }
 

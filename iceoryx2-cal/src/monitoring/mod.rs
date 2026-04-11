@@ -135,6 +135,7 @@ impl core::error::Error for MonitoringCreateCleanerError {}
 pub enum MonitoringCreateMonitorError {
     InsufficientPermissions,
     Interrupt,
+    ConceptNameNotSupportedOnPlatform,
     InternalError,
 }
 
@@ -151,6 +152,7 @@ impl core::error::Error for MonitoringCreateMonitorError {}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MonitoringStateError {
     Interrupt,
+    InsufficientPermissions,
     InternalError,
 }
 

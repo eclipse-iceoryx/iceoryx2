@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_posix::process::*;
+use iceoryx2_bb_posix::{process::*, thread};
 use iceoryx2_bb_testing::{assert_that, test_requires};
 use iceoryx2_bb_testing_macros::test;
 use iceoryx2_pal_posix::posix::{self, POSIX_SUPPORT_SCHEDULER};
@@ -53,4 +53,26 @@ pub fn executable_path_works() {
     let executable_path = process.executable();
 
     assert_that!(executable_path, is_ok);
+}
+
+#[test]
+pub fn the_unique_process_id_is_constant_within_one_process() {
+    let sut = Process::unique_id().unwrap();
+
+    assert_that!(sut, eq Process::unique_id().unwrap());
+}
+
+#[test]
+pub fn the_unique_process_id_is_constant_between_threads() {
+    let sut = Process::unique_id().unwrap();
+
+    thread::thread_scope(|v| {
+        v.thread_builder()
+            .spawn(|| {
+                assert_that!(sut, eq Process::unique_id().unwrap());
+            })
+            .unwrap();
+        Ok(())
+    })
+    .unwrap();
 }
