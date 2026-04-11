@@ -50,7 +50,7 @@ class Node {
     auto name() const -> NodeNameView;
 
     /// Returns the unique id of the [`Node`].
-    auto id() const -> NodeId;
+    auto id() const -> UniqueNodeId;
 
     /// Returns the [`ServiceBuilder`] to create a new service. The
     /// [`ServiceName`] of the [`Service`] is provided as argument.

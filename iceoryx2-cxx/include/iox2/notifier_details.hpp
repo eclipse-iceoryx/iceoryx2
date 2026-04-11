@@ -33,7 +33,7 @@ class NotifierDetailsView {
     auto notifier_id() const -> UniqueNotifierId;
 
     /// The [`NodeId`] of the [`Node`] under which the [`Notifier`] was created.
-    auto node_id() const -> NodeId;
+    auto node_id() const -> UniqueNodeId;
 
   private:
     template <typename T, typename>

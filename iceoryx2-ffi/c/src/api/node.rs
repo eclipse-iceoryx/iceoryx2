@@ -33,7 +33,10 @@ use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
 use core::time::Duration;
 
-use super::{iox2_config_h_ref, iox2_node_id_h_ref, iox2_node_id_ptr, iox2_signal_handling_mode_e};
+use super::{
+    iox2_config_h_ref, iox2_signal_handling_mode_e, iox2_unique_node_id_h_ref,
+    iox2_unique_node_id_ptr,
+};
 
 // BEGIN type definition
 
@@ -201,7 +204,7 @@ pub enum iox2_node_state_e {
 /// # Arguments
 ///
 /// * [`iox2_node_state_e`]
-/// * [`iox2_node_id_ptr`]
+/// * [`iox2_unique_node_id_ptr`]
 /// * [`iox2_node_name_ptr`](crate::iox2_node_name_ptr) -> `NULL` for `iox2_node_state_e::INACCESSIBLE` and `iox2_node_state_e::UNDEFINED`
 /// * [`iox2_config_ptr`](crate::iox2_config_ptr) -> `NULL` for `iox2_node_state_e::INACCESSIBLE` and `iox2_node_state_e::UNDEFINED`
 /// * [`iox2_callback_context`] -> provided by the user to [`iox2_node_list`] and can be `NULL`
@@ -209,7 +212,7 @@ pub enum iox2_node_state_e {
 /// Returns a [`iox2_callback_progression_e`](crate::iox2_callback_progression_e)
 pub type iox2_node_list_callback = extern "C" fn(
     iox2_node_state_e,
-    iox2_node_id_ptr,
+    iox2_unique_node_id_ptr,
     *const c_char,
     iox2_node_name_ptr,
     iox2_config_ptr,
@@ -341,16 +344,16 @@ pub unsafe extern "C" fn iox2_node_signal_handling_mode(
     }
 }
 
-/// Returns the [`iox2_node_id_ptr`](crate::iox2_node_id_ptr), an immutable pointer to the node id.
+/// Returns the [`iox2_unique_node_id_ptr`](crate::iox2_unique_node_id_ptr), an immutable pointer to the node id.
 ///
 /// # Safety
 ///
 /// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
-pub unsafe extern "C" fn iox2_node_id(
+pub unsafe extern "C" fn iox2_unique_node_id(
     node_handle: iox2_node_h_ref,
     service_type: iox2_service_type_e,
-) -> iox2_node_id_ptr {
+) -> iox2_unique_node_id_ptr {
     node_handle.assert_non_null();
 
     let node = &mut *node_handle.as_type();
@@ -373,7 +376,7 @@ pub unsafe extern "C" fn iox2_node_id(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_dead_node_remove_stale_resources(
     service_type: iox2_service_type_e,
-    node_id: iox2_node_id_h_ref,
+    node_id: iox2_unique_node_id_h_ref,
     config: iox2_config_h_ref,
     has_success: *mut bool,
 ) -> c_int {
@@ -480,7 +483,7 @@ pub(crate) fn iox2_node_list_impl<S: Service>(
     }
 }
 
-/// Calls the callback repeatedly with an [`iox2_node_state_e`], [`iox2_node_id_ptr`], [´iox2_node_name_ptr´] and [`iox2_config_ptr`] for
+/// Calls the callback repeatedly with an [`iox2_node_state_e`], [`iox2_unique_node_id_ptr`], [´iox2_node_name_ptr´] and [`iox2_config_ptr`] for
 /// all [`Node`](iceoryx2::node::Node)s in the system under a given [`Config`](iceoryx2::config::Config).
 ///
 /// # Arguments

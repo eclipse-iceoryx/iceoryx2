@@ -31,7 +31,7 @@ class NodeDetails {
   private:
     template <ServiceType>
     friend auto internal::list_callback(iox2_node_state_e,
-                                        iox2_node_id_ptr,
+                                        iox2_unique_node_id_ptr,
                                         const char* executable,
                                         iox2_node_name_ptr,
                                         iox2_config_ptr,

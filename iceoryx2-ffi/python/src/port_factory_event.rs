@@ -16,7 +16,7 @@ use pyo3::prelude::*;
 use crate::{
     attribute_set::AttributeSet,
     error::NodeListFailure,
-    node_id::NodeId,
+    node_id::UniqueNodeId,
     node_state::{AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState},
     parc::Parc,
     port_factory_listener::PortFactoryListener,
@@ -90,10 +90,10 @@ impl PortFactoryEvent {
                             ret_val.push(NodeState::Dead(DeadNodeView(DeadNodeViewType::Ipc(n))))
                         }
                         iceoryx2::prelude::NodeState::Inaccessible(n) => {
-                            ret_val.push(NodeState::Inaccessible(NodeId(n)))
+                            ret_val.push(NodeState::Inaccessible(UniqueNodeId(n)))
                         }
                         iceoryx2::prelude::NodeState::Undefined(n) => {
-                            ret_val.push(NodeState::Undefined(NodeId(n)))
+                            ret_val.push(NodeState::Undefined(UniqueNodeId(n)))
                         }
                     }
                     CallbackProgression::Continue
@@ -111,10 +111,10 @@ impl PortFactoryEvent {
                             ret_val.push(NodeState::Dead(DeadNodeView(DeadNodeViewType::Local(n))))
                         }
                         iceoryx2::prelude::NodeState::Inaccessible(n) => {
-                            ret_val.push(NodeState::Inaccessible(NodeId(n)))
+                            ret_val.push(NodeState::Inaccessible(UniqueNodeId(n)))
                         }
                         iceoryx2::prelude::NodeState::Undefined(n) => {
-                            ret_val.push(NodeState::Undefined(NodeId(n)))
+                            ret_val.push(NodeState::Undefined(UniqueNodeId(n)))
                         }
                     }
                     CallbackProgression::Continue

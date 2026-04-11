@@ -16,7 +16,7 @@ use pyo3::prelude::*;
 use crate::{
     attribute_set::AttributeSet,
     messaging_pattern::MessagingPattern,
-    node_id::NodeId,
+    node_id::UniqueNodeId,
     node_state::{AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState},
     service_hash::ServiceHash,
     service_name::ServiceName,
@@ -49,10 +49,10 @@ impl ServiceDetails {
                                 DeadNodeView(DeadNodeViewType::Ipc(v.clone())),
                             )),
                             iceoryx2::node::NodeState::Inaccessible(v) => {
-                                ret_val.push(NodeState::Inaccessible(NodeId(*v)))
+                                ret_val.push(NodeState::Inaccessible(UniqueNodeId(*v)))
                             }
                             iceoryx2::node::NodeState::Undefined(v) => {
-                                ret_val.push(NodeState::Undefined(NodeId(*v)))
+                                ret_val.push(NodeState::Undefined(UniqueNodeId(*v)))
                             }
                         }
                     }
@@ -69,10 +69,10 @@ impl ServiceDetails {
                                 DeadNodeView(DeadNodeViewType::Local(v.clone())),
                             )),
                             iceoryx2::node::NodeState::Inaccessible(v) => {
-                                ret_val.push(NodeState::Inaccessible(NodeId(*v)))
+                                ret_val.push(NodeState::Inaccessible(UniqueNodeId(*v)))
                             }
                             iceoryx2::node::NodeState::Undefined(v) => {
-                                ret_val.push(NodeState::Undefined(NodeId(*v)))
+                                ret_val.push(NodeState::Undefined(UniqueNodeId(*v)))
                             }
                         }
                     }

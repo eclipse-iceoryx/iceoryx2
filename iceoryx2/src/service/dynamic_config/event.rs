@@ -35,7 +35,7 @@ use iceoryx2_log::fatal_panic;
 
 use crate::{
     identifiers::{UniqueListenerId, UniqueNotifierId, UniquePortId},
-    node::NodeId,
+    node::UniqueNodeId,
 };
 
 use super::PortCleanupAction;
@@ -66,7 +66,7 @@ pub struct ListenerDetails {
     pub listener_id: UniqueListenerId,
     /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Listener`](crate::port::listener::Listener) was created.
-    pub node_id: NodeId,
+    pub node_id: UniqueNodeId,
 }
 
 /// Contains the communication settings of the connected
@@ -78,7 +78,7 @@ pub struct NotifierDetails {
     pub notifier_id: UniqueNotifierId,
     /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Notifier`](crate::port::notifier::Notifier) was created.
-    pub node_id: NodeId,
+    pub node_id: UniqueNodeId,
 }
 
 impl DynamicConfig {
@@ -144,7 +144,7 @@ impl DynamicConfig {
         PortCleanup: FnMut(UniquePortId) -> PortCleanupAction,
     >(
         &self,
-        node_id: &NodeId,
+        node_id: &UniqueNodeId,
         mut port_cleanup_callback: PortCleanup,
     ) {
         self.listeners

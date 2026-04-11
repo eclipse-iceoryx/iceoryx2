@@ -149,7 +149,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::message_type_details::MessageTypeDetails>()?;
     m.add_class::<crate::node::Node>()?;
     m.add_class::<crate::node_builder::NodeBuilder>()?;
-    m.add_class::<crate::node_id::NodeId>()?;
+    m.add_class::<crate::node_id::UniqueNodeId>()?;
     m.add_class::<crate::node_name::NodeName>()?;
     m.add_class::<crate::node_state::NodeState>()?;
     m.add_class::<crate::node_state::AliveNodeView>()?;

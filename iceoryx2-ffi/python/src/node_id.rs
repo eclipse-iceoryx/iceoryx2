@@ -15,16 +15,16 @@ use pyo3::prelude::*;
 #[pyclass(str = "{0:?}", from_py_object)]
 #[derive(Clone, PartialEq)]
 /// The system-wide unique id of a `Node`
-pub struct NodeId(pub(crate) iceoryx2::node::NodeId);
+pub struct UniqueNodeId(pub(crate) iceoryx2::node::UniqueNodeId);
 
 #[pymethods]
-impl NodeId {
+impl UniqueNodeId {
     pub fn __eq__(&self, other: &Self) -> bool {
         self == other
     }
 
     #[getter]
-    /// Returns the underlying integer value of the `NodeId`.
+    /// Returns the underlying integer value of the `UniqueNodeId`.
     pub fn value(&self) -> u128 {
         self.0.value()
     }

@@ -19,13 +19,13 @@ constexpr uint64_t INACCESSIBLE_STATE = 2;
 constexpr uint64_t UNDEFINED_STATE = 3;
 
 template <ServiceType T>
-AliveNodeView<T>::AliveNodeView(NodeId node_id, const bb::Optional<NodeDetails>& details)
+AliveNodeView<T>::AliveNodeView(UniqueNodeId node_id, const bb::Optional<NodeDetails>& details)
     : m_id { std::move(node_id) }
     , m_details { details } {
 }
 
 template <ServiceType T>
-auto AliveNodeView<T>::id() const -> const NodeId& {
+auto AliveNodeView<T>::id() const -> const UniqueNodeId& {
     return m_id;
 }
 
@@ -40,7 +40,7 @@ DeadNodeView<T>::DeadNodeView(const AliveNodeView<T>& view)
 }
 
 template <ServiceType T>
-auto DeadNodeView<T>::id() const -> const NodeId& {
+auto DeadNodeView<T>::id() const -> const UniqueNodeId& {
     return m_view.id();
 }
 
@@ -79,7 +79,7 @@ NodeState<T>::NodeState(const DeadNodeView<T>& view)
 }
 
 template <ServiceType T>
-NodeState<T>::NodeState(iox2_node_state_e node_state, const NodeId& node_id) {
+NodeState<T>::NodeState(iox2_node_state_e node_state, const UniqueNodeId& node_id) {
     switch (node_state) {
     case iox2_node_state_e_INACCESSIBLE:
         m_state.template emplace_at_index<INACCESSIBLE_STATE>(node_id);
@@ -111,7 +111,7 @@ auto NodeState<T>::dead(const iox2::bb::StaticFunction<void(DeadNodeView<T>&)>& 
 }
 
 template <ServiceType T>
-auto NodeState<T>::inaccessible(const iox2::bb::StaticFunction<void(NodeId&)>& callback) -> NodeState& {
+auto NodeState<T>::inaccessible(const iox2::bb::StaticFunction<void(UniqueNodeId&)>& callback) -> NodeState& {
     if (m_state.index() == INACCESSIBLE_STATE) {
         callback(*m_state.template get_at_index<INACCESSIBLE_STATE>());
     }
@@ -120,7 +120,7 @@ auto NodeState<T>::inaccessible(const iox2::bb::StaticFunction<void(NodeId&)>& c
 }
 
 template <ServiceType T>
-auto NodeState<T>::undefined(const iox2::bb::StaticFunction<void(NodeId&)>& callback) -> NodeState& {
+auto NodeState<T>::undefined(const iox2::bb::StaticFunction<void(UniqueNodeId&)>& callback) -> NodeState& {
     if (m_state.index() == UNDEFINED_STATE) {
         callback(*m_state.template get_at_index<UNDEFINED_STATE>());
     }

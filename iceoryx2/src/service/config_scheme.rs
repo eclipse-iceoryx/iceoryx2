@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::{config, node::NodeId};
+use crate::{config, node::UniqueNodeId};
 use core::fmt::Debug;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::named_concept::{NamedConceptConfiguration, NamedConceptMgmt};
@@ -88,7 +88,7 @@ pub(crate) fn node_monitoring_config<Service: crate::service::Service>(
 
 pub(crate) fn node_details_path(
     global_config: &config::Config,
-    node_id: &NodeId,
+    node_id: &UniqueNodeId,
 ) -> iceoryx2_bb_system_types::path::Path {
     let origin = "node_details_path";
     let mut path = global_config.global.node_dir();
@@ -99,7 +99,7 @@ pub(crate) fn node_details_path(
 
 pub(crate) fn node_details_config<Service: crate::service::Service>(
     global_config: &config::Config,
-    node_id: &NodeId,
+    node_id: &UniqueNodeId,
 ) -> <Service::StaticStorage as NamedConceptMgmt>::Configuration {
     <<Service::StaticStorage as NamedConceptMgmt>::Configuration>::default()
         .prefix(&global_config.global.prefix)
@@ -109,7 +109,7 @@ pub(crate) fn node_details_config<Service: crate::service::Service>(
 
 pub(crate) fn service_tag_config<Service: crate::service::Service>(
     global_config: &config::Config,
-    node_id: &NodeId,
+    node_id: &UniqueNodeId,
 ) -> <Service::StaticStorage as NamedConceptMgmt>::Configuration {
     <<Service::StaticStorage as NamedConceptMgmt>::Configuration>::default()
         .prefix(&global_config.global.prefix)

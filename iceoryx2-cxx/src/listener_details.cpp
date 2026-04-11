@@ -37,10 +37,10 @@ auto ListenerDetailsView::listener_id() const -> UniqueListenerId {
     return UniqueListenerId { id_handle };
 }
 
-auto ListenerDetailsView::node_id() const -> NodeId {
+auto ListenerDetailsView::node_id() const -> UniqueNodeId {
     const auto* node_id_ptr = iox2_listener_details_node_id(m_handle);
-    iox2_node_id_h id_handle = nullptr;
-    iox2_node_id_clone_from_ptr(nullptr, node_id_ptr, &id_handle);
-    return NodeId(id_handle);
+    iox2_unique_node_id_h id_handle = nullptr;
+    iox2_unique_node_id_clone_from_ptr(nullptr, node_id_ptr, &id_handle);
+    return UniqueNodeId(id_handle);
 }
 } // namespace iox2

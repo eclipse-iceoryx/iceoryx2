@@ -17,7 +17,7 @@ use iceoryx2_cal::zero_copy_connection::ChannelId;
 use crate::{
     active_request::RequestId,
     identifiers::{UniqueClientId, UniqueServerId},
-    node::NodeId,
+    node::UniqueNodeId,
 };
 
 /// Request header used by
@@ -25,7 +25,7 @@ use crate::{
 #[derive(Debug, Copy, Clone, ZeroCopySend)]
 #[repr(C)]
 pub struct RequestHeader {
-    pub(crate) node_id: NodeId,
+    pub(crate) node_id: UniqueNodeId,
     pub(crate) client_id: UniqueClientId,
     pub(crate) channel_id: ChannelId,
     pub(crate) request_id: RequestId,
@@ -54,7 +54,7 @@ impl RequestHeader {
 
     /// Returns the [`NodeId`] of the source node that published the
     /// [`RequestMut`](crate::request_mut::RequestMut).
-    pub fn node_id(&self) -> NodeId {
+    pub fn node_id(&self) -> UniqueNodeId {
         self.node_id
     }
 }
@@ -64,7 +64,7 @@ impl RequestHeader {
 #[derive(Debug, Copy, Clone, ZeroCopySend)]
 #[repr(C)]
 pub struct ResponseHeader {
-    pub(crate) node_id: NodeId,
+    pub(crate) node_id: UniqueNodeId,
     pub(crate) server_id: UniqueServerId,
     pub(crate) request_id: RequestId,
     pub(crate) number_of_elements: u64,
@@ -73,7 +73,7 @@ pub struct ResponseHeader {
 impl ResponseHeader {
     /// Returns the [`NodeId`] of the source node that published the
     /// [`Response`](crate::response::Response).
-    pub fn node_id(&self) -> NodeId {
+    pub fn node_id(&self) -> UniqueNodeId {
         self.node_id
     }
 

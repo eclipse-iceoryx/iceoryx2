@@ -85,7 +85,7 @@ typedef struct iox2_attribute_set_ptr_t iox2_attribute_set_ptr_t;
 typedef struct iox2_client_details_ptr_t iox2_client_details_ptr_t;
 typedef struct iox2_config_ptr_t iox2_config_ptr_t;
 typedef struct iox2_listener_details_ptr_t iox2_listener_details_ptr_t;
-typedef struct iox2_node_id_ptr_t iox2_node_id_ptr_t;
+typedef struct iox2_unique_node_id_ptr_t iox2_unique_node_id_ptr_t;
 typedef struct iox2_node_name_ptr_t iox2_node_name_ptr_t;
 typedef struct iox2_notifier_details_ptr_t iox2_notifier_details_ptr_t;
 typedef struct iox2_publisher_details_ptr_t iox2_publisher_details_ptr_t;
@@ -161,7 +161,7 @@ renaming_overrides_prefixing = false
 "ClientDetails" = "iox2_client_details_ptr_t"
 "Config" = "iox2_config_ptr_t"
 "ListenerDetails" = "iox2_listener_details_ptr_t"
-"NodeId" = "iox2_node_id_ptr_t"
+"UniqueNodeId" = "iox2_unique_node_id_ptr_t"
 "NodeName" = "iox2_node_name_ptr_t"
 "NotifierDetails" = "iox2_notifier_details_ptr_t"
 "PublisherDetails" = "iox2_publisher_details_ptr_t"

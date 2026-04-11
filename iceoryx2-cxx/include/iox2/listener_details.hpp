@@ -33,7 +33,7 @@ class ListenerDetailsView {
     auto listener_id() const -> UniqueListenerId;
 
     /// The [`NodeId`] of the [`Node`] under which the [`Listener`] was created.
-    auto node_id() const -> NodeId;
+    auto node_id() const -> UniqueNodeId;
 
   private:
     template <typename T, typename>

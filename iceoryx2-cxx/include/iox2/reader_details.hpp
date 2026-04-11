@@ -33,7 +33,7 @@ class ReaderDetailsView {
     auto reader_id() const -> UniqueReaderId;
 
     /// The [`NodeId`] of the [`Node`] under which the [`Reader`] was created.
-    auto node_id() const -> NodeId;
+    auto node_id() const -> UniqueNodeId;
 
   private:
     template <typename T, typename>

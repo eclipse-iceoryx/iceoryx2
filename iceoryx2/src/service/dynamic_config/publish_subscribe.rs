@@ -33,7 +33,7 @@ use iceoryx2_log::fatal_panic;
 
 use crate::{
     identifiers::{UniquePortId, UniquePublisherId, UniqueSubscriberId},
-    node::NodeId,
+    node::UniqueNodeId,
     port::details::data_segment::DataSegmentType,
 };
 
@@ -55,7 +55,7 @@ pub struct PublisherDetails {
     pub publisher_id: UniquePublisherId,
     /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Publisher`](crate::port::publisher::Publisher) was created.
-    pub node_id: NodeId,
+    pub node_id: UniqueNodeId,
     /// The total number of samples contained in the
     /// [`Publisher`](crate::port::publisher::Publisher)s data segment.
     pub number_of_samples: usize,
@@ -79,7 +79,7 @@ pub struct SubscriberDetails {
     pub subscriber_id: UniqueSubscriberId,
     /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Subscriber`](crate::port::subscriber::Subscriber) was created.
-    pub node_id: NodeId,
+    pub node_id: UniqueNodeId,
     /// The size of the receive buffer that stores [`Sample`](crate::sample::Sample).
     pub buffer_size: usize,
 }
@@ -120,7 +120,7 @@ impl DynamicConfig {
         PortCleanup: FnMut(UniquePortId) -> PortCleanupAction,
     >(
         &self,
-        node_id: &NodeId,
+        node_id: &UniqueNodeId,
         mut port_cleanup_callback: PortCleanup,
     ) {
         self.publishers

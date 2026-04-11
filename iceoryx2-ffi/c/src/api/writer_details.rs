@@ -14,7 +14,7 @@
 
 use iceoryx2::service::dynamic_config::blackboard::WriterDetails;
 
-use super::{iox2_node_id_ptr, iox2_unique_writer_id_h, iox2_unique_writer_id_t};
+use super::{iox2_unique_node_id_ptr, iox2_unique_writer_id_h, iox2_unique_writer_id_t};
 
 /// The immutable pointer to the underlying `WriterDetails`
 pub type iox2_writer_details_ptr = *const WriterDetails;
@@ -51,7 +51,7 @@ pub unsafe extern "C" fn iox2_writer_details_writer_id(
     *id_handle_ptr = (*storage_ptr).as_handle();
 }
 
-/// Returns the [`iox2_node_id_ptr`](crate::iox2_node_id_ptr), an immutable pointer to the node id.
+/// Returns the [`iox2_unique_node_id_ptr`](crate::iox2_unique_node_id_ptr), an immutable pointer to the node id.
 ///
 /// # Safety
 ///
@@ -59,7 +59,7 @@ pub unsafe extern "C" fn iox2_writer_details_writer_id(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_writer_details_node_id(
     handle: iox2_writer_details_ptr,
-) -> iox2_node_id_ptr {
+) -> iox2_unique_node_id_ptr {
     debug_assert!(!handle.is_null());
 
     &(*handle).node_id

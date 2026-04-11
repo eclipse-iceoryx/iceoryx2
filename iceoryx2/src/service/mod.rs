@@ -264,7 +264,7 @@ use alloc::vec::Vec;
 
 use crate::config;
 use crate::constants::MAX_TYPE_NAME_LENGTH;
-use crate::node::{NodeId, NodeListFailure, NodeState, SharedNode};
+use crate::node::{UniqueNodeId, NodeListFailure, NodeState, SharedNode};
 use crate::service::config_scheme::dynamic_config_storage_config;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::static_config::*;
@@ -454,7 +454,7 @@ pub mod internal {
 
     use crate::{
         identifiers::UniquePortId,
-        node::{NodeBuilder, NodeId},
+        node::{NodeBuilder, UniqueNodeId},
         port::{listener::remove_connection_of_listener, notifier::Notifier},
         prelude::EventId,
         service::stale_resource_cleanup::{
@@ -632,7 +632,7 @@ pub mod internal {
 
     pub trait ServiceInternal<S: Service> {
         fn __internal_remove_node_from_service(
-            node_id: &NodeId,
+            node_id: &UniqueNodeId,
             service_hash: &ServiceHash,
             config: &config::Config,
         ) -> Result<(), ServiceRemoveNodeError> {
@@ -1087,7 +1087,7 @@ fn open_dynamic_config<S: Service>(
 }
 
 pub(crate) fn remove_service_tag<S: Service>(
-    node_id: &NodeId,
+    node_id: &UniqueNodeId,
     service_hash: &ServiceHash,
     config: &config::Config,
 ) -> Result<(), ServiceRemoveTagError> {

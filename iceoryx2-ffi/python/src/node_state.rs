@@ -14,7 +14,7 @@ use iceoryx2::node::NodeView;
 use pyo3::prelude::*;
 
 use crate::{
-    config::Config, error::NodeCleanupFailure, file_name::FileName, node_id::NodeId,
+    config::Config, error::NodeCleanupFailure, file_name::FileName, node_id::UniqueNodeId,
     node_name::NodeName, parc::Parc,
 };
 
@@ -64,11 +64,11 @@ pub struct AliveNodeView(pub(crate) AliveNodeViewType);
 #[pymethods]
 impl AliveNodeView {
     #[getter]
-    /// Returns the `NodeId`.
-    pub fn id(&self) -> NodeId {
+    /// Returns the `UniqueNodeId`.
+    pub fn id(&self) -> UniqueNodeId {
         match &self.0 {
-            AliveNodeViewType::Ipc(n) => NodeId(*n.id()),
-            AliveNodeViewType::Local(n) => NodeId(*n.id()),
+            AliveNodeViewType::Ipc(n) => UniqueNodeId(*n.id()),
+            AliveNodeViewType::Local(n) => UniqueNodeId(*n.id()),
         }
     }
 
@@ -91,11 +91,11 @@ pub struct DeadNodeView(pub(crate) DeadNodeViewType);
 #[pymethods]
 impl DeadNodeView {
     #[getter]
-    /// Returns the `NodeId`.
-    pub fn id(&self) -> NodeId {
+    /// Returns the `UniqueNodeId`.
+    pub fn id(&self) -> UniqueNodeId {
         match &self.0 {
-            DeadNodeViewType::Ipc(n) => NodeId(*n.id()),
-            DeadNodeViewType::Local(n) => NodeId(*n.id()),
+            DeadNodeViewType::Ipc(n) => UniqueNodeId(*n.id()),
+            DeadNodeViewType::Local(n) => UniqueNodeId(*n.id()),
         }
     }
 
@@ -137,9 +137,9 @@ pub enum NodeState {
     /// now the responsibility to cleanup all the stale resources.
     Dead(DeadNodeView),
     /// The process does not have sufficient permissions to identify the `Node` as dead or alive.
-    Inaccessible(NodeId),
+    Inaccessible(UniqueNodeId),
     /// The `Node` is in an undefined state, meaning that certain elements are missing,
     /// misconfigured or inconsistent. This can only happen due to an implementation failure or
     /// when the corresponding `Node` resources were altered.
-    Undefined(NodeId),
+    Undefined(UniqueNodeId),
 }

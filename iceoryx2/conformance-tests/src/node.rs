@@ -22,7 +22,7 @@ pub mod node {
 
     use iceoryx2::config::Config;
     use iceoryx2::node::{
-        NodeCleanupFailure, NodeCreationFailure, NodeId, NodeListFailure, NodeState, NodeView,
+        NodeCleanupFailure, NodeCreationFailure, NodeListFailure, NodeState, NodeView, UniqueNodeId,
     };
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
@@ -38,12 +38,12 @@ pub mod node {
     #[derive(Debug, Eq, PartialEq)]
     struct Details {
         name: NodeName,
-        id: NodeId,
+        id: UniqueNodeId,
         config: Config,
     }
 
     impl Details {
-        fn new(name: &NodeName, id: &NodeId, config: &Config) -> Self {
+        fn new(name: &NodeName, id: &UniqueNodeId, config: &Config) -> Self {
             Self {
                 name: name.clone(),
                 id: *id,

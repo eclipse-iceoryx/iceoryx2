@@ -75,7 +75,7 @@ auto list_ports_callback(void* context, const T port_details_view) -> iox2_callb
 template <ServiceType T>
 // NOLINTBEGIN(readability-function-size)
 auto list_callback(iox2_node_state_e node_state,
-                   iox2_node_id_ptr node_id_ptr,
+                   iox2_unique_node_id_ptr node_id_ptr,
                    const char* executable,
                    iox2_node_name_ptr node_name,
                    iox2_config_ptr config,
@@ -98,9 +98,9 @@ auto list_callback(iox2_node_state_e node_state,
             NodeDetails { file_name.value(), NodeNameView { node_name }.to_owned(), Config {} });
     }();
 
-    iox2_node_id_h node_id_handle = nullptr;
-    iox2_node_id_clone_from_ptr(nullptr, node_id_ptr, &node_id_handle);
-    NodeId node_id { node_id_handle };
+    iox2_unique_node_id_h node_id_handle = nullptr;
+    iox2_unique_node_id_clone_from_ptr(nullptr, node_id_ptr, &node_id_handle);
+    UniqueNodeId node_id { node_id_handle };
 
     auto node_state_object = [&]() -> auto {
         switch (node_state) {

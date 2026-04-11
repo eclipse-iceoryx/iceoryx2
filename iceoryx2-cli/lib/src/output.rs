@@ -13,7 +13,7 @@
 use core::ops::Deref;
 
 use iceoryx2::node::NodeDetails as IceoryxNodeDetails;
-use iceoryx2::node::NodeId as IceoryxNodeId;
+use iceoryx2::node::UniqueNodeId as IceoryxNodeId;
 use iceoryx2::node::NodeState as IceoryxNodeState;
 use iceoryx2::node::NodeView as IceoryxNodeView;
 use iceoryx2::service::Service as IceoryxService;

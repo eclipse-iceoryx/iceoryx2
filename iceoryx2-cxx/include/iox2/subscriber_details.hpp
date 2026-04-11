@@ -33,7 +33,7 @@ class SubscriberDetailsView {
     auto subscriber_id() const -> UniqueSubscriberId;
 
     /// The [`NodeId`] of the [`Node`] under which the [`Subscriber`] was created.
-    auto node_id() const -> NodeId;
+    auto node_id() const -> UniqueNodeId;
 
     /// The receive buffer size for incoming samples.
     auto buffer_size() const -> uint64_t;

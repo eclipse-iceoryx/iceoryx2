@@ -33,7 +33,7 @@ class ServerDetailsView {
     auto server_id() const -> UniqueServerId;
 
     /// The [`NodeId`] of the [`Node`] under which the [`Server`] was created.
-    auto node_id() const -> NodeId;
+    auto node_id() const -> UniqueNodeId;
 
     /// The receive buffer size for incoming requests.
     auto request_buffer_size() const -> uint64_t;

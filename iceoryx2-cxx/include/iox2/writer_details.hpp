@@ -33,7 +33,7 @@ class WriterDetailsView {
     auto writer_id() const -> UniqueWriterId;
 
     /// The [`NodeId`] of the [`Node`] under which the [`Writer`] was created.
-    auto node_id() const -> NodeId;
+    auto node_id() const -> UniqueNodeId;
 
   private:
     template <typename T, typename>
