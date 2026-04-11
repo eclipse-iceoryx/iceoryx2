@@ -30,7 +30,7 @@ use super::PortCleanupAction;
 pub struct ServerDetails {
     /// The [`UniqueServerId`] of the [`Server`](crate::port::server::Server).
     pub server_id: UniqueServerId,
-    /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
+    /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Server`](crate::port::server::Server) was created.
     pub node_id: UniqueNodeId,
     /// The receive buffer size for incoming requests.
@@ -56,7 +56,7 @@ pub struct ServerDetails {
 pub struct ClientDetails {
     /// The [`UniqueClientId`] of the [`Client`](crate::port::client::Client).
     pub client_id: UniqueClientId,
-    /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
+    /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Client`](crate::port::client::Client) was created.
     pub node_id: UniqueNodeId,
     /// The total number of requests available in the

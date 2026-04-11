@@ -59,7 +59,7 @@ impl Header {
         }
     }
 
-    /// Returns the [`NodeId`] of the source node that published the
+    /// Returns the [`UniqueNodeId`] of the source node that published the
     /// [`Sample`](crate::sample::Sample).
     pub fn node_id(&self) -> UniqueNodeId {
         self.node_id

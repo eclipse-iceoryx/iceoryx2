@@ -52,7 +52,7 @@ pub(crate) struct DynamicConfigSettings {
 pub struct PublisherDetails {
     /// The [`UniquePublisherId`] of the [`Publisher`](crate::port::publisher::Publisher).
     pub publisher_id: UniquePublisherId,
-    /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
+    /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Publisher`](crate::port::publisher::Publisher) was created.
     pub node_id: UniqueNodeId,
     /// The total number of samples contained in the
@@ -76,7 +76,7 @@ pub struct PublisherDetails {
 pub struct SubscriberDetails {
     /// The [`UniqueSubscriberId`] of the [`Subscriber`](crate::port::subscriber::Subscriber).
     pub subscriber_id: UniqueSubscriberId,
-    /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
+    /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Subscriber`](crate::port::subscriber::Subscriber) was created.
     pub node_id: UniqueNodeId,
     /// The size of the receive buffer that stores [`Sample`](crate::sample::Sample).

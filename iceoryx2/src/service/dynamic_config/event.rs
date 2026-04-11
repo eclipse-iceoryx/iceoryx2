@@ -61,7 +61,7 @@ pub struct DynamicConfig {
 pub struct ListenerDetails {
     /// The [`UniqueListenerId`] of the [`Listener`](crate::port::listener::Listener).
     pub listener_id: UniqueListenerId,
-    /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
+    /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Listener`](crate::port::listener::Listener) was created.
     pub node_id: UniqueNodeId,
 }
@@ -73,7 +73,7 @@ pub struct ListenerDetails {
 pub struct NotifierDetails {
     /// The [`UniqueNotifierId`] of the [`Notifier`](crate::port::notifier::Notifier).
     pub notifier_id: UniqueNotifierId,
-    /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
+    /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Notifier`](crate::port::notifier::Notifier) was created.
     pub node_id: UniqueNodeId,
 }

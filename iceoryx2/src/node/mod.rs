@@ -394,7 +394,7 @@ impl<Service: service::Service> NodeState<Service> {
         }
     }
 
-    /// Returns the [`NodeId`] of the corresponding [`Node`].
+    /// Returns the [`UniqueNodeId`] of the corresponding [`Node`].
     pub fn node_id(&self) -> &UniqueNodeId {
         match self {
             NodeState::Dead(node) => node.id(),
@@ -421,7 +421,7 @@ pub struct CleanupState {
 
 /// Contains all available details of a [`Node`].
 pub trait NodeView {
-    /// Returns the [`NodeId`] of the [`Node`].
+    /// Returns the [`UniqueNodeId`] of the [`Node`].
     fn id(&self) -> &UniqueNodeId;
     /// Returns the [`NodeDetails`].
     fn details(&self) -> &Option<NodeDetails>;
@@ -877,7 +877,7 @@ impl<Service: service::Service> Node<Service> {
         &self.shared.details.config
     }
 
-    /// Returns the [`NodeId`] of the [`Node`].
+    /// Returns the [`UniqueNodeId`] of the [`Node`].
     pub fn id(&self) -> &UniqueNodeId {
         &self.shared.id
     }

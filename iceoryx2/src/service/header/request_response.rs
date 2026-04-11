@@ -51,7 +51,7 @@ impl RequestHeader {
         self.number_of_elements
     }
 
-    /// Returns the [`NodeId`] of the source node that published the
+    /// Returns the [`UniqueNodeId`] of the source node that published the
     /// [`RequestMut`](crate::request_mut::RequestMut).
     pub fn node_id(&self) -> UniqueNodeId {
         self.node_id
@@ -70,7 +70,7 @@ pub struct ResponseHeader {
 }
 
 impl ResponseHeader {
-    /// Returns the [`NodeId`] of the source node that published the
+    /// Returns the [`UniqueNodeId`] of the source node that published the
     /// [`Response`](crate::response::Response).
     pub fn node_id(&self) -> UniqueNodeId {
         self.node_id

@@ -39,7 +39,7 @@ macro_rules! generate_id {
 
         impl core::fmt::Display for $id_name {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, "0x{:032x}", self.0.value())
+                write!(f, "0x{:x}", self.0.value())
             }
         }
 
@@ -61,7 +61,7 @@ macro_rules! generate_id {
                 self.0.pid()
             }
 
-            /// Returns the [`Time`](iceoryx2_bb_posix::time::Time) the [`Node`] was created.
+            /// Returns the [`Time`](iceoryx2_bb_posix::clock::Time) the id was created.
             pub fn creation_time(&self) -> iceoryx2_bb_posix::clock::Time {
                 self.0.creation_time()
             }
