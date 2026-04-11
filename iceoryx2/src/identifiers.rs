@@ -39,7 +39,7 @@ macro_rules! generate_id {
 
         impl core::fmt::Display for $id_name {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, "0x{:x}", self.0.value())
+                write!(f, "{:x}", self.0.value())
             }
         }
 
