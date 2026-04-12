@@ -119,6 +119,9 @@ pub enum EventCreateError {
     HangsInCreation,
     /// The process has insufficient permissions to create the [`Service`].
     InsufficientPermissions,
+    /// A lifecycle event id (`notifier_created_event`, `notifier_dropped_event`, or
+    /// `notifier_dead_event`) exceeds the configured `event_id_max_value`.
+    EventIdExceedsMaxSupportedValue,
 }
 
 impl core::fmt::Display for EventCreateError {
@@ -476,6 +479,25 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
 
         let msg = "Unable to create event service";
 
+        {
+            let settings = self.base.service_config.event();
+            let max = settings.event_id_max_value;
+            for (label, opt_id) in [
+                ("notifier_created_event", settings.notifier_created_event.as_option_ref().copied()),
+                ("notifier_dropped_event", settings.notifier_dropped_event.as_option_ref().copied()),
+                ("notifier_dead_event", settings.notifier_dead_event.as_option_ref().copied()),
+            ] {
+                if let Some(id) = opt_id {
+                    if id > max {
+                        fail!(from self,
+                            with EventCreateError::EventIdExceedsMaxSupportedValue,
+                            "{} since the {} value {} exceeds event_id_max_value {}.",
+                            msg, label, id, max);
+                    }
+                }
+            }
+        }
+
         match self.base.is_service_available(msg)? {
             None => {
                 let service_tag = self
@@ -671,6 +693,34 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             fail!(from self, with EventOpenError::IncompatibleDeadline,
                 "{} since the deadline is {:?} but a deadline of {:?} is required.",
                 msg, existing_settings.deadline, required_settings.deadline);
+        }
+
+        // Verify that the existing service's lifecycle event IDs are within its own
+        // event_id_max_value bounds.  A service whose lifecycle events exceed its own max
+        // would cause every Notifier creation to fail with EventIdOutOfBounds at emit time —
+        // a silent accept that only surfaces later.  Catch it here instead.
+        let max_event_id = existing_settings.event_id_max_value;
+        for (label, opt_id) in [
+            (
+                "notifier_created_event",
+                existing_settings.notifier_created_event.as_option_ref().copied(),
+            ),
+            (
+                "notifier_dropped_event",
+                existing_settings.notifier_dropped_event.as_option_ref().copied(),
+            ),
+            (
+                "notifier_dead_event",
+                existing_settings.notifier_dead_event.as_option_ref().copied(),
+            ),
+        ] {
+            if let Some(id) = opt_id {
+                if id > max_event_id {
+                    fail!(from self, with EventOpenError::DoesNotSupportRequestedMaxEventId,
+                        "{} since the stored {} value {} exceeds the service's event_id_max_value {}.",
+                        msg, label, id, max_event_id);
+                }
+            }
         }
 
         Ok(*existing_settings)
