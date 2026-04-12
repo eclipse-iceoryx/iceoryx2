@@ -27,7 +27,10 @@ def payload(self: Any) -> Any:
     assert self.__payload_type_details is not None
     if get_origin(self.__payload_type_details) is Slice:
         (contained_type,) = get_args(self.__payload_type_details)
-        return Slice(self.payload_ptr, self.__slice_len, contained_type)
+        # __slice_len is the raw payload size in bytes; divide by the element
+        # size to obtain the element count expected by Slice. (fix for #1533)
+        number_of_elements = self.__slice_len // ctypes.sizeof(contained_type)
+        return Slice(self.payload_ptr, number_of_elements, contained_type)
 
     return ctypes.cast(self.payload_ptr, ctypes.POINTER(self.__payload_type_details))
 
