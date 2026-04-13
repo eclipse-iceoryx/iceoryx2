@@ -167,7 +167,7 @@ impl<Service: service::Service> Sender<Service> {
         };
 
         let mut number_of_recipients = 0;
-        if let Some(ref connection) = self.get(connection_id) {
+        if let Some(connection) = self.get(connection_id) {
             match deliver_call(&connection.sender, offset, sample_size, channel_id) {
                 Err(ZeroCopySendError::ReceiveBufferFull)
                 | Err(ZeroCopySendError::UsedChunkListFull) => {
@@ -230,7 +230,7 @@ impl<Service: service::Service> Sender<Service> {
         connection_id: usize,
         state: ChannelState,
     ) -> bool {
-        if let Some(ref connection) = self.get(connection_id) {
+        if let Some(connection) = self.get(connection_id) {
             connection.sender.has_disconnect_hint(channel_id, state)
         } else {
             false
@@ -243,7 +243,7 @@ impl<Service: service::Service> Sender<Service> {
         connection_id: usize,
         state: ChannelState,
     ) -> bool {
-        if let Some(ref connection) = self.get(connection_id) {
+        if let Some(connection) = self.get(connection_id) {
             connection.sender.has_channel_state(channel_id, state)
         } else {
             false
@@ -256,7 +256,7 @@ impl<Service: service::Service> Sender<Service> {
         connection_id: usize,
         expected_state: ChannelState,
     ) {
-        if let Some(ref connection) = self.get(connection_id) {
+        if let Some(connection) = self.get(connection_id) {
             connection.sender.close_channel(channel_id, expected_state);
         }
     }
@@ -367,7 +367,7 @@ impl<Service: service::Service> Sender<Service> {
 
     pub(crate) fn retrieve_returned_samples(&self) {
         for i in 0..self.len() {
-            if let Some(ref connection) = self.get(i) {
+            if let Some(connection) = self.get(i) {
                 for channel_id in 0..self.number_of_channels {
                     let id = ChannelId::new(channel_id);
                     loop {

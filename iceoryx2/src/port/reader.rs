@@ -37,8 +37,8 @@
 
 use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
 use crate::prelude::EventId;
-use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
 use crate::service::builder::CustomKeyMarker;
+use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
 use crate::service::dynamic_config::blackboard::ReaderDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, ServiceState};
@@ -105,9 +105,9 @@ struct ReaderSharedState<
 }
 
 impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-    > Drop for ReaderSharedState<Service, KeyType>
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+> Drop for ReaderSharedState<Service, KeyType>
 {
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_reader_handle {
@@ -150,9 +150,9 @@ pub struct Reader<
 }
 
 impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
-    > Reader<Service, KeyType>
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
+> Reader<Service, KeyType>
 {
     pub(crate) fn new(
         service: Arc<ServiceState<Service, BlackboardResources<Service>>>,
@@ -332,25 +332,25 @@ pub struct EntryHandle<
 // implements Send + Sync, and shared_state ensures the lifetime of the UnrestrictedAtomic (struct
 // fields are dropped in the same order as declared)
 unsafe impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-        ValueType: Copy + 'static,
-    > Send for EntryHandle<Service, KeyType, ValueType>
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+    ValueType: Copy + 'static,
+> Send for EntryHandle<Service, KeyType, ValueType>
 {
 }
 unsafe impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-        ValueType: Copy + 'static,
-    > Sync for EntryHandle<Service, KeyType, ValueType>
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+    ValueType: Copy + 'static,
+> Sync for EntryHandle<Service, KeyType, ValueType>
 {
 }
 
 impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-        ValueType: Copy,
-    > EntryHandle<Service, KeyType, ValueType>
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+    ValueType: Copy,
+> EntryHandle<Service, KeyType, ValueType>
 {
     fn new(
         reader_state: Arc<ReaderSharedState<Service, KeyType>>,
@@ -513,15 +513,17 @@ impl<Service: service::Service> __InternalEntryHandle<Service> {
         value_alignment: usize,
         generation_counter_ptr: *mut u64,
     ) {
-        if !generation_counter_ptr.is_null() {
-            let generation_counter = (*self.atomic_mgmt_ptr).__internal_get_write_cell();
-            core::ptr::copy_nonoverlapping(&generation_counter, generation_counter_ptr, 1);
+        unsafe {
+            if !generation_counter_ptr.is_null() {
+                let generation_counter = (*self.atomic_mgmt_ptr).__internal_get_write_cell();
+                core::ptr::copy_nonoverlapping(&generation_counter, generation_counter_ptr, 1);
+            }
+            // The generation_counter may be outdated as the blackboard value could have been
+            // updated between reading the counter and writing the value to the value_ptr. This
+            // is not a problem, as is_up_to_date() returns a false positive but never a false
+            // negative, so no updates are lost.
+            (*self.atomic_mgmt_ptr).load(value_ptr, value_size, value_alignment, self.data_ptr);
         }
-        // The generation_counter may be outdated as the blackboard value could have been
-        // updated between reading the counter and writing the value to the value_ptr. This
-        // is not a problem, as is_up_to_date() returns a false positive but never a false
-        // negative, so no updates are lost.
-        (*self.atomic_mgmt_ptr).load(value_ptr, value_size, value_alignment, self.data_ptr);
     }
 
     /// Returns an ID corresponding to the entry which can be used in an event based communication

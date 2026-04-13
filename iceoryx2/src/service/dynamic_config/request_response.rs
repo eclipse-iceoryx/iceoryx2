@@ -101,12 +101,14 @@ impl DynamicConfig {
     }
 
     pub(crate) unsafe fn init(&mut self, allocator: &BumpAllocator) {
-        fatal_panic!(from self,
+        unsafe {
+            fatal_panic!(from self,
             when self.servers.init(allocator),
             "This should never happen! Unable to initialize servers port id container.");
-        fatal_panic!(from self,
+            fatal_panic!(from self,
             when self.clients.init(allocator),
             "This should never happen! Unable to initialize clients port id container.");
+        }
     }
 
     pub(crate) fn memory_size(config: &DynamicConfigSettings) -> usize {
@@ -131,29 +133,31 @@ impl DynamicConfig {
         node_id: &UniqueNodeId,
         mut port_cleanup_callback: PortCleanup,
     ) {
-        self.servers
-            .get_state()
-            .for_each(|handle: ContainerHandle, registered_server| {
-                if registered_server.node_id == *node_id
-                    && port_cleanup_callback(UniquePortId::Server(registered_server.server_id))
-                        == PortCleanupAction::RemovePort
-                {
-                    self.release_server_handle(handle);
-                }
-                CallbackProgression::Continue
-            });
+        unsafe {
+            self.servers
+                .get_state()
+                .for_each(|handle: ContainerHandle, registered_server| {
+                    if registered_server.node_id == *node_id
+                        && port_cleanup_callback(UniquePortId::Server(registered_server.server_id))
+                            == PortCleanupAction::RemovePort
+                    {
+                        self.release_server_handle(handle);
+                    }
+                    CallbackProgression::Continue
+                });
 
-        self.clients
-            .get_state()
-            .for_each(|handle: ContainerHandle, registered_client| {
-                if registered_client.node_id == *node_id
-                    && port_cleanup_callback(UniquePortId::Client(registered_client.client_id))
-                        == PortCleanupAction::RemovePort
-                {
-                    self.release_client_handle(handle);
-                }
-                CallbackProgression::Continue
-            });
+            self.clients
+                .get_state()
+                .for_each(|handle: ContainerHandle, registered_client| {
+                    if registered_client.node_id == *node_id
+                        && port_cleanup_callback(UniquePortId::Client(registered_client.client_id))
+                            == PortCleanupAction::RemovePort
+                    {
+                        self.release_client_handle(handle);
+                    }
+                    CallbackProgression::Continue
+                });
+        }
     }
 
     pub(crate) fn add_client_id(&self, details: ClientDetails) -> Option<ContainerHandle> {

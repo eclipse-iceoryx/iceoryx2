@@ -55,11 +55,10 @@ use crate::{
     identifiers::{UniqueListenerId, UniqueNodeId, UniqueNotifierId},
     port::update_connections::UpdateConnections,
     service::{
-        self,
+        self, NoResource, ServiceState,
         config_scheme::event_config,
         dynamic_config::event::{ListenerDetails, NotifierDetails},
         naming_scheme::event_concept_name,
-        NoResource, ServiceState,
     },
 };
 
@@ -466,7 +465,7 @@ impl<Service: service::Service> Notifier<Service> {
         }
 
         for i in 0..listener_connections.len() {
-            if let Some(ref connection) = listener_connections.get(i) {
+            if let Some(connection) = listener_connections.get(i) {
                 if !(skip_self_deliver && connection.node_id == self.node_id) {
                     match connection.notifier.notify(value) {
                         Err(iceoryx2_cal::event::NotifierNotifyError::Disconnected) => {

@@ -132,13 +132,15 @@ impl DynamicConfig {
     }
 
     pub(crate) unsafe fn init(&mut self, allocator: &BumpAllocator) {
-        fatal_panic!(from self, when self.nodes.init(allocator),
+        unsafe {
+            fatal_panic!(from self, when self.nodes.init(allocator),
             "This should never happen! Unable to initialize NodeId container.");
-        match &mut self.messaging_pattern {
-            MessagingPattern::PublishSubscribe(ref mut v) => v.init(allocator),
-            MessagingPattern::Event(ref mut v) => v.init(allocator),
-            MessagingPattern::RequestResponse(ref mut v) => v.init(allocator),
-            MessagingPattern::Blackboard(ref mut v) => v.init(allocator),
+            match &mut self.messaging_pattern {
+                MessagingPattern::PublishSubscribe(v) => v.init(allocator),
+                MessagingPattern::Event(v) => v.init(allocator),
+                MessagingPattern::RequestResponse(v) => v.init(allocator),
+                MessagingPattern::Blackboard(v) => v.init(allocator),
+            }
         }
     }
 
@@ -149,32 +151,36 @@ impl DynamicConfig {
         node_id: &UniqueNodeId,
         port_cleanup_callback: PortCleanup,
     ) -> Result<DeregisterNodeState, RemoveDeadNodeResult> {
-        match self.messaging_pattern {
-            MessagingPattern::PublishSubscribe(ref v) => {
-                v.remove_dead_node_id(node_id, port_cleanup_callback)
-            }
-            MessagingPattern::Event(ref v) => v.remove_dead_node_id(node_id, port_cleanup_callback),
-            MessagingPattern::RequestResponse(ref v) => {
-                v.remove_dead_node_id(node_id, port_cleanup_callback)
-            }
-            MessagingPattern::Blackboard(ref v) => {
-                v.remove_dead_node_id(node_id, port_cleanup_callback)
-            }
-        };
-
-        let mut ret_val = Err(RemoveDeadNodeResult::NodeNotRegistered);
-        self.nodes
-            .get_state()
-            .for_each(|handle: ContainerHandle, registered_node_id| {
-                if registered_node_id == node_id {
-                    ret_val = Ok(self.deregister_node_id(handle));
-                    CallbackProgression::Stop
-                } else {
-                    CallbackProgression::Continue
+        unsafe {
+            match self.messaging_pattern {
+                MessagingPattern::PublishSubscribe(ref v) => {
+                    v.remove_dead_node_id(node_id, port_cleanup_callback)
                 }
-            });
+                MessagingPattern::Event(ref v) => {
+                    v.remove_dead_node_id(node_id, port_cleanup_callback)
+                }
+                MessagingPattern::RequestResponse(ref v) => {
+                    v.remove_dead_node_id(node_id, port_cleanup_callback)
+                }
+                MessagingPattern::Blackboard(ref v) => {
+                    v.remove_dead_node_id(node_id, port_cleanup_callback)
+                }
+            };
 
-        ret_val
+            let mut ret_val = Err(RemoveDeadNodeResult::NodeNotRegistered);
+            self.nodes
+                .get_state()
+                .for_each(|handle: ContainerHandle, registered_node_id| {
+                    if registered_node_id == node_id {
+                        ret_val = Ok(self.deregister_node_id(handle));
+                        CallbackProgression::Stop
+                    } else {
+                        CallbackProgression::Continue
+                    }
+                });
+
+            ret_val
+        }
     }
 
     pub(crate) fn register_node_id(
@@ -219,7 +225,7 @@ impl DynamicConfig {
 
     pub(crate) fn request_response(&self) -> &request_response::DynamicConfig {
         match &self.messaging_pattern {
-            MessagingPattern::RequestResponse(ref v) => v,
+            MessagingPattern::RequestResponse(v) => v,
             m => {
                 fatal_panic!(from self, "This should never happen! Trying to access request_response::DynamicConfig when the messaging pattern is actually {:?}.", m);
             }
@@ -228,7 +234,7 @@ impl DynamicConfig {
 
     pub(crate) fn publish_subscribe(&self) -> &publish_subscribe::DynamicConfig {
         match &self.messaging_pattern {
-            MessagingPattern::PublishSubscribe(ref v) => v,
+            MessagingPattern::PublishSubscribe(v) => v,
             m => {
                 fatal_panic!(from self, "This should never happen! Trying to access publish_subscribe::DynamicConfig when the messaging pattern is actually {:?}.", m);
             }
@@ -237,7 +243,7 @@ impl DynamicConfig {
 
     pub(crate) fn event(&self) -> &event::DynamicConfig {
         match &self.messaging_pattern {
-            MessagingPattern::Event(ref v) => v,
+            MessagingPattern::Event(v) => v,
             m => {
                 fatal_panic!(from self, "This should never happen! Trying to access event::DynamicConfig when the messaging pattern is actually {:?}.", m);
             }
@@ -246,7 +252,7 @@ impl DynamicConfig {
 
     pub(crate) fn blackboard(&self) -> &blackboard::DynamicConfig {
         match &self.messaging_pattern {
-            MessagingPattern::Blackboard(ref v) => v,
+            MessagingPattern::Blackboard(v) => v,
             m => {
                 fatal_panic!(from self, "This should never happen! Trying to access blackboard::DynamicConfig when the messaging pattern is actually {:?}.", m);
             }

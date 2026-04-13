@@ -164,7 +164,7 @@ use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
-use iceoryx2_bb_posix::clock::{nanosleep, NanosleepError};
+use iceoryx2_bb_posix::clock::{NanosleepError, nanosleep};
 use iceoryx2_bb_posix::mutex::Handle;
 use iceoryx2_bb_posix::mutex::Mutex;
 use iceoryx2_bb_posix::mutex::MutexBuilder;
@@ -188,7 +188,7 @@ use crate::service::config_scheme::{
 use crate::service::service_hash::ServiceHash;
 use crate::service::service_name::ServiceName;
 use crate::service::{
-    self, remove_service_tag, remove_static_service_config, ServiceRemoveNodeError,
+    self, ServiceRemoveNodeError, remove_service_tag, remove_static_service_config,
 };
 use crate::signal_handling_mode::SignalHandlingMode;
 use crate::{config::Config, service::config_scheme::node_details_config};
@@ -399,8 +399,8 @@ impl<Service: service::Service> NodeState<Service> {
         match self {
             NodeState::Dead(node) => node.id(),
             NodeState::Alive(node) => node.id(),
-            NodeState::Inaccessible(ref node_id) => node_id,
-            NodeState::Undefined(ref node_id) => node_id,
+            NodeState::Inaccessible(node_id) => node_id,
+            NodeState::Undefined(node_id) => node_id,
         }
     }
 }
@@ -936,7 +936,7 @@ impl<Service: service::Service> Node<Service> {
     }
 
     pub(crate) unsafe fn staged_death(&mut self) -> <Service::Monitoring as Monitoring>::Token {
-        (*self.shared.monitoring_token.get()).take().unwrap()
+        unsafe { (*self.shared.monitoring_token.get()).take().unwrap() }
     }
 
     fn handle_termination_request(&self, error_msg: &str) -> Result<(), NodeWaitFailure> {

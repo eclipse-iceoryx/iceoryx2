@@ -22,8 +22,8 @@ use iceoryx2_cal::{
         SharedMemoryOpenError, ShmPointer,
     },
     shm_allocator::{
-        self, pool_allocator::PoolAllocator, AllocationError, AllocationStrategy, PointerOffset,
-        SegmentId, ShmAllocationError,
+        self, AllocationError, AllocationStrategy, PointerOffset, SegmentId, ShmAllocationError,
+        pool_allocator::PoolAllocator,
     },
 };
 use iceoryx2_log::fail;
@@ -150,9 +150,11 @@ impl<Service: service::Service> DataSegment<Service> {
     }
 
     pub(crate) unsafe fn deallocate_bucket(&self, offset: PointerOffset) {
-        match &self.memory {
-            MemoryType::Static(memory) => memory.deallocate_bucket(offset),
-            MemoryType::Dynamic(memory) => memory.deallocate_bucket(offset),
+        unsafe {
+            match &self.memory {
+                MemoryType::Static(memory) => memory.deallocate_bucket(offset),
+                MemoryType::Dynamic(memory) => memory.deallocate_bucket(offset),
+            }
         }
     }
 
@@ -257,8 +259,10 @@ impl<Service: service::Service> DataSegmentView<Service> {
     }
 
     pub(crate) unsafe fn unregister_offset(&self, offset: PointerOffset) {
-        if let MemoryViewType::Dynamic(memory) = &self.memory {
-            memory.unregister_offset(offset);
+        unsafe {
+            if let MemoryViewType::Dynamic(memory) = &self.memory {
+                memory.unregister_offset(offset);
+            }
         }
     }
 

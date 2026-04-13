@@ -19,8 +19,8 @@ pub mod service_event {
     use alloc::{format, vec};
     use core::time::Duration;
     use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
-    use iceoryx2_bb_posix::clock::nanosleep;
     use iceoryx2_bb_posix::clock::Time;
+    use iceoryx2_bb_posix::clock::nanosleep;
     use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::thread::thread_scope;
 

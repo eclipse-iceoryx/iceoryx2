@@ -38,7 +38,7 @@ use iceoryx2_cal::shm_allocator::AllocationStrategy;
 use iceoryx2_log::fail;
 
 use crate::{
-    port::{client::Client, DegradationAction, DegradationCallback},
+    port::{DegradationAction, DegradationCallback, client::Client},
     prelude::UnableToDeliverStrategy,
     service,
 };
@@ -102,12 +102,12 @@ pub struct PortFactoryClient<
 }
 
 unsafe impl<
-        Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Send
+    Service: service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Send
     for PortFactoryClient<
         '_,
         Service,
@@ -120,13 +120,13 @@ unsafe impl<
 }
 
 impl<
-        'factory,
-        Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    >
+    'factory,
+    Service: service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+>
     PortFactoryClient<
         'factory,
         Service,
@@ -237,13 +237,12 @@ impl<
 }
 
 impl<
-        Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    >
-    PortFactoryClient<'_, Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+    Service: service::Service,
+    RequestPayload: Debug + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> PortFactoryClient<'_, Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
 {
     /// Sets the maximum slice length that a user can allocate with
     /// [`Client::loan_slice()`] or [`Client::loan_slice_uninit()`].

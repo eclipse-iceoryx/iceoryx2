@@ -56,9 +56,9 @@ use iceoryx2_log::fail;
 use crate::{
     identifiers::{UniqueClientId, UniqueServerId},
     port::{
-        details::chunk_details::ChunkDetails,
-        server::{SharedServerState, INVALID_CONNECTION_ID},
         LoanError, SendError,
+        details::chunk_details::ChunkDetails,
+        server::{INVALID_CONNECTION_ID, SharedServerState},
     },
     raw_sample::{RawSample, RawSampleMut},
     response_mut::ResponseMut,
@@ -105,26 +105,24 @@ pub struct ActiveRequest<
 }
 
 unsafe impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Send
-    for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Send for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 where
     Service::ArcThreadSafetyPolicy<SharedServerState<Service>>: Send + Sync,
 {
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Debug
-    for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Debug for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
@@ -143,13 +141,12 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Deref
-    for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Deref for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     type Target = RequestPayload;
     fn deref(&self) -> &Self::Target {
@@ -158,13 +155,12 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Drop
-    for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Drop for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
         self.shared_state
@@ -176,12 +172,12 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn finish(&self) {
         if self.connection_id != INVALID_CONNECTION_ID {
@@ -274,12 +270,12 @@ impl<
 // BEGIN: typed API
 ////////////////////////
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + Sized,
-        ResponseHeader: Default + Debug + ZeroCopySend,
-    > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + Sized,
+    ResponseHeader: Default + Debug + ZeroCopySend,
+> ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     /// Loans uninitialized memory for a [`ResponseMut`] where the user can write its payload to.
     ///
@@ -393,12 +389,12 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + Default + ZeroCopySend + Sized,
-        ResponseHeader: Default + Debug + ZeroCopySend,
-    > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + Default + ZeroCopySend + Sized,
+    ResponseHeader: Default + Debug + ZeroCopySend,
+> ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     /// Loans default initialized memory for a [`ResponseMut`] where the user can write its
     /// payload to.
@@ -441,12 +437,12 @@ impl<
 // BEGIN: sliced API
 ////////////////////////
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + Default + ZeroCopySend + 'static,
-        ResponseHeader: Default + Debug + ZeroCopySend,
-    > ActiveRequest<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + Default + ZeroCopySend + 'static,
+    ResponseHeader: Default + Debug + ZeroCopySend,
+> ActiveRequest<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
 {
     /// Loans/allocates a [`ResponseMut`] from the underlying data segment of the
     /// [`Server`](crate::port::server::Server)
@@ -491,12 +487,12 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + 'static,
-        ResponseHeader: Default + Debug + ZeroCopySend,
-    > ActiveRequest<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + 'static,
+    ResponseHeader: Default + Debug + ZeroCopySend,
+> ActiveRequest<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
 {
     /// Loans/allocates a [`ResponseMutUninit`] from the underlying data segment of the
     /// [`Server`](crate::port::server::Server).
@@ -633,11 +629,12 @@ impl<Service: crate::service::Service>
             slice_len == 1
                 || shared_state.response_sender.payload_type_variant() == TypeVariant::Dynamic
         );
-
-        self.loan_slice_uninit_impl(
-            slice_len,
-            shared_state.response_sender.payload_size() * slice_len,
-        )
+        unsafe {
+            self.loan_slice_uninit_impl(
+                slice_len,
+                shared_state.response_sender.payload_size() * slice_len,
+            )
+        }
     }
 }
 ////////////////////////

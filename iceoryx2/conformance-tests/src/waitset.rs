@@ -24,7 +24,7 @@ pub mod waitset {
     use iceoryx2::testing::generate_service_name;
     use iceoryx2::testing::*;
     use iceoryx2::waitset::{WaitSetAttachmentError, WaitSetRunError};
-    use iceoryx2_bb_posix::clock::{nanosleep, Time};
+    use iceoryx2_bb_posix::clock::{Time, nanosleep};
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_posix::unix_datagram_socket::{
         UnixDatagramReceiver, UnixDatagramSender, UnixDatagramSenderBuilder,

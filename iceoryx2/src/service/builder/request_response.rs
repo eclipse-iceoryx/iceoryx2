@@ -24,16 +24,16 @@ use iceoryx2_log::{fail, fatal_panic, warn};
 
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
 use crate::service::builder::OpenDynamicStorageFailure;
-use crate::service::dynamic_config::request_response::DynamicConfigSettings;
 use crate::service::dynamic_config::MessagingPatternSettings;
+use crate::service::dynamic_config::request_response::DynamicConfigSettings;
 use crate::service::port_factory::request_response;
 use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
-use crate::service::{self, header, static_config, NoResource};
-use crate::service::{builder, dynamic_config, Service};
+use crate::service::{self, NoResource, header, static_config};
+use crate::service::{Service, builder, dynamic_config};
 
 use super::message_type_details::{MessageTypeDetails, TypeVariant};
-use super::{CustomHeaderMarker, CustomPayloadMarker, ServiceState, RETRY_LIMIT};
+use super::{CustomHeaderMarker, CustomPayloadMarker, RETRY_LIMIT, ServiceState};
 
 /// Errors that can occur when an existing [`MessagingPattern::RequestResponse`] [`Service`] shall
 /// be opened.
@@ -251,13 +251,12 @@ pub struct Builder<
 }
 
 impl<
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-        ServiceType: Service,
-    > Clone
-    for Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+    ServiceType: Service,
+> Clone for Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
 {
     fn clone(&self) -> Self {
         Self {
@@ -289,12 +288,12 @@ impl<
 }
 
 impl<
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-        ServiceType: Service,
-    > Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+    ServiceType: Service,
+> Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
 {
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         Self {
@@ -534,7 +533,7 @@ impl<
 
         let required_configuration = self.base.service_config.request_response();
         let existing_configuration = match &existing_settings.messaging_pattern {
-            MessagingPattern::RequestResponse(ref v) => v,
+            MessagingPattern::RequestResponse(v) => v,
             p => {
                 fail!(from self, with RequestResponseOpenError::IncompatibleMessagingPattern,
                     "{} since a service with the messaging pattern {:?} exists but MessagingPattern::RequestResponse is required.",
@@ -963,12 +962,12 @@ impl<
 }
 
 impl<
-        RequestPayload: Debug + ZeroCopySend,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
-        ResponseHeader: Debug + ZeroCopySend,
-        ServiceType: Service,
-    > Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
+    RequestPayload: Debug + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+    ServiceType: Service,
+> Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
 {
     fn prepare_message_type_details(&mut self) {
         self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
@@ -1097,12 +1096,12 @@ impl<
 }
 
 impl<
-        RequestPayload: Debug + ZeroCopySend,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
-        ResponseHeader: Debug + ZeroCopySend,
-        ServiceType: Service,
-    > Builder<[RequestPayload], RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
+    RequestPayload: Debug + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+    ServiceType: Service,
+> Builder<[RequestPayload], RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
 {
     fn prepare_message_type_details(&mut self) {
         self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
@@ -1231,12 +1230,12 @@ impl<
 }
 
 impl<
-        RequestPayload: Debug + ZeroCopySend,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
-        ResponseHeader: Debug + ZeroCopySend,
-        ServiceType: Service,
-    > Builder<[RequestPayload], RequestHeader, [ResponsePayload], ResponseHeader, ServiceType>
+    RequestPayload: Debug + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+    ServiceType: Service,
+> Builder<[RequestPayload], RequestHeader, [ResponsePayload], ResponseHeader, ServiceType>
 {
     fn prepare_message_type_details(&mut self) {
         self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
@@ -1371,12 +1370,12 @@ impl<
 }
 
 impl<
-        RequestPayload: Debug + ZeroCopySend,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
-        ResponseHeader: Debug + ZeroCopySend,
-        ServiceType: Service,
-    > Builder<RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader, ServiceType>
+    RequestPayload: Debug + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+    ServiceType: Service,
+> Builder<RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader, ServiceType>
 {
     fn prepare_message_type_details(&mut self) {
         self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<

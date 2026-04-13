@@ -74,7 +74,7 @@ use core::time::Duration;
 use alloc::string::String;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_elementary::{lazy_singleton::*, CallbackProgression};
+use iceoryx2_bb_elementary::{CallbackProgression, lazy_singleton::*};
 use iceoryx2_bb_posix::{
     file::{FileBuilder, FileOpenError},
     shared_memory::AccessMode,

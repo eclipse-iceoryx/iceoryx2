@@ -78,24 +78,24 @@ pub struct RequestMut<
 }
 
 unsafe impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Send for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Send for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 where
     Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>: Send + Sync,
 {
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Drop for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Drop for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
         let client_shared_state = self.client_shared_state.lock();
@@ -119,13 +119,12 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Debug
-    for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Debug for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
@@ -146,13 +145,12 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Deref
-    for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Deref for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     type Target = RequestPayload;
     fn deref(&self) -> &Self::Target {
@@ -161,13 +159,12 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > DerefMut
-    for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> DerefMut for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.ptr.as_payload_mut()
@@ -175,12 +172,12 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     /// Returns a reference to the iceoryx2 internal
     /// [`service::header::request_response::RequestHeader`]

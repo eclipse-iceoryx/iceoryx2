@@ -43,7 +43,7 @@ pub mod service {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing_macros::conformance_test;
-    use iceoryx2_log::{set_log_level, LogLevel};
+    use iceoryx2_log::{LogLevel, set_log_level};
 
     pub trait SutFactory<Sut: Service>: Send + Sync {
         type Factory: PortFactory;

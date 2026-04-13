@@ -973,7 +973,9 @@ pub(crate) unsafe fn remove_static_service_config<S: Service>(
     let origin = "Service::remove_static_service_config()";
     let static_storage_config = config_scheme::static_config_storage_config::<S>(config);
 
-    match <S::StaticStorage as NamedConceptMgmt>::remove_cfg(uuid, &static_storage_config) {
+    match unsafe {
+        <S::StaticStorage as NamedConceptMgmt>::remove_cfg(uuid, &static_storage_config)
+    } {
         Ok(v) => Ok(v),
         Err(e) => {
             fail!(from origin, with e, "{msg} due to ({:?}).", e);
