@@ -25,3 +25,5 @@
 6. When the work is done, please add your changes to the release notes in
    `doc/release-notes/iceoryx2-unreleased.md`.
 7. Create a pull request.
+  * **USE OUR PR TEMPLATE**, Add all comments into the `Notes for Reviewer`
+    section.
