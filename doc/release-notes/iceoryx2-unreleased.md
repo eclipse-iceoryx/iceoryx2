@@ -147,6 +147,9 @@
   [#1508](https://github.com/eclipse-iceoryx/iceoryx2/issues/1508)
 * Rename `NodeId` into `UniqueNodeId`
   [#1534](https://github.com/eclipse-iceoryx/iceoryx2/issues/1534)
+* Move conformance test macros into `iceoryx2-bb-testing-macros` and rename
+  `#[conformance_test_module]` to `#[conformance_tests]`
+  [#1540](https://github.com/eclipse-iceoryx/iceoryx2/issues/1540)
 
 ### Workflow
 
