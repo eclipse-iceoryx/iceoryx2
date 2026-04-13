@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::{
-    api::{c_size_t, iox2_service_type_e, AssertNonNullHandle, HandleToType},
+    api::{AssertNonNullHandle, HandleToType, c_size_t, iox2_service_type_e},
     iox2_event_id_t,
 };
 use core::ffi::c_void;
@@ -118,7 +118,7 @@ impl HandleToType for iox2_entry_handle_h_ref {
 /// * `value_ptr` a valid, non-null [`*mut c_void`] pointer
 /// * `value_size` the size of the value type
 /// * `value_alignment` the alignment of the value type
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_entry_handle_get(
     entry_handle_handle: iox2_entry_handle_h_ref,
     value_ptr: *mut c_void,
@@ -128,23 +128,24 @@ pub unsafe extern "C" fn iox2_entry_handle_get(
 ) {
     entry_handle_handle.assert_non_null();
     debug_assert!(!value_ptr.is_null());
+    unsafe {
+        let entry_handle = &*entry_handle_handle.as_type();
 
-    let entry_handle = &*entry_handle_handle.as_type();
-
-    match entry_handle.service_type {
-        iox2_service_type_e::IPC => entry_handle.value.as_ref().ipc.get(
-            value_ptr as *mut u8,
-            value_size,
-            value_alignment,
-            generation_counter_ptr as *mut u64,
-        ),
-        iox2_service_type_e::LOCAL => entry_handle.value.as_ref().local.get(
-            value_ptr as *mut u8,
-            value_size,
-            value_alignment,
-            generation_counter_ptr as *mut u64,
-        ),
-    };
+        match entry_handle.service_type {
+            iox2_service_type_e::IPC => entry_handle.value.as_ref().ipc.get(
+                value_ptr as *mut u8,
+                value_size,
+                value_alignment,
+                generation_counter_ptr as *mut u64,
+            ),
+            iox2_service_type_e::LOCAL => entry_handle.value.as_ref().local.get(
+                value_ptr as *mut u8,
+                value_size,
+                value_alignment,
+                generation_counter_ptr as *mut u64,
+            ),
+        };
+    }
 }
 
 /// Checks if the blackboard value that corresponds to the `generation_counter` is
@@ -153,26 +154,27 @@ pub unsafe extern "C" fn iox2_entry_handle_get(
 /// # Safety
 ///
 /// * `entry_handle_handle` obtained by [`iox2_reader_entry()`](crate::iox2_reader_entry())
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_entry_handle_is_up_to_date(
     entry_handle_handle: iox2_entry_handle_h_ref,
     generation_counter: u64,
 ) -> bool {
     entry_handle_handle.assert_non_null();
+    unsafe {
+        let entry_handle = &*entry_handle_handle.as_type();
 
-    let entry_handle = &*entry_handle_handle.as_type();
-
-    match entry_handle.service_type {
-        iox2_service_type_e::IPC => entry_handle
-            .value
-            .as_ref()
-            .ipc
-            .is_up_to_date(generation_counter),
-        iox2_service_type_e::LOCAL => entry_handle
-            .value
-            .as_ref()
-            .local
-            .is_up_to_date(generation_counter),
+        match entry_handle.service_type {
+            iox2_service_type_e::IPC => entry_handle
+                .value
+                .as_ref()
+                .ipc
+                .is_up_to_date(generation_counter),
+            iox2_service_type_e::LOCAL => entry_handle
+                .value
+                .as_ref()
+                .local
+                .is_up_to_date(generation_counter),
+        }
     }
 }
 
@@ -182,22 +184,23 @@ pub unsafe extern "C" fn iox2_entry_handle_is_up_to_date(
 ///
 /// * `entry_handle_handle` obtained by [`iox2_reader_entry()`](crate::iox2_reader_entry())
 /// * `entry_id` a valid, non-null pointer pointing to a [`iox2_event_id_t`]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_entry_handle_entry_id(
     entry_handle_handle: iox2_entry_handle_h_ref,
     entry_id: *mut iox2_event_id_t,
 ) {
     entry_handle_handle.assert_non_null();
     debug_assert!(!entry_id.is_null());
+    unsafe {
+        let entry_handle = &mut *entry_handle_handle.as_type();
 
-    let entry_handle = &mut *entry_handle_handle.as_type();
+        let result = match entry_handle.service_type {
+            iox2_service_type_e::IPC => entry_handle.value.as_ref().ipc.entry_id(),
+            iox2_service_type_e::LOCAL => entry_handle.value.as_ref().local.entry_id(),
+        };
 
-    let result = match entry_handle.service_type {
-        iox2_service_type_e::IPC => entry_handle.value.as_ref().ipc.entry_id(),
-        iox2_service_type_e::LOCAL => entry_handle.value.as_ref().local.entry_id(),
-    };
-
-    *entry_id = result.into();
+        *entry_id = result.into();
+    }
 }
 
 /// This function needs to be called to destroy the entry handle!
@@ -211,20 +214,21 @@ pub unsafe extern "C" fn iox2_entry_handle_entry_id(
 /// * The `entry_handle_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_entry_handle_t`] can be re-used with a call to
 ///   [`iox2_reader_entry`](crate::iox2_reader_entry)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_entry_handle_drop(entry_handle_handle: iox2_entry_handle_h) {
     entry_handle_handle.assert_non_null();
+    unsafe {
+        let entry_handle = &mut *entry_handle_handle.as_type();
 
-    let entry_handle = &mut *entry_handle_handle.as_type();
-
-    match entry_handle.service_type {
-        iox2_service_type_e::IPC => {
-            ManuallyDrop::drop(&mut entry_handle.value.as_mut().ipc);
+        match entry_handle.service_type {
+            iox2_service_type_e::IPC => {
+                ManuallyDrop::drop(&mut entry_handle.value.as_mut().ipc);
+            }
+            iox2_service_type_e::LOCAL => {
+                ManuallyDrop::drop(&mut entry_handle.value.as_mut().local);
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            ManuallyDrop::drop(&mut entry_handle.value.as_mut().local);
-        }
+        (entry_handle.deleter)(entry_handle);
     }
-    (entry_handle.deleter)(entry_handle);
 }
 // END C API

@@ -143,7 +143,7 @@ impl RequestMutUninit {
     /// to convert it into the initialized `RequestMut` version.
     pub fn assume_init(&self) -> RequestMut {
         match &mut *self.value.lock() {
-            RequestMutUninitType::Ipc(ref mut v) => {
+            RequestMutUninitType::Ipc(v) => {
                 let request = v.take().unwrap();
                 RequestMut {
                     value: Parc::new(RequestMutType::Ipc(Some(unsafe { request.assume_init() }))),
@@ -153,7 +153,7 @@ impl RequestMutUninit {
                     response_payload_type_details: self.response_payload_type_details.clone(),
                 }
             }
-            RequestMutUninitType::Local(ref mut v) => {
+            RequestMutUninitType::Local(v) => {
                 let request = v.take().unwrap();
                 RequestMut {
                     value: Parc::new(RequestMutType::Local(Some(unsafe {

@@ -21,7 +21,7 @@ use crate::{
 };
 
 #[allow(clippy::large_enum_variant)] // used purely for python and there it will reside always in
-                                     // the heap
+// the heap
 pub(crate) enum ListenerType {
     Ipc(Option<Arc<iceoryx2::port::listener::Listener<crate::IpcService>>>),
     Local(Option<Arc<iceoryx2::port::listener::Listener<crate::LocalService>>>),

@@ -115,13 +115,12 @@ impl HandleToType for iox2_file_descriptor_h_ref {
 /// # Safety
 ///
 /// * `handle` must be valid and acquired with [`iox2_file_descriptor_new()`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_cast_file_descriptor_ptr(
     handle: iox2_file_descriptor_h,
 ) -> iox2_file_descriptor_ptr {
     debug_assert!(!handle.is_null());
-
-    (*handle.as_type()).value.as_ref()
+    unsafe { (*handle.as_type()).value.as_ref() }
 }
 
 /// Releases a [`iox2_file_descriptor_h`].
@@ -129,13 +128,14 @@ pub unsafe extern "C" fn iox2_cast_file_descriptor_ptr(
 /// # Safety
 ///
 /// * `handle` must be valid and acquired with [`iox2_file_descriptor_new()`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_file_descriptor_drop(handle: iox2_file_descriptor_h) {
     handle.assert_non_null();
-
-    let file_descriptor = &mut *handle.as_type();
-    core::ptr::drop_in_place(file_descriptor.value.as_option_mut());
-    (file_descriptor.deleter)(file_descriptor);
+    unsafe {
+        let file_descriptor = &mut *handle.as_type();
+        core::ptr::drop_in_place(file_descriptor.value.as_option_mut());
+        (file_descriptor.deleter)(file_descriptor);
+    }
 }
 
 /// Returns the underlying native file descriptor value. When the
@@ -145,12 +145,12 @@ pub unsafe extern "C" fn iox2_file_descriptor_drop(handle: iox2_file_descriptor_
 /// # Safety
 ///
 /// * `handle` must be valid and acquired with [`iox2_file_descriptor_new()`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_file_descriptor_native_handle(
     handle: iox2_file_descriptor_ptr,
 ) -> i32 {
     debug_assert!(!handle.is_null());
-    (*handle).file_descriptor().native_handle()
+    unsafe { (*handle).file_descriptor().native_handle() }
 }
 
 /// Creates a new [`iox2_file_descriptor_t`].
@@ -165,7 +165,7 @@ pub unsafe extern "C" fn iox2_file_descriptor_native_handle(
 /// * `struct_ptr` must be either null or pointing to a valid uninitialized memory location
 /// * `handle_ptr` must be non-null and pointing to valid uninitialized memory
 /// * `handle_ptr` must be cleaned up with [`iox2_file_descriptor_drop()`]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_file_descriptor_new(
     value: i32,
     is_owned: bool,
@@ -186,10 +186,10 @@ pub unsafe extern "C" fn iox2_file_descriptor_new(
         deleter = iox2_file_descriptor_t::dealloc;
     }
     debug_assert!(!struct_ptr.is_null());
-
-    (*struct_ptr).init(CFileDescriptor { value, is_owned }, deleter);
-    *handle_ptr = (*struct_ptr).as_handle();
-
+    unsafe {
+        (*struct_ptr).init(CFileDescriptor { value, is_owned }, deleter);
+        *handle_ptr = (*struct_ptr).as_handle();
+    }
     true
 }
 // END C API

@@ -23,8 +23,8 @@ use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_ffi_macros::iceoryx2_ffi;
 use iceoryx2_ffi_macros::CStrRepr;
+use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use crate::IOX2_OK;
 
@@ -160,7 +160,7 @@ impl HandleToType for iox2_config_h_ref {
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_creation_error_string(
     error: iox2_config_creation_error_e,
 ) -> *const c_char {
@@ -180,15 +180,17 @@ pub unsafe extern "C" fn iox2_config_creation_error_string(
 ///
 /// * The `config_handle` must be a valid handle.
 /// * The `config_handle` is still valid after the call to this function.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_cast_config_ptr(config_handle: iox2_config_h) -> iox2_config_ptr {
-    debug_assert!(!config_handle.is_null());
+    unsafe {
+        debug_assert!(!config_handle.is_null());
 
-    &*(*config_handle.as_type()).value.as_ref().value
+        &*(*config_handle.as_type()).value.as_ref().value
+    }
 }
 
 /// Returns a pointer to the global config
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn iox2_config_global_config() -> iox2_config_ptr {
     iceoryx2::config::Config::global_config()
 }
@@ -201,26 +203,28 @@ pub extern "C" fn iox2_config_global_config() -> iox2_config_ptr {
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `handle_ptr` - An uninitialized or dangling [`iox2_config_h`] handle which will be initialized
 ///   by this function call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_default(
     struct_ptr: *mut iox2_config_t,
     handle_ptr: *mut iox2_config_h,
 ) -> c_int {
-    debug_assert!(!handle_ptr.is_null());
+    unsafe {
+        debug_assert!(!handle_ptr.is_null());
 
-    let mut struct_ptr = struct_ptr;
-    fn no_op(_: *mut iox2_config_t) {}
-    let mut deleter: fn(*mut iox2_config_t) = no_op;
-    if struct_ptr.is_null() {
-        struct_ptr = iox2_config_t::alloc();
-        deleter = iox2_config_t::dealloc;
+        let mut struct_ptr = struct_ptr;
+        fn no_op(_: *mut iox2_config_t) {}
+        let mut deleter: fn(*mut iox2_config_t) = no_op;
+        if struct_ptr.is_null() {
+            struct_ptr = iox2_config_t::alloc();
+            deleter = iox2_config_t::dealloc;
+        }
+        debug_assert!(!struct_ptr.is_null());
+
+        (*struct_ptr).init(ManuallyDrop::new(Config::default()), deleter);
+        *handle_ptr = (*struct_ptr).as_handle();
+
+        IOX2_OK
     }
-    debug_assert!(!struct_ptr.is_null());
-
-    (*struct_ptr).init(ManuallyDrop::new(Config::default()), deleter);
-    *handle_ptr = (*struct_ptr).as_handle();
-
-    IOX2_OK
 }
 
 /// Creates an iceoryx2 config populated values from the provided file.
@@ -232,41 +236,43 @@ pub unsafe extern "C" fn iox2_config_default(
 /// * `handle_ptr` - An uninitialized or dangling [`iox2_config_h`] handle which will be initialized
 ///   by this function call.
 /// * `config_file` - Must be a valid file path to an existing config file.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_from_file(
     struct_ptr: *mut iox2_config_t,
     handle_ptr: *mut iox2_config_h,
     config_file: *const c_char,
 ) -> c_int {
-    debug_assert!(!handle_ptr.is_null());
-    debug_assert!(!config_file.is_null());
+    unsafe {
+        debug_assert!(!handle_ptr.is_null());
+        debug_assert!(!config_file.is_null());
 
-    let file = match FilePath::from_c_str(config_file) {
-        Ok(file) => file,
-        Err(_) => return iox2_config_creation_error_e::INVALID_FILE_PATH as c_int,
-    };
+        let file = match FilePath::from_c_str(config_file) {
+            Ok(file) => file,
+            Err(_) => return iox2_config_creation_error_e::INVALID_FILE_PATH as c_int,
+        };
 
-    let mut struct_ptr = struct_ptr;
-    fn no_op(_: *mut iox2_config_t) {}
-    let mut deleter: fn(*mut iox2_config_t) = no_op;
-    if struct_ptr.is_null() {
-        struct_ptr = iox2_config_t::alloc();
-        deleter = iox2_config_t::dealloc;
-    }
-    debug_assert!(!struct_ptr.is_null());
-
-    let config_from_file = match Config::from_file(&file) {
-        Ok(config) => config,
-        Err(e) => {
-            deleter(struct_ptr);
-            return e.into_c_int();
+        let mut struct_ptr = struct_ptr;
+        fn no_op(_: *mut iox2_config_t) {}
+        let mut deleter: fn(*mut iox2_config_t) = no_op;
+        if struct_ptr.is_null() {
+            struct_ptr = iox2_config_t::alloc();
+            deleter = iox2_config_t::dealloc;
         }
-    };
+        debug_assert!(!struct_ptr.is_null());
 
-    (*struct_ptr).init(ManuallyDrop::new(config_from_file), deleter);
-    *handle_ptr = (*struct_ptr).as_handle();
+        let config_from_file = match Config::from_file(&file) {
+            Ok(config) => config,
+            Err(e) => {
+                deleter(struct_ptr);
+                return e.into_c_int();
+            }
+        };
 
-    IOX2_OK
+        (*struct_ptr).init(ManuallyDrop::new(config_from_file), deleter);
+        *handle_ptr = (*struct_ptr).as_handle();
+
+        IOX2_OK
+    }
 }
 
 /// Creates an iceoryx2 config, populated values from the provided file and sets it as global default.
@@ -276,29 +282,31 @@ pub unsafe extern "C" fn iox2_config_from_file(
 /// * `handle_ptr` - An uninitialized or dangling [`iox2_config_ptr`] handle which will be initialized
 ///   by this function call.
 /// * `config_file` - Must be a valid file path to an existing config file.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_setup_global_config_from_file(
     handle_ptr: *mut iox2_config_ptr,
     config_file: *const c_char,
 ) -> c_int {
-    debug_assert!(!handle_ptr.is_null());
-    debug_assert!(!config_file.is_null());
+    unsafe {
+        debug_assert!(!handle_ptr.is_null());
+        debug_assert!(!config_file.is_null());
 
-    let file = match FilePath::from_c_str(config_file) {
-        Ok(file) => file,
-        Err(_) => return iox2_config_creation_error_e::INVALID_FILE_PATH as c_int,
-    };
+        let file = match FilePath::from_c_str(config_file) {
+            Ok(file) => file,
+            Err(_) => return iox2_config_creation_error_e::INVALID_FILE_PATH as c_int,
+        };
 
-    let config = match Config::setup_global_config_from_file(&file) {
-        Ok(config) => config,
-        Err(e) => {
-            return e.into_c_int();
-        }
-    };
+        let config = match Config::setup_global_config_from_file(&file) {
+            Ok(config) => config,
+            Err(e) => {
+                return e.into_c_int();
+            }
+        };
 
-    *handle_ptr = config;
+        *handle_ptr = config;
 
-    IOX2_OK
+        IOX2_OK
+    }
 }
 
 /// Clones a config from the provided [`iox2_config_ptr`].
@@ -310,26 +318,28 @@ pub unsafe extern "C" fn iox2_config_setup_global_config_from_file(
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `handle_ptr` - An uninitialized or dangling [`iox2_config_h`] handle which will be initialized
 ///   by this function call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_from_ptr(
     config: iox2_config_ptr,
     struct_ptr: *mut iox2_config_t,
     handle_ptr: *mut iox2_config_h,
 ) {
-    debug_assert!(!config.is_null());
-    debug_assert!(!handle_ptr.is_null());
+    unsafe {
+        debug_assert!(!config.is_null());
+        debug_assert!(!handle_ptr.is_null());
 
-    let mut struct_ptr = struct_ptr;
-    fn no_op(_: *mut iox2_config_t) {}
-    let mut deleter: fn(*mut iox2_config_t) = no_op;
-    if struct_ptr.is_null() {
-        struct_ptr = iox2_config_t::alloc();
-        deleter = iox2_config_t::dealloc;
+        let mut struct_ptr = struct_ptr;
+        fn no_op(_: *mut iox2_config_t) {}
+        let mut deleter: fn(*mut iox2_config_t) = no_op;
+        if struct_ptr.is_null() {
+            struct_ptr = iox2_config_t::alloc();
+            deleter = iox2_config_t::dealloc;
+        }
+        debug_assert!(!struct_ptr.is_null());
+
+        (*struct_ptr).init(ManuallyDrop::new((*config).clone()), deleter);
+        *handle_ptr = (*struct_ptr).as_handle();
     }
-    debug_assert!(!struct_ptr.is_null());
-
-    (*struct_ptr).init(ManuallyDrop::new((*config).clone()), deleter);
-    *handle_ptr = (*struct_ptr).as_handle();
 }
 
 /// Clones a config from a given non-owning [`iox2_config_h_ref`].
@@ -341,27 +351,29 @@ pub unsafe extern "C" fn iox2_config_from_ptr(
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `handle_ptr` - An uninitialized or dangling [`iox2_config_h`] handle which will be initialized
 ///   by this function call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_clone(
     handle: iox2_config_h_ref,
     struct_ptr: *mut iox2_config_t,
     handle_ptr: *mut iox2_config_h,
 ) {
     handle.assert_non_null();
-    debug_assert!(!handle_ptr.is_null());
+    unsafe {
+        debug_assert!(!handle_ptr.is_null());
 
-    let mut struct_ptr = struct_ptr;
-    fn no_op(_: *mut iox2_config_t) {}
-    let mut deleter: fn(*mut iox2_config_t) = no_op;
-    if struct_ptr.is_null() {
-        struct_ptr = iox2_config_t::alloc();
-        deleter = iox2_config_t::dealloc;
+        let mut struct_ptr = struct_ptr;
+        fn no_op(_: *mut iox2_config_t) {}
+        let mut deleter: fn(*mut iox2_config_t) = no_op;
+        if struct_ptr.is_null() {
+            struct_ptr = iox2_config_t::alloc();
+            deleter = iox2_config_t::dealloc;
+        }
+        debug_assert!(!struct_ptr.is_null());
+
+        let config = &mut *handle.as_type();
+        (*struct_ptr).init(config.value.as_ref().value.clone(), deleter);
+        *handle_ptr = (*struct_ptr).as_handle();
     }
-    debug_assert!(!struct_ptr.is_null());
-
-    let config = &mut *handle.as_type();
-    (*struct_ptr).init(config.value.as_ref().value.clone(), deleter);
-    *handle_ptr = (*struct_ptr).as_handle();
 }
 
 /// Takes ownership of the handle and releases all underlying resources.
@@ -370,13 +382,14 @@ pub unsafe extern "C" fn iox2_config_clone(
 ///
 /// * `handle` - An initialized [`iox2_config_h`] handle which will be uninitialized
 ///   after this function call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_drop(handle: iox2_config_h) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    ManuallyDrop::drop(&mut config.value.as_mut().value);
-    (config.deleter)(config)
+    unsafe {
+        let config = &mut *handle.as_type();
+        ManuallyDrop::drop(&mut config.value.as_mut().value);
+        (config.deleter)(config)
+    }
 }
 
 /////////////////
@@ -388,12 +401,13 @@ pub unsafe extern "C" fn iox2_config_drop(handle: iox2_config_h) {
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_prefix(handle: iox2_config_h_ref) -> *const c_char {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config.value.as_ref().value.global.prefix.as_c_str()
+    unsafe {
+        let config = &*handle.as_type();
+        config.value.as_ref().value.global.prefix.as_c_str()
+    }
 }
 
 /// Sets the prefix used for all files created during runtime
@@ -405,20 +419,21 @@ pub unsafe extern "C" fn iox2_config_global_prefix(handle: iox2_config_h_ref) ->
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `value` - A valid file name containing the prefix
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_set_prefix(
     handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    match FileName::from_c_str(value) {
-        Ok(n) => {
-            config.value.as_mut().value.global.prefix = n;
-            IOX2_OK as _
+    unsafe {
+        let config = &mut *handle.as_type();
+        match FileName::from_c_str(value) {
+            Ok(n) => {
+                config.value.as_mut().value.global.prefix = n;
+                IOX2_OK as _
+            }
+            Err(e) => e as c_int,
         }
-        Err(e) => e as c_int,
     }
 }
 
@@ -427,12 +442,13 @@ pub unsafe extern "C" fn iox2_config_global_set_prefix(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_root_path(handle: iox2_config_h_ref) -> *const c_char {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config.value.as_ref().value.global.root_path().as_c_str()
+    unsafe {
+        let config = &*handle.as_type();
+        config.value.as_ref().value.global.root_path().as_c_str()
+    }
 }
 
 /// Sets the path under which all other directories or files will be created
@@ -444,20 +460,21 @@ pub unsafe extern "C" fn iox2_config_global_root_path(handle: iox2_config_h_ref)
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `value` - A valid path
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_set_root_path(
     handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    match Path::from_c_str(value) {
-        Ok(n) => {
-            config.value.as_mut().value.global.set_root_path(&n);
-            IOX2_OK as _
+    unsafe {
+        let config = &mut *handle.as_type();
+        match Path::from_c_str(value) {
+            Ok(n) => {
+                config.value.as_mut().value.global.set_root_path(&n);
+                IOX2_OK as _
+            }
+            Err(e) => e as c_int,
         }
-        Err(e) => e as c_int,
     }
 }
 /////////////////
@@ -472,14 +489,15 @@ pub unsafe extern "C" fn iox2_config_global_set_root_path(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_node_directory(
     handle: iox2_config_h_ref,
 ) -> *const c_char {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config.value.as_ref().value.global.node.directory.as_c_str()
+    unsafe {
+        let config = &*handle.as_type();
+        config.value.as_ref().value.global.node.directory.as_c_str()
+    }
 }
 
 /// Sets the directory in which all node files are stored
@@ -491,20 +509,21 @@ pub unsafe extern "C" fn iox2_config_global_node_directory(
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `value` - A valid path
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_node_set_directory(
     handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    match Path::from_c_str(value) {
-        Ok(n) => {
-            config.value.as_mut().value.global.node.directory = n;
-            IOX2_OK as _
+    unsafe {
+        let config = &mut *handle.as_type();
+        match Path::from_c_str(value) {
+            Ok(n) => {
+                config.value.as_mut().value.global.node.directory = n;
+                IOX2_OK as _
+            }
+            Err(e) => e as c_int,
         }
-        Err(e) => e as c_int,
     }
 }
 
@@ -513,21 +532,22 @@ pub unsafe extern "C" fn iox2_config_global_node_set_directory(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_node_monitor_suffix(
     handle: iox2_config_h_ref,
 ) -> *const c_char {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .global
-        .node
-        .monitor_suffix
-        .as_c_str()
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .global
+            .node
+            .monitor_suffix
+            .as_c_str()
+    }
 }
 
 /// Sets the suffix of the monitor token
@@ -539,20 +559,21 @@ pub unsafe extern "C" fn iox2_config_global_node_monitor_suffix(
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_node_set_monitor_suffix(
     handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    match FileName::from_c_str(value) {
-        Ok(n) => {
-            config.value.as_mut().value.global.node.monitor_suffix = n;
-            IOX2_OK as _
+    unsafe {
+        let config = &mut *handle.as_type();
+        match FileName::from_c_str(value) {
+            Ok(n) => {
+                config.value.as_mut().value.global.node.monitor_suffix = n;
+                IOX2_OK as _
+            }
+            Err(e) => e as c_int,
         }
-        Err(e) => e as c_int,
     }
 }
 
@@ -561,21 +582,22 @@ pub unsafe extern "C" fn iox2_config_global_node_set_monitor_suffix(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_node_static_config_suffix(
     handle: iox2_config_h_ref,
 ) -> *const c_char {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .global
-        .node
-        .static_config_suffix
-        .as_c_str()
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .global
+            .node
+            .static_config_suffix
+            .as_c_str()
+    }
 }
 
 /// Sets the suffix of the files where the node configuration is stored.
@@ -587,20 +609,21 @@ pub unsafe extern "C" fn iox2_config_global_node_static_config_suffix(
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_node_set_static_config_suffix(
     handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    match FileName::from_c_str(value) {
-        Ok(n) => {
-            config.value.as_mut().value.global.node.static_config_suffix = n;
-            IOX2_OK as _
+    unsafe {
+        let config = &mut *handle.as_type();
+        match FileName::from_c_str(value) {
+            Ok(n) => {
+                config.value.as_mut().value.global.node.static_config_suffix = n;
+                IOX2_OK as _
+            }
+            Err(e) => e as c_int,
         }
-        Err(e) => e as c_int,
     }
 }
 
@@ -609,21 +632,22 @@ pub unsafe extern "C" fn iox2_config_global_node_set_static_config_suffix(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_node_service_tag_suffix(
     handle: iox2_config_h_ref,
 ) -> *const c_char {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .global
-        .node
-        .service_tag_suffix
-        .as_c_str()
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .global
+            .node
+            .service_tag_suffix
+            .as_c_str()
+    }
 }
 
 /// Sets the suffix of the service tags.
@@ -635,20 +659,21 @@ pub unsafe extern "C" fn iox2_config_global_node_service_tag_suffix(
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_node_set_service_tag_suffix(
     handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    match FileName::from_c_str(value) {
-        Ok(n) => {
-            config.value.as_mut().value.global.node.service_tag_suffix = n;
-            IOX2_OK as _
+    unsafe {
+        let config = &mut *handle.as_type();
+        match FileName::from_c_str(value) {
+            Ok(n) => {
+                config.value.as_mut().value.global.node.service_tag_suffix = n;
+                IOX2_OK as _
+            }
+            Err(e) => e as c_int,
         }
-        Err(e) => e as c_int,
     }
 }
 
@@ -659,20 +684,21 @@ pub unsafe extern "C" fn iox2_config_global_node_set_service_tag_suffix(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_node_cleanup_dead_nodes_on_creation(
     handle: iox2_config_h_ref,
 ) -> bool {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .global
-        .node
-        .cleanup_dead_nodes_on_creation
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .global
+            .node
+            .cleanup_dead_nodes_on_creation
+    }
 }
 
 /// Enable/disable the cleanup dead nodes on creation
@@ -680,21 +706,22 @@ pub unsafe extern "C" fn iox2_config_global_node_cleanup_dead_nodes_on_creation(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_node_set_cleanup_dead_nodes_on_creation(
     handle: iox2_config_h_ref,
     value: bool,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .global
-        .node
-        .cleanup_dead_nodes_on_creation = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .global
+            .node
+            .cleanup_dead_nodes_on_creation = value;
+    }
 }
 
 /// When true, the [`iox2_node_builder_create()`](crate::api::iox2_node_builder_create) checks for
@@ -705,20 +732,21 @@ pub unsafe extern "C" fn iox2_config_global_node_set_cleanup_dead_nodes_on_creat
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_node_cleanup_dead_nodes_on_destruction(
     handle: iox2_config_h_ref,
 ) -> bool {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .global
-        .node
-        .cleanup_dead_nodes_on_destruction
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .global
+            .node
+            .cleanup_dead_nodes_on_destruction
+    }
 }
 
 /// Enable/disable the cleanup dead nodes on destruction
@@ -726,21 +754,22 @@ pub unsafe extern "C" fn iox2_config_global_node_cleanup_dead_nodes_on_destructi
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_node_set_cleanup_dead_nodes_on_destruction(
     handle: iox2_config_h_ref,
     value: bool,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .global
-        .node
-        .cleanup_dead_nodes_on_destruction = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .global
+            .node
+            .cleanup_dead_nodes_on_destruction = value;
+    }
 }
 
 /////////////////
@@ -756,21 +785,22 @@ pub unsafe extern "C" fn iox2_config_global_node_set_cleanup_dead_nodes_on_destr
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_service_directory(
     handle: iox2_config_h_ref,
 ) -> *const c_char {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .global
-        .service
-        .directory
-        .as_c_str()
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .global
+            .service
+            .directory
+            .as_c_str()
+    }
 }
 
 /// Sets the directory in which all service files are stored
@@ -782,20 +812,21 @@ pub unsafe extern "C" fn iox2_config_global_service_directory(
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `value` - A valid path
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_service_set_directory(
     handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    match Path::from_c_str(value) {
-        Ok(n) => {
-            config.value.as_mut().value.global.service.directory = n;
-            IOX2_OK as _
+    unsafe {
+        let config = &mut *handle.as_type();
+        match Path::from_c_str(value) {
+            Ok(n) => {
+                config.value.as_mut().value.global.service.directory = n;
+                IOX2_OK as _
+            }
+            Err(e) => e as c_int,
         }
-        Err(e) => e as c_int,
     }
 }
 
@@ -804,21 +835,22 @@ pub unsafe extern "C" fn iox2_config_global_service_set_directory(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_service_data_segment_suffix(
     handle: iox2_config_h_ref,
 ) -> *const c_char {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .global
-        .service
-        .data_segment_suffix
-        .as_c_str()
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .global
+            .service
+            .data_segment_suffix
+            .as_c_str()
+    }
 }
 
 /// Sets the suffix of the ports data segment
@@ -830,26 +862,27 @@ pub unsafe extern "C" fn iox2_config_global_service_data_segment_suffix(
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_service_set_data_segment_suffix(
     handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    match FileName::from_c_str(value) {
-        Ok(n) => {
-            config
-                .value
-                .as_mut()
-                .value
-                .global
-                .service
-                .data_segment_suffix = n;
-            IOX2_OK as _
+    unsafe {
+        let config = &mut *handle.as_type();
+        match FileName::from_c_str(value) {
+            Ok(n) => {
+                config
+                    .value
+                    .as_mut()
+                    .value
+                    .global
+                    .service
+                    .data_segment_suffix = n;
+                IOX2_OK as _
+            }
+            Err(e) => e as c_int,
         }
-        Err(e) => e as c_int,
     }
 }
 
@@ -858,21 +891,22 @@ pub unsafe extern "C" fn iox2_config_global_service_set_data_segment_suffix(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_service_static_config_storage_suffix(
     handle: iox2_config_h_ref,
 ) -> *const c_char {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .global
-        .service
-        .static_config_storage_suffix
-        .as_c_str()
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .global
+            .service
+            .static_config_storage_suffix
+            .as_c_str()
+    }
 }
 
 /// Sets the suffix of the static config file
@@ -884,26 +918,27 @@ pub unsafe extern "C" fn iox2_config_global_service_static_config_storage_suffix
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_service_set_static_config_storage_suffix(
     handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    match FileName::from_c_str(value) {
-        Ok(n) => {
-            config
-                .value
-                .as_mut()
-                .value
-                .global
-                .service
-                .static_config_storage_suffix = n;
-            IOX2_OK as _
+    unsafe {
+        let config = &mut *handle.as_type();
+        match FileName::from_c_str(value) {
+            Ok(n) => {
+                config
+                    .value
+                    .as_mut()
+                    .value
+                    .global
+                    .service
+                    .static_config_storage_suffix = n;
+                IOX2_OK as _
+            }
+            Err(e) => e as c_int,
         }
-        Err(e) => e as c_int,
     }
 }
 
@@ -912,21 +947,22 @@ pub unsafe extern "C" fn iox2_config_global_service_set_static_config_storage_su
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_service_dynamic_config_storage_suffix(
     handle: iox2_config_h_ref,
 ) -> *const c_char {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .global
-        .service
-        .dynamic_config_storage_suffix
-        .as_c_str()
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .global
+            .service
+            .dynamic_config_storage_suffix
+            .as_c_str()
+    }
 }
 
 /// Sets the suffix of the dynamic config file
@@ -938,26 +974,27 @@ pub unsafe extern "C" fn iox2_config_global_service_dynamic_config_storage_suffi
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_service_set_dynamic_config_storage_suffix(
     handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    match FileName::from_c_str(value) {
-        Ok(n) => {
-            config
-                .value
-                .as_mut()
-                .value
-                .global
-                .service
-                .dynamic_config_storage_suffix = n;
-            IOX2_OK as _
+    unsafe {
+        let config = &mut *handle.as_type();
+        match FileName::from_c_str(value) {
+            Ok(n) => {
+                config
+                    .value
+                    .as_mut()
+                    .value
+                    .global
+                    .service
+                    .dynamic_config_storage_suffix = n;
+                IOX2_OK as _
+            }
+            Err(e) => e as c_int,
         }
-        Err(e) => e as c_int,
     }
 }
 
@@ -969,20 +1006,22 @@ pub unsafe extern "C" fn iox2_config_global_service_set_dynamic_config_storage_s
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `secs` - A valid pointer pointing to a [`u64`].
 /// * `nsecs` - A valid pointer pointing to a [`u32`]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_service_creation_timeout(
     handle: iox2_config_h_ref,
     secs: *mut u64,
     nsecs: *mut u32,
 ) {
     handle.assert_non_null();
-    debug_assert!(!secs.is_null());
-    debug_assert!(!nsecs.is_null());
+    unsafe {
+        debug_assert!(!secs.is_null());
+        debug_assert!(!nsecs.is_null());
 
-    let config = &*handle.as_type();
-    let timeout = config.value.as_ref().value.global.service.creation_timeout;
-    *secs = timeout.as_secs();
-    *nsecs = timeout.subsec_nanos();
+        let config = &*handle.as_type();
+        let timeout = config.value.as_ref().value.global.service.creation_timeout;
+        *secs = timeout.as_secs();
+        *nsecs = timeout.subsec_nanos();
+    }
 }
 
 /// Sets the creation timeout
@@ -994,17 +1033,18 @@ pub unsafe extern "C" fn iox2_config_global_service_creation_timeout(
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_service_set_creation_timeout(
     handle: iox2_config_h_ref,
     sec: u64,
     nsec: u32,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config.value.as_mut().value.global.service.creation_timeout =
-        Duration::from_secs(sec) + Duration::from_nanos(nsec as u64);
+    unsafe {
+        let config = &mut *handle.as_type();
+        config.value.as_mut().value.global.service.creation_timeout =
+            Duration::from_secs(sec) + Duration::from_nanos(nsec as u64);
+    }
 }
 
 /// The suffix of a one-to-one connection
@@ -1012,21 +1052,22 @@ pub unsafe extern "C" fn iox2_config_global_service_set_creation_timeout(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_service_connection_suffix(
     handle: iox2_config_h_ref,
 ) -> *const c_char {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .global
-        .service
-        .connection_suffix
-        .as_c_str()
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .global
+            .service
+            .connection_suffix
+            .as_c_str()
+    }
 }
 
 /// Set the suffix of a one-to-one connection
@@ -1038,20 +1079,21 @@ pub unsafe extern "C" fn iox2_config_global_service_connection_suffix(
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_service_set_connection_suffix(
     handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    match FileName::from_c_str(value) {
-        Ok(n) => {
-            config.value.as_mut().value.global.service.connection_suffix = n;
-            IOX2_OK as _
+    unsafe {
+        let config = &mut *handle.as_type();
+        match FileName::from_c_str(value) {
+            Ok(n) => {
+                config.value.as_mut().value.global.service.connection_suffix = n;
+                IOX2_OK as _
+            }
+            Err(e) => e as c_int,
         }
-        Err(e) => e as c_int,
     }
 }
 
@@ -1060,21 +1102,22 @@ pub unsafe extern "C" fn iox2_config_global_service_set_connection_suffix(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_service_event_connection_suffix(
     handle: iox2_config_h_ref,
 ) -> *const c_char {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .global
-        .service
-        .event_connection_suffix
-        .as_c_str()
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .global
+            .service
+            .event_connection_suffix
+            .as_c_str()
+    }
 }
 
 /// Sets the suffix of a one-to-one connection
@@ -1086,26 +1129,27 @@ pub unsafe extern "C" fn iox2_config_global_service_event_connection_suffix(
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_service_set_event_connection_suffix(
     handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    match FileName::from_c_str(value) {
-        Ok(n) => {
-            config
-                .value
-                .as_mut()
-                .value
-                .global
-                .service
-                .event_connection_suffix = n;
-            IOX2_OK as _
+    unsafe {
+        let config = &mut *handle.as_type();
+        match FileName::from_c_str(value) {
+            Ok(n) => {
+                config
+                    .value
+                    .as_mut()
+                    .value
+                    .global
+                    .service
+                    .event_connection_suffix = n;
+                IOX2_OK as _
+            }
+            Err(e) => e as c_int,
         }
-        Err(e) => e as c_int,
     }
 }
 
@@ -1114,21 +1158,22 @@ pub unsafe extern "C" fn iox2_config_global_service_set_event_connection_suffix(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_service_blackboard_mgmt_suffix(
     handle: iox2_config_h_ref,
 ) -> *const c_char {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .global
-        .service
-        .blackboard_mgmt_suffix
-        .as_c_str()
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .global
+            .service
+            .blackboard_mgmt_suffix
+            .as_c_str()
+    }
 }
 
 /// Sets the suffix of the blackboard management data segment
@@ -1140,26 +1185,27 @@ pub unsafe extern "C" fn iox2_config_global_service_blackboard_mgmt_suffix(
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_service_set_blackboard_mgmt_suffix(
     handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    match FileName::from_c_str(value) {
-        Ok(n) => {
-            config
-                .value
-                .as_mut()
-                .value
-                .global
-                .service
-                .blackboard_mgmt_suffix = n;
-            IOX2_OK as _
+    unsafe {
+        let config = &mut *handle.as_type();
+        match FileName::from_c_str(value) {
+            Ok(n) => {
+                config
+                    .value
+                    .as_mut()
+                    .value
+                    .global
+                    .service
+                    .blackboard_mgmt_suffix = n;
+                IOX2_OK as _
+            }
+            Err(e) => e as c_int,
         }
-        Err(e) => e as c_int,
     }
 }
 
@@ -1168,21 +1214,22 @@ pub unsafe extern "C" fn iox2_config_global_service_set_blackboard_mgmt_suffix(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_service_blackboard_data_suffix(
     handle: iox2_config_h_ref,
 ) -> *const c_char {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .global
-        .service
-        .blackboard_data_suffix
-        .as_c_str()
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .global
+            .service
+            .blackboard_data_suffix
+            .as_c_str()
+    }
 }
 
 /// Sets the suffix of the blackboard payload data segment
@@ -1194,26 +1241,27 @@ pub unsafe extern "C" fn iox2_config_global_service_blackboard_data_suffix(
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_service_set_blackboard_data_suffix(
     handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    match FileName::from_c_str(value) {
-        Ok(n) => {
-            config
-                .value
-                .as_mut()
-                .value
-                .global
-                .service
-                .blackboard_data_suffix = n;
-            IOX2_OK as _
+    unsafe {
+        let config = &mut *handle.as_type();
+        match FileName::from_c_str(value) {
+            Ok(n) => {
+                config
+                    .value
+                    .as_mut()
+                    .value
+                    .global
+                    .service
+                    .blackboard_data_suffix = n;
+                IOX2_OK as _
+            }
+            Err(e) => e as c_int,
         }
-        Err(e) => e as c_int,
     }
 }
 /////////////////
@@ -1228,20 +1276,21 @@ pub unsafe extern "C" fn iox2_config_global_service_set_blackboard_data_suffix(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_max_subscribers(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .publish_subscribe
-        .max_subscribers
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .publish_subscribe
+            .max_subscribers
+    }
 }
 
 /// Sets the maximum amount of supported [`iox2_subscriber_h`](crate::api::iox2_subscriber_h)s
@@ -1249,21 +1298,22 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_max_subscribers(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_max_subscribers(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .publish_subscribe
-        .max_subscribers = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .publish_subscribe
+            .max_subscribers = value;
+    }
 }
 
 /// Returns maximum amount of supported [`iox2_publisher_h`](crate::api::iox2_publisher_h)s
@@ -1271,20 +1321,21 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_max_subscrib
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_max_publishers(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .publish_subscribe
-        .max_publishers
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .publish_subscribe
+            .max_publishers
+    }
 }
 
 /// Sets the maximum amount of supported [`iox2_publisher_h`](crate::api::iox2_publisher_h)s
@@ -1292,21 +1343,22 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_max_publishers(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_max_publishers(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .publish_subscribe
-        .max_publishers = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .publish_subscribe
+            .max_publishers = value;
+    }
 }
 
 /// Returns the maximum amount of supported [`iox2_node_h`](crate::api::iox2_node_h)s. Defines indirectly
@@ -1315,20 +1367,21 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_max_publishe
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_max_nodes(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .publish_subscribe
-        .max_nodes
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .publish_subscribe
+            .max_nodes
+    }
 }
 
 /// Sets the maximum amount of supported [`iox2_node_h`](crate::api::iox2_node_h)s.
@@ -1336,21 +1389,22 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_max_nodes(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_max_nodes(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .publish_subscribe
-        .max_nodes = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .publish_subscribe
+            .max_nodes = value;
+    }
 }
 
 /// Returns the maximum buffer size a [`iox2_subscriber_h`](crate::api::iox2_subscriber_h) can have
@@ -1358,20 +1412,21 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_max_nodes(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_subscriber_max_buffer_size(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .publish_subscribe
-        .subscriber_max_buffer_size
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .publish_subscribe
+            .subscriber_max_buffer_size
+    }
 }
 
 /// Sets the maximum buffer size a [`iox2_subscriber_h`](crate::api::iox2_subscriber_h) can have
@@ -1379,21 +1434,22 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_subscriber_max_b
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_subscriber_max_buffer_size(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .publish_subscribe
-        .subscriber_max_buffer_size = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .publish_subscribe
+            .subscriber_max_buffer_size = value;
+    }
 }
 
 /// Returns the maximum amount of [`iox2_sample_h`](crate::api::iox2_sample_h)s a
@@ -1402,20 +1458,21 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_subscriber_m
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_subscriber_max_borrowed_samples(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .publish_subscribe
-        .subscriber_max_borrowed_samples
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .publish_subscribe
+            .subscriber_max_borrowed_samples
+    }
 }
 
 /// Sets the maximum amount of [`iox2_sample_h`](crate::api::iox2_sample_h)s a
@@ -1424,21 +1481,22 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_subscriber_max_b
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_subscriber_max_borrowed_samples(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .publish_subscribe
-        .subscriber_max_borrowed_samples = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .publish_subscribe
+            .subscriber_max_borrowed_samples = value;
+    }
 }
 
 /// Returns the maximum amount of [`iox2_sample_mut_h`](crate::api::iox2_sample_mut_h)s a
@@ -1447,20 +1505,21 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_subscriber_m
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_publisher_max_loaned_samples(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .publish_subscribe
-        .publisher_max_loaned_samples
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .publish_subscribe
+            .publisher_max_loaned_samples
+    }
 }
 
 /// Sets the maximum amount of [`iox2_sample_mut_h`](crate::api::iox2_sample_mut_h)s a
@@ -1469,21 +1528,22 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_publisher_max_lo
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_publisher_max_loaned_samples(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .publish_subscribe
-        .publisher_max_loaned_samples = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .publish_subscribe
+            .publisher_max_loaned_samples = value;
+    }
 }
 
 /// Returns the maximum history size a [`iox2_subscriber_h`](crate::api::iox2_subscriber_h) can
@@ -1492,20 +1552,21 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_publisher_ma
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_publisher_history_size(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .publish_subscribe
-        .publisher_history_size
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .publish_subscribe
+            .publisher_history_size
+    }
 }
 
 /// Sets the maximum history size a [`iox2_subscriber_h`](crate::api::iox2_subscriber_h) can
@@ -1514,21 +1575,22 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_publisher_histor
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_publisher_history_size(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .publish_subscribe
-        .publisher_history_size = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .publish_subscribe
+            .publisher_history_size = value;
+    }
 }
 
 /// Defines how the [`iox2_subscriber_h`](crate::api::iox2_subscriber_h) buffer behaves when it is
@@ -1538,20 +1600,21 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_publisher_hi
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_enable_safe_overflow(
     handle: iox2_config_h_ref,
 ) -> bool {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .publish_subscribe
-        .enable_safe_overflow
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .publish_subscribe
+            .enable_safe_overflow
+    }
 }
 
 /// Enables/disables safe overflow
@@ -1559,21 +1622,22 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_enable_safe_over
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_enable_safe_overflow(
     handle: iox2_config_h_ref,
     value: bool,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .publish_subscribe
-        .enable_safe_overflow = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .publish_subscribe
+            .enable_safe_overflow = value;
+    }
 }
 
 /// If safe overflow is deactivated it defines the deliver strategy of the
@@ -1585,21 +1649,22 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_enable_safe_
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_unable_to_deliver_strategy(
     handle: iox2_config_h_ref,
 ) -> c_int {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .publish_subscribe
-        .unable_to_deliver_strategy
-        .into_c_int()
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .publish_subscribe
+            .unable_to_deliver_strategy
+            .into_c_int()
+    }
 }
 
 /// Define the unable to deliver strategy
@@ -1607,21 +1672,22 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_unable_to_delive
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_unable_to_deliver_strategy(
     handle: iox2_config_h_ref,
     value: iox2_unable_to_deliver_strategy_e,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .publish_subscribe
-        .unable_to_deliver_strategy = value.into();
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .publish_subscribe
+            .unable_to_deliver_strategy = value.into();
+    }
 }
 
 /// Defines the size of the internal [`iox2_subscriber_h`](crate::api::iox2_subscriber_h)
@@ -1633,20 +1699,21 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_unable_to_de
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_subscriber_expired_connection_buffer(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .publish_subscribe
-        .subscriber_expired_connection_buffer
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .publish_subscribe
+            .subscriber_expired_connection_buffer
+    }
 }
 
 /// Set the expired connection buffer size
@@ -1654,21 +1721,22 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_subscriber_expir
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_subscriber_expired_connection_buffer(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .publish_subscribe
-        .subscriber_expired_connection_buffer = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .publish_subscribe
+            .subscriber_expired_connection_buffer = value;
+    }
 }
 //////////////////////////
 // END: publish subscribe
@@ -1684,20 +1752,21 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_subscriber_e
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_client_expired_connection_buffer(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .request_response
-        .client_expired_connection_buffer
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .request_response
+            .client_expired_connection_buffer
+    }
 }
 
 /// Sets the expired connection buffer size for [`iox2_client_h`](crate::api::iox2_client_h).
@@ -1705,21 +1774,22 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_client_expired_co
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_set_client_expired_connection_buffer(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .request_response
-        .client_expired_connection_buffer = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .request_response
+            .client_expired_connection_buffer = value;
+    }
 }
 
 /// Returns the expired connection buffer size for [`iox2_serve_h`](crate::api::iox2_server_h)
@@ -1729,20 +1799,21 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_client_expire
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_server_expired_connection_buffer(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .request_response
-        .server_expired_connection_buffer
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .request_response
+            .server_expired_connection_buffer
+    }
 }
 
 /// Sets the expired connection buffer size for [`iox2_server_h`](crate::api::iox2_server_h).
@@ -1750,21 +1821,22 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_server_expired_co
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_set_server_expired_connection_buffer(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .request_response
-        .server_expired_connection_buffer = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .request_response
+            .server_expired_connection_buffer = value;
+    }
 }
 
 /// If safe overflow is deactivated it defines the deliver strategy of the
@@ -1776,21 +1848,22 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_server_expire
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_client_unable_to_deliver_strategy(
     handle: iox2_config_h_ref,
 ) -> c_int {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .request_response
-        .client_unable_to_deliver_strategy
-        .into_c_int()
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .request_response
+            .client_unable_to_deliver_strategy
+            .into_c_int()
+    }
 }
 
 /// Defines the unable to deliver strategy for the [`iox2_client_h`](crate::api::iox2_client_h).
@@ -1798,21 +1871,22 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_client_unable_to_
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_set_client_unable_to_deliver_strategy(
     handle: iox2_config_h_ref,
     value: iox2_unable_to_deliver_strategy_e,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .request_response
-        .client_unable_to_deliver_strategy = value.into();
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .request_response
+            .client_unable_to_deliver_strategy = value.into();
+    }
 }
 
 /// If safe overflow is deactivated it defines the deliver strategy of the
@@ -1824,21 +1898,22 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_client_unable
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_server_unable_to_deliver_strategy(
     handle: iox2_config_h_ref,
 ) -> c_int {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .request_response
-        .server_unable_to_deliver_strategy
-        .into_c_int()
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .request_response
+            .server_unable_to_deliver_strategy
+            .into_c_int()
+    }
 }
 
 /// Defines the unable to deliver strategy for the [`iox2_server_h`](crate::api::iox2_server_h).
@@ -1846,21 +1921,22 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_server_unable_to_
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_set_server_unable_to_deliver_strategy(
     handle: iox2_config_h_ref,
     value: iox2_unable_to_deliver_strategy_e,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .request_response
-        .server_unable_to_deliver_strategy = value.into();
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .request_response
+            .server_unable_to_deliver_strategy = value.into();
+    }
 }
 
 /// Returns if the service supports fire and forget requests. Those are requests where the
@@ -1869,20 +1945,21 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_server_unable
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_has_fire_and_forget_requests(
     handle: iox2_config_h_ref,
 ) -> bool {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .request_response
-        .enable_fire_and_forget_requests
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .request_response
+            .enable_fire_and_forget_requests
+    }
 }
 
 /// Defines if request response services shall support fire and forget requests.
@@ -1890,21 +1967,22 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_has_fire_and_forg
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_set_fire_and_forget_requests(
     handle: iox2_config_h_ref,
     value: bool,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .request_response
-        .enable_fire_and_forget_requests = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .request_response
+            .enable_fire_and_forget_requests = value;
+    }
 }
 
 /// Defines how the [`iox2_server_h`](crate::api::iox2_server_h) buffer behaves when it is
@@ -1914,20 +1992,21 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_fire_and_forg
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_enable_safe_overflow_for_requests(
     handle: iox2_config_h_ref,
 ) -> bool {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .request_response
-        .enable_safe_overflow_for_requests
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .request_response
+            .enable_safe_overflow_for_requests
+    }
 }
 
 /// Enables/disables safe overflow for requests
@@ -1935,21 +2014,22 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_enable_safe_overf
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_set_enable_safe_overflow_for_requests(
     handle: iox2_config_h_ref,
     value: bool,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .request_response
-        .enable_safe_overflow_for_requests = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .request_response
+            .enable_safe_overflow_for_requests = value;
+    }
 }
 
 /// Defines how the [`iox2_client_h`](crate::api::iox2_client_h) buffer behaves when it is
@@ -1959,20 +2039,21 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_enable_safe_o
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_enable_safe_overflow_for_responses(
     handle: iox2_config_h_ref,
 ) -> bool {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .request_response
-        .enable_safe_overflow_for_responses
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .request_response
+            .enable_safe_overflow_for_responses
+    }
 }
 
 /// Enables/disables safe overflow for responses
@@ -1980,21 +2061,22 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_enable_safe_overf
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_set_enable_safe_overflow_for_responses(
     handle: iox2_config_h_ref,
     value: bool,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .request_response
-        .enable_safe_overflow_for_responses = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .request_response
+            .enable_safe_overflow_for_responses = value;
+    }
 }
 
 /// Returns how many active requests a [`iox2_client_h`](crate::api::iox2_client_h) can send out in
@@ -2003,20 +2085,21 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_enable_safe_o
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_max_active_requests_per_client(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .request_response
-        .max_active_requests_per_client
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .request_response
+            .max_active_requests_per_client
+    }
 }
 
 /// Sets the max number of active requests.
@@ -2024,21 +2107,22 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_max_active_reques
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_active_requests_per_client(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .request_response
-        .max_active_requests_per_client = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .request_response
+            .max_active_requests_per_client = value;
+    }
 }
 
 /// Returns the size of the [`iox2_response_h`](crate::api::iox2_response_h) buffer per request
@@ -2048,20 +2132,21 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_active_re
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_max_response_buffer_size(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .request_response
-        .max_response_buffer_size
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .request_response
+            .max_response_buffer_size
+    }
 }
 
 /// Sets the max response buffer size
@@ -2069,21 +2154,22 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_max_response_buff
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_response_buffer_size(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .request_response
-        .max_response_buffer_size = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .request_response
+            .max_response_buffer_size = value;
+    }
 }
 
 /// Returns how many [`iox2_server_h`](crate::api::iox2_server_h)s can be connected to the same
@@ -2092,20 +2178,21 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_response_
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_max_servers(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .request_response
-        .max_servers
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .request_response
+            .max_servers
+    }
 }
 
 /// Sets the maximum number of servers per service
@@ -2113,21 +2200,22 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_max_servers(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_servers(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .request_response
-        .max_servers = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .request_response
+            .max_servers = value;
+    }
 }
 
 /// Returns how many [`iox2_client_h`](crate::api::iox2_client_h)s can be connected to the same
@@ -2136,20 +2224,21 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_servers(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_max_clients(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .request_response
-        .max_clients
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .request_response
+            .max_clients
+    }
 }
 
 /// Sets the maximum number of clients per service
@@ -2157,21 +2246,22 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_max_clients(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_clients(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .request_response
-        .max_clients = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .request_response
+            .max_clients = value;
+    }
 }
 
 /// Returns how many [`iox2_node_h`](crate::api::iox2_node_h)s can open the same
@@ -2180,20 +2270,21 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_clients(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_max_nodes(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .request_response
-        .max_nodes
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .request_response
+            .max_nodes
+    }
 }
 
 /// Sets the maximum number of nodes per service
@@ -2201,21 +2292,22 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_max_nodes(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_nodes(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .request_response
-        .max_nodes = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .request_response
+            .max_nodes = value;
+    }
 }
 
 /// Returns how many [`iox2_response_h`](crate::api::iox2_response_h)s can be borrowed per
@@ -2224,20 +2316,21 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_nodes(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_max_borrowed_responses_per_pending_response(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .request_response
-        .max_borrowed_responses_per_pending_response
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .request_response
+            .max_borrowed_responses_per_pending_response
+    }
 }
 
 /// Sets the maximum number of borrowed responses per pending response
@@ -2245,21 +2338,22 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_max_borrowed_resp
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_borrowed_responses_per_pending_response(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .request_response
-        .max_borrowed_responses_per_pending_response = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .request_response
+            .max_borrowed_responses_per_pending_response = value;
+    }
 }
 
 /// Returns how many [`iox2_request_mut_h`](crate::api::iox2_request_mut_h)s can be loaned at most
@@ -2268,20 +2362,21 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_borrowed_
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_max_loaned_requests(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .request_response
-        .max_loaned_requests
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .request_response
+            .max_loaned_requests
+    }
 }
 
 /// Sets the maximum number of loaned requests
@@ -2289,21 +2384,22 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_max_loaned_reques
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_loaned_requests(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .request_response
-        .max_loaned_requests = value
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .request_response
+            .max_loaned_requests = value
+    }
 }
 
 /// Returns how many [`iox2_response_mut_h`](crate::api::iox2_response_mut_h)s can be loaned at most
@@ -2312,20 +2408,21 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_loaned_re
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_server_max_loaned_responses_per_request(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .request_response
-        .server_max_loaned_responses_per_request
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .request_response
+            .server_max_loaned_responses_per_request
+    }
 }
 
 /// Sets the maximum number of loaned responses per request
@@ -2333,21 +2430,22 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_server_max_loaned
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_request_response_set_server_max_loaned_responses_per_request(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .request_response
-        .server_max_loaned_responses_per_request = value
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .request_response
+            .server_max_loaned_responses_per_request = value
+    }
 }
 
 //////////////////////////
@@ -2362,14 +2460,15 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_server_max_lo
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_event_max_listeners(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config.value.as_ref().value.defaults.event.max_listeners
+    unsafe {
+        let config = &*handle.as_type();
+        config.value.as_ref().value.defaults.event.max_listeners
+    }
 }
 
 /// Sets the maximum amount of supported [`iox2_listener_h`](crate::api::iox2_listener_h)
@@ -2377,15 +2476,16 @@ pub unsafe extern "C" fn iox2_config_defaults_event_max_listeners(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_event_set_max_listeners(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config.value.as_mut().value.defaults.event.max_listeners = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config.value.as_mut().value.defaults.event.max_listeners = value;
+    }
 }
 
 /// Returns the default deadline for event services. If there is a deadline set, the provided
@@ -2397,7 +2497,7 @@ pub unsafe extern "C" fn iox2_config_defaults_event_set_max_listeners(
 /// * `notifier_handle` is valid, non-null and was obtained via [`iox2_port_factory_listener_builder_create`](crate::iox2_port_factory_listener_builder_create)
 /// * `seconds` is pointing to a valid memory location and non-null
 /// * `nanoseconds` is pointing to a valid memory location and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_event_deadline(
     handle: iox2_config_h_ref,
     seconds: *mut u64,
@@ -2406,20 +2506,21 @@ pub unsafe extern "C" fn iox2_config_defaults_event_deadline(
     handle.assert_non_null();
     debug_assert!(!seconds.is_null());
     debug_assert!(!nanoseconds.is_null());
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .event
-        .deadline
-        .map(|v| {
-            *seconds = v.as_secs();
-            *nanoseconds = v.subsec_nanos();
-        })
-        .is_some()
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .event
+            .deadline
+            .map(|v| {
+                *seconds = v.as_secs();
+                *nanoseconds = v.subsec_nanos();
+            })
+            .is_some()
+    }
 }
 
 /// Sets the default deadline for event services. If `seconds` and `nanoseconds` is `NULL`
@@ -2430,24 +2531,25 @@ pub unsafe extern "C" fn iox2_config_defaults_event_deadline(
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `seconds` & `nanoseconds` - either both must be `NULL` or both must point to a valid memory
 ///   location
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_event_set_deadline(
     handle: iox2_config_h_ref,
     seconds: *const u64,
     nanoseconds: *const u32,
 ) {
     handle.assert_non_null();
+    unsafe {
+        let config = &mut *handle.as_type();
+        let deadline = if seconds.is_null() {
+            debug_assert!(nanoseconds.is_null());
+            None
+        } else {
+            debug_assert!(!nanoseconds.is_null());
+            Some(Duration::from_secs(*seconds) + Duration::from_nanos(*nanoseconds as u64))
+        };
 
-    let config = &mut *handle.as_type();
-    let deadline = if seconds.is_null() {
-        debug_assert!(nanoseconds.is_null());
-        None
-    } else {
-        debug_assert!(!nanoseconds.is_null());
-        Some(Duration::from_secs(*seconds) + Duration::from_nanos(*nanoseconds as u64))
-    };
-
-    config.value.as_mut().value.defaults.event.deadline = deadline;
+        config.value.as_mut().value.defaults.event.deadline = deadline;
+    }
 }
 
 /// Returns the event id value that is emitted when a new notifier is created. It returns `true`
@@ -2457,27 +2559,28 @@ pub unsafe extern "C" fn iox2_config_defaults_event_set_deadline(
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `value` - points to a valid memory location
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_event_notifier_created_event(
     handle: iox2_config_h_ref,
     value: *mut c_size_t,
 ) -> bool {
     handle.assert_non_null();
     debug_assert!(!value.is_null());
-
-    let config = &*handle.as_type();
-    if let Some(v) = config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .event
-        .notifier_created_event
-    {
-        *value = v;
-        true
-    } else {
-        false
+    unsafe {
+        let config = &*handle.as_type();
+        if let Some(v) = config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .event
+            .notifier_created_event
+        {
+            *value = v;
+            true
+        } else {
+            false
+        }
     }
 }
 
@@ -2487,22 +2590,23 @@ pub unsafe extern "C" fn iox2_config_defaults_event_notifier_created_event(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_event_set_notifier_created_event(
     handle: iox2_config_h_ref,
     value: *const c_size_t,
 ) {
     handle.assert_non_null();
+    unsafe {
+        let config = &mut *handle.as_type();
 
-    let config = &mut *handle.as_type();
-
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .event
-        .notifier_created_event = if value.is_null() { None } else { Some(*value) };
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .event
+            .notifier_created_event = if value.is_null() { None } else { Some(*value) };
+    }
 }
 
 /// Returns the event id value that is emitted when a notifier is dropped. It returns `true`
@@ -2512,27 +2616,28 @@ pub unsafe extern "C" fn iox2_config_defaults_event_set_notifier_created_event(
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `value` - points to a valid memory location
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_event_notifier_dropped_event(
     handle: iox2_config_h_ref,
     value: *mut c_size_t,
 ) -> bool {
     handle.assert_non_null();
     debug_assert!(!value.is_null());
-
-    let config = &*handle.as_type();
-    if let Some(v) = config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .event
-        .notifier_dropped_event
-    {
-        *value = v;
-        true
-    } else {
-        false
+    unsafe {
+        let config = &*handle.as_type();
+        if let Some(v) = config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .event
+            .notifier_dropped_event
+        {
+            *value = v;
+            true
+        } else {
+            false
+        }
     }
 }
 
@@ -2542,22 +2647,23 @@ pub unsafe extern "C" fn iox2_config_defaults_event_notifier_dropped_event(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_event_set_notifier_dropped_event(
     handle: iox2_config_h_ref,
     value: *const c_size_t,
 ) {
     handle.assert_non_null();
+    unsafe {
+        let config = &mut *handle.as_type();
 
-    let config = &mut *handle.as_type();
-
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .event
-        .notifier_dropped_event = if value.is_null() { None } else { Some(*value) };
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .event
+            .notifier_dropped_event = if value.is_null() { None } else { Some(*value) };
+    }
 }
 
 /// Returns the event id value that is emitted when a notifier is identified as dead. It returns
@@ -2567,27 +2673,28 @@ pub unsafe extern "C" fn iox2_config_defaults_event_set_notifier_dropped_event(
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `value` - points to a valid memory location
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_event_notifier_dead_event(
     handle: iox2_config_h_ref,
     value: *mut c_size_t,
 ) -> bool {
     handle.assert_non_null();
     debug_assert!(!value.is_null());
-
-    let config = &*handle.as_type();
-    if let Some(v) = config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .event
-        .notifier_dead_event
-    {
-        *value = v;
-        true
-    } else {
-        false
+    unsafe {
+        let config = &*handle.as_type();
+        if let Some(v) = config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .event
+            .notifier_dead_event
+        {
+            *value = v;
+            true
+        } else {
+            false
+        }
     }
 }
 
@@ -2597,22 +2704,23 @@ pub unsafe extern "C" fn iox2_config_defaults_event_notifier_dead_event(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_event_set_notifier_dead_event(
     handle: iox2_config_h_ref,
     value: *const c_size_t,
 ) {
     handle.assert_non_null();
+    unsafe {
+        let config = &mut *handle.as_type();
 
-    let config = &mut *handle.as_type();
-
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .event
-        .notifier_dead_event = if value.is_null() { None } else { Some(*value) };
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .event
+            .notifier_dead_event = if value.is_null() { None } else { Some(*value) };
+    }
 }
 
 /// Returns the maximum amount of supported [`iox2_notifier_h`](crate::api::iox2_notifier_h)
@@ -2620,14 +2728,15 @@ pub unsafe extern "C" fn iox2_config_defaults_event_set_notifier_dead_event(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_event_max_notifiers(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config.value.as_ref().value.defaults.event.max_notifiers
+    unsafe {
+        let config = &*handle.as_type();
+        config.value.as_ref().value.defaults.event.max_notifiers
+    }
 }
 
 /// Sets the maximum amount of supported [`iox2_notifier_h`](crate::api::iox2_notifier_h)
@@ -2635,15 +2744,16 @@ pub unsafe extern "C" fn iox2_config_defaults_event_max_notifiers(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_event_set_max_notifiers(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config.value.as_mut().value.defaults.event.max_notifiers = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config.value.as_mut().value.defaults.event.max_notifiers = value;
+    }
 }
 
 /// Returns the maximum amount of supported [`iox2_node_h`](crate::api::iox2_node_h)s. Defines
@@ -2652,14 +2762,15 @@ pub unsafe extern "C" fn iox2_config_defaults_event_set_max_notifiers(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_event_max_nodes(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config.value.as_ref().value.defaults.event.max_nodes
+    unsafe {
+        let config = &*handle.as_type();
+        config.value.as_ref().value.defaults.event.max_nodes
+    }
 }
 
 /// Sets the maximum amount of supported [`iox2_node_h`](crate::api::iox2_node_h)s.
@@ -2667,15 +2778,16 @@ pub unsafe extern "C" fn iox2_config_defaults_event_max_nodes(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_event_set_max_nodes(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config.value.as_mut().value.defaults.event.max_nodes = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config.value.as_mut().value.defaults.event.max_nodes = value;
+    }
 }
 
 /// Returns the largest event id supported by the event service
@@ -2683,20 +2795,21 @@ pub unsafe extern "C" fn iox2_config_defaults_event_set_max_nodes(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_event_event_id_max_value(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .defaults
-        .event
-        .event_id_max_value
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .defaults
+            .event
+            .event_id_max_value
+    }
 }
 
 /// Sets the largest event id supported by the event service
@@ -2704,21 +2817,22 @@ pub unsafe extern "C" fn iox2_config_defaults_event_event_id_max_value(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_event_set_event_id_max_value(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config
-        .value
-        .as_mut()
-        .value
-        .defaults
-        .event
-        .event_id_max_value = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .defaults
+            .event
+            .event_id_max_value = value;
+    }
 }
 //////////////////////////
 // END: event
@@ -2732,14 +2846,15 @@ pub unsafe extern "C" fn iox2_config_defaults_event_set_event_id_max_value(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_blackboard_max_readers(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config.value.as_ref().value.defaults.blackboard.max_readers
+    unsafe {
+        let config = &*handle.as_type();
+        config.value.as_ref().value.defaults.blackboard.max_readers
+    }
 }
 
 /// Sets the maximum amount of supported [`iox2_reader_h`](crate::api::iox2_reader_h)s
@@ -2747,15 +2862,16 @@ pub unsafe extern "C" fn iox2_config_defaults_blackboard_max_readers(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_blackboard_set_max_readers(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config.value.as_mut().value.defaults.blackboard.max_readers = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config.value.as_mut().value.defaults.blackboard.max_readers = value;
+    }
 }
 
 /// Returns the maximum amount of supported [`iox2_node_h`](crate::api::iox2_node_h)s. Defines indirectly
@@ -2764,14 +2880,15 @@ pub unsafe extern "C" fn iox2_config_defaults_blackboard_set_max_readers(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_blackboard_max_nodes(
     handle: iox2_config_h_ref,
 ) -> c_size_t {
     handle.assert_non_null();
-
-    let config = &*handle.as_type();
-    config.value.as_ref().value.defaults.blackboard.max_nodes
+    unsafe {
+        let config = &*handle.as_type();
+        config.value.as_ref().value.defaults.blackboard.max_nodes
+    }
 }
 
 /// Sets the maximum amount of supported [`iox2_node_h`](crate::api::iox2_node_h)s.
@@ -2779,15 +2896,16 @@ pub unsafe extern "C" fn iox2_config_defaults_blackboard_max_nodes(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_defaults_blackboard_set_max_nodes(
     handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     handle.assert_non_null();
-
-    let config = &mut *handle.as_type();
-    config.value.as_mut().value.defaults.blackboard.max_nodes = value;
+    unsafe {
+        let config = &mut *handle.as_type();
+        config.value.as_mut().value.defaults.blackboard.max_nodes = value;
+    }
 }
 //////////////////////////
 // END: blackboard

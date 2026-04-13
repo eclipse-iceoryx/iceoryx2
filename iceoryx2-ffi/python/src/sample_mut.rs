@@ -118,10 +118,10 @@ impl SampleMut {
     /// After this call the `SampleMut` is no longer usable!
     pub fn delete(&mut self) {
         match &mut *self.value.lock() {
-            SampleMutType::Ipc(ref mut v) => {
+            SampleMutType::Ipc(v) => {
                 v.take();
             }
-            SampleMutType::Local(ref mut v) => {
+            SampleMutType::Local(v) => {
                 v.take();
             }
         }
@@ -134,13 +134,13 @@ impl SampleMut {
     /// the data is returned, otherwise a `SendError` is emitted describing the failure.
     pub fn send(&self) -> PyResult<usize> {
         match &mut *self.value.lock() {
-            SampleMutType::Ipc(ref mut v) => {
+            SampleMutType::Ipc(v) => {
                 let sample = v.take().unwrap();
                 Ok(sample
                     .send()
                     .map_err(|e| SendError::new_err(format!("{e:?}")))?)
             }
-            SampleMutType::Local(ref mut v) => {
+            SampleMutType::Local(v) => {
                 let sample = v.take().unwrap();
                 Ok(sample
                     .send()

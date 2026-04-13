@@ -109,10 +109,10 @@ impl Response {
     /// After this call the `Response` is no longer usable!
     pub fn delete(&mut self) {
         match &mut *self.value.lock() {
-            ResponseType::Ipc(ref mut v) => {
+            ResponseType::Ipc(v) => {
                 v.take();
             }
-            ResponseType::Local(ref mut v) => {
+            ResponseType::Local(v) => {
                 v.take();
             }
         }

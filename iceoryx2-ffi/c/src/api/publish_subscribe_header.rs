@@ -101,16 +101,17 @@ impl HandleToType for iox2_publish_subscribe_header_h_ref {
 ///
 /// * The `handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_publish_subscribe_header_t`] can be re-used
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publish_subscribe_header_drop(
     handle: iox2_publish_subscribe_header_h,
 ) {
     debug_assert!(!handle.is_null());
+    unsafe {
+        let header = &mut *handle.as_type();
+        core::ptr::drop_in_place(header.value.as_option_mut());
 
-    let header = &mut *handle.as_type();
-    core::ptr::drop_in_place(header.value.as_option_mut());
-
-    (header.deleter)(header);
+        (header.deleter)(header);
+    }
 }
 
 /// Returns the unique publisher id of the source of the sample.
@@ -128,7 +129,7 @@ pub unsafe extern "C" fn iox2_publish_subscribe_header_drop(
 /// * `header_handle` is valid and non-null
 /// * `id_struct_ptr` is either null or valid and non-null
 /// * `id_handle_ptr` is valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publish_subscribe_header_publisher_id(
     header_handle: iox2_publish_subscribe_header_h_ref,
     id_struct_ptr: *mut iox2_unique_publisher_id_t,
@@ -145,13 +146,14 @@ pub unsafe extern "C" fn iox2_publish_subscribe_header_publisher_id(
         storage_ptr = iox2_unique_publisher_id_t::alloc();
     }
     debug_assert!(!storage_ptr.is_null());
+    unsafe {
+        let header = &mut *header_handle.as_type();
 
-    let header = &mut *header_handle.as_type();
+        let id = header.value.as_ref().publisher_id();
 
-    let id = header.value.as_ref().publisher_id();
-
-    (*storage_ptr).init(id, deleter);
-    *id_handle_ptr = (*storage_ptr).as_handle();
+        (*storage_ptr).init(id, deleter);
+        *id_handle_ptr = (*storage_ptr).as_handle();
+    }
 }
 
 /// Returns the number of elements of the payload.
@@ -169,14 +171,15 @@ pub unsafe extern "C" fn iox2_publish_subscribe_header_publisher_id(
 /// # Safety
 ///
 /// * `header_handle` is valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publish_subscribe_header_number_of_elements(
     header_handle: iox2_publish_subscribe_header_h_ref,
 ) -> u64 {
     header_handle.assert_non_null();
+    unsafe {
+        let header = &mut *header_handle.as_type();
 
-    let header = &mut *header_handle.as_type();
-
-    header.value.as_ref().number_of_elements()
+        header.value.as_ref().number_of_elements()
+    }
 }
 // END C API

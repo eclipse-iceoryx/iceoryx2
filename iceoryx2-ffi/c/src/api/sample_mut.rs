@@ -13,8 +13,8 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    c_size_t, iox2_publish_subscribe_header_h, iox2_publish_subscribe_header_t,
-    iox2_service_type_e, AssertNonNullHandle, HandleToType, IntoCInt, UserHeaderFfi, IOX2_OK,
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, UserHeaderFfi, c_size_t,
+    iox2_publish_subscribe_header_h, iox2_publish_subscribe_header_t, iox2_service_type_e,
 };
 
 use iceoryx2::sample_mut_uninit::SampleMutUninit;
@@ -126,7 +126,7 @@ impl HandleToType for iox2_sample_mut_h_ref {
 /// * `dest_struct_ptr` must not be `null` and the struct it is pointing to must not contain valid data, i.e. initialized. It can be moved or dropped, though.
 /// * `dest_handle_ptr` must not be `null`
 #[doc(hidden)]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_sample_mut_move(
     source_struct_ptr: *mut iox2_sample_mut_t,
     dest_struct_ptr: *mut iox2_sample_mut_t,
@@ -135,21 +135,22 @@ pub unsafe extern "C" fn iox2_sample_mut_move(
     debug_assert!(!source_struct_ptr.is_null());
     debug_assert!(!dest_struct_ptr.is_null());
     debug_assert!(!dest_handle_ptr.is_null());
+    unsafe {
+        let source = &mut *source_struct_ptr;
+        let dest = &mut *dest_struct_ptr;
 
-    let source = &mut *source_struct_ptr;
-    let dest = &mut *dest_struct_ptr;
+        dest.service_type = source.service_type;
+        dest.value.init(
+            source
+                .value
+                .as_option_mut()
+                .take()
+                .expect("Source must have a valid sample"),
+        );
+        dest.deleter = source.deleter;
 
-    dest.service_type = source.service_type;
-    dest.value.init(
-        source
-            .value
-            .as_option_mut()
-            .take()
-            .expect("Source must have a valid sample"),
-    );
-    dest.deleter = source.deleter;
-
-    *dest_handle_ptr = (*dest_struct_ptr).as_handle();
+        *dest_handle_ptr = (*dest_struct_ptr).as_handle();
+    }
 }
 
 /// Acquires the samples user header.
@@ -158,22 +159,23 @@ pub unsafe extern "C" fn iox2_sample_mut_move(
 ///
 /// * `handle` obtained by [`iox2_publisher_loan_slice_uninit()`](crate::iox2_publisher_loan_slice_uninit())
 /// * `header_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_sample_mut_user_header(
     handle: iox2_sample_mut_h_ref,
     header_ptr: *mut *const c_void,
 ) {
     handle.assert_non_null();
     debug_assert!(!header_ptr.is_null());
+    unsafe {
+        let sample = &mut *handle.as_type();
 
-    let sample = &mut *handle.as_type();
+        let header = match sample.service_type {
+            iox2_service_type_e::IPC => sample.value.as_mut().ipc.user_header(),
+            iox2_service_type_e::LOCAL => sample.value.as_mut().local.user_header(),
+        };
 
-    let header = match sample.service_type {
-        iox2_service_type_e::IPC => sample.value.as_mut().ipc.user_header(),
-        iox2_service_type_e::LOCAL => sample.value.as_mut().local.user_header(),
-    };
-
-    *header_ptr = (header as *const UserHeaderFfi).cast();
+        *header_ptr = (header as *const UserHeaderFfi).cast();
+    }
 }
 
 /// Acquires the samples header.
@@ -184,7 +186,7 @@ pub unsafe extern "C" fn iox2_sample_mut_user_header(
 /// * `header_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
 ///   [`iox2_publish_subscribe_header_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `header_handle_ptr` valid pointer to a [`iox2_publish_subscribe_header_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_sample_mut_header(
     handle: iox2_sample_mut_h_ref,
     header_struct_ptr: *mut iox2_publish_subscribe_header_t,
@@ -201,16 +203,17 @@ pub unsafe extern "C" fn iox2_sample_mut_header(
         storage_ptr = iox2_publish_subscribe_header_t::alloc();
     }
     debug_assert!(!storage_ptr.is_null());
+    unsafe {
+        let sample = &mut *handle.as_type();
 
-    let sample = &mut *handle.as_type();
+        let header = *match sample.service_type {
+            iox2_service_type_e::IPC => sample.value.as_mut().ipc.header(),
+            iox2_service_type_e::LOCAL => sample.value.as_mut().local.header(),
+        };
 
-    let header = *match sample.service_type {
-        iox2_service_type_e::IPC => sample.value.as_mut().ipc.header(),
-        iox2_service_type_e::LOCAL => sample.value.as_mut().local.header(),
-    };
-
-    (*storage_ptr).init(header, deleter);
-    *header_handle_ptr = (*storage_ptr).as_handle();
+        (*storage_ptr).init(header, deleter);
+        *header_handle_ptr = (*storage_ptr).as_handle();
+    }
 }
 
 /// Acquires the samples mutable user header.
@@ -219,22 +222,23 @@ pub unsafe extern "C" fn iox2_sample_mut_header(
 ///
 /// * `handle` obtained by [`iox2_publisher_loan_slice_uninit()`](crate::iox2_publisher_loan_slice_uninit())
 /// * `header_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_sample_mut_user_header_mut(
     handle: iox2_sample_mut_h_ref,
     header_ptr: *mut *mut c_void,
 ) {
     handle.assert_non_null();
     debug_assert!(!header_ptr.is_null());
+    unsafe {
+        let sample = &mut *handle.as_type();
 
-    let sample = &mut *handle.as_type();
+        let header = match sample.service_type {
+            iox2_service_type_e::IPC => sample.value.as_mut().ipc.user_header_mut(),
+            iox2_service_type_e::LOCAL => sample.value.as_mut().local.user_header_mut(),
+        };
 
-    let header = match sample.service_type {
-        iox2_service_type_e::IPC => sample.value.as_mut().ipc.user_header_mut(),
-        iox2_service_type_e::LOCAL => sample.value.as_mut().local.user_header_mut(),
-    };
-
-    *header_ptr = (header as *mut UserHeaderFfi).cast();
+        *header_ptr = (header as *mut UserHeaderFfi).cast();
+    }
 }
 
 /// Acquires the samples mutable payload.
@@ -244,7 +248,7 @@ pub unsafe extern "C" fn iox2_sample_mut_user_header_mut(
 /// * `handle` obtained by [`iox2_publisher_loan_slice_uninit()`](crate::iox2_publisher_loan_slice_uninit())
 /// * `payload_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
 /// * `payload_len` (optional) either a null poitner or a valid pointer pointing to a [`c_size_t`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_sample_mut_payload_mut(
     handle: iox2_sample_mut_h_ref,
     payload_ptr: *mut *mut c_void,
@@ -252,21 +256,23 @@ pub unsafe extern "C" fn iox2_sample_mut_payload_mut(
 ) {
     handle.assert_non_null();
     debug_assert!(!payload_ptr.is_null());
+    unsafe {
+        let sample = &mut *handle.as_type();
+        let payload = sample.value.as_mut().ipc.payload_mut();
 
-    let sample = &mut *handle.as_type();
-    let payload = sample.value.as_mut().ipc.payload_mut();
+        match sample.service_type {
+            iox2_service_type_e::IPC => {
+                *payload_ptr = payload.as_mut_ptr().cast();
+            }
+            iox2_service_type_e::LOCAL => {
+                *payload_ptr = payload.as_mut_ptr().cast();
+            }
+        };
 
-    match sample.service_type {
-        iox2_service_type_e::IPC => {
-            *payload_ptr = payload.as_mut_ptr().cast();
+        if !number_of_elements.is_null() {
+            *number_of_elements =
+                sample.value.as_mut().local.header().number_of_elements() as c_size_t;
         }
-        iox2_service_type_e::LOCAL => {
-            *payload_ptr = payload.as_mut_ptr().cast();
-        }
-    };
-
-    if !number_of_elements.is_null() {
-        *number_of_elements = sample.value.as_mut().local.header().number_of_elements() as c_size_t;
     }
 }
 
@@ -277,7 +283,7 @@ pub unsafe extern "C" fn iox2_sample_mut_payload_mut(
 /// * `handle` obtained by [`iox2_publisher_loan_slice_uninit()`](crate::iox2_publisher_loan_slice_uninit())
 /// * `payload_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
 /// * `payload_len` (optional) either a null poitner or a valid pointer pointing to a [`c_size_t`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_sample_mut_payload(
     handle: iox2_sample_mut_h_ref,
     payload_ptr: *mut *const c_void,
@@ -285,21 +291,23 @@ pub unsafe extern "C" fn iox2_sample_mut_payload(
 ) {
     handle.assert_non_null();
     debug_assert!(!payload_ptr.is_null());
+    unsafe {
+        let sample = &mut *handle.as_type();
+        let payload = sample.value.as_mut().ipc.payload_mut();
 
-    let sample = &mut *handle.as_type();
-    let payload = sample.value.as_mut().ipc.payload_mut();
+        match sample.service_type {
+            iox2_service_type_e::IPC => {
+                *payload_ptr = payload.as_mut_ptr().cast();
+            }
+            iox2_service_type_e::LOCAL => {
+                *payload_ptr = payload.as_mut_ptr().cast();
+            }
+        };
 
-    match sample.service_type {
-        iox2_service_type_e::IPC => {
-            *payload_ptr = payload.as_mut_ptr().cast();
+        if !number_of_elements.is_null() {
+            *number_of_elements =
+                sample.value.as_mut().local.header().number_of_elements() as c_size_t;
         }
-        iox2_service_type_e::LOCAL => {
-            *payload_ptr = payload.as_mut_ptr().cast();
-        }
-    };
-
-    if !number_of_elements.is_null() {
-        *number_of_elements = sample.value.as_mut().local.header().number_of_elements() as c_size_t;
     }
 }
 
@@ -310,52 +318,52 @@ pub unsafe extern "C" fn iox2_sample_mut_payload(
 /// * `handle` obtained by [`iox2_publisher_loan_slice_uninit()`](crate::iox2_publisher_loan_slice_uninit())
 /// * `number_of_recipients`, can be null or must point to a valid [`c_size_t`] to store the number
 ///   of subscribers that received the sample
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_sample_mut_send(
     sample_handle: iox2_sample_mut_h,
     number_of_recipients: *mut c_size_t,
 ) -> c_int {
     debug_assert!(!sample_handle.is_null());
+    unsafe {
+        let sample_struct = &mut *sample_handle.as_type();
+        let service_type = sample_struct.service_type;
 
-    let sample_struct = &mut *sample_handle.as_type();
-    let service_type = sample_struct.service_type;
+        let sample = sample_struct
+            .value
+            .as_option_mut()
+            .take()
+            .unwrap_or_else(|| panic!("Trying to send an already sent sample!"));
+        (sample_struct.deleter)(sample_struct);
 
-    let sample = sample_struct
-        .value
-        .as_option_mut()
-        .take()
-        .unwrap_or_else(|| panic!("Trying to send an already sent sample!"));
-    (sample_struct.deleter)(sample_struct);
-
-    match service_type {
-        iox2_service_type_e::IPC => {
-            let sample = ManuallyDrop::into_inner(sample.ipc);
-            match sample.assume_init().send() {
-                Ok(v) => {
-                    if !number_of_recipients.is_null() {
-                        *number_of_recipients = v;
+        match service_type {
+            iox2_service_type_e::IPC => {
+                let sample = ManuallyDrop::into_inner(sample.ipc);
+                match sample.assume_init().send() {
+                    Ok(v) => {
+                        if !number_of_recipients.is_null() {
+                            *number_of_recipients = v;
+                        }
                     }
-                }
-                Err(e) => {
-                    return e.into_c_int();
+                    Err(e) => {
+                        return e.into_c_int();
+                    }
                 }
             }
-        }
-        iox2_service_type_e::LOCAL => {
-            let sample = ManuallyDrop::into_inner(sample.local);
-            match sample.assume_init().send() {
-                Ok(v) => {
-                    if !number_of_recipients.is_null() {
-                        *number_of_recipients = v;
+            iox2_service_type_e::LOCAL => {
+                let sample = ManuallyDrop::into_inner(sample.local);
+                match sample.assume_init().send() {
+                    Ok(v) => {
+                        if !number_of_recipients.is_null() {
+                            *number_of_recipients = v;
+                        }
                     }
-                }
-                Err(e) => {
-                    return e.into_c_int();
+                    Err(e) => {
+                        return e.into_c_int();
+                    }
                 }
             }
         }
     }
-
     IOX2_OK
 }
 
@@ -370,21 +378,22 @@ pub unsafe extern "C" fn iox2_sample_mut_send(
 /// * The `sample_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_sample_mut_t`] can be re-used with a call to
 ///   [`iox2_subscriber_receive`](crate::iox2_subscriber_receive)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_sample_mut_drop(sample_handle: iox2_sample_mut_h) {
     debug_assert!(!sample_handle.is_null());
+    unsafe {
+        let sample = &mut *sample_handle.as_type();
 
-    let sample = &mut *sample_handle.as_type();
-
-    match sample.service_type {
-        iox2_service_type_e::IPC => {
-            ManuallyDrop::drop(&mut sample.value.as_mut().ipc);
+        match sample.service_type {
+            iox2_service_type_e::IPC => {
+                ManuallyDrop::drop(&mut sample.value.as_mut().ipc);
+            }
+            iox2_service_type_e::LOCAL => {
+                ManuallyDrop::drop(&mut sample.value.as_mut().local);
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            ManuallyDrop::drop(&mut sample.value.as_mut().local);
-        }
+        (sample.deleter)(sample);
     }
-    (sample.deleter)(sample);
 }
 
 // END C API

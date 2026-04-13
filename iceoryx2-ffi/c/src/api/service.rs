@@ -18,16 +18,16 @@
 use core::ffi::{c_char, c_int};
 
 use iceoryx2::service::{
-    messaging_pattern::MessagingPattern, Service, ServiceDetails, ServiceDetailsError,
-    ServiceListError,
+    Service, ServiceDetails, ServiceDetailsError, ServiceListError,
+    messaging_pattern::MessagingPattern,
 };
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::CStrRepr;
 
 use crate::{
-    iox2_callback_context, iox2_callback_progression_e, iox2_config_ptr, iox2_service_name_ptr,
-    iox2_static_config_t, IOX2_OK,
+    IOX2_OK, iox2_callback_context, iox2_callback_progression_e, iox2_config_ptr,
+    iox2_service_name_ptr, iox2_static_config_t,
 };
 
 use super::IntoCInt;
@@ -161,7 +161,7 @@ pub type iox2_service_list_callback = extern "C" fn(
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_details_error_string(
     error: iox2_service_details_error_e,
 ) -> *const c_char {
@@ -182,7 +182,7 @@ pub unsafe extern "C" fn iox2_service_details_error_string(
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_list_error_string(
     error: iox2_service_list_error_e,
 ) -> *const c_char {
@@ -198,7 +198,7 @@ pub unsafe extern "C" fn iox2_service_list_error_string(
 /// * The `service_name` must be valid and non-null
 /// * The `config` must be valid and non-null
 /// * The `does_exist` must be valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_does_exist(
     service_type: iox2_service_type_e,
     service_name: iox2_service_name_ptr,
@@ -209,24 +209,27 @@ pub unsafe extern "C" fn iox2_service_does_exist(
     debug_assert!(!service_name.is_null());
     debug_assert!(!config.is_null());
     debug_assert!(!does_exist.is_null());
+    unsafe {
+        let config = &*config;
+        let service_name = &*service_name;
+        let messaging_pattern = messaging_pattern.into();
 
-    let config = &*config;
-    let service_name = &*service_name;
-    let messaging_pattern = messaging_pattern.into();
+        let result = match service_type {
+            iox2_service_type_e::IPC => {
+                IpcService::does_exist(service_name, config, messaging_pattern)
+            }
+            iox2_service_type_e::LOCAL => {
+                LocalService::does_exist(service_name, config, messaging_pattern)
+            }
+        };
 
-    let result = match service_type {
-        iox2_service_type_e::IPC => IpcService::does_exist(service_name, config, messaging_pattern),
-        iox2_service_type_e::LOCAL => {
-            LocalService::does_exist(service_name, config, messaging_pattern)
+        match result {
+            Ok(value) => {
+                *does_exist = value;
+                IOX2_OK
+            }
+            Err(e) => e.into_c_int(),
         }
-    };
-
-    match result {
-        Ok(value) => {
-            *does_exist = value;
-            IOX2_OK
-        }
-        Err(e) => e.into_c_int(),
     }
 }
 
@@ -240,7 +243,7 @@ pub unsafe extern "C" fn iox2_service_does_exist(
 /// * The `config` must be valid and non-null
 /// * The `service_details` must be valid and non-null
 /// * The `does_exist` must be valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_details(
     service_type: iox2_service_type_e,
     service_name: iox2_service_name_ptr,
@@ -253,37 +256,38 @@ pub unsafe extern "C" fn iox2_service_details(
     debug_assert!(!config.is_null());
     debug_assert!(!service_details.is_null());
     debug_assert!(!does_exist.is_null());
+    unsafe {
+        let config = &*config;
+        let service_name = &*service_name;
+        let messaging_pattern = messaging_pattern.into();
 
-    let config = &*config;
-    let service_name = &*service_name;
-    let messaging_pattern = messaging_pattern.into();
-
-    match service_type {
-        iox2_service_type_e::IPC => {
-            match IpcService::details(service_name, config, messaging_pattern) {
-                Ok(None) => {
-                    does_exist.write(false);
-                    IOX2_OK
-                }
-                Err(e) => e.into_c_int(),
-                Ok(Some(v)) => {
-                    service_details.write((&v.static_details).into());
-                    does_exist.write(true);
-                    IOX2_OK
+        match service_type {
+            iox2_service_type_e::IPC => {
+                match IpcService::details(service_name, config, messaging_pattern) {
+                    Ok(None) => {
+                        does_exist.write(false);
+                        IOX2_OK
+                    }
+                    Err(e) => e.into_c_int(),
+                    Ok(Some(v)) => {
+                        service_details.write((&v.static_details).into());
+                        does_exist.write(true);
+                        IOX2_OK
+                    }
                 }
             }
-        }
-        iox2_service_type_e::LOCAL => {
-            match LocalService::details(service_name, config, messaging_pattern) {
-                Ok(None) => {
-                    does_exist.write(false);
-                    IOX2_OK
-                }
-                Err(e) => e.into_c_int(),
-                Ok(Some(v)) => {
-                    service_details.write((&v.static_details).into());
-                    does_exist.write(true);
-                    IOX2_OK
+            iox2_service_type_e::LOCAL => {
+                match LocalService::details(service_name, config, messaging_pattern) {
+                    Ok(None) => {
+                        does_exist.write(false);
+                        IOX2_OK
+                    }
+                    Err(e) => e.into_c_int(),
+                    Ok(Some(v)) => {
+                        service_details.write((&v.static_details).into());
+                        does_exist.write(true);
+                        IOX2_OK
+                    }
                 }
             }
         }
@@ -306,7 +310,7 @@ fn list_callback<S: Service>(
 ///
 /// * The `config` must be valid and non-null
 /// * The `callback` must be valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_list(
     service_type: iox2_service_type_e,
     config_ptr: iox2_config_ptr,
@@ -316,12 +320,14 @@ pub unsafe extern "C" fn iox2_service_list(
     debug_assert!(!config_ptr.is_null());
 
     let result = match service_type {
-        iox2_service_type_e::IPC => IpcService::list(&*config_ptr, |service_details| {
+        iox2_service_type_e::IPC => IpcService::list(unsafe { &*config_ptr }, |service_details| {
             list_callback::<IpcService>(callback, callback_ctx, &service_details)
         }),
-        iox2_service_type_e::LOCAL => LocalService::list(&*config_ptr, |service_details| {
-            list_callback::<LocalService>(callback, callback_ctx, &service_details)
-        }),
+        iox2_service_type_e::LOCAL => {
+            LocalService::list(unsafe { &*config_ptr }, |service_details| {
+                list_callback::<LocalService>(callback, callback_ctx, &service_details)
+            })
+        }
     };
 
     match result {

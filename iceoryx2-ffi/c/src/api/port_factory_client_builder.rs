@@ -13,19 +13,19 @@
 #![allow(non_camel_case_types)]
 
 use super::IntoCInt;
-use super::{
-    c_size_t, iox2_allocation_strategy_e, iox2_client_h, iox2_client_t, iox2_service_type_e,
-    iox2_unable_to_deliver_strategy_e, PayloadFfi, UserHeaderFfi,
-};
 use super::{AssertNonNullHandle, HandleToType};
-use crate::api::ClientUnion;
+use super::{
+    PayloadFfi, UserHeaderFfi, c_size_t, iox2_allocation_strategy_e, iox2_client_h, iox2_client_t,
+    iox2_service_type_e, iox2_unable_to_deliver_strategy_e,
+};
 use crate::IOX2_OK;
+use crate::api::ClientUnion;
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
 use iceoryx2::service::port_factory::client::{ClientCreateError, PortFactoryClient};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_ffi_macros::{iceoryx2_ffi, CStrRepr};
+use iceoryx2_ffi_macros::{CStrRepr, iceoryx2_ffi};
 
 // BEGIN types definition
 #[repr(C)]
@@ -187,7 +187,7 @@ impl HandleToType for iox2_port_factory_client_builder_h_ref {
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_client_create_error_string(
     error: iox2_client_create_error_e,
 ) -> *const c_char {
@@ -205,28 +205,30 @@ pub unsafe extern "C" fn iox2_client_create_error_string(
 /// # Safety
 ///
 /// * `port_factory_handle` must be a valid handle
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_client_builder_set_allocation_strategy(
     port_factory_handle: iox2_port_factory_client_builder_h_ref,
     value: iox2_allocation_strategy_e,
 ) {
     port_factory_handle.assert_non_null();
+    unsafe {
+        let port_factory_struct = &mut *port_factory_handle.as_type();
+        match port_factory_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
 
-    let port_factory_struct = unsafe { &mut *port_factory_handle.as_type() };
-    match port_factory_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
+                port_factory_struct.set(PortFactoryClientBuilderUnion::new_ipc(
+                    port_factory.allocation_strategy(value.into()),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let port_factory =
+                    ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
 
-            port_factory_struct.set(PortFactoryClientBuilderUnion::new_ipc(
-                port_factory.allocation_strategy(value.into()),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
-
-            port_factory_struct.set(PortFactoryClientBuilderUnion::new_local(
-                port_factory.allocation_strategy(value.into()),
-            ));
+                port_factory_struct.set(PortFactoryClientBuilderUnion::new_local(
+                    port_factory.allocation_strategy(value.into()),
+                ));
+            }
         }
     }
 }
@@ -242,28 +244,30 @@ pub unsafe extern "C" fn iox2_port_factory_client_builder_set_allocation_strateg
 /// # Safety
 ///
 /// * `port_factory_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_client_builder_set_initial_max_slice_len(
     port_factory_handle: iox2_port_factory_client_builder_h_ref,
     value: c_size_t,
 ) {
     port_factory_handle.assert_non_null();
+    unsafe {
+        let port_factory_struct = &mut *port_factory_handle.as_type();
+        match port_factory_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
 
-    let port_factory_struct = unsafe { &mut *port_factory_handle.as_type() };
-    match port_factory_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
+                port_factory_struct.set(PortFactoryClientBuilderUnion::new_ipc(
+                    port_factory.initial_max_slice_len(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let port_factory =
+                    ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
 
-            port_factory_struct.set(PortFactoryClientBuilderUnion::new_ipc(
-                port_factory.initial_max_slice_len(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
-
-            port_factory_struct.set(PortFactoryClientBuilderUnion::new_local(
-                port_factory.initial_max_slice_len(value),
-            ));
+                port_factory_struct.set(PortFactoryClientBuilderUnion::new_local(
+                    port_factory.initial_max_slice_len(value),
+                ));
+            }
         }
     }
 }
@@ -279,28 +283,29 @@ pub unsafe extern "C" fn iox2_port_factory_client_builder_set_initial_max_slice_
 /// # Safety
 ///
 /// * `port_factory_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_client_builder_unable_to_deliver_strategy(
     port_factory_handle: iox2_port_factory_client_builder_h_ref,
     value: iox2_unable_to_deliver_strategy_e,
 ) {
     port_factory_handle.assert_non_null();
+    unsafe {
+        let handle = &mut *port_factory_handle.as_type();
+        match handle.service_type {
+            iox2_service_type_e::IPC => {
+                let builder = ManuallyDrop::take(&mut handle.value.as_mut().ipc);
 
-    let handle = unsafe { &mut *port_factory_handle.as_type() };
-    match handle.service_type {
-        iox2_service_type_e::IPC => {
-            let builder = ManuallyDrop::take(&mut handle.value.as_mut().ipc);
+                handle.set(PortFactoryClientBuilderUnion::new_ipc(
+                    builder.unable_to_deliver_strategy(value.into()),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let builder = ManuallyDrop::take(&mut handle.value.as_mut().local);
 
-            handle.set(PortFactoryClientBuilderUnion::new_ipc(
-                builder.unable_to_deliver_strategy(value.into()),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let builder = ManuallyDrop::take(&mut handle.value.as_mut().local);
-
-            handle.set(PortFactoryClientBuilderUnion::new_local(
-                builder.unable_to_deliver_strategy(value.into()),
-            ));
+                handle.set(PortFactoryClientBuilderUnion::new_local(
+                    builder.unable_to_deliver_strategy(value.into()),
+                ));
+            }
         }
     }
 }
@@ -320,7 +325,7 @@ pub unsafe extern "C" fn iox2_port_factory_client_builder_unable_to_deliver_stra
 /// * The `port_factory_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_port_factory_client_builder_t`]
 ///   can be re-used with a call to  [`iox2_port_factory_request_response_client_builder`](crate::iox2_port_factory_request_response_client_builder)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_client_builder_create(
     port_factory_handle: iox2_port_factory_client_builder_h,
     struct_ptr: *mut iox2_client_t,
@@ -337,49 +342,49 @@ pub unsafe extern "C" fn iox2_port_factory_client_builder_create(
         deleter = iox2_client_t::dealloc;
     }
     debug_assert!(!struct_ptr.is_null());
+    unsafe {
+        let builder_struct = &mut *port_factory_handle.as_type();
+        let service_type = builder_struct.service_type;
+        let builder = builder_struct
+            .value
+            .as_option_mut()
+            .take()
+            .unwrap_or_else(|| {
+                panic!("Trying to use an invalid 'iox2_port_factory_client_builder_h'!")
+            });
+        (builder_struct.deleter)(builder_struct);
 
-    let builder_struct = unsafe { &mut *port_factory_handle.as_type() };
-    let service_type = builder_struct.service_type;
-    let builder = builder_struct
-        .value
-        .as_option_mut()
-        .take()
-        .unwrap_or_else(|| {
-            panic!("Trying to use an invalid 'iox2_port_factory_client_builder_h'!")
-        });
-    (builder_struct.deleter)(builder_struct);
+        match service_type {
+            iox2_service_type_e::IPC => {
+                let builder = ManuallyDrop::into_inner(builder.ipc);
 
-    match service_type {
-        iox2_service_type_e::IPC => {
-            let builder = ManuallyDrop::into_inner(builder.ipc);
-
-            match builder.create() {
-                Ok(client) => {
-                    (*struct_ptr).init(service_type, ClientUnion::new_ipc(client), deleter);
+                match builder.create() {
+                    Ok(client) => {
+                        (*struct_ptr).init(service_type, ClientUnion::new_ipc(client), deleter);
+                    }
+                    Err(error) => {
+                        deleter(struct_ptr);
+                        return error.into_c_int();
+                    }
                 }
-                Err(error) => {
-                    deleter(struct_ptr);
-                    return error.into_c_int();
+            }
+            iox2_service_type_e::LOCAL => {
+                let builder = ManuallyDrop::into_inner(builder.local);
+
+                match builder.create() {
+                    Ok(client) => {
+                        (*struct_ptr).init(service_type, ClientUnion::new_local(client), deleter);
+                    }
+                    Err(error) => {
+                        deleter(struct_ptr);
+                        return error.into_c_int();
+                    }
                 }
             }
         }
-        iox2_service_type_e::LOCAL => {
-            let builder = ManuallyDrop::into_inner(builder.local);
 
-            match builder.create() {
-                Ok(client) => {
-                    (*struct_ptr).init(service_type, ClientUnion::new_local(client), deleter);
-                }
-                Err(error) => {
-                    deleter(struct_ptr);
-                    return error.into_c_int();
-                }
-            }
-        }
+        *handle_ptr = (*struct_ptr).as_handle();
     }
-
-    *handle_ptr = (*struct_ptr).as_handle();
-
     IOX2_OK
 }
 

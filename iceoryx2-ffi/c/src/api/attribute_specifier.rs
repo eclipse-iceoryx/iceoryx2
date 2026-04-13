@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{AssertNonNullHandle, HandleToType, IntoCInt, IOX2_OK};
+use crate::api::{AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt};
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::attribute::{AttributeKey, AttributeValue};
@@ -108,15 +108,15 @@ impl HandleToType for iox2_attribute_specifier_h_ref {
 /// # Safety
 ///
 /// * The `handle_ptr` must point to an uninitialized [`iox2_attribute_specifier_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_specifier_new(
     struct_ptr: *mut iox2_attribute_specifier_t,
     handle_ptr: *mut iox2_attribute_specifier_h,
 ) -> c_int {
     debug_assert!(!handle_ptr.is_null());
-
-    *handle_ptr = core::ptr::null_mut();
-
+    unsafe {
+        *handle_ptr = core::ptr::null_mut();
+    }
     let mut struct_ptr = struct_ptr;
     fn no_op(_: *mut iox2_attribute_specifier_t) {}
     let mut deleter: fn(*mut iox2_attribute_specifier_t) = no_op;
@@ -125,12 +125,12 @@ pub unsafe extern "C" fn iox2_attribute_specifier_new(
         deleter = iox2_attribute_specifier_t::dealloc;
     }
     debug_assert!(!struct_ptr.is_null());
+    unsafe {
+        (*struct_ptr).deleter = deleter;
+        (*struct_ptr).value.init(AttributeSpecifierType::new());
 
-    unsafe { (*struct_ptr).deleter = deleter };
-    unsafe { (*struct_ptr).value.init(AttributeSpecifierType::new()) };
-
-    *handle_ptr = (*struct_ptr).as_handle();
-
+        *handle_ptr = (*struct_ptr).as_handle();
+    }
     IOX2_OK
 }
 
@@ -140,14 +140,15 @@ pub unsafe extern "C" fn iox2_attribute_specifier_new(
 /// # Safety
 ///
 /// * The `handle` must point to an initialized [`iox2_attribute_specifier_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_specifier_drop(handle: iox2_attribute_specifier_h) {
     debug_assert!(!handle.is_null());
+    unsafe {
+        let attribute_specifier = &mut *handle.as_type();
 
-    let attribute_specifier = &mut *handle.as_type();
-
-    ManuallyDrop::drop(&mut attribute_specifier.value.as_mut().0);
-    (attribute_specifier.deleter)(attribute_specifier);
+        ManuallyDrop::drop(&mut attribute_specifier.value.as_mut().0);
+        (attribute_specifier.deleter)(attribute_specifier);
+    }
 }
 
 /// Defines a attribute (key / value pair).
@@ -160,7 +161,7 @@ pub unsafe extern "C" fn iox2_attribute_specifier_drop(handle: iox2_attribute_sp
 /// * The `handle` must point to an initialized [`iox2_attribute_specifier_h`].
 /// * The `key` must point to a valid null-terminated string.
 /// * The `value` must point to a valid null-terminated string.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_specifier_define(
     handle: iox2_attribute_specifier_h_ref,
     key: *const c_char,
@@ -169,24 +170,26 @@ pub unsafe extern "C" fn iox2_attribute_specifier_define(
     debug_assert!(!handle.is_null());
     debug_assert!(!key.is_null());
     debug_assert!(!value.is_null());
+    unsafe {
+        let key = AttributeKey::from_c_str(key);
+        let value = AttributeValue::from_c_str(value);
 
-    let key = AttributeKey::from_c_str(key);
-    let value = AttributeValue::from_c_str(value);
+        debug_assert!(key.is_ok() && value.is_ok());
 
-    debug_assert!(key.is_ok() && value.is_ok());
+        let attribute_specifier_struct = &mut *handle.as_type();
+        let attribute_specifier =
+            ManuallyDrop::take(&mut attribute_specifier_struct.value.as_mut().0);
 
-    let attribute_specifier_struct = &mut *handle.as_type();
-    let attribute_specifier = ManuallyDrop::take(&mut attribute_specifier_struct.value.as_mut().0);
-
-    let attribute_specifier_clone = attribute_specifier.clone();
-    match attribute_specifier_clone.define(&key.unwrap(), &value.unwrap()) {
-        Ok(v) => {
-            attribute_specifier_struct.set(AttributeSpecifierType::from(v));
-            IOX2_OK
-        }
-        Err(e) => {
-            attribute_specifier_struct.set(AttributeSpecifierType::from(attribute_specifier));
-            e.into_c_int()
+        let attribute_specifier_clone = attribute_specifier.clone();
+        match attribute_specifier_clone.define(&key.unwrap(), &value.unwrap()) {
+            Ok(v) => {
+                attribute_specifier_struct.set(AttributeSpecifierType::from(v));
+                IOX2_OK
+            }
+            Err(e) => {
+                attribute_specifier_struct.set(AttributeSpecifierType::from(attribute_specifier));
+                e.into_c_int()
+            }
         }
     }
 }
@@ -197,13 +200,14 @@ pub unsafe extern "C" fn iox2_attribute_specifier_define(
 ///
 /// * The `handle` must point to an initialized [`iox2_attribute_specifier_h`].
 /// * The `handle` must live at least as long as the returned [`iox2_attribute_set_ptr`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_attribute_specifier_attributes(
     handle: iox2_attribute_specifier_h_ref,
 ) -> iox2_attribute_set_ptr {
     debug_assert!(!handle.is_null());
-
-    let attribute_specifier_struct = &mut *handle.as_type();
-    attribute_specifier_struct.value.as_ref().0.attributes()
+    unsafe {
+        let attribute_specifier_struct = &mut *handle.as_type();
+        attribute_specifier_struct.value.as_ref().0.attributes()
+    }
 }
 // END C API

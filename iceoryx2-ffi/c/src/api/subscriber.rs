@@ -13,18 +13,18 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, PayloadFfi, SampleUnion, UserHeaderFfi,
     c_size_t, iox2_sample_h, iox2_sample_t, iox2_service_type_e, iox2_unique_subscriber_id_h,
-    iox2_unique_subscriber_id_t, AssertNonNullHandle, HandleToType, IntoCInt, PayloadFfi,
-    SampleUnion, UserHeaderFfi, IOX2_OK,
+    iox2_unique_subscriber_id_t,
 };
 
+use iceoryx2::port::ReceiveError;
 use iceoryx2::port::subscriber::Subscriber;
 use iceoryx2::port::update_connections::ConnectionFailure;
-use iceoryx2::port::ReceiveError;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_ffi_macros::iceoryx2_ffi;
 use iceoryx2_ffi_macros::CStrRepr;
+use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
@@ -177,7 +177,7 @@ impl HandleToType for iox2_subscriber_h_ref {
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_receive_error_string(error: iox2_receive_error_e) -> *const c_char {
     error.as_const_cstr().as_ptr() as *const c_char
 }
@@ -196,7 +196,7 @@ pub unsafe extern "C" fn iox2_receive_error_string(error: iox2_receive_error_e) 
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_connection_failure_string(
     error: iox2_connection_failure_e,
 ) -> *const c_char {
@@ -213,17 +213,18 @@ pub unsafe extern "C" fn iox2_connection_failure_string(
 /// # Safety
 ///
 /// * `subscriber_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_subscriber_buffer_size(
     subscriber_handle: iox2_subscriber_h_ref,
 ) -> c_size_t {
     subscriber_handle.assert_non_null();
+    unsafe {
+        let subscriber = &mut *subscriber_handle.as_type();
 
-    let subscriber = &mut *subscriber_handle.as_type();
-
-    match subscriber.service_type {
-        iox2_service_type_e::IPC => subscriber.value.as_ref().ipc.buffer_size(),
-        iox2_service_type_e::LOCAL => subscriber.value.as_ref().local.buffer_size(),
+        match subscriber.service_type {
+            iox2_service_type_e::IPC => subscriber.value.as_ref().ipc.buffer_size(),
+            iox2_service_type_e::LOCAL => subscriber.value.as_ref().local.buffer_size(),
+        }
     }
 }
 
@@ -240,7 +241,7 @@ pub unsafe extern "C" fn iox2_subscriber_buffer_size(
 ///
 /// * `subscriber_handle` is valid, non-null and was obtained via [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create)
 /// * `id` is valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_subscriber_id(
     subscriber_handle: iox2_subscriber_h_ref,
     id_struct_ptr: *mut iox2_unique_subscriber_id_t,
@@ -257,16 +258,17 @@ pub unsafe extern "C" fn iox2_subscriber_id(
         storage_ptr = iox2_unique_subscriber_id_t::alloc();
     }
     debug_assert!(!storage_ptr.is_null());
+    unsafe {
+        let subscriber = &mut *subscriber_handle.as_type();
 
-    let subscriber = &mut *subscriber_handle.as_type();
+        let id = match subscriber.service_type {
+            iox2_service_type_e::IPC => subscriber.value.as_mut().ipc.id(),
+            iox2_service_type_e::LOCAL => subscriber.value.as_mut().local.id(),
+        };
 
-    let id = match subscriber.service_type {
-        iox2_service_type_e::IPC => subscriber.value.as_mut().ipc.id(),
-        iox2_service_type_e::LOCAL => subscriber.value.as_mut().local.id(),
-    };
-
-    (*storage_ptr).init(id, deleter);
-    *id_handle_ptr = (*storage_ptr).as_handle();
+        (*storage_ptr).init(id, deleter);
+        *id_handle_ptr = (*storage_ptr).as_handle();
+    }
 }
 
 // TODO [#210] add all the other setter methods
@@ -288,7 +290,7 @@ pub unsafe extern "C" fn iox2_subscriber_id(
 ///
 /// * The `subscriber_handle` is still valid after the return of this function and can be use in another function call.
 /// * The `sample_handle_ptr` is pointing to a valid [`iox2_sample_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_subscriber_receive(
     subscriber_handle: iox2_subscriber_h_ref,
     sample_struct_ptr: *mut iox2_sample_t,
@@ -296,8 +298,6 @@ pub unsafe extern "C" fn iox2_subscriber_receive(
 ) -> c_int {
     subscriber_handle.assert_non_null();
     debug_assert!(!sample_handle_ptr.is_null());
-
-    *sample_handle_ptr = core::ptr::null_mut();
 
     let init_sample_struct_ptr = |sample_struct_ptr: *mut iox2_sample_t| {
         let mut sample_struct_ptr = sample_struct_ptr;
@@ -311,41 +311,47 @@ pub unsafe extern "C" fn iox2_subscriber_receive(
 
         (sample_struct_ptr, deleter)
     };
+    unsafe {
+        *sample_handle_ptr = core::ptr::null_mut();
+        let subscriber = &mut *subscriber_handle.as_type();
 
-    let subscriber = &mut *subscriber_handle.as_type();
-
-    match subscriber.service_type {
-        iox2_service_type_e::IPC => match subscriber.value.as_ref().ipc.receive_custom_payload() {
-            Ok(Some(sample)) => {
-                let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
-                (*sample_struct_ptr).init(
-                    subscriber.service_type,
-                    SampleUnion::new_ipc(sample),
-                    deleter,
-                );
-                *sample_handle_ptr = (*sample_struct_ptr).as_handle();
-            }
-            Ok(None) => (),
-            Err(error) => return error.into_c_int(),
-        },
-        iox2_service_type_e::LOCAL => {
-            match subscriber.value.as_ref().local.receive_custom_payload() {
-                Ok(Some(sample)) => {
-                    let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
-                    (*sample_struct_ptr).init(
-                        subscriber.service_type,
-                        SampleUnion::new_local(sample),
-                        deleter,
-                    );
-                    *sample_handle_ptr = (*sample_struct_ptr).as_handle();
+        match subscriber.service_type {
+            iox2_service_type_e::IPC => {
+                match subscriber.value.as_ref().ipc.receive_custom_payload() {
+                    Ok(Some(sample)) => {
+                        let (sample_struct_ptr, deleter) =
+                            init_sample_struct_ptr(sample_struct_ptr);
+                        (*sample_struct_ptr).init(
+                            subscriber.service_type,
+                            SampleUnion::new_ipc(sample),
+                            deleter,
+                        );
+                        *sample_handle_ptr = (*sample_struct_ptr).as_handle();
+                    }
+                    Ok(None) => (),
+                    Err(error) => return error.into_c_int(),
                 }
-                Ok(None) => (),
-                Err(error) => return error.into_c_int(),
+            }
+            iox2_service_type_e::LOCAL => {
+                match subscriber.value.as_ref().local.receive_custom_payload() {
+                    Ok(Some(sample)) => {
+                        let (sample_struct_ptr, deleter) =
+                            init_sample_struct_ptr(sample_struct_ptr);
+                        (*sample_struct_ptr).init(
+                            subscriber.service_type,
+                            SampleUnion::new_local(sample),
+                            deleter,
+                        );
+                        *sample_handle_ptr = (*sample_struct_ptr).as_handle();
+                    }
+                    Ok(None) => (),
+                    Err(error) => return error.into_c_int(),
+                }
             }
         }
-    }
 
-    IOX2_OK
+        IOX2_OK
+    }
 }
 
 /// Returns true when the subscriber has samples that can be acquired with [`iox2_subscriber_receive`], otherwise false.
@@ -363,31 +369,32 @@ pub unsafe extern "C" fn iox2_subscriber_receive(
 ///
 /// * The `subscriber_handle` is still valid after the return of this function and can be use in another function call.
 /// * The `result_ptr` is pointing to a valid bool.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_subscriber_has_samples(
     subscriber_handle: iox2_subscriber_h_ref,
     result_ptr: *mut bool,
 ) -> c_int {
     subscriber_handle.assert_non_null();
     debug_assert!(!result_ptr.is_null());
+    unsafe {
+        let subscriber = &mut *subscriber_handle.as_type();
 
-    let subscriber = &mut *subscriber_handle.as_type();
-
-    match subscriber.service_type {
-        iox2_service_type_e::IPC => match subscriber.value.as_ref().ipc.has_samples() {
-            Ok(v) => {
-                *result_ptr = v;
-                IOX2_OK
-            }
-            Err(error) => error.into_c_int(),
-        },
-        iox2_service_type_e::LOCAL => match subscriber.value.as_ref().local.has_samples() {
-            Ok(v) => {
-                *result_ptr = v;
-                IOX2_OK
-            }
-            Err(error) => error.into_c_int(),
-        },
+        match subscriber.service_type {
+            iox2_service_type_e::IPC => match subscriber.value.as_ref().ipc.has_samples() {
+                Ok(v) => {
+                    *result_ptr = v;
+                    IOX2_OK
+                }
+                Err(error) => error.into_c_int(),
+            },
+            iox2_service_type_e::LOCAL => match subscriber.value.as_ref().local.has_samples() {
+                Ok(v) => {
+                    *result_ptr = v;
+                    IOX2_OK
+                }
+                Err(error) => error.into_c_int(),
+            },
+        }
     }
 }
 
@@ -402,21 +409,22 @@ pub unsafe extern "C" fn iox2_subscriber_has_samples(
 /// * The `subscriber_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_subscriber_t`] can be re-used with a call to
 ///   [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_subscriber_drop(subscriber_handle: iox2_subscriber_h) {
     subscriber_handle.assert_non_null();
+    unsafe {
+        let subscriber = &mut *subscriber_handle.as_type();
 
-    let subscriber = &mut *subscriber_handle.as_type();
-
-    match subscriber.service_type {
-        iox2_service_type_e::IPC => {
-            ManuallyDrop::drop(&mut subscriber.value.as_mut().ipc);
+        match subscriber.service_type {
+            iox2_service_type_e::IPC => {
+                ManuallyDrop::drop(&mut subscriber.value.as_mut().ipc);
+            }
+            iox2_service_type_e::LOCAL => {
+                ManuallyDrop::drop(&mut subscriber.value.as_mut().local);
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            ManuallyDrop::drop(&mut subscriber.value.as_mut().local);
-        }
+        (subscriber.deleter)(subscriber);
     }
-    (subscriber.deleter)(subscriber);
 }
 
 // END C API

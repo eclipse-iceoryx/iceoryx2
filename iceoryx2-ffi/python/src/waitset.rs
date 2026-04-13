@@ -446,10 +446,10 @@ impl WaitSet {
     /// After this call the `WaitSet` is no longer usable!
     pub fn delete(&mut self) {
         match &mut *self.0.lock() {
-            WaitSetType::Ipc(ref mut v) => {
+            WaitSetType::Ipc(v) => {
                 v.take();
             }
-            WaitSetType::Local(ref mut v) => {
+            WaitSetType::Local(v) => {
                 v.take();
             }
         }
