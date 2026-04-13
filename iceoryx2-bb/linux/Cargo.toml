@@ -2,7 +2,7 @@
 name = "iceoryx2-bb-linux"
 description = "iceoryx2: [internal] high level safe abstractions for low level unsafe linux constructs"
 categories = { workspace = true }
-edition = { workspace = true }
+edition = "2024"
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }
@@ -14,12 +14,12 @@ version = { workspace = true }
 default = []
 
 std = [
-  "iceoryx2-bb-concurrency/std",  
-  "iceoryx2-bb-container/std",  
+  "iceoryx2-bb-concurrency/std",
+  "iceoryx2-bb-container/std",
   "iceoryx2-bb-posix/std",
-  "iceoryx2-bb-system-types/std",  
-  "iceoryx2-log/std",  
-  "iceoryx2-pal-os-api/std",  
+  "iceoryx2-bb-system-types/std",
+  "iceoryx2-log/std",
+  "iceoryx2-pal-os-api/std",
   "iceoryx2-pal-posix/std",
 ]
 

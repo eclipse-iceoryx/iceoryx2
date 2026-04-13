@@ -15,7 +15,7 @@ use alloc::vec::Vec;
 use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
 use iceoryx2_bb_posix::barrier::*;
-use iceoryx2_bb_posix::clock::{nanosleep, Time};
+use iceoryx2_bb_posix::clock::{Time, nanosleep};
 use iceoryx2_bb_posix::socket_pair::*;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;

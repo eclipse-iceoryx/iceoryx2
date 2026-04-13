@@ -2,7 +2,7 @@
 name = "iceoryx2-bb-elementary"
 description = "iceoryx2: [internal] elementary constructs that have (almost) no dependencies at all"
 categories = { workspace = true }
-edition = { workspace = true }
+edition = "2024"
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }

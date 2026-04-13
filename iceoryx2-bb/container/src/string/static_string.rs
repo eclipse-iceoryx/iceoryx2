@@ -47,10 +47,10 @@ use iceoryx2_bb_derive_macros::{PlacementDefault, ZeroCopySend};
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
-use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Visitor};
 
 use crate::string::{
-    as_escaped_string, internal::StringView, strnlen, String, StringModificationError,
+    String, StringModificationError, as_escaped_string, internal::StringView, strnlen,
 };
 
 /// Variant of the [`String`] that has a compile-time fixed capacity and is
@@ -287,8 +287,10 @@ impl<const CAPACITY: usize> StaticString<CAPACITY> {
         debug_assert!(len <= bytes.len());
 
         let mut new_self = Self::new();
-        core::ptr::copy_nonoverlapping(bytes.as_ptr(), new_self.data.as_mut_ptr().cast(), len);
-        core::ptr::write::<u8>(new_self.data.as_mut_ptr().add(len).cast(), 0);
+        unsafe {
+            core::ptr::copy_nonoverlapping(bytes.as_ptr(), new_self.data.as_mut_ptr().cast(), len);
+            core::ptr::write::<u8>(new_self.data.as_mut_ptr().add(len).cast(), 0);
+        }
         new_self.len = len as u64;
         new_self
     }
@@ -303,8 +305,7 @@ impl<const CAPACITY: usize> StaticString<CAPACITY> {
     ///
     pub const unsafe fn from_bytes_unchecked(bytes: &[u8]) -> Self {
         debug_assert!(bytes.len() <= CAPACITY);
-
-        Self::from_bytes_unchecked_restricted(bytes, bytes.len())
+        unsafe { Self::from_bytes_unchecked_restricted(bytes, bytes.len()) }
     }
 
     /// Creates a new [`StaticString`] from a byte slice
@@ -339,12 +340,12 @@ impl<const CAPACITY: usize> StaticString<CAPACITY> {
     pub unsafe fn from_c_str(
         ptr: *const core::ffi::c_char,
     ) -> Result<Self, StringModificationError> {
-        let string_length = strnlen(ptr, CAPACITY + 1);
+        let string_length = unsafe { strnlen(ptr, CAPACITY + 1) };
         if CAPACITY < string_length {
             return Err(StringModificationError::InsertWouldExceedCapacity);
         }
 
-        Self::from_bytes(core::slice::from_raw_parts(ptr.cast(), string_length))
+        Self::from_bytes(unsafe { core::slice::from_raw_parts(ptr.cast(), string_length) })
     }
 
     /// Returns the capacity of the [`StaticString`]

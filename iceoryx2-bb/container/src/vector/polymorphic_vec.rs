@@ -64,8 +64,8 @@ use core::{
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_log::fail;
 
-use crate::vector::internal;
 pub use crate::vector::Vector;
+use crate::vector::internal;
 
 /// Runtime fixed-size vector variant with a polymorphic allocator, meaning an
 /// allocator with a state can be attached to the vector instead of using a

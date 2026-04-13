@@ -2,7 +2,7 @@
 name = "iceoryx2-bb-lock-free"
 description = "iceoryx2: [internal] lock-free containers and constructs"
 categories = { workspace = true }
-edition = { workspace = true }
+edition = "2024"
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }

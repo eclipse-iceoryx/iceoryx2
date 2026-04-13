@@ -49,7 +49,7 @@ use iceoryx2_log::{error, fail, fatal_panic, trace};
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;
-use iceoryx2_pal_posix::{posix::errno::Errno, posix::S_IFDIR};
+use iceoryx2_pal_posix::{posix::S_IFDIR, posix::errno::Errno};
 
 use crate::file::{File, FileRemoveError};
 use crate::file_type::FileType;

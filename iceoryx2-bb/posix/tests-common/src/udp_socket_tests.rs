@@ -12,7 +12,7 @@
 
 use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 use iceoryx2_bb_posix::barrier::*;
-use iceoryx2_bb_posix::clock::{nanosleep, Time};
+use iceoryx2_bb_posix::clock::{Time, nanosleep};
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_posix::udp_socket::*;
 use iceoryx2_bb_system_types::ipv4_address::{self, Ipv4Address};

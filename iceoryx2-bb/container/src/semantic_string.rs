@@ -162,10 +162,12 @@ pub trait SemanticString<const CAPACITY: usize>:
     ///   * The contents must not contain invalid UTF-8 characters
     ///
     unsafe fn from_c_str(ptr: *const core::ffi::c_char) -> Result<Self, SemanticStringError> {
-        Self::new(core::slice::from_raw_parts(
-            ptr.cast(),
-            strnlen(ptr, CAPACITY + 1),
-        ))
+        unsafe {
+            Self::new(core::slice::from_raw_parts(
+                ptr.cast(),
+                strnlen(ptr, CAPACITY + 1),
+            ))
+        }
     }
 
     /// Returns the contents as a slice

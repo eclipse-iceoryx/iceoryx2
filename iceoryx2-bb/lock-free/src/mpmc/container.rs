@@ -205,7 +205,7 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
             ) as isize),
             capacity,
             change_counter: AtomicU64::new(0),
-            index_set: UniqueIndexSet::new_uninit(capacity),
+            index_set: unsafe { UniqueIndexSet::new_uninit(capacity) },
             is_initialized: AtomicBool::new(false),
         }
     }
@@ -218,29 +218,30 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
             fatal_panic!(from self, "Memory already initialized. Initializing it twice may lead to undefined behavior.");
         }
         let msg = "Unable to initialize";
-
-        fail!(from self, when self.index_set.init(allocator),
+        unsafe {
+            fail!(from self, when self.index_set.init(allocator),
             "{} since the underlying UniqueIndexSet could not be initialized", msg);
 
-        self.active_index_ptr.init(fail!(from self, when allocator.allocate(Layout::from_size_align_unchecked(
+            self.active_index_ptr.init(fail!(from self, when allocator.allocate(Layout::from_size_align_unchecked(
                         core::mem::size_of::<AtomicU64>() * self.capacity,
                         core::mem::align_of::<AtomicU64>())), "{} since the allocation of the active index memory failed.",
                 msg));
-        self.data_ptr.init(
-            fail!(from self, when allocator.allocate(Layout::from_size_align_unchecked(
-                    core::mem::size_of::<T>() * self.capacity,
-                    core::mem::align_of::<T>())),
-                "{} since the allocation of the data memory failed.", msg
-            ),
-        );
+            self.data_ptr.init(
+                fail!(from self, when allocator.allocate(Layout::from_size_align_unchecked(
+                        core::mem::size_of::<T>() * self.capacity,
+                        core::mem::align_of::<T>())),
+                    "{} since the allocation of the data memory failed.", msg
+                ),
+            );
 
-        for i in 0..self.capacity {
-            (self.active_index_ptr.as_ptr() as *mut AtomicU64)
-                .add(i)
-                .write(AtomicU64::new(0));
-            (self.data_ptr.as_ptr() as *mut UnsafeCell<MaybeUninit<T>>)
-                .add(i)
-                .write(UnsafeCell::new(MaybeUninit::uninit()));
+            for i in 0..self.capacity {
+                (self.active_index_ptr.as_ptr() as *mut AtomicU64)
+                    .add(i)
+                    .write(AtomicU64::new(0));
+                (self.data_ptr.as_ptr() as *mut UnsafeCell<MaybeUninit<T>>)
+                    .add(i)
+                    .write(UnsafeCell::new(MaybeUninit::uninit()));
+            }
         }
         self.is_initialized.store(true, Ordering::Relaxed);
 
@@ -255,9 +256,12 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
 impl<T: Copy + Debug> Container<T> {
     #[inline(always)]
     fn verify_init(&self, source: &str) {
-        debug_assert!(self.is_initialized.load(Ordering::Relaxed),
+        debug_assert!(
+            self.is_initialized.load(Ordering::Relaxed),
             "Undefined behavior when calling Container<{}>::{} and the object is not initialized with 'init'.",
-            core::any::type_name::<T>(), source);
+            core::any::type_name::<T>(),
+            source
+        );
     }
 
     /// Returns the required memory size of the data segment of the [`Container`].
@@ -301,25 +305,26 @@ impl<T: Copy + Debug> Container<T> {
     ///
     pub unsafe fn add(&self, value: T) -> Result<ContainerHandle, ContainerAddFailure> {
         self.verify_init("add()");
+        unsafe {
+            let index = self.index_set.acquire_raw_index()?;
+            core::ptr::copy_nonoverlapping(
+                &value,
+                (*self.data_ptr.as_ptr().add(index as _)).get().cast(),
+                1,
+            );
 
-        let index = self.index_set.acquire_raw_index()?;
-        core::ptr::copy_nonoverlapping(
-            &value,
-            (*self.data_ptr.as_ptr().add(index as _)).get().cast(),
-            1,
-        );
+            //////////////////////////////////////
+            // SYNC POINT with reading data values
+            //////////////////////////////////////
+            (&*self.active_index_ptr.as_ptr().add(index as _)).fetch_add(1, Ordering::Release);
 
-        //////////////////////////////////////
-        // SYNC POINT with reading data values
-        //////////////////////////////////////
-        unsafe { &*self.active_index_ptr.as_ptr().add(index as _) }.fetch_add(1, Ordering::Release);
-
-        // MUST HAPPEN AFTER all other operations
-        self.change_counter.fetch_add(1, Ordering::Release);
-        Ok(ContainerHandle {
-            index,
-            container_id: self.container_id.value(),
-        })
+            // MUST HAPPEN AFTER all other operations
+            self.change_counter.fetch_add(1, Ordering::Release);
+            Ok(ContainerHandle {
+                index,
+                container_id: self.container_id.value(),
+            })
+        }
     }
 
     /// Useful in IPC context when an application holding the UniqueIndex has died.
@@ -344,7 +349,8 @@ impl<T: Copy + Debug> Container<T> {
 
         unsafe { &*self.active_index_ptr.as_ptr().add(handle.index as _) }
             .fetch_add(1, Ordering::Relaxed);
-        let release_state = self.index_set.release_raw_index(handle.index, mode);
+
+        let release_state = unsafe { self.index_set.release_raw_index(handle.index, mode) };
 
         // MUST HAPPEN AFTER all other operations
         self.change_counter.fetch_add(1, Ordering::Release);
@@ -362,7 +368,9 @@ impl<T: Copy + Debug> Container<T> {
         self.verify_init("get_state()");
 
         let mut state = ContainerState::new(self.container_id.value(), self.capacity);
-        self.update_state(&mut state);
+        unsafe {
+            self.update_state(&mut state);
+        }
         state
     }
 
@@ -410,25 +418,26 @@ impl<T: Copy + Debug> Container<T> {
                 }
 
                 previous_state.active_index[i] = current_index_count;
+                unsafe {
+                    if previous_state.active_index[i] % 2 == 1 {
+                        core::ptr::copy_nonoverlapping(
+                            (*self.data_ptr.as_ptr().add(i)).get(),
+                            previous_state.data.as_mut_ptr().add(i),
+                            1,
+                        );
+                    }
 
-                if previous_state.active_index[i] % 2 == 1 {
-                    core::ptr::copy_nonoverlapping(
-                        (*self.data_ptr.as_ptr().add(i)).get(),
-                        previous_state.data.as_mut_ptr().add(i),
-                        1,
-                    );
-                }
-
-                // MUST HAPPEN AFTER all other operations
-                if let Err(count) = (*self.active_index_ptr.as_ptr().add(i)).compare_exchange(
-                    current_index_count,
-                    current_index_count,
-                    Ordering::AcqRel,
-                    Ordering::Acquire,
-                ) {
-                    current_index_count = count
-                } else {
-                    break;
+                    // MUST HAPPEN AFTER all other operations
+                    if let Err(count) = (*self.active_index_ptr.as_ptr().add(i)).compare_exchange(
+                        current_index_count,
+                        current_index_count,
+                        Ordering::AcqRel,
+                        Ordering::Acquire,
+                    ) {
+                        current_index_count = count
+                    } else {
+                        break;
+                    }
                 }
             }
         }
@@ -524,7 +533,7 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///    the element will leak.
     ///
     pub unsafe fn add(&self, value: T) -> Result<ContainerHandle, ContainerAddFailure> {
-        self.container.add(value)
+        unsafe { self.container.add(value) }
     }
 
     /// Useful in IPC context when an application holding the UniqueIndex has died.
@@ -534,7 +543,7 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///  * If the UniqueIndex still exists it causes double frees or freeing an index
     ///    which was allocated afterwards
     pub unsafe fn remove(&self, handle: ContainerHandle, mode: ReleaseMode) -> ReleaseState {
-        self.container.remove(handle, mode)
+        unsafe { self.container.remove(handle, mode) }
     }
 
     /// Returns [`ContainerState`] which contains all elements of this container. Be aware that

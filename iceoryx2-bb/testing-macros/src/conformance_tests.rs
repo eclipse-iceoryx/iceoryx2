@@ -21,7 +21,7 @@
 //! document for more details.
 
 use quote::quote;
-use syn::{parse_macro_input, ItemMod};
+use syn::{ItemMod, parse_macro_input};
 
 /// Attribute macro for defining a conformance test module.
 ///

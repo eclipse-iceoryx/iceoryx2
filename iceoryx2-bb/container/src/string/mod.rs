@@ -240,20 +240,21 @@ pub trait String:
     ///    [`String::len()`]
     ///
     unsafe fn insert_bytes_unchecked(&mut self, idx: usize, bytes: &[u8]) {
-        let data = unsafe { self.data_mut() };
-        let ptr = data.as_mut_ptr();
         unsafe {
+            let data = self.data_mut();
+            let ptr = data.as_mut_ptr();
+
             core::ptr::copy(ptr.add(idx), ptr.add(idx + bytes.len()), self.len() - idx);
-        }
 
-        for (i, byte) in bytes.iter().enumerate() {
-            self.data_mut()[idx + i].write(*byte);
-        }
+            for (i, byte) in bytes.iter().enumerate() {
+                self.data_mut()[idx + i].write(*byte);
+            }
 
-        let new_len = self.len() + bytes.len();
-        self.set_len(new_len as u64);
-        if new_len < self.capacity() {
-            self.data_mut()[new_len].write(0);
+            let new_len = self.len() + bytes.len();
+            self.set_len(new_len as u64);
+            if new_len < self.capacity() {
+                self.data_mut()[new_len].write(0);
+            }
         }
     }
 

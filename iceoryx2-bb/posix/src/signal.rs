@@ -73,7 +73,7 @@ use crate::{
     clock::{ClockType, NanosleepError, Time, TimeError},
     mutex::*,
 };
-use enum_iterator::{all, Sequence};
+use enum_iterator::{Sequence, all};
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;

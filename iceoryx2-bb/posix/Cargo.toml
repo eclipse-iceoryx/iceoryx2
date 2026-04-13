@@ -2,7 +2,7 @@
 name = "iceoryx2-bb-posix"
 description = "iceoryx2: [internal] high level safe abstractions for low level unsafe posix constructs"
 categories = { workspace = true }
-edition = { workspace = true }
+edition = "2024"
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }
@@ -17,13 +17,13 @@ workspace = true
 default = []
 
 std = [
-  "iceoryx2-log/std",  
+  "iceoryx2-log/std",
   "iceoryx2-bb-concurrency/std",
-  "iceoryx2-bb-container/std",  
-  "iceoryx2-bb-elementary/std",  
-  "iceoryx2-bb-derive-macros/std",  
-  "iceoryx2-bb-print/std",  
-  "iceoryx2-bb-system-types/std",  
+  "iceoryx2-bb-container/std",
+  "iceoryx2-bb-elementary/std",
+  "iceoryx2-bb-derive-macros/std",
+  "iceoryx2-bb-print/std",
+  "iceoryx2-bb-system-types/std",
   "iceoryx2-pal-posix/std",
 ]
 

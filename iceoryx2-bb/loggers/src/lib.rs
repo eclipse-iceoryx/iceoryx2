@@ -69,7 +69,7 @@ mod null;
 extern crate alloc;
 
 #[cfg(feature = "console")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
         static CONSOLE_LOGGER: console::Logger = console::Logger::new();
@@ -78,7 +78,7 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
 }
 
 #[cfg(feature = "buffer")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
         static BUFFER_LOGGER: buffer::Logger = buffer::Logger::new();
@@ -87,7 +87,7 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
 }
 
 #[cfg(feature = "file")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
         static FILE_NAME: &str = "iceoryx2.log";
@@ -98,7 +98,7 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
 }
 
 #[cfg(feature = "log")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
         static LOG_LOGGER: log::Logger = log::Logger::new();
@@ -107,7 +107,7 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
 }
 
 #[cfg(feature = "tracing")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
         static TRACING_LOGGER: tracing::Logger = tracing::Logger::new();
@@ -122,7 +122,7 @@ pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     feature = "log",
     feature = "tracing"
 )))]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "Rust" fn __internal_default_logger() -> &'static dyn Log {
     {
         static NULL_LOGGER: null::Logger = null::Logger;

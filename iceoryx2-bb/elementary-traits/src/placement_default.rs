@@ -66,7 +66,7 @@ macro_rules! Impl {
     ($type:ty) => {
         impl PlacementDefault for $type {
             unsafe fn placement_default(ptr: *mut Self) {
-                ptr.write(<$type>::default())
+                unsafe { ptr.write(<$type>::default()) }
             }
         }
     };
@@ -91,35 +91,43 @@ Impl!(bool);
 
 impl<T: PlacementDefault> PlacementDefault for [T] {
     unsafe fn placement_default(ptr: *mut Self) {
-        let ptr = ptr as *mut [MaybeUninit<T>];
-        for i in (*ptr).iter_mut() {
-            PlacementDefault::placement_default(i.as_mut_ptr());
+        unsafe {
+            let ptr = ptr as *mut [MaybeUninit<T>];
+            for i in (*ptr).iter_mut() {
+                PlacementDefault::placement_default(i.as_mut_ptr());
+            }
         }
     }
 }
 
 impl<T: PlacementDefault, const CAPACITY: usize> PlacementDefault for [T; CAPACITY] {
     unsafe fn placement_default(ptr: *mut Self) {
-        for i in 0..CAPACITY {
-            PlacementDefault::placement_default((ptr as *mut T).add(i))
+        unsafe {
+            for i in 0..CAPACITY {
+                PlacementDefault::placement_default((ptr as *mut T).add(i))
+            }
         }
     }
 }
 
 impl<T1: PlacementDefault> PlacementDefault for (T1,) {
     unsafe fn placement_default(ptr: *mut Self) {
-        let ptr = core::ptr::addr_of_mut!((*ptr).0);
-        PlacementDefault::placement_default(ptr)
+        unsafe {
+            let ptr = core::ptr::addr_of_mut!((*ptr).0);
+            PlacementDefault::placement_default(ptr)
+        }
     }
 }
 
 impl<T1: PlacementDefault, T2: PlacementDefault> PlacementDefault for (T1, T2) {
     unsafe fn placement_default(ptr: *mut Self) {
-        let elem = core::ptr::addr_of_mut!((*ptr).0);
-        PlacementDefault::placement_default(elem);
+        unsafe {
+            let elem = core::ptr::addr_of_mut!((*ptr).0);
+            PlacementDefault::placement_default(elem);
 
-        let elem = core::ptr::addr_of_mut!((*ptr).1);
-        PlacementDefault::placement_default(elem)
+            let elem = core::ptr::addr_of_mut!((*ptr).1);
+            PlacementDefault::placement_default(elem)
+        }
     }
 }
 
@@ -127,14 +135,16 @@ impl<T1: PlacementDefault, T2: PlacementDefault, T3: PlacementDefault> Placement
     for (T1, T2, T3)
 {
     unsafe fn placement_default(ptr: *mut Self) {
-        let elem = core::ptr::addr_of_mut!((*ptr).0);
-        PlacementDefault::placement_default(elem);
+        unsafe {
+            let elem = core::ptr::addr_of_mut!((*ptr).0);
+            PlacementDefault::placement_default(elem);
 
-        let elem = core::ptr::addr_of_mut!((*ptr).1);
-        PlacementDefault::placement_default(elem);
+            let elem = core::ptr::addr_of_mut!((*ptr).1);
+            PlacementDefault::placement_default(elem);
 
-        let elem = core::ptr::addr_of_mut!((*ptr).2);
-        PlacementDefault::placement_default(elem)
+            let elem = core::ptr::addr_of_mut!((*ptr).2);
+            PlacementDefault::placement_default(elem)
+        }
     }
 }
 
@@ -142,23 +152,25 @@ impl<T1: PlacementDefault, T2: PlacementDefault, T3: PlacementDefault, T4: Place
     PlacementDefault for (T1, T2, T3, T4)
 {
     unsafe fn placement_default(ptr: *mut Self) {
-        let elem = core::ptr::addr_of_mut!((*ptr).0);
-        PlacementDefault::placement_default(elem);
+        unsafe {
+            let elem = core::ptr::addr_of_mut!((*ptr).0);
+            PlacementDefault::placement_default(elem);
 
-        let elem = core::ptr::addr_of_mut!((*ptr).1);
-        PlacementDefault::placement_default(elem);
+            let elem = core::ptr::addr_of_mut!((*ptr).1);
+            PlacementDefault::placement_default(elem);
 
-        let elem = core::ptr::addr_of_mut!((*ptr).2);
-        PlacementDefault::placement_default(elem);
+            let elem = core::ptr::addr_of_mut!((*ptr).2);
+            PlacementDefault::placement_default(elem);
 
-        let elem = core::ptr::addr_of_mut!((*ptr).3);
-        PlacementDefault::placement_default(elem)
+            let elem = core::ptr::addr_of_mut!((*ptr).3);
+            PlacementDefault::placement_default(elem)
+        }
     }
 }
 
 impl<T> PlacementDefault for Option<T> {
     unsafe fn placement_default(ptr: *mut Self) {
-        ptr.write(Option::default())
+        unsafe { ptr.write(Option::default()) }
     }
 }
 

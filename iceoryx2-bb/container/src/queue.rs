@@ -223,7 +223,7 @@ impl<T: Copy + Debug, Ptr: GenericPointer + Debug> MetaQueue<T, Ptr> {
 impl<T> RelocatableContainer for RelocatableQueue<T> {
     unsafe fn new_uninit(capacity: usize) -> Self {
         Self {
-            data_ptr: RelocatablePointer::new_uninit(),
+            data_ptr: unsafe { RelocatablePointer::new_uninit() },
             start: 0,
             len: 0,
             capacity,
@@ -245,13 +245,14 @@ impl<T> RelocatableContainer for RelocatableQueue<T> {
                 "Memory already initialized. Initializing it twice may lead to undefined behavior."
             );
         }
-
-        self.data_ptr.init(fail!(from "Queue::init", when allocator
-             .allocate(Layout::from_size_align_unchecked(
-                 core::mem::size_of::<T>() * self.capacity,
-                 core::mem::align_of::<T>(),
-             )), "Failed to initialize queue since the allocation of the data memory failed."
-        ));
+        unsafe {
+            self.data_ptr.init(fail!(from "Queue::init", when allocator
+                 .allocate(Layout::from_size_align_unchecked(
+                     core::mem::size_of::<T>() * self.capacity,
+                     core::mem::align_of::<T>(),
+                 )), "Failed to initialize queue since the allocation of the data memory failed."
+            ));
+        }
         self.is_initialized
             .store(true, core::sync::atomic::Ordering::Relaxed);
 
@@ -278,7 +279,7 @@ impl<T> RelocatableQueue<T> {
     ///  * [`Queue::init()`] must have been called once before
     ///
     pub unsafe fn clear(&mut self) {
-        self.clear_impl()
+        unsafe { self.clear_impl() }
     }
 
     /// Returns a reference to the element from the beginning of the queue without removing it.
@@ -310,7 +311,7 @@ impl<T> RelocatableQueue<T> {
     ///  * [`Queue::init()`] must have been called once before
     ///
     pub unsafe fn pop(&mut self) -> Option<T> {
-        self.pop_impl()
+        unsafe { self.pop_impl() }
     }
 
     /// Adds an element at the end of the queue. If the queue is full it returns false, otherwise true.
@@ -320,7 +321,7 @@ impl<T> RelocatableQueue<T> {
     ///  * [`Queue::init()`] must have been called once before
     ///
     pub unsafe fn push(&mut self, value: T) -> bool {
-        self.push_impl(value)
+        unsafe { self.push_impl(value) }
     }
 
     /// Adds an element at the end of the queue. If the queue is full it returns the oldest element,
@@ -331,7 +332,7 @@ impl<T> RelocatableQueue<T> {
     ///  * [`Queue::init()`] must have been called once before
     ///
     pub unsafe fn push_with_overflow(&mut self, value: T) -> Option<T> {
-        self.push_with_overflow_impl(value)
+        unsafe { self.push_with_overflow_impl(value) }
     }
 }
 
@@ -339,11 +340,12 @@ impl<T, Ptr: GenericPointer> MetaQueue<T, Ptr> {
     #[inline(always)]
     fn verify_init(&self, source: &str) {
         debug_assert!(
-                self.is_initialized
-                    .load(core::sync::atomic::Ordering::Relaxed),
-                "From: MetaQueue<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
-                core::any::type_name::<T>(), source
-            );
+            self.is_initialized
+                .load(core::sync::atomic::Ordering::Relaxed),
+            "From: MetaQueue<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
+            core::any::type_name::<T>(),
+            source
+        );
     }
 
     /// Returns true if the queue is empty, otherwise false
@@ -367,7 +369,7 @@ impl<T, Ptr: GenericPointer> MetaQueue<T, Ptr> {
     }
 
     pub(crate) unsafe fn clear_impl(&mut self) {
-        while self.pop_impl().is_some() {}
+        unsafe { while self.pop_impl().is_some() {} }
     }
 
     pub(crate) unsafe fn peek_mut_impl(&mut self) -> Option<&mut T> {
@@ -378,8 +380,7 @@ impl<T, Ptr: GenericPointer> MetaQueue<T, Ptr> {
         }
 
         let index = (self.start - self.len) % self.capacity;
-
-        Some((*self.data_ptr.as_mut_ptr().add(index)).assume_init_mut())
+        unsafe { Some((*self.data_ptr.as_mut_ptr().add(index)).assume_init_mut()) }
     }
 
     pub(crate) unsafe fn peek_impl(&self) -> Option<&T> {
@@ -390,8 +391,7 @@ impl<T, Ptr: GenericPointer> MetaQueue<T, Ptr> {
         }
 
         let index = (self.start - self.len) % self.capacity;
-
-        Some((*self.data_ptr.as_ptr().add(index)).assume_init_ref())
+        unsafe { Some((*self.data_ptr.as_ptr().add(index)).assume_init_ref()) }
     }
 
     pub(crate) unsafe fn pop_impl(&mut self) -> Option<T> {
@@ -403,11 +403,14 @@ impl<T, Ptr: GenericPointer> MetaQueue<T, Ptr> {
 
         let index = (self.start - self.len) % self.capacity;
         self.len -= 1;
-        let value = core::mem::replace(
-            &mut *self.data_ptr.as_mut_ptr().add(index),
-            MaybeUninit::uninit(),
-        );
-        Some(value.assume_init())
+        unsafe {
+            let value = core::mem::replace(
+                &mut *self.data_ptr.as_mut_ptr().add(index),
+                MaybeUninit::uninit(),
+            );
+
+            Some(value.assume_init())
+        }
     }
 
     pub(crate) unsafe fn push_impl(&mut self, value: T) -> bool {
@@ -416,8 +419,9 @@ impl<T, Ptr: GenericPointer> MetaQueue<T, Ptr> {
         if self.len == self.capacity {
             return false;
         }
-
-        self.unchecked_push(value);
+        unsafe {
+            self.unchecked_push(value);
+        }
         true
     }
 
@@ -425,21 +429,25 @@ impl<T, Ptr: GenericPointer> MetaQueue<T, Ptr> {
         self.verify_init("push_with_overflow()");
 
         let overridden_value = if self.len() == self.capacity() {
-            self.pop_impl()
+            unsafe { self.pop_impl() }
         } else {
             None
         };
 
-        self.unchecked_push(value);
+        unsafe {
+            self.unchecked_push(value);
+        }
         overridden_value
     }
 
     unsafe fn unchecked_push(&mut self, value: T) {
         let index = (self.start) % self.capacity;
-        self.data_ptr
-            .as_mut_ptr()
-            .add(index)
-            .write(MaybeUninit::new(value));
+        unsafe {
+            self.data_ptr
+                .as_mut_ptr()
+                .add(index)
+                .write(MaybeUninit::new(value));
+        }
         self.start += 1;
         self.len += 1;
     }
@@ -469,14 +477,16 @@ unsafe impl<T: ZeroCopySend, const CAPACITY: usize> ZeroCopySend for FixedSizeQu
 
 impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeQueue<T, CAPACITY> {
     unsafe fn placement_default(ptr: *mut Self) {
-        let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
-        state_ptr.write(RelocatableQueue::new_uninit(CAPACITY));
+        unsafe {
+            let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
+            state_ptr.write(RelocatableQueue::new_uninit(CAPACITY));
 
-        let allocator = BumpAllocator::new((*ptr)._data.as_mut_ptr().cast());
-        (*ptr)
-            .state
-            .init(&allocator)
-            .expect("All required memory is preallocated.");
+            let allocator = BumpAllocator::new((*ptr)._data.as_mut_ptr().cast());
+            (*ptr)
+                .state
+                .init(&allocator)
+                .expect("All required memory is preallocated.");
+        }
     }
 }
 
@@ -588,7 +598,7 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
     ///  * The index must be not out of bounds
     ///
     pub unsafe fn get_unchecked(&self, index: usize) -> T {
-        self.state.get_unchecked(index)
+        unsafe { self.state.get_unchecked(index) }
     }
 
     /// Returns a copy of the element stored at index. The index is starting by 0 for the first

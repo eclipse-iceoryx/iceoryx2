@@ -99,8 +99,8 @@ fn zero_copy_send_derive_does_not_work_for_generic_unnamed_struct_when_members_d
 /// struct GenericUnnamedTestStruct<T1: ZeroCopySend, T2>(T1, T2);
 /// ```
 #[cfg(doctest)]
-fn zero_copy_send_derive_does_not_work_for_generic_unnamed_struct_when_not_all_members_implement_it(
-) {
+fn zero_copy_send_derive_does_not_work_for_generic_unnamed_struct_when_not_all_members_implement_it()
+ {
 }
 
 /// ``` compile_fail

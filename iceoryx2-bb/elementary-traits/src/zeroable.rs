@@ -62,25 +62,25 @@ unsafe impl<T1: Zeroable, T2: Zeroable, T3: Zeroable, T4: Zeroable, T5: Zeroable
 {
 }
 unsafe impl<
-        T1: Zeroable,
-        T2: Zeroable,
-        T3: Zeroable,
-        T4: Zeroable,
-        T5: Zeroable,
-        T6: Zeroable,
-        T7: Zeroable,
-    > Zeroable for (T1, T2, T3, T4, T5, T6, T7)
+    T1: Zeroable,
+    T2: Zeroable,
+    T3: Zeroable,
+    T4: Zeroable,
+    T5: Zeroable,
+    T6: Zeroable,
+    T7: Zeroable,
+> Zeroable for (T1, T2, T3, T4, T5, T6, T7)
 {
 }
 unsafe impl<
-        T1: Zeroable,
-        T2: Zeroable,
-        T3: Zeroable,
-        T4: Zeroable,
-        T5: Zeroable,
-        T6: Zeroable,
-        T7: Zeroable,
-        T8: Zeroable,
-    > Zeroable for (T1, T2, T3, T4, T5, T6, T7, T8)
+    T1: Zeroable,
+    T2: Zeroable,
+    T3: Zeroable,
+    T4: Zeroable,
+    T5: Zeroable,
+    T6: Zeroable,
+    T7: Zeroable,
+    T8: Zeroable,
+> Zeroable for (T1, T2, T3, T4, T5, T6, T7, T8)
 {
 }

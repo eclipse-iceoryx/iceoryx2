@@ -268,7 +268,7 @@ pub fn eq_with_slice_works() {
 #[test]
 #[requires_std("serde_test")]
 pub fn serialization_works() {
-    use serde_test::{assert_tokens, Token};
+    use serde_test::{Token, assert_tokens};
 
     let sut = SmallSut::try_from(b"bee").unwrap();
 

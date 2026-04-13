@@ -17,7 +17,7 @@ use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
 use iceoryx2_bb_posix::barrier::*;
-use iceoryx2_bb_posix::clock::{nanosleep, Time};
+use iceoryx2_bb_posix::clock::{Time, nanosleep};
 use iceoryx2_bb_posix::creation_mode::*;
 use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_posix::file_descriptor::*;

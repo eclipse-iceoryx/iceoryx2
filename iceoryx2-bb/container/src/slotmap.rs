@@ -136,11 +136,12 @@ impl<T, Ptr: GenericPointer> MetaSlotMap<T, Ptr> {
     #[inline(always)]
     fn verify_init(&self, source: &str) {
         debug_assert!(
-                self.is_initialized
-                    .load(core::sync::atomic::Ordering::Relaxed),
-                "From: MetaSlotMap<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
-                core::any::type_name::<T>(), source
-            );
+            self.is_initialized
+                .load(core::sync::atomic::Ordering::Relaxed),
+            "From: MetaSlotMap<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
+            core::any::type_name::<T>(),
+            source
+        );
     }
 
     fn next_available_key_after(&self, start: SlotMapKey) -> Option<(SlotMapKey, &T)> {
@@ -164,14 +165,17 @@ impl<T, Ptr: GenericPointer> MetaSlotMap<T, Ptr> {
     pub(crate) unsafe fn initialize_data_structures(&mut self) {
         let capacity = self.capacity_impl();
         for n in 0..capacity {
-            self.idx_to_data.push_impl(INVALID);
-            self.data.push_impl(None);
-            self.data_next_free_index.push_impl(n);
-
+            unsafe {
+                self.idx_to_data.push_impl(INVALID);
+                self.data.push_impl(None);
+                self.data_next_free_index.push_impl(n);
+            }
             let previous = if n == 0 { INVALID } else { n - 1 };
             let next = if n < capacity - 1 { n + 1 } else { INVALID };
-            self.idx_to_data_free_list
-                .push_impl(FreeListEntry { previous, next });
+            unsafe {
+                self.idx_to_data_free_list
+                    .push_impl(FreeListEntry { previous, next });
+            }
         }
     }
 
@@ -254,17 +258,22 @@ impl<T, Ptr: GenericPointer> MetaSlotMap<T, Ptr> {
 
     pub(crate) unsafe fn insert_impl(&mut self, value: T) -> Option<SlotMapKey> {
         self.verify_init("insert()");
-        self.acquire_next_free_index().map(|key| {
-            let key = SlotMapKey(key);
-            self.store_value(key, value);
-            key
-        })
+
+        unsafe {
+            self.acquire_next_free_index().map(|key| {
+                let key = SlotMapKey(key);
+                self.store_value(key, value);
+                key
+            })
+        }
     }
 
     pub(crate) unsafe fn insert_at_impl(&mut self, key: SlotMapKey, value: T) -> bool {
         self.verify_init("insert_at()");
-        self.claim_index(key.value());
-        self.store_value(key, value)
+        unsafe {
+            self.claim_index(key.value());
+            self.store_value(key, value)
+        }
     }
 
     pub(crate) unsafe fn store_value(&mut self, key: SlotMapKey, value: T) -> bool {
@@ -277,7 +286,7 @@ impl<T, Ptr: GenericPointer> MetaSlotMap<T, Ptr> {
         if data_idx != INVALID {
             self.data[data_idx] = Some(value);
         } else {
-            let n = self.data_next_free_index.pop_impl().expect(
+            let n = unsafe { self.data_next_free_index.pop_impl() }.expect(
                 "data and idx_to_data correspond and there must be always a free index available.",
             );
             self.idx_to_data[key.0] = n;
@@ -297,9 +306,9 @@ impl<T, Ptr: GenericPointer> MetaSlotMap<T, Ptr> {
         let data_idx = self.idx_to_data[key.0];
         if data_idx != INVALID {
             let ret = self.data[data_idx].take();
-            let push_result = self.data_next_free_index.push_impl(data_idx);
+            let push_result = unsafe { self.data_next_free_index.push_impl(data_idx) };
             debug_assert!(push_result);
-            self.release_free_index(key.0);
+            unsafe { self.release_free_index(key.0) };
             self.idx_to_data[key.0] = INVALID;
             self.len -= 1;
             ret
@@ -339,10 +348,10 @@ impl<T> RelocatableContainer for RelocatableSlotMap<T> {
         Self {
             len: 0,
             idx_to_data_free_list_head: 0,
-            idx_to_data: RelocatableVec::new_uninit(capacity),
-            idx_to_data_free_list: RelocatableVec::new_uninit(capacity),
-            data: RelocatableVec::new_uninit(capacity),
-            data_next_free_index: RelocatableQueue::new_uninit(capacity),
+            idx_to_data: unsafe { RelocatableVec::new_uninit(capacity) },
+            idx_to_data_free_list: unsafe { RelocatableVec::new_uninit(capacity) },
+            data: unsafe { RelocatableVec::new_uninit(capacity) },
+            data_next_free_index: unsafe { RelocatableQueue::new_uninit(capacity) },
             is_initialized: AtomicBool::new(false),
         }
     }
@@ -359,19 +368,19 @@ impl<T> RelocatableContainer for RelocatableSlotMap<T> {
         }
         let msg = "Unable to initialize RelocatableSlotMap";
         fail!(from "RelocatableSlotMap::init()",
-                  when self.idx_to_data.init(allocator),
+                  when unsafe {self.idx_to_data.init(allocator)},
                   "{msg} since the underlying idx_to_data vector could not be initialized.");
         fail!(from "RelocatableSlotMap::init()",
-                  when self.idx_to_data_free_list.init(allocator),
+                  when unsafe {self.idx_to_data_free_list.init(allocator)},
                   "{msg} since the underlying idx_to_data_free_list vec could not be initialized.");
         fail!(from "RelocatableSlotMap::init()",
-                  when self.data.init(allocator),
+                  when unsafe {self.data.init(allocator)},
                   "{msg} since the underlying data vector could not be initialized.");
         fail!(from "RelocatableSlotMap::init()",
-                  when self.data_next_free_index.init(allocator),
+                  when unsafe {self.data_next_free_index.init(allocator)},
                   "{msg} since the underlying data_next_free_index queue could not be initialized.");
 
-        self.initialize_data_structures();
+        unsafe { self.initialize_data_structures() };
         self.is_initialized
             .store(true, core::sync::atomic::Ordering::Relaxed);
         Ok(())
@@ -485,7 +494,7 @@ impl<T> RelocatableSlotMap<T> {
     ///  * [`RelocatableSlotMap::init()`] must be called once before
     ///
     pub unsafe fn iter(&self) -> RelocatableIter<'_, T> {
-        self.iter_impl()
+        unsafe { self.iter_impl() }
     }
 
     /// Returns `true` if the provided `key` is contained, otherwise `false`.
@@ -495,7 +504,7 @@ impl<T> RelocatableSlotMap<T> {
     ///  * [`RelocatableSlotMap::init()`] must be called once before
     ///
     pub unsafe fn contains(&self, key: SlotMapKey) -> bool {
-        self.contains_impl(key)
+        unsafe { self.contains_impl(key) }
     }
 
     /// Returns a reference to the value stored under the given key. If there is no such key,
@@ -506,7 +515,7 @@ impl<T> RelocatableSlotMap<T> {
     ///  * [`RelocatableSlotMap::init()`] must be called once before
     ///
     pub unsafe fn get(&self, key: SlotMapKey) -> Option<&T> {
-        self.get_impl(key)
+        unsafe { self.get_impl(key) }
     }
 
     /// Returns a mutable reference to the value stored under the given key. If there is no
@@ -517,7 +526,7 @@ impl<T> RelocatableSlotMap<T> {
     ///  * [`RelocatableSlotMap::init()`] must be called once before
     ///
     pub unsafe fn get_mut(&mut self, key: SlotMapKey) -> Option<&mut T> {
-        self.get_mut_impl(key)
+        unsafe { self.get_mut_impl(key) }
     }
 
     /// Insert a value and returns the corresponding [`SlotMapKey`]. If the container is full
@@ -528,7 +537,7 @@ impl<T> RelocatableSlotMap<T> {
     ///  * [`RelocatableSlotMap::init()`] must be called once before
     ///
     pub unsafe fn insert(&mut self, value: T) -> Option<SlotMapKey> {
-        self.insert_impl(value)
+        unsafe { self.insert_impl(value) }
     }
 
     /// Insert a value at the specified [`SlotMapKey`] and returns true.  If the provided key
@@ -540,7 +549,7 @@ impl<T> RelocatableSlotMap<T> {
     ///  * [`RelocatableSlotMap::init()`] must be called once before
     ///
     pub unsafe fn insert_at(&mut self, key: SlotMapKey, value: T) -> bool {
-        self.insert_at_impl(key, value)
+        unsafe { self.insert_at_impl(key, value) }
     }
 
     /// Removes a value at the specified [`SlotMapKey`]. If there was no value corresponding
@@ -551,7 +560,7 @@ impl<T> RelocatableSlotMap<T> {
     ///  * [`RelocatableSlotMap::init()`] must be called once before
     ///
     pub unsafe fn remove(&mut self, key: SlotMapKey) -> Option<T> {
-        self.remove_impl(key)
+        unsafe { self.remove_impl(key) }
     }
 
     /// Returns the [`SlotMapKey`] that will be used when the user calls
@@ -562,7 +571,7 @@ impl<T> RelocatableSlotMap<T> {
     ///  * [`RelocatableSlotMap::init()`] must be called once before
     ///
     pub unsafe fn next_free_key(&self) -> Option<SlotMapKey> {
-        self.next_free_key_impl()
+        unsafe { self.next_free_key_impl() }
     }
 
     /// Returns the number of stored values.
@@ -601,13 +610,15 @@ unsafe impl<T: ZeroCopySend, const CAPACITY: usize> ZeroCopySend for FixedSizeSl
 
 impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeSlotMap<T, CAPACITY> {
     unsafe fn placement_default(ptr: *mut Self) {
-        let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
-        state_ptr.write(unsafe { RelocatableSlotMap::new_uninit(CAPACITY) });
-        let allocator = BumpAllocator::new((*ptr)._idx_to_data.as_mut_ptr().cast());
-        (*ptr)
-            .state
-            .init(&allocator)
-            .expect("All required memory is preallocated.");
+        unsafe {
+            let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
+            state_ptr.write(RelocatableSlotMap::new_uninit(CAPACITY));
+            let allocator = BumpAllocator::new((*ptr)._idx_to_data.as_mut_ptr().cast());
+            (*ptr)
+                .state
+                .init(&allocator)
+                .expect("All required memory is preallocated.");
+        }
     }
 }
 

@@ -356,7 +356,7 @@ pub fn placement_default_works() {
 #[test]
 #[requires_std("serde_test")]
 pub fn serialization_works() {
-    use serde_test::{assert_tokens, Token};
+    use serde_test::{Token, assert_tokens};
 
     let sut_none = RelocatableOption::<i32>::None;
     let sut_some = RelocatableOption::<i32>::Some(551);

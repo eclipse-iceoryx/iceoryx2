@@ -21,8 +21,8 @@ pub mod generic {
     use core::fmt::Debug;
 
     use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
-    use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
     use iceoryx2_bb_elementary::CallbackProgression;
+    use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
     use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
     use iceoryx2_bb_lock_free::mpmc::container::ContainerAddFailure;
     use iceoryx2_bb_lock_free::mpmc::container::*;

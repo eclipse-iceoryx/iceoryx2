@@ -136,7 +136,7 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_log::{fail, fatal_panic, trace};
-use iceoryx2_pal_posix::posix::{errno::Errno, MemZeroedStruct};
+use iceoryx2_pal_posix::posix::{MemZeroedStruct, errno::Errno};
 
 use crate::clock::AsTimeval;
 use crate::file_descriptor::{FileDescriptor, FileDescriptorBased, FileDescriptorManagement};

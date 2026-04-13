@@ -15,7 +15,7 @@ use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
 use iceoryx2_bb_concurrency::internal::strategy::mutex::*;
 use iceoryx2_bb_concurrency::{WaitAction, WaitResult};
-use iceoryx2_bb_posix::clock::{nanosleep, Time};
+use iceoryx2_bb_posix::clock::{Time, nanosleep};
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;

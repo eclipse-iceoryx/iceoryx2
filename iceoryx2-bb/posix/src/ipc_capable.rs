@@ -114,9 +114,9 @@ pub(crate) mod internal {
                 self.is_initialized.load(Ordering::Relaxed),
                 "The handle must be initialized before it can be cleaned up."
             );
-
-            cleanup(self.get());
-
+            unsafe {
+                cleanup(self.get());
+            }
             // does not need to sync any memory since the construct is not allowed to
             // be shared with any other thread before it is initialized
             // -> Ordering::Relaxed

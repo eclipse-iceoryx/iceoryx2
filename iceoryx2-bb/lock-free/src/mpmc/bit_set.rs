@@ -122,12 +122,14 @@ pub mod details {
 
     impl RelocatableContainer for BitSet<RelocatablePointer<BitsetElement>> {
         unsafe fn new_uninit(capacity: usize) -> Self {
-            Self {
-                data_ptr: RelocatablePointer::new_uninit(),
-                capacity,
-                array_capacity: Self::array_capacity(capacity),
-                is_memory_initialized: AtomicBool::new(false),
-                reset_position: AtomicUsize::new(0),
+            unsafe {
+                Self {
+                    data_ptr: RelocatablePointer::new_uninit(),
+                    capacity,
+                    array_capacity: Self::array_capacity(capacity),
+                    is_memory_initialized: AtomicBool::new(false),
+                    reset_position: AtomicUsize::new(0),
+                }
             }
         }
 
@@ -139,23 +141,21 @@ pub mod details {
                 fatal_panic!(from self,
                 "Memory already initialized. Initializing it twice may lead to undefined behavior.");
             }
-
-            let memory = fail!(from self, when allocator
+            unsafe {
+                let memory = fail!(from self, when allocator
             .allocate(Layout::from_size_align_unchecked(
                     core::mem::size_of::<BitsetElement>() * self.array_capacity,
                     core::mem::align_of::<BitsetElement>())),
             "Failed to initialize since the allocation of the data memory failed.");
 
-            self.data_ptr.init(memory);
+                self.data_ptr.init(memory);
 
-            for i in 0..self.array_capacity {
-                unsafe {
+                for i in 0..self.array_capacity {
                     (self.data_ptr.as_ptr() as *mut BitsetElement)
                         .add(i)
                         .write(BitsetElement::new(0))
-                };
+                }
             }
-
             // relaxed is sufficient since no relocatable container can be used
             // before init was called. Meaning, it is not allowed to send or share
             // the container with other threads when it is in an uninitialized state.

@@ -2,7 +2,7 @@
 name = "iceoryx2-bb-posix-tests-nostd"
 description = "iceoryx2: [internal] nostd deployment of iceoryx2-bb-posix tests"
 categories = { workspace = true }
-edition = { workspace = true }
+edition = "2024"
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }
@@ -15,13 +15,13 @@ version = { workspace = true }
 default = ["std"]
 
 std = [
-  "iceoryx2-bb-loggers/std",  
-  "iceoryx2-bb-memory/std",  
-  "iceoryx2-bb-posix-tests-common/std",  
-  "iceoryx2-bb-posix/std",  
+  "iceoryx2-bb-loggers/std",
+  "iceoryx2-bb-memory/std",
+  "iceoryx2-bb-posix-tests-common/std",
+  "iceoryx2-bb-posix/std",
   "iceoryx2-bb-testing-macros/std",
   "iceoryx2-bb-testing/std",
-  "iceoryx2-pal-print/std",  
+  "iceoryx2-pal-print/std",
 ]
 
 [dependencies]

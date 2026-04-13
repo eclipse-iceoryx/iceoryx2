@@ -209,8 +209,8 @@ impl StreamingSocket {
     }
 
     /// Creates a new [`StreamingSocket`] pair.
-    pub fn create_pair(
-    ) -> Result<(StreamingSocket, StreamingSocket), StreamingSocketPairCreationError> {
+    pub fn create_pair()
+    -> Result<(StreamingSocket, StreamingSocket), StreamingSocketPairCreationError> {
         let msg = "Unable to create streaming socket pair";
         let origin = "StreamingSocket::create_pair()";
         let mut fd_values = [0, 0];
