@@ -1,9 +1,9 @@
 # Contributing to Eclipse iceoryx2
 
 **Important:** Issues labeled `good first issue` are intended to introduce new
-contributors to iceoryx2 development and help them ramp up. If you use AI
-agents to implement such an issue, that defeats the purpose. Please do not use
-AI to work on `good first issue`s.
+contributors to iceoryx2 development and help them ramp up.
+They should offer a meaningful challenge and require some time and effort for
+new developers to understand the underlying concepts.
 
 1. Every new contributor must sign the
    [Eclipse Contributor Agreement (ECA)](https://www.eclipse.org/legal/ECA.php)
