@@ -562,9 +562,79 @@ fn blub_generic_union() {}
 /// let v = t.__get_members();
 /// assert_eq!(v.len(), 2);
 /// assert_eq!(v[0], (0, 1));
-/// assert_eq!(v[1], (16, 16));
+/// assert_eq!(v[1], (16, 4));
 /// ```
 #[cfg(doctest)]
 fn blub_with_alignment_that_changes_inner_padding() {}
 
-// TODO: test structs with nested fields, containing padding bytes
+/// ```
+/// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+///
+/// #[repr(C)]
+/// #[derive(ZeroCopySend)]
+/// struct TupleStruct(u64);
+///
+/// #[repr(C)]
+/// #[derive(ZeroCopySend)]
+/// struct FieldStruct {
+///     a: u8,
+///     b: i16,
+/// }
+///
+/// #[repr(C)]
+/// #[derive(ZeroCopySend)]
+/// struct NestedStruct {
+///     val0: TupleStruct,
+///     val1: u32,
+///     val2: FieldStruct,
+/// }
+///
+/// let t = NestedStruct { val0: TupleStruct(32687), val1: 7, val2: FieldStruct { a: 1, b: -4 } };
+/// let v = t.__get_members();
+/// assert_eq!(v.len(), 4);
+/// assert_eq!(v[0], (0, 8));
+/// assert_eq!(v[1], (8, 4));
+/// assert_eq!(v[2], (12, 1));
+/// assert_eq!(v[3], (14, 2));
+/// ```
+#[cfg(doctest)]
+fn blub_nested_struct() {}
+
+/// ```
+/// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+///
+/// #[repr(C)]
+/// #[derive(Copy, Clone)]
+/// #[derive(ZeroCopySend)]
+/// struct FieldStruct {
+///     a: u8,
+///     b: u64,
+/// }
+///
+/// #[repr(C)]
+/// #[derive(ZeroCopySend)]
+/// union NestedUnion {
+///     val0: u8,
+///     val1: u16,
+///     val2: FieldStruct,
+/// }
+///
+/// let u1 = NestedUnion { val0: 1 };
+/// let v1 = u1.__get_members();
+/// assert_eq!(v1.len(), 1);
+/// assert_eq!(v1[0], (0, 16));
+/// let u2 = NestedUnion { val1: 2 };
+/// let v2 = u2.__get_members();
+/// assert_eq!(v2.len(), 1);
+/// assert_eq!(v2[0], (0, 16));
+/// let u3 = NestedUnion { val2: FieldStruct { a: 3, b: 4, } };
+/// let v3 = u3.__get_members();
+/// assert_eq!(v3.len(), 2);
+/// assert_eq!(v3[0], (0, 8));
+/// assert_eq!(v3[1], (8, 8));
+/// ```
+#[cfg(doctest)]
+fn blub_union_with_struct() {}
+// TODO: test union that contains a struct
