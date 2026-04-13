@@ -10,19 +10,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_bb_testing_macros::conformance_tests;
 
 #[allow(clippy::module_inception)]
-#[conformance_test_module]
+#[conformance_tests]
 pub mod shm_allocator_trait {
     use alloc::collections::btree_set::BTreeSet;
     use core::{alloc::Layout, ptr::NonNull};
     use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
-    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::mutex::{Mutex, MutexBuilder, MutexHandle};
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::shm_allocator::{ShmAllocator, *};
 
     const MEMORY_SIZE: usize = 4096;

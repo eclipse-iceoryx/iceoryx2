@@ -10,10 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_bb_testing_macros::conformance_tests;
 
 #[allow(clippy::module_inception)]
-#[conformance_test_module]
+#[conformance_tests]
 pub mod server {
     use alloc::vec;
     use core::time::Duration;
@@ -24,7 +24,6 @@ pub mod server {
     use iceoryx2::testing::*;
     use iceoryx2_bb_concurrency::atomic::AtomicBool;
     use iceoryx2_bb_concurrency::atomic::Ordering;
-    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::barrier::BarrierBuilder;
     use iceoryx2_bb_posix::barrier::BarrierHandle;
     use iceoryx2_bb_posix::clock::nanosleep;
@@ -32,6 +31,7 @@ pub mod server {
     use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
+    use iceoryx2_bb_testing_macros::conformance_test;
 
     const TIMEOUT: Duration = Duration::from_millis(50);
 

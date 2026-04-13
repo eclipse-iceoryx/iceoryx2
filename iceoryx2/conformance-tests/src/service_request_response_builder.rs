@@ -10,10 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_bb_testing_macros::conformance_tests;
 
 #[allow(clippy::module_inception)]
-#[conformance_test_module]
+#[conformance_tests]
 pub mod service_request_response_builder {
     use alloc::vec;
 
@@ -27,8 +27,8 @@ pub mod service_request_response_builder {
     use iceoryx2::service::port_factory::server::ServerCreateError;
     use iceoryx2::service::static_config::message_type_details::TypeVariant;
     use iceoryx2::testing::*;
-    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing_macros::conformance_test;
 
     #[conformance_test]
     pub fn open_existing_service_works<Sut: Service>() {

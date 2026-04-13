@@ -10,18 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_bb_testing_macros::conformance_tests;
 
 #[allow(clippy::module_inception)]
-#[conformance_test_module]
+#[conformance_tests]
 pub mod listener {
     use alloc::collections::BTreeSet;
     use alloc::{format, vec};
 
     use iceoryx2::testing::*;
     use iceoryx2::{node::NodeBuilder, port::listener::ListenerCreateError, service::Service};
-    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing_macros::conformance_test;
 
     #[conformance_test]
     pub fn create_error_display_works<S: Service>() {

@@ -10,14 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_bb_testing_macros::conformance_tests;
 
 #[allow(clippy::module_inception)]
-#[conformance_test_module]
+#[conformance_tests]
 pub mod event_signal_mechanism_trait {
     use core::time::Duration;
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
-    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::clock::nanosleep;
     use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::thread::thread_scope;
@@ -26,6 +25,7 @@ pub mod event_signal_mechanism_trait {
         clock::Time,
     };
     use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
+    use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::event::signal_mechanism::SignalMechanism;
 
     const TIMEOUT: Duration = Duration::from_millis(25);

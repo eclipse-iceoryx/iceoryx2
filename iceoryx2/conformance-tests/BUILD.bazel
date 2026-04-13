@@ -40,7 +40,6 @@ rust_library(
         "//iceoryx2-pal/print:iceoryx2-pal-print",
     ],
     proc_macro_deps = [
-        "//iceoryx2-bb/conformance-test-macros:iceoryx2-bb-conformance-test-macros",
         "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
         "//iceoryx2-bb/testing-macros:iceoryx2-bb-testing-macros",
     ],

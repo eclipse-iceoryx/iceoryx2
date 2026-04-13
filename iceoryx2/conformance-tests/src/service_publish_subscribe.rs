@@ -10,10 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_bb_testing_macros::conformance_tests;
 
 #[allow(clippy::module_inception)]
-#[conformance_test_module]
+#[conformance_tests]
 pub mod service_publish_subscribe {
     use alloc::{format, vec, vec::Vec};
 
@@ -33,7 +33,6 @@ pub mod service_publish_subscribe {
     use iceoryx2::testing::generate_service_name;
     use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize};
-    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_derive_macros::ZeroCopySend;
     use iceoryx2_bb_elementary::alignment::Alignment;
     use iceoryx2_bb_elementary::CallbackProgression;
@@ -43,6 +42,7 @@ pub mod service_publish_subscribe {
     use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
+    use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_log::{set_log_level, LogLevel};
 
     #[derive(Debug, ZeroCopySend)]

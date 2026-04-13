@@ -1382,15 +1382,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "iceoryx2-bb-conformance-test-macros"
-version = "0.8.999"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.114",
-]
-
-[[package]]
 name = "iceoryx2-bb-container"
 version = "0.8.999"
 dependencies = [
@@ -1880,7 +1871,6 @@ name = "iceoryx2-cal-conformance-tests"
 version = "0.8.999"
 dependencies = [
  "iceoryx2-bb-concurrency",
- "iceoryx2-bb-conformance-test-macros",
  "iceoryx2-bb-container",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
@@ -1998,7 +1988,6 @@ version = "0.8.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-concurrency",
- "iceoryx2-bb-conformance-test-macros",
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
@@ -2213,9 +2202,9 @@ name = "iceoryx2-tunnel-conformance-tests"
 version = "0.8.999"
 dependencies = [
  "iceoryx2",
- "iceoryx2-bb-conformance-test-macros",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
  "iceoryx2-services-discovery",
  "iceoryx2-tunnel",
  "iceoryx2-tunnel-backend",

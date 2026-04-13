@@ -10,17 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_bb_testing_macros::conformance_tests;
 
 #[allow(clippy::module_inception)]
-#[conformance_test_module]
+#[conformance_tests]
 pub mod zero_copy_connection_trait {
     use alloc::collections::btree_set::BTreeSet;
     use alloc::sync::Arc;
     use alloc::vec;
     use core::time::Duration;
     use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
-    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_posix::clock::{nanosleep, Time};
@@ -31,6 +30,7 @@ pub mod zero_copy_connection_trait {
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
+    use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptMgmt};
     use iceoryx2_cal::shm_allocator::{PointerOffset, SegmentId};

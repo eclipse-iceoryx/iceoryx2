@@ -10,18 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_bb_testing_macros::conformance_tests;
 
 #[allow(clippy::module_inception)]
-#[conformance_test_module]
+#[conformance_tests]
 pub mod communication_channel_trait {
     use alloc::vec;
 
-    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
+    use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::communication_channel::*;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::testing::*;

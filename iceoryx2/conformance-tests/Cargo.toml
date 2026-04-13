@@ -33,7 +33,6 @@ harness = false
 [dependencies]
 iceoryx2 = { workspace = true }
 iceoryx2-bb-concurrency = { workspace = true }
-iceoryx2-bb-conformance-test-macros = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-derive-macros = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }

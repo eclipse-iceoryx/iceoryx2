@@ -14,7 +14,7 @@ use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_concurrency::atomic::AtomicU32;
 use iceoryx2_bb_concurrency::atomic::Ordering;
-use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_bb_testing_macros::conformance_tests;
 
 use iceoryx2::config::Config;
 use iceoryx2::node::testing::__internal_node_staged_death;
@@ -66,14 +66,14 @@ impl Test for ZeroCopy {
 }
 
 #[allow(clippy::module_inception)]
-#[conformance_test_module]
+#[conformance_tests]
 pub mod node_death {
     use iceoryx2::node::{CleanupState, NodeState};
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
-    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_fail};
+    use iceoryx2_bb_testing_macros::conformance_test;
 
     use super::*;
 
