@@ -107,6 +107,10 @@
 * Make `UniqueSystemId` unique accross docker containers and pid namespaces
   by introducing `gethostpid()` in the platform.  
   [#1518](https://github.com/eclipse-iceoryx/iceoryx2/issues/1518)
+* Python `payload()` reported wrong element count for multi-byte types;
+  `__slice_len` (byte length) is now divided by `ctypes.sizeof(contained_type)`
+  before passing to `Slice()`
+  [#1533](https://github.com/eclipse-iceoryx/iceoryx2/issues/1533)
 
 ### Refactoring
 
