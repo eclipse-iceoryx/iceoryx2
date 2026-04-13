@@ -84,6 +84,7 @@
 //!
 //! use iceoryx2_bb_posix::unix_datagram_socket::*;
 //! use iceoryx2_bb_posix::socket_ancillary::*;
+//! use iceoryx2_bb_posix::access_mode::*;
 //! use iceoryx2_bb_posix::file::*;
 //! use iceoryx2_bb_posix::file_descriptor::*;
 //! use iceoryx2_bb_system_types::file_path::FilePath;
@@ -117,7 +118,7 @@
 //! if fd_vec.is_empty() {
 //!     println!("No file descriptors received.");
 //! }
-//! let recv_file = File::from_file_descriptor(fd_vec.remove(0));
+//! let recv_file = File::from_file_descriptor(fd_vec.remove(0), AccessMode::ReadWrite);
 //!
 //! // cleanup
 //! File::remove(&file_name);

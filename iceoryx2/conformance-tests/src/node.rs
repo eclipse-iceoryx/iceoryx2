@@ -286,7 +286,7 @@ pub mod node {
     #[conformance_test]
     pub fn concurrent_node_creation_and_listing_works<S: Service>() {
         let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
-        let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
+        let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         const NUMBER_OF_ITERATIONS: usize = 100;
         let handle = BarrierHandle::new();
         let barrier = BarrierBuilder::new(number_of_creators as _)

@@ -15,8 +15,9 @@ use core::ops::{Deref, DerefMut};
 pub use iceoryx2_pal_concurrency_sync::atomic::fence;
 pub use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 
-use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::{
+    placement_default::PlacementDefault, zero_copy_send::ZeroCopySend, zeroable::Zeroable,
+};
 
 #[derive(Debug, Default)]
 #[repr(transparent)]
@@ -91,6 +92,7 @@ macro_rules! Impl {
         }
 
         unsafe impl ZeroCopySend for $type_name {}
+        unsafe impl Zeroable for $type_name {}
     };
 }
 

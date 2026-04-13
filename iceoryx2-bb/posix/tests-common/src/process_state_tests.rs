@@ -13,10 +13,12 @@
 use alloc::string::ToString;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
 use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::file::{File, FileBuilder};
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
+use iceoryx2_bb_posix::process::UniqueProcessId;
 use iceoryx2_bb_posix::shared_memory::Permission;
 use iceoryx2_bb_posix::testing::__internal_process_guard_staged_death;
 use iceoryx2_bb_posix::testing::create_test_directory;
@@ -53,6 +55,17 @@ pub fn guard_can_be_created() {
 }
 
 #[test]
+pub fn guard_can_be_created_with_default() {
+    create_test_directory();
+    let path = generate_file_path();
+
+    let guard = ProcessGuardBuilder::default().create(&path).unwrap();
+
+    assert_that!(*guard.path(), eq path);
+    assert_that!(File::does_exist(&path).unwrap(), eq true);
+}
+
+#[test]
 pub fn guard_removes_file_when_dropped() {
     create_test_directory();
     let path = generate_file_path();
@@ -81,11 +94,18 @@ pub fn guard_cannot_use_already_existing_file() {
 }
 
 #[test]
+pub fn monitor_returns_the_path_under_which_it_was_created() {
+    create_test_directory();
+    let path = generate_file_path();
+
+    let monitor = ProcessMonitor::new(&path).unwrap();
+    assert_that!(*monitor.path(), eq path);
+}
+
+#[test]
 pub fn monitor_detects_dead_state() {
     create_test_directory();
     let path = generate_file_path();
-    let mut cleaner_path = path;
-    cleaner_path.push_bytes(b"_owner_lock").unwrap();
 
     let guard = ProcessGuardBuilder::new().create(&path).unwrap();
     __internal_process_guard_staged_death(guard);
@@ -109,25 +129,36 @@ pub fn monitor_detects_non_existing_state() {
 pub fn monitor_transitions_work_starting_from_non_existing_process() {
     create_test_directory();
     let path = generate_file_path();
-    let mut cleaner_path = path;
-    cleaner_path.push_bytes(b"_owner_lock").unwrap();
+    let mut owner_lock_path = path;
+    owner_lock_path.push_bytes(b"_owner_lock").unwrap();
+    let mut context_path = path;
+    context_path.push_bytes(b"_context").unwrap();
 
     let monitor = ProcessMonitor::new(&path).unwrap();
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
-    let file = FileBuilder::new(&path)
+
+    let mut context_file = FileBuilder::new(&context_path)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
-
-    let cleaner_file = FileBuilder::new(&cleaner_path)
+    context_file
+        .write_val(&UniqueProcessId::new_zeroed())
+        .unwrap();
+    let state_file = FileBuilder::new(&path)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+    let owner_lock_file = FileBuilder::new(&owner_lock_path)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
 
     assert_that!(monitor.state().unwrap(), eq ProcessState::Dead);
-    cleaner_file.remove_self().unwrap();
+    owner_lock_file.remove_self().unwrap();
     assert_that!(monitor.state().err().unwrap(), eq ProcessMonitorStateError::CorruptedState);
-    file.remove_self().unwrap();
+    state_file.remove_self().unwrap();
+    assert_that!(monitor.state().unwrap(), eq ProcessState::CleaningUp);
+    context_file.remove_self().unwrap();
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
 }
 
@@ -137,8 +168,17 @@ pub fn monitor_transitions_work_starting_from_existing_process() {
     let path = generate_file_path();
     let mut owner_lock_path = path;
     owner_lock_path.push_bytes(b"_owner_lock").unwrap();
+    let mut context_path = path;
+    context_path.push_bytes(b"_context").unwrap();
 
-    let file = FileBuilder::new(&path)
+    let mut context_file = FileBuilder::new(&context_path)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+    context_file
+        .write_val(&UniqueProcessId::new_zeroed())
+        .unwrap();
+    let state_file = FileBuilder::new(&path)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
@@ -149,25 +189,60 @@ pub fn monitor_transitions_work_starting_from_existing_process() {
 
     let monitor = ProcessMonitor::new(&path).unwrap();
     assert_that!(monitor.state().unwrap(), eq ProcessState::Dead);
-    file.remove_self().unwrap();
+    state_file.remove_self().unwrap();
+    assert_that!(monitor.state().unwrap(), eq ProcessState::CleaningUp);
+    owner_lock_file.remove_self().unwrap();
+    assert_that!(monitor.state().unwrap(), eq ProcessState::CleaningUp);
+    context_file.remove_self().unwrap();
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
+}
 
-    let file = FileBuilder::new(&path)
+#[test]
+pub fn monitor_transitions_to_corrupted_state_works_for_existing_process() {
+    create_test_directory();
+    let path = generate_file_path();
+    let mut owner_lock_path = path;
+    owner_lock_path.push_bytes(b"_owner_lock").unwrap();
+    let mut context_path = path;
+    context_path.push_bytes(b"_context").unwrap();
+
+    let mut context_file = FileBuilder::new(&context_path)
+        .has_ownership(true)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
-    assert_that!(monitor.state().unwrap(), eq ProcessState::Dead);
+    context_file
+        .write_val(&UniqueProcessId::new_zeroed())
+        .unwrap();
+    let state_file = FileBuilder::new(&path)
+        .has_ownership(true)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+    let owner_lock_file = FileBuilder::new(&owner_lock_path)
+        .has_ownership(true)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
 
-    file.remove_self().unwrap();
+    let monitor = ProcessMonitor::new(&path).unwrap();
+    assert_that!(monitor.state().unwrap(), eq ProcessState::Dead);
     owner_lock_file.remove_self().unwrap();
+    assert_that!(monitor.state().err(), eq Some(ProcessMonitorStateError::CorruptedState));
+    state_file.remove_self().unwrap();
+    assert_that!(monitor.state().unwrap(), eq ProcessState::CleaningUp);
+    context_file.remove_self().unwrap();
+    assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
 }
 
 #[test]
 pub fn monitor_detects_initialized_state() {
     create_test_directory();
     let path = generate_file_path();
+    let mut context_path = path;
+    context_path.push_bytes(b"_context").unwrap();
 
-    let mut file = FileBuilder::new(&path)
+    let mut file = FileBuilder::new(&context_path)
         .creation_mode(CreationMode::PurgeAndCreate)
         .permission(Permission::OWNER_WRITE)
         .create()
@@ -194,7 +269,7 @@ pub fn owner_lock_cannot_be_created_when_process_does_not_exist() {
         ProcessCleanerCreateError::DoesNotExist
     );
 
-    let file = FileBuilder::new(&path)
+    let state_file = FileBuilder::new(&path)
         .has_ownership(true)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
@@ -206,13 +281,16 @@ pub fn owner_lock_cannot_be_created_when_process_does_not_exist() {
         owner_lock.err().unwrap(), eq
         ProcessCleanerCreateError::DoesNotExist
     );
-    drop(file);
+    drop(state_file);
     nanosleep(core::time::Duration::from_millis(100)).expect("failed to sleep");
 
-    let _file = FileBuilder::new(&owner_lock_path)
+    let mut owner_lock_file = FileBuilder::new(&owner_lock_path)
         .has_ownership(true)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
+        .unwrap();
+    owner_lock_file
+        .write_val(&UniqueProcessId::new_zeroed())
         .unwrap();
 
     let owner_lock = ProcessCleaner::new(&path);
@@ -229,8 +307,19 @@ pub fn cleaner_removes_state_files_on_drop() {
     let path = generate_file_path();
     let mut owner_lock_path = path;
     owner_lock_path.push_bytes(b"_owner_lock").unwrap();
+    let mut context_path = path;
+    context_path.push_bytes(b"_context").unwrap();
 
-    let _file = FileBuilder::new(&path)
+    let mut context_file = FileBuilder::new(&context_path)
+        .has_ownership(false)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+    context_file
+        .write_val(&UniqueProcessId::new_zeroed())
+        .unwrap();
+
+    let _state_file = FileBuilder::new(&path)
         .has_ownership(false)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
@@ -249,6 +338,7 @@ pub fn cleaner_removes_state_files_on_drop() {
 
     assert_that!(File::does_exist(&path).unwrap(), eq false);
     assert_that!(File::does_exist(&owner_lock_path).unwrap(), eq false);
+    assert_that!(File::does_exist(&context_path).unwrap(), eq false);
 }
 
 #[test]
@@ -257,8 +347,19 @@ pub fn cleaner_keeps_state_files_when_abandoned() {
     let path = generate_file_path();
     let mut owner_lock_path = path;
     owner_lock_path.push_bytes(b"_owner_lock").unwrap();
+    let mut context_path = path;
+    context_path.push_bytes(b"_context").unwrap();
 
-    let _file = FileBuilder::new(&path)
+    let mut context_file = FileBuilder::new(&context_path)
+        .has_ownership(true)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+    context_file
+        .write_val(&UniqueProcessId::new_zeroed())
+        .unwrap();
+
+    let _state_file = FileBuilder::new(&path)
         .has_ownership(true)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
@@ -277,19 +378,6 @@ pub fn cleaner_keeps_state_files_when_abandoned() {
     assert_that!(File::does_exist(&owner_lock_path).unwrap(), eq true);
 }
 
-// START: OS with IPC only lock detection
-//
-// the lock detection does work on some OS only in the inter process context.
-// In the process local context the lock is not detected when the fcntl GETLK call is originating
-// from the same thread os the fcntl SETLK call. If it is called from a different thread GETLK
-// blocks despite it should be non-blocking.
-
-#[cfg(not(any(
-    target_os = "linux",
-    target_os = "freebsd",
-    target_os = "macos",
-    target_os = "nto"
-)))]
 #[test]
 pub fn monitor_detects_alive_state_from_existing_process() {
     create_test_directory();
@@ -303,12 +391,7 @@ pub fn monitor_detects_alive_state_from_existing_process() {
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
 }
 
-#[cfg(not(any(
-    target_os = "linux",
-    target_os = "freebsd",
-    target_os = "macos",
-    target_os = "nto"
-)))]
+#[test]
 pub fn owner_lock_cannot_be_acquired_from_living_process() {
     create_test_directory();
     let path = generate_file_path();
@@ -322,6 +405,81 @@ pub fn owner_lock_cannot_be_acquired_from_living_process() {
     );
 }
 
+#[test]
+pub fn cleaner_cannot_be_created_with_a_process_state_currently_being_initialized() {
+    create_test_directory();
+    let path = generate_file_path();
+    let mut context_path = path;
+    context_path.push_bytes(b"_context").unwrap();
+
+    let _context_file = FileBuilder::new(&context_path)
+        .has_ownership(true)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .permission(Permission::OWNER_WRITE)
+        .create()
+        .unwrap();
+
+    assert_that!(ProcessCleaner::new(&path).err(), eq Some(ProcessCleanerCreateError::ProcessIsInitializedOrCrashedDuringInitialization));
+}
+
+#[test]
+pub fn cleaner_cannot_be_created_when_another_process_is_currently_cleaning_up() {
+    create_test_directory();
+    let path = generate_file_path();
+    let mut owner_lock_path = path;
+    owner_lock_path.push_bytes(b"_owner_lock").unwrap();
+    let mut context_path = path;
+    context_path.push_bytes(b"_context").unwrap();
+
+    let mut context_file = FileBuilder::new(&context_path)
+        .has_ownership(true)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+    context_file
+        .write_val(&UniqueProcessId::new_zeroed())
+        .unwrap();
+
+    let _owner_lock_file = FileBuilder::new(&owner_lock_path)
+        .has_ownership(true)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+
+    assert_that!(ProcessCleaner::new(&path).err(), eq Some(ProcessCleanerCreateError::ProcessIsBeingCleanedUpOrCrashedDuringCleanup));
+}
+
+#[test]
+pub fn cleaner_cannot_acquire_a_corrupted_process() {
+    create_test_directory();
+    let path = generate_file_path();
+    let mut context_path = path;
+    context_path.push_bytes(b"_context").unwrap();
+
+    let mut context_file = FileBuilder::new(&context_path)
+        .has_ownership(true)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+    context_file
+        .write_val(&UniqueProcessId::new_zeroed())
+        .unwrap();
+
+    let _state_file = FileBuilder::new(&path)
+        .has_ownership(true)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+
+    assert_that!(ProcessCleaner::new(&path).err(), eq Some(ProcessCleanerCreateError::ProcessMonitorStateError(ProcessMonitorStateError::CorruptedState)));
+}
+
+// START: OS with IPC only lock detection
+//
+// the lock detection does work on some OS only in the inter process context.
+// In the process local context the lock is not detected when the fcntl GETLK call is originating
+// from the same thread os the fcntl SETLK call. If it is called from a different thread GETLK
+// blocks despite it should be non-blocking.
 #[cfg(not(any(
     target_os = "linux",
     target_os = "freebsd",
@@ -334,8 +492,19 @@ pub fn owner_lock_cannot_be_acquired_twice() {
     let path = generate_file_path();
     let mut owner_lock_path = path;
     owner_lock_path.push_bytes(b"_owner_lock").unwrap();
+    let mut context_path = path;
+    context_path.push_bytes(b"_context").unwrap();
 
-    let _file = FileBuilder::new(&path)
+    let mut context_file = FileBuilder::new(&context_path)
+        .has_ownership(true)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+    context_file
+        .write_val(&UniqueProcessId::new_zeroed())
+        .unwrap();
+
+    let _state_file = FileBuilder::new(&path)
         .has_ownership(true)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
@@ -352,7 +521,7 @@ pub fn owner_lock_cannot_be_acquired_twice() {
     assert_that!(owner_lock, is_err);
     assert_that!(
         owner_lock.err().unwrap(), eq
-        ProcessCleanerCreateError::OwnedByAnotherProcess
+        ProcessCleanerCreateError::ProcessIsBeingCleanedUpOrCrashedDuringCleanup
     );
 }
 

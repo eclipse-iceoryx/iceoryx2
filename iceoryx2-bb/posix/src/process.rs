@@ -43,12 +43,18 @@
 //! ```
 use core::fmt::Display;
 
+use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_elementary_traits::plain_old_data_without_padding::PlainOldDataWithoutPadding;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_log::{fail, trace};
 use iceoryx2_pal_posix::posix::{errno::Errno, MemZeroedStruct};
 use iceoryx2_pal_posix::*;
 
+use crate::unique_system_id::{UniqueSystemId, UniqueSystemIdCreationError};
 use crate::{
     scheduler::{Scheduler, SchedulerConversionError},
     signal::Signal,
@@ -110,6 +116,21 @@ impl ProcessExt for posix::pid_t {
         Process::from_pid(ProcessId::new(*self))
     }
 }
+
+/// Represents a system wide unique process id.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, ZeroCopySend)]
+#[repr(C)]
+pub struct UniqueProcessId(UniqueSystemId);
+
+impl UniqueProcessId {
+    /// Returns the underlying value of the [`UniqueProcessId`]
+    pub fn value(&self) -> u128 {
+        self.0.value()
+    }
+}
+
+unsafe impl Zeroable for UniqueProcessId {}
+unsafe impl PlainOldDataWithoutPadding for UniqueProcessId {}
 
 /// Represents a process id.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -174,6 +195,22 @@ impl Process {
     /// Returns the id of the process.
     pub fn id(&self) -> ProcessId {
         self.pid
+    }
+
+    /// Returns a [`UniqueProcessId`]. It is similar to the pid except that this id is unique at all time.
+    /// No future [`Process`] on the same machine will ever have the same [`UniqueProcessId`] again.
+    pub fn unique_id() -> Result<UniqueProcessId, UniqueSystemIdCreationError> {
+        static UNIQUE_PROCESS_ID: LazyLock<Result<UniqueProcessId, UniqueSystemIdCreationError>> =
+            LazyLock::new(|| UniqueSystemId::new().map(UniqueProcessId));
+
+        match *UNIQUE_PROCESS_ID {
+            Ok(_) => *UNIQUE_PROCESS_ID,
+            Err(e) => {
+                fail!(from "Process::unique_id()",
+                    with e,
+                    "Unable to create unique process id. [{e:?}]");
+            }
+        }
     }
 
     /// Returns the executable path of the [`Process`].

@@ -13,6 +13,10 @@
 use alloc::string::String;
 use alloc::string::ToString;
 
+use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::plain_old_data_without_padding::PlainOldDataWithoutPadding;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
 use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_posix::file_descriptor::*;
 use iceoryx2_bb_posix::testing::create_test_directory;
@@ -438,4 +442,124 @@ pub fn release_ownership_works() -> Result<(), FileError> {
     File::remove(&file_name).unwrap();
 
     Ok(())
+}
+
+#[derive(ZeroCopySend, PartialEq, Eq, Debug, Copy, Clone)]
+#[repr(C)]
+struct TestValue {
+    value1: u64,
+    value2: u64,
+    value3: u64,
+}
+
+unsafe impl Zeroable for TestValue {}
+unsafe impl PlainOldDataWithoutPadding for TestValue {}
+
+#[derive(ZeroCopySend, PartialEq, Eq, Debug, Copy, Clone)]
+#[repr(C)]
+struct SmallTestValue {
+    value1: u64,
+    value2: u64,
+}
+
+unsafe impl Zeroable for SmallTestValue {}
+unsafe impl PlainOldDataWithoutPadding for SmallTestValue {}
+
+#[test]
+pub fn simple_read_write_of_a_value_works() {
+    let test = TestFixture::new();
+    let value_written = TestValue {
+        value1: 1111,
+        value2: 222222,
+        value3: 333333333,
+    };
+    let mut file = test.create_file(&test.file);
+
+    file.write_val(&value_written).unwrap();
+    assert_that!(file.flush(), is_ok);
+    assert_that!(file.seek(0), is_ok);
+
+    let value_read = file.read_val::<TestValue>().unwrap();
+
+    assert_that!(value_written, eq value_read);
+}
+
+#[test]
+pub fn simple_read_at_write_at_of_a_value_works() {
+    const OFFSET: usize = 36;
+    let test = TestFixture::new();
+    let value_written = TestValue {
+        value1: 55,
+        value2: 6666,
+        value3: 77777,
+    };
+    let mut file = test.create_file(&test.file);
+    // write more bytes than OFFSET so that the offset position is available
+    file.write(&[255u8; OFFSET * 2]).unwrap();
+
+    file.write_val_at(OFFSET as u64, &value_written).unwrap();
+    assert_that!(file.flush(), is_ok);
+
+    let value_read = file.read_val_at::<TestValue>(OFFSET as u64).unwrap();
+
+    assert_that!(value_written, eq value_read);
+}
+
+#[test]
+pub fn when_file_does_not_contain_the_required_bytes_read_val_fails() {
+    let test = TestFixture::new();
+    let value_written = SmallTestValue {
+        value1: 11171,
+        value2: 2222722,
+    };
+    let mut file = test.create_file(&test.file);
+
+    file.write_val(&value_written).unwrap();
+    assert_that!(file.flush(), is_ok);
+    assert_that!(file.seek(0), is_ok);
+
+    assert_that!(file.read_val::<TestValue>().err(), eq Some(FileReadValError::FileSizeTooSmallToContainValue));
+}
+
+#[test]
+pub fn when_file_does_not_contain_the_required_bytes_read_val_at_fails() {
+    let test = TestFixture::new();
+    let value_written = TestValue {
+        value1: 129,
+        value2: 8912389,
+        value3: 81981,
+    };
+    let mut file = test.create_file(&test.file);
+
+    file.write_val(&value_written).unwrap();
+    assert_that!(file.flush(), is_ok);
+    assert_that!(file.seek(0), is_ok);
+
+    assert_that!(file.read_val_at::<TestValue>(1).err(), eq Some(FileReadValError::FileSizeTooSmallToContainValue));
+}
+
+#[test]
+pub fn cannot_read_from_file_that_was_not_opened_with_read_access_mode() {
+    let test = TestFixture::new();
+    test.create_file(&test.file);
+    let sut = FileBuilder::new(&test.file)
+        .open_existing(AccessMode::Write)
+        .unwrap();
+
+    assert_that!(sut.access_mode(), eq AccessMode::Write);
+    let mut buffer = [0u8; 8];
+    assert_that!(sut.read(&mut buffer).err(), eq Some(FileReadError::OpenedWithoutReadAccessMode));
+}
+
+#[test]
+pub fn cannot_write_to_file_that_was_not_opened_with_write_access_mode() {
+    let test = TestFixture::new();
+    test.create_file(&test.file);
+    let mut sut = FileBuilder::new(&test.file)
+        .open_existing(AccessMode::Read)
+        .unwrap();
+
+    assert_that!(sut.access_mode(), eq AccessMode::Read);
+    let buffer = [0u8; 8];
+    assert_that!(sut.write(&buffer).err(), eq Some(FileWriteError::OpenedWithoutWriteAccessMode));
 }
