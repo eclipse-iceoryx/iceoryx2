@@ -254,3 +254,22 @@
     let node = NodeBuilder::new().create::<ipc::Service>()?;
     let id: UniqueNodeId = node.id();
     ```
+
+1. The `#[conformance_test_module]` macro has been renamed to
+   `#[conformance_tests]`
+
+   ```rust
+   // old
+    #[allow(clippy::module_inception)]
+    #[conformance_test_module]
+    pub mod my_module {
+        // ...
+    }
+
+   // new
+   #[allow(clippy::module_inception)]
+   #[conformance_tests]
+   pub mod my_module {
+       // ...
+   }
+   ```
