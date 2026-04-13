@@ -805,13 +805,10 @@ impl File {
         let buffer = unsafe { core::slice::from_raw_parts((value as *const T).cast(), size_of_t) };
 
         match write_call(buffer) {
+            Ok(n) if n == size_of_t as u64 => Ok(()),
             Ok(n) => {
-                if n != size_of_t as u64 {
-                    fail!(from origin, with FileWriteValError::ValueWasWrittenOnlyPartially,
-                        "{msg} since only {n} bytes of {size_of_t} bytes of the value were written.");
-                } else {
-                    Ok(())
-                }
+                fail!(from origin, with FileWriteValError::ValueWasWrittenOnlyPartially,
+                    "{msg} since only {n} bytes of {size_of_t} bytes of the value were written.");
             }
             Err(e) => {
                 fail!(from origin, with e.into(),
