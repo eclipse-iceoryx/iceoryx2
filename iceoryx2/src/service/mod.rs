@@ -261,6 +261,7 @@ use alloc::string::String as CoreString;
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
+use iceoryx2_bb_posix::file::AccessMode;
 
 use crate::config;
 use crate::constants::MAX_TYPE_NAME_LENGTH;
@@ -1073,7 +1074,7 @@ fn open_dynamic_config<S: Service>(
                 >>::new(&service_hash.0.into())
                     .config(&dynamic_config_storage_config::<S>(config))
                 .has_ownership(false)
-                .open() {
+                .open(AccessMode::ReadWrite) {
             Ok(storage) => Ok(Some(storage)),
             Err(DynamicStorageOpenError::DoesNotExist) | Err(DynamicStorageOpenError::InitializationNotYetFinalized) => Ok(None),
             Err(DynamicStorageOpenError::VersionMismatch) => {

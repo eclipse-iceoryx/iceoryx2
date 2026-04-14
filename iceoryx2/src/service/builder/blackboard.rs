@@ -32,6 +32,7 @@ use iceoryx2_bb_elementary::static_assert::static_assert_eq;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryBuilder};
 use iceoryx2_log::{error, fatal_panic};
@@ -1022,7 +1023,7 @@ impl<
                         >::Builder::new(&name)
                             .config(&mgmt_config)
                             .has_ownership(false)
-                            .open(),
+                            .open(AccessMode::ReadWrite),
                         with BlackboardOpenError::ServiceInCorruptedState,
                         "{} since the blackboard management information could not be opened. This could indicate a corrupted system.", msg);
 
@@ -1035,7 +1036,7 @@ impl<
                         &name
                     )
                     .config(&shm_config)
-                    .open()
+                    .open(AccessMode::ReadWrite)
                     {
                         Ok(v) => v,
                         Err(_) => {

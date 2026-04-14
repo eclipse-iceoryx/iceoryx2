@@ -12,6 +12,7 @@
 
 use core::alloc::Layout;
 
+use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::{
     event::NamedConceptBuilder,
@@ -203,7 +204,7 @@ impl<Service: service::Service> DataSegmentView<Service> {
                                 Builder::new(segment_name)
                                 .config(&segment_config)
                                 .timeout(global_config.global.service.creation_timeout)
-                                .open(),
+                                .open(AccessMode::Read),
                             "{msg}");
 
         Ok(Self {
@@ -228,7 +229,7 @@ impl<Service: service::Service> DataSegmentView<Service> {
                         segment_name,
                     )
                     .config(&segment_config)
-                    .open(),
+                    .open(AccessMode::Read),
                     "{msg}");
 
         Ok(Self {

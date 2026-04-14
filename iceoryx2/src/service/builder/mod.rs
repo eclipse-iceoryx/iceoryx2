@@ -38,6 +38,7 @@ use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::dynamic_storage::DynamicStorageOpenError;
 use iceoryx2_cal::dynamic_storage::{DynamicStorage, DynamicStorageBuilder};
@@ -426,7 +427,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     .timeout(self.shared_node.config().global.service.creation_timeout)
                     .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
                 .has_ownership(false)
-                .open(),
+                .open(AccessMode::ReadWrite),
             "{} since the dynamic storage could not be opened.", msg);
 
         self.shared_node.registered_services().add_or(

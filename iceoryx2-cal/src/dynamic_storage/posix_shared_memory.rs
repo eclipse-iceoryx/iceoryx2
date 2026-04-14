@@ -489,7 +489,10 @@ impl<T: Send + Sync + Debug> NamedConceptMgmt for Storage<T> {
         let msg = "Unable to remove dynamic_storage::posix_shared_memory";
         let origin = "dynamic_storage::posix_shared_memory::Storage::remove_cfg()";
 
-        match Builder::<T>::new(name).config(cfg).open(AccessMode::Read) {
+        match Builder::<T>::new(name)
+            .config(cfg)
+            .open(AccessMode::ReadWrite)
+        {
             Ok(s) => {
                 s.acquire_ownership();
                 Ok(true)
