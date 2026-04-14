@@ -14,8 +14,8 @@ use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
 use iceoryx2::service::ipc::Service as Ipc;
 use iceoryx2::service::local::Service as Local;
-use iceoryx2_services_tunnel_zenoh::ZenohBackend;
-use iceoryx2_services_tunnel_zenoh::testing;
+use iceoryx2_integrations_zenoh_tunnel_backend::ZenohBackend;
+use iceoryx2_integrations_zenoh_tunnel_backend::testing;
 
 instantiate_conformance_tests_with_module!(
     ipc,

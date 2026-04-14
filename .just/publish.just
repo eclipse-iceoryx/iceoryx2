@@ -46,7 +46,6 @@ ICEORYX2_CRATES_TO_PUBLISH := `echo \
     iceoryx2-services-tunnel-backend    \
     iceoryx2-services-tunnel            \
     iceoryx2-services-tunnel-conformance-tests \
-    iceoryx2-services-tunnel-zenoh      \
     iceoryx2-userland-record-and-replay \
     iceoryx2-cli`
 
