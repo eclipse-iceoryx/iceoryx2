@@ -14,7 +14,9 @@
 # Publish Recipes
 # =============================================================================
 
-ICEORYX2_CRATES_TO_PUBLISH := `echo \
+INTEGRATIONS_DIR := justfile_directory() / "integrations"
+
+SDK_CRATES_TO_PUBLISH := `echo \
     iceoryx2-pal-configuration          \
     iceoryx2-pal-concurrency-sync       \
     iceoryx2-pal-posix                  \
@@ -49,7 +51,7 @@ ICEORYX2_CRATES_TO_PUBLISH := `echo \
     iceoryx2-userland-record-and-replay \
     iceoryx2-cli`
 
-ICEORYX2_CRATES_TO_IGNORE := `echo \
+SDK_CRATES_TO_IGNORE := `echo \
     benchmark-event                        \
     benchmark-publish-subscribe            \
     benchmark-request-response             \
@@ -92,6 +94,11 @@ ICEORYX2_CRATES_TO_IGNORE := `echo \
     iceoryx2-tests-common                  \
     iceoryx2-tests-nostd`
 
+INTEGRATIONS_CRATES_TO_PUBLISH := `echo \
+    iceoryx2-integrations-tunnel-zenoh`
+
+INTEGRATIONS_CRATES_TO_IGNORE := ""
+
 [private]
 _publish-dispatch what *flags:
     #!/usr/bin/env bash
@@ -132,18 +139,17 @@ _publish-dispatch what *flags:
             exit 1
             ;;
         sdk)
-            just _publish-action "$DRY_RUN" "$ALLOW_DIRTY" "$SANITY_CHECKS" "$LIST" "$REGISTRY"
+            just _publish-workspace-action sdk "$DRY_RUN" "$ALLOW_DIRTY" "$SANITY_CHECKS" "$LIST" "$REGISTRY"
             ;;
         integrations)
-            echo "Publishing for 'integrations' is not yet implemented."
-            exit 0
+            just _publish-workspace-action integrations "$DRY_RUN" "$ALLOW_DIRTY" "$SANITY_CHECKS" "$LIST" "$REGISTRY"
             ;;
         all)
             echo "=== sdk ==="
-            just _publish-action "$DRY_RUN" "$ALLOW_DIRTY" "$SANITY_CHECKS" "$LIST" "$REGISTRY"
+            just _publish-workspace-action sdk "$DRY_RUN" "$ALLOW_DIRTY" "$SANITY_CHECKS" "$LIST" "$REGISTRY"
             echo ""
             echo "=== integrations ==="
-            echo "Publishing for 'integrations' is not yet implemented."
+            just _publish-workspace-action integrations "$DRY_RUN" "$ALLOW_DIRTY" "$SANITY_CHECKS" "$LIST" "$REGISTRY"
             ;;
         *)
             echo "Unknown publish target: {{what}}"
@@ -152,30 +158,58 @@ _publish-dispatch what *flags:
     esac
 
 # -----------------------------------------------------------------------------
+# Workspace resolution helpers
+# -----------------------------------------------------------------------------
+
+[private]
+_publish-manifest workspace:
+    #!/usr/bin/env bash
+    case "{{workspace}}" in
+        sdk)          echo "" ;;
+        integrations) echo "--manifest-path {{INTEGRATIONS_DIR}}/Cargo.toml" ;;
+    esac
+
+[private]
+_publish-crates-to-publish workspace:
+    #!/usr/bin/env bash
+    case "{{workspace}}" in
+        sdk)          echo "{{SDK_CRATES_TO_PUBLISH}}" ;;
+        integrations) echo "{{INTEGRATIONS_CRATES_TO_PUBLISH}}" ;;
+    esac
+
+[private]
+_publish-crates-to-ignore workspace:
+    #!/usr/bin/env bash
+    case "{{workspace}}" in
+        sdk)          echo "{{SDK_CRATES_TO_IGNORE}}" ;;
+        integrations) echo "{{INTEGRATIONS_CRATES_TO_IGNORE}}" ;;
+    esac
+
+# -----------------------------------------------------------------------------
 # Action dispatch
 # -----------------------------------------------------------------------------
 
 [private]
-_publish-action dry_run allow_dirty sanity_checks list registry:
+_publish-workspace-action workspace dry_run allow_dirty sanity_checks list registry:
     #!/usr/bin/env bash
     set -euo pipefail
 
     if [ "{{list}}" = "true" ]; then
-        just _publish-list
+        just _publish-list "{{workspace}}"
         exit 0
     fi
 
     if [ "{{sanity_checks}}" = "true" ]; then
-        just _publish-sanity-checks
+        just _publish-sanity-checks "{{workspace}}"
         exit 0
     fi
 
     if [ "{{dry_run}}" = "true" ]; then
-        just _publish-sanity-checks
-        just _publish-dry-run "{{allow_dirty}}" "{{registry}}"
+        just _publish-sanity-checks "{{workspace}}"
+        just _publish-dry-run "{{workspace}}" "{{allow_dirty}}" "{{registry}}"
     else
-        just _publish-sanity-checks
-        just _publish-run "{{registry}}"
+        just _publish-sanity-checks "{{workspace}}"
+        just _publish-run "{{workspace}}" "{{registry}}"
     fi
 
 # -----------------------------------------------------------------------------
@@ -183,12 +217,13 @@ _publish-action dry_run allow_dirty sanity_checks list registry:
 # -----------------------------------------------------------------------------
 
 [private]
-_publish-list:
+_publish-list workspace:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    echo "Crates to publish:"
-    PUBLISH="{{ICEORYX2_CRATES_TO_PUBLISH}}"
+    PUBLISH=$(just _publish-crates-to-publish "{{workspace}}")
+
+    echo "Crates to publish ({{workspace}}):"
     for CRATE in $PUBLISH; do
         echo "  $CRATE"
     done
@@ -198,38 +233,40 @@ _publish-list:
 # -----------------------------------------------------------------------------
 
 [private]
-_publish-sanity-checks:
+_publish-sanity-checks workspace:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    echo "Running sanity checks..."
-    just _publish-check-completeness
-    just _publish-check-cyclic-deps
+    echo "Running sanity checks for '{{workspace}}'..."
+    just _publish-check-completeness "{{workspace}}"
+    just _publish-check-cyclic-deps "{{workspace}}"
     echo "All sanity checks passed."
 
 [private]
-_publish-check-completeness:
+_publish-check-completeness workspace:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    WORKSPACE_CRATES=$(cargo tree --workspace --depth 1 --prefix none \
+    MANIFEST_FLAG=$(just _publish-manifest "{{workspace}}")
+
+    WORKSPACE_CRATES=$(cargo tree --workspace --depth 1 --prefix none $MANIFEST_FLAG \
         | grep -v '(\*)' \
         | grep -E '^(iceoryx2|benchmark|example)' \
         | awk '{print $1}' \
         | sort | uniq)
 
-    PUBLISH="{{ICEORYX2_CRATES_TO_PUBLISH}}"
-    IGNORE="{{ICEORYX2_CRATES_TO_IGNORE}}"
+    PUBLISH=$(just _publish-crates-to-publish "{{workspace}}")
+    IGNORE=$(just _publish-crates-to-ignore "{{workspace}}")
 
     HAS_ERROR=false
     for CRATE in $WORKSPACE_CRATES; do
-        if [[ " $IGNORE " =~ " ${CRATE} " ]]; then
+        if [[ -n "$IGNORE" ]] && [[ " $IGNORE " =~ " ${CRATE} " ]]; then
             continue
         fi
         if [[ " $PUBLISH " =~ " ${CRATE} " ]]; then
             continue
         fi
-        echo "ERROR: Crate '$CRATE' is neither in the publish nor ignore list."
+        echo "ERROR: Crate '$CRATE' is neither in the publish nor ignore list for '{{workspace}}'."
         HAS_ERROR=true
     done
 
@@ -238,11 +275,12 @@ _publish-check-completeness:
     fi
 
 [private]
-_publish-check-cyclic-deps:
+_publish-check-cyclic-deps workspace:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    PUBLISH="{{ICEORYX2_CRATES_TO_PUBLISH}}"
+    MANIFEST_FLAG=$(just _publish-manifest "{{workspace}}")
+    PUBLISH=$(just _publish-crates-to-publish "{{workspace}}")
 
     ALLOWED=""
     HAS_ERROR=false
@@ -250,7 +288,7 @@ _publish-check-cyclic-deps:
     for CRATE in $PUBLISH; do
         ALLOWED="$ALLOWED $CRATE"
 
-        DEPS=$(cargo tree --package "$CRATE" --depth 1 --prefix none --edges normal \
+        DEPS=$(cargo tree --package "$CRATE" --depth 1 --prefix none --edges normal $MANIFEST_FLAG \
             | grep -v '(\*)' \
             | grep -e '^iceoryx2' \
             | awk '{print $1}' \
@@ -274,11 +312,12 @@ _publish-check-cyclic-deps:
 # -----------------------------------------------------------------------------
 
 [private]
-_publish-dry-run allow_dirty registry:
+_publish-dry-run workspace allow_dirty registry:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    IGNORE="{{ICEORYX2_CRATES_TO_IGNORE}}"
+    MANIFEST_FLAG=$(just _publish-manifest "{{workspace}}")
+    IGNORE=$(just _publish-crates-to-ignore "{{workspace}}")
 
     EXCLUDE_ARGS=""
     for CRATE in $IGNORE; do
@@ -295,16 +334,17 @@ _publish-dry-run allow_dirty registry:
         REGISTRY_FLAG="--registry {{registry}}"
     fi
 
-    echo "Publishing (dry-run)..."
-    cargo publish --dry-run --workspace $EXCLUDE_ARGS $DIRTY_FLAG $REGISTRY_FLAG
+    echo "Publishing '{{workspace}}' (dry-run)..."
+    cargo publish --dry-run --workspace $MANIFEST_FLAG $EXCLUDE_ARGS $DIRTY_FLAG $REGISTRY_FLAG
     echo "Done."
 
 [private]
-_publish-run registry:
+_publish-run workspace registry:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    IGNORE="{{ICEORYX2_CRATES_TO_IGNORE}}"
+    MANIFEST_FLAG=$(just _publish-manifest "{{workspace}}")
+    IGNORE=$(just _publish-crates-to-ignore "{{workspace}}")
 
     EXCLUDE_ARGS=""
     for CRATE in $IGNORE; do
@@ -316,6 +356,6 @@ _publish-run registry:
         REGISTRY_FLAG="--registry {{registry}}"
     fi
 
-    echo "Publishing..."
-    cargo publish --workspace $EXCLUDE_ARGS $REGISTRY_FLAG
+    echo "Publishing '{{workspace}}'..."
+    cargo publish --workspace $MANIFEST_FLAG $EXCLUDE_ARGS $REGISTRY_FLAG
     echo "Done."
