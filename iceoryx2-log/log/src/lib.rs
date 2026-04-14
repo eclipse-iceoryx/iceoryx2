@@ -155,8 +155,13 @@ static INIT: std::sync::LazyLock<Once> = std::sync::LazyLock::new(|| {
     unimplemented!("loom does not provide const-initialization for atomic variables.")
 });
 
-/// Sets the current log level. This is ignored for external frameworks like `log` or `tracing`.
-/// Here you have to use the log-level settings of that framework.
+/// Sets the current log level.
+///
+/// # Important
+///
+/// The log level should be set explicitly when using an external frameworks like
+/// `log` or `tracing` since only messages compliant with the log level will be forwarded.
+/// Additionally, you might have set the log-level settings of that framework.
 pub fn set_log_level(v: LogLevel) {
     LOG_LEVEL.store(v as u8, Ordering::Relaxed);
 }
@@ -201,7 +206,7 @@ pub fn set_logger(logger: &'static dyn Log) -> bool {
 
 #[cfg(feature = "std")]
 mod from_env {
-    use super::{DEFAULT_LOG_LEVEL, LogLevel, set_log_level};
+    use super::{set_log_level, LogLevel, DEFAULT_LOG_LEVEL};
     use std::env;
 
     fn get_log_level_from_str_fuzzy(
@@ -228,12 +233,24 @@ mod from_env {
     }
 
     /// Sets the log level by reading environment variable "IOX2_LOG_LEVEL" or default it with LogLevel::INFO
+    ///
+    /// # Important
+    ///
+    /// The log level should be set explicitly when using an external frameworks like
+    /// `log` or `tracing` since only messages compliant with the log level will be forwarded.
+    /// Additionally, you might have set the log-level settings of that framework.
     pub fn set_log_level_from_env_or_default() {
         set_log_level_from_env_or(DEFAULT_LOG_LEVEL);
     }
 
     /// Sets the log level by reading environment variable "IOX2_LOG_LEVEL", and if the environment variable
     /// doesn't exit it sets it with a user-defined logging level
+    ///
+    /// # Important
+    ///
+    /// The log level should be set explicitly when using an external frameworks like
+    /// `log` or `tracing` since only messages compliant with the log level will be forwarded.
+    /// Additionally, you might have set the log-level settings of that framework.
     pub fn set_log_level_from_env_or(v: LogLevel) {
         let log_level = env::var("IOX2_LOG_LEVEL")
             .ok()
