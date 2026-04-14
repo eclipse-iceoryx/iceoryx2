@@ -11,24 +11,11 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use anyhow::Result;
-use colored::*;
 
-use crate::command::{CommandFinder, Environment, HostEnvironment, IceoryxCommandFinder};
+use iceoryx2_cli::command::HostEnvironment;
 
-fn list_impl<E>() -> Result<()>
-where
-    E: Environment,
-{
-    let commands = IceoryxCommandFinder::<E>::commands()?;
-
-    println!("{}", "Discovered Commands:".bright_green().bold());
-    for command in commands {
-        println!("  {}", command.name.bold());
-    }
-
-    Ok(())
-}
+use super::COMMAND_PREFIX;
 
 pub(crate) fn list() -> Result<()> {
-    list_impl::<HostEnvironment>()
+    iceoryx2_cli::command::list::<HostEnvironment>(COMMAND_PREFIX)
 }
