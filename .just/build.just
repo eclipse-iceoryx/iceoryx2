@@ -66,8 +66,7 @@ _build-dispatch what *flags:
             just _build-sdk "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_TESTS"
             ;;
         integrations)
-            echo "Building 'integrations' is not yet implemented."
-            exit 0
+            just _build-integrations "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_TESTS"
             ;;
         *)
             just _build-package "{{what}}" "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD"
@@ -123,6 +122,23 @@ _build-sdk toolchain target_triplet has_nostd has_tests:
 
         cargo {{toolchain}} build --workspace $TESTS_FLAG
     fi
+
+[private]
+_build-integrations toolchain target_triplet has_nostd has_tests:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [ "{{has_nostd}}" = "true" ]; then
+        echo "Error: the integrations workspace cannot be built with --no_std" >&2
+        exit 1
+    fi
+
+    TESTS_FLAG=""
+    if [ "{{has_tests}}" = "true" ]; then
+        TESTS_FLAG="--tests"
+    fi
+
+    cargo {{toolchain}} build --workspace --manifest-path {{INTEGRATIONS_DIR}}/Cargo.toml $TESTS_FLAG
 
 [private]
 _build-package package toolchain target_triplet has_nostd:
