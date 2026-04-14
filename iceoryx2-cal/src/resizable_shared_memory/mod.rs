@@ -96,6 +96,7 @@ use core::fmt::Debug;
 use core::time::Duration;
 
 use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_posix::file::AccessMode;
 
 use crate::named_concept::*;
 use crate::shared_memory::{
@@ -137,7 +138,7 @@ pub trait ResizableSharedMemoryViewBuilder<
 
     /// Opens already existing [`SharedMemory`]. If it does not exist or the initialization is not
     /// yet finished the method will fail.
-    fn open(self) -> Result<ResizableShmView, SharedMemoryOpenError>;
+    fn open(self, access_mode: AccessMode) -> Result<ResizableShmView, SharedMemoryOpenError>;
 }
 
 /// Creates a new [`ResizableSharedMemory`] which the process will own. As soon as the

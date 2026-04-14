@@ -19,6 +19,7 @@ pub mod details {
     use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize};
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+    use iceoryx2_bb_posix::file::AccessMode;
     use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
     use iceoryx2_log::{debug, fail};
 
@@ -362,7 +363,7 @@ pub mod details {
             match Storage::Builder::new(&self.name)
                 .config(&self.config.convert())
                 .timeout(self.creation_timeout)
-                .open()
+                .open(AccessMode::ReadWrite)
             {
                 Ok(storage) => {
                     let mut ref_count = storage.get().reference_counter.load(Ordering::Relaxed);

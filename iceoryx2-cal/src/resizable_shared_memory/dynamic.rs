@@ -26,6 +26,7 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::slotmap::{SlotMap, SlotMapKey};
 use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
+use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fatal_panic;
@@ -161,7 +162,10 @@ where
         self
     }
 
-    fn open(self) -> Result<DynamicView<Allocator, Shm>, SharedMemoryOpenError> {
+    fn open(
+        self,
+        access_mode: AccessMode,
+    ) -> Result<DynamicView<Allocator, Shm>, SharedMemoryOpenError> {
         let origin = format!("{self:?}");
         let msg = "Unable to open ResizableSharedMemoryView";
 
@@ -170,7 +174,7 @@ where
         let mgmt_segment = fail!(from origin, when Shm::Builder::new(&adjusted_name)
                                                         .config(&self.config.shm)
                                                         .has_ownership(false)
-                                                        .open(),
+                                                        .open(access_mode),
                                     "{msg} since the managment segment could not be opened.");
 
         let shared_memory_map = SlotMap::new(MAX_NUMBER_OF_REALLOCATIONS);
@@ -180,6 +184,7 @@ where
             _mgmt_segment: mgmt_segment,
             shared_memory_map: UnsafeCell::new(shared_memory_map),
             current_idx: AtomicUsize::new(INVALID_KEY),
+            access_mode,
             _data: PhantomData,
         })
     }
@@ -306,6 +311,7 @@ pub struct DynamicView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     _mgmt_segment: Shm,
     shared_memory_map: UnsafeCell<SlotMap<ShmEntry<Allocator, Shm>>>,
     current_idx: AtomicUsize,
+    access_mode: AccessMode,
     _data: PhantomData<Allocator>,
 }
 
@@ -348,7 +354,7 @@ where
         let payload_start_address = match shared_memory_map.get(key) {
             None => {
                 let shm = fail!(from self,
-                                when DynamicMemory::open_segment(&self.view_config, segment_id),
+                                when DynamicMemory::open_segment(&self.view_config, segment_id, self.access_mode),
                                 "{msg} {:?} since the corresponding shared memory segment could not be opened.", offset);
                 let payload_start_address = shm.payload_start_address();
                 let entry = ShmEntry::new(shm);
@@ -583,11 +589,12 @@ where
     fn open_segment(
         config: &ViewConfig<Allocator, Shm>,
         segment_id: SegmentId,
+        access_mode: AccessMode,
     ) -> Result<Shm, SharedMemoryOpenError> {
         Self::segment_builder(&config.base_name, &config.shm, segment_id)
             .has_ownership(false)
             .timeout(config.shm_builder_timeout)
-            .open()
+            .open(access_mode)
     }
 
     fn segment_builder(

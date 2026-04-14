@@ -64,6 +64,7 @@ use core::{fmt::Debug, time::Duration};
 
 pub use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
+use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::*;
 use pool_allocator::PoolAllocator;
 
@@ -150,7 +151,7 @@ pub trait SharedMemoryBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocat
 
     /// Opens already existing [`SharedMemory`]. If it does not exist or the initialization is not
     /// yet finished the method will fail.
-    fn open(self) -> Result<Shm, SharedMemoryOpenError>;
+    fn open(self, access_mode: AccessMode) -> Result<Shm, SharedMemoryOpenError>;
 }
 
 /// Abstract concept of a memory shared between multiple processes. Can be created with the

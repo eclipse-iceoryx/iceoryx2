@@ -489,7 +489,7 @@ impl<'builder, T: Send + Sync + Debug + 'static> DynamicStorageBuilder<'builder,
         self
     }
 
-    fn open(self) -> Result<Storage<T>, DynamicStorageOpenError> {
+    fn open(self, _access_mode: AccessMode) -> Result<Storage<T>, DynamicStorageOpenError> {
         let msg = "Failed to open dynamic storage";
         let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
             with DynamicStorageOpenError::InternalError,

@@ -195,7 +195,7 @@ impl<T: Send + Sync + Debug> NamedConceptBuilder<Storage<T>> for Builder<'_, T> 
 }
 
 impl<T: Send + Sync + Debug> Builder<'_, T> {
-    fn open_impl(&self) -> Result<Storage<T>, DynamicStorageOpenError> {
+    fn open_impl(&self, access_mode: AccessMode) -> Result<Storage<T>, DynamicStorageOpenError> {
         let msg = "Failed to open posix_shared_memory::DynamicStorage";
 
         let full_name = self.config.path_for(&self.storage_name).file_name();
@@ -205,7 +205,7 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
 
         let mut elapsed_time = Duration::ZERO;
         let shm = loop {
-            match SharedMemoryBuilder::new(&full_name).open_existing(AccessMode::ReadWrite) {
+            match SharedMemoryBuilder::new(&full_name).open_existing(access_mode) {
                 Ok(v) => break v,
                 Err(SharedMemoryCreationError::DoesNotExist) => {
                     fail!(from self, with DynamicStorageOpenError::DoesNotExist,
@@ -398,8 +398,8 @@ impl<'builder, T: Send + Sync + Debug> DynamicStorageBuilder<'builder, T, Storag
         self.init_impl(shm, initial_value)
     }
 
-    fn open(self) -> Result<Storage<T>, DynamicStorageOpenError> {
-        self.open_impl()
+    fn open(self, access_mode: AccessMode) -> Result<Storage<T>, DynamicStorageOpenError> {
+        self.open_impl(access_mode)
     }
 
     fn open_or_create(
@@ -407,7 +407,7 @@ impl<'builder, T: Send + Sync + Debug> DynamicStorageBuilder<'builder, T, Storag
         initial_value: T,
     ) -> Result<Storage<T>, DynamicStorageOpenOrCreateError> {
         loop {
-            match self.open_impl() {
+            match self.open_impl(AccessMode::ReadWrite) {
                 Ok(storage) => return Ok(storage),
                 Err(DynamicStorageOpenError::DoesNotExist) => match self.create_impl() {
                     Ok(shm) => {
@@ -489,7 +489,7 @@ impl<T: Send + Sync + Debug> NamedConceptMgmt for Storage<T> {
         let msg = "Unable to remove dynamic_storage::posix_shared_memory";
         let origin = "dynamic_storage::posix_shared_memory::Storage::remove_cfg()";
 
-        match Builder::<T>::new(name).config(cfg).open() {
+        match Builder::<T>::new(name).config(cfg).open(AccessMode::Read) {
             Ok(s) => {
                 s.acquire_ownership();
                 Ok(true)

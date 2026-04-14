@@ -13,6 +13,7 @@
 use core::time::Duration;
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::creation_mode::CreationMode;
+use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_posix::permission::Permission;
 use iceoryx2_bb_posix::shared_memory::SharedMemoryBuilder;
 use iceoryx2_bb_posix::testing::generate_file_path;
@@ -50,7 +51,7 @@ fn version_check_works() {
 
     let sut = <Sut as DynamicStorage<TestData>>::Builder::new(&storage_name)
         .config(&config)
-        .open();
+        .open(AccessMode::ReadWrite);
 
     assert_that!(sut, is_err);
     assert_that!(sut.err().unwrap(), eq DynamicStorageOpenError::VersionMismatch);
@@ -73,7 +74,7 @@ fn write_only_segment_is_not_initialized() {
 
     let sut = <Sut as DynamicStorage<TestData>>::Builder::new(&storage_name)
         .config(&config)
-        .open();
+        .open(AccessMode::ReadWrite);
 
     assert_that!(sut, is_err);
     assert_that!(sut.err().unwrap(), eq DynamicStorageOpenError::InitializationNotYetFinalized);
@@ -98,7 +99,7 @@ fn waiting_for_initialization_works() {
     let sut = <Sut as DynamicStorage<TestData>>::Builder::new(&storage_name)
         .timeout(TIMEOUT)
         .config(&config)
-        .open();
+        .open(AccessMode::ReadWrite);
 
     assert_that!(sut, is_err);
     assert_that!(sut.err().unwrap(), eq DynamicStorageOpenError::InitializationNotYetFinalized);

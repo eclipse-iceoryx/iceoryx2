@@ -20,6 +20,7 @@ pub type DefaultAllocator = PoolAllocator;
 pub mod resizable_shared_memory_trait {
     use alloc::vec;
     use core::alloc::Layout;
+    use iceoryx2_bb_posix::file::AccessMode;
 
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_testing::assert_that;
@@ -48,7 +49,7 @@ pub mod resizable_shared_memory_trait {
             .unwrap();
         let sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
-            .open()
+            .open(AccessMode::ReadWrite)
             .unwrap();
 
         let test_value_1 = 189273771;
@@ -134,7 +135,7 @@ pub mod resizable_shared_memory_trait {
             .unwrap();
         let sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
-            .open()
+            .open(AccessMode::ReadWrite)
             .unwrap();
 
         let ptr_creator_1 = sut_creator.allocate(Layout::new::<u64>()).unwrap();
@@ -233,7 +234,7 @@ pub mod resizable_shared_memory_trait {
 
         let sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
-            .open()
+            .open(AccessMode::ReadWrite)
             .unwrap();
 
         let mut ptrs = vec![];
@@ -302,7 +303,7 @@ pub mod resizable_shared_memory_trait {
 
         let sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
-            .open()
+            .open(AccessMode::ReadWrite)
             .unwrap();
 
         let mut ptrs = vec![];
@@ -372,7 +373,7 @@ pub mod resizable_shared_memory_trait {
 
         let sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
-            .open()
+            .open(AccessMode::ReadWrite)
             .unwrap();
 
         let mut ptrs = vec![];
@@ -711,7 +712,7 @@ pub mod resizable_shared_memory_trait {
 
         let sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
-            .open()
+            .open(AccessMode::ReadWrite)
             .unwrap();
 
         let translated_chunk = unsafe {
@@ -761,7 +762,7 @@ pub mod resizable_shared_memory_trait {
 
         let sut_view = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
-            .open()
+            .open(AccessMode::ReadWrite)
             .unwrap();
 
         assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
@@ -835,7 +836,7 @@ pub mod resizable_shared_memory_trait {
 
         let sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
-            .open()
+            .open(AccessMode::ReadWrite)
             .unwrap();
 
         let tr_chunk_1 = unsafe {
@@ -892,7 +893,7 @@ pub mod resizable_shared_memory_trait {
 
         let sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
-            .open()
+            .open(AccessMode::ReadWrite)
             .unwrap();
 
         unsafe { sut_viewer.register_and_translate_offset(chunk_1).unwrap() };
@@ -935,7 +936,7 @@ pub mod resizable_shared_memory_trait {
 
         let sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
-            .open()
+            .open(AccessMode::ReadWrite)
             .unwrap();
 
         unsafe { sut_viewer.register_and_translate_offset(chunk_1).unwrap() };
@@ -973,7 +974,7 @@ pub mod resizable_shared_memory_trait {
 
         let sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
-            .open()
+            .open(AccessMode::ReadWrite)
             .unwrap();
 
         let chunk_small = sut.allocate(Layout::new::<u8>()).unwrap().offset;
