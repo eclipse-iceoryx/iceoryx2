@@ -63,13 +63,31 @@ auto set_logger(Log& logger) -> bool;
 
 /// Sets the global log level for the application using `IOX2_LOG_LEVEL` environment variable
 /// or defaults it to LogLevel::INFO if variable does not exist.
+///
+/// # Important
+///
+/// When using external frameworks, the log level should be set explicitly, as
+/// only messages matching that level will be forwarded. You may also need to
+/// configure the framework’s own log level settings.
 auto set_log_level_from_env_or_default() -> void;
 
 /// Sets the global log level for the application using `IOX2_LOG_LEVEL` environment variable
 /// or sets it to a user-given value if variable does not exist.
+///
+/// # Important
+///
+/// When using external frameworks, the log level should be set explicitly, as
+/// only messages matching that level will be forwarded. You may also need to
+/// configure the framework’s own log level settings.
 auto set_log_level_from_env_or(LogLevel level) -> void;
 
 /// Sets the global log level for the application
+///
+/// # Important
+///
+/// When using external frameworks, the log level should be set explicitly, as
+/// only messages matching that level will be forwarded. You may also need to
+/// configure the framework’s own log level settings.
 auto set_log_level(LogLevel level) -> void;
 
 /// Returns the current global log level of the application
