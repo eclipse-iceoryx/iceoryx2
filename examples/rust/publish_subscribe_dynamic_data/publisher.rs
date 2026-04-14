@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let service = node
         .service_builder(&"Service With Dynamic Data".try_into()?)
-        .publish_subscribe::<[u8]>()
+        .publish_subscribe::<[u128]>()
         .open_or_create()?;
 
     let publisher = service
@@ -46,11 +46,11 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     while node.wait(CYCLE_TIME).is_ok() {
         let required_memory_size = 1_000_000.min(counter * counter);
         let sample = publisher.loan_slice_uninit(required_memory_size)?;
-        let sample = sample.write_from_fn(|byte_idx| ((byte_idx + counter) % 255) as u8);
+        let sample = sample.write_from_fn(|byte_idx| ((byte_idx + counter) % 255) as u128);
 
         sample.send()?;
 
-        coutln!("Send sample {counter} with {required_memory_size} bytes...");
+        coutln!("Send sample {counter} with {required_memory_size} elements...");
 
         counter += 1;
     }

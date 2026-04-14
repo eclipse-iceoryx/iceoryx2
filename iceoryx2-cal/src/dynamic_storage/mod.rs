@@ -28,6 +28,7 @@
 //! # Example
 //!
 //! ```
+//! use iceoryx2_bb_posix::access_mode::AccessMode;
 //! use iceoryx2_bb_system_types::file_name::FileName;
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
 //! use iceoryx2_cal::dynamic_storage::*;
@@ -47,7 +48,7 @@
 //! fn process_two<Storage: DynamicStorage<AtomicU64>>() {
 //!     let storage_name = FileName::new(b"myStorageName").unwrap();
 //!     let mut storage = Storage::Builder::new(&storage_name)
-//!                         .open().unwrap();
+//!                         .open(AccessMode::ReadWrite).unwrap();
 //!
 //!     println!("Opened storage {}", storage.name());
 //!     println!("Current value {}", storage.get().swap(1001, Ordering::Relaxed));

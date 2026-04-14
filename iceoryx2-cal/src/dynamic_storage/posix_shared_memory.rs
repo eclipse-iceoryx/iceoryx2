@@ -17,6 +17,7 @@
 //! ```
 //! # extern crate iceoryx2_bb_loggers;
 //!
+//! use iceoryx2_bb_posix::access_mode::AccessMode;
 //! use iceoryx2_bb_system_types::file_name::FileName;
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
 //! use iceoryx2_cal::dynamic_storage::posix_shared_memory::*;
@@ -34,7 +35,7 @@
 //!
 //! // usually a different process
 //! let storage = Builder::<AtomicI64>::new(&storage_name)
-//!                 .open().unwrap();
+//!                 .open(AccessMode::ReadWrite).unwrap();
 //!
 //! println!("Initial value: {}", storage.get().load(Ordering::Relaxed));
 //! // returns a reference to the underlying atomic

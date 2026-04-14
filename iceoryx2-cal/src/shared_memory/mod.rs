@@ -19,6 +19,7 @@
 //! # Example
 //!
 //! ```
+//! use iceoryx2_bb_posix::access_mode::AccessMode;
 //! use iceoryx2_cal::shared_memory::*;
 //! use iceoryx2_cal::named_concept::*;
 //! use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
@@ -46,7 +47,8 @@
 //!         // we want to allocate [`u64`]
 //!         bucket_layout: Layout::new::<u64>()
 //!     };
-//!     let shm = Shm::Builder::new(&shm_name).size(1024).open().unwrap();
+//!     let shm = Shm::Builder::new(&shm_name).size(1024)
+//!             .open(AccessMode::ReadWrite).unwrap();
 //!     let mut shm_pointer = shm.allocate(Layout::new::<u64>()).unwrap();
 //!     unsafe { shm_pointer.data_ptr.write(31) }
 //!

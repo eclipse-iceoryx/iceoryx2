@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let service = node
         .service_builder(&"Service With Dynamic Data".try_into()?)
-        .publish_subscribe::<[u8]>()
+        .publish_subscribe::<[u128]>()
         .open_or_create()?;
 
     let subscriber = service.subscriber_builder().create()?;
@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(sample) = subscriber.receive()? {
-            coutln!("received {} bytes", sample.payload().len());
+            coutln!("received {} elements", sample.payload().len());
         }
     }
 

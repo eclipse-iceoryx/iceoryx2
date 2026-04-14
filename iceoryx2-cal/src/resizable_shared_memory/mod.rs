@@ -29,6 +29,7 @@
 //!
 //! ```
 //! // owner of the ResizableSharedMemory
+//! use iceoryx2_bb_posix::access_mode::AccessMode;
 //! use iceoryx2_cal::resizable_shared_memory::*;
 //! use iceoryx2_bb_system_types::file_name::FileName;
 //! use iceoryx2_cal::shm_allocator::ShmAllocator;
@@ -72,7 +73,7 @@
 //!         // defines how long the builder shall wait to open the corresponding segments when
 //!         // the creator is concurrently creating them.
 //!         .timeout(Duration::from_secs(1))
-//!         .open().unwrap();
+//!         .open(AccessMode::ReadWrite).unwrap();
 //!
 //!     // before we can consume the received offset we need to translate it into our local
 //!     // process space
