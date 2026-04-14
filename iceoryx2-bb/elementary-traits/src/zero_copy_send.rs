@@ -46,10 +46,20 @@ pub unsafe trait ZeroCopySend {
     /// a struct implement ZeroCopySend
     fn __is_zero_copy_send(&self) {}
 
+    // TODO: CallbackProgression?
     // TODO: better name + documentation
     #[doc(hidden)]
-    fn __get_members(&self) -> alloc::vec::Vec<(usize, usize)> {
-        alloc::vec::Vec::new()
+    fn __get_members<F: FnMut(usize, usize)>(&self, callback: &mut F) {
+        self.__get_members_with_offset(0, callback);
+    }
+
+    #[doc(hidden)]
+    fn __get_members_with_offset<F: FnMut(usize, usize)>(
+        &self,
+        _base_offset: usize,
+        _callback: &mut F,
+    ) -> bool {
+        false
     }
 }
 

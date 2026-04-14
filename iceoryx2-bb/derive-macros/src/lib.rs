@@ -214,22 +214,18 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                     }
                 });
 
-                // use callable instead of returning vector
                 let mut member_offsets_and_sizes = Vec::new();
                 for field in fields_named.named.iter() {
                     let field_name = &field.ident;
                     let field_type = &field.ty;
 
                     let block = quote! {
-                        let offset = core::mem::offset_of!(#struct_name #ty_generics, #field_name);
+                        let rel_offset = core::mem::offset_of!(#struct_name #ty_generics, #field_name);
+                        let abs_offset = base_offset + rel_offset;
                         let size = core::mem::size_of::<#field_type>();
 
-                        let child_entries = <#field_type as ZeroCopySend>::__get_members(&self.#field_name);
-                        if child_entries.is_empty() {
-                            members.push((offset, size));
-                        }
-                        for (child_offset, child_size) in child_entries {
-                            members.push((child_offset + offset, child_size));
+                        if !<#field_type as ZeroCopySend>::__get_members_with_offset(&self.#field_name, abs_offset, callback) {
+                            callback(abs_offset, size);
                         }
                     };
                     member_offsets_and_sizes.push(block);
@@ -242,10 +238,9 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
 
                     #type_name_impl
 
-                    fn __get_members(&self) -> Vec<(usize, usize)> {
-                        let mut members: Vec<(usize, usize)> = Vec::new();
+                    fn __get_members_with_offset<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) -> bool {
                         #(#member_offsets_and_sizes)*
-                        members
+                        true
                     }
                 }
             }
@@ -264,15 +259,12 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                     let field_type = &field.ty;
 
                     let block = quote! {
-                        let offset = core::mem::offset_of!(#struct_name #ty_generics, #field_index);
+                        let rel_offset = core::mem::offset_of!(#struct_name #ty_generics, #field_index);
+                        let abs_offset = base_offset + rel_offset;
                         let size = core::mem::size_of::<#field_type>();
 
-                        let child_entries = <#field_type as ZeroCopySend>::__get_members(&self.#field_index);
-                        if child_entries.is_empty() {
-                            members.push((offset, size));
-                        }
-                        for (child_offset, child_size) in child_entries {
-                            members.push((child_offset + offset, child_size));
+                        if !<#field_type as ZeroCopySend>::__get_members_with_offset(&self.#field_index, abs_offset, callback) {
+                            callback(abs_offset, size);
                         }
                     };
                     member_offsets_and_sizes.push(block);
@@ -285,10 +277,9 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
 
                     #type_name_impl
 
-                    fn __get_members(&self) -> Vec<(usize, usize)> {
-                        let mut members: Vec<(usize, usize)> = Vec::new();
+                    fn __get_members_with_offset<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) -> bool {
                         #(#member_offsets_and_sizes)*
-                        members
+                        true
                     }
                 }
             }
@@ -372,7 +363,10 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
 
                 #type_name_impl
 
-                // TODO: implement __get_members() when offset_of! for enums is stable
+                // TODO: better error handling
+                fn __get_members<F: FnMut(usize, usize)>(&self, callback: &mut F) {
+                    panic!("Member offsets cannot be determined for enums, only for structs.");
+                }
             }
         }
         Data::Union(ref data_union) => {
@@ -384,15 +378,6 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                 }
             });
 
-            let mut member_offsets_and_sizes = Vec::new();
-
-            // the C representation (required by ZeroCopySend) guarantees that union fields have zero offset
-            // https://doc.rust-lang.org/reference/items/unions.html#r-items.union.fields.offset
-            let size = quote! { core::mem::size_of::<#struct_name #ty_generics>()};
-            member_offsets_and_sizes.push(quote! {
-                members.push((0, #size));
-            });
-
             quote! {
                 fn __is_zero_copy_send(&self) {
                     #(#field_inits)*
@@ -400,10 +385,9 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
 
                 #type_name_impl
 
-                fn __get_members(&self) -> Vec<(usize, usize)> {
-                     let mut members: Vec<(usize, usize)> = Vec::new();
-                     #(#member_offsets_and_sizes)*
-                     members
+                // TODO: better error handling
+                fn __get_members<F: FnMut(usize, usize)>(&self, callback: &mut F) {
+                    panic!("Member offsets cannot be determined for unions, only for structs.");
                 }
             }
         }
