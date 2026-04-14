@@ -151,6 +151,12 @@ pub unsafe extern "C" fn iox2_log(
 }
 
 /// Sets the log level from environment variable or defaults it if variable does not exist
+///
+/// # Important
+///
+/// When using external frameworks, the log level should be set explicitly, as
+/// only messages matching that level will be forwarded. You may also need to
+/// configure the framework’s own log level settings.
 #[cfg(feature = "std")]
 #[no_mangle]
 pub unsafe extern "C" fn iox2_set_log_level_from_env_or_default() {
@@ -160,6 +166,12 @@ pub unsafe extern "C" fn iox2_set_log_level_from_env_or_default() {
 }
 
 /// Sets the log level from environment variable or to a user given value if variable does not exist
+///
+/// # Important
+///
+/// When using external frameworks, the log level should be set explicitly, as
+/// only messages matching that level will be forwarded. You may also need to
+/// configure the framework’s own log level settings.
 #[cfg(feature = "std")]
 #[no_mangle]
 pub unsafe extern "C" fn iox2_set_log_level_from_env_or(v: iox2_log_level_e) {
@@ -169,6 +181,12 @@ pub unsafe extern "C" fn iox2_set_log_level_from_env_or(v: iox2_log_level_e) {
 }
 
 /// Sets the log level.
+///
+/// # Important
+///
+/// When using external frameworks, the log level should be set explicitly, as
+/// only messages matching that level will be forwarded. You may also need to
+/// configure the framework’s own log level settings.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_set_log_level(v: iox2_log_level_e) {
     set_log_level(v.into());
