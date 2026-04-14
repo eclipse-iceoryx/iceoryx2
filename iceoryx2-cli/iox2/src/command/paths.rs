@@ -10,34 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use anyhow::{Context, Result};
-use colored::*;
+use anyhow::Result;
 
-use crate::command::{CommandFinder, Environment, HostEnvironment, IceoryxCommandFinder};
+use iceoryx2_cli::command::HostEnvironment;
 
-fn paths_impl<E>() -> Result<()>
-where
-    E: Environment,
-{
-    let paths = IceoryxCommandFinder::<E>::paths().context("Failed to list search paths")?;
-
-    if !paths.build.is_empty() {
-        println!("{}", "Build Paths:".bright_green().bold());
-        for dir in &paths.build {
-            println!("  {}", dir.display().to_string().bold());
-        }
-        println!();
-    }
-    if !paths.install.is_empty() {
-        println!("{}", "Install Paths:".bright_green().bold());
-        for dir in &paths.install {
-            println!("  {}", dir.display().to_string().bold());
-        }
-    }
-
-    Ok(())
-}
+use super::COMMAND_PREFIX;
 
 pub(crate) fn paths() -> Result<()> {
-    paths_impl::<HostEnvironment>()
+    iceoryx2_cli::command::paths::<HostEnvironment>(COMMAND_PREFIX)
 }
