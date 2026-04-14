@@ -23,7 +23,7 @@ _verify-dispatch what *flags:
         "")
             echo "Usage: just verify <what> [flags]"
             echo ""
-            echo "  std-propagation workspace    verify std feature propagation for all crates"
+            echo "  std-propagation sdk          verify std feature propagation for all crates"
             echo "  std-propagation <crate>      verify std feature propagation for a specific crate"
             exit 1
             ;;
@@ -35,8 +35,8 @@ _verify-dispatch what *flags:
 _verify-std-propagation-dispatch target:
     #!/usr/bin/env bash
     case "{{target}}" in
-        workspace) just _verify-std-propagation-workspace ;;
-        *)         just _verify-std-propagation-package "{{target}}" ;;
+        sdk) just _verify-std-propagation-sdk ;;
+        *)   just _verify-std-propagation-package "{{target}}" ;;
     esac
 
 [private]
@@ -52,7 +52,7 @@ _verify-std-propagation-package target:
     fi
 
 [private]
-_verify-std-propagation-workspace:
+_verify-std-propagation-sdk:
     #!/usr/bin/env bash
     set -euo pipefail
 

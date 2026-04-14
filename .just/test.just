@@ -20,22 +20,22 @@ _parse-test-args *flags:
     set -euo pipefail
 
     TOOLCHAIN=""
-    HAS_NOSTD="false"
     TARGET_TRIPLET=""
+    HAS_NOSTD="false"
 
     set -- {{flags}}
     while [[ $# -gt 0 ]]; do
         case "$1" in
             +*)         TOOLCHAIN="$1";                    shift ;;
-            --no_std)   HAS_NOSTD="true";                  shift ;;
             --target=*) TARGET_TRIPLET="${1#--target=}";   shift ;;
+            --no_std)   HAS_NOSTD="true";                  shift ;;
             *)          shift ;;
         esac
     done
 
     echo "TOOLCHAIN='$TOOLCHAIN'"
-    echo "HAS_NOSTD='$HAS_NOSTD'"
     echo "TARGET_TRIPLET='$TARGET_TRIPLET'"
+    echo "HAS_NOSTD='$HAS_NOSTD'"
 
 [private]
 _test-dispatch what *flags:
@@ -48,25 +48,30 @@ _test-dispatch what *flags:
         "")
             echo "Usage: just test <what> [flags]"
             echo ""
-            echo "  workspace              run all tests"
+            echo "  sdk                    run all tests for the main workspace"
+            echo "  integrations           run all tests for the integrations workspace"
             echo "  <package>              run tests for a specific package"
             echo ""
             echo "Flags:"
-            echo "  --no_std               test without std"
             echo "  +<toolchain>           use a specific toolchain"
             echo "  --target=<triplet>     cross-compile for target"
+            echo "  --no_std               test without std"
             exit 1
             ;;
-        workspace)
-            just _test-workspace "$TOOLCHAIN" "$HAS_NOSTD" "$TARGET_TRIPLET"
+        sdk)
+            just _test-sdk "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD"
+            ;;
+        integrations)
+            echo "Testing 'integrations' is not yet implemented."
+            exit 0
             ;;
         *)
-            just _test-package "{{what}}" "$TOOLCHAIN" "$HAS_NOSTD" "$TARGET_TRIPLET"
+            just _test-package "{{what}}" "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD"
             ;;
     esac
 
 [private]
-_test-workspace toolchain has_nostd target_triplet:
+_test-sdk toolchain target_triplet has_nostd:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -91,7 +96,7 @@ _test-workspace toolchain has_nostd target_triplet:
             echo "[$((PASSED + FAILED + 1))/$CRATE_COUNT] Running tests for $BASE_CRATE..."
             echo "------------------------------------------"
 
-            if just _test-package "$BASE_CRATE" "{{toolchain}}" "true" "{{target_triplet}}"; then
+            if just _test-package "$BASE_CRATE" "{{toolchain}}" "{{target_triplet}}" "true"; then
                 echo "✓ $BASE_CRATE PASSED"
                 PASSED=$((PASSED + 1))
                 PASSED_CRATES+=("$BASE_CRATE")
@@ -132,7 +137,7 @@ _test-workspace toolchain has_nostd target_triplet:
     fi
 
 [private]
-_test-package package toolchain has_nostd target_triplet:
+_test-package package toolchain target_triplet has_nostd:
     #!/usr/bin/env bash
     set -euo pipefail
 
