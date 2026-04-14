@@ -14,12 +14,12 @@ use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
 use iceoryx2::service::ipc::Service as Ipc;
 use iceoryx2::service::local::Service as Local;
-use iceoryx2_services_tunnel_zenoh::ZenohBackend;
-use iceoryx2_services_tunnel_zenoh::testing;
+use iceoryx2_integrations_zenoh_tunnel_backend::ZenohBackend;
+use iceoryx2_integrations_zenoh_tunnel_backend::testing;
 
 instantiate_conformance_tests_with_module!(
     ipc,
-    iceoryx2_services_tunnel_conformance_tests::publish_subscribe_discovery,
+    iceoryx2_services_tunnel_conformance_tests::publish_subscribe_propagation,
     super::Ipc,
     super::ZenohBackend<super::Ipc>,
     super::testing::Testing
@@ -27,7 +27,7 @@ instantiate_conformance_tests_with_module!(
 
 instantiate_conformance_tests_with_module!(
     local,
-    iceoryx2_services_tunnel_conformance_tests::publish_subscribe_discovery,
+    iceoryx2_services_tunnel_conformance_tests::publish_subscribe_propagation,
     super::Local,
     super::ZenohBackend<super::Local>,
     super::testing::Testing

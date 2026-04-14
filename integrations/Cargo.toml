@@ -1,0 +1,66 @@
+[workspace]
+resolver = "2"
+members = [
+    "zenoh/tunnel-backend",
+]
+
+[workspace.package]
+categories = ["network-programming"]
+description = "iceoryx2 integrations with external middleware"
+edition = "2024"
+homepage = "https://iceoryx.io"
+keywords = [
+    "zero-copy",
+    "communication",
+    "ipc",
+    "publish-subscribe",
+    "request-response",
+]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/eclipse-iceoryx/iceoryx2"
+rust-version = "1.85"
+version = "0.8.999"
+
+[workspace.dependencies]
+iceoryx2-integrations-zenoh-tunnel-backend = { version = "0.8.999" }
+
+iceoryx2 = { version = "0.8.999" }
+iceoryx2-log = { version = "0.8.999" }
+iceoryx2-bb-concurrency = { version = "0.8.999" }
+iceoryx2-bb-posix = { version = "0.8.999" }
+iceoryx2-bb-testing = { version = "0.8.999" }
+iceoryx2-bb-testing-macros = { version = "0.8.999" }
+iceoryx2-services-tunnel-backend = { version = "0.8.999" }
+iceoryx2-services-tunnel-conformance-tests = { version = "0.8.999" }
+
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+zenoh = { version = "1.7.2", features = ["default", "unstable"] }
+
+[patch.crates-io]
+iceoryx2 = { path = "../iceoryx2/" }
+iceoryx2-log = { path = "../iceoryx2-log/log/" }
+iceoryx2-log-types = { path = "../iceoryx2-log/types/" }
+iceoryx2-bb-concurrency = { path = "../iceoryx2-bb/concurrency/" }
+iceoryx2-bb-container = { path = "../iceoryx2-bb/container/" }
+iceoryx2-bb-derive-macros = { path = "../iceoryx2-bb/derive-macros/" }
+iceoryx2-bb-elementary = { path = "../iceoryx2-bb/elementary/" }
+iceoryx2-bb-elementary-traits = { path = "../iceoryx2-bb/elementary-traits/" }
+iceoryx2-bb-linux = { path = "../iceoryx2-bb/linux/" }
+iceoryx2-bb-lock-free = { path = "../iceoryx2-bb/lock-free/" }
+iceoryx2-bb-memory = { path = "../iceoryx2-bb/memory/" }
+iceoryx2-bb-posix = { path = "../iceoryx2-bb/posix/" }
+iceoryx2-bb-print = { path = "../iceoryx2-bb/print/" }
+iceoryx2-bb-system-types = { path = "../iceoryx2-bb/system-types/" }
+iceoryx2-bb-testing = { path = "../iceoryx2-bb/testing/" }
+iceoryx2-bb-testing-macros = { path = "../iceoryx2-bb/testing-macros/" }
+iceoryx2-cal = { path = "../iceoryx2-cal" }
+iceoryx2-pal-concurrency-sync = { path = "../iceoryx2-pal/concurrency-sync/" }
+iceoryx2-pal-configuration = { path = "../iceoryx2-pal/configuration/" }
+iceoryx2-pal-os-api = { path = "../iceoryx2-pal/os-api/" }
+iceoryx2-pal-posix = { path = "../iceoryx2-pal/posix/" }
+iceoryx2-pal-print = { path = "../iceoryx2-pal/print/" }
+iceoryx2-pal-testing = { path = "../iceoryx2-pal/testing/" }
+iceoryx2-services-discovery = { path = "../iceoryx2-services/discovery" }
+iceoryx2-services-tunnel = { path = "../iceoryx2-services/tunnel" }
+iceoryx2-services-tunnel-backend = { path = "../iceoryx2-services/tunnel-backend" }
+iceoryx2-services-tunnel-conformance-tests = { path = "../iceoryx2-services/tunnel-conformance-tests" }
