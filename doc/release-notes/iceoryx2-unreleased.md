@@ -57,6 +57,8 @@
   these calls do not work on all supported platforms and were only used in
   the tests; the try send methods are used instead
   [#698](https://github.com/eclipse-iceoryx/iceoryx2/issues/698)
+* Map the sender datasegment always as read-only
+  [#906](https://github.com/eclipse-iceoryx/iceoryx2/issues/906)
 * Remove default implementation of `ZeroCopySend` from `Option` and `Duration`
   [#1312](https://github.com/eclipse-iceoryx/iceoryx2/issues/1312)
 * Bump wheel from 0.45.1 to 0.46.3 in /iceoryx2-ffi/python

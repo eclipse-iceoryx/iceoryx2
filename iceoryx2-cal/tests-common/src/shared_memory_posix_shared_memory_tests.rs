@@ -13,6 +13,7 @@
 use core::time::Duration;
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::creation_mode::CreationMode;
+use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_posix::permission::Permission;
 use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_testing::assert_that;
@@ -42,7 +43,7 @@ fn waiting_for_initialization_works() {
     let start = Time::now().expect("failed to get current time");
     let sut = <Sut as SharedMemory<PoolAllocator>>::Builder::new(&storage_name)
         .timeout(TIMEOUT)
-        .open();
+        .open(AccessMode::ReadWrite);
 
     assert_that!(sut, is_err);
     assert_that!(sut.err().unwrap(), eq SharedMemoryOpenError::InitializationNotYetFinalized);

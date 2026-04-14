@@ -67,6 +67,8 @@ unsafe impl Sync for TestData {}
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod dynamic_storage_trait {
+    use iceoryx2_bb_posix::file::AccessMode;
+
     use super::*;
 
     #[conformance_test]
@@ -86,7 +88,7 @@ pub mod dynamic_storage_trait {
 
         let sut2 = Sut::Builder::new(&storage_name)
             .config(&config)
-            .open()
+            .open(AccessMode::ReadWrite)
             .unwrap();
 
         assert_that!(*sut2.name(), eq storage_name);
@@ -108,7 +110,9 @@ pub mod dynamic_storage_trait {
         let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
-        let sut = Sut::Builder::new(&storage_name).config(&config).open();
+        let sut = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open(AccessMode::ReadWrite);
 
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq DynamicStorageOpenError::DoesNotExist);
@@ -127,7 +131,9 @@ pub mod dynamic_storage_trait {
             .create(TestData::new(123));
         drop(sut);
 
-        let sut = Sut::Builder::new(&storage_name).config(&config).open();
+        let sut = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open(AccessMode::ReadWrite);
 
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq DynamicStorageOpenError::DoesNotExist);
@@ -172,7 +178,7 @@ pub mod dynamic_storage_trait {
 
         let sut2 = Sut::Builder::new(&storage_name)
             .config(&config)
-            .open()
+            .open(AccessMode::ReadWrite)
             .unwrap();
 
         drop(sut);
@@ -183,7 +189,7 @@ pub mod dynamic_storage_trait {
 
         assert_that!(sut2.get().value.load(Ordering::Relaxed), eq 456);
 
-        let sut3 = Sut::Builder::new(&storage_name).open();
+        let sut3 = Sut::Builder::new(&storage_name).open(AccessMode::ReadWrite);
 
         assert_that!(sut3, is_err);
         assert_that!(sut3.err().unwrap(), eq DynamicStorageOpenError::DoesNotExist);
@@ -212,7 +218,7 @@ pub mod dynamic_storage_trait {
             sut_vec.push(
                 Sut::Builder::new(&storage_name)
                     .config(&config)
-                    .open()
+                    .open(AccessMode::ReadWrite)
                     .unwrap(),
             );
         }
@@ -253,14 +259,14 @@ pub mod dynamic_storage_trait {
 
         let sut2 = Sut::Builder::new(&storage_name)
             .config(&config)
-            .open()
+            .open(AccessMode::ReadWrite)
             .unwrap();
         assert_that!(sut2.get().value.load(Ordering::Relaxed), eq 9887);
 
         assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
         drop(sut2);
 
-        let sut2 = Sut::Builder::new(&storage_name).open();
+        let sut2 = Sut::Builder::new(&storage_name).open(AccessMode::ReadWrite);
         assert_that!(sut2, is_err);
         assert_that!(sut2.err().unwrap(), eq DynamicStorageOpenError::DoesNotExist);
     }
@@ -286,14 +292,16 @@ pub mod dynamic_storage_trait {
 
         let sut2 = Sut::Builder::new(&storage_name)
             .config(&config)
-            .open()
+            .open(AccessMode::ReadWrite)
             .unwrap();
         assert_that!(sut2.get().value.load(Ordering::Relaxed), eq 9887);
 
         assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
         drop(sut2);
 
-        let sut2 = Sut::Builder::new(&storage_name).config(&config).open();
+        let sut2 = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open(AccessMode::ReadWrite);
         assert_that!(sut2, is_err);
         assert_that!(sut2.err().unwrap(), eq DynamicStorageOpenError::DoesNotExist);
     }
@@ -336,7 +344,7 @@ pub mod dynamic_storage_trait {
         let _sut2 = Sut::Builder::new(&storage_name)
             .supplementary_size(additional_size)
             .config(&config)
-            .open()
+            .open(AccessMode::ReadWrite)
             .unwrap();
 
         assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
@@ -358,7 +366,7 @@ pub mod dynamic_storage_trait {
 
         let sut2 = Sut::Builder::new(&storage_name)
             .config(&config)
-            .open()
+            .open(AccessMode::ReadWrite)
             .unwrap();
 
         assert_that!(sut.has_ownership(), eq true);
@@ -414,7 +422,7 @@ pub mod dynamic_storage_trait {
 
         let sut2 = Sut::Builder::new(&storage_name)
             .config(&config)
-            .open()
+            .open(AccessMode::ReadWrite)
             .unwrap();
         assert_that!(sut2.get().value.load(Ordering::Relaxed), eq 8912);
         assert_that!(sut2.get().supplementary_len, eq 134);
@@ -462,7 +470,7 @@ pub mod dynamic_storage_trait {
             s.thread_builder().spawn(move || {
                 barrier_2.wait();
                 loop {
-                let sut2 = Sut::Builder::new(&storage_name).config(&config_2).open();
+                let sut2 = Sut::Builder::new(&storage_name).config(&config_2).open(AccessMode::ReadWrite);
                 if let Ok(res) = sut2 {
                     assert_that!(res.get().value.load(Ordering::Relaxed), eq 789);
                     break;
@@ -519,7 +527,7 @@ pub mod dynamic_storage_trait {
                 let _sut = Sut::Builder::new(&storage_name)
                     .config(&config_2)
                     .timeout(TIMEOUT)
-                    .open();
+                    .open(AccessMode::ReadWrite);
 
                 assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
             })?;
@@ -907,7 +915,7 @@ pub mod dynamic_storage_trait {
             .unwrap();
         let sut = WrongTypeSut::Builder::new(&storage_name)
             .config(&wrong_type_config)
-            .open();
+            .open(AccessMode::ReadWrite);
         assert_that!(sut.err().unwrap(), eq DynamicStorageOpenError::DoesNotExist);
     }
 

@@ -178,7 +178,7 @@ impl<T: Send + Sync + Debug> NamedConceptBuilder<Storage<T>> for Builder<'_, T> 
 }
 
 impl<T: Send + Sync + Debug> Builder<'_, T> {
-    fn open_impl(&self) -> Result<Storage<T>, DynamicStorageOpenError> {
+    fn open_impl(&self, access_mode: AccessMode) -> Result<Storage<T>, DynamicStorageOpenError> {
         let msg = "Failed to open file::DynamicStorage";
 
         let full_path = self.config.path_for(&self.storage_name);
@@ -188,7 +188,7 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
 
         let mut elapsed_time = Duration::ZERO;
         let file = loop {
-            match FileBuilder::new(&full_path).open_existing(AccessMode::ReadWrite) {
+            match FileBuilder::new(&full_path).open_existing(access_mode) {
                 Ok(v) => break v,
                 Err(FileOpenError::FileDoesNotExist) => {
                     fail!(from self, with DynamicStorageOpenError::DoesNotExist,
@@ -224,7 +224,7 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
 
         let memory_mapping = match MemoryMappingBuilder::from_file_descriptor(fd)
             .mapping_behavior(MappingBehavior::Shared)
-            .initial_mapping_permission(MappingPermission::ReadWrite)
+            .initial_mapping_permission(access_mode.into())
             .size(file_size as usize)
             .create()
         {
@@ -424,8 +424,8 @@ impl<'builder, T: Send + Sync + Debug> DynamicStorageBuilder<'builder, T, Storag
         self.init_impl(shm, initial_value)
     }
 
-    fn open(self) -> Result<Storage<T>, DynamicStorageOpenError> {
-        self.open_impl()
+    fn open(self, access_mode: AccessMode) -> Result<Storage<T>, DynamicStorageOpenError> {
+        self.open_impl(access_mode)
     }
 
     fn open_or_create(
@@ -433,7 +433,7 @@ impl<'builder, T: Send + Sync + Debug> DynamicStorageBuilder<'builder, T, Storag
         initial_value: T,
     ) -> Result<Storage<T>, DynamicStorageOpenOrCreateError> {
         loop {
-            match self.open_impl() {
+            match self.open_impl(AccessMode::ReadWrite) {
                 Ok(storage) => return Ok(storage),
                 Err(DynamicStorageOpenError::DoesNotExist) => match self.create_impl() {
                     Ok(shm) => {
@@ -547,7 +547,7 @@ impl<T: Send + Sync + Debug> NamedConceptMgmt for Storage<T> {
         let msg = "Unable to remove dynamic_storage::file::Storage";
         let origin = "dynamic_storage::file::Storage::remove_cfg()";
 
-        match Builder::<T>::new(name).config(cfg).open() {
+        match Builder::<T>::new(name).config(cfg).open(AccessMode::Read) {
             Ok(s) => {
                 s.acquire_ownership();
                 Ok(true)

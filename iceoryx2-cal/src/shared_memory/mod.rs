@@ -19,6 +19,7 @@
 //! # Example
 //!
 //! ```
+//! use iceoryx2_bb_posix::access_mode::AccessMode;
 //! use iceoryx2_cal::shared_memory::*;
 //! use iceoryx2_cal::named_concept::*;
 //! use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
@@ -46,7 +47,8 @@
 //!         // we want to allocate [`u64`]
 //!         bucket_layout: Layout::new::<u64>()
 //!     };
-//!     let shm = Shm::Builder::new(&shm_name).size(1024).open().unwrap();
+//!     let shm = Shm::Builder::new(&shm_name).size(1024)
+//!             .open(AccessMode::ReadWrite).unwrap();
 //!     let mut shm_pointer = shm.allocate(Layout::new::<u64>()).unwrap();
 //!     unsafe { shm_pointer.data_ptr.write(31) }
 //!
@@ -64,6 +66,7 @@ use core::{fmt::Debug, time::Duration};
 
 pub use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
+use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::*;
 use pool_allocator::PoolAllocator;
 
@@ -150,7 +153,7 @@ pub trait SharedMemoryBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocat
 
     /// Opens already existing [`SharedMemory`]. If it does not exist or the initialization is not
     /// yet finished the method will fail.
-    fn open(self) -> Result<Shm, SharedMemoryOpenError>;
+    fn open(self, access_mode: AccessMode) -> Result<Shm, SharedMemoryOpenError>;
 }
 
 /// Abstract concept of a memory shared between multiple processes. Can be created with the

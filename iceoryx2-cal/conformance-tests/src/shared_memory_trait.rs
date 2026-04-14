@@ -20,6 +20,7 @@ pub type DefaultAllocator = PoolAllocator;
 pub mod shared_memory_trait {
     use alloc::vec;
     use core::alloc::Layout;
+    use iceoryx2_bb_posix::file::AccessMode;
 
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::testing::generate_file_path;
@@ -52,7 +53,9 @@ pub mod shared_memory_trait {
             .size(0)
             .config(&config)
             .create(&SHM_CONFIG);
-        let sut_open = Sut::Builder::new(&name).config(&config).open();
+        let sut_open = Sut::Builder::new(&name)
+            .config(&config)
+            .open(AccessMode::ReadWrite);
 
         assert_that!(sut_create, is_err);
         assert_that!(sut_open, is_err);
@@ -74,7 +77,10 @@ pub mod shared_memory_trait {
             .config(&config)
             .create(&SHM_CONFIG)
             .unwrap();
-        let sut_open = Sut::Builder::new(&name).config(&config).open().unwrap();
+        let sut_open = Sut::Builder::new(&name)
+            .config(&config)
+            .open(AccessMode::ReadWrite)
+            .unwrap();
 
         assert_that!(sut_create.size(), ge DEFAULT_SIZE);
         assert_that!(sut_open.size(), ge DEFAULT_SIZE);
@@ -129,7 +135,9 @@ pub mod shared_memory_trait {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
-        let sut_open = Sut::Builder::new(&name).config(&config).open();
+        let sut_open = Sut::Builder::new(&name)
+            .config(&config)
+            .open(AccessMode::ReadWrite);
 
         assert_that!(sut_open, is_err);
 
@@ -187,7 +195,10 @@ pub mod shared_memory_trait {
             chunks.push(chunk.unwrap());
         }
 
-        let sut_open = Sut::Builder::new(&name).config(&config).open().unwrap();
+        let sut_open = Sut::Builder::new(&name)
+            .config(&config)
+            .open(AccessMode::ReadWrite)
+            .unwrap();
         for _ in 0..NUMBER_OF_CHUNKS / 2 {
             let chunk = sut_open.allocate(DEFAULT_LAYOUT);
             assert_that!(chunk, is_ok);

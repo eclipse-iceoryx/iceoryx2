@@ -29,6 +29,7 @@
 //!
 //! ```
 //! // owner of the ResizableSharedMemory
+//! use iceoryx2_bb_posix::access_mode::AccessMode;
 //! use iceoryx2_cal::resizable_shared_memory::*;
 //! use iceoryx2_bb_system_types::file_name::FileName;
 //! use iceoryx2_cal::shm_allocator::ShmAllocator;
@@ -72,7 +73,7 @@
 //!         // defines how long the builder shall wait to open the corresponding segments when
 //!         // the creator is concurrently creating them.
 //!         .timeout(Duration::from_secs(1))
-//!         .open().unwrap();
+//!         .open(AccessMode::ReadWrite).unwrap();
 //!
 //!     // before we can consume the received offset we need to translate it into our local
 //!     // process space
@@ -96,6 +97,7 @@ use core::fmt::Debug;
 use core::time::Duration;
 
 use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_posix::file::AccessMode;
 
 use crate::named_concept::*;
 use crate::shared_memory::{
@@ -137,7 +139,7 @@ pub trait ResizableSharedMemoryViewBuilder<
 
     /// Opens already existing [`SharedMemory`]. If it does not exist or the initialization is not
     /// yet finished the method will fail.
-    fn open(self) -> Result<ResizableShmView, SharedMemoryOpenError>;
+    fn open(self, access_mode: AccessMode) -> Result<ResizableShmView, SharedMemoryOpenError>;
 }
 
 /// Creates a new [`ResizableSharedMemory`] which the process will own. As soon as the

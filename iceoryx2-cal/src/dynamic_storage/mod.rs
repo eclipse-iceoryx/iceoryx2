@@ -28,6 +28,7 @@
 //! # Example
 //!
 //! ```
+//! use iceoryx2_bb_posix::access_mode::AccessMode;
 //! use iceoryx2_bb_system_types::file_name::FileName;
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
 //! use iceoryx2_cal::dynamic_storage::*;
@@ -47,7 +48,7 @@
 //! fn process_two<Storage: DynamicStorage<AtomicU64>>() {
 //!     let storage_name = FileName::new(b"myStorageName").unwrap();
 //!     let mut storage = Storage::Builder::new(&storage_name)
-//!                         .open().unwrap();
+//!                         .open(AccessMode::ReadWrite).unwrap();
 //!
 //!     println!("Opened storage {}", storage.name());
 //!     println!("Current value {}", storage.get().swap(1001, Ordering::Relaxed));
@@ -58,6 +59,7 @@ use core::{fmt::Debug, time::Duration};
 
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::*;
 use tiny_fn::tiny_fn;
 
@@ -160,7 +162,7 @@ pub trait DynamicStorageBuilder<'builder, T: Send + Sync, D: DynamicStorage<T>>:
     /// Opens a [`DynamicStorage`]. The implementation must ensure that a [`DynamicStorage`]
     /// which is in the midst of creation cannot be opened. If the [`DynamicStorage`] does not
     /// exist or is not initialized it fails.
-    fn open(self) -> Result<D, DynamicStorageOpenError>;
+    fn open(self, access_mode: AccessMode) -> Result<D, DynamicStorageOpenError>;
 
     /// Opens the [`DynamicStorage`] if it exists, otherwise it creates it.
     fn open_or_create(self, initial_value: T) -> Result<D, DynamicStorageOpenOrCreateError>;

@@ -30,6 +30,7 @@ pub mod details {
     };
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
+    use iceoryx2_bb_posix::file::AccessMode;
     use iceoryx2_log::{fail, fatal_panic};
 
     pub use crate::zero_copy_connection::*;
@@ -1023,7 +1024,7 @@ pub mod details {
             let origin = "Connection::open_storage()";
             match <<Storage as DynamicStorage<SharedManagementData>>::Builder<'_> as NamedConceptBuilder<
                     Storage>>::new(name)
-                       .config(&config.dynamic_storage_config).open() {
+                       .config(&config.dynamic_storage_config).open(AccessMode::ReadWrite) {
                            Ok(storage) => Ok(storage),
                            Err(DynamicStorageOpenError::VersionMismatch) => {
                                fail!(from origin, with ZeroCopyPortRemoveError::VersionMismatch,
