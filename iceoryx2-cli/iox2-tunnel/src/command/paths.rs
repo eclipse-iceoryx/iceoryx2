@@ -10,12 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod execute;
-mod list;
-mod paths;
+use anyhow::Result;
 
-pub(crate) use execute::*;
-pub(crate) use list::*;
-pub(crate) use paths::*;
+use iceoryx2_cli::command::HostEnvironment;
 
-const COMMAND_PREFIX: &str = "iox2-tunnel-";
+use super::COMMAND_PREFIX;
+
+pub(crate) fn paths() -> Result<()> {
+    iceoryx2_cli::command::paths::<HostEnvironment>(COMMAND_PREFIX)
+}

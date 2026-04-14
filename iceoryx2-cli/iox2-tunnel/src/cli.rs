@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use clap::Parser;
-use clap::Subcommand;
 
 use iceoryx2_cli::HelpOptions;
 use iceoryx2_cli::help_template;
@@ -25,57 +24,15 @@ use iceoryx2_cli::help_template;
     version = env!("CARGO_PKG_VERSION"),
     disable_help_subcommand = true,
     arg_required_else_help = false,
-    help_template = help_template(HelpOptions::PrintCommandSection),
+    help_template = help_template(HelpOptions::PrintCommandSectionWithExternalCommandHint),
 )]
 pub struct Cli {
-    #[clap(subcommand)]
-    pub transport: Option<Transport>,
-}
+    #[arg(short, long, help = "List all installed tunnel backends")]
+    pub list: bool,
 
-#[derive(Parser)]
-pub struct CommonOptions {
-    #[clap(
-        long,
-        short = 'd',
-        help = "Optionally provide the name of a service providing discovery updates to connect to"
-    )]
-    pub discovery_service: Option<String>,
+    #[arg(short, long, help = "Display paths that will be checked for tunnel backends")]
+    pub paths: bool,
 
-    #[clap(
-        long,
-        value_name = "RATE",
-        conflicts_with = "reactive",
-        help = "Periodically poll for discovery updates and samples at the provided rate (in milliseconds) [default]"
-    )]
-    pub poll: Option<u64>,
-
-    #[clap(
-        long,
-        conflicts_with = "poll",
-        help = "Reactively process discovery updates and samples"
-    )]
-    pub reactive: bool,
-}
-
-#[derive(Parser)]
-pub struct ZenohOptions {
-    #[clap(
-        short,
-        long,
-        value_name = "PATH",
-        help = "Path to a zenoh configuration file to use to configure the zenoh session used by the tunnel"
-    )]
-    pub zenoh_config: Option<String>,
-
-    #[clap(flatten)]
-    pub common: CommonOptions,
-}
-
-#[derive(Subcommand)]
-pub enum Transport {
-    #[clap(
-        about = "Use Zenoh as the transport",
-        help_template = help_template(HelpOptions::DontPrintCommandSection),
-    )]
-    Zenoh(ZenohOptions),
+    #[arg(hide = true, required = false, trailing_var_arg = true, allow_hyphen_values = true)]
+    pub external_command: Vec<String>,
 }
