@@ -107,6 +107,10 @@
 * Make `UniqueSystemId` unique accross docker containers and pid namespaces
   by introducing `gethostpid()` in the platform.  
   [#1518](https://github.com/eclipse-iceoryx/iceoryx2/issues/1518)
+* Bump cryptography from 46.0.6 to 46.0.7 in /iceoryx2-ffi/python
+  [#1515](https://github.com/eclipse-iceoryx/iceoryx2/issues/1515)
+* Bump pytest from 8.4.1 to 9.0.3 in /iceoryx2-ffi/python
+  [#1515](https://github.com/eclipse-iceoryx/iceoryx2/issues/1515)
 
 ### Refactoring
 
