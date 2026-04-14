@@ -14,7 +14,7 @@
 mod service_builder {
 
     use crate::api::*;
-    use crate::tests::{create_event_service, create_node, ServiceTypeMapping};
+    use crate::tests::{ServiceTypeMapping, create_event_service, create_node};
     use iceoryx2::prelude::*;
     use iceoryx2_bb_testing::assert_that;
 

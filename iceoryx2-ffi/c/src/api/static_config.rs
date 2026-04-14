@@ -14,14 +14,14 @@
 
 use core::ffi::c_char;
 
-use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::static_config::StaticConfig;
+use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2_log::fatal_panic;
 
 use crate::{
-    iox2_messaging_pattern_e, iox2_static_config_blackboard_t, iox2_static_config_event_t,
+    IOX2_SERVICE_HASH_LENGTH, IOX2_SERVICE_NAME_LENGTH, iox2_messaging_pattern_e,
+    iox2_static_config_blackboard_t, iox2_static_config_event_t,
     iox2_static_config_publish_subscribe_t, iox2_static_config_request_response_t,
-    IOX2_SERVICE_HASH_LENGTH, IOX2_SERVICE_NAME_LENGTH,
 };
 
 use super::{iox2_attribute_set_h, iox2_attribute_set_new_clone};

@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    c_size_t, iox2_semantic_string_error_e, AssertNonNullHandle, HandleToType, IntoCInt, IOX2_OK,
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, c_size_t, iox2_semantic_string_error_e,
 };
 
 use iceoryx2::prelude::*;
@@ -101,7 +101,7 @@ impl HandleToType for iox2_node_name_h_ref {
 ///
 /// * Terminates if `node_name_str` or `node_name_handle_ptr` is a NULL pointer!
 /// * It is undefined behavior to pass a `node_name_len` which is larger than the actual length of `node_name_str`!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_node_name_new(
     node_name_struct_ptr: *mut iox2_node_name_t,
     node_name_str: *const c_char,
@@ -110,8 +110,6 @@ pub unsafe extern "C" fn iox2_node_name_new(
 ) -> c_int {
     debug_assert!(!node_name_str.is_null());
     debug_assert!(!node_name_handle_ptr.is_null());
-
-    *node_name_handle_ptr = core::ptr::null_mut();
 
     let mut node_name_struct_ptr = node_name_struct_ptr;
     fn no_op(_: *mut iox2_node_name_t) {}
@@ -125,30 +123,29 @@ pub unsafe extern "C" fn iox2_node_name_new(
     unsafe {
         (*node_name_struct_ptr).deleter = deleter;
     }
-
-    let node_name = slice::from_raw_parts(node_name_str as _, node_name_len as _);
-
-    let node_name = if let Ok(node_name) = str::from_utf8(node_name) {
-        node_name
-    } else {
-        deleter(node_name_struct_ptr);
-        return iox2_semantic_string_error_e::INVALID_CONTENT as c_int;
-    };
-
-    let node_name = match NodeName::new(node_name) {
-        Ok(node_name) => node_name,
-        Err(e) => {
-            deleter(node_name_struct_ptr);
-            return e.into_c_int();
-        }
-    };
-
     unsafe {
+        *node_name_handle_ptr = core::ptr::null_mut();
+        let node_name = slice::from_raw_parts(node_name_str as _, node_name_len as _);
+
+        let node_name = if let Ok(node_name) = str::from_utf8(node_name) {
+            node_name
+        } else {
+            deleter(node_name_struct_ptr);
+            return iox2_semantic_string_error_e::INVALID_CONTENT as c_int;
+        };
+
+        let node_name = match NodeName::new(node_name) {
+            Ok(node_name) => node_name,
+            Err(e) => {
+                deleter(node_name_struct_ptr);
+                return e.into_c_int();
+            }
+        };
+
         (*node_name_struct_ptr).value.init(node_name);
+
+        *node_name_handle_ptr = (*node_name_struct_ptr).as_handle();
     }
-
-    *node_name_handle_ptr = (*node_name_struct_ptr).as_handle();
-
     IOX2_OK
 }
 
@@ -164,13 +161,12 @@ pub unsafe extern "C" fn iox2_node_name_new(
 ///
 /// * The `node_name_handle` must be a valid handle.
 /// * The `node_name_handle` is still valid after the call to this function.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_cast_node_name_ptr(
     node_name_handle: iox2_node_name_h,
 ) -> iox2_node_name_ptr {
     debug_assert!(!node_name_handle.is_null());
-
-    (*node_name_handle.as_type()).value.as_ref()
+    unsafe { (*node_name_handle.as_type()).value.as_ref() }
 }
 
 /// This function gives access to the node name as a non-zero-terminated char array
@@ -186,23 +182,22 @@ pub unsafe extern "C" fn iox2_cast_node_name_ptr(
 ///
 /// * The `node_name_ptr` must be a valid pointer to a node name.
 /// * The `node_name_len` must be a valid pointer to a size_t.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_node_name_as_chars(
     node_name_ptr: iox2_node_name_ptr,
     node_name_len: *mut c_size_t,
 ) -> *const c_char {
     debug_assert!(!node_name_ptr.is_null());
     debug_assert!(!node_name_len.is_null());
+    unsafe {
+        let node_name = &*node_name_ptr;
 
-    let node_name = &*node_name_ptr;
-
-    if !node_name_len.is_null() {
-        unsafe {
+        if !node_name_len.is_null() {
             *node_name_len = node_name.len() as _;
         }
-    }
 
-    node_name.as_str().as_ptr() as _
+        node_name.as_str().as_ptr() as _
+    }
 }
 
 /// This function needs to be called to destroy the node name!
@@ -217,14 +212,15 @@ pub unsafe extern "C" fn iox2_node_name_as_chars(
 ///
 /// * The `node_name_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_node_name_t`] can be re-used with a call to [`iox2_node_name_new`]!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_node_name_drop(node_name_handle: iox2_node_name_h) {
     debug_assert!(!node_name_handle.is_null());
+    unsafe {
+        let node_name = &mut *node_name_handle.as_type();
 
-    let node_name = &mut *node_name_handle.as_type();
-
-    core::ptr::drop_in_place(node_name.value.as_option_mut());
-    (node_name.deleter)(node_name);
+        core::ptr::drop_in_place(node_name.value.as_option_mut());
+        (node_name.deleter)(node_name);
+    }
 }
 
 // END C API

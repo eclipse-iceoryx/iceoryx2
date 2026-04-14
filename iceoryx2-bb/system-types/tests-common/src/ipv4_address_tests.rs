@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_system_types::ipv4_address::{
-    Ipv4Address, Ipv4AddressParseError, BROADCAST, LOCALHOST, UNSPECIFIED,
+    BROADCAST, Ipv4Address, Ipv4AddressParseError, LOCALHOST, UNSPECIFIED,
 };
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;

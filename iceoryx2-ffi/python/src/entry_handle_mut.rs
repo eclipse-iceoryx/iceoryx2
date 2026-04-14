@@ -78,7 +78,7 @@ impl EntryHandleMut {
     /// update without copy.
     pub fn loan_uninit(&mut self) -> EntryValueUninit {
         match &mut *self.value.lock() {
-            EntryHandleMutType::Ipc(ref mut v) => {
+            EntryHandleMutType::Ipc(v) => {
                 let entry_handle_mut = v.take().unwrap();
                 let entry_value_uninit = entry_handle_mut.loan_uninit(
                     self.value_type_details.0.size(),
@@ -90,7 +90,7 @@ impl EntryHandleMut {
                     value_type_storage: self.value_type_storage.clone(),
                 }
             }
-            EntryHandleMutType::Local(ref mut v) => {
+            EntryHandleMutType::Local(v) => {
                 let entry_handle_mut = v.take().unwrap();
                 let entry_value_uninit = entry_handle_mut.loan_uninit(
                     self.value_type_details.0.size(),

@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    iox2_semantic_string_error_e, AssertNonNullHandle, HandleToType, IntoCInt, IOX2_OK,
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, iox2_semantic_string_error_e,
 };
 use crate::c_size_t;
 
@@ -21,7 +21,7 @@ use iceoryx2::prelude::*;
 use iceoryx2::service::service_name::ServiceNameError;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_ffi_macros::{iceoryx2_ffi, CStrRepr};
+use iceoryx2_ffi_macros::{CStrRepr, iceoryx2_ffi};
 
 use core::ffi::{c_char, c_int};
 use core::{slice, str};
@@ -122,7 +122,7 @@ impl HandleToType for iox2_service_name_h_ref {
 ///
 /// * Terminates if `service_name_str` or `service_name_handle_ptr` is a NULL pointer!
 /// * It is undefined behavior to pass a `service_name_len` which is larger than the actual length of `service_name_str`!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_name_new(
     service_name_struct_ptr: *mut iox2_service_name_t,
     service_name_str: *const c_char,
@@ -131,8 +131,6 @@ pub unsafe extern "C" fn iox2_service_name_new(
 ) -> c_int {
     debug_assert!(!service_name_str.is_null());
     debug_assert!(!service_name_handle_ptr.is_null());
-
-    *service_name_handle_ptr = core::ptr::null_mut();
 
     let mut service_name_struct_ptr = service_name_struct_ptr;
     fn no_op(_: *mut iox2_service_name_t) {}
@@ -144,10 +142,11 @@ pub unsafe extern "C" fn iox2_service_name_new(
     debug_assert!(!service_name_struct_ptr.is_null());
 
     unsafe {
+        *service_name_handle_ptr = core::ptr::null_mut();
         (*service_name_struct_ptr).deleter = deleter;
     }
-
-    let service_name = slice::from_raw_parts(service_name_str as _, service_name_len as _);
+    let service_name =
+        unsafe { slice::from_raw_parts(service_name_str as _, service_name_len as _) };
 
     let service_name = if let Ok(service_name) = str::from_utf8(service_name) {
         service_name
@@ -166,10 +165,8 @@ pub unsafe extern "C" fn iox2_service_name_new(
 
     unsafe {
         (*service_name_struct_ptr).value.init(service_name);
+        *service_name_handle_ptr = (*service_name_struct_ptr).as_handle();
     }
-
-    *service_name_handle_ptr = (*service_name_struct_ptr).as_handle();
-
     IOX2_OK
 }
 
@@ -185,13 +182,12 @@ pub unsafe extern "C" fn iox2_service_name_new(
 ///
 /// * The `service_name_handle` must be a valid handle.
 /// * The `service_name_handle` is still valid after the call to this function.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_cast_service_name_ptr(
     service_name_handle: iox2_service_name_h,
 ) -> iox2_service_name_ptr {
     debug_assert!(!service_name_handle.is_null());
-
-    (*service_name_handle.as_type()).value.as_ref()
+    unsafe { (*service_name_handle.as_type()).value.as_ref() }
 }
 
 /// This function gives access to the node name as a non-zero-terminated char array
@@ -207,7 +203,7 @@ pub unsafe extern "C" fn iox2_cast_service_name_ptr(
 ///
 /// * The `service_name_ptr` must be a valid pointer to a node name.
 /// * The `service_name_len` must be a valid pointer to a size_t.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_name_as_chars(
     service_name_ptr: iox2_service_name_ptr,
     service_name_len: *mut c_size_t,
@@ -215,7 +211,7 @@ pub unsafe extern "C" fn iox2_service_name_as_chars(
     debug_assert!(!service_name_ptr.is_null());
     debug_assert!(!service_name_len.is_null());
 
-    let service_name = &*service_name_ptr;
+    let service_name = unsafe { &*service_name_ptr };
 
     if !service_name_len.is_null() {
         unsafe {
@@ -238,14 +234,15 @@ pub unsafe extern "C" fn iox2_service_name_as_chars(
 ///
 /// * The `service_name_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_service_name_t`] can be re-used with a call to [`iox2_service_name_new`]!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_name_drop(service_name_handle: iox2_service_name_h) {
     debug_assert!(!service_name_handle.is_null());
+    unsafe {
+        let service_name = &mut *service_name_handle.as_type();
 
-    let service_name = &mut *service_name_handle.as_type();
-
-    core::ptr::drop_in_place(service_name.value.as_option_mut());
-    (service_name.deleter)(service_name);
+        core::ptr::drop_in_place(service_name.value.as_option_mut());
+        (service_name.deleter)(service_name);
+    }
 }
 
 // END C API

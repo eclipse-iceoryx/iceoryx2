@@ -39,10 +39,10 @@ use iceoryx2_bb_elementary_traits::{
     placement_default::PlacementDefault, zero_copy_send::ZeroCopySend,
 };
 use iceoryx2_log::fail;
-use serde::{de::Visitor, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::Visitor};
 
 pub use crate::vector::Vector;
-use crate::vector::{internal, VectorModificationError};
+use crate::vector::{VectorModificationError, internal};
 
 /// Relocatable shared-memory compatible vector with compile time fixed size
 /// capacity. It is memory-layout compatible to the C++ container in the
@@ -146,10 +146,12 @@ impl<'de, T: Deserialize<'de>, const CAPACITY: usize> Deserialize<'de> for Stati
 
 impl<T, const CAPACITY: usize> PlacementDefault for StaticVec<T, CAPACITY> {
     unsafe fn placement_default(ptr: *mut Self) {
-        core::ptr::addr_of_mut!((*ptr).len).write(0);
-        // We do not have to initialize the `MaybeUninit` array at all, see:
-        // https://google.github.io/learn_unsafe_rust/advanced_unsafety/uninitialized.html
-        // core::ptr::addr_of_mut!((*ptr).data).write([const { MaybeUninit::uninit() }; CAPACITY]);
+        unsafe {
+            core::ptr::addr_of_mut!((*ptr).len).write(0);
+            // We do not have to initialize the `MaybeUninit` array at all, see:
+            // https://google.github.io/learn_unsafe_rust/advanced_unsafety/uninitialized.html
+            // core::ptr::addr_of_mut!((*ptr).data).write([const { MaybeUninit::uninit() }; CAPACITY]);
+        }
     }
 }
 

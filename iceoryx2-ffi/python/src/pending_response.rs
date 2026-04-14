@@ -158,10 +158,10 @@ impl PendingResponse {
     /// After this call the `PendingResponse` is no longer usable!
     pub fn delete(&mut self) {
         match &mut *self.value.lock() {
-            PendingResponseType::Ipc(ref mut v) => {
+            PendingResponseType::Ipc(v) => {
                 v.take();
             }
-            PendingResponseType::Local(ref mut v) => {
+            PendingResponseType::Local(v) => {
                 v.take();
             }
         }

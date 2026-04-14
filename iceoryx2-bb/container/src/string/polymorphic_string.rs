@@ -82,7 +82,7 @@ impl<Allocator: BaseAllocator> internal::StringView for PolymorphicString<'_, Al
     }
 
     unsafe fn data_mut(&mut self) -> &mut [MaybeUninit<u8>] {
-        core::slice::from_raw_parts_mut(self.data_ptr, self.capacity() + 1)
+        unsafe { core::slice::from_raw_parts_mut(self.data_ptr, self.capacity() + 1) }
     }
 
     unsafe fn set_len(&mut self, len: u64) {

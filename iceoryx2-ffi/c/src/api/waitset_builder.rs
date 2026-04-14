@@ -15,10 +15,10 @@
 use core::ffi::c_int;
 
 use crate::{
-    api::IntoCInt, iox2_service_type_e, iox2_waitset_h, iox2_waitset_t, WaitSetUnion, IOX2_OK,
+    IOX2_OK, WaitSetUnion, api::IntoCInt, iox2_service_type_e, iox2_waitset_h, iox2_waitset_t,
 };
 
-use super::{iox2_signal_handling_mode_e, AssertNonNullHandle, HandleToType};
+use super::{AssertNonNullHandle, HandleToType, iox2_signal_handling_mode_e};
 use iceoryx2::prelude::WaitSetBuilder;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
@@ -91,28 +91,30 @@ impl HandleToType for iox2_waitset_builder_h_ref {
 ///  * `struct_ptr` must be either a valid pointer to uninitialized memory or `null`
 ///  * `handle_ptr` must point to a valid uninitialized memory location
 ///  * The acquire handle must be cleaned up with [`iox2_waitset_builder_drop()`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_builder_new(
     struct_ptr: *mut iox2_waitset_builder_t,
     handle_ptr: *mut iox2_waitset_builder_h,
 ) {
-    debug_assert!(!handle_ptr.is_null());
+    unsafe {
+        debug_assert!(!handle_ptr.is_null());
 
-    *handle_ptr = core::ptr::null_mut();
+        *handle_ptr = core::ptr::null_mut();
 
-    let mut struct_ptr = struct_ptr;
-    fn no_op(_: *mut iox2_waitset_builder_t) {}
-    let mut deleter: fn(*mut iox2_waitset_builder_t) = no_op;
-    if struct_ptr.is_null() {
-        struct_ptr = iox2_waitset_builder_t::alloc();
-        deleter = iox2_waitset_builder_t::dealloc;
+        let mut struct_ptr = struct_ptr;
+        fn no_op(_: *mut iox2_waitset_builder_t) {}
+        let mut deleter: fn(*mut iox2_waitset_builder_t) = no_op;
+        if struct_ptr.is_null() {
+            struct_ptr = iox2_waitset_builder_t::alloc();
+            deleter = iox2_waitset_builder_t::dealloc;
+        }
+        debug_assert!(!struct_ptr.is_null());
+
+        (*struct_ptr).deleter = deleter;
+        (*struct_ptr).value.init(WaitSetBuilder::new());
+
+        *handle_ptr = (*struct_ptr).as_handle();
     }
-    debug_assert!(!struct_ptr.is_null());
-
-    (*struct_ptr).deleter = deleter;
-    (*struct_ptr).value.init(WaitSetBuilder::new());
-
-    *handle_ptr = (*struct_ptr).as_handle();
 }
 
 /// Drops a [`iox2_waitset_builder_h`] and calls all corresponding cleanup functions.
@@ -120,13 +122,15 @@ pub unsafe extern "C" fn iox2_waitset_builder_new(
 /// # Safety
 ///
 ///  * `handle` must be acquired with [`iox2_waitset_builder_new()`]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_builder_drop(handle: iox2_waitset_builder_h) {
-    debug_assert!(!handle.is_null());
+    unsafe {
+        debug_assert!(!handle.is_null());
 
-    let waitset_builder = &mut *handle.as_type();
-    core::ptr::drop_in_place(waitset_builder.value.as_option_mut());
-    (waitset_builder.deleter)(waitset_builder);
+        let waitset_builder = &mut *handle.as_type();
+        core::ptr::drop_in_place(waitset_builder.value.as_option_mut());
+        (waitset_builder.deleter)(waitset_builder);
+    }
 }
 
 /// Creates a new [`iox2_waitset_t`].
@@ -143,7 +147,7 @@ pub unsafe extern "C" fn iox2_waitset_builder_drop(handle: iox2_waitset_builder_
 ///    with this function.
 ///  * `struct_ptr` must be either a valid pointer to uninitialized memory or `null`
 ///  * `handle_ptr` must point to a valid uninitialized memory location
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_builder_create(
     handle: iox2_waitset_builder_h,
     service_type: iox2_service_type_e,
@@ -154,47 +158,49 @@ pub unsafe extern "C" fn iox2_waitset_builder_create(
 
     let waitset_builder_struct = unsafe { &mut *handle.as_type() };
     let waitset_builder = waitset_builder_struct.take().unwrap();
-    iox2_waitset_builder_drop(handle);
+    unsafe {
+        iox2_waitset_builder_drop(handle);
 
-    fn no_op(_: *mut iox2_waitset_t) {}
-    let mut deleter: fn(*mut iox2_waitset_t) = no_op;
-    let mut struct_ptr = struct_ptr;
-    *handle_ptr = core::ptr::null_mut();
+        fn no_op(_: *mut iox2_waitset_t) {}
+        let mut deleter: fn(*mut iox2_waitset_t) = no_op;
+        let mut struct_ptr = struct_ptr;
+        *handle_ptr = core::ptr::null_mut();
 
-    let mut alloc_memory = || {
-        if struct_ptr.is_null() {
-            struct_ptr = iox2_waitset_t::alloc();
-            deleter = iox2_waitset_t::dealloc;
+        let mut alloc_memory = || {
+            if struct_ptr.is_null() {
+                struct_ptr = iox2_waitset_t::alloc();
+                deleter = iox2_waitset_t::dealloc;
+            }
+            debug_assert!(!struct_ptr.is_null());
+
+            (*struct_ptr).deleter = deleter;
+        };
+
+        match service_type {
+            iox2_service_type_e::IPC => {
+                let waitset = match waitset_builder.create::<crate::IpcService>() {
+                    Ok(waitset) => waitset,
+                    Err(e) => return e.into_c_int(),
+                };
+
+                alloc_memory();
+
+                (*struct_ptr).init(service_type, WaitSetUnion::new_ipc(waitset), deleter);
+            }
+            iox2_service_type_e::LOCAL => {
+                let waitset = match waitset_builder.create::<crate::LocalService>() {
+                    Ok(waitset) => waitset,
+                    Err(e) => return e.into_c_int(),
+                };
+
+                alloc_memory();
+
+                (*struct_ptr).init(service_type, WaitSetUnion::new_local(waitset), deleter);
+            }
         }
-        debug_assert!(!struct_ptr.is_null());
 
-        (*struct_ptr).deleter = deleter;
-    };
-
-    match service_type {
-        iox2_service_type_e::IPC => {
-            let waitset = match waitset_builder.create::<crate::IpcService>() {
-                Ok(waitset) => waitset,
-                Err(e) => return e.into_c_int(),
-            };
-
-            alloc_memory();
-
-            (*struct_ptr).init(service_type, WaitSetUnion::new_ipc(waitset), deleter);
-        }
-        iox2_service_type_e::LOCAL => {
-            let waitset = match waitset_builder.create::<crate::LocalService>() {
-                Ok(waitset) => waitset,
-                Err(e) => return e.into_c_int(),
-            };
-
-            alloc_memory();
-
-            (*struct_ptr).init(service_type, WaitSetUnion::new_local(waitset), deleter);
-        }
+        *handle_ptr = (*struct_ptr).as_handle();
     }
-
-    *handle_ptr = (*struct_ptr).as_handle();
     IOX2_OK
 }
 
@@ -207,14 +213,14 @@ pub unsafe extern "C" fn iox2_waitset_builder_create(
 /// # Safety
 ///
 /// * `waitset_builder_handle` must be a valid handle
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_waitset_builder_set_signal_handling_mode(
     waitset_builder_handle: iox2_waitset_builder_h_ref,
     signal_handling_mode: iox2_signal_handling_mode_e,
 ) {
     waitset_builder_handle.assert_non_null();
 
-    let waitset_builder_struct = &mut *waitset_builder_handle.as_type();
+    let waitset_builder_struct = unsafe { &mut *waitset_builder_handle.as_type() };
 
     let waitset_builder = waitset_builder_struct.take().unwrap();
     let waitset_builder = waitset_builder.signal_handling_mode(signal_handling_mode.into());

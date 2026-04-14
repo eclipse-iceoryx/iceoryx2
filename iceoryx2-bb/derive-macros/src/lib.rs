@@ -25,7 +25,7 @@ use alloc::vec::Vec;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields, LitStr};
+use syn::{Data, DeriveInput, Fields, LitStr, parse_macro_input};
 
 /// Implements the [`iceoryx2_bb_elementary_traits::placement_default::PlacementDefault`] trait when all
 /// fields of the struct implement it.

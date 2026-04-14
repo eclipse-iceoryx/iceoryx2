@@ -149,7 +149,7 @@ pub mod details {
     impl RelocatableContainer for IndexQueue<RelocatablePointer<UnsafeCell<u64>>> {
         unsafe fn new_uninit(capacity: usize) -> Self {
             Self {
-                data_ptr: RelocatablePointer::new_uninit(),
+                data_ptr: unsafe { RelocatablePointer::new_uninit() },
                 capacity,
                 write_position: AtomicU64::new(0),
                 read_position: AtomicU64::new(0),
@@ -166,19 +166,19 @@ pub mod details {
             if self.is_memory_initialized.load(Ordering::Relaxed) {
                 fatal_panic!(from self, "Memory already initialized. Initializing it twice may lead to undefined behavior.");
             }
-
-            self.data_ptr.init(fail!(from self, when allocator
+            unsafe {
+                self.data_ptr.init(fail!(from self, when allocator
             .allocate(Layout::from_size_align_unchecked(
                     core::mem::size_of::<u64>() * self.capacity,
                     core::mem::align_of::<u64>())),
             "Failed to initialize since the allocation of the data memory failed."));
 
-            for i in 0..self.capacity {
-                (self.data_ptr.as_ptr() as *mut UnsafeCell<u64>)
-                    .add(i)
-                    .write(UnsafeCell::new(0));
+                for i in 0..self.capacity {
+                    (self.data_ptr.as_ptr() as *mut UnsafeCell<u64>)
+                        .add(i)
+                        .write(UnsafeCell::new(0));
+                }
             }
-
             self.is_memory_initialized.store(true, Ordering::Relaxed);
             Ok(())
         }
@@ -204,10 +204,12 @@ pub mod details {
         }
 
         unsafe fn at(&self, position: u64) -> *mut u64 {
-            let cell = &*self
-                .data_ptr
-                .as_ptr()
-                .add((position % self.capacity as u64) as usize);
+            let cell = unsafe {
+                &*self
+                    .data_ptr
+                    .as_ptr()
+                    .add((position % self.capacity as u64) as usize)
+            };
 
             #[cfg(all(test, loom, feature = "std"))]
             {
@@ -463,7 +465,7 @@ impl<const CAPACITY: usize> FixedSizeIndexQueue<CAPACITY> {
     ///   * Ensure that no concurrent push occurres. Only one thread at a time is allowed to call
     ///     push.
     pub unsafe fn push(&self, value: u64) -> bool {
-        self.state.push(value)
+        unsafe { self.state.push(value) }
     }
 
     /// Acquires a value from the queue.
@@ -472,6 +474,6 @@ impl<const CAPACITY: usize> FixedSizeIndexQueue<CAPACITY> {
     ///
     ///   * Ensure that no concurrent pop occurres. Only one thread at a time is allowed to call pop.
     pub unsafe fn pop(&self) -> Option<u64> {
-        self.state.pop()
+        unsafe { self.state.pop() }
     }
 }

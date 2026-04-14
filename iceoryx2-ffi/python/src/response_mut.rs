@@ -105,10 +105,10 @@ impl ResponseMut {
     /// After this call the `ResponseMut` is no longer usable!
     pub fn delete(&mut self) {
         match &mut *self.value.lock() {
-            ResponseMutType::Ipc(ref mut v) => {
+            ResponseMutType::Ipc(v) => {
                 v.take();
             }
-            ResponseMutType::Local(ref mut v) => {
+            ResponseMutType::Local(v) => {
                 v.take();
             }
         }
@@ -118,13 +118,13 @@ impl ResponseMut {
     /// `Client`.
     pub fn send(&self) -> PyResult<()> {
         match &mut *self.value.lock() {
-            ResponseMutType::Ipc(ref mut v) => {
+            ResponseMutType::Ipc(v) => {
                 let response = v.take().unwrap();
                 Ok(response
                     .send()
                     .map_err(|e| SendError::new_err(format!("{e:?}")))?)
             }
-            ResponseMutType::Local(ref mut v) => {
+            ResponseMutType::Local(v) => {
                 let response = v.take().unwrap();
                 Ok(response
                     .send()

@@ -12,8 +12,8 @@
 
 use core::ops::{Deref, DerefMut};
 
-pub use iceoryx2_pal_concurrency_sync::atomic::fence;
 pub use iceoryx2_pal_concurrency_sync::atomic::Ordering;
+pub use iceoryx2_pal_concurrency_sync::atomic::fence;
 
 use iceoryx2_bb_elementary_traits::{
     placement_default::PlacementDefault, zero_copy_send::ZeroCopySend, zeroable::Zeroable,
@@ -87,7 +87,7 @@ macro_rules! Impl {
 
         impl PlacementDefault for $type_name {
             unsafe fn placement_default(ptr: *mut Self) {
-                ptr.write(<$type_name>::default())
+                unsafe { ptr.write(<$type_name>::default()) }
             }
         }
 
@@ -144,7 +144,7 @@ impl<T: internal::AtomicInteger> DerefMut for Atomic<T> {
 
 impl<T: internal::AtomicInteger> PlacementDefault for Atomic<T> {
     unsafe fn placement_default(ptr: *mut Self) {
-        ptr.write(<Atomic<T>>::default())
+        unsafe { ptr.write(<Atomic<T>>::default()) }
     }
 }
 
@@ -153,15 +153,15 @@ unsafe impl<T: internal::AtomicInteger> ZeroCopySend for Atomic<T> {}
 pub mod internal {
     pub use iceoryx2_pal_concurrency_sync::atomic::Atomic;
     pub use iceoryx2_pal_concurrency_sync::atomic::AtomicBool;
+    pub use iceoryx2_pal_concurrency_sync::atomic::AtomicI8;
     pub use iceoryx2_pal_concurrency_sync::atomic::AtomicI16;
     pub use iceoryx2_pal_concurrency_sync::atomic::AtomicI32;
     pub use iceoryx2_pal_concurrency_sync::atomic::AtomicI64;
-    pub use iceoryx2_pal_concurrency_sync::atomic::AtomicI8;
     pub use iceoryx2_pal_concurrency_sync::atomic::AtomicIsize;
+    pub use iceoryx2_pal_concurrency_sync::atomic::AtomicU8;
     pub use iceoryx2_pal_concurrency_sync::atomic::AtomicU16;
     pub use iceoryx2_pal_concurrency_sync::atomic::AtomicU32;
     pub use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
-    pub use iceoryx2_pal_concurrency_sync::atomic::AtomicU8;
     pub use iceoryx2_pal_concurrency_sync::atomic::AtomicUsize;
 
     #[doc(hidden)]

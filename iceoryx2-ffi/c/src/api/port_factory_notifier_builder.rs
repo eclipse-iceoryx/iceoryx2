@@ -13,16 +13,16 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    iox2_event_id_t, iox2_notifier_h, iox2_notifier_t, iox2_service_type_e, AssertNonNullHandle,
-    HandleToType, IntoCInt, NotifierUnion, IOX2_OK,
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, NotifierUnion, iox2_event_id_t,
+    iox2_notifier_h, iox2_notifier_t, iox2_service_type_e,
 };
 
 use iceoryx2::port::notifier::NotifierCreateError;
 use iceoryx2::service::port_factory::notifier::PortFactoryNotifier;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_ffi_macros::iceoryx2_ffi;
 use iceoryx2_ffi_macros::CStrRepr;
+use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
@@ -151,7 +151,7 @@ impl HandleToType for iox2_port_factory_notifier_builder_h_ref {
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_notifier_create_error_string(
     error: iox2_notifier_create_error_e,
 ) -> *const c_char {
@@ -170,30 +170,32 @@ pub unsafe extern "C" fn iox2_notifier_create_error_string(
 ///
 /// * `port_factory_handle` must be valid handles
 /// * `value` must not be a NULL pointer but a pointer to an initialized `iox2_event_id_t`
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_notifier_builder_set_default_event_id(
     port_factory_handle: iox2_port_factory_notifier_builder_h_ref,
     value: *const iox2_event_id_t,
 ) {
     port_factory_handle.assert_non_null();
+    unsafe {
+        let value = (*value).into();
 
-    let value = (*value).into();
+        let port_factory_struct = &mut *port_factory_handle.as_type();
+        match port_factory_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
 
-    let port_factory_struct = unsafe { &mut *port_factory_handle.as_type() };
-    match port_factory_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
+                port_factory_struct.set(PortFactoryNotifierBuilderUnion::new_ipc(
+                    port_factory.default_event_id(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let port_factory =
+                    ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
 
-            port_factory_struct.set(PortFactoryNotifierBuilderUnion::new_ipc(
-                port_factory.default_event_id(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
-
-            port_factory_struct.set(PortFactoryNotifierBuilderUnion::new_local(
-                port_factory.default_event_id(value),
-            ));
+                port_factory_struct.set(PortFactoryNotifierBuilderUnion::new_local(
+                    port_factory.default_event_id(value),
+                ));
+            }
         }
     }
 }
@@ -213,7 +215,7 @@ pub unsafe extern "C" fn iox2_port_factory_notifier_builder_set_default_event_id
 /// * The `port_factory_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_port_factory_notifier_builder_t`]
 ///   can be re-used with a call to  [`iox2_port_factory_event_notifier_builder`](crate::iox2_port_factory_event_notifier_builder)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_notifier_builder_create(
     port_factory_handle: iox2_port_factory_notifier_builder_h,
     notifier_struct_ptr: *mut iox2_notifier_t,
@@ -230,57 +232,57 @@ pub unsafe extern "C" fn iox2_port_factory_notifier_builder_create(
         deleter = iox2_notifier_t::dealloc;
     }
     debug_assert!(!notifier_struct_ptr.is_null());
+    unsafe {
+        let notifier_builder_struct = &mut *port_factory_handle.as_type();
+        let service_type = notifier_builder_struct.service_type;
+        let notifier_builder = notifier_builder_struct
+            .value
+            .as_option_mut()
+            .take()
+            .unwrap_or_else(|| {
+                panic!("Trying to use an invalid 'iox2_port_factory_notifier_builder_h'!")
+            });
+        (notifier_builder_struct.deleter)(notifier_builder_struct);
 
-    let notifier_builder_struct = unsafe { &mut *port_factory_handle.as_type() };
-    let service_type = notifier_builder_struct.service_type;
-    let notifier_builder = notifier_builder_struct
-        .value
-        .as_option_mut()
-        .take()
-        .unwrap_or_else(|| {
-            panic!("Trying to use an invalid 'iox2_port_factory_notifier_builder_h'!")
-        });
-    (notifier_builder_struct.deleter)(notifier_builder_struct);
+        match service_type {
+            iox2_service_type_e::IPC => {
+                let notifier_builder = ManuallyDrop::into_inner(notifier_builder.ipc);
 
-    match service_type {
-        iox2_service_type_e::IPC => {
-            let notifier_builder = ManuallyDrop::into_inner(notifier_builder.ipc);
-
-            match notifier_builder.create() {
-                Ok(notifier) => {
-                    (*notifier_struct_ptr).init(
-                        service_type,
-                        NotifierUnion::new_ipc(notifier),
-                        deleter,
-                    );
+                match notifier_builder.create() {
+                    Ok(notifier) => {
+                        (*notifier_struct_ptr).init(
+                            service_type,
+                            NotifierUnion::new_ipc(notifier),
+                            deleter,
+                        );
+                    }
+                    Err(error) => {
+                        deleter(notifier_struct_ptr);
+                        return error.into_c_int();
+                    }
                 }
-                Err(error) => {
-                    deleter(notifier_struct_ptr);
-                    return error.into_c_int();
+            }
+            iox2_service_type_e::LOCAL => {
+                let notifier_builder = ManuallyDrop::into_inner(notifier_builder.local);
+
+                match notifier_builder.create() {
+                    Ok(notifier) => {
+                        (*notifier_struct_ptr).init(
+                            service_type,
+                            NotifierUnion::new_local(notifier),
+                            deleter,
+                        );
+                    }
+                    Err(error) => {
+                        deleter(notifier_struct_ptr);
+                        return error.into_c_int();
+                    }
                 }
             }
         }
-        iox2_service_type_e::LOCAL => {
-            let notifier_builder = ManuallyDrop::into_inner(notifier_builder.local);
 
-            match notifier_builder.create() {
-                Ok(notifier) => {
-                    (*notifier_struct_ptr).init(
-                        service_type,
-                        NotifierUnion::new_local(notifier),
-                        deleter,
-                    );
-                }
-                Err(error) => {
-                    deleter(notifier_struct_ptr);
-                    return error.into_c_int();
-                }
-            }
-        }
+        *notifier_handle_ptr = (*notifier_struct_ptr).as_handle();
     }
-
-    *notifier_handle_ptr = (*notifier_struct_ptr).as_handle();
-
     IOX2_OK
 }
 

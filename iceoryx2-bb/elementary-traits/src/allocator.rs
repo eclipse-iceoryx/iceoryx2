@@ -138,13 +138,15 @@ pub trait Allocator: BaseAllocator {
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocationGrowError> {
-        let memory = self.grow(ptr, old_layout, new_layout)?;
-        core::ptr::write_bytes(
-            memory.as_ref().as_ptr().add(old_layout.size()) as *mut u8,
-            0,
-            memory.as_ref().len() - old_layout.size(),
-        );
-        Ok(memory)
+        unsafe {
+            let memory = self.grow(ptr, old_layout, new_layout)?;
+            core::ptr::write_bytes(
+                memory.as_ref().as_ptr().add(old_layout.size()) as *mut u8,
+                0,
+                memory.as_ref().len() - old_layout.size(),
+            );
+            Ok(memory)
+        }
     }
 
     /// Decreases the size of an previously allocated chunk of memory. If the size increases it

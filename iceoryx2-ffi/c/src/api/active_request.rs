@@ -15,13 +15,13 @@
 use core::ffi::{c_int, c_void};
 use core::mem::ManuallyDrop;
 
-use crate::api::{IntoCInt, ResponseMutUninitUnion};
 use crate::IOX2_OK;
+use crate::api::{IntoCInt, ResponseMutUninitUnion};
 
 use super::{
-    c_size_t, iox2_request_header_h, iox2_request_header_t, iox2_response_mut_h,
-    iox2_response_mut_t, iox2_send_error_e, iox2_service_type_e, AssertNonNullHandle, HandleToType,
-    PayloadFfi, UserHeaderFfi,
+    AssertNonNullHandle, HandleToType, PayloadFfi, UserHeaderFfi, c_size_t, iox2_request_header_h,
+    iox2_request_header_t, iox2_response_mut_h, iox2_response_mut_t, iox2_send_error_e,
+    iox2_service_type_e,
 };
 use iceoryx2::active_request::ActiveRequest;
 use iceoryx2::prelude::*;
@@ -146,17 +146,18 @@ impl HandleToType for iox2_active_request_h_ref {
 /// # Safety
 ///
 /// * `handle` must be a valid handle
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_active_request_has_disconnect_hint(
     handle: iox2_active_request_h_ref,
 ) -> bool {
     handle.assert_non_null();
+    unsafe {
+        let active_request = &mut *handle.as_type();
 
-    let active_request = &mut *handle.as_type();
-
-    match active_request.service_type {
-        iox2_service_type_e::IPC => active_request.value.as_mut().ipc.has_disconnect_hint(),
-        iox2_service_type_e::LOCAL => active_request.value.as_mut().local.has_disconnect_hint(),
+        match active_request.service_type {
+            iox2_service_type_e::IPC => active_request.value.as_mut().ipc.has_disconnect_hint(),
+            iox2_service_type_e::LOCAL => active_request.value.as_mut().local.has_disconnect_hint(),
+        }
     }
 }
 
@@ -170,17 +171,18 @@ pub unsafe extern "C" fn iox2_active_request_has_disconnect_hint(
 /// # Safety
 ///
 /// * `handle` must be a valid handle
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_active_request_is_connected(
     handle: iox2_active_request_h_ref,
 ) -> bool {
     handle.assert_non_null();
+    unsafe {
+        let active_request = &mut *handle.as_type();
 
-    let active_request = &mut *handle.as_type();
-
-    match active_request.service_type {
-        iox2_service_type_e::IPC => active_request.value.as_mut().ipc.is_connected(),
-        iox2_service_type_e::LOCAL => active_request.value.as_mut().local.is_connected(),
+        match active_request.service_type {
+            iox2_service_type_e::IPC => active_request.value.as_mut().ipc.is_connected(),
+            iox2_service_type_e::LOCAL => active_request.value.as_mut().local.is_connected(),
+        }
     }
 }
 
@@ -193,7 +195,7 @@ pub unsafe extern "C" fn iox2_active_request_is_connected(
 /// * `header_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
 ///   [`iox2_request_header_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `header_handle_ptr` valid pointer to a [`iox2_request_header_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_active_request_header(
     handle: iox2_active_request_h_ref,
     header_struct_ptr: *mut iox2_request_header_t,
@@ -210,16 +212,17 @@ pub unsafe extern "C" fn iox2_active_request_header(
         storage_ptr = iox2_request_header_t::alloc();
     }
     debug_assert!(!storage_ptr.is_null());
+    unsafe {
+        let active_request = &mut *handle.as_type();
 
-    let active_request = &mut *handle.as_type();
+        let header = *match active_request.service_type {
+            iox2_service_type_e::IPC => active_request.value.as_mut().ipc.header(),
+            iox2_service_type_e::LOCAL => active_request.value.as_mut().local.header(),
+        };
 
-    let header = *match active_request.service_type {
-        iox2_service_type_e::IPC => active_request.value.as_mut().ipc.header(),
-        iox2_service_type_e::LOCAL => active_request.value.as_mut().local.header(),
-    };
-
-    (*storage_ptr).init(header, deleter);
-    *header_handle_ptr = (*storage_ptr).as_handle();
+        (*storage_ptr).init(header, deleter);
+        *header_handle_ptr = (*storage_ptr).as_handle();
+    }
 }
 
 /// Acquires the request user header.
@@ -228,22 +231,23 @@ pub unsafe extern "C" fn iox2_active_request_header(
 ///
 /// * `handle` - Must be a valid [`iox2_active_request_h_ref`]
 ///   obtained by [`iox2_server_receive`](crate::iox2_server_receive).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_active_request_user_header(
     handle: iox2_active_request_h_ref,
     header_ptr: *mut *const c_void,
 ) {
     handle.assert_non_null();
     debug_assert!(!header_ptr.is_null());
+    unsafe {
+        let active_request = &mut *handle.as_type();
 
-    let active_request = &mut *handle.as_type();
+        let header = match active_request.service_type {
+            iox2_service_type_e::IPC => active_request.value.as_mut().ipc.user_header(),
+            iox2_service_type_e::LOCAL => active_request.value.as_mut().local.user_header(),
+        };
 
-    let header = match active_request.service_type {
-        iox2_service_type_e::IPC => active_request.value.as_mut().ipc.user_header(),
-        iox2_service_type_e::LOCAL => active_request.value.as_mut().local.user_header(),
-    };
-
-    *header_ptr = (header as *const UserHeaderFfi).cast();
+        *header_ptr = (header as *const UserHeaderFfi).cast();
+    }
 }
 
 /// Acquires the request payload.
@@ -254,7 +258,7 @@ pub unsafe extern "C" fn iox2_active_request_user_header(
 ///   obtained by [`iox2_server_receive`](crate::iox2_server_receive).
 /// * `payload_ptr` a valid, non-null pointer pointing to a `*const c_void` pointer.
 /// * `number_of_elements` (optional) either a null pointer or a valid pointer pointing to a [`c_size_t`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_active_request_payload(
     handle: iox2_active_request_h_ref,
     payload_ptr: *mut *const c_void,
@@ -262,39 +266,40 @@ pub unsafe extern "C" fn iox2_active_request_payload(
 ) {
     handle.assert_non_null();
     debug_assert!(!payload_ptr.is_null());
+    unsafe {
+        let active_request = &mut *handle.as_type();
+        let number_of_elements_value;
 
-    let active_request = &mut *handle.as_type();
-    let number_of_elements_value;
+        match active_request.service_type {
+            iox2_service_type_e::IPC => {
+                *payload_ptr = active_request.value.as_mut().ipc.payload().as_ptr().cast();
+                number_of_elements_value = active_request
+                    .value
+                    .as_mut()
+                    .ipc
+                    .header()
+                    .number_of_elements();
+            }
+            iox2_service_type_e::LOCAL => {
+                *payload_ptr = active_request
+                    .value
+                    .as_mut()
+                    .local
+                    .payload()
+                    .as_ptr()
+                    .cast();
+                number_of_elements_value = active_request
+                    .value
+                    .as_mut()
+                    .local
+                    .header()
+                    .number_of_elements();
+            }
+        };
 
-    match active_request.service_type {
-        iox2_service_type_e::IPC => {
-            *payload_ptr = active_request.value.as_mut().ipc.payload().as_ptr().cast();
-            number_of_elements_value = active_request
-                .value
-                .as_mut()
-                .ipc
-                .header()
-                .number_of_elements();
+        if !number_of_elements.is_null() {
+            *number_of_elements = number_of_elements_value as c_size_t;
         }
-        iox2_service_type_e::LOCAL => {
-            *payload_ptr = active_request
-                .value
-                .as_mut()
-                .local
-                .payload()
-                .as_ptr()
-                .cast();
-            number_of_elements_value = active_request
-                .value
-                .as_mut()
-                .local
-                .header()
-                .number_of_elements();
-        }
-    };
-
-    if !number_of_elements.is_null() {
-        *number_of_elements = number_of_elements_value as c_size_t;
     }
 }
 
@@ -315,7 +320,7 @@ pub unsafe extern "C" fn iox2_active_request_payload(
 ///
 /// * `active_request_handle` is valid and non-null
 /// * The `response_handle_ptr` is pointing to a valid [`iox2_response_mut_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_active_request_loan_slice_uninit(
     active_request_handle: iox2_active_request_h_ref,
     response_struct_ptr: *mut iox2_response_mut_t,
@@ -324,9 +329,9 @@ pub unsafe extern "C" fn iox2_active_request_loan_slice_uninit(
 ) -> c_int {
     active_request_handle.assert_non_null();
     debug_assert!(!response_handle_ptr.is_null());
-
-    *response_handle_ptr = core::ptr::null_mut();
-
+    unsafe {
+        *response_handle_ptr = core::ptr::null_mut();
+    }
     let init_response_struct_ptr = |response_struct_ptr: *mut iox2_response_mut_t| {
         let mut response_struct_ptr = response_struct_ptr;
         fn no_op(_: *mut iox2_response_mut_t) {}
@@ -339,46 +344,49 @@ pub unsafe extern "C" fn iox2_active_request_loan_slice_uninit(
 
         (response_struct_ptr, deleter)
     };
+    unsafe {
+        let active_request = &mut *active_request_handle.as_type();
 
-    let active_request = &mut *active_request_handle.as_type();
-
-    match active_request.service_type {
-        iox2_service_type_e::IPC => match active_request
-            .value
-            .as_ref()
-            .ipc
-            .loan_custom_payload(number_of_elements)
-        {
-            Ok(response) => {
-                let (response_struct_ptr, deleter) = init_response_struct_ptr(response_struct_ptr);
-                (*response_struct_ptr).init(
-                    active_request.service_type,
-                    ResponseMutUninitUnion::new_ipc(response),
-                    deleter,
-                );
-                *response_handle_ptr = (*response_struct_ptr).as_handle();
-                IOX2_OK
-            }
-            Err(error) => error.into_c_int(),
-        },
-        iox2_service_type_e::LOCAL => match active_request
-            .value
-            .as_ref()
-            .local
-            .loan_custom_payload(number_of_elements)
-        {
-            Ok(response) => {
-                let (response_struct_ptr, deleter) = init_response_struct_ptr(response_struct_ptr);
-                (*response_struct_ptr).init(
-                    active_request.service_type,
-                    ResponseMutUninitUnion::new_local(response),
-                    deleter,
-                );
-                *response_handle_ptr = (*response_struct_ptr).as_handle();
-                IOX2_OK
-            }
-            Err(error) => error.into_c_int(),
-        },
+        match active_request.service_type {
+            iox2_service_type_e::IPC => match active_request
+                .value
+                .as_ref()
+                .ipc
+                .loan_custom_payload(number_of_elements)
+            {
+                Ok(response) => {
+                    let (response_struct_ptr, deleter) =
+                        init_response_struct_ptr(response_struct_ptr);
+                    (*response_struct_ptr).init(
+                        active_request.service_type,
+                        ResponseMutUninitUnion::new_ipc(response),
+                        deleter,
+                    );
+                    *response_handle_ptr = (*response_struct_ptr).as_handle();
+                    IOX2_OK
+                }
+                Err(error) => error.into_c_int(),
+            },
+            iox2_service_type_e::LOCAL => match active_request
+                .value
+                .as_ref()
+                .local
+                .loan_custom_payload(number_of_elements)
+            {
+                Ok(response) => {
+                    let (response_struct_ptr, deleter) =
+                        init_response_struct_ptr(response_struct_ptr);
+                    (*response_struct_ptr).init(
+                        active_request.service_type,
+                        ResponseMutUninitUnion::new_local(response),
+                        deleter,
+                    );
+                    *response_handle_ptr = (*response_struct_ptr).as_handle();
+                    IOX2_OK
+                }
+                Err(error) => error.into_c_int(),
+            },
+        }
     }
 }
 
@@ -388,7 +396,7 @@ unsafe fn send_copy<S: Service>(
     size_of_element: usize,
     number_of_elements: usize,
 ) -> c_int {
-    let mut sample = match active_request.loan_custom_payload(number_of_elements) {
+    let mut sample = match unsafe { active_request.loan_custom_payload(number_of_elements) } {
         Ok(sample) => sample,
         Err(e) => return e.into_c_int(),
     };
@@ -399,10 +407,12 @@ unsafe fn send_copy<S: Service>(
     }
 
     let sample_ptr = sample.payload_mut().as_mut_ptr();
-    core::ptr::copy_nonoverlapping(data_ptr, sample_ptr.cast(), data_len);
-    match sample.assume_init().send() {
-        Ok(()) => IOX2_OK,
-        Err(e) => e.into_c_int(),
+    unsafe {
+        core::ptr::copy_nonoverlapping(data_ptr, sample_ptr.cast(), data_len);
+        match sample.assume_init().send() {
+            Ok(()) => IOX2_OK,
+            Err(e) => e.into_c_int(),
+        }
     }
 }
 
@@ -422,7 +432,7 @@ unsafe fn send_copy<S: Service>(
 ///
 /// * `active_request_handle` is valid and non-null
 /// * `data_ptr` non-null pointer to a valid position in memory
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_active_request_send_copy(
     active_request_handle: iox2_active_request_h_ref,
     data_ptr: *const c_void,
@@ -432,22 +442,23 @@ pub unsafe extern "C" fn iox2_active_request_send_copy(
     active_request_handle.assert_non_null();
     debug_assert!(!data_ptr.is_null());
     debug_assert!(size_of_element != 0);
+    unsafe {
+        let active_request = &mut *active_request_handle.as_type();
 
-    let active_request = &mut *active_request_handle.as_type();
-
-    match active_request.service_type {
-        iox2_service_type_e::IPC => send_copy(
-            &active_request.value.as_mut().ipc,
-            data_ptr,
-            size_of_element,
-            number_of_elements,
-        ),
-        iox2_service_type_e::LOCAL => send_copy(
-            &active_request.value.as_mut().local,
-            data_ptr,
-            size_of_element,
-            number_of_elements,
-        ),
+        match active_request.service_type {
+            iox2_service_type_e::IPC => send_copy(
+                &active_request.value.as_mut().ipc,
+                data_ptr,
+                size_of_element,
+                number_of_elements,
+            ),
+            iox2_service_type_e::LOCAL => send_copy(
+                &active_request.value.as_mut().local,
+                data_ptr,
+                size_of_element,
+                number_of_elements,
+            ),
+        }
     }
 }
 
@@ -462,20 +473,21 @@ pub unsafe extern "C" fn iox2_active_request_send_copy(
 /// * The `handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_active_request_t`] can be re-used with a call to
 ///   [`iox2_server_receive`](crate::iox2_server_receive)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_active_request_drop(handle: iox2_active_request_h) {
     debug_assert!(!handle.is_null());
+    unsafe {
+        let active_request = &mut *handle.as_type();
 
-    let active_request = &mut *handle.as_type();
-
-    match active_request.service_type {
-        iox2_service_type_e::IPC => {
-            ManuallyDrop::drop(&mut active_request.value.as_mut().ipc);
+        match active_request.service_type {
+            iox2_service_type_e::IPC => {
+                ManuallyDrop::drop(&mut active_request.value.as_mut().ipc);
+            }
+            iox2_service_type_e::LOCAL => {
+                ManuallyDrop::drop(&mut active_request.value.as_mut().local);
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            ManuallyDrop::drop(&mut active_request.value.as_mut().local);
-        }
+        (active_request.deleter)(active_request);
     }
-    (active_request.deleter)(active_request);
 }
 // END C API

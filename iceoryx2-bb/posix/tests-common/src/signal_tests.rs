@@ -17,9 +17,9 @@ use iceoryx2_bb_concurrency::spin_lock::{SpinLock, SpinLockGuard};
 use alloc::vec;
 
 use iceoryx2_bb_concurrency::atomic::{AtomicI32, Ordering};
-use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::clock::ClockType;
 use iceoryx2_bb_posix::clock::Time;
+use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::process::*;
 use iceoryx2_bb_posix::signal::*;
 use iceoryx2_bb_posix::thread::thread_scope;

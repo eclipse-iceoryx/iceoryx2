@@ -104,10 +104,10 @@ impl Sample {
     /// After this call the `Sample` is no longer usable!
     pub fn delete(&mut self) {
         match &mut *self.value.lock() {
-            SampleType::Ipc(ref mut v) => {
+            SampleType::Ipc(v) => {
                 v.take();
             }
-            SampleType::Local(ref mut v) => {
+            SampleType::Local(v) => {
                 v.take();
             }
         }

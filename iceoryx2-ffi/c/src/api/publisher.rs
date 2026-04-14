@@ -13,22 +13,22 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
+    AssertNonNullHandle, HandleToType, IOX2_OK, PayloadFfi, SampleMutUninitUnion, UserHeaderFfi,
     iox2_service_type_e, iox2_unable_to_deliver_strategy_e, iox2_unique_publisher_id_h,
-    iox2_unique_publisher_id_t, AssertNonNullHandle, HandleToType, PayloadFfi,
-    SampleMutUninitUnion, UserHeaderFfi, IOX2_OK,
+    iox2_unique_publisher_id_t,
 };
 
-use iceoryx2::port::publisher::Publisher;
-use iceoryx2::port::update_connections::UpdateConnections;
 use iceoryx2::port::LoanError;
 use iceoryx2::port::SendError;
+use iceoryx2::port::publisher::Publisher;
+use iceoryx2::port::update_connections::UpdateConnections;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_ffi_macros::iceoryx2_ffi;
 use iceoryx2_ffi_macros::CStrRepr;
+use iceoryx2_ffi_macros::iceoryx2_ffi;
 
-use super::{iox2_sample_mut_h, iox2_sample_mut_t, IntoCInt};
+use super::{IntoCInt, iox2_sample_mut_h, iox2_sample_mut_t};
 
 use crate::c_size_t;
 use core::ffi::{c_char, c_int, c_void};
@@ -188,29 +188,30 @@ unsafe fn send_copy<S: Service>(
     size_of_element: usize,
     number_of_recipients: *mut usize,
 ) -> c_int {
-    // loan_slice_uninit(1) <= 1 is correct here since it defines the number of
-    // slice elements not bytes. The element was set via TypeDetails and has a
-    // defined size and alignment.
-    let mut sample = match publisher.loan_custom_payload(1) {
-        Ok(sample) => sample,
-        Err(e) => return e.into_c_int(),
-    };
+    unsafe {
+        // loan_slice_uninit(1) <= 1 is correct here since it defines the number of
+        // slice elements not bytes. The element was set via TypeDetails and has a
+        // defined size and alignment.
+        let mut sample = match publisher.loan_custom_payload(1) {
+            Ok(sample) => sample,
+            Err(e) => return e.into_c_int(),
+        };
 
-    if sample.payload().len() < size_of_element {
-        return iox2_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE as c_int;
-    }
-
-    let sample_ptr = sample.payload_mut().as_mut_ptr();
-    core::ptr::copy_nonoverlapping(data_ptr, sample_ptr.cast(), size_of_element);
-    match sample.assume_init().send() {
-        Ok(v) => {
-            if !number_of_recipients.is_null() {
-                *number_of_recipients = v;
-            }
+        if sample.payload().len() < size_of_element {
+            return iox2_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE as c_int;
         }
-        Err(e) => return e.into_c_int(),
-    }
 
+        let sample_ptr = sample.payload_mut().as_mut_ptr();
+        core::ptr::copy_nonoverlapping(data_ptr, sample_ptr.cast(), size_of_element);
+        match sample.assume_init().send() {
+            Ok(v) => {
+                if !number_of_recipients.is_null() {
+                    *number_of_recipients = v;
+                }
+            }
+            Err(e) => return e.into_c_int(),
+        }
+    }
     IOX2_OK
 }
 
@@ -221,27 +222,28 @@ unsafe fn send_slice_copy<S: Service>(
     number_of_elements: usize,
     number_of_recipients: *mut usize,
 ) -> c_int {
-    let mut sample = match publisher.loan_custom_payload(number_of_elements) {
-        Ok(sample) => sample,
-        Err(e) => return e.into_c_int(),
-    };
+    unsafe {
+        let mut sample = match publisher.loan_custom_payload(number_of_elements) {
+            Ok(sample) => sample,
+            Err(e) => return e.into_c_int(),
+        };
 
-    let data_len = size_of_element * number_of_elements;
-    if sample.payload().len() < data_len {
-        return iox2_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE as c_int;
-    }
-
-    let sample_ptr = sample.payload_mut().as_mut_ptr();
-    core::ptr::copy_nonoverlapping(data_ptr, sample_ptr.cast(), data_len);
-    match sample.assume_init().send() {
-        Ok(v) => {
-            if !number_of_recipients.is_null() {
-                *number_of_recipients = v;
-            }
+        let data_len = size_of_element * number_of_elements;
+        if sample.payload().len() < data_len {
+            return iox2_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE as c_int;
         }
-        Err(e) => return e.into_c_int(),
-    }
 
+        let sample_ptr = sample.payload_mut().as_mut_ptr();
+        core::ptr::copy_nonoverlapping(data_ptr, sample_ptr.cast(), data_len);
+        match sample.assume_init().send() {
+            Ok(v) => {
+                if !number_of_recipients.is_null() {
+                    *number_of_recipients = v;
+                }
+            }
+            Err(e) => return e.into_c_int(),
+        }
+    }
     IOX2_OK
 }
 
@@ -261,7 +263,7 @@ unsafe fn send_slice_copy<S: Service>(
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_send_error_string(error: iox2_send_error_e) -> *const c_char {
     error.as_const_cstr().as_ptr() as *const c_char
 }
@@ -280,7 +282,7 @@ pub unsafe extern "C" fn iox2_send_error_string(error: iox2_send_error_e) -> *co
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_loan_error_string(error: iox2_loan_error_e) -> *const c_char {
     error.as_const_cstr().as_ptr() as *const c_char
 }
@@ -297,27 +299,28 @@ pub unsafe extern "C" fn iox2_loan_error_string(error: iox2_loan_error_e) -> *co
 /// # Safety
 ///
 /// * `publisher_handle` is valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publisher_unable_to_deliver_strategy(
     publisher_handle: iox2_publisher_h_ref,
 ) -> iox2_unable_to_deliver_strategy_e {
     publisher_handle.assert_non_null();
+    unsafe {
+        let publisher = &mut *publisher_handle.as_type();
 
-    let publisher = &mut *publisher_handle.as_type();
-
-    match publisher.service_type {
-        iox2_service_type_e::IPC => publisher
-            .value
-            .as_mut()
-            .ipc
-            .unable_to_deliver_strategy()
-            .into(),
-        iox2_service_type_e::LOCAL => publisher
-            .value
-            .as_mut()
-            .local
-            .unable_to_deliver_strategy()
-            .into(),
+        match publisher.service_type {
+            iox2_service_type_e::IPC => publisher
+                .value
+                .as_mut()
+                .ipc
+                .unable_to_deliver_strategy()
+                .into(),
+            iox2_service_type_e::LOCAL => publisher
+                .value
+                .as_mut()
+                .local
+                .unable_to_deliver_strategy()
+                .into(),
+        }
     }
 }
 
@@ -333,19 +336,20 @@ pub unsafe extern "C" fn iox2_publisher_unable_to_deliver_strategy(
 /// # Safety
 ///
 /// * `publisher_handle` is valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publisher_initial_max_slice_len(
     publisher_handle: iox2_publisher_h_ref,
 ) -> c_size_t {
     publisher_handle.assert_non_null();
-
-    let publisher = &mut *publisher_handle.as_type();
-    match publisher.service_type {
-        iox2_service_type_e::IPC => {
-            publisher.value.as_mut().ipc.initial_max_slice_len() as c_size_t
-        }
-        iox2_service_type_e::LOCAL => {
-            publisher.value.as_mut().local.initial_max_slice_len() as c_size_t
+    unsafe {
+        let publisher = &mut *publisher_handle.as_type();
+        match publisher.service_type {
+            iox2_service_type_e::IPC => {
+                publisher.value.as_mut().ipc.initial_max_slice_len() as c_size_t
+            }
+            iox2_service_type_e::LOCAL => {
+                publisher.value.as_mut().local.initial_max_slice_len() as c_size_t
+            }
         }
     }
 }
@@ -363,7 +367,7 @@ pub unsafe extern "C" fn iox2_publisher_initial_max_slice_len(
 ///
 /// * `publisher_handle` is valid and non-null
 /// * `id` is valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publisher_id(
     publisher_handle: iox2_publisher_h_ref,
     id_struct_ptr: *mut iox2_unique_publisher_id_t,
@@ -380,16 +384,17 @@ pub unsafe extern "C" fn iox2_publisher_id(
         storage_ptr = iox2_unique_publisher_id_t::alloc();
     }
     debug_assert!(!storage_ptr.is_null());
+    unsafe {
+        let publisher = &mut *publisher_handle.as_type();
 
-    let publisher = &mut *publisher_handle.as_type();
+        let id = match publisher.service_type {
+            iox2_service_type_e::IPC => publisher.value.as_mut().ipc.id(),
+            iox2_service_type_e::LOCAL => publisher.value.as_mut().local.id(),
+        };
 
-    let id = match publisher.service_type {
-        iox2_service_type_e::IPC => publisher.value.as_mut().ipc.id(),
-        iox2_service_type_e::LOCAL => publisher.value.as_mut().local.id(),
-    };
-
-    (*storage_ptr).init(id, deleter);
-    *id_handle_ptr = (*storage_ptr).as_handle();
+        (*storage_ptr).init(id, deleter);
+        *id_handle_ptr = (*storage_ptr).as_handle();
+    }
 }
 
 /// Sends a copy of the provided slice data via the publisher.
@@ -413,7 +418,7 @@ pub unsafe extern "C" fn iox2_publisher_id(
 /// * `size_of_element` must be the correct size of each element in bytes
 /// * `number_of_elements` must accurately represent the number of elements in the slice
 /// * `number_of_recipients` can be null, otherwise it must be a valid pointer to a `usize`
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publisher_send_slice_copy(
     publisher_handle: iox2_publisher_h_ref,
     data_ptr: *const c_void,
@@ -424,24 +429,25 @@ pub unsafe extern "C" fn iox2_publisher_send_slice_copy(
     publisher_handle.assert_non_null();
     debug_assert!(!data_ptr.is_null());
     debug_assert!(size_of_element != 0);
+    unsafe {
+        let publisher = &mut *publisher_handle.as_type();
 
-    let publisher = &mut *publisher_handle.as_type();
-
-    match publisher.service_type {
-        iox2_service_type_e::IPC => send_slice_copy(
-            &publisher.value.as_mut().ipc,
-            data_ptr,
-            size_of_element,
-            number_of_elements,
-            number_of_recipients,
-        ),
-        iox2_service_type_e::LOCAL => send_slice_copy(
-            &publisher.value.as_mut().local,
-            data_ptr,
-            size_of_element,
-            number_of_elements,
-            number_of_recipients,
-        ),
+        match publisher.service_type {
+            iox2_service_type_e::IPC => send_slice_copy(
+                &publisher.value.as_mut().ipc,
+                data_ptr,
+                size_of_element,
+                number_of_elements,
+                number_of_recipients,
+            ),
+            iox2_service_type_e::LOCAL => send_slice_copy(
+                &publisher.value.as_mut().local,
+                data_ptr,
+                size_of_element,
+                number_of_elements,
+                number_of_recipients,
+            ),
+        }
     }
 }
 
@@ -462,7 +468,7 @@ pub unsafe extern "C" fn iox2_publisher_send_slice_copy(
 /// * `data_ptr` non-null pointer to a valid position in memory
 /// * `data_len` the size of the payload memory
 /// * `number_of_recipients` can be null, otherwise a valid pointer to an [`usize`]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publisher_send_copy(
     publisher_handle: iox2_publisher_h_ref,
     data_ptr: *const c_void,
@@ -472,22 +478,23 @@ pub unsafe extern "C" fn iox2_publisher_send_copy(
     publisher_handle.assert_non_null();
     debug_assert!(!data_ptr.is_null());
     debug_assert!(data_len != 0);
+    unsafe {
+        let publisher = &mut *publisher_handle.as_type();
 
-    let publisher = &mut *publisher_handle.as_type();
-
-    match publisher.service_type {
-        iox2_service_type_e::IPC => send_copy(
-            &publisher.value.as_mut().ipc,
-            data_ptr,
-            data_len,
-            number_of_recipients,
-        ),
-        iox2_service_type_e::LOCAL => send_copy(
-            &publisher.value.as_mut().local,
-            data_ptr,
-            data_len,
-            number_of_recipients,
-        ),
+        match publisher.service_type {
+            iox2_service_type_e::IPC => send_copy(
+                &publisher.value.as_mut().ipc,
+                data_ptr,
+                data_len,
+                number_of_recipients,
+            ),
+            iox2_service_type_e::LOCAL => send_copy(
+                &publisher.value.as_mut().local,
+                data_ptr,
+                data_len,
+                number_of_recipients,
+            ),
+        }
     }
 }
 
@@ -507,7 +514,7 @@ pub unsafe extern "C" fn iox2_publisher_send_copy(
 ///
 /// * `publisher_handle` is valid and non-null
 /// * The `sample_handle_ptr` is pointing to a valid [`iox2_sample_mut_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publisher_loan_slice_uninit(
     publisher_handle: iox2_publisher_h_ref,
     sample_struct_ptr: *mut iox2_sample_mut_t,
@@ -516,8 +523,6 @@ pub unsafe extern "C" fn iox2_publisher_loan_slice_uninit(
 ) -> c_int {
     publisher_handle.assert_non_null();
     debug_assert!(!sample_handle_ptr.is_null());
-
-    *sample_handle_ptr = core::ptr::null_mut();
 
     let init_sample_struct_ptr = |sample_struct_ptr: *mut iox2_sample_mut_t| {
         let mut sample_struct_ptr = sample_struct_ptr;
@@ -531,46 +536,48 @@ pub unsafe extern "C" fn iox2_publisher_loan_slice_uninit(
 
         (sample_struct_ptr, deleter)
     };
+    unsafe {
+        *sample_handle_ptr = core::ptr::null_mut();
+        let publisher = &mut *publisher_handle.as_type();
 
-    let publisher = &mut *publisher_handle.as_type();
-
-    match publisher.service_type {
-        iox2_service_type_e::IPC => match publisher
-            .value
-            .as_ref()
-            .ipc
-            .loan_custom_payload(number_of_elements)
-        {
-            Ok(sample) => {
-                let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
-                (*sample_struct_ptr).init(
-                    publisher.service_type,
-                    SampleMutUninitUnion::new_ipc(sample),
-                    deleter,
-                );
-                *sample_handle_ptr = (*sample_struct_ptr).as_handle();
-                IOX2_OK
-            }
-            Err(error) => error.into_c_int(),
-        },
-        iox2_service_type_e::LOCAL => match publisher
-            .value
-            .as_ref()
-            .local
-            .loan_custom_payload(number_of_elements)
-        {
-            Ok(sample) => {
-                let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
-                (*sample_struct_ptr).init(
-                    publisher.service_type,
-                    SampleMutUninitUnion::new_local(sample),
-                    deleter,
-                );
-                *sample_handle_ptr = (*sample_struct_ptr).as_handle();
-                IOX2_OK
-            }
-            Err(error) => error.into_c_int(),
-        },
+        match publisher.service_type {
+            iox2_service_type_e::IPC => match publisher
+                .value
+                .as_ref()
+                .ipc
+                .loan_custom_payload(number_of_elements)
+            {
+                Ok(sample) => {
+                    let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
+                    (*sample_struct_ptr).init(
+                        publisher.service_type,
+                        SampleMutUninitUnion::new_ipc(sample),
+                        deleter,
+                    );
+                    *sample_handle_ptr = (*sample_struct_ptr).as_handle();
+                    IOX2_OK
+                }
+                Err(error) => error.into_c_int(),
+            },
+            iox2_service_type_e::LOCAL => match publisher
+                .value
+                .as_ref()
+                .local
+                .loan_custom_payload(number_of_elements)
+            {
+                Ok(sample) => {
+                    let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
+                    (*sample_struct_ptr).init(
+                        publisher.service_type,
+                        SampleMutUninitUnion::new_local(sample),
+                        deleter,
+                    );
+                    *sample_handle_ptr = (*sample_struct_ptr).as_handle();
+                    IOX2_OK
+                }
+                Err(error) => error.into_c_int(),
+            },
+        }
     }
 }
 
@@ -585,23 +592,25 @@ pub unsafe extern "C" fn iox2_publisher_loan_slice_uninit(
 /// # Safety
 ///
 /// * The `publisher_handle` is still valid after the return of this function and can be use in another function call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publisher_update_connections(
     publisher_handle: iox2_publisher_h_ref,
 ) -> c_int {
     publisher_handle.assert_non_null();
+    unsafe {
+        let publisher = &mut *publisher_handle.as_type();
 
-    let publisher = &mut *publisher_handle.as_type();
-
-    match publisher.service_type {
-        iox2_service_type_e::IPC => match publisher.value.as_ref().ipc.update_connections() {
-            Ok(()) => IOX2_OK,
-            Err(error) => error.into_c_int(),
-        },
-        iox2_service_type_e::LOCAL => match publisher.value.as_ref().local.update_connections() {
-            Ok(()) => IOX2_OK,
-            Err(error) => error.into_c_int(),
-        },
+        match publisher.service_type {
+            iox2_service_type_e::IPC => match publisher.value.as_ref().ipc.update_connections() {
+                Ok(()) => IOX2_OK,
+                Err(error) => error.into_c_int(),
+            },
+            iox2_service_type_e::LOCAL => match publisher.value.as_ref().local.update_connections()
+            {
+                Ok(()) => IOX2_OK,
+                Err(error) => error.into_c_int(),
+            },
+        }
     }
 }
 
@@ -616,21 +625,22 @@ pub unsafe extern "C" fn iox2_publisher_update_connections(
 /// * The `publisher_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_publisher_t`] can be re-used with a call to
 ///   [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publisher_drop(publisher_handle: iox2_publisher_h) {
     publisher_handle.assert_non_null();
+    unsafe {
+        let publisher = &mut *publisher_handle.as_type();
 
-    let publisher = &mut *publisher_handle.as_type();
-
-    match publisher.service_type {
-        iox2_service_type_e::IPC => {
-            ManuallyDrop::drop(&mut publisher.value.as_mut().ipc);
+        match publisher.service_type {
+            iox2_service_type_e::IPC => {
+                ManuallyDrop::drop(&mut publisher.value.as_mut().ipc);
+            }
+            iox2_service_type_e::LOCAL => {
+                ManuallyDrop::drop(&mut publisher.value.as_mut().local);
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            ManuallyDrop::drop(&mut publisher.value.as_mut().local);
-        }
+        (publisher.deleter)(publisher);
     }
-    (publisher.deleter)(publisher);
 }
 
 // END C API

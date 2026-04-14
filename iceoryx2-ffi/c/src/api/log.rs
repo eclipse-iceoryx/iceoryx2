@@ -15,12 +15,12 @@
 
 // BEGIN type definition
 
-use core::ffi::{c_char, CStr};
+use core::ffi::{CStr, c_char};
 
 use alloc::string::ToString;
 
 use iceoryx2_log::{
-    get_log_level, set_log_level, set_logger, Log, LogLevel, __internal_print_log_msg,
+    __internal_print_log_msg, Log, LogLevel, get_log_level, set_log_level, set_logger,
 };
 
 use iceoryx2_bb_concurrency::once::Once;
@@ -127,7 +127,7 @@ pub type iox2_log_callback = extern "C" fn(iox2_log_level_e, *const c_char, *con
 ///
 ///  * origin must be either NULL or a valid pointer to a string.
 ///  * message must be a valid pointer to a string
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_log(
     log_level: iox2_log_level_e,
     origin: *const c_char,
@@ -136,18 +136,20 @@ pub unsafe extern "C" fn iox2_log(
     debug_assert!(!message.is_null());
 
     let empty_origin = b"\0";
-    let origin = if origin.is_null() {
-        CStr::from_bytes_with_nul(empty_origin).unwrap()
-    } else {
-        CStr::from_ptr(origin)
-    };
-    let message = CStr::from_ptr(message);
+    unsafe {
+        let origin = if origin.is_null() {
+            CStr::from_bytes_with_nul(empty_origin).unwrap()
+        } else {
+            CStr::from_ptr(origin)
+        };
+        let message = CStr::from_ptr(message);
 
-    __internal_print_log_msg(
-        log_level.into(),
-        format_args!("{}", origin.to_string_lossy()),
-        format_args!("{}", message.to_string_lossy()),
-    );
+        __internal_print_log_msg(
+            log_level.into(),
+            format_args!("{}", origin.to_string_lossy()),
+            format_args!("{}", message.to_string_lossy()),
+        );
+    }
 }
 
 /// Sets the log level from environment variable or defaults it if variable does not exist
@@ -158,7 +160,7 @@ pub unsafe extern "C" fn iox2_log(
 /// only messages matching that level will be forwarded. You may also need to
 /// configure the framework’s own log level settings.
 #[cfg(feature = "std")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_set_log_level_from_env_or_default() {
     use iceoryx2_log::set_log_level_from_env_or_default;
 
@@ -173,7 +175,7 @@ pub unsafe extern "C" fn iox2_set_log_level_from_env_or_default() {
 /// only messages matching that level will be forwarded. You may also need to
 /// configure the framework’s own log level settings.
 #[cfg(feature = "std")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_set_log_level_from_env_or(v: iox2_log_level_e) {
     use iceoryx2_log::set_log_level_from_env_or;
 
@@ -187,13 +189,13 @@ pub unsafe extern "C" fn iox2_set_log_level_from_env_or(v: iox2_log_level_e) {
 /// When using external frameworks, the log level should be set explicitly, as
 /// only messages matching that level will be forwarded. You may also need to
 /// configure the framework’s own log level settings.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_set_log_level(v: iox2_log_level_e) {
     set_log_level(v.into());
 }
 
 /// Returns the current log level.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_get_log_level() -> iox2_log_level_e {
     get_log_level().into()
 }
@@ -201,14 +203,16 @@ pub unsafe extern "C" fn iox2_get_log_level() -> iox2_log_level_e {
 /// Sets the logger that shall be used. This function can only be called once and must be called
 /// before any log message was created.
 /// It returns true if the logger was set, otherwise false.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_set_logger(logger: iox2_log_callback) -> bool {
-    INIT.call_once(|| {
-        LOGGER = Some(CLogger::new(logger));
-    });
+    unsafe {
+        INIT.call_once(|| {
+            LOGGER = Some(CLogger::new(logger));
+        });
 
-    #[allow(static_mut_refs)] // internally used and the logger is never changed once it was set
-    set_logger(LOGGER.as_ref().unwrap())
+        #[allow(static_mut_refs)] // internally used and the logger is never changed once it was set
+        set_logger(LOGGER.as_ref().unwrap())
+    }
 }
 
 // END C API

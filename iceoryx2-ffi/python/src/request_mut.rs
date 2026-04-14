@@ -126,10 +126,10 @@ impl RequestMut {
     /// After this call the `RequestMut` is no longer usable!
     pub fn delete(&mut self) {
         match &mut *self.value.lock() {
-            RequestMutType::Ipc(ref mut v) => {
+            RequestMutType::Ipc(v) => {
                 v.take();
             }
-            RequestMutType::Local(ref mut v) => {
+            RequestMutType::Local(v) => {
                 v.take();
             }
         }
@@ -138,7 +138,7 @@ impl RequestMut {
     /// Sends the `RequestMut` to all connected `Server`s of the `Service`.
     pub fn send(&self) -> PyResult<PendingResponse> {
         match &mut *self.value.lock() {
-            RequestMutType::Ipc(ref mut v) => {
+            RequestMutType::Ipc(v) => {
                 let request = v.take().unwrap();
                 Ok(PendingResponse {
                     value: Parc::new(PendingResponseType::Ipc(Some(
@@ -152,7 +152,7 @@ impl RequestMut {
                     response_payload_type_details: self.response_payload_type_details.clone(),
                 })
             }
-            RequestMutType::Local(ref mut v) => {
+            RequestMutType::Local(v) => {
                 let request = v.take().unwrap();
                 Ok(PendingResponse {
                     value: Parc::new(PendingResponseType::Local(Some(

@@ -14,8 +14,8 @@ use std::alloc::Layout;
 use std::ptr::copy_nonoverlapping;
 
 use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
-use iceoryx2::service::builder::blackboard::KeyMemory;
 use iceoryx2::service::builder::CustomKeyMarker;
+use iceoryx2::service::builder::blackboard::KeyMemory;
 use pyo3::prelude::*;
 
 use crate::attribute_specifier::AttributeSpecifier;
@@ -97,12 +97,12 @@ impl ServiceBuilderBlackboardCreator {
     /// indentical in all participants since the communication is always strongly typed.
     pub fn __set_key_type_details(&mut self, value: &TypeDetail) -> Self {
         match &mut *self.value.lock() {
-            ServiceBuilderBlackboardCreatorType::Ipc(ref mut v) => {
+            ServiceBuilderBlackboardCreatorType::Ipc(v) => {
                 let this = v.take().unwrap();
                 let this = unsafe { this.__internal_set_key_type_details(&value.0) };
                 self.clone_ipc(this)
             }
-            ServiceBuilderBlackboardCreatorType::Local(ref mut v) => {
+            ServiceBuilderBlackboardCreatorType::Local(v) => {
                 let this = v.take().unwrap();
                 let this = unsafe { this.__internal_set_key_type_details(&value.0) };
                 self.clone_local(this)
@@ -114,7 +114,7 @@ impl ServiceBuilderBlackboardCreator {
     /// blackboard.
     pub fn __set_key_eq_cmp_func(&mut self, key_eq_func: Py<PyAny>) -> Self {
         match &mut *self.value.lock() {
-            ServiceBuilderBlackboardCreatorType::Ipc(ref mut v) => {
+            ServiceBuilderBlackboardCreatorType::Ipc(v) => {
                 let this = v.take().unwrap();
                 let eq_func = Box::new(move |lhs: *const u8, rhs: *const u8| -> bool {
                     Python::attach(|py| {
@@ -131,7 +131,7 @@ impl ServiceBuilderBlackboardCreator {
                 };
                 self.clone_ipc(this)
             }
-            ServiceBuilderBlackboardCreatorType::Local(ref mut v) => {
+            ServiceBuilderBlackboardCreatorType::Local(v) => {
                 let this = v.take().unwrap();
                 let eq_func = Box::new(move |lhs: *const u8, rhs: *const u8| -> bool {
                     Python::attach(|py| {
@@ -154,12 +154,12 @@ impl ServiceBuilderBlackboardCreator {
     /// Defines how many `Reader`s shall be supported at most.
     pub fn max_readers(&mut self, value: usize) -> Self {
         match &mut *self.value.lock() {
-            ServiceBuilderBlackboardCreatorType::Ipc(ref mut v) => {
+            ServiceBuilderBlackboardCreatorType::Ipc(v) => {
                 let this = v.take().unwrap();
                 let this = this.max_readers(value);
                 self.clone_ipc(this)
             }
-            ServiceBuilderBlackboardCreatorType::Local(ref mut v) => {
+            ServiceBuilderBlackboardCreatorType::Local(v) => {
                 let this = v.take().unwrap();
                 let this = this.max_readers(value);
                 self.clone_local(this)
@@ -170,12 +170,12 @@ impl ServiceBuilderBlackboardCreator {
     /// Defines how many `Node`s shall be able to open the `Service` in parallel.
     pub fn max_nodes(&mut self, value: usize) -> Self {
         match &mut *self.value.lock() {
-            ServiceBuilderBlackboardCreatorType::Ipc(ref mut v) => {
+            ServiceBuilderBlackboardCreatorType::Ipc(v) => {
                 let this = v.take().unwrap();
                 let this = this.max_nodes(value);
                 self.clone_ipc(this)
             }
-            ServiceBuilderBlackboardCreatorType::Local(ref mut v) => {
+            ServiceBuilderBlackboardCreatorType::Local(v) => {
                 let this = v.take().unwrap();
                 let this = this.max_nodes(value);
                 self.clone_local(this)
@@ -191,7 +191,7 @@ impl ServiceBuilderBlackboardCreator {
         let value_buffer = unsafe { std::alloc::alloc(value_layout) };
         unsafe { copy_nonoverlapping(value as *const u8, value_buffer, value_details.0.size()) };
         match &mut *self.value.lock() {
-            ServiceBuilderBlackboardCreatorType::Ipc(ref mut v) => {
+            ServiceBuilderBlackboardCreatorType::Ipc(v) => {
                 let this = v.take().unwrap();
                 let this = unsafe {
                     this.__internal_add(
@@ -205,7 +205,7 @@ impl ServiceBuilderBlackboardCreator {
                 };
                 self.clone_ipc(this)
             }
-            ServiceBuilderBlackboardCreatorType::Local(ref mut v) => {
+            ServiceBuilderBlackboardCreatorType::Local(v) => {
                 let this = v.take().unwrap();
                 let this = unsafe {
                     this.__internal_add(
@@ -225,7 +225,7 @@ impl ServiceBuilderBlackboardCreator {
     /// Creates a new `Service`.
     pub fn create(&mut self) -> PyResult<PortFactoryBlackboard> {
         match &mut *self.value.lock() {
-            ServiceBuilderBlackboardCreatorType::Ipc(ref mut v) => {
+            ServiceBuilderBlackboardCreatorType::Ipc(v) => {
                 let this = v.take().unwrap();
                 Ok(PortFactoryBlackboard::new(
                     PortFactoryBlackboardType::Ipc(Some(
@@ -235,7 +235,7 @@ impl ServiceBuilderBlackboardCreator {
                     self.key_type_storage.clone(),
                 ))
             }
-            ServiceBuilderBlackboardCreatorType::Local(ref mut v) => {
+            ServiceBuilderBlackboardCreatorType::Local(v) => {
                 let this = v.take().unwrap();
                 Ok(PortFactoryBlackboard::new(
                     PortFactoryBlackboardType::Local(Some(
@@ -254,7 +254,7 @@ impl ServiceBuilderBlackboardCreator {
         attributes: &AttributeSpecifier,
     ) -> PyResult<PortFactoryBlackboard> {
         match &mut *self.value.lock() {
-            ServiceBuilderBlackboardCreatorType::Ipc(ref mut v) => {
+            ServiceBuilderBlackboardCreatorType::Ipc(v) => {
                 let this = v.take().unwrap();
                 Ok(PortFactoryBlackboard::new(
                     PortFactoryBlackboardType::Ipc(Some(
@@ -264,7 +264,7 @@ impl ServiceBuilderBlackboardCreator {
                     self.key_type_storage.clone(),
                 ))
             }
-            ServiceBuilderBlackboardCreatorType::Local(ref mut v) => {
+            ServiceBuilderBlackboardCreatorType::Local(v) => {
                 let this = v.take().unwrap();
                 Ok(PortFactoryBlackboard::new(
                     PortFactoryBlackboardType::Local(Some(
@@ -323,12 +323,12 @@ impl ServiceBuilderBlackboardOpener {
     /// indentical in all participants since the communication is always strongly typed.
     pub fn __set_key_type_details(&mut self, value: &TypeDetail) -> Self {
         match &mut *self.value.lock() {
-            ServiceBuilderBlackboardOpenerType::Ipc(ref mut v) => {
+            ServiceBuilderBlackboardOpenerType::Ipc(v) => {
                 let this = v.take().unwrap();
                 let this = unsafe { this.__internal_set_key_type_details(&value.0) };
                 self.clone_ipc(this)
             }
-            ServiceBuilderBlackboardOpenerType::Local(ref mut v) => {
+            ServiceBuilderBlackboardOpenerType::Local(v) => {
                 let this = v.take().unwrap();
                 let this = unsafe { this.__internal_set_key_type_details(&value.0) };
                 self.clone_local(this)
@@ -339,12 +339,12 @@ impl ServiceBuilderBlackboardOpener {
     /// Defines how many `Reader`s must be at least supported.
     pub fn max_readers(&mut self, value: usize) -> Self {
         match &mut *self.value.lock() {
-            ServiceBuilderBlackboardOpenerType::Ipc(ref mut v) => {
+            ServiceBuilderBlackboardOpenerType::Ipc(v) => {
                 let this = v.take().unwrap();
                 let this = this.max_readers(value);
                 self.clone_ipc(this)
             }
-            ServiceBuilderBlackboardOpenerType::Local(ref mut v) => {
+            ServiceBuilderBlackboardOpenerType::Local(v) => {
                 let this = v.take().unwrap();
                 let this = this.max_readers(value);
                 self.clone_local(this)
@@ -355,12 +355,12 @@ impl ServiceBuilderBlackboardOpener {
     /// Defines how many `Node`s must be at least supported.
     pub fn max_nodes(&mut self, value: usize) -> Self {
         match &mut *self.value.lock() {
-            ServiceBuilderBlackboardOpenerType::Ipc(ref mut v) => {
+            ServiceBuilderBlackboardOpenerType::Ipc(v) => {
                 let this = v.take().unwrap();
                 let this = this.max_nodes(value);
                 self.clone_ipc(this)
             }
-            ServiceBuilderBlackboardOpenerType::Local(ref mut v) => {
+            ServiceBuilderBlackboardOpenerType::Local(v) => {
                 let this = v.take().unwrap();
                 let this = this.max_nodes(value);
                 self.clone_local(this)
@@ -371,7 +371,7 @@ impl ServiceBuilderBlackboardOpener {
     /// Opens an existing `Service`.
     pub fn open(&mut self) -> PyResult<PortFactoryBlackboard> {
         match &mut *self.value.lock() {
-            ServiceBuilderBlackboardOpenerType::Ipc(ref mut v) => {
+            ServiceBuilderBlackboardOpenerType::Ipc(v) => {
                 let this = v.take().unwrap();
                 Ok(PortFactoryBlackboard::new(
                     PortFactoryBlackboardType::Ipc(Some(
@@ -381,7 +381,7 @@ impl ServiceBuilderBlackboardOpener {
                     self.key_type_details.clone(),
                 ))
             }
-            ServiceBuilderBlackboardOpenerType::Local(ref mut v) => {
+            ServiceBuilderBlackboardOpenerType::Local(v) => {
                 let this = v.take().unwrap();
                 Ok(PortFactoryBlackboard::new(
                     PortFactoryBlackboardType::Local(Some(
@@ -401,7 +401,7 @@ impl ServiceBuilderBlackboardOpener {
         verifier: &AttributeVerifier,
     ) -> PyResult<PortFactoryBlackboard> {
         match &mut *self.value.lock() {
-            ServiceBuilderBlackboardOpenerType::Ipc(ref mut v) => {
+            ServiceBuilderBlackboardOpenerType::Ipc(v) => {
                 let this = v.take().unwrap();
                 Ok(PortFactoryBlackboard::new(
                     PortFactoryBlackboardType::Ipc(Some(
@@ -411,7 +411,7 @@ impl ServiceBuilderBlackboardOpener {
                     self.key_type_details.clone(),
                 ))
             }
-            ServiceBuilderBlackboardOpenerType::Local(ref mut v) => {
+            ServiceBuilderBlackboardOpenerType::Local(v) => {
                 let this = v.take().unwrap();
                 Ok(PortFactoryBlackboard::new(
                     PortFactoryBlackboardType::Local(Some(

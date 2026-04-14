@@ -61,7 +61,7 @@ use iceoryx2_bb_container::string::strnlen;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::{group_name::GroupName, user_name::UserName};
 use iceoryx2_log::fail;
-use iceoryx2_pal_posix::posix::{errno::Errno, MemZeroedStruct};
+use iceoryx2_pal_posix::posix::{MemZeroedStruct, errno::Errno};
 use iceoryx2_pal_posix::*;
 
 use crate::{config::GROUP_BUFFER_SIZE, system_configuration::*};

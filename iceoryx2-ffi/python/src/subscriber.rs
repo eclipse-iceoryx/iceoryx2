@@ -122,10 +122,10 @@ impl Subscriber {
     /// After this call the `Subscriber` is no longer usable!
     pub fn delete(&mut self) {
         match &mut *self.value.lock() {
-            SubscriberType::Ipc(ref mut v) => {
+            SubscriberType::Ipc(v) => {
                 v.take();
             }
-            SubscriberType::Local(ref mut v) => {
+            SubscriberType::Local(v) => {
                 v.take();
             }
         }

@@ -2,7 +2,7 @@
 name = "iceoryx2-bb-threadsafe"
 description = "iceoryx2: [internal] threadsafe non-lock-free containers and constructs"
 categories = { workspace = true }
-edition = { workspace = true }
+edition = "2024"
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }
@@ -14,10 +14,10 @@ version = { workspace = true }
 default = []
 
 std = [
-  "iceoryx2-log/std",  
-  "iceoryx2-bb-container/std",  
-  "iceoryx2-bb-elementary/std",  
-  "iceoryx2-bb-posix/std",  
+  "iceoryx2-log/std",
+  "iceoryx2-bb-container/std",
+  "iceoryx2-bb-elementary/std",
+  "iceoryx2-bb-posix/std",
 ]
 
 [dependencies]

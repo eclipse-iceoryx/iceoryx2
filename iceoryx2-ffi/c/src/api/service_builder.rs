@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{iox2_service_type_e, AssertNonNullHandle, HandleToType};
+use crate::api::{AssertNonNullHandle, HandleToType, iox2_service_type_e};
 use crate::{
     iox2_service_builder_pub_sub_set_user_header_type_details,
     iox2_service_builder_request_response_set_request_header_type_details,
@@ -21,10 +21,10 @@ use crate::{
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::builder::{
-    blackboard::Creator as ServiceBuilderBlackboardCreator,
+    Builder as ServiceBuilderBase, blackboard::Creator as ServiceBuilderBlackboardCreator,
     blackboard::Opener as ServiceBuilderBlackboardOpener, event::Builder as ServiceBuilderEvent,
     publish_subscribe::Builder as ServiceBuilderPubSub,
-    request_response::Builder as ServiceBuilderRequestResponse, Builder as ServiceBuilderBase,
+    request_response::Builder as ServiceBuilderRequestResponse,
 };
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomKeyMarker, CustomPayloadMarker};
 use iceoryx2_bb_elementary::static_assert::*;
@@ -436,35 +436,36 @@ impl HandleToType for iox2_service_builder_blackboard_opener_h_ref {
 /// # Safety
 ///
 /// * The `service_builder_handle` is invalid after this call; The corresponding `iox2_service_builder_t` is now owned by the returned handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event(
     service_builder_handle: iox2_service_builder_h,
 ) -> iox2_service_builder_event_h {
     debug_assert!(!service_builder_handle.is_null());
+    unsafe {
+        let service_builders_struct = &mut *service_builder_handle.as_type();
 
-    let service_builders_struct = unsafe { &mut *service_builder_handle.as_type() };
+        match service_builders_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
 
-    match service_builders_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
+                let service_builder = ManuallyDrop::into_inner(service_builder.base);
+                service_builders_struct
+                    .set(ServiceBuilderUnion::new_ipc_event(service_builder.event()));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.base);
-            service_builders_struct
-                .set(ServiceBuilderUnion::new_ipc_event(service_builder.event()));
+                let service_builder = ManuallyDrop::into_inner(service_builder.base);
+                service_builders_struct.set(ServiceBuilderUnion::new_local_event(
+                    service_builder.event(),
+                ));
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.base);
-            service_builders_struct.set(ServiceBuilderUnion::new_local_event(
-                service_builder.event(),
-            ));
-        }
+        service_builder_handle as *mut _ as _
     }
-
-    service_builder_handle as *mut _ as _
 }
 
 /// This function transform the [`iox2_service_builder_h`] to a publish-subscribe service builder.
@@ -478,51 +479,52 @@ pub unsafe extern "C" fn iox2_service_builder_event(
 /// # Safety
 ///
 /// * The `service_builder_handle` is invalid after this call; The corresponding `iox2_service_builder_t` is now owned by the returned handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub(
     service_builder_handle: iox2_service_builder_h,
 ) -> iox2_service_builder_pub_sub_h {
     debug_assert!(!service_builder_handle.is_null());
+    unsafe {
+        let service_builders_struct = &mut *service_builder_handle.as_type();
 
-    let service_builders_struct = unsafe { &mut *service_builder_handle.as_type() };
+        match service_builders_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
 
-    match service_builders_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
+                let service_builder = ManuallyDrop::into_inner(service_builder.base);
+                service_builders_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                    service_builder
+                        .publish_subscribe::<PayloadFfi>()
+                        .user_header::<UserHeaderFfi>(),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.base);
-            service_builders_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
-                service_builder
-                    .publish_subscribe::<PayloadFfi>()
-                    .user_header::<UserHeaderFfi>(),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.base);
+                service_builders_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                    service_builder
+                        .publish_subscribe::<PayloadFfi>()
+                        .user_header::<UserHeaderFfi>(),
+                ));
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.base);
-            service_builders_struct.set(ServiceBuilderUnion::new_local_pub_sub(
-                service_builder
-                    .publish_subscribe::<PayloadFfi>()
-                    .user_header::<UserHeaderFfi>(),
-            ));
-        }
+        // set default user header type to ()
+        let user_header_type_name = "()";
+        iox2_service_builder_pub_sub_set_user_header_type_details(
+            &(service_builder_handle as *mut _ as _),
+            iox2_type_variant_e::FIXED_SIZE,
+            user_header_type_name.as_ptr() as *const core::ffi::c_char,
+            user_header_type_name.len(),
+            0,
+            1,
+        );
+
+        service_builder_handle as *mut _ as _
     }
-
-    // set default user header type to ()
-    let user_header_type_name = "()";
-    iox2_service_builder_pub_sub_set_user_header_type_details(
-        &(service_builder_handle as *mut _ as _),
-        iox2_type_variant_e::FIXED_SIZE,
-        user_header_type_name.as_ptr() as *const core::ffi::c_char,
-        user_header_type_name.len(),
-        0,
-        1,
-    );
-
-    service_builder_handle as *mut _ as _
 }
 
 /// This function transform the [`iox2_service_builder_h`] to a request-response service builder.
@@ -536,63 +538,64 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub(
 /// # Safety
 ///
 /// * The `service_builder_handle` is invalid after this call; The corresponding `iox2_service_builder_t` is now owned by the returned handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_request_response(
     service_builder_handle: iox2_service_builder_h,
 ) -> iox2_service_builder_request_response_h {
     debug_assert!(!service_builder_handle.is_null());
+    unsafe {
+        let service_builders_struct = &mut *service_builder_handle.as_type();
 
-    let service_builders_struct = unsafe { &mut *service_builder_handle.as_type() };
+        match service_builders_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
 
-    match service_builders_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
+                let service_builder = ManuallyDrop::into_inner(service_builder.base);
+                service_builders_struct.set(ServiceBuilderUnion::new_ipc_request_response(
+                    service_builder
+                        .request_response::<PayloadFfi, PayloadFfi>()
+                        .request_user_header::<UserHeaderFfi>()
+                        .response_user_header::<UserHeaderFfi>(),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.base);
-            service_builders_struct.set(ServiceBuilderUnion::new_ipc_request_response(
-                service_builder
-                    .request_response::<PayloadFfi, PayloadFfi>()
-                    .request_user_header::<UserHeaderFfi>()
-                    .response_user_header::<UserHeaderFfi>(),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.base);
+                service_builders_struct.set(ServiceBuilderUnion::new_local_request_response(
+                    service_builder
+                        .request_response::<PayloadFfi, PayloadFfi>()
+                        .request_user_header::<UserHeaderFfi>()
+                        .response_user_header::<UserHeaderFfi>(),
+                ));
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.base);
-            service_builders_struct.set(ServiceBuilderUnion::new_local_request_response(
-                service_builder
-                    .request_response::<PayloadFfi, PayloadFfi>()
-                    .request_user_header::<UserHeaderFfi>()
-                    .response_user_header::<UserHeaderFfi>(),
-            ));
-        }
+        // set default request header type to ()
+        let user_header_type_name = "()";
+        iox2_service_builder_request_response_set_request_header_type_details(
+            &(service_builder_handle as *mut _ as _),
+            iox2_type_variant_e::FIXED_SIZE,
+            user_header_type_name.as_ptr() as *const core::ffi::c_char,
+            user_header_type_name.len(),
+            0,
+            1,
+        );
+
+        // set default response header type to ()
+        iox2_service_builder_request_response_set_response_header_type_details(
+            &(service_builder_handle as *mut _ as _),
+            iox2_type_variant_e::FIXED_SIZE,
+            user_header_type_name.as_ptr() as *const core::ffi::c_char,
+            user_header_type_name.len(),
+            0,
+            1,
+        );
+
+        service_builder_handle as *mut _ as _
     }
-
-    // set default request header type to ()
-    let user_header_type_name = "()";
-    iox2_service_builder_request_response_set_request_header_type_details(
-        &(service_builder_handle as *mut _ as _),
-        iox2_type_variant_e::FIXED_SIZE,
-        user_header_type_name.as_ptr() as *const core::ffi::c_char,
-        user_header_type_name.len(),
-        0,
-        1,
-    );
-
-    // set default response header type to ()
-    iox2_service_builder_request_response_set_response_header_type_details(
-        &(service_builder_handle as *mut _ as _),
-        iox2_type_variant_e::FIXED_SIZE,
-        user_header_type_name.as_ptr() as *const core::ffi::c_char,
-        user_header_type_name.len(),
-        0,
-        1,
-    );
-
-    service_builder_handle as *mut _ as _
 }
 
 /// This function transforms the [`iox2_service_builder_h`] to a blackboard service creator.
@@ -606,36 +609,37 @@ pub unsafe extern "C" fn iox2_service_builder_request_response(
 /// # Safety
 ///
 /// * The `service_builder_handle` is invalid after this call; The corresponding `iox2_service_builder_t` is now owned by the returned handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_creator(
     service_builder_handle: iox2_service_builder_h,
 ) -> iox2_service_builder_blackboard_creator_h {
     debug_assert!(!service_builder_handle.is_null());
+    unsafe {
+        let service_builders_struct = &mut *service_builder_handle.as_type();
 
-    let service_builders_struct = unsafe { &mut *service_builder_handle.as_type() };
+        match service_builders_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
 
-    match service_builders_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
+                let service_builder = ManuallyDrop::into_inner(service_builder.base);
+                service_builders_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
+                    service_builder.blackboard_creator::<KeyFfi>(),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.base);
-            service_builders_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
-                service_builder.blackboard_creator::<KeyFfi>(),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.base);
+                service_builders_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
+                    service_builder.blackboard_creator::<KeyFfi>(),
+                ));
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.base);
-            service_builders_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
-                service_builder.blackboard_creator::<KeyFfi>(),
-            ));
-        }
+        service_builder_handle as *mut _ as _
     }
-
-    service_builder_handle as *mut _ as _
 }
 
 /// This function transforms the [`iox2_service_builder_h`] to a blackboard service opener.
@@ -649,36 +653,37 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator(
 /// # Safety
 ///
 /// * The `service_builder_handle` is invalid after this call; The corresponding `iox2_service_builder_t` is now owned by the returned handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_opener(
     service_builder_handle: iox2_service_builder_h,
 ) -> iox2_service_builder_blackboard_opener_h {
     debug_assert!(!service_builder_handle.is_null());
+    unsafe {
+        let service_builders_struct = &mut *service_builder_handle.as_type();
 
-    let service_builders_struct = unsafe { &mut *service_builder_handle.as_type() };
+        match service_builders_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
 
-    match service_builders_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
+                let service_builder = ManuallyDrop::into_inner(service_builder.base);
+                service_builders_struct.set(ServiceBuilderUnion::new_ipc_blackboard_opener(
+                    service_builder.blackboard_opener::<KeyFfi>(),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.base);
-            service_builders_struct.set(ServiceBuilderUnion::new_ipc_blackboard_opener(
-                service_builder.blackboard_opener::<KeyFfi>(),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.base);
+                service_builders_struct.set(ServiceBuilderUnion::new_local_blackboard_opener(
+                    service_builder.blackboard_opener::<KeyFfi>(),
+                ));
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.base);
-            service_builders_struct.set(ServiceBuilderUnion::new_local_blackboard_opener(
-                service_builder.blackboard_opener::<KeyFfi>(),
-            ));
-        }
+        service_builder_handle as *mut _ as _
     }
-
-    service_builder_handle as *mut _ as _
 }
 
 // END C API

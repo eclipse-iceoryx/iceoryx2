@@ -13,15 +13,15 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    c_size_t, iox2_event_id_t, iox2_service_type_e, iox2_unique_notifier_id_h,
-    iox2_unique_notifier_id_t, AssertNonNullHandle, HandleToType, IntoCInt, IOX2_OK,
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, c_size_t, iox2_event_id_t,
+    iox2_service_type_e, iox2_unique_notifier_id_h, iox2_unique_notifier_id_t,
 };
 
 use iceoryx2::port::notifier::{Notifier, NotifierNotifyError};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_ffi_macros::iceoryx2_ffi;
 use iceoryx2_ffi_macros::CStrRepr;
+use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
@@ -150,7 +150,7 @@ impl HandleToType for iox2_notifier_h_ref {
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_notifier_notify_error_string(
     error: iox2_notifier_notify_error_e,
 ) -> *const c_char {
@@ -165,7 +165,7 @@ pub unsafe extern "C" fn iox2_notifier_notify_error_string(
 /// * `id_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_unique_notifier_id_t`].
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `id_handle_ptr` valid pointer to a [`iox2_unique_notifier_id_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_notifier_id(
     notifier_handle: iox2_notifier_h_ref,
     id_struct_ptr: *mut iox2_unique_notifier_id_t,
@@ -182,16 +182,17 @@ pub unsafe extern "C" fn iox2_notifier_id(
         storage_ptr = iox2_unique_notifier_id_t::alloc();
     }
     debug_assert!(!storage_ptr.is_null());
+    unsafe {
+        let notifier = &mut *notifier_handle.as_type();
 
-    let notifier = &mut *notifier_handle.as_type();
+        let id = match notifier.service_type {
+            iox2_service_type_e::IPC => notifier.value.as_mut().ipc.id(),
+            iox2_service_type_e::LOCAL => notifier.value.as_mut().local.id(),
+        };
 
-    let id = match notifier.service_type {
-        iox2_service_type_e::IPC => notifier.value.as_mut().ipc.id(),
-        iox2_service_type_e::LOCAL => notifier.value.as_mut().local.id(),
-    };
-
-    (*storage_ptr).init(id, deleter);
-    *id_handle_ptr = (*storage_ptr).as_handle();
+        (*storage_ptr).init(id, deleter);
+        *id_handle_ptr = (*storage_ptr).as_handle();
+    }
 }
 
 /// Returns the deadline of the notifier's service. If there is a deadline set, the provided
@@ -203,7 +204,7 @@ pub unsafe extern "C" fn iox2_notifier_id(
 /// * `notifier_handle` is valid, non-null and was obtained via [`iox2_port_factory_listener_builder_create`](crate::iox2_port_factory_listener_builder_create)
 /// * `seconds` is pointing to a valid memory location and non-null
 /// * `nanoseconds` is pointing to a valid memory location and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_notifier_deadline(
     notifier_handle: iox2_notifier_h_ref,
     seconds: *mut u64,
@@ -212,20 +213,21 @@ pub unsafe extern "C" fn iox2_notifier_deadline(
     notifier_handle.assert_non_null();
     debug_assert!(!seconds.is_null());
     debug_assert!(!nanoseconds.is_null());
+    unsafe {
+        let notifier = &mut *notifier_handle.as_type();
 
-    let notifier = &mut *notifier_handle.as_type();
+        let deadline = match notifier.service_type {
+            iox2_service_type_e::IPC => notifier.value.as_mut().ipc.deadline(),
+            iox2_service_type_e::LOCAL => notifier.value.as_mut().local.deadline(),
+        };
 
-    let deadline = match notifier.service_type {
-        iox2_service_type_e::IPC => notifier.value.as_mut().ipc.deadline(),
-        iox2_service_type_e::LOCAL => notifier.value.as_mut().local.deadline(),
-    };
-
-    deadline
-        .map(|v| {
-            *seconds = v.as_secs();
-            *nanoseconds = v.subsec_nanos();
-        })
-        .is_some()
+        deadline
+            .map(|v| {
+                *seconds = v.as_secs();
+                *nanoseconds = v.subsec_nanos();
+            })
+            .is_some()
+    }
 }
 
 /// Notifies all [`iox2_listener_h`](crate::iox2_listener_h) connected to the service
@@ -242,31 +244,31 @@ pub unsafe extern "C" fn iox2_notifier_deadline(
 /// # Safety
 ///
 /// `notifier_handle` must be a valid handle and is still valid after the return of this function and can be use in another function call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_notifier_notify(
     notifier_handle: iox2_notifier_h_ref,
     number_of_notified_listener_ptr: *mut c_size_t,
 ) -> c_int {
     notifier_handle.assert_non_null();
+    unsafe {
+        let notifier = &mut *notifier_handle.as_type();
 
-    let notifier = &mut *notifier_handle.as_type();
+        let notify_result = match notifier.service_type {
+            iox2_service_type_e::IPC => notifier.value.as_mut().ipc.notify(),
+            iox2_service_type_e::LOCAL => notifier.value.as_mut().local.notify(),
+        };
 
-    let notify_result = match notifier.service_type {
-        iox2_service_type_e::IPC => notifier.value.as_mut().ipc.notify(),
-        iox2_service_type_e::LOCAL => notifier.value.as_mut().local.notify(),
-    };
-
-    match notify_result {
-        Ok(count) => {
-            if !number_of_notified_listener_ptr.is_null() {
-                *number_of_notified_listener_ptr = count;
+        match notify_result {
+            Ok(count) => {
+                if !number_of_notified_listener_ptr.is_null() {
+                    *number_of_notified_listener_ptr = count;
+                }
+            }
+            Err(error) => {
+                return error.into_c_int();
             }
         }
-        Err(error) => {
-            return error.into_c_int();
-        }
     }
-
     IOX2_OK
 }
 
@@ -286,7 +288,7 @@ pub unsafe extern "C" fn iox2_notifier_notify(
 ///
 /// `notifier_handle` must be a valid handle and is still valid after the return of this function and can be use in another function call.
 /// `custom_event_id_ptr` must not be a NULL pointer.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_notifier_notify_with_custom_event_id(
     notifier_handle: iox2_notifier_h_ref,
     custom_event_id_ptr: *const iox2_event_id_t,
@@ -294,34 +296,34 @@ pub unsafe extern "C" fn iox2_notifier_notify_with_custom_event_id(
 ) -> c_int {
     notifier_handle.assert_non_null();
     debug_assert!(!custom_event_id_ptr.is_null());
+    unsafe {
+        let event_id = (*custom_event_id_ptr).into();
 
-    let event_id = (*custom_event_id_ptr).into();
+        let notifier = &mut *notifier_handle.as_type();
+        let notify_result = match notifier.service_type {
+            iox2_service_type_e::IPC => notifier
+                .value
+                .as_mut()
+                .ipc
+                .notify_with_custom_event_id(event_id),
+            iox2_service_type_e::LOCAL => notifier
+                .value
+                .as_mut()
+                .local
+                .notify_with_custom_event_id(event_id),
+        };
 
-    let notifier = &mut *notifier_handle.as_type();
-    let notify_result = match notifier.service_type {
-        iox2_service_type_e::IPC => notifier
-            .value
-            .as_mut()
-            .ipc
-            .notify_with_custom_event_id(event_id),
-        iox2_service_type_e::LOCAL => notifier
-            .value
-            .as_mut()
-            .local
-            .notify_with_custom_event_id(event_id),
-    };
-
-    match notify_result {
-        Ok(count) => {
-            if !number_of_notified_listener_ptr.is_null() {
-                *number_of_notified_listener_ptr = count;
+        match notify_result {
+            Ok(count) => {
+                if !number_of_notified_listener_ptr.is_null() {
+                    *number_of_notified_listener_ptr = count;
+                }
+            }
+            Err(error) => {
+                return error.into_c_int();
             }
         }
-        Err(error) => {
-            return error.into_c_int();
-        }
     }
-
     IOX2_OK
 }
 
@@ -336,21 +338,22 @@ pub unsafe extern "C" fn iox2_notifier_notify_with_custom_event_id(
 /// * The `notifier_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_notifier_t`] can be re-used with a call to
 ///   [`iox2_port_factory_notifier_builder_create`](crate::iox2_port_factory_notifier_builder_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_notifier_drop(notifier_handle: iox2_notifier_h) {
     debug_assert!(!notifier_handle.is_null());
+    unsafe {
+        let notifier = &mut *notifier_handle.as_type();
 
-    let notifier = &mut *notifier_handle.as_type();
-
-    match notifier.service_type {
-        iox2_service_type_e::IPC => {
-            ManuallyDrop::drop(&mut notifier.value.as_mut().ipc);
+        match notifier.service_type {
+            iox2_service_type_e::IPC => {
+                ManuallyDrop::drop(&mut notifier.value.as_mut().ipc);
+            }
+            iox2_service_type_e::LOCAL => {
+                ManuallyDrop::drop(&mut notifier.value.as_mut().local);
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            ManuallyDrop::drop(&mut notifier.value.as_mut().local);
-        }
+        (notifier.deleter)(notifier);
     }
-    (notifier.deleter)(notifier);
 }
 
 // END C API

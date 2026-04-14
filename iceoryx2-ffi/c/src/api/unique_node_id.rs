@@ -89,7 +89,7 @@ impl HandleToType for iox2_unique_node_id_h_ref {
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `node_id_ptr` - Must be a valid [`iox2_unique_node_id_ptr`]
 /// * `node_id_handle_ptr` - Must point to a valid [`iox2_unique_node_id_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_unique_node_id_clone_from_ptr(
     node_id_struct_ptr: *mut iox2_unique_node_id_t,
     node_id_ptr: iox2_unique_node_id_ptr,
@@ -97,24 +97,23 @@ pub unsafe extern "C" fn iox2_unique_node_id_clone_from_ptr(
 ) {
     debug_assert!(!node_id_handle_ptr.is_null());
     debug_assert!(!node_id_ptr.is_null());
-
-    *node_id_handle_ptr = core::ptr::null_mut();
-
-    let mut node_id_struct_ptr = node_id_struct_ptr;
-    fn no_op(_: *mut iox2_unique_node_id_t) {}
-    let mut deleter: fn(*mut iox2_unique_node_id_t) = no_op;
-    if node_id_struct_ptr.is_null() {
-        node_id_struct_ptr = iox2_unique_node_id_t::alloc();
-        deleter = iox2_unique_node_id_t::dealloc;
-    }
-    debug_assert!(!node_id_struct_ptr.is_null());
-
     unsafe {
-        (*node_id_struct_ptr).deleter = deleter;
-    }
+        *node_id_handle_ptr = core::ptr::null_mut();
 
-    (*node_id_struct_ptr).value.init(*node_id_ptr);
-    *node_id_handle_ptr = (*node_id_struct_ptr).as_handle();
+        let mut node_id_struct_ptr = node_id_struct_ptr;
+        fn no_op(_: *mut iox2_unique_node_id_t) {}
+        let mut deleter: fn(*mut iox2_unique_node_id_t) = no_op;
+        if node_id_struct_ptr.is_null() {
+            node_id_struct_ptr = iox2_unique_node_id_t::alloc();
+            deleter = iox2_unique_node_id_t::dealloc;
+        }
+        debug_assert!(!node_id_struct_ptr.is_null());
+
+        (*node_id_struct_ptr).deleter = deleter;
+
+        (*node_id_struct_ptr).value.init(*node_id_ptr);
+        *node_id_handle_ptr = (*node_id_struct_ptr).as_handle();
+    }
 }
 
 /// Creates a new [`iox2_unique_node_id_h`] by cloning a [`iox2_unique_node_id_h_ref`].
@@ -125,7 +124,7 @@ pub unsafe extern "C" fn iox2_unique_node_id_clone_from_ptr(
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `node_id_handle` - Must be a valid [`iox2_unique_node_id_h_ref`]
 /// * `node_id_handle_ptr` - Must point to a valid [`iox2_unique_node_id_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_unique_node_id_clone_from_handle(
     node_id_struct_ptr: *mut iox2_unique_node_id_t,
     node_id_handle: iox2_unique_node_id_h_ref,
@@ -133,11 +132,12 @@ pub unsafe extern "C" fn iox2_unique_node_id_clone_from_handle(
 ) {
     node_id_handle.assert_non_null();
     debug_assert!(!node_id_handle_ptr.is_null());
+    unsafe {
+        let node_id = &mut *node_id_handle.as_type();
+        let node_id_ptr = node_id.value.as_ref();
 
-    let node_id = &mut *node_id_handle.as_type();
-    let node_id_ptr = node_id.value.as_ref();
-
-    iox2_unique_node_id_clone_from_ptr(node_id_struct_ptr, node_id_ptr, node_id_handle_ptr);
+        iox2_unique_node_id_clone_from_ptr(node_id_struct_ptr, node_id_ptr, node_id_handle_ptr);
+    }
 }
 
 /// Returns the high bits of the underlying value of the [`iox2_unique_node_id_h`].
@@ -145,14 +145,15 @@ pub unsafe extern "C" fn iox2_unique_node_id_clone_from_handle(
 /// # Safety
 ///
 /// * `node_id_handle` - Must be a valid [`iox2_unique_node_id_h_ref`]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_unique_node_id_value_high(
     node_id_handle: iox2_unique_node_id_h_ref,
 ) -> u64 {
     node_id_handle.assert_non_null();
-
-    let node_id = &mut *node_id_handle.as_type();
-    (node_id.value.as_ref().value() >> 64) as u64
+    unsafe {
+        let node_id = &mut *node_id_handle.as_type();
+        (node_id.value.as_ref().value() >> 64) as u64
+    }
 }
 
 /// Returns the low bits of the underlying value of the [`iox2_unique_node_id_h`].
@@ -160,14 +161,15 @@ pub unsafe extern "C" fn iox2_unique_node_id_value_high(
 /// # Safety
 ///
 /// * `node_id_handle` - Must be a valid [`iox2_unique_node_id_h_ref`]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_unique_node_id_value_low(
     node_id_handle: iox2_unique_node_id_h_ref,
 ) -> u64 {
     node_id_handle.assert_non_null();
-
-    let node_id = &mut *node_id_handle.as_type();
-    node_id.value.as_ref().value() as u64
+    unsafe {
+        let node_id = &mut *node_id_handle.as_type();
+        node_id.value.as_ref().value() as u64
+    }
 }
 
 /// Returns the process id of the [`iox2_unique_node_id_h`].
@@ -175,12 +177,13 @@ pub unsafe extern "C" fn iox2_unique_node_id_value_low(
 /// # Safety
 ///
 /// * `node_id_handle` - Must be a valid [`iox2_unique_node_id_h_ref`]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_unique_node_id_pid(node_id_handle: iox2_unique_node_id_h_ref) -> i32 {
     node_id_handle.assert_non_null();
-
-    let node_id = &mut *node_id_handle.as_type();
-    node_id.value.as_ref().pid().value() as _
+    unsafe {
+        let node_id = &mut *node_id_handle.as_type();
+        node_id.value.as_ref().pid().value() as _
+    }
 }
 
 /// Returns the creation time of the [`iox2_unique_node_id_h`].
@@ -190,7 +193,7 @@ pub unsafe extern "C" fn iox2_unique_node_id_pid(node_id_handle: iox2_unique_nod
 /// * `node_id_handle` - Must be a valid [`iox2_unique_node_id_h_ref`]
 /// * `seconds` - Must point to a valid memory location
 /// * `nanoseconds` - Must point to a valid memory location
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_unique_node_id_creation_time(
     node_id_handle: iox2_unique_node_id_h_ref,
     seconds: *mut u64,
@@ -199,10 +202,11 @@ pub unsafe extern "C" fn iox2_unique_node_id_creation_time(
     node_id_handle.assert_non_null();
     debug_assert!(!seconds.is_null());
     debug_assert!(!nanoseconds.is_null());
-
-    let node_id = &mut *node_id_handle.as_type();
-    *seconds = node_id.value.as_ref().creation_time().seconds();
-    *nanoseconds = node_id.value.as_ref().creation_time().nanoseconds();
+    unsafe {
+        let node_id = &mut *node_id_handle.as_type();
+        *seconds = node_id.value.as_ref().creation_time().seconds();
+        *nanoseconds = node_id.value.as_ref().creation_time().nanoseconds();
+    }
 }
 
 /// Takes ownership of the handle to delete and remove the underlying resources of a
@@ -211,14 +215,15 @@ pub unsafe extern "C" fn iox2_unique_node_id_creation_time(
 /// # Safety
 ///
 /// * `node_id_handle` - Must be a valid [`iox2_unique_node_id_h`]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_unique_node_id_drop(node_id_handle: iox2_unique_node_id_h) {
     debug_assert!(!node_id_handle.is_null());
+    unsafe {
+        let node_id = &mut *node_id_handle.as_type();
 
-    let node_id = &mut *node_id_handle.as_type();
-
-    core::ptr::drop_in_place(node_id.value.as_option_mut());
-    (node_id.deleter)(node_id);
+        core::ptr::drop_in_place(node_id.value.as_option_mut());
+        (node_id.deleter)(node_id);
+    }
 }
 
 // END C API

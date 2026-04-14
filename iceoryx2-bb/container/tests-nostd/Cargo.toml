@@ -2,7 +2,7 @@
 name = "iceoryx2-bb-container-tests-nostd"
 description = "iceoryx2: [internal] nostd deployment of iceoryx2-bb-lock-free tests"
 categories = { workspace = true }
-edition = { workspace = true }
+edition = "2024"
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }

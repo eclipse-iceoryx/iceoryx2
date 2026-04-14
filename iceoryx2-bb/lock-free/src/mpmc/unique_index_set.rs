@@ -90,8 +90,8 @@
 use core::alloc::Layout;
 use core::fmt::Debug;
 
-use iceoryx2_bb_concurrency::atomic::fence;
 use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_concurrency::atomic::fence;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
@@ -279,7 +279,7 @@ impl RelocatableContainer for UniqueIndexSet {
         );
 
         Self {
-            data_ptr: RelocatablePointer::new_uninit(),
+            data_ptr: unsafe { RelocatablePointer::new_uninit() },
             capacity: capacity as u32,
             head: AtomicU64::new(0),
             is_memory_initialized: AtomicBool::new(false),
@@ -290,20 +290,20 @@ impl RelocatableContainer for UniqueIndexSet {
         if self.is_memory_initialized.load(Ordering::Relaxed) {
             fatal_panic!(from self, "Memory already initialized. Initializing it twice may lead to undefined behavior.");
         }
+        unsafe {
+            self.data_ptr.init(fail!(from self, when allocator
+                .allocate(Layout::from_size_align_unchecked(
+                    core::mem::size_of::<u32>() * (self.capacity + 1) as usize,
+                    core::mem::align_of::<u32>())),
+                "Failed to initialize since the allocation of the data memory failed."
+            ));
 
-        self.data_ptr.init(fail!(from self, when allocator
-            .allocate(Layout::from_size_align_unchecked(
-                core::mem::size_of::<u32>() * (self.capacity + 1) as usize,
-                core::mem::align_of::<u32>())),
-            "Failed to initialize since the allocation of the data memory failed."
-        ));
-
-        for i in 0..self.capacity + 1 {
-            (self.data_ptr.as_ptr() as *mut UnsafeCell<u32>)
-                .offset(i as isize)
-                .write(UnsafeCell::new(i + 1));
+            for i in 0..self.capacity + 1 {
+                (self.data_ptr.as_ptr() as *mut UnsafeCell<u32>)
+                    .offset(i as isize)
+                    .write(UnsafeCell::new(i + 1));
+            }
         }
-
         self.is_memory_initialized.store(true, Ordering::Relaxed);
         Ok(())
     }
@@ -350,11 +350,7 @@ impl UniqueIndexSet {
     /// Returns the current len.
     pub fn borrowed_indices(&self) -> usize {
         let s = HeadDetails::from(self.head.load(Ordering::Relaxed)).borrowed_indices;
-        if s == LOCK_ACQUIRE {
-            0
-        } else {
-            s as usize
-        }
+        if s == LOCK_ACQUIRE { 0 } else { s as usize }
     }
 
     /// Returns if the [`UniqueIndexSet`] is locked or not. If the set is locked no more indices
@@ -598,7 +594,7 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
     ///    [`FixedSizeUniqueIndexSet::release_raw_index()`]
     ///
     pub unsafe fn acquire_raw_index(&self) -> Result<u32, UniqueIndexSetAcquireFailure> {
-        self.state.acquire_raw_index()
+        unsafe { self.state.acquire_raw_index() }
     }
 
     /// See [`UniqueIndexSet::release_raw_index()`]
@@ -610,7 +606,7 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
     ///  * The index should not be released twice
     ///
     pub unsafe fn release_raw_index(&self, index: u32, mode: ReleaseMode) -> ReleaseState {
-        self.state.release_raw_index(index, mode)
+        unsafe { self.state.release_raw_index(index, mode) }
     }
 
     /// Returns the current len.

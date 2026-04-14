@@ -2,7 +2,7 @@
 name = "iceoryx2-bb-memory"
 description = "iceoryx2: [internal] allocators and tools for memory management"
 categories = { workspace = true }
-edition = { workspace = true }
+edition = "2024"
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }
@@ -14,7 +14,7 @@ version = { workspace = true }
 default = []
 
 std = [
-  "iceoryx2-log/std",  
+  "iceoryx2-log/std",
   "iceoryx2-bb-elementary/std",
   "iceoryx2-bb-concurrency/std",
   "iceoryx2-bb-lock-free/std",

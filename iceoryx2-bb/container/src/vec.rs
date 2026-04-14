@@ -79,7 +79,7 @@ impl<T, Ptr: GenericPointer> Drop for MetaVec<T, Ptr> {
 impl<T> RelocatableContainer for RelocatableVec<T> {
     unsafe fn new_uninit(capacity: usize) -> Self {
         Self {
-            data_ptr: RelocatablePointer::new_uninit(),
+            data_ptr: unsafe { RelocatablePointer::new_uninit() },
             capacity,
             len: 0,
             _phantom_data: PhantomData,
@@ -93,14 +93,14 @@ impl<T> RelocatableContainer for RelocatableVec<T> {
         if self.data_ptr.is_initialized() {
             fatal_panic!(from "Vec::init()", "Memory already initialized, Initializing it twice may lead to undefined behavior.");
         }
-
-        self.data_ptr.init(fail!(from "Vec::init", when allocator
-             .allocate(Layout::from_size_align_unchecked(
-                 core::mem::size_of::<T>() * self.capacity,
-                 core::mem::align_of::<T>(),
-             )), "Failed to initialize vec since the allocation of the data memory failed."
-        ));
-
+        unsafe {
+            self.data_ptr.init(fail!(from "Vec::init", when allocator
+                 .allocate(Layout::from_size_align_unchecked(
+                     core::mem::size_of::<T>() * self.capacity,
+                     core::mem::align_of::<T>(),
+                 )), "Failed to initialize vec since the allocation of the data memory failed."
+            ));
+        }
         Ok(())
     }
 
@@ -147,10 +147,11 @@ impl<T, Ptr: GenericPointer> MetaVec<T, Ptr> {
     #[inline(always)]
     fn verify_init(&self, source: &str) {
         debug_assert!(
-                self.data_ptr.is_initialized(),
-                "From: MetaVec<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
-                core::any::type_name::<T>(), source
-            );
+            self.data_ptr.is_initialized(),
+            "From: MetaVec<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
+            core::any::type_name::<T>(),
+            source
+        );
     }
 
     /// Returns the capacity of the vector

@@ -13,9 +13,9 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    c_size_t, iox2_port_factory_event_h, iox2_port_factory_event_t, iox2_service_builder_event_h,
-    iox2_service_builder_event_h_ref, iox2_service_type_e, AssertNonNullHandle, HandleToType,
-    IntoCInt, PortFactoryEventUnion, ServiceBuilderUnion, IOX2_OK,
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, PortFactoryEventUnion,
+    ServiceBuilderUnion, c_size_t, iox2_port_factory_event_h, iox2_port_factory_event_t,
+    iox2_service_builder_event_h, iox2_service_builder_event_h_ref, iox2_service_type_e,
 };
 
 use iceoryx2::prelude::*;
@@ -197,7 +197,7 @@ impl IntoCInt for EventOpenOrCreateError {
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_event_open_or_create_error_string(
     error: iox2_event_open_or_create_error_e,
 ) -> *const c_char {
@@ -217,14 +217,16 @@ pub unsafe extern "C" fn iox2_event_open_or_create_error_string(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_set_deadline(
     service_builder_handle: iox2_service_builder_event_h_ref,
     seconds: u64,
     nanoseconds: u32,
 ) {
     let deadline = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as u64);
-    iox2_service_builder_event_set_deadline_impl(service_builder_handle, Some(deadline));
+    unsafe {
+        iox2_service_builder_event_set_deadline_impl(service_builder_handle, Some(deadline));
+    }
 }
 
 /// Disables the deadline property of the service.
@@ -237,11 +239,13 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_deadline(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_disable_deadline(
     service_builder_handle: iox2_service_builder_event_h_ref,
 ) {
-    iox2_service_builder_event_set_deadline_impl(service_builder_handle, None);
+    unsafe {
+        iox2_service_builder_event_set_deadline_impl(service_builder_handle, None);
+    }
 }
 
 unsafe fn iox2_service_builder_event_set_deadline_impl(
@@ -249,28 +253,29 @@ unsafe fn iox2_service_builder_event_set_deadline_impl(
     deadline: Option<Duration>,
 ) {
     service_builder_handle.assert_non_null();
+    unsafe {
+        let service_builder_struct = &mut *service_builder_handle.as_type();
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+                let service_builder = ManuallyDrop::into_inner(service_builder.event);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(match deadline {
+                    Some(v) => service_builder.deadline(v),
+                    None => service_builder.disable_deadline(),
+                }));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(match deadline {
-                Some(v) => service_builder.deadline(v),
-                None => service_builder.disable_deadline(),
-            }));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
-
-            let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_event(match deadline {
-                Some(v) => service_builder.deadline(v),
-                None => service_builder.disable_deadline(),
-            }));
+                let service_builder = ManuallyDrop::into_inner(service_builder.event);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_event(match deadline {
+                    Some(v) => service_builder.deadline(v),
+                    None => service_builder.disable_deadline(),
+                }));
+            }
         }
     }
 }
@@ -286,15 +291,17 @@ unsafe fn iox2_service_builder_event_set_deadline_impl(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_set_notifier_dead_event(
     service_builder_handle: iox2_service_builder_event_h_ref,
     value: c_size_t,
 ) {
-    iox2_service_builder_event_set_notifier_dead_event_impl(
-        service_builder_handle,
-        Some(EventId::new(value as _)),
-    );
+    unsafe {
+        iox2_service_builder_event_set_notifier_dead_event_impl(
+            service_builder_handle,
+            Some(EventId::new(value as _)),
+        );
+    }
 }
 
 /// Disables event id notification when a notifier was identified as dead.
@@ -307,42 +314,45 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_notifier_dead_event(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_disable_notifier_dead_event(
     service_builder_handle: iox2_service_builder_event_h_ref,
 ) {
-    iox2_service_builder_event_set_notifier_dead_event_impl(service_builder_handle, None);
+    unsafe {
+        iox2_service_builder_event_set_notifier_dead_event_impl(service_builder_handle, None);
+    }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe fn iox2_service_builder_event_set_notifier_dead_event_impl(
     service_builder_handle: iox2_service_builder_event_h_ref,
     value: Option<EventId>,
 ) {
     service_builder_handle.assert_non_null();
+    unsafe {
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+                let service_builder = ManuallyDrop::into_inner(service_builder.event);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(match value {
+                    Some(value) => service_builder.notifier_dead_event(value),
+                    None => service_builder.disable_notifier_dead_event(),
+                }));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(match value {
-                Some(value) => service_builder.notifier_dead_event(value),
-                None => service_builder.disable_notifier_dead_event(),
-            }));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
-
-            let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_event(match value {
-                Some(value) => service_builder.notifier_dead_event(value),
-                None => service_builder.disable_notifier_dead_event(),
-            }));
+                let service_builder = ManuallyDrop::into_inner(service_builder.event);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_event(match value {
+                    Some(value) => service_builder.notifier_dead_event(value),
+                    None => service_builder.disable_notifier_dead_event(),
+                }));
+            }
         }
     }
 }
@@ -358,15 +368,17 @@ unsafe fn iox2_service_builder_event_set_notifier_dead_event_impl(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_set_notifier_created_event(
     service_builder_handle: iox2_service_builder_event_h_ref,
     value: c_size_t,
 ) {
-    iox2_service_builder_event_set_notifier_created_event_impl(
-        service_builder_handle,
-        Some(EventId::new(value as _)),
-    );
+    unsafe {
+        iox2_service_builder_event_set_notifier_created_event_impl(
+            service_builder_handle,
+            Some(EventId::new(value as _)),
+        );
+    }
 }
 
 /// Disables the event id value that shall be emitted after a notifier was created.
@@ -379,11 +391,13 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_notifier_created_event(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_disable_notifier_created_event(
     service_builder_handle: iox2_service_builder_event_h_ref,
 ) {
-    iox2_service_builder_event_set_notifier_created_event_impl(service_builder_handle, None);
+    unsafe {
+        iox2_service_builder_event_set_notifier_created_event_impl(service_builder_handle, None);
+    }
 }
 
 unsafe fn iox2_service_builder_event_set_notifier_created_event_impl(
@@ -391,29 +405,30 @@ unsafe fn iox2_service_builder_event_set_notifier_created_event_impl(
     value: Option<EventId>,
 ) {
     service_builder_handle.assert_non_null();
+    unsafe {
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+                let service_builder = ManuallyDrop::into_inner(service_builder.event);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(match value {
+                    Some(value) => service_builder.notifier_created_event(value),
+                    None => service_builder.disable_notifier_created_event(),
+                }));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(match value {
-                Some(value) => service_builder.notifier_created_event(value),
-                None => service_builder.disable_notifier_created_event(),
-            }));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
-
-            let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_event(match value {
-                Some(value) => service_builder.notifier_created_event(value),
-                None => service_builder.disable_notifier_created_event(),
-            }));
+                let service_builder = ManuallyDrop::into_inner(service_builder.event);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_event(match value {
+                    Some(value) => service_builder.notifier_created_event(value),
+                    None => service_builder.disable_notifier_created_event(),
+                }));
+            }
         }
     }
 }
@@ -429,15 +444,17 @@ unsafe fn iox2_service_builder_event_set_notifier_created_event_impl(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_set_notifier_dropped_event(
     service_builder_handle: iox2_service_builder_event_h_ref,
     value: c_size_t,
 ) {
-    iox2_service_builder_event_set_notifier_dropped_event_impl(
-        service_builder_handle,
-        Some(EventId::new(value as _)),
-    );
+    unsafe {
+        iox2_service_builder_event_set_notifier_dropped_event_impl(
+            service_builder_handle,
+            Some(EventId::new(value as _)),
+        );
+    }
 }
 
 /// Disables the event id value that shall be emitted before a notifier is dropped.
@@ -450,42 +467,45 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_notifier_dropped_event(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_disable_notifier_dropped_event(
     service_builder_handle: iox2_service_builder_event_h_ref,
 ) {
-    iox2_service_builder_event_set_notifier_dropped_event_impl(service_builder_handle, None);
+    unsafe {
+        iox2_service_builder_event_set_notifier_dropped_event_impl(service_builder_handle, None);
+    }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe fn iox2_service_builder_event_set_notifier_dropped_event_impl(
     service_builder_handle: iox2_service_builder_event_h_ref,
     value: Option<EventId>,
 ) {
     service_builder_handle.assert_non_null();
+    unsafe {
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+                let service_builder = ManuallyDrop::into_inner(service_builder.event);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(match value {
+                    Some(value) => service_builder.notifier_dropped_event(value),
+                    None => service_builder.disable_notifier_dropped_event(),
+                }));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(match value {
-                Some(value) => service_builder.notifier_dropped_event(value),
-                None => service_builder.disable_notifier_dropped_event(),
-            }));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
-
-            let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_event(match value {
-                Some(value) => service_builder.notifier_dropped_event(value),
-                None => service_builder.disable_notifier_dropped_event(),
-            }));
+                let service_builder = ManuallyDrop::into_inner(service_builder.event);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_event(match value {
+                    Some(value) => service_builder.notifier_dropped_event(value),
+                    None => service_builder.disable_notifier_dropped_event(),
+                }));
+            }
         }
     }
 }
@@ -501,33 +521,34 @@ unsafe fn iox2_service_builder_event_set_notifier_dropped_event_impl(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_set_max_notifiers(
     service_builder_handle: iox2_service_builder_event_h_ref,
     value: c_size_t,
 ) {
     service_builder_handle.assert_non_null();
+    unsafe {
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+                let service_builder = ManuallyDrop::into_inner(service_builder.event);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(
+                    service_builder.max_notifiers(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(
-                service_builder.max_notifiers(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
-
-            let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_event(
-                service_builder.max_notifiers(value),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.event);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_event(
+                    service_builder.max_notifiers(value),
+                ));
+            }
         }
     }
 }
@@ -543,33 +564,34 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_max_notifiers(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_set_max_nodes(
     service_builder_handle: iox2_service_builder_event_h_ref,
     value: c_size_t,
 ) {
     service_builder_handle.assert_non_null();
+    unsafe {
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+                let service_builder = ManuallyDrop::into_inner(service_builder.event);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(
+                    service_builder.max_nodes(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(
-                service_builder.max_nodes(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
-
-            let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_event(
-                service_builder.max_nodes(value),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.event);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_event(
+                    service_builder.max_nodes(value),
+                ));
+            }
         }
     }
 }
@@ -585,33 +607,34 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_max_nodes(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_set_event_id_max_value(
     service_builder_handle: iox2_service_builder_event_h_ref,
     value: c_size_t,
 ) {
     service_builder_handle.assert_non_null();
+    unsafe {
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+                let service_builder = ManuallyDrop::into_inner(service_builder.event);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(
+                    service_builder.event_id_max_value(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(
-                service_builder.event_id_max_value(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
-
-            let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_event(
-                service_builder.event_id_max_value(value),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.event);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_event(
+                    service_builder.event_id_max_value(value),
+                ));
+            }
         }
     }
 }
@@ -627,33 +650,34 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_event_id_max_value(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_set_max_listeners(
     service_builder_handle: iox2_service_builder_event_h_ref,
     value: c_size_t,
 ) {
     service_builder_handle.assert_non_null();
+    unsafe {
+        let service_builder_struct = &mut *service_builder_handle.as_type();
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
-    match service_builder_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+                let service_builder = ManuallyDrop::into_inner(service_builder.event);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(
+                    service_builder.max_listeners(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
-            let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(
-                service_builder.max_listeners(value),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
-
-            let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_event(
-                service_builder.max_listeners(value),
-            ));
+                let service_builder = ManuallyDrop::into_inner(service_builder.event);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_event(
+                    service_builder.max_listeners(value),
+                ));
+            }
         }
     }
 }
@@ -675,19 +699,21 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_max_listeners(
 /// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_open_or_create(
     service_builder_handle: iox2_service_builder_event_h,
     port_factory_struct_ptr: *mut iox2_port_factory_event_t,
     port_factory_handle_ptr: *mut iox2_port_factory_event_h,
 ) -> c_int {
-    iox2_service_builder_event_open_create_impl(
-        service_builder_handle,
-        port_factory_struct_ptr,
-        port_factory_handle_ptr,
-        |service_builder| service_builder.open_or_create(),
-        |service_builder| service_builder.open_or_create(),
-    )
+    unsafe {
+        iox2_service_builder_event_open_create_impl(
+            service_builder_handle,
+            port_factory_struct_ptr,
+            port_factory_handle_ptr,
+            |service_builder| service_builder.open_or_create(),
+            |service_builder| service_builder.open_or_create(),
+        )
+    }
 }
 
 /// Opens an event service or creates the service if it does not exist and returns a port factory to create notifiers and listeners.
@@ -710,23 +736,25 @@ pub unsafe extern "C" fn iox2_service_builder_event_open_or_create(
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
 /// * The `attribute_verifier_handle` must be valid.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_open_or_create_with_attributes(
     service_builder_handle: iox2_service_builder_event_h,
     attribute_verifier_handle: iox2_attribute_verifier_h_ref,
     port_factory_struct_ptr: *mut iox2_port_factory_event_t,
     port_factory_handle_ptr: *mut iox2_port_factory_event_h,
 ) -> c_int {
-    let attribute_verifier_struct = &mut *attribute_verifier_handle.as_type();
-    let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
+    unsafe {
+        let attribute_verifier_struct = &mut *attribute_verifier_handle.as_type();
+        let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
 
-    iox2_service_builder_event_open_create_impl(
-        service_builder_handle,
-        port_factory_struct_ptr,
-        port_factory_handle_ptr,
-        |service_builder| service_builder.open_or_create_with_attributes(attribute_verifier),
-        |service_builder| service_builder.open_or_create_with_attributes(attribute_verifier),
-    )
+        iox2_service_builder_event_open_create_impl(
+            service_builder_handle,
+            port_factory_struct_ptr,
+            port_factory_handle_ptr,
+            |service_builder| service_builder.open_or_create_with_attributes(attribute_verifier),
+            |service_builder| service_builder.open_or_create_with_attributes(attribute_verifier),
+        )
+    }
 }
 
 /// Opens an event service and returns a port factory to create notifiers and listeners.
@@ -746,19 +774,21 @@ pub unsafe extern "C" fn iox2_service_builder_event_open_or_create_with_attribut
 /// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_open(
     service_builder_handle: iox2_service_builder_event_h,
     port_factory_struct_ptr: *mut iox2_port_factory_event_t,
     port_factory_handle_ptr: *mut iox2_port_factory_event_h,
 ) -> c_int {
-    iox2_service_builder_event_open_create_impl(
-        service_builder_handle,
-        port_factory_struct_ptr,
-        port_factory_handle_ptr,
-        |service_builder| service_builder.open(),
-        |service_builder| service_builder.open(),
-    )
+    unsafe {
+        iox2_service_builder_event_open_create_impl(
+            service_builder_handle,
+            port_factory_struct_ptr,
+            port_factory_handle_ptr,
+            |service_builder| service_builder.open(),
+            |service_builder| service_builder.open(),
+        )
+    }
 }
 
 /// Opens an event service and returns a port factory to create notifiers and listeners.
@@ -780,23 +810,25 @@ pub unsafe extern "C" fn iox2_service_builder_event_open(
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
 /// * The `attribute_verifier_handle` must be valid.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_open_with_attributes(
     service_builder_handle: iox2_service_builder_event_h,
     attribute_verifier_handle: iox2_attribute_verifier_h_ref,
     port_factory_struct_ptr: *mut iox2_port_factory_event_t,
     port_factory_handle_ptr: *mut iox2_port_factory_event_h,
 ) -> c_int {
-    let attribute_verifier_struct = &mut *attribute_verifier_handle.as_type();
-    let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
+    unsafe {
+        let attribute_verifier_struct = &mut *attribute_verifier_handle.as_type();
+        let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
 
-    iox2_service_builder_event_open_create_impl(
-        service_builder_handle,
-        port_factory_struct_ptr,
-        port_factory_handle_ptr,
-        |service_builder| service_builder.open_with_attributes(attribute_verifier),
-        |service_builder| service_builder.open_with_attributes(attribute_verifier),
-    )
+        iox2_service_builder_event_open_create_impl(
+            service_builder_handle,
+            port_factory_struct_ptr,
+            port_factory_handle_ptr,
+            |service_builder| service_builder.open_with_attributes(attribute_verifier),
+            |service_builder| service_builder.open_with_attributes(attribute_verifier),
+        )
+    }
 }
 
 /// Creates an event service and returns a port factory to create notifiers and listeners.
@@ -816,19 +848,21 @@ pub unsafe extern "C" fn iox2_service_builder_event_open_with_attributes(
 /// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_create(
     service_builder_handle: iox2_service_builder_event_h,
     port_factory_struct_ptr: *mut iox2_port_factory_event_t,
     port_factory_handle_ptr: *mut iox2_port_factory_event_h,
 ) -> c_int {
-    iox2_service_builder_event_open_create_impl(
-        service_builder_handle,
-        port_factory_struct_ptr,
-        port_factory_handle_ptr,
-        |service_builder| service_builder.create(),
-        |service_builder| service_builder.create(),
-    )
+    unsafe {
+        iox2_service_builder_event_open_create_impl(
+            service_builder_handle,
+            port_factory_struct_ptr,
+            port_factory_handle_ptr,
+            |service_builder| service_builder.create(),
+            |service_builder| service_builder.create(),
+        )
+    }
 }
 
 /// Creates a service if it does not exist and returns a port factory to create notifiers and listeners.
@@ -850,23 +884,25 @@ pub unsafe extern "C" fn iox2_service_builder_event_create(
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
 /// * The `attribute_verifier_handle` must be valid.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_service_builder_event_create_with_attributes(
     service_builder_handle: iox2_service_builder_event_h,
     attribute_specifier_handle: iox2_attribute_specifier_h_ref,
     port_factory_struct_ptr: *mut iox2_port_factory_event_t,
     port_factory_handle_ptr: *mut iox2_port_factory_event_h,
 ) -> c_int {
-    let attribute_specifier_struct = &mut *attribute_specifier_handle.as_type();
-    let attribute_specifier = &attribute_specifier_struct.value.as_ref().0;
+    unsafe {
+        let attribute_specifier_struct = &mut *attribute_specifier_handle.as_type();
+        let attribute_specifier = &attribute_specifier_struct.value.as_ref().0;
 
-    iox2_service_builder_event_open_create_impl(
-        service_builder_handle,
-        port_factory_struct_ptr,
-        port_factory_handle_ptr,
-        |service_builder| service_builder.create_with_attributes(attribute_specifier),
-        |service_builder| service_builder.create_with_attributes(attribute_specifier),
-    )
+        iox2_service_builder_event_open_create_impl(
+            service_builder_handle,
+            port_factory_struct_ptr,
+            port_factory_handle_ptr,
+            |service_builder| service_builder.create_with_attributes(attribute_specifier),
+            |service_builder| service_builder.create_with_attributes(attribute_specifier),
+        )
+    }
 }
 
 unsafe fn iox2_service_builder_event_open_create_impl<E: IntoCInt>(
@@ -892,60 +928,61 @@ unsafe fn iox2_service_builder_event_open_create_impl<E: IntoCInt>(
         (port_factory_struct_ptr, deleter)
     };
 
-    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
-    let service_type = service_builder_struct.service_type;
-    let service_builder = service_builder_struct
-        .value
-        .as_option_mut()
-        .take()
-        .unwrap_or_else(|| {
-            panic!("Trying to use an invalid 'iox2_service_builder_event_h'!");
-        });
-    (service_builder_struct.deleter)(service_builder_struct);
+    unsafe {
+        let service_builder_struct = &mut *service_builder_handle.as_type();
+        let service_type = service_builder_struct.service_type;
+        let service_builder = service_builder_struct
+            .value
+            .as_option_mut()
+            .take()
+            .unwrap_or_else(|| {
+                panic!("Trying to use an invalid 'iox2_service_builder_event_h'!");
+            });
+        (service_builder_struct.deleter)(service_builder_struct);
 
-    match service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder = ManuallyDrop::into_inner(service_builder.ipc);
-            let service_builder = ManuallyDrop::into_inner(service_builder.event);
+        match service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder = ManuallyDrop::into_inner(service_builder.ipc);
+                let service_builder = ManuallyDrop::into_inner(service_builder.event);
 
-            match func_ipc(service_builder) {
-                Ok(port_factory) => {
-                    let (port_factory_struct_ptr, deleter) =
-                        init_port_factory_struct_ptr(port_factory_struct_ptr);
-                    (*port_factory_struct_ptr).init(
-                        service_type,
-                        PortFactoryEventUnion::new_ipc(port_factory),
-                        deleter,
-                    );
-                    *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
-                }
-                Err(error) => {
-                    return error.into_c_int();
+                match func_ipc(service_builder) {
+                    Ok(port_factory) => {
+                        let (port_factory_struct_ptr, deleter) =
+                            init_port_factory_struct_ptr(port_factory_struct_ptr);
+                        (*port_factory_struct_ptr).init(
+                            service_type,
+                            PortFactoryEventUnion::new_ipc(port_factory),
+                            deleter,
+                        );
+                        *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
+                    }
+                    Err(error) => {
+                        return error.into_c_int();
+                    }
                 }
             }
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder = ManuallyDrop::into_inner(service_builder.local);
-            let service_builder = ManuallyDrop::into_inner(service_builder.event);
+            iox2_service_type_e::LOCAL => {
+                let service_builder = ManuallyDrop::into_inner(service_builder.local);
+                let service_builder = ManuallyDrop::into_inner(service_builder.event);
 
-            match func_local(service_builder) {
-                Ok(port_factory) => {
-                    let (port_factory_struct_ptr, deleter) =
-                        init_port_factory_struct_ptr(port_factory_struct_ptr);
-                    (*port_factory_struct_ptr).init(
-                        service_type,
-                        PortFactoryEventUnion::new_local(port_factory),
-                        deleter,
-                    );
-                    *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
-                }
-                Err(error) => {
-                    return error.into_c_int();
+                match func_local(service_builder) {
+                    Ok(port_factory) => {
+                        let (port_factory_struct_ptr, deleter) =
+                            init_port_factory_struct_ptr(port_factory_struct_ptr);
+                        (*port_factory_struct_ptr).init(
+                            service_type,
+                            PortFactoryEventUnion::new_local(port_factory),
+                            deleter,
+                        );
+                        *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
+                    }
+                    Err(error) => {
+                        return error.into_c_int();
+                    }
                 }
             }
         }
     }
-
     IOX2_OK
 }
 

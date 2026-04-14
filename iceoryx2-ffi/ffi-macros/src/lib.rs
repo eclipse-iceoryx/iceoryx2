@@ -18,8 +18,8 @@ use proc_macro::TokenStream;
 use proc_macro2::TokenTree;
 use quote::{format_ident, quote};
 use syn::{
-    parse_macro_input, punctuated::Punctuated, Data, DeriveInput, Expr, ExprLit, Fields, Lit,
-    LitStr, Meta, Token,
+    Data, DeriveInput, Expr, ExprLit, Fields, Lit, LitStr, Meta, Token, parse_macro_input,
+    punctuated::Punctuated,
 };
 
 #[proc_macro_attribute]

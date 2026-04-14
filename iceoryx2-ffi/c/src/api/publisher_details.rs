@@ -29,7 +29,7 @@ pub type iox2_publisher_details_ptr = *const PublisherDetails;
 /// * `id_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_unique_publisher_id_t`].
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `id_handle_ptr` valid pointer to a [`iox2_unique_publisher_id_h`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publisher_details_publisher_id(
     handle: iox2_publisher_details_ptr,
     id_struct_ptr: *mut iox2_unique_publisher_id_t,
@@ -46,11 +46,12 @@ pub unsafe extern "C" fn iox2_publisher_details_publisher_id(
         storage_ptr = iox2_unique_publisher_id_t::alloc();
     }
     debug_assert!(!storage_ptr.is_null());
+    unsafe {
+        let id = (*handle).publisher_id;
 
-    let id = (*handle).publisher_id;
-
-    (*storage_ptr).init(id, deleter);
-    *id_handle_ptr = (*storage_ptr).as_handle();
+        (*storage_ptr).init(id, deleter);
+        *id_handle_ptr = (*storage_ptr).as_handle();
+    }
 }
 
 /// Returns the [`iox2_unique_node_id_ptr`](crate::iox2_unique_node_id_ptr), an immutable pointer to the node id.
@@ -58,13 +59,12 @@ pub unsafe extern "C" fn iox2_publisher_details_publisher_id(
 /// # Safety
 ///
 /// * `handle` valid pointer to the publisher details
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publisher_details_node_id(
     handle: iox2_publisher_details_ptr,
 ) -> iox2_unique_node_id_ptr {
     debug_assert!(!handle.is_null());
-
-    &(*handle).node_id
+    unsafe { &(*handle).node_id }
 }
 
 /// Returns the total number of samples contained in the
@@ -73,13 +73,12 @@ pub unsafe extern "C" fn iox2_publisher_details_node_id(
 /// # Safety
 ///
 /// * `handle` valid pointer to the publisher details
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publisher_details_number_of_samples(
     handle: iox2_publisher_details_ptr,
 ) -> c_size_t {
     debug_assert!(!handle.is_null());
-
-    (*handle).number_of_samples as _
+    unsafe { (*handle).number_of_samples as _ }
 }
 
 /// Returns the current maximum length of a slice.
@@ -87,11 +86,10 @@ pub unsafe extern "C" fn iox2_publisher_details_number_of_samples(
 /// # Safety
 ///
 /// * `handle` valid pointer to the publisher details
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publisher_details_max_slice_len(
     handle: iox2_publisher_details_ptr,
 ) -> c_size_t {
     debug_assert!(!handle.is_null());
-
-    (*handle).max_slice_len as _
+    unsafe { (*handle).max_slice_len as _ }
 }

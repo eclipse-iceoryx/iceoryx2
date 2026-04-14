@@ -14,7 +14,7 @@ use core::ffi::c_int;
 
 use iceoryx2::signal_handling_mode::SignalHandlingMode;
 
-use super::{IntoCInt, IOX2_OK};
+use super::{IOX2_OK, IntoCInt};
 
 /// Defines how signals are handled by constructs that might register a custom
 /// signal handler.

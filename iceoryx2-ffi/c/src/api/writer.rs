@@ -13,9 +13,9 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    c_size_t, iox2_entry_handle_mut_h, iox2_entry_handle_mut_t, iox2_service_type_e,
-    iox2_type_variant_e, iox2_unique_writer_id_h, iox2_unique_writer_id_t, AssertNonNullHandle,
-    EntryHandleMutUnion, HandleToType, IntoCInt, KeyFfi, IOX2_OK,
+    AssertNonNullHandle, EntryHandleMutUnion, HandleToType, IOX2_OK, IntoCInt, KeyFfi, c_size_t,
+    iox2_entry_handle_mut_h, iox2_entry_handle_mut_t, iox2_service_type_e, iox2_type_variant_e,
+    iox2_unique_writer_id_h, iox2_unique_writer_id_t,
 };
 use crate::create_type_details;
 use core::ffi::{c_char, c_int, c_void};
@@ -23,7 +23,7 @@ use core::mem::ManuallyDrop;
 use iceoryx2::port::writer::{EntryHandleMutError, Writer};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_ffi_macros::{iceoryx2_ffi, CStrRepr};
+use iceoryx2_ffi_macros::{CStrRepr, iceoryx2_ffi};
 
 // BEGIN types definition
 
@@ -147,7 +147,7 @@ impl HandleToType for iox2_writer_h_ref {
 /// # Safety
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_entry_handle_mut_error_string(
     error: iox2_entry_handle_mut_error_e,
 ) -> *const c_char {
@@ -167,7 +167,7 @@ pub unsafe extern "C" fn iox2_entry_handle_mut_error_string(
 ///
 /// * `writer_handle` is valid, non-null and was obtained via [`iox2_port_factory_writer_builder_create`](crate::iox2_port_factory_writer_builder_create)
 /// * `id` is valid and non-null
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_writer_id(
     writer_handle: iox2_writer_h_ref,
     id_struct_ptr: *mut iox2_unique_writer_id_t,
@@ -184,16 +184,17 @@ pub unsafe extern "C" fn iox2_writer_id(
         storage_ptr = iox2_unique_writer_id_t::alloc();
     }
     debug_assert!(!storage_ptr.is_null());
+    unsafe {
+        let writer = &mut *writer_handle.as_type();
 
-    let writer = &mut *writer_handle.as_type();
+        let id = match writer.service_type {
+            iox2_service_type_e::IPC => writer.value.as_mut().ipc.id(),
+            iox2_service_type_e::LOCAL => writer.value.as_mut().local.id(),
+        };
 
-    let id = match writer.service_type {
-        iox2_service_type_e::IPC => writer.value.as_mut().ipc.id(),
-        iox2_service_type_e::LOCAL => writer.value.as_mut().local.id(),
-    };
-
-    (*storage_ptr).init(id, deleter);
-    *id_handle_ptr = (*storage_ptr).as_handle();
+        (*storage_ptr).init(id, deleter);
+        *id_handle_ptr = (*storage_ptr).as_handle();
+    }
 }
 
 /// Acquires an entry handle mut for direct write access to the stored value.
@@ -213,7 +214,7 @@ pub unsafe extern "C" fn iox2_writer_id(
 ///
 /// * `writer_handle` must be non-null and valid
 /// * `entry_handle_mut_handle_ptr` must be non-null and valid
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_writer_entry(
     writer_handle: iox2_writer_h_ref,
     entry_handle_mut_struct_ptr: *mut iox2_entry_handle_mut_t,
@@ -227,8 +228,6 @@ pub unsafe extern "C" fn iox2_writer_entry(
     writer_handle.assert_non_null();
     debug_assert!(!entry_handle_mut_handle_ptr.is_null());
 
-    *entry_handle_mut_handle_ptr = core::ptr::null_mut();
-
     let init_entry_handle_mut_struct_ptr = |entry_struct_ptr: *mut iox2_entry_handle_mut_t| {
         let mut entry_handle_mut_struct_ptr = entry_struct_ptr;
         fn no_op(_: *mut iox2_entry_handle_mut_t) {}
@@ -241,58 +240,60 @@ pub unsafe extern "C" fn iox2_writer_entry(
 
         (entry_handle_mut_struct_ptr, deleter)
     };
+    unsafe {
+        *entry_handle_mut_handle_ptr = core::ptr::null_mut();
+        let value_type_details = match create_type_details(
+            iox2_type_variant_e::FIXED_SIZE,
+            value_type_name_str,
+            value_type_name_len,
+            value_size,
+            value_alignment,
+        ) {
+            Ok(v) => v,
+            Err(e) => return e,
+        };
+        let writer = &mut *writer_handle.as_type();
 
-    let value_type_details = match create_type_details(
-        iox2_type_variant_e::FIXED_SIZE,
-        value_type_name_str,
-        value_type_name_len,
-        value_size,
-        value_alignment,
-    ) {
-        Ok(v) => v,
-        Err(e) => return e,
-    };
-    let writer = &mut *writer_handle.as_type();
-
-    match writer.service_type {
-        iox2_service_type_e::IPC => {
-            match writer
-                .value
-                .as_ref()
-                .ipc
-                .__internal_entry(key as *const u8, &value_type_details)
-            {
-                Ok(handle) => {
-                    let (entry_handle_mut_struct_ptr, deleter) =
-                        init_entry_handle_mut_struct_ptr(entry_handle_mut_struct_ptr);
-                    (*entry_handle_mut_struct_ptr).init(
-                        writer.service_type,
-                        EntryHandleMutUnion::new_ipc(handle),
-                        deleter,
-                    );
-                    *entry_handle_mut_handle_ptr = (*entry_handle_mut_struct_ptr).as_handle();
+        match writer.service_type {
+            iox2_service_type_e::IPC => {
+                match writer
+                    .value
+                    .as_ref()
+                    .ipc
+                    .__internal_entry(key as *const u8, &value_type_details)
+                {
+                    Ok(handle) => {
+                        let (entry_handle_mut_struct_ptr, deleter) =
+                            init_entry_handle_mut_struct_ptr(entry_handle_mut_struct_ptr);
+                        (*entry_handle_mut_struct_ptr).init(
+                            writer.service_type,
+                            EntryHandleMutUnion::new_ipc(handle),
+                            deleter,
+                        );
+                        *entry_handle_mut_handle_ptr = (*entry_handle_mut_struct_ptr).as_handle();
+                    }
+                    Err(error) => return error.into_c_int(),
                 }
-                Err(error) => return error.into_c_int(),
             }
-        }
-        iox2_service_type_e::LOCAL => {
-            match writer
-                .value
-                .as_ref()
-                .local
-                .__internal_entry(key as *const u8, &value_type_details)
-            {
-                Ok(handle) => {
-                    let (entry_handle_mut_struct_ptr, deleter) =
-                        init_entry_handle_mut_struct_ptr(entry_handle_mut_struct_ptr);
-                    (*entry_handle_mut_struct_ptr).init(
-                        writer.service_type,
-                        EntryHandleMutUnion::new_local(handle),
-                        deleter,
-                    );
-                    *entry_handle_mut_handle_ptr = (*entry_handle_mut_struct_ptr).as_handle();
+            iox2_service_type_e::LOCAL => {
+                match writer
+                    .value
+                    .as_ref()
+                    .local
+                    .__internal_entry(key as *const u8, &value_type_details)
+                {
+                    Ok(handle) => {
+                        let (entry_handle_mut_struct_ptr, deleter) =
+                            init_entry_handle_mut_struct_ptr(entry_handle_mut_struct_ptr);
+                        (*entry_handle_mut_struct_ptr).init(
+                            writer.service_type,
+                            EntryHandleMutUnion::new_local(handle),
+                            deleter,
+                        );
+                        *entry_handle_mut_handle_ptr = (*entry_handle_mut_struct_ptr).as_handle();
+                    }
+                    Err(error) => return error.into_c_int(),
                 }
-                Err(error) => return error.into_c_int(),
             }
         }
     }
@@ -311,20 +312,21 @@ pub unsafe extern "C" fn iox2_writer_entry(
 /// * The `writer_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_writer_t`] can be re-used with a call to
 ///   [`iox2_port_factory_writer_builder_create`](crate::iox2_port_factory_writer_builder_create)!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_writer_drop(writer_handle: iox2_writer_h) {
     writer_handle.assert_non_null();
+    unsafe {
+        let writer = &mut *writer_handle.as_type();
 
-    let writer = &mut *writer_handle.as_type();
-
-    match writer.service_type {
-        iox2_service_type_e::IPC => {
-            ManuallyDrop::drop(&mut writer.value.as_mut().ipc);
+        match writer.service_type {
+            iox2_service_type_e::IPC => {
+                ManuallyDrop::drop(&mut writer.value.as_mut().ipc);
+            }
+            iox2_service_type_e::LOCAL => {
+                ManuallyDrop::drop(&mut writer.value.as_mut().local);
+            }
         }
-        iox2_service_type_e::LOCAL => {
-            ManuallyDrop::drop(&mut writer.value.as_mut().local);
-        }
+        (writer.deleter)(writer);
     }
-    (writer.deleter)(writer);
 }
 // END C API

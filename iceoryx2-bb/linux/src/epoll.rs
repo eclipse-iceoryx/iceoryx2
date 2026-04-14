@@ -623,7 +623,9 @@ impl Epoll {
                                     "{msg} with a timeout of {timeout}ms since an interrupt signal was raised while acquiring the raised signals.");
                             }
                             Err(e) => {
-                                warn!("Epoll wait will continue but a failure occurred while reading the raised signal ({e:?}).");
+                                warn!(
+                                    "Epoll wait will continue but a failure occurred while reading the raised signal ({e:?})."
+                                );
                                 None
                             }
                         } {

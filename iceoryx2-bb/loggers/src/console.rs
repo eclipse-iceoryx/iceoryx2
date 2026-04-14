@@ -15,9 +15,9 @@
 use alloc::string::String;
 use alloc::string::ToString;
 
+use iceoryx2_bb_print::IsTerminal;
 use iceoryx2_bb_print::cerrln;
 use iceoryx2_bb_print::stderr;
-use iceoryx2_bb_print::IsTerminal;
 use iceoryx2_log_types::Log;
 use iceoryx2_log_types::LogLevel;
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
@@ -124,11 +124,7 @@ impl Logger {
     }
 
     fn counter_color(_log_level: LogLevel) -> &'static str {
-        if is_terminal() {
-            "\x1b[0;90m"
-        } else {
-            ""
-        }
+        if is_terminal() { "\x1b[0;90m" } else { "" }
     }
 
     fn origin_color(log_level: LogLevel) -> &'static str {

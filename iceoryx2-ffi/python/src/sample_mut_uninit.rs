@@ -121,10 +121,10 @@ impl SampleMutUninit {
     /// After this call the `SampleMutUninit` is no longer usable!
     pub fn delete(&mut self) {
         match &mut *self.value.lock() {
-            SampleMutUninitType::Ipc(ref mut v) => {
+            SampleMutUninitType::Ipc(v) => {
                 v.take();
             }
-            SampleMutUninitType::Local(ref mut v) => {
+            SampleMutUninitType::Local(v) => {
                 v.take();
             }
         }
@@ -136,7 +136,7 @@ impl SampleMutUninit {
     /// After this call the `SampleMutUninit` is no longer usable!
     pub fn assume_init(&self) -> SampleMut {
         match &mut *self.value.lock() {
-            SampleMutUninitType::Ipc(ref mut v) => {
+            SampleMutUninitType::Ipc(v) => {
                 let sample = v.take().unwrap();
                 SampleMut {
                     value: Parc::new(SampleMutType::Ipc(Some(unsafe { sample.assume_init() }))),
@@ -144,7 +144,7 @@ impl SampleMutUninit {
                     user_header_type_details: self.user_header_type_details.clone(),
                 }
             }
-            SampleMutUninitType::Local(ref mut v) => {
+            SampleMutUninitType::Local(v) => {
                 let sample = v.take().unwrap();
                 SampleMut {
                     value: Parc::new(SampleMutType::Local(Some(unsafe { sample.assume_init() }))),

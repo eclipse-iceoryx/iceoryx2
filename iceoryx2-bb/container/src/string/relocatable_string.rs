@@ -78,7 +78,7 @@ use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_log::{fail, fatal_panic};
 
-use crate::string::{as_escaped_string, internal, String};
+use crate::string::{String, as_escaped_string, internal};
 
 /// **Non-movable** relocatable shared-memory compatible string with runtime fixed size capacity.
 #[repr(C)]
@@ -96,7 +96,7 @@ impl internal::StringView for RelocatableString {
 
     unsafe fn data_mut(&mut self) -> &mut [MaybeUninit<u8>] {
         self.verify_init("data_mut()");
-        core::slice::from_raw_parts_mut(self.data_ptr.as_mut_ptr(), self.capacity() + 1)
+        unsafe { core::slice::from_raw_parts_mut(self.data_ptr.as_mut_ptr(), self.capacity() + 1) }
     }
 
     unsafe fn set_len(&mut self, len: u64) {
@@ -198,10 +198,10 @@ impl RelocatableString {
     #[inline(always)]
     fn verify_init(&self, source: &str) {
         debug_assert!(
-                self.data_ptr.is_initialized(),
-                "From: RelocatableString::{}, Undefined behavior - the object was not initialized with 'init' before.",
-                source
-            );
+            self.data_ptr.is_initialized(),
+            "From: RelocatableString::{}, Undefined behavior - the object was not initialized with 'init' before.",
+            source
+        );
     }
 
     /// Returns the required memory size for a string with a specified capacity
@@ -213,7 +213,7 @@ impl RelocatableString {
 impl RelocatableContainer for RelocatableString {
     unsafe fn new_uninit(capacity: usize) -> Self {
         Self {
-            data_ptr: RelocatablePointer::new_uninit(),
+            data_ptr: unsafe { RelocatablePointer::new_uninit() },
             capacity: capacity as u64,
             len: 0,
         }
@@ -229,10 +229,12 @@ impl RelocatableContainer for RelocatableString {
                 "Memory already initialized! Initializing it twice may lead to undefined behavior.");
         }
 
-        let ptr = match allocator.allocate(Layout::from_size_align_unchecked(
-            core::mem::size_of::<u8>() * (self.capacity as usize + 1),
-            core::mem::align_of::<u8>(),
-        )) {
+        let ptr = match allocator.allocate(unsafe {
+            Layout::from_size_align_unchecked(
+                core::mem::size_of::<u8>() * (self.capacity as usize + 1),
+                core::mem::align_of::<u8>(),
+            )
+        }) {
             Ok(ptr) => ptr,
             Err(e) => {
                 fail!(from origin, with e,
@@ -240,8 +242,9 @@ impl RelocatableContainer for RelocatableString {
             }
         };
 
-        self.data_ptr.init(ptr);
-
+        unsafe {
+            self.data_ptr.init(ptr);
+        }
         Ok(())
     }
 

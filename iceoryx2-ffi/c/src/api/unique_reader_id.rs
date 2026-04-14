@@ -99,7 +99,7 @@ impl HandleToType for iox2_unique_reader_id_h_ref {
 /// * `handle` must be a valid, non-null pointer
 /// * `id_ptr` must be a valid, non-null pointer to a buffer of at least `id_length` bytes
 /// * `id_length` must be large enough to hold the ID value
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe extern "C" fn iox2_unique_reader_id_value(
     handle: iox2_unique_reader_id_h,
     id_ptr: *mut u8,
@@ -107,14 +107,15 @@ unsafe extern "C" fn iox2_unique_reader_id_value(
 ) {
     debug_assert!(!id_ptr.is_null());
     handle.assert_non_null();
+    unsafe {
+        let h = &mut *handle.as_type();
 
-    let h = &mut *handle.as_type();
+        if let Some(Some(id)) =
+            (h.value.internal.as_ptr() as *const Option<UniqueReaderId>).as_ref()
+        {
+            let bytes = id.value().to_ne_bytes();
+            debug_assert!(bytes.len() <= id_length, "id_length is too small");
 
-    if let Some(Some(id)) = (h.value.internal.as_ptr() as *const Option<UniqueReaderId>).as_ref() {
-        let bytes = id.value().to_ne_bytes();
-        debug_assert!(bytes.len() <= id_length, "id_length is too small");
-
-        unsafe {
             core::ptr::copy_nonoverlapping(
                 bytes.as_ptr(),
                 id_ptr,
@@ -133,13 +134,14 @@ unsafe extern "C" fn iox2_unique_reader_id_value(
 /// # Safety
 ///
 /// * The `handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_unique_reader_id_drop(handle: iox2_unique_reader_id_h) {
     debug_assert!(!handle.is_null());
-
-    let h = &mut *handle.as_type();
-    core::ptr::drop_in_place(h.value.as_option_mut());
-    (h.deleter)(h);
+    unsafe {
+        let h = &mut *handle.as_type();
+        core::ptr::drop_in_place(h.value.as_option_mut());
+        (h.deleter)(h);
+    }
 }
 
 /// Checks two [`iox2_unique_reader_id_t`] for equality.
@@ -148,18 +150,19 @@ pub unsafe extern "C" fn iox2_unique_reader_id_drop(handle: iox2_unique_reader_i
 ///
 /// * `lhs` - Must be a valid [`iox2_unique_reader_id_h_ref`]
 /// * `rhs` - Must be a valid [`iox2_unique_reader_id_h_ref`]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_unique_reader_id_eq(
     lhs: iox2_unique_reader_id_h_ref,
     rhs: iox2_unique_reader_id_h_ref,
 ) -> bool {
     lhs.assert_non_null();
     rhs.assert_non_null();
+    unsafe {
+        let lhs = &mut *lhs.as_type();
+        let rhs = &mut *rhs.as_type();
 
-    let lhs = &mut *lhs.as_type();
-    let rhs = &mut *rhs.as_type();
-
-    lhs.value.as_ref() == rhs.value.as_ref()
+        lhs.value.as_ref() == rhs.value.as_ref()
+    }
 }
 
 /// Checks the ordering of two [`iox2_unique_reader_id_t`].
@@ -168,17 +171,18 @@ pub unsafe extern "C" fn iox2_unique_reader_id_eq(
 ///
 /// * `lhs` - Must be a valid [`iox2_unique_reader_id_h_ref`]
 /// * `rhs` - Must be a valid [`iox2_unique_reader_id_h_ref`]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_unique_reader_id_less(
     lhs: iox2_unique_reader_id_h_ref,
     rhs: iox2_unique_reader_id_h_ref,
 ) -> bool {
     lhs.assert_non_null();
     rhs.assert_non_null();
+    unsafe {
+        let lhs = &mut *lhs.as_type();
+        let rhs = &mut *rhs.as_type();
 
-    let lhs = &mut *lhs.as_type();
-    let rhs = &mut *rhs.as_type();
-
-    lhs.value.as_ref() < rhs.value.as_ref()
+        lhs.value.as_ref() < rhs.value.as_ref()
+    }
 }
 // END C API

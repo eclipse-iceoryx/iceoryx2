@@ -22,7 +22,7 @@ use alloc::vec::Vec;
 pub unsafe fn strnlen(ptr: *const core::ffi::c_char, len: usize) -> usize {
     const NULL_TERMINATION: core::ffi::c_char = 0;
     for i in 0..len {
-        if *ptr.add(i) == NULL_TERMINATION {
+        if unsafe { *ptr.add(i) } == NULL_TERMINATION {
             return i;
         }
     }

@@ -16,8 +16,8 @@ use iceoryx2_bb_linux::epoll::*;
 use iceoryx2_bb_posix::barrier::BarrierBuilder;
 use iceoryx2_bb_posix::barrier::BarrierHandle;
 use iceoryx2_bb_posix::barrier::Handle;
-use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::clock::Time;
+use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_posix::{
     file_descriptor::FileDescriptorBased,

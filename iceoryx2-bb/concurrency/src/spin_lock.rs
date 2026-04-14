@@ -18,7 +18,9 @@ pub struct SpinLock<T>(internal::SpinLock<T>);
 
 impl<T: Default> PlacementDefault for SpinLock<T> {
     unsafe fn placement_default(ptr: *mut Self) {
-        ptr.write(SpinLock::default());
+        unsafe {
+            ptr.write(SpinLock::default());
+        }
     }
 }
 

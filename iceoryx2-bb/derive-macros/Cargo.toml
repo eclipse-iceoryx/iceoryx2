@@ -2,7 +2,7 @@
 name = "iceoryx2-bb-derive-macros"
 description = "iceoryx2: [internal] helper derive proc-macros"
 categories = { workspace = true }
-edition = { workspace = true }
+edition = "2024"
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }

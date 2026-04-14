@@ -13,7 +13,7 @@
 #[generic_tests::define]
 mod node {
     use crate::api::*;
-    use crate::tests::{create_node, ServiceTypeMapping};
+    use crate::tests::{ServiceTypeMapping, create_node};
     use iceoryx2::prelude::*;
     use iceoryx2_bb_testing::assert_that;
 
@@ -47,8 +47,8 @@ mod node {
     }
 
     #[test]
-    fn basic_node_name_test<S: Service + ServiceTypeMapping>(
-    ) -> Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+    fn basic_node_name_test<S: Service + ServiceTypeMapping>()
+    -> Result<(), alloc::boxed::Box<dyn core::error::Error>> {
         unsafe {
             let node_handle = create_node::<S>("hypnotoad");
 
