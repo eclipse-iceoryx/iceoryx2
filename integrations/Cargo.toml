@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "zenoh/tunnel-backend",
+    "zenoh/tunnel-cli",
 ]
 
 [workspace.package]
@@ -22,7 +23,7 @@ rust-version = "1.85"
 version = "0.8.999"
 
 [workspace.dependencies]
-iceoryx2-integrations-zenoh-tunnel-backend = { version = "0.8.999" }
+iceoryx2-integrations-zenoh-tunnel-backend = { version = "0.8.999", path = "zenoh/tunnel-backend" }
 
 iceoryx2 = { version = "0.8.999" }
 iceoryx2-log = { version = "0.8.999" }
@@ -30,9 +31,14 @@ iceoryx2-bb-concurrency = { version = "0.8.999" }
 iceoryx2-bb-posix = { version = "0.8.999" }
 iceoryx2-bb-testing = { version = "0.8.999" }
 iceoryx2-bb-testing-macros = { version = "0.8.999" }
+iceoryx2-services-tunnel = { version = "0.8.999" }
 iceoryx2-services-tunnel-backend = { version = "0.8.999" }
 iceoryx2-services-tunnel-conformance-tests = { version = "0.8.999" }
 
+anyhow = { version = "1.0.86" }
+better-panic = { version = "0.3.0" }
+clap = { version = "4.5.4", features = ["derive"] }
+human-panic = { version = "=2.0.2" }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 zenoh = { version = "1.7.2", features = ["default", "unstable"] }
 
