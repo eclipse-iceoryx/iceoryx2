@@ -186,3 +186,88 @@ pub fn for_unions() {
     assert_that!(is_zero_copy_send(&sut), eq true);
     assert_that!(unsafe { BasicUnionTest::type_name() }, eq "TryMadHoney");
 }
+
+#[test]
+#[should_panic]
+pub fn member_offsets_cannot_be_determined_for_unions() {
+    let sut = BasicUnionTest { _val1: 12 };
+    sut.__get_members(&mut |_, _| {});
+}
+
+#[test]
+#[should_panic]
+pub fn member_offsets_cannot_be_determined_for_generic_unions() {
+    #[repr(C)]
+    #[derive(ZeroCopySend)]
+    union GenericUnion<T: Copy + ZeroCopySend> {
+        val1: u8,
+        val2: T,
+    }
+
+    let sut = GenericUnion { val2: 0u64 };
+    sut.__get_members(&mut |_, _| {});
+}
+
+#[test]
+#[should_panic]
+pub fn member_offsets_cannot_be_determined_for_unions_with_struct_field() {
+    #[repr(C)]
+    #[derive(Clone, Copy, ZeroCopySend)]
+    struct FieldStruct {
+        a: u8,
+        b: u64,
+    }
+
+    #[repr(C)]
+    #[derive(ZeroCopySend)]
+    union NestedUnion {
+        val1: u8,
+        val2: FieldStruct,
+    }
+
+    let sut = NestedUnion {
+        val2: FieldStruct { a: 0, b: 0 },
+    };
+    sut.__get_members(&mut |_, _| {});
+}
+
+#[test]
+#[should_panic]
+pub fn member_offsets_cannot_be_determined_for_structs_with_union() {
+    #[repr(C)]
+    #[derive(ZeroCopySend)]
+    struct NestedStruct {
+        a: BasicUnionTest,
+        b: u8,
+    }
+
+    let sut = NestedStruct {
+        a: BasicUnionTest { _val1: 12 },
+        b: 0,
+    };
+    sut.__get_members(&mut |_, _| {});
+}
+
+#[test]
+#[should_panic]
+pub fn member_offsets_cannot_be_determined_for_structs_with_enum() {
+    #[repr(C)]
+    #[derive(ZeroCopySend)]
+    enum SomeEnum {
+        A,
+        B,
+    }
+
+    #[repr(C)]
+    #[derive(ZeroCopySend)]
+    struct NestedStruct {
+        a: SomeEnum,
+        b: u8,
+    }
+
+    let sut = NestedStruct {
+        a: SomeEnum::A,
+        b: 0,
+    };
+    sut.__get_members(&mut |_, _| {});
+}

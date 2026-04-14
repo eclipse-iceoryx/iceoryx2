@@ -506,44 +506,6 @@ fn blub_generic_tuple_struct() {}
 /// ```
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 /// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-///
-/// #[repr(C)]
-/// #[derive(Copy, Clone, ZeroCopySend)]
-/// struct Foo(u16);
-///
-/// #[repr(C)]
-/// #[derive(ZeroCopySend)]
-/// union SomeUnion {
-///     val1: u64,
-///     val2: Foo,
-/// }
-///
-/// let u = SomeUnion {val2: Foo(0)};
-/// u.__get_members(&mut |_, _| {});
-/// ```
-#[cfg(doctest)]
-fn blub_union() {}
-
-/// ```
-/// use iceoryx2_bb_derive_macros::ZeroCopySend;
-/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-///
-/// #[repr(C)]
-/// #[derive(ZeroCopySend)]
-/// union GenericUnion<T1: Copy + ZeroCopySend, T2: Copy + ZeroCopySend> {
-///     val1: T1,
-///     val2: T2,
-/// }
-///
-/// let u: GenericUnion<u32, u64> = GenericUnion {val1: 0};
-/// u.__get_members(&mut |_, _| {});
-/// ```
-#[cfg(doctest)]
-fn blub_generic_union() {}
-
-/// ```
-/// use iceoryx2_bb_derive_macros::ZeroCopySend;
-/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 /// use std::vec::Vec;
 ///
 /// #[repr(C)]
@@ -603,31 +565,3 @@ fn blub_with_alignment_that_changes_inner_padding() {}
 /// ```
 #[cfg(doctest)]
 fn blub_nested_struct() {}
-
-/// ```
-/// use iceoryx2_bb_derive_macros::ZeroCopySend;
-/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-///
-/// #[repr(C)]
-/// #[derive(Copy, Clone)]
-/// #[derive(ZeroCopySend)]
-/// struct FieldStruct {
-///     a: u8,
-///     b: u64,
-/// }
-///
-/// #[repr(C)]
-/// #[derive(ZeroCopySend)]
-/// union NestedUnion {
-///     val0: u8,
-///     val1: u16,
-///     val2: FieldStruct,
-/// }
-///
-/// let u = NestedUnion { val0: 1 };
-/// u.__get_members(&mut |_, _| {});
-/// ```
-#[cfg(doctest)]
-fn blub_union_with_struct() {}
-
-// TODO: move offset tests for unions to runtime tests, add enum tests

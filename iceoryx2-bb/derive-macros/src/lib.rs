@@ -367,6 +367,14 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                 fn __get_members<F: FnMut(usize, usize)>(&self, callback: &mut F) {
                     panic!("Member offsets cannot be determined for enums, only for structs.");
                 }
+
+                fn __get_members_with_offset<F: FnMut(usize, usize)>(
+                    &self,
+                    _base_offset: usize,
+                    _callback: &mut F,
+                ) -> bool {
+                    panic!("Member offsets cannot be determined for enums, only for structs.");
+                }
             }
         }
         Data::Union(ref data_union) => {
@@ -387,6 +395,14 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
 
                 // TODO: better error handling
                 fn __get_members<F: FnMut(usize, usize)>(&self, callback: &mut F) {
+                    panic!("Member offsets cannot be determined for unions, only for structs.");
+                }
+
+                fn __get_members_with_offset<F: FnMut(usize, usize)>(
+                    &self,
+                    _base_offset: usize,
+                    _callback: &mut F,
+                ) -> bool {
                     panic!("Member offsets cannot be determined for unions, only for structs.");
                 }
             }
