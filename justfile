@@ -18,6 +18,7 @@ import '.just/verify.just'
 import '.just/lint.just'
 import '.just/setup.just'
 import '.just/coverage.just'
+import '.just/publish.just'
 
 # Show available commands
 default:
@@ -31,6 +32,7 @@ default:
     @echo "  verify        - Run verification checks"
     @echo "  lint          - Run linting checks"
     @echo "  coverage      - Run test coverage tasks"
+    @echo "  publish       - Publish crates to crates.io"
     @echo ""
     @echo "Run 'just <command>' for usage details on each command."
 
@@ -54,3 +56,6 @@ setup what="":
 
 coverage action="" *flags:
     @just _coverage-dispatch "{{action}}" {{flags}}
+
+publish what="" *flags:
+    @just _publish-dispatch "{{what}}" {{flags}}
