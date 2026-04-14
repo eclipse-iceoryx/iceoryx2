@@ -37,37 +37,37 @@ impl sigaction_t {
 }
 
 pub unsafe fn sigaction(sig: int, act: &sigaction_t, oact: &mut sigaction_t) -> int {
-    libc::sigaction(sig, &act.0, &mut oact.0)
+    unsafe { libc::sigaction(sig, &act.0, &mut oact.0) }
 }
 
 pub unsafe fn kill(pid: pid_t, sig: int) -> int {
-    libc::kill(pid, sig)
+    unsafe { libc::kill(pid, sig) }
 }
 
 pub unsafe fn sigaddset(set: *mut sigset_t, signo: int) -> int {
-    libc::sigaddset(set, signo)
+    unsafe { libc::sigaddset(set, signo) }
 }
 
 pub unsafe fn sigdelset(set: *mut sigset_t, signo: int) -> int {
-    libc::sigdelset(set, signo)
+    unsafe { libc::sigdelset(set, signo) }
 }
 
 pub unsafe fn sigismember(set: *const sigset_t, signo: int) -> int {
-    libc::sigismember(set, signo)
+    unsafe { libc::sigismember(set, signo) }
 }
 
 pub unsafe fn sigfillset(set: *mut sigset_t) -> int {
-    libc::sigfillset(set)
+    unsafe { libc::sigfillset(set) }
 }
 
 pub unsafe fn sigemptyset(set: *mut sigset_t) -> int {
-    libc::sigemptyset(set)
+    unsafe { libc::sigemptyset(set) }
 }
 
 pub unsafe fn sigpending(set: *mut sigset_t) -> int {
-    libc::sigpending(set)
+    unsafe { libc::sigpending(set) }
 }
 
 pub unsafe fn abort() {
-    libc::abort()
+    unsafe { libc::abort() }
 }

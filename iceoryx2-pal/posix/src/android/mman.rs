@@ -16,19 +16,19 @@
 use crate::posix::{Errno, closedir, opendir, readdir, types::*};
 
 pub unsafe fn mlock(addr: *const void, len: size_t) -> int {
-    libc::mlock(addr, len)
+    unsafe { libc::mlock(addr, len) }
 }
 
 pub unsafe fn munlock(addr: *const void, len: size_t) -> int {
-    libc::munlock(addr, len)
+    unsafe { libc::munlock(addr, len) }
 }
 
 pub unsafe fn mlockall(flags: int) -> int {
-    libc::mlockall(flags)
+    unsafe { libc::mlockall(flags) }
 }
 
 pub unsafe fn munlockall() -> int {
-    libc::munlockall()
+    unsafe { libc::munlockall() }
 }
 
 pub unsafe fn shm_open(_name: *const c_char, _oflag: int, _mode: mode_t) -> int {
@@ -45,21 +45,23 @@ pub unsafe fn shm_unlink(_name: *const c_char) -> int {
 
 pub unsafe fn shm_list() -> Vec<[i8; 256]> {
     let mut result = vec![];
-    let dir = opendir(c"/dev/shm/".as_ptr().cast());
+    let dir = unsafe { opendir(c"/dev/shm/".as_ptr().cast()) };
     if dir.is_null() {
         return result;
     }
 
     loop {
-        let entry = readdir(dir);
+        let entry = unsafe { readdir(dir) };
         if entry.is_null() {
             break;
         }
         let mut temp = [0i8; 256];
         for (i, c) in temp.iter_mut().enumerate() {
-            *c = (*entry).d_name[i] as _;
-            if (*entry).d_name[i] == 0 {
-                break;
+            unsafe {
+                *c = (*entry).d_name[i] as _;
+                if (*entry).d_name[i] == 0 {
+                    break;
+                }
             }
         }
 
@@ -75,7 +77,9 @@ pub unsafe fn shm_list() -> Vec<[i8; 256]> {
 
         result.push(temp);
     }
-    closedir(dir);
+    unsafe {
+        closedir(dir);
+    }
 
     result
 }
@@ -88,13 +92,13 @@ pub unsafe fn mmap(
     fd: int,
     off: off_t,
 ) -> *mut void {
-    libc::mmap(addr, len, prot, flags, fd, off)
+    unsafe { libc::mmap(addr, len, prot, flags, fd, off) }
 }
 
 pub unsafe fn munmap(addr: *mut void, len: size_t) -> int {
-    libc::munmap(addr, len)
+    unsafe { libc::munmap(addr, len) }
 }
 
 pub unsafe fn mprotect(addr: *mut void, len: size_t, prot: int) -> int {
-    libc::mprotect(addr, len, prot)
+    unsafe { libc::mprotect(addr, len, prot) }
 }
