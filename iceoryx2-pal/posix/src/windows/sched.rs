@@ -27,8 +27,10 @@ pub unsafe fn sched_get_priority_min(policy: int) -> int {
 }
 
 pub unsafe fn sched_yield() -> int {
-    SwitchToThread();
-    0
+    unsafe {
+        SwitchToThread();
+        0
+    }
 }
 
 pub unsafe fn sched_getparam(pid: pid_t, param: *mut sched_param) -> int {

@@ -60,14 +60,18 @@ use crate::win32call;
 impl MemZeroedStruct for SYSTEM_INFO {}
 
 pub unsafe fn proc_pidpath(pid: pid_t, buffer: *mut c_char, buffer_len: size_t) -> isize {
-    let process_handle = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid as _);
+    let process_handle =
+        unsafe { OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid as _) };
 
     if process_handle == 0 {
         return -1;
     }
 
-    let ret_val = GetModuleFileNameExA(process_handle, 0, buffer.cast(), buffer_len as _);
-    CloseHandle(process_handle);
+    let ret_val =
+        unsafe { GetModuleFileNameExA(process_handle, 0, buffer.cast(), buffer_len as _) };
+    unsafe {
+        CloseHandle(process_handle);
+    }
 
     if ret_val == 0 {
         return -1;
@@ -78,8 +82,9 @@ pub unsafe fn proc_pidpath(pid: pid_t, buffer: *mut c_char, buffer_len: size_t) 
 
 pub unsafe fn sysconf(name: int) -> long {
     let mut system_info = SYSTEM_INFO::new_zeroed();
-    win32call! { GetSystemInfo(&mut system_info)};
-
+    unsafe {
+        win32call! { GetSystemInfo(&mut system_info)};
+    }
     const POSIX_VERSION: long = 200809;
 
     match name {
@@ -118,18 +123,23 @@ pub unsafe fn pathconf(path: *const c_char, name: int) -> long {
 }
 
 pub unsafe fn getpid() -> pid_t {
-    let (pid, _) = win32call! { GetCurrentProcessId() };
+    let (pid, _) = unsafe {
+        win32call! { GetCurrentProcessId() }
+    };
+
     pid
 }
 
 pub unsafe fn gethostpid() -> pid_t {
-    getpid()
+    unsafe { getpid() }
 }
 
 impl MemZeroedStruct for PROCESSENTRY32 {}
 
 pub unsafe fn getppid() -> pid_t {
-    let (snapshot, _) = win32call! { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
+    let (snapshot, _) = unsafe {
+        win32call! { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) }
+    };
     if snapshot == INVALID_HANDLE_VALUE {
         return 0;
     }
@@ -138,9 +148,11 @@ pub unsafe fn getppid() -> pid_t {
     process_entry.dwSize = core::mem::size_of::<PROCESSENTRY32>() as u32;
 
     let mut parent_process_id = 0;
-    let self_process_id = getgid();
+    let self_process_id = unsafe { getgid() };
 
-    let (has_snapshot, _) = win32call! { Process32First(snapshot, &mut process_entry) };
+    let (has_snapshot, _) = unsafe {
+        win32call! { Process32First(snapshot, &mut process_entry) }
+    };
     if has_snapshot == TRUE {
         loop {
             if process_entry.th32ProcessID == self_process_id {
@@ -148,7 +160,9 @@ pub unsafe fn getppid() -> pid_t {
                 break;
             }
 
-            let (has_snapshot, _) = win32call! { Process32Next(snapshot, &mut process_entry), ignore ERROR_NO_MORE_FILES };
+            let (has_snapshot, _) = unsafe {
+                win32call! { Process32Next(snapshot, &mut process_entry), ignore ERROR_NO_MORE_FILES }
+            };
             if has_snapshot == FALSE {
                 break;
             }
@@ -164,12 +178,15 @@ pub unsafe fn dup(fildes: int) -> int {
     match HandleTranslator::get_instance().get(fildes) {
         Some(FdHandleEntry::Socket(handle)) => {
             let mut protocol_info = WSAPROTOCOL_INFOA::new_zeroed();
-            let (result, _) = win32call! { winsock WSADuplicateSocketA(handle.fd, GetCurrentProcessId(), &mut protocol_info) };
+            let (result, _) = unsafe {
+                win32call! { winsock WSADuplicateSocketA(handle.fd, GetCurrentProcessId(), &mut protocol_info) }
+            };
             if result == SOCKET_ERROR {
                 return -1;
             }
-            let (duplicated_socket, _) =
-                win32call! { WSASocketA(AF_UNIX as _, SOCK_STREAM, 0, &protocol_info, 0, 0)};
+            let (duplicated_socket, _) = unsafe {
+                win32call! { WSASocketA(AF_UNIX as _, SOCK_STREAM, 0, &protocol_info, 0, 0)}
+            };
             if duplicated_socket == INVALID_SOCKET {
                 return -1;
             }
@@ -182,7 +199,9 @@ pub unsafe fn dup(fildes: int) -> int {
         }
         Some(FdHandleEntry::File(fd)) => {
             let mut duplicate: HANDLE = 0;
-            win32call! { DuplicateHandle(GetCurrentProcess(), fd.handle, GetCurrentProcess(), &mut duplicate, 0, FALSE, DUPLICATE_SAME_ACCESS)};
+            unsafe {
+                win32call! { DuplicateHandle(GetCurrentProcess(), fd.handle, GetCurrentProcess(), &mut duplicate, 0, FALSE, DUPLICATE_SAME_ACCESS)}
+            };
             HandleTranslator::get_instance().add(FdHandleEntry::File(FileHandle {
                 handle: duplicate,
                 lock_state: F_UNLCK,
@@ -196,30 +215,32 @@ pub unsafe fn dup(fildes: int) -> int {
 }
 
 pub unsafe fn close(fd: int) -> int {
-    match HandleTranslator::get_instance().get(fd) {
-        Some(FdHandleEntry::SharedMemory(handle)) => {
-            HandleTranslator::get_instance().remove(fd);
-            win32call! { CloseHandle(handle.handle.handle)};
-            win32call! { CloseHandle(handle.state_handle)};
-            0
-        }
-        Some(FdHandleEntry::File(handle)) => {
-            HandleTranslator::get_instance().remove(fd);
-            win32call! { CloseHandle(handle.handle)};
-            0
-        }
-        Some(FdHandleEntry::Socket(handle)) => {
-            HandleTranslator::get_instance().remove(fd);
-            win32call! { winsock closesocket(handle.fd) };
-            0
-        }
-        Some(FdHandleEntry::UdsDatagramSocket(handle)) => {
-            win32call! { winsock closesocket(handle.fd)};
-            0
-        }
-        _ => {
-            Errno::set(Errno::EBADF);
-            -1
+    unsafe {
+        match HandleTranslator::get_instance().get(fd) {
+            Some(FdHandleEntry::SharedMemory(handle)) => {
+                HandleTranslator::get_instance().remove(fd);
+                win32call! { CloseHandle(handle.handle.handle)};
+                win32call! { CloseHandle(handle.state_handle)};
+                0
+            }
+            Some(FdHandleEntry::File(handle)) => {
+                HandleTranslator::get_instance().remove(fd);
+                win32call! { CloseHandle(handle.handle)};
+                0
+            }
+            Some(FdHandleEntry::Socket(handle)) => {
+                HandleTranslator::get_instance().remove(fd);
+                win32call! { winsock closesocket(handle.fd) };
+                0
+            }
+            Some(FdHandleEntry::UdsDatagramSocket(handle)) => {
+                win32call! { winsock closesocket(handle.fd)};
+                0
+            }
+            _ => {
+                Errno::set(Errno::EBADF);
+                -1
+            }
         }
     }
 }
@@ -228,13 +249,15 @@ pub unsafe fn read(fd: int, buf: *mut void, count: size_t) -> ssize_t {
     match HandleTranslator::get_instance().get(fd) {
         Some(FdHandleEntry::File(handle)) => {
             let mut bytes_read = 0;
-            let (file_read, _) = win32call! {ReadFile(
-                handle.handle,
-                buf,
-                count as u32,
-                &mut bytes_read,
-                core::ptr::null_mut::<OVERLAPPED>(),
-            )};
+            let (file_read, _) = unsafe {
+                win32call! {ReadFile(
+                    handle.handle,
+                    buf,
+                    count as u32,
+                    &mut bytes_read,
+                    core::ptr::null_mut::<OVERLAPPED>(),
+                )}
+            };
             if file_read == FALSE {
                 -1
             } else {
@@ -252,13 +275,15 @@ pub unsafe fn write(fd: int, buf: *const void, count: size_t) -> ssize_t {
     match HandleTranslator::get_instance().get(fd) {
         Some(FdHandleEntry::File(handle)) => {
             let mut bytes_written = 0;
-            let (file_written, _) = win32call! {WriteFile(
-                handle.handle,
-                buf as *const u8,
-                count as u32,
-                &mut bytes_written,
-                core::ptr::null_mut::<OVERLAPPED>(),
-            )};
+            let (file_written, _) = unsafe {
+                win32call! {WriteFile(
+                    handle.handle,
+                    buf as *const u8,
+                    count as u32,
+                    &mut bytes_written,
+                    core::ptr::null_mut::<OVERLAPPED>(),
+                )}
+            };
             if file_written == FALSE {
                 -1
             } else {
@@ -273,8 +298,9 @@ pub unsafe fn write(fd: int, buf: *const void, count: size_t) -> ssize_t {
 }
 
 pub unsafe fn access(pathname: *const c_char, mode: int) -> int {
-    let (attributes, _) =
-        win32call! {GetFileAttributesA(pathname as *const u8), ignore ERROR_FILE_NOT_FOUND};
+    let (attributes, _) = unsafe {
+        win32call! {GetFileAttributesA(pathname as *const u8) , ignore ERROR_FILE_NOT_FOUND}
+    };
 
     if attributes == INVALID_FILE_ATTRIBUTES {
         if HandleTranslator::get_instance().contains_uds(pathname) {
@@ -313,7 +339,9 @@ pub unsafe fn lseek(fd: int, offset: off_t, whence: int) -> off_t {
             };
 
             let mut new_position = 0;
-            let (has_success, _) = win32call! {SetFilePointerEx(handle.handle, offset, &mut new_position, move_method)};
+            let (has_success, _) = unsafe {
+                win32call! {SetFilePointerEx(handle.handle, offset, &mut new_position, move_method)}
+            };
 
             if has_success == 0 {
                 return -1;
@@ -337,8 +365,9 @@ pub unsafe fn getgid() -> gid_t {
 }
 
 pub unsafe fn rmdir(pathname: *const c_char) -> int {
-    let (has_removed, _) =
-        win32call! {RemoveDirectoryA(pathname as*const u8), ignore ERROR_FILE_NOT_FOUND};
+    let (has_removed, _) = unsafe {
+        win32call! {RemoveDirectoryA(pathname as*const u8), ignore ERROR_FILE_NOT_FOUND}
+    };
     if has_removed == FALSE {
         return -1;
     }
@@ -353,20 +382,24 @@ pub unsafe fn ftruncate(fd: int, length: off_t) -> int {
 
     match HandleTranslator::get_instance().get(fd) {
         Some(FdHandleEntry::SharedMemory(handle)) => {
-            shm_set_size(handle.state_handle, length as u64);
+            unsafe { shm_set_size(handle.state_handle, length as u64) };
             0
         }
         Some(FdHandleEntry::File(handle)) => {
-            let (result, _) = win32call! { SetFilePointerEx(
-                handle.handle,
-                length as _,
-                core::ptr::null_mut(),
-                FILE_BEGIN,
-            )};
+            let (result, _) = unsafe {
+                win32call! { SetFilePointerEx(
+                    handle.handle,
+                    length as _,
+                    core::ptr::null_mut(),
+                    FILE_BEGIN,
+                )}
+            };
             if result == 0 {
                 return -1;
             }
-            win32call! { SetEndOfFile(handle.handle)};
+            unsafe {
+                win32call! { SetEndOfFile(handle.handle)};
+            }
             0
         }
         _ => {
@@ -383,7 +416,9 @@ pub unsafe fn fchown(fd: int, owner: uid_t, group: gid_t) -> int {
 pub unsafe fn fsync(fd: int) -> int {
     match HandleTranslator::get_instance().get(fd) {
         Some(FdHandleEntry::File(handle)) => {
-            win32call! {FlushFileBuffers(handle.handle)};
+            unsafe {
+                win32call! {FlushFileBuffers(handle.handle)}
+            };
             0
         }
         _ => {

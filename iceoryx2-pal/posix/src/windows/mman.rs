@@ -138,10 +138,12 @@ pub unsafe fn munlockall() -> int {
 }
 
 unsafe fn remove_leading_path_separator(value: *const c_char) -> *const c_char {
-    if *value as u8 == PATH_SEPARATOR {
-        value.offset(1)
-    } else {
-        value
+    unsafe {
+        if *value as u8 == PATH_SEPARATOR {
+            value.offset(1)
+        } else {
+            value
+        }
     }
 }
 
@@ -159,209 +161,226 @@ pub unsafe fn shm_list() -> Vec<[i8; 256]> {
     let mut result = vec![];
     let mut search_path = SHM_STATE_DIRECTORY.to_vec();
     search_path.push(0);
-    let search_path = to_dir_search_string(search_path.as_ptr().cast());
+    unsafe {
+        let search_path = to_dir_search_string(search_path.as_ptr().cast());
 
-    //SHM_STATE_SUFFIX
-    let mut data = WIN32_FIND_DATAA::new_zeroed();
-    let (handle, _) = win32call! { FindFirstFileA(search_path.as_ptr().cast(), &mut data), ignore ERROR_FILE_NOT_FOUND };
+        //SHM_STATE_SUFFIX
+        let mut data = WIN32_FIND_DATAA::new_zeroed();
+        let (handle, _) = win32call! { FindFirstFileA(search_path.as_ptr().cast(), &mut data), ignore ERROR_FILE_NOT_FOUND };
 
-    if handle == INVALID_HANDLE_VALUE {
-        return result;
-    }
+        if handle == INVALID_HANDLE_VALUE {
+            return result;
+        }
 
-    loop {
-        if data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY == 0 {
-            let file_name = trim_ascii(&data.cFileName);
-            if file_name.ends_with(SHM_STATE_SUFFIX) {
-                let name = file_name
-                    .split_at(file_name.len() - SHM_STATE_SUFFIX.len())
-                    .0;
+        loop {
+            if data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY == 0 {
+                let file_name = trim_ascii(&data.cFileName);
+                if file_name.ends_with(SHM_STATE_SUFFIX) {
+                    let name = file_name
+                        .split_at(file_name.len() - SHM_STATE_SUFFIX.len())
+                        .0;
 
-                let mut shm_name = [0i8; 256];
-                for i in 0..core::cmp::min(shm_name.len(), name.len()) {
-                    shm_name[i] = name[i] as _;
+                    let mut shm_name = [0i8; 256];
+                    for i in 0..core::cmp::min(shm_name.len(), name.len()) {
+                        shm_name[i] = name[i] as _;
+                    }
+                    result.push(shm_name);
                 }
-                result.push(shm_name);
+            }
+
+            let (file_found, _) = win32call! { FindNextFileA(handle, &mut data) };
+            if file_found == FALSE {
+                break;
             }
         }
 
-        let (file_found, _) = win32call! { FindNextFileA(handle, &mut data) };
-        if file_found == FALSE {
-            break;
-        }
+        win32call! { FindClose(handle) };
+
+        result
     }
-
-    win32call! { FindClose(handle) };
-
-    result
 }
 
 pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
-    let name = remove_leading_path_separator(name.cast());
-    let handle: HANDLE = 0;
-    let shm_handle;
-    let mut shm_state_handle;
+    unsafe {
+        let name = remove_leading_path_separator(name.cast());
+        let handle: HANDLE = 0;
+        let shm_handle;
+        let mut shm_state_handle;
 
-    if oflag & O_CREAT != 0 {
-        shm_state_handle = create_state_handle(name);
-        if shm_state_handle == INVALID_HANDLE_VALUE {
-            if oflag & O_EXCL != 0 {
-                Errno::set(Errno::EEXIST);
+        if oflag & O_CREAT != 0 {
+            shm_state_handle = create_state_handle(name);
+            if shm_state_handle == INVALID_HANDLE_VALUE {
+                if oflag & O_EXCL != 0 {
+                    Errno::set(Errno::EEXIST);
+                    return -1;
+                }
+
+                shm_state_handle = open_state_handle(name);
+
+                if shm_state_handle == INVALID_HANDLE_VALUE {
+                    Errno::set(Errno::ENOENT);
+                    return -1;
+                }
+            }
+            shm_set_size(shm_state_handle, 0);
+
+            const MAX_SIZE_LOW: u32 = (MAX_SUPPORTED_SHM_SIZE & 0xFFFFFFFF) as u32;
+            const MAX_SIZE_HIGH: u32 = ((MAX_SUPPORTED_SHM_SIZE >> 32) & 0xFFFFFFFF) as u32;
+
+            let last_mapping_error;
+            (shm_handle, last_mapping_error) = win32call! {CreateFileMappingA(
+                handle,
+                core::ptr::null::<SECURITY_ATTRIBUTES>(),
+                PAGE_READWRITE | SEC_RESERVE,
+                MAX_SIZE_HIGH,
+                MAX_SIZE_LOW,
+                name as *const u8,
+            ), ignore ERROR_ALREADY_EXISTS};
+
+            if shm_handle == 0 {
+                Errno::set(Errno::EACCES);
+                CloseHandle(shm_state_handle);
                 return -1;
             }
 
+            if oflag & O_EXCL != 0 && last_mapping_error == ERROR_ALREADY_EXISTS {
+                CloseHandle(shm_handle);
+                CloseHandle(shm_state_handle);
+                return -1;
+            }
+        } else {
             shm_state_handle = open_state_handle(name);
 
             if shm_state_handle == INVALID_HANDLE_VALUE {
                 Errno::set(Errno::ENOENT);
                 return -1;
             }
-        }
-        shm_set_size(shm_state_handle, 0);
 
-        const MAX_SIZE_LOW: u32 = (MAX_SUPPORTED_SHM_SIZE & 0xFFFFFFFF) as u32;
-        const MAX_SIZE_HIGH: u32 = ((MAX_SUPPORTED_SHM_SIZE >> 32) & 0xFFFFFFFF) as u32;
+            let last_mapping_error;
+            (shm_handle, last_mapping_error) = win32call! {OpenFileMappingA(FILE_MAP_ALL_ACCESS, false as i32, name as *const u8), ignore ERROR_FILE_NOT_FOUND};
 
-        let last_mapping_error;
-        (shm_handle, last_mapping_error) = win32call! {CreateFileMappingA(
-            handle,
-            core::ptr::null::<SECURITY_ATTRIBUTES>(),
-            PAGE_READWRITE | SEC_RESERVE,
-            MAX_SIZE_HIGH,
-            MAX_SIZE_LOW,
-            name as *const u8,
-        ), ignore ERROR_ALREADY_EXISTS};
+            if shm_handle == 0 {
+                Errno::set(Errno::ENOENT);
+                shm_unlink(name);
+                win32call! {CloseHandle(shm_state_handle)};
+                return -1;
+            }
 
-        if shm_handle == 0 {
-            Errno::set(Errno::EACCES);
-            CloseHandle(shm_state_handle);
-            return -1;
+            if last_mapping_error != 0 {
+                Errno::set(Errno::EACCES);
+                win32call! {CloseHandle(shm_handle)};
+                win32call! {CloseHandle(shm_state_handle)};
+                return -1;
+            }
         }
 
-        if oflag & O_EXCL != 0 && last_mapping_error == ERROR_ALREADY_EXISTS {
-            CloseHandle(shm_handle);
-            CloseHandle(shm_state_handle);
-            return -1;
-        }
-    } else {
-        shm_state_handle = open_state_handle(name);
-
-        if shm_state_handle == INVALID_HANDLE_VALUE {
-            Errno::set(Errno::ENOENT);
-            return -1;
-        }
-
-        let last_mapping_error;
-        (shm_handle, last_mapping_error) = win32call! {OpenFileMappingA(FILE_MAP_ALL_ACCESS, false as i32, name as *const u8), ignore ERROR_FILE_NOT_FOUND};
-
-        if shm_handle == 0 {
-            Errno::set(Errno::ENOENT);
-            shm_unlink(name);
-            win32call! {CloseHandle(shm_state_handle)};
-            return -1;
-        }
-
-        if last_mapping_error != 0 {
-            Errno::set(Errno::EACCES);
-            win32call! {CloseHandle(shm_handle)};
-            win32call! {CloseHandle(shm_state_handle)};
-            return -1;
-        }
+        HandleTranslator::get_instance().add(FdHandleEntry::SharedMemory(ShmHandle {
+            handle: FileHandle {
+                handle: shm_handle,
+                lock_state: F_UNLCK,
+            },
+            state_handle: shm_state_handle,
+        }))
     }
-
-    HandleTranslator::get_instance().add(FdHandleEntry::SharedMemory(ShmHandle {
-        handle: FileHandle {
-            handle: shm_handle,
-            lock_state: F_UNLCK,
-        },
-        state_handle: shm_state_handle,
-    }))
 }
 
 unsafe fn shm_file_path(name: *const c_char, suffix: &[u8]) -> [u8; MAX_PATH_LENGTH] {
-    let name = remove_leading_path_separator(name);
+    unsafe {
+        let name = remove_leading_path_separator(name);
 
-    let mut state_file_path = [0u8; MAX_PATH_LENGTH];
+        let mut state_file_path = [0u8; MAX_PATH_LENGTH];
 
-    // path
-    state_file_path[..SHM_STATE_DIRECTORY.len()].copy_from_slice(SHM_STATE_DIRECTORY);
+        // path
+        state_file_path[..SHM_STATE_DIRECTORY.len()].copy_from_slice(SHM_STATE_DIRECTORY);
 
-    // name
-    let mut name_len = 0;
-    for i in 0..usize::MAX {
-        let c = *(name.add(i) as *const u8);
+        // name
+        let mut name_len = 0;
+        for i in 0..usize::MAX {
+            let c = *(name.add(i) as *const u8);
 
-        state_file_path[i + SHM_STATE_DIRECTORY.len()] = if c == b'/' { b'\\' } else { c };
-        if *(name.add(i)) == 0i8 {
-            name_len = i;
-            break;
+            state_file_path[i + SHM_STATE_DIRECTORY.len()] = if c == b'/' { b'\\' } else { c };
+            if *(name.add(i)) == 0i8 {
+                name_len = i;
+                break;
+            }
         }
-    }
 
-    // suffix
-    for i in 0..suffix.len() {
-        state_file_path[i + SHM_STATE_DIRECTORY.len() + name_len] = suffix[i];
-    }
+        // suffix
+        for i in 0..suffix.len() {
+            state_file_path[i + SHM_STATE_DIRECTORY.len() + name_len] = suffix[i];
+        }
 
-    state_file_path
+        state_file_path
+    }
 }
 
 unsafe fn create_state_handle(name: *const c_char) -> HANDLE {
-    let name = remove_leading_path_separator(name);
+    unsafe {
+        let name = remove_leading_path_separator(name);
 
-    let create_file = || {
-        let (handle, last_error) = win32call! {CreateFileA(
-            shm_file_path(name, SHM_STATE_SUFFIX).as_ptr(),
-            GENERIC_WRITE | GENERIC_READ,
-            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-            core::ptr::null::<SECURITY_ATTRIBUTES>(),
-            CREATE_NEW,
-            FILE_ATTRIBUTE_NORMAL,
-            0,
-        ), ignore ERROR_FILE_EXISTS};
-        (handle, last_error)
-    };
+        let create_file = || {
+            let (handle, last_error) = win32call! {CreateFileA(
+                shm_file_path(name, SHM_STATE_SUFFIX).as_ptr(),
+                GENERIC_WRITE | GENERIC_READ,
+                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                core::ptr::null::<SECURITY_ATTRIBUTES>(),
+                CREATE_NEW,
+                FILE_ATTRIBUTE_NORMAL,
+                0,
+            ), ignore ERROR_FILE_EXISTS};
+            (handle, last_error)
+        };
 
-    let (mut handle, last_error) = create_file();
-    if handle == INVALID_HANDLE_VALUE && last_error == ERROR_FILE_EXISTS && !does_shm_exist(name) {
-        remove_state_handle(name);
-        (handle, _) = create_file();
+        let (mut handle, last_error) = create_file();
+        if handle == INVALID_HANDLE_VALUE
+            && last_error == ERROR_FILE_EXISTS
+            && !does_shm_exist(name)
+        {
+            remove_state_handle(name);
+            (handle, _) = create_file();
+        }
+
+        handle
     }
-
-    handle
 }
 
 unsafe fn open_state_handle(name: *const c_char) -> HANDLE {
-    let name = remove_leading_path_separator(name);
+    unsafe {
+        let name = remove_leading_path_separator(name);
 
-    let (handle, _) = win32call! {CreateFileA(
-        shm_file_path(name, SHM_STATE_SUFFIX).as_ptr(),
-        GENERIC_READ,
-        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-        core::ptr::null::<SECURITY_ATTRIBUTES>(),
-        OPEN_EXISTING,
-        FILE_ATTRIBUTE_NORMAL,
-        0,
-    ), ignore ERROR_FILE_NOT_FOUND };
-    handle
+        let (handle, _) = win32call! {CreateFileA(
+            shm_file_path(name, SHM_STATE_SUFFIX).as_ptr(),
+            GENERIC_READ,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            core::ptr::null::<SECURITY_ATTRIBUTES>(),
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            0,
+        ), ignore ERROR_FILE_NOT_FOUND };
+        handle
+    }
 }
 
 unsafe fn remove_state_handle(name: *const c_char) -> int {
-    let name = remove_leading_path_separator(name);
+    unsafe {
+        let name = remove_leading_path_separator(name);
 
-    let (has_deleted_file, error_code) = win32call! { DeleteFileA(shm_file_path(name, SHM_STATE_SUFFIX).as_ptr()),
-    ignore ERROR_FILE_NOT_FOUND, ERROR_ACCESS_DENIED};
-    if has_deleted_file == FALSE {
-        // TODO: [#9]
-        Errno::set(Errno::ENOENT);
-        return -1;
+        let (has_deleted_file, error_code) = win32call! { DeleteFileA(shm_file_path(name, SHM_STATE_SUFFIX).as_ptr()),
+        ignore ERROR_FILE_NOT_FOUND, ERROR_ACCESS_DENIED};
+        if has_deleted_file == FALSE {
+            // TODO: [#9]
+            Errno::set(Errno::ENOENT);
+            return -1;
+        }
+        0
     }
-    0
 }
 
 unsafe fn does_shm_exist(name: *const c_char) -> bool {
-    let (shm_handle, last_error) = win32call! {OpenFileMappingA(FILE_MAP_ALL_ACCESS, false as i32, name as *const u8), ignore ERROR_FILE_NOT_FOUND};
-    !(shm_handle == 0 && last_error == ERROR_FILE_NOT_FOUND)
+    unsafe {
+        let (shm_handle, last_error) = win32call! {OpenFileMappingA(FILE_MAP_ALL_ACCESS, false as i32, name as *const u8), ignore ERROR_FILE_NOT_FOUND};
+        !(shm_handle == 0 && last_error == ERROR_FILE_NOT_FOUND)
+    }
 }
 
 pub(crate) unsafe fn shm_set_size(fd_handle: HANDLE, shm_size: u64) {
@@ -376,15 +395,16 @@ pub(crate) unsafe fn shm_set_size(fd_handle: HANDLE, shm_size: u64) {
     }
 
     let mut bytes_written = 0;
-
-    win32call! {SetFilePointer(fd_handle, 0, core::ptr::null_mut::<i32>(), FILE_BEGIN)};
-    win32call! { WriteFile(
-        fd_handle,
-        (&shm_size as *const u64) as *const u8,
-        8,
-        &mut bytes_written,
-        core::ptr::null_mut::<OVERLAPPED>(),
-    )};
+    unsafe {
+        win32call! {SetFilePointer(fd_handle, 0, core::ptr::null_mut::<i32>(), FILE_BEGIN)};
+        win32call! { WriteFile(
+            fd_handle,
+            (&shm_size as *const u64) as *const u8,
+            8,
+            &mut bytes_written,
+            core::ptr::null_mut::<OVERLAPPED>(),
+        )};
+    }
 }
 
 pub(crate) unsafe fn shm_get_size(fd_handle: HANDLE) -> u64 {
@@ -394,24 +414,25 @@ pub(crate) unsafe fn shm_get_size(fd_handle: HANDLE) -> u64 {
 
     let mut read_buffer: u64 = 0;
     let mut bytes_read = 0;
+    unsafe {
+        win32call! {SetFilePointer(fd_handle, 0, core::ptr::null_mut::<i32>(), FILE_BEGIN)};
+        let (has_read_file, _) = win32call! { ReadFile(
+            fd_handle,
+            (&mut read_buffer as *mut u64) as *mut void,
+            8,
+            &mut bytes_read,
+            core::ptr::null_mut::<OVERLAPPED>(),
+        )};
+        if has_read_file == FALSE || bytes_read != 8 {
+            read_buffer = 0;
+        }
 
-    win32call! {SetFilePointer(fd_handle, 0, core::ptr::null_mut::<i32>(), FILE_BEGIN)};
-    let (has_read_file, _) = win32call! { ReadFile(
-        fd_handle,
-        (&mut read_buffer as *mut u64) as *mut void,
-        8,
-        &mut bytes_read,
-        core::ptr::null_mut::<OVERLAPPED>(),
-    )};
-    if has_read_file == FALSE || bytes_read != 8 {
-        read_buffer = 0;
+        read_buffer
     }
-
-    read_buffer
 }
 
 pub unsafe fn shm_unlink(name: *const c_char) -> int {
-    remove_state_handle(name)
+    unsafe { remove_state_handle(name) }
 }
 
 pub unsafe fn mmap(
@@ -426,32 +447,33 @@ pub unsafe fn mmap(
         Errno::set(Errno::EINVAL);
         return core::ptr::null_mut::<void>();
     }
-
-    if fd == -1 {
-        if flags == MAP_ANONYMOUS | MAP_PRIVATE {
-            let addr =
-                win32call! { VirtualAlloc(core::ptr::null(), len, MEM_COMMIT, PAGE_READWRITE) }.0;
-            if addr.is_null() {
-                Errno::set(Errno::ENOMEM);
+    unsafe {
+        if fd == -1 {
+            if flags == MAP_ANONYMOUS | MAP_PRIVATE {
+                let addr =
+                    win32call! { VirtualAlloc(core::ptr::null(), len, MEM_COMMIT, PAGE_READWRITE) }
+                        .0;
+                if addr.is_null() {
+                    Errno::set(Errno::ENOMEM);
+                    return core::ptr::null_mut::<void>();
+                }
+                return addr as *mut void;
+            } else {
+                Errno::set(Errno::EINVAL);
                 return core::ptr::null_mut::<void>();
             }
-            return addr as *mut void;
-        } else {
-            Errno::set(Errno::EINVAL);
-            return core::ptr::null_mut::<void>();
         }
-    }
 
-    match HandleTranslator::get_instance().get(fd) {
-        Some(FdHandleEntry::SharedMemory(win_handle)) => {
-            let (map_result, _) = win32call! { MapViewOfFile(win_handle.handle.handle, FILE_MAP_ALL_ACCESS, 0, 0, len)};
-            match map_result {
-                0 => {
-                    Errno::set(Errno::ENOMEM);
-                    core::ptr::null_mut::<void>()
-                }
-                lpaddress => {
-                    if win32call!{  VirtualAlloc(lpaddress as *const void, len, MEM_COMMIT, PAGE_READWRITE)}.0
+        match HandleTranslator::get_instance().get(fd) {
+            Some(FdHandleEntry::SharedMemory(win_handle)) => {
+                let (map_result, _) = win32call! { MapViewOfFile(win_handle.handle.handle, FILE_MAP_ALL_ACCESS, 0, 0, len)};
+                match map_result {
+                    0 => {
+                        Errno::set(Errno::ENOMEM);
+                        core::ptr::null_mut::<void>()
+                    }
+                    lpaddress => {
+                        if win32call!{  VirtualAlloc(lpaddress as *const void, len, MEM_COMMIT, PAGE_READWRITE)}.0
                         .is_null()
                     {
                         win32call! { UnmapViewOfFile(lpaddress) };
@@ -459,71 +481,77 @@ pub unsafe fn mmap(
                         return core::ptr::null_mut::<void>();
                     }
 
-                    if !FileMappingsSet::get_instance().insert(lpaddress, 0) {
-                        win32call! { UnmapViewOfFile(lpaddress) };
-                        Errno::set(Errno::EMFILE);
-                        return core::ptr::null_mut::<void>();
-                    }
+                        if !FileMappingsSet::get_instance().insert(lpaddress, 0) {
+                            win32call! { UnmapViewOfFile(lpaddress) };
+                            Errno::set(Errno::EMFILE);
+                            return core::ptr::null_mut::<void>();
+                        }
 
-                    lpaddress as *mut void
+                        lpaddress as *mut void
+                    }
                 }
             }
-        }
-        Some(FdHandleEntry::File(fd)) => {
-            let max_size_low: u32 = (len & 0xFFFFFFFF) as u32;
-            let max_size_high: u32 = (len.overflowing_shr(32).0 & 0xFFFFFFFF) as u32;
-            let file_view = win32call! { CreateFileMappingA(
-                fd.handle,
-                core::ptr::null(),
-                PAGE_READWRITE | SEC_RESERVE,
-                max_size_high,
-                max_size_low,
-                core::ptr::null(),
-            ) }
-            .0;
+            Some(FdHandleEntry::File(fd)) => {
+                let max_size_low: u32 = (len & 0xFFFFFFFF) as u32;
+                let max_size_high: u32 = (len.overflowing_shr(32).0 & 0xFFFFFFFF) as u32;
+                let file_view = win32call! { CreateFileMappingA(
+                    fd.handle,
+                    core::ptr::null(),
+                    PAGE_READWRITE | SEC_RESERVE,
+                    max_size_high,
+                    max_size_low,
+                    core::ptr::null(),
+                ) }
+                .0;
 
-            let lpaddress =
-                win32call! { MapViewOfFile(file_view, FILE_MAP_ALL_ACCESS, 0, 0, len)}.0;
-            if lpaddress == 0 {
-                return core::ptr::null_mut();
+                let lpaddress =
+                    win32call! { MapViewOfFile(file_view, FILE_MAP_ALL_ACCESS, 0, 0, len)}.0;
+                if lpaddress == 0 {
+                    return core::ptr::null_mut();
+                }
+
+                if !FileMappingsSet::get_instance().insert(lpaddress, file_view) {
+                    win32call! { UnmapViewOfFile(lpaddress) };
+                    Errno::set(Errno::EMFILE);
+                    return core::ptr::null_mut::<void>();
+                }
+
+                lpaddress as *mut void
             }
-
-            if !FileMappingsSet::get_instance().insert(lpaddress, file_view) {
-                win32call! { UnmapViewOfFile(lpaddress) };
-                Errno::set(Errno::EMFILE);
-                return core::ptr::null_mut::<void>();
+            _ => {
+                Errno::set(Errno::EINVAL);
+                core::ptr::null_mut::<void>()
             }
-
-            lpaddress as *mut void
-        }
-        _ => {
-            Errno::set(Errno::EINVAL);
-            core::ptr::null_mut::<void>()
         }
     }
 }
 
 pub unsafe fn munmap(addr: *mut void, len: size_t) -> int {
-    if let Some((addr, handle)) = FileMappingsSet::get_instance().remove(addr as isize) {
-        let (has_unmapped, _) = win32call! { UnmapViewOfFile(addr as _) };
-        if has_unmapped == FALSE {
-            Errno::set(Errno::EINVAL);
+    unsafe {
+        if let Some((addr, handle)) = FileMappingsSet::get_instance().remove(addr as isize) {
+            let (has_unmapped, _) = win32call! { UnmapViewOfFile(addr as _) };
+            if has_unmapped == FALSE {
+                Errno::set(Errno::EINVAL);
+                return -1;
+            }
+
+            if handle != 0 && win32call! { CloseHandle(handle)}.0 == FALSE {
+                Errno::set(Errno::EINVAL);
+                return -1;
+            }
+        } else if win32call! {VirtualFree(addr, len, MEM_DECOMMIT)}.0 == 0 {
             return -1;
         }
 
-        if handle != 0 && win32call! { CloseHandle(handle)}.0 == FALSE {
-            Errno::set(Errno::EINVAL);
-            return -1;
-        }
-    } else if win32call! {VirtualFree(addr, len, MEM_DECOMMIT)}.0 == 0 {
-        return -1;
+        0
     }
-
-    0
 }
 
 pub unsafe fn mprotect(addr: *mut void, len: size_t, prot: int) -> int {
-    if win32call! { VirtualProtect(addr.cast(), len, prot as _, core::ptr::null_mut()) }.0 == 0 {
+    if unsafe {
+        win32call! { VirtualProtect(addr.cast(), len, prot as _, core::ptr::null_mut()) }.0
+    } == 0
+    {
         0
     } else {
         -1

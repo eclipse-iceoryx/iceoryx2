@@ -73,108 +73,113 @@ pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) 
     };
 
     let security_attributes = from_mode_to_security_attributes(INVALID_HANDLE_VALUE, mode);
+    unsafe {
+        let (handle, _) = win32call! {CreateFileA(
+            pathname as *const u8,
+            access_mode,
+            shared_mode,
+            &security_attributes,
+            open_mode,
+            FILE_ATTRIBUTE_NORMAL,
+            0,
+        ), ignore
+            ERROR_FILE_EXISTS, ERROR_FILE_NOT_FOUND, ERROR_PATH_NOT_FOUND,
+            ERROR_ACCESS_DENIED, ERROR_FILE_TOO_LARGE};
 
-    let (handle, _) = win32call! {CreateFileA(
-        pathname as *const u8,
-        access_mode,
-        shared_mode,
-        &security_attributes,
-        open_mode,
-        FILE_ATTRIBUTE_NORMAL,
-        0,
-    ), ignore
-        ERROR_FILE_EXISTS, ERROR_FILE_NOT_FOUND, ERROR_PATH_NOT_FOUND,
-        ERROR_ACCESS_DENIED, ERROR_FILE_TOO_LARGE};
+        if handle == INVALID_HANDLE_VALUE {
+            return -1;
+        }
 
-    if handle == INVALID_HANDLE_VALUE {
-        return -1;
+        HandleTranslator::get_instance().add(FdHandleEntry::File(FileHandle {
+            handle,
+            lock_state: F_UNLCK,
+        }))
     }
-
-    HandleTranslator::get_instance().add(FdHandleEntry::File(FileHandle {
-        handle,
-        lock_state: F_UNLCK,
-    }))
 }
 
 pub unsafe fn open(pathname: *const c_char, flags: int) -> int {
-    open_with_mode(pathname, flags, 0)
+    unsafe { open_with_mode(pathname, flags, 0) }
 }
 
 impl MemZeroedStruct for BY_HANDLE_FILE_INFORMATION {}
 
 pub unsafe fn fstat(fd: int, buf: *mut stat_t) -> int {
     let mut file_stat = stat_t::new_zeroed();
-
-    let permission_handle = match HandleTranslator::get_instance().get(fd) {
-        Some(FdHandleEntry::SharedMemory(handle)) => {
-            file_stat.st_size = shm_get_size(handle.state_handle) as _;
-            handle.state_handle
-        }
-        Some(FdHandleEntry::File(handle)) => {
-            let (size, _) = win32call! {GetFileSize(handle.handle, core::ptr::null_mut::<u32>())};
-            if size == INVALID_FILE_SIZE {
-                Errno::set(Errno::EINVAL);
-                return -1;
+    unsafe {
+        let permission_handle = match HandleTranslator::get_instance().get(fd) {
+            Some(FdHandleEntry::SharedMemory(handle)) => {
+                file_stat.st_size = shm_get_size(handle.state_handle) as _;
+                handle.state_handle
             }
+            Some(FdHandleEntry::File(handle)) => {
+                let (size, _) =
+                    win32call! {GetFileSize(handle.handle, core::ptr::null_mut::<u32>())};
+                if size == INVALID_FILE_SIZE {
+                    Errno::set(Errno::EINVAL);
+                    return -1;
+                }
 
-            file_stat.st_size = size as _;
-            file_stat.st_mode = S_IFREG;
+                file_stat.st_size = size as _;
+                file_stat.st_mode = S_IFREG;
 
-            let mut info = BY_HANDLE_FILE_INFORMATION::new_zeroed();
-            let (has_file_info, _) =
-                win32call! {GetFileInformationByHandle(handle.handle, &mut info)};
-            if has_file_info == FALSE {
-                Errno::set(Errno::EINVAL);
-                return -1;
+                let mut info = BY_HANDLE_FILE_INFORMATION::new_zeroed();
+                let (has_file_info, _) =
+                    win32call! {GetFileInformationByHandle(handle.handle, &mut info)};
+                if has_file_info == FALSE {
+                    Errno::set(Errno::EINVAL);
+                    return -1;
+                }
+
+                file_stat.st_mode = if info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY != 0 {
+                    S_IFDIR
+                } else {
+                    S_IFREG
+                };
+
+                handle.handle
             }
+            _ => {
+                Errno::set(Errno::EBADF);
+                -1
+            }
+        };
 
-            file_stat.st_mode = if info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY != 0 {
-                S_IFDIR
-            } else {
-                S_IFREG
-            };
+        if let Some(file_path) = handle_to_file_path(permission_handle) {
+            if let Some(mode) = acquire_mode_from_path(&file_path) {
+                file_stat.st_mode |= mode;
+            }
+        };
 
-            handle.handle
-        }
-        _ => {
-            Errno::set(Errno::EBADF);
-            -1
-        }
-    };
+        buf.write(file_stat);
 
-    if let Some(file_path) = handle_to_file_path(permission_handle) {
-        if let Some(mode) = acquire_mode_from_path(&file_path) {
-            file_stat.st_mode |= mode;
-        }
-    };
-
-    buf.write(file_stat);
-
-    0
+        0
+    }
 }
 
 pub(crate) unsafe fn acquire_mode_from_path(file_path: &[u8]) -> Option<mode_t> {
     const SECURITY_BUFFER_CAPACITY: usize = 1024;
     let mut security_attributes_buffer = [0u8; SECURITY_BUFFER_CAPACITY];
     let mut required_buffer_capacity = 0;
-    let (has_read_file_security, _) = win32call!(GetFileSecurityA(
-        file_path.as_ptr(),
-        DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,
-        security_attributes_buffer.as_mut_ptr() as *mut void,
-        SECURITY_BUFFER_CAPACITY as u32,
-        &mut required_buffer_capacity
-    ));
-    if has_read_file_security == FALSE {
-        return None;
+    unsafe {
+        let (has_read_file_security, _) = win32call!(GetFileSecurityA(
+            file_path.as_ptr(),
+            DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,
+            security_attributes_buffer.as_mut_ptr() as *mut void,
+            SECURITY_BUFFER_CAPACITY as u32,
+            &mut required_buffer_capacity
+        ));
+        if has_read_file_security == FALSE {
+            return None;
+        }
+
+        let security_attributes = SECURITY_ATTRIBUTES {
+            nLength: required_buffer_capacity,
+            lpSecurityDescriptor: security_attributes_buffer.as_mut_ptr() as *mut void,
+            bInheritHandle: FALSE,
+        };
+
+        Some(from_security_attributes_to_mode(&security_attributes))
     }
-
-    let security_attributes = SECURITY_ATTRIBUTES {
-        nLength: required_buffer_capacity,
-        lpSecurityDescriptor: security_attributes_buffer.as_mut_ptr() as *mut void,
-        bInheritHandle: FALSE,
-    };
-
-    Some(from_security_attributes_to_mode(&security_attributes))
 }
 
 pub unsafe fn fcntl_int(fd: int, cmd: int, arg: int) -> int {
@@ -205,7 +210,9 @@ pub unsafe fn fcntl_int(fd: int, cmd: int, arg: int) -> int {
 
     if cmd == F_SETFL {
         let mut mode = if arg & O_NONBLOCK != 0 { 1u32 } else { 0u32 };
-        win32call!(winsock windows_sys::Win32::Networking::WinSock::ioctlsocket(socket_fd, windows_sys::Win32::Networking::WinSock::FIONBIO, &mut mode));
+        unsafe {
+            win32call!(winsock windows_sys::Win32::Networking::WinSock::ioctlsocket(socket_fd, windows_sys::Win32::Networking::WinSock::FIONBIO, &mut mode));
+        }
         0
     } else {
         Errno::set(Errno::ENOTSUP);
@@ -216,88 +223,93 @@ pub unsafe fn fcntl_int(fd: int, cmd: int, arg: int) -> int {
 impl MemZeroedStruct for OVERLAPPED {}
 
 pub unsafe fn fcntl(fd: int, cmd: int, arg: *mut flock) -> int {
-    let handle = match HandleTranslator::get_instance().get(fd) {
-        Some(FdHandleEntry::File(_)) => HandleTranslator::get_instance().get_file_handle_mut(fd),
-        Some(FdHandleEntry::SharedMemory(_)) => {
-            &mut HandleTranslator::get_instance()
-                .get_shm_handle_mut(fd)
-                .handle
-        }
-        _ => {
-            Errno::set(Errno::EBADF);
-            return -1;
-        }
-    };
+    unsafe {
+        let handle = match HandleTranslator::get_instance().get(fd) {
+            Some(FdHandleEntry::File(_)) => {
+                HandleTranslator::get_instance().get_file_handle_mut(fd)
+            }
+            Some(FdHandleEntry::SharedMemory(_)) => {
+                &mut HandleTranslator::get_instance()
+                    .get_shm_handle_mut(fd)
+                    .handle
+            }
+            _ => {
+                Errno::set(Errno::EBADF);
+                return -1;
+            }
+        };
 
-    if cmd != F_SETLK && cmd != F_SETLKW && cmd != F_GETLK {
-        Errno::set(Errno::EINVAL);
-        return -1;
-    }
-
-    if cmd == F_GETLK {
-        if handle.lock_state != posix::F_UNLCK {
-            (*arg).l_type = handle.lock_state as i16;
-            return 0;
-        }
-
-        let mut overlapped = OVERLAPPED::new_zeroed();
-        let flags = LOCKFILE_EXCLUSIVE_LOCK | LOCKFILE_FAIL_IMMEDIATELY;
-        let lock_result = LockFileEx(handle.handle, flags, 0, MAXWORD, MAXWORD, &mut overlapped);
-
-        if lock_result != FALSE {
-            let mut overlapped = OVERLAPPED::new_zeroed();
-            UnlockFileEx(handle.handle, 0, MAXWORD, MAXWORD, &mut overlapped);
-            (*arg).l_type = posix::F_UNLCK as _;
-        } else {
-            (*arg).l_type = posix::F_WRLCK as _;
-        }
-
-        return 0;
-    }
-
-    let lock_type = (*arg).l_type as i32;
-    if lock_type != F_UNLCK && lock_type != F_RDLCK && lock_type != F_WRLCK {
-        Errno::set(Errno::EINVAL);
-        return -1;
-    }
-
-    if lock_type == F_UNLCK {
-        let mut overlapped = OVERLAPPED::new_zeroed();
-        handle.lock_state = F_UNLCK;
-        let (file_unlocked, _) = win32call! {UnlockFileEx(
-            handle.handle,
-            0,
-            MAXWORD,
-            MAXWORD,
-            &mut overlapped,
-        )};
-        if file_unlocked == FALSE {
+        if cmd != F_SETLK && cmd != F_SETLKW && cmd != F_GETLK {
             Errno::set(Errno::EINVAL);
             return -1;
         }
-        return 0;
+
+        if cmd == F_GETLK {
+            if handle.lock_state != posix::F_UNLCK {
+                (*arg).l_type = handle.lock_state as i16;
+                return 0;
+            }
+
+            let mut overlapped = OVERLAPPED::new_zeroed();
+            let flags = LOCKFILE_EXCLUSIVE_LOCK | LOCKFILE_FAIL_IMMEDIATELY;
+            let lock_result =
+                LockFileEx(handle.handle, flags, 0, MAXWORD, MAXWORD, &mut overlapped);
+
+            if lock_result != FALSE {
+                let mut overlapped = OVERLAPPED::new_zeroed();
+                UnlockFileEx(handle.handle, 0, MAXWORD, MAXWORD, &mut overlapped);
+                (*arg).l_type = posix::F_UNLCK as _;
+            } else {
+                (*arg).l_type = posix::F_WRLCK as _;
+            }
+
+            return 0;
+        }
+
+        let lock_type = (*arg).l_type as i32;
+        if lock_type != F_UNLCK && lock_type != F_RDLCK && lock_type != F_WRLCK {
+            Errno::set(Errno::EINVAL);
+            return -1;
+        }
+
+        if lock_type == F_UNLCK {
+            let mut overlapped = OVERLAPPED::new_zeroed();
+            handle.lock_state = F_UNLCK;
+            let (file_unlocked, _) = win32call! {UnlockFileEx(
+                handle.handle,
+                0,
+                MAXWORD,
+                MAXWORD,
+                &mut overlapped,
+            )};
+            if file_unlocked == FALSE {
+                Errno::set(Errno::EINVAL);
+                return -1;
+            }
+            return 0;
+        }
+
+        let mut flags = 0;
+        if lock_type == F_WRLCK {
+            flags |= LOCKFILE_EXCLUSIVE_LOCK;
+        }
+
+        if cmd & F_SETLK != 0 {
+            flags |= LOCKFILE_FAIL_IMMEDIATELY;
+        }
+
+        let mut overlapped = OVERLAPPED::new_zeroed();
+
+        let (has_file_locked, _) =
+            win32call! {LockFileEx(handle.handle, flags, 0, MAXWORD, MAXWORD, &mut overlapped)};
+        if has_file_locked == FALSE {
+            return -1;
+        }
+
+        handle.lock_state = lock_type;
+
+        0
     }
-
-    let mut flags = 0;
-    if lock_type == F_WRLCK {
-        flags |= LOCKFILE_EXCLUSIVE_LOCK;
-    }
-
-    if cmd & F_SETLK != 0 {
-        flags |= LOCKFILE_FAIL_IMMEDIATELY;
-    }
-
-    let mut overlapped = OVERLAPPED::new_zeroed();
-
-    let (has_file_locked, _) =
-        win32call! {LockFileEx(handle.handle, flags, 0, MAXWORD, MAXWORD, &mut overlapped)};
-    if has_file_locked == FALSE {
-        return -1;
-    }
-
-    handle.lock_state = lock_type;
-
-    0
 }
 
 pub unsafe fn fcntl2(fd: int, cmd: int) -> int {
@@ -316,12 +328,14 @@ pub unsafe fn fcntl2(fd: int, cmd: int) -> int {
 
 unsafe fn handle_to_file_path(handle: HANDLE) -> Option<[u8; MAX_PATH_LENGTH]> {
     let mut file_path = [0u8; MAX_PATH_LENGTH];
-    let (file_path_len, _) = win32call!(GetFinalPathNameByHandleA(
-        handle,
-        file_path.as_mut_ptr(),
-        MAX_PATH_LENGTH as u32,
-        FILE_NAME_NORMALIZED
-    ));
+    let (file_path_len, _) = unsafe {
+        win32call!(GetFinalPathNameByHandleA(
+            handle,
+            file_path.as_mut_ptr(),
+            MAX_PATH_LENGTH as u32,
+            FILE_NAME_NORMALIZED
+        ))
+    };
 
     if file_path_len as usize > MAX_PATH_LENGTH {
         None
@@ -341,7 +355,7 @@ pub unsafe fn fchmod(fd: int, mode: mode_t) -> int {
         }
     };
 
-    let file_path = match handle_to_file_path(handle) {
+    let file_path = match unsafe { handle_to_file_path(handle) } {
         Some(v) => v,
         None => {
             Errno::set(Errno::EINVAL);
@@ -350,16 +364,17 @@ pub unsafe fn fchmod(fd: int, mode: mode_t) -> int {
     };
 
     let security_attributes = from_mode_to_security_attributes(handle, mode);
+    unsafe {
+        let (has_file_security_set, _) = win32call!(SetFileSecurityA(
+            file_path.as_ptr(),
+            DACL_SECURITY_INFORMATION,
+            security_attributes.lpSecurityDescriptor
+        ));
+        if has_file_security_set == FALSE {
+            Errno::set(Errno::EPERM);
+            return -1;
+        }
 
-    let (has_file_security_set, _) = win32call!(SetFileSecurityA(
-        file_path.as_ptr(),
-        DACL_SECURITY_INFORMATION,
-        security_attributes.lpSecurityDescriptor
-    ));
-    if has_file_security_set == FALSE {
-        Errno::set(Errno::EPERM);
-        return -1;
+        0
     }
-
-    0
 }

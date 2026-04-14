@@ -107,8 +107,9 @@ unsafe impl Sync for SigAction {}
 static SIG_ACTION: SigAction = SigAction::new();
 
 unsafe extern "system" fn ctrl_handler(value: u32) -> i32 {
-    let action =
-        core::mem::transmute::<sighandler_t, extern "C" fn(int)>(SIG_ACTION.get().sa_handler);
+    let action = unsafe {
+        core::mem::transmute::<sighandler_t, extern "C" fn(int)>(SIG_ACTION.get().sa_handler)
+    };
 
     let sigval = win32_event_to_signal(value);
 
@@ -139,9 +140,9 @@ pub unsafe fn sigaction(sig: int, act: &sigaction_t, oact: &mut sigaction_t) -> 
 
     if sig == SIGTERM {
         if act.sa_handler == 0 {
-            SetConsoleCtrlHandler(None, FALSE);
+            unsafe { SetConsoleCtrlHandler(None, FALSE) };
         } else {
-            SetConsoleCtrlHandler(Some(ctrl_handler), TRUE);
+            unsafe { SetConsoleCtrlHandler(Some(ctrl_handler), TRUE) };
         }
     }
     0
@@ -150,8 +151,12 @@ pub unsafe fn sigaction(sig: int, act: &sigaction_t, oact: &mut sigaction_t) -> 
 pub unsafe fn kill(pid: pid_t, sig: int) -> int {
     if sig == 0 {
         let mut exit_code = 0;
-        let (handle, _) = win32call! { OpenProcess(PROCESS_ALL_ACCESS, TRUE, pid) };
-        let (has_exit_code, _) = win32call! { GetExitCodeProcess(handle, &mut exit_code) };
+        let (handle, _) = unsafe {
+            win32call! { OpenProcess(PROCESS_ALL_ACCESS, TRUE, pid)    }
+        };
+        let (has_exit_code, _) = unsafe {
+            win32call! { GetExitCodeProcess(handle, &mut exit_code) }
+        };
         return if has_exit_code == TRUE {
             0
         } else {
@@ -160,7 +165,7 @@ pub unsafe fn kill(pid: pid_t, sig: int) -> int {
         };
     }
 
-    if pid != getpid() {
+    if pid != unsafe { getpid() } {
         Errno::set(Errno::ENOTSUP);
         return -1;
     }
@@ -171,7 +176,9 @@ pub unsafe fn kill(pid: pid_t, sig: int) -> int {
             -1
         }
         Some(e) => {
-            win32call! {GenerateConsoleCtrlEvent(e, 0)};
+            unsafe {
+                win32call! {GenerateConsoleCtrlEvent(e, 0)}
+            };
             0
         }
     }

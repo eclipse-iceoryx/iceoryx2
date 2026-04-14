@@ -159,19 +159,21 @@ impl Errno {
 }
 
 pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
-    let error = strerror(errnum);
-    let len = || -> usize {
-        for n in 0..buflen {
-            if *error.add(n) == 0 {
-                return n;
+    unsafe {
+        let error = strerror(errnum);
+        let len = || -> usize {
+            for n in 0..buflen {
+                if *error.add(n) == 0 {
+                    return n;
+                }
             }
-        }
-        buflen
-    }();
+            buflen
+        }();
 
-    core::ptr::copy_nonoverlapping(error, buf, len);
+        core::ptr::copy_nonoverlapping(error, buf, len);
 
-    0
+        0
+    }
 }
 
 pub unsafe fn strerror(errnum: int) -> *const c_char {

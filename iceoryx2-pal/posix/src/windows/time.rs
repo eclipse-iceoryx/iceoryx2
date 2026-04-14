@@ -30,8 +30,10 @@ pub unsafe fn clock_gettime(clock_id: clockid_t, tp: *mut timespec) -> int {
     match SystemTime::now().duration_since(UNIX_EPOCH) {
         Err(_) => Errno::EINVAL as _,
         Ok(v) => {
-            (*tp).tv_sec = v.as_secs() as _;
-            (*tp).tv_nsec = v.subsec_nanos() as _;
+            unsafe {
+                (*tp).tv_sec = v.as_secs() as _;
+                (*tp).tv_nsec = v.subsec_nanos() as _;
+            }
             Errno::ESUCCES as _
         }
     }
@@ -61,8 +63,9 @@ pub unsafe fn clock_nanosleep(
     }
     let now = now.unwrap();
 
-    let future_time_point =
-        Duration::from_secs((*rqtp).tv_sec as _) + Duration::from_nanos((*rqtp).tv_nsec as _);
+    let future_time_point = unsafe {
+        Duration::from_secs((*rqtp).tv_sec as _) + Duration::from_nanos((*rqtp).tv_nsec as _)
+    };
 
     if now < future_time_point {
         let sleep_time = future_time_point - now;
