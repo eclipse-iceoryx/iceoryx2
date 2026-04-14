@@ -95,7 +95,8 @@ SDK_CRATES_TO_IGNORE := `echo \
     iceoryx2-tests-nostd`
 
 INTEGRATIONS_CRATES_TO_PUBLISH := `echo \
-    iceoryx2-integrations-tunnel-zenoh`
+    iceoryx2-integrations-zenoh-tunnel-backend \
+    iceoryx2-integrations-zenoh-tunnel-cli`
 
 INTEGRATIONS_CRATES_TO_IGNORE := ""
 
