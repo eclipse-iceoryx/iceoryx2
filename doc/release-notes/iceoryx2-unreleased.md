@@ -50,6 +50,9 @@
 * Publisher, Client, Server no longer deadlocks with
   UnableToDeliveryStrategy::Block when the other side disconnects
   [#314](https://github.com/eclipse-iceoryx/iceoryx2/issues/314)
+* Update `set_log_level_X` docs and mention that iceoryx2 filters
+  even for external frameworks
+  [#620](https://github.com/eclipse-iceoryx/iceoryx2/issues/620)
 * Remove timed and blocking send from `UnixDatagramSender` blocking block;
   these calls do not work on all supported platforms and were only used in
   the tests; the try send methods are used instead
@@ -105,7 +108,7 @@
 * Bump cryptography from 46.0.5 to 46.0.6 in /iceoryx2-ffi/python
   [#1499](https://github.com/eclipse-iceoryx/iceoryx2/issues/1499)
 * Make `UniqueSystemId` unique accross docker containers and pid namespaces
-  by introducing `gethostpid()` in the platform.  
+  by introducing `gethostpid()` in the platform.
   [#1518](https://github.com/eclipse-iceoryx/iceoryx2/issues/1518)
 
 ### Refactoring
