@@ -23,9 +23,9 @@ mod posix_platform {
     use core::time::Duration;
 
     use iceoryx2_pal_posix::posix::{
-        self, long, sigaction_t, sighandler_t,
+        self, CLOCK_REALTIME, Errno, MemZeroedStruct, SIGALRM, SIGEV_SIGNAL, long, sigaction_t,
+        sighandler_t,
         types::{int, itimerspec, sigevent, time_t, timer_t, timespec},
-        Errno, MemZeroedStruct, CLOCK_REALTIME, SIGALRM, SIGEV_SIGNAL,
     };
 
     use super::EXPIRY_MESSAGE;
@@ -69,7 +69,9 @@ mod posix_platform {
     /// [`posix::abort()`] is used instead to terminate immediately.
     unsafe extern "C" fn handler(_sig: int) {
         signal_safe_write(EXPIRY_MESSAGE);
-        posix::abort();
+        unsafe {
+            posix::abort();
+        }
     }
 
     impl Watchdog {

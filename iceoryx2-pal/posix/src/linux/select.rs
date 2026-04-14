@@ -22,41 +22,41 @@ pub unsafe fn select(
     errorfds: *mut fd_set,
     timeout: *mut timeval,
 ) -> int {
-    libc::select(nfds, readfds, writefds, errorfds, timeout)
+    unsafe { libc::select(nfds, readfds, writefds, errorfds, timeout) }
 }
 
 pub unsafe fn CMSG_SPACE(length: size_t) -> size_t {
-    libc::CMSG_SPACE(length as _) as _
+    unsafe { libc::CMSG_SPACE(length as _) as _ }
 }
 
 pub unsafe fn CMSG_FIRSTHDR(mhdr: *const msghdr) -> *mut cmsghdr {
-    libc::CMSG_FIRSTHDR(mhdr)
+    unsafe { libc::CMSG_FIRSTHDR(mhdr) }
 }
 
 pub unsafe fn CMSG_NXTHDR(header: *const msghdr, sub_header: *const cmsghdr) -> *mut cmsghdr {
-    libc::CMSG_NXTHDR(header as *mut msghdr, sub_header as *mut cmsghdr)
+    unsafe { libc::CMSG_NXTHDR(header as *mut msghdr, sub_header as *mut cmsghdr) }
 }
 
 pub unsafe fn CMSG_LEN(length: size_t) -> size_t {
-    libc::CMSG_LEN(length as _) as _
+    unsafe { libc::CMSG_LEN(length as _) as _ }
 }
 
 pub unsafe fn CMSG_DATA(cmsg: *mut cmsghdr) -> *mut uchar {
-    libc::CMSG_DATA(cmsg)
+    unsafe { libc::CMSG_DATA(cmsg) }
 }
 
 pub unsafe fn FD_CLR(fd: int, set: *mut fd_set) {
-    libc::FD_CLR(fd, set)
+    unsafe { libc::FD_CLR(fd, set) }
 }
 
 pub unsafe fn FD_ISSET(fd: int, set: *const fd_set) -> bool {
-    libc::FD_ISSET(fd, set)
+    unsafe { libc::FD_ISSET(fd, set) }
 }
 
 pub unsafe fn FD_SET(fd: int, set: *mut fd_set) {
-    libc::FD_SET(fd, set)
+    unsafe { libc::FD_SET(fd, set) }
 }
 
 pub unsafe fn FD_ZERO(set: *mut fd_set) {
-    libc::FD_ZERO(set)
+    unsafe { libc::FD_ZERO(set) }
 }

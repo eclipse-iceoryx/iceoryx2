@@ -16,7 +16,7 @@
 
 use windows_sys::Win32::{
     Foundation::ERROR_FILE_NOT_FOUND,
-    Storage::FileSystem::{GetFileAttributesA, FILE_ATTRIBUTE_DIRECTORY, INVALID_FILE_ATTRIBUTES},
+    Storage::FileSystem::{FILE_ATTRIBUTE_DIRECTORY, GetFileAttributesA, INVALID_FILE_ATTRIBUTES},
 };
 
 use crate::posix::*;

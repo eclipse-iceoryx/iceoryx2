@@ -19,7 +19,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::{
     posix::CLOCK_REALTIME,
-    posix::{types::*, Errno},
+    posix::{Errno, types::*},
 };
 
 pub unsafe fn clock_gettime(clock_id: clockid_t, tp: *mut timespec) -> int {

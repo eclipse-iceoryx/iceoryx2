@@ -27,9 +27,9 @@ pub use core::sync::atomic::fence;
 #[cfg(all(test, loom, feature = "std"))]
 pub use loom::sync::atomic::fence;
 
+use crate::WaitAction;
 use crate::cell::UnsafeCell;
 use crate::strategy::rwlock::RwLockWriterPreference;
-use crate::WaitAction;
 
 /// Behaves like [`core::sync::atomic::AtomicBool`]
 #[cfg(not(all(test, loom, feature = "std")))]

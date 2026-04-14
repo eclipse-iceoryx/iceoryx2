@@ -17,36 +17,38 @@ use crate::common::mem_zeroed_struct::MemZeroedStruct;
 use crate::posix::types::*;
 
 pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) -> int {
-    libc::open(pathname, flags, mode)
+    unsafe { libc::open(pathname, flags, mode) }
 }
 
 pub unsafe fn fstat(fd: int, buf: *mut stat_t) -> int {
     let mut os_specific_buffer = native_stat_t::new_zeroed();
-    match libc::fstat(fd, &mut os_specific_buffer) {
-        0 => {
-            *buf = os_specific_buffer.into();
-            0
+    unsafe {
+        match libc::fstat(fd, &mut os_specific_buffer) {
+            0 => {
+                *buf = os_specific_buffer.into();
+                0
+            }
+            v => v,
         }
-        v => v,
     }
 }
 
 pub unsafe fn fcntl_int(fd: int, cmd: int, arg: int) -> int {
-    libc::fcntl(fd, cmd, arg)
+    unsafe { libc::fcntl(fd, cmd, arg) }
 }
 
 pub unsafe fn fcntl(fd: int, cmd: int, arg: *mut flock) -> int {
-    libc::fcntl(fd, cmd, arg)
+    unsafe { libc::fcntl(fd, cmd, arg) }
 }
 
 pub unsafe fn fcntl2(fd: int, cmd: int) -> int {
-    libc::fcntl(fd, cmd)
+    unsafe { libc::fcntl(fd, cmd) }
 }
 
 pub unsafe fn fchmod(fd: int, mode: mode_t) -> int {
-    libc::fchmod(fd, mode)
+    unsafe { libc::fchmod(fd, mode) }
 }
 
 pub unsafe fn open(pathname: *const c_char, flags: int) -> int {
-    libc::open(pathname, flags)
+    unsafe { libc::open(pathname, flags) }
 }

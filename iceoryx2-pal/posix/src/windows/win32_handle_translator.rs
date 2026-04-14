@@ -14,17 +14,17 @@ use iceoryx2_pal_configuration::PATH_LENGTH;
 use windows_sys::Win32::{
     Foundation::HANDLE,
     Networking::WinSock::SOCKADDR,
-    System::Threading::{WaitOnAddress, WakeByAddressSingle, INFINITE},
+    System::Threading::{INFINITE, WaitOnAddress, WakeByAddressSingle},
 };
 
 use crate::posix::{c_string_length, types::*};
 use core::fmt::Debug;
 use core::panic;
+use iceoryx2_pal_concurrency_sync::WaitAction;
 use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 use iceoryx2_pal_concurrency_sync::atomic::{AtomicBool, AtomicU64, AtomicUsize};
 use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
 use iceoryx2_pal_concurrency_sync::strategy::mutex::Mutex;
-use iceoryx2_pal_concurrency_sync::WaitAction;
 
 use super::win32_udp_port_to_uds_name::PortToUds;
 

@@ -18,15 +18,17 @@ use crate::posix::types::*;
 
 pub unsafe fn stat(path: *const c_char, buf: *mut stat_t) -> int {
     let mut os_specific_buffer = native_stat_t::new_zeroed();
-    match libc::stat(path, &mut os_specific_buffer) {
-        0 => {
-            *buf = os_specific_buffer.into();
-            0
+    unsafe {
+        match libc::stat(path, &mut os_specific_buffer) {
+            0 => {
+                *buf = os_specific_buffer.into();
+                0
+            }
+            v => v,
         }
-        v => v,
     }
 }
 
 pub unsafe fn umask(mask: mode_t) -> mode_t {
-    libc::umask(mask)
+    unsafe { libc::umask(mask) }
 }

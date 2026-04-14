@@ -14,15 +14,15 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
+use iceoryx2_pal_concurrency_sync::WaitAction;
 use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
 use iceoryx2_pal_concurrency_sync::strategy::mutex::Mutex;
-use iceoryx2_pal_concurrency_sync::WaitAction;
 use windows_sys::Win32::{
     Foundation::{FALSE, TRUE},
     System::{
         Console::{
-            GenerateConsoleCtrlEvent, SetConsoleCtrlHandler, CTRL_BREAK_EVENT, CTRL_CLOSE_EVENT,
-            CTRL_C_EVENT,
+            CTRL_BREAK_EVENT, CTRL_C_EVENT, CTRL_CLOSE_EVENT, GenerateConsoleCtrlEvent,
+            SetConsoleCtrlHandler,
         },
         Threading::{GetExitCodeProcess, OpenProcess, PROCESS_ALL_ACCESS},
     },
@@ -31,8 +31,8 @@ use windows_sys::Win32::{
 use crate::{
     posix::getpid,
     posix::types::*,
-    posix::{sighandler_t, MemZeroedStruct},
     posix::{Errno, SIGKILL, SIGSTOP, SIGTERM, SIGUSR1},
+    posix::{MemZeroedStruct, sighandler_t},
     win32call,
 };
 

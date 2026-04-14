@@ -16,41 +16,41 @@
 use crate::posix::types::*;
 
 pub unsafe fn sem_create(name: *const c_char, oflag: int, mode: mode_t, value: uint) -> *mut sem_t {
-    libc::sem_open(name, oflag, mode, value)
+    unsafe { libc::sem_open(name, oflag, mode, value) }
 }
 
 pub unsafe fn sem_post(sem: *mut sem_t) -> int {
-    libc::sem_post(sem)
+    unsafe { libc::sem_post(sem) }
 }
 
 pub unsafe fn sem_wait(sem: *mut sem_t) -> int {
-    libc::sem_wait(sem)
+    unsafe { libc::sem_wait(sem) }
 }
 
 pub unsafe fn sem_trywait(sem: *mut sem_t) -> int {
-    libc::sem_trywait(sem)
+    unsafe { libc::sem_trywait(sem) }
 }
 
 pub unsafe fn sem_timedwait(sem: *mut sem_t, abs_timeout: *const timespec) -> int {
-    libc::sem_timedwait(sem, abs_timeout)
+    unsafe { libc::sem_timedwait(sem, abs_timeout) }
 }
 
 pub unsafe fn sem_unlink(name: *const c_char) -> int {
-    libc::sem_unlink(name)
+    unsafe { libc::sem_unlink(name) }
 }
 
 pub unsafe fn sem_open(name: *const c_char, oflag: int) -> *mut sem_t {
-    libc::sem_open(name, oflag)
+    unsafe { libc::sem_open(name, oflag) }
 }
 
 pub unsafe fn sem_destroy(sem: *mut sem_t) -> int {
-    libc::sem_destroy(sem)
+    unsafe { libc::sem_destroy(sem) }
 }
 
 pub unsafe fn sem_init(sem: *mut sem_t, pshared: int, value: uint) -> int {
-    libc::sem_init(sem, pshared, value)
+    unsafe { libc::sem_init(sem, pshared, value) }
 }
 
 pub unsafe fn sem_close(sem: *mut sem_t) -> int {
-    libc::sem_close(sem)
+    unsafe { libc::sem_close(sem) }
 }

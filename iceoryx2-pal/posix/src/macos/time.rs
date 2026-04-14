@@ -13,9 +13,9 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 
-use crate::posix::types::*;
 use crate::posix::Errno;
 use crate::posix::MemZeroedStruct;
+use crate::posix::types::*;
 
 pub unsafe fn clock_gettime(clock_id: clockid_t, tp: *mut timespec) -> int {
     crate::internal::clock_gettime(clock_id, tp)

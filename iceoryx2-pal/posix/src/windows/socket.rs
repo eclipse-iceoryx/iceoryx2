@@ -21,18 +21,18 @@ extern crate alloc;
 use alloc::ffi::CString;
 
 use iceoryx2_pal_concurrency_sync::atomic::Ordering;
-use iceoryx2_pal_concurrency_sync::atomic::{AtomicU64, AtomicU8};
+use iceoryx2_pal_concurrency_sync::atomic::{AtomicU8, AtomicU64};
 use iceoryx2_pal_concurrency_sync::cell::OnceCell;
 
 use windows_sys::Win32::Networking::WinSock::{INVALID_SOCKET, SOCKADDR, SOCKET_ERROR, WSADATA};
 use windows_sys::Win32::Networking::WinSock::{SOCKADDR_UN, WSAEWOULDBLOCK};
 
+use crate::posix::SockAddrIn;
 use crate::posix::getpid;
 use crate::posix::select;
 use crate::posix::types::*;
-use crate::posix::SockAddrIn;
-use crate::posix::{constants::*, fcntl_int};
 use crate::posix::{Errno, MemZeroedStruct};
+use crate::posix::{constants::*, fcntl_int};
 
 use crate::win32call;
 

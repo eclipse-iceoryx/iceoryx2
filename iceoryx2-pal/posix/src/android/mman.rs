@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 
-use crate::posix::{closedir, opendir, readdir, types::*, Errno};
+use crate::posix::{Errno, closedir, opendir, readdir, types::*};
 
 pub unsafe fn mlock(addr: *const void, len: size_t) -> int {
     libc::mlock(addr, len)

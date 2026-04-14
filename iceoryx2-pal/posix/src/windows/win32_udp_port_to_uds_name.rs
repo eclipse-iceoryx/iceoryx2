@@ -15,8 +15,8 @@ use windows_sys::Win32::{
     Foundation::{CloseHandle, ERROR_ALREADY_EXISTS, HANDLE},
     Security::SECURITY_ATTRIBUTES,
     System::Memory::{
-        CreateFileMappingA, MapViewOfFile, UnmapViewOfFile, VirtualAlloc, FILE_MAP_ALL_ACCESS,
-        MEM_COMMIT, PAGE_READWRITE, SEC_RESERVE,
+        CreateFileMappingA, FILE_MAP_ALL_ACCESS, MEM_COMMIT, MapViewOfFile, PAGE_READWRITE,
+        SEC_RESERVE, UnmapViewOfFile, VirtualAlloc,
     },
 };
 
