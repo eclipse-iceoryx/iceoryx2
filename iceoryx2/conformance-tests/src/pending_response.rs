@@ -10,10 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_bb_testing_macros::conformance_tests;
 
 #[allow(clippy::module_inception)]
-#[conformance_test_module]
+#[conformance_tests]
 pub mod pending_response {
     use iceoryx2::port::client::Client;
     use iceoryx2::port::server::Server;
@@ -23,8 +23,8 @@ pub mod pending_response {
         node::{Node, NodeBuilder},
         service::Service,
     };
-    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing_macros::conformance_test;
 
     struct TestFixture<Sut: Service> {
         _node: Node<Sut>,

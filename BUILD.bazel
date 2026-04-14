@@ -269,7 +269,6 @@ filegroup(
         "//iceoryx2/tests-common:all_srcs",
         "//iceoryx2-bb/print:all_srcs",
         "//iceoryx2-bb/loggers:all_srcs",
-        "//iceoryx2-bb/conformance-test-macros:all_srcs",
         "//iceoryx2-bb/concurrency:all_srcs",
         "//iceoryx2-bb/concurrency/tests-common:all_srcs",
         "//iceoryx2-bb/container:all_srcs",

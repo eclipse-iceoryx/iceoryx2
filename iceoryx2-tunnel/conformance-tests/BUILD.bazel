@@ -31,6 +31,6 @@ rust_library(
         "//iceoryx2-services/discovery:iceoryx2-services-discovery",
     ],
     proc_macro_deps = [
-        "//iceoryx2-bb/conformance-test-macros:iceoryx2-bb-conformance-test-macros",
+        "//iceoryx2-bb/testing-macros:iceoryx2-bb-testing-macros",
     ],
 )

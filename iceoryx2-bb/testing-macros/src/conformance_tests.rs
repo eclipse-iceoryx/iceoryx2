@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Contributors to the Eclipse Foundation
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,10 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![warn(clippy::alloc_instead_of_core)]
-#![warn(clippy::std_instead_of_alloc)]
-#![warn(clippy::std_instead_of_core)]
-
 //! Attribute macro for defining a module containing conformance tests.
 //!
 //! This macro processes a module, collects all functions marked with
@@ -24,18 +20,8 @@
 //! Have a look at the `How It Works` section of the how-to-write-conformance-tests.md
 //! document for more details.
 
-use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, ItemMod};
-
-/// Attribute macro for marking functions as conformance tests.
-///
-/// Functions marked with this attribute will be included in the generated
-/// test suite when the module is processed by `conformance_test_module`.
-#[proc_macro_attribute]
-pub fn conformance_test(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    item
-}
 
 /// Attribute macro for defining a conformance test module.
 ///
@@ -45,8 +31,10 @@ pub fn conformance_test(_attr: TokenStream, item: TokenStream) -> TokenStream {
 ///
 /// Have a look at the `How It Works` section of the how-to-write-conformance-tests.md
 /// document for more details.
-#[proc_macro_attribute]
-pub fn conformance_test_module(_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn proc_macro(
+    _attr: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
     let input = parse_macro_input!(item as ItemMod);
     let mod_ident = &input.ident;
     let macro_name = mod_ident;

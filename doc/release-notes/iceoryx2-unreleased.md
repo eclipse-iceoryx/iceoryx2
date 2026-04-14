@@ -147,6 +147,9 @@
   [#1508](https://github.com/eclipse-iceoryx/iceoryx2/issues/1508)
 * Rename `NodeId` into `UniqueNodeId`
   [#1534](https://github.com/eclipse-iceoryx/iceoryx2/issues/1534)
+* Move conformance test macros into `iceoryx2-bb-testing-macros` and rename
+  `#[conformance_test_module]` to `#[conformance_tests]`
+  [#1540](https://github.com/eclipse-iceoryx/iceoryx2/issues/1540)
 
 ### Workflow
 
@@ -251,3 +254,22 @@
     let node = NodeBuilder::new().create::<ipc::Service>()?;
     let id: UniqueNodeId = node.id();
     ```
+
+1. The `#[conformance_test_module]` macro has been renamed to
+   `#[conformance_tests]`
+
+   ```rust
+   // old
+    #[allow(clippy::module_inception)]
+    #[conformance_test_module]
+    pub mod my_module {
+        // ...
+    }
+
+   // new
+   #[allow(clippy::module_inception)]
+   #[conformance_tests]
+   pub mod my_module {
+       // ...
+   }
+   ```

@@ -10,20 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_bb_testing_macros::conformance_tests;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
 
 pub type DefaultAllocator = PoolAllocator;
 
 #[allow(clippy::module_inception)]
-#[conformance_test_module]
+#[conformance_tests]
 pub mod resizable_shared_memory_trait {
     use alloc::vec;
     use core::alloc::Layout;
 
-    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::resizable_shared_memory::*;
     use iceoryx2_cal::shared_memory::SharedMemory;

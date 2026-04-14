@@ -16,7 +16,7 @@ service variant or extension.
 | Component | Description |
 | --------- | ----------- |
 | `#[conformance_test]` | Marks a function as a conformance test. The function must be generic over the SUT type(s). |
-| `#[conformance_test_module]` | Generates a declarative macro for a module, collecting all conformance tests and instantiating them for each SUT type. |
+| `#[conformance_tests]` | Generates a declarative macro for a module, collecting all conformance tests and instantiating them for each SUT type. |
 | `instantiate_conformance_tests!` | Instantiates the generated macro for a conformance test and a list of SUT types. |
 | `instantiate_conformance_tests_with_module!` | Instantiates the generated macro for a conformance test and a list of SUT types. The instantiation is wrapped in a module. |
 
@@ -24,11 +24,11 @@ service variant or extension.
 
 ### Step 1: Define a Test Module
 
-Annotate your test module with `#[conformance_test_module]`:
+Annotate your test module with `#[conformance_tests]`:
 
 ```rs
 #[allow(clippy::module_inception)]
-#[conformance_test_module]
+#[conformance_tests]
 pub mod my_module {
     // ...
 }
@@ -140,7 +140,7 @@ The `my_impl` crate has two implementations: `ImplA` and `ImplB`.
 
 ```rs
 #[allow(clippy::module_inception)]
-#[conformance_test_module]
+#[conformance_tests]
 pub mod my_module {
     use super::*;
 
@@ -195,7 +195,7 @@ impl Foo for Bar {}
 impl Foo for Baz {}
 
 #[allow(clippy::module_inception)]
-#[conformance_test_module]
+#[conformance_tests]
 pub mod my_module {
     use super::*;
 
@@ -253,7 +253,7 @@ mod impl_b {
 
 ## 6. How It Works
 
-The `conformance_test_module` proc macro will parse the module for functions
+The `conformance_tests` proc macro will parse the module for functions
 with the `conformance_test` attribute and generates a declarative macro using
 the specified conformance test module name as macro name. The declarative macro
 will be accessible from the crate root.
@@ -267,7 +267,7 @@ Assuming we have this conformance test in the `my_module` module of
 
 ```rs
 #[allow(clippy::module_inception)]
-#[conformance_test_module]
+#[conformance_tests]
 pub mod my_module {
     use super::*;
 

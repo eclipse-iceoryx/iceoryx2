@@ -10,16 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_bb_testing_macros::conformance_tests;
 
 #[allow(clippy::module_inception)]
-#[conformance_test_module]
+#[conformance_tests]
 pub mod reactor_trait {
     use alloc::vec;
     use core::time::Duration;
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_concurrency::atomic::Ordering;
-    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::barrier::BarrierBuilder;
     use iceoryx2_bb_posix::barrier::BarrierHandle;
     use iceoryx2_bb_posix::clock::nanosleep;
@@ -31,6 +30,7 @@ pub mod reactor_trait {
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::event::unix_datagram_socket::*;
     use iceoryx2_cal::event::{Listener, ListenerBuilder, Notifier, NotifierBuilder};
     use iceoryx2_cal::reactor::{Reactor, *};

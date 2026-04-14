@@ -10,10 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_bb_testing_macros::conformance_tests;
 
 #[allow(clippy::module_inception)]
-#[conformance_test_module]
+#[conformance_tests]
 pub mod node {
     use alloc::collections::{BTreeSet, VecDeque};
     use alloc::string::ToString;
@@ -28,13 +28,13 @@ pub mod node {
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
-    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
     use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_fail};
+    use iceoryx2_bb_testing_macros::conformance_test;
 
     #[derive(Debug, Eq, PartialEq)]
     struct Details {

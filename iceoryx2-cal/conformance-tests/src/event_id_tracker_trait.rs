@@ -10,17 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_bb_testing_macros::conformance_tests;
 
 #[allow(clippy::module_inception)]
-#[conformance_test_module]
+#[conformance_tests]
 pub mod event_id_tracker_trait {
     use alloc::boxed::Box;
     use alloc::collections::btree_set::BTreeSet;
     use core::ptr::NonNull;
 
-    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::event::{id_tracker::IdTracker, TriggerId};
 
     use iceoryx2_bb_memory::bump_allocator::*;

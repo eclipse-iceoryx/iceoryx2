@@ -12,17 +12,16 @@
 
 extern crate iceoryx2_bb_loggers;
 
-use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_bb_testing_macros::conformance_tests;
 
 #[allow(clippy::module_inception)]
-#[conformance_test_module]
+#[conformance_tests]
 pub mod event_trait {
     use alloc::collections::btree_set::BTreeSet;
     use alloc::{vec, vec::Vec};
     use core::time::Duration;
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_concurrency::atomic::Ordering;
-    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_posix::clock::{nanosleep, Time};
@@ -32,6 +31,7 @@ pub mod event_trait {
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_requires};
+    use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::event::{TriggerId, *};
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::testing::*;

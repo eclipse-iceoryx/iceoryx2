@@ -10,10 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_conformance_test_macros::conformance_test_module;
+use iceoryx2_bb_testing_macros::conformance_tests;
 
 #[allow(clippy::module_inception)]
-#[conformance_test_module]
+#[conformance_tests]
 pub mod event_discovery {
 
     use alloc::format;
@@ -23,8 +23,8 @@ pub mod event_discovery {
     use iceoryx2::prelude::*;
     use iceoryx2::testing::*;
 
-    use iceoryx2_bb_conformance_test_macros::conformance_test;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_services_discovery::service_discovery::Config as DiscoveryConfig;
     use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
     use iceoryx2_tunnel::Tunnel;
