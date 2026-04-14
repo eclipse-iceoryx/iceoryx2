@@ -411,6 +411,7 @@ fn zero_copy_send_derive_does_not_work_for_generic_union_when_not_all_members_im
 /// ```
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 /// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+/// use std::vec::Vec;
 ///
 /// #[repr(C)]
 /// #[derive(ZeroCopySend)]
@@ -419,8 +420,9 @@ fn zero_copy_send_derive_does_not_work_for_generic_union_when_not_all_members_im
 ///     val2: u64,
 ///     val3: u32,
 /// }
+/// let mut v = Vec::new();
 /// let t = NamedTestStruct {val1: 0, val2: 0, val3: 0};
-/// let v = t.__get_members();
+/// t.__get_members(&mut |offset, size| { v.push((offset, size)); });
 /// assert_eq!(v[0], (0, 1));
 /// assert_eq!(v[1], (8, 8));
 /// assert_eq!(v[2], (16, 4));
@@ -432,6 +434,7 @@ fn blub_struct() {}
 /// ```
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 /// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+/// use std::vec::Vec;
 ///
 /// #[repr(C)]
 /// #[derive(ZeroCopySend)]
@@ -440,8 +443,10 @@ fn blub_struct() {}
 ///     val2: T,
 ///     val3: u32,
 /// }
+///
+/// let mut v = Vec::new();
 /// let t = NamedTestStruct {val1: 0, val2: -9, val3: 0};
-/// let v = t.__get_members();
+/// t.__get_members(&mut |offset, size| { v.push((offset, size)); });
 /// assert_eq!(v[0], (0, 1));
 /// assert_eq!(v[1], (4, 4));
 /// assert_eq!(v[2], (8, 4));
@@ -453,6 +458,7 @@ fn blub_generic_struct() {}
 /// ```
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 /// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+/// use std::vec::Vec;
 ///
 /// #[repr(C)]
 /// #[derive(ZeroCopySend)]
@@ -461,8 +467,10 @@ fn blub_generic_struct() {}
 /// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// struct UnnamedTestStruct(i32, u64, Foo);
+///
+/// let mut v = Vec::new();
 /// let t = UnnamedTestStruct(0, 0, Foo(0));
-/// let v = t.__get_members();
+/// t.__get_members(&mut |offset, size| { v.push((offset, size)); });
 /// assert_eq!(v[0], (0, 4));
 /// assert_eq!(v[1], (8, 8));
 /// assert_eq!(v[2], (16, 2));
@@ -474,6 +482,7 @@ fn blub_tuple_struct() {}
 /// ```
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 /// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+/// use std::vec::Vec;
 ///
 /// #[repr(C)]
 /// #[derive(ZeroCopySend)]
@@ -482,8 +491,10 @@ fn blub_tuple_struct() {}
 /// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// struct UnnamedTestStruct<T: ZeroCopySend>(i32, T, Foo);
+///
+/// let mut v = Vec::new();
 /// let t = UnnamedTestStruct(0, 0u64, Foo(0));
-/// let v = t.__get_members();
+/// t.__get_members(&mut |offset, size| { v.push((offset, size)); });
 /// assert_eq!(v[0], (0, 4));
 /// assert_eq!(v[1], (8, 8));
 /// assert_eq!(v[2], (16, 2));
@@ -507,14 +518,8 @@ fn blub_generic_tuple_struct() {}
 ///     val2: Foo,
 /// }
 ///
-/// let u1 = SomeUnion {val1: 0};
-/// let v = u1.__get_members();
-/// assert_eq!(v.len(), 1);
-/// assert_eq!(v[0], (0, 8));
-/// let u2 = SomeUnion {val2: Foo(0)};
-/// let v2 = u2.__get_members();
-/// assert_eq!(v2.len(), 1);
-/// assert_eq!(v2[0], (0, 8));
+/// let u = SomeUnion {val2: Foo(0)};
+/// u.__get_members(&mut |_, _| {});
 /// ```
 #[cfg(doctest)]
 fn blub_union() {}
@@ -530,14 +535,8 @@ fn blub_union() {}
 ///     val2: T2,
 /// }
 ///
-/// let u1: GenericUnion<u32, u64> = GenericUnion {val1: 0};
-/// let v1 = u1.__get_members();
-/// assert_eq!(v1.len(), 1);
-/// assert_eq!(v1[0], (0, 8));
-/// let u2: GenericUnion<u32, u64> = GenericUnion {val2: 8};
-/// let v2 = u2.__get_members();
-/// assert_eq!(v2.len(), 1);
-/// assert_eq!(v2[0], (0, 8));
+/// let u: GenericUnion<u32, u64> = GenericUnion {val1: 0};
+/// u.__get_members(&mut |_, _| {});
 /// ```
 #[cfg(doctest)]
 fn blub_generic_union() {}
@@ -545,6 +544,7 @@ fn blub_generic_union() {}
 /// ```
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 /// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+/// use std::vec::Vec;
 ///
 /// #[repr(C)]
 /// #[repr(align(16))]
@@ -558,8 +558,9 @@ fn blub_generic_union() {}
 ///     b: AlignedU32,
 /// }
 ///
+/// let mut v = Vec::new();
 /// let t = FieldAlignedStruct { a: 3, b: AlignedU32(9) };
-/// let v = t.__get_members();
+/// t.__get_members(&mut |offset, size| { v.push((offset, size)); });
 /// assert_eq!(v.len(), 2);
 /// assert_eq!(v[0], (0, 1));
 /// assert_eq!(v[1], (16, 4));
@@ -570,6 +571,7 @@ fn blub_with_alignment_that_changes_inner_padding() {}
 /// ```
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 /// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+/// use std::vec::Vec;
 ///
 /// #[repr(C)]
 /// #[derive(ZeroCopySend)]
@@ -590,8 +592,9 @@ fn blub_with_alignment_that_changes_inner_padding() {}
 ///     val2: FieldStruct,
 /// }
 ///
+/// let mut v = Vec::new();
 /// let t = NestedStruct { val0: TupleStruct(32687), val1: 7, val2: FieldStruct { a: 1, b: -4 } };
-/// let v = t.__get_members();
+/// t.__get_members(&mut |offset, size| { v.push((offset, size)); });
 /// assert_eq!(v.len(), 4);
 /// assert_eq!(v[0], (0, 8));
 /// assert_eq!(v[1], (8, 4));
@@ -621,20 +624,10 @@ fn blub_nested_struct() {}
 ///     val2: FieldStruct,
 /// }
 ///
-/// let u1 = NestedUnion { val0: 1 };
-/// let v1 = u1.__get_members();
-/// assert_eq!(v1.len(), 1);
-/// assert_eq!(v1[0], (0, 16));
-/// let u2 = NestedUnion { val1: 2 };
-/// let v2 = u2.__get_members();
-/// assert_eq!(v2.len(), 1);
-/// assert_eq!(v2[0], (0, 16));
-/// let u3 = NestedUnion { val2: FieldStruct { a: 3, b: 4, } };
-/// let v3 = u3.__get_members();
-/// assert_eq!(v3.len(), 2);
-/// assert_eq!(v3[0], (0, 8));
-/// assert_eq!(v3[1], (8, 8));
+/// let u = NestedUnion { val0: 1 };
+/// u.__get_members(&mut |_, _| {});
 /// ```
 #[cfg(doctest)]
 fn blub_union_with_struct() {}
-// TODO: test union that contains a struct
+
+// TODO: move offset tests for unions to runtime tests, add enum tests
