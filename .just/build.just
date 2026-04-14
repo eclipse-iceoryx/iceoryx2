@@ -20,22 +20,25 @@ _parse-build-args *flags:
     set -euo pipefail
 
     TOOLCHAIN=""
-    HAS_NOSTD="false"
     TARGET_TRIPLET=""
+    HAS_NOSTD="false"
+    HAS_TESTS="false"
 
     set -- {{flags}}
     while [[ $# -gt 0 ]]; do
         case "$1" in
             +*)         TOOLCHAIN="$1";                    shift ;;
-            --no_std)   HAS_NOSTD="true";                  shift ;;
             --target=*) TARGET_TRIPLET="${1#--target=}";   shift ;;
+            --no_std)   HAS_NOSTD="true";                  shift ;;
+            --tests)    HAS_TESTS="true";                  shift ;;
             *)          shift ;;
         esac
     done
 
     echo "TOOLCHAIN='$TOOLCHAIN'"
-    echo "HAS_NOSTD='$HAS_NOSTD'"
     echo "TARGET_TRIPLET='$TARGET_TRIPLET'"
+    echo "HAS_NOSTD='$HAS_NOSTD'"
+    echo "HAS_TESTS='$HAS_TESTS'"
 
 [private]
 _build-dispatch what *flags:
@@ -48,46 +51,43 @@ _build-dispatch what *flags:
         "")
             echo "Usage: just build <what> [flags]"
             echo ""
-            echo "  workspace              build all crates"
-            echo "  tests                  build all tests"
+            echo "  sdk                    build the main workspace"
+            echo "  integrations           build the integrations workspace"
             echo "  <package>              build a specific package"
             echo ""
             echo "Flags:"
-            echo "  --no_std               build without std"
             echo "  +<toolchain>           use a specific toolchain"
             echo "  --target=<triplet>     cross-compile for target"
+            echo "  --no_std               build without std"
+            echo "  --tests                also build tests"
             exit 1
             ;;
-        workspace)
-            just _build-workspace "$TOOLCHAIN" "$HAS_NOSTD"
+        sdk)
+            just _build-sdk "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_TESTS"
             ;;
-        tests)
-            just _build-tests "$TOOLCHAIN" "$HAS_NOSTD" "$TARGET_TRIPLET"
+        integrations)
+            echo "Building 'integrations' is not yet implemented."
+            exit 0
             ;;
         *)
-            just _build-package "{{what}}" "$TOOLCHAIN" "$HAS_NOSTD" "$TARGET_TRIPLET"
+            just _build-package "{{what}}" "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD"
             ;;
     esac
 
 [private]
-_build-workspace toolchain has_nostd:
+_build-sdk toolchain target_triplet has_nostd has_tests:
     #!/usr/bin/env bash
     set -euo pipefail
 
+    # TODO: Move this branch into helper function
     if [ "{{has_nostd}}" = "true" ]; then
-        echo "Error: entire workspace cannot be built with --no_std" >&2
-        echo "Use 'just build <package> --no_std' to build compatible packages without std" >&2
-        exit 1
-    fi
+        if [ "{{has_tests}}" = "false" ]; then
+            # TODO: Update this to build all crates that are no_std
+            echo "Error: the sdk workspace cannot be built with --no_std" >&2
+            echo "Use 'just build <package> --no_std' to build compatible packages without std" >&2
+            exit 1
+        fi
 
-    cargo {{toolchain}} build --workspace
-
-[private]
-_build-tests toolchain has_nostd target_triplet:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    if [ "{{has_nostd}}" = "true" ]; then
         NOSTD_CRATES=$(just _discover-nostd-test-crates)
 
         CRATE_COUNT=$(echo "$NOSTD_CRATES" | wc -l)
@@ -101,7 +101,7 @@ _build-tests toolchain has_nostd target_triplet:
         BUILT_CRATES=()
         for crate in $NOSTD_CRATES; do
             echo "[$((BUILT_COUNT + 1))/$CRATE_COUNT] Building $crate..."
-            just _build-package "$crate" "{{toolchain}}" "true" "{{target_triplet}}"
+            just _build-package "$crate" "{{toolchain}}" "{{target_triplet}}" "true"
             BUILT_COUNT=$((BUILT_COUNT + 1))
             BUILT_CRATES+=("$crate")
         done
@@ -116,11 +116,16 @@ _build-tests toolchain has_nostd target_triplet:
         done
         echo ""
     else
-        cargo {{toolchain}} build --workspace --tests
+        TESTS_FLAG=""
+        if [ "{{has_tests}}" = "true" ]; then
+            TESTS_FLAG="--tests"
+        fi
+
+        cargo {{toolchain}} build --workspace $TESTS_FLAG
     fi
 
 [private]
-_build-package package toolchain has_nostd target_triplet:
+_build-package package toolchain target_triplet has_nostd:
     #!/usr/bin/env bash
     set -euo pipefail
 
