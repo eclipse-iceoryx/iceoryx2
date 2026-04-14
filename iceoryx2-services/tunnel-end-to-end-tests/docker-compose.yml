@@ -13,7 +13,7 @@ services:
       interval: 1s
       timeout: 3s
       retries: 3
-    command: ["sh", "-c", "iox2-tunnel zenoh & iceoryx2-tunnel-end-to-end-tests-ponger --payload-type ${PAYLOAD_TYPE:?PAYLOAD_TYPE environment variable must be set}"]
+    command: ["sh", "-c", "iox2-tunnel zenoh & iceoryx2-services-tunnel-end-to-end-tests-ponger --payload-type ${PAYLOAD_TYPE:?PAYLOAD_TYPE environment variable must be set}"]
 
   pinger:
     image: end-to-end-tests:${IMAGE_TAG:-latest}
@@ -27,7 +27,7 @@ services:
     depends_on:
       ponger:
         condition: service_healthy
-    command: ["sh", "-c", "iox2-tunnel zenoh & sleep 1 && iceoryx2-tunnel-end-to-end-tests-pinger --payload-type ${PAYLOAD_TYPE:?PAYLOAD_TYPE environment variable must be set}"]
+    command: ["sh", "-c", "iox2-tunnel zenoh & sleep 1 && iceoryx2-services-tunnel-end-to-end-tests-pinger --payload-type ${PAYLOAD_TYPE:?PAYLOAD_TYPE environment variable must be set}"]
 
 networks:
   test-network:
