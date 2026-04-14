@@ -56,11 +56,11 @@ CRATES_TO_PUBLISH=(
     iceoryx2
     iceoryx2-conformance-tests
     iceoryx2-services-discovery
+    iceoryx2-services-tunnel-backend
+    iceoryx2-services-tunnel
+    iceoryx2-services-tunnel-conformance-tests
+    iceoryx2-services-tunnel-zenoh
     iceoryx2-userland-record-and-replay
-    iceoryx2-tunnel-backend
-    iceoryx2-tunnel
-    iceoryx2-tunnel-conformance-tests
-    iceoryx2-tunnel-zenoh
     iceoryx2-cli
 )
 CRATES_TO_IGNORE=(
@@ -73,7 +73,7 @@ CRATES_TO_IGNORE=(
     iceoryx2-ffi-c
     iceoryx2-ffi-macros
     iceoryx2-ffi-python
-    iceoryx2-tunnel-end-to-end-tests
+    iceoryx2-services-tunnel-end-to-end-tests
     iceoryx2-bb-trait-tests
     iceoryx2-bb-elementary-tests-common
     iceoryx2-bb-elementary-tests-nostd
