@@ -158,18 +158,18 @@ impl Errno {
 }
 
 pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
-    internal::strerror_r(errnum, buf, buflen)
+    unsafe { internal::strerror_r(errnum, buf, buflen) }
 }
 
 pub unsafe fn strerror(errnum: int) -> *const c_char {
-    crate::internal::strerror(errnum)
+    unsafe { crate::internal::strerror(errnum) }
 }
 
 mod internal {
     use super::*;
 
     #[cfg_attr(target_os = "freebsd", link(name = "c"))]
-    extern "C" {
+    unsafe extern "C" {
         pub(super) fn __error() -> *mut int;
         pub(super) fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int;
     }

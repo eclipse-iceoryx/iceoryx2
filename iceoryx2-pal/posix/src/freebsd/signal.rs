@@ -55,37 +55,37 @@ impl core::fmt::Debug for sigaction_t {
 }
 
 pub unsafe fn sigaction(sig: int, act: &sigaction_t, oact: &mut sigaction_t) -> int {
-    crate::internal::sigaction(sig, &act.0, &mut oact.0)
+    unsafe { crate::internal::sigaction(sig, &act.0, &mut oact.0) }
 }
 
 pub unsafe fn kill(pid: pid_t, sig: int) -> int {
-    crate::internal::kill(pid, sig)
+    unsafe { crate::internal::kill(pid, sig) }
 }
 
 pub unsafe fn sigaddset(set: *mut sigset_t, signo: int) -> int {
-    crate::internal::sigaddset(set, signo)
+    unsafe { crate::internal::sigaddset(set, signo) }
 }
 
 pub unsafe fn sigdelset(set: *mut sigset_t, signo: int) -> int {
-    crate::internal::sigdelset(set, signo)
+    unsafe { crate::internal::sigdelset(set, signo) }
 }
 
 pub unsafe fn sigismember(set: *const sigset_t, signo: int) -> int {
-    crate::internal::sigismember(set, signo)
+    unsafe { crate::internal::sigismember(set, signo) }
 }
 
 pub unsafe fn sigfillset(set: *mut sigset_t) -> int {
-    crate::internal::sigfillset(set)
+    unsafe { crate::internal::sigfillset(set) }
 }
 
 pub unsafe fn sigemptyset(set: *mut sigset_t) -> int {
-    crate::internal::sigemptyset(set)
+    unsafe { crate::internal::sigemptyset(set) }
 }
 
 pub unsafe fn sigpending(set: *mut sigset_t) -> int {
-    crate::internal::sigpending(set)
+    unsafe { crate::internal::sigpending(set) }
 }
 
 pub unsafe fn abort() {
-    crate::internal::abort()
+    unsafe { crate::internal::abort() }
 }
