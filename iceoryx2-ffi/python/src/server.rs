@@ -51,6 +51,8 @@ pub struct Server {
     pub(crate) response_payload_type_details: TypeStorage,
     pub(crate) request_header_type_details: TypeStorage,
     pub(crate) response_header_type_details: TypeStorage,
+    pub(crate) request_payload_element_size: usize,
+    pub(crate) response_payload_element_size: usize,
 }
 
 #[pymethods]
@@ -125,6 +127,8 @@ impl Server {
                         request_payload_type_details: self.request_payload_type_details.clone(),
                         response_header_type_details: self.response_header_type_details.clone(),
                         response_payload_type_details: self.response_payload_type_details.clone(),
+                        request_payload_element_size: self.request_payload_element_size,
+                        response_payload_element_size: self.response_payload_element_size,
                     })
             }),
             ServerType::Local(Some(v)) => Ok(unsafe {
@@ -136,6 +140,8 @@ impl Server {
                         request_payload_type_details: self.request_payload_type_details.clone(),
                         response_header_type_details: self.response_header_type_details.clone(),
                         response_payload_type_details: self.response_payload_type_details.clone(),
+                        request_payload_element_size: self.request_payload_element_size,
+                        response_payload_element_size: self.response_payload_element_size,
                     })
             }),
             _ => fatal_panic!(from "Server::receive()",

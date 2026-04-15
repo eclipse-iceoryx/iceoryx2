@@ -50,6 +50,7 @@ pub struct PortFactoryPublisher {
     value: PortFactoryPublisherType,
     payload_type_details: TypeStorage,
     user_header_type_details: TypeStorage,
+    payload_element_size: usize,
 }
 
 impl PortFactoryPublisher {
@@ -57,6 +58,7 @@ impl PortFactoryPublisher {
         factory: Parc<PortFactoryPublishSubscribeType>,
         payload_type_details: TypeStorage,
         user_header_type_details: TypeStorage,
+        payload_element_size: usize,
     ) -> Self {
         Self {
             factory: factory.clone(),
@@ -78,6 +80,7 @@ impl PortFactoryPublisher {
             },
             payload_type_details,
             user_header_type_details,
+            payload_element_size,
         }
     }
 
@@ -87,6 +90,7 @@ impl PortFactoryPublisher {
             value: PortFactoryPublisherType::Ipc(Parc::new(value)),
             payload_type_details: self.payload_type_details.clone(),
             user_header_type_details: self.user_header_type_details.clone(),
+            payload_element_size: self.payload_element_size,
         }
     }
 
@@ -96,6 +100,7 @@ impl PortFactoryPublisher {
             value: PortFactoryPublisherType::Local(Parc::new(value)),
             payload_type_details: self.payload_type_details.clone(),
             user_header_type_details: self.user_header_type_details.clone(),
+            payload_element_size: self.payload_element_size,
         }
     }
 }
@@ -193,6 +198,7 @@ impl PortFactoryPublisher {
                     ))),
                     payload_type_details: self.payload_type_details.clone(),
                     user_header_type_details: self.user_header_type_details.clone(),
+                    payload_element_size: self.payload_element_size,
                 })
             }
             PortFactoryPublisherType::Local(v) => {
@@ -204,6 +210,7 @@ impl PortFactoryPublisher {
                     ))),
                     payload_type_details: self.payload_type_details.clone(),
                     user_header_type_details: self.user_header_type_details.clone(),
+                    payload_element_size: self.payload_element_size,
                 })
             }
         }

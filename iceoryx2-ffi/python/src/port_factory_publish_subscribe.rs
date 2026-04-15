@@ -52,6 +52,7 @@ pub struct PortFactoryPublishSubscribe {
     pub(crate) value: Parc<PortFactoryPublishSubscribeType>,
     payload_type_details: TypeStorage,
     user_header_type_details: TypeStorage,
+    payload_element_size: usize,
 }
 
 impl PortFactoryPublishSubscribe {
@@ -60,10 +61,19 @@ impl PortFactoryPublishSubscribe {
         payload_type_details: TypeStorage,
         user_header_type_details: TypeStorage,
     ) -> Self {
+        let payload_element_size = match &value {
+            PortFactoryPublishSubscribeType::Ipc(v) => {
+                v.static_config().message_type_details().payload.size()
+            }
+            PortFactoryPublishSubscribeType::Local(v) => {
+                v.static_config().message_type_details().payload.size()
+            }
+        };
         Self {
             value: Parc::new(value),
             payload_type_details,
             user_header_type_details,
+            payload_element_size,
         }
     }
 }
@@ -167,6 +177,7 @@ impl PortFactoryPublishSubscribe {
             self.value.clone(),
             self.payload_type_details.clone(),
             self.user_header_type_details.clone(),
+            self.payload_element_size,
         )
     }
 
@@ -176,6 +187,7 @@ impl PortFactoryPublishSubscribe {
             self.value.clone(),
             self.payload_type_details.clone(),
             self.user_header_type_details.clone(),
+            self.payload_element_size,
         )
     }
 }

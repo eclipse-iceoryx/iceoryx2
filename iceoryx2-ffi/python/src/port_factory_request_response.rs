@@ -59,6 +59,38 @@ pub struct PortFactoryRequestResponse {
     pub(crate) response_payload_type_details: TypeStorage,
     pub(crate) request_header_type_details: TypeStorage,
     pub(crate) response_header_type_details: TypeStorage,
+    pub(crate) request_payload_element_size: usize,
+    pub(crate) response_payload_element_size: usize,
+}
+
+impl PortFactoryRequestResponse {
+    pub(crate) fn new(
+        value: PortFactoryRequestResponseType,
+        request_payload_type_details: TypeStorage,
+        response_payload_type_details: TypeStorage,
+        request_header_type_details: TypeStorage,
+        response_header_type_details: TypeStorage,
+    ) -> Self {
+        let (request_payload_element_size, response_payload_element_size) = match &value {
+            PortFactoryRequestResponseType::Ipc(v) => (
+                v.static_config().request_message_type_details().payload.size(),
+                v.static_config().response_message_type_details().payload.size(),
+            ),
+            PortFactoryRequestResponseType::Local(v) => (
+                v.static_config().request_message_type_details().payload.size(),
+                v.static_config().response_message_type_details().payload.size(),
+            ),
+        };
+        Self {
+            value: Parc::new(value),
+            request_payload_type_details,
+            response_payload_type_details,
+            request_header_type_details,
+            response_header_type_details,
+            request_payload_element_size,
+            response_payload_element_size,
+        }
+    }
 }
 
 #[pymethods]
@@ -162,6 +194,8 @@ impl PortFactoryRequestResponse {
             self.response_payload_type_details.clone(),
             self.request_header_type_details.clone(),
             self.response_header_type_details.clone(),
+            self.request_payload_element_size,
+            self.response_payload_element_size,
         )
     }
 
@@ -173,6 +207,8 @@ impl PortFactoryRequestResponse {
             self.response_payload_type_details.clone(),
             self.request_header_type_details.clone(),
             self.response_header_type_details.clone(),
+            self.request_payload_element_size,
+            self.response_payload_element_size,
         )
     }
 }

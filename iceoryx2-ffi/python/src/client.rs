@@ -51,6 +51,8 @@ pub struct Client {
     pub(crate) response_payload_type_details: TypeStorage,
     pub(crate) request_header_type_details: TypeStorage,
     pub(crate) response_header_type_details: TypeStorage,
+    pub(crate) request_payload_element_size: usize,
+    pub(crate) response_payload_element_size: usize,
 }
 
 #[pymethods]
@@ -134,6 +136,8 @@ impl Client {
                 response_payload_type_details: self.response_payload_type_details.clone(),
                 request_header_type_details: self.request_header_type_details.clone(),
                 response_header_type_details: self.response_header_type_details.clone(),
+                request_payload_element_size: self.request_payload_element_size,
+                response_payload_element_size: self.response_payload_element_size,
             }),
             ClientType::Local(Some(v)) => Ok(RequestMutUninit {
                 value: Parc::new(RequestMutUninitType::Local(Some(unsafe {
@@ -144,6 +148,8 @@ impl Client {
                 response_payload_type_details: self.response_payload_type_details.clone(),
                 request_header_type_details: self.request_header_type_details.clone(),
                 response_header_type_details: self.response_header_type_details.clone(),
+                request_payload_element_size: self.request_payload_element_size,
+                response_payload_element_size: self.response_payload_element_size,
             }),
             _ => {
                 fatal_panic!(from "Client::loan_slice_uninit()",

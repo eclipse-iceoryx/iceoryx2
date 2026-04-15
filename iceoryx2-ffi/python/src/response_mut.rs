@@ -39,6 +39,7 @@ pub struct ResponseMut {
     pub(crate) value: Parc<ResponseMutType>,
     pub(crate) response_payload_type_details: TypeStorage,
     pub(crate) response_header_type_details: TypeStorage,
+    pub(crate) response_payload_element_size: usize,
 }
 
 #[pymethods]
@@ -54,13 +55,14 @@ impl ResponseMut {
     }
 
     #[getter]
-    pub fn __payload_size_in_bytes(&self) -> usize {
-        match &*self.value.lock() {
+    pub fn __slice_len(&self) -> usize {
+        let payload_bytes = match &*self.value.lock() {
             ResponseMutType::Ipc(Some(v)) => v.payload().len(),
             ResponseMutType::Local(Some(v)) => v.payload().len(),
-            _ => fatal_panic!(from "RequestMut::__payload_size_in_bytes()",
+            _ => fatal_panic!(from "ResponseMut::__slice_len()",
                 "Accessing a released response mut."),
-        }
+        };
+        payload_bytes / self.response_payload_element_size.max(1)
     }
 
     #[getter]

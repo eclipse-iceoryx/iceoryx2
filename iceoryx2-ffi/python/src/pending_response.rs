@@ -53,6 +53,7 @@ pub struct PendingResponse {
     pub(crate) response_payload_type_details: TypeStorage,
     pub(crate) request_header_type_details: TypeStorage,
     pub(crate) response_header_type_details: TypeStorage,
+    pub(crate) response_payload_element_size: usize,
 }
 
 #[pymethods]
@@ -177,6 +178,7 @@ impl PendingResponse {
                         value: Parc::new(ResponseType::Ipc(Some(response))),
                         response_header_type_details: self.response_header_type_details.clone(),
                         response_payload_type_details: self.response_payload_type_details.clone(),
+                        response_payload_element_size: self.response_payload_element_size,
                     })
             }),
             PendingResponseType::Local(Some(v)) => Ok(unsafe {
@@ -186,6 +188,7 @@ impl PendingResponse {
                         value: Parc::new(ResponseType::Local(Some(response))),
                         response_header_type_details: self.response_header_type_details.clone(),
                         response_payload_type_details: self.response_payload_type_details.clone(),
+                        response_payload_element_size: self.response_payload_element_size,
                     })
             }),
             _ => fatal_panic!(from "PendingResponse::receive()",

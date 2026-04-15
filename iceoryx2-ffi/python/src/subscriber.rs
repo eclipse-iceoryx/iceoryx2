@@ -49,6 +49,7 @@ pub struct Subscriber {
     pub(crate) value: Parc<SubscriberType>,
     pub(crate) payload_type_details: TypeStorage,
     pub(crate) user_header_type_details: TypeStorage,
+    pub(crate) payload_element_size: usize,
 }
 
 #[pymethods]
@@ -101,6 +102,7 @@ impl Subscriber {
                         value: Parc::new(SampleType::Ipc(Some(s))),
                         payload_type_details: self.payload_type_details.clone(),
                         user_header_type_details: self.user_header_type_details.clone(),
+                        payload_element_size: self.payload_element_size,
                     })
             }),
             SubscriberType::Local(Some(v)) => Ok(unsafe {
@@ -110,6 +112,7 @@ impl Subscriber {
                         value: Parc::new(SampleType::Local(Some(s))),
                         payload_type_details: self.payload_type_details.clone(),
                         user_header_type_details: self.user_header_type_details.clone(),
+                        payload_element_size: self.payload_element_size,
                     })
             }),
             _ => fatal_panic!(from "Subscriber::receive()",

@@ -55,6 +55,8 @@ pub struct PortFactoryServer {
     response_payload_type_details: TypeStorage,
     request_header_type_details: TypeStorage,
     response_header_type_details: TypeStorage,
+    request_payload_element_size: usize,
+    response_payload_element_size: usize,
 }
 
 impl PortFactoryServer {
@@ -64,6 +66,8 @@ impl PortFactoryServer {
         response_payload_type_details: TypeStorage,
         request_header_type_details: TypeStorage,
         response_header_type_details: TypeStorage,
+        request_payload_element_size: usize,
+        response_payload_element_size: usize,
     ) -> Self {
         Self {
             factory: factory.clone(),
@@ -85,6 +89,8 @@ impl PortFactoryServer {
             request_payload_type_details,
             response_header_type_details,
             response_payload_type_details,
+            request_payload_element_size,
+            response_payload_element_size,
         }
     }
 
@@ -96,6 +102,8 @@ impl PortFactoryServer {
             response_payload_type_details: self.response_payload_type_details.clone(),
             request_header_type_details: self.request_header_type_details.clone(),
             response_header_type_details: self.response_header_type_details.clone(),
+            request_payload_element_size: self.request_payload_element_size,
+            response_payload_element_size: self.response_payload_element_size,
         }
     }
 
@@ -107,6 +115,8 @@ impl PortFactoryServer {
             response_payload_type_details: self.response_payload_type_details.clone(),
             request_header_type_details: self.request_header_type_details.clone(),
             response_header_type_details: self.response_header_type_details.clone(),
+            request_payload_element_size: self.request_payload_element_size,
+            response_payload_element_size: self.response_payload_element_size,
         }
     }
 }
@@ -223,6 +233,8 @@ impl PortFactoryServer {
                     request_payload_type_details: self.request_payload_type_details.clone(),
                     response_header_type_details: self.response_header_type_details.clone(),
                     response_payload_type_details: self.response_payload_type_details.clone(),
+                    request_payload_element_size: self.request_payload_element_size,
+                    response_payload_element_size: self.response_payload_element_size,
                 })
             }
             PortFactoryServerType::Local(v) => {
@@ -236,6 +248,8 @@ impl PortFactoryServer {
                     request_payload_type_details: self.request_payload_type_details.clone(),
                     response_header_type_details: self.response_header_type_details.clone(),
                     response_payload_type_details: self.response_payload_type_details.clone(),
+                    request_payload_element_size: self.request_payload_element_size,
+                    response_payload_element_size: self.response_payload_element_size,
                 })
             }
         }

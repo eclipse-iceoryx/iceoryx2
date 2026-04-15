@@ -137,10 +137,7 @@ def request_payload(self: Any) -> Any:
     assert self.__request_payload_type_details is not None
     if get_origin(self.__request_payload_type_details) is Slice:
         (contained_type,) = get_args(self.__request_payload_type_details)
-        number_of_elements = self.__payload_size_in_bytes // ctypes.sizeof(
-            contained_type
-        )
-        return Slice(self.payload_ptr, number_of_elements, contained_type)
+        return Slice(self.payload_ptr, self.__slice_len, contained_type)
 
     return ctypes.cast(
         self.payload_ptr, ctypes.POINTER(self.__request_payload_type_details)
@@ -152,10 +149,7 @@ def response_payload(self: Any) -> Any:
     assert self.__response_payload_type_details is not None
     if get_origin(self.__response_payload_type_details) is Slice:
         (contained_type,) = get_args(self.__response_payload_type_details)
-        number_of_elements = self.__payload_size_in_bytes // ctypes.sizeof(
-            contained_type
-        )
-        return Slice(self.payload_ptr, number_of_elements, contained_type)
+        return Slice(self.payload_ptr, self.__slice_len, contained_type)
 
     return ctypes.cast(
         self.payload_ptr, ctypes.POINTER(self.__response_payload_type_details)

@@ -52,6 +52,7 @@ pub struct SampleMut {
     pub(crate) value: Parc<SampleMutType>,
     pub(crate) payload_type_details: TypeStorage,
     pub(crate) user_header_type_details: TypeStorage,
+    pub(crate) payload_element_size: usize,
 }
 
 #[pymethods]
@@ -67,13 +68,14 @@ impl SampleMut {
     }
 
     #[getter]
-    pub fn __payload_size_in_bytes(&self) -> usize {
-        match &*self.value.lock() {
+    pub fn __slice_len(&self) -> usize {
+        let payload_bytes = match &*self.value.lock() {
             SampleMutType::Ipc(Some(v)) => v.payload().len(),
             SampleMutType::Local(Some(v)) => v.payload().len(),
-            _ => fatal_panic!(from "Sample::header()",
+            _ => fatal_panic!(from "SampleMut::__slice_len()",
                 "Accessing a released sample."),
-        }
+        };
+        payload_bytes / self.payload_element_size.max(1)
     }
 
     #[getter]

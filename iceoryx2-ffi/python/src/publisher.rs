@@ -53,6 +53,7 @@ pub struct Publisher {
     pub(crate) value: Parc<PublisherType>,
     pub(crate) payload_type_details: TypeStorage,
     pub(crate) user_header_type_details: TypeStorage,
+    pub(crate) payload_element_size: usize,
 }
 
 #[pymethods]
@@ -120,6 +121,7 @@ impl Publisher {
                     value: Parc::new(SampleMutUninitType::Ipc(Some(sample))),
                     payload_type_details: self.payload_type_details.clone(),
                     user_header_type_details: self.user_header_type_details.clone(),
+                    payload_element_size: self.payload_element_size,
                 })
             }
             PublisherType::Local(Some(v)) => {
@@ -131,6 +133,7 @@ impl Publisher {
                     value: Parc::new(SampleMutUninitType::Local(Some(sample))),
                     payload_type_details: self.payload_type_details.clone(),
                     user_header_type_details: self.user_header_type_details.clone(),
+                    payload_element_size: self.payload_element_size,
                 })
             }
             _ => fatal_panic!(from "Publisher::loan_slice_uninit()",

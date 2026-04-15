@@ -36,6 +36,7 @@ pub struct Response {
     pub(crate) value: Parc<ResponseType>,
     pub(crate) response_payload_type_details: TypeStorage,
     pub(crate) response_header_type_details: TypeStorage,
+    pub(crate) response_payload_element_size: usize,
 }
 
 #[pymethods]
@@ -51,13 +52,14 @@ impl Response {
     }
 
     #[getter]
-    pub fn __payload_size_in_bytes(&self) -> usize {
-        match &*self.value.lock() {
+    pub fn __slice_len(&self) -> usize {
+        let payload_bytes = match &*self.value.lock() {
             ResponseType::Ipc(Some(v)) => v.payload().len(),
             ResponseType::Local(Some(v)) => v.payload().len(),
-            _ => fatal_panic!(from "RequestMutUninit::__payload_size_in_bytes()",
-                "Accessing a released request."),
-        }
+            _ => fatal_panic!(from "Response::__slice_len()",
+                "Accessing a released response."),
+        };
+        payload_bytes / self.response_payload_element_size.max(1)
     }
 
     #[getter]

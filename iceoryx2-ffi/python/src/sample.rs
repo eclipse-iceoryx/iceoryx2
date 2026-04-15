@@ -42,6 +42,7 @@ pub struct Sample {
     pub(crate) value: Parc<SampleType>,
     pub payload_type_details: TypeStorage,
     pub user_header_type_details: TypeStorage,
+    pub(crate) payload_element_size: usize,
 }
 
 #[pymethods]
@@ -57,13 +58,14 @@ impl Sample {
     }
 
     #[getter]
-    pub fn __payload_size_in_bytes(&self) -> usize {
-        match &*self.value.lock() {
+    pub fn __slice_len(&self) -> usize {
+        let payload_bytes = match &*self.value.lock() {
             SampleType::Ipc(Some(v)) => v.payload().len(),
             SampleType::Local(Some(v)) => v.payload().len(),
-            _ => fatal_panic!(from "Sample::header()",
+            _ => fatal_panic!(from "Sample::__slice_len()",
                 "Accessing a released sample."),
-        }
+        };
+        payload_bytes / self.payload_element_size.max(1)
     }
 
     #[getter]
