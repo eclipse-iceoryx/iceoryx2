@@ -98,7 +98,16 @@ INTEGRATIONS_CRATES_TO_PUBLISH := `echo \
     iceoryx2-integrations-zenoh-tunnel-backend \
     iceoryx2-integrations-zenoh-tunnel-cli`
 
-INTEGRATIONS_CRATES_TO_IGNORE := ""
+INTEGRATIONS_CRATES_TO_IGNORE := `echo \
+    iceoryx2                                \
+    iceoryx2-bb-concurrency                 \
+    iceoryx2-bb-posix                       \
+    iceoryx2-bb-testing                     \
+    iceoryx2-bb-testing-macros              \
+    iceoryx2-log                            \
+    iceoryx2-services-tunnel                \
+    iceoryx2-services-tunnel-backend        \
+    iceoryx2-services-tunnel-conformance-tests`
 
 [private]
 _publish-dispatch what *flags:
@@ -136,7 +145,7 @@ _publish-dispatch what *flags:
             echo "  --allow-dirty      allow dirty workspace during dry-run"
             echo "  --sanity-checks    run sanity checks only"
             echo "  --list             list crates to publish"
-            echo "  --registry <url>   publish to a custom registry"
+            echo "  --registry <name>  publish to a custom registry configured in ~/.cargo/config.toml"
             exit 1
             ;;
         sdk)
@@ -296,6 +305,10 @@ _publish-check-cyclic-deps workspace:
             | sort | uniq)
 
         for DEP in $DEPS; do
+            if [[ ! " $PUBLISH " =~ " ${DEP} " ]]; then
+                # Dependency is not in this workspace's publish list (e.g. SDK crate)
+                continue
+            fi
             if [[ " $ALLOWED " =~ " ${DEP} " ]]; then
                 continue
             fi
@@ -313,17 +326,34 @@ _publish-check-cyclic-deps workspace:
 # -----------------------------------------------------------------------------
 
 [private]
-_publish-dry-run workspace allow_dirty registry:
+_publish-exclude-args workspace:
     #!/usr/bin/env bash
     set -euo pipefail
 
     MANIFEST_FLAG=$(just _publish-manifest "{{workspace}}")
     IGNORE=$(just _publish-crates-to-ignore "{{workspace}}")
 
+    # Only exclude crates that are actual workspace members; the ignore list may
+    # contain external dependencies (e.g. SDK crates listed in the integrations
+    # ignore list) that are not members of this workspace.
+    MEMBERS=$(cargo metadata --format-version=1 --no-deps $MANIFEST_FLAG \
+        | jq -r '.packages[].name')
+
     EXCLUDE_ARGS=""
     for CRATE in $IGNORE; do
-        EXCLUDE_ARGS+="--exclude $CRATE "
+        if echo "$MEMBERS" | grep -qx "$CRATE"; then
+            EXCLUDE_ARGS+="--exclude $CRATE "
+        fi
     done
+    echo "$EXCLUDE_ARGS"
+
+[private]
+_publish-dry-run workspace allow_dirty registry:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    MANIFEST_FLAG=$(just _publish-manifest "{{workspace}}")
+    EXCLUDE_ARGS=$(just _publish-exclude-args "{{workspace}}")
 
     DIRTY_FLAG=""
     if [ "{{allow_dirty}}" = "true" ]; then
@@ -351,6 +381,7 @@ _publish-run workspace registry:
     for CRATE in $IGNORE; do
         EXCLUDE_ARGS+="--exclude $CRATE "
     done
+    EXCLUDE_ARGS=$(just _publish-exclude-args "{{workspace}}")
 
     REGISTRY_FLAG=""
     if [ -n "{{registry}}" ]; then
