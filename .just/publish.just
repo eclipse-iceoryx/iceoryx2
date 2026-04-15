@@ -118,6 +118,7 @@ _publish-dispatch what *flags:
     ALLOW_DIRTY="false"
     SANITY_CHECKS="false"
     LIST="false"
+    NO_VERIFY="false"
     REGISTRY=""
 
     set -- {{flags}}
@@ -127,6 +128,7 @@ _publish-dispatch what *flags:
             --allow-dirty)   ALLOW_DIRTY="true";    shift ;;
             --sanity-checks) SANITY_CHECKS="true";  shift ;;
             --list)          LIST="true";            shift ;;
+            --no-verify)     NO_VERIFY="true";       shift ;;
             --registry)      REGISTRY="$2";         shift 2 ;;
             *)               echo "Unknown flag: $1"; exit 1 ;;
         esac
@@ -142,24 +144,25 @@ _publish-dispatch what *flags:
             echo ""
             echo "Flags:"
             echo "  --dry-run          simulate publishing (requires Rust >= 1.90)"
-            echo "  --allow-dirty      allow dirty workspace during dry-run"
+            echo "  --allow-dirty      allow dirty working directory"
             echo "  --sanity-checks    run sanity checks only"
             echo "  --list             list crates to publish"
+            echo "  --no-verify        skip build verification during publishing"
             echo "  --registry <name>  publish to a custom registry configured in ~/.cargo/config.toml"
             exit 1
             ;;
         sdk)
-            just _publish-workspace-action sdk "$DRY_RUN" "$ALLOW_DIRTY" "$SANITY_CHECKS" "$LIST" "$REGISTRY"
+            just _publish-workspace-action sdk "$DRY_RUN" "$ALLOW_DIRTY" "$SANITY_CHECKS" "$LIST" "$NO_VERIFY" "$REGISTRY"
             ;;
         integrations)
-            just _publish-workspace-action integrations "$DRY_RUN" "$ALLOW_DIRTY" "$SANITY_CHECKS" "$LIST" "$REGISTRY"
+            just _publish-workspace-action integrations "$DRY_RUN" "$ALLOW_DIRTY" "$SANITY_CHECKS" "$LIST" "$NO_VERIFY" "$REGISTRY"
             ;;
         all)
             echo "=== sdk ==="
-            just _publish-workspace-action sdk "$DRY_RUN" "$ALLOW_DIRTY" "$SANITY_CHECKS" "$LIST" "$REGISTRY"
+            just _publish-workspace-action sdk "$DRY_RUN" "$ALLOW_DIRTY" "$SANITY_CHECKS" "$LIST" "$NO_VERIFY" "$REGISTRY"
             echo ""
             echo "=== integrations ==="
-            just _publish-workspace-action integrations "$DRY_RUN" "$ALLOW_DIRTY" "$SANITY_CHECKS" "$LIST" "$REGISTRY"
+            just _publish-workspace-action integrations "$DRY_RUN" "$ALLOW_DIRTY" "$SANITY_CHECKS" "$LIST" "$NO_VERIFY" "$REGISTRY"
             ;;
         *)
             echo "Unknown publish target: {{what}}"
@@ -200,7 +203,7 @@ _publish-crates-to-ignore workspace:
 # -----------------------------------------------------------------------------
 
 [private]
-_publish-workspace-action workspace dry_run allow_dirty sanity_checks list registry:
+_publish-workspace-action workspace dry_run allow_dirty sanity_checks list no_verify registry:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -216,10 +219,10 @@ _publish-workspace-action workspace dry_run allow_dirty sanity_checks list regis
 
     if [ "{{dry_run}}" = "true" ]; then
         just _publish-sanity-checks "{{workspace}}"
-        just _publish-dry-run "{{workspace}}" "{{allow_dirty}}" "{{registry}}"
+        just _publish-dry-run "{{workspace}}" "{{allow_dirty}}" "{{no_verify}}" "{{registry}}"
     else
         just _publish-sanity-checks "{{workspace}}"
-        just _publish-run "{{workspace}}" "{{registry}}"
+        just _publish-run "{{workspace}}" "{{allow_dirty}}" "{{no_verify}}" "{{registry}}"
     fi
 
 # -----------------------------------------------------------------------------
@@ -333,9 +336,6 @@ _publish-exclude-args workspace:
     MANIFEST_FLAG=$(just _publish-manifest "{{workspace}}")
     IGNORE=$(just _publish-crates-to-ignore "{{workspace}}")
 
-    # Only exclude crates that are actual workspace members; the ignore list may
-    # contain external dependencies (e.g. SDK crates listed in the integrations
-    # ignore list) that are not members of this workspace.
     MEMBERS=$(cargo metadata --format-version=1 --no-deps $MANIFEST_FLAG \
         | jq -r '.packages[].name')
 
@@ -348,7 +348,7 @@ _publish-exclude-args workspace:
     echo "$EXCLUDE_ARGS"
 
 [private]
-_publish-dry-run workspace allow_dirty registry:
+_publish-dry-run workspace allow_dirty no_verify registry:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -360,28 +360,38 @@ _publish-dry-run workspace allow_dirty registry:
         DIRTY_FLAG="--allow-dirty"
     fi
 
+    NO_VERIFY_FLAG=""
+    if [ "{{no_verify}}" = "true" ]; then
+        NO_VERIFY_FLAG="--no-verify"
+    fi
+
     REGISTRY_FLAG=""
     if [ -n "{{registry}}" ]; then
         REGISTRY_FLAG="--registry {{registry}}"
     fi
 
     echo "Publishing '{{workspace}}' (dry-run)..."
-    cargo publish --dry-run --workspace $MANIFEST_FLAG $EXCLUDE_ARGS $DIRTY_FLAG $REGISTRY_FLAG
+    cargo publish --dry-run --workspace \
+        $MANIFEST_FLAG $REGISTRY_FLAG $EXCLUDE_ARGS $DIRTY_FLAG $NO_VERIFY_FLAG
     echo "Done."
 
 [private]
-_publish-run workspace registry:
+_publish-run workspace allow_dirty no_verify registry:
     #!/usr/bin/env bash
     set -euo pipefail
 
     MANIFEST_FLAG=$(just _publish-manifest "{{workspace}}")
-    IGNORE=$(just _publish-crates-to-ignore "{{workspace}}")
-
-    EXCLUDE_ARGS=""
-    for CRATE in $IGNORE; do
-        EXCLUDE_ARGS+="--exclude $CRATE "
-    done
     EXCLUDE_ARGS=$(just _publish-exclude-args "{{workspace}}")
+
+    DIRTY_FLAG=""
+    if [ "{{allow_dirty}}" = "true" ]; then
+        DIRTY_FLAG="--allow-dirty"
+    fi
+
+    NO_VERIFY_FLAG=""
+    if [ "{{no_verify}}" = "true" ]; then
+        NO_VERIFY_FLAG="--no-verify"
+    fi
 
     REGISTRY_FLAG=""
     if [ -n "{{registry}}" ]; then
@@ -389,5 +399,5 @@ _publish-run workspace registry:
     fi
 
     echo "Publishing '{{workspace}}'..."
-    cargo publish --workspace $MANIFEST_FLAG $EXCLUDE_ARGS $REGISTRY_FLAG
+    cargo publish --workspace $MANIFEST_FLAG $REGISTRY_FLAG $EXCLUDE_ARGS $DIRTY_FLAG $NO_VERIFY_FLAG
     echo "Done."
