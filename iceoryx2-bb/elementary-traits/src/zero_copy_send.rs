@@ -47,14 +47,16 @@ pub unsafe trait ZeroCopySend {
     fn __is_zero_copy_send(&self) {}
 
     // TODO: CallbackProgression?
-    // TODO: better name + documentation
     #[doc(hidden)]
-    fn __get_members<F: FnMut(usize, usize)>(&self, callback: &mut F) {
-        self.__get_members_with_offset(0, callback);
+    /// Iterates over the fields of the type and applies the provided callback to each offset-size pair of the field.
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, callback: &mut F) {
+        self.__for_each_field_with_offset(0, callback);
     }
 
     #[doc(hidden)]
-    fn __get_members_with_offset<F: FnMut(usize, usize)>(
+    /// Iterates over the fields of the type, calculates the offset relative to the provided base_offset, and applies
+    /// the provided callback to each offset-size pair of the field.
+    fn __for_each_field_with_offset<F: FnMut(usize, usize)>(
         &self,
         _base_offset: usize,
         _callback: &mut F,
