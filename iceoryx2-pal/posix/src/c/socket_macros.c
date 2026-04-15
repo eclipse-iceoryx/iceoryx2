@@ -23,40 +23,46 @@
 #include <sys/select.h>
 #include <sys/socket.h>
 
-static size_t iceoryx2_cmsg_space(const size_t len) {
+// NOLINTBEGIN(misc-use-internal-linkage) we want this functions to be found by the linker and used externally;
+// the linker on FreeBSD is more strict and complains about missing symbols if the functions are static;
+// another workaround would be to add a C header with the signatures, but to keep it simple, we just suppress clang-tidy
+
+size_t iceoryx2_cmsg_space(const size_t len) {
     return CMSG_SPACE(len);
 }
 
-static struct cmsghdr* iceoryx2_cmsg_firsthdr(const struct msghdr* hdr) {
+struct cmsghdr* iceoryx2_cmsg_firsthdr(const struct msghdr* hdr) {
     return CMSG_FIRSTHDR(hdr);
 }
 
-static struct cmsghdr* iceoryx2_cmsg_nxthdr(struct msghdr* hdr, struct cmsghdr* sub) {
+struct cmsghdr* iceoryx2_cmsg_nxthdr(struct msghdr* hdr, struct cmsghdr* sub) {
     return CMSG_NXTHDR(hdr, sub);
 }
 
-static size_t iceoryx2_cmsg_len(const size_t len) {
+size_t iceoryx2_cmsg_len(const size_t len) {
     return CMSG_LEN(len);
 }
 
-static unsigned char* iceoryx2_cmsg_data(struct cmsghdr* cmsg) {
+unsigned char* iceoryx2_cmsg_data(struct cmsghdr* cmsg) {
     return CMSG_DATA(cmsg);
 }
 
-static void iceoryx2_fd_clr(const int fd, fd_set* set) {
+void iceoryx2_fd_clr(const int fd, fd_set* set) {
     FD_CLR(fd, set);
 }
 
-static int iceoryx2_fd_isset(const int fd, const fd_set* set) {
+int iceoryx2_fd_isset(const int fd, const fd_set* set) {
     return FD_ISSET(fd, set);
 }
 
-static void iceoryx2_fd_set(const int fd, fd_set* set) {
+void iceoryx2_fd_set(const int fd, fd_set* set) {
     FD_SET(fd, set);
 }
 
-static void iceoryx2_fd_zero(fd_set* set) {
+void iceoryx2_fd_zero(fd_set* set) {
     FD_ZERO(set);
 }
+
+// NOLINTEND(misc-use-internal-linkage)
 
 #endif
