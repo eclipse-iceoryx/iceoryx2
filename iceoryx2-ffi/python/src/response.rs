@@ -51,11 +51,11 @@ impl Response {
     }
 
     #[getter]
-    pub fn __slice_len(&self) -> usize {
+    pub fn __payload_size_in_bytes(&self) -> usize {
         match &*self.value.lock() {
             ResponseType::Ipc(Some(v)) => v.payload().len(),
             ResponseType::Local(Some(v)) => v.payload().len(),
-            _ => fatal_panic!(from "RequestMutUninit::__slice_len()",
+            _ => fatal_panic!(from "RequestMutUninit::__payload_size_in_bytes()",
                 "Accessing a released request."),
         }
     }

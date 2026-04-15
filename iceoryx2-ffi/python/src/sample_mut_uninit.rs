@@ -70,11 +70,11 @@ impl SampleMutUninit {
     }
 
     #[getter]
-    pub fn __slice_len(&self) -> usize {
+    pub fn __payload_size_in_bytes(&self) -> usize {
         match &*self.value.lock() {
             SampleMutUninitType::Ipc(Some(v)) => v.payload().len(),
             SampleMutUninitType::Local(Some(v)) => v.payload().len(),
-            _ => fatal_panic!(from "Sample::__slice_len()",
+            _ => fatal_panic!(from "Sample::__payload_size_in_bytes()",
                 "Accessing a released sample."),
         }
     }

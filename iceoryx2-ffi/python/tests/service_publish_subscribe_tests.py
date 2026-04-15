@@ -371,7 +371,7 @@ def test_slice_payload_element_count_is_correct_for_multi_byte_types(
 ) -> None:
     """Regression test for #1533: payload() must return element count, not byte count.
 
-    When the slice element type has sizeof > 1, __slice_len returns the raw byte
+    When the slice element type has sizeof > 1, __payload_size_in_bytes returns the raw byte
     count from Rust.  The Python payload() function must divide by sizeof(T) to
     obtain the number of elements; otherwise Slice.len() would report N*sizeof(T)
     instead of N.
