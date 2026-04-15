@@ -45,8 +45,6 @@ pub fn new_creates_atomic_memcpy_containing_passed_static_string() {
     const SIZE: usize = size_of::<StaticString<3>>();
     let value = StaticString::<3>::try_from("ato").unwrap();
     let sut = AtomicMemcpy::<StaticString<3>, SIZE>::new(value);
-    // UB: uninitialized memory
-    // StaticString: 3 bytes "ato" + 1 byte null terminator + 4 uninitialized padding bytes + 4 bytes length
     assert_that!(sut, is_ok);
 
     let read_value = unsafe { sut.unwrap().read().assume_init() };

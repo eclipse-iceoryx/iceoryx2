@@ -13,6 +13,7 @@
 use core::marker::PhantomData;
 use core::mem::{transmute_copy, MaybeUninit};
 use iceoryx2_bb_concurrency::atomic::{AtomicU8, Ordering};
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -23,7 +24,7 @@ pub enum AtomicMemcpyError {
 // TODO: better name
 // TODO: get rid of size parameter
 #[repr(C)]
-pub struct AtomicMemcpy<T: Copy, const SIZE: usize> {
+pub struct AtomicMemcpy<T: Copy + ZeroCopySend, const SIZE: usize> {
     // data: [AtomicU8; size_of::<T>()],
     // data: [AtomicU8; Self::LEN],
     data: [AtomicU8; SIZE],
@@ -32,7 +33,7 @@ pub struct AtomicMemcpy<T: Copy, const SIZE: usize> {
 
 // TODO: impl Send, ZeroCopySend?
 
-impl<T: Copy, const SIZE: usize> AtomicMemcpy<T, SIZE> {
+impl<T: Copy + ZeroCopySend, const SIZE: usize> AtomicMemcpy<T, SIZE> {
     // const LEN: usize = size_of::<T>();
 
     pub fn new(value: T) -> Result<Self, AtomicMemcpyError> {
@@ -40,15 +41,20 @@ impl<T: Copy, const SIZE: usize> AtomicMemcpy<T, SIZE> {
             fail!(from "AtomicMemcpy::new()", with AtomicMemcpyError::AtomicMemcpyCreateError,
                 "size_of::<T>() and SIZE must be equal.");
         }
-        // let value_ptr = (&value as *const T) as *const u8;
-        // Ok(Self {
-        //     // UB if memory is not initialized (padding bytes!)
-        //     data: core::array::from_fn(|i| AtomicU8::new(unsafe { *value_ptr.add(i) })),
-        //     _inner_type: PhantomData,
-        // })
-        //     // UB if memory is not initialized (padding bytes!)
-        let bytes: [u8; SIZE] = unsafe { transmute_copy(&value) };
-        // let bytes: [u8; SIZE] = unsafe { core::ptr::read(&value as *const T as *const _) };
+        let value_ptr = (&value as *const T) as *const u8;
+        if value.__is_scalar() {
+            return Ok(Self {
+                data: core::array::from_fn(|i| AtomicU8::new(unsafe { *value_ptr.add(i) })),
+                _inner_type: PhantomData,
+            });
+        }
+
+        let mut bytes = [0u8; SIZE];
+        value.__for_each_field(&mut |offset, size| {
+            for i in offset..offset + size {
+                bytes[i] = unsafe { *value_ptr.add(i) };
+            }
+        });
         Ok(Self {
             data: bytes.map(|b| AtomicU8::new(b)),
             _inner_type: PhantomData,
