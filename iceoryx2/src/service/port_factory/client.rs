@@ -29,21 +29,18 @@
 //! # }
 //! ```
 
-use core::fmt::Debug;
-
-use alloc::format;
-
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::shm_allocator::AllocationStrategy;
-use iceoryx2_log::fail;
-
+use super::request_response::PortFactory;
 use crate::{
     port::{DegradationAction, DegradationCallback, client::Client},
     prelude::UnableToDeliverStrategy,
     service,
 };
-
-use super::request_response::PortFactory;
+use alloc::format;
+use core::fmt::Debug;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_cal::shm_allocator::AllocationStrategy;
+use iceoryx2_log::fail;
+use tiny_fn::tiny_fn;
 
 /// Defines a failure that can occur when a [`Client`] is created with
 /// [`crate::service::port_factory::client::PortFactoryClient`].
@@ -70,6 +67,30 @@ impl core::fmt::Display for ClientCreateError {
 
 impl core::error::Error for ClientCreateError {}
 
+tiny_fn! {
+    /// A user provided callback to reduce the number of preallocated [`RequestMut`]s.
+    /// The input argument is the worst case number of preallocated [`RequestMut`]s required
+    /// to guarantee that the [`Client`] never runs out of [`RequestMut`]s to loan
+    /// and send.
+    /// The return value is clamped between `1` and the worst case number of
+    /// preallocated samples.
+    ///
+    /// # Important
+    ///
+    /// If the user reduces the number of preallocated [`RequestMut`]s, iceoryx2 can
+    /// no longer guarantee, that the [`Client`] can always loan a [`RequestMut`]
+    /// to send.
+    pub struct PreallocatedRequestsOverride = Fn(number_of_preallocated_requests: usize) -> usize;
+}
+
+impl<'a> Debug for PreallocatedRequestsOverride<'a> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "PreallocatedRequestsOverride")
+    }
+}
+
+unsafe impl Send for PreallocatedRequestsOverride<'_> {}
+
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct LocalClientConfig {
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
@@ -90,6 +111,7 @@ pub struct PortFactoryClient<
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) config: LocalClientConfig,
+    pub(crate) preallocate_number_of_requests_override: PreallocatedRequestsOverride<'static>,
     pub(crate) request_degradation_callback: Option<DegradationCallback<'static>>,
     pub(crate) response_degradation_callback: Option<DegradationCallback<'static>>,
     pub(crate) factory: &'factory PortFactory<
@@ -139,13 +161,14 @@ impl<
     #[doc(hidden)]
     /// # Safety
     ///
-    ///   * does not clone the degradation callback
+    ///   * does not clone the callbacks
     pub unsafe fn __internal_partial_clone(&self) -> Self {
         Self {
             config: self.config,
+            factory: self.factory,
             request_degradation_callback: None,
             response_degradation_callback: None,
-            factory: self.factory,
+            preallocate_number_of_requests_override: PreallocatedRequestsOverride::new(|v| v),
         }
     }
 
@@ -171,10 +194,32 @@ impl<
                 initial_max_slice_len: 1,
                 allocation_strategy: AllocationStrategy::Static,
             },
+            preallocate_number_of_requests_override: PreallocatedRequestsOverride::new(|v| v),
             request_degradation_callback: None,
             response_degradation_callback: None,
             factory,
         }
+    }
+
+    /// Defines a callback to reduce the number of preallocated [`RequestMut`]s.
+    /// The input argument is the worst case number of preallocated [`RequestMut`]s required
+    /// to guarantee that the [`Client`] never runs out of [`RequestMut`]s to loan
+    /// and send.
+    /// The return value is clamped between `1` and the worst case number of
+    /// preallocated samples.
+    ///
+    /// # Important
+    ///
+    /// If the user reduces the number of preallocated [`RequestMut`]s, iceoryx2 can
+    /// no longer guarantee, that the [`Client`] can always loan a [`RequestMut`]
+    /// to send.
+    pub fn override_requests_preallocation<F: Fn(usize) -> usize + Send + 'static>(
+        mut self,
+        callback: F,
+    ) -> Self {
+        self.preallocate_number_of_requests_override =
+            PreallocatedRequestsOverride::new(move |v| callback(v).clamp(1, v));
+        self
     }
 
     /// Sets the [`UnableToDeliverStrategy`] which defines how the [`Client`] shall behave

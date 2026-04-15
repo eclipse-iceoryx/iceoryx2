@@ -105,7 +105,6 @@ use core::any::TypeId;
 use core::fmt::Debug;
 use core::{marker::PhantomData, mem::MaybeUninit};
 
-use alloc::sync::Arc;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::Ordering;
@@ -135,10 +134,9 @@ use crate::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::header::publish_subscribe::Header;
 use crate::service::naming_scheme::data_segment_name;
-use crate::service::port_factory::publisher::LocalPublisherConfig;
+use crate::service::port_factory::publisher::{LocalPublisherConfig, PortFactoryPublisher};
 use crate::service::static_config::message_type_details::TypeVariant;
-use crate::service::static_config::publish_subscribe;
-use crate::service::{self, NoResource, ServiceState};
+use crate::service::{self};
 
 use super::details::data_segment::{DataSegment, DataSegmentType};
 use super::details::segment_state::SegmentState;
@@ -363,13 +361,18 @@ impl<
 > Publisher<Service, Payload, UserHeader>
 {
     pub(crate) fn new(
-        service: Arc<ServiceState<Service, NoResource>>,
-        static_config: &publish_subscribe::StaticConfig,
-        config: LocalPublisherConfig,
+        publisher_factory: PortFactoryPublisher<Service, Payload, UserHeader>,
     ) -> Result<Self, PublisherCreateError> {
         let msg = "Unable to create Publisher port";
         let origin = "Publisher::new()";
         let port_id = UniquePublisherId::new();
+        let config = &publisher_factory.config;
+        let static_config = publisher_factory
+            .factory
+            .service
+            .static_config
+            .publish_subscribe();
+        let service = &publisher_factory.factory.service;
         let subscriber_list = &service
             .dynamic_storage
             .get()
@@ -380,7 +383,7 @@ impl<
             unsafe { service.static_config.messaging_pattern.publish_subscribe() }
                 .required_amount_of_samples_per_data_segment(config.max_loaned_samples);
 
-        let number_of_samples = config
+        let number_of_samples = publisher_factory
             .preallocate_number_of_samples_override
             .call(number_of_samples);
 
@@ -449,7 +452,7 @@ impl<
                     enable_safe_overflow: static_config.enable_safe_overflow,
                     number_of_samples,
                     max_number_of_segments,
-                    degradation_callback: None,
+                    degradation_callback: publisher_factory.degradation_callback,
                     service_state: service.clone(),
                     tagger: CyclicTagger::new(),
                     loan_counter: AtomicUsize::new(0),
@@ -459,7 +462,7 @@ impl<
                     number_of_channels: 1,
                     initial_channel_state: CHANNEL_STATE_OPEN,
                 },
-                config,
+                config: *config,
                 subscriber_list_state: UnsafeCell::new(unsafe { subscriber_list.get_state() }),
                 history: match static_config.history_size == 0 {
                     true => None,

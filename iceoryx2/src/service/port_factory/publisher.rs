@@ -73,7 +73,7 @@ use super::publish_subscribe::PortFactory;
 
 tiny_fn! {
     /// A user provided callback to reduce the number of preallocated [`Sample`]s.
-    /// The input argument is the worst case number of preallocated samples required
+    /// The input argument is the worst case number of preallocated [`Sample`]s required
     /// to guarantee that the [`Publisher`] never runs out of [`Sample`]s to loan
     /// and send.
     /// The return value is clamped between `1` and the worst case number of
@@ -95,14 +95,12 @@ impl<'a> Debug for PreallocatedSamplesOverride<'a> {
 
 unsafe impl Send for PreallocatedSamplesOverride<'_> {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) struct LocalPublisherConfig {
     pub(crate) max_loaned_samples: usize,
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
-    pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
     pub(crate) initial_max_slice_len: usize,
     pub(crate) allocation_strategy: AllocationStrategy,
-    pub(crate) preallocate_number_of_samples_override: PreallocatedSamplesOverride<'static>,
 }
 
 /// Factory to create a new [`Publisher`] port/endpoint for
@@ -115,7 +113,9 @@ pub struct PortFactoryPublisher<
     Payload: Debug + ZeroCopySend + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > {
-    config: LocalPublisherConfig,
+    pub(crate) config: LocalPublisherConfig,
+    pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
+    pub(crate) preallocate_number_of_samples_override: PreallocatedSamplesOverride<'static>,
     pub(crate) factory: &'factory PortFactory<Service, Payload, UserHeader>,
 }
 
@@ -139,15 +139,10 @@ impl<
     ///   * does not clone the callbacks
     pub unsafe fn __internal_partial_clone(&self) -> Self {
         Self {
-            config: LocalPublisherConfig {
-                max_loaned_samples: self.config.max_loaned_samples,
-                unable_to_deliver_strategy: self.config.unable_to_deliver_strategy,
-                degradation_callback: None,
-                initial_max_slice_len: self.config.initial_max_slice_len,
-                allocation_strategy: self.config.allocation_strategy,
-                preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),
-            },
+            config: self.config,
             factory: self.factory,
+            degradation_callback: None,
+            preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),
         }
     }
 }
@@ -163,7 +158,6 @@ impl<
         Self {
             config: LocalPublisherConfig {
                 allocation_strategy: AllocationStrategy::Static,
-                degradation_callback: None,
                 initial_max_slice_len: 1,
                 max_loaned_samples: factory
                     .service
@@ -179,14 +173,15 @@ impl<
                     .defaults
                     .publish_subscribe
                     .unable_to_deliver_strategy,
-                preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),
             },
+            degradation_callback: None,
+            preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),
             factory,
         }
     }
 
     /// Defines a callback to reduce the number of preallocated [`Sample`]s.
-    /// The input argument is the worst case number of preallocated samples required
+    /// The input argument is the worst case number of preallocated [`Sample`]s required
     /// to guarantee that the [`Publisher`] never runs out of [`Sample`]s to loan
     /// and send.
     /// The return value is clamped between `1` and the worst case number of
@@ -201,7 +196,7 @@ impl<
         mut self,
         callback: F,
     ) -> Self {
-        self.config.preallocate_number_of_samples_override =
+        self.preallocate_number_of_samples_override =
             PreallocatedSamplesOverride::new(move |v| callback(v).clamp(1, v));
         self
     }
@@ -230,8 +225,8 @@ impl<
         callback: Option<F>,
     ) -> Self {
         match callback {
-            Some(c) => self.config.degradation_callback = Some(DegradationCallback::new(c)),
-            None => self.config.degradation_callback = None,
+            Some(c) => self.degradation_callback = Some(DegradationCallback::new(c)),
+            None => self.degradation_callback = None,
         }
 
         self
@@ -240,10 +235,8 @@ impl<
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
     pub fn create(self) -> Result<Publisher<Service, Payload, UserHeader>, PublisherCreateError> {
         let origin = format!("{self:?}");
-        Ok(
-            fail!(from origin, when Publisher::new(self.factory.service.clone(), self.factory.service.static_config.publish_subscribe(), self.config),
-                "Failed to create new Publisher port."),
-        )
+        Ok(fail!(from origin, when Publisher::new(self),
+                "Failed to create new Publisher port."))
     }
 }
 
