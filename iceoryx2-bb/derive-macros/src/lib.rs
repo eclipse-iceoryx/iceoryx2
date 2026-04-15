@@ -214,7 +214,8 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                     }
                 });
 
-                let mut member_offsets_and_sizes = Vec::new();
+                // implement __for_each_field_with_offset
+                let mut field_offsets_and_sizes = Vec::new();
                 for field in fields_named.named.iter() {
                     let field_name = &field.ident;
                     let field_type = &field.ty;
@@ -224,11 +225,13 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                         let abs_offset = base_offset + rel_offset;
                         let size = core::mem::size_of::<#field_type>();
 
-                        if !<#field_type as ZeroCopySend>::__get_members_with_offset(&self.#field_name, abs_offset, callback) {
+                        // if a field is a struct, its offset and size are not considered,
+                        // but the offsets and sizes of its fields are
+                        if !<#field_type as ZeroCopySend>::__for_each_field_with_offset(&self.#field_name, abs_offset, callback) {
                             callback(abs_offset, size);
                         }
                     };
-                    member_offsets_and_sizes.push(block);
+                    field_offsets_and_sizes.push(block);
                 }
 
                 quote! {
@@ -238,8 +241,8 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
 
                     #type_name_impl
 
-                    fn __get_members_with_offset<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) -> bool {
-                        #(#member_offsets_and_sizes)*
+                    fn __for_each_field_with_offset<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) -> bool {
+                        #(#field_offsets_and_sizes)*
                         true
                     }
                 }
@@ -253,7 +256,8 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                     }
                 });
 
-                let mut member_offsets_and_sizes = Vec::new();
+                // implement __for_each_field_with_offset
+                let mut field_offsets_and_sizes = Vec::new();
                 for (i, field) in fields_unnamed.unnamed.iter().enumerate() {
                     let field_index = syn::Index::from(i);
                     let field_type = &field.ty;
@@ -263,11 +267,13 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                         let abs_offset = base_offset + rel_offset;
                         let size = core::mem::size_of::<#field_type>();
 
-                        if !<#field_type as ZeroCopySend>::__get_members_with_offset(&self.#field_index, abs_offset, callback) {
+                        // if a field is a struct, its offset and size are not considered,
+                        // but the offsets and sizes of its fields are
+                        if !<#field_type as ZeroCopySend>::__for_each_field_with_offset(&self.#field_index, abs_offset, callback) {
                             callback(abs_offset, size);
                         }
                     };
-                    member_offsets_and_sizes.push(block);
+                    field_offsets_and_sizes.push(block);
                 }
 
                 quote! {
@@ -277,8 +283,8 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
 
                     #type_name_impl
 
-                    fn __get_members_with_offset<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) -> bool {
-                        #(#member_offsets_and_sizes)*
+                    fn __for_each_field_with_offset<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) -> bool {
+                        #(#field_offsets_and_sizes)*
                         true
                     }
                 }
@@ -364,16 +370,13 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                 #type_name_impl
 
                 // TODO: better error handling
-                fn __get_members<F: FnMut(usize, usize)>(&self, callback: &mut F) {
-                    panic!("Member offsets cannot be determined for enums, only for structs.");
-                }
-
-                fn __get_members_with_offset<F: FnMut(usize, usize)>(
+                fn __for_each_field_with_offset<F: FnMut(usize, usize)>(
                     &self,
                     _base_offset: usize,
                     _callback: &mut F,
                 ) -> bool {
-                    panic!("Member offsets cannot be determined for enums, only for structs.");
+                    // Can be implemented once core::mem::offset_of! is stable for enums.
+                    panic!("Field offsets and sizes cannot be determined for enums, only for structs.");
                 }
             }
         }
@@ -394,16 +397,15 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                 #type_name_impl
 
                 // TODO: better error handling
-                fn __get_members<F: FnMut(usize, usize)>(&self, callback: &mut F) {
-                    panic!("Member offsets cannot be determined for unions, only for structs.");
-                }
-
-                fn __get_members_with_offset<F: FnMut(usize, usize)>(
+                fn __for_each_field_with_offset<F: FnMut(usize, usize)>(
                     &self,
                     _base_offset: usize,
                     _callback: &mut F,
                 ) -> bool {
-                    panic!("Member offsets cannot be determined for unions, only for structs.");
+                    // The implementation makes no sense for unions. Unions have no notion of their "active field" and since their
+                    // size is the maximum size of all of their fields rounded to the alignment, calling `size_of` on a union will
+                    // usually return a value that is too large and includes padding bytes.
+                    panic!("Field offsets and sizes cannot be determined for unions, only for structs.");
                 }
             }
         }
