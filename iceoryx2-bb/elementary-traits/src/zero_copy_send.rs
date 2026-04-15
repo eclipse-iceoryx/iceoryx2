@@ -63,6 +63,12 @@ pub unsafe trait ZeroCopySend {
     ) -> bool {
         false
     }
+
+    // TODO
+    #[doc(hidden)]
+    fn __is_scalar(&self) -> bool {
+        true
+    }
 }
 
 unsafe impl ZeroCopySend for usize {}
