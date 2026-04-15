@@ -1302,16 +1302,12 @@ pub mod service_event {
             format!("{}", EventCreateError::EventIdExceedsMaxSupportedValue), eq "EventCreateError::EventIdExceedsMaxSupportedValue");
     }
 
-    // Regression test for #1488: lifecycle event IDs exceeding event_id_max_value must be
-    // rejected at service creation time and detected at open time, rather than silently
-    // accepted and only failing at notify_with_custom_event_id call time.
     #[conformance_test]
-    pub fn create_fails_when_lifecycle_event_id_exceeds_max_event_id<Sut: Service>() {
+    pub fn create_fails_when_notifier_created_event_exceeds_max_event_id<Sut: Service>() {
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         const MAX: usize = 5;
 
-        // notifier_created_event exceeds max
         let service_name = generate_service_name();
         let sut = node
             .service_builder(&service_name)
@@ -1321,8 +1317,14 @@ pub mod service_event {
             .create();
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq EventCreateError::EventIdExceedsMaxSupportedValue);
+    }
 
-        // notifier_dropped_event exceeds max
+    #[conformance_test]
+    pub fn create_fails_when_notifier_dropped_event_exceeds_max_event_id<Sut: Service>() {
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        const MAX: usize = 5;
+
         let service_name = generate_service_name();
         let sut = node
             .service_builder(&service_name)
@@ -1332,8 +1334,14 @@ pub mod service_event {
             .create();
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq EventCreateError::EventIdExceedsMaxSupportedValue);
+    }
 
-        // notifier_dead_event exceeds max
+    #[conformance_test]
+    pub fn create_fails_when_notifier_dead_event_exceeds_max_event_id<Sut: Service>() {
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        const MAX: usize = 5;
+
         let service_name = generate_service_name();
         let sut = node
             .service_builder(&service_name)
@@ -1343,8 +1351,14 @@ pub mod service_event {
             .create();
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq EventCreateError::EventIdExceedsMaxSupportedValue);
+    }
 
-        // lifecycle event IDs at or below max are accepted
+    #[conformance_test]
+    pub fn create_succeeds_when_lifecycle_event_ids_within_max_event_id<Sut: Service>() {
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        const MAX: usize = 5;
+
         let service_name = generate_service_name();
         let sut = node
             .service_builder(&service_name)

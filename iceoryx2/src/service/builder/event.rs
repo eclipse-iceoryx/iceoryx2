@@ -695,34 +695,6 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 msg, existing_settings.deadline, required_settings.deadline);
         }
 
-        // Verify that the existing service's lifecycle event IDs are within its own
-        // event_id_max_value bounds.  A service whose lifecycle events exceed its own max
-        // would cause every Notifier creation to fail with EventIdOutOfBounds at emit time —
-        // a silent accept that only surfaces later.  Catch it here instead.
-        let max_event_id = existing_settings.event_id_max_value;
-        for (label, opt_id) in [
-            (
-                "notifier_created_event",
-                existing_settings.notifier_created_event.as_option_ref().copied(),
-            ),
-            (
-                "notifier_dropped_event",
-                existing_settings.notifier_dropped_event.as_option_ref().copied(),
-            ),
-            (
-                "notifier_dead_event",
-                existing_settings.notifier_dead_event.as_option_ref().copied(),
-            ),
-        ] {
-            if let Some(id) = opt_id {
-                if id > max_event_id {
-                    fail!(from self, with EventOpenError::DoesNotSupportRequestedMaxEventId,
-                        "{} since the stored {} value {} exceeds the service's event_id_max_value {}.",
-                        msg, label, id, max_event_id);
-                }
-            }
-        }
-
         Ok(*existing_settings)
     }
 }
