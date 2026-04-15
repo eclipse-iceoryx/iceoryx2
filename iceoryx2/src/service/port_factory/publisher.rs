@@ -54,14 +54,6 @@
 //! # }
 //! ```
 
-use core::fmt::Debug;
-
-use alloc::format;
-
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::shm_allocator::AllocationStrategy;
-use iceoryx2_log::fail;
-
 use crate::{
     port::{
         DegradationAction, DegradationCallback,
@@ -70,8 +62,38 @@ use crate::{
     },
     service,
 };
+use alloc::format;
+use core::fmt::Debug;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_cal::shm_allocator::AllocationStrategy;
+use iceoryx2_log::fail;
+use tiny_fn::tiny_fn;
 
 use super::publish_subscribe::PortFactory;
+
+tiny_fn! {
+    /// A user provided callback to reduce the number of preallocated [`Sample`]s.
+    /// The input argument is the worst case number of preallocated samples required
+    /// to guarantee that the [`Publisher`] never runs out of [`Sample`]s to loan
+    /// and send.
+    /// The return value is clamped between `1` and the worst case number of
+    /// preallocated samples.
+    ///
+    /// # Important
+    ///
+    /// If the user reduces the number of preallocated [`Sample`]s, iceoryx2 can
+    /// no longer guarantee, that the [`Publisher`] can always loan a [`Sample`]
+    /// to send.
+    pub struct PreallocatedSamplesOverride = Fn(number_of_preallocated_samples: usize) -> usize;
+}
+
+impl<'a> Debug for PreallocatedSamplesOverride<'a> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "PreallocatedSamplesOverride")
+    }
+}
+
+unsafe impl Send for PreallocatedSamplesOverride<'_> {}
 
 #[derive(Debug)]
 pub(crate) struct LocalPublisherConfig {
@@ -80,6 +102,7 @@ pub(crate) struct LocalPublisherConfig {
     pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
     pub(crate) initial_max_slice_len: usize,
     pub(crate) allocation_strategy: AllocationStrategy,
+    pub(crate) preallocate_number_of_samples_override: PreallocatedSamplesOverride<'static>,
 }
 
 /// Factory to create a new [`Publisher`] port/endpoint for
@@ -113,7 +136,7 @@ impl<
     #[doc(hidden)]
     /// # Safety
     ///
-    ///   * does not clone the degradation callback
+    ///   * does not clone the callbacks
     pub unsafe fn __internal_partial_clone(&self) -> Self {
         Self {
             config: LocalPublisherConfig {
@@ -122,6 +145,7 @@ impl<
                 degradation_callback: None,
                 initial_max_slice_len: self.config.initial_max_slice_len,
                 allocation_strategy: self.config.allocation_strategy,
+                preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),
             },
             factory: self.factory,
         }
@@ -155,9 +179,31 @@ impl<
                     .defaults
                     .publish_subscribe
                     .unable_to_deliver_strategy,
+                preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),
             },
             factory,
         }
+    }
+
+    /// Defines a callback to reduce the number of preallocated [`Sample`]s.
+    /// The input argument is the worst case number of preallocated samples required
+    /// to guarantee that the [`Publisher`] never runs out of [`Sample`]s to loan
+    /// and send.
+    /// The return value is clamped between `1` and the worst case number of
+    /// preallocated samples.
+    ///
+    /// # Important
+    ///
+    /// If the user reduces the number of preallocated [`Sample`]s, iceoryx2 can
+    /// no longer guarantee, that the [`Publisher`] can always loan a [`Sample`]
+    /// to send.
+    pub fn override_sample_preallocation<F: Fn(usize) -> usize + Send + 'static>(
+        mut self,
+        callback: F,
+    ) -> Self {
+        self.config.preallocate_number_of_samples_override =
+            PreallocatedSamplesOverride::new(move |v| callback(v).clamp(1, v));
+        self
     }
 
     /// Defines how many [`crate::sample_mut::SampleMut`] the [`Publisher`] can loan with

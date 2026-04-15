@@ -380,6 +380,10 @@ impl<
             unsafe { service.static_config.messaging_pattern.publish_subscribe() }
                 .required_amount_of_samples_per_data_segment(config.max_loaned_samples);
 
+        let number_of_samples = config
+            .preallocate_number_of_samples_override
+            .call(number_of_samples);
+
         let data_segment_type =
             DataSegmentType::new_from_allocation_strategy(config.allocation_strategy);
 
