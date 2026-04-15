@@ -44,6 +44,7 @@ pub enum iox2_request_send_error_e {
     LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE,
     LOAN_ERROR_INTERNAL_FAILURE,
     CONNECTION_ERROR,
+    INTERRUPTED_BY_SIGNAL,
     EXCEEDS_MAX_ACTIVE_REQUESTS,
     INTERNAL_ERROR,
 }
@@ -71,6 +72,9 @@ impl IntoCInt for RequestSendError {
             }
             RequestSendError::SendError(SendError::ConnectionError(_)) => {
                 iox2_request_send_error_e::CONNECTION_ERROR
+            }
+            RequestSendError::SendError(SendError::InterruptedBySignal) => {
+                iox2_request_send_error_e::INTERRUPTED_BY_SIGNAL
             }
             RequestSendError::ExceedsMaxActiveRequests => {
                 iox2_request_send_error_e::EXCEEDS_MAX_ACTIVE_REQUESTS

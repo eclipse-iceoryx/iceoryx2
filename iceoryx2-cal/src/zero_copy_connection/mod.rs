@@ -79,6 +79,7 @@ pub enum ZeroCopySendError {
     UsedChunkListFull,
     NoConnectedReceiver,
     ChannelIsClosed,
+    InterruptedBySignal,
     InternalError,
 }
 
