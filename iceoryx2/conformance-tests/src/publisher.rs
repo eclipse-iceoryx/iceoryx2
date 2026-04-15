@@ -79,6 +79,83 @@ pub mod publisher {
     }
 
     #[conformance_test]
+    pub fn override_preallocated_samples_to_one_works<Sut: Service>()
+    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        let service_name = generate_service_name();
+        let config = testing::generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create()?;
+
+        let sut = service
+            .publisher_builder()
+            .override_sample_preallocation(|_| 1)
+            .max_loaned_samples(2)
+            .create()?;
+
+        let _sample = sut.loan()?;
+        assert_that!(sut.loan().err(), eq Some(LoanError::OutOfMemory));
+
+        Ok(())
+    }
+
+    #[conformance_test]
+    pub fn override_preallocated_samples_to_zero_rounds_it_up_to_one<Sut: Service>()
+    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        let service_name = generate_service_name();
+        let config = testing::generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create()?;
+
+        let sut = service
+            .publisher_builder()
+            .override_sample_preallocation(|_| 0)
+            .max_loaned_samples(2)
+            .create()?;
+
+        let _sample = sut.loan()?;
+        assert_that!(sut.loan().err(), eq Some(LoanError::OutOfMemory));
+
+        Ok(())
+    }
+
+    #[conformance_test]
+    pub fn override_preallocated_samples_to_many_works<Sut: Service>()
+    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        const MAX_NUMBER_OF_SAMPLES: usize = 10;
+        let service_name = generate_service_name();
+        let config = testing::generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        for n in 1..MAX_NUMBER_OF_SAMPLES {
+            let service = node
+                .service_builder(&service_name)
+                .publish_subscribe::<u64>()
+                .create()?;
+
+            let number_of_samples = n;
+            let sut = service
+                .publisher_builder()
+                .override_sample_preallocation(move |_| number_of_samples)
+                .max_loaned_samples(n + 1)
+                .create()?;
+
+            let mut samples = vec![];
+            for _ in 0..n {
+                samples.push(sut.loan()?)
+            }
+            assert_that!(sut.loan().err(), eq Some(LoanError::OutOfMemory));
+        }
+
+        Ok(())
+    }
+
+    #[conformance_test]
     pub fn drop_is_not_called_for_underlying_type_of_sample<Sut: Service>()
     -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
         let service_name = generate_service_name();
