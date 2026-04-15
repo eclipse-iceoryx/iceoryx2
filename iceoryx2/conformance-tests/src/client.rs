@@ -146,6 +146,77 @@ pub mod client {
     }
 
     #[conformance_test]
+    pub fn override_preallocated_requests_to_one_works<Sut: Service>() {
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_loaned_requests(2)
+            .create()
+            .unwrap();
+
+        let sut = service
+            .client_builder()
+            .override_requests_preallocation(|_| 1)
+            .create()
+            .unwrap();
+
+        let _request = sut.loan().unwrap();
+        assert_that!(sut.loan().err(), eq Some(LoanError::OutOfMemory));
+    }
+
+    #[conformance_test]
+    pub fn override_preallocated_requests_to_zero_rounds_up_to_one<Sut: Service>() {
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_loaned_requests(2)
+            .create()
+            .unwrap();
+
+        let sut = service
+            .client_builder()
+            .override_requests_preallocation(|_| 0)
+            .create()
+            .unwrap();
+
+        let _request = sut.loan().unwrap();
+        assert_that!(sut.loan().err(), eq Some(LoanError::OutOfMemory));
+    }
+
+    #[conformance_test]
+    pub fn override_preallocated_requests_to_many_works<Sut: Service>() {
+        const MAX_NUMBER_OF_REQUESTS: usize = 10;
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+
+        for n in 1..MAX_NUMBER_OF_REQUESTS {
+            let service = node
+                .service_builder(&service_name)
+                .request_response::<u64, u64>()
+                .max_loaned_requests(n + 1)
+                .create()
+                .unwrap();
+
+            let number_of_requests = n;
+            let sut = service
+                .client_builder()
+                .override_requests_preallocation(move |_| number_of_requests)
+                .create()
+                .unwrap();
+
+            let mut requests = vec![];
+            for _ in 0..n {
+                requests.push(sut.loan().unwrap());
+            }
+            assert_that!(sut.loan().err(), eq Some(LoanError::OutOfMemory));
+        }
+    }
+
+    #[conformance_test]
     pub fn unable_to_deliver_strategy_block_blocks_when_server_buffer_is_full<Sut: Service>() {
         let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
