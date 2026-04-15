@@ -18,11 +18,11 @@ use crate::posix::MemZeroedStruct;
 use crate::posix::types::*;
 
 pub unsafe fn clock_gettime(clock_id: clockid_t, tp: *mut timespec) -> int {
-    crate::internal::clock_gettime(clock_id, tp)
+    unsafe { crate::internal::clock_gettime(clock_id, tp) }
 }
 
 pub unsafe fn clock_settime(clock_id: clockid_t, tp: *const timespec) -> int {
-    crate::internal::clock_settime(clock_id, tp)
+    unsafe { crate::internal::clock_settime(clock_id, tp) }
 }
 
 pub unsafe fn clock_nanosleep(
@@ -34,31 +34,32 @@ pub unsafe fn clock_nanosleep(
     if clock_id != crate::posix::CLOCK_REALTIME {
         return Errno::ENOTSUP as _;
     }
-
-    let mut now = timespec::new_zeroed();
-    if clock_gettime(clock_id, &mut now) == -1 {
-        return Errno::EINVAL as _;
-    }
-
-    let wait_time = if (now.tv_sec > (*rqtp).tv_sec)
-        || (now.tv_sec == (*rqtp).tv_sec && now.tv_nsec >= (*rqtp).tv_nsec)
-    {
-        return 0;
-    } else if now.tv_nsec <= (*rqtp).tv_nsec {
-        timespec {
-            tv_sec: (*rqtp).tv_sec - now.tv_sec,
-            tv_nsec: (*rqtp).tv_nsec - now.tv_nsec,
+    unsafe {
+        let mut now = timespec::new_zeroed();
+        if clock_gettime(clock_id, &mut now) == -1 {
+            return Errno::EINVAL as _;
         }
-    } else {
-        timespec {
-            tv_sec: (*rqtp).tv_sec - now.tv_sec - 1,
-            tv_nsec: 1000000000 + (*rqtp).tv_nsec - now.tv_nsec,
-        }
-    };
 
-    if crate::internal::nanosleep(&wait_time, rmtp) == 0 {
-        0
-    } else {
-        Errno::get() as _
+        let wait_time = if (now.tv_sec > (*rqtp).tv_sec)
+            || (now.tv_sec == (*rqtp).tv_sec && now.tv_nsec >= (*rqtp).tv_nsec)
+        {
+            return 0;
+        } else if now.tv_nsec <= (*rqtp).tv_nsec {
+            timespec {
+                tv_sec: (*rqtp).tv_sec - now.tv_sec,
+                tv_nsec: (*rqtp).tv_nsec - now.tv_nsec,
+            }
+        } else {
+            timespec {
+                tv_sec: (*rqtp).tv_sec - now.tv_sec - 1,
+                tv_nsec: 1000000000 + (*rqtp).tv_nsec - now.tv_nsec,
+            }
+        };
+
+        if crate::internal::nanosleep(&wait_time, rmtp) == 0 {
+            0
+        } else {
+            Errno::get() as _
+        }
     }
 }
