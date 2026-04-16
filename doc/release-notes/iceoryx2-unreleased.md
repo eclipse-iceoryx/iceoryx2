@@ -150,6 +150,8 @@
   [#1345](https://github.com/eclipse-iceoryx/iceoryx2/issues/1345)
 * Set Rust minimum required version (MSRV) to version 1.85.0
   [#1359](https://github.com/eclipse-iceoryx/iceoryx2/issues/1359)
+* Upgrade Rust Edition to 2024
+  [#1359](https://github.com/eclipse-iceoryx/iceoryx2/issues/1359)
 * Use `libc` constants in linux platform instead of hardcoded values
   [#1388](https://github.com/eclipse-iceoryx/iceoryx2/issues/1388)
 * Update `inventory` crate and remove `disallowed_types` suppression from tests
