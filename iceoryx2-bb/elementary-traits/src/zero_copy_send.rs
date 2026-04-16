@@ -67,29 +67,93 @@ pub unsafe trait ZeroCopySend {
     // TODO
     #[doc(hidden)]
     fn __is_scalar(&self) -> bool {
+        false
+    }
+}
+
+unsafe impl ZeroCopySend for usize {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl ZeroCopySend for u8 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl ZeroCopySend for u16 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl ZeroCopySend for u32 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl ZeroCopySend for u64 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl ZeroCopySend for u128 {
+    fn __is_scalar(&self) -> bool {
         true
     }
 }
 
-unsafe impl ZeroCopySend for usize {}
-unsafe impl ZeroCopySend for u8 {}
-unsafe impl ZeroCopySend for u16 {}
-unsafe impl ZeroCopySend for u32 {}
-unsafe impl ZeroCopySend for u64 {}
-unsafe impl ZeroCopySend for u128 {}
+unsafe impl ZeroCopySend for isize {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl ZeroCopySend for i8 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl ZeroCopySend for i16 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl ZeroCopySend for i32 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl ZeroCopySend for i64 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl ZeroCopySend for i128 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
 
-unsafe impl ZeroCopySend for isize {}
-unsafe impl ZeroCopySend for i8 {}
-unsafe impl ZeroCopySend for i16 {}
-unsafe impl ZeroCopySend for i32 {}
-unsafe impl ZeroCopySend for i64 {}
-unsafe impl ZeroCopySend for i128 {}
+unsafe impl ZeroCopySend for f32 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl ZeroCopySend for f64 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
 
-unsafe impl ZeroCopySend for f32 {}
-unsafe impl ZeroCopySend for f64 {}
-
-unsafe impl ZeroCopySend for char {}
-unsafe impl ZeroCopySend for bool {}
+unsafe impl ZeroCopySend for char {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl ZeroCopySend for bool {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
 
 unsafe impl ZeroCopySend for () {}
 

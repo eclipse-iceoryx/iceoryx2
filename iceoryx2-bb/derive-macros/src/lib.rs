@@ -245,10 +245,6 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                         #(#field_offsets_and_sizes)*
                         true
                     }
-
-                    fn __is_scalar(&self) -> bool {
-                        false
-                    }
                 }
             }
             Fields::Unnamed(ref fields_unnamed) => {
@@ -290,10 +286,6 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                     fn __for_each_field_with_offset<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) -> bool {
                         #(#field_offsets_and_sizes)*
                         true
-                    }
-
-                    fn __is_scalar(&self) -> bool {
-                        false
                     }
                 }
             }
@@ -386,10 +378,6 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                     // Can be implemented once core::mem::offset_of! is stable for enums.
                     panic!("Field offsets and sizes cannot be determined for enums, only for structs.");
                 }
-
-                fn __is_scalar(&self) -> bool {
-                    false
-                }
             }
         }
         Data::Union(ref data_union) => {
@@ -418,10 +406,6 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                     // size is the maximum size of all of their fields rounded to the alignment, calling `size_of` on a union will
                     // usually return a value that is too large and includes padding bytes.
                     panic!("Field offsets and sizes cannot be determined for unions, only for structs.");
-                }
-
-                fn __is_scalar(&self) -> bool {
-                    false
                 }
             }
         }

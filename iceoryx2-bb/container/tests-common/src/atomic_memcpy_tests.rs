@@ -42,9 +42,9 @@ pub fn new_creates_atomic_memcpy_containing_passed_value() {
 
 #[test]
 pub fn new_creates_atomic_memcpy_containing_passed_static_string() {
-    const SIZE: usize = size_of::<StaticString<3>>();
-    let value = StaticString::<3>::try_from("ato").unwrap();
-    let sut = AtomicMemcpy::<StaticString<3>, SIZE>::new(value);
+    const SIZE: usize = size_of::<StaticString<6>>();
+    let value = StaticString::<6>::try_from("ato").unwrap();
+    let sut = AtomicMemcpy::<StaticString<6>, SIZE>::new(value);
     assert_that!(sut, is_ok);
 
     let read_value = unsafe { sut.unwrap().read().assume_init() };
@@ -57,6 +57,18 @@ pub fn atomic_memcpy_contains_passed_value_after_write() {
     let mut sut = AtomicMemcpy::<u64, SIZE>::new(0).unwrap();
 
     let new_value: u64 = 752389;
+    unsafe {
+        sut.write(new_value);
+        assert_that!(sut.read().assume_init(), eq new_value);
+    }
+}
+
+#[test]
+pub fn atomic_memcpy_contains_passed_static_string_after_write() {
+    const SIZE: usize = size_of::<StaticString<20>>();
+    let mut sut = AtomicMemcpy::<StaticString<20>, SIZE>::new(StaticString::<20>::new()).unwrap();
+
+    let new_value = StaticString::<20>::try_from("atomheartmother").unwrap();
     unsafe {
         sut.write(new_value);
         assert_that!(sut.read().assume_init(), eq new_value);
