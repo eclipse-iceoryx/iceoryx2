@@ -271,7 +271,7 @@ pub mod server {
         assert_that!(active_request.loan().err(), eq Some(iceoryx2::port::LoanError::OutOfMemory));
     }
 
-    pub fn override_preallocated_responses_to_zero_rounds_up_to_many<Sut: Service>() {
+    pub fn override_preallocated_responses_many_works<Sut: Service>() {
         const MAX_NUMBER_OF_RESPONSES: usize = 10;
         let service_name = generate_service_name();
         let node = create_node::<Sut>();

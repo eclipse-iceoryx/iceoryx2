@@ -39,7 +39,7 @@
 * Implement C++20 'source_location' based on compiler source location builtins
   and use it for better `Expected` and `Optional` messages on contract violations
   [#1496](https://github.com/eclipse-iceoryx/iceoryx2/issues/1496)
-* Enable override of preallocate data chunks for sender ports
+* Enable override of preallocated data chunks for sender ports
   [#1551](https://github.com/eclipse-iceoryx/iceoryx2/issues/1551)
 
 ### Bugfixes
