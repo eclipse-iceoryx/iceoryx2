@@ -110,7 +110,7 @@ impl PortFactoryServerBuilderUnion {
 #[repr(C)]
 #[repr(align(16))] // alignment of Option<PortFactoryServerBuilderUnion>
 pub struct iox2_port_factory_server_builder_storage_t {
-    internal: [u8; 176], // magic number obtained with size_of::<Option<PortFactoryServerBuilderUnion>>()
+    internal: [u8; 224], // magic number obtained with size_of::<Option<PortFactoryServerBuilderUnion>>()
 }
 
 #[repr(C)]

@@ -73,7 +73,7 @@ tiny_fn! {
     /// to guarantee that the [`Client`] never runs out of [`RequestMut`]s to loan
     /// and send.
     /// The return value is clamped between `1` and the worst case number of
-    /// preallocated samples.
+    /// preallocated [`RequestMut`]s.
     ///
     /// # Important
     ///
@@ -206,7 +206,7 @@ impl<
     /// to guarantee that the [`Client`] never runs out of [`RequestMut`]s to loan
     /// and send.
     /// The return value is clamped between `1` and the worst case number of
-    /// preallocated samples.
+    /// preallocated [`RequestMut`]s.
     ///
     /// # Important
     ///

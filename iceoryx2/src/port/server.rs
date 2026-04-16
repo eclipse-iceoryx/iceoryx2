@@ -299,8 +299,11 @@ impl<
         let number_of_responses =
             unsafe { service.static_config.messaging_pattern.request_response() }
                 .required_amount_of_chunks_per_server_data_segment(
-                    server_factory.max_loaned_responses_per_request,
+                    server_factory.config.max_loaned_responses_per_request,
                 );
+        let number_of_responses = server_factory
+            .preallocated_number_of_responses_override
+            .call(number_of_responses);
 
         let client_list = &service.dynamic_storage.get().request_response().clients;
 
@@ -394,7 +397,7 @@ impl<
             receiver_max_buffer_size: static_config.max_response_buffer_size,
             receiver_max_borrowed_samples: static_config
                 .max_borrowed_responses_per_pending_response,
-            sender_max_borrowed_samples: server_factory.max_loaned_responses_per_request
+            sender_max_borrowed_samples: server_factory.config.max_loaned_responses_per_request
                 * static_config.max_active_requests_per_client
                 * static_config.max_clients,
             enable_safe_overflow: static_config.enable_safe_overflow_for_responses,
@@ -428,7 +431,9 @@ impl<
         };
 
         let new_self = Self {
-            max_loaned_responses_per_request: server_factory.max_loaned_responses_per_request,
+            max_loaned_responses_per_request: server_factory
+                .config
+                .max_loaned_responses_per_request,
             enable_fire_and_forget: service
                 .static_config
                 .request_response()
