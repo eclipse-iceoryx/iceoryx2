@@ -57,7 +57,7 @@ impl<T, F> LazyLock<T, F> {
     /// Must only be called after initialization is complete.
     unsafe fn get(&self) -> &T {
         let data_ptr = self.data.get();
-        (*data_ptr).assume_init_ref()
+        unsafe { (*data_ptr).assume_init_ref() }
     }
 
     /// Initialize the data by taking the init function, calling it, and storing the result.
@@ -71,13 +71,15 @@ impl<T, F> LazyLock<T, F> {
         F: FnOnce() -> T,
     {
         let init_ptr = self.init.get();
-        let init_fn = (*init_ptr)
-            .take()
-            .expect("initialization function already taken");
-        let value = init_fn();
+        unsafe {
+            let init_fn = (*init_ptr)
+                .take()
+                .expect("initialization function already taken");
+            let value = init_fn();
 
-        let data_ptr = self.data.get();
-        (*data_ptr).write(value);
+            let data_ptr = self.data.get();
+            (*data_ptr).write(value);
+        }
     }
 }
 

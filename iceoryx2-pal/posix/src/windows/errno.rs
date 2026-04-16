@@ -13,8 +13,8 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
-use crate::posix::types::*;
 use crate::ErrnoEnumGenerator;
+use crate::posix::types::*;
 use core::{ffi::CStr, fmt::Display};
 
 use iceoryx2_pal_concurrency_sync::cell::Cell;
@@ -159,19 +159,21 @@ impl Errno {
 }
 
 pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
-    let error = strerror(errnum);
-    let len = || -> usize {
-        for n in 0..buflen {
-            if *error.add(n) == 0 {
-                return n;
+    unsafe {
+        let error = strerror(errnum);
+        let len = || -> usize {
+            for n in 0..buflen {
+                if *error.add(n) == 0 {
+                    return n;
+                }
             }
-        }
-        buflen
-    }();
+            buflen
+        }();
 
-    core::ptr::copy_nonoverlapping(error, buf, len);
+        core::ptr::copy_nonoverlapping(error, buf, len);
 
-    0
+        0
+    }
 }
 
 pub unsafe fn strerror(errnum: int) -> *const c_char {

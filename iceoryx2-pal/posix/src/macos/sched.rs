@@ -16,15 +16,15 @@
 use crate::posix::types::*;
 
 pub unsafe fn sched_get_priority_max(policy: int) -> int {
-    crate::internal::sched_get_priority_max(policy)
+    unsafe { crate::internal::sched_get_priority_max(policy) }
 }
 
 pub unsafe fn sched_get_priority_min(policy: int) -> int {
-    crate::internal::sched_get_priority_min(policy)
+    unsafe { crate::internal::sched_get_priority_min(policy) }
 }
 
 pub unsafe fn sched_yield() -> int {
-    crate::internal::sched_yield()
+    unsafe { crate::internal::sched_yield() }
 }
 
 pub unsafe fn sched_getparam(_pid: pid_t, _param: *mut sched_param) -> int {

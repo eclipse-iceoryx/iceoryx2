@@ -64,9 +64,9 @@ use iceoryx2_log::fail;
 
 use crate::{
     port::{
+        DegradationAction, DegradationCallback,
         publisher::{Publisher, PublisherCreateError},
         unable_to_deliver_strategy::UnableToDeliverStrategy,
-        DegradationAction, DegradationCallback,
     },
     service,
 };
@@ -97,18 +97,18 @@ pub struct PortFactoryPublisher<
 }
 
 unsafe impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: Debug + ZeroCopySend,
-    > Send for PortFactoryPublisher<'_, Service, Payload, UserHeader>
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Send for PortFactoryPublisher<'_, Service, Payload, UserHeader>
 {
 }
 
 impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: Debug + ZeroCopySend,
-    > PortFactoryPublisher<'_, Service, Payload, UserHeader>
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> PortFactoryPublisher<'_, Service, Payload, UserHeader>
 {
     #[doc(hidden)]
     /// # Safety
@@ -129,11 +129,11 @@ impl<
 }
 
 impl<
-        'factory,
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: Debug + ZeroCopySend,
-    > PortFactoryPublisher<'factory, Service, Payload, UserHeader>
+    'factory,
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> PortFactoryPublisher<'factory, Service, Payload, UserHeader>
 {
     pub(crate) fn new(factory: &'factory PortFactory<Service, Payload, UserHeader>) -> Self {
         Self {
@@ -201,11 +201,8 @@ impl<
     }
 }
 
-impl<
-        Service: service::Service,
-        Payload: Debug + ZeroCopySend,
-        UserHeader: Debug + ZeroCopySend,
-    > PortFactoryPublisher<'_, Service, [Payload], UserHeader>
+impl<Service: service::Service, Payload: Debug + ZeroCopySend, UserHeader: Debug + ZeroCopySend>
+    PortFactoryPublisher<'_, Service, [Payload], UserHeader>
 {
     /// Sets the maximum slice length that a user can allocate with
     /// [`Publisher::loan_slice()`] or [`Publisher::loan_slice_uninit()`].

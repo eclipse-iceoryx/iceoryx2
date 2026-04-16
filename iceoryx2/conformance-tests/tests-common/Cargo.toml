@@ -2,7 +2,7 @@
 name = "iceoryx2-conformance-tests-common"
 description = "iceoryx2: Conformance tests for iceoryx2 components and extensions"
 categories = { workspace = true }
-edition = { workspace = true }
+edition = "2024"
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }

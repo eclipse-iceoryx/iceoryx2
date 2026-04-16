@@ -16,11 +16,11 @@
 use crate::posix::types::*;
 
 pub unsafe fn clock_gettime(clock_id: clockid_t, tp: *mut timespec) -> int {
-    libc::clock_gettime(clock_id, tp)
+    unsafe { libc::clock_gettime(clock_id, tp) }
 }
 
 pub unsafe fn clock_settime(clock_id: clockid_t, tp: *const timespec) -> int {
-    libc::clock_settime(clock_id, tp)
+    unsafe { libc::clock_settime(clock_id, tp) }
 }
 
 pub unsafe fn clock_nanosleep(
@@ -29,5 +29,5 @@ pub unsafe fn clock_nanosleep(
     rqtp: *const timespec,
     rmtp: *mut timespec,
 ) -> int {
-    libc::clock_nanosleep(clock_id, flags, rqtp, rmtp)
+    unsafe { libc::clock_nanosleep(clock_id, flags, rqtp, rmtp) }
 }

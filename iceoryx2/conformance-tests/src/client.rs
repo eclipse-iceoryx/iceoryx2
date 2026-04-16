@@ -20,8 +20,8 @@ pub mod client {
     use core::time::Duration;
     use iceoryx2::port::update_connections::UpdateConnections;
 
-    use iceoryx2::port::client::RequestSendError;
     use iceoryx2::port::LoanError;
+    use iceoryx2::port::client::RequestSendError;
     use iceoryx2::prelude::*;
     use iceoryx2::testing::*;
     use iceoryx2_bb_concurrency::atomic::AtomicBool;

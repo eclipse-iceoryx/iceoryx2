@@ -54,10 +54,10 @@ pub struct PortFactoryReader<
 }
 
 impl<
-        'factory,
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
-    > PortFactoryReader<'factory, Service, KeyType>
+    'factory,
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
+> PortFactoryReader<'factory, Service, KeyType>
 {
     pub(crate) fn new(factory: &'factory PortFactory<Service, KeyType>) -> Self {
         Self { factory }

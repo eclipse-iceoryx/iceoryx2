@@ -21,7 +21,7 @@ pub unsafe fn pthread_rwlockattr_setkind_np(_attr: *mut pthread_rwlockattr_t, _p
 }
 
 pub unsafe fn pthread_barrier_wait(barrier: *mut pthread_barrier_t) -> int {
-    libc::pthread_barrier_wait(barrier)
+    unsafe { libc::pthread_barrier_wait(barrier) }
 }
 
 pub unsafe fn pthread_barrier_init(
@@ -29,38 +29,38 @@ pub unsafe fn pthread_barrier_init(
     attr: *const pthread_barrierattr_t,
     count: uint,
 ) -> int {
-    libc::pthread_barrier_init(barrier, attr, count)
+    unsafe { libc::pthread_barrier_init(barrier, attr, count) }
 }
 
 pub unsafe fn pthread_barrier_destroy(barrier: *mut pthread_barrier_t) -> int {
-    libc::pthread_barrier_destroy(barrier)
+    unsafe { libc::pthread_barrier_destroy(barrier) }
 }
 
 pub unsafe fn pthread_barrierattr_destroy(attr: *mut pthread_barrierattr_t) -> int {
-    libc::pthread_barrierattr_destroy(attr)
+    unsafe { libc::pthread_barrierattr_destroy(attr) }
 }
 
 pub unsafe fn pthread_barrierattr_init(attr: *mut pthread_barrierattr_t) -> int {
-    libc::pthread_barrierattr_init(attr)
+    unsafe { libc::pthread_barrierattr_init(attr) }
 }
 
 pub unsafe fn pthread_barrierattr_setpshared(
     attr: *mut pthread_barrierattr_t,
     pshared: int,
 ) -> int {
-    libc::pthread_barrierattr_setpshared(attr, pshared)
+    unsafe { libc::pthread_barrierattr_setpshared(attr, pshared) }
 }
 
 pub unsafe fn pthread_attr_init(attr: *mut pthread_attr_t) -> int {
-    libc::pthread_attr_init(attr)
+    unsafe { libc::pthread_attr_init(attr) }
 }
 
 pub unsafe fn pthread_attr_destroy(attr: *mut pthread_attr_t) -> int {
-    libc::pthread_attr_destroy(attr)
+    unsafe { libc::pthread_attr_destroy(attr) }
 }
 
 pub unsafe fn pthread_attr_setguardsize(attr: *mut pthread_attr_t, guardsize: size_t) -> int {
-    libc::pthread_attr_setguardsize(attr, guardsize)
+    unsafe { libc::pthread_attr_setguardsize(attr, guardsize) }
 }
 
 pub unsafe fn pthread_attr_setinheritsched(_attr: *mut pthread_attr_t, _inheritsched: int) -> int {
@@ -87,7 +87,7 @@ pub unsafe fn pthread_attr_setschedparam(
 }
 
 pub unsafe fn pthread_attr_setstacksize(attr: *mut pthread_attr_t, stacksize: size_t) -> int {
-    libc::pthread_attr_setstacksize(attr, stacksize)
+    unsafe { libc::pthread_attr_setstacksize(attr, stacksize) }
 }
 
 pub unsafe fn pthread_attr_setaffinity_np(
@@ -108,27 +108,27 @@ pub unsafe fn pthread_create(
     start_routine: extern "C" fn(*mut void) -> *mut void,
     arg: *mut void,
 ) -> int {
-    libc::pthread_create(thread, attr, start_routine, arg)
+    unsafe { libc::pthread_create(thread, attr, start_routine, arg) }
 }
 
 pub unsafe fn pthread_join(thread: pthread_t, retval: *mut *mut void) -> int {
-    libc::pthread_join(thread, retval)
+    unsafe { libc::pthread_join(thread, retval) }
 }
 
 pub unsafe fn pthread_self() -> pthread_t {
-    libc::pthread_self()
+    unsafe { libc::pthread_self() }
 }
 
 pub unsafe fn pthread_setname_np(thread: pthread_t, name: *const c_char) -> int {
-    libc::pthread_setname_np(thread, name)
+    unsafe { libc::pthread_setname_np(thread, name) }
 }
 
 pub unsafe fn pthread_getname_np(thread: pthread_t, name: *mut c_char, len: size_t) -> int {
-    internal::pthread_getname_np(thread, name, len)
+    unsafe { internal::pthread_getname_np(thread, name, len) }
 }
 
 pub unsafe fn pthread_kill(thread: pthread_t, sig: int) -> int {
-    libc::pthread_kill(thread, sig)
+    unsafe { libc::pthread_kill(thread, sig) }
 }
 
 pub unsafe fn pthread_setaffinity_np(
@@ -162,76 +162,76 @@ pub unsafe fn pthread_getaffinity_np(
 }
 
 pub unsafe fn pthread_rwlockattr_init(attr: *mut pthread_rwlockattr_t) -> int {
-    libc::pthread_rwlockattr_init(attr)
+    unsafe { libc::pthread_rwlockattr_init(attr) }
 }
 
 pub unsafe fn pthread_rwlockattr_destroy(attr: *mut pthread_rwlockattr_t) -> int {
-    libc::pthread_rwlockattr_destroy(attr)
+    unsafe { libc::pthread_rwlockattr_destroy(attr) }
 }
 
 pub unsafe fn pthread_rwlockattr_setpshared(attr: *mut pthread_rwlockattr_t, pshared: int) -> int {
-    libc::pthread_rwlockattr_setpshared(attr, pshared)
+    unsafe { libc::pthread_rwlockattr_setpshared(attr, pshared) }
 }
 
 pub unsafe fn pthread_rwlock_init(
     lock: *mut pthread_rwlock_t,
     attr: *const pthread_rwlockattr_t,
 ) -> int {
-    libc::pthread_rwlock_init(lock, attr)
+    unsafe { libc::pthread_rwlock_init(lock, attr) }
 }
 
 pub unsafe fn pthread_rwlock_destroy(lock: *mut pthread_rwlock_t) -> int {
-    libc::pthread_rwlock_destroy(lock)
+    unsafe { libc::pthread_rwlock_destroy(lock) }
 }
 
 pub unsafe fn pthread_rwlock_rdlock(lock: *mut pthread_rwlock_t) -> int {
-    libc::pthread_rwlock_rdlock(lock)
+    unsafe { libc::pthread_rwlock_rdlock(lock) }
 }
 
 pub unsafe fn pthread_rwlock_tryrdlock(lock: *mut pthread_rwlock_t) -> int {
-    libc::pthread_rwlock_tryrdlock(lock)
+    unsafe { libc::pthread_rwlock_tryrdlock(lock) }
 }
 
 pub unsafe fn pthread_rwlock_unlock(lock: *mut pthread_rwlock_t) -> int {
-    libc::pthread_rwlock_unlock(lock)
+    unsafe { libc::pthread_rwlock_unlock(lock) }
 }
 
 pub unsafe fn pthread_rwlock_wrlock(lock: *mut pthread_rwlock_t) -> int {
-    libc::pthread_rwlock_wrlock(lock)
+    unsafe { libc::pthread_rwlock_wrlock(lock) }
 }
 
 pub unsafe fn pthread_rwlock_trywrlock(lock: *mut pthread_rwlock_t) -> int {
-    libc::pthread_rwlock_trywrlock(lock)
+    unsafe { libc::pthread_rwlock_trywrlock(lock) }
 }
 
 pub unsafe fn pthread_mutex_init(
     mtx: *mut pthread_mutex_t,
     attr: *const pthread_mutexattr_t,
 ) -> int {
-    libc::pthread_mutex_init(mtx, attr)
+    unsafe { libc::pthread_mutex_init(mtx, attr) }
 }
 
 pub unsafe fn pthread_mutex_destroy(mtx: *mut pthread_mutex_t) -> int {
-    libc::pthread_mutex_destroy(mtx)
+    unsafe { libc::pthread_mutex_destroy(mtx) }
 }
 
 pub unsafe fn pthread_mutex_lock(mtx: *mut pthread_mutex_t) -> int {
-    libc::pthread_mutex_lock(mtx)
+    unsafe { libc::pthread_mutex_lock(mtx) }
 }
 
 pub unsafe fn pthread_mutex_timedlock(
     mtx: *mut pthread_mutex_t,
     abs_timeout: *const timespec,
 ) -> int {
-    libc::pthread_mutex_timedlock(mtx, abs_timeout)
+    unsafe { libc::pthread_mutex_timedlock(mtx, abs_timeout) }
 }
 
 pub unsafe fn pthread_mutex_trylock(mtx: *mut pthread_mutex_t) -> int {
-    libc::pthread_mutex_trylock(mtx)
+    unsafe { libc::pthread_mutex_trylock(mtx) }
 }
 
 pub unsafe fn pthread_mutex_unlock(mtx: *mut pthread_mutex_t) -> int {
-    libc::pthread_mutex_unlock(mtx)
+    unsafe { libc::pthread_mutex_unlock(mtx) }
 }
 
 pub unsafe fn pthread_mutex_consistent(_mtx: *mut pthread_mutex_t) -> int {
@@ -243,11 +243,11 @@ pub unsafe fn pthread_mutex_consistent(_mtx: *mut pthread_mutex_t) -> int {
 }
 
 pub unsafe fn pthread_mutexattr_init(attr: *mut pthread_mutexattr_t) -> int {
-    libc::pthread_mutexattr_init(attr)
+    unsafe { libc::pthread_mutexattr_init(attr) }
 }
 
 pub unsafe fn pthread_mutexattr_destroy(attr: *mut pthread_mutexattr_t) -> int {
-    libc::pthread_mutexattr_destroy(attr)
+    unsafe { libc::pthread_mutexattr_destroy(attr) }
 }
 
 pub unsafe fn pthread_mutexattr_setprotocol(
@@ -261,7 +261,7 @@ pub unsafe fn pthread_mutexattr_setprotocol(
 }
 
 pub unsafe fn pthread_mutexattr_setpshared(attr: *mut pthread_mutexattr_t, pshared: int) -> int {
-    libc::pthread_mutexattr_setpshared(attr, pshared)
+    unsafe { libc::pthread_mutexattr_setpshared(attr, pshared) }
 }
 
 pub unsafe fn pthread_mutexattr_setrobust(
@@ -275,13 +275,13 @@ pub unsafe fn pthread_mutexattr_setrobust(
 }
 
 pub unsafe fn pthread_mutexattr_settype(attr: *mut pthread_mutexattr_t, mtype: int) -> int {
-    libc::pthread_mutexattr_settype(attr, mtype)
+    unsafe { libc::pthread_mutexattr_settype(attr, mtype) }
 }
 
 mod internal {
     use super::*;
 
-    extern "C" {
+    unsafe extern "C" {
         // pub(super) fn pthread_attr_setschedparam(
         //     attr: *mut pthread_attr_t,
         //     param: *const sched_param,

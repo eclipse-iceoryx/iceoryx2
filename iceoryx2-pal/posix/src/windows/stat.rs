@@ -16,7 +16,7 @@
 
 use windows_sys::Win32::{
     Foundation::ERROR_FILE_NOT_FOUND,
-    Storage::FileSystem::{GetFileAttributesA, FILE_ATTRIBUTE_DIRECTORY, INVALID_FILE_ATTRIBUTES},
+    Storage::FileSystem::{FILE_ATTRIBUTE_DIRECTORY, GetFileAttributesA, INVALID_FILE_ATTRIBUTES},
 };
 
 use crate::posix::*;
@@ -26,34 +26,38 @@ use crate::win32call;
 use super::win32_handle_translator::HandleTranslator;
 
 pub unsafe fn stat(path: *const c_char, buf: *mut stat_t) -> int {
-    if HandleTranslator::get_instance().contains_uds(path.cast()) {
-        (*buf).st_mode = S_IFSOCK | S_IRUSR | S_IWUSR | S_IXUSR;
-        return 0;
+    unsafe {
+        if HandleTranslator::get_instance().contains_uds(path.cast()) {
+            (*buf).st_mode = S_IFSOCK | S_IRUSR | S_IWUSR | S_IXUSR;
+            return 0;
+        }
     }
 
-    let (attr, _) =
-        win32call! { GetFileAttributesA(path as *const u8), ignore ERROR_FILE_NOT_FOUND};
+    let (attr, _) = unsafe {
+        win32call! { GetFileAttributesA(path as *const u8), ignore ERROR_FILE_NOT_FOUND}
+    };
     if attr == INVALID_FILE_ATTRIBUTES {
         Errno::set(Errno::ENOENT);
         return -1;
     }
 
-    if attr & FILE_ATTRIBUTE_DIRECTORY != 0 {
-        (*buf).st_mode = S_IFDIR;
-    } else {
-        (*buf).st_mode = S_IFREG;
-    }
+    unsafe {
+        if attr & FILE_ATTRIBUTE_DIRECTORY != 0 {
+            (*buf).st_mode = S_IFDIR;
+        } else {
+            (*buf).st_mode = S_IFREG;
+        }
 
-    if let Some(mode) = acquire_mode_from_path(core::slice::from_raw_parts(
-        path as *const u8,
-        c_string_length(path),
-    )) {
-        (*buf).st_mode |= mode;
-    } else {
-        Errno::set(Errno::ENOENT);
-        return -1;
+        if let Some(mode) = acquire_mode_from_path(core::slice::from_raw_parts(
+            path as *const u8,
+            c_string_length(path),
+        )) {
+            (*buf).st_mode |= mode;
+        } else {
+            Errno::set(Errno::ENOENT);
+            return -1;
+        }
     }
-
     0
 }
 

@@ -14,7 +14,7 @@ use core::hint::spin_loop;
 
 use crate::atomic::AtomicU64;
 use crate::atomic::Ordering;
-use crate::{WaitAction, WaitResult, SPIN_REPETITIONS};
+use crate::{SPIN_REPETITIONS, WaitAction, WaitResult};
 
 const WRITE_LOCKED: u64 = u64::MAX;
 const UNLOCKED: u64 = 0;

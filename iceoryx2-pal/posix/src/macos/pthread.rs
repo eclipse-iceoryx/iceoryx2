@@ -87,7 +87,9 @@ impl ThreadStates {
         self.unlock();
 
         if index == usize::MAX {
-            panic!("With this thread the maximum number of supported thread ({MAX_NUMBER_OF_THREADS}) of the system is exceeded.");
+            panic!(
+                "With this thread the maximum number of supported thread ({MAX_NUMBER_OF_THREADS}) of the system is exceeded."
+            );
         }
         index
     }
@@ -149,7 +151,7 @@ impl ThreadStates {
 }
 
 #[link(name = "c++")]
-extern "C" {
+unsafe extern "C" {
     #[link_name = "_ZNSt3__123__libcpp_atomic_monitorEPVKv"]
     fn __libcpp_atomic_monitor(ptr: *const void) -> i64;
 
@@ -212,8 +214,10 @@ pub fn wake_all(atomic: &AtomicU64) {
 }
 
 pub unsafe fn pthread_barrier_wait(barrier: *mut pthread_barrier_t) -> int {
-    (*barrier).barrier.wait(wait, wake_all);
-    0
+    unsafe {
+        (*barrier).barrier.wait(wait, wake_all);
+        0
+    }
 }
 
 pub unsafe fn pthread_barrier_init(
@@ -221,8 +225,10 @@ pub unsafe fn pthread_barrier_init(
     _attr: *const pthread_barrierattr_t,
     count: uint,
 ) -> int {
-    (*barrier).barrier = Barrier::new(count as _);
-    0
+    unsafe {
+        (*barrier).barrier = Barrier::new(count as _);
+        0
+    }
 }
 
 pub unsafe fn pthread_barrier_destroy(_barrier: *mut pthread_barrier_t) -> int {
@@ -246,35 +252,37 @@ pub unsafe fn pthread_barrierattr_setpshared(
 }
 
 pub unsafe fn pthread_attr_init(attr: *mut pthread_attr_t) -> int {
-    (*attr) = pthread_attr_t::new_zeroed();
-    crate::internal::pthread_attr_init(&mut (*attr).attr)
+    unsafe {
+        (*attr) = pthread_attr_t::new_zeroed();
+        crate::internal::pthread_attr_init(&mut (*attr).attr)
+    }
 }
 
 pub unsafe fn pthread_attr_destroy(attr: *mut pthread_attr_t) -> int {
-    crate::internal::pthread_attr_destroy(&mut (*attr).attr)
+    unsafe { crate::internal::pthread_attr_destroy(&mut (*attr).attr) }
 }
 
 pub unsafe fn pthread_attr_setguardsize(attr: *mut pthread_attr_t, guardsize: size_t) -> int {
-    crate::internal::pthread_attr_setguardsize(&mut (*attr).attr, guardsize)
+    unsafe { crate::internal::pthread_attr_setguardsize(&mut (*attr).attr, guardsize) }
 }
 
 pub unsafe fn pthread_attr_setinheritsched(attr: *mut pthread_attr_t, inheritsched: int) -> int {
-    crate::internal::pthread_attr_setinheritsched(&mut (*attr).attr, inheritsched)
+    unsafe { crate::internal::pthread_attr_setinheritsched(&mut (*attr).attr, inheritsched) }
 }
 
 pub unsafe fn pthread_attr_setschedpolicy(attr: *mut pthread_attr_t, policy: int) -> int {
-    crate::internal::pthread_attr_setschedpolicy(&mut (*attr).attr, policy)
+    unsafe { crate::internal::pthread_attr_setschedpolicy(&mut (*attr).attr, policy) }
 }
 
 pub unsafe fn pthread_attr_setschedparam(
     attr: *mut pthread_attr_t,
     param: *const sched_param,
 ) -> int {
-    crate::internal::pthread_attr_setschedparam(&mut (*attr).attr, param)
+    unsafe { crate::internal::pthread_attr_setschedparam(&mut (*attr).attr, param) }
 }
 
 pub unsafe fn pthread_attr_setstacksize(attr: *mut pthread_attr_t, stacksize: size_t) -> int {
-    crate::internal::pthread_attr_setstacksize(&mut (*attr).attr, stacksize)
+    unsafe { crate::internal::pthread_attr_setstacksize(&mut (*attr).attr, stacksize) }
 }
 
 pub unsafe fn pthread_attr_setaffinity_np(
@@ -285,9 +293,10 @@ pub unsafe fn pthread_attr_setaffinity_np(
     if cpusetsize != CPU_SETSIZE / 8 {
         return Errno::EINVAL as int;
     }
-
-    (*attr).affinity = *cpuset;
-    Errno::ESUCCES as int
+    unsafe {
+        (*attr).affinity = *cpuset;
+        Errno::ESUCCES as int
+    }
 }
 
 struct CallbackArguments {
@@ -298,15 +307,16 @@ struct CallbackArguments {
 
 unsafe extern "C" fn thread_callback(args: *mut void) -> *mut void {
     let thread = args as *mut CallbackArguments;
+    unsafe {
+        let start_routine = (*thread).start_routine;
+        let arg = (*thread).arg;
+        let startup_barrier = &(*thread).startup_barrier;
+        startup_barrier.wait(|_, _| {}, |_| {});
 
-    let start_routine = (*thread).start_routine;
-    let arg = (*thread).arg;
-    let startup_barrier = &(*thread).startup_barrier;
-    startup_barrier.wait(|_, _| {}, |_| {});
+        start_routine(arg);
 
-    start_routine(arg);
-
-    core::ptr::null_mut()
+        core::ptr::null_mut()
+    }
 }
 
 pub unsafe fn pthread_create(
@@ -320,46 +330,49 @@ pub unsafe fn pthread_create(
         start_routine,
         arg,
     };
-
-    let result = crate::internal::pthread_create(
-        thread,
-        &(*attr).attr,
-        Some(thread_callback),
-        (&mut thread_args as *mut CallbackArguments).cast(),
-    );
-
-    if result == 0 {
-        ThreadStates::get_instance().add(*thread);
-        ThreadStates::get_instance().get_mut(*thread).affinity = (*attr).affinity;
-        thread_args.startup_barrier.wait(|_, _| {}, |_| {});
+    unsafe {
+        let result = crate::internal::pthread_create(
+            thread,
+            &(*attr).attr,
+            Some(thread_callback),
+            (&mut thread_args as *mut CallbackArguments).cast(),
+        );
+        if result == 0 {
+            ThreadStates::get_instance().add(*thread);
+            ThreadStates::get_instance().get_mut(*thread).affinity = (*attr).affinity;
+            thread_args.startup_barrier.wait(|_, _| {}, |_| {});
+        }
+        result
     }
-
-    result
 }
 
 pub unsafe fn pthread_join(thread: pthread_t, retval: *mut *mut void) -> int {
-    let result = crate::internal::pthread_join(thread, retval);
-    if result == 0 {
-        ThreadStates::get_instance().remove(thread);
+    unsafe {
+        let result = crate::internal::pthread_join(thread, retval);
+        if result == 0 {
+            ThreadStates::get_instance().remove(thread);
+        }
+        result
     }
-    result
 }
 
 pub unsafe fn pthread_self() -> pthread_t {
-    crate::internal::pthread_self()
+    unsafe { crate::internal::pthread_self() }
 }
 
 pub unsafe fn pthread_setname_np(thread: pthread_t, name: *const c_char) -> int {
-    let state = ThreadStates::get_instance().get_mut(thread);
-    for i in 0..THREAD_NAME_LENGTH {
-        state.name[i] = *name.add(i) as _;
+    unsafe {
+        let state = ThreadStates::get_instance().get_mut(thread);
+        for i in 0..THREAD_NAME_LENGTH {
+            state.name[i] = *name.add(i) as _;
 
-        if *name.add(i) == 0 {
-            break;
+            if *name.add(i) == 0 {
+                break;
+            }
         }
-    }
 
-    crate::internal::pthread_setname_np(name)
+        crate::internal::pthread_setname_np(name)
+    }
 }
 
 pub unsafe fn pthread_getname_np(thread: pthread_t, name: *mut c_char, len: size_t) -> int {
@@ -368,16 +381,17 @@ pub unsafe fn pthread_getname_np(thread: pthread_t, name: *mut c_char, len: size
     }
 
     let state = ThreadStates::get_instance().get(thread);
+    unsafe {
+        for i in 0..15 {
+            *name.add(i) = state.name[i] as _;
 
-    for i in 0..15 {
-        *name.add(i) = state.name[i] as _;
-
-        if state.name[i] == 0 {
-            break;
+            if state.name[i] == 0 {
+                break;
+            }
         }
-    }
 
-    Errno::ESUCCES as _
+        Errno::ESUCCES as _
+    }
 }
 
 pub unsafe fn pthread_kill(_thread: pthread_t, _sig: int) -> int {
@@ -392,8 +406,9 @@ pub unsafe fn pthread_setaffinity_np(
     if cpusetsize != CPU_SETSIZE / 8 {
         return Errno::EINVAL as int;
     }
-
-    ThreadStates::get_instance().get_mut(thread).affinity = *cpuset;
+    unsafe {
+        ThreadStates::get_instance().get_mut(thread).affinity = *cpuset;
+    }
     Errno::ESUCCES as int
 }
 
@@ -402,17 +417,21 @@ pub unsafe fn pthread_getaffinity_np(
     cpusetsize: size_t,
     cpuset: *mut cpu_set_t,
 ) -> int {
-    if cpusetsize != CPU_SETSIZE / 8 {
-        return Errno::EINVAL as int;
-    }
+    unsafe {
+        if cpusetsize != CPU_SETSIZE / 8 {
+            return Errno::EINVAL as int;
+        }
 
-    *cpuset = ThreadStates::get_instance().get_mut(thread).affinity;
-    Errno::ESUCCES as int
+        *cpuset = ThreadStates::get_instance().get_mut(thread).affinity;
+        Errno::ESUCCES as int
+    }
 }
 
 pub unsafe fn pthread_rwlockattr_setkind_np(attr: *mut pthread_rwlockattr_t, pref: int) -> int {
-    (*attr).prefer_writer =
-        (pref == PTHREAD_PREFER_WRITER_NP) || (pref == PTHREAD_PREFER_WRITER_NONRECURSIVE_NP);
+    unsafe {
+        (*attr).prefer_writer =
+            (pref == PTHREAD_PREFER_WRITER_NP) || (pref == PTHREAD_PREFER_WRITER_NONRECURSIVE_NP);
+    }
     Errno::ESUCCES as _
 }
 
@@ -436,100 +455,113 @@ pub unsafe fn pthread_rwlock_init(
     lock: *mut pthread_rwlock_t,
     attr: *const pthread_rwlockattr_t,
 ) -> int {
-    match (*attr).prefer_writer {
-        true => (*lock).lock = RwLockType::PreferWriter(RwLockWriterPreference::new()),
-        false => (*lock).lock = RwLockType::PreferReader(RwLockReaderPreference::new()),
-    }
+    unsafe {
+        match (*attr).prefer_writer {
+            true => (*lock).lock = RwLockType::PreferWriter(RwLockWriterPreference::new()),
+            false => (*lock).lock = RwLockType::PreferReader(RwLockReaderPreference::new()),
+        }
 
-    Errno::ESUCCES as _
+        Errno::ESUCCES as _
+    }
 }
 
 pub unsafe fn pthread_rwlock_destroy(lock: *mut pthread_rwlock_t) -> int {
-    (*lock).lock = RwLockType::None;
-    Errno::ESUCCES as _
+    unsafe {
+        (*lock).lock = RwLockType::None;
+        Errno::ESUCCES as _
+    }
 }
 
 pub unsafe fn pthread_rwlock_rdlock(lock: *mut pthread_rwlock_t) -> int {
-    match (*lock).lock {
-        RwLockType::PreferReader(ref l) => l.read_lock(|atomic, value| {
-            wait(atomic, value);
-            WaitAction::Continue
-        }),
-        RwLockType::PreferWriter(ref l) => l.read_lock(|atomic, value| {
-            wait(atomic, value);
-            WaitAction::Continue
-        }),
-        _ => {
-            return Errno::EINVAL as _;
-        }
-    };
+    unsafe {
+        match (*lock).lock {
+            RwLockType::PreferReader(ref l) => l.read_lock(|atomic, value| {
+                wait(atomic, value);
+                WaitAction::Continue
+            }),
+            RwLockType::PreferWriter(ref l) => l.read_lock(|atomic, value| {
+                wait(atomic, value);
+                WaitAction::Continue
+            }),
+            _ => {
+                return Errno::EINVAL as _;
+            }
+        };
 
-    Errno::ESUCCES as _
+        Errno::ESUCCES as _
+    }
 }
 
 pub unsafe fn pthread_rwlock_tryrdlock(lock: *mut pthread_rwlock_t) -> int {
-    let wait_result = match (*lock).lock {
-        RwLockType::PreferReader(ref l) => l.try_read_lock(),
-        RwLockType::PreferWriter(ref l) => l.try_read_lock(),
-        _ => {
-            return Errno::EINVAL as _;
-        }
-    };
+    unsafe {
+        let wait_result = match (*lock).lock {
+            RwLockType::PreferReader(ref l) => l.try_read_lock(),
+            RwLockType::PreferWriter(ref l) => l.try_read_lock(),
+            _ => {
+                return Errno::EINVAL as _;
+            }
+        };
 
-    if wait_result == WaitResult::Success {
-        Errno::ESUCCES as _
-    } else {
-        Errno::EBUSY as _
+        if wait_result == WaitResult::Success {
+            Errno::ESUCCES as _
+        } else {
+            Errno::EBUSY as _
+        }
     }
 }
 
 pub unsafe fn pthread_rwlock_unlock(lock: *mut pthread_rwlock_t) -> int {
-    match (*lock).lock {
-        RwLockType::PreferReader(ref l) => l.unlock(wake_one),
-        RwLockType::PreferWriter(ref l) => l.unlock(wake_one, wake_all),
-        _ => {
-            return Errno::EINVAL as _;
-        }
-    };
+    unsafe {
+        match (*lock).lock {
+            RwLockType::PreferReader(ref l) => l.unlock(wake_one),
+            RwLockType::PreferWriter(ref l) => l.unlock(wake_one, wake_all),
+            _ => {
+                return Errno::EINVAL as _;
+            }
+        };
 
-    Errno::ESUCCES as _
+        Errno::ESUCCES as _
+    }
 }
 
 pub unsafe fn pthread_rwlock_wrlock(lock: *mut pthread_rwlock_t) -> int {
-    match (*lock).lock {
-        RwLockType::PreferReader(ref l) => l.write_lock(|atomic, value| {
-            wait(atomic, value);
-            WaitAction::Continue
-        }),
-        RwLockType::PreferWriter(ref l) => l.write_lock(
-            |atomic, value| {
+    unsafe {
+        match (*lock).lock {
+            RwLockType::PreferReader(ref l) => l.write_lock(|atomic, value| {
                 wait(atomic, value);
                 WaitAction::Continue
-            },
-            wake_one,
-            wake_all,
-        ),
-        _ => {
-            return Errno::EINVAL as _;
-        }
-    };
-
+            }),
+            RwLockType::PreferWriter(ref l) => l.write_lock(
+                |atomic, value| {
+                    wait(atomic, value);
+                    WaitAction::Continue
+                },
+                wake_one,
+                wake_all,
+            ),
+            _ => {
+                return Errno::EINVAL as _;
+            }
+        };
+    }
     Errno::ESUCCES as _
 }
 
 pub unsafe fn pthread_rwlock_trywrlock(lock: *mut pthread_rwlock_t) -> int {
-    let wait_result = match (*lock).lock {
-        RwLockType::PreferReader(ref l) => l.try_write_lock(),
-        RwLockType::PreferWriter(ref l) => l.try_write_lock(),
-        _ => {
-            return Errno::EINVAL as _;
-        }
-    };
+    unsafe {
+        let wait_result = match (*lock).lock {
+            RwLockType::PreferReader(ref l) => l.try_write_lock(),
+            RwLockType::PreferWriter(ref l) => l.try_write_lock(),
+            _ => {
+                return Errno::EINVAL as _;
+            }
+        };
 
-    if wait_result == WaitResult::Success {
-        Errno::ESUCCES as _
-    } else {
-        Errno::EBUSY as _
+        if wait_result == WaitResult::Success {
+            Errno::ESUCCES as _
+        } else {
+            Errno::EBUSY as _
+        }
     }
 }
 
@@ -537,13 +569,15 @@ pub unsafe fn pthread_mutex_init(
     mtx: *mut pthread_mutex_t,
     attr: *const pthread_mutexattr_t,
 ) -> int {
-    mtx.write(pthread_mutex_t::new_zeroed());
-    (*mtx).mtype = (*attr).mtype | (*attr).robustness;
-    (*mtx).track_thread_id = (*attr).mtype == PTHREAD_MUTEX_ERRORCHECK
-        || (*attr).mtype == PTHREAD_MUTEX_RECURSIVE
-        || (*attr).robustness == PTHREAD_MUTEX_ROBUST;
+    unsafe {
+        mtx.write(pthread_mutex_t::new_zeroed());
+        (*mtx).mtype = (*attr).mtype | (*attr).robustness;
+        (*mtx).track_thread_id = (*attr).mtype == PTHREAD_MUTEX_ERRORCHECK
+            || (*attr).mtype == PTHREAD_MUTEX_RECURSIVE
+            || (*attr).robustness == PTHREAD_MUTEX_ROBUST;
 
-    0
+        0
+    }
 }
 
 pub unsafe fn pthread_mutex_destroy(_mtx: *mut pthread_mutex_t) -> int {
@@ -556,204 +590,223 @@ unsafe fn owner_and_ref_count(v: u64) -> (u32, u32) {
 
 unsafe fn get_thread_id() -> u32 {
     let mut id = 0u64;
-    crate::internal::pthread_threadid_np(core::ptr::null_mut(), &mut id);
+    unsafe {
+        crate::internal::pthread_threadid_np(core::ptr::null_mut(), &mut id);
+    }
     id as _
 }
 
 unsafe fn prepare_lock(mtx: *mut pthread_mutex_t) -> (int, u32) {
-    let mut thread_id = 0;
-    if (*mtx).track_thread_id {
-        thread_id = get_thread_id();
-        let mut current_owner = (*mtx).current_owner.load(Ordering::Relaxed);
-        let (owner, ref_count) = owner_and_ref_count(current_owner);
+    unsafe {
+        let mut thread_id = 0;
+        if (*mtx).track_thread_id {
+            thread_id = get_thread_id();
+            let mut current_owner = (*mtx).current_owner.load(Ordering::Relaxed);
+            let (owner, ref_count) = owner_and_ref_count(current_owner);
 
-        if ((*mtx).mtype & PTHREAD_MUTEX_ROBUST) != 0 {
-            if (*mtx).unrecoverable_state {
-                return (Errno::ENOTRECOVERABLE as _, thread_id);
-            }
-
-            if owner != 0 {
-                let is_still_active = crate::internal::pthread_kill((*mtx).thread_handle, 0) == 0;
-
-                if !is_still_active {
-                    (*mtx)
-                        .current_owner
-                        .store((thread_id as u64) << 32, Ordering::Relaxed);
-                    (*mtx).inconsistent_state = true;
-                    return (Errno::EOWNERDEAD as _, thread_id);
-                }
-            }
-        }
-
-        if owner == thread_id {
-            if ((*mtx).mtype & PTHREAD_MUTEX_ERRORCHECK) != 0 {
-                return (Errno::EDEADLK as _, thread_id);
-            }
-
-            loop {
-                if ref_count == u32::MAX {
-                    return (Errno::EAGAIN as _, thread_id);
+            if ((*mtx).mtype & PTHREAD_MUTEX_ROBUST) != 0 {
+                if (*mtx).unrecoverable_state {
+                    return (Errno::ENOTRECOVERABLE as _, thread_id);
                 }
 
-                if ((*mtx).mtype & PTHREAD_MUTEX_RECURSIVE) != 0 {
-                    match (*mtx).current_owner.compare_exchange(
-                        current_owner,
-                        current_owner + 1,
-                        Ordering::Acquire,
-                        Ordering::Relaxed,
-                    ) {
-                        Err(v) => current_owner = v,
-                        Ok(_) => return (Errno::ESUCCES as _, thread_id),
+                if owner != 0 {
+                    let is_still_active =
+                        crate::internal::pthread_kill((*mtx).thread_handle, 0) == 0;
+
+                    if !is_still_active {
+                        (*mtx)
+                            .current_owner
+                            .store((thread_id as u64) << 32, Ordering::Relaxed);
+                        (*mtx).inconsistent_state = true;
+                        return (Errno::EOWNERDEAD as _, thread_id);
                     }
                 }
+            }
 
-                let (owner, _ref_count) = owner_and_ref_count(current_owner);
+            if owner == thread_id {
+                if ((*mtx).mtype & PTHREAD_MUTEX_ERRORCHECK) != 0 {
+                    return (Errno::EDEADLK as _, thread_id);
+                }
 
-                if owner != thread_id {
-                    break;
+                loop {
+                    if ref_count == u32::MAX {
+                        return (Errno::EAGAIN as _, thread_id);
+                    }
+
+                    if ((*mtx).mtype & PTHREAD_MUTEX_RECURSIVE) != 0 {
+                        match (*mtx).current_owner.compare_exchange(
+                            current_owner,
+                            current_owner + 1,
+                            Ordering::Acquire,
+                            Ordering::Relaxed,
+                        ) {
+                            Err(v) => current_owner = v,
+                            Ok(_) => return (Errno::ESUCCES as _, thread_id),
+                        }
+                    }
+
+                    let (owner, _ref_count) = owner_and_ref_count(current_owner);
+
+                    if owner != thread_id {
+                        break;
+                    }
                 }
             }
         }
-    }
 
-    (-1, thread_id)
+        (-1, thread_id)
+    }
 }
 
 pub unsafe fn pthread_mutex_lock(mtx: *mut pthread_mutex_t) -> int {
-    let thread_id = match prepare_lock(mtx) {
-        (-1, id) => id,
-        (0, _id) => return Errno::ESUCCES as _,
-        (e, _) => return e,
-    };
+    unsafe {
+        let thread_id = match prepare_lock(mtx) {
+            (-1, id) => id,
+            (0, _id) => return Errno::ESUCCES as _,
+            (e, _) => return e,
+        };
 
-    (*mtx).mtx.lock(|atomic, value| {
-        wait(atomic, value);
-        WaitAction::Continue
-    });
+        (*mtx).mtx.lock(|atomic, value| {
+            wait(atomic, value);
+            WaitAction::Continue
+        });
 
-    if (*mtx).track_thread_id {
-        (*mtx)
-            .current_owner
-            .store((thread_id as u64) << 32, Ordering::Relaxed);
-        (*mtx).thread_handle = crate::internal::pthread_self();
+        if (*mtx).track_thread_id {
+            (*mtx)
+                .current_owner
+                .store((thread_id as u64) << 32, Ordering::Relaxed);
+            (*mtx).thread_handle = crate::internal::pthread_self();
+        }
+
+        0
     }
-
-    0
 }
 
 pub unsafe fn pthread_mutex_timedlock(
     mtx: *mut pthread_mutex_t,
     abs_timeout: *const timespec,
 ) -> int {
-    let mut current_time = timespec::new_zeroed();
-    let mut wait_time = timespec::new_zeroed();
+    unsafe {
+        let mut current_time = timespec::new_zeroed();
+        let mut wait_time = timespec::new_zeroed();
 
-    loop {
-        match pthread_mutex_trylock(mtx).into() {
-            Errno::ESUCCES => return Errno::ESUCCES as _,
-            Errno::EBUSY | Errno::EDEADLK => (),
-            v => return v as _,
+        loop {
+            match pthread_mutex_trylock(mtx).into() {
+                Errno::ESUCCES => return Errno::ESUCCES as _,
+                Errno::EBUSY | Errno::EDEADLK => (),
+                v => return v as _,
+            }
+
+            clock_gettime(CLOCK_REALTIME, &mut current_time);
+
+            if (current_time.tv_sec > (*abs_timeout).tv_sec)
+                || (current_time.tv_sec == (*abs_timeout).tv_sec
+                    && current_time.tv_nsec > (*abs_timeout).tv_nsec)
+            {
+                return Errno::ETIMEDOUT as _;
+            }
+
+            current_time.tv_sec = 0;
+            current_time.tv_nsec = 1000000;
+
+            crate::internal::nanosleep(&current_time, &mut wait_time);
         }
-
-        clock_gettime(CLOCK_REALTIME, &mut current_time);
-
-        if (current_time.tv_sec > (*abs_timeout).tv_sec)
-            || (current_time.tv_sec == (*abs_timeout).tv_sec
-                && current_time.tv_nsec > (*abs_timeout).tv_nsec)
-        {
-            return Errno::ETIMEDOUT as _;
-        }
-
-        current_time.tv_sec = 0;
-        current_time.tv_nsec = 1000000;
-
-        crate::internal::nanosleep(&current_time, &mut wait_time);
     }
 }
 
 pub unsafe fn pthread_mutex_trylock(mtx: *mut pthread_mutex_t) -> int {
-    let thread_id = match prepare_lock(mtx) {
-        (-1, id) => id,
-        (0, _id) => return Errno::ESUCCES as _,
-        (e, _) => return e,
-    };
+    unsafe {
+        let thread_id = match prepare_lock(mtx) {
+            (-1, id) => id,
+            (0, _id) => return Errno::ESUCCES as _,
+            (e, _) => return e,
+        };
 
-    match (*mtx).mtx.try_lock() {
-        WaitResult::Success => {
-            if (*mtx).track_thread_id {
-                (*mtx)
-                    .current_owner
-                    .store((thread_id as u64) << 32, Ordering::Relaxed);
+        match (*mtx).mtx.try_lock() {
+            WaitResult::Success => {
+                if (*mtx).track_thread_id {
+                    (*mtx)
+                        .current_owner
+                        .store((thread_id as u64) << 32, Ordering::Relaxed);
+                }
+
+                Errno::ESUCCES as _
             }
-
-            Errno::ESUCCES as _
+            WaitResult::Interrupted => Errno::EBUSY as _,
         }
-        WaitResult::Interrupted => Errno::EBUSY as _,
     }
 }
 
 pub unsafe fn pthread_mutex_unlock(mtx: *mut pthread_mutex_t) -> int {
-    if ((*mtx).mtype & PTHREAD_MUTEX_ERRORCHECK) != 0 {
-        let thread_id = get_thread_id();
-        if thread_id != owner_and_ref_count((*mtx).current_owner.load(Ordering::Relaxed)).0 {
-            return Errno::EBUSY as _;
-        }
-    }
-
-    if (*mtx).inconsistent_state {
-        (*mtx).unrecoverable_state = true;
-    }
-
-    let mut unlock_thread = false;
-    if (*mtx).mtype & PTHREAD_MUTEX_RECURSIVE != 0 {
-        let mut current_value = (*mtx).current_owner.load(Ordering::Relaxed);
-        loop {
-            let (_owner, ref_count) = owner_and_ref_count(current_value);
-            let new_value = if ref_count == 0 { 0 } else { current_value - 1 };
-
-            match (*mtx).current_owner.compare_exchange(
-                current_value,
-                new_value,
-                Ordering::Relaxed,
-                Ordering::Relaxed,
-            ) {
-                Ok(_) => {
-                    if new_value == 0 {
-                        unlock_thread = true;
-                    }
-                    break;
-                }
-                Err(v) => current_value = v,
+    unsafe {
+        if ((*mtx).mtype & PTHREAD_MUTEX_ERRORCHECK) != 0 {
+            let thread_id = get_thread_id();
+            if thread_id != owner_and_ref_count((*mtx).current_owner.load(Ordering::Relaxed)).0 {
+                return Errno::EBUSY as _;
             }
         }
-    } else {
-        (*mtx).current_owner.store(0, Ordering::Relaxed);
-        unlock_thread = true;
-    }
 
-    if unlock_thread {
-        (*mtx).mtx.unlock(wake_one);
-        (*mtx).thread_handle = core::ptr::null_mut();
-    }
+        if (*mtx).inconsistent_state {
+            (*mtx).unrecoverable_state = true;
+        }
 
-    Errno::ESUCCES as _
+        let mut unlock_thread = false;
+        if (*mtx).mtype & PTHREAD_MUTEX_RECURSIVE != 0 {
+            let mut current_value = (*mtx).current_owner.load(Ordering::Relaxed);
+            loop {
+                let (_owner, ref_count) = owner_and_ref_count(current_value);
+                let new_value = if ref_count == 0 { 0 } else { current_value - 1 };
+
+                match (*mtx).current_owner.compare_exchange(
+                    current_value,
+                    new_value,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(_) => {
+                        if new_value == 0 {
+                            unlock_thread = true;
+                        }
+                        break;
+                    }
+                    Err(v) => current_value = v,
+                }
+            }
+        } else {
+            (*mtx).current_owner.store(0, Ordering::Relaxed);
+            unlock_thread = true;
+        }
+
+        if unlock_thread {
+            (*mtx).mtx.unlock(wake_one);
+            (*mtx).thread_handle = core::ptr::null_mut();
+        }
+
+        Errno::ESUCCES as _
+    }
 }
 
 pub unsafe fn pthread_mutex_consistent(mtx: *mut pthread_mutex_t) -> int {
-    (*mtx).inconsistent_state = false;
-    Errno::ESUCCES as _
+    unsafe {
+        (*mtx).inconsistent_state = false;
+        Errno::ESUCCES as _
+    }
 }
 
 pub unsafe fn pthread_mutexattr_init(attr: *mut pthread_mutexattr_t) -> int {
-    Errno::set(Errno::ESUCCES);
-    attr.write(pthread_mutexattr_t::new_zeroed());
-    0
+    unsafe {
+        Errno::set(Errno::ESUCCES);
+        attr.write(pthread_mutexattr_t::new_zeroed());
+        0
+    }
 }
 
 pub unsafe fn pthread_mutexattr_destroy(attr: *mut pthread_mutexattr_t) -> int {
-    Errno::set(Errno::ESUCCES);
-    core::ptr::drop_in_place(attr);
-    0
+    unsafe {
+        Errno::set(Errno::ESUCCES);
+        core::ptr::drop_in_place(attr);
+        0
+    }
 }
 
 pub unsafe fn pthread_mutexattr_setprotocol(_attr: *mut pthread_mutexattr_t, protocol: int) -> int {
@@ -773,13 +826,17 @@ pub unsafe fn pthread_mutexattr_setpshared(_attr: *mut pthread_mutexattr_t, _psh
 }
 
 pub unsafe fn pthread_mutexattr_setrobust(attr: *mut pthread_mutexattr_t, robustness: int) -> int {
-    Errno::set(Errno::ESUCCES);
-    (*attr).robustness = robustness;
-    0
+    unsafe {
+        Errno::set(Errno::ESUCCES);
+        (*attr).robustness = robustness;
+        0
+    }
 }
 
 pub unsafe fn pthread_mutexattr_settype(attr: *mut pthread_mutexattr_t, mtype: int) -> int {
-    Errno::set(Errno::ESUCCES);
-    (*attr).mtype = mtype;
-    0
+    unsafe {
+        Errno::set(Errno::ESUCCES);
+        (*attr).mtype = mtype;
+        0
+    }
 }

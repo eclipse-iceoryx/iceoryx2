@@ -67,7 +67,7 @@ impl<T> RawMemory<T> {
     ///
     /// * T must have been constructed manually before calling this function.
     pub unsafe fn assume_init(&self) -> &T {
-        &*self.memory
+        unsafe { &*self.memory }
     }
 
     /// Returns a mutable reference to T
@@ -76,7 +76,7 @@ impl<T> RawMemory<T> {
     ///
     /// * T must have been constructed manually before calling this function.
     pub unsafe fn assume_init_mut(&mut self) -> &mut T {
-        &mut *self.memory
+        unsafe { &mut *self.memory }
     }
 
     /// Returns a slice to the underlying memory

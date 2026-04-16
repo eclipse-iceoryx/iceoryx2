@@ -16,9 +16,9 @@
 use crate::posix::types::*;
 
 pub unsafe fn getrlimit(resource: int, rlim: *mut rlimit) -> int {
-    crate::internal::getrlimit(resource, rlim)
+    unsafe { crate::internal::getrlimit(resource, rlim) }
 }
 
 pub unsafe fn setrlimit(resource: int, rlim: *const rlimit) -> int {
-    crate::internal::setrlimit(resource, rlim)
+    unsafe { crate::internal::setrlimit(resource, rlim) }
 }

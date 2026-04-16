@@ -18,5 +18,5 @@
 pub unsafe fn __internal_node_staged_death<S: crate::service::Service>(
     node: &mut crate::node::Node<S>,
 ) -> <S::Monitoring as iceoryx2_cal::monitoring::Monitoring>::Token {
-    node.staged_death()
+    unsafe { node.staged_death() }
 }

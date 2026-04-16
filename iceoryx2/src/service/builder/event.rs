@@ -603,7 +603,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
 
         let required_settings = self.base.service_config.event();
         let existing_settings = match &existing_settings.messaging_pattern {
-            MessagingPattern::Event(ref v) => v,
+            MessagingPattern::Event(v) => v,
             p => {
                 fail!(from self, with EventOpenError::IncompatibleMessagingPattern,
                 "{} since a service with the messaging pattern {:?} exists but MessagingPattern::Event is required.", msg, p);

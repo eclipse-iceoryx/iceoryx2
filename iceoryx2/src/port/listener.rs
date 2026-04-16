@@ -302,17 +302,19 @@ pub(crate) unsafe fn remove_connection_of_listener<Service: service::Service>(
     listener_id: &UniqueListenerId,
     config: &Config,
 ) -> Result<(), NamedConceptRemoveError> {
-    let origin = format!(
-        "remove_connection_of_listener::<{}>({:?})",
-        core::any::type_name::<Service>(),
-        listener_id
-    );
-    let msg = "Unable to remove the listener connection";
-    let event_name = event_concept_name(listener_id);
-    let event_config = event_config::<Service>(config);
+    unsafe {
+        let origin = format!(
+            "remove_connection_of_listener::<{}>({:?})",
+            core::any::type_name::<Service>(),
+            listener_id
+        );
+        let msg = "Unable to remove the listener connection";
+        let event_name = event_concept_name(listener_id);
+        let event_config = event_config::<Service>(config);
 
-    fail!(from origin,
+        fail!(from origin,
             when <Service::Event as NamedConceptMgmt>::remove_cfg(&event_name, &event_config),
             "{} since the underlying concept could not be removed.", msg);
-    Ok(())
+        Ok(())
+    }
 }

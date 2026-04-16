@@ -12,8 +12,8 @@
 
 #![allow(clippy::missing_safety_doc)]
 
-use crate::posix::types::*;
 use crate::ErrnoEnumGenerator;
+use crate::posix::types::*;
 use core::{ffi::CStr, fmt::Display};
 
 ErrnoEnumGenerator!(
@@ -160,15 +160,15 @@ pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
         .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
         .is_err()
     {}
-
-    let raw_string = strerror(errnum);
-    crate::posix::string::strncpy(buf, raw_string, buflen);
-
+    unsafe {
+        let raw_string = strerror(errnum);
+        crate::posix::string::strncpy(buf, raw_string, buflen);
+    }
     IS_LOCKED.store(false, Ordering::Relaxed);
 
     0
 }
 
 pub unsafe fn strerror(errnum: int) -> *const c_char {
-    libc::strerror(errnum)
+    unsafe { libc::strerror(errnum) }
 }

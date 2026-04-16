@@ -41,8 +41,8 @@ use crate::constants::{MAX_BLACKBOARD_KEY_ALIGNMENT, MAX_BLACKBOARD_KEY_SIZE};
 use crate::service;
 use crate::service::builder::CustomKeyMarker;
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
-use crate::service::dynamic_config::blackboard::DynamicConfigSettings;
 use crate::service::dynamic_config::MessagingPatternSettings;
+use crate::service::dynamic_config::blackboard::DynamicConfigSettings;
 use crate::service::naming_scheme::blackboard_name;
 use crate::service::port_factory::blackboard;
 use crate::service::static_config::message_type_details::TypeDetail;
@@ -364,9 +364,9 @@ struct Builder<
 }
 
 impl<
-        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
-        ServiceType: service::Service,
-    > Debug for Builder<KeyType, ServiceType>
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
+    ServiceType: service::Service,
+> Debug for Builder<KeyType, ServiceType>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
@@ -382,9 +382,9 @@ impl<
 }
 
 impl<
-        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
-        ServiceType: service::Service,
-    > Builder<KeyType, ServiceType>
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
+    ServiceType: service::Service,
+> Builder<KeyType, ServiceType>
 {
     fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         let mut new_self = Self {
@@ -487,9 +487,9 @@ pub struct Creator<
 }
 
 impl<
-        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
-        ServiceType: service::Service,
-    > Creator<KeyType, ServiceType>
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
+    ServiceType: service::Service,
+> Creator<KeyType, ServiceType>
 {
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         Self {
@@ -811,12 +811,12 @@ impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
                 fatal_panic!(from self, "This should never happen! Key size/alignment is invalid!")
             }
         };
-        let key_mem = match KeyMemory::try_from_ptr(key, key_layout) {
+        let key_mem = match unsafe { KeyMemory::try_from_ptr(key, key_layout) } {
             Ok(mem) => mem,
             Err(_) => fatal_panic!(from self, "The key type has the wrong size/alignment!"),
         };
 
-        let value_writer = Box::new(move |raw_memory_ptr: *mut u8| {
+        let value_writer = Box::new(move |raw_memory_ptr: *mut u8| unsafe {
             let ptrs = __internal_calculate_atomic_mgmt_and_payload_ptr(
                 raw_memory_ptr,
                 value_details.alignment,
@@ -859,9 +859,9 @@ pub struct Opener<
 }
 
 impl<
-        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
-        ServiceType: service::Service,
-    > Opener<KeyType, ServiceType>
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
+    ServiceType: service::Service,
+> Opener<KeyType, ServiceType>
 {
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         Self {
@@ -897,7 +897,7 @@ impl<
 
         let required_settings = self.builder.base.service_config.blackboard();
         let existing_settings = match &existing_settings.messaging_pattern {
-            MessagingPattern::Blackboard(ref v) => v,
+            MessagingPattern::Blackboard(v) => v,
             p => {
                 fail!(from self, with BlackboardOpenError::IncompatibleMessagingPattern,
                 "{} since a service with the messaging pattern {:?} exists but MessagingPattern::Blackboard is required.", msg, p);

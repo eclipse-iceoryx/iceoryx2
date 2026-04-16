@@ -16,7 +16,7 @@ use core::unreachable;
 
 pub(crate) unsafe fn c_string_length(value: *const crate::posix::c_char) -> usize {
     for i in 0..isize::MAX {
-        if *value.offset(i) == crate::posix::NULL_TERMINATOR {
+        if unsafe { *value.offset(i) } == crate::posix::NULL_TERMINATOR {
             return i as usize;
         }
     }
@@ -26,7 +26,7 @@ pub(crate) unsafe fn c_string_length(value: *const crate::posix::c_char) -> usiz
 
 pub(crate) unsafe fn c_wide_string_length(value: *const u16) -> usize {
     for i in 0..usize::MAX {
-        if *value.add(i) == 0u16 {
+        if unsafe { *value.add(i) } == 0u16 {
             return i;
         }
     }

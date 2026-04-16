@@ -58,20 +58,20 @@ pub struct Sample<
 }
 
 unsafe impl<
-        Service: crate::service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: ZeroCopySend,
-    > Send for Sample<Service, Payload, UserHeader>
+    Service: crate::service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: ZeroCopySend,
+> Send for Sample<Service, Payload, UserHeader>
 where
     Service::ArcThreadSafetyPolicy<SubscriberSharedState<Service>>: Send + Sync,
 {
 }
 
 impl<
-        Service: crate::service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: ZeroCopySend,
-    > Debug for Sample<Service, Payload, UserHeader>
+    Service: crate::service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: ZeroCopySend,
+> Debug for Sample<Service, Payload, UserHeader>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
@@ -87,10 +87,10 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: ZeroCopySend,
-    > Deref for Sample<Service, Payload, UserHeader>
+    Service: crate::service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: ZeroCopySend,
+> Deref for Sample<Service, Payload, UserHeader>
 {
     type Target = Payload;
     fn deref(&self) -> &Self::Target {
@@ -99,10 +99,10 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: ZeroCopySend,
-    > Drop for Sample<Service, Payload, UserHeader>
+    Service: crate::service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: ZeroCopySend,
+> Drop for Sample<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
         self.subscriber_shared_state
@@ -113,10 +113,10 @@ impl<
 }
 
 impl<
-        Service: crate::service::Service,
-        Payload: Debug + ZeroCopySend + ?Sized,
-        UserHeader: ZeroCopySend,
-    > Sample<Service, Payload, UserHeader>
+    Service: crate::service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: ZeroCopySend,
+> Sample<Service, Payload, UserHeader>
 {
     /// Returns a reference to the payload of the [`Sample`]
     pub fn payload(&self) -> &Payload {

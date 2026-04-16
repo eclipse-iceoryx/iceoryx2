@@ -58,11 +58,11 @@ use crate::service::dynamic_config::DynamicConfig;
 use crate::service::dynamic_config::RegisterNodeResult;
 use crate::service::static_config::*;
 
+use super::Service;
 use super::config_scheme::dynamic_config_storage_config;
 use super::config_scheme::service_tag_config;
 use super::config_scheme::static_config_storage_config;
 use super::service_name::ServiceName;
-use super::Service;
 
 const RETRY_LIMIT: usize = 5;
 

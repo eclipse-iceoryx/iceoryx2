@@ -14,17 +14,17 @@ use iceoryx2_pal_configuration::PATH_LENGTH;
 use windows_sys::Win32::{
     Foundation::HANDLE,
     Networking::WinSock::SOCKADDR,
-    System::Threading::{WaitOnAddress, WakeByAddressSingle, INFINITE},
+    System::Threading::{INFINITE, WaitOnAddress, WakeByAddressSingle},
 };
 
 use crate::posix::{c_string_length, types::*};
 use core::fmt::Debug;
 use core::panic;
+use iceoryx2_pal_concurrency_sync::WaitAction;
 use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 use iceoryx2_pal_concurrency_sync::atomic::{AtomicBool, AtomicU64, AtomicUsize};
 use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
 use iceoryx2_pal_concurrency_sync::strategy::mutex::Mutex;
-use iceoryx2_pal_concurrency_sync::WaitAction;
 
 use super::win32_udp_port_to_uds_name::PortToUds;
 
@@ -282,7 +282,7 @@ impl HandleTranslator {
     pub(crate) unsafe fn get_shm_handle_mut(&self, fd: int) -> &mut ShmHandle {
         self.lock();
         match unsafe { &mut *self.fd2handle[fd as usize].get() } {
-            FdHandleEntry::SharedMemory(ref mut handle) => {
+            FdHandleEntry::SharedMemory(handle) => {
                 self.unlock();
                 handle
             }
@@ -297,7 +297,7 @@ impl HandleTranslator {
     pub(crate) unsafe fn get_file_handle_mut(&self, fd: int) -> &mut FileHandle {
         self.lock();
         match unsafe { &mut *self.fd2handle[fd as usize].get() } {
-            FdHandleEntry::File(ref mut handle) => {
+            FdHandleEntry::File(handle) => {
                 self.unlock();
                 handle
             }
@@ -344,7 +344,7 @@ impl HandleTranslator {
         let name_slice = unsafe { core::slice::from_raw_parts(name.cast(), c_string_length(name)) };
 
         self.lock();
-        if let Some(ref v) = unsafe { &(*self.port_to_uds_translator.get()) } {
+        if let Some(v) = unsafe { &(*self.port_to_uds_translator.get()) } {
             result = v.contains(name_slice);
         }
         self.unlock();
@@ -356,7 +356,7 @@ impl HandleTranslator {
         let name_slice = unsafe { core::slice::from_raw_parts(name.cast(), c_string_length(name)) };
 
         self.lock();
-        if let Some(ref v) = unsafe { &(*self.port_to_uds_translator.get()) } {
+        if let Some(v) = unsafe { &(*self.port_to_uds_translator.get()) } {
             result = v.remove(name_slice);
         }
         self.unlock();
@@ -368,7 +368,7 @@ impl HandleTranslator {
         let path_slice = unsafe { core::slice::from_raw_parts(path.cast(), c_string_length(path)) };
 
         self.lock();
-        if let Some(ref v) = unsafe { &(*self.port_to_uds_translator.get()) } {
+        if let Some(v) = unsafe { &(*self.port_to_uds_translator.get()) } {
             result = v.list(path_slice);
         }
         self.unlock();

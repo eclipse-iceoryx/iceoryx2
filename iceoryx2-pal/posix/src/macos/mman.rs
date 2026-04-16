@@ -26,31 +26,33 @@ use super::settings::{MAX_PATH_LENGTH, SHM_STATE_DIRECTORY, SHM_STATE_SUFFIX};
 const SHM_MAX_NAME_LEN: usize = 33;
 
 pub unsafe fn mlock(addr: *const void, len: size_t) -> int {
-    crate::internal::mlock(addr, len)
+    unsafe { crate::internal::mlock(addr, len) }
 }
 
 pub unsafe fn munlock(addr: *const void, len: size_t) -> int {
-    crate::internal::munlock(addr, len)
+    unsafe { crate::internal::munlock(addr, len) }
 }
 
 pub unsafe fn mlockall(flags: int) -> int {
-    crate::internal::mlockall(flags)
+    unsafe { crate::internal::mlockall(flags) }
 }
 
 pub unsafe fn munlockall() -> int {
-    crate::internal::munlockall()
+    unsafe { crate::internal::munlockall() }
 }
 
 unsafe fn remove_leading_path_separator(value: *const c_char) -> *const c_char {
-    if *value as u8 == PATH_SEPARATOR {
-        value.add(1)
-    } else {
-        value
+    unsafe {
+        if *value as u8 == PATH_SEPARATOR {
+            value.add(1)
+        } else {
+            value
+        }
     }
 }
 
 unsafe fn shm_file_path(name: *const c_char, suffix: &[u8]) -> [u8; MAX_PATH_LENGTH] {
-    let name = remove_leading_path_separator(name);
+    let name = unsafe { remove_leading_path_separator(name) };
 
     let mut state_file_path = [0u8; MAX_PATH_LENGTH];
 
@@ -60,12 +62,14 @@ unsafe fn shm_file_path(name: *const c_char, suffix: &[u8]) -> [u8; MAX_PATH_LEN
     // name
     let mut name_len = 0;
     for i in 0..usize::MAX {
-        let c = *(name.add(i) as *const u8);
+        let c = unsafe { *(name.add(i) as *const u8) };
 
         state_file_path[i + SHM_STATE_DIRECTORY.len()] = if c == b'/' { b'\\' } else { c };
-        if *(name.add(i)) == 0i8 {
-            name_len = i;
-            break;
+        unsafe {
+            if *(name.add(i)) == 0i8 {
+                name_len = i;
+                break;
+            }
         }
     }
 
@@ -78,56 +82,60 @@ unsafe fn shm_file_path(name: *const c_char, suffix: &[u8]) -> [u8; MAX_PATH_LEN
 }
 
 unsafe fn get_real_shm_name(name: *const c_char) -> Option<[u8; SHM_MAX_NAME_LEN]> {
-    let shm_file_path = shm_file_path(name, SHM_STATE_SUFFIX);
-    let shm_state_fd = open_with_mode(shm_file_path.as_ptr().cast(), O_RDONLY, 0);
-    if shm_state_fd == -1 {
-        return None;
-    }
+    unsafe {
+        let shm_file_path = shm_file_path(name, SHM_STATE_SUFFIX);
+        let shm_state_fd = open_with_mode(shm_file_path.as_ptr().cast(), O_RDONLY, 0);
+        if shm_state_fd == -1 {
+            return None;
+        }
 
-    let mut buffer = [0u8; SHM_MAX_NAME_LEN];
+        let mut buffer = [0u8; SHM_MAX_NAME_LEN];
 
-    if read(
-        shm_state_fd,
-        buffer.as_mut_ptr().cast(),
-        SHM_MAX_NAME_LEN - 1,
-    ) <= 0
-    {
+        if read(
+            shm_state_fd,
+            buffer.as_mut_ptr().cast(),
+            SHM_MAX_NAME_LEN - 1,
+        ) <= 0
+        {
+            close(shm_state_fd);
+            return None;
+        }
+
         close(shm_state_fd);
-        return None;
+        Some(buffer)
     }
-
-    close(shm_state_fd);
-    Some(buffer)
 }
 
 unsafe fn write_real_shm_name(name: *const c_char, buffer: &[u8]) -> bool {
-    let shm_file_path = shm_file_path(name, SHM_STATE_SUFFIX);
-    let shm_state_fd = open_with_mode(
-        shm_file_path.as_ptr().cast(),
-        O_EXCL | O_CREAT | O_RDWR,
-        S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH,
-    );
+    unsafe {
+        let shm_file_path = shm_file_path(name, SHM_STATE_SUFFIX);
+        let shm_state_fd = open_with_mode(
+            shm_file_path.as_ptr().cast(),
+            O_EXCL | O_CREAT | O_RDWR,
+            S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH,
+        );
 
-    if shm_state_fd == -1 {
-        return false;
-    }
+        if shm_state_fd == -1 {
+            return false;
+        }
 
-    if write(shm_state_fd, buffer.as_ptr().cast(), buffer.len()) != buffer.len() as _ {
-        remove(shm_file_path.as_ptr().cast());
+        if write(shm_state_fd, buffer.as_ptr().cast(), buffer.len()) != buffer.len() as _ {
+            remove(shm_file_path.as_ptr().cast());
+            close(shm_state_fd);
+            return false;
+        }
+
         close(shm_state_fd);
-        return false;
+        true
     }
-
-    close(shm_state_fd);
-    true
 }
 
 unsafe fn generate_real_shm_name() -> [u8; SHM_MAX_NAME_LEN] {
     static COUNTER: AtomicU8 = AtomicU8::new(0);
 
     let mut now = timespec::new_zeroed();
-    clock_gettime(CLOCK_REALTIME, &mut now);
-    let pid = getpid();
+    unsafe { clock_gettime(CLOCK_REALTIME, &mut now) };
+    let pid = unsafe { getpid() };
     let shm_name = pid.to_string()
         + "_"
         + &now.tv_sec.to_string()
@@ -146,7 +154,7 @@ unsafe fn generate_real_shm_name() -> [u8; SHM_MAX_NAME_LEN] {
 }
 
 pub unsafe fn shm_open(name: *const c_char, oflag: int, _mode: mode_t) -> int {
-    let real_name = get_real_shm_name(name);
+    let real_name = unsafe { get_real_shm_name(name) };
     if oflag & O_EXCL != 0 && real_name.is_some() {
         Errno::set(Errno::EEXIST);
         return -1;
@@ -159,8 +167,8 @@ pub unsafe fn shm_open(name: *const c_char, oflag: int, _mode: mode_t) -> int {
                 Errno::set(Errno::ENOENT);
                 return -1;
             }
-            let real_name = generate_real_shm_name();
-            if !write_real_shm_name(name, &real_name) {
+            let real_name = unsafe { generate_real_shm_name() };
+            if unsafe { !write_real_shm_name(name, &real_name) } {
                 return -1;
             }
             real_name
@@ -171,16 +179,16 @@ pub unsafe fn shm_open(name: *const c_char, oflag: int, _mode: mode_t) -> int {
     //                  it so that the owner can access everything
     let mode = S_IRWXU;
     // TODO iox2-156, end
-    crate::internal::shm_open(real_name.as_ptr().cast(), oflag, mode as uint)
+    unsafe { crate::internal::shm_open(real_name.as_ptr().cast(), oflag, mode as uint) }
 }
 
 pub unsafe fn shm_unlink(name: *const c_char) -> int {
-    let real_name = get_real_shm_name(name);
+    let real_name = unsafe { get_real_shm_name(name) };
 
     if let Some(real_name) = real_name {
-        let ret_val = crate::internal::shm_unlink(real_name.as_ptr().cast());
+        let ret_val = unsafe { crate::internal::shm_unlink(real_name.as_ptr().cast()) };
         if ret_val == 0 || (ret_val == -1 && Errno::get() == Errno::ENOENT) {
-            remove(shm_file_path(name, SHM_STATE_SUFFIX).as_ptr().cast());
+            unsafe { remove(shm_file_path(name, SHM_STATE_SUFFIX).as_ptr().cast()) };
         }
         return ret_val;
     }
@@ -197,63 +205,65 @@ pub unsafe fn mmap(
     fd: int,
     off: off_t,
 ) -> *mut void {
-    crate::internal::mmap(addr, len, prot, flags, fd, off)
+    unsafe { crate::internal::mmap(addr, len, prot, flags, fd, off) }
 }
 
 pub unsafe fn munmap(addr: *mut void, len: size_t) -> int {
-    crate::internal::munmap(addr, len)
+    unsafe { crate::internal::munmap(addr, len) }
 }
 
 pub unsafe fn mprotect(addr: *mut void, len: size_t, prot: int) -> int {
-    crate::internal::mprotect(addr, len, prot)
+    unsafe { crate::internal::mprotect(addr, len, prot) }
 }
 
 unsafe fn trim_ascii(value: &[i8]) -> &[u8] {
     for i in 0..value.len() {
         if value[i] == 0 {
-            return core::slice::from_raw_parts(value.as_ptr().cast(), i);
+            return unsafe { core::slice::from_raw_parts(value.as_ptr().cast(), i) };
         }
     }
-    core::slice::from_raw_parts(value.as_ptr().cast(), value.len())
+    unsafe { core::slice::from_raw_parts(value.as_ptr().cast(), value.len()) }
 }
 
 pub unsafe fn shm_list() -> Vec<[i8; 256]> {
     let mut result = vec![];
     let mut search_path = SHM_STATE_DIRECTORY.to_vec();
     search_path.push(0);
-    let dir = opendir(search_path.as_ptr().cast());
+    unsafe {
+        let dir = opendir(search_path.as_ptr().cast());
 
-    if dir.is_null() {
-        return result;
-    }
-
-    loop {
-        let entry = crate::internal::readdir(dir);
-        if entry.is_null() {
-            break;
+        if dir.is_null() {
+            return result;
         }
 
-        if (*entry).d_type == crate::internal::DT_REG as _ {
-            let file_name = trim_ascii(&(*entry).d_name);
-            if file_name.ends_with(SHM_STATE_SUFFIX) {
-                let mut shm_name = [0i8; 256];
-                for (i, letter) in shm_name
-                    .iter_mut()
-                    .enumerate()
-                    .take(file_name.len() - SHM_STATE_SUFFIX.len())
-                {
-                    if (*entry).d_name[i] == 0 {
-                        break;
+        loop {
+            let entry = crate::internal::readdir(dir);
+            if entry.is_null() {
+                break;
+            }
+
+            if (*entry).d_type == crate::internal::DT_REG as _ {
+                let file_name = trim_ascii(&(*entry).d_name);
+                if file_name.ends_with(SHM_STATE_SUFFIX) {
+                    let mut shm_name = [0i8; 256];
+                    for (i, letter) in shm_name
+                        .iter_mut()
+                        .enumerate()
+                        .take(file_name.len() - SHM_STATE_SUFFIX.len())
+                    {
+                        if (*entry).d_name[i] == 0 {
+                            break;
+                        }
+
+                        *letter = (*entry).d_name[i];
                     }
 
-                    *letter = (*entry).d_name[i];
+                    result.push(shm_name);
                 }
-
-                result.push(shm_name);
             }
         }
-    }
 
-    closedir(dir);
-    result
+        closedir(dir);
+        result
+    }
 }

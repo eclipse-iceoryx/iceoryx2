@@ -15,8 +15,8 @@ use windows_sys::Win32::{
     Foundation::{CloseHandle, ERROR_ALREADY_EXISTS, HANDLE},
     Security::SECURITY_ATTRIBUTES,
     System::Memory::{
-        CreateFileMappingA, MapViewOfFile, UnmapViewOfFile, VirtualAlloc, FILE_MAP_ALL_ACCESS,
-        MEM_COMMIT, PAGE_READWRITE, SEC_RESERVE,
+        CreateFileMappingA, FILE_MAP_ALL_ACCESS, MEM_COMMIT, MapViewOfFile, PAGE_READWRITE,
+        SEC_RESERVE, UnmapViewOfFile, VirtualAlloc,
     },
 };
 
@@ -286,8 +286,8 @@ impl PortToUds {
         let path_len = unsafe { c_string_length(path.as_ptr().cast()) };
 
         let mut result = vec![];
-
-        for value in unsafe { &(*self.map).uds_names.list() } {
+        let uds_names_list = unsafe { &(*self.map).uds_names.list() };
+        for value in uds_names_list {
             let value_len = unsafe { c_string_length(value.as_ptr().cast()) };
             if value_len == 0 || value_len <= path_len {
                 continue;

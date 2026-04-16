@@ -16,5 +16,5 @@
 use crate::posix::types::*;
 
 pub unsafe fn remove(pathname: *const c_char) -> int {
-    libc::remove(pathname)
+    unsafe { libc::remove(pathname) }
 }

@@ -17,7 +17,7 @@ use iceoryx2_log::fail;
 
 use crate::constants::MAX_NODE_NAME_LENGTH;
 
-use serde::{de::Visitor, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::Visitor};
 
 type NodeNameString = StaticString<MAX_NODE_NAME_LENGTH>;
 

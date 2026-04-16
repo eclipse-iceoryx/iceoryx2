@@ -16,13 +16,13 @@
 use crate::posix::types::*;
 
 pub unsafe fn memset(s: *mut void, c: int, n: size_t) -> *mut void {
-    crate::internal::memset(s, c, n as _)
+    unsafe { crate::internal::memset(s, c, n as _) }
 }
 
 pub unsafe fn memcpy(dest: *mut void, src: *const void, n: size_t) -> *mut void {
-    crate::internal::memcpy(dest, src, n as _)
+    unsafe { crate::internal::memcpy(dest, src, n as _) }
 }
 
 pub unsafe fn strncpy(dest: *mut c_char, src: *const c_char, n: size_t) -> *mut c_char {
-    crate::internal::strncpy(dest, src, n as _)
+    unsafe { crate::internal::strncpy(dest, src, n as _) }
 }

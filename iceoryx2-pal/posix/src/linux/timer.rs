@@ -20,11 +20,11 @@ pub unsafe fn timer_create(
     sevp: *mut sigevent,
     timer_id: *mut timer_t,
 ) -> int {
-    libc::timer_create(clock_id, sevp, timer_id)
+    unsafe { libc::timer_create(clock_id, sevp, timer_id) }
 }
 
 pub unsafe fn timer_delete(timer_id: timer_t) -> int {
-    libc::timer_delete(timer_id)
+    unsafe { libc::timer_delete(timer_id) }
 }
 
 pub unsafe fn timer_settime(
@@ -33,9 +33,9 @@ pub unsafe fn timer_settime(
     new_value: *const itimerspec,
     old_value: *mut itimerspec,
 ) -> int {
-    libc::timer_settime(timer_id, flags, new_value, old_value)
+    unsafe { libc::timer_settime(timer_id, flags, new_value, old_value) }
 }
 
 pub unsafe fn timer_gettime(timer_id: timer_t, current_value: *mut itimerspec) -> int {
-    libc::timer_gettime(timer_id, current_value)
+    unsafe { libc::timer_gettime(timer_id, current_value) }
 }

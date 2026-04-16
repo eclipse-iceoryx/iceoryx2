@@ -87,6 +87,7 @@ pub(crate) mod internal {
     #![allow(improper_ctypes)]
     #![allow(unknown_lints)]
     #![allow(unnecessary_transmutes)]
+    #![allow(unsafe_op_in_unsafe_fn)]
     #![allow(clippy::all)]
     #[cfg(not(bazel_build))]
     include!(concat!(env!("OUT_DIR"), "/posix_generated.rs"));

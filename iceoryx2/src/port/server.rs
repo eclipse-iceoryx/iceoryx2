@@ -75,19 +75,18 @@
 
 use crate::port::update_connections::UpdateConnections;
 use crate::prelude::UnableToDeliverStrategy;
+use crate::service::NoResource;
 use crate::service::builder::CustomPayloadMarker;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::server::LocalServerConfig;
-use crate::service::NoResource;
 use crate::{
     active_request::ActiveRequest,
     prelude::PortFactory,
     raw_sample::RawSample,
     service::{
-        self,
+        self, ServiceState,
         dynamic_config::request_response::{ClientDetails, ServerDetails},
         port_factory::server::{PortFactoryServer, ServerCreateError},
-        ServiceState,
     },
 };
 use alloc::sync::Arc;
@@ -97,20 +96,21 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
-use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
+use iceoryx2_bb_elementary::{CallbackProgression, cyclic_tagger::CyclicTagger};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
-use iceoryx2_cal::zero_copy_connection::{ChannelId, CHANNEL_STATE_CLOSED, CHANNEL_STATE_OPEN};
+use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_CLOSED, CHANNEL_STATE_OPEN, ChannelId};
 use iceoryx2_log::{fail, warn};
 
 use super::details::data_segment::DataSegment;
 use super::details::segment_state::SegmentState;
 use super::details::sender::{ReceiverDetails, Sender};
 use super::{
+    ReceiveError,
     details::{
         chunk::Chunk,
         chunk_details::ChunkDetails,
@@ -118,7 +118,6 @@ use super::{
         receiver::{Receiver, SenderDetails},
     },
     update_connections::ConnectionFailure,
-    ReceiveError,
 };
 use crate::identifiers::UniqueServerId;
 
@@ -232,36 +231,36 @@ pub struct Server<
 }
 
 unsafe impl<
-        Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Send for Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Send for Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 where
     Service::ArcThreadSafetyPolicy<SharedServerState<Service>>: Send + Sync,
 {
 }
 
 unsafe impl<
-        Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Sync for Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Sync for Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 where
     Service::ArcThreadSafetyPolicy<SharedServerState<Service>>: Send + Sync,
 {
 }
 
 impl<
-        Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > UpdateConnections
+    Service: service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> UpdateConnections
     for Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
@@ -270,12 +269,12 @@ impl<
 }
 
 impl<
-        Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     pub(crate) fn new(
         server_factory: PortFactoryServer<
@@ -522,12 +521,12 @@ impl<
 }
 
 impl<
-        Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    Service: service::Service,
+    RequestPayload: Debug + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn create_active_request(
         &self,
@@ -630,12 +629,12 @@ impl<
 }
 
 impl<
-        Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Server<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+    Service: service::Service,
+    RequestPayload: Debug + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Server<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn create_active_request(
         &self,
@@ -747,12 +746,12 @@ impl<
 }
 
 impl<
-        Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend + ?Sized,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Server<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
+    Service: service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+> Server<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
 {
     /// Returns the maximum initial slice length configured for this [`Server`].
     pub fn initial_max_slice_len(&self) -> usize {
@@ -761,11 +760,11 @@ impl<
 }
 
 impl<
-        Service: service::Service,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Server<Service, [CustomPayloadMarker], RequestHeader, ResponsePayload, ResponseHeader>
+    Service: service::Service,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Server<Service, [CustomPayloadMarker], RequestHeader, ResponsePayload, ResponseHeader>
 {
     #[doc(hidden)]
     #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity

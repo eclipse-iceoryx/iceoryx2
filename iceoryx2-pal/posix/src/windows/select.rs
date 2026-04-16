@@ -38,7 +38,7 @@ pub unsafe fn select(
             tv_usec: 0,
         }
     } else {
-        *timeout
+        unsafe { *timeout }
     };
 
     let mut remaining_time =
@@ -48,21 +48,23 @@ pub unsafe fn select(
     let readfds_copy = if readfds.is_null() {
         fd_set::new_zeroed()
     } else {
-        *readfds
+        unsafe { *readfds }
     };
     let writefds_copy = if writefds.is_null() {
         fd_set::new_zeroed()
     } else {
-        *writefds
+        unsafe { *writefds }
     };
     let errorfds_copy = if errorfds.is_null() {
         fd_set::new_zeroed()
     } else {
-        *errorfds
+        unsafe { *errorfds }
     };
 
     loop {
-        let (num_handles, _) = win32call! { winsock windows_sys::Win32::Networking::WinSock::select(nfds, readfds, writefds, errorfds, &timeout) };
+        let (num_handles, _) = unsafe {
+            win32call! { winsock windows_sys::Win32::Networking::WinSock::select(nfds, readfds, writefds, errorfds, &timeout) }
+        };
         if num_handles > 0 {
             return num_handles;
         }
@@ -76,15 +78,15 @@ pub unsafe fn select(
             timeout.tv_usec = remaining_time.subsec_micros() as _;
 
             if !readfds.is_null() {
-                *readfds = readfds_copy;
+                unsafe { *readfds = readfds_copy };
             }
 
             if !writefds.is_null() {
-                *writefds = writefds_copy;
+                unsafe { *writefds = writefds_copy };
             }
 
             if !errorfds.is_null() {
-                *errorfds = errorfds_copy;
+                unsafe { *errorfds = errorfds_copy };
             }
         }
     }
@@ -103,31 +105,35 @@ pub fn CMSG_SPACE_NON_CONST(length: uint) -> uint {
 }
 
 pub unsafe fn CMSG_FIRSTHDR(mhdr: *const msghdr) -> *mut cmsghdr {
-    match ((*mhdr).msg_controllen as usize) < core::mem::size_of::<cmsghdr>() {
-        true => core::ptr::null_mut::<cmsghdr>(),
-        false => (*mhdr).msg_control as *mut cmsghdr,
+    unsafe {
+        match ((*mhdr).msg_controllen as usize) < core::mem::size_of::<cmsghdr>() {
+            true => core::ptr::null_mut::<cmsghdr>(),
+            false => (*mhdr).msg_control as *mut cmsghdr,
+        }
     }
 }
 
 pub unsafe fn CMSG_NXTHDR(header: *const msghdr, sub_header: *const cmsghdr) -> *mut cmsghdr {
-    // no header contained
-    if (*sub_header).cmsg_len < core::mem::size_of::<cmsghdr>() {
-        return core::ptr::null_mut::<cmsghdr>();
-    };
+    unsafe {
+        // no header contained
+        if (*sub_header).cmsg_len < core::mem::size_of::<cmsghdr>() {
+            return core::ptr::null_mut::<cmsghdr>();
+        };
 
-    let next_sub_header =
-        (sub_header as usize + CMSG_ALIGN((*sub_header).cmsg_len)) as *mut cmsghdr;
-    let end_of_message = (*header).msg_control as usize + (*header).msg_controllen as usize;
+        let next_sub_header =
+            (sub_header as usize + CMSG_ALIGN((*sub_header).cmsg_len)) as *mut cmsghdr;
+        let end_of_message = (*header).msg_control as usize + (*header).msg_controllen as usize;
 
-    if (next_sub_header.offset(1)) as usize > end_of_message {
-        return core::ptr::null_mut::<cmsghdr>();
+        if (next_sub_header.offset(1)) as usize > end_of_message {
+            return core::ptr::null_mut::<cmsghdr>();
+        }
+
+        if next_sub_header as usize + CMSG_ALIGN((*next_sub_header).cmsg_len) > end_of_message {
+            return core::ptr::null_mut::<cmsghdr>();
+        }
+
+        next_sub_header
     }
-
-    if next_sub_header as usize + CMSG_ALIGN((*next_sub_header).cmsg_len) > end_of_message {
-        return core::ptr::null_mut::<cmsghdr>();
-    }
-
-    next_sub_header
 }
 
 pub const unsafe fn CMSG_LEN(length: uint) -> uint {
@@ -135,7 +141,7 @@ pub const unsafe fn CMSG_LEN(length: uint) -> uint {
 }
 
 pub unsafe fn CMSG_DATA(cmsg: *const cmsghdr) -> *mut uchar {
-    cmsg.offset(1) as *mut uchar
+    unsafe { cmsg.offset(1) as *mut uchar }
 }
 
 pub unsafe fn FD_CLR(fd: int, set: *mut fd_set) {
@@ -144,16 +150,17 @@ pub unsafe fn FD_CLR(fd: int, set: *mut fd_set) {
         Some(FdHandleEntry::UdsDatagramSocket(s)) => s.fd,
         Some(_) | None => return,
     };
-
-    for i in 0..(*set).fd_count {
-        if (*set).fd_array[i as usize] == socket {
-            if i < (*set).fd_count - 1 {
-                (*set).fd_array[i as usize] = (*set).fd_array[(*set).fd_count as usize - 1];
-            } else {
-                (*set).fd_array[i as usize] = 0;
+    unsafe {
+        for i in 0..(*set).fd_count {
+            if (*set).fd_array[i as usize] == socket {
+                if i < (*set).fd_count - 1 {
+                    (*set).fd_array[i as usize] = (*set).fd_array[(*set).fd_count as usize - 1];
+                } else {
+                    (*set).fd_array[i as usize] = 0;
+                }
+                (*set).fd_count -= 1;
+                return;
             }
-            (*set).fd_count -= 1;
-            return;
         }
     }
 }
@@ -164,18 +171,18 @@ pub unsafe fn FD_ISSET(fd: int, set: *const fd_set) -> bool {
         Some(FdHandleEntry::UdsDatagramSocket(s)) => s.fd,
         Some(_) | None => return false,
     };
-
-    for i in 0..(*set).fd_count {
-        if (*set).fd_array[i as usize] == socket {
-            return true;
+    unsafe {
+        for i in 0..(*set).fd_count {
+            if (*set).fd_array[i as usize] == socket {
+                return true;
+            }
         }
     }
-
     false
 }
 
 pub unsafe fn FD_SET(fd: int, set: *mut fd_set) {
-    if FD_ISSET(fd, set) {
+    if unsafe { FD_ISSET(fd, set) } {
         return;
     }
 
@@ -184,16 +191,19 @@ pub unsafe fn FD_SET(fd: int, set: *mut fd_set) {
         Some(FdHandleEntry::UdsDatagramSocket(s)) => s.fd,
         Some(_) | None => return,
     };
+    unsafe {
+        if (*set).fd_count as usize >= (*set).fd_array.len() {
+            return;
+        }
 
-    if (*set).fd_count as usize >= (*set).fd_array.len() {
-        return;
+        (*set).fd_array[(*set).fd_count as usize] = socket;
+        (*set).fd_count += 1;
     }
-
-    (*set).fd_array[(*set).fd_count as usize] = socket;
-    (*set).fd_count += 1;
 }
 
 pub unsafe fn FD_ZERO(set: *mut fd_set) {
-    (*set).fd_count = 0;
-    (*set).fd_array = [0; 64];
+    unsafe {
+        (*set).fd_count = 0;
+        (*set).fd_array = [0; 64];
+    }
 }

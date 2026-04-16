@@ -16,27 +16,27 @@
 use crate::{common::scandir::scandir_impl, posix::types::*};
 
 pub unsafe fn scandir(path: *const c_char, namelist: *mut *mut *mut dirent) -> int {
-    scandir_impl(path, namelist)
+    unsafe { scandir_impl(path, namelist) }
 }
 
 pub unsafe fn mkdir(pathname: *const c_char, mode: mode_t) -> int {
-    crate::internal::mkdir(pathname, mode)
+    unsafe { crate::internal::mkdir(pathname, mode) }
 }
 
 pub unsafe fn opendir(dirname: *const c_char) -> *mut DIR {
-    crate::internal::opendir(dirname)
+    unsafe { crate::internal::opendir(dirname) }
 }
 
 pub unsafe fn closedir(dirp: *mut DIR) -> int {
-    crate::internal::closedir(dirp)
+    unsafe { crate::internal::closedir(dirp) }
 }
 
 pub unsafe fn dirfd(dirp: *mut DIR) -> int {
-    crate::internal::dirfd(dirp)
+    unsafe { crate::internal::dirfd(dirp) }
 }
 
 pub unsafe fn readdir_r(dirp: *mut DIR, entry: *mut dirent, result: *mut *mut dirent) -> int {
-    crate::internal::readdir_r(dirp, entry, result)
+    unsafe { crate::internal::readdir_r(dirp, entry, result) }
 }
 
 pub fn dirent_size() -> usize {

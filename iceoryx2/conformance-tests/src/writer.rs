@@ -20,10 +20,10 @@ pub mod writer {
     use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
     use iceoryx2::port::writer::*;
     use iceoryx2::prelude::*;
-    use iceoryx2::service::builder::blackboard::KeyMemory;
-    use iceoryx2::service::builder::CustomKeyMarker;
-    use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
+    use iceoryx2::service::builder::CustomKeyMarker;
+    use iceoryx2::service::builder::blackboard::KeyMemory;
+    use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::testing::generate_service_name;
     use iceoryx2::testing::*;
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
