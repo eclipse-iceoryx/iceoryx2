@@ -17,38 +17,40 @@ use crate::common::mem_zeroed_struct::MemZeroedStruct;
 use crate::posix::types::*;
 
 pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) -> int {
-    internal::open_with_mode(pathname, flags, mode)
+    unsafe { internal::open_with_mode(pathname, flags, mode) }
 }
 
 pub unsafe fn fstat(fd: int, buf: *mut stat_t) -> int {
-    let mut os_specific_buffer = native_stat_t::new_zeroed();
-    match internal::fstat(fd, &mut os_specific_buffer) {
-        0 => {
-            *buf = os_specific_buffer.into();
-            0
+    unsafe {
+        let mut os_specific_buffer = native_stat_t::new_zeroed();
+        match internal::fstat(fd, &mut os_specific_buffer) {
+            0 => {
+                *buf = os_specific_buffer.into();
+                0
+            }
+            v => v,
         }
-        v => v,
     }
 }
 
 pub unsafe fn fcntl_int(fd: int, cmd: int, arg: int) -> int {
-    crate::internal::fcntl(fd, cmd, arg)
+    unsafe { crate::internal::fcntl(fd, cmd, arg) }
 }
 
 pub unsafe fn fcntl(fd: int, cmd: int, arg: *mut flock) -> int {
-    crate::internal::fcntl(fd, cmd, arg)
+    unsafe { crate::internal::fcntl(fd, cmd, arg) }
 }
 
 pub unsafe fn fcntl2(fd: int, cmd: int) -> int {
-    crate::internal::fcntl(fd, cmd)
+    unsafe { crate::internal::fcntl(fd, cmd) }
 }
 
 pub unsafe fn fchmod(fd: int, mode: mode_t) -> int {
-    internal::fchmod(fd, mode)
+    unsafe { internal::fchmod(fd, mode) }
 }
 
 pub unsafe fn open(pathname: *const c_char, flags: int) -> int {
-    internal::open(pathname, flags)
+    unsafe { internal::open(pathname, flags) }
 }
 
 mod internal {
@@ -61,16 +63,16 @@ mod internal {
         use crate::posix::types::native_stat_t;
 
         let mut buffer = native_stat_t::new_zeroed();
-        if fstat(fd, &mut buffer) != 0 {
-            return -1;
+        unsafe {
+            if fstat(fd, &mut buffer) != 0 {
+                return -1;
+            }
         }
-
         // Stub for directories, returns ENOSYS on QNX 8
         if (buffer.st_mode & S_IFMT) == S_IFDIR {
             return 0;
         }
-
-        crate::internal::fchmod(fd, mode)
+        unsafe { crate::internal::fchmod(fd, mode) }
     }
 
     #[cfg(target_env = "nto71")]
@@ -95,16 +97,16 @@ mod internal {
 
     #[cfg(target_pointer_width = "64")]
     pub unsafe fn open(path: *const c_char, oflag: int) -> int {
-        crate::internal::open64(path, oflag)
+        unsafe { crate::internal::open64(path, oflag) }
     }
 
     #[cfg(target_pointer_width = "64")]
     pub unsafe fn open_with_mode(path: *const c_char, oflag: int, mode: mode_t) -> int {
-        crate::internal::open64(path, oflag, mode)
+        unsafe { crate::internal::open64(path, oflag, mode) }
     }
 
     #[cfg(target_pointer_width = "64")]
     pub unsafe fn fstat(fd: int, buf: &mut native_stat_t) -> int {
-        crate::internal::fstat64(fd, buf)
+        unsafe { crate::internal::fstat64(fd, buf) }
     }
 }
