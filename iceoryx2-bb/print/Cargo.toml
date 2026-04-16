@@ -2,7 +2,7 @@
 name = "iceoryx2-bb-print"
 description = "iceoryx2: [internal] abstraction over character printing"
 categories = { workspace = true }
-edition = "2024"
+edition = { workspace = true }
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }

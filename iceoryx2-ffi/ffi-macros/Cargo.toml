@@ -2,7 +2,7 @@
 name = "iceoryx2-ffi-macros"
 description = "iceoryx2: [internal] helper proc-macros for ffi"
 categories = { workspace = true }
-edition = "2024"
+edition = { workspace = true }
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }

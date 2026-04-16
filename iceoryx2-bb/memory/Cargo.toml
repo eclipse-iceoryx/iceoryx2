@@ -2,7 +2,7 @@
 name = "iceoryx2-bb-memory"
 description = "iceoryx2: [internal] allocators and tools for memory management"
 categories = { workspace = true }
-edition = "2024"
+edition = { workspace = true }
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }

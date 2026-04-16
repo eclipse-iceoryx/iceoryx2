@@ -2,7 +2,7 @@
 name = "iceoryx2-log"
 description = "iceoryx2: logger front-end"
 categories = { workspace = true }
-edition = "2024"
+edition = { workspace = true }
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }

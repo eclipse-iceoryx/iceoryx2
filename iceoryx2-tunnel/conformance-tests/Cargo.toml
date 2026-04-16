@@ -2,7 +2,7 @@
 name = "iceoryx2-tunnel-conformance-tests"
 description = "iceoryx2: Conformance tests for iceoryx2-tunnel"
 categories = { workspace = true }
-edition = "2024"
+edition = { workspace = true }
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }

@@ -94,7 +94,7 @@ members = [
 [workspace.package]
 categories = ["network-programming"]
 description = "iceoryx2: Lock-Free Zero-Copy Interprocess Communication"
-edition = "2021"
+edition = "2024"
 homepage = "https://iceoryx.io"
 keywords = [
     "zero-copy",

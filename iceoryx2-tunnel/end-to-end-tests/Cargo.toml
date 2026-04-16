@@ -2,7 +2,7 @@
 name = "iceoryx2-tunnel-end-to-end-tests"
 description = "iceoryx2: [internal] binaries for tunnel end-to-end tests"
 categories = { workspace = true }
-edition = "2024"
+edition = { workspace = true }
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }

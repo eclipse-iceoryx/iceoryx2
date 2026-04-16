@@ -2,7 +2,7 @@
 name = "iceoryx2-cal"
 description = "iceoryx2: [internal] high-level traits and implementations that represents OS primitives in an exchangeable fashion"
 categories = { workspace = true }
-edition = "2024"
+edition = { workspace = true }
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }

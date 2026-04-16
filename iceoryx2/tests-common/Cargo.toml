@@ -2,7 +2,7 @@
 name = "iceoryx2-tests-common"
 description = "iceoryx2: [internal] common test definitions for iceoryx2"
 categories = { workspace = true }
-edition = "2024"
+edition = { workspace = true }
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }

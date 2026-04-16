@@ -2,7 +2,7 @@
 name = "iceoryx2-bb-testing-macros"
 description = "iceoryx2: [internal] proc macros for testing"
 categories = { workspace = true }
-edition = "2024"
+edition = { workspace = true }
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }
