@@ -188,7 +188,7 @@ iceoryx2-tests-nostd = { path = "iceoryx2/tests-nostd" }
 ################################################################################
 
 anyhow = { version = "1.0.86" }
-bindgen = { version = "0.72.0" }
+bindgen = { version = "0.72.1" }
 cargo_metadata = { version = "0.18.1" }
 cbindgen = { version = "0.29.0" }
 cc = { version = "1.0.98" }

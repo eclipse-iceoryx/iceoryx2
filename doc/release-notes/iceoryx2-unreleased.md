@@ -116,6 +116,8 @@
   [#1515](https://github.com/eclipse-iceoryx/iceoryx2/issues/1515)
 * Bump pytest from 8.4.1 to 9.0.3 in /iceoryx2-ffi/python
   [#1515](https://github.com/eclipse-iceoryx/iceoryx2/issues/1515)
+* Fix build error in `iceoryx2-pal-posix` with bindgen
+  [#1560](https://github.com/eclipse-iceoryx/iceoryx2/issues/1560)
 
 ### Refactoring
 
