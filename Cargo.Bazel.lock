@@ -1,5 +1,5 @@
 {
-  "checksum": "1f18727c3f8ecf050afd0142dc50b34b167d394455aa31bfef183aad5f47632e",
+  "checksum": "866c6e9f9c17096ad45a69395ccddedbc7a07559de22de8af3e4b2b25d853e8d",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -1520,14 +1520,14 @@
       ],
       "license_file": "LICENSE"
     },
-    "bindgen 0.72.0": {
+    "bindgen 0.72.1": {
       "name": "bindgen",
-      "version": "0.72.0",
+      "version": "0.72.1",
       "package_url": "https://github.com/rust-lang/rust-bindgen",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/bindgen/0.72.0/download",
-          "sha256": "4f72209734318d0b619a5e0f5129918b848c416e122a3c4ce054e03cb87b726f"
+          "url": "https://static.crates.io/crates/bindgen/0.72.1/download",
+          "sha256": "993776b509cfb49c750f11b8f07a46fa23e0a1386ffc01fb1e7d343efc387895"
         }
       },
       "targets": [
@@ -1573,7 +1573,7 @@
         "deps": {
           "common": [
             {
-              "id": "bindgen 0.72.0",
+              "id": "bindgen 0.72.1",
               "target": "build_script_build"
             },
             {
@@ -1628,7 +1628,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.72.0"
+        "version": "0.72.1"
       },
       "build_script_attrs": {
         "compile_data_glob": [
@@ -10698,7 +10698,7 @@
         "deps": {
           "common": [
             {
-              "id": "bindgen 0.72.0",
+              "id": "bindgen 0.72.1",
               "target": "bindgen"
             },
             {
@@ -19670,7 +19670,7 @@
             ],
             "cfg(windows)": [
               {
-                "id": "windows-sys 0.60.2",
+                "id": "windows-sys 0.61.2",
                 "target": "windows_sys"
               }
             ]
@@ -27405,7 +27405,7 @@
           "selects": {
             "cfg(windows)": [
               {
-                "id": "windows-sys 0.48.0",
+                "id": "windows-sys 0.59.0",
                 "target": "windows_sys"
               }
             ]
@@ -28377,8 +28377,6 @@
             "Win32_Foundation",
             "Win32_Networking",
             "Win32_Networking_WinSock",
-            "Win32_Security",
-            "Win32_Security_Cryptography",
             "Win32_System",
             "Win32_System_IO",
             "Win32_System_Threading",
@@ -28442,6 +28440,7 @@
             "Win32_Networking",
             "Win32_Networking_WinSock",
             "Win32_Security",
+            "Win32_Security_Cryptography",
             "Win32_Storage",
             "Win32_Storage_FileSystem",
             "Win32_System",
@@ -34948,7 +34947,7 @@
   "direct_deps": [
     "anyhow 1.0.100",
     "better-panic 0.3.0",
-    "bindgen 0.72.0",
+    "bindgen 0.72.1",
     "cargo_metadata 0.18.1",
     "cbindgen 0.29.2",
     "cc 1.2.21",
