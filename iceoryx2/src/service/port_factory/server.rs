@@ -78,17 +78,17 @@ impl core::fmt::Display for ServerCreateError {
 impl core::error::Error for ServerCreateError {}
 
 tiny_fn! {
-    /// A user provided callback to reduce the number of preallocated [`ResponseMut`]s.
-    /// The input argument is the worst case number of preallocated [`ResponseMut`]s required
-    /// to guarantee that the [`Server`]/[`ActiveRequest`] never runs out of [`ResponseMut`]s to loan
+    /// A user provided callback to reduce the number of preallocated [`ResponseMut`](crate::response_mut::ResponseMut)s.
+    /// The input argument is the worst case number of preallocated [`ResponseMut`](crate::response_mut::ResponseMut)s required
+    /// to guarantee that the [`Server`]/[`ActiveRequest`](crate::active_request::ActiveRequest) never runs out of [`ResponseMut`](crate::response_mut::ResponseMut)s to loan
     /// and send.
     /// The return value is clamped between `1` and the worst case number of
-    /// preallocated [`ResponseMut`]s.
+    /// preallocated [`ResponseMut`](crate::response_mut::ResponseMut)s.
     ///
     /// # Important
     ///
-    /// If the user reduces the number of preallocated [`RequestMut`]s, iceoryx2 can
-    /// no longer guarantee, that the [`Client`] can always loan a [`RequestMut`]
+    /// If the user reduces the number of preallocated [`ResponseMut`](crate::response_mut::ResponseMut)s, iceoryx2 can
+    /// no longer guarantee, that the [`Client`] can always loan a [`ResponseMut`](crate::response_mut::ResponseMut)
     /// to send.
     pub struct PreallocatedResponseOverride = Fn(number_of_preallocated_responses: usize) -> usize;
 }
@@ -206,17 +206,17 @@ impl<
         }
     }
 
-    /// A user provided callback to reduce the number of preallocated [`ResponseMut`]s.
-    /// The input argument is the worst case number of preallocated [`ResponseMut`]s required
-    /// to guarantee that the [`Server`]/[`ActiveRequest`] never runs out of [`ResponseMut`]s to loan
+    /// A user provided callback to reduce the number of preallocated [`ResponseMut`](crate::response_mut::ResponseMut)s.
+    /// The input argument is the worst case number of preallocated [`ResponseMut`](crate::response_mut::ResponseMut)s required
+    /// to guarantee that the [`Server`]/[`ActiveRequest`](crate::active_request::ActiveRequest) never runs out of [`ResponseMut`](crate::response_mut::ResponseMut)s to loan
     /// and send.
     /// The return value is clamped between `1` and the worst case number of
-    /// preallocated [`ResponseMut`]s.
+    /// preallocated [`ResponseMut`](crate::response_mut::ResponseMut)s.
     ///
     /// # Important
     ///
-    /// If the user reduces the number of preallocated [`RequestMut`]s, iceoryx2 can
-    /// no longer guarantee, that the [`Client`] can always loan a [`RequestMut`]
+    /// If the user reduces the number of preallocated [`ResponseMut`](crate::response_mut::ResponseMut)s, iceoryx2 can
+    /// no longer guarantee, that the [`Server`] can always loan a [`ResponseMut`](crate::response_mut::ResponseMut)
     /// to send.
     pub fn override_response_preallocation<F: Fn(usize) -> usize + Send + 'static>(
         mut self,

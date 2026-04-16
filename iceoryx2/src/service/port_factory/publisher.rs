@@ -72,17 +72,17 @@ use tiny_fn::tiny_fn;
 use super::publish_subscribe::PortFactory;
 
 tiny_fn! {
-    /// A user provided callback to reduce the number of preallocated [`SampleMut`]s.
-    /// The input argument is the worst case number of preallocated [`SampleMut`]s required
-    /// to guarantee that the [`Publisher`] never runs out of [`SampleMut`]s to loan
+    /// A user provided callback to reduce the number of preallocated [`SampleMut`](crate::sample_mut::SampleMut)s.
+    /// The input argument is the worst case number of preallocated [`SampleMut`](crate::sample_mut::SampleMut)s required
+    /// to guarantee that the [`Publisher`] never runs out of [`SampleMut`](crate::sample_mut::SampleMut)s to loan
     /// and send.
     /// The return value is clamped between `1` and the worst case number of
-    /// preallocated [`SampleMut`]s.
+    /// preallocated [`SampleMut`](crate::sample_mut::SampleMut)s.
     ///
     /// # Important
     ///
-    /// If the user reduces the number of preallocated [`SampleMut`]s, iceoryx2 can
-    /// no longer guarantee, that the [`Publisher`] can always loan a [`Sample`]
+    /// If the user reduces the number of preallocated [`SampleMut`](crate::sample_mut::SampleMut)s, iceoryx2 can
+    /// no longer guarantee, that the [`Publisher`] can always loan a [`SampleMut`](crate::sample_mut::SampleMut)
     /// to send.
     pub struct PreallocatedSamplesOverride = Fn(number_of_preallocated_samples: usize) -> usize;
 }
@@ -180,17 +180,17 @@ impl<
         }
     }
 
-    /// Defines a callback to reduce the number of preallocated [`SampleMut`]s.
-    /// The input argument is the worst case number of preallocated [`SampleMut`]s required
-    /// to guarantee that the [`Publisher`] never runs out of [`SampleMut`]s to loan
+    /// Defines a callback to reduce the number of preallocated [`SampleMut`](crate::sample_mut::SampleMut).
+    /// The input argument is the worst case number of preallocated [`SampleMut`](crate::sample_mut::SampleMut)s required
+    /// to guarantee that the [`Publisher`] never runs out of [`SampleMut`](crate::sample_mut::SampleMut)s to loan
     /// and send.
     /// The return value is clamped between `1` and the worst case number of
-    /// preallocated [`SampleMut`]s.
+    /// preallocated [`SampleMut`](crate::sample_mut::SampleMut)s.
     ///
     /// # Important
     ///
-    /// If the user reduces the number of preallocated [`SampleMut`]s, iceoryx2 can
-    /// no longer guarantee, that the [`Publisher`] can always loan a [`SampleMut`]
+    /// If the user reduces the number of preallocated [`SampleMut`](crate::sample_mut::SampleMut)s, iceoryx2 can
+    /// no longer guarantee, that the [`Publisher`] can always loan a [`SampleMut`](crate::sample_mut::SampleMut)
     /// to send.
     pub fn override_sample_preallocation<F: Fn(usize) -> usize + Send + 'static>(
         mut self,

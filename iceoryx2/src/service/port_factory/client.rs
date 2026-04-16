@@ -68,17 +68,17 @@ impl core::fmt::Display for ClientCreateError {
 impl core::error::Error for ClientCreateError {}
 
 tiny_fn! {
-    /// A user provided callback to reduce the number of preallocated [`RequestMut`]s.
-    /// The input argument is the worst case number of preallocated [`RequestMut`]s required
-    /// to guarantee that the [`Client`] never runs out of [`RequestMut`]s to loan
+    /// A user provided callback to reduce the number of preallocated [`RequestMut`](crate::request_mut::RequestMut)s.
+    /// The input argument is the worst case number of preallocated [`RequestMut`](crate::request_mut::RequestMut)s required
+    /// to guarantee that the [`Client`] never runs out of [`RequestMut`](crate::request_mut::RequestMut)s to loan
     /// and send.
     /// The return value is clamped between `1` and the worst case number of
-    /// preallocated [`RequestMut`]s.
+    /// preallocated [`RequestMut`](crate::request_mut::RequestMut)s.
     ///
     /// # Important
     ///
-    /// If the user reduces the number of preallocated [`RequestMut`]s, iceoryx2 can
-    /// no longer guarantee, that the [`Client`] can always loan a [`RequestMut`]
+    /// If the user reduces the number of preallocated [`RequestMut`](crate::request_mut::RequestMut)s, iceoryx2 can
+    /// no longer guarantee, that the [`Client`] can always loan a [`RequestMut`](crate::request_mut::RequestMut)
     /// to send.
     pub struct PreallocatedRequestsOverride = Fn(number_of_preallocated_requests: usize) -> usize;
 }
@@ -201,17 +201,17 @@ impl<
         }
     }
 
-    /// Defines a callback to reduce the number of preallocated [`RequestMut`]s.
-    /// The input argument is the worst case number of preallocated [`RequestMut`]s required
-    /// to guarantee that the [`Client`] never runs out of [`RequestMut`]s to loan
+    /// Defines a callback to reduce the number of preallocated [`RequestMut`](crate::request_mut::RequestMut)s.
+    /// The input argument is the worst case number of preallocated [`RequestMut`](crate::request_mut::RequestMut)s required
+    /// to guarantee that the [`Client`] never runs out of [`RequestMut`](crate::request_mut::RequestMut)s to loan
     /// and send.
     /// The return value is clamped between `1` and the worst case number of
-    /// preallocated [`RequestMut`]s.
+    /// preallocated [`RequestMut`](crate::request_mut::RequestMut)s.
     ///
     /// # Important
     ///
-    /// If the user reduces the number of preallocated [`RequestMut`]s, iceoryx2 can
-    /// no longer guarantee, that the [`Client`] can always loan a [`RequestMut`]
+    /// If the user reduces the number of preallocated [`RequestMut`](crate::request_mut::RequestMut)s, iceoryx2 can
+    /// no longer guarantee, that the [`Client`] can always loan a [`RequestMut`](crate::request_mut::RequestMut)
     /// to send.
     pub fn override_requests_preallocation<F: Fn(usize) -> usize + Send + 'static>(
         mut self,
