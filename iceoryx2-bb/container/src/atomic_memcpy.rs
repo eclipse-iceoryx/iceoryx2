@@ -11,9 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::marker::PhantomData;
-use core::mem::{transmute_copy, MaybeUninit};
+use core::mem::MaybeUninit;
 use iceoryx2_bb_concurrency::atomic::{AtomicU8, Ordering};
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::{atomic_copy::AtomicCopy, zero_copy_send::ZeroCopySend};
 use iceoryx2_log::fail;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -24,7 +24,7 @@ pub enum AtomicMemcpyError {
 // TODO: better name
 // TODO: get rid of size parameter
 #[repr(C)]
-pub struct AtomicMemcpy<T: Copy + ZeroCopySend, const SIZE: usize> {
+pub struct AtomicMemcpy<T: AtomicCopy, const SIZE: usize> {
     // data: [AtomicU8; size_of::<T>()],
     // data: [AtomicU8; Self::LEN],
     data: [AtomicU8; SIZE],
@@ -33,7 +33,7 @@ pub struct AtomicMemcpy<T: Copy + ZeroCopySend, const SIZE: usize> {
 
 // TODO: impl Send, ZeroCopySend?
 
-impl<T: Copy + ZeroCopySend, const SIZE: usize> AtomicMemcpy<T, SIZE> {
+impl<T: AtomicCopy, const SIZE: usize> AtomicMemcpy<T, SIZE> {
     // const LEN: usize = size_of::<T>();
 
     pub fn new(value: T) -> Result<Self, AtomicMemcpyError> {
@@ -72,8 +72,16 @@ impl<T: Copy + ZeroCopySend, const SIZE: usize> AtomicMemcpy<T, SIZE> {
 
     pub unsafe fn write(&mut self, value: T) {
         let value_ptr = (&value as *const T) as *const u8;
-        for i in 0..SIZE {
-            self.data[i].store(*value_ptr.add(i), Ordering::Relaxed);
+        if value.__is_scalar() {
+            for i in 0..SIZE {
+                self.data[i].store(*value_ptr.add(i), Ordering::Relaxed);
+            }
+        } else {
+            value.__for_each_field(&mut |offset, size| {
+                for i in offset..offset + size {
+                    self.data[i].store(*value_ptr.add(i), Ordering::Relaxed);
+                }
+            })
         }
     }
 }
