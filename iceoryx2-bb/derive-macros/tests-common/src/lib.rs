@@ -16,3 +16,4 @@ extern crate iceoryx2_bb_loggers;
 
 pub mod placement_default_tests;
 pub mod zero_copy_send_tests;
+pub mod zeroable_tests;

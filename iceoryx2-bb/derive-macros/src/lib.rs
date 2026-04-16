@@ -348,5 +348,71 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
+/// Implements the [`iceoryx2_bb_elementary_traits::zeroable::Zeroable`] trait when all
+/// fields of the struct implement it.
+///
+/// ```
+/// use iceoryx2_bb_derive_macros::Zeroable;
+/// use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
+///
+/// #[derive(Zeroable)]
+/// struct MyStruct {
+///     value_1: u64,
+///     value_2: u32,
+///     value_3: [u8; 16],
+/// }
+///
+/// let zeroed = MyStruct::new_zeroed();
+/// ```
+#[proc_macro_derive(Zeroable)]
+pub fn zeroable_derive(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let name = &input.ident;
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+
+    let zeroable_check = match input.data {
+        Data::Struct(ref data_struct) => match data_struct.fields {
+            Fields::Named(ref fields_named) => {
+                let field_checks = fields_named.named.iter().map(|f| {
+                    let field_name = &f.ident;
+                    quote! {
+                        Zeroable::__is_zeroable(&self.#field_name);
+                    }
+                });
+
+                quote! {
+                    fn __is_zeroable(&self) {
+                        #(#field_checks)*
+                    }
+                }
+            }
+            Fields::Unnamed(ref fields_unnamed) => {
+                let field_checks = fields_unnamed.unnamed.iter().enumerate().map(|(i, _)| {
+                    let index = syn::Index::from(i);
+                    quote! {
+                        Zeroable::__is_zeroable(&self.#index);
+                    }
+                });
+
+                quote! {
+                    fn __is_zeroable(&self) {
+                        #(#field_checks)*
+                    }
+                }
+            }
+            Fields::Unit => quote! {},
+        },
+        _ => unimplemented!(),
+    };
+
+    let expanded = quote! {
+        unsafe impl #impl_generics Zeroable for #name #ty_generics #where_clause {
+            #zeroable_check
+        }
+    };
+
+    TokenStream::from(expanded)
+}
+
 #[cfg(doctest)]
 mod zero_copy_send_compile_tests;
