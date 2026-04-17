@@ -16,8 +16,11 @@
 #include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
+#include "iox2/bb/static_function.hpp"
 #include "iox2/client.hpp"
 #include "iox2/client_error.hpp"
+#include "iox2/internal/callback_context.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unable_to_deliver_strategy.hpp"
 
@@ -58,6 +61,21 @@ class PortFactoryClient {
     template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto allocation_strategy(AllocationStrategy value) && -> PortFactoryClient&&;
 
+    /// Defines a callback to reduce the number of preallocated [`RequestMut`]s.
+    /// The input argument is the worst case number of preallocated [`RequestMut`]s required
+    /// to guarantee that the [`Client`] never runs out of [`RequestMut`]s to loan
+    /// and send.
+    /// The return value is clamped between `1` and the worst case number of
+    /// preallocated [`RequestMut`]s.
+    ///
+    /// # Important
+    ///
+    /// If the user reduces the number of preallocated [`RequestMut`]s, iceoryx2 can
+    /// no longer guarantee, that the [`Client`] can always loan a [`RequestMut`]
+    /// to send.
+    auto
+    override_request_preallocation(const iox2::bb::StaticFunction<size_t(size_t)>& callback) && -> PortFactoryClient&&;
+
     /// Creates a new [`Client`] or returns a [`ClientCreateError`] on failure.
     auto
     create() && -> bb::Expected<Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
@@ -72,6 +90,7 @@ class PortFactoryClient {
     iox2_port_factory_client_builder_h m_handle = nullptr;
     bb::Optional<uint64_t> m_max_slice_len;
     bb::Optional<AllocationStrategy> m_allocation_strategy;
+    bb::Optional<iox2::bb::StaticFunction<size_t(size_t)>> m_override_preallocation_callback;
 };
 
 template <ServiceType Service,
@@ -83,6 +102,18 @@ template <typename T, typename>
 inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     initial_max_slice_len(uint64_t value) && -> PortFactoryClient&& {
     m_max_slice_len.emplace(value);
+    return std::move(*this);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    override_request_preallocation(
+        const iox2::bb::StaticFunction<uint64_t(uint64_t)>& callback) && -> PortFactoryClient&& {
+    m_override_preallocation_callback.emplace(callback);
     return std::move(*this);
 }
 
@@ -120,6 +151,13 @@ inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, Respon
     if (m_allocation_strategy.has_value()) {
         iox2_port_factory_client_builder_set_allocation_strategy(
             &m_handle, bb::into<iox2_allocation_strategy_e>(m_allocation_strategy.value()));
+    }
+    if (m_override_preallocation_callback.has_value()) {
+        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be a raw pointer - crosses FFI boundary
+        auto* callback = new iox2::bb::StaticFunction<size_t(size_t)>(m_override_preallocation_callback.value());
+        auto* ctx = new internal::CallbackContext<iox2::bb::StaticFunction<size_t(size_t)>*>(callback);
+        iox2_port_factory_client_builder_override_requests_preallocation(
+            &m_handle, internal::override_callback, static_cast<void*>(ctx));
     }
 
     iox2_client_h client_handle {};

@@ -559,6 +559,26 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_response_default_constr
     ASSERT_THAT(sut.user_header(), Eq(UserHeader()));
 }
 
+TYPED_TEST(ServiceRequestResponseTest, override_preallocated_requests_to_one_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    struct Payload {
+        uint64_t p { 3 };
+    };
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template request_response<Payload, Payload>().max_loaned_requests(2).create().value();
+
+    auto sut_client = service.client_builder().override_request_preallocation([](auto) { return 1;}).create().value();
+
+    auto request_1 = sut_client.loan().value();
+    auto request_2 = sut_client.loan();
+    ASSERT_THAT(request_2.has_value(), Eq(false));
+    ASSERT_THAT(request_2.error(), Eq(LoanError::OutOfMemory));
+}
+
 struct DummyData {
     static constexpr uint64_t DEFAULT_VALUE_A = 42;
     static constexpr bool DEFAULT_VALUE_Z { false };
