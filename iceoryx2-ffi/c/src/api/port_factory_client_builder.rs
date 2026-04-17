@@ -244,8 +244,7 @@ pub unsafe extern "C" fn iox2_port_factory_client_builder_override_requests_prea
                 let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
 
                 port_factory_struct.set(PortFactoryClientBuilderUnion::new_ipc(
-                    port_factory
-                        .override_requests_preallocation(move |v| callback(v, callback_ctx)),
+                    port_factory.override_request_preallocation(move |v| callback(v, callback_ctx)),
                 ));
             }
             iox2_service_type_e::LOCAL => {
@@ -253,8 +252,7 @@ pub unsafe extern "C" fn iox2_port_factory_client_builder_override_requests_prea
                     ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
 
                 port_factory_struct.set(PortFactoryClientBuilderUnion::new_local(
-                    port_factory
-                        .override_requests_preallocation(move |v| callback(v, callback_ctx)),
+                    port_factory.override_request_preallocation(move |v| callback(v, callback_ctx)),
                 ));
             }
         }

@@ -93,8 +93,6 @@ impl<'a> Debug for PreallocatedSamplesOverride<'a> {
     }
 }
 
-unsafe impl Send for PreallocatedSamplesOverride<'_> {}
-
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct LocalPublisherConfig {
     pub(crate) max_loaned_samples: usize,
@@ -192,7 +190,7 @@ impl<
     /// If the user reduces the number of preallocated [`SampleMut`](crate::sample_mut::SampleMut)s, iceoryx2 can
     /// no longer guarantee, that the [`Publisher`] can always loan a [`SampleMut`](crate::sample_mut::SampleMut)
     /// to send.
-    pub fn override_sample_preallocation<F: Fn(usize) -> usize + Send + 'static>(
+    pub fn override_sample_preallocation<F: Fn(usize) -> usize + 'static>(
         mut self,
         callback: F,
     ) -> Self {
