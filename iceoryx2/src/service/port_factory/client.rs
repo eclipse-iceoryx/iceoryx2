@@ -89,8 +89,6 @@ impl<'a> Debug for PreallocatedRequestsOverride<'a> {
     }
 }
 
-unsafe impl Send for PreallocatedRequestsOverride<'_> {}
-
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct LocalClientConfig {
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
@@ -213,7 +211,7 @@ impl<
     /// If the user reduces the number of preallocated [`RequestMut`](crate::request_mut::RequestMut)s, iceoryx2 can
     /// no longer guarantee, that the [`Client`] can always loan a [`RequestMut`](crate::request_mut::RequestMut)
     /// to send.
-    pub fn override_requests_preallocation<F: Fn(usize) -> usize + Send + 'static>(
+    pub fn override_requests_preallocation<F: Fn(usize) -> usize + 'static>(
         mut self,
         callback: F,
     ) -> Self {
