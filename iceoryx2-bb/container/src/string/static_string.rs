@@ -56,7 +56,7 @@ use crate::string::{
 
 /// Variant of the [`String`] that has a compile-time fixed capacity and is
 /// shared-memory compatible.
-#[derive(PlacementDefault, Clone, Copy)]
+#[derive(PlacementDefault, ZeroCopySend, Clone, Copy)]
 #[repr(C)]
 pub struct StaticString<const CAPACITY: usize> {
     data: [MaybeUninit<u8>; CAPACITY],
@@ -64,15 +64,13 @@ pub struct StaticString<const CAPACITY: usize> {
     len: u64,
 }
 
-unsafe impl<const CAPACITY: usize> ZeroCopySend for StaticString<CAPACITY> {
+unsafe impl<const CAPACITY: usize> AtomicCopy for StaticString<CAPACITY> {
     fn __for_each_field<F: FnMut(usize, usize)>(&self, callback: &mut F) {
         callback(core::mem::offset_of!(Self, data), self.len());
         callback(core::mem::offset_of!(Self, terminator), 1);
         callback(core::mem::offset_of!(Self, len), 8);
     }
 }
-
-unsafe impl<const CAPACITY: usize> AtomicCopy for StaticString<CAPACITY> {}
 
 impl<const CAPACITY: usize> Serialize for StaticString<CAPACITY> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>

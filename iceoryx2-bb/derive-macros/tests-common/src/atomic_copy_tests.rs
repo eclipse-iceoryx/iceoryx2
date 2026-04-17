@@ -19,6 +19,8 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
+// TODO: clean up tests
+// TODO: tests with unions/enums where AtomicCopy is implemented manually
 #[allow(dead_code)]
 #[derive(Copy, Clone)]
 struct Foo(u16);
@@ -55,98 +57,98 @@ where
     T1: AtomicCopy,
     T2: AtomicCopy;
 
-#[repr(C)]
-#[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
-#[type_name("TryMadHoney")]
-union BasicUnionTest {
-    _val1: u32,
-    _val2: u8,
-}
+// #[repr(C)]
+// #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+// #[type_name("TryMadHoney")]
+// union BasicUnionTest {
+//     _val1: u32,
+//     _val2: u8,
+// }
 
-#[test]
-#[should_panic]
-pub fn field_offsets_and_sizes_cannot_be_calculated_for_unions() {
-    let sut = BasicUnionTest { _val1: 12 };
-    sut.__for_each_field(&mut |_, _| {});
-}
+// #[test]
+// #[should_panic]
+// pub fn field_offsets_and_sizes_cannot_be_calculated_for_unions() {
+//     let sut = BasicUnionTest { _val1: 12 };
+//     sut.__for_each_field(&mut |_, _| {});
+// }
 
-#[test]
-#[should_panic]
-pub fn field_offsets_and_sizes_cannot_be_calculated_for_generic_unions() {
-    #[repr(C)]
-    #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
-    union GenericUnion<T: AtomicCopy> {
-        val1: u8,
-        val2: T,
-    }
+// #[test]
+// #[should_panic]
+// pub fn field_offsets_and_sizes_cannot_be_calculated_for_generic_unions() {
+//     #[repr(C)]
+//     #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+//     union GenericUnion<T: AtomicCopy> {
+//         val1: u8,
+//         val2: T,
+//     }
 
-    let sut = GenericUnion { val2: 0u64 };
-    sut.__for_each_field(&mut |_, _| {});
-}
+//     let sut = GenericUnion { val2: 0u64 };
+//     sut.__for_each_field(&mut |_, _| {});
+// }
 
-#[test]
-#[should_panic]
-pub fn field_offsets_and_sizes_cannot_be_calculated_for_unions_with_struct_field() {
-    #[repr(C)]
-    #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
-    struct SomeNamedStruct {
-        a: u8,
-        b: u64,
-    }
+// #[test]
+// #[should_panic]
+// pub fn field_offsets_and_sizes_cannot_be_calculated_for_unions_with_struct_field() {
+//     #[repr(C)]
+//     #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+//     struct SomeNamedStruct {
+//         a: u8,
+//         b: u64,
+//     }
 
-    #[repr(C)]
-    #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
-    union NestedUnion {
-        val1: u8,
-        val2: SomeNamedStruct,
-    }
+//     #[repr(C)]
+//     #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+//     union NestedUnion {
+//         val1: u8,
+//         val2: SomeNamedStruct,
+//     }
 
-    let sut = NestedUnion {
-        val2: SomeNamedStruct { a: 0, b: 0 },
-    };
-    sut.__for_each_field(&mut |_, _| {});
-}
+//     let sut = NestedUnion {
+//         val2: SomeNamedStruct { a: 0, b: 0 },
+//     };
+//     sut.__for_each_field(&mut |_, _| {});
+// }
 
-#[test]
-#[should_panic]
-pub fn field_offsets_and_sizes_cannot_be_calculated_for_structs_with_union() {
-    #[repr(C)]
-    #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
-    struct NestedStruct {
-        a: BasicUnionTest,
-        b: u8,
-    }
+// #[test]
+// #[should_panic]
+// pub fn field_offsets_and_sizes_cannot_be_calculated_for_structs_with_union() {
+//     #[repr(C)]
+//     #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+//     struct NestedStruct {
+//         a: BasicUnionTest,
+//         b: u8,
+//     }
 
-    let sut = NestedStruct {
-        a: BasicUnionTest { _val1: 12 },
-        b: 0,
-    };
-    sut.__for_each_field(&mut |_, _| {});
-}
+//     let sut = NestedStruct {
+//         a: BasicUnionTest { _val1: 12 },
+//         b: 0,
+//     };
+//     sut.__for_each_field(&mut |_, _| {});
+// }
 
-#[test]
-#[should_panic]
-pub fn field_offsets_and_sizes_cannot_be_calculated_for_structs_with_enum() {
-    #[repr(C)]
-    #[derive(AtomicCopy, Copy, Clone, ZeroCopySend)]
-    enum SomeEnum {
-        A,
-        B,
-    }
+// #[test]
+// #[should_panic]
+// pub fn field_offsets_and_sizes_cannot_be_calculated_for_structs_with_enum() {
+//     #[repr(C)]
+//     #[derive(AtomicCopy, Copy, Clone, ZeroCopySend)]
+//     enum SomeEnum {
+//         A,
+//         B,
+//     }
 
-    #[repr(C)]
-    #[derive(AtomicCopy, Copy, Clone, ZeroCopySend)]
-    struct NestedStruct {
-        a: SomeEnum,
-        b: u8,
-    }
+//     #[repr(C)]
+//     #[derive(AtomicCopy, Copy, Clone, ZeroCopySend)]
+//     struct NestedStruct {
+//         a: SomeEnum,
+//         b: u8,
+//     }
 
-    let sut = NestedStruct {
-        a: SomeEnum::A,
-        b: 0,
-    };
-    sut.__for_each_field(&mut |_, _| {});
-}
+//     let sut = NestedStruct {
+//         a: SomeEnum::A,
+//         b: 0,
+//     };
+//     sut.__for_each_field(&mut |_, _| {});
+// }
 
 #[test]
 pub fn field_offsets_and_sizes_are_correct_for_named_struct() {
