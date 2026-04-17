@@ -54,7 +54,7 @@ pub fn new_creates_atomic_memcpy_containing_passed_static_string() {
 #[test]
 pub fn atomic_memcpy_contains_passed_value_after_write() {
     const SIZE: usize = size_of::<u64>();
-    let mut sut = AtomicMemcpy::<u64, SIZE>::new(0).unwrap();
+    let sut = AtomicMemcpy::<u64, SIZE>::new(0).unwrap();
 
     let new_value: u64 = 752389;
     unsafe {
@@ -66,7 +66,7 @@ pub fn atomic_memcpy_contains_passed_value_after_write() {
 #[test]
 pub fn atomic_memcpy_contains_passed_static_string_after_write() {
     const SIZE: usize = size_of::<StaticString<20>>();
-    let mut sut = AtomicMemcpy::<StaticString<20>, SIZE>::new(StaticString::<20>::new()).unwrap();
+    let sut = AtomicMemcpy::<StaticString<20>, SIZE>::new(StaticString::<20>::new()).unwrap();
 
     let new_value = StaticString::<20>::try_from("atomheartmother").unwrap();
     unsafe {
@@ -95,6 +95,70 @@ pub fn concurrent_read_without_write_always_returns_correct_data() {
                     unsafe {
                         let read_value = sut.read();
                         assert_that!(read_value.assume_init(), eq value);
+                    }
+                }
+            });
+        }
+    });
+}
+
+#[test]
+pub fn concurrent_write_does_not_trigger_ub_with_miri() {
+    const SIZE: usize = size_of::<u64>();
+    let value = u64::MAX;
+    let sut = AtomicMemcpy::<u64, SIZE>::new(value).unwrap();
+
+    let number_of_threads = 16;
+    const REPETITIONS: usize = 500;
+    let barrier = Barrier::new(number_of_threads);
+    thread::scope(|s| {
+        for _ in 0..number_of_threads {
+            s.spawn(|| {
+                barrier.wait();
+                for _ in 0..REPETITIONS {
+                    unsafe {
+                        sut.write(value);
+                    }
+                }
+            });
+        }
+    });
+
+    unsafe {
+        let read_value = sut.read();
+        assert_that!(read_value.assume_init(), eq value);
+    }
+}
+
+#[test]
+pub fn concurrent_read_and_write_does_not_trigger_ub_with_miri() {
+    const SIZE: usize = size_of::<u64>();
+    let value = 3249780;
+    let sut = AtomicMemcpy::<u64, SIZE>::new(value).unwrap();
+
+    let number_of_threads = 16;
+    const REPETITIONS: usize = 500;
+    let barrier = Barrier::new(number_of_threads);
+    thread::scope(|s| {
+        for _ in 0..number_of_threads / 2 {
+            s.spawn(|| {
+                barrier.wait();
+                for _ in 0..REPETITIONS {
+                    unsafe {
+                        let read_value = sut.read();
+                        // dummy assert to prevent the read operation to be optimized away
+                        assert_that!(core::mem::size_of_val(&read_value), eq SIZE);
+                    }
+                }
+            });
+        }
+
+        for _ in 0..number_of_threads / 2 {
+            s.spawn(|| {
+                barrier.wait();
+                for _ in 0..REPETITIONS {
+                    unsafe {
+                        sut.write(value);
                     }
                 }
             });

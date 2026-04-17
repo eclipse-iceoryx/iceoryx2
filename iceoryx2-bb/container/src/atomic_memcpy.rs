@@ -31,7 +31,7 @@ pub struct AtomicMemcpy<T: AtomicCopy, const SIZE: usize> {
     _inner_type: PhantomData<T>,
 }
 
-// TODO: impl Send, ZeroCopySend?
+// TODO: ZeroCopySend?
 
 impl<T: AtomicCopy, const SIZE: usize> AtomicMemcpy<T, SIZE> {
     // const LEN: usize = size_of::<T>();
@@ -70,7 +70,7 @@ impl<T: AtomicCopy, const SIZE: usize> AtomicMemcpy<T, SIZE> {
         data
     }
 
-    pub unsafe fn write(&mut self, value: T) {
+    pub unsafe fn write(&self, value: T) {
         let value_ptr = (&value as *const T) as *const u8;
         if value.__is_scalar() {
             for i in 0..SIZE {
