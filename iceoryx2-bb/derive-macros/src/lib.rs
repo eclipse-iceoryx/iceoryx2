@@ -373,7 +373,7 @@ pub fn atomic_copy_derive(input: TokenStream) -> TokenStream {
 
                         // if a field is a struct, its offset and size are not considered,
                         // but the offsets and sizes of its fields are
-                        if !<#field_type as AtomicCopy>::__for_each_field_with_offset(&self.#field_name, abs_offset, callback) {
+                        if !AtomicCopy::__for_each_field_with_offset(&self.#field_name, abs_offset, callback) {
                             callback(abs_offset, size);
                         }
                     };
@@ -401,7 +401,7 @@ pub fn atomic_copy_derive(input: TokenStream) -> TokenStream {
 
                         // if a field is a struct, its offset and size are not considered,
                         // but the offsets and sizes of its fields are
-                        if !<#field_type as AtomicCopy>::__for_each_field_with_offset(&self.#field_index, abs_offset, callback) {
+                        if !AtomicCopy::__for_each_field_with_offset(&self.#field_index, abs_offset, callback) {
                             callback(abs_offset, size);
                         }
                     };
@@ -418,32 +418,11 @@ pub fn atomic_copy_derive(input: TokenStream) -> TokenStream {
             Fields::Unit => quote! {},
         },
         Data::Enum(_) => {
-            quote! {
-                // TODO: better error handling
-                fn __for_each_field_with_offset<F: FnMut(usize, usize)>(
-                    &self,
-                    _base_offset: usize,
-                    _callback: &mut F,
-                ) -> bool {
-                    // Can be implemented once core::mem::offset_of! is stable for enums.
-                    panic!("Field offsets and sizes cannot be determined for enums, only for structs.");
-                }
-            }
+            // Can be implemented once core::mem::offset_of! is stable for enums.
+            panic!("`#[derive(AtomicCopy)]` is not implemented for enums, only for structs.");
         }
         Data::Union(_) => {
-            quote! {
-                // TODO: better error handling
-                fn __for_each_field_with_offset<F: FnMut(usize, usize)>(
-                    &self,
-                    _base_offset: usize,
-                    _callback: &mut F,
-                ) -> bool {
-                    // The implementation makes no sense for unions. Unions have no notion of their "active field" and since their
-                    // size is the maximum size of all of their fields rounded to the alignment, calling `size_of` on a union will
-                    // usually return a value that is too large and includes padding bytes.
-                    panic!("Field offsets and sizes cannot be determined for unions, only for structs.");
-                }
-            }
+            panic!("`#[derive(AtomicCopy)]` is not implemented for unions, only for structs.");
         }
     };
 
@@ -634,3 +613,6 @@ mod zeroable_compile_tests;
 
 #[cfg(doctest)]
 mod plain_old_data_without_padding_compile_tests;
+
+#[cfg(doctest)]
+mod atomic_copy_compile_tests;
