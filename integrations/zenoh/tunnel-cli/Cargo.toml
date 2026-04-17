@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-integrations-zenoh-tunnel-cli"
-description = "CLI binary for launching an iceoryx2 tunnel with a Zenoh backend"
+description = "iceoryx2-integrations: CLI binary for launching an iceoryx2 tunnel with a Zenoh backend"
 categories = { workspace = true }
 edition = "2024"
 homepage = { workspace = true }
