@@ -3,7 +3,7 @@ name = "iceoryx2-cli"
 description = "CLI tools for iceoryx2"
 
 categories = { workspace = true }
-edition = "2024"
+edition = { workspace = true }
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }

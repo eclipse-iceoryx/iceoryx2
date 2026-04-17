@@ -2,7 +2,7 @@
 name = "iceoryx2-bb-system-types"
 description = "iceoryx2: [internal] strong types that represents low level constructs like file, path, ip address, etc..."
 categories = { workspace = true }
-edition = "2024"
+edition = { workspace = true }
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }

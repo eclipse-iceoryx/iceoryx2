@@ -18,7 +18,7 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary_traits::allocator::*;
 use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
-use iceoryx2_bb_posix::clock::{nanosleep, Time};
+use iceoryx2_bb_posix::clock::{Time, nanosleep};
 use iceoryx2_bb_posix::ipc_capable::Handle;
 use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_posix::thread::thread_scope;
@@ -614,10 +614,8 @@ pub mod dynamic_storage_trait {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let config = generate_isolated_config::<Sut>();
-        let config_1 = config
-            .clone()
-            .suffix(unsafe { &FileName::new_unchecked(b".s1") });
-        let config_2 = config.suffix(unsafe { &FileName::new_unchecked(b".s2") });
+        let config_1 = unsafe { config.clone().suffix(&FileName::new_unchecked(b".s1")) };
+        let config_2 = unsafe { config.suffix(&FileName::new_unchecked(b".s2")) };
 
         let sut_name = generate_file_path().file_name();
 

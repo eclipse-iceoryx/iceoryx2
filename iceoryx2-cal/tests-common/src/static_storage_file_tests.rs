@@ -30,8 +30,9 @@ use iceoryx2_cal::testing::*;
 #[test]
 fn custom_suffix_works() {
     let storage_name = generate_file_path().file_name();
-    let config = generate_isolated_config::<Storage>()
-        .suffix(unsafe { &FileName::new_unchecked(b".blubbme") });
+    let config = unsafe {
+        generate_isolated_config::<Storage>().suffix(&FileName::new_unchecked(b".blubbme"))
+    };
 
     let content = "some storage content".to_string();
 
@@ -92,16 +93,14 @@ fn path_is_created_when_it_does_not_exist() {
 #[test]
 fn custom_path_and_suffix_list_storage_works() {
     const NUMBER_OF_STORAGES: u64 = 12;
-    let config = generate_isolated_config::<Storage>()
-        .suffix(unsafe { &FileName::new_unchecked(b".blubbme") })
-        .path_hint(
-            &FilePath::from_path_and_file(
-                &TEST_DIRECTORY,
-                &FileName::new(b"non_existing").unwrap(),
-            )
+    let config = unsafe {
+        generate_isolated_config::<Storage>().suffix(&FileName::new_unchecked(b".blubbme"))
+    }
+    .path_hint(
+        &FilePath::from_path_and_file(&TEST_DIRECTORY, &FileName::new(b"non_existing").unwrap())
             .unwrap()
             .into(),
-        );
+    );
 
     let content = "some storage content".to_string();
 

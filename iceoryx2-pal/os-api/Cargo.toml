@@ -2,7 +2,7 @@
 name = "iceoryx2-pal-os-api"
 description = "iceoryx2: [internal] OS api layer for OS specific features"
 categories = { workspace = true }
-edition = "2024"
+edition = { workspace = true }
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }

@@ -299,10 +299,8 @@ pub mod shared_memory_trait {
     #[conformance_test]
     pub fn custom_suffix_keeps_storages_separated<Sut: SharedMemory<DefaultAllocator>>() {
         let config = generate_isolated_config::<Sut>();
-        let config_1 = config
-            .clone()
-            .suffix(unsafe { &FileName::new_unchecked(b".s1") });
-        let config_2 = config.suffix(unsafe { &FileName::new_unchecked(b".s2") });
+        let config_1 = unsafe { config.clone().suffix(&FileName::new_unchecked(b".s1")) };
+        let config_2 = unsafe { config.suffix(&FileName::new_unchecked(b".s2")) };
 
         let storage_name = generate_file_path().file_name();
 

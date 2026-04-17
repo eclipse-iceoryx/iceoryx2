@@ -2,7 +2,7 @@
 name = "iceoryx2-bb-concurrency"
 description = "iceoryx2: concurrency primitives"
 categories = { workspace = true }
-edition = "2024"
+edition = { workspace = true }
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }

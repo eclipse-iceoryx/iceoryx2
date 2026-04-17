@@ -2,7 +2,7 @@
 name = "iceoryx2-bb-posix"
 description = "iceoryx2: [internal] high level safe abstractions for low level unsafe posix constructs"
 categories = { workspace = true }
-edition = "2024"
+edition = { workspace = true }
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }
