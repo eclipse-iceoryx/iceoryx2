@@ -46,24 +46,6 @@ pub unsafe trait ZeroCopySend {
     /// a struct implement ZeroCopySend
     fn __is_zero_copy_send(&self) {}
 
-    // TODO: CallbackProgression?
-    #[doc(hidden)]
-    /// Iterates over the fields of the type and applies the provided callback to each offset-size pair of the field.
-    fn __for_each_field<F: FnMut(usize, usize)>(&self, callback: &mut F) {
-        self.__for_each_field_with_offset(0, callback);
-    }
-
-    #[doc(hidden)]
-    /// Iterates over the fields of the type, calculates the offset relative to the provided base_offset, and applies
-    /// the provided callback to each offset-size pair of the field.
-    fn __for_each_field_with_offset<F: FnMut(usize, usize)>(
-        &self,
-        _base_offset: usize,
-        _callback: &mut F,
-    ) -> bool {
-        false
-    }
-
     // TODO
     #[doc(hidden)]
     fn __is_scalar(&self) -> bool {

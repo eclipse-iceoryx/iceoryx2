@@ -214,37 +214,12 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                     }
                 });
 
-                // implement __for_each_field_with_offset
-                let mut field_offsets_and_sizes = Vec::new();
-                for field in fields_named.named.iter() {
-                    let field_name = &field.ident;
-                    let field_type = &field.ty;
-
-                    let block = quote! {
-                        let rel_offset = core::mem::offset_of!(#struct_name #ty_generics, #field_name);
-                        let abs_offset = base_offset + rel_offset;
-                        let size = core::mem::size_of::<#field_type>();
-
-                        // if a field is a struct, its offset and size are not considered,
-                        // but the offsets and sizes of its fields are
-                        if !<#field_type as ZeroCopySend>::__for_each_field_with_offset(&self.#field_name, abs_offset, callback) {
-                            callback(abs_offset, size);
-                        }
-                    };
-                    field_offsets_and_sizes.push(block);
-                }
-
                 quote! {
                     fn __is_zero_copy_send(&self) {
                         #(#field_inits)*
                     }
 
                     #type_name_impl
-
-                    fn __for_each_field_with_offset<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) -> bool {
-                        #(#field_offsets_and_sizes)*
-                        true
-                    }
                 }
             }
             Fields::Unnamed(ref fields_unnamed) => {
@@ -256,37 +231,12 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                     }
                 });
 
-                // implement __for_each_field_with_offset
-                let mut field_offsets_and_sizes = Vec::new();
-                for (i, field) in fields_unnamed.unnamed.iter().enumerate() {
-                    let field_index = syn::Index::from(i);
-                    let field_type = &field.ty;
-
-                    let block = quote! {
-                        let rel_offset = core::mem::offset_of!(#struct_name #ty_generics, #field_index);
-                        let abs_offset = base_offset + rel_offset;
-                        let size = core::mem::size_of::<#field_type>();
-
-                        // if a field is a struct, its offset and size are not considered,
-                        // but the offsets and sizes of its fields are
-                        if !<#field_type as ZeroCopySend>::__for_each_field_with_offset(&self.#field_index, abs_offset, callback) {
-                            callback(abs_offset, size);
-                        }
-                    };
-                    field_offsets_and_sizes.push(block);
-                }
-
                 quote! {
                     fn __is_zero_copy_send(&self) {
                         #(#field_inits)*
                     }
 
                     #type_name_impl
-
-                    fn __for_each_field_with_offset<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) -> bool {
-                        #(#field_offsets_and_sizes)*
-                        true
-                    }
                 }
             }
             Fields::Unit => quote! {
@@ -368,16 +318,6 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                 }
 
                 #type_name_impl
-
-                // TODO: better error handling
-                fn __for_each_field_with_offset<F: FnMut(usize, usize)>(
-                    &self,
-                    _base_offset: usize,
-                    _callback: &mut F,
-                ) -> bool {
-                    // Can be implemented once core::mem::offset_of! is stable for enums.
-                    panic!("Field offsets and sizes cannot be determined for enums, only for structs.");
-                }
             }
         }
         Data::Union(ref data_union) => {
@@ -395,7 +335,103 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                 }
 
                 #type_name_impl
+            }
+        }
+    };
 
+    let expanded = quote! {
+        unsafe impl #impl_generics ZeroCopySend for #struct_name #ty_generics #where_clause {
+            #zero_copy_send_impl
+        }
+    };
+
+    TokenStream::from(expanded)
+}
+
+// TODO: documentation
+#[proc_macro_derive(AtomicCopy)]
+pub fn atomic_copy_derive(input: TokenStream) -> TokenStream {
+    let ast = parse_macro_input!(input as DeriveInput);
+    let struct_name = &ast.ident;
+
+    // implement AtomicCopy
+    let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
+
+    let atomic_copy_impl = match ast.data {
+        Data::Struct(ref data_struct) => match data_struct.fields {
+            Fields::Named(ref fields_named) => {
+                // implement __for_each_field_with_offset
+                let mut field_offsets_and_sizes = Vec::new();
+                for field in fields_named.named.iter() {
+                    let field_name = &field.ident;
+                    let field_type = &field.ty;
+
+                    let block = quote! {
+                        let rel_offset = core::mem::offset_of!(#struct_name #ty_generics, #field_name);
+                        let abs_offset = base_offset + rel_offset;
+                        let size = core::mem::size_of::<#field_type>();
+
+                        // if a field is a struct, its offset and size are not considered,
+                        // but the offsets and sizes of its fields are
+                        if !<#field_type as AtomicCopy>::__for_each_field_with_offset(&self.#field_name, abs_offset, callback) {
+                            callback(abs_offset, size);
+                        }
+                    };
+                    field_offsets_and_sizes.push(block);
+                }
+
+                quote! {
+                    fn __for_each_field_with_offset<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) -> bool {
+                        #(#field_offsets_and_sizes)*
+                        true
+                    }
+                }
+            }
+            Fields::Unnamed(ref fields_unnamed) => {
+                // implement __for_each_field_with_offset
+                let mut field_offsets_and_sizes = Vec::new();
+                for (i, field) in fields_unnamed.unnamed.iter().enumerate() {
+                    let field_index = syn::Index::from(i);
+                    let field_type = &field.ty;
+
+                    let block = quote! {
+                        let rel_offset = core::mem::offset_of!(#struct_name #ty_generics, #field_index);
+                        let abs_offset = base_offset + rel_offset;
+                        let size = core::mem::size_of::<#field_type>();
+
+                        // if a field is a struct, its offset and size are not considered,
+                        // but the offsets and sizes of its fields are
+                        if !<#field_type as AtomicCopy>::__for_each_field_with_offset(&self.#field_index, abs_offset, callback) {
+                            callback(abs_offset, size);
+                        }
+                    };
+                    field_offsets_and_sizes.push(block);
+                }
+
+                quote! {
+                    fn __for_each_field_with_offset<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) -> bool {
+                        #(#field_offsets_and_sizes)*
+                        true
+                    }
+                }
+            }
+            Fields::Unit => quote! {},
+        },
+        Data::Enum(_) => {
+            quote! {
+                // TODO: better error handling
+                fn __for_each_field_with_offset<F: FnMut(usize, usize)>(
+                    &self,
+                    _base_offset: usize,
+                    _callback: &mut F,
+                ) -> bool {
+                    // Can be implemented once core::mem::offset_of! is stable for enums.
+                    panic!("Field offsets and sizes cannot be determined for enums, only for structs.");
+                }
+            }
+        }
+        Data::Union(_) => {
+            quote! {
                 // TODO: better error handling
                 fn __for_each_field_with_offset<F: FnMut(usize, usize)>(
                     &self,
@@ -412,8 +448,8 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
     };
 
     let expanded = quote! {
-        unsafe impl #impl_generics ZeroCopySend for #struct_name #ty_generics #where_clause {
-            #zero_copy_send_impl
+        unsafe impl #impl_generics AtomicCopy for #struct_name #ty_generics #where_clause {
+            #atomic_copy_impl
         }
     };
 

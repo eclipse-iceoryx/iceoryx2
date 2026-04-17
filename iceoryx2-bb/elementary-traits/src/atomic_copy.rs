@@ -12,7 +12,26 @@
 
 use crate::zero_copy_send::ZeroCopySend;
 
-pub unsafe trait AtomicCopy: ZeroCopySend + Copy + 'static {}
+pub unsafe trait AtomicCopy: ZeroCopySend + Copy + 'static {
+    // TODO: CallbackProgression?
+    // TODO: keep it internal or make it unsafe fn for_each_field()?
+    #[doc(hidden)]
+    /// Iterates over the fields of the type and applies the provided callback to each offset-size pair of the field.
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, callback: &mut F) {
+        self.__for_each_field_with_offset(0, callback);
+    }
+
+    #[doc(hidden)]
+    /// Iterates over the fields of the type, calculates the offset relative to the provided base_offset, and applies
+    /// the provided callback to each offset-size pair of the field.
+    fn __for_each_field_with_offset<F: FnMut(usize, usize)>(
+        &self,
+        _base_offset: usize,
+        _callback: &mut F,
+    ) -> bool {
+        false
+    }
+}
 
 unsafe impl AtomicCopy for usize {}
 unsafe impl AtomicCopy for u8 {}
