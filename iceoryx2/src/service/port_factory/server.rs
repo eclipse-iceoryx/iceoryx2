@@ -99,8 +99,6 @@ impl<'a> Debug for PreallocatedResponseOverride<'a> {
     }
 }
 
-unsafe impl Send for PreallocatedResponseOverride<'_> {}
-
 /// Factory to create a new [`Server`] port/endpoint for
 /// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
 /// based communication.
@@ -218,7 +216,7 @@ impl<
     /// If the user reduces the number of preallocated [`ResponseMut`](crate::response_mut::ResponseMut)s, iceoryx2 can
     /// no longer guarantee, that the [`Server`] can always loan a [`ResponseMut`](crate::response_mut::ResponseMut)
     /// to send.
-    pub fn override_response_preallocation<F: Fn(usize) -> usize + Send + 'static>(
+    pub fn override_response_preallocation<F: Fn(usize) -> usize + 'static>(
         mut self,
         callback: F,
     ) -> Self {
