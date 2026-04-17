@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-integrations-zenoh-tunnel-backend"
-description = "tunnel backend implemented with zenoh"
+description = "iceoryx2-integrations: tunnel backend implemented with zenoh"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
