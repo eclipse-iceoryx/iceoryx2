@@ -54,14 +54,6 @@
 //! # }
 //! ```
 
-use core::fmt::Debug;
-
-use alloc::format;
-
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::shm_allocator::AllocationStrategy;
-use iceoryx2_log::fail;
-
 use crate::{
     port::{
         DegradationAction, DegradationCallback,
@@ -70,14 +62,43 @@ use crate::{
     },
     service,
 };
+use alloc::format;
+use core::fmt::Debug;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_cal::shm_allocator::AllocationStrategy;
+use iceoryx2_log::fail;
+use tiny_fn::tiny_fn;
 
 use super::publish_subscribe::PortFactory;
 
-#[derive(Debug)]
+tiny_fn! {
+    /// A user provided callback to reduce the number of preallocated [`SampleMut`](crate::sample_mut::SampleMut)s.
+    /// The input argument is the worst case number of preallocated [`SampleMut`](crate::sample_mut::SampleMut)s required
+    /// to guarantee that the [`Publisher`] never runs out of [`SampleMut`](crate::sample_mut::SampleMut)s to loan
+    /// and send.
+    /// The return value is clamped between `1` and the worst case number of
+    /// preallocated [`SampleMut`](crate::sample_mut::SampleMut)s.
+    ///
+    /// # Important
+    ///
+    /// If the user reduces the number of preallocated [`SampleMut`](crate::sample_mut::SampleMut)s, iceoryx2 can
+    /// no longer guarantee, that the [`Publisher`] can always loan a [`SampleMut`](crate::sample_mut::SampleMut)
+    /// to send.
+    pub struct PreallocatedSamplesOverride = Fn(number_of_preallocated_samples: usize) -> usize;
+}
+
+impl<'a> Debug for PreallocatedSamplesOverride<'a> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "PreallocatedSamplesOverride")
+    }
+}
+
+unsafe impl Send for PreallocatedSamplesOverride<'_> {}
+
+#[derive(Debug, Clone, Copy)]
 pub(crate) struct LocalPublisherConfig {
     pub(crate) max_loaned_samples: usize,
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
-    pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
     pub(crate) initial_max_slice_len: usize,
     pub(crate) allocation_strategy: AllocationStrategy,
 }
@@ -92,7 +113,9 @@ pub struct PortFactoryPublisher<
     Payload: Debug + ZeroCopySend + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > {
-    config: LocalPublisherConfig,
+    pub(crate) config: LocalPublisherConfig,
+    pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
+    pub(crate) preallocate_number_of_samples_override: PreallocatedSamplesOverride<'static>,
     pub(crate) factory: &'factory PortFactory<Service, Payload, UserHeader>,
 }
 
@@ -113,17 +136,13 @@ impl<
     #[doc(hidden)]
     /// # Safety
     ///
-    ///   * does not clone the degradation callback
+    ///   * does not clone the callbacks
     pub unsafe fn __internal_partial_clone(&self) -> Self {
         Self {
-            config: LocalPublisherConfig {
-                max_loaned_samples: self.config.max_loaned_samples,
-                unable_to_deliver_strategy: self.config.unable_to_deliver_strategy,
-                degradation_callback: None,
-                initial_max_slice_len: self.config.initial_max_slice_len,
-                allocation_strategy: self.config.allocation_strategy,
-            },
+            config: self.config,
             factory: self.factory,
+            degradation_callback: None,
+            preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),
         }
     }
 }
@@ -139,7 +158,6 @@ impl<
         Self {
             config: LocalPublisherConfig {
                 allocation_strategy: AllocationStrategy::Static,
-                degradation_callback: None,
                 initial_max_slice_len: 1,
                 max_loaned_samples: factory
                     .service
@@ -156,8 +174,31 @@ impl<
                     .publish_subscribe
                     .unable_to_deliver_strategy,
             },
+            degradation_callback: None,
+            preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),
             factory,
         }
+    }
+
+    /// Defines a callback to reduce the number of preallocated [`SampleMut`](crate::sample_mut::SampleMut).
+    /// The input argument is the worst case number of preallocated [`SampleMut`](crate::sample_mut::SampleMut)s required
+    /// to guarantee that the [`Publisher`] never runs out of [`SampleMut`](crate::sample_mut::SampleMut)s to loan
+    /// and send.
+    /// The return value is clamped between `1` and the worst case number of
+    /// preallocated [`SampleMut`](crate::sample_mut::SampleMut)s.
+    ///
+    /// # Important
+    ///
+    /// If the user reduces the number of preallocated [`SampleMut`](crate::sample_mut::SampleMut)s, iceoryx2 can
+    /// no longer guarantee, that the [`Publisher`] can always loan a [`SampleMut`](crate::sample_mut::SampleMut)
+    /// to send.
+    pub fn override_sample_preallocation<F: Fn(usize) -> usize + Send + 'static>(
+        mut self,
+        callback: F,
+    ) -> Self {
+        self.preallocate_number_of_samples_override =
+            PreallocatedSamplesOverride::new(move |v| callback(v).clamp(1, v));
+        self
     }
 
     /// Defines how many [`crate::sample_mut::SampleMut`] the [`Publisher`] can loan with
@@ -184,8 +225,8 @@ impl<
         callback: Option<F>,
     ) -> Self {
         match callback {
-            Some(c) => self.config.degradation_callback = Some(DegradationCallback::new(c)),
-            None => self.config.degradation_callback = None,
+            Some(c) => self.degradation_callback = Some(DegradationCallback::new(c)),
+            None => self.degradation_callback = None,
         }
 
         self
@@ -194,10 +235,8 @@ impl<
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
     pub fn create(self) -> Result<Publisher<Service, Payload, UserHeader>, PublisherCreateError> {
         let origin = format!("{self:?}");
-        Ok(
-            fail!(from origin, when Publisher::new(self.factory.service.clone(), self.factory.service.static_config.publish_subscribe(), self.config),
-                "Failed to create new Publisher port."),
-        )
+        Ok(fail!(from origin, when Publisher::new(self),
+                "Failed to create new Publisher port."))
     }
 }
 

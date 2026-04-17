@@ -33,27 +33,25 @@
 //! # }
 //! ```
 
-use core::fmt::Debug;
-
-use alloc::format;
-
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::shm_allocator::AllocationStrategy;
-use iceoryx2_log::{fail, warn};
-
+use super::request_response::PortFactory;
 use crate::{
     port::{DegradationAction, DegradationCallback, server::Server},
     prelude::UnableToDeliverStrategy,
     service,
 };
-
-use super::request_response::PortFactory;
+use alloc::format;
+use core::fmt::Debug;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_cal::shm_allocator::AllocationStrategy;
+use iceoryx2_log::{fail, warn};
+use tiny_fn::tiny_fn;
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct LocalServerConfig {
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
     pub(crate) initial_max_slice_len: usize,
     pub(crate) allocation_strategy: AllocationStrategy,
+    pub(crate) max_loaned_responses_per_request: usize,
 }
 
 /// Defines a failure that can occur when a [`Server`] is created with
@@ -79,6 +77,30 @@ impl core::fmt::Display for ServerCreateError {
 
 impl core::error::Error for ServerCreateError {}
 
+tiny_fn! {
+    /// A user provided callback to reduce the number of preallocated [`ResponseMut`](crate::response_mut::ResponseMut)s.
+    /// The input argument is the worst case number of preallocated [`ResponseMut`](crate::response_mut::ResponseMut)s required
+    /// to guarantee that the [`Server`]/[`ActiveRequest`](crate::active_request::ActiveRequest) never runs out of [`ResponseMut`](crate::response_mut::ResponseMut)s to loan
+    /// and send.
+    /// The return value is clamped between `1` and the worst case number of
+    /// preallocated [`ResponseMut`](crate::response_mut::ResponseMut)s.
+    ///
+    /// # Important
+    ///
+    /// If the user reduces the number of preallocated [`ResponseMut`](crate::response_mut::ResponseMut)s, iceoryx2 can
+    /// no longer guarantee, that the [`Client`] can always loan a [`ResponseMut`](crate::response_mut::ResponseMut)
+    /// to send.
+    pub struct PreallocatedResponseOverride = Fn(number_of_preallocated_responses: usize) -> usize;
+}
+
+impl<'a> Debug for PreallocatedResponseOverride<'a> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "PreallocatedResponseOverride")
+    }
+}
+
+unsafe impl Send for PreallocatedResponseOverride<'_> {}
+
 /// Factory to create a new [`Server`] port/endpoint for
 /// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
 /// based communication.
@@ -100,9 +122,9 @@ pub struct PortFactoryServer<
     >,
 
     pub(crate) config: LocalServerConfig,
-    pub(crate) max_loaned_responses_per_request: usize,
     pub(crate) request_degradation_callback: Option<DegradationCallback<'static>>,
     pub(crate) response_degradation_callback: Option<DegradationCallback<'static>>,
+    pub(crate) preallocated_number_of_responses_override: PreallocatedResponseOverride<'static>,
 }
 
 unsafe impl<
@@ -147,14 +169,10 @@ impl<
     pub unsafe fn __internal_partial_clone(&self) -> Self {
         Self {
             factory: self.factory,
-            config: LocalServerConfig {
-                unable_to_deliver_strategy: self.config.unable_to_deliver_strategy,
-                initial_max_slice_len: self.config.initial_max_slice_len,
-                allocation_strategy: self.config.allocation_strategy,
-            },
-            max_loaned_responses_per_request: self.max_loaned_responses_per_request,
+            config: self.config,
             request_degradation_callback: None,
             response_degradation_callback: None,
+            preallocated_number_of_responses_override: PreallocatedResponseOverride::new(|v| v),
         }
     }
 
@@ -176,15 +194,37 @@ impl<
 
         Self {
             factory,
-            max_loaned_responses_per_request: defs.server_max_loaned_responses_per_request,
             config: LocalServerConfig {
                 unable_to_deliver_strategy: defs.server_unable_to_deliver_strategy,
                 initial_max_slice_len: 1,
                 allocation_strategy: AllocationStrategy::Static,
+                max_loaned_responses_per_request: defs.server_max_loaned_responses_per_request,
             },
             request_degradation_callback: None,
             response_degradation_callback: None,
+            preallocated_number_of_responses_override: PreallocatedResponseOverride::new(|v| v),
         }
+    }
+
+    /// A user provided callback to reduce the number of preallocated [`ResponseMut`](crate::response_mut::ResponseMut)s.
+    /// The input argument is the worst case number of preallocated [`ResponseMut`](crate::response_mut::ResponseMut)s required
+    /// to guarantee that the [`Server`]/[`ActiveRequest`](crate::active_request::ActiveRequest) never runs out of [`ResponseMut`](crate::response_mut::ResponseMut)s to loan
+    /// and send.
+    /// The return value is clamped between `1` and the worst case number of
+    /// preallocated [`ResponseMut`](crate::response_mut::ResponseMut)s.
+    ///
+    /// # Important
+    ///
+    /// If the user reduces the number of preallocated [`ResponseMut`](crate::response_mut::ResponseMut)s, iceoryx2 can
+    /// no longer guarantee, that the [`Server`] can always loan a [`ResponseMut`](crate::response_mut::ResponseMut)
+    /// to send.
+    pub fn override_response_preallocation<F: Fn(usize) -> usize + Send + 'static>(
+        mut self,
+        callback: F,
+    ) -> Self {
+        self.preallocated_number_of_responses_override =
+            PreallocatedResponseOverride::new(move |v| callback(v).clamp(1, v));
+        self
     }
 
     /// Sets the [`UnableToDeliverStrategy`] which defines how the [`Server`] shall behave
@@ -204,7 +244,7 @@ impl<
             warn!(from self,
                 "A value of 0 is not allowed for max loaned responses per request. Adjusting it to 1.");
         }
-        self.max_loaned_responses_per_request = value.max(1);
+        self.config.max_loaned_responses_per_request = value.max(1);
         self
     }
 

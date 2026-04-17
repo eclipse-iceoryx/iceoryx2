@@ -221,6 +221,91 @@ pub mod server {
     }
 
     #[conformance_test]
+    pub fn override_preallocated_responses_to_one_works<Sut: Service>() {
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create()
+            .unwrap();
+
+        let sut = service
+            .server_builder()
+            .override_response_preallocation(|_| 1)
+            .max_loaned_responses_per_request(2)
+            .create()
+            .unwrap();
+
+        let client = service.client_builder().create().unwrap();
+        let _pending_response = client.send_copy(0).unwrap();
+
+        let active_request = sut.receive().unwrap().unwrap();
+
+        let _response = active_request.loan().unwrap();
+        assert_that!(active_request.loan().err(), eq Some(iceoryx2::port::LoanError::OutOfMemory));
+    }
+
+    pub fn override_preallocated_responses_to_zero_rounds_up_to_one<Sut: Service>() {
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create()
+            .unwrap();
+
+        let sut = service
+            .server_builder()
+            .override_response_preallocation(|_| 0)
+            .max_loaned_responses_per_request(2)
+            .create()
+            .unwrap();
+
+        let client = service.client_builder().create().unwrap();
+        let _pending_response = client.send_copy(0).unwrap();
+
+        let active_request = sut.receive().unwrap().unwrap();
+
+        let _response = active_request.loan().unwrap();
+        assert_that!(active_request.loan().err(), eq Some(iceoryx2::port::LoanError::OutOfMemory));
+    }
+
+    pub fn override_preallocated_responses_many_works<Sut: Service>() {
+        const MAX_NUMBER_OF_RESPONSES: usize = 10;
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+
+        for n in 1..MAX_NUMBER_OF_RESPONSES {
+            let service = node
+                .service_builder(&service_name)
+                .request_response::<u64, u64>()
+                .create()
+                .unwrap();
+
+            let number_of_responses = n;
+            let sut = service
+                .server_builder()
+                .override_response_preallocation(move |_| number_of_responses)
+                .max_loaned_responses_per_request(n + 1)
+                .create()
+                .unwrap();
+
+            let client = service.client_builder().create().unwrap();
+            let _pending_response = client.send_copy(0).unwrap();
+
+            let active_request = sut.receive().unwrap().unwrap();
+
+            let mut responses = vec![];
+            for _ in 0..n {
+                responses.push(active_request.loan().unwrap());
+            }
+
+            assert_that!(active_request.loan().err(), eq Some(iceoryx2::port::LoanError::OutOfMemory));
+        }
+    }
+
+    #[conformance_test]
     pub fn server_can_hold_specified_amount_of_active_requests_one_client_one_request<
         Sut: Service,
     >() {

@@ -359,6 +359,9 @@ impl<
                 .required_amount_of_chunks_per_client_data_segment(
                     static_config.max_loaned_requests,
                 );
+        let number_of_requests = client_factory
+            .preallocate_number_of_requests_override
+            .call(number_of_requests);
         let server_list = &service.dynamic_storage.get().request_response().servers;
 
         let global_config = service.shared_node.config();
