@@ -296,10 +296,44 @@ def test_override_request_preallocation_to_one_works(
     )
 
     client = service.client_builder().override_request_preallocation(1).create()
-    _request_1 = client.loan_uninit()
+    _request = client.loan_uninit()
 
     with pytest.raises(iox2.LoanError):
         client.loan_uninit()
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_override_response_preallocation_to_one_works(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(Payload, Payload)
+        .response_header(ctypes.c_uint64)
+        .create()
+    )
+
+    client = service.client_builder().create()
+    server = (
+        service.server_builder()
+        .max_loaned_responses_per_request(2)
+        .override_response_preallocation(1)
+        .create()
+    )
+
+    request_uninit = client.loan_uninit()
+    request = request_uninit.assume_init()
+    _pending_response = request.send()
+
+    active_request = server.receive()
+    _response = active_request.loan_uninit()
+
+    with pytest.raises(iox2.LoanError):
+        active_request.loan_uninit()
 
 
 @pytest.mark.parametrize("service_type", service_types)

@@ -55,6 +55,7 @@ pub struct PortFactoryServer {
     response_payload_type_details: TypeStorage,
     request_header_type_details: TypeStorage,
     response_header_type_details: TypeStorage,
+    override_response_preallocation: Parc<Option<usize>>,
 }
 
 impl PortFactoryServer {
@@ -81,6 +82,7 @@ impl PortFactoryServer {
                     >(v.server_builder()))
                 }),
             },
+            override_response_preallocation: Parc::new(None),
             request_header_type_details,
             request_payload_type_details,
             response_header_type_details,
@@ -91,6 +93,7 @@ impl PortFactoryServer {
     fn clone_ipc(&self, value: IpcPortFactoryServer<'static>) -> Self {
         Self {
             factory: self.factory.clone(),
+            override_response_preallocation: self.override_response_preallocation.clone(),
             value: PortFactoryServerType::Ipc(Parc::new(value)),
             request_payload_type_details: self.request_payload_type_details.clone(),
             response_payload_type_details: self.response_payload_type_details.clone(),
@@ -102,6 +105,7 @@ impl PortFactoryServer {
     fn clone_local(&self, value: LocalPortFactoryServer<'static>) -> Self {
         Self {
             factory: self.factory.clone(),
+            override_response_preallocation: self.override_response_preallocation.clone(),
             value: PortFactoryServerType::Local(Parc::new(value)),
             request_payload_type_details: self.request_payload_type_details.clone(),
             response_payload_type_details: self.response_payload_type_details.clone(),
@@ -149,12 +153,12 @@ impl PortFactoryServer {
         match &self.value {
             PortFactoryServerType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                let this = this.override_response_preallocation(move |_| value);
+                *self.override_response_preallocation.lock() = Some(value);
                 self.clone_ipc(this)
             }
             PortFactoryServerType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                let this = this.override_response_preallocation(move |_| value);
+                *self.override_response_preallocation.lock() = Some(value);
                 self.clone_local(this)
             }
         }
@@ -241,6 +245,13 @@ impl PortFactoryServer {
         match &self.value {
             PortFactoryServerType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = match &*self.override_response_preallocation.lock() {
+                    Some(v) => {
+                        let override_value = *v;
+                        this.override_response_preallocation(move |_| override_value)
+                    }
+                    None => this,
+                };
                 Ok(Server {
                     value: ServerType::Ipc(Some(
                         this.create()
@@ -254,6 +265,13 @@ impl PortFactoryServer {
             }
             PortFactoryServerType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = match &*self.override_response_preallocation.lock() {
+                    Some(v) => {
+                        let override_value = *v;
+                        this.override_response_preallocation(move |_| override_value)
+                    }
+                    None => this,
+                };
                 Ok(Server {
                     value: ServerType::Local(Some(
                         this.create()
