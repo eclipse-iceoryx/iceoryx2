@@ -16,6 +16,7 @@
 #include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
+#include "iox2/internal/callback_context.hpp"
 #include "iox2/server.hpp"
 #include "iox2/server_error.hpp"
 #include "iox2/service_type.hpp"
@@ -118,7 +119,7 @@ template <ServiceType Service,
           typename ResponseUserHeader>
 inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     override_response_preallocation(
-        const iox2::bb::StaticFunction<uint64_t(uint64_t)>& callback) && -> PortFactoryServer&& {
+        const iox2::bb::StaticFunction<size_t(size_t)>& callback) && -> PortFactoryServer&& {
     m_override_preallocation_callback.emplace(callback);
     return std::move(*this);
 }
@@ -165,6 +166,7 @@ inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, Respon
     if (m_override_preallocation_callback.has_value()) {
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be a raw pointer - crosses FFI boundary
         auto* callback = new iox2::bb::StaticFunction<size_t(size_t)>(m_override_preallocation_callback.value());
+        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be a raw pointer - crosses FFI boundary
         auto* ctx = new internal::CallbackContext<iox2::bb::StaticFunction<size_t(size_t)>*>(callback);
         iox2_port_factory_server_builder_override_responses_preallocation(
             &m_handle, internal::override_callback, static_cast<void*>(ctx));

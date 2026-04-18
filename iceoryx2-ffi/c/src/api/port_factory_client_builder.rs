@@ -170,13 +170,13 @@ impl HandleToType for iox2_port_factory_client_builder_h_ref {
     }
 }
 
-/// The callback for [`iox2_port_factory_client_override_requests_preallocation`]
+/// The callback for [`iox2_port_factory_client_builder_override_requests_preallocation`]
 ///
 /// # Arguments
 ///
-/// * [`number_of_preallocated_requests`] - the worst case number of requests that need to be
+/// * `number_of_preallocated_requests` - the worst case number of requests that need to be
 ///   preallocated so that iceoryx2 can guarantee that it never runs out of memory.
-/// * [`iox2_callback_context`] -> provided by the user and can be `NULL`
+/// * `iox2_callback_context` -> provided by the user and can be `NULL`
 ///
 /// Returns the override value of preallocated requests. The return value is clamped between `1`
 /// and the worst case number of preallocated requests.

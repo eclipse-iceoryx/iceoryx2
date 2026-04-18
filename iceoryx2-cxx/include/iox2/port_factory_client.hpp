@@ -111,8 +111,7 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseUserHeader>
 inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
-    override_request_preallocation(
-        const iox2::bb::StaticFunction<uint64_t(uint64_t)>& callback) && -> PortFactoryClient&& {
+    override_request_preallocation(const iox2::bb::StaticFunction<size_t(size_t)>& callback) && -> PortFactoryClient&& {
     m_override_preallocation_callback.emplace(callback);
     return std::move(*this);
 }
@@ -155,6 +154,7 @@ inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, Respon
     if (m_override_preallocation_callback.has_value()) {
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be a raw pointer - crosses FFI boundary
         auto* callback = new iox2::bb::StaticFunction<size_t(size_t)>(m_override_preallocation_callback.value());
+        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be a raw pointer - crosses FFI boundary
         auto* ctx = new internal::CallbackContext<iox2::bb::StaticFunction<size_t(size_t)>*>(callback);
         iox2_port_factory_client_builder_override_requests_preallocation(
             &m_handle, internal::override_callback, static_cast<void*>(ctx));

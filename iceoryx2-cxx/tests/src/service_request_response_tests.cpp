@@ -576,7 +576,7 @@ TYPED_TEST(ServiceRequestResponseTest, override_preallocated_requests_to_one_wor
                        .value();
 
     auto sut_client =
-        service.client_builder().override_request_preallocation([](auto) -> auto { return 1; }).create().value();
+        service.client_builder().override_request_preallocation([](size_t) -> size_t { return 1; }).create().value();
 
     auto request_1 = sut_client.loan().value();
     auto request_2 = sut_client.loan();
@@ -595,7 +595,7 @@ TYPED_TEST(ServiceRequestResponseTest, override_preallocated_responses_to_one_wo
     auto client = service.client_builder().create().value();
     auto server = service.server_builder()
                       .max_loaned_responses_per_request(2)
-                      .override_response_preallocation([](auto) -> auto { return 1; })
+                      .override_response_preallocation([](size_t) -> size_t { return 1; })
                       .create()
                       .value();
 

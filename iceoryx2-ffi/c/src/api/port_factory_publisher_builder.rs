@@ -202,13 +202,13 @@ impl HandleToType for iox2_port_factory_publisher_builder_h_ref {
     }
 }
 
-/// The callback for [`iox2_port_factory_publisher_override_samples_preallocation`]
+/// The callback for [`iox2_port_factory_publisher_builder_override_samples_preallocation`]
 ///
 /// # Arguments
 ///
-/// * [`number_of_preallocated_samples`] - the worst case number of samples that need to be
+/// * `number_of_preallocated_samples` - the worst case number of samples that need to be
 ///   preallocated so that iceoryx2 can guarantee that it never runs out of memory.
-/// * [`iox2_callback_context`] -> provided by the user and can be `NULL`
+/// * `iox2_callback_context` -> provided by the user and can be `NULL`
 ///
 /// Returns the override value of preallocated samples. The return value is clamped between `1`
 /// and the worst case number of preallocated samples.

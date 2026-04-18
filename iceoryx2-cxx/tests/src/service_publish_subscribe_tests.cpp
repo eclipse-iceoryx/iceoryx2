@@ -304,7 +304,7 @@ TYPED_TEST(ServicePublishSubscribeTest, override_preallocated_samples_to_one_wor
 
     auto sut_publisher = service.publisher_builder()
                              .max_loaned_samples(2)
-                             .override_sample_preallocation([](auto) { return 1; })
+                             .override_sample_preallocation([](size_t) -> size_t { return 1; })
                              .create()
                              .value();
 

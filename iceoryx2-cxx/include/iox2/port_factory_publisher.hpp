@@ -17,6 +17,7 @@
 #include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
+#include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/publisher.hpp"
 #include "iox2/service_type.hpp"
@@ -145,6 +146,7 @@ inline auto PortFactoryPublisher<S, Payload, UserHeader>::create() && -> bb::Exp
     if (m_override_preallocation_callback.has_value()) {
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be a raw pointer - crosses FFI boundary
         auto* callback = new iox2::bb::StaticFunction<size_t(size_t)>(m_override_preallocation_callback.value());
+        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be a raw pointer - crosses FFI boundary
         auto* ctx = new internal::CallbackContext<iox2::bb::StaticFunction<size_t(size_t)>*>(callback);
         iox2_port_factory_publisher_builder_override_samples_preallocation(
             &m_handle, internal::override_callback, static_cast<void*>(ctx));
