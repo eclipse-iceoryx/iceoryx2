@@ -16,7 +16,6 @@
 #include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
-#include "iox2/bb/static_function.hpp"
 #include "iox2/client.hpp"
 #include "iox2/client_error.hpp"
 #include "iox2/internal/callback_context.hpp"
@@ -73,8 +72,7 @@ class PortFactoryClient {
     /// If the user reduces the number of preallocated [`RequestMut`]s, iceoryx2 can
     /// no longer guarantee, that the [`Client`] can always loan a [`RequestMut`]
     /// to send.
-    auto
-    override_request_preallocation(const iox2::bb::StaticFunction<size_t(size_t)>& callback) && -> PortFactoryClient&&;
+    auto override_request_preallocation(const OverridePreallocationCallback& callback) && -> PortFactoryClient&&;
 
     /// Creates a new [`Client`] or returns a [`ClientCreateError`] on failure.
     auto
@@ -90,7 +88,7 @@ class PortFactoryClient {
     iox2_port_factory_client_builder_h m_handle = nullptr;
     bb::Optional<uint64_t> m_max_slice_len;
     bb::Optional<AllocationStrategy> m_allocation_strategy;
-    bb::Optional<iox2::bb::StaticFunction<size_t(size_t)>> m_override_preallocation_callback;
+    bb::Optional<OverridePreallocationCallback> m_override_preallocation_callback;
 };
 
 template <ServiceType Service,
@@ -111,7 +109,7 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseUserHeader>
 inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
-    override_request_preallocation(const iox2::bb::StaticFunction<size_t(size_t)>& callback) && -> PortFactoryClient&& {
+    override_request_preallocation(const OverridePreallocationCallback& callback) && -> PortFactoryClient&& {
     m_override_preallocation_callback.emplace(callback);
     return std::move(*this);
 }
@@ -153,9 +151,9 @@ inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, Respon
     }
     if (m_override_preallocation_callback.has_value()) {
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be a raw pointer - crosses FFI boundary
-        auto* callback = new iox2::bb::StaticFunction<size_t(size_t)>(m_override_preallocation_callback.value());
+        auto* callback = new OverridePreallocationCallback(m_override_preallocation_callback.value());
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be a raw pointer - crosses FFI boundary
-        auto* ctx = new internal::CallbackContext<iox2::bb::StaticFunction<size_t(size_t)>*>(callback);
+        auto* ctx = new internal::CallbackContext<OverridePreallocationCallback*>(callback);
         iox2_port_factory_client_builder_override_requests_preallocation(
             &m_handle, internal::override_callback, static_cast<void*>(ctx));
     }

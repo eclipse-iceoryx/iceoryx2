@@ -23,7 +23,10 @@
 #include "iox2/unique_node_id.hpp"
 
 namespace iox2 {
+using OverridePreallocationCallback = iox2::bb::StaticFunction<size_t(size_t)>;
+
 namespace internal {
+
 
 /// Building block to provide a type-safe context pointer to a C callback
 /// that has a `void*` context argument.
@@ -69,7 +72,7 @@ inline auto ctx_cast(void* ptr) -> CallbackContext<T>* {
 
 inline auto override_callback(size_t value, iox2_callback_context ctx) -> size_t {
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be raw pointer because of C interface
-    auto* context = ctx_cast<iox2::bb::StaticFunction<size_t(size_t)>*>(ctx);
+    auto* context = ctx_cast<OverridePreallocationCallback*>(ctx);
     auto ret_val = (*context->value())(value);
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be raw pointer because of C interface
     delete context->value();

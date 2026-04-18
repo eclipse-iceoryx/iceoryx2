@@ -65,8 +65,7 @@ class PortFactoryPublisher {
     /// If the user reduces the number of preallocated [`SampleMut`]s, iceoryx2 can
     /// no longer guarantee, that the [`Publisher`] can always loan a [`SampleMut`]
     /// to send.
-    auto override_sample_preallocation(
-        const iox2::bb::StaticFunction<size_t(size_t)>& callback) && -> PortFactoryPublisher&&;
+    auto override_sample_preallocation(const OverridePreallocationCallback& callback) && -> PortFactoryPublisher&&;
 
     /// Sets the maximum slice length that a user can allocate with
     /// [`Publisher::loan_slice()`] or [`Publisher::loan_slice_uninit()`].
@@ -92,7 +91,7 @@ class PortFactoryPublisher {
     iox2_port_factory_publisher_builder_h m_handle = nullptr;
     bb::Optional<uint64_t> m_max_slice_len;
     bb::Optional<AllocationStrategy> m_allocation_strategy;
-    bb::Optional<iox2::bb::StaticFunction<size_t(size_t)>> m_override_preallocation_callback;
+    bb::Optional<OverridePreallocationCallback> m_override_preallocation_callback;
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -110,7 +109,7 @@ PortFactoryPublisher<S, Payload, UserHeader>::initial_max_slice_len(uint64_t val
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto PortFactoryPublisher<S, Payload, UserHeader>::override_sample_preallocation(
-    const iox2::bb::StaticFunction<size_t(size_t)>& callback) && -> PortFactoryPublisher&& {
+    const OverridePreallocationCallback& callback) && -> PortFactoryPublisher&& {
     m_override_preallocation_callback.emplace(callback);
     return std::move(*this);
 }
@@ -145,9 +144,9 @@ inline auto PortFactoryPublisher<S, Payload, UserHeader>::create() && -> bb::Exp
     }
     if (m_override_preallocation_callback.has_value()) {
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be a raw pointer - crosses FFI boundary
-        auto* callback = new iox2::bb::StaticFunction<size_t(size_t)>(m_override_preallocation_callback.value());
+        auto* callback = new OverridePreallocationCallback(m_override_preallocation_callback.value());
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be a raw pointer - crosses FFI boundary
-        auto* ctx = new internal::CallbackContext<iox2::bb::StaticFunction<size_t(size_t)>*>(callback);
+        auto* ctx = new internal::CallbackContext<OverridePreallocationCallback*>(callback);
         iox2_port_factory_publisher_builder_override_samples_preallocation(
             &m_handle, internal::override_callback, static_cast<void*>(ctx));
     }
