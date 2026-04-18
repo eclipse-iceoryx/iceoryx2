@@ -281,6 +281,28 @@ def test_send_with_response_system_header_works(
 
 
 @pytest.mark.parametrize("service_type", service_types)
+def test_override_request_preallocation_to_one_works(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(ctypes.c_uint64, ctypes.c_uint64)
+        .max_loaned_requests(2)
+        .create()
+    )
+
+    client = service.client_builder().override_request_preallocation(1).create()
+    _request_1 = client.loan_uninit()
+
+    with pytest.raises(iox2.LoanError):
+        client.loan_uninit()
+
+
+@pytest.mark.parametrize("service_type", service_types)
 def test_client_reallocation_fails_when_allocation_strategy_is_static(
     service_type: iox2.ServiceType,
 ) -> None:

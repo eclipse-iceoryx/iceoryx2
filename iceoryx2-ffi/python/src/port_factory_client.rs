@@ -54,6 +54,7 @@ pub struct PortFactoryClient {
     response_payload_type_details: TypeStorage,
     request_header_type_details: TypeStorage,
     response_header_type_details: TypeStorage,
+    override_request_preallocation: Parc<Option<usize>>,
 }
 
 impl PortFactoryClient {
@@ -80,6 +81,7 @@ impl PortFactoryClient {
                     >(v.client_builder()))
                 }),
             },
+            override_request_preallocation: Parc::new(None),
             request_header_type_details,
             request_payload_type_details,
             response_header_type_details,
@@ -95,6 +97,7 @@ impl PortFactoryClient {
             response_payload_type_details: self.response_payload_type_details.clone(),
             request_header_type_details: self.request_header_type_details.clone(),
             response_header_type_details: self.response_header_type_details.clone(),
+            override_request_preallocation: self.override_request_preallocation.clone(),
         }
     }
 
@@ -106,6 +109,7 @@ impl PortFactoryClient {
             response_payload_type_details: self.response_payload_type_details.clone(),
             request_header_type_details: self.request_header_type_details.clone(),
             response_header_type_details: self.response_header_type_details.clone(),
+            override_request_preallocation: self.override_request_preallocation.clone(),
         }
     }
 }
@@ -148,12 +152,12 @@ impl PortFactoryClient {
         match &self.value {
             PortFactoryClientType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                let this = this.override_request_preallocation(move |_| value);
+                *self.override_request_preallocation.lock() = Some(value);
                 self.clone_ipc(this)
             }
             PortFactoryClientType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                let this = this.override_request_preallocation(move |_| value);
+                *self.override_request_preallocation.lock() = Some(value);
                 self.clone_local(this)
             }
         }
@@ -220,6 +224,13 @@ impl PortFactoryClient {
         match &self.value {
             PortFactoryClientType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = match &*self.override_request_preallocation.lock() {
+                    Some(v) => {
+                        let override_value = *v;
+                        this.override_request_preallocation(move |_| override_value)
+                    }
+                    None => this,
+                };
                 Ok(Client {
                     value: ClientType::Ipc(Some(
                         this.create()
@@ -233,6 +244,13 @@ impl PortFactoryClient {
             }
             PortFactoryClientType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = match &*self.override_request_preallocation.lock() {
+                    Some(v) => {
+                        let override_value = *v;
+                        this.override_request_preallocation(move |_| override_value)
+                    }
+                    None => this,
+                };
                 Ok(Client {
                     value: ClientType::Local(Some(
                         this.create()
