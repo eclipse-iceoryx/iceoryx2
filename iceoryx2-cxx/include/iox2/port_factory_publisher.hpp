@@ -52,6 +52,21 @@ class PortFactoryPublisher {
     auto operator=(PortFactoryPublisher&&) -> PortFactoryPublisher& = default;
     ~PortFactoryPublisher() = default;
 
+    /// Defines a callback to reduce the number of preallocated [`SampleMut`]s.
+    /// The input argument is the worst case number of preallocated [`SampleMut`]s required
+    /// to guarantee that the [`Publisher`] never runs out of [`SampleMut`]s to loan
+    /// and send.
+    /// The return value is clamped between `1` and the worst case number of
+    /// preallocated [`SampleMut`]s.
+    ///
+    /// # Important
+    ///
+    /// If the user reduces the number of preallocated [`SampleMut`]s, iceoryx2 can
+    /// no longer guarantee, that the [`Publisher`] can always loan a [`SampleMut`]
+    /// to send.
+    auto override_sample_preallocation(
+        const iox2::bb::StaticFunction<size_t(size_t)>& callback) && -> PortFactoryPublisher&&;
+
     /// Sets the maximum slice length that a user can allocate with
     /// [`Publisher::loan_slice()`] or [`Publisher::loan_slice_uninit()`].
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
@@ -76,6 +91,7 @@ class PortFactoryPublisher {
     iox2_port_factory_publisher_builder_h m_handle = nullptr;
     bb::Optional<uint64_t> m_max_slice_len;
     bb::Optional<AllocationStrategy> m_allocation_strategy;
+    bb::Optional<iox2::bb::StaticFunction<size_t(size_t)>> m_override_preallocation_callback;
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -88,6 +104,13 @@ template <typename T, typename>
 inline auto
 PortFactoryPublisher<S, Payload, UserHeader>::initial_max_slice_len(uint64_t value) && -> PortFactoryPublisher&& {
     m_max_slice_len.emplace(value);
+    return std::move(*this);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto PortFactoryPublisher<S, Payload, UserHeader>::override_sample_preallocation(
+    const iox2::bb::StaticFunction<size_t(size_t)>& callback) && -> PortFactoryPublisher&& {
+    m_override_preallocation_callback.emplace(callback);
     return std::move(*this);
 }
 
@@ -119,6 +142,14 @@ inline auto PortFactoryPublisher<S, Payload, UserHeader>::create() && -> bb::Exp
         iox2_port_factory_publisher_builder_set_allocation_strategy(
             &m_handle, bb::into<iox2_allocation_strategy_e>(m_allocation_strategy.value()));
     }
+    if (m_override_preallocation_callback.has_value()) {
+        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be a raw pointer - crosses FFI boundary
+        auto* callback = new iox2::bb::StaticFunction<size_t(size_t)>(m_override_preallocation_callback.value());
+        auto* ctx = new internal::CallbackContext<iox2::bb::StaticFunction<size_t(size_t)>*>(callback);
+        iox2_port_factory_publisher_builder_override_samples_preallocation(
+            &m_handle, internal::override_callback, static_cast<void*>(ctx));
+    }
+
 
     iox2_publisher_h pub_handle {};
 

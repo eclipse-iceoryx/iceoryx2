@@ -294,6 +294,26 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_uninit_send_receive_works) {
     ASSERT_THAT(recv_sample->payload(), Eq(payload));
 }
 
+TYPED_TEST(ServicePublishSubscribeTest, override_preallocated_samples_to_one_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
+
+    auto sut_publisher = service.publisher_builder()
+                             .max_loaned_samples(2)
+                             .override_sample_preallocation([](auto) { return 1; })
+                             .create()
+                             .value();
+
+    auto sample_1 = sut_publisher.loan().value();
+    auto sample_2 = sut_publisher.loan();
+    ASSERT_THAT(sample_2.has_value(), Eq(false));
+    ASSERT_THAT(sample_2.error(), Eq(LoanError::OutOfMemory));
+}
+
 struct DummyData {
     static constexpr uint64_t DEFAULT_VALUE_A = 42;
     static constexpr bool DEFAULT_VALUE_Z { false };
