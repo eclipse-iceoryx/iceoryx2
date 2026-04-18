@@ -132,6 +132,33 @@ impl PortFactoryClient {
         self.response_header_type_details.clone().value
     }
 
+    /// Reduces the number of preallocated `RequestMut`s.
+    /// The return value is clamped between `1` and the worst case number of
+    /// preallocated `RequestMut`s required
+    /// to guarantee that the `Client` never runs out of `RequestMut`s to loan
+    /// and send.
+    ///
+    /// # Important
+    ///
+    /// If the user reduces the number of preallocated `RequestMut`s, iceoryx2 can
+    /// no longer guarantee, that the `Client` can always loan a `RequestMut`
+    /// to send.
+    pub fn override_request_preallocation(&self, value: usize) -> Self {
+        let _guard = self.factory.lock();
+        match &self.value {
+            PortFactoryClientType::Ipc(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = this.override_request_preallocation(move |_| value);
+                self.clone_ipc(this)
+            }
+            PortFactoryClientType::Local(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = this.override_request_preallocation(move |_| value);
+                self.clone_local(this)
+            }
+        }
+    }
+
     /// Sets the `UnableToDeliverStrategy` which defines how the `Client` shall behave
     /// when a `Server` cannot receive a `RequestMut` since its internal buffer is full.
     pub fn unable_to_deliver_strategy(&self, value: &UnableToDeliverStrategy) -> Self {

@@ -133,6 +133,33 @@ impl PortFactoryServer {
         self.response_header_type_details.clone().value
     }
 
+    /// Reduces the number of preallocated `ResponseMut`s.
+    /// The return value is clamped between `1` and the worst case number of
+    /// preallocated `ResponseMut`s required
+    /// to guarantee that the `Server` never runs out of `ResponseMut`s to loan
+    /// and send.
+    ///
+    /// # Important
+    ///
+    /// If the user reduces the number of preallocated `ResponseMut`s, iceoryx2 can
+    /// no longer guarantee, that the `Server` can always loan a `ResponseMut`
+    /// to send.
+    pub fn override_response_preallocation(&self, value: usize) -> Self {
+        let _guard = self.factory.lock();
+        match &self.value {
+            PortFactoryServerType::Ipc(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = this.override_response_preallocation(move |_| value);
+                self.clone_ipc(this)
+            }
+            PortFactoryServerType::Local(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = this.override_response_preallocation(move |_| value);
+                self.clone_local(this)
+            }
+        }
+    }
+
     /// Sets the `UnableToDeliverStrategy` which defines how the `Server` shall behave
     /// when a `Client` cannot receive a `Response` since its internal buffer is full.
     pub fn unable_to_deliver_strategy(&self, value: &UnableToDeliverStrategy) -> Self {

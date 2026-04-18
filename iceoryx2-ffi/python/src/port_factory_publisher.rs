@@ -125,6 +125,33 @@ impl PortFactoryPublisher {
         }
     }
 
+    /// Reduces the number of preallocated `SampleMut`s.
+    /// The return value is clamped between `1` and the worst case number of
+    /// preallocated `SampleMut`s required
+    /// to guarantee that the `Publisher` never runs out of `SampleMut`s to loan
+    /// and send.
+    ///
+    /// # Important
+    ///
+    /// If the user reduces the number of preallocated `SampleMut`s, iceoryx2 can
+    /// no longer guarantee, that the `Publisher` can always loan a `SampleMut`
+    /// to send.
+    pub fn override_sample_preallocation(&self, value: usize) -> Self {
+        let _guard = self.factory.lock();
+        match &self.value {
+            PortFactoryPublisherType::Ipc(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = this.override_sample_preallocation(move |_| value);
+                self.clone_ipc(this)
+            }
+            PortFactoryPublisherType::Local(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = this.override_sample_preallocation(move |_| value);
+                self.clone_local(this)
+            }
+        }
+    }
+
     /// Sets the `UnableToDeliverStrategy`.
     pub fn unable_to_deliver_strategy(&self, value: &UnableToDeliverStrategy) -> Self {
         let _guard = self.factory.lock();
