@@ -93,6 +93,7 @@ target_sources(iceoryx2-bb-cxx-tests
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_utility_convert.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_utility_deprecation_marker.cpp
     ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_vocabulary_expected.cpp
+    ${PROJECT_SOURCE_DIR}/src/legacy/moduletests/test_vocabulary_variant.cpp
 )
 target_include_directories(iceoryx2-bb-cxx-tests
     PRIVATE ${PROJECT_SOURCE_DIR}/src

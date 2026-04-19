@@ -655,4 +655,14 @@ TEST_F(variant_Test, TwoVariantsWithUnequalValueAreUnequal) {
     EXPECT_FALSE(sut1 == sut2);
 }
 
+TEST_F(variant_Test, VariantUsesMaxAlignment) {
+    ::testing::Test::RecordProperty("TEST_ID", "f49bc937-0aca-4be7-bb40-b4e0d4cc50d0");
+
+    struct alignas(16) Foo { };
+
+    using SUT = iox2::legacy::variant<char, Foo, bool>;
+
+    ASSERT_THAT(alignof(SUT), alignof(Foo));
+}
+
 } // namespace

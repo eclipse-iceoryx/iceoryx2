@@ -231,7 +231,7 @@ class IOX2_NO_DISCARD expected final {
     explicit operator bool() const noexcept;
 
     /// @brief  returns true if the expected contains a value type and false if it is an error type
-    /// @return bool which contains true if the expected contains an error
+    /// @return bool which contains true if the expected contains a value type and false if it is an error type
     bool has_value() const noexcept;
 
     /// @brief  returns true if the expected contains an error otherwise false
