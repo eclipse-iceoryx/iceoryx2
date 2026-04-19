@@ -64,20 +64,6 @@ struct in_place_type {
 /// @endcode
 static constexpr uint64_t INVALID_VARIANT_INDEX { std::numeric_limits<uint64_t>::max() };
 
-namespace detail {
-/// template recursion stopper for maximum size calculation
-template <std::size_t S = 0>
-constexpr std::size_t maxSize() noexcept {
-    return S;
-}
-
-/// calculate maximum size of supplied types
-template <typename T, typename... Args>
-constexpr std::size_t maxSize() noexcept {
-    return (sizeof(T) > maxSize<Args...>()) ? sizeof(T) : maxSize<Args...>();
-}
-} // namespace detail
-
 /// @brief Variant implementation from the C++17 standard with C++11. The
 ///         interface is inspired by the C++17 standard but it has changes in
 ///         get and emplace since we are not allowed to throw exceptions.
@@ -115,7 +101,7 @@ template <typename... Types>
 class variant final {
   private:
     /// @brief contains the largest size of the elements
-    static constexpr uint64_t TYPE_SIZE { detail::maxSize<Types...>() };
+    static constexpr uint64_t TYPE_SIZE { std::max({ sizeof(Types)... }) };
     /// @brief contains the largest alignment of the elements
     static constexpr uint64_t TYPE_ALIGNMENT { std::max({ alignof(Types)... }) };
 
