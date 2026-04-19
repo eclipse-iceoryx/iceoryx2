@@ -582,7 +582,7 @@ TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
     constexpr uint64_t HISTORY_SIZE = 13;
     constexpr uint64_t SUBSCRIBER_MAX_BUFFER_SIZE = 14;
     constexpr uint64_t SUBSCRIBER_MAX_BORROWED_SAMPLES = 15;
-    constexpr uint64_t PAYLOAD_ALIGNMENT = 4;
+    constexpr uint64_t PAYLOAD_ALIGNMENT = alignof(uint64_t) * 2;
 
     const auto service_name = iox2_testing::generate_service_name();
 
@@ -608,7 +608,7 @@ TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
     ASSERT_THAT(static_config.subscriber_max_buffer_size(), Eq(SUBSCRIBER_MAX_BUFFER_SIZE));
     ASSERT_THAT(static_config.subscriber_max_borrowed_samples(), Eq(SUBSCRIBER_MAX_BORROWED_SAMPLES));
     ASSERT_THAT(static_config.message_type_details().payload().size(), Eq(sizeof(uint64_t)));
-    ASSERT_THAT(static_config.message_type_details().payload().alignment(), Eq(alignof(uint64_t)));
+    ASSERT_THAT(static_config.message_type_details().payload().alignment(), Eq(PAYLOAD_ALIGNMENT));
     ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("u64"));
 
     auto subscriber = service.subscriber_builder().create().value();
@@ -616,6 +616,24 @@ TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
 
     auto subscriber_2 = service.subscriber_builder().buffer_size(1).create().value();
     ASSERT_THAT(subscriber_2.buffer_size(), Eq(1));
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_incorrect_alignment_is_corrected) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t PAYLOAD_ALIGNMENT = alignof(uint64_t) / 2;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template publish_subscribe<uint64_t>()
+                       .payload_alignment(PAYLOAD_ALIGNMENT)
+                       .create()
+                       .value();
+
+    auto static_config = service.static_config();
+
+    ASSERT_THAT(static_config.message_type_details().payload().alignment(), Eq(alignof(uint64_t)));
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, safe_overflow_can_be_set) {

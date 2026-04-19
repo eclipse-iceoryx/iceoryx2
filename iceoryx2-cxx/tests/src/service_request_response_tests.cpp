@@ -831,8 +831,8 @@ TYPED_TEST(ServiceRequestResponseTest, setting_service_properties_works) {
     constexpr uint64_t MAX_RESPONSE_BUFFER_SIZE = 4;
     constexpr uint64_t MAX_BORROWED_RESPONSES = 5;
     constexpr uint64_t MAX_LOANED_REQUESTS = 3;
-    constexpr uint64_t REQUEST_PAYLOAD_ALIGNMENT = 4;
-    constexpr uint64_t RESPONSE_PAYLOAD_ALIGNMENT = 8;
+    constexpr uint64_t REQUEST_PAYLOAD_ALIGNMENT = alignof(uint64_t) * 2;
+    constexpr uint64_t RESPONSE_PAYLOAD_ALIGNMENT = alignof(uint64_t) * 4;
 
     const auto service_name = iox2_testing::generate_service_name();
 
@@ -860,10 +860,10 @@ TYPED_TEST(ServiceRequestResponseTest, setting_service_properties_works) {
     ASSERT_THAT(static_config.max_clients(), Eq(NUMBER_OF_CLIENTS));
     ASSERT_THAT(static_config.max_servers(), Eq(NUMBER_OF_SERVERS));
     ASSERT_THAT(static_config.request_message_type_details().payload().size(), Eq(sizeof(uint64_t)));
-    ASSERT_THAT(static_config.request_message_type_details().payload().alignment(), Eq(alignof(uint64_t)));
+    ASSERT_THAT(static_config.request_message_type_details().payload().alignment(), Eq(REQUEST_PAYLOAD_ALIGNMENT));
     ASSERT_THAT(static_config.request_message_type_details().payload().type_name(), StrEq("u64"));
     ASSERT_THAT(static_config.response_message_type_details().payload().size(), Eq(sizeof(uint64_t)));
-    ASSERT_THAT(static_config.response_message_type_details().payload().alignment(), Eq(alignof(uint64_t)));
+    ASSERT_THAT(static_config.response_message_type_details().payload().alignment(), Eq(RESPONSE_PAYLOAD_ALIGNMENT));
     ASSERT_THAT(static_config.response_message_type_details().payload().type_name(), StrEq("u64"));
     ASSERT_THAT(static_config.has_safe_overflow_for_requests(), Eq(false));
     ASSERT_THAT(static_config.has_safe_overflow_for_responses(), Eq(false));
@@ -872,6 +872,28 @@ TYPED_TEST(ServiceRequestResponseTest, setting_service_properties_works) {
     ASSERT_THAT(static_config.max_borrowed_responses_per_pending_responses(), Eq(MAX_BORROWED_RESPONSES));
     ASSERT_THAT(static_config.max_loaned_requests(), Eq(MAX_LOANED_REQUESTS));
     ASSERT_THAT(static_config.does_support_fire_and_forget_requests(), Eq(false));
+}
+
+
+TYPED_TEST(ServiceRequestResponseTest, setting_service_properties_incorrect_alignment_is_corrected) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t REQUEST_PAYLOAD_ALIGNMENT = alignof(uint64_t) / 2;
+    constexpr uint64_t RESPONSE_PAYLOAD_ALIGNMENT = alignof(uint64_t) / 2;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template request_response<uint64_t, uint64_t>()
+                       .request_payload_alignment(REQUEST_PAYLOAD_ALIGNMENT)
+                       .response_payload_alignment(RESPONSE_PAYLOAD_ALIGNMENT)
+                       .create()
+                       .value();
+
+    auto static_config = service.static_config();
+
+    ASSERT_THAT(static_config.request_message_type_details().payload().alignment(), Eq(alignof(uint64_t)));
+    ASSERT_THAT(static_config.response_message_type_details().payload().alignment(), Eq(alignof(uint64_t)));
 }
 
 TYPED_TEST(ServiceRequestResponseTest, open_fails_with_incompatible_client_requirement) {
