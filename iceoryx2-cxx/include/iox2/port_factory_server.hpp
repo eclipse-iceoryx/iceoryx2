@@ -165,7 +165,7 @@ inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, Respon
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be a raw pointer - crosses FFI boundary
         auto* callback = new OverridePreallocationCallback(m_override_preallocation_callback.value());
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be a raw pointer - crosses FFI boundary
-        auto* ctx = new internal::CallbackContext<OverridePreallocationCallback*>(callback);
+        auto* ctx = new internal::CallbackContext<OverridePreallocationCallback>(*callback);
         iox2_port_factory_server_builder_override_responses_preallocation(
             &m_handle, internal::override_callback, static_cast<void*>(ctx));
     }

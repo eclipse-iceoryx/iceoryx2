@@ -146,7 +146,7 @@ inline auto PortFactoryPublisher<S, Payload, UserHeader>::create() && -> bb::Exp
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be a raw pointer - crosses FFI boundary
         auto* callback = new OverridePreallocationCallback(m_override_preallocation_callback.value());
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be a raw pointer - crosses FFI boundary
-        auto* ctx = new internal::CallbackContext<OverridePreallocationCallback*>(callback);
+        auto* ctx = new internal::CallbackContext<OverridePreallocationCallback>(*callback);
         iox2_port_factory_publisher_builder_override_samples_preallocation(
             &m_handle, internal::override_callback, static_cast<void*>(ctx));
     }
