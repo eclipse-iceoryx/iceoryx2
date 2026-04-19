@@ -20,6 +20,7 @@
 
 #include "iox2/legacy/detail/variant_internal.hpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <iostream>
 #include <limits>
@@ -113,8 +114,10 @@ constexpr std::size_t maxSize() noexcept {
 template <typename... Types>
 class variant final {
   private:
-    /// @brief contains the size of the largest element
+    /// @brief contains the largest size of the elements
     static constexpr uint64_t TYPE_SIZE { detail::maxSize<Types...>() };
+    /// @brief contains the largest alignment of the elements
+    static constexpr uint64_t TYPE_ALIGNMENT { std::max({ alignof(Types)... }) };
 
   public:
     /// @brief the default constructor constructs a variant which does not contain
@@ -288,7 +291,7 @@ class variant final {
 
   private:
     // AXIVION Next Construct AutosarC++19_03-A9.6.1 : false positive. internal::byte_t is a type alias for uint8_t
-    struct alignas(Types...) storage_t {
+    struct alignas(TYPE_ALIGNMENT) storage_t {
         // AXIVION Next Construct AutosarC++19_03-M0.1.3 : data provides the actual storage and is accessed via m_storage since &m_storage.data = &m_storage
         // AXIVION Next Construct AutosarC++19_03-A18.1.1 : safe access is guaranteed since the c-array is wrapped inside the variant class
         // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays)

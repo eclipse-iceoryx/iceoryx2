@@ -120,6 +120,8 @@
   [#1515](https://github.com/eclipse-iceoryx/iceoryx2/issues/1515)
 * Fix build error in `iceoryx2-pal-posix` with bindgen
   [#1560](https://github.com/eclipse-iceoryx/iceoryx2/issues/1560)
+* Fix alignment of the `variant` alternatives
+  [#1567](https://github.com/eclipse-iceoryx/iceoryx2/issues/1567)
 
 ### Refactoring
 
