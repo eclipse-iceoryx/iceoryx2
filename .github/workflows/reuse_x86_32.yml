@@ -100,8 +100,8 @@ jobs:
                 -DCMAKE_INSTALL_PREFIX=target/ff/cc/install \
                 -DBUILD_EXAMPLES=ON \
                 -DBUILD_TESTING=ON \
-                -DCMAKE_C_FLAGS="-m32 -malign-double" \
-                -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
+                -DCMAKE_C_FLAGS="-m32" \
+                -DCMAKE_CXX_FLAGS="-m32" \
                 -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ inputs.profile }}" \
                 ${{ steps.set-build-flags.outputs.cmake-build-type }} \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
@@ -116,8 +116,7 @@ jobs:
         run: target/ff/cc/build/tests/iceoryx2-c-tests
 
       - name: Run C++ language binding tests
-        # TODO: [#262] the skipped tests trigger an unaligned pointer access
-        run: target/ff/cc/build/tests/iceoryx2-cxx-tests --gtest_filter="-ServiceTest/*.list_works:ServiceTest/*.list_works_with_attributes:ServiceTest/*.details_works"
+        run: target/ff/cc/build/tests/iceoryx2-cxx-tests
 
       - name: Build C language binding examples in out-of-tree configuration
         shell: bash
@@ -126,8 +125,8 @@ jobs:
           cmake -S examples/c \
                 -B target/ff/out-of-tree-c \
                 -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install \
-                -DCMAKE_C_FLAGS="-m32 -malign-double" \
-                -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
+                -DCMAKE_C_FLAGS="-m32" \
+                -DCMAKE_CXX_FLAGS="-m32" \
                 ${{ steps.set-build-flags.outputs.cmake-build-type }} \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
@@ -139,8 +138,8 @@ jobs:
           cmake -S examples/cxx \
                 -B target/ff/out-of-tree-cxx \
                 -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install" \
-                -DCMAKE_C_FLAGS="-m32 -malign-double" \
-                -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
+                -DCMAKE_C_FLAGS="-m32" \
+                -DCMAKE_CXX_FLAGS="-m32" \
                 ${{ steps.set-build-flags.outputs.cmake-build-type }} \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache

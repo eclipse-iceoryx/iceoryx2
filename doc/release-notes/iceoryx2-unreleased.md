@@ -49,6 +49,8 @@
     conflicts when merging.
 -->
 
+* Enable all tests for 32 bit after `#1567` fixed the unaligned pointer access
+  [#262](https://github.com/eclipse-iceoryx/iceoryx2/issues/262)
 * Publisher, Client, Server no longer deadlocks with
   UnableToDeliveryStrategy::Block when the other side disconnects
   [#314](https://github.com/eclipse-iceoryx/iceoryx2/issues/314)
