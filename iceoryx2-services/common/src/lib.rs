@@ -16,4 +16,22 @@
 
 #![no_std]
 
+use iceoryx2::{prelude::ZeroCopySend, service::static_config::StaticConfig};
+
 extern crate alloc;
+
+/// Events emitted by the service discovery service.
+#[derive(Debug, ZeroCopySend, serde::Serialize, serde::Deserialize)]
+#[allow(dead_code)] // Fields used by subscribers
+#[repr(C)]
+pub enum DiscoveryEvent {
+    /// A service has been added to the system.
+    ///
+    /// Contains the static configuration of the newly added service.
+    Added(StaticConfig),
+
+    /// A service has been removed from the system.
+    ///
+    /// Contains the static configuration of the removed service.
+    Removed(StaticConfig),
+}

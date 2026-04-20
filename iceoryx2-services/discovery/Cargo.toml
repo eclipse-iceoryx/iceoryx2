@@ -25,6 +25,7 @@ std = [
 ]
 
 [dependencies]
+iceoryx2-services-common = { workspace = true }
 iceoryx2 = { workspace = true }
 iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-bb-container = { workspace = true }

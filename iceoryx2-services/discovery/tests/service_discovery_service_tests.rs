@@ -20,9 +20,8 @@ mod service_discovery_service {
     use iceoryx2::testing::*;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::test_fail;
-    use iceoryx2_services_discovery::service_discovery::{
-        Config, Discovery, Payload, Service, service_name,
-    };
+    use iceoryx2_services_common::DiscoveryEvent;
+    use iceoryx2_services_discovery::service_discovery::{Config, Payload, Service, service_name};
 
     #[test]
     fn publishes_details_of_added_and_removed_services_when_configured() {
@@ -80,10 +79,10 @@ mod service_discovery_service {
         let mut num_removed = 0;
         while let Ok(Some(sample)) = subscriber.receive() {
             match sample.payload() {
-                Discovery::Added(_) => {
+                DiscoveryEvent::Added(_) => {
                     num_added += 1;
                 }
-                Discovery::Removed(_) => {
+                DiscoveryEvent::Removed(_) => {
                     num_removed += 1;
                 }
             }
@@ -185,7 +184,7 @@ mod service_discovery_service {
         assert_that!(result, is_some);
         let sample = result.unwrap();
 
-        if let Discovery::Added(service_info) = sample.payload() {
+        if let DiscoveryEvent::Added(service_info) = sample.payload() {
             assert_that!(service_info.name().to_string(), eq service_name().as_str());
         } else {
             test_fail!("expected DiscoveryEvent::Added for the internal service")

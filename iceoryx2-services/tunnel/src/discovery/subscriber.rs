@@ -17,8 +17,8 @@ use iceoryx2::prelude::ServiceName;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::{port::subscriber::Subscriber, service::Service};
 use iceoryx2_log::fail;
-use iceoryx2_services_discovery::service_discovery::Discovery as DiscoveryEvent;
 
+use iceoryx2_services_common::DiscoveryEvent;
 use iceoryx2_services_tunnel_backend::traits::Discovery;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
