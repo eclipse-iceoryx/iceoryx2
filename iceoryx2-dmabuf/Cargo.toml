@@ -1,0 +1,153 @@
+[package]
+name = "iceoryx2-dmabuf"
+description = "iceoryx2: SCM_RIGHTS fd sidecar + typed DMA-BUF wrapper for zero-copy frame delivery"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[features]
+default = ["std"]
+std = ["iceoryx2/std"]
+memfd = []
+peercred = []
+## Exposes test-only injection APIs for integration tests (error_paths).
+test-utils = []
+## Enables the typed DMA-BUF transport layer (DmaBufPublisher / DmaBufSubscriber).
+## Linux only — pulls `dma-buf` 0.5 via the cfg-gated dependency below.
+dma-buf = ["dep:dma-buf"]
+
+[dependencies]
+iceoryx2 = { workspace = true }
+iceoryx2-pal-concurrency-sync = { workspace = true }
+sha1_smol = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+rustix = { version = "1", features = ["fs", "net", "mm"] }
+libc = { workspace = true }
+tracing = { workspace = true }
+dma-buf = { version = "0.5", optional = true }
+
+[dev-dependencies]
+memmap2 = "0.9"
+libc = { workspace = true }
+proptest = "1"
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+dma-heap = "0.3"
+
+[[example]]
+name = "dmabuf-publisher"
+path = "examples/publish_subscribe_with_fd/publisher.rs"
+required-features = ["memfd"]
+
+[[example]]
+name = "dmabuf-subscriber"
+path = "examples/publish_subscribe_with_fd/subscriber.rs"
+required-features = ["memfd"]
+
+[[example]]
+name = "dmabuf-typed-publisher"
+path = "examples/publish_subscribe_dmabuf/publisher.rs"
+required-features = ["dma-buf"]
+
+[[example]]
+name = "dmabuf-typed-subscriber"
+path = "examples/publish_subscribe_dmabuf/subscriber.rs"
+required-features = ["dma-buf"]
+
+[[test]]
+name = "unit_token"
+path = "tests/unit_token.rs"
+
+[[test]]
+name = "unit_path"
+path = "tests/unit_path.rs"
+
+[[test]]
+name = "unit_scm"
+path = "tests/unit_scm.rs"
+required-features = ["peercred"]
+
+[[test]]
+name = "peercred_mismatch"
+path = "tests/peercred_mismatch.rs"
+required-features = ["peercred"]
+
+[[test]]
+name = "dmabuf_roundtrip"
+path = "tests/dmabuf_roundtrip.rs"
+required-features = ["memfd"]
+
+[[test]]
+name = "it_fd_identity"
+path = "tests/it_fd_identity.rs"
+required-features = ["memfd"]
+
+[[bin]]
+name = "fd_sidecar_fd_identity"
+path = "src/bin/fd_sidecar_fd_identity.rs"
+required-features = ["memfd"]
+
+[[test]]
+name = "it_fanout"
+path = "tests/it_fanout.rs"
+required-features = ["memfd"]
+
+[[test]]
+name = "refcount_survival"
+path = "tests/refcount_survival.rs"
+required-features = ["memfd"]
+
+[[test]]
+name = "it_crash_midsend"
+path = "tests/it_crash_midsend.rs"
+required-features = ["memfd"]
+
+[[bin]]
+name = "fd_sidecar_crash_pub"
+path = "src/bin/fd_sidecar_crash_pub.rs"
+required-features = ["memfd"]
+
+[[test]]
+name = "it_service_gone"
+path = "tests/it_service_gone.rs"
+
+[[test]]
+name = "it_socket_gone"
+path = "tests/it_socket_gone.rs"
+required-features = ["memfd"]
+
+[[test]]
+name = "prop_roundtrip"
+path = "tests/prop_roundtrip.rs"
+required-features = ["memfd"]
+
+[[test]]
+name = "unit_generic_service"
+path = "tests/unit_generic_service.rs"
+required-features = ["memfd"]
+
+[[test]]
+name = "error_paths"
+path = "tests/error_paths.rs"
+required-features = ["memfd", "test-utils"]
+
+[[test]]
+name = "unit_dmabuf_publisher"
+path = "tests/unit_dmabuf_publisher.rs"
+required-features = ["dma-buf", "memfd"]
+
+[[test]]
+name = "it_dmabuf_fd_identity"
+path = "tests/it_dmabuf_fd_identity.rs"
+required-features = ["dma-buf", "memfd"]
+
+[[test]]
+name = "it_dmabuf_heap_roundtrip"
+path = "tests/it_dmabuf_heap_roundtrip.rs"
+required-features = ["dma-buf"]

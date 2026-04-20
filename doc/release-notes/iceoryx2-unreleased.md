@@ -41,6 +41,16 @@
   [#1496](https://github.com/eclipse-iceoryx/iceoryx2/issues/1496)
 * Enable override of preallocated data chunks for sender ports
   [#1551](https://github.com/eclipse-iceoryx/iceoryx2/issues/1551)
+* Introduce `iceoryx2-dmabuf` crate providing an `SCM_RIGHTS` fd sidecar
+  (`FdSidecarPublisher`/`FdSidecarSubscriber`) and a typed DMA-BUF wrapper
+  (`DmaBufPublisher`/`DmaBufSubscriber`, behind the `dma-buf` feature)
+  layered on iceoryx2 pub/sub for zero-copy frame delivery of kernel-owned
+  file descriptors (V4L2 ISP, DRM scanout, Vulkan external memory)
+  [#1570](https://github.com/eclipse-iceoryx/iceoryx2/issues/1570)
+* Introduce `SideChannel` trait in `iceoryx2::port::side_channel` as an
+  extension point for out-of-band transports alongside pub/sub (companion
+  to `iceoryx2-dmabuf`)
+  [#1570](https://github.com/eclipse-iceoryx/iceoryx2/issues/1570)
 
 ### Bugfixes
 

@@ -87,8 +87,11 @@ members = [
     "benchmarks/publish-subscribe",
     "benchmarks/event",
     "benchmarks/queue",
+    "benchmarks/dmabuf",
 
     "component-tests/rust",
+
+    "iceoryx2-dmabuf/",
 ]
 
 [workspace.package]
