@@ -15,6 +15,7 @@
 
 pub mod error;
 pub mod path;
+pub(crate) mod side_channel;
 pub mod token;
 
 pub use error::{DmabufError, Result};
