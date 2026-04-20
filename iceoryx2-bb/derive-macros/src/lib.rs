@@ -373,17 +373,19 @@ pub fn atomic_copy_derive(input: TokenStream) -> TokenStream {
 
                         // if a field is a struct, its offset and size are not considered,
                         // but the offsets and sizes of its fields are
-                        if !AtomicCopy::__for_each_field_with_offset(&self.#field_name, abs_offset, callback) {
+                        if AtomicCopy::__is_scalar(&self.#field_name) {
                             callback(abs_offset, size);
+                        }
+                        else {
+                            AtomicCopy::__for_each_field_with_offset(&self.#field_name, abs_offset, callback);
                         }
                     };
                     field_offsets_and_sizes.push(block);
                 }
 
                 quote! {
-                    fn __for_each_field_with_offset<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) -> bool {
+                    fn __for_each_field_with_offset<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
                         #(#field_offsets_and_sizes)*
-                        true
                     }
                 }
             }
@@ -401,17 +403,19 @@ pub fn atomic_copy_derive(input: TokenStream) -> TokenStream {
 
                         // if a field is a struct, its offset and size are not considered,
                         // but the offsets and sizes of its fields are
-                        if !AtomicCopy::__for_each_field_with_offset(&self.#field_index, abs_offset, callback) {
+                        if AtomicCopy::__is_scalar(&self.#field_index) {
                             callback(abs_offset, size);
+                        }
+                        else {
+                            AtomicCopy::__for_each_field_with_offset(&self.#field_index, abs_offset, callback);
                         }
                     };
                     field_offsets_and_sizes.push(block);
                 }
 
                 quote! {
-                    fn __for_each_field_with_offset<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) -> bool {
+                    fn __for_each_field_with_offset<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
                         #(#field_offsets_and_sizes)*
-                        true
                     }
                 }
             }
