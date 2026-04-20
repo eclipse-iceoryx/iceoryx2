@@ -1406,6 +1406,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-services-common"
+version = "0.8.999"
+
+[[package]]
 name = "iceoryx2-services-discovery"
 version = "0.8.999"
 dependencies = [
