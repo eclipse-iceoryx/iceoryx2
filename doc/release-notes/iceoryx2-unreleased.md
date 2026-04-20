@@ -41,6 +41,8 @@
   [#1496](https://github.com/eclipse-iceoryx/iceoryx2/issues/1496)
 * Enable override of preallocated data chunks for sender ports
   [#1551](https://github.com/eclipse-iceoryx/iceoryx2/issues/1551)
+* Add DMA-BUF side channel for zero-copy fd passing via SCM_RIGHTS
+  [#1570](https://github.com/eclipse-iceoryx/iceoryx2/issues/1570)
 
 ### Bugfixes
 

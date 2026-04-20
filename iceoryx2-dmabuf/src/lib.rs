@@ -10,6 +10,61 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! # iceoryx2-dmabuf
+//!
+//! Zero-copy DMA-BUF file-descriptor transport layered on top of iceoryx2.
+//!
+//! ## Motivation
+//!
+//! iceoryx2's typed SHM pool model is excellent for value-type payloads but
+//! cannot represent kernel-owned DMA-BUF allocations produced by V4L2 ISP,
+//! DRM scanout, or Vulkan external-memory exports.  Those frames are identified
+//! by a file descriptor whose numeric value is meaningless outside the
+//! producing process; cross-process transfer requires `SCM_RIGHTS` over a
+//! Unix domain socket.
+//!
+//! ## Two-channel architecture
+//!
+//! Every [`DmabufPublisher::send`] call performs two coordinated actions:
+//!
+//! 1. **iceoryx2 metadata channel** — carries the `Meta` payload plus a
+//!    [`DmabufToken`] user-header that uniquely identifies the frame.
+//! 2. **SCM_RIGHTS sidecar** — a Unix domain socket delivers the raw fd
+//!    alongside the same token for correlation.
+//!
+//! [`DmabufSubscriber::recv`] dequeues one iceoryx2 sample, extracts its
+//! token, and drains the sidecar until a matching fd arrives (50 ms timeout).
+//!
+//! ## Quick start
+//!
+//! ```rust,no_run
+//! use iceoryx2::service::ipc;
+//! use iceoryx2_dmabuf::{DmabufPublisher, DmabufSubscriber};
+//!
+//! #[derive(Debug, Clone, Copy)]
+//! #[repr(C)]
+//! struct FrameMeta { width: u32, height: u32 }
+//! # // Safety: FrameMeta is repr(C) with no padding of undefined value.
+//! unsafe impl iceoryx2::prelude::ZeroCopySend for FrameMeta {}
+//!
+//! fn example() -> iceoryx2_dmabuf::Result<()> {
+//!     let svc = "mos4/frame-plane/video/0";
+//!     let mut publisher = DmabufPublisher::<ipc::Service, FrameMeta>::create(svc)?;
+//!     let mut subscriber = DmabufSubscriber::<ipc::Service, FrameMeta>::create(svc)?;
+//!     // publisher.send(meta, fd.into())?;
+//!     // let (meta, fd) = subscriber.recv()?.unwrap();
+//!     Ok(())
+//! }
+//! ```
+//!
+//! ## Platform support
+//!
+//! | Platform | Status |
+//! |---|---|
+//! | x86_64-unknown-linux-gnu | Full support |
+//! | aarch64-unknown-linux-gnu | Full support |
+//! | aarch64-apple-darwin | Compiles; `UnsupportedPlatform` at runtime |
+
 // Unsafe is forbidden at the crate level.  The only exceptions are the
 // Linux-specific syscall wrappers in `scm.rs` (marked `#[allow(unsafe_code)]`
 // at the function level) and test-only `#[allow(unsafe_code)]` blocks.
