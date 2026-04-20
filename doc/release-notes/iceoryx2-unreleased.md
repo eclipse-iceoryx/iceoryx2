@@ -290,3 +290,15 @@
        // ...
    }
    ```
+
+1. The crates for the `iceoryx2` tunnel have been moved into
+   the `services` architecture layer and have been renamed
+   accordingly.
+
+    ```rust
+    // old
+    use iceoryx2_tunnel::{Config, Tunnel};
+    
+    // new
+    use iceoryx2_services_tunnel::{Config, Tunnel};
+    ```
