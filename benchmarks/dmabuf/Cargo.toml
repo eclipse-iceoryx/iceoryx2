@@ -1,0 +1,21 @@
+[package]
+name = "benchmarks-dmabuf"
+description = "iceoryx2-dmabuf: [internal] benchmarks for DMA-BUF fd-passing via SCM_RIGHTS sidecar"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+publish = false
+
+[dependencies]
+iceoryx2-dmabuf = { path = "../../iceoryx2-dmabuf", features = ["memfd"] }
+iceoryx2 = { workspace = true, features = ["std"] }
+rustix = { version = "1", features = ["fs", "net", "mm"] }
+
+[[bin]]
+name = "dmabuf-bench"
+path = "src/main.rs"
