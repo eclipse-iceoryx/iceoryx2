@@ -14,147 +14,43 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 use iceoryx2_bb_derive_macros::{AtomicCopy, ZeroCopySend};
+use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
-// TODO: clean up tests
-// TODO: tests with unions/enums where AtomicCopy is implemented manually
 #[allow(dead_code)]
 #[derive(Copy, Clone)]
 struct Foo(u16);
 unsafe impl ZeroCopySend for Foo {}
-unsafe impl AtomicCopy for Foo {}
-
-#[repr(C)]
-#[derive(ZeroCopySend, Copy, Clone, AtomicCopy)]
-struct NamedTestStruct {
-    a: u64,
-    b: Foo,
+unsafe impl AtomicCopy for Foo {
+    fn __for_each_field_with_offset<F: FnMut(usize, usize)>(
+        &self,
+        base_offset: usize,
+        callback: &mut F,
+    ) {
+        callback(align_to::<u16>(base_offset), 2);
+    }
 }
 
 #[allow(dead_code)]
 #[repr(C)]
 #[derive(ZeroCopySend, Clone, Copy, AtomicCopy)]
-struct UnnamedTestStruct(i32, u64, Foo);
-
-#[repr(C)]
-#[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
-struct GenericNamedTestStruct<T1, T2>
-where
-    T1: AtomicCopy,
-    T2: AtomicCopy,
-{
-    a: T1,
-    b: T2,
-}
-
-#[repr(C)]
-#[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
-struct GenericUnnamedTestStruct<T1, T2>(T1, T2)
-where
-    T1: AtomicCopy,
-    T2: AtomicCopy;
-
-// #[repr(C)]
-// #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
-// #[type_name("TryMadHoney")]
-// union BasicUnionTest {
-//     _val1: u32,
-//     _val2: u8,
-// }
-
-// #[test]
-// #[should_panic]
-// pub fn field_offsets_and_sizes_cannot_be_calculated_for_unions() {
-//     let sut = BasicUnionTest { _val1: 12 };
-//     sut.__for_each_field(&mut |_, _| {});
-// }
-
-// #[test]
-// #[should_panic]
-// pub fn field_offsets_and_sizes_cannot_be_calculated_for_generic_unions() {
-//     #[repr(C)]
-//     #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
-//     union GenericUnion<T: AtomicCopy> {
-//         val1: u8,
-//         val2: T,
-//     }
-
-//     let sut = GenericUnion { val2: 0u64 };
-//     sut.__for_each_field(&mut |_, _| {});
-// }
-
-// #[test]
-// #[should_panic]
-// pub fn field_offsets_and_sizes_cannot_be_calculated_for_unions_with_struct_field() {
-//     #[repr(C)]
-//     #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
-//     struct SomeNamedStruct {
-//         a: u8,
-//         b: u64,
-//     }
-
-//     #[repr(C)]
-//     #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
-//     union NestedUnion {
-//         val1: u8,
-//         val2: SomeNamedStruct,
-//     }
-
-//     let sut = NestedUnion {
-//         val2: SomeNamedStruct { a: 0, b: 0 },
-//     };
-//     sut.__for_each_field(&mut |_, _| {});
-// }
-
-// #[test]
-// #[should_panic]
-// pub fn field_offsets_and_sizes_cannot_be_calculated_for_structs_with_union() {
-//     #[repr(C)]
-//     #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
-//     struct NestedStruct {
-//         a: BasicUnionTest,
-//         b: u8,
-//     }
-
-//     let sut = NestedStruct {
-//         a: BasicUnionTest { _val1: 12 },
-//         b: 0,
-//     };
-//     sut.__for_each_field(&mut |_, _| {});
-// }
-
-// #[test]
-// #[should_panic]
-// pub fn field_offsets_and_sizes_cannot_be_calculated_for_structs_with_enum() {
-//     #[repr(C)]
-//     #[derive(AtomicCopy, Copy, Clone, ZeroCopySend)]
-//     enum SomeEnum {
-//         A,
-//         B,
-//     }
-
-//     #[repr(C)]
-//     #[derive(AtomicCopy, Copy, Clone, ZeroCopySend)]
-//     struct NestedStruct {
-//         a: SomeEnum,
-//         b: u8,
-//     }
-
-//     let sut = NestedStruct {
-//         a: SomeEnum::A,
-//         b: 0,
-//     };
-//     sut.__for_each_field(&mut |_, _| {});
-// }
+struct NestedUnnamedTestedStruct(i32, u64, Foo);
 
 #[test]
 pub fn field_offsets_and_sizes_are_correct_for_named_struct() {
-    let mut v = Vec::new();
+    #[repr(C)]
+    #[derive(ZeroCopySend, Copy, Clone, AtomicCopy)]
+    struct NamedTestStruct {
+        a: u64,
+        b: Foo,
+    }
     let sut = NamedTestStruct { a: 0, b: Foo(0) };
-    sut.__for_each_field(&mut |offset, size| {
+
+    let mut v = Vec::new();
+    sut.__for_each_field_with_offset(0, &mut |offset, size| {
         v.push((offset, size));
     });
 
@@ -165,9 +61,20 @@ pub fn field_offsets_and_sizes_are_correct_for_named_struct() {
 
 #[test]
 pub fn field_offsets_and_sizes_are_correct_for_generic_named_struct() {
-    let mut v = Vec::new();
+    #[repr(C)]
+    #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+    struct GenericNamedTestStruct<T1, T2>
+    where
+        T1: AtomicCopy,
+        T2: AtomicCopy,
+    {
+        a: T1,
+        b: T2,
+    }
     let sut = GenericNamedTestStruct { a: 0u8, b: 0i32 };
-    sut.__for_each_field(&mut |offset, size| {
+
+    let mut v = Vec::new();
+    sut.__for_each_field_with_offset(0, &mut |offset, size| {
         v.push((offset, size));
     });
 
@@ -179,8 +86,8 @@ pub fn field_offsets_and_sizes_are_correct_for_generic_named_struct() {
 #[test]
 pub fn field_offsets_and_sizes_are_correct_for_unnamed_struct() {
     let mut v = Vec::new();
-    let sut = UnnamedTestStruct(0, 0, Foo(0));
-    sut.__for_each_field(&mut |offset, size| {
+    let sut = NestedUnnamedTestedStruct(0, 0, Foo(0));
+    sut.__for_each_field_with_offset(0, &mut |offset, size| {
         v.push((offset, size));
     });
 
@@ -192,9 +99,16 @@ pub fn field_offsets_and_sizes_are_correct_for_unnamed_struct() {
 
 #[test]
 pub fn field_offsets_and_sizes_are_correct_for_generic_unnamed_struct() {
+    #[repr(C)]
+    #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+    struct GenericUnnamedTestStruct<T1, T2>(T1, T2)
+    where
+        T1: AtomicCopy,
+        T2: AtomicCopy;
+    let sut = GenericUnnamedTestStruct(0u64, NestedUnnamedTestedStruct(0, 0, Foo(0)));
+
     let mut v = Vec::new();
-    let sut = GenericUnnamedTestStruct(0u64, UnnamedTestStruct(0, 0, Foo(0)));
-    sut.__for_each_field(&mut |offset, size| {
+    sut.__for_each_field_with_offset(0, &mut |offset, size| {
         v.push((offset, size));
     });
 
@@ -224,7 +138,7 @@ pub fn field_offsets_and_sizes_are_correct_when_alignment_changes_inner_padding(
         a: 3,
         b: AlignedU32(9),
     };
-    sut.__for_each_field(&mut |offset, size| {
+    sut.__for_each_field_with_offset(0, &mut |offset, size| {
         v.push((offset, size));
     });
 
@@ -265,7 +179,7 @@ pub fn field_offsets_and_sizes_are_correct_for_nested_structs() {
             c: SomeUnnamedStruct(5),
         },
     };
-    sut.__for_each_field(&mut |offset, size| {
+    sut.__for_each_field_with_offset(0, &mut |offset, size| {
         v.push((offset, size));
     });
 
@@ -275,4 +189,38 @@ pub fn field_offsets_and_sizes_are_correct_for_nested_structs() {
     assert_that!(v[2], eq(16, 1));
     assert_that!(v[3], eq(18, 2));
     assert_that!(v[4], eq(24, 8));
+}
+
+#[test]
+pub fn field_offsets_are_correct_with_custom_implementation() {
+    #[repr(C)]
+    #[derive(Clone, Copy, ZeroCopySend)]
+    struct Foo(u32, u8);
+    unsafe impl AtomicCopy for Foo {
+        fn __for_each_field_with_offset<F: FnMut(usize, usize)>(
+            &self,
+            base_offset: usize,
+            callback: &mut F,
+        ) {
+            // align_to actually not necessary because derive macro calculates correctly aligned base offset
+            let aligned_base_offset = align_to::<Self>(base_offset);
+            callback(aligned_base_offset, 4);
+            callback(aligned_base_offset + 4, 1);
+        }
+    }
+
+    #[repr(C)]
+    #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+    struct Bar(u8, Foo);
+
+    let mut v = Vec::new();
+    let sut = Bar(0, Foo(0, 0));
+    sut.__for_each_field_with_offset(0, &mut |offset, size| {
+        v.push((offset, size));
+    });
+
+    assert_that!(v, len 3);
+    assert_that!(v[0], eq(0, 1));
+    assert_that!(v[1], eq(4, 4));
+    assert_that!(v[2], eq(8, 1));
 }

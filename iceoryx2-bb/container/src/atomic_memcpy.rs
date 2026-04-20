@@ -50,7 +50,7 @@ impl<T: AtomicCopy, const SIZE: usize> AtomicMemcpy<T, SIZE> {
         }
 
         let mut bytes = [0u8; SIZE];
-        value.__for_each_field(&mut |offset, size| {
+        value.__for_each_field_with_offset(0, &mut |offset, size| {
             for i in offset..offset + size {
                 bytes[i] = unsafe { *value_ptr.add(i) };
             }
@@ -77,11 +77,11 @@ impl<T: AtomicCopy, const SIZE: usize> AtomicMemcpy<T, SIZE> {
                 self.data[i].store(*value_ptr.add(i), Ordering::Relaxed);
             }
         } else {
-            value.__for_each_field(&mut |offset, size| {
+            value.__for_each_field_with_offset(0, &mut |offset, size| {
                 for i in offset..offset + size {
                     self.data[i].store(*value_ptr.add(i), Ordering::Relaxed);
                 }
-            })
+            });
         }
     }
 }

@@ -67,4 +67,28 @@ fn atomic_copy_derive_does_not_work_for_unions_containing_struct_field() {}
 #[cfg(doctest)]
 fn atomic_copy_derive_does_not_work_for_enums() {}
 
-// TODO: test with ZeroCopySend, Copy missing
+/// ``` compile_fail
+/// use iceoryx2_bb_derive_macros::AtomicCopy;
+/// use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
+///
+/// #[derive(AtomicCopy, Clone, Copy)]
+/// struct Foo {
+///     a: u32,
+///     b: u64,
+/// }
+#[cfg(doctest)]
+fn atomic_copy_derive_does_not_work_when_struct_is_not_zero_copy_send() {}
+
+/// ``` compile_fail
+/// use iceoryx2_bb_derive_macros::{AtomicCopy, ZeroCopySend};
+/// use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+///
+/// #[repr(C)]
+/// #[derive(AtomicCopy, ZeroCopySend)]
+/// struct Foo {
+///     a: u32,
+///     b: u64,
+/// }
+#[cfg(doctest)]
+fn atomic_copy_derive_does_not_work_when_struct_is_not_copy() {}

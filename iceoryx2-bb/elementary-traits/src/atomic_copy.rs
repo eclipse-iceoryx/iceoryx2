@@ -16,42 +16,95 @@ pub unsafe trait AtomicCopy: ZeroCopySend + Copy + 'static {
     // TODO: CallbackProgression?
     // TODO: keep it internal or make it unsafe fn for_each_field()?
     #[doc(hidden)]
-    /// Iterates over the fields of the type and applies the provided callback to each offset-size pair of the field.
-    fn __for_each_field<F: FnMut(usize, usize)>(&self, callback: &mut F) {
-        self.__for_each_field_with_offset(0, callback);
-    }
-
-    #[doc(hidden)]
     /// Iterates over the fields of the type, calculates the offset relative to the provided base_offset, and applies
     /// the provided callback to each offset-size pair of the field.
     fn __for_each_field_with_offset<F: FnMut(usize, usize)>(
         &self,
         _base_offset: usize,
         _callback: &mut F,
-    ) -> bool {
+    ) {
+    }
+
+    // TODO
+    #[doc(hidden)]
+    fn __is_scalar(&self) -> bool {
         false
     }
 }
 
-unsafe impl AtomicCopy for usize {}
-unsafe impl AtomicCopy for u8 {}
-unsafe impl AtomicCopy for u16 {}
-unsafe impl AtomicCopy for u32 {}
-unsafe impl AtomicCopy for u64 {}
+unsafe impl AtomicCopy for usize {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl AtomicCopy for u8 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl AtomicCopy for u16 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl AtomicCopy for u32 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl AtomicCopy for u64 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
 
-unsafe impl AtomicCopy for isize {}
-unsafe impl AtomicCopy for i8 {}
-unsafe impl AtomicCopy for i16 {}
-unsafe impl AtomicCopy for i32 {}
-unsafe impl AtomicCopy for i64 {}
+unsafe impl AtomicCopy for isize {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl AtomicCopy for i8 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl AtomicCopy for i16 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl AtomicCopy for i32 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl AtomicCopy for i64 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
 
-unsafe impl AtomicCopy for f32 {}
-unsafe impl AtomicCopy for f64 {}
+unsafe impl AtomicCopy for f32 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl AtomicCopy for f64 {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
 
-unsafe impl AtomicCopy for bool {}
-unsafe impl AtomicCopy for char {}
-
-unsafe impl AtomicCopy for () {}
+unsafe impl AtomicCopy for bool {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
+unsafe impl AtomicCopy for char {
+    fn __is_scalar(&self) -> bool {
+        true
+    }
+}
 
 unsafe impl<T: AtomicCopy, const N: usize> AtomicCopy for [T; N] {}
 
