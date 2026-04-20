@@ -56,7 +56,7 @@
 
 use crate::{
     port::{
-        DegradationAction, DegradationCallback, DegradationCause,
+        DegradationAction, DegradationCallback, DegradationCause, DegradationContext,
         publisher::{Publisher, PublisherCreateError},
         unable_to_deliver_strategy::UnableToDeliverStrategy,
     },
@@ -217,13 +217,7 @@ impl<
     /// [`crate::port::subscriber::Subscriber`] is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
     pub fn set_degradation_callback<
-        F: Fn(
-                &service::static_config::StaticConfig,
-                DegradationCause,
-                u128,
-                u128,
-            ) -> DegradationAction
-            + 'static,
+        F: Fn(DegradationCause, &DegradationContext) -> DegradationAction + 'static,
     >(
         mut self,
         callback: F,
