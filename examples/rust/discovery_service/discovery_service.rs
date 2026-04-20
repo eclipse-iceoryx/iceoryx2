@@ -14,8 +14,8 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use iceoryx2::prelude::*;
+use iceoryx2_services_common::DiscoveryEvent;
 use iceoryx2_services_discovery::*;
-use service_discovery::Discovery;
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level(LogLevel::Info);
@@ -55,10 +55,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             // Process new discovery information.
             while let Ok(Some(sample)) = subscriber.receive() {
                 match sample.payload() {
-                    Discovery::Added(details) => {
+                    DiscoveryEvent::Added(details) => {
                         coutln!("Added: {:?}", details.name());
                     }
-                    Discovery::Removed(details) => {
+                    DiscoveryEvent::Removed(details) => {
                         coutln!("Removed: {:?}", details.name());
                     }
                 }

@@ -12,7 +12,10 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [features]
-default = ["std"]
+default = []
 std = []
 
 [dependencies]
+iceoryx2 = { workspace = true }
+
+serde = { workspace = true }
