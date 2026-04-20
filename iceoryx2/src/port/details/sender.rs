@@ -113,7 +113,7 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) enable_safe_overflow: bool,
     pub(crate) number_of_samples: usize,
     pub(crate) max_number_of_segments: u8,
-    pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
+    pub(crate) degradation_callback: DegradationCallback<'static>,
     pub(crate) service_state: Arc<ServiceState<Service, NoResource>>,
     pub(crate) tagger: CyclicTagger,
     pub(crate) loan_counter: AtomicUsize,
@@ -187,8 +187,8 @@ impl<Service: service::Service> Sender<Service> {
                     fail!(from self, with SendError::InternalError,
                         "{msg} {:?} to receiver {:?} an internal mechanism failed and the offset was delivered only to a subset of receivers.", offset, connection.receiver_port_id);
                 }
-                Err(ZeroCopySendError::ConnectionCorrupted) => match &self.degradation_callback {
-                    Some(c) => match c.call(
+                Err(ZeroCopySendError::ConnectionCorrupted) => {
+                    match self.degradation_callback.call(
                         &self.service_state.static_config,
                         self.sender_port_id,
                         connection.receiver_port_id,
@@ -204,13 +204,8 @@ impl<Service: service::Service> Sender<Service> {
                                         "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
                                         offset, connection.receiver_port_id);
                         }
-                    },
-                    None => {
-                        error!(from self,
-                                    "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
-                                    offset, connection.receiver_port_id);
                     }
-                },
+                }
                 Ok(overflow) => {
                     self.borrow_sample(offset);
                     number_of_recipients += 1;
@@ -441,28 +436,21 @@ impl<Service: service::Service> Sender<Service> {
                         fatal_panic!(from self, "This should never happen! Unable to acquire previously created receiver connection.")
                     }
                 },
-                Err(e) => match &self.degradation_callback {
-                    Some(c) => match c.call(
-                        &self.service_state.static_config,
-                        self.sender_port_id,
-                        receiver_details.port_id,
-                    ) {
-                        DegradationAction::Ignore => (),
-                        DegradationAction::Warn => {
-                            warn!(from self,
+                Err(e) => match self.degradation_callback.call(
+                    &self.service_state.static_config,
+                    self.sender_port_id,
+                    receiver_details.port_id,
+                ) {
+                    DegradationAction::Ignore => (),
+                    DegradationAction::Warn => {
+                        warn!(from self,
                                             "Unable to establish connection to new receiver {:?}.",
                                             receiver_details.port_id )
-                        }
-                        DegradationAction::Fail => {
-                            fail!(from self, with e,
+                    }
+                    DegradationAction::Fail => {
+                        fail!(from self, with e,
                                            "Unable to establish connection to new receiver {:?}.",
                                            receiver_details.port_id );
-                        }
-                    },
-                    None => {
-                        warn!(from self,
-                                        "Unable to establish connection to new receiver {:?}.",
-                                        receiver_details.port_id )
                     }
                 },
             }

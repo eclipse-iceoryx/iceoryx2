@@ -121,7 +121,7 @@ pub(crate) struct Receiver<Service: service::Service> {
     pub(crate) tagger: CyclicTagger,
     pub(crate) to_be_removed_connections:
         Option<UnsafeCell<PolymorphicVec<'static, SlotMapKey, HeapAllocator>>>,
-    pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
+    pub(crate) degradation_callback: DegradationCallback<'static>,
     pub(crate) message_type_details: MessageTypeDetails,
     pub(crate) receiver_max_borrowed_samples: usize,
     pub(crate) enable_safe_overflow: bool,
@@ -459,30 +459,20 @@ impl<Service: service::Service> Receiver<Service> {
 
             match self.create(index, &sender_details) {
                 Ok(()) => Ok(()),
-                Err(e) => match &self.degradation_callback {
-                    None => {
-                        warn!(from self,
-                                "Unable to establish connection to new sender {:?}.",
-                                sender_details.port_id);
+                Err(e) => match self.degradation_callback.call(
+                    &self.service_state.static_config,
+                    sender_details.port_id,
+                    self.receiver_port_id(),
+                ) {
+                    DegradationAction::Ignore => Ok(()),
+                    DegradationAction::Warn => {
+                        warn!(from self, "Unable to establish connection to new sender {:?}.",
+                                        sender_details.port_id);
                         Ok(())
                     }
-                    Some(c) => {
-                        match c.call(
-                            &self.service_state.static_config,
-                            sender_details.port_id,
-                            self.receiver_port_id(),
-                        ) {
-                            DegradationAction::Ignore => Ok(()),
-                            DegradationAction::Warn => {
-                                warn!(from self, "Unable to establish connection to new sender {:?}.",
+                    DegradationAction::Fail => {
+                        fail!(from self, with e, "Unable to establish connection to new sender {:?}.",
                                         sender_details.port_id);
-                                Ok(())
-                            }
-                            DegradationAction::Fail => {
-                                fail!(from self, with e, "Unable to establish connection to new sender {:?}.",
-                                        sender_details.port_id);
-                            }
-                        }
                     }
                 },
             }

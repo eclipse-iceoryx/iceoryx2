@@ -120,8 +120,8 @@ pub struct PortFactoryServer<
     >,
 
     pub(crate) config: LocalServerConfig,
-    pub(crate) request_degradation_callback: Option<DegradationCallback<'static>>,
-    pub(crate) response_degradation_callback: Option<DegradationCallback<'static>>,
+    pub(crate) request_degradation_callback: DegradationCallback<'static>,
+    pub(crate) response_degradation_callback: DegradationCallback<'static>,
     pub(crate) preallocated_number_of_responses_override: PreallocatedResponseOverride<'static>,
 }
 
@@ -168,8 +168,8 @@ impl<
         Self {
             factory: self.factory,
             config: self.config,
-            request_degradation_callback: None,
-            response_degradation_callback: None,
+            request_degradation_callback: DegradationCallback::default(),
+            response_degradation_callback: DegradationCallback::default(),
             preallocated_number_of_responses_override: PreallocatedResponseOverride::new(|v| v),
         }
     }
@@ -198,8 +198,8 @@ impl<
                 allocation_strategy: AllocationStrategy::Static,
                 max_loaned_responses_per_request: defs.server_max_loaned_responses_per_request,
             },
-            request_degradation_callback: None,
-            response_degradation_callback: None,
+            request_degradation_callback: DegradationCallback::default(),
+            response_degradation_callback: DegradationCallback::default(),
             preallocated_number_of_responses_override: PreallocatedResponseOverride::new(|v| v),
         }
     }
@@ -254,12 +254,9 @@ impl<
         F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegradationAction + 'static,
     >(
         mut self,
-        callback: Option<F>,
+        callback: F,
     ) -> Self {
-        match callback {
-            Some(c) => self.request_degradation_callback = Some(DegradationCallback::new(c)),
-            None => self.request_degradation_callback = None,
-        }
+        self.request_degradation_callback = DegradationCallback::new(callback);
 
         self
     }
@@ -273,12 +270,9 @@ impl<
         F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegradationAction + 'static,
     >(
         mut self,
-        callback: Option<F>,
+        callback: F,
     ) -> Self {
-        match callback {
-            Some(c) => self.response_degradation_callback = Some(DegradationCallback::new(c)),
-            None => self.response_degradation_callback = None,
-        }
+        self.response_degradation_callback = DegradationCallback::new(callback);
 
         self
     }

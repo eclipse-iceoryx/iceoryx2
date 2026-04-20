@@ -72,6 +72,12 @@ impl Debug for DegradationCallback<'_> {
     }
 }
 
+impl Default for DegradationCallback<'_> {
+    fn default() -> Self {
+        Self::new(|_, _, _| DegradationAction::Warn)
+    }
+}
+
 /// Defines a failure that can occur in
 /// [`Publisher::loan()`](crate::port::publisher::Publisher::loan()) and
 /// [`Publisher::loan_uninit()`](crate::port::publisher::Publisher::loan_uninit())
