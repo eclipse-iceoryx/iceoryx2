@@ -32,6 +32,7 @@ iceoryx2-bb-concurrency = { version = "0.8.999", path = "../iceoryx2-bb/concurre
 iceoryx2-bb-posix = { version = "0.8.999", path = "../iceoryx2-bb/posix/" }
 iceoryx2-bb-testing = { version = "0.8.999", path = "../iceoryx2-bb/testing/" }
 iceoryx2-bb-testing-macros = { version = "0.8.999", path = "../iceoryx2-bb/testing-macros/" }
+iceoryx2-services-common = { version = "0.8.999", path = "../iceoryx2-services/common" }
 iceoryx2-services-tunnel = { version = "0.8.999", path = "../iceoryx2-services/tunnel" }
 iceoryx2-services-tunnel-backend = { version = "0.8.999", path = "../iceoryx2-services/tunnel-backend" }
 iceoryx2-services-tunnel-conformance-tests = { version = "0.8.999", path = "../iceoryx2-services/tunnel-conformance-tests" }

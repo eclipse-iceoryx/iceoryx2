@@ -91,10 +91,7 @@ impl<S: Service> Discovery for DiscoverySubscriber<S> {
     type DiscoveryError = DiscoveryError;
     type AnnouncementError = AnnouncementError;
 
-    fn announce(
-        &self,
-        _static_config: &iceoryx2::service::static_config::StaticConfig,
-    ) -> Result<(), Self::AnnouncementError> {
+    fn announce(&self, _discovery: DiscoveryEvent) -> Result<(), Self::AnnouncementError> {
         // NOOP - iceoryx2 handles discovery internally
         Ok(())
     }

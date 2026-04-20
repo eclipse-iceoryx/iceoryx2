@@ -1453,6 +1453,7 @@ version = "0.8.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-posix",
+ "iceoryx2-services-common",
 ]
 
 [[package]]
