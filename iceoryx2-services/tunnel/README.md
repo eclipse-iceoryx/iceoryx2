@@ -16,10 +16,10 @@ The tunnel is implemented against generic traits thus has no knowledge over the
 specifics of the mechanism being used.
 
 A custom tunnelling mechanism can be provided by implementing the traits in the
-`iceoryx2-tunnel-backend` crate and passing the implementation when
+`iceoryx2-services-tunnel-backend` crate and passing the implementation when
 initializing the tunnel.
 
-Ready-to-use backend implementations are available in the `iceoryx2-tunnel-**`
+Ready-to-use backend implementations are available in the `iceoryx2-services/tunnel-**`
 crates.
 
 ## Usage
