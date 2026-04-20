@@ -464,8 +464,8 @@ impl<Service: service::Service> Receiver<Service> {
                     sender_details.port_id,
                     self.receiver_port_id(),
                 ) {
-                    DegradationAction::Ignore => Ok(()),
-                    DegradationAction::Warn => {
+                    DegradationAction::Ignore | DegradationAction::Discard => Ok(()),
+                    DegradationAction::Default | DegradationAction::Warn => {
                         warn!(from self, "Unable to establish connection to new sender {:?}.",
                                         sender_details.port_id);
                         Ok(())
@@ -473,6 +473,11 @@ impl<Service: service::Service> Receiver<Service> {
                     DegradationAction::Fail => {
                         fail!(from self, with e, "Unable to establish connection to new sender {:?}.",
                                         sender_details.port_id);
+                    }
+                    DegradationAction::Retry | DegradationAction::Block => {
+                        // TODO call degradation callback with DegradationCause::InvalidDegradationAction
+                        fail!(from self, with e, "Unable to establish connection to new sender {:?}.",
+                              sender_details.port_id);
                     }
                 },
             }

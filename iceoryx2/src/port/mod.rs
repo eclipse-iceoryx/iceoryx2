@@ -51,8 +51,16 @@ use crate::service;
 /// the [`DegradationCallback`] to define a custom behavior.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum DegradationAction {
+    /// Perform the default action
+    Default,
     /// Ignore the degradation completely
-    Ignore,
+    Ignore, // TODO: replace with Discard?
+    /// Performs whatever is necessary to discard the degradation
+    Discard,
+    /// Retries the action that caused the degradation
+    Retry,
+    /// Blocks until the cause of the degradation disappeared
+    Block, // TODO: with an UnableToDeliverStrategy::DeferToHandler, this could be omitted and Retry could achieve the same result
     /// Print out a warning as soon as the degradation is detected
     Warn,
     /// Returns a failure in the function the degradation was detected
@@ -74,7 +82,7 @@ impl Debug for DegradationCallback<'_> {
 
 impl Default for DegradationCallback<'_> {
     fn default() -> Self {
-        Self::new(|_, _, _| DegradationAction::Warn)
+        Self::new(|_, _, _| DegradationAction::Default)
     }
 }
 
@@ -118,6 +126,8 @@ pub enum SendError {
     LoanError(LoanError),
     /// A failure occurred while establishing a connection to the ports counterpart port.
     ConnectionError(ConnectionFailure),
+    /// The sample could not be delivered
+    UnableToDeliver,
     /// An internal mechanisms failed and the data could not be delivered to all receivers.
     InternalError,
 }

@@ -729,6 +729,7 @@ pub mod details {
             ptr: PointerOffset,
             sample_size: usize,
             channel_id: ChannelId,
+            unable_to_deliver_handler: UnableToDeliverHandler,
         ) -> Result<Option<PointerOffset>, ZeroCopySendError> {
             let msg = "Unable to blocking send the offset";
             debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
@@ -737,6 +738,8 @@ pub mod details {
             if !mgmt.enable_safe_overflow {
                 let mut is_connected = false;
                 let mut has_valid_channel_state = false;
+                let mut do_block = false;
+                let mut do_fail = false;
 
                 if let Err(e) = AdaptiveWaitBuilder::new().create().unwrap().wait_while(|| {
                     is_connected = mgmt.is_connected();
@@ -744,9 +747,30 @@ pub mod details {
                         .state
                         .load(Ordering::Relaxed)
                         != CHANNEL_STATE_CLOSED.0;
-                    mgmt.channels[channel_id.value()].submission_queue.is_full()
-                        && is_connected
-                        && has_valid_channel_state
+                    if is_connected && has_valid_channel_state {
+                        if mgmt.channels[channel_id.value()].submission_queue.is_full() {
+                            if do_block {
+                                true
+                            } else {
+                                match unable_to_deliver_handler.call() {
+                                    UnableToDeliverAction::Block => {
+                                        do_block = true;
+                                        true
+                                    }
+                                    UnableToDeliverAction::Retry => true,
+                                    UnableToDeliverAction::DiscardLatestSample => false,
+                                    UnableToDeliverAction::Fail => {
+                                        do_fail = true;
+                                        false
+                                    }
+                                }
+                            }
+                        } else {
+                            false
+                        }
+                    } else {
+                        false
+                    }
                 }) {
                     fail!(from self, with ZeroCopySendError::InternalError,
                         "{msg} {ptr:?} via channel {channel_id:?} since the adaptive wait failed. [{e:?}]");
@@ -761,8 +785,12 @@ pub mod details {
                     fail!(from self, with ZeroCopySendError::ChannelIsClosed,
                         "{msg} {ptr:?} via channel {channel_id:?} since the channel is closed.");
                 }
-            }
 
+                if do_fail {
+                    fail!(from self, with ZeroCopySendError::UnableToDeliver,
+                          "{msg} {ptr:?} via channel {channel_id:?} since the receive buffer is full.");
+                }
+            }
             self.try_send(ptr, sample_size, channel_id)
         }
 

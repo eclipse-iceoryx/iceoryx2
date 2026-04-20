@@ -21,6 +21,7 @@ pub enum UnableToDeliverStrategy {
     Block,
     /// Do not deliver the data.
     DiscardSample,
+    // TODO: should there be a third option like DeferToHandler -> This would reduce the DegradationActions since Block would not be a degradation action anymore and a user could achieve the same with Retry
 }
 
 impl Serialize for UnableToDeliverStrategy {
