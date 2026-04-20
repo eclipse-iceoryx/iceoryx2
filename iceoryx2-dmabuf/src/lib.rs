@@ -9,3 +9,12 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
+
+#![deny(unsafe_code)]
+#![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
+pub mod error;
+pub mod token;
+
+pub use error::{DmabufError, Result};
+pub use token::DmabufToken;
