@@ -15,6 +15,7 @@
 
 pub mod error;
 pub mod path;
+pub mod scm;
 pub(crate) mod side_channel;
 pub mod token;
 
