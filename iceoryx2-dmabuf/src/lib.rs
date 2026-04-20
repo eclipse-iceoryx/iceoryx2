@@ -14,7 +14,9 @@
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 pub mod error;
+pub mod path;
 pub mod token;
 
 pub use error::{DmabufError, Result};
+pub use path::uds_path_for_service;
 pub use token::DmabufToken;
