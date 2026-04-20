@@ -48,7 +48,7 @@ use super::publish_subscribe::PortFactory;
 #[derive(Debug)]
 pub(crate) struct SubscriberConfig {
     pub(crate) buffer_size: Option<usize>,
-    pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
+    pub(crate) degradation_callback: DegradationCallback<'static>,
 }
 
 /// Factory to create a new [`Subscriber`] port/endpoint for
@@ -88,7 +88,7 @@ impl<
         Self {
             config: SubscriberConfig {
                 buffer_size: self.config.buffer_size,
-                degradation_callback: None,
+                degradation_callback: DegradationCallback::default(),
             },
             factory: self.factory,
         }
@@ -98,7 +98,7 @@ impl<
         Self {
             config: SubscriberConfig {
                 buffer_size: None,
-                degradation_callback: None,
+                degradation_callback: DegradationCallback::default(),
             },
             factory,
         }
@@ -117,12 +117,9 @@ impl<
         F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegradationAction + 'static,
     >(
         mut self,
-        callback: Option<F>,
+        callback: F,
     ) -> Self {
-        match callback {
-            Some(c) => self.config.degradation_callback = Some(DegradationCallback::new(c)),
-            None => self.config.degradation_callback = None,
-        }
+        self.config.degradation_callback = DegradationCallback::new(callback);
 
         self
     }
