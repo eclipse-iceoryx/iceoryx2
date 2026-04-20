@@ -30,7 +30,7 @@ use iceoryx2_cal::zero_copy_connection::{
 use iceoryx2_log::{error, fail, fatal_panic, trace, warn};
 
 use crate::node::SharedNode;
-use crate::port::{DegradationAction, DegradationCallback, LoanError, SendError};
+use crate::port::{DegradationAction, DegradationCallback, DegradationCause, LoanError, SendError};
 use crate::prelude::UnableToDeliverStrategy;
 use crate::service::config_scheme::connection_config;
 use crate::service::static_config::message_type_details::{MessageTypeDetails, TypeVariant};
@@ -171,6 +171,7 @@ impl<Service: service::Service> Sender<Service> {
                         UnableToDeliverHandler::new(|| {
                             match self.degradation_callback.call(
                                 &self.service_state.static_config,
+                                DegradationCause::UnableToDeliverData,
                                 self.sender_port_id,
                                 connection.receiver_port_id,
                             ) {
@@ -234,6 +235,7 @@ impl<Service: service::Service> Sender<Service> {
                 Err(ZeroCopySendError::ConnectionCorrupted) => {
                     match self.degradation_callback.call(
                         &self.service_state.static_config,
+                        DegradationCause::ConnectionCorrupted,
                         self.sender_port_id,
                         connection.receiver_port_id,
                     ) {
@@ -249,7 +251,12 @@ impl<Service: service::Service> Sender<Service> {
                                         offset, connection.receiver_port_id);
                         }
                         DegradationAction::Retry | DegradationAction::Block => {
-                            // TODO call degradation callback with DegradationCause::InvalidDegradationAction
+                            self.degradation_callback.call(
+                                &self.service_state.static_config,
+                                DegradationCause::InvalidDegradationAction,
+                                self.sender_port_id,
+                                connection.receiver_port_id,
+                            );
                             fail!(from self, with SendError::ConnectionCorrupted,
                                   "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
                                   offset, connection.receiver_port_id);
@@ -488,6 +495,7 @@ impl<Service: service::Service> Sender<Service> {
                 },
                 Err(e) => match self.degradation_callback.call(
                     &self.service_state.static_config,
+                    DegradationCause::FailedToEstablishConnection,
                     self.sender_port_id,
                     receiver_details.port_id,
                 ) {
@@ -503,7 +511,12 @@ impl<Service: service::Service> Sender<Service> {
                                            receiver_details.port_id );
                     }
                     DegradationAction::Retry | DegradationAction::Block => {
-                        // TODO call degradation callback with DegradationCause::InvalidDegradationAction
+                        self.degradation_callback.call(
+                            &self.service_state.static_config,
+                            DegradationCause::InvalidDegradationAction,
+                            self.sender_port_id,
+                            receiver_details.port_id,
+                        );
                         fail!(from self, with e,
                               "Unable to establish connection to new receiver {:?}.",
                               receiver_details.port_id );

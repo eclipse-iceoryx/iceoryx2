@@ -46,9 +46,10 @@ pub mod unable_to_deliver_strategy;
 
 use crate::service;
 
-/// Defines the action a port shall take when an internal failure occurs. Can happen when the
-/// system is corrupted and files are modified by non-iceoryx2 instances. Is used as return value of
-/// the [`DegradationCallback`] to define a custom behavior.
+/// Defines the action that shall be take when an degradation is detected. This can happen when a
+/// sample cannot be delivered, or when the system is corrupted and files are modified by
+/// non-iceoryx2 instances. Is used as return value of the [`DegradationCallback`] to define a
+/// custom behavior.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum DegradationAction {
     /// Perform the default action
@@ -67,9 +68,22 @@ pub enum DegradationAction {
     Fail,
 }
 
+/// Defines the cause of a degradation and is a parameter of the [`DegradationCallback`].
+pub enum DegradationCause {
+    /// Connection could not be established
+    FailedToEstablishConnection,
+    /// Connection is corrupted
+    ConnectionCorrupted,
+    /// Data could not be delivered
+    UnableToDeliverData,
+    /// The [`DegradationAction`] used by the [`DegradationCallback`] was invalid for the given [`DegradationCause`].
+    /// The function will return with an error after the invocation of the [`DegradationCallback`].
+    InvalidDegradationAction,
+}
+
 tiny_fn! {
     /// Defines a custom behavior whenever a port detects a degregation.
-    pub struct DegradationCallback = Fn(service: &service::static_config::StaticConfig, sender_port_id: u128, receiver_port_id: u128) -> DegradationAction;
+    pub struct DegradationCallback = Fn(service: &service::static_config::StaticConfig, cause: DegradationCause, sender_port_id: u128, receiver_port_id: u128) -> DegradationAction;
 }
 
 unsafe impl Send for DegradationCallback<'_> {}
@@ -82,7 +96,7 @@ impl Debug for DegradationCallback<'_> {
 
 impl Default for DegradationCallback<'_> {
     fn default() -> Self {
-        Self::new(|_, _, _| DegradationAction::Default)
+        Self::new(|_, _, _, _| DegradationAction::Default)
     }
 }
 

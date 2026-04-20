@@ -35,7 +35,7 @@
 
 use super::request_response::PortFactory;
 use crate::{
-    port::{DegradationAction, DegradationCallback, server::Server},
+    port::{DegradationAction, DegradationCallback, DegradationCause, server::Server},
     prelude::UnableToDeliverStrategy,
     service,
 };
@@ -251,7 +251,13 @@ impl<
     /// [`Client`](crate::port::client::Client) is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
     pub fn set_request_degradation_callback<
-        F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegradationAction + 'static,
+        F: Fn(
+                &service::static_config::StaticConfig,
+                DegradationCause,
+                u128,
+                u128,
+            ) -> DegradationAction
+            + 'static,
     >(
         mut self,
         callback: F,
@@ -267,7 +273,13 @@ impl<
     /// [`Client`](crate::port::client::Client) is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
     pub fn set_response_degradation_callback<
-        F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegradationAction + 'static,
+        F: Fn(
+                &service::static_config::StaticConfig,
+                DegradationCause,
+                u128,
+                u128,
+            ) -> DegradationAction
+            + 'static,
     >(
         mut self,
         callback: F,
