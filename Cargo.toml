@@ -88,6 +88,8 @@ members = [
     "benchmarks/event",
     "benchmarks/queue",
 
+    "iceoryx2-dmabuf/",
+
     "component-tests/rust",
 ]
 
