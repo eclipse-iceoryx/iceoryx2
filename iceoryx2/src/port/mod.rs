@@ -44,8 +44,6 @@ pub mod writer;
 /// receiver is full and the service does not overflow.
 pub mod unable_to_deliver_strategy;
 
-use crate::service;
-
 /// Defines the action that shall be take when an degradation is detected. This can happen when a
 /// sample cannot be delivered, or when the system is corrupted and files are modified by
 /// non-iceoryx2 instances. Is used as return value of the [`DegradationCallback`] to define a
@@ -81,9 +79,31 @@ pub enum DegradationCause {
     InvalidDegradationAction,
 }
 
+/// The degradation context passed to the [`DegradationCallback`]
+#[repr(C)]
+pub struct DegradationContext {
+    /// The service id, which is involved in the degradation
+    pub service_id: u128,
+    /// The sender port id, which is involved in the degradation
+    pub sender_port_id: u128,
+    /// The receiver port id, which is involved in the degradation
+    pub receiver_port_id: u128,
+}
+
+impl DegradationContext {
+    /// Creates a new [`DegradationContext`]
+    pub fn new(service_id: u128, sender_port_id: u128, receiver_port_id: u128) -> Self {
+        Self {
+            service_id,
+            sender_port_id,
+            receiver_port_id,
+        }
+    }
+}
+
 tiny_fn! {
-    /// Defines a custom behavior whenever a port detects a degregation.
-    pub struct DegradationCallback = Fn(service: &service::static_config::StaticConfig, cause: DegradationCause, sender_port_id: u128, receiver_port_id: u128) -> DegradationAction;
+    /// Defines a custom behavior whenever a port detects a degradation.
+    pub struct DegradationCallback = Fn(cause: DegradationCause, context: &DegradationContext) -> DegradationAction;
 }
 
 unsafe impl Send for DegradationCallback<'_> {}
@@ -96,7 +116,7 @@ impl Debug for DegradationCallback<'_> {
 
 impl Default for DegradationCallback<'_> {
     fn default() -> Self {
-        Self::new(|_, _, _, _| DegradationAction::Default)
+        Self::new(|_, _| DegradationAction::Default)
     }
 }
 
