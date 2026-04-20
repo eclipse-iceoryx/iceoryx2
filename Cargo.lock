@@ -286,6 +286,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "benchmarks-dmabuf"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-dmabuf",
+ "rustix",
+]
+
+[[package]]
 name = "better-panic"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
