@@ -310,6 +310,7 @@ filegroup(
         "//iceoryx2-pal/posix:all_srcs",
         "//iceoryx2-pal/print:all_srcs",
         "//iceoryx2-pal/testing:all_srcs",
+        "//iceoryx2-services/common:all_srcs",
         "//iceoryx2-services/discovery:all_srcs",
         "//iceoryx2-services/tunnel:all_srcs",
         "//iceoryx2-services/tunnel-backend:all_srcs",
