@@ -24,6 +24,7 @@ use iceoryx2_cal::zero_copy_connection::*;
 use iceoryx2_log::fatal_panic;
 use iceoryx2_log::{error, fail, warn};
 
+use crate::port::DegradationCause;
 use crate::port::update_connections::ConnectionFailure;
 use crate::port::{DegradationAction, DegradationCallback, ReceiveError};
 use crate::service::NoResource;
@@ -461,6 +462,7 @@ impl<Service: service::Service> Receiver<Service> {
                 Ok(()) => Ok(()),
                 Err(e) => match self.degradation_callback.call(
                     &self.service_state.static_config,
+                    DegradationCause::FailedToEstablishConnection,
                     sender_details.port_id,
                     self.receiver_port_id(),
                 ) {
@@ -475,7 +477,12 @@ impl<Service: service::Service> Receiver<Service> {
                                         sender_details.port_id);
                     }
                     DegradationAction::Retry | DegradationAction::Block => {
-                        // TODO call degradation callback with DegradationCause::InvalidDegradationAction
+                        self.degradation_callback.call(
+                            &self.service_state.static_config,
+                            DegradationCause::InvalidDegradationAction,
+                            sender_details.port_id,
+                            self.receiver_port_id(),
+                        );
                         fail!(from self, with e, "Unable to establish connection to new sender {:?}.",
                               sender_details.port_id);
                     }
