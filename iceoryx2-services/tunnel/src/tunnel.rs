@@ -25,6 +25,7 @@ use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2_log::{debug, fail, info, trace, warn};
+use iceoryx2_services_common::DiscoveryEvent;
 use iceoryx2_services_tunnel_backend::traits::{
     Backend, Discovery, EventRelay, PublishSubscribeRelay, RelayBuilder, RelayFactory,
 };
@@ -384,9 +385,10 @@ fn setup_publish_subscribe<S: Service, B: Backend<S> + Debug>(
     );
     relays.publish_subscribe.insert(*service_hash, relay);
 
+    // TODO: Do not clone static_config
     fail!(
         from origin,
-        when backend.discovery().announce(static_config),
+        when backend.discovery().announce(DiscoveryEvent::Added(static_config.clone())),
         with DiscoveryError::DiscoveryAnnouncement,
         "Failed to announce service over backend"
     );
@@ -428,9 +430,10 @@ fn setup_event<S: Service, B: Backend<S> + Debug>(
     );
     relays.event.insert(*service_hash, relay);
 
+    // TODO: Do not clone static_config
     fail!(
         from origin,
-        when backend.discovery().announce(static_config),
+        when backend.discovery().announce(DiscoveryEvent::Added(static_config.clone())),
         with DiscoveryError::DiscoveryAnnouncement,
         "Failed to announce service over backend"
     );

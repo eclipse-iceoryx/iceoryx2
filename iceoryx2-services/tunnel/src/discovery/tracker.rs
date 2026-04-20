@@ -16,6 +16,7 @@ use iceoryx2::{
 };
 use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_log::{fail, fatal_panic};
+use iceoryx2_services_common::DiscoveryEvent;
 use iceoryx2_services_discovery::service_discovery::Tracker;
 use iceoryx2_services_tunnel_backend::traits::Discovery;
 
@@ -58,10 +59,7 @@ impl<S: Service> Discovery for DiscoveryTracker<S> {
     type DiscoveryError = DiscoveryError;
     type AnnouncementError = AnnouncementError;
 
-    fn announce(
-        &self,
-        _static_config: &iceoryx2::service::static_config::StaticConfig,
-    ) -> Result<(), Self::AnnouncementError> {
+    fn announce(&self, _discovery: DiscoveryEvent) -> Result<(), Self::AnnouncementError> {
         // NOOP - iceoryx2 handles discovery internally
         Ok(())
     }

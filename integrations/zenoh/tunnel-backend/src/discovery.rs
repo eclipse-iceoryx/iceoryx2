@@ -10,10 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_concurrency::cell::RefCell;
-
 use iceoryx2::service::static_config::StaticConfig;
+use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_log::{error, fail, warn};
+use iceoryx2_services_common::DiscoveryEvent;
+
 use zenoh::{
     Session, Wait,
     handlers::FifoChannelHandler,
@@ -108,7 +109,12 @@ impl iceoryx2_services_tunnel_backend::traits::Discovery for Discovery {
     type DiscoveryError = DiscoveryError;
     type AnnouncementError = AnnouncementError;
 
-    fn announce(&self, static_config: &StaticConfig) -> Result<(), Self::AnnouncementError> {
+    fn announce(&self, discovery: DiscoveryEvent) -> Result<(), Self::AnnouncementError> {
+        let static_config = match discovery {
+            DiscoveryEvent::Added(static_config) => static_config,
+            DiscoveryEvent::Removed(static_config) => static_config,
+        };
+
         let key = keys::service_details(static_config.service_hash());
         let service_config_serialized = fail!(
             from self,
@@ -128,6 +134,7 @@ impl iceoryx2_services_tunnel_backend::traits::Discovery for Discovery {
             "Failed to notify known hosts of discovery"
         );
 
+        // TODO: Need to work out mechanism to stop announcing when service is gone
         // Set up a queryable to respond to future hosts.
         fail!(
             from self,

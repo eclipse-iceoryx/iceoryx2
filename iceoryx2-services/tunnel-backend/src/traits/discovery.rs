@@ -13,6 +13,7 @@
 use core::error::Error;
 
 use iceoryx2::service::static_config::StaticConfig;
+use iceoryx2_services_common::DiscoveryEvent;
 
 /// Service discovery interface for discoverying and announcing
 /// [`Service`](iceoryx2::service::Service)s over the [`Backend`](crate::traits::Backend)
@@ -56,6 +57,7 @@ use iceoryx2::service::static_config::StaticConfig;
 /// ```no_run
 /// use iceoryx2_services_tunnel_backend::traits::Discovery;
 /// use iceoryx2::service::static_config::StaticConfig;
+/// use iceoryx2_services_common::DiscoveryEvent;
 ///
 /// struct MyDiscovery {
 ///     // Discovery state
@@ -83,7 +85,7 @@ use iceoryx2::service::static_config::StaticConfig;
 ///     type DiscoveryError = MyDiscoveryError;
 ///     type AnnouncementError = MyAnnouncementError;
 ///
-///     fn announce(&self, static_config: &StaticConfig)
+///     fn announce(&self, discovery: DiscoveryEvent)
 ///         -> Result<(), Self::AnnouncementError> {
 ///         // Make the service described by the provided static config
 ///         // discoverable over the backend
@@ -118,7 +120,7 @@ pub trait Discovery {
     /// # Parameters
     ///
     /// * `static_config` - The [`StaticConfig`] of the service to announce.
-    fn announce(&self, static_config: &StaticConfig) -> Result<(), Self::AnnouncementError>;
+    fn announce(&self, discovery: DiscoveryEvent) -> Result<(), Self::AnnouncementError>;
 
     /// Discovers available services and processes each one with the provided
     /// `process_discovery` callback.
