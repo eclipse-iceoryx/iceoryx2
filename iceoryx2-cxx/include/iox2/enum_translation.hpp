@@ -1670,6 +1670,8 @@ constexpr auto from<int, iox2::SendError>(const int value) noexcept -> iox2::Sen
         return iox2::SendError::LoanErrorInternalFailure;
     case iox2_send_error_e_CONNECTION_ERROR:
         return iox2::SendError::ConnectionError;
+    case iox2_send_error_e_UNABLE_TO_DELIVER:
+        return iox2::SendError::UnableToDeliver;
     case iox2_send_error_e_INTERNAL_ERROR:
         return iox2::SendError::InternalError;
     }
@@ -1694,6 +1696,8 @@ constexpr auto from<iox2::SendError, iox2_send_error_e>(const iox2::SendError va
         return iox2_send_error_e_LOAN_ERROR_INTERNAL_FAILURE;
     case iox2::SendError::ConnectionError:
         return iox2_send_error_e_CONNECTION_ERROR;
+    case iox2::SendError::UnableToDeliver:
+        return iox2_send_error_e_UNABLE_TO_DELIVER;
     case iox2::SendError::InternalError:
         return iox2_send_error_e_INTERNAL_ERROR;
     }
@@ -1799,6 +1803,8 @@ constexpr auto from<int, iox2::RequestSendError>(const int value) noexcept -> io
         return iox2::RequestSendError::LoanErrorInternalFailure;
     case iox2_request_send_error_e_CONNECTION_ERROR:
         return iox2::RequestSendError::ConnectionError;
+    case iox2_request_send_error_e_UNABLE_TO_DELIVER:
+        return iox2::RequestSendError::UnableToDeliver;
     case iox2_request_send_error_e_INTERNAL_ERROR:
         return iox2::RequestSendError::InternalError;
     }
@@ -1826,6 +1832,8 @@ constexpr auto from<iox2::RequestSendError, iox2_request_send_error_e>(const iox
         return iox2_request_send_error_e_LOAN_ERROR_INTERNAL_FAILURE;
     case iox2::RequestSendError::ConnectionError:
         return iox2_request_send_error_e_CONNECTION_ERROR;
+    case iox2::RequestSendError::UnableToDeliver:
+        return iox2_request_send_error_e_UNABLE_TO_DELIVER;
     case iox2::RequestSendError::InternalError:
         return iox2_request_send_error_e_INTERNAL_ERROR;
     }

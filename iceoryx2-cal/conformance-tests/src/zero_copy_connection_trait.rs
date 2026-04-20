@@ -838,11 +838,21 @@ pub mod zero_copy_connection_trait {
             let now = Time::now().unwrap();
 
             assert_that!(
-                sut_sender.blocking_send(PointerOffset::new(sample_offset_1), SAMPLE_SIZE, id),
+                sut_sender.blocking_send(
+                    PointerOffset::new(sample_offset_1),
+                    SAMPLE_SIZE,
+                    id,
+                    UnableToDeliverHandler::block()
+                ),
                 is_ok
             );
             assert_that!(
-                sut_sender.blocking_send(PointerOffset::new(sample_offset_2), SAMPLE_SIZE, id),
+                sut_sender.blocking_send(
+                    PointerOffset::new(sample_offset_2),
+                    SAMPLE_SIZE,
+                    id,
+                    UnableToDeliverHandler::block()
+                ),
                 is_ok
             );
             assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
@@ -889,11 +899,11 @@ pub mod zero_copy_connection_trait {
 
                 barrier.wait();
                 assert_that!(
-                    sut_sender.blocking_send(PointerOffset::new(sample_offset_1), SAMPLE_SIZE, id),
+                    sut_sender.blocking_send(PointerOffset::new(sample_offset_1), SAMPLE_SIZE, id, UnableToDeliverHandler::block()),
                     is_ok
                 );
                 assert_that!(
-                    sut_sender.blocking_send(PointerOffset::new(sample_offset_2), SAMPLE_SIZE, id).err(),
+                    sut_sender.blocking_send(PointerOffset::new(sample_offset_2), SAMPLE_SIZE, id, UnableToDeliverHandler::block()).err(),
                     eq Some(ZeroCopySendError::NoConnectedReceiver)
                 );
                 has_finished_send_thread.store(true, Ordering::Relaxed);
@@ -947,11 +957,11 @@ pub mod zero_copy_connection_trait {
 
                 barrier.wait();
                 assert_that!(
-                    sut_sender.blocking_send(PointerOffset::new(sample_offset_1), SAMPLE_SIZE, id),
+                    sut_sender.blocking_send(PointerOffset::new(sample_offset_1), SAMPLE_SIZE, id, UnableToDeliverHandler::block()),
                     is_ok
                 );
                 assert_that!(
-                    sut_sender.blocking_send(PointerOffset::new(sample_offset_2), SAMPLE_SIZE, id).err(),
+                    sut_sender.blocking_send(PointerOffset::new(sample_offset_2), SAMPLE_SIZE, id, UnableToDeliverHandler::block()).err(),
                     eq Some(ZeroCopySendError::ChannelIsClosed)
                 );
                 has_finished_send_thread.store(true, Ordering::Relaxed);
@@ -1829,7 +1839,12 @@ pub mod zero_copy_connection_trait {
             .unwrap();
 
         // panics here
-        let _ = sut_sender.blocking_send(PointerOffset::new(0), SAMPLE_SIZE, ChannelId::new(1));
+        let _ = sut_sender.blocking_send(
+            PointerOffset::new(0),
+            SAMPLE_SIZE,
+            ChannelId::new(1),
+            UnableToDeliverHandler::block(),
+        );
     }
 
     #[cfg(debug_assertions)]

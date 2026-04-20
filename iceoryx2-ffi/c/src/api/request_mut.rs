@@ -45,6 +45,7 @@ pub enum iox2_request_send_error_e {
     LOAN_ERROR_INTERNAL_FAILURE,
     CONNECTION_ERROR,
     EXCEEDS_MAX_ACTIVE_REQUESTS,
+    UNABLE_TO_DELIVER,
     INTERNAL_ERROR,
 }
 
@@ -74,6 +75,9 @@ impl IntoCInt for RequestSendError {
             }
             RequestSendError::ExceedsMaxActiveRequests => {
                 iox2_request_send_error_e::EXCEEDS_MAX_ACTIVE_REQUESTS
+            }
+            RequestSendError::SendError(SendError::UnableToDeliver) => {
+                iox2_request_send_error_e::UNABLE_TO_DELIVER
             }
             RequestSendError::SendError(SendError::InternalError) => {
                 iox2_request_send_error_e::INTERNAL_ERROR
