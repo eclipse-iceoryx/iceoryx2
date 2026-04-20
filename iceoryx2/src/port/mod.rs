@@ -44,6 +44,9 @@ pub mod writer;
 /// receiver is full and the service does not overflow.
 pub mod unable_to_deliver_strategy;
 
+/// Extension point for out-of-band fd-passing side channels (e.g. DMA-BUF).
+pub mod side_channel;
+
 use crate::service;
 
 /// Defines the action a port shall take when an internal failure occurs. Can happen when the
