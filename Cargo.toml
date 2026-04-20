@@ -89,6 +89,8 @@ members = [
     "benchmarks/queue",
 
     "component-tests/rust",
+
+    "iceoryx2-dmabuf/",
 ]
 
 [workspace.package]
