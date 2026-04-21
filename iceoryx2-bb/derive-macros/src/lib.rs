@@ -348,5 +348,181 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
+/// Implements the [`iceoryx2_bb_elementary_traits::zeroable::Zeroable`] trait
+/// when all fields of the struct also implement it. Rejects enums, unions, and
+/// structs whose fields violate the `Zeroable` invariant at compile time.
+///
+/// ```
+/// use iceoryx2_bb_derive_macros::Zeroable;
+/// use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
+///
+/// #[derive(Zeroable)]
+/// struct MyStruct {
+///     val1: u64,
+///     val2: [u8; 16],
+/// }
+///
+/// let v = MyStruct::new_zeroed();
+/// assert_eq!(v.val1, 0);
+/// ```
+///
+#[proc_macro_derive(Zeroable)]
+pub fn zeroable_derive(input: TokenStream) -> TokenStream {
+    let ast = parse_macro_input!(input as DeriveInput);
+    let name = &ast.ident;
+    let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
+
+    let impl_body = match &ast.data {
+        Data::Struct(data_struct) => match &data_struct.fields {
+            Fields::Named(fields) => {
+                let calls = fields.named.iter().map(|field| {
+                    let name = &field.ident;
+                    quote! { Zeroable::__is_zeroable(&self.#name); }
+                });
+                quote! {
+                    fn __is_zeroable(&self) {
+                        #(#calls)*
+                    }
+                }
+            }
+            Fields::Unnamed(fields) => {
+                let calls = fields.unnamed.iter().enumerate().map(|(i, _)| {
+                    let idx = syn::Index::from(i);
+                    quote! { Zeroable::__is_zeroable(&self.#idx); }
+                });
+                quote! {
+                    fn __is_zeroable(&self) {
+                        #(#calls)*
+                    }
+                }
+            }
+            Fields::Unit => quote! {},
+        },
+        _ => panic!("`#[derive(Zeroable)]` can only be used on structs"),
+    };
+
+    let expanded = quote! {
+        unsafe impl #impl_generics Zeroable for #name #ty_generics #where_clause {
+            #impl_body
+        }
+    };
+
+    TokenStream::from(expanded)
+}
+
+/// Implements the [`iceoryx2_bb_elementary_traits::plain_old_data_without_padding::PlainOldDataWithoutPadding`]
+/// trait when the struct is annotated with `#[repr(C)]`, has no padding
+/// between or after its fields, and every field also implements the trait.
+/// Rejects enums, unions, layouts with padding, and supertrait violations
+/// (`Copy`, `Zeroable`, `ZeroCopySend`, `'static`) at compile time.
+///
+/// ```
+/// use iceoryx2_bb_derive_macros::{PlainOldDataWithoutPadding, ZeroCopySend, Zeroable};
+/// use iceoryx2_bb_elementary_traits::plain_old_data_without_padding::PlainOldDataWithoutPadding;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
+///
+/// #[repr(C)]
+/// #[derive(Copy, Clone, Zeroable, ZeroCopySend, PlainOldDataWithoutPadding)]
+/// struct MyPodStruct {
+///     val1: u64,
+///     val2: [u8; 16],
+/// }
+///
+/// fn needs_pod<T: PlainOldDataWithoutPadding>(_: &T) {}
+/// needs_pod(&MyPodStruct { val1: 0, val2: [0; 16] });
+/// ```
+///
+#[proc_macro_derive(PlainOldDataWithoutPadding)]
+pub fn plain_old_data_without_padding_derive(input: TokenStream) -> TokenStream {
+    let ast = parse_macro_input!(input as DeriveInput);
+    let name = &ast.ident;
+    let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
+
+    // reject enum/union, collect field accessors + field types
+    let (field_accessors, field_types): (Vec<_>, Vec<_>) = match &ast.data {
+        Data::Struct(data_struct) => match &data_struct.fields {
+            Fields::Named(fields) => fields
+                .named
+                .iter()
+                .map(|field| {
+                    let ident = &field.ident;
+                    let ty = &field.ty;
+                    (quote! { #ident }, ty)
+                })
+                .unzip(),
+            Fields::Unnamed(fields) => fields
+                .unnamed
+                .iter()
+                .enumerate()
+                .map(|(i, field)| {
+                    let idx = syn::Index::from(i);
+                    let ty = &field.ty;
+                    (quote! { #idx }, ty)
+                })
+                .unzip(),
+            Fields::Unit => (Vec::new(), Vec::new()),
+        },
+        _ => panic!("`#[derive(PlainOldDataWithoutPadding)]` can only be used on structs"),
+    };
+
+    // verify #[repr(C)]
+    let has_repr_c = ast.attrs.iter().any(|a| {
+        a.path().is_ident("repr")
+            && a.parse_args::<syn::Meta>()
+                .ok()
+                .map(|m| m.path().is_ident("C"))
+                .unwrap_or(false)
+    });
+    if !has_repr_c {
+        panic!(
+            "`#[derive(PlainOldDataWithoutPadding)]` requires the type to be annotated with #[repr(C)]"
+        );
+    }
+
+    // padding check via const assert
+    let size_check = if field_types.is_empty() {
+        quote! {
+            assert!(
+                ::core::mem::size_of::<#name #ty_generics>() == 0,
+                "PlainOldDataWithoutPadding: unit struct must have size 0"
+            );
+        }
+    } else {
+        quote! {
+            assert!(
+                ::core::mem::size_of::<#name #ty_generics>()
+                    == 0usize #( + ::core::mem::size_of::<#field_types>() )*,
+                "PlainOldDataWithoutPadding: struct has padding bytes"
+            );
+        }
+    };
+
+    // dummy-call body to verify each field is PoD
+    let call_body = field_accessors.iter().map(|acc| {
+        quote! { PlainOldDataWithoutPadding::__is_pod(&self.#acc); }
+    });
+
+    let expanded = quote! {
+        const _: () = { #size_check };
+
+        unsafe impl #impl_generics PlainOldDataWithoutPadding
+            for #name #ty_generics #where_clause
+        {
+            fn __is_pod(&self) {
+                #(#call_body)*
+            }
+        }
+    };
+
+    TokenStream::from(expanded)
+}
+
 #[cfg(doctest)]
 mod zero_copy_send_compile_tests;
+
+#[cfg(doctest)]
+mod zeroable_compile_tests;
+
+#[cfg(doctest)]
+mod plain_old_data_without_padding_compile_tests;

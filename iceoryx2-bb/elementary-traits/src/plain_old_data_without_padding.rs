@@ -24,6 +24,10 @@ use crate::{zero_copy_send::ZeroCopySend, zeroable::Zeroable};
 pub unsafe trait PlainOldDataWithoutPadding:
     ZeroCopySend + Zeroable + Copy + 'static
 {
+    #[doc(hidden)]
+    /// used as dummy call in the derive macro to ensure at compile-time that all fields of
+    /// a struct implement PlainOldDataWithoutPadding
+    fn __is_pod(&self) {}
 }
 
 unsafe impl PlainOldDataWithoutPadding for usize {}

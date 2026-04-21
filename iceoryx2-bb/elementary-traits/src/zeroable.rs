@@ -23,6 +23,11 @@ pub unsafe trait Zeroable: core::marker::Sized {
     fn new_zeroed() -> Self {
         unsafe { core::mem::zeroed() }
     }
+
+    #[doc(hidden)]
+    /// used as dummy call in the derive macro to ensure at compile-time that all fields of
+    /// a struct implement Zeroable
+    fn __is_zeroable(&self) {}
 }
 
 unsafe impl Zeroable for usize {}
