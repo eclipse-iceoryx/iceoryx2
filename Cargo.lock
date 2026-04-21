@@ -1972,8 +1972,8 @@ dependencies = [
  "iceoryx2-log",
  "iceoryx2-pal-posix",
  "iceoryx2-services-discovery",
- "iceoryx2-tunnel",
- "iceoryx2-tunnel-zenoh",
+ "iceoryx2-services-tunnel",
+ "iceoryx2-services-tunnel-zenoh",
  "iceoryx2-userland-record-and-replay",
  "ron 0.11.0",
  "serde",
@@ -2151,6 +2151,69 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-services-tunnel"
+version = "0.8.999"
+dependencies = [
+ "generic-tests",
+ "iceoryx2",
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-container",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-log",
+ "iceoryx2-services-discovery",
+ "iceoryx2-services-tunnel-backend",
+]
+
+[[package]]
+name = "iceoryx2-services-tunnel-backend"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-posix",
+]
+
+[[package]]
+name = "iceoryx2-services-tunnel-conformance-tests"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-services-discovery",
+ "iceoryx2-services-tunnel",
+ "iceoryx2-services-tunnel-backend",
+]
+
+[[package]]
+name = "iceoryx2-services-tunnel-end-to-end-tests"
+version = "0.8.999"
+dependencies = [
+ "clap",
+ "iceoryx2",
+ "iceoryx2-bb-container",
+ "iceoryx2-bb-posix",
+ "iceoryx2-log",
+]
+
+[[package]]
+name = "iceoryx2-services-tunnel-zenoh"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-concurrency",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-log",
+ "iceoryx2-services-tunnel-backend",
+ "iceoryx2-services-tunnel-conformance-tests",
+ "serde_json",
+ "zenoh",
+]
+
+[[package]]
 name = "iceoryx2-tests-common"
 version = "0.8.999"
 dependencies = [
@@ -2174,69 +2237,6 @@ dependencies = [
  "iceoryx2-bb-testing",
  "iceoryx2-bb-testing-macros",
  "iceoryx2-tests-common",
-]
-
-[[package]]
-name = "iceoryx2-tunnel"
-version = "0.8.999"
-dependencies = [
- "generic-tests",
- "iceoryx2",
- "iceoryx2-bb-concurrency",
- "iceoryx2-bb-container",
- "iceoryx2-bb-posix",
- "iceoryx2-bb-testing",
- "iceoryx2-log",
- "iceoryx2-services-discovery",
- "iceoryx2-tunnel-backend",
-]
-
-[[package]]
-name = "iceoryx2-tunnel-backend"
-version = "0.8.999"
-dependencies = [
- "iceoryx2",
- "iceoryx2-bb-posix",
-]
-
-[[package]]
-name = "iceoryx2-tunnel-conformance-tests"
-version = "0.8.999"
-dependencies = [
- "iceoryx2",
- "iceoryx2-bb-posix",
- "iceoryx2-bb-testing",
- "iceoryx2-bb-testing-macros",
- "iceoryx2-services-discovery",
- "iceoryx2-tunnel",
- "iceoryx2-tunnel-backend",
-]
-
-[[package]]
-name = "iceoryx2-tunnel-end-to-end-tests"
-version = "0.8.999"
-dependencies = [
- "clap",
- "iceoryx2",
- "iceoryx2-bb-container",
- "iceoryx2-bb-posix",
- "iceoryx2-log",
-]
-
-[[package]]
-name = "iceoryx2-tunnel-zenoh"
-version = "0.8.999"
-dependencies = [
- "iceoryx2",
- "iceoryx2-bb-concurrency",
- "iceoryx2-bb-posix",
- "iceoryx2-bb-testing",
- "iceoryx2-bb-testing-macros",
- "iceoryx2-log",
- "iceoryx2-tunnel-backend",
- "iceoryx2-tunnel-conformance-tests",
- "serde_json",
- "zenoh",
 ]
 
 [[package]]

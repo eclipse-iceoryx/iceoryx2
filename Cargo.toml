@@ -70,12 +70,12 @@ members = [
     "iceoryx2-pal/os-api",
 
     "iceoryx2-services/discovery",
+    "iceoryx2-services/tunnel",
+    "iceoryx2-services/tunnel-backend",
+    "iceoryx2-services/tunnel-conformance-tests",
+    "iceoryx2-services/tunnel-end-to-end-tests",
+    "iceoryx2-services/tunnel-zenoh",
 
-    "iceoryx2-tunnel/backend",
-    "iceoryx2-tunnel/conformance-tests",
-    "iceoryx2-tunnel/tunnel",
-    "iceoryx2-tunnel/zenoh",
-    "iceoryx2-tunnel/end-to-end-tests",
 
     "iceoryx2-userland/record-and-replay",
 
@@ -142,11 +142,11 @@ iceoryx2-ffi-c = { version = "0.8.999", path = "iceoryx2-ffi/c" }
 iceoryx2-ffi-python = { version = "0.8.999", path = "iceoryx2-ffi/python" }
 iceoryx2-ffi-macros = { version = "0.8.999", path = "iceoryx2-ffi/ffi-macros" }
 iceoryx2-services-discovery = { version = "0.8.999", path = "iceoryx2-services/discovery"}
-iceoryx2-tunnel-end-to-end-tests = { version = "0.8.999", path = "iceoryx2-tunnel/end-to-end-tests" }
-iceoryx2-tunnel = { version = "0.8.999", path = "iceoryx2-tunnel/tunnel" }
-iceoryx2-tunnel-backend = { version = "0.8.999", path = "iceoryx2-tunnel/backend" }
-iceoryx2-tunnel-conformance-tests = { version = "0.8.999", path = "iceoryx2-tunnel/conformance-tests" }
-iceoryx2-tunnel-zenoh = { version = "0.8.999", path = "iceoryx2-tunnel/zenoh" }
+iceoryx2-services-tunnel = { version = "0.8.999", path = "iceoryx2-services/tunnel"}
+iceoryx2-services-tunnel-backend = { version = "0.8.999", path = "iceoryx2-services/tunnel-backend"}
+iceoryx2-services-tunnel-conformance-tests = { version = "0.8.999", path = "iceoryx2-services/tunnel-conformance-tests"}
+iceoryx2-services-tunnel-end-to-end-tests = { version = "0.8.999", path = "iceoryx2-services/tunnel-end-to-end-tests" }
+iceoryx2-services-tunnel-zenoh = { version = "0.8.999", path = "iceoryx2-services/tunnel-zenoh"}
 iceoryx2-userland-record-and-replay = { version = "0.8.999", path = "iceoryx2-userland/record-and-replay" }
 
 ################################################################################

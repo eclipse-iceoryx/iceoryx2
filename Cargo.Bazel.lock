@@ -1,5 +1,5 @@
 {
-  "checksum": "fd3d1cb565c0252887517fb3e1ee831aa5617ec44dc47b9d025aaef328be4450",
+  "checksum": "b9b2a825c59bf39371209c0256ecd46ddc12250f32156a5e45dcdd4983ee664f",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -9978,7 +9978,7 @@
         "crate_features": {
           "common": [
             "default",
-            "iceoryx2-tunnel-zenoh",
+            "iceoryx2-services-tunnel-zenoh",
             "tunnel_zenoh"
           ],
           "selects": {}
@@ -10857,6 +10857,228 @@
       ],
       "license_file": null
     },
+    "iceoryx2-services-tunnel 0.8.999": {
+      "name": "iceoryx2-services-tunnel",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_services_tunnel",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_services_tunnel",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2024",
+        "proc_macro_deps_dev": {
+          "common": [
+            {
+              "id": "generic-tests 0.1.2",
+              "target": "generic_tests"
+            }
+          ],
+          "selects": {}
+        },
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-services-tunnel-backend 0.8.999": {
+      "name": "iceoryx2-services-tunnel-backend",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_services_tunnel_backend",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_services_tunnel_backend",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2024",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-services-tunnel-conformance-tests 0.8.999": {
+      "name": "iceoryx2-services-tunnel-conformance-tests",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_services_tunnel_conformance_tests",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_services_tunnel_conformance_tests",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2024",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-services-tunnel-end-to-end-tests 0.8.999": {
+      "name": "iceoryx2-services-tunnel-end-to-end-tests",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_services_tunnel_end_to_end_tests",
+            "crate_root": "common/src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_services_tunnel_end_to_end_tests",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "clap 4.5.19",
+              "target": "clap"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2024",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-services-tunnel-zenoh 0.8.999": {
+      "name": "iceoryx2-services-tunnel-zenoh",
+      "version": "0.8.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_services_tunnel_zenoh",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_services_tunnel_zenoh",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "serde_json 1.0.149",
+              "target": "serde_json"
+            },
+            {
+              "id": "zenoh 1.7.2",
+              "target": "zenoh"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2024",
+        "version": "0.8.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
     "iceoryx2-tests-common 0.8.999": {
       "name": "iceoryx2-tests-common",
       "version": "0.8.999",
@@ -10913,228 +11135,6 @@
           "common": [
             "default",
             "std"
-          ],
-          "selects": {}
-        },
-        "edition": "2024",
-        "version": "0.8.999"
-      },
-      "license": "MIT OR Apache-2.0",
-      "license_ids": [
-        "Apache-2.0",
-        "MIT"
-      ],
-      "license_file": null
-    },
-    "iceoryx2-tunnel 0.8.999": {
-      "name": "iceoryx2-tunnel",
-      "version": "0.8.999",
-      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
-      "repository": null,
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "iceoryx2_tunnel",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "iceoryx2_tunnel",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "default",
-            "std"
-          ],
-          "selects": {}
-        },
-        "edition": "2024",
-        "proc_macro_deps_dev": {
-          "common": [
-            {
-              "id": "generic-tests 0.1.2",
-              "target": "generic_tests"
-            }
-          ],
-          "selects": {}
-        },
-        "version": "0.8.999"
-      },
-      "license": "MIT OR Apache-2.0",
-      "license_ids": [
-        "Apache-2.0",
-        "MIT"
-      ],
-      "license_file": null
-    },
-    "iceoryx2-tunnel-backend 0.8.999": {
-      "name": "iceoryx2-tunnel-backend",
-      "version": "0.8.999",
-      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
-      "repository": null,
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "iceoryx2_tunnel_backend",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "iceoryx2_tunnel_backend",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "default",
-            "std"
-          ],
-          "selects": {}
-        },
-        "edition": "2024",
-        "version": "0.8.999"
-      },
-      "license": "MIT OR Apache-2.0",
-      "license_ids": [
-        "Apache-2.0",
-        "MIT"
-      ],
-      "license_file": null
-    },
-    "iceoryx2-tunnel-conformance-tests 0.8.999": {
-      "name": "iceoryx2-tunnel-conformance-tests",
-      "version": "0.8.999",
-      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
-      "repository": null,
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "iceoryx2_tunnel_conformance_tests",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "iceoryx2_tunnel_conformance_tests",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "default",
-            "std"
-          ],
-          "selects": {}
-        },
-        "edition": "2024",
-        "version": "0.8.999"
-      },
-      "license": "MIT OR Apache-2.0",
-      "license_ids": [
-        "Apache-2.0",
-        "MIT"
-      ],
-      "license_file": null
-    },
-    "iceoryx2-tunnel-end-to-end-tests 0.8.999": {
-      "name": "iceoryx2-tunnel-end-to-end-tests",
-      "version": "0.8.999",
-      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
-      "repository": null,
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "iceoryx2_tunnel_end_to_end_tests",
-            "crate_root": "common/src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "iceoryx2_tunnel_end_to_end_tests",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "clap 4.5.19",
-              "target": "clap"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2024",
-        "version": "0.8.999"
-      },
-      "license": "MIT OR Apache-2.0",
-      "license_ids": [
-        "Apache-2.0",
-        "MIT"
-      ],
-      "license_file": null
-    },
-    "iceoryx2-tunnel-zenoh 0.8.999": {
-      "name": "iceoryx2-tunnel-zenoh",
-      "version": "0.8.999",
-      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
-      "repository": null,
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "iceoryx2_tunnel_zenoh",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "iceoryx2_tunnel_zenoh",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "serde_json 1.0.149",
-              "target": "serde_json"
-            },
-            {
-              "id": "zenoh 1.7.2",
-              "target": "zenoh"
-            }
           ],
           "selects": {}
         },
@@ -34688,13 +34688,13 @@
     "iceoryx2-pal-print 0.8.999": "iceoryx2-pal/print",
     "iceoryx2-pal-testing 0.8.999": "iceoryx2-pal/testing",
     "iceoryx2-services-discovery 0.8.999": "iceoryx2-services/discovery",
+    "iceoryx2-services-tunnel 0.8.999": "iceoryx2-services/tunnel",
+    "iceoryx2-services-tunnel-backend 0.8.999": "iceoryx2-services/tunnel-backend",
+    "iceoryx2-services-tunnel-conformance-tests 0.8.999": "iceoryx2-services/tunnel-conformance-tests",
+    "iceoryx2-services-tunnel-end-to-end-tests 0.8.999": "iceoryx2-services/tunnel-end-to-end-tests",
+    "iceoryx2-services-tunnel-zenoh 0.8.999": "iceoryx2-services/tunnel-zenoh",
     "iceoryx2-tests-common 0.8.999": "iceoryx2/tests-common",
     "iceoryx2-tests-nostd 0.8.999": "iceoryx2/tests-nostd",
-    "iceoryx2-tunnel 0.8.999": "iceoryx2-tunnel/tunnel",
-    "iceoryx2-tunnel-backend 0.8.999": "iceoryx2-tunnel/backend",
-    "iceoryx2-tunnel-conformance-tests 0.8.999": "iceoryx2-tunnel/conformance-tests",
-    "iceoryx2-tunnel-end-to-end-tests 0.8.999": "iceoryx2-tunnel/end-to-end-tests",
-    "iceoryx2-tunnel-zenoh 0.8.999": "iceoryx2-tunnel/zenoh",
     "iceoryx2-userland-record-and-replay 0.8.999": "iceoryx2-userland/record-and-replay"
   },
   "conditions": {

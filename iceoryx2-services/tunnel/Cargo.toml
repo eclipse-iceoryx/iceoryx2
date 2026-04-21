@@ -1,0 +1,38 @@
+[package]
+name = "iceoryx2-services-tunnel"
+description = "iceoryx2-services: network tunneling service"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+readme = "README.md"
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+  "iceoryx2-log/std",
+  "iceoryx2-services-discovery/std",
+  "iceoryx2-services-tunnel-backend/std",
+  "iceoryx2/std",
+  "iceoryx2-bb-container/std",
+  "iceoryx2-bb-concurrency/std",
+  "iceoryx2-bb-posix/std",
+]
+
+[dependencies]
+iceoryx2-log = { workspace = true }
+iceoryx2 = { workspace = true }
+iceoryx2-bb-container = { workspace = true }
+iceoryx2-bb-concurrency = { workspace = true }
+iceoryx2-services-discovery = { workspace = true }
+iceoryx2-services-tunnel-backend = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-posix = { workspace = true }
+
+generic-tests = { workspace = true }
