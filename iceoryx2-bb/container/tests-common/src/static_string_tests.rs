@@ -325,7 +325,7 @@ pub fn atomic_copy_is_correctly_implemented() {
 
     assert_that!(v, len 5);
     assert_that!(v[0], eq(0, 1));
-    assert_that!(v[1], eq(8, 10));
+    assert_that!(v[1], eq(8, 5));
     assert_that!(v[2], eq(18, 1));
     assert_that!(v[3], eq(24, 8));
     assert_that!(v[4], eq(32, 8));
