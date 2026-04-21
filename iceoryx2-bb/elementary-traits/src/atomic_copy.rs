@@ -14,7 +14,6 @@ use crate::zero_copy_send::ZeroCopySend;
 
 pub unsafe trait AtomicCopy: ZeroCopySend + Copy + 'static {
     // TODO: CallbackProgression?
-    // TODO: keep it internal or make it unsafe fn for_each_field()?
     #[doc(hidden)]
     /// Iterates over the fields of the type, calculates the offset relative to the provided base_offset, and applies
     /// the provided callback to each offset-size pair of the field.
@@ -25,7 +24,7 @@ pub unsafe trait AtomicCopy: ZeroCopySend + Copy + 'static {
     ) {
     }
 
-    // TODO
+    /// Returns true for scalar types
     #[doc(hidden)]
     fn __is_scalar(&self) -> bool {
         false
@@ -104,50 +103,4 @@ unsafe impl AtomicCopy for char {
     fn __is_scalar(&self) -> bool {
         true
     }
-}
-
-unsafe impl<T: AtomicCopy, const N: usize> AtomicCopy for [T; N] {}
-
-unsafe impl<T1: AtomicCopy, T2: AtomicCopy> AtomicCopy for (T1, T2) {}
-unsafe impl<T1: AtomicCopy, T2: AtomicCopy, T3: AtomicCopy> AtomicCopy for (T1, T2, T3) {}
-unsafe impl<T1: AtomicCopy, T2: AtomicCopy, T3: AtomicCopy, T4: AtomicCopy> AtomicCopy
-    for (T1, T2, T3, T4)
-{
-}
-unsafe impl<T1: AtomicCopy, T2: AtomicCopy, T3: AtomicCopy, T4: AtomicCopy, T5: AtomicCopy>
-    AtomicCopy for (T1, T2, T3, T4, T5)
-{
-}
-unsafe impl<
-        T1: AtomicCopy,
-        T2: AtomicCopy,
-        T3: AtomicCopy,
-        T4: AtomicCopy,
-        T5: AtomicCopy,
-        T6: AtomicCopy,
-    > AtomicCopy for (T1, T2, T3, T4, T5, T6)
-{
-}
-unsafe impl<
-        T1: AtomicCopy,
-        T2: AtomicCopy,
-        T3: AtomicCopy,
-        T4: AtomicCopy,
-        T5: AtomicCopy,
-        T6: AtomicCopy,
-        T7: AtomicCopy,
-    > AtomicCopy for (T1, T2, T3, T4, T5, T6, T7)
-{
-}
-unsafe impl<
-        T1: AtomicCopy,
-        T2: AtomicCopy,
-        T3: AtomicCopy,
-        T4: AtomicCopy,
-        T5: AtomicCopy,
-        T6: AtomicCopy,
-        T7: AtomicCopy,
-        T8: AtomicCopy,
-    > AtomicCopy for (T1, T2, T3, T4, T5, T6, T7, T8)
-{
 }
