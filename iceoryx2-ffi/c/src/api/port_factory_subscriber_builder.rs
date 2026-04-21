@@ -14,7 +14,8 @@
 
 use crate::api::{
     AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, PayloadFfi, SubscriberUnion,
-    UserHeaderFfi, c_size_t, iox2_service_type_e, iox2_subscriber_h, iox2_subscriber_t,
+    UserHeaderFfi, c_size_t, degradation_context_cast, iox2_callback_context,
+    iox2_degradation_callback, iox2_service_type_e, iox2_subscriber_h, iox2_subscriber_t,
 };
 
 use iceoryx2::port::subscriber::SubscriberCreateError;
@@ -210,7 +211,60 @@ pub unsafe extern "C" fn iox2_port_factory_subscriber_builder_set_buffer_size(
     }
 }
 
-// TODO [#210] add all the other setter methods
+/// Sets the degradation callback for the subscriber
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_subscriber_builder_h_ref`]
+///   obtained by [`iox2_port_factory_pub_sub_subscriber_builder`](crate::iox2_port_factory_pub_sub_subscriber_builder).
+/// * `callback` is the [`iox2_degradation_callback`](crate::iox2_degradation_callback)
+/// * `callback_ctx` is an user defined [`iox2_callback_context`](crate::iox2_callback_context)
+///
+/// # Safety
+///
+/// * `port_factory_handle` must be valid handles
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_port_factory_subscriber_builder_set_degradation_callback(
+    port_factory_handle: iox2_port_factory_subscriber_builder_h_ref,
+    callback: iox2_degradation_callback,
+    callback_ctx: iox2_callback_context,
+) {
+    port_factory_handle.assert_non_null();
+    unsafe {
+        let port_factory_struct = &mut *port_factory_handle.as_type();
+        match port_factory_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
+
+                port_factory_struct.set(PortFactorySubscriberBuilderUnion::new_ipc(
+                    port_factory.set_degradation_callback(move |cause, context| {
+                        callback(
+                            cause.into(),
+                            degradation_context_cast(context),
+                            callback_ctx,
+                        )
+                        .into()
+                    }),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let port_factory =
+                    ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
+
+                port_factory_struct.set(PortFactorySubscriberBuilderUnion::new_local(
+                    port_factory.set_degradation_callback(move |cause, context| {
+                        callback(
+                            cause.into(),
+                            degradation_context_cast(context),
+                            callback_ctx,
+                        )
+                        .into()
+                    }),
+                ));
+            }
+        }
+    }
+}
 
 /// Creates a subscriber and consumes the builder
 ///

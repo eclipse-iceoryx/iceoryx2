@@ -19,7 +19,8 @@ use crate::{IOX2_OK, iox2_callback_context};
 
 use super::{AssertNonNullHandle, HandleToType};
 use super::{
-    IntoCInt, PayloadFfi, UserHeaderFfi, c_size_t, iox2_allocation_strategy_e, iox2_server_h,
+    IntoCInt, PayloadFfi, UserHeaderFfi, c_size_t, degradation_context_cast,
+    iox2_allocation_strategy_e, iox2_callback_context, iox2_degradation_callback, iox2_server_h,
     iox2_server_t, iox2_service_type_e, iox2_unable_to_deliver_strategy_e,
 };
 use core::ffi::{c_char, c_int};
@@ -297,6 +298,116 @@ pub unsafe extern "C" fn iox2_port_factory_server_builder_set_allocation_strateg
 
                 port_factory_struct.set(PortFactoryServerBuilderUnion::new_local(
                     port_factory.allocation_strategy(value.into()),
+                ));
+            }
+        }
+    }
+}
+
+/// Sets the request degradation callback for the sever
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_server_builder_h_ref`]
+///   obtained by [`iox2_port_factory_request_response_server_builder`](crate::iox2_port_factory_request_response_server_builder).
+/// * `callback` is the [`iox2_degradation_callback`](crate::iox2_degradation_callback)
+/// * `callback_ctx` is an user defined [`iox2_callback_context`](crate::iox2_callback_context)
+///
+/// # Safety
+///
+/// * `port_factory_handle` must be valid handles
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_port_factory_server_builder_set_request_degradation_callback(
+    port_factory_handle: iox2_port_factory_server_builder_h_ref,
+    callback: iox2_degradation_callback,
+    callback_ctx: iox2_callback_context,
+) {
+    port_factory_handle.assert_non_null();
+    unsafe {
+        let port_factory_struct = &mut *port_factory_handle.as_type();
+        match port_factory_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
+
+                port_factory_struct.set(PortFactoryServerBuilderUnion::new_ipc(
+                    port_factory.set_request_degradation_callback(move |cause, context| {
+                        callback(
+                            cause.into(),
+                            degradation_context_cast(context),
+                            callback_ctx,
+                        )
+                        .into()
+                    }),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let port_factory =
+                    ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
+
+                port_factory_struct.set(PortFactoryServerBuilderUnion::new_local(
+                    port_factory.set_request_degradation_callback(move |cause, context| {
+                        callback(
+                            cause.into(),
+                            degradation_context_cast(context),
+                            callback_ctx,
+                        )
+                        .into()
+                    }),
+                ));
+            }
+        }
+    }
+}
+
+/// Sets the response degradation callback for the server
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_server_builder_h_ref`]
+///   obtained by [`iox2_port_factory_request_response_server_builder`](crate::iox2_port_factory_request_response_server_builder).
+/// * `callback` is the [`iox2_degradation_callback`](crate::iox2_degradation_callback)
+/// * `callback_ctx` is an user defined [`iox2_callback_context`](crate::iox2_callback_context)
+///
+/// # Safety
+///
+/// * `port_factory_handle` must be valid handles
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_port_factory_server_builder_set_response_degradation_callback(
+    port_factory_handle: iox2_port_factory_server_builder_h_ref,
+    callback: iox2_degradation_callback,
+    callback_ctx: iox2_callback_context,
+) {
+    port_factory_handle.assert_non_null();
+    unsafe {
+        let port_factory_struct = &mut *port_factory_handle.as_type();
+        match port_factory_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
+
+                port_factory_struct.set(PortFactoryServerBuilderUnion::new_ipc(
+                    port_factory.set_response_degradation_callback(move |cause, context| {
+                        callback(
+                            cause.into(),
+                            degradation_context_cast(context),
+                            callback_ctx,
+                        )
+                        .into()
+                    }),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let port_factory =
+                    ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
+
+                port_factory_struct.set(PortFactoryServerBuilderUnion::new_local(
+                    port_factory.set_response_degradation_callback(move |cause, context| {
+                        callback(
+                            cause.into(),
+                            degradation_context_cast(context),
+                            callback_ctx,
+                        )
+                        .into()
+                    }),
                 ));
             }
         }
