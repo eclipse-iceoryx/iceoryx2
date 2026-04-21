@@ -202,7 +202,6 @@ pub fn field_offsets_are_correct_with_custom_implementation() {
             base_offset: usize,
             callback: &mut F,
         ) {
-            // align_to actually not necessary because derive macro calculates correctly aligned base offset
             let aligned_base_offset = align_to::<Self>(base_offset);
             callback(aligned_base_offset, 4);
             callback(aligned_base_offset + 4, 1);
