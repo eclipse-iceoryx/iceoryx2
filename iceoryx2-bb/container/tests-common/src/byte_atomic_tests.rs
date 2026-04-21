@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_container::atomic_memcpy::*;
+use iceoryx2_bb_container::byte_atomic::*;
 use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_derive_macros::{AtomicCopy, ZeroCopySend};
 use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
@@ -39,16 +39,16 @@ struct ComplexType {
 pub fn atomic_memcpy_cannot_be_created_when_sizes_do_not_match() {
     const SIZE: usize = size_of::<u64>();
     let value: u8 = 0;
-    let sut = AtomicMemcpy::<u8, SIZE>::new(value);
+    let sut = ByteAtomic::<u8, SIZE>::new(value);
     assert_that!(sut, is_err);
-    assert_that!(sut.err().unwrap(), eq AtomicMemcpyError::AtomicMemcpyCreateError);
+    assert_that!(sut.err().unwrap(), eq ByteAtomicError::SizesDoNotMatch);
 }
 
 #[test]
 pub fn new_creates_atomic_memcpy_containing_passed_value() {
     const SIZE: usize = size_of::<u64>();
     let value = 963;
-    let sut = AtomicMemcpy::<u64, SIZE>::new(value);
+    let sut = ByteAtomic::<u64, SIZE>::new(value);
     assert_that!(sut, is_ok);
 
     let read_value = unsafe { sut.unwrap().read().assume_init() };
@@ -64,7 +64,7 @@ pub fn new_creates_atomic_memcpy_containing_passed_complex_value() {
         d: Foo(1, 111111, 444, 99),
     };
     const SIZE: usize = size_of::<ComplexType>();
-    let sut = AtomicMemcpy::<ComplexType, SIZE>::new(value);
+    let sut = ByteAtomic::<ComplexType, SIZE>::new(value);
     assert_that!(sut, is_ok);
 
     let read_value = unsafe { sut.unwrap().read().assume_init() };
@@ -80,7 +80,7 @@ pub fn new_creates_atomic_memcpy_containing_passed_complex_value() {
 #[test]
 pub fn atomic_memcpy_contains_passed_value_after_write() {
     const SIZE: usize = size_of::<u64>();
-    let sut = AtomicMemcpy::<u64, SIZE>::new(0).unwrap();
+    let sut = ByteAtomic::<u64, SIZE>::new(0).unwrap();
 
     let new_value: u64 = 752389;
     unsafe {
@@ -98,7 +98,7 @@ pub fn atomic_memcpy_contains_passed_complex_value_after_write() {
         c: 0.0,
         d: Foo(0, 0, 0, 0),
     };
-    let sut = AtomicMemcpy::<ComplexType, SIZE>::new(init_value).unwrap();
+    let sut = ByteAtomic::<ComplexType, SIZE>::new(init_value).unwrap();
 
     let new_value = ComplexType {
         a: 22,
@@ -119,12 +119,11 @@ pub fn atomic_memcpy_contains_passed_complex_value_after_write() {
     }
 }
 
-// TODO: requires_std threading + synchronization?
 #[test]
 pub fn concurrent_read_without_write_always_returns_correct_data() {
     const SIZE: usize = size_of::<u64>();
     let value = 481935403;
-    let sut = AtomicMemcpy::<u64, SIZE>::new(value).unwrap();
+    let sut = ByteAtomic::<u64, SIZE>::new(value).unwrap();
 
     let number_of_threads = 16;
     const REPETITIONS: usize = 500;
@@ -154,7 +153,7 @@ pub fn concurrent_read_without_write_always_returns_correct_data() {
 pub fn concurrent_write_does_not_trigger_ub_with_miri() {
     const SIZE: usize = size_of::<u64>();
     let value = u64::MAX;
-    let sut = AtomicMemcpy::<u64, SIZE>::new(value).unwrap();
+    let sut = ByteAtomic::<u64, SIZE>::new(value).unwrap();
 
     let number_of_threads = 16;
     const REPETITIONS: usize = 500;
@@ -182,7 +181,7 @@ pub fn concurrent_write_does_not_trigger_ub_with_miri() {
 pub fn concurrent_read_and_write_does_not_trigger_ub_with_miri() {
     const SIZE: usize = size_of::<u64>();
     let value = 3249780;
-    let sut = AtomicMemcpy::<u64, SIZE>::new(value).unwrap();
+    let sut = ByteAtomic::<u64, SIZE>::new(value).unwrap();
 
     let number_of_threads = 16;
     const REPETITIONS: usize = 500;
