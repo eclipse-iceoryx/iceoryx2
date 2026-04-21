@@ -12,12 +12,28 @@
 
 use iceoryx2_bb_container::atomic_memcpy::*;
 use iceoryx2_bb_container::string::StaticString;
-use iceoryx2_bb_testing_macros::test;
+use iceoryx2_bb_derive_macros::{AtomicCopy, ZeroCopySend};
+use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 // use iceoryx2_bb_posix::barrier::*;
 // use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing_macros::test;
 use std::sync::Barrier;
 use std::thread;
+
+#[repr(C)]
+#[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+struct Foo(u8, u64, u32, u16);
+
+#[repr(C)]
+#[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+struct ComplexType {
+    a: u8,
+    b: StaticString<6>,
+    c: f64,
+    d: Foo,
+}
 
 #[test]
 pub fn atomic_memcpy_cannot_be_created_when_sizes_do_not_match() {
@@ -28,7 +44,6 @@ pub fn atomic_memcpy_cannot_be_created_when_sizes_do_not_match() {
     assert_that!(sut.err().unwrap(), eq AtomicMemcpyError::AtomicMemcpyCreateError);
 }
 
-// TODO: test other types
 #[test]
 pub fn new_creates_atomic_memcpy_containing_passed_value() {
     const SIZE: usize = size_of::<u64>();
@@ -41,14 +56,25 @@ pub fn new_creates_atomic_memcpy_containing_passed_value() {
 }
 
 #[test]
-pub fn new_creates_atomic_memcpy_containing_passed_static_string() {
-    const SIZE: usize = size_of::<StaticString<6>>();
-    let value = StaticString::<6>::try_from("ato").unwrap();
-    let sut = AtomicMemcpy::<StaticString<6>, SIZE>::new(value);
+pub fn new_creates_atomic_memcpy_containing_passed_complex_value() {
+    let value = ComplexType {
+        a: 5,
+        b: StaticString::<6>::try_from("ato").unwrap(),
+        c: -9.3,
+        d: Foo(1, 111111, 444, 99),
+    };
+    const SIZE: usize = size_of::<ComplexType>();
+    let sut = AtomicMemcpy::<ComplexType, SIZE>::new(value);
     assert_that!(sut, is_ok);
 
     let read_value = unsafe { sut.unwrap().read().assume_init() };
-    assert_that!(read_value, eq value.as_bytes_const());
+    assert_that!(read_value.a, eq value.a);
+    assert_that!(read_value.b, eq value.b);
+    assert_that!(read_value.c, eq value.c);
+    assert_that!(read_value.d.0, eq value.d.0);
+    assert_that!(read_value.d.1, eq value.d.1);
+    assert_that!(read_value.d.2, eq value.d.2);
+    assert_that!(read_value.d.3, eq value.d.3);
 }
 
 #[test]
@@ -64,14 +90,32 @@ pub fn atomic_memcpy_contains_passed_value_after_write() {
 }
 
 #[test]
-pub fn atomic_memcpy_contains_passed_static_string_after_write() {
-    const SIZE: usize = size_of::<StaticString<20>>();
-    let sut = AtomicMemcpy::<StaticString<20>, SIZE>::new(StaticString::<20>::new()).unwrap();
+pub fn atomic_memcpy_contains_passed_complex_value_after_write() {
+    const SIZE: usize = size_of::<ComplexType>();
+    let init_value = ComplexType {
+        a: 0,
+        b: StaticString::<6>::new(),
+        c: 0.0,
+        d: Foo(0, 0, 0, 0),
+    };
+    let sut = AtomicMemcpy::<ComplexType, SIZE>::new(init_value).unwrap();
 
-    let new_value = StaticString::<20>::try_from("atomheartmother").unwrap();
+    let new_value = ComplexType {
+        a: 22,
+        b: StaticString::<6>::try_from("smeik").unwrap(),
+        c: 7.53,
+        d: Foo(6, 734567, 5234, 132),
+    };
     unsafe {
         sut.write(new_value);
-        assert_that!(sut.read().assume_init(), eq new_value);
+        let read_value = sut.read().assume_init();
+        assert_that!(read_value.a, eq new_value.a);
+        assert_that!(read_value.b, eq new_value.b);
+        assert_that!(read_value.c, eq new_value.c);
+        assert_that!(read_value.d.0, eq new_value.d.0);
+        assert_that!(read_value.d.1, eq new_value.d.1);
+        assert_that!(read_value.d.2, eq new_value.d.2);
+        assert_that!(read_value.d.3, eq new_value.d.3);
     }
 }
 
@@ -87,6 +131,10 @@ pub fn concurrent_read_without_write_always_returns_correct_data() {
     // Use of std thread + barrier because Miri fails with "error: unsupported operation: can't call foreign function"
     // for `pthread_attr_init` and `pthread_barrieratrr_init` (iceoryx2-pal/posix/src/linux/pthread.rs)
     let barrier = Barrier::new(number_of_threads);
+    // let barrier_handle = BarrierHandle::new();
+    // let barrier = BarrierBuilder::new(number_of_threads)
+    //     .create(&barrier_handle)
+    //     .unwrap();
     thread::scope(|s| {
         for _ in 0..number_of_threads {
             s.spawn(|| {
