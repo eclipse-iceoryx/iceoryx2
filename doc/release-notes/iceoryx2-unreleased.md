@@ -41,6 +41,10 @@
   [#1496](https://github.com/eclipse-iceoryx/iceoryx2/issues/1496)
 * Enable override of preallocated data chunks for sender ports
   [#1551](https://github.com/eclipse-iceoryx/iceoryx2/issues/1551)
+* Add `Zeroable` and `PlainOldDataWithoutPadding` derive macros that generate
+  the trait impl and enforce all invariants (`#[repr(C)]`, no padding, field
+  bounds) at compile time
+  [#1547](https://github.com/eclipse-iceoryx/iceoryx2/issues/1547)
 
 ### Bugfixes
 
