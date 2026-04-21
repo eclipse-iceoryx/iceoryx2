@@ -1,0 +1,33 @@
+[package]
+name = "iceoryx2-services-tunnel-conformance-tests"
+description = "iceoryx2-services: conformance tests for the tunnel service"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[features]
+default = ["std"]
+
+std = [
+  "iceoryx2-bb-posix/std",
+  "iceoryx2-bb-testing/std",
+  "iceoryx2-bb-testing-macros/std",
+  "iceoryx2-services-discovery/std",
+  "iceoryx2-services-tunnel/std",
+  "iceoryx2-services-tunnel-backend/std",
+  "iceoryx2/std",
+]
+
+[dependencies]
+iceoryx2 = { workspace = true }
+iceoryx2-bb-posix = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-testing-macros = { workspace = true }
+iceoryx2-services-discovery = { workspace = true }
+iceoryx2-services-tunnel = { workspace = true }
+iceoryx2-services-tunnel-backend = { workspace = true }

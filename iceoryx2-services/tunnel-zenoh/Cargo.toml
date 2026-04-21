@@ -1,0 +1,30 @@
+[package]
+name = "iceoryx2-services-tunnel-zenoh"
+description = "iceoryx2-services: tunnel backend implemented with zenoh"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[[test]]
+name = "main"
+harness = false
+
+[dependencies]
+iceoryx2 = { workspace = true, features = ["std"] }
+iceoryx2-log = { workspace = true, features = ["std"] }
+iceoryx2-bb-concurrency = { workspace = true, features = ["std"] }
+iceoryx2-services-tunnel-backend = { workspace = true, features = ["std"] }
+
+serde_json = { workspace = true }
+zenoh = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-posix = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-testing-macros = { workspace = true }
+iceoryx2-services-tunnel-conformance-tests = { workspace = true }

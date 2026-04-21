@@ -1,11 +1,17 @@
 # iceoryx2-services
 
-Being a service-oriented middleware, `iceoryx2` facilitates the ability to add
-functionality by spinning up services.
+As a service-oriented middleware, `iceoryx2` is designed to extend application
+capabilities through composable services.
 
-These crates provides some "internal" services that can be used out-of-the-box
-to augment applications with some common functionality with minimal hassle.
+This directory contains ready-to-use service crates that provide common
+functionality on top of the core `iceoryx2` infrastructure. Each crate can be
+integrated into applications with minimal effort.
 
-|      Crate                    | Offered Services             | Description                                         |
-| ----------------------------- | ---------------------------- | --------------------------------------------------- |
-| `iceoryx2-services-discovery` | `iox2://discovery/services/` | Subscribe to service changes in the iceoryx2 system |
+<!-- markdownlint-disable MD060 -->
+
+| Crate                         | Offered Services             | Description                                                        |
+| ----------------------------- | ---------------------------- | ------------------------------------------------------------------ |
+| `iceoryx2-services-discovery` | `iox2://discovery/services/` | Receive notifications when services are created, changed or removed |
+| `iceoryx2-services-tunnel`    | -                            | Extend  `iceoryx2` communication over a network connection          |
+
+<!-- markdownlint-enable MD060 -->

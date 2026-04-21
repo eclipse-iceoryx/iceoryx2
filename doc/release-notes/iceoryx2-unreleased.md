@@ -173,6 +173,8 @@
 * Move conformance test macros into `iceoryx2-bb-testing-macros` and rename
   `#[conformance_test_module]` to `#[conformance_tests]`
   [#1540](https://github.com/eclipse-iceoryx/iceoryx2/issues/1540)
+* Move tunnel crates into services architecture layer
+  [#1552](https://github.com/eclipse-iceoryx/iceoryx2/issues/1552)
 
 ### Workflow
 
@@ -296,3 +298,15 @@
        // ...
    }
    ```
+
+1. The crates for the `iceoryx2` tunnel have been moved into
+   the `services` architecture layer and have been renamed
+   accordingly.
+
+    ```rust
+    // old
+    use iceoryx2_tunnel::{Config, Tunnel};
+    
+    // new
+    use iceoryx2_services_tunnel::{Config, Tunnel};
+    ```

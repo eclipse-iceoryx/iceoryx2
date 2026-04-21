@@ -139,6 +139,6 @@ cmake --build target/ff/cc/build
 ### Bazel
 
 ```console
-USE_BAZEL_VERSION=7.x bazel build //iceoryx2/...                        # std build
-USE_BAZEL_VERSION=7.x bazel build //iceoryx2/... --//:feature_std=off   # no_std build
+bazel build //iceoryx2/...                        # std build
+bazel build //iceoryx2/... --//:feature_std=off   # no_std build
 ```
