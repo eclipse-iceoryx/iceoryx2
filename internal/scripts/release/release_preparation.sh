@@ -318,7 +318,7 @@ if [[ ${SELECTION} == ${YES} ]]; then
     echo -e "Did you build with cargo, bazel and also the python bindings to update the corresponding lock files?"
     echo -e ""
     echo -e "cargo:  cargo build --all-targets"
-    echo -e "bazel:  USE_BAZEL_VERSION=7.4.1 bazelisk build //..."
+    echo -e "bazel:  bazelisk build //..."
     echo -e "python: maturin build --manifest-path=iceoryx2-ffi/python/Cargo.toml"
     show_default_selector
 
