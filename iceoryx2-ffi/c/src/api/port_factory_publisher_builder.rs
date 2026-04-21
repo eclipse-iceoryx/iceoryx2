@@ -14,9 +14,10 @@
 
 use crate::api::{
     AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, PayloadFfi, PublisherUnion,
-    UserHeaderFfi, c_size_t, iox2_publisher_h, iox2_publisher_t, iox2_service_type_e,
+    UnsafeCallbackContextSendWorkaround, UserHeaderFfi, c_size_t, degradation_info_cast,
+    iox2_callback_context, iox2_degradation_handler, iox2_publisher_h, iox2_publisher_t,
+    iox2_service_type_e,
 };
-use crate::iox2_callback_context;
 
 use iceoryx2::port::publisher::PublisherCreateError;
 use iceoryx2::prelude::*;
@@ -329,6 +330,57 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_allocation_stra
 
                 port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_local(
                     port_factory.allocation_strategy(value.into()),
+                ));
+            }
+        }
+    }
+}
+
+/// Sets the degradation handler for the publisher
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_publisher_builder_h_ref`]
+///   obtained by [`iox2_port_factory_pub_sub_publisher_builder`](crate::iox2_port_factory_pub_sub_publisher_builder).
+/// * `handler` is the [`iox2_degradation_handler`](crate::iox2_degradation_handler)
+/// * `ctx` is an user defined [`iox2_callback_context`](crate::iox2_callback_context)
+///
+/// # Safety
+///
+/// * `port_factory_handle` must be valid handles
+/// * `ctx` is stored for later use; if the publisher, including the send function, is accessed from multiple threads, the `ctx` must be thread-safe
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_degradation_handler(
+    port_factory_handle: iox2_port_factory_publisher_builder_h_ref,
+    handler: iox2_degradation_handler,
+    ctx: iox2_callback_context,
+) {
+    port_factory_handle.assert_non_null();
+
+    let ctx = UnsafeCallbackContextSendWorkaround { ctx };
+
+    unsafe {
+        let port_factory_struct = &mut *port_factory_handle.as_type();
+        match port_factory_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
+
+                port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_ipc(
+                    port_factory.set_degradation_handler(move |cause, info| {
+                        let ctx = ctx;
+                        handler(cause.into(), degradation_info_cast(info), ctx.ctx).into()
+                    }),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let port_factory =
+                    ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
+
+                port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_local(
+                    port_factory.set_degradation_handler(move |cause, info| {
+                        let ctx = ctx;
+                        handler(cause.into(), degradation_info_cast(info), ctx.ctx).into()
+                    }),
                 ));
             }
         }

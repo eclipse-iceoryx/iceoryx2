@@ -28,6 +28,7 @@ mod client;
 mod client_details;
 mod config;
 mod constants;
+mod degradation_handler;
 mod entry_handle;
 mod entry_handle_mut;
 mod entry_value_uninit;
@@ -111,6 +112,7 @@ pub use client::*;
 pub use client_details::*;
 pub use config::*;
 pub use constants::*;
+pub use degradation_handler::*;
 pub use entry_handle::*;
 pub use entry_handle_mut::*;
 pub use entry_value_uninit::*;
@@ -189,6 +191,28 @@ pub const IOX2_OK: c_int = 0;
 
 /// An alias to a `void *` which can be used to pass arbitrary data to the callback
 pub type iox2_callback_context = *mut c_void;
+
+// The degradation and unable to deliver handler require the handler to be Send;
+// passing a `*mut c_void` is therefore not possible; since this is for the C bindings,
+// there are no other options and with C, it is up to the user to ensure thread-safety;
+// this workaround is used to pass a `*mut c_void` to a Rust closure
+//
+// ```no_run
+// fn set_callback(handle: iox2_port_handle, callback: iox2_callback, ctx: iox2_callback_context) {
+//     let ctx = UnsafeCallbackContextSendWorkaround { ctx };
+//     let port = port_from_handle(handle);
+//     port.set_callback(|| {
+//         let ctx = ctx;
+//         calback(ctx.ctx);
+//     });
+// }
+// ```
+#[derive(Clone, Copy)]
+pub(crate) struct UnsafeCallbackContextSendWorkaround {
+    ctx: iox2_callback_context,
+}
+
+unsafe impl Send for UnsafeCallbackContextSendWorkaround {}
 
 #[repr(C)]
 #[derive(Copy, Clone)]
