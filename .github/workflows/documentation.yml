@@ -70,21 +70,18 @@ jobs:
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
 
+      - name: Install just
+        uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
+
       - name: Set Up Python & Install Poetry
         uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # version: v6.0.1
         with:
           python-version: "3.13"
       - run: pip install poetry==2.2.1
 
-      - name: Build Python Bindings
-        run: |
-          poetry --project iceoryx2-ffi/python install
-          poetry --project iceoryx2-ffi/python build-into-venv
-
       - name: Build Python API Documentation
         run: |
-          poetry --project doc/api/python install
-          poetry --project doc/api/python build-docs
+          just doc sdk python
 
       - name: Upload Python Documentation Artifact
         if: github.event_name != 'pull_request'
@@ -111,13 +108,12 @@ jobs:
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
 
-      - name: Build C Bindings
-        run: |
-          cargo build --release --package iceoryx2-ffi-c
+      - name: Install just
+        uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
 
       - name: Build C API Documentation
         run: |
-          cd doc/api/c && make html && cd -
+          just doc sdk c
 
       - name: Upload C Documentation Artifact
         if: github.event_name != 'pull_request'
@@ -144,9 +140,12 @@ jobs:
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
 
+      - name: Install just
+        uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
+
       - name: Build C++ API Documentation
         run: |
-          cd doc/api/cxx && make html && cd -
+          just doc sdk cxx
 
       - name: Upload C++ Documentation Artifact
         if: github.event_name != 'pull_request'

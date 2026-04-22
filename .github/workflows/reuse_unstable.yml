@@ -22,6 +22,9 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
+      - name: Install just
+        uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
+
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@3a6cbe35ba64df7ca70c51365c4aff65db9a9037 # version: v2.1.1
         with:
@@ -75,15 +78,17 @@ jobs:
         with:
           profile: ${{ inputs.profile }}
 
-      - name: Run cargo build
+      - name: Run workspaces
         shell: bash
         run: |
-          cargo build --workspace --all-targets ${{ steps.set-build-flags.outputs.cargo-build-mode }}
+          just build sdk ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
+          just build integrations ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
 
-      - name: Run cargo nextest
+      - name: Test workspaces
         shell: bash
         run: |
-          cargo nextest run --workspace --all-targets --no-fail-fast ${{ steps.set-build-flags.outputs.cargo-build-mode }}
+          just test sdk ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast
+          just test integrations ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast
 
       - name: Cleanup build artifacts
         uses: ./.github/actions/save-disk-space

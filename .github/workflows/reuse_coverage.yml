@@ -20,6 +20,9 @@ jobs:
           sudo groupadd testgroup1
           sudo groupadd testgroup2
 
+      - name: Install just
+        uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
         with:
@@ -52,9 +55,6 @@ jobs:
         with:
           artifact-bin-name: grcov
           artifact-upload-name: ${{ runner.os }}-grcov
-
-      - name: Install just
-        uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
 
       - name: Save disk space
         uses: ./.github/actions/save-disk-space
