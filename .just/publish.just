@@ -134,37 +134,30 @@ _publish-dispatch workspace *flags:
         esac
     done
 
-    case "{{workspace}}" in
-        "")
-            echo "Usage: just publish <workspace> [flags]"
-            echo ""
-            echo "  sdk             publish the main workspace crates"
-            echo "  integrations    publish the integrations workspace crates"
-            echo "  all             publish all workspaces in order"
-            echo ""
-            echo "Flags:"
-            echo "  --dry-run          simulate publishing (requires Rust >= 1.90)"
-            echo "  --allow-dirty      allow dirty working directory"
-            echo "  --sanity-checks    run sanity checks only"
-            echo "  --list             list crates to publish"
-            echo "  --no-verify        skip build verification during publishing"
-            echo "  --registry <name>  publish to a custom registry configured in ~/.cargo/config.toml"
-            exit 1
-            ;;
-        sdk|integrations|all)
-            if [ "$LIST" = "true" ]; then
-                just _publish-list "{{workspace}}"
-            elif [ "$SANITY_CHECKS" = "true" ]; then
-                just _publish-sanity-checks "{{workspace}}"
-            else
-                just _publish "{{workspace}}" "$DRY_RUN" "$ALLOW_DIRTY" "$NO_VERIFY" "$REGISTRY"
-            fi
-            ;;
-        *)
-            echo "Unknown publish target: {{workspace}}"
-            exit 1
-            ;;
-    esac
+    if [ -z "{{workspace}}" ]; then
+        echo "Usage: just publish <workspace> [flags]"
+        echo ""
+        echo "  sdk             publish the main workspace crates"
+        echo "  integrations    publish the integrations workspace crates"
+        echo "  all             publish all workspaces in order"
+        echo ""
+        echo "Flags:"
+        echo "  --dry-run          simulate publishing (requires Rust >= 1.90)"
+        echo "  --allow-dirty      allow dirty working directory"
+        echo "  --sanity-checks    run sanity checks only"
+        echo "  --list             list crates to publish"
+        echo "  --no-verify        skip build verification during publishing"
+        echo "  --registry <name>  publish to a custom registry configured in ~/.cargo/config.toml"
+        exit 1
+    fi
+
+    if [ "$LIST" = "true" ]; then
+        just _publish-list "{{workspace}}"
+    elif [ "$SANITY_CHECKS" = "true" ]; then
+        just _publish-sanity-checks "{{workspace}}"
+    else
+        just _publish "{{workspace}}" "$DRY_RUN" "$ALLOW_DIRTY" "$NO_VERIFY" "$REGISTRY"
+    fi
 
 # -----------------------------------------------------------------------------
 # Helpers

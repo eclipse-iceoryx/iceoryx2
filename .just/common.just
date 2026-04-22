@@ -70,6 +70,10 @@ _find-crate-src package:
 _parse-workspace workspace:
     #!/usr/bin/env bash
     case "{{workspace}}" in
-        all) echo "sdk integrations" ;;
-        *)   echo "{{workspace}}" ;;
+        sdk|integrations) echo "{{workspace}}" ;;
+        all)              echo "sdk integrations" ;;
+        *)
+            echo "Error: unknown workspace '{{workspace}}' (expected: sdk|integrations|all)" >&2
+            exit 1
+            ;;
     esac

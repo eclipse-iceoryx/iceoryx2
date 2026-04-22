@@ -15,70 +15,40 @@
 # =============================================================================
 
 [private]
-_parse-doc-args *flags:
+_doc-dispatch workspace target *flags:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    LANGUAGE="rust"
-    LANG_COUNT=0
-
-    set -- {{flags}}
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            --rust)   LANGUAGE="rust";   LANG_COUNT=$((LANG_COUNT + 1)); shift ;;
-            --c)      LANGUAGE="c";      LANG_COUNT=$((LANG_COUNT + 1)); shift ;;
-            --cxx)    LANGUAGE="cxx";    LANG_COUNT=$((LANG_COUNT + 1)); shift ;;
-            --python) LANGUAGE="python"; LANG_COUNT=$((LANG_COUNT + 1)); shift ;;
-            *)        shift ;;
-        esac
-    done
-
-    if [ "$LANG_COUNT" -gt 1 ]; then
-        echo "Error: only one language flag may be specified" >&2
+    if [ -z "{{workspace}}" ] || [ -z "{{target}}" ]; then
+        echo "Usage: just doc <workspace> <target>"
+        echo ""
+        echo "Workspaces:"
+        echo "  sdk             build docs for the main workspace"
+        echo "  integrations    build docs for the integrations workspace"
+        echo "  all             build docs for all workspaces"
+        echo ""
+        echo "Targets:"
+        echo "  rust            build Rust API docs"
+        echo "  c               build C API docs"
+        echo "  cxx             build C++ API docs"
+        echo "  python          build Python API docs"
         exit 1
     fi
 
-    echo "LANGUAGE='$LANGUAGE'"
-
-[private]
-_doc-dispatch workspace *flags:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    eval $(just _parse-doc-args {{flags}})
-
-    case "{{workspace}}" in
-        "")
-            echo "Usage: just doc <workspace> [flags]"
-            echo ""
-            echo "  sdk             build docs for the main workspace"
-            echo "  integrations    build docs for the integrations workspace"
-            echo "  all             build docs for all workspaces"
-            echo ""
-            echo "Flags:"
-            echo "  --rust          build Rust API docs (default)"
-            echo "  --c             build C API docs"
-            echo "  --cxx           build C++ API docs"
-            echo "  --python        build Python API docs"
-            exit 1
-            ;;
-        sdk|integrations|all) ;;
-        *)
-            echo "Error: unknown workspace '{{workspace}}'" >&2
-            exit 1
-            ;;
-    esac
-
-    if [ "{{workspace}}" = "integrations" ] && [ "$LANGUAGE" != "rust" ]; then
-        echo "Error: the integrations workspace only has Rust docs (given: --$LANGUAGE)" >&2
+    if [ "{{workspace}}" = "integrations" ] && [ "{{target}}" != "rust" ]; then
+        echo "Error: the integrations workspace only has Rust docs (given: {{target}})" >&2
         exit 1
     fi
 
-    case "$LANGUAGE" in
+    case "{{target}}" in
         rust)   just _doc-rust "{{workspace}}" ;;
-        c)      just _doc-c ;;
-        cxx)    just _doc-cxx ;;
-        python) just _doc-python ;;
+        c)      just _doc-c "{{workspace}}" ;;
+        cxx)    just _doc-cxx "{{workspace}}" ;;
+        python) just _doc-python "{{workspace}}" ;;
+        *)
+            echo "Error: unknown target '{{target}}' (expected: rust|c|cxx|python)" >&2
+            exit 1
+            ;;
     esac
 
 # -----------------------------------------------------------------------------
@@ -96,7 +66,7 @@ _doc-rust workspace:
         case "$WS" in
             sdk)
                 cargo doc --no-deps --workspace
-                
+
                 echo ""
                 echo "Available at: {{justfile_directory()}}/target/doc/"
                 ;;
@@ -114,9 +84,11 @@ _doc-rust workspace:
 # -----------------------------------------------------------------------------
 
 [private]
-_doc-c:
+_doc-c workspace:
     #!/usr/bin/env bash
     set -euo pipefail
+
+    just _parse-workspace "{{workspace}}" > /dev/null
 
     cargo build --release --package iceoryx2-ffi-c
     make -C {{justfile_directory()}}/doc/api/c html
@@ -129,9 +101,11 @@ _doc-c:
 # -----------------------------------------------------------------------------
 
 [private]
-_doc-cxx:
+_doc-cxx workspace:
     #!/usr/bin/env bash
     set -euo pipefail
+
+    just _parse-workspace "{{workspace}}" > /dev/null
 
     make -C {{justfile_directory()}}/doc/api/cxx html
 
@@ -143,9 +117,11 @@ _doc-cxx:
 # -----------------------------------------------------------------------------
 
 [private]
-_doc-python:
+_doc-python workspace:
     #!/usr/bin/env bash
     set -euo pipefail
+
+    just _parse-workspace "{{workspace}}" > /dev/null
 
     poetry --project {{justfile_directory()}}/iceoryx2-ffi/python install
     poetry --project {{justfile_directory()}}/iceoryx2-ffi/python build-into-venv

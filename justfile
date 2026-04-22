@@ -44,8 +44,8 @@ build what="" *flags:
 test what="" *flags:
     @just _test-dispatch "{{what}}" {{flags}}
 
-doc workspace="" *flags:
-    @just _doc-dispatch "{{workspace}}" {{flags}}
+doc workspace="" target="" *flags:
+    @just _doc-dispatch "{{workspace}}" "{{target}}" {{flags}}
 
 bundle what="" *flags:
     @just _bundle-dispatch "{{what}}" {{flags}}
@@ -53,8 +53,8 @@ bundle what="" *flags:
 verify what="" *flags:
     @just _verify-dispatch "{{what}}" {{flags}}
 
-lint what="" *flags:
-    @just _lint-dispatch "{{what}}" {{flags}}
+lint workspace="" target="" *flags:
+    @just _lint-dispatch "{{workspace}}" "{{target}}" {{flags}}
 
 setup what="":
     @just _setup-dispatch "{{what}}"
