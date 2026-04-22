@@ -49,8 +49,9 @@ _test-dispatch what *flags:
 
     case "{{what}}" in
         "")
-            echo "Usage: just test <what> [flags]"
+            echo "Usage: just test <scope> [flags]"
             echo ""
+            echo "Scope:"
             echo "  sdk                    run all tests for the main workspace"
             echo "  integrations           run all tests for the integrations workspace"
             echo "  <package>              run tests for a specific package"

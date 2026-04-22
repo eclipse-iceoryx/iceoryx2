@@ -50,8 +50,8 @@ doc workspace="" target="" *flags:
 bundle what="" *flags:
     @just _bundle-dispatch "{{what}}" {{flags}}
 
-verify what="" *flags:
-    @just _verify-dispatch "{{what}}" {{flags}}
+verify workspace="" target="" *flags:
+    @just _verify-dispatch "{{workspace}}" "{{target}}" {{flags}}
 
 lint workspace="" target="" *flags:
     @just _lint-dispatch "{{workspace}}" "{{target}}" {{flags}}
