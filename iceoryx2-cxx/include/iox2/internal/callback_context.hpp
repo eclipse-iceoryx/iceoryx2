@@ -26,8 +26,6 @@ namespace iox2 {
 using OverridePreallocationCallback = iox2::bb::StaticFunction<size_t(size_t)>;
 
 namespace internal {
-
-
 /// Building block to provide a type-safe context pointer to a C callback
 /// that has a `void*` context argument.
 /// The context could be hereby a user provided clojure with capture or

@@ -211,7 +211,7 @@ impl HandleToType for iox2_port_factory_publisher_builder_h_ref {
 /// * `iox2_callback_context` -> provided by the user and can be `NULL`
 ///
 /// Returns the override value of preallocated samples. The return value is clamped between `1`
-/// and the worst case number of preallocated samples.
+/// and the worst case number of preallocated samples (`number_of_preallocated_sample`).
 pub type iox2_preallocated_samples_override = extern "C" fn(usize, iox2_callback_context) -> usize;
 
 // END type definition
@@ -244,7 +244,7 @@ pub unsafe extern "C" fn iox2_publisher_create_error_string(
 /// to guarantee that the publisher never runs out of samples to loan
 /// and send.
 /// The return value is clamped between `1` and the worst case number of
-/// preallocated requests.
+/// preallocated samples.
 ///
 /// # Important
 ///

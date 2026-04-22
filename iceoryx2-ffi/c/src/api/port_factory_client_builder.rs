@@ -179,7 +179,7 @@ impl HandleToType for iox2_port_factory_client_builder_h_ref {
 /// * `iox2_callback_context` -> provided by the user and can be `NULL`
 ///
 /// Returns the override value of preallocated requests. The return value is clamped between `1`
-/// and the worst case number of preallocated requests.
+/// and the worst case number of preallocated requests (`number_of_preallocated_requests`).
 pub type iox2_preallocated_requests_override = extern "C" fn(usize, iox2_callback_context) -> usize;
 
 // END type definition
