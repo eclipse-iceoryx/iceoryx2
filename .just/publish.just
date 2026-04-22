@@ -110,7 +110,7 @@ INTEGRATIONS_CRATES_TO_IGNORE := `echo \
     iceoryx2-services-tunnel-conformance-tests`
 
 [private]
-_publish-dispatch what *flags:
+_publish-dispatch workspace *flags:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -134,9 +134,9 @@ _publish-dispatch what *flags:
         esac
     done
 
-    case "{{what}}" in
+    case "{{workspace}}" in
         "")
-            echo "Usage: just publish <what> [flags]"
+            echo "Usage: just publish <workspace> [flags]"
             echo ""
             echo "  sdk             publish the main workspace crates"
             echo "  integrations    publish the integrations workspace crates"
@@ -151,28 +151,32 @@ _publish-dispatch what *flags:
             echo "  --registry <name>  publish to a custom registry configured in ~/.cargo/config.toml"
             exit 1
             ;;
-        sdk)
-            just _publish-workspace-action sdk "$DRY_RUN" "$ALLOW_DIRTY" "$SANITY_CHECKS" "$LIST" "$NO_VERIFY" "$REGISTRY"
-            ;;
-        integrations)
-            just _publish-workspace-action integrations "$DRY_RUN" "$ALLOW_DIRTY" "$SANITY_CHECKS" "$LIST" "$NO_VERIFY" "$REGISTRY"
-            ;;
-        all)
-            echo "=== sdk ==="
-            just _publish-workspace-action sdk "$DRY_RUN" "$ALLOW_DIRTY" "$SANITY_CHECKS" "$LIST" "$NO_VERIFY" "$REGISTRY"
-            echo ""
-            echo "=== integrations ==="
-            just _publish-workspace-action integrations "$DRY_RUN" "$ALLOW_DIRTY" "$SANITY_CHECKS" "$LIST" "$NO_VERIFY" "$REGISTRY"
+        sdk|integrations|all)
+            if [ "$LIST" = "true" ]; then
+                just _publish-list "{{workspace}}"
+            elif [ "$SANITY_CHECKS" = "true" ]; then
+                just _publish-sanity-checks "{{workspace}}"
+            else
+                just _publish "{{workspace}}" "$DRY_RUN" "$ALLOW_DIRTY" "$NO_VERIFY" "$REGISTRY"
+            fi
             ;;
         *)
-            echo "Unknown publish target: {{what}}"
+            echo "Unknown publish target: {{workspace}}"
             exit 1
             ;;
     esac
 
 # -----------------------------------------------------------------------------
-# Workspace resolution helpers
+# Helpers
 # -----------------------------------------------------------------------------
+
+[private]
+_publish-parse-workspace workspace:
+    #!/usr/bin/env bash
+    case "{{workspace}}" in
+        all) echo "sdk integrations" ;;
+        *)   echo "{{workspace}}" ;;
+    esac
 
 [private]
 _publish-manifest workspace:
@@ -199,33 +203,6 @@ _publish-crates-to-ignore workspace:
     esac
 
 # -----------------------------------------------------------------------------
-# Action dispatch
-# -----------------------------------------------------------------------------
-
-[private]
-_publish-workspace-action workspace dry_run allow_dirty sanity_checks list no_verify registry:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    if [ "{{list}}" = "true" ]; then
-        just _publish-list "{{workspace}}"
-        exit 0
-    fi
-
-    if [ "{{sanity_checks}}" = "true" ]; then
-        just _publish-sanity-checks "{{workspace}}"
-        exit 0
-    fi
-
-    if [ "{{dry_run}}" = "true" ]; then
-        just _publish-sanity-checks "{{workspace}}"
-        just _publish-dry-run "{{workspace}}" "{{allow_dirty}}" "{{no_verify}}" "{{registry}}"
-    else
-        just _publish-sanity-checks "{{workspace}}"
-        just _publish-run "{{workspace}}" "{{allow_dirty}}" "{{no_verify}}" "{{registry}}"
-    fi
-
-# -----------------------------------------------------------------------------
 # List
 # -----------------------------------------------------------------------------
 
@@ -234,11 +211,15 @@ _publish-list workspace:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    PUBLISH=$(just _publish-crates-to-publish "{{workspace}}")
+    WORKSPACES=$(just _publish-parse-workspace "{{workspace}}")
 
-    echo "Crates to publish ({{workspace}}):"
-    for CRATE in $PUBLISH; do
-        echo "  $CRATE"
+    for WS in $WORKSPACES; do
+        PUBLISH=$(just _publish-crates-to-publish "$WS")
+
+        echo "Crates to publish ($WS):"
+        for CRATE in $PUBLISH; do
+            echo "  $CRATE"
+        done
     done
 
 # -----------------------------------------------------------------------------
@@ -250,10 +231,14 @@ _publish-sanity-checks workspace:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    echo "Running sanity checks for '{{workspace}}'..."
-    just _publish-check-completeness "{{workspace}}"
-    just _publish-check-cyclic-deps "{{workspace}}"
-    echo "All sanity checks passed."
+    WORKSPACES=$(just _publish-parse-workspace "{{workspace}}")
+
+    for WS in $WORKSPACES; do
+        echo "Running sanity checks for '$WS'..."
+        just _publish-check-completeness "$WS"
+        just _publish-check-cyclic-deps "$WS"
+        echo "All sanity checks passed."
+    done
 
 [private]
 _publish-check-completeness workspace:
@@ -327,6 +312,31 @@ _publish-check-cyclic-deps workspace:
 # -----------------------------------------------------------------------------
 # Publish
 # -----------------------------------------------------------------------------
+
+[private]
+_publish workspace dry_run allow_dirty no_verify registry:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    WORKSPACES=$(just _publish-parse-workspace "{{workspace}}")
+
+    for WS in $WORKSPACES; do
+        if [ "{{workspace}}" = "all" ]; then
+            echo "=== $WS ==="
+        fi
+
+        just _publish-sanity-checks "$WS"
+
+        if [ "{{dry_run}}" = "true" ]; then
+            just _publish-dry-run "$WS" "{{allow_dirty}}" "{{no_verify}}" "{{registry}}"
+        else
+            just _publish-run "$WS" "{{allow_dirty}}" "{{no_verify}}" "{{registry}}"
+        fi
+
+        if [ "{{workspace}}" = "all" ]; then
+            echo ""
+        fi
+    done
 
 [private]
 _publish-exclude-args workspace:

@@ -57,5 +57,5 @@ setup what="":
 coverage action="" *flags:
     @just _coverage-dispatch "{{action}}" {{flags}}
 
-publish what="" *flags:
-    @just _publish-dispatch "{{what}}" {{flags}}
+publish workspace="" *flags:
+    @just _publish-dispatch "{{workspace}}" {{flags}}
