@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::alloc::Layout;
+use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use alloc::format;
@@ -171,13 +172,15 @@ impl<Service: service::Service> Sender<Service> {
                         offset,
                         sample_size,
                         channel_id,
-                        UnableToDeliverHandler::new(|| {
+                        UnableToDeliverHandler::new(|elapsed_time, retries| {
                             match self.degradation_callback.call(
                                 DegradationCause::UnableToDeliverData,
                                 &DegradationContext::new(
                                     self.service_state.static_config.unique_service_id().value(),
                                     self.sender_port_id,
                                     connection.receiver_port_id,
+                                    elapsed_time,
+                                    retries,
                                 ),
                             ) {
                                 DegradationAction::Default => UnableToDeliverAction::Block,
@@ -244,6 +247,8 @@ impl<Service: service::Service> Sender<Service> {
                             self.service_state.static_config.unique_service_id().value(),
                             self.sender_port_id,
                             connection.receiver_port_id,
+                            Duration::ZERO,
+                            0,
                         ),
                     ) {
                         DegradationAction::Ignore | DegradationAction::Discard => (),
@@ -264,6 +269,8 @@ impl<Service: service::Service> Sender<Service> {
                                     self.service_state.static_config.unique_service_id().value(),
                                     self.sender_port_id,
                                     connection.receiver_port_id,
+                                    Duration::ZERO,
+                                    0,
                                 ),
                             );
                             fail!(from self, with SendError::ConnectionCorrupted,
@@ -508,6 +515,8 @@ impl<Service: service::Service> Sender<Service> {
                         self.service_state.static_config.unique_service_id().value(),
                         self.sender_port_id,
                         receiver_details.port_id,
+                        Duration::ZERO,
+                        0,
                     ),
                 ) {
                     DegradationAction::Ignore | DegradationAction::Discard => (),
@@ -528,6 +537,8 @@ impl<Service: service::Service> Sender<Service> {
                                 self.service_state.static_config.unique_service_id().value(),
                                 self.sender_port_id,
                                 receiver_details.port_id,
+                                Duration::ZERO,
+                                0,
                             ),
                         );
                         fail!(from self, with e,

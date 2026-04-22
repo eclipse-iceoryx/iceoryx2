@@ -12,6 +12,7 @@
 
 use alloc::format;
 use alloc::sync::Arc;
+use core::time::Duration;
 
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::slotmap::SlotMap;
@@ -467,6 +468,8 @@ impl<Service: service::Service> Receiver<Service> {
                         self.service_state.static_config.unique_service_id().value(),
                         sender_details.port_id,
                         self.receiver_port_id(),
+                        Duration::ZERO,
+                        0,
                     ),
                 ) {
                     DegradationAction::Ignore | DegradationAction::Discard => Ok(()),
@@ -486,6 +489,8 @@ impl<Service: service::Service> Receiver<Service> {
                                 self.service_state.static_config.unique_service_id().value(),
                                 sender_details.port_id,
                                 self.receiver_port_id(),
+                                Duration::ZERO,
+                                0,
                             ),
                         );
                         fail!(from self, with e, "Unable to establish connection to new sender {:?}.",

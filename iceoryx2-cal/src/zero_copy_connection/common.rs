@@ -30,6 +30,7 @@ pub mod details {
     };
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
+    use iceoryx2_bb_posix::clock::Time;
     use iceoryx2_bb_posix::file::AccessMode;
     use iceoryx2_log::{fail, fatal_panic};
 
@@ -740,6 +741,8 @@ pub mod details {
                 let mut has_valid_channel_state = false;
                 let mut do_block = false;
                 let mut do_fail = false;
+                let mut retry_counter = 0;
+                let start = Time::now().unwrap();
 
                 if let Err(e) = AdaptiveWaitBuilder::new().create().unwrap().wait_while(|| {
                     is_connected = mgmt.is_connected();
@@ -752,7 +755,9 @@ pub mod details {
                             if do_block {
                                 true
                             } else {
-                                match unable_to_deliver_handler.call() {
+                                let wait_action = match unable_to_deliver_handler
+                                    .call(start.elapsed().unwrap(), retry_counter)
+                                {
                                     UnableToDeliverAction::Block => {
                                         do_block = true;
                                         true
@@ -763,7 +768,9 @@ pub mod details {
                                         do_fail = true;
                                         false
                                     }
-                                }
+                                };
+                                retry_counter += 1;
+                                wait_action
                             }
                         } else {
                             false

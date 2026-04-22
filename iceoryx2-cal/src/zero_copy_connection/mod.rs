@@ -142,7 +142,7 @@ pub enum UnableToDeliverAction {
 
 tiny_fn! {
     /// Defines a custom behavior whenever a port detects a degregation.
-    pub struct UnableToDeliverHandler = Fn() -> UnableToDeliverAction;
+    pub struct UnableToDeliverHandler = Fn(elapsed_time: Duration, retries: u64) -> UnableToDeliverAction;
 }
 
 unsafe impl Send for UnableToDeliverHandler<'_> {}
@@ -155,7 +155,7 @@ impl Debug for UnableToDeliverHandler<'_> {
 
 impl UnableToDeliverHandler<'_> {
     pub fn block() -> Self {
-        Self::new(|| UnableToDeliverAction::Block)
+        Self::new(|_, _| UnableToDeliverAction::Block)
     }
 }
 

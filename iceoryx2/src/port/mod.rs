@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::fmt::Debug;
+use core::time::Duration;
 
 use tiny_fn::tiny_fn;
 use update_connections::ConnectionFailure;
@@ -88,15 +89,27 @@ pub struct DegradationContext {
     pub sender_port_id: u128,
     /// The receiver port id, which is involved in the degradation
     pub receiver_port_id: u128,
+    /// TODO
+    pub elapsed_time: Duration,
+    /// TODO
+    pub retries: u64,
 }
 
 impl DegradationContext {
     /// Creates a new [`DegradationContext`]
-    pub fn new(service_id: u128, sender_port_id: u128, receiver_port_id: u128) -> Self {
+    pub fn new(
+        service_id: u128,
+        sender_port_id: u128,
+        receiver_port_id: u128,
+        elapsed_time: Duration,
+        retries: u64,
+    ) -> Self {
         Self {
             service_id,
             sender_port_id,
             receiver_port_id,
+            elapsed_time,
+            retries,
         }
     }
 }

@@ -43,17 +43,49 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     .publisher_builder()
     .set_degradation_callback({
         let counter = counter.clone();
+        let degradation_counter = alloc::sync::Arc::new(AtomicU64::new(0));
         move |cause, context| {
+            if context.retries == 0 {
+                degradation_counter.fetch_add(1, Ordering::SeqCst);
+                println!(
+                    "Degradation Event {}",
+                    degradation_counter.load(Ordering::SeqCst)
+                );
+            }
             match cause {
                 DegradationCause::UnableToDeliverData => {
-                    println!(
-                        "Could not deliver sample {}  from publisher sender id {:?} to subscriber receiver id {:?}",
-                        counter.load(Ordering::SeqCst),
-                        context.sender_port_id,
-                        context.receiver_port_id
-                    );
-                    println!("    Discarding sample and failing");
-                    DegradationAction::Fail
+                    if context.retries == 0 {
+                        println!(
+                            "    Could not deliver sample {}  from publisher sender id {:?} to subscriber receiver id {:?}",
+                            counter.load(Ordering::SeqCst),
+                                 context.sender_port_id,
+                                 context.receiver_port_id
+                        );
+                    }
+
+                    match degradation_counter.load(Ordering::SeqCst) % 4 {
+                        0 => {
+                            println!("    Sleeping 100ms and retry");
+                            std::thread::sleep(core::time::Duration::from_millis(100));
+                            DegradationAction::Retry
+                        }
+                        1 => {
+                            if context.elapsed_time < Duration::from_millis(10) {
+                                DegradationAction::Retry
+                            } else {
+                                println!("    Retried for 10ms! Discarding sample and failing");
+                                DegradationAction::Fail
+                            }
+                        }
+                        2 => {
+                            println!("    Discarding sample silently");
+                            DegradationAction::Discard
+                        }
+                        _ => {
+                            println!("    Discarding sample and failing");
+                            DegradationAction::Fail
+                        }
+                    }
                 }
                 _ => DegradationAction::Default,
             }
