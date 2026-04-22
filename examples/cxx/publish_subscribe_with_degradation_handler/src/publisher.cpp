@@ -10,13 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/degradation_handler_enums.hpp"
 #include "iox2/iceoryx2.hpp"
 #include "transmission_data.hpp"
 
 #include <iostream>
 #include <utility>
 
-constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
+constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_millis(500);
 
 auto main() -> int {
     using namespace iox2;
@@ -25,10 +26,21 @@ auto main() -> int {
 
     auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
                        .publish_subscribe<TransmissionData>()
+                       .enable_safe_overflow(false)
                        .open_or_create()
                        .value();
 
-    auto publisher = service.publisher_builder().create().value();
+    DegradationCallback degradation_handler = [](DegradationCause cause, DegradationContext& context) -> auto {
+        switch (cause) {
+        case DegradationCause::UnableToDeliverData:
+            std::cout << "Could not deliver sample to receiver port id: " << context.receiver_port_id() << std::endl;
+            return DegradationAction::Fail;
+        default:
+            return DegradationAction::Default;
+        }
+    };
+
+    auto publisher = service.publisher_builder().set_degradation_callback(&degradation_handler).create().value();
 
     auto counter = 0;
     while (node.wait(CYCLE_TIME).has_value()) {
@@ -39,9 +51,10 @@ auto main() -> int {
         auto initialized_sample =
             sample.write_payload(TransmissionData { counter, counter * 3, counter * 812.12 }); // NOLINT
 
-        send(std::move(initialized_sample)).has_value();
-
-        std::cout << "Send sample " << counter << "..." << std::endl;
+        std::cout << "Sending sample " << counter << "..." << std::endl;
+        if (!send(std::move(initialized_sample)).has_value()) {
+            std::cout << "Failed to send sample" << std::endl;
+        }
     }
 
     std::cout << "exit" << std::endl;
