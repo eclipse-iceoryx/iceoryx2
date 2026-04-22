@@ -559,6 +559,54 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_response_default_constr
     ASSERT_THAT(sut.user_header(), Eq(UserHeader()));
 }
 
+TYPED_TEST(ServiceRequestResponseTest, override_preallocated_requests_to_one_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    struct Payload {
+        uint64_t p { 3 };
+    };
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template request_response<Payload, Payload>()
+                       .max_loaned_requests(2)
+                       .create()
+                       .value();
+
+    auto sut_client =
+        service.client_builder().override_request_preallocation([](size_t) -> size_t { return 1; }).create().value();
+
+    auto request_1 = sut_client.loan().value();
+    auto request_2 = sut_client.loan();
+    ASSERT_THAT(request_2.has_value(), Eq(false));
+    ASSERT_THAT(request_2.error(), Eq(LoanError::OutOfMemory));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, override_preallocated_responses_to_one_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
+
+    auto client = service.client_builder().create().value();
+    auto server = service.server_builder()
+                      .max_loaned_responses_per_request(2)
+                      .override_response_preallocation([](size_t) -> size_t { return 1; })
+                      .create()
+                      .value();
+
+    auto pending_response = client.send_copy(0);
+    auto active_request = server.receive().value().value();
+    auto response_1 = active_request.loan().value();
+    auto response_2 = active_request.loan();
+    ASSERT_THAT(response_2.has_value(), Eq(false));
+    ASSERT_THAT(response_2.error(), Eq(LoanError::OutOfMemory));
+}
+
 struct DummyData {
     static constexpr uint64_t DEFAULT_VALUE_A = 42;
     static constexpr bool DEFAULT_VALUE_Z { false };

@@ -50,6 +50,7 @@ pub struct PortFactoryPublisher {
     value: PortFactoryPublisherType,
     payload_type_details: TypeStorage,
     user_header_type_details: TypeStorage,
+    override_sample_preallocation: Parc<Option<usize>>,
 }
 
 impl PortFactoryPublisher {
@@ -76,6 +77,7 @@ impl PortFactoryPublisher {
                     })
                 }
             },
+            override_sample_preallocation: Parc::new(None),
             payload_type_details,
             user_header_type_details,
         }
@@ -84,6 +86,7 @@ impl PortFactoryPublisher {
     fn clone_ipc(&self, value: IpcPortFactoryPublisher<'static>) -> Self {
         Self {
             factory: self.factory.clone(),
+            override_sample_preallocation: self.override_sample_preallocation.clone(),
             value: PortFactoryPublisherType::Ipc(Parc::new(value)),
             payload_type_details: self.payload_type_details.clone(),
             user_header_type_details: self.user_header_type_details.clone(),
@@ -93,6 +96,7 @@ impl PortFactoryPublisher {
     fn clone_local(&self, value: LocalPortFactoryPublisher<'static>) -> Self {
         Self {
             factory: self.factory.clone(),
+            override_sample_preallocation: self.override_sample_preallocation.clone(),
             value: PortFactoryPublisherType::Local(Parc::new(value)),
             payload_type_details: self.payload_type_details.clone(),
             user_header_type_details: self.user_header_type_details.clone(),
@@ -120,6 +124,33 @@ impl PortFactoryPublisher {
             PortFactoryPublisherType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.max_loaned_samples(value);
+                self.clone_local(this)
+            }
+        }
+    }
+
+    /// Reduces the number of preallocated `SampleMut`s.
+    /// The return value is clamped between `1` and the worst case number of
+    /// preallocated `SampleMut`s required
+    /// to guarantee that the `Publisher` never runs out of `SampleMut`s to loan
+    /// and send.
+    ///
+    /// # Important
+    ///
+    /// If the user reduces the number of preallocated `SampleMut`s, iceoryx2 can
+    /// no longer guarantee, that the `Publisher` can always loan a `SampleMut`
+    /// to send.
+    pub fn override_sample_preallocation(&self, value: usize) -> Self {
+        let _guard = self.factory.lock();
+        match &self.value {
+            PortFactoryPublisherType::Ipc(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                *self.override_sample_preallocation.lock() = Some(value);
+                self.clone_ipc(this)
+            }
+            PortFactoryPublisherType::Local(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                *self.override_sample_preallocation.lock() = Some(value);
                 self.clone_local(this)
             }
         }
@@ -186,6 +217,13 @@ impl PortFactoryPublisher {
         match &self.value {
             PortFactoryPublisherType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = match &*self.override_sample_preallocation.lock() {
+                    Some(v) => {
+                        let override_value = *v;
+                        this.override_sample_preallocation(move |_| override_value)
+                    }
+                    None => this,
+                };
                 Ok(Publisher {
                     value: Parc::new(PublisherType::Ipc(Some(
                         this.create()
@@ -197,6 +235,13 @@ impl PortFactoryPublisher {
             }
             PortFactoryPublisherType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = match &*self.override_sample_preallocation.lock() {
+                    Some(v) => {
+                        let override_value = *v;
+                        this.override_sample_preallocation(move |_| override_value)
+                    }
+                    None => this,
+                };
                 Ok(Publisher {
                     value: Parc::new(PublisherType::Local(Some(
                         this.create()

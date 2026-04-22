@@ -14,6 +14,7 @@
 #define IOX2_INTERNAL_CALLBACK_CONTEXT_HPP
 
 #include "iox2/bb/optional.hpp"
+#include "iox2/bb/static_function.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/node_details.hpp"
 #include "iox2/node_name.hpp"
@@ -22,8 +23,9 @@
 #include "iox2/unique_node_id.hpp"
 
 namespace iox2 {
-namespace internal {
+using OverridePreallocationCallback = iox2::bb::StaticFunction<size_t(size_t)>;
 
+namespace internal {
 /// Building block to provide a type-safe context pointer to a C callback
 /// that has a `void*` context argument.
 /// The context could be hereby a user provided clojure with capture or
@@ -66,20 +68,31 @@ inline auto ctx_cast(void* ptr) -> CallbackContext<T>* {
     return static_cast<CallbackContext<T>*>(ptr);
 }
 
+inline auto override_callback(size_t value, iox2_callback_context ctx) -> size_t {
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be raw pointer because of C interface
+    auto* context = ctx_cast<OverridePreallocationCallback>(ctx);
+    auto ret_val = context->value()(value);
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be raw pointer because of C interface
+    delete &context->value();
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be raw pointer because of C interface
+    delete context;
+    return ret_val;
+}
+
 template <typename T, typename ViewType>
-auto list_ports_callback(void* context, const T port_details_view) -> iox2_callback_progression_e {
+inline auto list_ports_callback(void* context, const T port_details_view) -> iox2_callback_progression_e {
     auto* callback = internal::ctx_cast<iox2::bb::StaticFunction<CallbackProgression(ViewType)>>(context);
     return iox2::bb::into<iox2_callback_progression_e>(callback->value()(ViewType(port_details_view)));
 }
 
 template <ServiceType T>
 // NOLINTBEGIN(readability-function-size)
-auto list_callback(iox2_node_state_e node_state,
-                   iox2_unique_node_id_ptr node_id_ptr,
-                   const char* executable,
-                   iox2_node_name_ptr node_name,
-                   iox2_config_ptr config,
-                   iox2_callback_context context) -> iox2_callback_progression_e {
+inline auto list_callback(iox2_node_state_e node_state,
+                          iox2_unique_node_id_ptr node_id_ptr,
+                          const char* executable,
+                          iox2_node_name_ptr node_name,
+                          iox2_config_ptr config,
+                          iox2_callback_context context) -> iox2_callback_progression_e {
     auto node_details = [&]() -> auto {
         if (node_id_ptr == nullptr || config == nullptr) {
             return bb::Optional<NodeDetails>();

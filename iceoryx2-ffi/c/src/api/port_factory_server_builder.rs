@@ -14,8 +14,8 @@
 
 use core::mem::ManuallyDrop;
 
-use crate::IOX2_OK;
 use crate::api::ServerUnion;
+use crate::{IOX2_OK, iox2_callback_context};
 
 use super::{AssertNonNullHandle, HandleToType};
 use super::{
@@ -171,6 +171,19 @@ impl HandleToType for iox2_port_factory_server_builder_h_ref {
     }
 }
 
+/// The callback for [`iox2_port_factory_server_builder_override_responses_preallocation`]
+///
+/// # Arguments
+///
+/// * `number_of_preallocated_responses` - the worst case number of responses that need to be
+///   preallocated so that iceoryx2 can guarantee that it never runs out of memory.
+/// * `iox2_callback_context` -> provided by the user and can be `NULL`
+///
+/// Returns the override value of preallocated responses. The return value is clamped between `1`
+/// and the worst case number of preallocated responses (`number_of_preallocated_responses`).
+pub type iox2_preallocated_responses_override =
+    extern "C" fn(usize, iox2_callback_context) -> usize;
+
 // END type definition
 
 // BEGIN C API
@@ -194,6 +207,61 @@ pub unsafe extern "C" fn iox2_server_create_error_string(
     error: iox2_server_create_error_e,
 ) -> *const c_char {
     error.as_const_cstr().as_ptr() as *const c_char
+}
+
+/// Defines a callback to reduce the number of preallocated responses.
+/// The input argument is the worst case number of preallocated responses required
+/// to guarantee that the server never runs out of responses to loan
+/// and send.
+/// The return value is clamped between `1` and the worst case number of
+/// preallocated responses.
+///
+/// # Important
+///
+/// If the user reduces the number of preallocated responses, iceoryx2 can
+/// no longer guarantee, that the server can always loan a response
+/// to send.
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_server_builder_h_ref`]
+///   obtained by [`iox2_port_factory_request_response_server_builder`](crate::iox2_port_factory_request_response_server_builder).
+/// * callback - the override callback
+/// * callback_ctx - a context pointer provided to the override callback as input argument
+///
+/// # Safety
+///
+/// * `port_factory_handle` must be a valid handle
+///
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_port_factory_server_builder_override_responses_preallocation(
+    port_factory_handle: iox2_port_factory_server_builder_h_ref,
+    callback: iox2_preallocated_responses_override,
+    callback_ctx: iox2_callback_context,
+) {
+    port_factory_handle.assert_non_null();
+    unsafe {
+        let port_factory_struct = &mut *port_factory_handle.as_type();
+        match port_factory_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
+
+                port_factory_struct.set(PortFactoryServerBuilderUnion::new_ipc(
+                    port_factory
+                        .override_response_preallocation(move |v| callback(v, callback_ctx)),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let port_factory =
+                    ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
+
+                port_factory_struct.set(PortFactoryServerBuilderUnion::new_local(
+                    port_factory
+                        .override_response_preallocation(move |v| callback(v, callback_ctx)),
+                ));
+            }
+        }
+    }
 }
 
 /// Sets the [`iox2_allocation_strategy_e`] for the server

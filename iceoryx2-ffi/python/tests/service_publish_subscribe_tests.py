@@ -169,6 +169,34 @@ def test_send_large_payload_works(
 
 
 @pytest.mark.parametrize("service_type", service_types)
+def test_override_sample_preallocation_to_one_works(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    number_of_samples = 6
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .publish_subscribe(Payload)
+        .subscriber_max_buffer_size(number_of_samples)
+        .create()
+    )
+
+    publisher = (
+        service.publisher_builder()
+        .max_loaned_samples(2)
+        .override_sample_preallocation(1)
+        .create()
+    )
+
+    _sample = publisher.loan_uninit()
+    with pytest.raises(iox2.LoanError):
+        publisher.loan_uninit()
+
+
+@pytest.mark.parametrize("service_type", service_types)
 def test_published_header_is_the_same_as_received_header(
     service_type: iox2.ServiceType,
 ) -> None:

@@ -16,6 +16,7 @@
 #include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
+#include "iox2/internal/callback_context.hpp"
 #include "iox2/server.hpp"
 #include "iox2/server_error.hpp"
 #include "iox2/service_type.hpp"
@@ -56,6 +57,20 @@ class PortFactoryServer {
     auto operator=(PortFactoryServer&&) -> PortFactoryServer& = default;
     ~PortFactoryServer() = default;
 
+    /// Defines a callback to reduce the number of preallocated [`ResponseMut`]s.
+    /// The input argument is the worst case number of preallocated [`ResponseMut`]s required
+    /// to guarantee that the [`Server`] never runs out of [`ResponseMut`]s to loan
+    /// and send.
+    /// The return value is clamped between `1` and the worst case number of
+    /// preallocated [`ResponseMut`]s.
+    ///
+    /// # Important
+    ///
+    /// If the user reduces the number of preallocated [`ResponseMut`]s, iceoryx2 can
+    /// no longer guarantee, that the [`Server`] can always loan a [`ResponseMut`]
+    /// to send.
+    auto override_response_preallocation(const OverridePreallocationCallback& callback) && -> PortFactoryServer&&;
+
     /// Sets the maximum initial slice length configured for this [`Server`].
     template <typename T = ResponsePayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto initial_max_slice_len(uint64_t value) && -> PortFactoryServer&&;
@@ -81,6 +96,7 @@ class PortFactoryServer {
     iox2_port_factory_server_builder_h m_handle = nullptr;
     bb::Optional<uint64_t> m_max_slice_len;
     bb::Optional<AllocationStrategy> m_allocation_strategy;
+    bb::Optional<OverridePreallocationCallback> m_override_preallocation_callback;
 };
 
 template <ServiceType Service,
@@ -92,6 +108,17 @@ template <typename T, typename>
 inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     initial_max_slice_len(uint64_t value) && -> PortFactoryServer&& {
     m_max_slice_len.emplace(value);
+    return std::move(*this);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    override_response_preallocation(const OverridePreallocationCallback& callback) && -> PortFactoryServer&& {
+    m_override_preallocation_callback.emplace(callback);
     return std::move(*this);
 }
 
@@ -134,6 +161,15 @@ inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, Respon
         iox2_port_factory_server_builder_set_allocation_strategy(
             &m_handle, bb::into<iox2_allocation_strategy_e>(m_allocation_strategy.value()));
     }
+    if (m_override_preallocation_callback.has_value()) {
+        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be a raw pointer - crosses FFI boundary
+        auto* callback = new OverridePreallocationCallback(m_override_preallocation_callback.value());
+        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be a raw pointer - crosses FFI boundary
+        auto* ctx = new internal::CallbackContext<OverridePreallocationCallback>(*callback);
+        iox2_port_factory_server_builder_override_responses_preallocation(
+            &m_handle, internal::override_callback, static_cast<void*>(ctx));
+    }
+
 
     iox2_server_h server_handle {};
     auto result = iox2_port_factory_server_builder_create(m_handle, nullptr, &server_handle);

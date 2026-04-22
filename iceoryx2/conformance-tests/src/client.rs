@@ -158,7 +158,7 @@ pub mod client {
 
         let sut = service
             .client_builder()
-            .override_requests_preallocation(|_| 1)
+            .override_request_preallocation(|_| 1)
             .create()
             .unwrap();
 
@@ -179,7 +179,7 @@ pub mod client {
 
         let sut = service
             .client_builder()
-            .override_requests_preallocation(|_| 0)
+            .override_request_preallocation(|_| 0)
             .create()
             .unwrap();
 
@@ -204,7 +204,7 @@ pub mod client {
             let number_of_requests = n;
             let sut = service
                 .client_builder()
-                .override_requests_preallocation(move |_| number_of_requests)
+                .override_request_preallocation(move |_| number_of_requests)
                 .create()
                 .unwrap();
 
