@@ -2769,7 +2769,7 @@ dependencies = [
  "num-integer",
  "num-iter",
  "num-traits",
- "rand 0.8.5",
+ "rand 0.8.6",
  "smallvec",
  "zeroize",
 ]
@@ -3251,9 +3251,9 @@ checksum = "74765f6d916ee2faa39bc8e68e4f3ed8949b48cccdac59983d287a7cb71ce9c5"
 
 [[package]]
 name = "rand"
-version = "0.8.5"
+version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34af8d1a0e25924bc5b7c43c079c942339d8f0a8b57c39049bef581b46327404"
+checksum = "5ca0ecfa931c29007047d1bc58e623ab12e5590e8c7cc53200d5202b69266d8a"
 dependencies = [
  "libc",
  "rand_chacha 0.3.1",
@@ -3988,7 +3988,7 @@ dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
- "rand 0.8.5",
+ "rand 0.8.6",
  "syn 1.0.109",
 ]
 
@@ -4439,7 +4439,7 @@ dependencies = [
  "http",
  "httparse",
  "log",
- "rand 0.8.5",
+ "rand 0.8.6",
  "sha1",
  "thiserror 1.0.64",
  "utf-8",
@@ -4478,7 +4478,7 @@ dependencies = [
  "humantime",
  "lazy_static",
  "log",
- "rand 0.8.5",
+ "rand 0.8.6",
  "serde",
  "spin",
 ]
@@ -5262,7 +5262,7 @@ dependencies = [
  "once_cell",
  "petgraph",
  "phf",
- "rand 0.8.5",
+ "rand 0.8.6",
  "ref-cast",
  "rustc_version",
  "serde",
@@ -5367,7 +5367,7 @@ checksum = "b433e08df3b03f2af2d23bd29a32aa5f5522c52e66d63e3d135bfa66373736dd"
 dependencies = [
  "aes",
  "hmac",
- "rand 0.8.5",
+ "rand 0.8.6",
  "rand_chacha 0.3.1",
  "sha3",
  "zenoh-result",
@@ -5382,7 +5382,7 @@ dependencies = [
  "getrandom 0.2.15",
  "hashbrown 0.16.1",
  "keyed-set",
- "rand 0.8.5",
+ "rand 0.8.6",
  "schemars 1.2.0",
  "serde",
  "token-cell",
@@ -5636,7 +5636,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b4d3dad7aeeea780495692b195cd56515569c32b76b9dd077cc408c3ebca03f"
 dependencies = [
  "const_format",
- "rand 0.8.5",
+ "rand 0.8.6",
  "serde",
  "uhlc",
  "zenoh-buffers",
@@ -5708,7 +5708,7 @@ dependencies = [
  "flume",
  "lazy_static",
  "lz4_flex",
- "rand 0.8.5",
+ "rand 0.8.6",
  "ringbuffer-spsc",
  "rsa",
  "serde",
