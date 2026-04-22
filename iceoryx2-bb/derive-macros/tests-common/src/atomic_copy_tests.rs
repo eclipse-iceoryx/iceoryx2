@@ -51,8 +51,8 @@ pub fn field_offsets_and_sizes_are_correct_for_named_struct() {
     });
 
     assert_that!(v, len 2);
-    assert_that!(v[0], eq(0, 8));
-    assert_that!(v[1], eq(8, 2));
+    assert_that!(v[0], eq(core::mem::offset_of!(NamedTestStruct, a), 8));
+    assert_that!(v[1], eq(core::mem::offset_of!(NamedTestStruct, b), 2));
 }
 
 #[test]
@@ -75,8 +75,14 @@ pub fn field_offsets_and_sizes_are_correct_for_generic_named_struct() {
     });
 
     assert_that!(v, len 2);
-    assert_that!(v[0], eq(0, 1));
-    assert_that!(v[1], eq(4, 4));
+    assert_that!(
+        v[0],
+        eq(core::mem::offset_of!(GenericNamedTestStruct<u8, i32>, a), 1)
+    );
+    assert_that!(
+        v[1],
+        eq(core::mem::offset_of!(GenericNamedTestStruct<u8, i32>, b), 4)
+    );
 }
 
 #[test]
@@ -88,9 +94,18 @@ pub fn field_offsets_and_sizes_are_correct_for_unnamed_struct() {
     });
 
     assert_that!(v, len 3);
-    assert_that!(v[0], eq(0, 4));
-    assert_that!(v[1], eq(8, 8));
-    assert_that!(v[2], eq(16, 2));
+    assert_that!(
+        v[0],
+        eq(core::mem::offset_of!(NestedUnnamedTestStruct, 0), 4)
+    );
+    assert_that!(
+        v[1],
+        eq(core::mem::offset_of!(NestedUnnamedTestStruct, 1), 8)
+    );
+    assert_that!(
+        v[2],
+        eq(core::mem::offset_of!(NestedUnnamedTestStruct, 2), 2)
+    );
 }
 
 #[test]
@@ -109,10 +124,34 @@ pub fn field_offsets_and_sizes_are_correct_for_generic_unnamed_struct() {
     });
 
     assert_that!(v, len 4);
-    assert_that!(v[0], eq(0, 8));
-    assert_that!(v[1], eq(8, 4));
-    assert_that!(v[2], eq(16, 8));
-    assert_that!(v[3], eq(24, 2));
+    assert_that!(
+        v[0],
+        eq(
+            core::mem::offset_of!(GenericUnnamedTestStruct<u64, NestedUnnamedTestStruct>, 0),
+            8
+        )
+    );
+    assert_that!(
+        v[1],
+        eq(
+            core::mem::offset_of!(GenericUnnamedTestStruct<u64, NestedUnnamedTestStruct>, 1.0),
+            4
+        )
+    );
+    assert_that!(
+        v[2],
+        eq(
+            core::mem::offset_of!(GenericUnnamedTestStruct<u64, NestedUnnamedTestStruct>, 1.1),
+            8
+        )
+    );
+    assert_that!(
+        v[3],
+        eq(
+            core::mem::offset_of!(GenericUnnamedTestStruct<u64, NestedUnnamedTestStruct>, 1.2),
+            2
+        )
+    );
 }
 
 #[test]
@@ -139,8 +178,8 @@ pub fn field_offsets_and_sizes_are_correct_when_alignment_changes_inner_padding(
     });
 
     assert_that!(v, len 2);
-    assert_that!(v[0], eq(0, 1));
-    assert_that!(v[1], eq(16, 4));
+    assert_that!(v[0], eq(core::mem::offset_of!(SomeNamedStruct, a), 1));
+    assert_that!(v[1], eq(core::mem::offset_of!(SomeNamedStruct, b), 4));
 }
 
 #[test]
@@ -180,11 +219,11 @@ pub fn field_offsets_and_sizes_are_correct_for_nested_structs() {
     });
 
     assert_that!(v, len 5);
-    assert_that!(v[0], eq(0, 8));
-    assert_that!(v[1], eq(8, 4));
-    assert_that!(v[2], eq(16, 1));
-    assert_that!(v[3], eq(18, 2));
-    assert_that!(v[4], eq(24, 8));
+    assert_that!(v[0], eq(core::mem::offset_of!(NestedStruct, a), 8));
+    assert_that!(v[1], eq(core::mem::offset_of!(NestedStruct, b), 4));
+    assert_that!(v[2], eq(core::mem::offset_of!(NestedStruct, c.a), 1));
+    assert_that!(v[3], eq(core::mem::offset_of!(NestedStruct, c.b), 2));
+    assert_that!(v[4], eq(core::mem::offset_of!(NestedStruct, c.c), 8));
 }
 
 #[test]
@@ -211,7 +250,7 @@ pub fn field_offsets_are_correct_with_custom_implementation() {
     });
 
     assert_that!(v, len 3);
-    assert_that!(v[0], eq(0, 1));
-    assert_that!(v[1], eq(4, 4));
-    assert_that!(v[2], eq(8, 1));
+    assert_that!(v[0], eq(core::mem::offset_of!(Bar, 0), 1));
+    assert_that!(v[1], eq(core::mem::offset_of!(Bar, 1.0), 4));
+    assert_that!(v[2], eq(core::mem::offset_of!(Bar, 1.1), 1));
 }

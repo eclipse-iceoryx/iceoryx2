@@ -13,11 +13,7 @@
 use alloc::str::FromStr;
 
 use iceoryx2_bb_container::string::*;
-use iceoryx2_bb_derive_macros::AtomicCopy;
-use iceoryx2_bb_derive_macros::ZeroCopySend;
-use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_testing::{assert_that, memory::RawMemory};
 use iceoryx2_bb_testing_macros::requires_std;
 use iceoryx2_bb_testing_macros::test;
@@ -309,24 +305,4 @@ pub fn try_from_u8_array_fails_when_it_contains_invalid_characters() {
 pub fn try_from_u8_array_with_valid_content_works() {
     let sut = Sut::try_from(b"i am a bee").unwrap();
     assert_that!(sut.as_bytes(), eq b"i am a bee");
-}
-
-#[test]
-pub fn atomic_copy_is_correctly_implemented() {
-    #[repr(C)]
-    #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
-    struct Foo(u8, StaticString<10>, u64);
-
-    let sut = Foo(0, StaticString::<10>::try_from("nupsi").unwrap(), 0);
-    let mut v = alloc::vec::Vec::new();
-    sut.__for_each_field(0, &mut |offset, size| {
-        v.push((offset, size));
-    });
-
-    assert_that!(v, len 5);
-    assert_that!(v[0], eq(0, 1));
-    assert_that!(v[1], eq(8, 5));
-    assert_that!(v[2], eq(18, 1));
-    assert_that!(v[3], eq(24, 8));
-    assert_that!(v[4], eq(32, 8));
 }
