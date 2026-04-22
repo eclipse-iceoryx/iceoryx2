@@ -30,9 +30,18 @@ pub struct Cli {
     #[arg(short, long, help = "List all installed tunnel backends")]
     pub list: bool,
 
-    #[arg(short, long, help = "Display paths that will be checked for tunnel backends")]
+    #[arg(
+        short,
+        long,
+        help = "Display paths that will be checked for tunnel backends"
+    )]
     pub paths: bool,
 
-    #[arg(hide = true, required = false, trailing_var_arg = true, allow_hyphen_values = true)]
+    #[arg(
+        hide = true,
+        required = false,
+        trailing_var_arg = true,
+        allow_hyphen_values = true
+    )]
     pub external_command: Vec<String>,
 }

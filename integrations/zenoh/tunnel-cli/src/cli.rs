@@ -14,7 +14,8 @@ use clap::Parser;
 
 #[derive(Parser)]
 #[command(
-    name = "iox2-tunnel-zenoh",
+    name = "iox2 tunnel zenoh",
+    bin_name = "iox2 tunnel zenoh",
     about = "Launch an iceoryx2 tunnel using Zenoh as the transport.",
     long_about = None,
     version = env!("CARGO_PKG_VERSION"),
