@@ -22,6 +22,7 @@ _parse-test-args *flags:
     TOOLCHAIN=""
     TARGET_TRIPLET=""
     HAS_NOSTD="false"
+    HAS_DOC="false"
 
     set -- {{flags}}
     while [[ $# -gt 0 ]]; do
@@ -29,6 +30,7 @@ _parse-test-args *flags:
             +*)         TOOLCHAIN="$1";                    shift ;;
             --target=*) TARGET_TRIPLET="${1#--target=}";   shift ;;
             --no_std)   HAS_NOSTD="true";                  shift ;;
+            --doc)      HAS_DOC="true";                    shift ;;
             *)          shift ;;
         esac
     done
@@ -36,6 +38,7 @@ _parse-test-args *flags:
     echo "TOOLCHAIN='$TOOLCHAIN'"
     echo "TARGET_TRIPLET='$TARGET_TRIPLET'"
     echo "HAS_NOSTD='$HAS_NOSTD'"
+    echo "HAS_DOC='$HAS_DOC'"
 
 [private]
 _test-dispatch what *flags:
@@ -56,23 +59,33 @@ _test-dispatch what *flags:
             echo "  +<toolchain>           use a specific toolchain"
             echo "  --target=<triplet>     cross-compile for target"
             echo "  --no_std               test without std"
+            echo "  --doc                  run documentation tests"
             exit 1
             ;;
         sdk)
-            just _test-sdk "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD"
+            just _test-sdk "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC"
             ;;
         integrations)
-            just _test-integrations "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD"
+            just _test-integrations "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC"
             ;;
         *)
-            just _test-package "{{what}}" "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD"
+            just _test-package "{{what}}" "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC"
             ;;
     esac
 
 [private]
-_test-sdk toolchain target_triplet has_nostd:
+_test-sdk toolchain target_triplet has_nostd has_doc:
     #!/usr/bin/env bash
     set -euo pipefail
+
+    if [ "{{has_doc}}" = "true" ]; then
+        if [ "{{has_nostd}}" = "true" ]; then
+            echo "Error: --doc cannot be combined with --no_std" >&2
+            exit 1
+        fi
+        cargo {{toolchain}} test --workspace --doc
+        exit 0
+    fi
 
     if [ "{{has_nostd}}" = "true" ]; then
         NOSTD_CRATES=$(just _discover-nostd-test-crates)
@@ -95,7 +108,7 @@ _test-sdk toolchain target_triplet has_nostd:
             echo "[$((PASSED + FAILED + 1))/$CRATE_COUNT] Running tests for $BASE_CRATE..."
             echo "------------------------------------------"
 
-            if just _test-package "$BASE_CRATE" "{{toolchain}}" "{{target_triplet}}" "true"; then
+            if just _test-package "$BASE_CRATE" "{{toolchain}}" "{{target_triplet}}" "true" "false"; then
                 echo "✓ $BASE_CRATE PASSED"
                 PASSED=$((PASSED + 1))
                 PASSED_CRATES+=("$BASE_CRATE")
@@ -136,7 +149,7 @@ _test-sdk toolchain target_triplet has_nostd:
     fi
 
 [private]
-_test-integrations toolchain target_triplet has_nostd:
+_test-integrations toolchain target_triplet has_nostd has_doc:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -145,12 +158,25 @@ _test-integrations toolchain target_triplet has_nostd:
         exit 1
     fi
 
-    cargo {{toolchain}} nextest run --workspace --manifest-path {{INTEGRATIONS_DIR}}/Cargo.toml
+    if [ "{{has_doc}}" = "true" ]; then
+        cargo {{toolchain}} test --workspace --doc --manifest-path {{INTEGRATIONS_DIR}}/Cargo.toml
+    else
+        cargo {{toolchain}} nextest run --workspace --manifest-path {{INTEGRATIONS_DIR}}/Cargo.toml
+    fi
 
 [private]
-_test-package package toolchain target_triplet has_nostd:
+_test-package package toolchain target_triplet has_nostd has_doc:
     #!/usr/bin/env bash
     set -euo pipefail
+
+    if [ "{{has_doc}}" = "true" ]; then
+        if [ "{{has_nostd}}" = "true" ]; then
+            echo "Error: --doc cannot be combined with --no_std" >&2
+            exit 1
+        fi
+        cargo {{toolchain}} test --package {{package}} --doc
+        exit 0
+    fi
 
     if [ "{{has_nostd}}" = "true" ]; then
         TARGET_ARG=""
