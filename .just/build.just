@@ -49,8 +49,9 @@ _build-dispatch what *flags:
 
     case "{{what}}" in
         "")
-            echo "Usage: just build <what> [flags]"
+            echo "Usage: just build <scope> [flags]"
             echo ""
+            echo "Scope:"
             echo "  sdk                    build the main workspace"
             echo "  integrations           build the integrations workspace"
             echo "  <package>              build a specific package"

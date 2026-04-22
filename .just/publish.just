@@ -137,6 +137,7 @@ _publish-dispatch workspace *flags:
     if [ -z "{{workspace}}" ]; then
         echo "Usage: just publish <workspace> [flags]"
         echo ""
+        echo "Workspace:"
         echo "  sdk             publish the main workspace crates"
         echo "  integrations    publish the integrations workspace crates"
         echo "  all             publish all workspaces in order"
