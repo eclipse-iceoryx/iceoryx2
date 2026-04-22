@@ -22,14 +22,16 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 set timeout 10
 
-spawn target/ff/cc/build/examples/c/publish_subscribe/example_c_publish_subscribe_publisher
+spawn target/ff/cc/build/examples/c/publish_subscribe_with_unable_to_deliver_handler/example_c_publish_subscribe_with_unable_to_deliver_handler_publisher
 set id_publisher $spawn_id
 
-spawn target/ff/cc/build/examples/c/publish_subscribe/example_c_publish_subscribe_subscriber
+spawn target/ff/cc/build/examples/c/publish_subscribe_with_unable_to_deliver_handler/example_c_publish_subscribe_with_unable_to_deliver_handler_subscriber
+set id_subscriber $spawn_id
 
 #### Test Assertion
 
-expect_output_from $id_publisher "Send sample*"
-expect_output "received: TransmissionData { .x: 3, .y: 9, .funky: 2436.36 }*"
+expect_output_from $id_publisher "Sending sample*"
+expect_output_from $id_subscriber "received: TransmissionData*"
+expect_output_from $id_publisher "Failed to send sample"
 
 show_test_passed
