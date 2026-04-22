@@ -169,7 +169,7 @@ point to `clang` from the Android NDK:
 
 ```bash
 export CC=/opt/android/android-ndk-r29/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android35-clang
-cargo build --target x86_64-linux-android --package iceoryx2-tunnel-zenoh
+cargo build --target x86_64-linux-android --package iceoryx2-services-tunnel-zenoh
 ```
 
 In order to make the tunnel functional, more work is required.

@@ -29,12 +29,13 @@ iceoryx2-bb-threadsafe
 iceoryx2-bb-container
 iceoryx2-bb-elementary
 iceoryx2-bb-elementary-traits
-iceoryx2-bb-log
+iceoryx2-bb-loggers
 iceoryx2-bb-memory
 iceoryx2-bb-posix
 iceoryx2-bb-system-types
 iceoryx2-bb-testing
 iceoryx2-bb-trait-tests
+iceoryx2-log
 iceoryx2-pal-concurrency-sync
 iceoryx2-pal-posix
 iceoryx2-pal-configuration
@@ -60,8 +61,11 @@ iceoryx2-services-discovery
 "
 
 PACKAGE_LIST_TUNNEL="
-iceoryx2-tunnels-end-to-end-testing
-iceoryx2-tunnels-zenoh
+iceoryx2-services-tunnel
+iceoryx2-services-tunnel-backend
+iceoryx2-services-tunnel-conformance-tests
+iceoryx2-services-tunnel-end-to-end-tests
+iceoryx2-services-tunnel-zenoh
 "
 
 PACKAGE_LIST_USERLAND="
@@ -147,7 +151,7 @@ case "$1" in
         PACKAGE_LIST=${PACKAGE_LIST_SERVICES}
         shift 1
         ;;
-    tunnel)
+    tunnels)
         PACKAGE_LIST=${PACKAGE_LIST_TUNNEL}
         shift 1
         ;;
@@ -185,5 +189,3 @@ cd "${WORKSPACE}"
 for PACKAGE in ${PACKAGE_LIST}; do
     cargo tree --package ${PACKAGE} $@
 done
-
-
