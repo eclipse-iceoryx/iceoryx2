@@ -893,7 +893,9 @@ impl<
             if self.is_service_available(msg)?.is_some() {
                 match self.open_impl(verifier) {
                     Ok(factory) => return Ok(factory),
-                    Err(RequestResponseOpenError::DoesNotExist) => continue,
+                    Err(RequestResponseOpenError::DoesNotExist)
+                    | Err(RequestResponseOpenError::ServiceInCorruptedState)
+                    | Err(RequestResponseOpenError::IsMarkedForDestruction) => continue,
                     Err(e) => return Err(e.into()),
                 }
             } else {
@@ -901,7 +903,8 @@ impl<
                 {
                     Ok(factory) => return Ok(factory),
                     Err(RequestResponseCreateError::AlreadyExists)
-                    | Err(RequestResponseCreateError::IsBeingCreatedByAnotherInstance) => {
+                    | Err(RequestResponseCreateError::IsBeingCreatedByAnotherInstance)
+                    | Err(RequestResponseCreateError::ServiceInCorruptedState) => {
                         continue;
                     }
                     Err(e) => return Err(e.into()),

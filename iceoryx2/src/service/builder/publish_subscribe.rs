@@ -730,7 +730,8 @@ impl<
             match self.is_service_available(msg)? {
                 Some(_) => match self.open_impl(verifier) {
                     Ok(factory) => return Ok(factory),
-                    Err(PublishSubscribeOpenError::DoesNotExist) => continue,
+                    Err(PublishSubscribeOpenError::ServiceInCorruptedState)
+                    | Err(PublishSubscribeOpenError::IsMarkedForDestruction) => continue,
                     Err(e) => return Err(e.into()),
                 },
                 None => {
@@ -739,7 +740,8 @@ impl<
                     {
                         Ok(factory) => return Ok(factory),
                         Err(PublishSubscribeCreateError::AlreadyExists)
-                        | Err(PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance) => {
+                        | Err(PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance)
+                        | Err(PublishSubscribeCreateError::ServiceInCorruptedState) => {
                             continue;
                         }
                         Err(e) => return Err(e.into()),
