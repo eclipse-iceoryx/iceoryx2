@@ -171,14 +171,6 @@ _publish-dispatch workspace *flags:
 # -----------------------------------------------------------------------------
 
 [private]
-_publish-parse-workspace workspace:
-    #!/usr/bin/env bash
-    case "{{workspace}}" in
-        all) echo "sdk integrations" ;;
-        *)   echo "{{workspace}}" ;;
-    esac
-
-[private]
 _publish-manifest workspace:
     #!/usr/bin/env bash
     case "{{workspace}}" in
@@ -211,7 +203,7 @@ _publish-list workspace:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    WORKSPACES=$(just _publish-parse-workspace "{{workspace}}")
+    WORKSPACES=$(just _parse-workspace "{{workspace}}")
 
     for WS in $WORKSPACES; do
         PUBLISH=$(just _publish-crates-to-publish "$WS")
@@ -231,7 +223,7 @@ _publish-sanity-checks workspace:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    WORKSPACES=$(just _publish-parse-workspace "{{workspace}}")
+    WORKSPACES=$(just _parse-workspace "{{workspace}}")
 
     for WS in $WORKSPACES; do
         echo "Running sanity checks for '$WS'..."
@@ -318,7 +310,7 @@ _publish workspace dry_run allow_dirty no_verify registry:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    WORKSPACES=$(just _publish-parse-workspace "{{workspace}}")
+    WORKSPACES=$(just _parse-workspace "{{workspace}}")
 
     for WS in $WORKSPACES; do
         if [ "{{workspace}}" = "all" ]; then

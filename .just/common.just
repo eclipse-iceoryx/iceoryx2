@@ -65,3 +65,11 @@ _find-crate-manifest package:
 [private]
 _find-crate-src package:
     @echo "$(just _find-crate-dir '{{package}}')/src"
+
+[private]
+_parse-workspace workspace:
+    #!/usr/bin/env bash
+    case "{{workspace}}" in
+        all) echo "sdk integrations" ;;
+        *)   echo "{{workspace}}" ;;
+    esac
