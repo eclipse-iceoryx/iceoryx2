@@ -25,11 +25,7 @@ use iceoryx2_bb_testing_macros::test;
 struct Foo(u16);
 unsafe impl ZeroCopySend for Foo {}
 unsafe impl AtomicCopy for Foo {
-    fn __for_each_field_with_offset<F: FnMut(usize, usize)>(
-        &self,
-        base_offset: usize,
-        callback: &mut F,
-    ) {
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
         callback(align_to::<u16>(base_offset), 2);
     }
 }
@@ -37,7 +33,7 @@ unsafe impl AtomicCopy for Foo {
 #[allow(dead_code)]
 #[repr(C)]
 #[derive(ZeroCopySend, Clone, Copy, AtomicCopy)]
-struct NestedUnnamedTestedStruct(i32, u64, Foo);
+struct NestedUnnamedTestStruct(i32, u64, Foo);
 
 #[test]
 pub fn field_offsets_and_sizes_are_correct_for_named_struct() {
@@ -50,7 +46,7 @@ pub fn field_offsets_and_sizes_are_correct_for_named_struct() {
     let sut = NamedTestStruct { a: 0, b: Foo(0) };
 
     let mut v = Vec::new();
-    sut.__for_each_field_with_offset(0, &mut |offset, size| {
+    sut.__for_each_field(0, &mut |offset, size| {
         v.push((offset, size));
     });
 
@@ -74,7 +70,7 @@ pub fn field_offsets_and_sizes_are_correct_for_generic_named_struct() {
     let sut = GenericNamedTestStruct { a: 0u8, b: 0i32 };
 
     let mut v = Vec::new();
-    sut.__for_each_field_with_offset(0, &mut |offset, size| {
+    sut.__for_each_field(0, &mut |offset, size| {
         v.push((offset, size));
     });
 
@@ -86,8 +82,8 @@ pub fn field_offsets_and_sizes_are_correct_for_generic_named_struct() {
 #[test]
 pub fn field_offsets_and_sizes_are_correct_for_unnamed_struct() {
     let mut v = Vec::new();
-    let sut = NestedUnnamedTestedStruct(0, 0, Foo(0));
-    sut.__for_each_field_with_offset(0, &mut |offset, size| {
+    let sut = NestedUnnamedTestStruct(0, 0, Foo(0));
+    sut.__for_each_field(0, &mut |offset, size| {
         v.push((offset, size));
     });
 
@@ -105,10 +101,10 @@ pub fn field_offsets_and_sizes_are_correct_for_generic_unnamed_struct() {
     where
         T1: AtomicCopy,
         T2: AtomicCopy;
-    let sut = GenericUnnamedTestStruct(0u64, NestedUnnamedTestedStruct(0, 0, Foo(0)));
+    let sut = GenericUnnamedTestStruct(0u64, NestedUnnamedTestStruct(0, 0, Foo(0)));
 
     let mut v = Vec::new();
-    sut.__for_each_field_with_offset(0, &mut |offset, size| {
+    sut.__for_each_field(0, &mut |offset, size| {
         v.push((offset, size));
     });
 
@@ -138,7 +134,7 @@ pub fn field_offsets_and_sizes_are_correct_when_alignment_changes_inner_padding(
         a: 3,
         b: AlignedU32(9),
     };
-    sut.__for_each_field_with_offset(0, &mut |offset, size| {
+    sut.__for_each_field(0, &mut |offset, size| {
         v.push((offset, size));
     });
 
@@ -179,7 +175,7 @@ pub fn field_offsets_and_sizes_are_correct_for_nested_structs() {
             c: SomeUnnamedStruct(5),
         },
     };
-    sut.__for_each_field_with_offset(0, &mut |offset, size| {
+    sut.__for_each_field(0, &mut |offset, size| {
         v.push((offset, size));
     });
 
@@ -197,14 +193,10 @@ pub fn field_offsets_are_correct_with_custom_implementation() {
     #[derive(Clone, Copy, ZeroCopySend)]
     struct Foo(u32, u8);
     unsafe impl AtomicCopy for Foo {
-        fn __for_each_field_with_offset<F: FnMut(usize, usize)>(
-            &self,
-            base_offset: usize,
-            callback: &mut F,
-        ) {
+        fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
             let aligned_base_offset = align_to::<Self>(base_offset);
-            callback(aligned_base_offset, 4);
-            callback(aligned_base_offset + 4, 1);
+            callback(aligned_base_offset + core::mem::offset_of!(Foo, 0), 4);
+            callback(aligned_base_offset + core::mem::offset_of!(Foo, 1), 1);
         }
     }
 
@@ -214,7 +206,7 @@ pub fn field_offsets_are_correct_with_custom_implementation() {
 
     let mut v = Vec::new();
     let sut = Bar(0, Foo(0, 0));
-    sut.__for_each_field_with_offset(0, &mut |offset, size| {
+    sut.__for_each_field(0, &mut |offset, size| {
         v.push((offset, size));
     });
 

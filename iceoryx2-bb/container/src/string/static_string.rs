@@ -66,11 +66,7 @@ pub struct StaticString<const CAPACITY: usize> {
 }
 
 unsafe impl<const CAPACITY: usize> AtomicCopy for StaticString<CAPACITY> {
-    fn __for_each_field_with_offset<F: FnMut(usize, usize)>(
-        &self,
-        base_offset: usize,
-        callback: &mut F,
-    ) {
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
         let aligned_base_offset = align_to::<Self>(base_offset);
         callback(
             aligned_base_offset + core::mem::offset_of!(Self, data),

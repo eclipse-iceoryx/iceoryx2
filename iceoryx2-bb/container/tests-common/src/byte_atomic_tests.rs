@@ -15,12 +15,10 @@ use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_derive_macros::{AtomicCopy, ZeroCopySend};
 use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-// use iceoryx2_bb_posix::barrier::*;
-// use iceoryx2_bb_posix::thread::thread_scope;
+use iceoryx2_bb_posix::barrier::*;
+use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
-use std::sync::Barrier;
-use std::thread;
 
 #[repr(C)]
 #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
@@ -119,6 +117,11 @@ pub fn atomic_memcpy_contains_passed_complex_value_after_write() {
     }
 }
 
+// TODO: The following tests should be run with Miri but using iceoryx2_bb_posix::barrier/thread::*
+// causes the error: "unsupported operation: can't call foreign function ... this means the program
+// tried to do something Miri does not support; it does not indicate a bug in the program" for
+// `pthread_attr_init` and `pthread_barrieratrr_init`. The tests pass when std::sync::Barrier and
+// std::thread are used.
 #[test]
 pub fn concurrent_read_without_write_always_returns_correct_data() {
     const SIZE: usize = size_of::<u64>();
@@ -127,88 +130,107 @@ pub fn concurrent_read_without_write_always_returns_correct_data() {
 
     let number_of_threads = 16;
     const REPETITIONS: usize = 500;
-    // Use of std thread + barrier because Miri fails with "error: unsupported operation: can't call foreign function"
-    // for `pthread_attr_init` and `pthread_barrieratrr_init` (iceoryx2-pal/posix/src/linux/pthread.rs)
-    let barrier = Barrier::new(number_of_threads);
-    // let barrier_handle = BarrierHandle::new();
-    // let barrier = BarrierBuilder::new(number_of_threads)
-    //     .create(&barrier_handle)
-    //     .unwrap();
-    thread::scope(|s| {
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(number_of_threads)
+        .create(&barrier_handle)
+        .unwrap();
+    thread_scope(|s| {
         for _ in 0..number_of_threads {
-            s.spawn(|| {
-                barrier.wait();
-                for _ in 0..REPETITIONS {
-                    unsafe {
-                        let read_value = sut.read();
-                        assert_that!(read_value.assume_init(), eq value);
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait();
+                    for _ in 0..REPETITIONS {
+                        unsafe {
+                            let read_value = sut.read();
+                            assert_that!(read_value.assume_init(), eq value);
+                        }
                     }
-                }
-            });
+                })
+                .expect("failed to spawn thread");
         }
-    });
+        Ok(())
+    })
+    .expect("failed to create scoped thread");
 }
 
 #[test]
-pub fn concurrent_write_does_not_trigger_ub_with_miri() {
+pub fn concurrent_write_does_not_trigger_ub() {
     const SIZE: usize = size_of::<u64>();
     let value = u64::MAX;
     let sut = ByteAtomic::<u64, SIZE>::new(value).unwrap();
 
     let number_of_threads = 16;
     const REPETITIONS: usize = 500;
-    let barrier = Barrier::new(number_of_threads);
-    thread::scope(|s| {
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(number_of_threads)
+        .create(&barrier_handle)
+        .unwrap();
+    thread_scope(|s| {
         for _ in 0..number_of_threads {
-            s.spawn(|| {
-                barrier.wait();
-                for _ in 0..REPETITIONS {
-                    unsafe {
-                        sut.write(value);
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait();
+                    for _ in 0..REPETITIONS {
+                        unsafe {
+                            sut.write(value);
+                        }
                     }
-                }
-            });
+                })
+                .expect("failed to spawn thread");
         }
-    });
+        Ok(())
+    })
+    .expect("failed to create scoped thread");
 
     unsafe {
         let read_value = sut.read();
+        // safe because the value is a u64
         assert_that!(read_value.assume_init(), eq value);
     }
 }
 
 #[test]
-pub fn concurrent_read_and_write_does_not_trigger_ub_with_miri() {
+pub fn concurrent_read_and_write_does_not_trigger_ub() {
     const SIZE: usize = size_of::<u64>();
     let value = 3249780;
     let sut = ByteAtomic::<u64, SIZE>::new(value).unwrap();
 
     let number_of_threads = 16;
     const REPETITIONS: usize = 500;
-    let barrier = Barrier::new(number_of_threads);
-    thread::scope(|s| {
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(number_of_threads)
+        .create(&barrier_handle)
+        .unwrap();
+    thread_scope(|s| {
         for _ in 0..number_of_threads / 2 {
-            s.spawn(|| {
-                barrier.wait();
-                for _ in 0..REPETITIONS {
-                    unsafe {
-                        let read_value = sut.read();
-                        // dummy assert to prevent the read operation to be optimized away
-                        assert_that!(core::mem::size_of_val(&read_value), eq SIZE);
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait();
+                    for _ in 0..REPETITIONS {
+                        unsafe {
+                            let read_value = sut.read();
+                            // dummy assert to prevent the read operation from being optimized away
+                            assert_that!(core::mem::size_of_val(&read_value), eq SIZE);
+                        }
                     }
-                }
-            });
+                })
+                .expect("failed to spawn thread");
         }
 
         for _ in 0..number_of_threads / 2 {
-            s.spawn(|| {
-                barrier.wait();
-                for _ in 0..REPETITIONS {
-                    unsafe {
-                        sut.write(value);
+            s.thread_builder()
+                .spawn(|| {
+                    barrier.wait();
+                    for _ in 0..REPETITIONS {
+                        unsafe {
+                            sut.write(value);
+                        }
                     }
-                }
-            });
+                })
+                .expect("failed to spawn thread");
         }
-    });
+
+        Ok(())
+    })
+    .expect("failed to create scoped thread");
 }

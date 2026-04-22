@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate alloc;
-
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_testing::assert_that;
@@ -43,7 +41,7 @@ struct NamedTestStructWithAttr {
 #[allow(dead_code)]
 #[repr(C)]
 #[derive(ZeroCopySend)]
-struct UnnamedTestStruct(i32, u64, Foo);
+struct UnnamedTestStruct(i32, u32, Foo);
 
 #[repr(C)]
 #[derive(ZeroCopySend)]
