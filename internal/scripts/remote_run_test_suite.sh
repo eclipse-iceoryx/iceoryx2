@@ -122,7 +122,6 @@ EXCLUDED_PACKAGES=(
     "iceoryx2-ffi"
     "iceoryx2-ffi-*"
     "iceoryx2-services-*"
-    "iceoryx2-tunnels-*"
     "iceoryx2-userland-*"
 )
 
@@ -195,7 +194,7 @@ if [ "$DRY_RUN" = true ]; then
         TEST_NAME=$(basename "$test_executable")
         echo -e "  ${BLUE}[$CURRENT]${NC} $TEST_NAME"
     done
-    
+
     echo ""
     echo -e "${YELLOW}Dry run completed. $CURRENT tests would be executed.${NC}"
     exit 0
@@ -207,22 +206,22 @@ set +e  # Don't exit on any error
 for test_executable in "${TEST_EXECUTABLES[@]}"; do
     ((CURRENT++))
     TEST_NAME=$(basename "$test_executable")
-    
+
     echo ""
     echo -e "${BLUE}========================================${NC}"
     echo -e "${BLUE}[$CURRENT/${#TEST_EXECUTABLES[@]}] Running: $TEST_NAME${NC}"
     echo -e "${BLUE}========================================${NC}"
-    
+
     # Run the test and capture output
     TEST_START_TIME=$(date +%s)
     TEST_OUTPUT=$(remote-test-client run 0 "$test_executable" 2>&1)
     EXIT_CODE=$?
     TEST_END_TIME=$(date +%s)
     TEST_DURATION=$((TEST_END_TIME - TEST_START_TIME))
-    
+
     # Print output
     echo "$TEST_OUTPUT"
-    
+
     # Show result
     echo ""
     if [ $EXIT_CODE -eq 0 ]; then
