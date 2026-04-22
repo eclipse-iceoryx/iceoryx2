@@ -21,6 +21,9 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
+      - name: Install just
+        uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
+
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@3a6cbe35ba64df7ca70c51365c4aff65db9a9037 # version: v2.1.1
         with:
@@ -77,15 +80,22 @@ jobs:
         with:
           profile: ${{ inputs.profile }}
 
-      - name: Run cargo build
+      - name: Build workspace
         shell: bash
         run: |
-          cargo build --workspace --exclude iceoryx2-ffi-python --all-targets ${{ steps.set-build-flags.outputs.cargo-build-mode }} --target i686-unknown-linux-gnu
+          just build sdk --target i686-unknown-linux-gnu ${{ steps.set-build-flags.outputs.cargo-build-mode }} \
+          -- \
+          --all-targets \
+          --exclude iceoryx2-ffi-python
 
-      - name: Run cargo nextest
+      - name: Test workspace
         shell: bash
         run: |
-          cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${{ steps.set-build-flags.outputs.cargo-build-mode }} --target i686-unknown-linux-gnu
+          just test sdk --target i686-unknown-linux-gnu ${{ steps.set-build-flags.outputs.cargo-build-mode }} \
+          -- \
+          --all-targets \
+          --exclude iceoryx2-ffi-python \
+          --no-fail-fast
 
       - name: Cleanup build artifacts
         uses: ./.github/actions/save-disk-space

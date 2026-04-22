@@ -64,14 +64,18 @@ jobs:
           toolchain: stable
           components: rustfmt
 
-      - name: Run cargo fmt
-        run: cargo fmt --all -- --check
+      - name: Lint Rust
+        run: |
+          just lint sdk rust
+          just lint integrations rust
 
       - name: Install rust-script
         run: cargo install rust-script --locked
 
       - name: Verify std feature propagation
-        run: just verify std-propagation workspace
+        run: |
+          just verify sdk std-propagation
+          just verify integrations std-propagation
 
   linting-markdown:
     needs: changes
@@ -82,6 +86,9 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
+      - name: Install just
+        uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
+
       - name: Setup node.js
         uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # version: v6.1.0
         with:
@@ -90,8 +97,10 @@ jobs:
       - name: Install linters
         run: npm install -g markdownlint-cli@0.47.0
 
-      - name: Check linting
-        run: ./internal/scripts/ci_check_markdown_linting.sh --all
+      - name: Lint markdown
+        run: |
+          just lint sdk markdown
+          just lint integrations markdown
 
       - name: Check config key documentation
         run: ./internal/scripts/ci_check_description_vector_and_README.sh
@@ -138,11 +147,18 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
+      - name: Install just
+        uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
+
       - name: Run code examples in documentation
-        run: cargo test --workspace --doc
+        run: |
+          just test sdk --doc
+          just test integrations --doc
 
       - name: Build documentation
-        run: cargo doc --no-deps
+        run: |
+          just doc sdk rust
+          just doc integrations rust
 
   cargo-nextest:
     needs: preflight-check
@@ -268,6 +284,9 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
+      - name: Install just
+        uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
         with:
@@ -282,17 +301,28 @@ jobs:
           echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 
       - name: Build tunnel CLI
-        run: cargo build --release -p iceoryx2-cli --bin iox2-tunnel
+        run: just build iceoryx2-cli --release
+
+      - name: Build tunnel backend
+        run: just build iceoryx2-integrations-${{ matrix.tunnel }}-tunnel-cli --release
 
       - name: Build test binaries
-        run: cargo build --release -p iceoryx2-services-tunnel-end-to-end-tests
+        run: just build iceoryx2-services-tunnel-end-to-end-tests --release
 
       - name: Build test docker image
-        run: docker build -f iceoryx2-services/tunnel-end-to-end-tests/Dockerfile -t end-to-end-tests:${{ github.sha }} .
+        run: |
+          docker build \
+            -f iceoryx2-services/tunnel-end-to-end-tests/Dockerfile \
+            --build-arg ENTRYPOINT_BIN=target/release/iox2-tunnel \
+            --build-arg BACKEND_BIN=integrations/target/release/iox2-tunnel-${{ matrix.tunnel }} \
+            --build-arg PINGER_BIN=target/release/iceoryx2-services-tunnel-end-to-end-tests-pinger \
+            --build-arg PONGER_BIN=target/release/iceoryx2-services-tunnel-end-to-end-tests-ponger \
+            -t end-to-end-tests:${{ github.sha }} .
 
       - name: Run end-to-end tests
         run: |
           export IMAGE_TAG=${{ github.sha }}
+          export TUNNEL_BACKEND=${{ matrix.tunnel }}
 
           export PAYLOAD_TYPE=primitive
           docker compose -f iceoryx2-services/tunnel-end-to-end-tests/docker-compose.yml up \
@@ -355,6 +385,7 @@ jobs:
       toolchain: ${{ matrix.toolchain }}
       profile: "debug"
 
+  # NOTE: No Bazel build for integrations workspace. This is on purpose.
   Bazel:
     needs: [preflight-check]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
@@ -411,16 +442,26 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
+      - name: Install just
+        uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
         with:
           toolchain: stable
 
-      - name: Update iceoryx2 version
-        run: ./internal/scripts/update_versions.sh --iceoryx2 0.0.0
+      - name: Update versions
+        run: |
+          just prepare-release all versions --version 0.0.0
 
+      # NOTE: No publish dry run for integrations workspace. This is on purpose.
+      #       A dry run is not possible since the integrations workspace depends
+      #       on crates in the sdk workspace.
+      # TODO: Test publishing to local crate registry OR kellnr.
       - name: Cargo Publish Dry-Run
-        run: ./internal/scripts/release/crates_io_publish_script.sh dry-run-allow-dirty
+        run: |
+          just publish sdk --dry-run --allow-dirty
+          just publish integrations --sanity-checks
 
   grcov:
     needs: [preflight-check]

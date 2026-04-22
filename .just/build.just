@@ -89,6 +89,8 @@ _build-sdk toolchain target_triplet profile has_nostd has_tests extra_args:
     set -euo pipefail
 
     if [ "{{has_nostd}}" = "true" ]; then
+        NOSTD_CRATES=$(just _discover-nostd-crates)
+
         CRATE_COUNT=$(echo "$NOSTD_CRATES" | wc -l)
 
         echo ""
