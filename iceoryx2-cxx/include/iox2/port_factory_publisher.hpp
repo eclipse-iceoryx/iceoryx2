@@ -17,6 +17,7 @@
 #include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
+#include "iox2/degradation_handler.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/publisher.hpp"
@@ -79,6 +80,13 @@ class PortFactoryPublisher {
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto allocation_strategy(AllocationStrategy value) && -> PortFactoryPublisher&&;
 
+    /// Sets the [`DegradationHandler`] of the [`Publisher`]. Whenever a connection to a
+    /// [`Subscriber`] is corrupted, this handler is called and depending on the returned
+    /// [`DegradationAction`] measures will be taken.
+    /// @attention The handler function needs to live as long as the generated publisher. If the publisher, including
+    /// the send function, is accessed from multiple threads, the handler must be thread-safe if it captures data
+    auto set_degradation_handler(DegradationHandler* handler) && -> PortFactoryPublisher&&;
+
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
     auto create() && -> bb::Expected<Publisher<S, Payload, UserHeader>, PublisherCreateError>;
 
@@ -92,6 +100,7 @@ class PortFactoryPublisher {
     bb::Optional<uint64_t> m_max_slice_len;
     bb::Optional<AllocationStrategy> m_allocation_strategy;
     bb::Optional<OverridePreallocationCallback> m_override_preallocation_callback;
+    bb::Optional<DegradationHandler* const> m_degradation_handler;
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -123,6 +132,13 @@ inline auto PortFactoryPublisher<S, Payload, UserHeader>::allocation_strategy(
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
+inline auto PortFactoryPublisher<S, Payload, UserHeader>::set_degradation_handler(
+    DegradationHandler* handler) && -> PortFactoryPublisher&& {
+    m_degradation_handler.emplace(handler);
+    return std::move(*this);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
 inline auto PortFactoryPublisher<S, Payload, UserHeader>::create() && -> bb::Expected<Publisher<S, Payload, UserHeader>,
                                                                                       PublisherCreateError> {
     if (m_unable_to_deliver_strategy.has_value()) {
@@ -142,6 +158,12 @@ inline auto PortFactoryPublisher<S, Payload, UserHeader>::create() && -> bb::Exp
         iox2_port_factory_publisher_builder_set_allocation_strategy(
             &m_handle, bb::into<iox2_allocation_strategy_e>(m_allocation_strategy.value()));
     }
+
+    if (m_degradation_handler.has_value()) {
+        iox2_port_factory_publisher_builder_set_degradation_handler(
+            &m_handle, detail::degradation_handler_delegate, static_cast<void*>(m_degradation_handler.value()));
+    }
+
     if (m_override_preallocation_callback.has_value()) {
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be a raw pointer - crosses FFI boundary
         auto* callback = new OverridePreallocationCallback(m_override_preallocation_callback.value());

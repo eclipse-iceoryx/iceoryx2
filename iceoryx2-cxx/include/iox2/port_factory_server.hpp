@@ -16,6 +16,7 @@
 #include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
+#include "iox2/degradation_handler.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/server.hpp"
 #include "iox2/server_error.hpp"
@@ -82,6 +83,22 @@ class PortFactoryServer {
     template <typename T = ResponsePayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto allocation_strategy(AllocationStrategy value) && -> PortFactoryServer&&;
 
+    /// Sets the [`DegradationHandler`] for receiving [`ActiveRequest`]s from a [`Client`]. Whenever a request
+    /// connection to a  [`Client`](crate::port::client::Client) is corrupted, this handler is called and depending on
+    /// the returned [`DegradationAction`] measures will be taken.
+    /// @attention The handler function needs to live as long as the generated server. If the server, including
+    /// the send and receive functions, is accessed from multiple threads, the handler must be thread-safe if it
+    /// captures data
+    auto set_request_degradation_handler(DegradationHandler* handler) && -> PortFactoryServer&&;
+
+    /// Sets the [`DegradationHandler`] for sending [`ResponseMut`]s to a [`Client`]. Whenever a response connection to
+    /// a [`Client`] is corrupted, this handler is called and depending on the returned [`DegradationAction`] measures
+    /// will be taken.
+    /// @attention The handler function needs to live as long as the generated server. If the server, including
+    /// the send and receive functions, is accessed from multiple threads, the handler must be thread-safe if it
+    /// captures data
+    auto set_response_degradation_handler(DegradationHandler* handler) && -> PortFactoryServer&&;
+
     /// Creates a new [`Server`] or returns a [`ServerCreateError`] on failure.
     auto
     create() && -> bb::Expected<Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
@@ -97,6 +114,8 @@ class PortFactoryServer {
     bb::Optional<uint64_t> m_max_slice_len;
     bb::Optional<AllocationStrategy> m_allocation_strategy;
     bb::Optional<OverridePreallocationCallback> m_override_preallocation_callback;
+    bb::Optional<DegradationHandler* const> m_request_degradation_handler;
+    bb::Optional<DegradationHandler* const> m_response_degradation_handler;
 };
 
 template <ServiceType Service,
@@ -141,6 +160,28 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseUserHeader>
 inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    set_request_degradation_handler(DegradationHandler* handler) && -> PortFactoryServer&& {
+    m_request_degradation_handler.emplace(handler);
+    return std::move(*this);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    set_response_degradation_handler(DegradationHandler* handler) && -> PortFactoryServer&& {
+    m_response_degradation_handler.emplace(handler);
+    return std::move(*this);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     create() && -> bb::Expected<Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
                                 ServerCreateError> {
     if (m_unable_to_deliver_strategy.has_value()) {
@@ -170,6 +211,17 @@ inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, Respon
             &m_handle, internal::override_callback, static_cast<void*>(ctx));
     }
 
+    if (m_request_degradation_handler.has_value()) {
+        iox2_port_factory_server_builder_set_request_degradation_handler(
+            &m_handle, detail::degradation_handler_delegate, static_cast<void*>(m_request_degradation_handler.value()));
+    }
+
+    if (m_response_degradation_handler.has_value()) {
+        iox2_port_factory_server_builder_set_response_degradation_handler(
+            &m_handle,
+            detail::degradation_handler_delegate,
+            static_cast<void*>(m_response_degradation_handler.value()));
+    }
 
     iox2_server_h server_handle {};
     auto result = iox2_port_factory_server_builder_create(m_handle, nullptr, &server_handle);

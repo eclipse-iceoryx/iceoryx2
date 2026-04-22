@@ -22,6 +22,8 @@
 #include "iox2/client_error.hpp"
 #include "iox2/config_creation_error.hpp"
 #include "iox2/connection_failure.hpp"
+#include "iox2/degradation_action.hpp"
+#include "iox2/degradation_cause.hpp"
 #include "iox2/entry_handle_error.hpp"
 #include "iox2/entry_handle_mut_error.hpp"
 #include "iox2/iceoryx2.h"
@@ -2282,6 +2284,34 @@ constexpr auto from<int, iox2::AttributeDefinitionError>(const int value) noexce
     switch (error) {
     case iox2_attribute_definition_error_e_EXCEEDS_MAX_SUPPORTED_ATTRIBUTES:
         return iox2::AttributeDefinitionError::ExceedsMaxSupportedAttributes;
+    }
+
+    IOX2_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<iox2_degradation_cause_e, iox2::DegradationCause>(const iox2_degradation_cause_e value) noexcept
+    -> iox2::DegradationCause {
+    switch (value) {
+    case iox2_degradation_cause_e_FAILED_TO_ESTABLISH_CONNECTION:
+        return iox2::DegradationCause::FailedToEstablishConnection;
+    case iox2_degradation_cause_e_CONNECTION_CORRUPTED:
+        return iox2::DegradationCause::ConnectionCorrupted;
+    }
+
+    IOX2_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<iox2::DegradationAction, iox2_degradation_action_e>(const iox2::DegradationAction value) noexcept
+    -> iox2_degradation_action_e {
+    switch (value) {
+    case iox2::DegradationAction::Ignore:
+        return iox2_degradation_action_e_IGNORE;
+    case iox2::DegradationAction::Warn:
+        return iox2_degradation_action_e_WARN;
+    case iox2::DegradationAction::DegradeAndFail:
+        return iox2_degradation_action_e_DEGRADE_AND_FAIL;
     }
 
     IOX2_UNREACHABLE();
