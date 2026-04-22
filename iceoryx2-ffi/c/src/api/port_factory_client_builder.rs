@@ -19,8 +19,8 @@ use super::{
     iox2_callback_context, iox2_client_h, iox2_client_t, iox2_degradation_callback,
     iox2_service_type_e, iox2_unable_to_deliver_strategy_e,
 };
+use crate::IOX2_OK;
 use crate::api::ClientUnion;
-use crate::{IOX2_OK, iox2_callback_context};
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
 use iceoryx2::service::port_factory::client::{ClientCreateError, PortFactoryClient};

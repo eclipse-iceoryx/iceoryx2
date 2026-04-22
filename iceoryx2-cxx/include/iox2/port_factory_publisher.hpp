@@ -17,6 +17,7 @@
 #include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
+#include "iox2/degradation_handler.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/publisher.hpp"
@@ -79,6 +80,8 @@ class PortFactoryPublisher {
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto allocation_strategy(AllocationStrategy value) && -> PortFactoryPublisher&&;
 
+    auto set_degradation_callback(DegradationCallback* callback) && -> PortFactoryPublisher&&;
+
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
     auto create() && -> bb::Expected<Publisher<S, Payload, UserHeader>, PublisherCreateError>;
 
@@ -92,6 +95,7 @@ class PortFactoryPublisher {
     bb::Optional<uint64_t> m_max_slice_len;
     bb::Optional<AllocationStrategy> m_allocation_strategy;
     bb::Optional<OverridePreallocationCallback> m_override_preallocation_callback;
+    bb::Optional<DegradationCallback* const> m_degradation_callback;
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -123,6 +127,13 @@ inline auto PortFactoryPublisher<S, Payload, UserHeader>::allocation_strategy(
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
+inline auto PortFactoryPublisher<S, Payload, UserHeader>::set_degradation_callback(
+    DegradationCallback* callback) && -> PortFactoryPublisher&& {
+    m_degradation_callback.emplace(callback);
+    return std::move(*this);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
 inline auto PortFactoryPublisher<S, Payload, UserHeader>::create() && -> bb::Expected<Publisher<S, Payload, UserHeader>,
                                                                                       PublisherCreateError> {
     if (m_unable_to_deliver_strategy.has_value()) {
@@ -141,6 +152,11 @@ inline auto PortFactoryPublisher<S, Payload, UserHeader>::create() && -> bb::Exp
     if (m_allocation_strategy.has_value()) {
         iox2_port_factory_publisher_builder_set_allocation_strategy(
             &m_handle, bb::into<iox2_allocation_strategy_e>(m_allocation_strategy.value()));
+    }
+
+    if (m_degradation_callback.has_value()) {
+        iox2_port_factory_publisher_builder_set_degradation_callback(
+            &m_handle, detail::degradation_callback_delegate, static_cast<void*>(m_degradation_callback.value()));
     }
     if (m_override_preallocation_callback.has_value()) {
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) must be a raw pointer - crosses FFI boundary

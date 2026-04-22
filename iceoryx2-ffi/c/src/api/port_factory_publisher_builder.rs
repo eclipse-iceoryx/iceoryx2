@@ -17,7 +17,6 @@ use crate::api::{
     UserHeaderFfi, c_size_t, degradation_context_cast, iox2_callback_context,
     iox2_degradation_callback, iox2_publisher_h, iox2_publisher_t, iox2_service_type_e,
 };
-use crate::iox2_callback_context;
 
 use iceoryx2::port::publisher::PublisherCreateError;
 use iceoryx2::prelude::*;

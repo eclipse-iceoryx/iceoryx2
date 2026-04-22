@@ -14,8 +14,8 @@
 
 use core::mem::ManuallyDrop;
 
+use crate::IOX2_OK;
 use crate::api::ServerUnion;
-use crate::{IOX2_OK, iox2_callback_context};
 
 use super::{AssertNonNullHandle, HandleToType};
 use super::{
