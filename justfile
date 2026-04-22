@@ -13,6 +13,7 @@
 import '.just/common.just'
 import '.just/build.just'
 import '.just/test.just'
+import '.just/doc.just'
 import '.just/bundle.just'
 import '.just/verify.just'
 import '.just/lint.just'
@@ -28,6 +29,7 @@ default:
     @echo "  setup         - Setup dependencies"
     @echo "  build         - Build workspace or a specific package"
     @echo "  test          - Run tests for workspace or a specific package"
+    @echo "  doc           - Build API documentation"
     @echo "  bundle        - Bundle tests for deployment"
     @echo "  verify        - Run verification checks"
     @echo "  lint          - Run linting checks"
@@ -41,6 +43,9 @@ build what="" *flags:
 
 test what="" *flags:
     @just _test-dispatch "{{what}}" {{flags}}
+
+doc workspace="" *flags:
+    @just _doc-dispatch "{{workspace}}" {{flags}}
 
 bundle what="" *flags:
     @just _bundle-dispatch "{{what}}" {{flags}}
