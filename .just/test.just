@@ -89,7 +89,7 @@ _test-sdk toolchain target_triplet has_nostd has_doc:
     fi
 
     if [ "{{has_nostd}}" = "true" ]; then
-        NOSTD_CRATES=$(just _discover-nostd-test-crates)
+        NOSTD_CRATES=$(just _discover-nostd-crates)
 
         CRATE_COUNT=$(echo "$NOSTD_CRATES" | wc -l)
         echo ""
@@ -104,19 +104,17 @@ _test-sdk toolchain target_triplet has_nostd has_doc:
         FAILED_CRATES=()
 
         for crate in $NOSTD_CRATES; do
-            BASE_CRATE="${crate%-tests-nostd}"
-
-            echo "[$((PASSED + FAILED + 1))/$CRATE_COUNT] Running tests for $BASE_CRATE..."
+            echo "[$((PASSED + FAILED + 1))/$CRATE_COUNT] Running tests for $crate..."
             echo "------------------------------------------"
 
-            if just _test-package "$BASE_CRATE" "{{toolchain}}" "{{target_triplet}}" "true" "false"; then
-                echo "✓ $BASE_CRATE PASSED"
+            if just _test-package "$crate" "{{toolchain}}" "{{target_triplet}}" "true" "false"; then
+                echo "✓ $crate PASSED"
                 PASSED=$((PASSED + 1))
-                PASSED_CRATES+=("$BASE_CRATE")
+                PASSED_CRATES+=("$crate")
             else
-                echo "✗ $BASE_CRATE FAILED"
+                echo "✗ $crate FAILED"
                 FAILED=$((FAILED + 1))
-                FAILED_CRATES+=("$BASE_CRATE")
+                FAILED_CRATES+=("$crate")
             fi
             echo ""
         done

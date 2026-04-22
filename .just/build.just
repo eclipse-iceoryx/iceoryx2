@@ -21,24 +21,33 @@ _parse-build-args *flags:
 
     TOOLCHAIN=""
     TARGET_TRIPLET=""
+    PROFILE=""
     HAS_NOSTD="false"
     HAS_TESTS="false"
+    HAS_ALL_TARGETS="false"
+    EXCLUDES=""
 
     set -- {{flags}}
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            +*)         TOOLCHAIN="$1";                    shift ;;
-            --target=*) TARGET_TRIPLET="${1#--target=}";   shift ;;
-            --no_std)   HAS_NOSTD="true";                  shift ;;
-            --tests)    HAS_TESTS="true";                  shift ;;
-            *)          shift ;;
+            +*)            TOOLCHAIN="$1";                    shift ;;
+            --target=*)    TARGET_TRIPLET="${1#--target=}";   shift ;;
+            --release)     PROFILE="--release";               shift ;;
+            --no_std)      HAS_NOSTD="true";                  shift ;;
+            --tests)       HAS_TESTS="true";                  shift ;;
+            --all-targets) HAS_ALL_TARGETS="true";            shift ;;
+            --exclude)     EXCLUDES="$EXCLUDES $2";           shift 2 ;;
+            *)             shift ;;
         esac
     done
 
     echo "TOOLCHAIN='$TOOLCHAIN'"
     echo "TARGET_TRIPLET='$TARGET_TRIPLET'"
+    echo "PROFILE='$PROFILE'"
     echo "HAS_NOSTD='$HAS_NOSTD'"
     echo "HAS_TESTS='$HAS_TESTS'"
+    echo "HAS_ALL_TARGETS='$HAS_ALL_TARGETS'"
+    echo "EXCLUDES='$EXCLUDES'"
 
 [private]
 _build-dispatch what *flags:
@@ -59,41 +68,35 @@ _build-dispatch what *flags:
             echo "Flags:"
             echo "  +<toolchain>           use a specific toolchain"
             echo "  --target=<triplet>     cross-compile for target"
+            echo "  --release              build in release profile (default: debug)"
             echo "  --no_std               build without std"
             echo "  --tests                also build tests"
+            echo "  --all-targets          build libs, bins, examples, tests, benches"
+            echo "  --exclude <pkg>        exclude a package from workspace build (repeatable)"
             exit 1
             ;;
         sdk)
-            just _build-sdk "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_TESTS"
+            just _build-sdk "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$HAS_TESTS" "$HAS_ALL_TARGETS" "$EXCLUDES"
             ;;
         integrations)
-            just _build-integrations "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_TESTS"
+            just _build-integrations "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$HAS_TESTS" "$HAS_ALL_TARGETS" "$EXCLUDES"
             ;;
         *)
-            just _build-package "{{what}}" "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD"
+            just _build-package "{{what}}" "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$HAS_ALL_TARGETS"
             ;;
     esac
 
 [private]
-_build-sdk toolchain target_triplet has_nostd has_tests:
+_build-sdk toolchain target_triplet profile has_nostd has_tests has_all_targets excludes:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    # TODO: Move this branch into helper function
     if [ "{{has_nostd}}" = "true" ]; then
-        if [ "{{has_tests}}" = "false" ]; then
-            # TODO: Update this to build all crates that are no_std
-            echo "Error: the sdk workspace cannot be built with --no_std" >&2
-            echo "Use 'just build <package> --no_std' to build compatible packages without std" >&2
-            exit 1
-        fi
-
-        NOSTD_CRATES=$(just _discover-nostd-test-crates)
-
         CRATE_COUNT=$(echo "$NOSTD_CRATES" | wc -l)
+
         echo ""
         echo "=========================================="
-        echo "Building $CRATE_COUNT no_std test crates"
+        echo "Building $CRATE_COUNT crates"
         echo "=========================================="
         echo ""
 
@@ -101,7 +104,7 @@ _build-sdk toolchain target_triplet has_nostd has_tests:
         BUILT_CRATES=()
         for crate in $NOSTD_CRATES; do
             echo "[$((BUILT_COUNT + 1))/$CRATE_COUNT] Building $crate..."
-            just _build-package "$crate" "{{toolchain}}" "{{target_triplet}}" "true"
+            just _build-package "$crate" "{{toolchain}}" "{{target_triplet}}" "{{profile}}" "true" "false"
             BUILT_COUNT=$((BUILT_COUNT + 1))
             BUILT_CRATES+=("$crate")
         done
@@ -110,22 +113,34 @@ _build-sdk toolchain target_triplet has_nostd has_tests:
         echo "=========================================="
         echo "Build Summary"
         echo "=========================================="
-        echo "Successfully built $BUILT_COUNT no_std test crates:"
+        echo "Successfully built $BUILT_COUNT crates:"
         for crate in "${BUILT_CRATES[@]}"; do
             echo "  ✓ $crate"
         done
         echo ""
     else
-        TESTS_FLAG=""
-        if [ "{{has_tests}}" = "true" ]; then
-            TESTS_FLAG="--tests"
+        TARGETS_FLAG=""
+        if [ "{{has_all_targets}}" = "true" ]; then
+            TARGETS_FLAG="--all-targets"
+        elif [ "{{has_tests}}" = "true" ]; then
+            TARGETS_FLAG="--tests"
         fi
 
-        cargo {{toolchain}} build --workspace $TESTS_FLAG
+        TARGET_ARG=""
+        if [ -n "{{target_triplet}}" ]; then
+            TARGET_ARG="--target {{target_triplet}}"
+        fi
+
+        EXCLUDE_ARGS=""
+        for pkg in {{excludes}}; do
+            EXCLUDE_ARGS="$EXCLUDE_ARGS --exclude $pkg"
+        done
+
+        cargo {{toolchain}} build --workspace {{profile}} $TARGETS_FLAG $TARGET_ARG $EXCLUDE_ARGS
     fi
 
 [private]
-_build-integrations toolchain target_triplet has_nostd has_tests:
+_build-integrations toolchain target_triplet profile has_nostd has_tests has_all_targets excludes:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -134,17 +149,35 @@ _build-integrations toolchain target_triplet has_nostd has_tests:
         exit 1
     fi
 
-    TESTS_FLAG=""
-    if [ "{{has_tests}}" = "true" ]; then
-        TESTS_FLAG="--tests"
+    TARGETS_FLAG=""
+    if [ "{{has_all_targets}}" = "true" ]; then
+        TARGETS_FLAG="--all-targets"
+    elif [ "{{has_tests}}" = "true" ]; then
+        TARGETS_FLAG="--tests"
     fi
 
-    cargo {{toolchain}} build --workspace --manifest-path {{INTEGRATIONS_DIR}}/Cargo.toml $TESTS_FLAG
+    TARGET_ARG=""
+    if [ -n "{{target_triplet}}" ]; then
+        TARGET_ARG="--target {{target_triplet}}"
+    fi
+
+    EXCLUDE_ARGS=""
+    for pkg in {{excludes}}; do
+        EXCLUDE_ARGS="$EXCLUDE_ARGS --exclude $pkg"
+    done
+
+    cargo {{toolchain}} build --workspace --manifest-path {{INTEGRATIONS_DIR}}/Cargo.toml {{profile}} $TARGETS_FLAG $TARGET_ARG $EXCLUDE_ARGS
 
 [private]
-_build-package package toolchain target_triplet has_nostd:
+_build-package package toolchain target_triplet profile has_nostd has_all_targets:
     #!/usr/bin/env bash
     set -euo pipefail
+
+    WORKSPACE=$(just _find-package-workspace "{{package}}")
+    MANIFEST_ARG=""
+    if [ "$WORKSPACE" = "integrations" ]; then
+        MANIFEST_ARG="--manifest-path {{INTEGRATIONS_DIR}}/Cargo.toml"
+    fi
 
     if [ "{{has_nostd}}" = "true" ]; then
         TARGET_ARG=""
@@ -159,12 +192,24 @@ _build-package package toolchain target_triplet has_nostd:
             RUSTC_BOOTSTRAP=1 RUSTFLAGS="-C panic=abort" \
                 cargo {{toolchain}} build \
                     --package {{package}} \
+                    $MANIFEST_ARG \
                     --no-default-features \
                     -Zbuild-std=core,alloc \
+                    {{profile}} \
                     $TARGET_ARG
         else
-            cargo {{toolchain}} build --package {{package}} --no-default-features
+            cargo {{toolchain}} build --package {{package}} $MANIFEST_ARG --no-default-features {{profile}}
         fi
     else
-        cargo {{toolchain}} build --package {{package}}
+        TARGETS_FLAG=""
+        if [ "{{has_all_targets}}" = "true" ]; then
+            TARGETS_FLAG="--all-targets"
+        fi
+
+        TARGET_ARG=""
+        if [ -n "{{target_triplet}}" ]; then
+            TARGET_ARG="--target {{target_triplet}}"
+        fi
+
+        cargo {{toolchain}} build --package {{package}} $MANIFEST_ARG {{profile}} $TARGETS_FLAG $TARGET_ARG
     fi
