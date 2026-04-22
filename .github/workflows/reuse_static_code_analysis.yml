@@ -43,13 +43,13 @@ jobs:
         if: ${{ runner.os == 'Linux' }}
         # NOTE: the following crates are excluded because:
         #       * iceoryx2-ffi-c -> clippy uses std itself and complains about the panic handler
-        #       * iceoryx2-tunnel-zenoh -> Zenoh requires std
+        #       * iceoryx2-services-tunnel-zenoh -> Zenoh requires std
         #       * iceoryx2-cli -> the CLI requires std
         run: |
             cargo clippy --no-deps --workspace --all-targets \
                 --no-default-features \
                 --exclude iceoryx2-ffi-c \
-                --exclude iceoryx2-tunnel-zenoh \
+                --exclude iceoryx2-services-tunnel-zenoh \
                 --exclude iceoryx2-cli \
                 -- -D warnings
 
@@ -57,14 +57,14 @@ jobs:
         if: ${{ runner.os == 'Linux' }}
         # NOTE: the following crates are excluded because:
         #       * iceoryx2-ffi-c -> clippy uses std itself and complains about the panic handler
-        #       * iceoryx2-tunnel-zenoh -> Zenoh requires std
+        #       * iceoryx2-services-tunnel-zenoh -> Zenoh requires std
         #       * iceoryx2-cli -> the CLI requires std
         run: |
             cargo clippy --no-deps --workspace --all-targets \
                 --release \
                 --no-default-features \
                 --exclude iceoryx2-ffi-c \
-                --exclude iceoryx2-tunnel-zenoh \
+                --exclude iceoryx2-services-tunnel-zenoh \
                 --exclude iceoryx2-cli \
                 -- -D warnings
 
