@@ -56,7 +56,7 @@
 
 use crate::{
     port::{
-        DegradationAction, DegradationCallback,
+        DegradationAction, DegradationCallback, DegradationCause, DegradationContext,
         publisher::{Publisher, PublisherCreateError},
         unable_to_deliver_strategy::UnableToDeliverStrategy,
     },
@@ -112,7 +112,7 @@ pub struct PortFactoryPublisher<
     UserHeader: Debug + ZeroCopySend,
 > {
     pub(crate) config: LocalPublisherConfig,
-    pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
+    pub(crate) degradation_callback: DegradationCallback<'static>,
     pub(crate) preallocate_number_of_samples_override: PreallocatedSamplesOverride<'static>,
     pub(crate) factory: &'factory PortFactory<Service, Payload, UserHeader>,
 }
@@ -139,7 +139,7 @@ impl<
         Self {
             config: self.config,
             factory: self.factory,
-            degradation_callback: None,
+            degradation_callback: DegradationCallback::default(),
             preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),
         }
     }
@@ -172,7 +172,7 @@ impl<
                     .publish_subscribe
                     .unable_to_deliver_strategy,
             },
-            degradation_callback: None,
+            degradation_callback: DegradationCallback::default(),
             preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),
             factory,
         }
@@ -217,15 +217,12 @@ impl<
     /// [`crate::port::subscriber::Subscriber`] is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
     pub fn set_degradation_callback<
-        F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegradationAction + 'static,
+        F: Fn(DegradationCause, &DegradationContext) -> DegradationAction + 'static,
     >(
         mut self,
-        callback: Option<F>,
+        callback: F,
     ) -> Self {
-        match callback {
-            Some(c) => self.degradation_callback = Some(DegradationCallback::new(c)),
-            None => self.degradation_callback = None,
-        }
+        self.degradation_callback = DegradationCallback::new(callback);
 
         self
     }

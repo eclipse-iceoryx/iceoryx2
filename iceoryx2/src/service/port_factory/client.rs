@@ -31,7 +31,10 @@
 
 use super::request_response::PortFactory;
 use crate::{
-    port::{DegradationAction, DegradationCallback, client::Client},
+    port::{
+        DegradationAction, DegradationCallback, DegradationCause, DegradationContext,
+        client::Client,
+    },
     prelude::UnableToDeliverStrategy,
     service,
 };
@@ -110,8 +113,8 @@ pub struct PortFactoryClient<
 > {
     pub(crate) config: LocalClientConfig,
     pub(crate) preallocate_number_of_requests_override: PreallocatedRequestsOverride<'static>,
-    pub(crate) request_degradation_callback: Option<DegradationCallback<'static>>,
-    pub(crate) response_degradation_callback: Option<DegradationCallback<'static>>,
+    pub(crate) request_degradation_callback: DegradationCallback<'static>,
+    pub(crate) response_degradation_callback: DegradationCallback<'static>,
     pub(crate) factory: &'factory PortFactory<
         Service,
         RequestPayload,
@@ -164,8 +167,8 @@ impl<
         Self {
             config: self.config,
             factory: self.factory,
-            request_degradation_callback: None,
-            response_degradation_callback: None,
+            request_degradation_callback: DegradationCallback::default(),
+            response_degradation_callback: DegradationCallback::default(),
             preallocate_number_of_requests_override: PreallocatedRequestsOverride::new(|v| v),
         }
     }
@@ -193,8 +196,8 @@ impl<
                 allocation_strategy: AllocationStrategy::Static,
             },
             preallocate_number_of_requests_override: PreallocatedRequestsOverride::new(|v| v),
-            request_degradation_callback: None,
-            response_degradation_callback: None,
+            request_degradation_callback: DegradationCallback::default(),
+            response_degradation_callback: DegradationCallback::default(),
             factory,
         }
     }
@@ -234,15 +237,12 @@ impl<
     /// [`Server`](crate::port::server::Server) is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
     pub fn set_request_degradation_callback<
-        F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegradationAction + 'static,
+        F: Fn(DegradationCause, &DegradationContext) -> DegradationAction + 'static,
     >(
         mut self,
-        callback: Option<F>,
+        callback: F,
     ) -> Self {
-        match callback {
-            Some(c) => self.request_degradation_callback = Some(DegradationCallback::new(c)),
-            None => self.request_degradation_callback = None,
-        }
+        self.request_degradation_callback = DegradationCallback::new(callback);
 
         self
     }
@@ -252,15 +252,12 @@ impl<
     /// [`Server`](crate::port::server::Server) is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
     pub fn set_response_degradation_callback<
-        F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegradationAction + 'static,
+        F: Fn(DegradationCause, &DegradationContext) -> DegradationAction + 'static,
     >(
         mut self,
-        callback: Option<F>,
+        callback: F,
     ) -> Self {
-        match callback {
-            Some(c) => self.response_degradation_callback = Some(DegradationCallback::new(c)),
-            None => self.response_degradation_callback = None,
-        }
+        self.response_degradation_callback = DegradationCallback::new(callback);
 
         self
     }

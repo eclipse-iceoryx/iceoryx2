@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::fmt::Debug;
+use core::time::Duration;
 
 use tiny_fn::tiny_fn;
 use update_connections::ConnectionFailure;
@@ -44,24 +45,78 @@ pub mod writer;
 /// receiver is full and the service does not overflow.
 pub mod unable_to_deliver_strategy;
 
-use crate::service;
-
-/// Defines the action a port shall take when an internal failure occurs. Can happen when the
-/// system is corrupted and files are modified by non-iceoryx2 instances. Is used as return value of
-/// the [`DegradationCallback`] to define a custom behavior.
+/// Defines the action that shall be take when an degradation is detected. This can happen when a
+/// sample cannot be delivered, or when the system is corrupted and files are modified by
+/// non-iceoryx2 instances. Is used as return value of the [`DegradationCallback`] to define a
+/// custom behavior.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum DegradationAction {
+    /// Perform the default action
+    Default,
     /// Ignore the degradation completely
-    Ignore,
+    Ignore, // TODO: replace with Discard?
+    /// Performs whatever is necessary to discard the degradation
+    Discard,
+    /// Retries the action that caused the degradation
+    Retry,
+    /// Blocks until the cause of the degradation disappeared
+    Block, // TODO: with an UnableToDeliverStrategy::DeferToHandler, this could be omitted and Retry could achieve the same result
     /// Print out a warning as soon as the degradation is detected
     Warn,
     /// Returns a failure in the function the degradation was detected
     Fail,
 }
 
+/// Defines the cause of a degradation and is a parameter of the [`DegradationCallback`].
+pub enum DegradationCause {
+    /// Connection could not be established
+    FailedToEstablishConnection,
+    /// Connection is corrupted
+    ConnectionCorrupted,
+    /// Data could not be delivered
+    UnableToDeliverData,
+    /// The [`DegradationAction`] used by the [`DegradationCallback`] was invalid for the given [`DegradationCause`].
+    /// The function will return with an error after the invocation of the [`DegradationCallback`].
+    InvalidDegradationAction,
+}
+
+/// The degradation context passed to the [`DegradationCallback`]
+#[repr(C)]
+pub struct DegradationContext {
+    /// The service id, which is involved in the degradation
+    pub service_id: u128,
+    /// The sender port id, which is involved in the degradation
+    pub sender_port_id: u128,
+    /// The receiver port id, which is involved in the degradation
+    pub receiver_port_id: u128,
+    /// TODO
+    pub elapsed_time: Duration,
+    /// TODO
+    pub retries: u64,
+}
+
+impl DegradationContext {
+    /// Creates a new [`DegradationContext`]
+    pub fn new(
+        service_id: u128,
+        sender_port_id: u128,
+        receiver_port_id: u128,
+        elapsed_time: Duration,
+        retries: u64,
+    ) -> Self {
+        Self {
+            service_id,
+            sender_port_id,
+            receiver_port_id,
+            elapsed_time,
+            retries,
+        }
+    }
+}
+
 tiny_fn! {
-    /// Defines a custom behavior whenever a port detects a degregation.
-    pub struct DegradationCallback = Fn(service: &service::static_config::StaticConfig, sender_port_id: u128, receiver_port_id: u128) -> DegradationAction;
+    /// Defines a custom behavior whenever a port detects a degradation.
+    pub struct DegradationCallback = Fn(cause: DegradationCause, context: &DegradationContext) -> DegradationAction;
 }
 
 unsafe impl Send for DegradationCallback<'_> {}
@@ -69,6 +124,12 @@ unsafe impl Send for DegradationCallback<'_> {}
 impl Debug for DegradationCallback<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "")
+    }
+}
+
+impl Default for DegradationCallback<'_> {
+    fn default() -> Self {
+        Self::new(|_, _| DegradationAction::Default)
     }
 }
 
@@ -112,6 +173,8 @@ pub enum SendError {
     LoanError(LoanError),
     /// A failure occurred while establishing a connection to the ports counterpart port.
     ConnectionError(ConnectionFailure),
+    /// The sample could not be delivered
+    UnableToDeliver,
     /// An internal mechanisms failed and the data could not be delivered to all receivers.
     InternalError,
 }

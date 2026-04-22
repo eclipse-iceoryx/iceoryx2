@@ -10,11 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include <iostream>
+
 #include "iox2/iceoryx2.hpp"
 #include "transmission_data.hpp"
-
-#include <iostream>
-#include <utility>
 
 constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 
@@ -25,23 +24,20 @@ auto main() -> int {
 
     auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
                        .publish_subscribe<TransmissionData>()
+                       .enable_safe_overflow(false)
                        .open_or_create()
                        .value();
 
-    auto publisher = service.publisher_builder().create().value();
+    auto subscriber = service.subscriber_builder().buffer_size(1).create().value();
 
-    auto counter = 0;
+    std::cout << "Subscriber ready to receive data!" << std::endl;
+
     while (node.wait(CYCLE_TIME).has_value()) {
-        counter += 1;
-
-        auto sample = publisher.loan_uninit().value();
-
-        auto initialized_sample =
-            sample.write_payload(TransmissionData { counter, counter * 3, counter * 812.12 }); // NOLINT
-
-        send(std::move(initialized_sample)).has_value();
-
-        std::cout << "Send sample " << counter << "..." << std::endl;
+        auto sample = subscriber.receive().value();
+        while (sample.has_value()) {
+            std::cout << "received: " << sample->payload() << std::endl;
+            sample = subscriber.receive().value();
+        }
     }
 
     std::cout << "exit" << std::endl;

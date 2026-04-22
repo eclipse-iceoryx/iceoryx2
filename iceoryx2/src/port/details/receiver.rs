@@ -12,6 +12,7 @@
 
 use alloc::format;
 use alloc::sync::Arc;
+use core::time::Duration;
 
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::slotmap::SlotMap;
@@ -24,6 +25,8 @@ use iceoryx2_cal::zero_copy_connection::*;
 use iceoryx2_log::fatal_panic;
 use iceoryx2_log::{error, fail, warn};
 
+use crate::port::DegradationCause;
+use crate::port::DegradationContext;
 use crate::port::update_connections::ConnectionFailure;
 use crate::port::{DegradationAction, DegradationCallback, ReceiveError};
 use crate::service::NoResource;
@@ -121,7 +124,7 @@ pub(crate) struct Receiver<Service: service::Service> {
     pub(crate) tagger: CyclicTagger,
     pub(crate) to_be_removed_connections:
         Option<UnsafeCell<PolymorphicVec<'static, SlotMapKey, HeapAllocator>>>,
-    pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
+    pub(crate) degradation_callback: DegradationCallback<'static>,
     pub(crate) message_type_details: MessageTypeDetails,
     pub(crate) receiver_max_borrowed_samples: usize,
     pub(crate) enable_safe_overflow: bool,
@@ -459,30 +462,39 @@ impl<Service: service::Service> Receiver<Service> {
 
             match self.create(index, &sender_details) {
                 Ok(()) => Ok(()),
-                Err(e) => match &self.degradation_callback {
-                    None => {
-                        warn!(from self,
-                                "Unable to establish connection to new sender {:?}.",
-                                sender_details.port_id);
+                Err(e) => match self.degradation_callback.call(
+                    DegradationCause::FailedToEstablishConnection,
+                    &DegradationContext::new(
+                        self.service_state.static_config.unique_service_id().value(),
+                        sender_details.port_id,
+                        self.receiver_port_id(),
+                        Duration::ZERO,
+                        0,
+                    ),
+                ) {
+                    DegradationAction::Ignore | DegradationAction::Discard => Ok(()),
+                    DegradationAction::Default | DegradationAction::Warn => {
+                        warn!(from self, "Unable to establish connection to new sender {:?}.",
+                                        sender_details.port_id);
                         Ok(())
                     }
-                    Some(c) => {
-                        match c.call(
-                            &self.service_state.static_config,
-                            sender_details.port_id,
-                            self.receiver_port_id(),
-                        ) {
-                            DegradationAction::Ignore => Ok(()),
-                            DegradationAction::Warn => {
-                                warn!(from self, "Unable to establish connection to new sender {:?}.",
+                    DegradationAction::Fail => {
+                        fail!(from self, with e, "Unable to establish connection to new sender {:?}.",
                                         sender_details.port_id);
-                                Ok(())
-                            }
-                            DegradationAction::Fail => {
-                                fail!(from self, with e, "Unable to establish connection to new sender {:?}.",
-                                        sender_details.port_id);
-                            }
-                        }
+                    }
+                    DegradationAction::Retry | DegradationAction::Block => {
+                        self.degradation_callback.call(
+                            DegradationCause::InvalidDegradationAction,
+                            &DegradationContext::new(
+                                self.service_state.static_config.unique_service_id().value(),
+                                sender_details.port_id,
+                                self.receiver_port_id(),
+                                Duration::ZERO,
+                                0,
+                            ),
+                        );
+                        fail!(from self, with e, "Unable to establish connection to new sender {:?}.",
+                              sender_details.port_id);
                     }
                 },
             }
