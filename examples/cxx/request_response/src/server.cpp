@@ -55,7 +55,12 @@ const char* ServerCreateErrorStrings[] = {
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto node = NodeBuilder().create<ServiceType::Ipc>().value();
+
+    auto config = Config::global_config().to_owned();
+    config.global().node().set_cleanup_dead_nodes_on_creation(false);
+    config.global().node().set_cleanup_dead_nodes_on_destruction(false);
+
+    auto node = NodeBuilder().config(config).create<ServiceType::Ipc>().value();
 
     auto service_result = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
                               .request_response<uint64_t, TransmissionData>()
