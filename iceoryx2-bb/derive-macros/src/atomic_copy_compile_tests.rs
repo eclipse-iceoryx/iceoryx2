@@ -92,3 +92,23 @@ fn atomic_copy_derive_does_not_work_when_struct_is_not_zero_copy_send() {}
 /// }
 #[cfg(doctest)]
 fn atomic_copy_derive_does_not_work_when_struct_is_not_copy() {}
+
+/// ``` compile_fail
+/// use iceoryx2_bb_derive_macros::{AtomicCopy, ZeroCopySend};
+/// use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+///
+/// #[repr(C)]
+/// #[derive(Copy, Clone, ZeroCopySend)]
+/// struct A(u16);
+///
+/// #[repr(C)]
+/// #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+/// struct B {
+///     a: u8,
+///     b: u16,
+///     c: A,
+/// }
+/// ```
+#[cfg(doctest)]
+fn atomic_copy_derive_does_not_work_when_not_all_fields_implement_it() {}

@@ -318,8 +318,8 @@ pub fn atomic_copy_is_correctly_implemented() {
     struct Foo(u8, StaticString<10>, u64);
 
     let sut = Foo(0, StaticString::<10>::try_from("nupsi").unwrap(), 0);
-    let mut v = Vec::new();
-    sut.__for_each_field_with_offset(0, &mut |offset, size| {
+    let mut v = alloc::vec::Vec::new();
+    sut.__for_each_field(0, &mut |offset, size| {
         v.push((offset, size));
     });
 

@@ -128,7 +128,7 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
 ///     val2: u64,
 /// }
 ///
-/// let x = MyZeroCopySendStruct{
+/// let x = MyZeroCopySendStruct {
 ///     val1: 23,
 ///     val2: 4,
 /// };
@@ -348,19 +348,42 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-// TODO: documentation
+/// Implements the [`iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy`] trait for structs
+/// when all fields of the struct implement it and the struct implements `Copy` +
+/// [`iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend`].
+///
+/// ```
+/// use iceoryx2_bb_derive_macros::{AtomicCopy, ZeroCopySend};
+/// use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+///
+/// fn needs_atomic_copy_type<T: AtomicCopy>(_: &T) {}
+///
+/// #[repr(C)]
+/// #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+/// struct MyAtomicCopyStruct {
+///     a: bool,
+///     b: i64,
+///     c: u32,
+/// }
+///
+/// let x = MyAtomicCopyStruct {
+///     a: true,
+///     b: -19,
+///     c: 84,
+/// };
+/// needs_atomic_copy_type(&x);
+/// ```
 #[proc_macro_derive(AtomicCopy)]
 pub fn atomic_copy_derive(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
     let struct_name = &ast.ident;
 
-    // implement AtomicCopy
     let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
 
     let atomic_copy_impl = match ast.data {
         Data::Struct(ref data_struct) => match data_struct.fields {
             Fields::Named(ref fields_named) => {
-                // implement __for_each_field_with_offset
                 let mut field_offsets_and_sizes = Vec::new();
                 for field in fields_named.named.iter() {
                     let field_name = &field.ident;
@@ -377,20 +400,19 @@ pub fn atomic_copy_derive(input: TokenStream) -> TokenStream {
                             callback(abs_offset, size);
                         }
                         else {
-                            AtomicCopy::__for_each_field_with_offset(&self.#field_name, abs_offset, callback);
+                            AtomicCopy::__for_each_field(&self.#field_name, abs_offset, callback);
                         }
                     };
                     field_offsets_and_sizes.push(block);
                 }
 
                 quote! {
-                    fn __for_each_field_with_offset<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+                    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
                         #(#field_offsets_and_sizes)*
                     }
                 }
             }
             Fields::Unnamed(ref fields_unnamed) => {
-                // implement __for_each_field_with_offset
                 let mut field_offsets_and_sizes = Vec::new();
                 for (i, field) in fields_unnamed.unnamed.iter().enumerate() {
                     let field_index = syn::Index::from(i);
@@ -407,14 +429,14 @@ pub fn atomic_copy_derive(input: TokenStream) -> TokenStream {
                             callback(abs_offset, size);
                         }
                         else {
-                            AtomicCopy::__for_each_field_with_offset(&self.#field_index, abs_offset, callback);
+                            AtomicCopy::__for_each_field(&self.#field_index, abs_offset, callback);
                         }
                     };
                     field_offsets_and_sizes.push(block);
                 }
 
                 quote! {
-                    fn __for_each_field_with_offset<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+                    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
                         #(#field_offsets_and_sizes)*
                     }
                 }

@@ -16,7 +16,7 @@ use iceoryx2_bb_concurrency::atomic::{AtomicU8, Ordering};
 use iceoryx2_bb_elementary_traits::{atomic_copy::AtomicCopy, zero_copy_send::ZeroCopySend};
 use iceoryx2_log::fail;
 
-/// Failures caused by new()
+/// Failures caused by [`ByteAtomic::new()`]
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum ByteAtomicError {
     /// The size of the passed value and SIZE do not match.
@@ -40,8 +40,8 @@ impl<T: AtomicCopy, const SIZE: usize> ByteAtomic<T, SIZE> {
     /// Creates a new [`ByteAtomic`] that contains the passed value. It fails when the size
     /// of the value and `SIZE` do not match.
     pub fn new(value: T) -> Result<Self, ByteAtomicError> {
-        // remove the following check once size_of::<T>() can be directly used in the struct
-        // definition
+        // TODO: remove the following check once size_of::<T>() can be directly used in the
+        // struct definition
         if size_of::<T>() != SIZE {
             fail!(from "ByteAtomic::new()", with ByteAtomicError::SizesDoNotMatch,
                 "size_of::<T>() and SIZE must be equal.");
@@ -56,17 +56,17 @@ impl<T: AtomicCopy, const SIZE: usize> ByteAtomic<T, SIZE> {
             });
         }
 
-        // If the passed value is not scalar, it may include padding bytes. Reading or copying
-        // these would cause undefined behavior. Therefore, we zero `bytes` first and copy only the
-        // fields, i.e. the initialized bytes, of the passed value afterwards.
+        // If the passed value is not a scalar, it may contain padding bytes. Reading or copying
+        // these padding bytes would lead to undefined behavior. Therefore, we first set all bytes
+        // to zero and then copy only the fields, i.e. the initialized bytes, of the passed value.
         let mut bytes = [0u8; SIZE];
-        value.__for_each_field_with_offset(0, &mut |offset, size| {
-            for i in offset..offset + size {
-                bytes[i] = unsafe { *value_ptr.add(i) };
+        value.__for_each_field(0, &mut |offset, size| {
+            for (i, byte) in bytes.iter_mut().enumerate().skip(offset).take(size) {
+                *byte = unsafe { *value_ptr.add(i) };
             }
         });
         Ok(Self {
-            data: bytes.map(|b| AtomicU8::new(b)),
+            data: bytes.map(AtomicU8::new),
             _inner_type: PhantomData,
         })
     }
@@ -101,7 +101,7 @@ impl<T: AtomicCopy, const SIZE: usize> ByteAtomic<T, SIZE> {
                 self.data[i].store(unsafe { *value_ptr.add(i) }, Ordering::Relaxed);
             }
         } else {
-            value.__for_each_field_with_offset(0, &mut |offset, size| {
+            value.__for_each_field(0, &mut |offset, size| {
                 for i in offset..offset + size {
                     self.data[i].store(unsafe { *value_ptr.add(i) }, Ordering::Relaxed);
                 }

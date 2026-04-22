@@ -19,18 +19,14 @@ use crate::zero_copy_send::ZeroCopySend;
 ///
 /// # Safety
 ///
-/// Implementations of this trait must ensure that the offset and size of each field are calculated
-/// correctly. Otherwise, undefined behavior may occur.
+/// * See Safety section of [`crate::zero_copy_send::ZeroCopySend`].
+/// * Implementations of this trait must ensure that the offset and size of each field are
+///   calculated correctly. Otherwise, undefined behavior may occur.
 pub unsafe trait AtomicCopy: ZeroCopySend + Copy + 'static {
     #[doc(hidden)]
-    /// Iterates over the fields of the type, calculates the offset relative to the provided base_offset, and applies
-    /// the provided callback to each offset-size pair of the field.
-    fn __for_each_field_with_offset<F: FnMut(usize, usize)>(
-        &self,
-        _base_offset: usize,
-        _callback: &mut F,
-    ) {
-    }
+    /// Iterates over the fields of the type, calculates the offset relative to the provided
+    /// base_offset, and applies the provided callback to each offset-size pair of the field.
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, _base_offset: usize, _callback: &mut F) {}
 
     #[doc(hidden)]
     /// Returns true for scalar types.
