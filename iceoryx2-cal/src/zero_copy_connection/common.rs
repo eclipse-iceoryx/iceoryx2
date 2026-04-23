@@ -29,7 +29,8 @@ pub mod details {
         safely_overflowing_index_queue::RelocatableSafelyOverflowingIndexQueue,
     };
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-    use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
+    use iceoryx2_bb_posix::adaptive_wait::{AdaptiveWaitBuilder, AdaptiveWaitError};
+    use iceoryx2_bb_posix::clock::NanosleepError;
     use iceoryx2_bb_posix::file::AccessMode;
     use iceoryx2_log::{fail, fatal_panic};
 
@@ -748,7 +749,13 @@ pub mod details {
                         && is_connected
                         && has_valid_channel_state
                 }) {
-                    fail!(from self, with ZeroCopySendError::InternalError,
+                    let error = match e {
+                        AdaptiveWaitError::NanosleepError(NanosleepError::InterruptedBySignal(
+                            _,
+                        )) => ZeroCopySendError::InterruptedBySignal,
+                        _ => ZeroCopySendError::InternalError,
+                    };
+                    fail!(from self, with error,
                         "{msg} {ptr:?} via channel {channel_id:?} since the adaptive wait failed. [{e:?}]");
                 }
 

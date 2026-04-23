@@ -211,6 +211,10 @@ impl<Service: service::Service> Sender<Service> {
                                     offset, connection.receiver_port_id);
                     }
                 },
+                Err(ZeroCopySendError::InterruptedBySignal) => {
+                    fail!(from self, with SendError::InterruptedBySignal,
+                         "{msg} a signal was raised and interrupted a system call.");
+                }
                 Ok(overflow) => {
                     self.borrow_sample(offset);
                     number_of_recipients += 1;
