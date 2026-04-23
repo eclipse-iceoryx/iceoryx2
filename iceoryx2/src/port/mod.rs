@@ -73,9 +73,9 @@ pub struct UnableToDeliverInfo {
 /// # Returns
 ///
 /// The [`UnableToDeliverAction`] to be taken to mitigate the incident
-pub trait UnableToDeliverFn: Fn(&UnableToDeliverInfo) -> UnableToDeliverAction {}
+pub trait UnableToDeliverFn: Fn(&UnableToDeliverInfo) -> UnableToDeliverAction + Send {}
 
-impl<F: Fn(&UnableToDeliverInfo) -> UnableToDeliverAction> UnableToDeliverFn for F {}
+impl<F: Fn(&UnableToDeliverInfo) -> UnableToDeliverAction + Send> UnableToDeliverFn for F {}
 
 tiny_fn! {
     /// Defines a custom behavior whenever a port detects a degradation.
@@ -152,9 +152,12 @@ impl DegradationInfo {
 /// # Returns
 ///
 /// The [`DegradationAction`] to be taken to mitigate the degradation
-pub trait DegradationFn: Fn(DegradationCause, &DegradationInfo) -> DegradationAction {}
+pub trait DegradationFn:
+    Fn(DegradationCause, &DegradationInfo) -> DegradationAction + Send
+{
+}
 
-impl<F: Fn(DegradationCause, &DegradationInfo) -> DegradationAction> DegradationFn for F {}
+impl<F: Fn(DegradationCause, &DegradationInfo) -> DegradationAction + Send> DegradationFn for F {}
 
 tiny_fn! {
     /// Defines a custom behavior whenever a port detects a degradation.
