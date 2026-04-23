@@ -23,13 +23,13 @@
 > **cross-language compatible!**
 
 This example illustrates a publisher-subscriber messaging pattern between
-two separate processes with custom degradation handling when samples cannot
+two separate processes with custom handling when samples cannot
 be delivered. The publisher sends a message every 500 milliseconds,
 each containing [`TransmissionData`]. On the receiving end, the subscriber
 checks for new data every second.
 
-The publisher registers a degradation callback to perform the specified action
-when a sample could not be delivered.
+The publisher registers a handler to perform the specified action when a sample
+could not be delivered.
 
 The subscriber is printing the sample on the console whenever new data arrives.
 
@@ -41,13 +41,13 @@ execute the following commands:
 ### Terminal 1
 
 ```sh
-cargo run --example publish_subscribe_with_degradation_handler_subscriber
+cargo run --example publish_subscribe_with_unable_to_deliver_handler_subscriber
 ```
 
 ### Terminal 2
 
 ```sh
-cargo run --example publish_subscribe_with_degradation_handler_publisher
+cargo run --example publish_subscribe_with_unable_to_deliver_handler_publisher
 ```
 
 Feel free to run multiple instances of publisher or subscriber processes

@@ -40,13 +40,14 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .publisher_builder()
         .set_unable_to_deliver_handler({
             let counter = counter.clone();
-            let degradation_counter = alloc::sync::Arc::new(AtomicU64::new(0));
+            let delivery_incident_counter = alloc::sync::Arc::new(AtomicU64::new(0));
             move |info| {
+                // only print the port IDs in the first iteration of the retry loop of each delivery incident
                 if info.retries == 0 {
-                    degradation_counter.fetch_add(1, Ordering::SeqCst);
+                    delivery_incident_counter.fetch_add(1, Ordering::SeqCst);
                     println!(
-                        "Degradation Event {}",
-                        degradation_counter.load(Ordering::SeqCst)
+                        "Sample delivery interruption count {}",
+                        delivery_incident_counter.load(Ordering::SeqCst)
                     );
 
                     println!(
@@ -57,13 +58,13 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                     );
                 }
 
-                match degradation_counter.load(Ordering::SeqCst) % 4 {
+                // there are multiple mitigation options available and to showcase these options,
+                // the mitigation is selected based on the incident counter
+                match delivery_incident_counter.load(Ordering::SeqCst) % 4 {
                     0 => {
-                        println!("    Sleeping 100ms and retry");
-                        std::thread::sleep(core::time::Duration::from_millis(100));
-                        UnableToDeliverAction::Retry
-                    }
-                    1 => {
+                        // use the built-in sleeping strategy and keep retrying to send the sample
+                        // for 10ms and then abort the delivery for the receiver that caused the
+                        // incident and all other which did not yet receive the sample
                         if info.elapsed_time < Duration::from_millis(10) {
                             UnableToDeliverAction::Retry
                         } else {
@@ -71,11 +72,27 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                             UnableToDeliverAction::AbortDeliveryAndFail
                         }
                     }
+                    1 => {
+                        // instead of using the built-in sleeping strategy, the sleep time is defined
+                        // by the handler and the delivery is aborted after a specified amount of retries
+                        if info.retries < 10 {
+                            println!("    Sleeping 100ms and retry");
+                            std::thread::sleep(core::time::Duration::from_millis(100));
+                            UnableToDeliverAction::Retry
+                        } else {
+                            UnableToDeliverAction::AbortDeliveryAndFail
+                        }
+                    }
                     2 => {
+                        // just discard the sample for the receiver involved in the incident and
+                        // continue to try delivering the sample to all other receiver to whom no
+                        // attempt was taken to deliver the sample, yet
                         println!("    Discarding sample silently");
                         UnableToDeliverAction::DiscardSample
                     }
                     _ => {
+                        // just abort the delivery for the receiver that caused the incident and
+                        // all other which did not yet receive the sample
                         println!("    Discarding sample and failing");
                         UnableToDeliverAction::AbortDeliveryAndFail
                     }
