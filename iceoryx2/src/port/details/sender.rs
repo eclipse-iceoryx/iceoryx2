@@ -197,12 +197,12 @@ impl<Service: service::Service> Sender<Service> {
                                     connection.receiver_port_id,
                                 ),
                             ) {
-                                DegradationAction::Default => UnableToDeliverAction::Block,
+                                DegradationAction::Default => UnableToDeliverAction::Retry,
                                 DegradationAction::Ignore | DegradationAction::Discard => {
-                                    UnableToDeliverAction::DiscardLatestSample
+                                    UnableToDeliverAction::DiscardSample
                                 }
                                 DegradationAction::Retry => UnableToDeliverAction::Retry,
-                                DegradationAction::Block => UnableToDeliverAction::Block,
+                                DegradationAction::Block => UnableToDeliverAction::Retry,
                                 DegradationAction::Warn => {
                                     trace!(from self,
                                           "Unable to deliver sample to receiver {:?}.",
@@ -212,9 +212,11 @@ impl<Service: service::Service> Sender<Service> {
                                         connection.receiver_port_id
                                     );
 
-                                    UnableToDeliverAction::DiscardLatestSample
+                                    UnableToDeliverAction::DiscardSample
                                 }
-                                DegradationAction::Fail => UnableToDeliverAction::Fail,
+                                DegradationAction::Fail => {
+                                    UnableToDeliverAction::AbortDeliveryAndFail
+                                }
                             }
                         }),
                     )

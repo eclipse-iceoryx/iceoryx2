@@ -133,11 +133,9 @@ impl core::fmt::Display for ZeroCopyReleaseError {
 impl core::error::Error for ZeroCopyReleaseError {}
 
 pub enum UnableToDeliverAction {
-    Fail,
-    Block,
     Retry,
-    DiscardLatestSample,
-    // DiscardOldestSample, TODO this could be a placeholder
+    DiscardSample,
+    AbortDeliveryAndFail,
 }
 
 tiny_fn! {
@@ -155,7 +153,7 @@ impl Debug for UnableToDeliverHandler<'_> {
 
 impl UnableToDeliverHandler<'_> {
     pub fn block() -> Self {
-        Self::new(|| UnableToDeliverAction::Block)
+        Self::new(|| UnableToDeliverAction::Retry)
     }
 }
 

@@ -738,7 +738,6 @@ pub mod details {
             if !mgmt.enable_safe_overflow {
                 let mut is_connected = false;
                 let mut has_valid_channel_state = false;
-                let mut do_block = false;
                 let mut do_fail = false;
 
                 if let Err(e) = AdaptiveWaitBuilder::new().create().unwrap().wait_while(|| {
@@ -749,20 +748,12 @@ pub mod details {
                         != CHANNEL_STATE_CLOSED.0;
                     if is_connected && has_valid_channel_state {
                         if mgmt.channels[channel_id.value()].submission_queue.is_full() {
-                            if do_block {
-                                true
-                            } else {
-                                match unable_to_deliver_handler.call() {
-                                    UnableToDeliverAction::Block => {
-                                        do_block = true;
-                                        true
-                                    }
-                                    UnableToDeliverAction::Retry => true,
-                                    UnableToDeliverAction::DiscardLatestSample => false,
-                                    UnableToDeliverAction::Fail => {
-                                        do_fail = true;
-                                        false
-                                    }
+                            match unable_to_deliver_handler.call() {
+                                UnableToDeliverAction::Retry => true,
+                                UnableToDeliverAction::DiscardSample => false,
+                                UnableToDeliverAction::AbortDeliveryAndFail => {
+                                    do_fail = true;
+                                    false
                                 }
                             }
                         } else {
