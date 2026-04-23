@@ -178,13 +178,17 @@ impl<Service: service::Service> Sender<Service> {
                     sample_size,
                     channel_id,
                     |retries, elapsed_time| {
-                        handler.call(&UnableToDeliverInfo::new(
-                            self.service_state.static_config.unique_service_id().value(),
-                            self.sender_port_id,
-                            connection.receiver_port_id,
+                        handler.call(&UnableToDeliverInfo {
+                            service_id: self
+                                .service_state
+                                .static_config
+                                .unique_service_id()
+                                .value(),
+                            sender_port_id: self.sender_port_id,
+                            receiver_port_id: connection.receiver_port_id,
                             retries,
                             elapsed_time,
-                        ))
+                        })
                     },
                     unablet_to_deliver_action_for_strategy,
                 )

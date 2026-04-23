@@ -62,25 +62,6 @@ pub struct UnableToDeliverInfo {
     pub elapsed_time: Duration,
 }
 
-impl UnableToDeliverInfo {
-    /// Creates a new [`UnableToDeliverInfo`]
-    pub fn new(
-        service_id: u128,
-        sender_port_id: u128,
-        receiver_port_id: u128,
-        retries: u64,
-        elapsed_time: Duration,
-    ) -> Self {
-        Self {
-            service_id,
-            sender_port_id,
-            receiver_port_id,
-            retries,
-            elapsed_time,
-        }
-    }
-}
-
 /// The unable to delivery handler invoked by a send function when a sample cannot be delivered
 /// to a receiver
 ///
