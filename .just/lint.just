@@ -20,10 +20,12 @@ _parse-lint-args *flags:
     set -euo pipefail
 
     MODE="check"
+    EXTRA_ARGS=""
 
     set -- {{flags}}
     while [[ $# -gt 0 ]]; do
         case "$1" in
+            --)      shift; EXTRA_ARGS="$*"; break ;;
             --fix)   MODE="fix";   shift ;;
             --check) MODE="check"; shift ;;
             *)       shift ;;
@@ -31,6 +33,7 @@ _parse-lint-args *flags:
     done
 
     echo "MODE='$MODE'"
+    echo "EXTRA_ARGS='$EXTRA_ARGS'"
 
 [private]
 _lint-dispatch workspace target *flags:
@@ -57,7 +60,7 @@ _lint-dispatch workspace target *flags:
     fi
 
     case "{{target}}" in
-        rust)     just _lint-rust "{{workspace}}" "$MODE" ;;
+        rust)     just _lint-rust "{{workspace}}" "$MODE" "$EXTRA_ARGS" ;;
         markdown) just _lint-markdown "{{workspace}}" "$MODE" ;;
         *)
             echo "Error: unknown target '{{target}}' (expected: rust|markdown)" >&2
@@ -70,7 +73,7 @@ _lint-dispatch workspace target *flags:
 # -----------------------------------------------------------------------------
 
 [private]
-_lint-rust workspace mode:
+_lint-rust workspace mode extra_args:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -81,11 +84,11 @@ _lint-rust workspace mode:
 
         if [ "{{mode}}" = "fix" ]; then
             echo "Running cargo fmt --all for workspace '$WS'..."
-            cargo fmt --all $MANIFEST_ARG
+            cargo fmt --all $MANIFEST_ARG {{extra_args}}
             echo "Rust fmt applied to '$WS'."
         else
             echo "Running cargo fmt --all -- --check for workspace '$WS'..."
-            cargo fmt --all $MANIFEST_ARG -- --check
+            cargo fmt --all $MANIFEST_ARG {{extra_args}} -- --check
             echo "Rust fmt check passed for '$WS'."
         fi
     done

@@ -21,10 +21,12 @@ _parse-verify-args *flags:
 
     PROFILE=""
     HAS_NOSTD="false"
+    EXTRA_ARGS=""
 
     set -- {{flags}}
     while [[ $# -gt 0 ]]; do
         case "$1" in
+            --)        shift; EXTRA_ARGS="$*"; break ;;
             --release) PROFILE="--release"; shift ;;
             --no_std)  HAS_NOSTD="true";    shift ;;
             *)         shift ;;
@@ -33,6 +35,7 @@ _parse-verify-args *flags:
 
     echo "PROFILE='$PROFILE'"
     echo "HAS_NOSTD='$HAS_NOSTD'"
+    echo "EXTRA_ARGS='$EXTRA_ARGS'"
 
 [private]
 _verify-dispatch what tool *flags:
@@ -62,8 +65,8 @@ _verify-dispatch what tool *flags:
     fi
 
     case "{{tool}}" in
-        clippy)          just _verify-clippy "{{what}}" "$PROFILE" "$HAS_NOSTD" ;;
-        miri)            just _verify-miri "{{what}}" ;;
+        clippy)          just _verify-clippy "{{what}}" "$PROFILE" "$HAS_NOSTD" "$EXTRA_ARGS" ;;
+        miri)            just _verify-miri "{{what}}" "$EXTRA_ARGS" ;;
         std-propagation) just _verify-std-propagation "{{what}}" ;;
         *)
             echo "Error: unknown tool '{{tool}}' (expected: clippy|miri|std-propagation)" >&2
@@ -76,7 +79,7 @@ _verify-dispatch what tool *flags:
 # -----------------------------------------------------------------------------
 
 [private]
-_verify-clippy workspace profile has_nostd:
+_verify-clippy workspace profile has_nostd extra_args:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -97,10 +100,11 @@ _verify-clippy workspace profile has_nostd:
                 --exclude iceoryx2-ffi-c \
                 --exclude iceoryx2-tunnel-zenoh \
                 --exclude iceoryx2-cli \
+                {{extra_args}} \
                 -- -D warnings
         else
             echo "Running clippy for '$WS' (std {{profile}})..."
-            cargo clippy --no-deps --workspace --all-targets $MANIFEST_ARG {{profile}} -- -D warnings
+            cargo clippy --no-deps --workspace --all-targets $MANIFEST_ARG {{profile}} {{extra_args}} -- -D warnings
         fi
     done
 
@@ -114,7 +118,7 @@ MIRI_WHITELIST_SDK          := ""
 MIRI_WHITELIST_INTEGRATIONS := ""
 
 [private]
-_verify-miri workspace:
+_verify-miri workspace extra_args:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -130,7 +134,7 @@ _verify-miri workspace:
 
         for CRATE in $WHITELIST; do
             echo "Running cargo +nightly miri test under: $CRATE"
-            (cd "{{justfile_directory()}}/$CRATE" && cargo +nightly miri test)
+            (cd "{{justfile_directory()}}/$CRATE" && cargo +nightly miri test {{extra_args}})
             DID_RUN=true
         done
     done

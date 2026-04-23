@@ -23,10 +23,12 @@ _parse-test-args *flags:
     TARGET_TRIPLET=""
     HAS_NOSTD="false"
     HAS_DOC="false"
+    EXTRA_ARGS=""
 
     set -- {{flags}}
     while [[ $# -gt 0 ]]; do
         case "$1" in
+            --)         shift; EXTRA_ARGS="$*";            break ;;
             +*)         TOOLCHAIN="$1";                    shift ;;
             --target=*) TARGET_TRIPLET="${1#--target=}";   shift ;;
             --no_std)   HAS_NOSTD="true";                  shift ;;
@@ -39,6 +41,7 @@ _parse-test-args *flags:
     echo "TARGET_TRIPLET='$TARGET_TRIPLET'"
     echo "HAS_NOSTD='$HAS_NOSTD'"
     echo "HAS_DOC='$HAS_DOC'"
+    echo "EXTRA_ARGS='$EXTRA_ARGS'"
 
 [private]
 _test-dispatch what *flags:
@@ -64,18 +67,18 @@ _test-dispatch what *flags:
             exit 1
             ;;
         sdk)
-            just _test-sdk "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC"
+            just _test-sdk "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
             ;;
         integrations)
-            just _test-integrations "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC"
+            just _test-integrations "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
             ;;
         *)
-            just _test-package "{{what}}" "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC"
+            just _test-package "{{what}}" "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
             ;;
     esac
 
 [private]
-_test-sdk toolchain target_triplet has_nostd has_doc:
+_test-sdk toolchain target_triplet has_nostd has_doc extra_args:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -84,7 +87,7 @@ _test-sdk toolchain target_triplet has_nostd has_doc:
             echo "Error: --doc cannot be combined with --no_std" >&2
             exit 1
         fi
-        cargo {{toolchain}} test --workspace --doc
+        cargo {{toolchain}} test --workspace --doc {{extra_args}}
         exit 0
     fi
 
@@ -107,7 +110,7 @@ _test-sdk toolchain target_triplet has_nostd has_doc:
             echo "[$((PASSED + FAILED + 1))/$CRATE_COUNT] Running tests for $crate..."
             echo "------------------------------------------"
 
-            if just _test-package "$crate" "{{toolchain}}" "{{target_triplet}}" "true" "false"; then
+            if just _test-package "$crate" "{{toolchain}}" "{{target_triplet}}" "true" "false" "{{extra_args}}"; then
                 echo "✓ $crate PASSED"
                 PASSED=$((PASSED + 1))
                 PASSED_CRATES+=("$crate")
@@ -144,11 +147,11 @@ _test-sdk toolchain target_triplet has_nostd has_doc:
             exit 1
         fi
     else
-        cargo {{toolchain}} nextest run --workspace
+        cargo {{toolchain}} nextest run --workspace {{extra_args}}
     fi
 
 [private]
-_test-integrations toolchain target_triplet has_nostd has_doc:
+_test-integrations toolchain target_triplet has_nostd has_doc extra_args:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -160,13 +163,13 @@ _test-integrations toolchain target_triplet has_nostd has_doc:
     MANIFEST_ARG=$(just _workspace-manifest-arg integrations)
 
     if [ "{{has_doc}}" = "true" ]; then
-        cargo {{toolchain}} test --workspace --doc $MANIFEST_ARG
+        cargo {{toolchain}} test --workspace --doc $MANIFEST_ARG {{extra_args}}
     else
-        cargo {{toolchain}} nextest run --workspace $MANIFEST_ARG
+        cargo {{toolchain}} nextest run --workspace $MANIFEST_ARG {{extra_args}}
     fi
 
 [private]
-_test-package package toolchain target_triplet has_nostd has_doc:
+_test-package package toolchain target_triplet has_nostd has_doc extra_args:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -175,7 +178,7 @@ _test-package package toolchain target_triplet has_nostd has_doc:
             echo "Error: --doc cannot be combined with --no_std" >&2
             exit 1
         fi
-        cargo {{toolchain}} test --package {{package}} --doc
+        cargo {{toolchain}} test --package {{package}} --doc {{extra_args}}
         exit 0
     fi
 
@@ -199,7 +202,8 @@ _test-package package toolchain target_triplet has_nostd has_doc:
                 --package "$TEST_PACKAGE" \
                 --no-default-features \
                 -Zbuild-std=core,alloc \
-                $TARGET_ARG
+                $TARGET_ARG \
+                {{extra_args}}
     else
-        cargo {{toolchain}} nextest run --package {{package}}
+        cargo {{toolchain}} nextest run --package {{package}} {{extra_args}}
     fi
