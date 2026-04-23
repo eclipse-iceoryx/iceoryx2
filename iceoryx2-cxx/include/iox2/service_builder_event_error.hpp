@@ -86,6 +86,9 @@ enum class EventCreateError : uint8_t {
     /// [`Sample`] or
     /// [`SampleMut`] in use.
     OldConnectionsStillActive,
+    /// A lifecycle event id (`notifier_created_event`, `notifier_dropped_event`, or
+    /// `notifier_dead_event`) exceeds the configured `event_id_max_value`.
+    EventIdExceedsMaxSupportedValue,
 };
 
 /// Failures that can occur when a [`MessagingPattern::Event`] [`Service`] shall be opened or
@@ -167,6 +170,9 @@ enum class EventOpenOrCreateError : uint8_t {
     /// [`Sample`] or
     /// [`SampleMut`] in use.
     CreateOldConnectionsStillActive,
+    /// A lifecycle event id (`notifier_created_event`, `notifier_dropped_event`, or
+    /// `notifier_dead_event`) exceeds the configured `event_id_max_value`.
+    CreateEventIdExceedsMaxSupportedValue,
     /// Can occur when another process creates and removes the same [`Service`] repeatedly with a
     /// high frequency.
     SystemInFlux,

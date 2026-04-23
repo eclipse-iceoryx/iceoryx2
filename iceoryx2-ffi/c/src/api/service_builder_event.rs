@@ -87,6 +87,8 @@ pub enum iox2_event_open_or_create_error_e {
     C_OLD_CONNECTION_STILL_ACTIVE,
     #[CStr = "same service is created and removed repeatedly"]
     SYSTEM_IN_FLUX,
+    #[CStr = "event id exceeds max supported value"]
+    C_EVENT_ID_EXCEEDS_MAX_SUPPORTED_VALUE,
 }
 
 impl IntoCInt for EventOpenError {
@@ -164,6 +166,9 @@ impl IntoCInt for EventCreateError {
             }
             EventCreateError::InsufficientPermissions => {
                 iox2_event_open_or_create_error_e::C_INSUFFICIENT_PERMISSIONS
+            }
+            EventCreateError::EventIdExceedsMaxSupportedValue => {
+                iox2_event_open_or_create_error_e::C_EVENT_ID_EXCEEDS_MAX_SUPPORTED_VALUE
             }
         }) as c_int
     }
