@@ -20,21 +20,23 @@ import '.just/lint.just'
 import '.just/setup.just'
 import '.just/coverage.just'
 import '.just/publish.just'
+import '.just/prepare-release.just'
 
 # Show available commands
 default:
     @echo "iceoryx2 development helpers"
     @echo ""
     @echo "Commands:"
-    @echo "  setup         - Setup dependencies"
-    @echo "  build         - Build workspace or a specific package"
-    @echo "  test          - Run tests for workspace or a specific package"
-    @echo "  doc           - Build API documentation"
-    @echo "  bundle        - Bundle tests for deployment"
-    @echo "  verify        - Run verification checks"
-    @echo "  lint          - Run linting checks"
-    @echo "  coverage      - Run test coverage tasks"
-    @echo "  publish       - Publish crates to crates.io"
+    @echo "  setup           - Setup dependencies"
+    @echo "  build           - Build workspace or a specific package"
+    @echo "  test            - Run tests for workspace or a specific package"
+    @echo "  doc             - Build API documentation"
+    @echo "  bundle          - Bundle tests for deployment"
+    @echo "  verify          - Run verification checks"
+    @echo "  lint            - Run linting checks"
+    @echo "  coverage        - Run test coverage tasks"
+    @echo "  prepare-release - Run release preparation tasks"
+    @echo "  publish         - Publish crates to crates.io"
     @echo ""
     @echo "Run 'just <command>' for usage details on each command."
 
@@ -64,3 +66,6 @@ coverage action="" *flags:
 
 publish workspace="" *flags:
     @just _publish-dispatch "{{workspace}}" {{flags}}
+
+prepare-release workspace="" action="" *flags:
+    @just _prepare-release-dispatch "{{workspace}}" "{{action}}" {{flags}}
