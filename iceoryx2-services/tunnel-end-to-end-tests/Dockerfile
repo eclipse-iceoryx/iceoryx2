@@ -1,5 +1,10 @@
 FROM ubuntu:latest
 
+ARG ENTRYPOINT_BIN
+ARG BACKEND_BIN
+ARG PINGER_BIN
+ARG PONGER_BIN
+
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     procps \
@@ -8,14 +13,9 @@ RUN apt-get update && apt-get install -y \
 
 RUN mkdir -p /usr/local/bin
 
-COPY target/release/iox2-tunnel \
-     target/release/iceoryx2-services-tunnel-end-to-end-tests-pinger \
-     target/release/iceoryx2-services-tunnel-end-to-end-tests-ponger \
-     /usr/local/bin/
+COPY ${ENTRYPOINT_BIN} ${BACKEND_BIN} ${PINGER_BIN} ${PONGER_BIN} /usr/local/bin/
 
-RUN chmod +x /usr/local/bin/iox2-tunnel \
-      /usr/local/bin/iceoryx2-services-tunnel-end-to-end-tests-pinger \
-      /usr/local/bin/iceoryx2-services-tunnel-end-to-end-tests-ponger
+RUN chmod +x /usr/local/bin/*
 
 USER testuser
 WORKDIR /home/testuser
