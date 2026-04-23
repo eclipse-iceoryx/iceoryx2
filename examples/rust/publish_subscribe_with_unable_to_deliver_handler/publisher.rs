@@ -38,6 +38,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let publisher = service
         .publisher_builder()
+        .unable_to_deliver_strategy(UnableToDeliverStrategy::DeferToHandler)
         .set_unable_to_deliver_handler({
             let counter = counter.clone();
             move |info| {

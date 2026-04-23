@@ -183,15 +183,15 @@ path = "rust/publish_subscribe_dynamic_data/publisher.rs"
 name = "publish_subscribe_dyn_subscriber"
 path = "rust/publish_subscribe_dynamic_data/subscriber.rs"
 
-# publish_subscribe_with_degradation_handler
+# publish_subscribe_with_unable_to_deliver_handler
 
 [[example]]
-name = "publish_subscribe_with_degradation_handler_publisher"
-path = "rust/publish_subscribe_with_degradation_handler/publisher.rs"
+name = "publish_subscribe_with_unable_to_deliver_handler_publisher"
+path = "rust/publish_subscribe_with_unable_to_deliver_handler/publisher.rs"
 
 [[example]]
-name = "publish_subscribe_with_degradation_handler_subscriber"
-path = "rust/publish_subscribe_with_degradation_handler/subscriber.rs"
+name = "publish_subscribe_with_unable_to_deliver_handler_subscriber"
+path = "rust/publish_subscribe_with_unable_to_deliver_handler/subscriber.rs"
 
 # publish_subscribe_with_user_header
 

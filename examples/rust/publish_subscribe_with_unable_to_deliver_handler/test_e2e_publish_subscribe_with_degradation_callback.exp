@@ -22,10 +22,10 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 set timeout 10
 
-spawn cargo run --example publish_subscribe_with_degradation_handler_publisher
+spawn cargo run --example publish_subscribe_with_unable_to_deliver_handler_publisher
 set id_publisher $spawn_id
 
-spawn cargo run --example publish_subscribe_with_degradation_handler_subscriber
+spawn cargo run --example publish_subscribe_with_unable_to_deliver_handler_subscriber
 set id_subscriber $spawn_id
 
 #### Test Assertion
