@@ -15,6 +15,7 @@
 extern crate alloc;
 extern crate iceoryx2_bb_loggers;
 
+pub mod byte_atomic_tests;
 pub mod flatmap_tests;
 pub mod polymorphic_string_tests;
 pub mod polymorphic_vec_tests;

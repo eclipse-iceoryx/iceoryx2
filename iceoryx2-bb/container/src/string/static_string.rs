@@ -42,8 +42,10 @@ use core::{
     mem::MaybeUninit,
     ops::{Deref, DerefMut},
 };
+use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
 
 use iceoryx2_bb_derive_macros::{PlacementDefault, ZeroCopySend};
+use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
@@ -61,6 +63,21 @@ pub struct StaticString<const CAPACITY: usize> {
     data: [MaybeUninit<u8>; CAPACITY],
     terminator: u8,
     len: u64,
+}
+
+unsafe impl<const CAPACITY: usize> AtomicCopy for StaticString<CAPACITY> {
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+        let aligned_base_offset = align_to::<Self>(base_offset);
+        callback(
+            aligned_base_offset + core::mem::offset_of!(Self, data),
+            self.len(),
+        );
+        callback(
+            aligned_base_offset + core::mem::offset_of!(Self, terminator),
+            1,
+        );
+        callback(aligned_base_offset + core::mem::offset_of!(Self, len), 8);
+    }
 }
 
 impl<const CAPACITY: usize> Serialize for StaticString<CAPACITY> {
