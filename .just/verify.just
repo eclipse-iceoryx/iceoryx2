@@ -98,7 +98,6 @@ _verify-clippy workspace profile has_nostd extra_args:
             cargo clippy --no-deps --workspace --all-targets {{profile}} \
                 --no-default-features \
                 --exclude iceoryx2-ffi-c \
-                --exclude iceoryx2-tunnel-zenoh \
                 --exclude iceoryx2-cli \
                 {{extra_args}} \
                 -- -D warnings

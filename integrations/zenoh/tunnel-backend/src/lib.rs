@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! # iceoryx2-services-tunnel-zenoh
+//! # iceoryx2-integrations-zenoh-tunnel-backend
 //!
 //! A [Zenoh](https://zenoh.io)-based backend for the iceoryx2 tunnel service.
 //!
@@ -25,7 +25,7 @@
 //!
 //! ```rust,ignore
 //! use iceoryx2_services_tunnel::{Config, Tunnel};
-//! use iceoryx2_services_tunnel_zenoh::ZenohBackend;
+//! use iceoryx2_integrations_zenoh_tunnel_backend::ZenohBackend;
 //!
 //! let tunnel_config = Config::default();
 //! let zenoh_config = zenoh::Config::default();
