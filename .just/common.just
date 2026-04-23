@@ -58,6 +58,15 @@ _discover-nostd-crates:
     done
 
 [private]
+_nostd-test-crate-for package:
+    #!/usr/bin/env bash
+    case "{{package}}" in
+        *-tests-nostd) echo "{{package}}" ;;
+        *-tests)       echo "{{package}}-nostd" ;;
+        *)             echo "{{package}}-tests-nostd" ;;
+    esac
+
+[private]
 _detect-host-target toolchain:
     #!/usr/bin/env bash
     set -euo pipefail
