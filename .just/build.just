@@ -166,7 +166,9 @@ _build-integrations toolchain target_triplet profile has_nostd has_tests has_all
         EXCLUDE_ARGS="$EXCLUDE_ARGS --exclude $pkg"
     done
 
-    cargo {{toolchain}} build --workspace --manifest-path {{INTEGRATIONS_DIR}}/Cargo.toml {{profile}} $TARGETS_FLAG $TARGET_ARG $EXCLUDE_ARGS
+    MANIFEST_ARG=$(just _workspace-manifest-arg integrations)
+
+    cargo {{toolchain}} build --workspace $MANIFEST_ARG {{profile}} $TARGETS_FLAG $TARGET_ARG $EXCLUDE_ARGS
 
 [private]
 _build-package package toolchain target_triplet profile has_nostd has_all_targets:
@@ -174,10 +176,7 @@ _build-package package toolchain target_triplet profile has_nostd has_all_target
     set -euo pipefail
 
     WORKSPACE=$(just _find-package-workspace "{{package}}")
-    MANIFEST_ARG=""
-    if [ "$WORKSPACE" = "integrations" ]; then
-        MANIFEST_ARG="--manifest-path {{INTEGRATIONS_DIR}}/Cargo.toml"
-    fi
+    MANIFEST_ARG=$(just _workspace-manifest-arg "$WORKSPACE")
 
     if [ "{{has_nostd}}" = "true" ]; then
         TARGET_ARG=""

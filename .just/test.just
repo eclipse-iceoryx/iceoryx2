@@ -157,10 +157,12 @@ _test-integrations toolchain target_triplet has_nostd has_doc:
         exit 1
     fi
 
+    MANIFEST_ARG=$(just _workspace-manifest-arg integrations)
+
     if [ "{{has_doc}}" = "true" ]; then
-        cargo {{toolchain}} test --workspace --doc --manifest-path {{INTEGRATIONS_DIR}}/Cargo.toml
+        cargo {{toolchain}} test --workspace --doc $MANIFEST_ARG
     else
-        cargo {{toolchain}} nextest run --workspace --manifest-path {{INTEGRATIONS_DIR}}/Cargo.toml
+        cargo {{toolchain}} nextest run --workspace $MANIFEST_ARG
     fi
 
 [private]

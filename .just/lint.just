@@ -77,10 +77,7 @@ _lint-rust workspace mode:
     WORKSPACES=$(just _parse-workspace "{{workspace}}")
 
     for WS in $WORKSPACES; do
-        case "$WS" in
-            sdk)          MANIFEST_ARG="" ;;
-            integrations) MANIFEST_ARG="--manifest-path {{INTEGRATIONS_DIR}}/Cargo.toml" ;;
-        esac
+        MANIFEST_ARG=$(just _workspace-manifest-arg "$WS")
 
         if [ "{{mode}}" = "fix" ]; then
             echo "Running cargo fmt --all for workspace '$WS'..."

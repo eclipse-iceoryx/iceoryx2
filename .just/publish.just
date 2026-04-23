@@ -165,14 +165,6 @@ _publish-dispatch workspace *flags:
 # -----------------------------------------------------------------------------
 
 [private]
-_publish-manifest workspace:
-    #!/usr/bin/env bash
-    case "{{workspace}}" in
-        sdk)          echo "" ;;
-        integrations) echo "--manifest-path {{INTEGRATIONS_DIR}}/Cargo.toml" ;;
-    esac
-
-[private]
 _publish-crates-to-publish workspace:
     #!/usr/bin/env bash
     case "{{workspace}}" in
@@ -231,7 +223,7 @@ _publish-check-completeness workspace:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    MANIFEST_FLAG=$(just _publish-manifest "{{workspace}}")
+    MANIFEST_FLAG=$(just _workspace-manifest-arg "{{workspace}}")
 
     WORKSPACE_CRATES=$(cargo tree --workspace --depth 1 --prefix none $MANIFEST_FLAG \
         | grep -v '(\*)' \
@@ -263,7 +255,7 @@ _publish-check-cyclic-deps workspace:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    MANIFEST_FLAG=$(just _publish-manifest "{{workspace}}")
+    MANIFEST_FLAG=$(just _workspace-manifest-arg "{{workspace}}")
     PUBLISH=$(just _publish-crates-to-publish "{{workspace}}")
 
     ALLOWED=""
@@ -329,7 +321,7 @@ _publish-exclude-args workspace:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    MANIFEST_FLAG=$(just _publish-manifest "{{workspace}}")
+    MANIFEST_FLAG=$(just _workspace-manifest-arg "{{workspace}}")
     IGNORE=$(just _publish-crates-to-ignore "{{workspace}}")
 
     MEMBERS=$(cargo metadata --format-version=1 --no-deps $MANIFEST_FLAG \
@@ -348,7 +340,7 @@ _publish-dry-run workspace allow_dirty no_verify registry:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    MANIFEST_FLAG=$(just _publish-manifest "{{workspace}}")
+    MANIFEST_FLAG=$(just _workspace-manifest-arg "{{workspace}}")
     EXCLUDE_ARGS=$(just _publish-exclude-args "{{workspace}}")
 
     DIRTY_FLAG=""
@@ -376,7 +368,7 @@ _publish-run workspace allow_dirty no_verify registry:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    MANIFEST_FLAG=$(just _publish-manifest "{{workspace}}")
+    MANIFEST_FLAG=$(just _workspace-manifest-arg "{{workspace}}")
     EXCLUDE_ARGS=$(just _publish-exclude-args "{{workspace}}")
 
     DIRTY_FLAG=""
