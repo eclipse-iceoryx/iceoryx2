@@ -124,7 +124,9 @@
   [#1515](https://github.com/eclipse-iceoryx/iceoryx2/issues/1515)
 * Bump pytest from 8.4.1 to 9.0.3 in /iceoryx2-ffi/python
   [#1515](https://github.com/eclipse-iceoryx/iceoryx2/issues/1515)
-* Bump rand from 0.8.5 to 0.8.6 in in Rust and Bazel
+* Bump rand from 0.8.5 to 0.8.6 in Rust and Bazel
+  [#1515](https://github.com/eclipse-iceoryx/iceoryx2/issues/1515)
+* Bump rustls-webpki from 0.103.10 to 0.103.13 in Rust and Bazel
   [#1515](https://github.com/eclipse-iceoryx/iceoryx2/issues/1515)
 * Fix build error in `iceoryx2-pal-posix` with bindgen
   [#1560](https://github.com/eclipse-iceoryx/iceoryx2/issues/1560)
