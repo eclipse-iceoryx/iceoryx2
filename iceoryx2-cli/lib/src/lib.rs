@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod cli;
+pub mod command;
 mod format;
 
 pub mod filter;

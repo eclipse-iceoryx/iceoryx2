@@ -10,6 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod zenoh;
+mod execute;
+mod list;
+mod paths;
 
-pub(crate) use zenoh::*;
+pub(crate) use execute::*;
+pub(crate) use list::*;
+pub(crate) use paths::*;
+
+const COMMAND_PREFIX: &str = "iox2-tunnel-";

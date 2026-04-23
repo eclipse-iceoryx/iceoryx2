@@ -1,8 +1,0 @@
-# .miri_allowlist use hash character to lead a comment
-# each line will be treated as a valid relative path to enter and run 'cargo miri test',
-# if it contains some changed files(added, copied and modified, deletion is excluded) in the PR.
-#
-# note that each line should end up with a newline character,
-# otherwise the ci shell will skip the last line
-### iceoryx2-bb/testing
-# this line is put here to ensure each file path contains a newline char, don't remove it 

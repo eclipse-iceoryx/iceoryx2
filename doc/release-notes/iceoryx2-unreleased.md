@@ -179,6 +179,8 @@
   [#1540](https://github.com/eclipse-iceoryx/iceoryx2/issues/1540)
 * Move tunnel crates into services architecture layer
   [#1552](https://github.com/eclipse-iceoryx/iceoryx2/issues/1552)
+* Move zenoh tunnel crates into `integrations` workspace
+  [#1552](https://github.com/eclipse-iceoryx/iceoryx2/issues/1244)
 
 ### Workflow
 
@@ -197,6 +199,8 @@
   [#1355](https://github.com/eclipse-iceoryx/iceoryx2/issues/1355)
 * Add `just` scripts for some common maintenance tasks
   [#1408](https://github.com/eclipse-iceoryx/iceoryx2/issues/1408)
+* Split workspace into separate `sdk` and `integrations` workspaces
+  [#1244](https://github.com/eclipse-iceoryx/iceoryx2/issues/1244)
 
 ### New API features
 
@@ -314,3 +318,28 @@
     // new
     use iceoryx2_services_tunnel::{Config, Tunnel};
     ```
+
+1. Tunnel backend require their own CLI to integrate with `iceoryx2-cli`.
+   These must be installed separately.
+
+   ```console
+   # old
+   cargo install iceoryx2-cli
+   iox2 tunnel zenoh
+
+   # new
+   cargo install iceoryx2-cli
+   cargo install iceoryx2-integrations-zenoh-tunnel-cli
+   iox2 tunnel zenoh
+   ```
+
+   If no backends are installed, the `iox2 tunnel` command can be used to
+   find what is available:
+
+   ```console
+   $ iox2 tunnel
+   No tunnel backends found.
+   
+   Install a backend to get started, e.g.:
+     cargo install iceoryx2-integrations-zenoh-tunnel-cli
+   ```

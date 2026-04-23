@@ -74,7 +74,6 @@ members = [
     "iceoryx2-services/tunnel-backend",
     "iceoryx2-services/tunnel-conformance-tests",
     "iceoryx2-services/tunnel-end-to-end-tests",
-    "iceoryx2-services/tunnel-zenoh",
 
 
     "iceoryx2-userland/record-and-replay",
@@ -146,7 +145,6 @@ iceoryx2-services-tunnel = { version = "0.8.999", path = "iceoryx2-services/tunn
 iceoryx2-services-tunnel-backend = { version = "0.8.999", path = "iceoryx2-services/tunnel-backend"}
 iceoryx2-services-tunnel-conformance-tests = { version = "0.8.999", path = "iceoryx2-services/tunnel-conformance-tests"}
 iceoryx2-services-tunnel-end-to-end-tests = { version = "0.8.999", path = "iceoryx2-services/tunnel-end-to-end-tests" }
-iceoryx2-services-tunnel-zenoh = { version = "0.8.999", path = "iceoryx2-services/tunnel-zenoh"}
 iceoryx2-userland-record-and-replay = { version = "0.8.999", path = "iceoryx2-userland/record-and-replay" }
 
 ################################################################################
@@ -236,7 +234,6 @@ windows-sys = { version = "0.48.0", features = [
     "Win32_System_SystemServices",
     "Win32_System_ProcessStatus",
 ] }
-zenoh = { version = "1.7.2", features = ["default", "unstable"] }
 
 [profile.dev]
 panic = "abort"

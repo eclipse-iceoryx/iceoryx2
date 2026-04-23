@@ -65,7 +65,6 @@ iceoryx2-services-tunnel
 iceoryx2-services-tunnel-backend
 iceoryx2-services-tunnel-conformance-tests
 iceoryx2-services-tunnel-end-to-end-tests
-iceoryx2-services-tunnel-zenoh
 "
 
 PACKAGE_LIST_USERLAND="

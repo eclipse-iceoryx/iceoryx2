@@ -96,7 +96,7 @@ _bundle-nostd-tests toolchain target_triplet do_strip do_compress:
         echo "Using toolchain: {{toolchain}}"
     fi
 
-    just _build-tests "{{toolchain}}" "true" "{{target_triplet}}"
+    just _build-sdk "{{toolchain}}" "{{target_triplet}}" "true" "true"
 
     BUNDLE_DIR="target/{{target_triplet}}/tests-nostd"
     just _create-bundle-dir "$TARGET_DIR" "$BUNDLE_DIR"

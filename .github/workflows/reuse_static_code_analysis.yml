@@ -15,6 +15,9 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
+      - name: Install just
+        uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
+
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@e0021407031f5be11a464abee9a0776171c79891 # version: v47.0.1
@@ -34,39 +37,37 @@ jobs:
           echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 
       - name: Run cargo clippy with default features for 'std' in debug mode
-        run: cargo clippy --no-deps --workspace --all-targets -- -D warnings
+        run: |
+          just verify sdk clippy
+          just verify integrations clippy
 
       - name: Run cargo clippy with default features for 'std' in release mode
-        run: cargo clippy --no-deps --workspace --all-targets --release -- -D warnings
+        run: |
+          just verify sdk clippy --release
+          just verify integrations clippy --release
 
       - name: Run cargo clippy with no-default features for 'no_std' in debug mode
         if: ${{ runner.os == 'Linux' }}
         # NOTE: the following crates are excluded because:
         #       * iceoryx2-ffi-c -> clippy uses std itself and complains about the panic handler
-        #       * iceoryx2-services-tunnel-zenoh -> Zenoh requires std
         #       * iceoryx2-cli -> the CLI requires std
         run: |
-            cargo clippy --no-deps --workspace --all-targets \
-                --no-default-features \
+            just verify sdk clippy --no_std \
+                -- \
                 --exclude iceoryx2-ffi-c \
-                --exclude iceoryx2-services-tunnel-zenoh \
-                --exclude iceoryx2-cli \
-                -- -D warnings
+                --exclude iceoryx2-cli
 
       - name: Run cargo clippy with no-default features for 'no_std' in release mode
         if: ${{ runner.os == 'Linux' }}
         # NOTE: the following crates are excluded because:
         #       * iceoryx2-ffi-c -> clippy uses std itself and complains about the panic handler
-        #       * iceoryx2-services-tunnel-zenoh -> Zenoh requires std
         #       * iceoryx2-cli -> the CLI requires std
         run: |
-            cargo clippy --no-deps --workspace --all-targets \
+            just verify sdk clippy --no_std \
                 --release \
-                --no-default-features \
+                -- \
                 --exclude iceoryx2-ffi-c \
-                --exclude iceoryx2-services-tunnel-zenoh \
-                --exclude iceoryx2-cli \
-                -- -D warnings
+                --exclude iceoryx2-cli
 
       - name: Setup miri
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
@@ -77,4 +78,6 @@ jobs:
       - name: Run cargo miri
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
-        run: ./internal/scripts/ci_run_miri.sh
+        run: |
+          just verify sdk miri
+          just verify integrations miri
