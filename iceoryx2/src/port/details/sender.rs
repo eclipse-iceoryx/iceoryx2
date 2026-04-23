@@ -23,16 +23,15 @@ use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
-    ChannelId, ChannelState, UnableToDeliverAction, UnableToDeliverHandler, ZeroCopyConnection,
-    ZeroCopyConnectionBuilder, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySendError,
-    ZeroCopySender,
+    ChannelId, ChannelState, UnableToDeliverAction, ZeroCopyConnection, ZeroCopyConnectionBuilder,
+    ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySendError, ZeroCopySender,
 };
-use iceoryx2_log::{error, fail, fatal_panic, trace, warn};
+use iceoryx2_log::{error, fail, fatal_panic, warn};
 
 use crate::node::SharedNode;
 use crate::port::{
     DegradationAction, DegradationCallback, DegradationCause, DegradationContext, LoanError,
-    SendError,
+    SendError, UnableToDeliverHandler, UnableToDeliverInfo,
 };
 use crate::prelude::UnableToDeliverStrategy;
 use crate::service::config_scheme::connection_config;
@@ -118,6 +117,7 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) number_of_samples: usize,
     pub(crate) max_number_of_segments: u8,
     pub(crate) degradation_callback: DegradationCallback<'static>,
+    pub(crate) unable_to_deliver_handler: UnableToDeliverHandler<'static>,
     pub(crate) service_state: Arc<ServiceState<Service, NoResource>>,
     pub(crate) tagger: CyclicTagger,
     pub(crate) loan_counter: AtomicUsize,
@@ -179,7 +179,7 @@ impl<Service: service::Service> Sender<Service> {
                         offset,
                         sample_size,
                         channel_id,
-                        UnableToDeliverHandler::new(|| UnableToDeliverAction::Retry),
+                        || UnableToDeliverAction::Retry,
                     )
                 }
                 UnableToDeliverStrategy::DeferToHandler => {
@@ -188,37 +188,14 @@ impl<Service: service::Service> Sender<Service> {
                         offset,
                         sample_size,
                         channel_id,
-                        UnableToDeliverHandler::new(|| {
-                            match self.degradation_callback.call(
-                                DegradationCause::UnableToDeliverData,
-                                &DegradationContext::new(
+                        || {
+                            self.unable_to_deliver_handler
+                                .call(&UnableToDeliverInfo::new(
                                     self.service_state.static_config.unique_service_id().value(),
                                     self.sender_port_id,
                                     connection.receiver_port_id,
-                                ),
-                            ) {
-                                DegradationAction::Default => UnableToDeliverAction::Retry,
-                                DegradationAction::Ignore | DegradationAction::Discard => {
-                                    UnableToDeliverAction::DiscardSample
-                                }
-                                DegradationAction::Retry => UnableToDeliverAction::Retry,
-                                DegradationAction::Block => UnableToDeliverAction::Retry,
-                                DegradationAction::Warn => {
-                                    trace!(from self,
-                                          "Unable to deliver sample to receiver {:?}.",
-                                           connection.receiver_port_id );
-                                    warn!(
-                                        "Discarding sample to receiver {:?}.",
-                                        connection.receiver_port_id
-                                    );
-
-                                    UnableToDeliverAction::DiscardSample
-                                }
-                                DegradationAction::Fail => {
-                                    UnableToDeliverAction::AbortDeliveryAndFail
-                                }
-                            }
-                        }),
+                                ))
+                        },
                     )
                 }
             };
@@ -257,8 +234,8 @@ impl<Service: service::Service> Sender<Service> {
                             connection.receiver_port_id,
                         ),
                     ) {
-                        DegradationAction::Ignore | DegradationAction::Discard => (),
-                        DegradationAction::Default | DegradationAction::Warn => {
+                        DegradationAction::Ignore => (),
+                        DegradationAction::Warn => {
                             error!(from self,
                                         "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
                                         offset, connection.receiver_port_id);
@@ -267,19 +244,6 @@ impl<Service: service::Service> Sender<Service> {
                             fail!(from self, with SendError::ConnectionCorrupted,
                                         "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
                                         offset, connection.receiver_port_id);
-                        }
-                        DegradationAction::Retry | DegradationAction::Block => {
-                            self.degradation_callback.call(
-                                DegradationCause::InvalidDegradationAction,
-                                &DegradationContext::new(
-                                    self.service_state.static_config.unique_service_id().value(),
-                                    self.sender_port_id,
-                                    connection.receiver_port_id,
-                                ),
-                            );
-                            fail!(from self, with SendError::ConnectionCorrupted,
-                                  "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
-                                  offset, connection.receiver_port_id);
                         }
                     }
                 }
@@ -521,8 +485,8 @@ impl<Service: service::Service> Sender<Service> {
                         receiver_details.port_id,
                     ),
                 ) {
-                    DegradationAction::Ignore | DegradationAction::Discard => (),
-                    DegradationAction::Default | DegradationAction::Warn => {
+                    DegradationAction::Ignore => (),
+                    DegradationAction::Warn => {
                         warn!(from self,
                                             "Unable to establish connection to new receiver {:?}.",
                                             receiver_details.port_id )
@@ -531,19 +495,6 @@ impl<Service: service::Service> Sender<Service> {
                         fail!(from self, with e,
                                            "Unable to establish connection to new receiver {:?}.",
                                            receiver_details.port_id );
-                    }
-                    DegradationAction::Retry | DegradationAction::Block => {
-                        self.degradation_callback.call(
-                            DegradationCause::InvalidDegradationAction,
-                            &DegradationContext::new(
-                                self.service_state.static_config.unique_service_id().value(),
-                                self.sender_port_id,
-                                receiver_details.port_id,
-                            ),
-                        );
-                        fail!(from self, with e,
-                              "Unable to establish connection to new receiver {:?}.",
-                              receiver_details.port_id );
                     }
                 },
             }

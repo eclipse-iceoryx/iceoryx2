@@ -724,12 +724,12 @@ pub mod details {
             }
         }
 
-        fn blocking_send(
+        fn blocking_send<F: Fn() -> UnableToDeliverAction>(
             &self,
             ptr: PointerOffset,
             sample_size: usize,
             channel_id: ChannelId,
-            unable_to_deliver_handler: UnableToDeliverHandler,
+            unable_to_deliver_handler: F,
         ) -> Result<Option<PointerOffset>, ZeroCopySendError> {
             let msg = "Unable to blocking send the offset";
             debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
@@ -748,7 +748,7 @@ pub mod details {
                         != CHANNEL_STATE_CLOSED.0;
                     if is_connected && has_valid_channel_state {
                         if mgmt.channels[channel_id.value()].submission_queue.is_full() {
-                            match unable_to_deliver_handler.call() {
+                            match unable_to_deliver_handler() {
                                 UnableToDeliverAction::Retry => true,
                                 UnableToDeliverAction::DiscardSample => false,
                                 UnableToDeliverAction::AbortDeliveryAndFail => {

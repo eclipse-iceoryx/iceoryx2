@@ -18,10 +18,7 @@ use alloc::boxed::Box;
 use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 
 use examples_common::TransmissionData;
-use iceoryx2::{
-    port::{DegradationAction, DegradationCause},
-    prelude::*,
-};
+use iceoryx2::{port::UnableToDeliverAction, prelude::*};
 
 const CYCLE_TIME: Duration = Duration::from_millis(500);
 
@@ -40,26 +37,21 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let counter = alloc::sync::Arc::new(AtomicU64::new(0));
 
     let publisher = service
-    .publisher_builder()
-    .set_degradation_callback({
-        let counter = counter.clone();
-        move |cause, context| {
-            match cause {
-                DegradationCause::UnableToDeliverData => {
-                    println!(
-                        "Could not deliver sample {}  from publisher sender id {:?} to subscriber receiver id {:?}",
-                        counter.load(Ordering::SeqCst),
-                        context.sender_port_id,
-                        context.receiver_port_id
-                    );
-                    println!("    Discarding sample and failing");
-                    DegradationAction::Fail
-                }
-                _ => DegradationAction::Default,
+        .publisher_builder()
+        .set_unable_to_deliver_handler({
+            let counter = counter.clone();
+            move |info| {
+                println!(
+                    "Could not deliver sample {}  from publisher sender id {:?} to subscriber receiver id {:?}",
+                    counter.load(Ordering::SeqCst),
+                    info.sender_port_id,
+                    info.receiver_port_id
+                );
+                println!("    Discarding sample and failing");
+                UnableToDeliverAction::AbortDeliveryAndFail
             }
-        }
-    })
-    .create()?;
+        })
+        .create()?;
 
     while node.wait(CYCLE_TIME).is_ok() {
         counter.fetch_add(1, Ordering::SeqCst);

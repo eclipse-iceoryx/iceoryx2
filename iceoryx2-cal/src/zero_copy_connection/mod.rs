@@ -17,8 +17,6 @@ pub mod process_local;
 pub mod recommended;
 pub mod used_chunk_list;
 
-use tiny_fn::tiny_fn;
-
 use core::fmt::Debug;
 use core::time::Duration;
 
@@ -132,29 +130,11 @@ impl core::fmt::Display for ZeroCopyReleaseError {
 
 impl core::error::Error for ZeroCopyReleaseError {}
 
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum UnableToDeliverAction {
     Retry,
     DiscardSample,
     AbortDeliveryAndFail,
-}
-
-tiny_fn! {
-    /// Defines a custom behavior whenever a port detects a degregation.
-    pub struct UnableToDeliverHandler = Fn() -> UnableToDeliverAction;
-}
-
-unsafe impl Send for UnableToDeliverHandler<'_> {}
-
-impl Debug for UnableToDeliverHandler<'_> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "")
-    }
-}
-
-impl UnableToDeliverHandler<'_> {
-    pub fn block() -> Self {
-        Self::new(|| UnableToDeliverAction::Retry)
-    }
 }
 
 #[repr(C)]
@@ -325,12 +305,12 @@ pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept + Send {
         channel_id: ChannelId,
     ) -> Result<Option<PointerOffset>, ZeroCopySendError>;
 
-    fn blocking_send(
+    fn blocking_send<F: Fn() -> UnableToDeliverAction>(
         &self,
         ptr: PointerOffset,
         sample_size: usize,
         channel_id: ChannelId,
-        unable_to_deliver_handler: UnableToDeliverHandler,
+        unable_to_deliver_handler: F,
     ) -> Result<Option<PointerOffset>, ZeroCopySendError>;
 
     fn reclaim(&self, channel_id: ChannelId)

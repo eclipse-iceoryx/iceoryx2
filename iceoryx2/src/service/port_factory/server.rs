@@ -37,7 +37,7 @@ use super::request_response::PortFactory;
 use crate::{
     port::{
         DegradationAction, DegradationCallback, DegradationCause, DegradationContext,
-        server::Server,
+        UnableToDeliverHandler, UnableToDeliverInfo, server::Server,
     },
     prelude::UnableToDeliverStrategy,
     service,
@@ -45,7 +45,9 @@ use crate::{
 use alloc::format;
 use core::fmt::Debug;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::shm_allocator::AllocationStrategy;
+use iceoryx2_cal::{
+    shm_allocator::AllocationStrategy, zero_copy_connection::UnableToDeliverAction,
+};
 use iceoryx2_log::{fail, warn};
 use tiny_fn::tiny_fn;
 
@@ -125,6 +127,7 @@ pub struct PortFactoryServer<
     pub(crate) config: LocalServerConfig,
     pub(crate) request_degradation_callback: DegradationCallback<'static>,
     pub(crate) response_degradation_callback: DegradationCallback<'static>,
+    pub(crate) unable_to_deliver_handler: UnableToDeliverHandler<'static>,
     pub(crate) preallocated_number_of_responses_override: PreallocatedResponseOverride<'static>,
 }
 
@@ -173,6 +176,9 @@ impl<
             config: self.config,
             request_degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
             response_degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
+            unable_to_deliver_handler: UnableToDeliverHandler::new_with(
+                UnableToDeliverAction::Retry,
+            ),
             preallocated_number_of_responses_override: PreallocatedResponseOverride::new(|v| v),
         }
     }
@@ -203,6 +209,9 @@ impl<
             },
             request_degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
             response_degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
+            unable_to_deliver_handler: UnableToDeliverHandler::new_with(
+                UnableToDeliverAction::Retry,
+            ),
             preallocated_number_of_responses_override: PreallocatedResponseOverride::new(|v| v),
         }
     }
@@ -276,6 +285,21 @@ impl<
         callback: F,
     ) -> Self {
         self.response_degradation_callback = DegradationCallback::new(callback);
+
+        self
+    }
+
+    /// Sets the [`UnableToDeliverHandler`] of the [`Server`]. Whenever a response to a
+    /// [`crate::port::client::Clinet`] cannot be sent, and the [`UnableToDeliverStrategy`]
+    /// is set to [`UnableToDeliverStrategy::DeferToHandler`] this handler
+    /// is called and depending on the returned [`UnableToDeliverAction`] measures will be taken.
+    pub fn set_response_unable_to_deliver_handler<
+        F: Fn(&UnableToDeliverInfo) -> UnableToDeliverAction + 'static,
+    >(
+        mut self,
+        handler: F,
+    ) -> Self {
+        self.unable_to_deliver_handler = UnableToDeliverHandler::new(handler);
 
         self
     }

@@ -33,7 +33,7 @@ use super::request_response::PortFactory;
 use crate::{
     port::{
         DegradationAction, DegradationCallback, DegradationCause, DegradationContext,
-        client::Client,
+        UnableToDeliverHandler, UnableToDeliverInfo, client::Client,
     },
     prelude::UnableToDeliverStrategy,
     service,
@@ -41,7 +41,9 @@ use crate::{
 use alloc::format;
 use core::fmt::Debug;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::shm_allocator::AllocationStrategy;
+use iceoryx2_cal::{
+    shm_allocator::AllocationStrategy, zero_copy_connection::UnableToDeliverAction,
+};
 use iceoryx2_log::fail;
 use tiny_fn::tiny_fn;
 
@@ -115,6 +117,7 @@ pub struct PortFactoryClient<
     pub(crate) preallocate_number_of_requests_override: PreallocatedRequestsOverride<'static>,
     pub(crate) request_degradation_callback: DegradationCallback<'static>,
     pub(crate) response_degradation_callback: DegradationCallback<'static>,
+    pub(crate) unable_to_deliver_handler: UnableToDeliverHandler<'static>,
     pub(crate) factory: &'factory PortFactory<
         Service,
         RequestPayload,
@@ -169,6 +172,9 @@ impl<
             factory: self.factory,
             request_degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
             response_degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
+            unable_to_deliver_handler: UnableToDeliverHandler::new_with(
+                UnableToDeliverAction::Retry,
+            ),
             preallocate_number_of_requests_override: PreallocatedRequestsOverride::new(|v| v),
         }
     }
@@ -198,6 +204,9 @@ impl<
             preallocate_number_of_requests_override: PreallocatedRequestsOverride::new(|v| v),
             request_degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
             response_degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
+            unable_to_deliver_handler: UnableToDeliverHandler::new_with(
+                UnableToDeliverAction::Retry,
+            ),
             factory,
         }
     }
@@ -258,6 +267,21 @@ impl<
         callback: F,
     ) -> Self {
         self.response_degradation_callback = DegradationCallback::new(callback);
+
+        self
+    }
+
+    /// Sets the [`UnableToDeliverHandler`] of the [`Client`]. Whenever a sample to a
+    /// [`crate::port::server::Server`] cannot be sent, and the [`UnableToDeliverStrategy`]
+    /// is set to [`UnableToDeliverStrategy::DeferToHandler`] this handler
+    /// is called and depending on the returned [`UnableToDeliverAction`] measures will be taken.
+    pub fn set_request_unable_to_deliver_handler<
+        F: Fn(&UnableToDeliverInfo) -> UnableToDeliverAction + 'static,
+    >(
+        mut self,
+        handler: F,
+    ) -> Self {
+        self.unable_to_deliver_handler = UnableToDeliverHandler::new(handler);
 
         self
     }

@@ -44,22 +44,58 @@ pub mod writer;
 /// receiver is full and the service does not overflow.
 pub mod unable_to_deliver_strategy;
 
+pub use iceoryx2_cal::zero_copy_connection::UnableToDeliverAction;
+
+/// The unable to deliver context information passed to the [`UnableToDeliverHandler`]
+#[repr(C)]
+pub struct UnableToDeliverInfo {
+    /// The service id, which is involved in the degradation
+    pub service_id: u128,
+    /// The sender port id, which is involved in the degradation
+    pub sender_port_id: u128,
+    /// The receiver port id, which is involved in the degradation
+    pub receiver_port_id: u128,
+}
+
+impl UnableToDeliverInfo {
+    /// Creates a new [`UnableToDeliverInfo`]
+    pub fn new(service_id: u128, sender_port_id: u128, receiver_port_id: u128) -> Self {
+        Self {
+            service_id,
+            sender_port_id,
+            receiver_port_id,
+        }
+    }
+}
+
+tiny_fn! {
+    /// Defines a custom behavior whenever a port detects a degradation.
+    pub struct UnableToDeliverHandler = Fn(info: &UnableToDeliverInfo) -> UnableToDeliverAction;
+}
+
+unsafe impl Send for UnableToDeliverHandler<'_> {}
+
+impl Debug for UnableToDeliverHandler<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "")
+    }
+}
+
+impl UnableToDeliverHandler<'_> {
+    /// A convenience function that takes a [`UnableToDeliverAction`] and returns a [`UnableToDeliverHandler`].
+    pub fn new_with(action: UnableToDeliverAction) -> Self {
+        Self::new(move |_| action)
+    }
+}
+
 /// Defines the action that shall be take when an degradation is detected. This can happen when a
 /// sample cannot be delivered, or when the system is corrupted and files are modified by
 /// non-iceoryx2 instances. Is used as return value of the [`DegradationCallback`] to define a
 /// custom behavior.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum DegradationAction {
-    /// Perform the default action
-    Default,
     /// Ignore the degradation completely
-    Ignore, // TODO: replace with Discard?
-    /// Performs whatever is necessary to discard the degradation
-    Discard,
-    /// Retries the action that caused the degradation
-    Retry,
-    /// Blocks until the cause of the degradation disappeared
-    Block, // TODO: with an UnableToDeliverStrategy::DeferToHandler, this could be omitted and Retry could achieve the same result
+    Ignore,
     /// Print out a warning as soon as the degradation is detected
     Warn,
     /// Returns a failure in the function the degradation was detected
@@ -72,11 +108,6 @@ pub enum DegradationCause {
     FailedToEstablishConnection,
     /// Connection is corrupted
     ConnectionCorrupted,
-    /// Data could not be delivered
-    UnableToDeliverData,
-    /// The [`DegradationAction`] used by the [`DegradationCallback`] was invalid for the given [`DegradationCause`].
-    /// The function will return with an error after the invocation of the [`DegradationCallback`].
-    InvalidDegradationAction,
 }
 
 /// The degradation context passed to the [`DegradationCallback`]

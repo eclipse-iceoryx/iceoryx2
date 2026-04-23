@@ -404,6 +404,7 @@ impl<
             number_of_samples: number_of_responses,
             max_number_of_segments,
             degradation_callback: server_factory.response_degradation_callback,
+            unable_to_deliver_handler: server_factory.unable_to_deliver_handler,
             service_state: service.clone(),
             tagger: CyclicTagger::new(),
             loan_counter: AtomicUsize::new(0),
