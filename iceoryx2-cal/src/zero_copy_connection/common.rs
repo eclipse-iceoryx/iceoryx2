@@ -754,36 +754,35 @@ pub mod details {
                         .state
                         .load(Ordering::Relaxed)
                         != CHANNEL_STATE_CLOSED.0;
-                    if is_connected && has_valid_channel_state {
-                        if mgmt.channels[channel_id.value()].submission_queue.is_full() {
-                            if retry_until_delivered {
-                                WAIT_CONTINURE
-                            } else {
-                                let wait_action = match unable_to_deliver_to_receiver_handler(
-                                    retry_counter,
-                                    start.elapsed().unwrap_or(Duration::MAX),
-                                ) {
-                                    UnableToDeliverAction::FollowUnableToDeliveryStrategy => {
-                                        match unable_to_deliver_action_for_strategy {
-                                            UnableToDeliverAction::Retry => {
-                                                retry_until_delivered = true;
-                                                WAIT_CONTINURE
-                                            }
-                                            _ => WAIT_ABORT,
-                                        }
-                                    }
-                                    UnableToDeliverAction::Retry => WAIT_CONTINURE,
-                                    UnableToDeliverAction::DiscardSample => WAIT_ABORT,
-                                    UnableToDeliverAction::AbortDeliveryAndFail => {
-                                        do_fail = true;
-                                        WAIT_ABORT
-                                    }
-                                };
-                                retry_counter += 1;
-                                wait_action
-                            }
+                    if is_connected
+                        && has_valid_channel_state
+                        && mgmt.channels[channel_id.value()].submission_queue.is_full()
+                    {
+                        if retry_until_delivered {
+                            WAIT_CONTINURE
                         } else {
-                            WAIT_ABORT
+                            let wait_action = match unable_to_deliver_to_receiver_handler(
+                                retry_counter,
+                                start.elapsed().unwrap_or(Duration::MAX),
+                            ) {
+                                UnableToDeliverAction::FollowUnableToDeliveryStrategy => {
+                                    match unable_to_deliver_action_for_strategy {
+                                        UnableToDeliverAction::Retry => {
+                                            retry_until_delivered = true;
+                                            WAIT_CONTINURE
+                                        }
+                                        _ => WAIT_ABORT,
+                                    }
+                                }
+                                UnableToDeliverAction::Retry => WAIT_CONTINURE,
+                                UnableToDeliverAction::DiscardSample => WAIT_ABORT,
+                                UnableToDeliverAction::AbortDeliveryAndFail => {
+                                    do_fail = true;
+                                    WAIT_ABORT
+                                }
+                            };
+                            retry_counter += 1;
+                            wait_action
                         }
                     } else {
                         WAIT_ABORT
