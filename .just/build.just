@@ -31,6 +31,7 @@ _parse-build-args *flags:
         case "$1" in
             --)         shift; EXTRA_ARGS="$*";            break ;;
             +*)         TOOLCHAIN="$1";                    shift ;;
+            --target)   TARGET_TRIPLET="$2";               shift 2 ;;
             --target=*) TARGET_TRIPLET="${1#--target=}";   shift ;;
             --release)  PROFILE="--release";               shift ;;
             --no_std)   HAS_NOSTD="true";                  shift ;;
@@ -64,7 +65,7 @@ _build-dispatch what *flags:
             echo ""
             echo "Flags:"
             echo "  +<toolchain>           use a specific toolchain"
-            echo "  --target=<triplet>     cross-compile for target"
+            echo "  --target <triplet>     cross-compile for target"
             echo "  --release              build in release profile (default: debug)"
             echo "  --no_std               build without std"
             echo "  --tests                also build tests"

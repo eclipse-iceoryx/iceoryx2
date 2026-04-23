@@ -30,6 +30,7 @@ _parse-test-args *flags:
         case "$1" in
             --)         shift; EXTRA_ARGS="$*";            break ;;
             +*)         TOOLCHAIN="$1";                    shift ;;
+            --target)   TARGET_TRIPLET="$2";               shift 2 ;;
             --target=*) TARGET_TRIPLET="${1#--target=}";   shift ;;
             --no_std)   HAS_NOSTD="true";                  shift ;;
             --doc)      HAS_DOC="true";                    shift ;;
@@ -61,7 +62,7 @@ _test-dispatch what *flags:
             echo ""
             echo "Flags:"
             echo "  +<toolchain>           use a specific toolchain"
-            echo "  --target=<triplet>     cross-compile for target"
+            echo "  --target <triplet>     cross-compile for target"
             echo "  --no_std               test without std"
             echo "  --doc                  run documentation tests"
             exit 1
