@@ -21,9 +21,6 @@ pub enum UnableToDeliverStrategy {
     RetryUntilDelivered,
     /// Do not deliver the data to receiver with a full buffer
     DiscardSample,
-    /// Perform the action defined with the [`UnableToDeliverAction`](crate::port::UnableToDeliverAction)
-    /// return by the registered [`UnableToDeliverHandler`](crate::port::UnableToDeliverHandler)
-    DeferToHandler,
 }
 
 impl Serialize for UnableToDeliverStrategy {
@@ -51,7 +48,6 @@ impl Visitor<'_> for UnableToDeliverStrategyVisitor {
         match v {
             "DiscardSample" => Ok(UnableToDeliverStrategy::DiscardSample),
             "RetryUntilDelivered" => Ok(UnableToDeliverStrategy::RetryUntilDelivered),
-            "DeferToHandler" => Ok(UnableToDeliverStrategy::DeferToHandler),
             v => Err(E::custom(alloc::format!(
                 "Invalid UnableToDeliverStrategy provided: \"{v:?}\"."
             ))),

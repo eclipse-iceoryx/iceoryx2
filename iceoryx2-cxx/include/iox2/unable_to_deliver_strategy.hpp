@@ -24,9 +24,6 @@ enum class UnableToDeliverStrategy : uint8_t {
     RetryUntilDelivered,
     /// Do not deliver the data to receiver with a full buffer
     DiscardSample,
-    /// Perform the action defined with the [`UnableToDeliveryAction`]
-    /// return by the registered [`UnableToDeliverHandler`]
-    DeferToHandler,
 };
 } // namespace iox2
 

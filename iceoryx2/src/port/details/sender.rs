@@ -117,7 +117,7 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) number_of_samples: usize,
     pub(crate) max_number_of_segments: u8,
     pub(crate) degradation_callback: DegradationCallback<'static>,
-    pub(crate) unable_to_deliver_handler: UnableToDeliverHandler<'static>,
+    pub(crate) unable_to_deliver_handler: Option<UnableToDeliverHandler<'static>>,
     pub(crate) service_state: Arc<ServiceState<Service, NoResource>>,
     pub(crate) tagger: CyclicTagger,
     pub(crate) loan_counter: AtomicUsize,
@@ -164,41 +164,50 @@ impl<Service: service::Service> Sender<Service> {
 
         let mut number_of_recipients = 0;
         if let Some(connection) = self.get(connection_id) {
-            let delivery_call_result = match self.unable_to_deliver_strategy {
-                UnableToDeliverStrategy::DiscardSample => {
-                    <Service::Connection as ZeroCopyConnection>::Sender::try_send(
-                        &connection.sender,
-                        offset,
-                        sample_size,
-                        channel_id,
-                    )
-                }
-                UnableToDeliverStrategy::RetryUntilDelivered => {
-                    <Service::Connection as ZeroCopyConnection>::Sender::blocking_send(
-                        &connection.sender,
-                        offset,
-                        sample_size,
-                        channel_id,
-                        |_, _| UnableToDeliverAction::Retry,
-                    )
-                }
-                UnableToDeliverStrategy::DeferToHandler => {
-                    <Service::Connection as ZeroCopyConnection>::Sender::blocking_send(
-                        &connection.sender,
-                        offset,
-                        sample_size,
-                        channel_id,
-                        |retries, elapsed_time| {
-                            self.unable_to_deliver_handler
-                                .call(&UnableToDeliverInfo::new(
-                                    self.service_state.static_config.unique_service_id().value(),
-                                    self.sender_port_id,
-                                    connection.receiver_port_id,
-                                    retries,
-                                    elapsed_time,
-                                ))
-                        },
-                    )
+            let delivery_call_result = if let Some(handler) =
+                self.unable_to_deliver_handler.as_ref()
+            {
+                let unablet_to_deliver_action_for_strategy = match self.unable_to_deliver_strategy {
+                    UnableToDeliverStrategy::RetryUntilDelivered => UnableToDeliverAction::Retry,
+                    UnableToDeliverStrategy::DiscardSample => UnableToDeliverAction::DiscardSample,
+                };
+
+                <Service::Connection as ZeroCopyConnection>::Sender::blocking_send(
+                    &connection.sender,
+                    offset,
+                    sample_size,
+                    channel_id,
+                    |retries, elapsed_time| {
+                        handler.call(&UnableToDeliverInfo::new(
+                            self.service_state.static_config.unique_service_id().value(),
+                            self.sender_port_id,
+                            connection.receiver_port_id,
+                            retries,
+                            elapsed_time,
+                        ))
+                    },
+                    unablet_to_deliver_action_for_strategy,
+                )
+            } else {
+                match self.unable_to_deliver_strategy {
+                    UnableToDeliverStrategy::DiscardSample => {
+                        <Service::Connection as ZeroCopyConnection>::Sender::try_send(
+                            &connection.sender,
+                            offset,
+                            sample_size,
+                            channel_id,
+                        )
+                    }
+                    UnableToDeliverStrategy::RetryUntilDelivered => {
+                        <Service::Connection as ZeroCopyConnection>::Sender::blocking_send(
+                            &connection.sender,
+                            offset,
+                            sample_size,
+                            channel_id,
+                            |_, _| UnableToDeliverAction::FollowUnableToDeliveryStrategy,
+                            UnableToDeliverAction::Retry,
+                        )
+                    }
                 }
             };
 

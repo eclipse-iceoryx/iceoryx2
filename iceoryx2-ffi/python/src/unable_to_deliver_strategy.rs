@@ -40,9 +40,6 @@ impl From<iceoryx2::prelude::UnableToDeliverStrategy> for UnableToDeliverStrateg
             iceoryx2::prelude::UnableToDeliverStrategy::DiscardSample => {
                 UnableToDeliverStrategy::DiscardSample
             }
-            iceoryx2::prelude::UnableToDeliverStrategy::DeferToHandler => {
-                UnableToDeliverStrategy::RetryUntilDelivered
-            }
         }
     }
 }

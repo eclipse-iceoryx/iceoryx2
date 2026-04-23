@@ -132,6 +132,7 @@ impl core::error::Error for ZeroCopyReleaseError {}
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum UnableToDeliverAction {
+    FollowUnableToDeliveryStrategy,
     Retry,
     DiscardSample,
     AbortDeliveryAndFail,
@@ -311,6 +312,7 @@ pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept + Send {
         sample_size: usize,
         channel_id: ChannelId,
         unable_to_deliver_handler: F,
+        unable_to_deliver_action_for_strategy: UnableToDeliverAction,
     ) -> Result<Option<PointerOffset>, ZeroCopySendError>;
 
     fn reclaim(&self, channel_id: ChannelId)

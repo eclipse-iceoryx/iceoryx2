@@ -114,7 +114,7 @@ pub struct PortFactoryPublisher<
 > {
     pub(crate) config: LocalPublisherConfig,
     pub(crate) degradation_callback: DegradationCallback<'static>,
-    pub(crate) unable_to_deliver_handler: UnableToDeliverHandler<'static>,
+    pub(crate) unable_to_deliver_handler: Option<UnableToDeliverHandler<'static>>,
     pub(crate) preallocate_number_of_samples_override: PreallocatedSamplesOverride<'static>,
     pub(crate) factory: &'factory PortFactory<Service, Payload, UserHeader>,
 }
@@ -142,9 +142,7 @@ impl<
             config: self.config,
             factory: self.factory,
             degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
-            unable_to_deliver_handler: UnableToDeliverHandler::new_with(
-                UnableToDeliverAction::Retry,
-            ),
+            unable_to_deliver_handler: None,
             preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),
         }
     }
@@ -178,9 +176,7 @@ impl<
                     .unable_to_deliver_strategy,
             },
             degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
-            unable_to_deliver_handler: UnableToDeliverHandler::new_with(
-                UnableToDeliverAction::Retry,
-            ),
+            unable_to_deliver_handler: None,
             preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),
             factory,
         }
@@ -236,16 +232,17 @@ impl<
     }
 
     /// Sets the [`UnableToDeliverHandler`] of the [`Publisher`]. Whenever a sample to a
-    /// [`crate::port::subscriber::Subscriber`] cannot be sent, and the [`UnableToDeliverStrategy`]
-    /// is set to [`UnableToDeliverStrategy::DeferToHandler`] this handler
-    /// is called and depending on the returned [`UnableToDeliverAction`] measures will be taken.
+    /// [`crate::port::subscriber::Subscriber`] cannot be sent, this handler
+    /// is called and depending on the returned [`UnableToDeliverAction`], measures will be taken.
+    /// If not handler is set, the measures will be determined by the value set to
+    /// [`unable_to_deliver_strategy`]
     pub fn set_unable_to_deliver_handler<
         F: Fn(&UnableToDeliverInfo) -> UnableToDeliverAction + 'static,
     >(
         mut self,
         handler: F,
     ) -> Self {
-        self.unable_to_deliver_handler = UnableToDeliverHandler::new(handler);
+        self.unable_to_deliver_handler = Some(UnableToDeliverHandler::new(handler));
 
         self
     }

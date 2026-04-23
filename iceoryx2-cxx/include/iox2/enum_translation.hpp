@@ -1915,8 +1915,6 @@ constexpr auto from<int, iox2::UnableToDeliverStrategy>(const int value) noexcep
         return iox2::UnableToDeliverStrategy::RetryUntilDelivered;
     case iox2_unable_to_deliver_strategy_e_DISCARD_SAMPLE:
         return iox2::UnableToDeliverStrategy::DiscardSample;
-    case iox2_unable_to_deliver_strategy_e_DEFER_TO_HANDLER:
-        return iox2::UnableToDeliverStrategy::DeferToHandler;
     }
 
     IOX2_UNREACHABLE();
@@ -1929,8 +1927,6 @@ constexpr auto from<iox2::UnableToDeliverStrategy, int>(const iox2::UnableToDeli
         return iox2_unable_to_deliver_strategy_e_RETRY_UNTIL_DELIVERED;
     case iox2::UnableToDeliverStrategy::DiscardSample:
         return iox2_unable_to_deliver_strategy_e_DISCARD_SAMPLE;
-    case iox2::UnableToDeliverStrategy::DeferToHandler:
-        return iox2_unable_to_deliver_strategy_e_DEFER_TO_HANDLER;
     }
 
     IOX2_UNREACHABLE();

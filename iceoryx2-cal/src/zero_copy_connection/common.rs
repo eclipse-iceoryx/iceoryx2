@@ -731,6 +731,7 @@ pub mod details {
             sample_size: usize,
             channel_id: ChannelId,
             unable_to_deliver_handler: F,
+            unable_to_deliver_action_for_strategy: UnableToDeliverAction,
         ) -> Result<Option<PointerOffset>, ZeroCopySendError> {
             let msg = "Unable to blocking send the offset";
             debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
@@ -740,8 +741,12 @@ pub mod details {
                 let mut is_connected = false;
                 let mut has_valid_channel_state = false;
                 let mut do_fail = false;
+                let mut retry_until_delivered = false;
                 let mut retry_counter = 0;
                 let start = Time::now().unwrap();
+
+                const WAIT_CONTINURE: bool = true;
+                const WAIT_ABORT: bool = false;
 
                 if let Err(e) = AdaptiveWaitBuilder::new().create().unwrap().wait_while(|| {
                     is_connected = mgmt.is_connected();
@@ -751,24 +756,37 @@ pub mod details {
                         != CHANNEL_STATE_CLOSED.0;
                     if is_connected && has_valid_channel_state {
                         if mgmt.channels[channel_id.value()].submission_queue.is_full() {
-                            let wait_action = match unable_to_deliver_handler(
-                                retry_counter,
-                                start.elapsed().unwrap_or(Duration::MAX),
-                            ) {
-                                UnableToDeliverAction::Retry => true,
-                                UnableToDeliverAction::DiscardSample => false,
-                                UnableToDeliverAction::AbortDeliveryAndFail => {
-                                    do_fail = true;
-                                    false
-                                }
-                            };
-                            retry_counter += 1;
-                            wait_action
+                            if retry_until_delivered {
+                                WAIT_CONTINURE
+                            } else {
+                                let wait_action = match unable_to_deliver_handler(
+                                    retry_counter,
+                                    start.elapsed().unwrap_or(Duration::MAX),
+                                ) {
+                                    UnableToDeliverAction::FollowUnableToDeliveryStrategy => {
+                                        match unable_to_deliver_action_for_strategy {
+                                            UnableToDeliverAction::Retry => {
+                                                retry_until_delivered = true;
+                                                WAIT_CONTINURE
+                                            }
+                                            _ => WAIT_ABORT,
+                                        }
+                                    }
+                                    UnableToDeliverAction::Retry => WAIT_CONTINURE,
+                                    UnableToDeliverAction::DiscardSample => WAIT_ABORT,
+                                    UnableToDeliverAction::AbortDeliveryAndFail => {
+                                        do_fail = true;
+                                        WAIT_ABORT
+                                    }
+                                };
+                                retry_counter += 1;
+                                wait_action
+                            }
                         } else {
-                            false
+                            WAIT_ABORT
                         }
                     } else {
-                        false
+                        WAIT_ABORT
                     }
                 }) {
                     fail!(from self, with ZeroCopySendError::InternalError,
