@@ -326,7 +326,7 @@ impl Default for PublishSubscribe {
             subscriber_max_borrowed_samples: 2,
             publisher_max_loaned_samples: 2,
             enable_safe_overflow: true,
-            unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
+            unable_to_deliver_strategy: UnableToDeliverStrategy::RetryUntilDelivered,
             subscriber_expired_connection_buffer: 128,
         }
     }
@@ -459,8 +459,8 @@ impl Default for RequestResonse {
             max_borrowed_responses_per_pending_response: 2,
             max_loaned_requests: 2,
             server_max_loaned_responses_per_request: 2,
-            client_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
-            server_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
+            client_unable_to_deliver_strategy: UnableToDeliverStrategy::RetryUntilDelivered,
+            server_unable_to_deliver_strategy: UnableToDeliverStrategy::RetryUntilDelivered,
             client_expired_connection_buffer: 128,
             server_expired_connection_buffer: 128,
             enable_fire_and_forget_requests: true,

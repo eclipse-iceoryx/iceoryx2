@@ -165,7 +165,24 @@ impl<Service: service::Service> Sender<Service> {
         let mut number_of_recipients = 0;
         if let Some(connection) = self.get(connection_id) {
             let delivery_call_result = match self.unable_to_deliver_strategy {
-                UnableToDeliverStrategy::Block => {
+                UnableToDeliverStrategy::DiscardSample => {
+                    <Service::Connection as ZeroCopyConnection>::Sender::try_send(
+                        &connection.sender,
+                        offset,
+                        sample_size,
+                        channel_id,
+                    )
+                }
+                UnableToDeliverStrategy::RetryUntilDelivered => {
+                    <Service::Connection as ZeroCopyConnection>::Sender::blocking_send(
+                        &connection.sender,
+                        offset,
+                        sample_size,
+                        channel_id,
+                        UnableToDeliverHandler::new(|| UnableToDeliverAction::Retry),
+                    )
+                }
+                UnableToDeliverStrategy::DeferToHandler => {
                     <Service::Connection as ZeroCopyConnection>::Sender::blocking_send(
                         &connection.sender,
                         offset,
@@ -200,14 +217,6 @@ impl<Service: service::Service> Sender<Service> {
                                 DegradationAction::Fail => UnableToDeliverAction::Fail,
                             }
                         }),
-                    )
-                }
-                UnableToDeliverStrategy::DiscardSample => {
-                    <Service::Connection as ZeroCopyConnection>::Sender::try_send(
-                        &connection.sender,
-                        offset,
-                        sample_size,
-                        channel_id,
                     )
                 }
             };

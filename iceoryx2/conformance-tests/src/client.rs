@@ -239,11 +239,11 @@ pub mod client {
             s.thread_builder().spawn(|| {
                 let sut = service
                     .client_builder()
-                    .unable_to_deliver_strategy(UnableToDeliverStrategy::Block)
+                    .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
                     .create()
                     .unwrap();
 
-                assert_that!(sut.unable_to_deliver_strategy(), eq UnableToDeliverStrategy::Block);
+                assert_that!(sut.unable_to_deliver_strategy(), eq UnableToDeliverStrategy::RetryUntilDelivered);
 
                 init_barrier.wait();
                 start_barrier.wait();
@@ -293,11 +293,11 @@ pub mod client {
             s.thread_builder().spawn(|| {
                 let sut = service
                     .client_builder()
-                    .unable_to_deliver_strategy(UnableToDeliverStrategy::Block)
+                    .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
                     .create()
                     .unwrap();
 
-                assert_that!(sut.unable_to_deliver_strategy(), eq UnableToDeliverStrategy::Block);
+                assert_that!(sut.unable_to_deliver_strategy(), eq UnableToDeliverStrategy::RetryUntilDelivered);
 
                 init_barrier.wait();
 

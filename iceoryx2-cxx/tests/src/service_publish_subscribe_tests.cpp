@@ -728,12 +728,14 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_unable_to_deliver_stra
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
 
-    auto sut_pub_1 =
-        service.publisher_builder().unable_to_deliver_strategy(UnableToDeliverStrategy::Block).create().value();
+    auto sut_pub_1 = service.publisher_builder()
+                         .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
+                         .create()
+                         .value();
     auto sut_pub_2 =
         service.publisher_builder().unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample).create().value();
 
-    ASSERT_THAT(sut_pub_1.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::Block));
+    ASSERT_THAT(sut_pub_1.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::RetryUntilDelivered));
     ASSERT_THAT(sut_pub_2.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::DiscardSample));
 }
 

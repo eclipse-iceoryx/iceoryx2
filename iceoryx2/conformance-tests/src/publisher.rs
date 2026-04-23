@@ -549,9 +549,9 @@ pub mod publisher {
 
         let sut = service
             .publisher_builder()
-            .unable_to_deliver_strategy(UnableToDeliverStrategy::Block)
+            .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
             .create()?;
-        assert_that!(sut.unable_to_deliver_strategy(), eq UnableToDeliverStrategy::Block);
+        assert_that!(sut.unable_to_deliver_strategy(), eq UnableToDeliverStrategy::RetryUntilDelivered);
 
         let handle = BarrierHandle::new();
         let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
@@ -638,7 +638,7 @@ pub mod publisher {
 
                 let sut = service
                     .publisher_builder()
-                    .unable_to_deliver_strategy(UnableToDeliverStrategy::Block)
+                    .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
                     .create()
                     .unwrap();
 

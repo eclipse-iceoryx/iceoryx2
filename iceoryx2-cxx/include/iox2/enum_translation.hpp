@@ -1911,10 +1911,12 @@ template <>
 constexpr auto from<int, iox2::UnableToDeliverStrategy>(const int value) noexcept -> iox2::UnableToDeliverStrategy {
     const auto variant = static_cast<iox2_unable_to_deliver_strategy_e>(value);
     switch (variant) {
-    case iox2_unable_to_deliver_strategy_e_BLOCK:
-        return iox2::UnableToDeliverStrategy::Block;
+    case iox2_unable_to_deliver_strategy_e_RETRY_UNTIL_DELIVERED:
+        return iox2::UnableToDeliverStrategy::RetryUntilDelivered;
     case iox2_unable_to_deliver_strategy_e_DISCARD_SAMPLE:
         return iox2::UnableToDeliverStrategy::DiscardSample;
+    case iox2_unable_to_deliver_strategy_e_DEFER_TO_HANDLER:
+        return iox2::UnableToDeliverStrategy::DeferToHandler;
     }
 
     IOX2_UNREACHABLE();
@@ -1923,10 +1925,12 @@ constexpr auto from<int, iox2::UnableToDeliverStrategy>(const int value) noexcep
 template <>
 constexpr auto from<iox2::UnableToDeliverStrategy, int>(const iox2::UnableToDeliverStrategy value) noexcept -> int {
     switch (value) {
+    case iox2::UnableToDeliverStrategy::RetryUntilDelivered:
+        return iox2_unable_to_deliver_strategy_e_RETRY_UNTIL_DELIVERED;
     case iox2::UnableToDeliverStrategy::DiscardSample:
         return iox2_unable_to_deliver_strategy_e_DISCARD_SAMPLE;
-    case iox2::UnableToDeliverStrategy::Block:
-        return iox2_unable_to_deliver_strategy_e_BLOCK;
+    case iox2::UnableToDeliverStrategy::DeferToHandler:
+        return iox2_unable_to_deliver_strategy_e_DEFER_TO_HANDLER;
     }
 
     IOX2_UNREACHABLE();

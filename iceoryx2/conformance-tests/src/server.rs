@@ -413,7 +413,7 @@ pub mod server {
             s.thread_builder().spawn(|| {
                 let sut = service
                     .server_builder()
-                    .unable_to_deliver_strategy(UnableToDeliverStrategy::Block)
+                    .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
                     .create()
                     .unwrap();
                 barrier.wait();
@@ -469,7 +469,7 @@ pub mod server {
             s.thread_builder().spawn(|| {
                 let sut = service
                     .server_builder()
-                    .unable_to_deliver_strategy(UnableToDeliverStrategy::Block)
+                    .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
                     .create()
                     .unwrap();
                 barrier.wait();
