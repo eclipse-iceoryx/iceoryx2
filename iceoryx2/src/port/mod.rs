@@ -112,7 +112,7 @@ pub enum DegradationCause {
 
 /// The degradation context passed to the [`DegradationCallback`]
 #[repr(C)]
-pub struct DegradationContext {
+pub struct DegradationInfo {
     /// The service id, which is involved in the degradation
     pub service_id: u128,
     /// The sender port id, which is involved in the degradation
@@ -121,8 +121,8 @@ pub struct DegradationContext {
     pub receiver_port_id: u128,
 }
 
-impl DegradationContext {
-    /// Creates a new [`DegradationContext`]
+impl DegradationInfo {
+    /// Creates a new [`DegradationInfo`]
     pub fn new(service_id: u128, sender_port_id: u128, receiver_port_id: u128) -> Self {
         Self {
             service_id,
@@ -134,7 +134,7 @@ impl DegradationContext {
 
 tiny_fn! {
     /// Defines a custom behavior whenever a port detects a degradation.
-    pub struct DegradationCallback = Fn(cause: DegradationCause, context: &DegradationContext) -> DegradationAction;
+    pub struct DegradationCallback = Fn(cause: DegradationCause, context: &DegradationInfo) -> DegradationAction;
 }
 
 unsafe impl Send for DegradationCallback<'_> {}

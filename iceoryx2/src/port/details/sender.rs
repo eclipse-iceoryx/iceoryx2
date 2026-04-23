@@ -30,7 +30,7 @@ use iceoryx2_log::{error, fail, fatal_panic, warn};
 
 use crate::node::SharedNode;
 use crate::port::{
-    DegradationAction, DegradationCallback, DegradationCause, DegradationContext, LoanError,
+    DegradationAction, DegradationCallback, DegradationCause, DegradationInfo, LoanError,
     SendError, UnableToDeliverHandler, UnableToDeliverInfo,
 };
 use crate::prelude::UnableToDeliverStrategy;
@@ -228,7 +228,7 @@ impl<Service: service::Service> Sender<Service> {
                 Err(ZeroCopySendError::ConnectionCorrupted) => {
                     match self.degradation_callback.call(
                         DegradationCause::ConnectionCorrupted,
-                        &DegradationContext::new(
+                        &DegradationInfo::new(
                             self.service_state.static_config.unique_service_id().value(),
                             self.sender_port_id,
                             connection.receiver_port_id,
@@ -479,7 +479,7 @@ impl<Service: service::Service> Sender<Service> {
                 },
                 Err(e) => match self.degradation_callback.call(
                     DegradationCause::FailedToEstablishConnection,
-                    &DegradationContext::new(
+                    &DegradationInfo::new(
                         self.service_state.static_config.unique_service_id().value(),
                         self.sender_port_id,
                         receiver_details.port_id,

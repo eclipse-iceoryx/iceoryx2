@@ -36,7 +36,7 @@
 use super::request_response::PortFactory;
 use crate::{
     port::{
-        DegradationAction, DegradationCallback, DegradationCause, DegradationContext,
+        DegradationAction, DegradationCallback, DegradationCause, DegradationInfo,
         UnableToDeliverHandler, UnableToDeliverInfo, server::Server,
     },
     prelude::UnableToDeliverStrategy,
@@ -263,7 +263,7 @@ impl<
     /// [`Client`](crate::port::client::Client) is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
     pub fn set_request_degradation_callback<
-        F: Fn(DegradationCause, &DegradationContext) -> DegradationAction + 'static,
+        F: Fn(DegradationCause, &DegradationInfo) -> DegradationAction + 'static,
     >(
         mut self,
         callback: F,
@@ -279,7 +279,7 @@ impl<
     /// [`Client`](crate::port::client::Client) is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
     pub fn set_response_degradation_callback<
-        F: Fn(DegradationCause, &DegradationContext) -> DegradationAction + 'static,
+        F: Fn(DegradationCause, &DegradationInfo) -> DegradationAction + 'static,
     >(
         mut self,
         callback: F,
@@ -290,7 +290,7 @@ impl<
     }
 
     /// Sets the [`UnableToDeliverHandler`] of the [`Server`]. Whenever a response to a
-    /// [`crate::port::client::Clinet`] cannot be sent, and the [`UnableToDeliverStrategy`]
+    /// [`crate::port::client::Client`] cannot be sent, and the [`UnableToDeliverStrategy`]
     /// is set to [`UnableToDeliverStrategy::DeferToHandler`] this handler
     /// is called and depending on the returned [`UnableToDeliverAction`] measures will be taken.
     pub fn set_response_unable_to_deliver_handler<

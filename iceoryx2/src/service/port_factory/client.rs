@@ -32,7 +32,7 @@
 use super::request_response::PortFactory;
 use crate::{
     port::{
-        DegradationAction, DegradationCallback, DegradationCause, DegradationContext,
+        DegradationAction, DegradationCallback, DegradationCause, DegradationInfo,
         UnableToDeliverHandler, UnableToDeliverInfo, client::Client,
     },
     prelude::UnableToDeliverStrategy,
@@ -246,7 +246,7 @@ impl<
     /// [`Server`](crate::port::server::Server) is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
     pub fn set_request_degradation_callback<
-        F: Fn(DegradationCause, &DegradationContext) -> DegradationAction + 'static,
+        F: Fn(DegradationCause, &DegradationInfo) -> DegradationAction + 'static,
     >(
         mut self,
         callback: F,
@@ -261,7 +261,7 @@ impl<
     /// [`Server`](crate::port::server::Server) is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
     pub fn set_response_degradation_callback<
-        F: Fn(DegradationCause, &DegradationContext) -> DegradationAction + 'static,
+        F: Fn(DegradationCause, &DegradationInfo) -> DegradationAction + 'static,
     >(
         mut self,
         callback: F,

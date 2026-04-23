@@ -21,8 +21,8 @@ pub enum UnableToDeliverStrategy {
     RetryUntilDelivered,
     /// Do not deliver the data to receiver with a full buffer
     DiscardSample,
-    /// Perform the action defined with the [`UnableToDeliveryAction`]
-    /// return by the registered [`UnableToDeliverHandler`]
+    /// Perform the action defined with the [`UnableToDeliverAction`](crate::port::UnableToDeliverAction)
+    /// return by the registered [`UnableToDeliverHandler`](crate::port::UnableToDeliverHandler)
     DeferToHandler,
 }
 
