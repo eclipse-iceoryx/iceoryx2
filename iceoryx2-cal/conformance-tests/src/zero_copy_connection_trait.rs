@@ -40,6 +40,10 @@ pub mod zero_copy_connection_trait {
     const SAMPLE_SIZE: usize = 123;
     const NUMBER_OF_SAMPLES: usize = 2345;
 
+    fn follow_unable_to_delivery_stratety(_: u64, _: Duration) -> UnableToDeliverAction {
+        UnableToDeliverAction::FollowUnableToDeliveryStrategy
+    }
+
     #[conformance_test]
     pub fn create_non_existing_connection_works<Sut: ZeroCopyConnection>() {
         let name = generate_file_path().file_name();
@@ -842,7 +846,7 @@ pub mod zero_copy_connection_trait {
                     PointerOffset::new(sample_offset_1),
                     SAMPLE_SIZE,
                     id,
-                    |_, _| UnableToDeliverAction::FollowUnableToDeliveryStrategy,
+                    follow_unable_to_delivery_stratety,
                     UnableToDeliverAction::Retry,
                 ),
                 is_ok
@@ -852,7 +856,7 @@ pub mod zero_copy_connection_trait {
                     PointerOffset::new(sample_offset_2),
                     SAMPLE_SIZE,
                     id,
-                    |_, _| UnableToDeliverAction::FollowUnableToDeliveryStrategy,
+                    follow_unable_to_delivery_stratety,
                     UnableToDeliverAction::Retry,
                 ),
                 is_ok
@@ -905,7 +909,7 @@ pub mod zero_copy_connection_trait {
                         PointerOffset::new(sample_offset_1),
                         SAMPLE_SIZE,
                         id,
-                        |_, _| UnableToDeliverAction::FollowUnableToDeliveryStrategy,
+                        follow_unable_to_delivery_stratety,
                         UnableToDeliverAction::Retry,
                     ),
                     is_ok
@@ -915,7 +919,7 @@ pub mod zero_copy_connection_trait {
                         PointerOffset::new(sample_offset_2),
                         SAMPLE_SIZE,
                         id,
-                        |_, _| UnableToDeliverAction::FollowUnableToDeliveryStrategy,
+                        follow_unable_to_delivery_stratety,
                         UnableToDeliverAction::Retry,
                     ).err(),
                      eq Some(ZeroCopySendError::NoConnectedReceiver)
@@ -975,7 +979,7 @@ pub mod zero_copy_connection_trait {
                         PointerOffset::new(sample_offset_1),
                         SAMPLE_SIZE,
                         id,
-                        |_, _| UnableToDeliverAction::FollowUnableToDeliveryStrategy,
+                        follow_unable_to_delivery_stratety,
                         UnableToDeliverAction::Retry,
                     ),
                     is_ok
@@ -985,7 +989,7 @@ pub mod zero_copy_connection_trait {
                         PointerOffset::new(sample_offset_2),
                         SAMPLE_SIZE,
                         id,
-                        |_, _| UnableToDeliverAction::FollowUnableToDeliveryStrategy,
+                        follow_unable_to_delivery_stratety,
                         UnableToDeliverAction::Retry,
                     ).err(),
                     eq Some(ZeroCopySendError::ChannelIsClosed)
@@ -1869,7 +1873,7 @@ pub mod zero_copy_connection_trait {
             PointerOffset::new(0),
             SAMPLE_SIZE,
             ChannelId::new(1),
-            |_, _| UnableToDeliverAction::FollowUnableToDeliveryStrategy,
+            follow_unable_to_delivery_stratety,
             UnableToDeliverAction::Retry,
         );
     }
