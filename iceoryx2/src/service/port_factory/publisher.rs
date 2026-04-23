@@ -226,12 +226,13 @@ impl<
         self
     }
 
-    /// Sets the [`UnableToDeliverHandler`] of the [`Publisher`]. Whenever a sample to a
-    /// [`crate::port::subscriber::Subscriber`] cannot be sent, this handler
-    /// is called and depending on the returned [`UnableToDeliverAction`](crate::port::UnableToDeliverAction),
+    /// Sets the [`UnableToDeliverHandler`] of the [`Publisher`]. Whenever a
+    /// [`SampleMut`](crate::sample_mut::SampleMut) cannot be sent to a
+    /// [`crate::port::subscriber::Subscriber`], this handler is called and depending on the
+    /// returned [`UnableToDeliverAction`](crate::port::UnableToDeliverAction),
     /// measures will be taken.
-    /// If not handler is set, the measures will be determined by the value set to
-    /// `unable_to_deliver_strategy`.
+    /// If no handler is set, the measures will be determined by the value set in
+    /// [`UnableToDeliverStrategy`].
     pub fn set_unable_to_deliver_handler<F: UnableToDeliverFn + 'static>(
         mut self,
         handler: F,

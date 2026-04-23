@@ -236,7 +236,7 @@ impl<
     }
 
     /// Sets the [`DegradationCallback`] for sending [`RequestMut`](crate::request_mut::RequestMut)
-    /// from the [`Client`]. Whenever a connection to a
+    /// from the [`Client`]. Whenever a request connection to a
     /// [`Server`](crate::port::server::Server) is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
     pub fn set_request_degradation_callback<F: DegradationFn + 'static>(
@@ -249,7 +249,7 @@ impl<
     }
 
     /// Sets the [`DegradationCallback`] for receiving [`Response`](crate::response::Response)s
-    /// from a [`Server`](crate::port::server::Server). Whenever a connection to a
+    /// from a [`Server`](crate::port::server::Server). Whenever a response connection to a
     /// [`Server`](crate::port::server::Server) is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
     pub fn set_response_degradation_callback<F: DegradationFn + 'static>(
@@ -261,12 +261,13 @@ impl<
         self
     }
 
-    /// Sets the [`UnableToDeliverHandler`] of the [`Client`]. Whenever a sample to a
-    /// [`crate::port::server::Server`] cannot be sent, this handler
-    /// is called and depending on the returned [`UnableToDeliverAction`](crate::port::UnableToDeliverAction),
+    /// Sets the [`UnableToDeliverHandler`] of the [`Client`]. Whenever a
+    /// [`RequestMut`](crate::response::Response) cannot be sent to a
+    /// [`crate::port::server::Server`], this handler is called and depending on
+    /// the returned [`UnableToDeliverAction`](crate::port::UnableToDeliverAction),
     /// measures will be taken.
-    /// If not handler is set, the measures will be determined by the value set to
-    /// `unable_to_deliver_strategy`.
+    /// If no handler is set, the measures will be determined by the value set in
+    /// [`UnableToDeliverStrategy`].
     pub fn set_request_unable_to_deliver_handler<F: UnableToDeliverFn + 'static>(
         mut self,
         handler: F,
