@@ -1,5 +1,5 @@
 {
-  "checksum": "b9b2a825c59bf39371209c0256ecd46ddc12250f32156a5e45dcdd4983ee664f",
+  "checksum": "c2bac2a2efe5a66e17533f66085e206a2d3879f5083fcfb61fea583494e131fd",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -14474,7 +14474,7 @@
               "target": "num_traits"
             },
             {
-              "id": "rand 0.8.5",
+              "id": "rand 0.8.6",
               "target": "rand"
             },
             {
@@ -17710,14 +17710,14 @@
       ],
       "license_file": null
     },
-    "rand 0.8.5": {
+    "rand 0.8.6": {
       "name": "rand",
-      "version": "0.8.5",
+      "version": "0.8.6",
       "package_url": "https://github.com/rust-random/rand",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/rand/0.8.5/download",
-          "sha256": "34af8d1a0e25924bc5b7c43c079c942339d8f0a8b57c39049bef581b46327404"
+          "url": "https://static.crates.io/crates/rand/0.8.6/download",
+          "sha256": "5ca0ecfa931c29007047d1bc58e623ab12e5590e8c7cc53200d5202b69266d8a"
         }
       },
       "targets": [
@@ -17790,7 +17790,7 @@
           }
         },
         "edition": "2018",
-        "version": "0.8.5"
+        "version": "0.8.6"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -22500,7 +22500,7 @@
               "target": "quote"
             },
             {
-              "id": "rand 0.8.5",
+              "id": "rand 0.8.6",
               "target": "rand"
             },
             {
@@ -25341,7 +25341,7 @@
               "target": "log"
             },
             {
-              "id": "rand 0.8.5",
+              "id": "rand 0.8.6",
               "target": "rand"
             },
             {
@@ -25654,7 +25654,7 @@
               "target": "log"
             },
             {
-              "id": "rand 0.8.5",
+              "id": "rand 0.8.6",
               "target": "rand"
             },
             {
@@ -31600,7 +31600,7 @@
               "target": "phf"
             },
             {
-              "id": "rand 0.8.5",
+              "id": "rand 0.8.6",
               "target": "rand"
             },
             {
@@ -32161,7 +32161,7 @@
               "target": "hmac"
             },
             {
-              "id": "rand 0.8.5",
+              "id": "rand 0.8.6",
               "target": "rand"
             },
             {
@@ -32237,7 +32237,7 @@
               "target": "keyed_set"
             },
             {
-              "id": "rand 0.8.5",
+              "id": "rand 0.8.6",
               "target": "rand"
             },
             {
@@ -33884,7 +33884,7 @@
               "target": "lz4_flex"
             },
             {
-              "id": "rand 0.8.5",
+              "id": "rand 0.8.6",
               "target": "rand"
             },
             {
