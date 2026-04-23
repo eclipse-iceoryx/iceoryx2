@@ -48,7 +48,10 @@ def test_unable_to_deliver_strategy_can_be_configured(
         .create()
     )
 
-    assert sut_1.unable_to_deliver_strategy == iox2.UnableToDeliverStrategy.RetryUntilDelivered
+    assert (
+        sut_1.unable_to_deliver_strategy
+        == iox2.UnableToDeliverStrategy.RetryUntilDelivered
+    )
     assert (
         sut_2.unable_to_deliver_strategy == iox2.UnableToDeliverStrategy.DiscardSample
     )
