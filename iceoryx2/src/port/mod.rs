@@ -48,7 +48,6 @@ pub mod unable_to_deliver_strategy;
 pub use iceoryx2_cal::zero_copy_connection::UnableToDeliverAction;
 
 /// The unable to deliver context information passed to the [`UnableToDeliverHandler`]
-#[repr(C)]
 pub struct UnableToDeliverInfo {
     /// The service id, of the sender an receiver participants
     pub service_id: u128,
@@ -120,7 +119,6 @@ pub enum DegradationCause {
 }
 
 /// The degradation context passed to the [`DegradationCallback`]
-#[repr(C)]
 pub struct DegradationInfo {
     /// The service id, which is involved in the degradation
     pub service_id: u128,
@@ -128,17 +126,6 @@ pub struct DegradationInfo {
     pub sender_port_id: u128,
     /// The receiver port id, which is involved in the degradation
     pub receiver_port_id: u128,
-}
-
-impl DegradationInfo {
-    /// Creates a new [`DegradationInfo`]
-    pub fn new(service_id: u128, sender_port_id: u128, receiver_port_id: u128) -> Self {
-        Self {
-            service_id,
-            sender_port_id,
-            receiver_port_id,
-        }
-    }
 }
 
 /// The degradation callback invoked when a degradation is detected

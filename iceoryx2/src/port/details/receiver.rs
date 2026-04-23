@@ -463,11 +463,11 @@ impl<Service: service::Service> Receiver<Service> {
                 Ok(()) => Ok(()),
                 Err(e) => match self.degradation_callback.call(
                     DegradationCause::FailedToEstablishConnection,
-                    &DegradationInfo::new(
-                        self.service_state.static_config.unique_service_id().value(),
-                        sender_details.port_id,
-                        self.receiver_port_id(),
-                    ),
+                    &DegradationInfo {
+                        service_id: self.service_state.static_config.unique_service_id().value(),
+                        sender_port_id: sender_details.port_id,
+                        receiver_port_id: self.receiver_port_id(),
+                    },
                 ) {
                     DegradationAction::Ignore => Ok(()),
                     DegradationAction::Warn => {

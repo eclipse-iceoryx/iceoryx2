@@ -243,11 +243,15 @@ impl<Service: service::Service> Sender<Service> {
                 Err(ZeroCopySendError::ConnectionCorrupted) => {
                     match self.degradation_callback.call(
                         DegradationCause::ConnectionCorrupted,
-                        &DegradationInfo::new(
-                            self.service_state.static_config.unique_service_id().value(),
-                            self.sender_port_id,
-                            connection.receiver_port_id,
-                        ),
+                        &DegradationInfo {
+                            service_id: self
+                                .service_state
+                                .static_config
+                                .unique_service_id()
+                                .value(),
+                            sender_port_id: self.sender_port_id,
+                            receiver_port_id: connection.receiver_port_id,
+                        },
                     ) {
                         DegradationAction::Ignore => (),
                         DegradationAction::Warn => {
@@ -494,11 +498,11 @@ impl<Service: service::Service> Sender<Service> {
                 },
                 Err(e) => match self.degradation_callback.call(
                     DegradationCause::FailedToEstablishConnection,
-                    &DegradationInfo::new(
-                        self.service_state.static_config.unique_service_id().value(),
-                        self.sender_port_id,
-                        receiver_details.port_id,
-                    ),
+                    &DegradationInfo {
+                        service_id: self.service_state.static_config.unique_service_id().value(),
+                        sender_port_id: self.sender_port_id,
+                        receiver_port_id: receiver_details.port_id,
+                    },
                 ) {
                     DegradationAction::Ignore => (),
                     DegradationAction::Warn => {
