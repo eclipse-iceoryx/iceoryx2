@@ -192,11 +192,7 @@ _test-package package toolchain target_triplet has_nostd has_doc extra_args:
             TARGET_ARG="--target $HOST_TARGET"
         fi
 
-        if [[ "{{package}}" == *-tests-nostd ]]; then
-            TEST_PACKAGE="{{package}}"
-        else
-            TEST_PACKAGE="{{package}}-tests-nostd"
-        fi
+        TEST_PACKAGE=$(just _nostd-test-crate-for "{{package}}")
 
         RUSTC_BOOTSTRAP=1 RUSTFLAGS="-C panic=abort" \
             cargo {{toolchain}} run \
