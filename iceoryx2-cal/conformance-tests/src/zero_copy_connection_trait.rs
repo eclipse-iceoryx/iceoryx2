@@ -19,7 +19,7 @@ pub mod zero_copy_connection_trait {
     use alloc::sync::Arc;
     use alloc::vec;
     use core::time::Duration;
-    use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
+    use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, Ordering};
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_posix::clock::{Time, nanosleep};
@@ -35,7 +35,7 @@ pub mod zero_copy_connection_trait {
     use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptMgmt};
     use iceoryx2_cal::shm_allocator::{PointerOffset, SegmentId};
     use iceoryx2_cal::testing::generate_isolated_config;
-    use iceoryx2_cal::zero_copy_connection::{ChannelId, ChannelState, *};
+    use iceoryx2_cal::zero_copy_connection::{ChannelId, ChannelState, UnableToDeliverAction, *};
 
     const SAMPLE_SIZE: usize = 123;
     const NUMBER_OF_SAMPLES: usize = 2345;
@@ -866,6 +866,160 @@ pub mod zero_copy_connection_trait {
             Ok(())
         })
         .unwrap();
+    }
+
+    fn blocking_send_returns_when_unable_to_delivery_handler_is_used<
+        Sut: ZeroCopyConnection,
+        F: UnableToDeliverToReceiverFn,
+    >(
+        unable_to_deliver_handler: F,
+        blocking_send_error: ZeroCopySendError,
+    ) -> Duration {
+        let id = ChannelId::new(0);
+        let _watchdog = Watchdog::new();
+        let name = generate_file_path().file_name();
+        let mutex_handle = MutexHandle::new();
+        let config = MutexBuilder::new()
+            .create(generate_isolated_config::<Sut>(), &mutex_handle)
+            .unwrap();
+
+        let sut_sender = Sut::Builder::new(&name)
+            .buffer_size(1)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .config(&config.lock().unwrap())
+            .create_sender()
+            .unwrap();
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .buffer_size(1)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .config(&config.lock().unwrap())
+            .create_receiver()
+            .unwrap();
+
+        let sample_offset_1 = SAMPLE_SIZE * 12;
+        let sample_offset_2 = SAMPLE_SIZE * 234;
+
+        let now = Time::now().unwrap();
+
+        assert_that!(
+            sut_sender.blocking_send(
+                PointerOffset::new(sample_offset_1),
+                SAMPLE_SIZE,
+                id,
+                |_, _| UnableToDeliverAction::Retry,
+                UnableToDeliverAction::Retry,
+            ),
+            is_ok
+        );
+        assert_that!(
+            sut_sender.blocking_send(
+                PointerOffset::new(sample_offset_2),
+                SAMPLE_SIZE,
+                id,
+                unable_to_deliver_handler,
+                UnableToDeliverAction::Retry,
+            ),
+            eq(Err(blocking_send_error))
+        );
+        let elapsed_blocking_time = now.elapsed().unwrap();
+
+        assert_that!(
+            sut_receiver.receive(id),
+            eq(Ok(Some(PointerOffset::new(sample_offset_1))))
+        );
+        assert_that!(sut_receiver.receive(id), eq(Ok(None)));
+
+        elapsed_blocking_time
+    }
+
+    #[conformance_test]
+    pub fn blocking_send_returns_when_unable_to_delivery_handler_discards_sample<
+        Sut: ZeroCopyConnection,
+    >() {
+        const EPSILON: Duration = Duration::from_millis(1);
+
+        let call_count = AtomicU64::new(0);
+
+        let elapsed_blocking_time =
+            blocking_send_returns_when_unable_to_delivery_handler_is_used::<Sut, _>(
+                |_, _| {
+                    call_count.fetch_add(1, Ordering::Relaxed);
+                    UnableToDeliverAction::DiscardSample
+                },
+                ZeroCopySendError::ReceiveBufferFull,
+            );
+
+        assert_that!(elapsed_blocking_time, lt(EPSILON));
+        assert_that!(call_count.load(Ordering::Relaxed), eq(1));
+    }
+
+    #[conformance_test]
+    pub fn blocking_send_returns_when_unable_to_delivery_handler_aborts_delivery_and_fails<
+        Sut: ZeroCopyConnection,
+    >() {
+        const EPSILON: Duration = Duration::from_millis(1);
+
+        let call_count = AtomicU64::new(0);
+
+        let elapsed_blocking_time =
+            blocking_send_returns_when_unable_to_delivery_handler_is_used::<Sut, _>(
+                |_, _| {
+                    call_count.fetch_add(1, Ordering::Relaxed);
+                    UnableToDeliverAction::AbortDeliveryAndFail
+                },
+                ZeroCopySendError::UnableToDeliver,
+            );
+
+        assert_that!(elapsed_blocking_time, lt(EPSILON));
+        assert_that!(call_count.load(Ordering::Relaxed), eq(1));
+    }
+
+    #[conformance_test]
+    pub fn blocking_send_returns_when_unable_to_delivery_handler_retries_twice<
+        Sut: ZeroCopyConnection,
+    >() {
+        const EPSILON: Duration = Duration::from_millis(1);
+
+        let call_count = AtomicU64::new(0);
+        const RETRY_COUNT: u64 = 2;
+
+        let elapsed_blocking_time =
+            blocking_send_returns_when_unable_to_delivery_handler_is_used::<Sut, _>(
+                |retries, _| {
+                    if retries == RETRY_COUNT {
+                        UnableToDeliverAction::DiscardSample
+                    } else {
+                        call_count.fetch_add(1, Ordering::Relaxed);
+                        UnableToDeliverAction::Retry
+                    }
+                },
+                ZeroCopySendError::ReceiveBufferFull,
+            );
+
+        assert_that!(elapsed_blocking_time, lt(EPSILON));
+        assert_that!(call_count.load(Ordering::Relaxed), eq(RETRY_COUNT));
+    }
+
+    #[conformance_test]
+    pub fn blocking_send_returns_when_unable_to_delivery_handler_retries_until_timeout<
+        Sut: ZeroCopyConnection,
+    >() {
+        const TIMEOUT: Duration = Duration::from_millis(25);
+
+        let elapsed_blocking_time =
+            blocking_send_returns_when_unable_to_delivery_handler_is_used::<Sut, _>(
+                |_, elapsed_time| {
+                    if elapsed_time > TIMEOUT {
+                        UnableToDeliverAction::DiscardSample
+                    } else {
+                        UnableToDeliverAction::Retry
+                    }
+                },
+                ZeroCopySendError::ReceiveBufferFull,
+            );
+
+        assert_that!(elapsed_blocking_time,  time_at_least TIMEOUT);
     }
 
     #[conformance_test]
