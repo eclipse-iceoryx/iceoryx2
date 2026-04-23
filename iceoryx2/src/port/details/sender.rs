@@ -179,7 +179,7 @@ impl<Service: service::Service> Sender<Service> {
                         offset,
                         sample_size,
                         channel_id,
-                        || UnableToDeliverAction::Retry,
+                        |_, _| UnableToDeliverAction::Retry,
                     )
                 }
                 UnableToDeliverStrategy::DeferToHandler => {
@@ -188,12 +188,14 @@ impl<Service: service::Service> Sender<Service> {
                         offset,
                         sample_size,
                         channel_id,
-                        || {
+                        |retries, elapsed_time| {
                             self.unable_to_deliver_handler
                                 .call(&UnableToDeliverInfo::new(
                                     self.service_state.static_config.unique_service_id().value(),
                                     self.sender_port_id,
                                     connection.receiver_port_id,
+                                    retries,
+                                    elapsed_time,
                                 ))
                         },
                     )

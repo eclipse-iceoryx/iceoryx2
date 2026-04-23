@@ -41,15 +41,46 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .unable_to_deliver_strategy(UnableToDeliverStrategy::DeferToHandler)
         .set_unable_to_deliver_handler({
             let counter = counter.clone();
+            let degradation_counter = alloc::sync::Arc::new(AtomicU64::new(0));
             move |info| {
-                println!(
-                    "Could not deliver sample {}  from publisher sender id {:?} to subscriber receiver id {:?}",
-                    counter.load(Ordering::SeqCst),
-                    info.sender_port_id,
-                    info.receiver_port_id
-                );
-                println!("    Discarding sample and failing");
-                UnableToDeliverAction::AbortDeliveryAndFail
+                if info.retries == 0 {
+                    degradation_counter.fetch_add(1, Ordering::SeqCst);
+                    println!(
+                        "Degradation Event {}",
+                        degradation_counter.load(Ordering::SeqCst)
+                    );
+
+                    println!(
+                        "    Could not deliver sample {}  from publisher sender id {:?} to subscriber receiver id {:?}",
+                        counter.load(Ordering::SeqCst),
+                        info.sender_port_id,
+                        info.receiver_port_id
+                    );
+                }
+
+                match degradation_counter.load(Ordering::SeqCst) % 4 {
+                    0 => {
+                        println!("    Sleeping 100ms and retry");
+                        std::thread::sleep(core::time::Duration::from_millis(100));
+                        UnableToDeliverAction::Retry
+                    }
+                    1 => {
+                        if info.elapsed_time < Duration::from_millis(10) {
+                            UnableToDeliverAction::Retry
+                        } else {
+                            println!("    Retried for 10ms! Discarding sample and failing");
+                            UnableToDeliverAction::AbortDeliveryAndFail
+                        }
+                    }
+                    2 => {
+                        println!("    Discarding sample silently");
+                        UnableToDeliverAction::DiscardSample
+                    }
+                    _ => {
+                        println!("    Discarding sample and failing");
+                        UnableToDeliverAction::AbortDeliveryAndFail
+                    }
+                }
             }
         })
         .create()?;

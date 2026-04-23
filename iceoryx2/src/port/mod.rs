@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::fmt::Debug;
+use core::time::Duration;
 
 use tiny_fn::tiny_fn;
 use update_connections::ConnectionFailure;
@@ -49,21 +50,33 @@ pub use iceoryx2_cal::zero_copy_connection::UnableToDeliverAction;
 /// The unable to deliver context information passed to the [`UnableToDeliverHandler`]
 #[repr(C)]
 pub struct UnableToDeliverInfo {
-    /// The service id, which is involved in the degradation
+    /// The service id, of the sender an receiver participants
     pub service_id: u128,
-    /// The sender port id, which is involved in the degradation
+    /// The sender port id, which tries to send data
     pub sender_port_id: u128,
-    /// The receiver port id, which is involved in the degradation
+    /// The receiver port id, which has a full buffer
     pub receiver_port_id: u128,
+    /// The number of retries for the running delivery to the receiver port
+    pub retries: u64,
+    /// The elapsed time since the initial retry
+    pub elapsed_time: Duration,
 }
 
 impl UnableToDeliverInfo {
     /// Creates a new [`UnableToDeliverInfo`]
-    pub fn new(service_id: u128, sender_port_id: u128, receiver_port_id: u128) -> Self {
+    pub fn new(
+        service_id: u128,
+        sender_port_id: u128,
+        receiver_port_id: u128,
+        retries: u64,
+        elapsed_time: Duration,
+    ) -> Self {
         Self {
             service_id,
             sender_port_id,
             receiver_port_id,
+            retries,
+            elapsed_time,
         }
     }
 }

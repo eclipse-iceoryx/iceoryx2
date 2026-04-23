@@ -305,7 +305,7 @@ pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept + Send {
         channel_id: ChannelId,
     ) -> Result<Option<PointerOffset>, ZeroCopySendError>;
 
-    fn blocking_send<F: Fn() -> UnableToDeliverAction>(
+    fn blocking_send<F: Fn(u64, Duration) -> UnableToDeliverAction>(
         &self,
         ptr: PointerOffset,
         sample_size: usize,

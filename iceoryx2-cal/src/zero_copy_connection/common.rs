@@ -30,6 +30,7 @@ pub mod details {
     };
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
+    use iceoryx2_bb_posix::clock::Time;
     use iceoryx2_bb_posix::file::AccessMode;
     use iceoryx2_log::{fail, fatal_panic};
 
@@ -724,7 +725,7 @@ pub mod details {
             }
         }
 
-        fn blocking_send<F: Fn() -> UnableToDeliverAction>(
+        fn blocking_send<F: Fn(u64, Duration) -> UnableToDeliverAction>(
             &self,
             ptr: PointerOffset,
             sample_size: usize,
@@ -739,6 +740,8 @@ pub mod details {
                 let mut is_connected = false;
                 let mut has_valid_channel_state = false;
                 let mut do_fail = false;
+                let mut retry_counter = 0;
+                let start = Time::now().unwrap();
 
                 if let Err(e) = AdaptiveWaitBuilder::new().create().unwrap().wait_while(|| {
                     is_connected = mgmt.is_connected();
@@ -748,14 +751,19 @@ pub mod details {
                         != CHANNEL_STATE_CLOSED.0;
                     if is_connected && has_valid_channel_state {
                         if mgmt.channels[channel_id.value()].submission_queue.is_full() {
-                            match unable_to_deliver_handler() {
+                            let wait_action = match unable_to_deliver_handler(
+                                retry_counter,
+                                start.elapsed().unwrap_or(Duration::MAX),
+                            ) {
                                 UnableToDeliverAction::Retry => true,
                                 UnableToDeliverAction::DiscardSample => false,
                                 UnableToDeliverAction::AbortDeliveryAndFail => {
                                     do_fail = true;
                                     false
                                 }
-                            }
+                            };
+                            retry_counter += 1;
+                            wait_action
                         } else {
                             false
                         }

@@ -842,7 +842,7 @@ pub mod zero_copy_connection_trait {
                     PointerOffset::new(sample_offset_1),
                     SAMPLE_SIZE,
                     id,
-                    || UnableToDeliverAction::Retry
+                    |_, _| UnableToDeliverAction::Retry
                 ),
                 is_ok
             );
@@ -851,7 +851,7 @@ pub mod zero_copy_connection_trait {
                     PointerOffset::new(sample_offset_2),
                     SAMPLE_SIZE,
                     id,
-                    || UnableToDeliverAction::Retry
+                    |_, _| UnableToDeliverAction::Retry
                 ),
                 is_ok
             );
@@ -900,12 +900,12 @@ pub mod zero_copy_connection_trait {
                 barrier.wait();
                 assert_that!(
                     sut_sender.blocking_send(
-                        PointerOffset::new(sample_offset_1), SAMPLE_SIZE, id, || UnableToDeliverAction::Retry),
+                        PointerOffset::new(sample_offset_1), SAMPLE_SIZE, id, |_, _| UnableToDeliverAction::Retry),
                         is_ok
                 );
                 assert_that!(
                     sut_sender.blocking_send(
-                        PointerOffset::new(sample_offset_2), SAMPLE_SIZE, id, || UnableToDeliverAction::Retry).err(),
+                        PointerOffset::new(sample_offset_2), SAMPLE_SIZE, id, |_, _| UnableToDeliverAction::Retry).err(),
                         eq Some(ZeroCopySendError::NoConnectedReceiver)
                 );
                 has_finished_send_thread.store(true, Ordering::Relaxed);
@@ -960,12 +960,12 @@ pub mod zero_copy_connection_trait {
                 barrier.wait();
                 assert_that!(
                     sut_sender.blocking_send(
-                        PointerOffset::new(sample_offset_1), SAMPLE_SIZE, id, || UnableToDeliverAction::Retry),
+                        PointerOffset::new(sample_offset_1), SAMPLE_SIZE, id, |_, _| UnableToDeliverAction::Retry),
                         is_ok
                 );
                 assert_that!(
                     sut_sender.blocking_send(
-                        PointerOffset::new(sample_offset_2), SAMPLE_SIZE, id, || UnableToDeliverAction::Retry).err(),
+                        PointerOffset::new(sample_offset_2), SAMPLE_SIZE, id, |_, _| UnableToDeliverAction::Retry).err(),
                         eq Some(ZeroCopySendError::ChannelIsClosed)
                 );
                 has_finished_send_thread.store(true, Ordering::Relaxed);
@@ -1847,7 +1847,7 @@ pub mod zero_copy_connection_trait {
             PointerOffset::new(0),
             SAMPLE_SIZE,
             ChannelId::new(1),
-            || UnableToDeliverAction::Retry,
+            |_, _| UnableToDeliverAction::Retry,
         );
     }
 
