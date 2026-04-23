@@ -63,19 +63,14 @@ _doc-rust workspace:
     WORKSPACES=$(just _parse-workspace "{{workspace}}")
 
     for WS in $WORKSPACES; do
+        MANIFEST_ARG=$(just _workspace-manifest-arg "$WS")
+
+        cargo doc --no-deps --workspace $MANIFEST_ARG
+
+        echo ""
         case "$WS" in
-            sdk)
-                cargo doc --no-deps --workspace
-
-                echo ""
-                echo "Available at: {{justfile_directory()}}/target/doc/"
-                ;;
-            integrations)
-                cargo doc --no-deps --workspace --manifest-path {{INTEGRATIONS_DIR}}/Cargo.toml
-
-                echo ""
-                echo "Available at: {{INTEGRATIONS_DIR}}/target/doc/"
-                ;;
+            sdk)          echo "Available at: {{justfile_directory()}}/target/doc/" ;;
+            integrations) echo "Available at: {{INTEGRATIONS_DIR}}/target/doc/" ;;
         esac
     done
 

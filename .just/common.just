@@ -121,3 +121,15 @@ _parse-workspace workspace:
             exit 1
             ;;
     esac
+
+[private]
+_workspace-manifest-arg workspace:
+    #!/usr/bin/env bash
+    case "{{workspace}}" in
+        sdk)          echo "" ;;
+        integrations) echo "--manifest-path {{INTEGRATIONS_DIR}}/Cargo.toml" ;;
+        *)
+            echo "Error: unknown workspace '{{workspace}}' (expected: sdk|integrations)" >&2
+            exit 1
+            ;;
+    esac

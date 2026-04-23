@@ -83,16 +83,12 @@ _verify-clippy workspace profile has_nostd:
     WORKSPACES=$(just _parse-workspace "{{workspace}}")
 
     for WS in $WORKSPACES; do
-        case "$WS" in
-            sdk)          MANIFEST_ARG="" ;;
-            integrations)
-                if [ "{{has_nostd}}" = "true" ]; then
-                    echo "Error: the integrations workspace cannot be built with --no_std" >&2
-                    exit 1
-                fi
-                MANIFEST_ARG="--manifest-path {{INTEGRATIONS_DIR}}/Cargo.toml"
-                ;;
-        esac
+        if [ "$WS" = "integrations" ] && [ "{{has_nostd}}" = "true" ]; then
+            echo "Error: the integrations workspace cannot be built with --no_std" >&2
+            exit 1
+        fi
+
+        MANIFEST_ARG=$(just _workspace-manifest-arg "$WS")
 
         if [ "{{has_nostd}}" = "true" ]; then
             echo "Running clippy for '$WS' (no_std {{profile}})..."
