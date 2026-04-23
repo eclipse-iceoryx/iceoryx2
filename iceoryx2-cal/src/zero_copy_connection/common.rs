@@ -725,12 +725,12 @@ pub mod details {
             }
         }
 
-        fn blocking_send<F: Fn(u64, Duration) -> UnableToDeliverAction>(
+        fn blocking_send<F: UnableToDeliverToReceiverFn>(
             &self,
             ptr: PointerOffset,
             sample_size: usize,
             channel_id: ChannelId,
-            unable_to_deliver_handler: F,
+            unable_to_deliver_to_receiver_handler: F,
             unable_to_deliver_action_for_strategy: UnableToDeliverAction,
         ) -> Result<Option<PointerOffset>, ZeroCopySendError> {
             let msg = "Unable to blocking send the offset";
@@ -759,7 +759,7 @@ pub mod details {
                             if retry_until_delivered {
                                 WAIT_CONTINURE
                             } else {
-                                let wait_action = match unable_to_deliver_handler(
+                                let wait_action = match unable_to_deliver_to_receiver_handler(
                                     retry_counter,
                                     start.elapsed().unwrap_or(Duration::MAX),
                                 ) {

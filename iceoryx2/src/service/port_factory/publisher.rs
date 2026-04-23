@@ -56,8 +56,8 @@
 
 use crate::{
     port::{
-        DegradationAction, DegradationCallback, DegradationCause, DegradationInfo,
-        UnableToDeliverAction, UnableToDeliverHandler, UnableToDeliverInfo,
+        DegradationAction, DegradationCallback, DegradationFn, UnableToDeliverFn,
+        UnableToDeliverHandler,
         publisher::{Publisher, PublisherCreateError},
         unable_to_deliver_strategy::UnableToDeliverStrategy,
     },
@@ -220,12 +220,7 @@ impl<
     /// Sets the [`DegradationCallback`] of the [`Publisher`]. Whenever a connection to a
     /// [`crate::port::subscriber::Subscriber`] is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
-    pub fn set_degradation_callback<
-        F: Fn(DegradationCause, &DegradationInfo) -> DegradationAction + 'static,
-    >(
-        mut self,
-        callback: F,
-    ) -> Self {
+    pub fn set_degradation_callback<F: DegradationFn + 'static>(mut self, callback: F) -> Self {
         self.degradation_callback = DegradationCallback::new(callback);
 
         self
@@ -233,12 +228,11 @@ impl<
 
     /// Sets the [`UnableToDeliverHandler`] of the [`Publisher`]. Whenever a sample to a
     /// [`crate::port::subscriber::Subscriber`] cannot be sent, this handler
-    /// is called and depending on the returned [`UnableToDeliverAction`], measures will be taken.
+    /// is called and depending on the returned [`UnableToDeliverAction`](crate::port::UnableToDeliverAction),
+    /// measures will be taken.
     /// If not handler is set, the measures will be determined by the value set to
-    /// [`unable_to_deliver_strategy`]
-    pub fn set_unable_to_deliver_handler<
-        F: Fn(&UnableToDeliverInfo) -> UnableToDeliverAction + 'static,
-    >(
+    /// `unable_to_deliver_strategy`.
+    pub fn set_unable_to_deliver_handler<F: UnableToDeliverFn + 'static>(
         mut self,
         handler: F,
     ) -> Self {

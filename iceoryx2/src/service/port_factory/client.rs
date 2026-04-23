@@ -32,8 +32,8 @@
 use super::request_response::PortFactory;
 use crate::{
     port::{
-        DegradationAction, DegradationCallback, DegradationCause, DegradationInfo,
-        UnableToDeliverHandler, UnableToDeliverInfo, client::Client,
+        DegradationAction, DegradationCallback, DegradationFn, UnableToDeliverFn,
+        UnableToDeliverHandler, client::Client,
     },
     prelude::UnableToDeliverStrategy,
     service,
@@ -41,9 +41,7 @@ use crate::{
 use alloc::format;
 use core::fmt::Debug;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::{
-    shm_allocator::AllocationStrategy, zero_copy_connection::UnableToDeliverAction,
-};
+use iceoryx2_cal::shm_allocator::AllocationStrategy;
 use iceoryx2_log::fail;
 use tiny_fn::tiny_fn;
 
@@ -241,9 +239,7 @@ impl<
     /// from the [`Client`]. Whenever a connection to a
     /// [`Server`](crate::port::server::Server) is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
-    pub fn set_request_degradation_callback<
-        F: Fn(DegradationCause, &DegradationInfo) -> DegradationAction + 'static,
-    >(
+    pub fn set_request_degradation_callback<F: DegradationFn + 'static>(
         mut self,
         callback: F,
     ) -> Self {
@@ -256,9 +252,7 @@ impl<
     /// from a [`Server`](crate::port::server::Server). Whenever a connection to a
     /// [`Server`](crate::port::server::Server) is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
-    pub fn set_response_degradation_callback<
-        F: Fn(DegradationCause, &DegradationInfo) -> DegradationAction + 'static,
-    >(
+    pub fn set_response_degradation_callback<F: DegradationFn + 'static>(
         mut self,
         callback: F,
     ) -> Self {
@@ -269,12 +263,11 @@ impl<
 
     /// Sets the [`UnableToDeliverHandler`] of the [`Client`]. Whenever a sample to a
     /// [`crate::port::server::Server`] cannot be sent, this handler
-    /// is called and depending on the returned [`UnableToDeliverAction`], measures will be taken.
+    /// is called and depending on the returned [`UnableToDeliverAction`](crate::port::UnableToDeliverAction),
+    /// measures will be taken.
     /// If not handler is set, the measures will be determined by the value set to
-    /// [`unable_to_deliver_strategy`]
-    pub fn set_request_unable_to_deliver_handler<
-        F: Fn(&UnableToDeliverInfo) -> UnableToDeliverAction + 'static,
-    >(
+    /// `unable_to_deliver_strategy`.
+    pub fn set_request_unable_to_deliver_handler<F: UnableToDeliverFn + 'static>(
         mut self,
         handler: F,
     ) -> Self {

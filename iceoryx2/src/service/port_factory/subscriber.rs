@@ -37,7 +37,7 @@ use iceoryx2_log::fail;
 
 use crate::{
     port::{
-        DegradationAction, DegradationCallback, DegradationCause, DegradationInfo,
+        DegradationAction, DegradationCallback, DegradationFn,
         subscriber::{Subscriber, SubscriberCreateError},
     },
     service,
@@ -113,12 +113,7 @@ impl<
     /// Sets the [`DegradationCallback`] of the [`Subscriber`]. Whenever a connection to a
     /// [`crate::port::subscriber::Subscriber`] is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
-    pub fn set_degradation_callback<
-        F: Fn(DegradationCause, &DegradationInfo) -> DegradationAction + 'static,
-    >(
-        mut self,
-        callback: F,
-    ) -> Self {
+    pub fn set_degradation_callback<F: DegradationFn + 'static>(mut self, callback: F) -> Self {
         self.config.degradation_callback = DegradationCallback::new(callback);
 
         self

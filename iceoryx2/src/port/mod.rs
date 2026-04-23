@@ -81,6 +81,21 @@ impl UnableToDeliverInfo {
     }
 }
 
+/// The unable to delivery handler invoked by a send function when a sample cannot be delivered
+/// to a receiver
+///
+/// # Arguments
+///
+/// * UnableToDeliverInfo: is a reference to [`UnableToDeliverInfo`] with additional information
+///   to the for the incident that caused the triggering of the handler
+///
+/// # Returns
+///
+/// The [`UnableToDeliverAction`] to be taken to mitigate the incident
+pub trait UnableToDeliverFn: Fn(&UnableToDeliverInfo) -> UnableToDeliverAction {}
+
+impl<F: Fn(&UnableToDeliverInfo) -> UnableToDeliverAction> UnableToDeliverFn for F {}
+
 tiny_fn! {
     /// Defines a custom behavior whenever a port detects a degradation.
     pub struct UnableToDeliverHandler = Fn(info: &UnableToDeliverInfo) -> UnableToDeliverAction;
@@ -144,6 +159,21 @@ impl DegradationInfo {
         }
     }
 }
+
+/// The degradation callback invoked when a degradation is detected
+///
+/// # Arguments
+///
+/// * DegradationCause: is the cause that triggered the callback
+/// * DegradationInfo: is a reference to [`DegradationInfo`] with additional information
+///   to the for the degradation that caused the triggering of the callback
+///
+/// # Returns
+///
+/// The [`DegradationAction`] to be taken to mitigate the degradation
+pub trait DegradationFn: Fn(DegradationCause, &DegradationInfo) -> DegradationAction {}
+
+impl<F: Fn(&DegradationInfo) -> DegradationAction> DegradationFn for F {}
 
 tiny_fn! {
     /// Defines a custom behavior whenever a port detects a degradation.
