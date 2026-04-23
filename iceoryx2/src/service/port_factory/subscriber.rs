@@ -88,7 +88,7 @@ impl<
         Self {
             config: SubscriberConfig {
                 buffer_size: self.config.buffer_size,
-                degradation_callback: DegradationCallback::default(),
+                degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
             },
             factory: self.factory,
         }
@@ -98,7 +98,7 @@ impl<
         Self {
             config: SubscriberConfig {
                 buffer_size: None,
-                degradation_callback: DegradationCallback::default(),
+                degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
             },
             factory,
         }

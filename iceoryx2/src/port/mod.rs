@@ -114,9 +114,10 @@ impl Debug for DegradationCallback<'_> {
     }
 }
 
-impl Default for DegradationCallback<'_> {
-    fn default() -> Self {
-        Self::new(|_, _| DegradationAction::Default)
+impl DegradationCallback<'_> {
+    /// A convenience function that takes a [`DegradationAction`] and returns a [`DegradationCallback`].
+    pub fn new_with(action: DegradationAction) -> Self {
+        Self::new(move |_, _| action)
     }
 }
 

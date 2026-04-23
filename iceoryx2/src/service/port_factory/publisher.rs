@@ -139,7 +139,7 @@ impl<
         Self {
             config: self.config,
             factory: self.factory,
-            degradation_callback: DegradationCallback::default(),
+            degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
             preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),
         }
     }
@@ -172,7 +172,7 @@ impl<
                     .publish_subscribe
                     .unable_to_deliver_strategy,
             },
-            degradation_callback: DegradationCallback::default(),
+            degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
             preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),
             factory,
         }

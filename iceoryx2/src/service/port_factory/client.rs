@@ -167,8 +167,8 @@ impl<
         Self {
             config: self.config,
             factory: self.factory,
-            request_degradation_callback: DegradationCallback::default(),
-            response_degradation_callback: DegradationCallback::default(),
+            request_degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
+            response_degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
             preallocate_number_of_requests_override: PreallocatedRequestsOverride::new(|v| v),
         }
     }
@@ -196,8 +196,8 @@ impl<
                 allocation_strategy: AllocationStrategy::Static,
             },
             preallocate_number_of_requests_override: PreallocatedRequestsOverride::new(|v| v),
-            request_degradation_callback: DegradationCallback::default(),
-            response_degradation_callback: DegradationCallback::default(),
+            request_degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
+            response_degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
             factory,
         }
     }
