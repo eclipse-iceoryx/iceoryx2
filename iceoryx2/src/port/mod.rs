@@ -173,7 +173,7 @@ impl DegradationInfo {
 /// The [`DegradationAction`] to be taken to mitigate the degradation
 pub trait DegradationFn: Fn(DegradationCause, &DegradationInfo) -> DegradationAction {}
 
-impl<F: Fn(&DegradationInfo) -> DegradationAction> DegradationFn for F {}
+impl<F: Fn(DegradationCause, &DegradationInfo) -> DegradationAction> DegradationFn for F {}
 
 tiny_fn! {
     /// Defines a custom behavior whenever a port detects a degradation.
