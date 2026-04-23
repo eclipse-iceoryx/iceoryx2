@@ -240,7 +240,7 @@ impl<Service: service::Service> Sender<Service> {
                                         "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
                                         offset, connection.receiver_port_id);
                         }
-                        DegradationAction::Fail => {
+                        DegradationAction::AbortOperationAndFail => {
                             fail!(from self, with SendError::ConnectionCorrupted,
                                         "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
                                         offset, connection.receiver_port_id);
@@ -491,7 +491,7 @@ impl<Service: service::Service> Sender<Service> {
                                             "Unable to establish connection to new receiver {:?}.",
                                             receiver_details.port_id )
                     }
-                    DegradationAction::Fail => {
+                    DegradationAction::AbortOperationAndFail => {
                         fail!(from self, with e,
                                            "Unable to establish connection to new receiver {:?}.",
                                            receiver_details.port_id );

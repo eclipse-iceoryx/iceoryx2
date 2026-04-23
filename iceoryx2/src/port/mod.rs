@@ -99,7 +99,7 @@ pub enum DegradationAction {
     /// Print out a warning as soon as the degradation is detected
     Warn,
     /// Returns a failure in the function the degradation was detected
-    Fail,
+    AbortOperationAndFail,
 }
 
 /// Defines the cause of a degradation and is a parameter of the [`DegradationCallback`].
