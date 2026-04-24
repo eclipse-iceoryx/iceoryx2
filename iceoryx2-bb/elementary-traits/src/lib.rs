@@ -21,6 +21,7 @@ pub mod allocator;
 mod as_cstr;
 pub use crate::as_cstr::*;
 pub mod generic_pointer;
+pub mod non_null;
 pub mod owning_pointer;
 pub mod placement_default;
 pub mod plain_old_data_without_padding;
