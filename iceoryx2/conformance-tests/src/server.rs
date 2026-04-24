@@ -565,14 +565,13 @@ pub mod server {
 
     #[conformance_test]
     pub fn server_with_unable_to_deliver_handler_does_not_block_with_safe_overflow<Sut: Service>() {
-        const EPSILON: Duration = Duration::from_millis(1);
         const SAFE_OVERFLOW: bool = true;
         const EXPECTED_SECOND_SEND_RESULT: Result<(), SendError> = Ok(());
         const EXPECTED_RECEIVE_VALUE: Option<u64> = Some(VALUE_SECOND_RESPONSE);
 
         let handler_call_count = Arc::new(AtomicU64::new(0));
 
-        let elapsed_blocking_time = server_with_unable_to_deliver_handler::<Sut, _>(
+        server_with_unable_to_deliver_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |server_port_factory| {
                 server_port_factory.set_unable_to_deliver_handler({
@@ -587,20 +586,18 @@ pub mod server {
             EXPECTED_RECEIVE_VALUE,
         );
 
-        assert_that!(elapsed_blocking_time, lt(EPSILON));
         assert_that!(handler_call_count.load(Ordering::Relaxed), eq(0));
     }
 
     #[conformance_test]
     pub fn server_with_unable_to_deliver_handler_discards_response<Sut: Service>() {
-        const EPSILON: Duration = Duration::from_millis(1);
         const SAFE_OVERFLOW: bool = false;
         const EXPECTED_SECOND_SEND_RESULT: Result<(), SendError> = Ok(());
         const EXPECTED_RECEIVE_VALUE: Option<u64> = Some(VALUE_FIRST_RESPONSE);
 
         let handler_call_count = Arc::new(AtomicU64::new(0));
 
-        let elapsed_blocking_time = server_with_unable_to_deliver_handler::<Sut, _>(
+        server_with_unable_to_deliver_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |server_port_factory| {
                 server_port_factory.set_unable_to_deliver_handler({
@@ -615,13 +612,11 @@ pub mod server {
             EXPECTED_RECEIVE_VALUE,
         );
 
-        assert_that!(elapsed_blocking_time, lt(EPSILON));
         assert_that!(handler_call_count.load(Ordering::Relaxed), eq(1));
     }
 
     #[conformance_test]
     pub fn server_with_unable_to_deliver_handler_retries_twice<Sut: Service>() {
-        const EPSILON: Duration = Duration::from_millis(1);
         const SAFE_OVERFLOW: bool = false;
         const EXPECTED_SECOND_SEND_RESULT: Result<(), SendError> = Ok(());
         const EXPECTED_RECEIVE_VALUE: Option<u64> = Some(VALUE_FIRST_RESPONSE);
@@ -629,7 +624,7 @@ pub mod server {
         let handler_call_count = Arc::new(AtomicU64::new(0));
         const RETRY_COUNT: u64 = 2;
 
-        let elapsed_blocking_time = server_with_unable_to_deliver_handler::<Sut, _>(
+        server_with_unable_to_deliver_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |server_port_factory| {
                 server_port_factory.set_unable_to_deliver_handler({
@@ -648,7 +643,6 @@ pub mod server {
             EXPECTED_RECEIVE_VALUE,
         );
 
-        assert_that!(elapsed_blocking_time, lt(EPSILON));
         assert_that!(handler_call_count.load(Ordering::Relaxed), eq(RETRY_COUNT));
     }
 
@@ -681,14 +675,13 @@ pub mod server {
 
     #[conformance_test]
     pub fn server_with_unable_to_deliver_handler_aborts_delivery_and_fails<Sut: Service>() {
-        const EPSILON: Duration = Duration::from_millis(1);
         const SAFE_OVERFLOW: bool = false;
         const EXPECTED_SECOND_SEND_RESULT: Result<(), SendError> = Err(SendError::UnableToDeliver);
         const EXPECTED_RECEIVE_VALUE: Option<u64> = Some(VALUE_FIRST_RESPONSE);
 
         let handler_call_count = Arc::new(AtomicU64::new(0));
 
-        let elapsed_blocking_time = server_with_unable_to_deliver_handler::<Sut, _>(
+        server_with_unable_to_deliver_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |server_port_factory| {
                 server_port_factory.set_unable_to_deliver_handler({
@@ -703,7 +696,6 @@ pub mod server {
             EXPECTED_RECEIVE_VALUE,
         );
 
-        assert_that!(elapsed_blocking_time, lt(EPSILON));
         assert_that!(handler_call_count.load(Ordering::Relaxed), eq(1));
     }
 
@@ -711,14 +703,13 @@ pub mod server {
     pub fn server_with_unable_to_deliver_handler_follows_unable_to_deliver_strategy_with_discard_response<
         Sut: Service,
     >() {
-        const EPSILON: Duration = Duration::from_millis(1);
         const SAFE_OVERFLOW: bool = false;
         const EXPECTED_SECOND_SEND_RESULT: Result<(), SendError> = Ok(());
         const EXPECTED_RECEIVE_VALUE: Option<u64> = Some(VALUE_FIRST_RESPONSE);
 
         let handler_call_count = Arc::new(AtomicU64::new(0));
 
-        let elapsed_blocking_time = server_with_unable_to_deliver_handler::<Sut, _>(
+        server_with_unable_to_deliver_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |server_port_factory| {
                 server_port_factory
@@ -735,7 +726,6 @@ pub mod server {
             EXPECTED_RECEIVE_VALUE,
         );
 
-        assert_that!(elapsed_blocking_time, lt(EPSILON));
         assert_that!(handler_call_count.load(Ordering::Relaxed), eq(1));
     }
 

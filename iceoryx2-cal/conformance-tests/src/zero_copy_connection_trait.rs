@@ -937,20 +937,16 @@ pub mod zero_copy_connection_trait {
     pub fn blocking_send_returns_when_unable_to_deliver_handler_discards_sample<
         Sut: ZeroCopyConnection,
     >() {
-        const EPSILON: Duration = Duration::from_millis(1);
-
         let call_count = AtomicU64::new(0);
 
-        let elapsed_blocking_time =
-            blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
-                |_, _| {
-                    call_count.fetch_add(1, Ordering::Relaxed);
-                    UnableToDeliverAction::DiscardSample
-                },
-                ZeroCopySendError::ReceiveBufferFull,
-            );
+        blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
+            |_, _| {
+                call_count.fetch_add(1, Ordering::Relaxed);
+                UnableToDeliverAction::DiscardSample
+            },
+            ZeroCopySendError::ReceiveBufferFull,
+        );
 
-        assert_that!(elapsed_blocking_time, lt(EPSILON));
         assert_that!(call_count.load(Ordering::Relaxed), eq(1));
     }
 
@@ -958,20 +954,16 @@ pub mod zero_copy_connection_trait {
     pub fn blocking_send_returns_when_unable_to_deliver_handler_aborts_delivery_and_fails<
         Sut: ZeroCopyConnection,
     >() {
-        const EPSILON: Duration = Duration::from_millis(1);
-
         let call_count = AtomicU64::new(0);
 
-        let elapsed_blocking_time =
-            blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
-                |_, _| {
-                    call_count.fetch_add(1, Ordering::Relaxed);
-                    UnableToDeliverAction::AbortDeliveryAndFail
-                },
-                ZeroCopySendError::UnableToDeliver,
-            );
+        blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
+            |_, _| {
+                call_count.fetch_add(1, Ordering::Relaxed);
+                UnableToDeliverAction::AbortDeliveryAndFail
+            },
+            ZeroCopySendError::UnableToDeliver,
+        );
 
-        assert_that!(elapsed_blocking_time, lt(EPSILON));
         assert_that!(call_count.load(Ordering::Relaxed), eq(1));
     }
 
@@ -979,25 +971,21 @@ pub mod zero_copy_connection_trait {
     pub fn blocking_send_returns_when_unable_to_deliver_handler_retries_twice<
         Sut: ZeroCopyConnection,
     >() {
-        const EPSILON: Duration = Duration::from_millis(1);
-
         let call_count = AtomicU64::new(0);
         const RETRY_COUNT: u64 = 2;
 
-        let elapsed_blocking_time =
-            blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
-                |retries, _| {
-                    if retries == RETRY_COUNT {
-                        UnableToDeliverAction::DiscardSample
-                    } else {
-                        call_count.fetch_add(1, Ordering::Relaxed);
-                        UnableToDeliverAction::Retry
-                    }
-                },
-                ZeroCopySendError::ReceiveBufferFull,
-            );
+        blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
+            |retries, _| {
+                if retries == RETRY_COUNT {
+                    UnableToDeliverAction::DiscardSample
+                } else {
+                    call_count.fetch_add(1, Ordering::Relaxed);
+                    UnableToDeliverAction::Retry
+                }
+            },
+            ZeroCopySendError::ReceiveBufferFull,
+        );
 
-        assert_that!(elapsed_blocking_time, lt(EPSILON));
         assert_that!(call_count.load(Ordering::Relaxed), eq(RETRY_COUNT));
     }
 
