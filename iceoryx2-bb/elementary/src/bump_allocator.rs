@@ -10,46 +10,108 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::math::align;
-use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
-use iceoryx2_pal_concurrency_sync::atomic::AtomicUsize;
-use iceoryx2_pal_concurrency_sync::atomic::Ordering;
+//! A **threadsafe** and **lock-free** bump allocator.
+//! It can be allocated with `BumpAllocator::allocate()` but `BumpAllocator::deallocate`
+//! deallocate all allocated chunks. See this: `https://os.phil-opp.com/allocator-designs/`
+//! for more details.
 
-/// A minimalistic [`BumpAllocator`].
+use core::{fmt::Display, ptr::NonNull};
+
+use crate::math::align;
+use iceoryx2_bb_concurrency::atomic::AtomicUsize;
+use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_log::fail;
+
+pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
+
+#[derive(Debug)]
 pub struct BumpAllocator {
-    start: *mut u8,
-    pos: AtomicUsize,
+    pub(crate) start: usize,
+    addr_next_free_memory: AtomicUsize,
+    full_memory_size: usize,
+}
+
+impl Display for BumpAllocator {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "BumpAllocator {{ start: {}, size: {}, current_position: {} }}",
+            self.start,
+            self.addr_next_free_memory
+                .load(core::sync::atomic::Ordering::Relaxed),
+            self.full_memory_size,
+        )
+    }
 }
 
 impl BumpAllocator {
-    /// Creates a new [`BumpAllocator`] that manages the memory starting at `start`.
-    pub fn new(start: *mut u8) -> Self {
+    pub fn new(start: NonNull<u8>, full_memory_size: usize) -> Self {
         Self {
-            start,
-            pos: AtomicUsize::new(start as usize),
+            start: start.as_ptr() as usize,
+            addr_next_free_memory: AtomicUsize::new(0),
+            full_memory_size,
         }
+    }
+
+    pub fn start_address(&self) -> usize {
+        self.start
+    }
+
+    pub fn used_space(&self) -> usize {
+        self.addr_next_free_memory.load(Ordering::Relaxed)
+    }
+
+    pub fn free_space(&self) -> usize {
+        self.full_memory_size - self.used_space()
+    }
+
+    pub fn total_space(&self) -> usize {
+        self.full_memory_size
     }
 }
 
 impl BaseAllocator for BumpAllocator {
-    fn allocate(
-        &self,
-        layout: core::alloc::Layout,
-    ) -> Result<core::ptr::NonNull<[u8]>, AllocationError> {
-        let mem = align(self.pos.load(Ordering::Relaxed), layout.align());
-        self.pos.store(mem + layout.size(), Ordering::Relaxed);
+    fn allocate(&self, layout: core::alloc::Layout) -> Result<NonNull<[u8]>, AllocationError> {
+        let msg = "Unable to allocate chunk with";
+        let mut next_aligned_free_address;
 
-        unsafe {
-            Ok(core::ptr::NonNull::new_unchecked(
-                core::ptr::slice_from_raw_parts_mut(
-                    self.start.add(mem - self.start as usize),
-                    layout.size(),
-                ),
-            ))
+        if layout.size() == 0 {
+            fail!(from self, with AllocationError::SizeIsZero,
+                "{} {:?} since the requested size was zero.", msg, layout);
         }
+
+        let mut current_addr_next_free_memory = self
+            .addr_next_free_memory
+            .load(core::sync::atomic::Ordering::Relaxed);
+        loop {
+            next_aligned_free_address =
+                align(self.start + current_addr_next_free_memory, layout.align()) - self.start;
+            if next_aligned_free_address + layout.size() > self.full_memory_size {
+                fail!(from self, with AllocationError::OutOfMemory,
+                    "{} {:?} since there is not enough memory available.", msg, layout);
+            }
+
+            match self.addr_next_free_memory.compare_exchange_weak(
+                current_addr_next_free_memory,
+                next_aligned_free_address + layout.size(),
+                core::sync::atomic::Ordering::Relaxed,
+                core::sync::atomic::Ordering::Relaxed,
+            ) {
+                Ok(_) => break,
+                Err(v) => current_addr_next_free_memory = v,
+            }
+        }
+
+        Ok(unsafe {
+            NonNull::new_unchecked(core::ptr::slice_from_raw_parts_mut(
+                (self.start + next_aligned_free_address) as *mut u8,
+                layout.size(),
+            ))
+        })
     }
 
-    unsafe fn deallocate(&self, _ptr: core::ptr::NonNull<u8>, _layout: core::alloc::Layout) {
-        self.pos.store(self.start as usize, Ordering::Relaxed);
+    unsafe fn deallocate(&self, _ptr: NonNull<u8>, _layout: core::alloc::Layout) {
+        self.addr_next_free_memory
+            .store(0, core::sync::atomic::Ordering::Relaxed);
     }
 }
