@@ -286,7 +286,7 @@ impl<
     /// measures will be taken.
     /// If no handler is set, the measures will be determined by the value set in
     /// [`UnableToDeliverStrategy`].
-    pub fn set_response_unable_to_deliver_handler<F: UnableToDeliverFn + 'static>(
+    pub fn set_unable_to_deliver_handler<F: UnableToDeliverFn + 'static>(
         mut self,
         handler: F,
     ) -> Self {
