@@ -868,7 +868,7 @@ pub mod zero_copy_connection_trait {
         .unwrap();
     }
 
-    fn blocking_send_returns_when_unable_to_delivery_handler_is_used<
+    fn blocking_send_returns_when_unable_to_deliver_handler_is_used<
         Sut: ZeroCopyConnection,
         F: UnableToDeliverToReceiverFn,
     >(
@@ -934,7 +934,7 @@ pub mod zero_copy_connection_trait {
     }
 
     #[conformance_test]
-    pub fn blocking_send_returns_when_unable_to_delivery_handler_discards_sample<
+    pub fn blocking_send_returns_when_unable_to_deliver_handler_discards_sample<
         Sut: ZeroCopyConnection,
     >() {
         const EPSILON: Duration = Duration::from_millis(1);
@@ -942,7 +942,7 @@ pub mod zero_copy_connection_trait {
         let call_count = AtomicU64::new(0);
 
         let elapsed_blocking_time =
-            blocking_send_returns_when_unable_to_delivery_handler_is_used::<Sut, _>(
+            blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
                 |_, _| {
                     call_count.fetch_add(1, Ordering::Relaxed);
                     UnableToDeliverAction::DiscardSample
@@ -955,7 +955,7 @@ pub mod zero_copy_connection_trait {
     }
 
     #[conformance_test]
-    pub fn blocking_send_returns_when_unable_to_delivery_handler_aborts_delivery_and_fails<
+    pub fn blocking_send_returns_when_unable_to_deliver_handler_aborts_delivery_and_fails<
         Sut: ZeroCopyConnection,
     >() {
         const EPSILON: Duration = Duration::from_millis(1);
@@ -963,7 +963,7 @@ pub mod zero_copy_connection_trait {
         let call_count = AtomicU64::new(0);
 
         let elapsed_blocking_time =
-            blocking_send_returns_when_unable_to_delivery_handler_is_used::<Sut, _>(
+            blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
                 |_, _| {
                     call_count.fetch_add(1, Ordering::Relaxed);
                     UnableToDeliverAction::AbortDeliveryAndFail
@@ -976,7 +976,7 @@ pub mod zero_copy_connection_trait {
     }
 
     #[conformance_test]
-    pub fn blocking_send_returns_when_unable_to_delivery_handler_retries_twice<
+    pub fn blocking_send_returns_when_unable_to_deliver_handler_retries_twice<
         Sut: ZeroCopyConnection,
     >() {
         const EPSILON: Duration = Duration::from_millis(1);
@@ -985,7 +985,7 @@ pub mod zero_copy_connection_trait {
         const RETRY_COUNT: u64 = 2;
 
         let elapsed_blocking_time =
-            blocking_send_returns_when_unable_to_delivery_handler_is_used::<Sut, _>(
+            blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
                 |retries, _| {
                     if retries == RETRY_COUNT {
                         UnableToDeliverAction::DiscardSample
@@ -1002,13 +1002,13 @@ pub mod zero_copy_connection_trait {
     }
 
     #[conformance_test]
-    pub fn blocking_send_returns_when_unable_to_delivery_handler_retries_until_timeout<
+    pub fn blocking_send_returns_when_unable_to_deliver_handler_retries_until_timeout<
         Sut: ZeroCopyConnection,
     >() {
         const TIMEOUT: Duration = Duration::from_millis(25);
 
         let elapsed_blocking_time =
-            blocking_send_returns_when_unable_to_delivery_handler_is_used::<Sut, _>(
+            blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
                 |_, elapsed_time| {
                     if elapsed_time > TIMEOUT {
                         UnableToDeliverAction::DiscardSample
