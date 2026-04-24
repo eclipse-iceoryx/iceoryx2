@@ -48,7 +48,7 @@ impl iceoryx2::service::Service for CustomServiceVariant {
         iceoryx2_cal::dynamic_storage::file::Storage<KeyType>;
     // the blackboard payload is replaced with a file based version
     type BlackboardPayload = iceoryx2_cal::shared_memory::file::Memory<
-        iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator,
+        iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator,
     >;
 }
 

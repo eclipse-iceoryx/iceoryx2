@@ -35,8 +35,8 @@
 use core::fmt::Debug;
 
 use crate::service::dynamic_config::DynamicConfig;
-use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
+use iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator;
 use iceoryx2_cal::*;
 
 /// Defines a process local or single address space communication setup.

@@ -341,3 +341,14 @@
         memory.len(),
     );
     ```
+
+1. The `bump_allocator` module in the `iceoryx2-cal` package
+   has been renamed to shm_bump_allocator.
+
+    ```rust
+    // old
+    use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
+    
+    // new
+    use iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator;
+    ```
