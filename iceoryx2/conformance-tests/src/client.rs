@@ -15,20 +15,20 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod client {
-    use alloc::vec;
+    use alloc::{sync::Arc, vec};
     use core::ops::Deref;
     use core::time::Duration;
     use iceoryx2::port::update_connections::UpdateConnections;
 
-    use iceoryx2::port::LoanError;
     use iceoryx2::port::client::RequestSendError;
+    use iceoryx2::port::{LoanError, SendError, UnableToDeliverAction};
     use iceoryx2::prelude::*;
+    use iceoryx2::service::port_factory::client::PortFactoryClient;
     use iceoryx2::testing::*;
-    use iceoryx2_bb_concurrency::atomic::AtomicBool;
-    use iceoryx2_bb_concurrency::atomic::Ordering;
+    use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, Ordering};
     use iceoryx2_bb_posix::barrier::BarrierBuilder;
     use iceoryx2_bb_posix::barrier::BarrierHandle;
-    use iceoryx2_bb_posix::clock::nanosleep;
+    use iceoryx2_bb_posix::clock::{Time, nanosleep};
     use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_testing::assert_that;
@@ -354,6 +354,385 @@ pub mod client {
         assert_that!(data, is_some);
         let data = data.unwrap();
         assert_that!(*data, eq 123);
+    }
+
+    const VALUE_FIRST_REQUEST: u64 = 123;
+    const VALUE_SECOND_REQUEST: u64 = 456;
+
+    fn client_with_unable_to_deliver_handler<Sut, ClientBuilder>(
+        save_overflow: bool,
+        client_builder: ClientBuilder,
+        expected_second_send_result: Result<(), RequestSendError>,
+        expected_receive_value_server_1: Option<u64>,
+        expected_receive_value_server_2: Option<u64>,
+    ) -> Duration
+    where
+        Sut: Service,
+        ClientBuilder: Fn(
+            PortFactoryClient<'_, Sut, u64, (), u64, ()>,
+        ) -> PortFactoryClient<'_, Sut, u64, (), u64, ()>,
+    {
+        let _watchdog = Watchdog::new();
+
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .enable_safe_overflow_for_requests(save_overflow)
+            .max_active_requests_per_client(1)
+            .create()
+            .unwrap();
+
+        let server_1 = service.server_builder().create().unwrap();
+        let server_2 = service.server_builder().create().unwrap();
+
+        let client_port_factory = service.client_builder();
+
+        let sut = client_builder(client_port_factory).create().unwrap();
+
+        let _ = server_1.update_connections();
+        let _ = server_2.update_connections();
+
+        let now = Time::now().unwrap();
+
+        let request = sut.send_copy(VALUE_FIRST_REQUEST);
+        assert_that!(request, is_ok);
+        assert_that!(
+            *server_2.receive().unwrap().unwrap(),
+            eq(VALUE_FIRST_REQUEST)
+        );
+
+        // need to drop request in order to make the client send the second request,
+        // else there will be a RequestSendError::ExceedsMaxActiveRequests error
+        drop(request);
+
+        let request = sut.send_copy(VALUE_SECOND_REQUEST);
+        match expected_second_send_result {
+            Ok(_) => assert_that!(request, is_ok),
+            Err(e) => assert_that!(request.err().unwrap(), eq(e)),
+        }
+
+        let elapsed_blocking_time = now.elapsed().unwrap();
+
+        // check result for server 1
+        let mut receive_result = server_1.receive();
+        if let Some(expected_value) = expected_receive_value_server_1 {
+            assert_that!(receive_result, is_ok);
+            let receive_value = receive_result.unwrap();
+            assert_that!(receive_value, is_some);
+            let sample = receive_value.unwrap();
+            assert_that!(*sample, eq(expected_value));
+
+            receive_result = server_1.receive();
+        }
+        assert_that!(receive_result, is_ok);
+        let receive_value = receive_result.unwrap();
+        assert_that!(receive_value, is_none);
+
+        // check result for server 2
+        let mut receive_result = server_2.receive();
+        if let Some(expected_value) = expected_receive_value_server_2 {
+            assert_that!(receive_result, is_ok);
+            let receive_value = receive_result.unwrap();
+            assert_that!(receive_value, is_some);
+            let sample = receive_value.unwrap();
+            assert_that!(*sample, eq(expected_value));
+
+            receive_result = server_2.receive();
+        }
+        assert_that!(receive_result, is_ok);
+        let receive_value = receive_result.unwrap();
+        assert_that!(receive_value, is_none);
+
+        elapsed_blocking_time
+    }
+
+    #[conformance_test]
+    pub fn client_with_unable_to_deliver_handler_does_not_block_with_safe_overflow<Sut: Service>() {
+        const EPSILON: Duration = Duration::from_millis(1);
+        const SAFE_OVERFLOW: bool = true;
+        const EXPECTED_SECOND_SEND_RESULT: Result<(), RequestSendError> = Ok(());
+        const EXPECTED_RECEIVE_VALUE_SERVER_1: Option<u64> = Some(VALUE_SECOND_REQUEST);
+        const EXPECTED_RECEIVE_VALUE_SERVER_2: Option<u64> = Some(VALUE_SECOND_REQUEST);
+
+        let handler_call_count = Arc::new(AtomicU64::new(0));
+
+        let elapsed_blocking_time = client_with_unable_to_deliver_handler::<Sut, _>(
+            SAFE_OVERFLOW,
+            |client_port_factory| {
+                client_port_factory.set_unable_to_deliver_handler({
+                    let handler_call_count = handler_call_count.clone();
+                    move |_| {
+                        handler_call_count.fetch_add(1, Ordering::Relaxed);
+                        UnableToDeliverAction::Retry
+                    }
+                })
+            },
+            EXPECTED_SECOND_SEND_RESULT,
+            EXPECTED_RECEIVE_VALUE_SERVER_1,
+            EXPECTED_RECEIVE_VALUE_SERVER_2,
+        );
+
+        assert_that!(elapsed_blocking_time, lt(EPSILON));
+        assert_that!(handler_call_count.load(Ordering::Relaxed), eq(0));
+    }
+
+    #[conformance_test]
+    pub fn client_with_unable_to_deliver_handler_discards_request<Sut: Service>() {
+        const EPSILON: Duration = Duration::from_millis(1);
+        const SAFE_OVERFLOW: bool = false;
+        const EXPECTED_SECOND_SEND_RESULT: Result<(), RequestSendError> = Ok(());
+        const EXPECTED_RECEIVE_VALUE_SERVER_1: Option<u64> = Some(VALUE_FIRST_REQUEST);
+        const EXPECTED_RECEIVE_VALUE_SERVER_2: Option<u64> = Some(VALUE_SECOND_REQUEST);
+
+        let handler_call_count = Arc::new(AtomicU64::new(0));
+
+        let elapsed_blocking_time = client_with_unable_to_deliver_handler::<Sut, _>(
+            SAFE_OVERFLOW,
+            |client_port_factory| {
+                client_port_factory.set_unable_to_deliver_handler({
+                    let handler_call_count = handler_call_count.clone();
+                    move |_| {
+                        handler_call_count.fetch_add(1, Ordering::Relaxed);
+                        UnableToDeliverAction::DiscardSample
+                    }
+                })
+            },
+            EXPECTED_SECOND_SEND_RESULT,
+            EXPECTED_RECEIVE_VALUE_SERVER_1,
+            EXPECTED_RECEIVE_VALUE_SERVER_2,
+        );
+
+        assert_that!(elapsed_blocking_time, lt(EPSILON));
+        assert_that!(handler_call_count.load(Ordering::Relaxed), eq(1));
+    }
+
+    #[conformance_test]
+    pub fn client_with_unable_to_deliver_handler_retries_twice<Sut: Service>() {
+        const EPSILON: Duration = Duration::from_millis(1);
+        const SAFE_OVERFLOW: bool = false;
+        const EXPECTED_SECOND_SEND_RESULT: Result<(), RequestSendError> = Ok(());
+        const EXPECTED_RECEIVE_VALUE_SERVER_1: Option<u64> = Some(VALUE_FIRST_REQUEST);
+        const EXPECTED_RECEIVE_VALUE_SERVER_2: Option<u64> = Some(VALUE_SECOND_REQUEST);
+
+        let handler_call_count = Arc::new(AtomicU64::new(0));
+        const RETRY_COUNT: u64 = 2;
+
+        let elapsed_blocking_time = client_with_unable_to_deliver_handler::<Sut, _>(
+            SAFE_OVERFLOW,
+            |client_port_factory| {
+                client_port_factory.set_unable_to_deliver_handler({
+                    let handler_call_count = handler_call_count.clone();
+                    move |info| {
+                        if info.retries == RETRY_COUNT {
+                            UnableToDeliverAction::DiscardSample
+                        } else {
+                            handler_call_count.fetch_add(1, Ordering::Relaxed);
+                            UnableToDeliverAction::Retry
+                        }
+                    }
+                })
+            },
+            EXPECTED_SECOND_SEND_RESULT,
+            EXPECTED_RECEIVE_VALUE_SERVER_1,
+            EXPECTED_RECEIVE_VALUE_SERVER_2,
+        );
+
+        assert_that!(elapsed_blocking_time, lt(EPSILON));
+        assert_that!(handler_call_count.load(Ordering::Relaxed), eq(RETRY_COUNT));
+    }
+
+    #[conformance_test]
+    pub fn client_with_unable_to_deliver_handler_retries_until_timeout<Sut: Service>() {
+        const TIMEOUT: Duration = Duration::from_millis(25);
+        const SAFE_OVERFLOW: bool = false;
+        const EXPECTED_SECOND_SEND_RESULT: Result<(), RequestSendError> = Ok(());
+        const EXPECTED_RECEIVE_VALUE_SERVER_1: Option<u64> = Some(VALUE_FIRST_REQUEST);
+        const EXPECTED_RECEIVE_VALUE_SERVER_2: Option<u64> = Some(VALUE_SECOND_REQUEST);
+
+        let elapsed_blocking_time = client_with_unable_to_deliver_handler::<Sut, _>(
+            SAFE_OVERFLOW,
+            |client_port_factory| {
+                client_port_factory.set_unable_to_deliver_handler({
+                    move |info| {
+                        if info.elapsed_time > TIMEOUT {
+                            UnableToDeliverAction::DiscardSample
+                        } else {
+                            UnableToDeliverAction::Retry
+                        }
+                    }
+                })
+            },
+            EXPECTED_SECOND_SEND_RESULT,
+            EXPECTED_RECEIVE_VALUE_SERVER_1,
+            EXPECTED_RECEIVE_VALUE_SERVER_2,
+        );
+
+        assert_that!(elapsed_blocking_time, time_at_least(TIMEOUT));
+    }
+
+    #[conformance_test]
+    pub fn client_with_unable_to_deliver_handler_aborts_delivery_and_fails<Sut: Service>() {
+        const EPSILON: Duration = Duration::from_millis(1);
+        const SAFE_OVERFLOW: bool = false;
+        const EXPECTED_SECOND_SEND_RESULT: Result<(), RequestSendError> =
+            Err(RequestSendError::SendError(SendError::UnableToDeliver));
+        const EXPECTED_RECEIVE_VALUE_SERVER_1: Option<u64> = Some(VALUE_FIRST_REQUEST);
+        const EXPECTED_RECEIVE_VALUE_SERVER_2: Option<u64> = None;
+
+        let handler_call_count = Arc::new(AtomicU64::new(0));
+
+        let elapsed_blocking_time = client_with_unable_to_deliver_handler::<Sut, _>(
+            SAFE_OVERFLOW,
+            |client_port_factory| {
+                client_port_factory.set_unable_to_deliver_handler({
+                    let handler_call_count = handler_call_count.clone();
+                    move |_| {
+                        handler_call_count.fetch_add(1, Ordering::Relaxed);
+                        UnableToDeliverAction::AbortDeliveryAndFail
+                    }
+                })
+            },
+            EXPECTED_SECOND_SEND_RESULT,
+            EXPECTED_RECEIVE_VALUE_SERVER_1,
+            EXPECTED_RECEIVE_VALUE_SERVER_2,
+        );
+
+        assert_that!(elapsed_blocking_time, lt(EPSILON));
+        assert_that!(handler_call_count.load(Ordering::Relaxed), eq(1));
+    }
+
+    #[conformance_test]
+    pub fn client_with_unable_to_deliver_handler_follows_unable_to_deliver_strategy_with_discard_request<
+        Sut: Service,
+    >() {
+        const EPSILON: Duration = Duration::from_millis(1);
+        const SAFE_OVERFLOW: bool = false;
+        const EXPECTED_SECOND_SEND_RESULT: Result<(), RequestSendError> = Ok(());
+        const EXPECTED_RECEIVE_VALUE_SERVER_1: Option<u64> = Some(VALUE_FIRST_REQUEST);
+        const EXPECTED_RECEIVE_VALUE_SERVER_2: Option<u64> = Some(VALUE_SECOND_REQUEST);
+
+        let handler_call_count = Arc::new(AtomicU64::new(0));
+
+        let elapsed_blocking_time = client_with_unable_to_deliver_handler::<Sut, _>(
+            SAFE_OVERFLOW,
+            |client_port_factory| {
+                client_port_factory
+                    .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
+                    .set_unable_to_deliver_handler({
+                        let handler_call_count = handler_call_count.clone();
+                        move |_| {
+                            handler_call_count.fetch_add(1, Ordering::Relaxed);
+                            UnableToDeliverAction::FollowUnableToDeliveryStrategy
+                        }
+                    })
+            },
+            EXPECTED_SECOND_SEND_RESULT,
+            EXPECTED_RECEIVE_VALUE_SERVER_1,
+            EXPECTED_RECEIVE_VALUE_SERVER_2,
+        );
+
+        assert_that!(elapsed_blocking_time, lt(EPSILON));
+        assert_that!(handler_call_count.load(Ordering::Relaxed), eq(1));
+    }
+
+    #[conformance_test]
+    pub fn client_with_unable_to_deliver_handler_follows_unable_to_deliver_strategy_with_retry_until_delivered<
+        Sut: Service,
+    >() {
+        let _watchdog = Watchdog::new();
+
+        thread_scope(|s| {
+            const TIMEOUT: Duration = Duration::from_millis(25);
+
+            let connect_handle = BarrierHandle::new();
+            let connect_barrier = BarrierBuilder::new(2).create(&connect_handle).unwrap();
+            let ready_handle = BarrierHandle::new();
+            let ready_barrier = BarrierBuilder::new(2).create(&ready_handle).unwrap();
+            let start_handle = BarrierHandle::new();
+            let start_barrier = BarrierBuilder::new(2).create(&start_handle).unwrap();
+            let finish_handle = BarrierHandle::new();
+            let finish_barrier = BarrierBuilder::new(2).create(&finish_handle).unwrap();
+
+            let service_name = generate_service_name();
+            let node = create_node::<Sut>();
+            let service = node
+                .service_builder(&service_name)
+                .request_response::<u64, u64>()
+                .enable_safe_overflow_for_requests(false)
+                .max_active_requests_per_client(1)
+                .create()
+                .unwrap();
+
+            let server_1 = service.server_builder().create().unwrap();
+
+            s.thread_builder().spawn(|| {
+                let call_count = Arc::new(AtomicU64::new(0));
+
+                let server_2 = service.server_builder().create().unwrap();
+
+                let sut = service
+                    .client_builder()
+                    .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
+                    .set_unable_to_deliver_handler({
+                        let call_count = call_count.clone();
+                        move |_| {
+                            call_count.fetch_add(1, Ordering::Relaxed);
+                            UnableToDeliverAction::FollowUnableToDeliveryStrategy
+                        }
+                    })
+                    .create()
+                    .unwrap();
+
+                connect_barrier.wait();
+
+                let _ = server_2.update_connections();
+
+                ready_barrier.wait();
+
+                let request = sut.send_copy(123);
+                assert_that!(request, is_ok);
+                assert_that!(*server_2.receive().unwrap().unwrap(), eq(123));
+
+                // need to drop request in order to make the client send the second request,
+                // else there will be a RequestSendError::ExceedsMaxActiveRequests error
+                drop(request);
+
+                start_barrier.wait();
+
+                let request = sut.send_copy(456);
+                assert_that!(request, is_ok);
+                assert_that!(*server_2.receive().unwrap().unwrap(), eq(456));
+
+                finish_barrier.wait();
+
+                assert_that!(call_count.load(Ordering::Relaxed), eq(1));
+            })?;
+
+            connect_barrier.wait();
+
+            let _ = server_1.update_connections();
+
+            ready_barrier.wait();
+
+            let start = Time::now().unwrap();
+
+            start_barrier.wait();
+
+            nanosleep(TIMEOUT).unwrap();
+
+            assert_that!(*server_1.receive().unwrap().unwrap(), eq(123));
+
+            finish_barrier.wait();
+
+            assert_that!(*server_1.receive().unwrap().unwrap(), eq(456));
+
+            assert_that!(start.elapsed().unwrap(),  time_at_least TIMEOUT);
+
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[conformance_test]
