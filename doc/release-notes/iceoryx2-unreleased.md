@@ -143,6 +143,8 @@
   [#223](https://github.com/eclipse-iceoryx/iceoryx2/issues/223)
 * Remove rule suppression in clang-tidy
   [#280](https://github.com/eclipse-iceoryx/iceoryx2/issues/280)
+* Move BumpAllocator from iceoryx2-bb-memory into iceoryx2-bb-elementary
+  [#996](https://github.com/eclipse-iceoryx/iceoryx2/issues/996)
 * Remove support for Bazel Workspaces
   [#1263](https://github.com/eclipse-iceoryx/iceoryx2/issues/1263)
 * Adjust test names to naming convention
@@ -313,4 +315,40 @@
     
     // new
     use iceoryx2_services_tunnel::{Config, Tunnel};
+    ```
+
+1. The `Bumpallocator` from iceoryx2-bb-memory crate has been
+   moved into the iceoryx2-bb-elementary crate and replaces it.
+   The `Bumpallocator` is re-exported in iceoryx2-bb-memory and
+   expects now a `NonNull<u8>` as start address and the size
+   of the memory that the Allocator manages.
+
+    ```rust
+    // old
+    use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+    
+    let memory = [0u8; 8192];
+    let start_position: *mut u8 = memory.as_mut_ptr();
+    let sut = BumpAllocator::new(start_position);
+    
+    // new
+    use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+    use iceoryx2_bb_elementary_traits::{non_null::NonNull, non_null::NonNullCompat};
+    
+    let memory = [0u8; 8192];
+    let sut = BumpAllocator::new(
+        <NonNull<u8> as NonNullCompat<u8>>::from_ref(&memory[0]),
+        memory.len(),
+    );
+    ```
+
+1. The `bump_allocator` module in the `iceoryx2-cal` package
+   has been renamed to shm_bump_allocator.
+
+    ```rust
+    // old
+    use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
+    
+    // new
+    use iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator;
     ```

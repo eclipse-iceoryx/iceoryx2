@@ -667,14 +667,14 @@ impl<
                     payload_size += i.internal_value_size + i.internal_value_alignment - 1;
                 }
                 let payload_shm = match <<ServiceType::BlackboardPayload as SharedMemory<
-                    iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator,
+                    iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator,
                 >>::Builder as NamedConceptBuilder<ServiceType::BlackboardPayload>>::new(
                     &name
                 )
                 .config(&shm_config)
                 .has_ownership(false)
                 .size(payload_size)
-                .create(&iceoryx2_cal::shared_memory::bump_allocator::Config::default())
+                .create(&iceoryx2_cal::shared_memory::shm_bump_allocator::Config::default())
                 {
                     Ok(v) => v,
                     Err(_) => {
@@ -1031,7 +1031,7 @@ impl<
                         self.builder.base.shared_node.config(),
                     );
                     let payload_shm = match <<ServiceType::BlackboardPayload as SharedMemory<
-                        iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator,
+                        iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator,
                     >>::Builder as NamedConceptBuilder<ServiceType::BlackboardPayload>>::new(
                         &name
                     )

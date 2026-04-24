@@ -15,7 +15,8 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
-pub mod bump_allocator;
+pub use iceoryx2_bb_elementary::bump_allocator;
+
 pub mod heap_allocator;
 pub mod one_chunk_allocator;
 pub mod pool_allocator;
