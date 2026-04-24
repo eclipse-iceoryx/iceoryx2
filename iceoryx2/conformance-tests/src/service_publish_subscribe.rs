@@ -1852,7 +1852,9 @@ pub mod service_publish_subscribe {
             EXPECTED_RECEIVE_VALUE_SUBSCRIBER_2,
         );
 
-        assert_that!(elapsed_blocking_time, lt(EPSILON));
+        // AdaptiveWait is extremely slow on macOS and sometimes needs more than 20ms for this test
+        let multiplicator = if cfg!(target_os = "macos") { 100 } else { 1 };
+        assert_that!(elapsed_blocking_time, lt(EPSILON * multiplicator));
         assert_that!(handler_call_count.load(Ordering::Relaxed), eq(RETRY_COUNT));
     }
 

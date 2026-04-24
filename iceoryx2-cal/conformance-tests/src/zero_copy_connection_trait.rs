@@ -997,7 +997,9 @@ pub mod zero_copy_connection_trait {
                 ZeroCopySendError::ReceiveBufferFull,
             );
 
-        assert_that!(elapsed_blocking_time, lt(EPSILON));
+        // AdaptiveWait is extremely slow on macOS and sometimes needs more than 20ms for this test
+        let multiplicator = if cfg!(target_os = "macos") { 100 } else { 1 };
+        assert_that!(elapsed_blocking_time, lt(EPSILON * multiplicator));
         assert_that!(call_count.load(Ordering::Relaxed), eq(RETRY_COUNT));
     }
 
