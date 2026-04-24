@@ -100,3 +100,115 @@ pub fn deallocating_releases_everything() {
     assert_that!(unsafe { memory.as_ref() }.as_ptr() as usize, eq start_position as usize);
     assert_that!(unsafe { memory.as_ref() }.len(), eq MEM_SIZE);
 }
+
+#[test]
+pub fn allocating_too_much_fails_with_out_of_memory() {
+    let memory = [0u8; 8192];
+    let sut = BumpAllocator::new(
+        <NonNull<u8> as NonNullCompat<u8>>::from_ref(&memory[0]),
+        memory.len(),
+    );
+
+    let sample = sut.allocate(unsafe { Layout::from_size_align_unchecked(8192 * 2, 1) });
+
+    assert_that!(sample, is_err);
+    assert_that!(sample.err().unwrap(), eq  AllocationError::OutOfMemory);
+}
+
+#[test]
+pub fn allocating_all_memory_works() {
+    let memory = [0u8; 8192];
+    let sut = BumpAllocator::new(
+        <NonNull<u8> as NonNullCompat<u8>>::from_ref(&memory[0]),
+        memory.len(),
+    );
+
+    let number_of_samples = 8;
+    let sample_size = 8192 / number_of_samples;
+    for i in 0..number_of_samples {
+        let sample = sut.allocate(unsafe { Layout::from_size_align_unchecked(sample_size, 1) });
+        assert_that!(sample, is_ok);
+        assert_that!(
+            (sample.unwrap().as_ptr() as *mut u8) as u64, eq
+            memory.as_ptr() as u64 + (i * sample_size) as u64
+        );
+    }
+
+    let sample = sut.allocate(unsafe { Layout::from_size_align_unchecked(sample_size, 1) });
+    assert_that!(sample, is_err);
+    assert_that!(sample.err().unwrap(), eq AllocationError::OutOfMemory);
+}
+
+#[test]
+pub fn after_deallocate_allocating_all_memory_works() {
+    let mut memory = [0u8; 8192];
+    let sut = BumpAllocator::new(
+        <NonNull<u8> as NonNullCompat<u8>>::from_ref(&memory[0]),
+        memory.len(),
+    );
+
+    let number_of_samples = 8;
+    let sample_size = 8192 / number_of_samples;
+    for _ in 0..number_of_samples {
+        let sample = sut.allocate(unsafe { Layout::from_size_align_unchecked(sample_size, 1) });
+        assert_that!(sample, is_ok);
+    }
+
+    unsafe {
+        sut.deallocate(
+            NonNull::new_unchecked(memory.as_mut_ptr()),
+            Layout::from_size_align_unchecked(1, 1),
+        );
+    }
+
+    for _ in 0..number_of_samples {
+        let sample = sut.allocate(unsafe { Layout::from_size_align_unchecked(sample_size, 1) });
+        assert_that!(sample, is_ok);
+    }
+}
+
+#[test]
+pub fn used_free_and_total_space_work() {
+    let memory = [0u8; 8192];
+    let sut = BumpAllocator::new(
+        <NonNull<u8> as NonNullCompat<u8>>::from_ref(&memory[0]),
+        memory.len(),
+    );
+
+    let mut space_used = 331;
+    while space_used < 8192 {
+        assert_that!(
+            sut.allocate(unsafe { Layout::from_size_align_unchecked(331, 1) }),
+            is_ok
+        );
+
+        assert_that!(sut.used_space(), eq space_used);
+        assert_that!(sut.free_space(), eq 8192 - space_used);
+        assert_that!(sut.total_space(), eq 8192);
+        space_used += 331;
+    }
+}
+
+#[test]
+pub fn allocating_with_different_alignments_works() {
+    let memory = [0u8; 8192];
+    let sut = BumpAllocator::new(
+        <NonNull<u8> as NonNullCompat<u8>>::from_ref(&memory[0]),
+        memory.len(),
+    );
+
+    for i in [
+        [32, 8],
+        [1, 64],
+        [1, 1],
+        [2, 1],
+        [5, 16],
+        [200, 128],
+        [129, 256],
+    ] {
+        let sample = sut.allocate(unsafe { Layout::from_size_align_unchecked(i[0], i[1]) });
+        assert_that!(sample, is_ok);
+        let sample_addr = (sample.unwrap().as_ptr() as *const u8) as usize;
+        assert_that!(sample_addr, mod i[1], is 0);
+    }
+}
