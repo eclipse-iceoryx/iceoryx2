@@ -59,14 +59,16 @@ impl From<iox2_allocation_strategy_e> for AllocationStrategy {
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub enum iox2_unable_to_deliver_strategy_e {
-    BLOCK,
+    RETRY_UNTIL_DELIVERED,
     DISCARD_SAMPLE,
 }
 
 impl From<iox2_unable_to_deliver_strategy_e> for UnableToDeliverStrategy {
     fn from(value: iox2_unable_to_deliver_strategy_e) -> Self {
         match value {
-            iox2_unable_to_deliver_strategy_e::BLOCK => UnableToDeliverStrategy::Block,
+            iox2_unable_to_deliver_strategy_e::RETRY_UNTIL_DELIVERED => {
+                UnableToDeliverStrategy::RetryUntilDelivered
+            }
             iox2_unable_to_deliver_strategy_e::DISCARD_SAMPLE => {
                 UnableToDeliverStrategy::DiscardSample
             }
@@ -77,7 +79,9 @@ impl From<iox2_unable_to_deliver_strategy_e> for UnableToDeliverStrategy {
 impl From<UnableToDeliverStrategy> for iox2_unable_to_deliver_strategy_e {
     fn from(value: UnableToDeliverStrategy) -> Self {
         match value {
-            UnableToDeliverStrategy::Block => iox2_unable_to_deliver_strategy_e::BLOCK,
+            UnableToDeliverStrategy::RetryUntilDelivered => {
+                iox2_unable_to_deliver_strategy_e::RETRY_UNTIL_DELIVERED
+            }
             UnableToDeliverStrategy::DiscardSample => {
                 iox2_unable_to_deliver_strategy_e::DISCARD_SAMPLE
             }
@@ -141,7 +145,7 @@ impl PortFactoryPublisherBuilderUnion {
 #[repr(C)]
 #[repr(align(16))] // alignment of Option<PortFactoryPublisherBuilderUnion>
 pub struct iox2_port_factory_publisher_builder_storage_t {
-    internal: [u8; 176], // magic number obtained with size_of::<Option<PortFactoryPublisherBuilderUnion>>()
+    internal: [u8; 208], // magic number obtained with size_of::<Option<PortFactoryPublisherBuilderUnion>>()
 }
 
 #[repr(C)]

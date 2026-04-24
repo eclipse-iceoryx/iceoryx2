@@ -16,10 +16,10 @@ use serde::{Deserialize, Serialize, de::Visitor};
 /// and the service does not overflow.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum UnableToDeliverStrategy {
-    /// Blocks until the receiver has consumed the
-    /// data from the buffer and there is space again
-    Block,
-    /// Do not deliver the data.
+    /// Retries until the receiver has consumed some
+    /// data from the full buffer and there is space again
+    RetryUntilDelivered,
+    /// Do not deliver the data to receiver with a full buffer
     DiscardSample,
 }
 
@@ -46,8 +46,8 @@ impl Visitor<'_> for UnableToDeliverStrategyVisitor {
         E: serde::de::Error,
     {
         match v {
-            "Block" => Ok(UnableToDeliverStrategy::Block),
             "DiscardSample" => Ok(UnableToDeliverStrategy::DiscardSample),
+            "RetryUntilDelivered" => Ok(UnableToDeliverStrategy::RetryUntilDelivered),
             v => Err(E::custom(alloc::format!(
                 "Invalid UnableToDeliverStrategy provided: \"{v:?}\"."
             ))),

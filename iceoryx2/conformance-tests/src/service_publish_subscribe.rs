@@ -15,28 +15,30 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod service_publish_subscribe {
-    use alloc::{format, vec, vec::Vec};
+    use alloc::{format, sync::Arc, vec, vec::Vec};
+    use core::time::Duration;
 
     use iceoryx2::config::Config;
-    use iceoryx2::port::LoanError;
     use iceoryx2::port::publisher::PublisherCreateError;
     use iceoryx2::port::subscriber::SubscriberCreateError;
     use iceoryx2::port::update_connections::UpdateConnections;
+    use iceoryx2::port::{LoanError, SendError, UnableToDeliverAction};
     use iceoryx2::prelude::{AllocationStrategy, *};
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
     use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
     use iceoryx2::service::messaging_pattern::MessagingPattern;
+    use iceoryx2::service::port_factory::publisher::PortFactoryPublisher;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::{Service, ServiceDetails};
     use iceoryx2::testing;
     use iceoryx2::testing::generate_service_name;
-    use iceoryx2_bb_concurrency::atomic::Ordering;
-    use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize};
+    use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
     use iceoryx2_bb_derive_macros::ZeroCopySend;
     use iceoryx2_bb_elementary::CallbackProgression;
     use iceoryx2_bb_elementary::alignment::Alignment;
     use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
+    use iceoryx2_bb_posix::clock::{Time, nanosleep};
     use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::mutex::{MutexBuilder, MutexHandle};
     use iceoryx2_bb_posix::thread::thread_scope;
@@ -1666,6 +1668,384 @@ pub mod service_publish_subscribe {
         for _ in 0..BUFFER_SIZE * 100 {
             assert_that!(sut_publisher.send_copy(889), is_ok);
         }
+    }
+
+    const VALUE_FIRST_SAMPLE: usize = 1;
+    const VALUE_SECOND_SAMPLE: usize = 2;
+
+    fn publisher_with_unable_to_deliver_handler<Sut, PublisherBuilder>(
+        save_overflow: bool,
+        publisher_builder: PublisherBuilder,
+        expected_second_send_result: Result<usize, SendError>,
+        expected_receive_value_subscriber_1: Option<usize>,
+        expected_receive_value_subscriber_2: Option<usize>,
+    ) -> Duration
+    where
+        Sut: Service,
+        PublisherBuilder: Fn(
+            PortFactoryPublisher<'_, Sut, usize, ()>,
+        ) -> PortFactoryPublisher<'_, Sut, usize, ()>,
+    {
+        let _watchdog = Watchdog::new();
+
+        let service_name = generate_service_name();
+        let config = testing::generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<usize>()
+            .max_publishers(1)
+            .max_subscribers(2)
+            .history_size(0)
+            .enable_safe_overflow(save_overflow)
+            .subscriber_max_buffer_size(1)
+            .subscriber_max_borrowed_samples(2)
+            .create()
+            .unwrap();
+
+        let publisher_port_factory = service.publisher_builder().max_loaned_samples(1);
+
+        let sut_publisher = publisher_builder(publisher_port_factory).create().unwrap();
+
+        let sut_subscriber_1 = service.subscriber_builder().create().unwrap();
+        let sut_subscriber_2 = service.subscriber_builder().create().unwrap();
+
+        let now = Time::now().unwrap();
+
+        assert_that!(sut_publisher.send_copy(VALUE_FIRST_SAMPLE), eq(Ok(2)));
+        assert_that!(
+            *sut_subscriber_2.receive().unwrap().unwrap(),
+            eq(VALUE_FIRST_SAMPLE)
+        );
+
+        assert_that!(
+            sut_publisher.send_copy(VALUE_SECOND_SAMPLE),
+            eq(expected_second_send_result)
+        );
+
+        let elapsed_blocking_time = now.elapsed().unwrap();
+
+        // check receive result for subscriber 1
+        let mut receive_result = sut_subscriber_1.receive();
+        if let Some(expected_value) = expected_receive_value_subscriber_1 {
+            assert_that!(receive_result, is_ok);
+            let receive_value = receive_result.unwrap();
+            assert_that!(receive_value, is_some);
+            let sample = receive_value.unwrap();
+            assert_that!(*sample, eq(expected_value));
+
+            receive_result = sut_subscriber_1.receive();
+        }
+        assert_that!(receive_result, is_ok);
+        let receive_value = receive_result.unwrap();
+        assert_that!(receive_value, is_none);
+
+        // check receive result for subscriber 2
+        let mut receive_result = sut_subscriber_2.receive();
+        if let Some(expected_value) = expected_receive_value_subscriber_2 {
+            assert_that!(receive_result, is_ok);
+            let receive_value = receive_result.unwrap();
+            assert_that!(receive_value, is_some);
+            let sample = receive_value.unwrap();
+            assert_that!(*sample, eq(expected_value));
+
+            receive_result = sut_subscriber_2.receive();
+        }
+        assert_that!(receive_result, is_ok);
+        let receive_value = receive_result.unwrap();
+        assert_that!(receive_value, is_none);
+
+        elapsed_blocking_time
+    }
+
+    #[conformance_test]
+    pub fn publisher_with_unable_to_deliver_handler_does_not_block_with_safe_overflow<
+        Sut: Service,
+    >() {
+        const EPSILON: Duration = Duration::from_millis(1);
+        const SAFE_OVERFLOW: bool = true;
+        const EXPECTED_SECOND_SEND_RESULT: Result<usize, SendError> = Ok(2);
+        const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_1: Option<usize> = Some(VALUE_SECOND_SAMPLE);
+        const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_2: Option<usize> = Some(VALUE_SECOND_SAMPLE);
+
+        let handler_call_count = Arc::new(AtomicU64::new(0));
+
+        let elapsed_blocking_time = publisher_with_unable_to_deliver_handler::<Sut, _>(
+            SAFE_OVERFLOW,
+            |publisher_port_factory| {
+                publisher_port_factory.set_unable_to_deliver_handler({
+                    let handler_call_count = handler_call_count.clone();
+                    move |_| {
+                        handler_call_count.fetch_add(1, Ordering::Relaxed);
+                        UnableToDeliverAction::Retry
+                    }
+                })
+            },
+            EXPECTED_SECOND_SEND_RESULT,
+            EXPECTED_RECEIVE_VALUE_SUBSCRIBER_1,
+            EXPECTED_RECEIVE_VALUE_SUBSCRIBER_2,
+        );
+
+        assert_that!(elapsed_blocking_time, lt(EPSILON));
+        assert_that!(handler_call_count.load(Ordering::Relaxed), eq(0));
+    }
+
+    #[conformance_test]
+    pub fn publisher_with_unable_to_deliver_handler_discards_sample<Sut: Service>() {
+        const EPSILON: Duration = Duration::from_millis(1);
+        const SAFE_OVERFLOW: bool = false;
+        const EXPECTED_SECOND_SEND_RESULT: Result<usize, SendError> = Ok(1);
+        const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_1: Option<usize> = Some(VALUE_FIRST_SAMPLE);
+        const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_2: Option<usize> = Some(VALUE_SECOND_SAMPLE);
+
+        let handler_call_count = Arc::new(AtomicU64::new(0));
+
+        let elapsed_blocking_time = publisher_with_unable_to_deliver_handler::<Sut, _>(
+            SAFE_OVERFLOW,
+            |publisher_port_factory| {
+                publisher_port_factory.set_unable_to_deliver_handler({
+                    let handler_call_count = handler_call_count.clone();
+                    move |_| {
+                        handler_call_count.fetch_add(1, Ordering::Relaxed);
+                        UnableToDeliverAction::DiscardSample
+                    }
+                })
+            },
+            EXPECTED_SECOND_SEND_RESULT,
+            EXPECTED_RECEIVE_VALUE_SUBSCRIBER_1,
+            EXPECTED_RECEIVE_VALUE_SUBSCRIBER_2,
+        );
+
+        assert_that!(elapsed_blocking_time, lt(EPSILON));
+        assert_that!(handler_call_count.load(Ordering::Relaxed), eq(1));
+    }
+
+    #[conformance_test]
+    pub fn publisher_with_unable_to_deliver_handler_retries_twice<Sut: Service>() {
+        const EPSILON: Duration = Duration::from_millis(1);
+        const SAFE_OVERFLOW: bool = false;
+        const EXPECTED_SECOND_SEND_RESULT: Result<usize, SendError> = Ok(1);
+        const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_1: Option<usize> = Some(VALUE_FIRST_SAMPLE);
+        const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_2: Option<usize> = Some(VALUE_SECOND_SAMPLE);
+
+        let handler_call_count = Arc::new(AtomicU64::new(0));
+        const RETRY_COUNT: u64 = 2;
+
+        let elapsed_blocking_time = publisher_with_unable_to_deliver_handler::<Sut, _>(
+            SAFE_OVERFLOW,
+            |publisher_port_factory| {
+                publisher_port_factory.set_unable_to_deliver_handler({
+                    let handler_call_count = handler_call_count.clone();
+                    move |info| {
+                        if info.retries == RETRY_COUNT {
+                            UnableToDeliverAction::DiscardSample
+                        } else {
+                            handler_call_count.fetch_add(1, Ordering::Relaxed);
+                            UnableToDeliverAction::Retry
+                        }
+                    }
+                })
+            },
+            EXPECTED_SECOND_SEND_RESULT,
+            EXPECTED_RECEIVE_VALUE_SUBSCRIBER_1,
+            EXPECTED_RECEIVE_VALUE_SUBSCRIBER_2,
+        );
+
+        // AdaptiveWait is extremely slow on macOS and sometimes needs more than 20ms for this test
+        let multiplicator = if cfg!(target_os = "macos") { 100 } else { 1 };
+        assert_that!(elapsed_blocking_time, lt(EPSILON * multiplicator));
+        assert_that!(handler_call_count.load(Ordering::Relaxed), eq(RETRY_COUNT));
+    }
+
+    #[conformance_test]
+    pub fn publisher_with_unable_to_deliver_handler_retries_until_timeout<Sut: Service>() {
+        const TIMEOUT: Duration = Duration::from_millis(25);
+        const SAFE_OVERFLOW: bool = false;
+        const EXPECTED_SECOND_SEND_RESULT: Result<usize, SendError> = Ok(1);
+        const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_1: Option<usize> = Some(VALUE_FIRST_SAMPLE);
+        const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_2: Option<usize> = Some(VALUE_SECOND_SAMPLE);
+
+        let elapsed_blocking_time = publisher_with_unable_to_deliver_handler::<Sut, _>(
+            SAFE_OVERFLOW,
+            |publisher_port_factory| {
+                publisher_port_factory.set_unable_to_deliver_handler({
+                    move |info| {
+                        if info.elapsed_time > TIMEOUT {
+                            UnableToDeliverAction::DiscardSample
+                        } else {
+                            UnableToDeliverAction::Retry
+                        }
+                    }
+                })
+            },
+            EXPECTED_SECOND_SEND_RESULT,
+            EXPECTED_RECEIVE_VALUE_SUBSCRIBER_1,
+            EXPECTED_RECEIVE_VALUE_SUBSCRIBER_2,
+        );
+
+        assert_that!(elapsed_blocking_time, time_at_least(TIMEOUT));
+    }
+
+    #[conformance_test]
+    pub fn publisher_with_unable_to_deliver_handler_aborts_delivery_and_fails<Sut: Service>() {
+        const EPSILON: Duration = Duration::from_millis(1);
+        const SAFE_OVERFLOW: bool = false;
+        const EXPECTED_SECOND_SEND_RESULT: Result<usize, SendError> =
+            Err(SendError::UnableToDeliver);
+        const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_1: Option<usize> = Some(VALUE_FIRST_SAMPLE);
+        const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_2: Option<usize> = None;
+
+        let handler_call_count = Arc::new(AtomicU64::new(0));
+
+        let elapsed_blocking_time = publisher_with_unable_to_deliver_handler::<Sut, _>(
+            SAFE_OVERFLOW,
+            |publisher_port_factory| {
+                publisher_port_factory.set_unable_to_deliver_handler({
+                    let handler_call_count = handler_call_count.clone();
+                    move |_| {
+                        handler_call_count.fetch_add(1, Ordering::Relaxed);
+                        UnableToDeliverAction::AbortDeliveryAndFail
+                    }
+                })
+            },
+            EXPECTED_SECOND_SEND_RESULT,
+            EXPECTED_RECEIVE_VALUE_SUBSCRIBER_1,
+            EXPECTED_RECEIVE_VALUE_SUBSCRIBER_2,
+        );
+
+        assert_that!(elapsed_blocking_time, lt(EPSILON));
+        assert_that!(handler_call_count.load(Ordering::Relaxed), eq(1));
+    }
+
+    #[conformance_test]
+    pub fn publisher_with_unable_to_deliver_handler_follows_unable_to_deliver_strategy_with_discard_samples<
+        Sut: Service,
+    >() {
+        const EPSILON: Duration = Duration::from_millis(1);
+        const SAFE_OVERFLOW: bool = false;
+        const EXPECTED_SECOND_SEND_RESULT: Result<usize, SendError> = Ok(1);
+        const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_1: Option<usize> = Some(VALUE_FIRST_SAMPLE);
+        const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_2: Option<usize> = Some(VALUE_SECOND_SAMPLE);
+
+        let handler_call_count = Arc::new(AtomicU64::new(0));
+
+        let elapsed_blocking_time = publisher_with_unable_to_deliver_handler::<Sut, _>(
+            SAFE_OVERFLOW,
+            |publisher_port_factory| {
+                publisher_port_factory
+                    .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
+                    .set_unable_to_deliver_handler({
+                        let handler_call_count = handler_call_count.clone();
+                        move |_| {
+                            handler_call_count.fetch_add(1, Ordering::Relaxed);
+                            UnableToDeliverAction::FollowUnableToDeliveryStrategy
+                        }
+                    })
+            },
+            EXPECTED_SECOND_SEND_RESULT,
+            EXPECTED_RECEIVE_VALUE_SUBSCRIBER_1,
+            EXPECTED_RECEIVE_VALUE_SUBSCRIBER_2,
+        );
+
+        assert_that!(elapsed_blocking_time, lt(EPSILON));
+        assert_that!(handler_call_count.load(Ordering::Relaxed), eq(1));
+    }
+
+    #[conformance_test]
+    pub fn publisher_with_unable_to_deliver_handler_follows_unable_to_deliver_strategy_with_retry_until_delivered<
+        Sut: Service,
+    >() {
+        let _watchdog = Watchdog::new();
+
+        let service_name = generate_service_name();
+        let config = testing::generate_isolated_config();
+
+        thread_scope(|s| {
+            const TIMEOUT: Duration = Duration::from_millis(25);
+
+            let connect_handle = BarrierHandle::new();
+            let connect_barrier = BarrierBuilder::new(2).create(&connect_handle).unwrap();
+            let ready_handle = BarrierHandle::new();
+            let ready_barrier = BarrierBuilder::new(2).create(&ready_handle).unwrap();
+            let start_handle = BarrierHandle::new();
+            let start_barrier = BarrierBuilder::new(2).create(&start_handle).unwrap();
+            let finish_handle = BarrierHandle::new();
+            let finish_barrier = BarrierBuilder::new(2).create(&finish_handle).unwrap();
+
+            let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+            let sut = node
+                .service_builder(&service_name)
+                .publish_subscribe::<usize>()
+                .max_publishers(1)
+                .max_subscribers(2)
+                .history_size(0)
+                .enable_safe_overflow(false)
+                .subscriber_max_buffer_size(1)
+                .subscriber_max_borrowed_samples(2)
+                .create()
+                .unwrap();
+
+            let sut_subscriber_1 = sut.subscriber_builder().create().unwrap();
+
+            s.thread_builder().spawn(|| {
+                let handler_call_count = Arc::new(AtomicU64::new(0));
+
+                let sut_publisher = sut
+                    .publisher_builder()
+                    .max_loaned_samples(1)
+                    .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
+                    .set_unable_to_deliver_handler({
+                        let handler_call_count = handler_call_count.clone();
+                        move |_| {
+                            handler_call_count.fetch_add(1, Ordering::Relaxed);
+                            UnableToDeliverAction::FollowUnableToDeliveryStrategy
+                        }
+                    })
+                    .create()
+                    .unwrap();
+
+                let sut_subscriber_2 = sut.subscriber_builder().create().unwrap();
+
+                connect_barrier.wait();
+                ready_barrier.wait();
+
+                sut_publisher.send_copy(1).unwrap();
+                assert_that!(*sut_subscriber_2.receive().unwrap().unwrap(), eq(1));
+
+                start_barrier.wait();
+
+                sut_publisher.send_copy(2).unwrap();
+                assert_that!(*sut_subscriber_2.receive().unwrap().unwrap(), eq(2));
+
+                finish_barrier.wait();
+
+                assert_that!(handler_call_count.load(Ordering::Relaxed), eq(1));
+            })?;
+
+            connect_barrier.wait();
+
+            let _ = sut_subscriber_1.update_connections();
+
+            ready_barrier.wait();
+
+            let start = Time::now().unwrap();
+
+            start_barrier.wait();
+
+            nanosleep(TIMEOUT).unwrap();
+            assert_that!(*sut_subscriber_1.receive().unwrap().unwrap(), eq(1));
+
+            finish_barrier.wait();
+
+            assert_that!(*sut_subscriber_1.receive().unwrap().unwrap(), eq(2));
+
+            assert_that!(start.elapsed().unwrap(),  time_at_least TIMEOUT);
+
+            Ok(())
+        })
+        .unwrap();
     }
 
     fn publisher_never_goes_out_of_memory_impl<Sut: Service>(

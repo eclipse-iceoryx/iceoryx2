@@ -426,6 +426,7 @@ impl<
             receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
             enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
             degradation_callback: client_factory.request_degradation_callback,
+            unable_to_deliver_handler: client_factory.unable_to_deliver_handler,
             number_of_samples: number_of_requests,
             max_number_of_segments,
             service_state: service.clone(),

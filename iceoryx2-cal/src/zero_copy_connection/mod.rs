@@ -76,6 +76,7 @@ impl core::error::Error for ZeroCopyCreationError {}
 pub enum ZeroCopySendError {
     ConnectionCorrupted,
     ReceiveBufferFull,
+    UnableToDeliver, // NOTE: in order to distinguish between a try_send failure and a user induced send aborting, the UnableToDeliver error is used
     UsedChunkListFull,
     NoConnectedReceiver,
     ChannelIsClosed,
@@ -128,6 +129,23 @@ impl core::fmt::Display for ZeroCopyReleaseError {
 }
 
 impl core::error::Error for ZeroCopyReleaseError {}
+
+/// Defines the action that shall be take when an a sample cannot be delivered. Is used as
+/// return value of the `UnableToDeliverHandler`, `UnableToDeliverFn` and
+/// [`UnableToDeliverToReceiverFn`] to define a custom behavior.
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum UnableToDeliverAction {
+    /// Use an action which is derived from the `UnableToDeliverStrategy`
+    FollowUnableToDeliveryStrategy,
+    /// Retry to send and invoke the handler again, if sending does not succeed
+    Retry,
+    /// Discard the sample for the receiver which cause the incident and continue
+    /// to deliver the sample to the remaining receivers
+    DiscardSample,
+    /// Abort the delivery for the receiver which caused the incident and
+    /// all other which did not yet receive the sample and return with an error
+    AbortDeliveryAndFail,
+}
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ZeroCopySend)]
@@ -289,6 +307,21 @@ pub trait ZeroCopyPortDetails {
     }
 }
 
+/// The unable to delivery handler invoked by a send function when a sample cannot be delivered
+/// to a receiver
+///
+/// # Arguments
+///
+/// * u64: is the retry counter for a delivery incident with a specific sender-receiver pair
+/// * Duration: is the elapsed time since the incident was detected
+///
+/// # Returns
+///
+/// The [`UnableToDeliverAction`] to be taken to mitigate the incident
+pub trait UnableToDeliverToReceiverFn: Fn(u64, Duration) -> UnableToDeliverAction {}
+
+impl<F: Fn(u64, Duration) -> UnableToDeliverAction> UnableToDeliverToReceiverFn for F {}
+
 pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept + Send {
     fn try_send(
         &self,
@@ -297,11 +330,13 @@ pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept + Send {
         channel_id: ChannelId,
     ) -> Result<Option<PointerOffset>, ZeroCopySendError>;
 
-    fn blocking_send(
+    fn blocking_send<F: UnableToDeliverToReceiverFn>(
         &self,
         ptr: PointerOffset,
         sample_size: usize,
         channel_id: ChannelId,
+        unable_to_deliver_to_receiver_handler: F,
+        unable_to_deliver_action_for_strategy: UnableToDeliverAction,
     ) -> Result<Option<PointerOffset>, ZeroCopySendError>;
 
     fn reclaim(&self, channel_id: ChannelId)

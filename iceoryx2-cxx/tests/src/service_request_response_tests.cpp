@@ -1071,12 +1071,14 @@ TYPED_TEST(ServiceRequestResponseTest, client_applies_unable_to_deliver_strategy
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
 
-    auto sut_client_1 =
-        service.client_builder().unable_to_deliver_strategy(UnableToDeliverStrategy::Block).create().value();
+    auto sut_client_1 = service.client_builder()
+                            .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
+                            .create()
+                            .value();
     auto sut_client_2 =
         service.client_builder().unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample).create().value();
 
-    ASSERT_THAT(sut_client_1.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::Block));
+    ASSERT_THAT(sut_client_1.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::RetryUntilDelivered));
     ASSERT_THAT(sut_client_2.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::DiscardSample));
 }
 

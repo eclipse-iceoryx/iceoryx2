@@ -56,7 +56,8 @@
 
 use crate::{
     port::{
-        DegradationAction, DegradationCallback,
+        DegradationAction, DegradationCallback, DegradationFn, UnableToDeliverFn,
+        UnableToDeliverHandler,
         publisher::{Publisher, PublisherCreateError},
         unable_to_deliver_strategy::UnableToDeliverStrategy,
     },
@@ -112,7 +113,8 @@ pub struct PortFactoryPublisher<
     UserHeader: Debug + ZeroCopySend,
 > {
     pub(crate) config: LocalPublisherConfig,
-    pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
+    pub(crate) degradation_callback: DegradationCallback<'static>,
+    pub(crate) unable_to_deliver_handler: Option<UnableToDeliverHandler<'static>>,
     pub(crate) preallocate_number_of_samples_override: PreallocatedSamplesOverride<'static>,
     pub(crate) factory: &'factory PortFactory<Service, Payload, UserHeader>,
 }
@@ -139,7 +141,8 @@ impl<
         Self {
             config: self.config,
             factory: self.factory,
-            degradation_callback: None,
+            degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
+            unable_to_deliver_handler: None,
             preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),
         }
     }
@@ -172,7 +175,8 @@ impl<
                     .publish_subscribe
                     .unable_to_deliver_strategy,
             },
-            degradation_callback: None,
+            degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
+            unable_to_deliver_handler: None,
             preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),
             factory,
         }
@@ -216,16 +220,24 @@ impl<
     /// Sets the [`DegradationCallback`] of the [`Publisher`]. Whenever a connection to a
     /// [`crate::port::subscriber::Subscriber`] is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
-    pub fn set_degradation_callback<
-        F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegradationAction + 'static,
-    >(
+    pub fn set_degradation_callback<F: DegradationFn + 'static>(mut self, callback: F) -> Self {
+        self.degradation_callback = DegradationCallback::new(callback);
+
+        self
+    }
+
+    /// Sets the [`UnableToDeliverHandler`] of the [`Publisher`]. Whenever a
+    /// [`SampleMut`](crate::sample_mut::SampleMut) cannot be sent to a
+    /// [`crate::port::subscriber::Subscriber`], this handler is called and depending on the
+    /// returned [`UnableToDeliverAction`](crate::port::UnableToDeliverAction),
+    /// measures will be taken.
+    /// If no handler is set, the measures will be determined by the value set in
+    /// [`UnableToDeliverStrategy`].
+    pub fn set_unable_to_deliver_handler<F: UnableToDeliverFn + 'static>(
         mut self,
-        callback: Option<F>,
+        handler: F,
     ) -> Self {
-        match callback {
-            Some(c) => self.degradation_callback = Some(DegradationCallback::new(c)),
-            None => self.degradation_callback = None,
-        }
+        self.unable_to_deliver_handler = Some(UnableToDeliverHandler::new(handler));
 
         self
     }

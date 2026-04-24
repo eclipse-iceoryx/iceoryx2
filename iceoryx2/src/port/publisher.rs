@@ -453,6 +453,7 @@ impl<
                     number_of_samples,
                     max_number_of_segments,
                     degradation_callback: publisher_factory.degradation_callback,
+                    unable_to_deliver_handler: publisher_factory.unable_to_deliver_handler,
                     service_state: service.clone(),
                     tagger: CyclicTagger::new(),
                     loan_counter: AtomicUsize::new(0),
