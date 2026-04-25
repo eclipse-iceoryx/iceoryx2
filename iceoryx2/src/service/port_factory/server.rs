@@ -199,8 +199,8 @@ impl<
             factory,
             config: LocalServerConfig {
                 unable_to_deliver_strategy: defs.server_unable_to_deliver_strategy,
-                initial_max_slice_len: 1,
-                allocation_strategy: AllocationStrategy::Static,
+                initial_max_slice_len: defs.server_initial_max_slice_len,
+                allocation_strategy: defs.server_allocation_strategy,
                 max_loaned_responses_per_request: defs.server_max_loaned_responses_per_request,
             },
             request_degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
