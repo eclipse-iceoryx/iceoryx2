@@ -937,4 +937,64 @@ pub mod client {
             }
         }
     }
+
+    #[conformance_test]
+    pub fn client_initial_max_slice_len_default_is_taken_from_config<Sut: Service>()
+    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        const CONFIG_SLICE_LEN: usize = 32;
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config
+            .defaults
+            .request_response
+            .client_initial_max_slice_len = CONFIG_SLICE_LEN;
+
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<[u64], u64>()
+            .create()?;
+
+        // Build the client without overriding initial_max_slice_len so the
+        // config default applies.
+        let client = service.client_builder().create()?;
+
+        let request = client.loan_slice(CONFIG_SLICE_LEN)?;
+        assert_that!(request.payload().len(), eq CONFIG_SLICE_LEN);
+        drop(request);
+
+        let too_large = client.loan_slice(CONFIG_SLICE_LEN + 1);
+        assert_that!(too_large, is_err);
+        assert_that!(too_large.err().unwrap(), eq LoanError::ExceedsMaxLoanSize);
+
+        Ok(())
+    }
+
+    #[conformance_test]
+    pub fn client_allocation_strategy_default_is_taken_from_config<Sut: Service>()
+    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.defaults.request_response.client_allocation_strategy =
+            AllocationStrategy::PowerOfTwo;
+        config
+            .defaults
+            .request_response
+            .client_initial_max_slice_len = 4;
+
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<[u64], u64>()
+            .create()?;
+
+        let client = service.client_builder().create()?;
+
+        // Requesting a larger slice should trigger reallocation under
+        // the PowerOfTwo strategy.
+        let request = client.loan_slice(5)?;
+        assert_that!(request.payload().len(), eq 5);
+
+        Ok(())
+    }
 }

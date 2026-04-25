@@ -153,24 +153,19 @@ impl<
 > PortFactoryPublisher<'factory, Service, Payload, UserHeader>
 {
     pub(crate) fn new(factory: &'factory PortFactory<Service, Payload, UserHeader>) -> Self {
+        let defaults = &factory
+            .service
+            .shared_node
+            .config()
+            .defaults
+            .publish_subscribe;
+
         Self {
             config: LocalPublisherConfig {
-                allocation_strategy: AllocationStrategy::Static,
-                initial_max_slice_len: 1,
-                max_loaned_samples: factory
-                    .service
-                    .shared_node
-                    .config()
-                    .defaults
-                    .publish_subscribe
-                    .publisher_max_loaned_samples,
-                unable_to_deliver_strategy: factory
-                    .service
-                    .shared_node
-                    .config()
-                    .defaults
-                    .publish_subscribe
-                    .unable_to_deliver_strategy,
+                allocation_strategy: defaults.publisher_allocation_strategy,
+                initial_max_slice_len: defaults.publisher_initial_max_slice_len,
+                max_loaned_samples: defaults.publisher_max_loaned_samples,
+                unable_to_deliver_strategy: defaults.unable_to_deliver_strategy,
             },
             degradation_callback: None,
             preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),

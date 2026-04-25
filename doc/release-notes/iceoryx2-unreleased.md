@@ -45,6 +45,9 @@
   the trait impl and enforce all invariants (`#[repr(C)]`, no padding, field
   bounds) at compile time
   [#1547](https://github.com/eclipse-iceoryx/iceoryx2/issues/1547)
+* Expose `allocation_strategy`, `initial_max_slice_len`, and `payload_alignment`
+  in the iceoryx2 config for the publish-subscribe and request-response
+  [#1358](https://github.com/eclipse-iceoryx/iceoryx2/issues/1358)
 
 ### Bugfixes
 
