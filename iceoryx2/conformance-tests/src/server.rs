@@ -1269,10 +1269,8 @@ pub mod server {
     -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
-        config
-            .defaults
-            .request_response
-            .server_allocation_strategy = AllocationStrategy::PowerOfTwo;
+        config.defaults.request_response.server_allocation_strategy =
+            AllocationStrategy::PowerOfTwo;
         config
             .defaults
             .request_response

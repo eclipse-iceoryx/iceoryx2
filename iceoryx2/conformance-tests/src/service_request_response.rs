@@ -1617,10 +1617,7 @@ pub mod service_request_response {
         const CONFIG_ALIGNMENT: usize = 64;
         let service_name = testing::generate_service_name();
         let mut config = testing::generate_isolated_config();
-        config
-            .defaults
-            .request_response
-            .request_payload_alignment = CONFIG_ALIGNMENT;
+        config.defaults.request_response.request_payload_alignment = CONFIG_ALIGNMENT;
 
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
@@ -1642,10 +1639,7 @@ pub mod service_request_response {
         const CONFIG_ALIGNMENT: usize = 64;
         let service_name = testing::generate_service_name();
         let mut config = testing::generate_isolated_config();
-        config
-            .defaults
-            .request_response
-            .response_payload_alignment = CONFIG_ALIGNMENT;
+        config.defaults.request_response.response_payload_alignment = CONFIG_ALIGNMENT;
 
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
