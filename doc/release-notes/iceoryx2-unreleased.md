@@ -47,6 +47,9 @@
   [#1547](https://github.com/eclipse-iceoryx/iceoryx2/issues/1547)
 * Enhance degradation handler and add unable to deliver handler
   [#1573](https://github.com/eclipse-iceoryx/iceoryx2/issues/1573)
+* Expose `allocation_strategy` in the iceoryx2 config for `Publisher`,
+  `Client`, and `Server` ports
+  [#1358](https://github.com/eclipse-iceoryx/iceoryx2/issues/1358)
 
 ### Bugfixes
 
