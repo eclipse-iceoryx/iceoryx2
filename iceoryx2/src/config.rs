@@ -460,6 +460,30 @@ pub struct RequestResonse {
     /// disconnected from a service and the connection
     /// still contains unconsumed [`ActiveRequest`](crate::active_request::ActiveRequest)s.
     pub server_expired_connection_buffer: usize,
+    /// Defines the default request payload alignment used by the
+    /// [`Service`](crate::service::Service). The actual alignment is the maximum of this value
+    /// and the request type's natural alignment. Must be a power of two.
+    pub request_payload_alignment: usize,
+    /// Defines the default response payload alignment used by the
+    /// [`Service`](crate::service::Service). The actual alignment is the maximum of this value
+    /// and the response type's natural alignment. Must be a power of two.
+    pub response_payload_alignment: usize,
+    /// Defines the default initial maximum slice length for
+    /// [`RequestMut`](crate::request_mut::RequestMut)s loaned by the
+    /// [`Client`](crate::port::client::Client).
+    pub client_initial_max_slice_len: usize,
+    /// Defines the default [`AllocationStrategy`] used by the
+    /// [`Client`](crate::port::client::Client) when the initially preallocated memory is
+    /// insufficient.
+    pub client_allocation_strategy: AllocationStrategy,
+    /// Defines the default initial maximum slice length for
+    /// [`ResponseMut`](crate::response_mut::ResponseMut)s loaned by the
+    /// [`Server`](crate::port::server::Server).
+    pub server_initial_max_slice_len: usize,
+    /// Defines the default [`AllocationStrategy`] used by the
+    /// [`Server`](crate::port::server::Server) when the initially preallocated memory is
+    /// insufficient.
+    pub server_allocation_strategy: AllocationStrategy,
 }
 
 impl Default for RequestResonse {
@@ -480,6 +504,12 @@ impl Default for RequestResonse {
             client_expired_connection_buffer: 128,
             server_expired_connection_buffer: 128,
             enable_fire_and_forget_requests: true,
+            request_payload_alignment: 1,
+            response_payload_alignment: 1,
+            client_initial_max_slice_len: 1,
+            client_allocation_strategy: AllocationStrategy::Static,
+            server_initial_max_slice_len: 1,
+            server_allocation_strategy: AllocationStrategy::Static,
         }
     }
 }
