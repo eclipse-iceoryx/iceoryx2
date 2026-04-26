@@ -959,6 +959,20 @@ pub mod service {
     }
 
     #[conformance_test]
+    pub fn remove_returns_false_when_service_does_not_exist<
+        Sut: Service,
+        Factory: SutFactory<Sut>,
+    >() {
+        let _ = Factory::new();
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+
+        let result = unsafe { Sut::remove(&service_name, &config, Factory::messaging_pattern()) };
+
+        assert_that!(result, eq Ok(false));
+    }
+
+    #[conformance_test]
     pub fn concurrent_service_creation_and_listing_works<Sut: Service, Factory: SutFactory<Sut>>() {
         let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
         let test = Factory::new();
