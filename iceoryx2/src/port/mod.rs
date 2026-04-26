@@ -67,7 +67,7 @@ pub struct UnableToDeliverInfo {
 /// # Arguments
 ///
 /// * UnableToDeliverInfo: is a reference to [`UnableToDeliverInfo`] with additional information
-///   to the for the incident that caused the triggering of the handler
+///   for the user to handle the incident
 ///
 /// # Returns
 ///
@@ -134,7 +134,7 @@ pub struct DegradationInfo {
 ///
 /// * DegradationCause: is the cause that triggered the callback
 /// * DegradationInfo: is a reference to [`DegradationInfo`] with additional information
-///   to the for the degradation that caused the triggering of the callback
+///   for the user to handle the incident
 ///
 /// # Returns
 ///

@@ -35,8 +35,8 @@ The subscriber is printing the sample on the console whenever new data arrives.
 
 ## How to Run
 
-To observe this dynamic communication in action, open two separate terminals and
-execute the following commands:
+To observe the unable to deliver handler in action, open two separate terminals
+and execute the following commands:
 
 ### Terminal 1
 
