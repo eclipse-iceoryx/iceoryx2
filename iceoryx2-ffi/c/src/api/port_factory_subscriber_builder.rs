@@ -224,7 +224,8 @@ pub unsafe extern "C" fn iox2_port_factory_subscriber_builder_set_buffer_size(
 /// # Safety
 ///
 /// * `port_factory_handle` must be valid handles
-/// * `ctx` is stored for later use; if the subscriber, including the receive function, is accessed from multiple threads, the `ctx` must be thread-safe
+/// * `ctx` is stored for later use; if the subscriber, including the receive function,
+///   is accessed from multiple threads, the `ctx` must be thread-safe
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_subscriber_builder_set_degradation_handler(
     port_factory_handle: iox2_port_factory_subscriber_builder_h_ref,

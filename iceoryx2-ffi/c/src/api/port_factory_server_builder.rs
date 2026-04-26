@@ -22,7 +22,7 @@ use super::{
     IntoCInt, PayloadFfi, UnsafeCallbackContextSendWorkaround, UserHeaderFfi, c_size_t,
     degradation_info_cast, iox2_allocation_strategy_e, iox2_callback_context,
     iox2_degradation_handler, iox2_server_h, iox2_server_t, iox2_service_type_e,
-    iox2_unable_to_deliver_strategy_e,
+    iox2_unable_to_deliver_handler, iox2_unable_to_deliver_strategy_e, unable_to_deliver_info_cast,
 };
 use core::ffi::{c_char, c_int};
 use iceoryx2::service::port_factory::server::{PortFactoryServer, ServerCreateError};
@@ -317,7 +317,8 @@ pub unsafe extern "C" fn iox2_port_factory_server_builder_set_allocation_strateg
 /// # Safety
 ///
 /// * `port_factory_handle` must be valid handles
-/// * `ctx` is stored for later use; if the server, including the send and receive functions, is accessed from multiple threads, the `ctx` must be thread-safe
+/// * `ctx` is stored for later use; if the server, including the send function,
+///   is accessed from multiple threads, the `ctx` must be thread-safe
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_server_builder_set_request_degradation_handler(
     port_factory_handle: iox2_port_factory_server_builder_h_ref,
@@ -368,7 +369,8 @@ pub unsafe extern "C" fn iox2_port_factory_server_builder_set_request_degradatio
 /// # Safety
 ///
 /// * `port_factory_handle` must be valid handles
-/// * `ctx` is stored for later use; if the iceoryx2 endpoints are accessed from multiple thread, the `ctx` must be thread-safe
+/// * `ctx` is stored for later use; if the server, including the send function,
+///   is accessed from multiple threads, the `ctx` must be thread-safe
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_port_factory_server_builder_set_response_degradation_handler(
     port_factory_handle: iox2_port_factory_server_builder_h_ref,
@@ -400,6 +402,58 @@ pub unsafe extern "C" fn iox2_port_factory_server_builder_set_response_degradati
                     port_factory.set_response_degradation_handler(move |cause, info| {
                         let ctx = ctx;
                         handler(cause.into(), degradation_info_cast(info), ctx.ctx).into()
+                    }),
+                ));
+            }
+        }
+    }
+}
+
+/// Sets the unable to deliver handler for the server to be able to execute custom code if a response cannot be delivered
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_server_builder_h_ref`]
+///   obtained by [`iox2_port_factory_request_response_server_builder`](crate::iox2_port_factory_request_response_server_builder).
+/// * `handler` is the [`iox2_unable_to_deliver_handler`](crate::iox2_unable_to_deliver_handler)
+/// * `ctx` is an user defined [`iox2_callback_context`](crate::iox2_callback_context)
+///
+/// # Safety
+///
+/// * `port_factory_handle` must be valid handles
+/// * `ctx` is stored for later use; if the server, including the send function,
+///   is accessed from multiple threads, the `ctx` must be thread-safe
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_port_factory_server_builder_set_unable_to_deliver_handler(
+    port_factory_handle: iox2_port_factory_server_builder_h_ref,
+    handler: iox2_unable_to_deliver_handler,
+    ctx: iox2_callback_context,
+) {
+    port_factory_handle.assert_non_null();
+
+    let ctx = UnsafeCallbackContextSendWorkaround { ctx };
+
+    unsafe {
+        let port_factory_struct = &mut *port_factory_handle.as_type();
+        match port_factory_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
+
+                port_factory_struct.set(PortFactoryServerBuilderUnion::new_ipc(
+                    port_factory.set_unable_to_deliver_handler(move |info| {
+                        let ctx = ctx;
+                        handler(unable_to_deliver_info_cast(info), ctx.ctx).into()
+                    }),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let port_factory =
+                    ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
+
+                port_factory_struct.set(PortFactoryServerBuilderUnion::new_local(
+                    port_factory.set_unable_to_deliver_handler(move |info| {
+                        let ctx = ctx;
+                        handler(unable_to_deliver_info_cast(info), ctx.ctx).into()
                     }),
                 ));
             }
@@ -585,12 +639,8 @@ pub unsafe extern "C" fn iox2_port_factory_server_builder_create(
                 let builder = ManuallyDrop::into_inner(builder.local);
 
                 match builder.create() {
-                    Ok(publisher) => {
-                        (*struct_ptr).init(
-                            service_type,
-                            ServerUnion::new_local(publisher),
-                            deleter,
-                        );
+                    Ok(server) => {
+                        (*struct_ptr).init(service_type, ServerUnion::new_local(server), deleter);
                     }
                     Err(error) => {
                         deleter(struct_ptr);

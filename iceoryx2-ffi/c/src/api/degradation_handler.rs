@@ -151,6 +151,11 @@ pub unsafe extern "C" fn iox2_degradation_info_sender_port_id(
 /// # Returns
 ///
 /// [`iox2_degradation_action_e`] the selected action to handle the degradation
+///
+/// # Safety
+///
+/// * `iox2_callback_context` is stored for later use; if the port, including the send and receive functions,
+///   is accessed from multiple threads, the `ctx` must be thread-safe
 pub type iox2_degradation_handler = extern "C" fn(
     iox2_degradation_cause_e,
     iox2_degradation_info_h_ref,
