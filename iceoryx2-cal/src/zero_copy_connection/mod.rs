@@ -142,9 +142,10 @@ pub enum UnableToDeliverAction {
     /// Discard the sample for the receiver which cause the incident and continue
     /// to deliver the sample to the remaining receivers
     DiscardSample,
-    /// Abort the delivery for the receiver which caused the incident and
-    /// all other which did not yet receive the sample and return with an error
-    AbortDeliveryAndFail,
+    /// Discard the sample for the receiver which caused the incident, continue
+    /// to deliver the sample to the remaining receivers;
+    /// return with an error if the sample was not delivered to all receivers
+    DiscardSampleAndFail,
 }
 
 #[repr(C)]

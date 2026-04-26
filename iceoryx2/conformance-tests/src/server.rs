@@ -674,7 +674,7 @@ pub mod server {
     }
 
     #[conformance_test]
-    pub fn server_with_unable_to_deliver_handler_aborts_delivery_and_fails<Sut: Service>() {
+    pub fn server_with_unable_to_deliver_handler_discards_response_and_fails<Sut: Service>() {
         const SAFE_OVERFLOW: bool = false;
         const EXPECTED_SECOND_SEND_RESULT: Result<(), SendError> = Err(SendError::UnableToDeliver);
         const EXPECTED_RECEIVE_VALUE: Option<u64> = Some(VALUE_FIRST_RESPONSE);
@@ -688,7 +688,7 @@ pub mod server {
                     let handler_call_count = handler_call_count.clone();
                     move |_| {
                         handler_call_count.fetch_add(1, Ordering::Relaxed);
-                        UnableToDeliverAction::AbortDeliveryAndFail
+                        UnableToDeliverAction::DiscardSampleAndFail
                     }
                 })
             },

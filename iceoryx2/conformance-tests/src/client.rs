@@ -567,12 +567,12 @@ pub mod client {
     }
 
     #[conformance_test]
-    pub fn client_with_unable_to_deliver_handler_aborts_delivery_and_fails<Sut: Service>() {
+    pub fn client_with_unable_to_deliver_handler_discards_request_and_fails<Sut: Service>() {
         const SAFE_OVERFLOW: bool = false;
         const EXPECTED_SECOND_SEND_RESULT: Result<(), RequestSendError> =
             Err(RequestSendError::SendError(SendError::UnableToDeliver));
         const EXPECTED_RECEIVE_VALUE_SERVER_1: Option<u64> = Some(VALUE_FIRST_REQUEST);
-        const EXPECTED_RECEIVE_VALUE_SERVER_2: Option<u64> = None;
+        const EXPECTED_RECEIVE_VALUE_SERVER_2: Option<u64> = Some(VALUE_SECOND_REQUEST);
 
         let handler_call_count = Arc::new(AtomicU64::new(0));
 
@@ -583,7 +583,7 @@ pub mod client {
                     let handler_call_count = handler_call_count.clone();
                     move |_| {
                         handler_call_count.fetch_add(1, Ordering::Relaxed);
-                        UnableToDeliverAction::AbortDeliveryAndFail
+                        UnableToDeliverAction::DiscardSampleAndFail
                     }
                 })
             },

@@ -475,7 +475,7 @@ impl<Service: service::Service> Receiver<Service> {
                                         sender_details.port_id);
                         Ok(())
                     }
-                    DegradationAction::AbortOperationAndFail => {
+                    DegradationAction::DegradeAndFail => {
                         fail!(from self, with e, "Unable to establish connection to new sender {:?}.",
                                         sender_details.port_id);
                     }

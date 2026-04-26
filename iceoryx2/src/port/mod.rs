@@ -107,7 +107,7 @@ pub enum DegradationAction {
     /// Print out a warning as soon as the degradation is detected
     Warn,
     /// Returns a failure in the function the degradation was detected
-    AbortOperationAndFail,
+    DegradeAndFail,
 }
 
 /// Defines the cause of a degradation and is a parameter of the [`DegradationCallback`].
@@ -200,13 +200,13 @@ impl core::error::Error for LoanError {}
 pub enum SendError {
     /// Send was called but the corresponding port went already out of scope.
     ConnectionBrokenSinceSenderNoLongerExists,
-    /// A connection between two ports has been corrupted.
+    /// A connection between two ports has been corrupted and the data could not be delivered to all receivers.
     ConnectionCorrupted,
     /// A failure occurred while acquiring memory for the payload
     LoanError(LoanError),
     /// A failure occurred while establishing a connection to the ports counterpart port.
     ConnectionError(ConnectionFailure),
-    /// The sample could not be delivered
+    /// The data could not be delivered to all receivers.
     UnableToDeliver,
     /// An internal mechanisms failed and the data could not be delivered to all receivers.
     InternalError,

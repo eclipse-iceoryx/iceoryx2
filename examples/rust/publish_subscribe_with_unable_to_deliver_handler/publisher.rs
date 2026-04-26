@@ -63,24 +63,30 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                 match delivery_incident_counter.load(Ordering::SeqCst) % 4 {
                     0 => {
                         // use the built-in sleeping strategy and keep retrying to send the sample
-                        // for 10ms and then abort the delivery for the receiver that caused the
-                        // incident and all other which did not yet receive the sample
+                        // for 10ms and then discard the sample for the receiver that caused the
+                        // incident but continue to try delivering the sample to all other receiver
+                        // to whom no attempt was taken to deliver the sample, yet;
+                        // return with an error if the sample was not delivered to all receivers
                         if info.elapsed_time < Duration::from_millis(10) {
                             UnableToDeliverAction::Retry
                         } else {
                             println!("    Retried for 10ms! Discarding sample and failing");
-                            UnableToDeliverAction::AbortDeliveryAndFail
+                            UnableToDeliverAction::DiscardSampleAndFail
                         }
                     }
                     1 => {
                         // instead of using the built-in sleeping strategy, the sleep time is defined
-                        // by the handler and the delivery is aborted after a specified amount of retries
+                        // by the handler and the sample is discarded after a specified amount of retries
+                        // for the receiver that caused the incident but continue to try delivering
+                        // the sample to all other receiver to whom no attempt was taken to deliver
+                        // the sample, yet;
+                        // return with an error if the sample was not delivered to all receivers
                         if info.retries < 10 {
                             println!("    Sleeping 100ms and retry");
                             std::thread::sleep(core::time::Duration::from_millis(100));
                             UnableToDeliverAction::Retry
                         } else {
-                            UnableToDeliverAction::AbortDeliveryAndFail
+                            UnableToDeliverAction::DiscardSampleAndFail
                         }
                     }
                     2 => {
@@ -91,10 +97,12 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                         UnableToDeliverAction::DiscardSample
                     }
                     _ => {
-                        // just abort the delivery for the receiver that caused the incident and
-                        // all other which did not yet receive the sample
+                        // just discard the sample for the receiver involved in the incident and
+                        // continue to try delivering the sample to all other receiver to whom
+                        // no attempt was taken to deliver the sample, yet;
+                        // return with an error if the sample was not delivered to all receivers
                         println!("    Discarding sample and failing");
-                        UnableToDeliverAction::AbortDeliveryAndFail
+                        UnableToDeliverAction::DiscardSampleAndFail
                     }
                 }
             }

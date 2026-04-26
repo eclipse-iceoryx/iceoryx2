@@ -776,7 +776,7 @@ pub mod details {
                                 }
                                 UnableToDeliverAction::Retry => WAIT_CONTINURE,
                                 UnableToDeliverAction::DiscardSample => WAIT_ABORT,
-                                UnableToDeliverAction::AbortDeliveryAndFail => {
+                                UnableToDeliverAction::DiscardSampleAndFail => {
                                     do_fail = true;
                                     WAIT_ABORT
                                 }

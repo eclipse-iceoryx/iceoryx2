@@ -259,7 +259,7 @@ impl<Service: service::Service> Sender<Service> {
                                         "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
                                         offset, connection.receiver_port_id);
                         }
-                        DegradationAction::AbortOperationAndFail => {
+                        DegradationAction::DegradeAndFail => {
                             fail!(from self, with SendError::ConnectionCorrupted,
                                         "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
                                         offset, connection.receiver_port_id);
@@ -336,11 +336,40 @@ impl<Service: service::Service> Sender<Service> {
         self.retrieve_returned_samples();
 
         let mut number_of_recipients = 0;
+        let mut delivery_error = None;
         for i in 0..self.len() {
-            number_of_recipients +=
-                self.deliver_offset_to_connection_impl(offset, sample_size, channel_id, i)?;
+            match self.deliver_offset_to_connection_impl(offset, sample_size, channel_id, i) {
+                Ok(n) => number_of_recipients += n,
+                Err(error) => match error {
+                    SendError::ConnectionCorrupted => {
+                        // `ConnectionCorrupted` has the highest priority and will overwrite
+                        // an existing `UnableToDeliver` error
+                        delivery_error = Some(error)
+                    }
+                    SendError::UnableToDeliver if delivery_error.is_none() => {
+                        // only store the `UnableToDeliver` if there is no existing error
+                        // to prevent overriding a higher priority `ConnectionCorrupted` error
+                        delivery_error = Some(error)
+                    }
+                    SendError::UnableToDeliver => {
+                        // there is already an error stored; nothing to do
+                    }
+                    e => {
+                        // the `deliver_offset_to_connection_impl` cannot fail with
+                        // `ConnectionBrokenSinceSenderNoLongerExists`, `ConnectionError`,
+                        // or `LoanError`, since these types of errors are triggered one layer
+                        // above this function; this leaves the `InternalError` which can be
+                        // triggered by EINTR, which should return immediately
+                        fail!(with e, "Delivery of the data was aborted due to error: {:?}", e);
+                    }
+                },
+            }
         }
-        Ok(number_of_recipients)
+        if let Some(e) = delivery_error {
+            Err(e)
+        } else {
+            Ok(number_of_recipients)
+        }
     }
 
     pub(crate) fn return_loaned_sample(&self, distance_to_chunk: PointerOffset) {
@@ -510,7 +539,7 @@ impl<Service: service::Service> Sender<Service> {
                                             "Unable to establish connection to new receiver {:?}.",
                                             receiver_details.port_id )
                     }
-                    DegradationAction::AbortOperationAndFail => {
+                    DegradationAction::DegradeAndFail => {
                         fail!(from self, with e,
                                            "Unable to establish connection to new receiver {:?}.",
                                            receiver_details.port_id );

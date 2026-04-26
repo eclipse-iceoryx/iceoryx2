@@ -959,7 +959,7 @@ pub mod zero_copy_connection_trait {
         blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
             |_, _| {
                 call_count.fetch_add(1, Ordering::Relaxed);
-                UnableToDeliverAction::AbortDeliveryAndFail
+                UnableToDeliverAction::DiscardSampleAndFail
             },
             ZeroCopySendError::UnableToDeliver,
         );
