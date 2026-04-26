@@ -963,9 +963,52 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
 
         Ok(())
     }
+
+    /// Removes the static service config of a [`Service`]. Returns `true` when a
+    /// config was removed, `false` if it did not exist.
+    ///
+    /// This is a thin convenience wrapper around [`remove_static_service_config()`]
+    /// that derives the service hash from the [`ServiceName`] and
+    /// [`MessagingPattern`].
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that:
+    ///
+    /// * no other process is creating, opening or otherwise using the same
+    ///   [`Service`] while this call runs, and
+    /// * any blackboard payload/management segments associated with the service
+    ///   are cleaned up separately when removing a blackboard service.
+    ///
+    /// For routine cleanup of dead participants prefer
+    /// [`Node::cleanup_dead_nodes()`](crate::node::Node::cleanup_dead_nodes). Use
+    /// [`Service::remove()`] to recover from the situation where a service's static
+    /// config persists in shared memory without any live owner registered to it.
+    unsafe fn remove(
+        service_name: &ServiceName,
+        config: &config::Config,
+        messaging_pattern: MessagingPattern,
+    ) -> Result<bool, NamedConceptRemoveError> {
+        let service_hash =
+            ServiceHash::new::<Self::ServiceNameHasher>(service_name, messaging_pattern);
+        unsafe { remove_static_service_config::<Self>(config, &service_hash.0.into()) }
+    }
 }
 
-pub(crate) unsafe fn remove_static_service_config<S: Service>(
+/// Removes the on-disk static service config identified by `uuid` for the given
+/// [`Service`] type and [`config::Config`]. Returns `true` when a config was
+/// removed, `false` if it did not exist.
+///
+/// This is the low-level cleanup primitive used by [`Service::remove()`] and the
+/// dead-node cleanup paths. Prefer [`Service::remove()`] when you know the
+/// [`ServiceName`] and [`MessagingPattern`].
+///
+/// # Safety
+///
+/// The caller must ensure that no other process is creating, opening or otherwise
+/// using the matching [`Service`] while this call runs. Any blackboard payload or
+/// management segments must be cleaned up separately.
+pub unsafe fn remove_static_service_config<S: Service>(
     config: &config::Config,
     uuid: &FileName,
 ) -> Result<bool, NamedConceptRemoveError> {
