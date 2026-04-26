@@ -967,10 +967,6 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
     /// Removes the static service config of a [`Service`]. Returns `true` when a
     /// config was removed, `false` if it did not exist.
     ///
-    /// This is a thin convenience wrapper around [`remove_static_service_config()`]
-    /// that derives the service hash from the [`ServiceName`] and
-    /// [`MessagingPattern`].
-    ///
     /// # Safety
     ///
     /// The caller must ensure that:
@@ -995,20 +991,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
     }
 }
 
-/// Removes the on-disk static service config identified by `uuid` for the given
-/// [`Service`] type and [`config::Config`]. Returns `true` when a config was
-/// removed, `false` if it did not exist.
-///
-/// This is the low-level cleanup primitive used by [`Service::remove()`] and the
-/// dead-node cleanup paths. Prefer [`Service::remove()`] when you know the
-/// [`ServiceName`] and [`MessagingPattern`].
-///
-/// # Safety
-///
-/// The caller must ensure that no other process is creating, opening or otherwise
-/// using the matching [`Service`] while this call runs. Any blackboard payload or
-/// management segments must be cleaned up separately.
-pub unsafe fn remove_static_service_config<S: Service>(
+pub(crate) unsafe fn remove_static_service_config<S: Service>(
     config: &config::Config,
     uuid: &FileName,
 ) -> Result<bool, NamedConceptRemoveError> {
