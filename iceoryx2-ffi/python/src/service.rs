@@ -14,7 +14,7 @@ use pyo3::prelude::*;
 
 use crate::{
     config::Config,
-    error::{ServiceDetailsError, ServiceListError},
+    error::{ServiceDetailsError, ServiceListError, ServiceRemoveError},
     messaging_pattern::MessagingPattern,
     service_details::{ServiceDetails, ServiceDetailsType},
     service_name::ServiceName,
@@ -76,6 +76,39 @@ impl Service {
             )
             .map_err(|e| ServiceDetailsError::new_err(format!("{e:?}")))?
             .map(|details| ServiceDetails(ServiceDetailsType::Local(details)))),
+        }
+    }
+
+    #[staticmethod]
+    /// Removes the static config of a `Service`. Returns `True` when a config was
+    /// removed, `False` if no matching service existed.
+    ///
+    /// Safety: the caller must ensure that no other process is creating, opening
+    /// or otherwise using the same service while this call runs.
+    pub fn remove(
+        service_name: &ServiceName,
+        config: &Config,
+        messaging_pattern: MessagingPattern,
+        service_type: ServiceType,
+    ) -> PyResult<bool> {
+        use iceoryx2::service::Service;
+        match service_type {
+            ServiceType::Ipc => Ok(unsafe {
+                crate::IpcService::remove(
+                    &service_name.0,
+                    &config.0.lock(),
+                    messaging_pattern.into(),
+                )
+            }
+            .map_err(|e| ServiceRemoveError::new_err(format!("{e:?}")))?),
+            ServiceType::Local => Ok(unsafe {
+                crate::LocalService::remove(
+                    &service_name.0,
+                    &config.0.lock(),
+                    messaging_pattern.into(),
+                )
+            }
+            .map_err(|e| ServiceRemoveError::new_err(format!("{e:?}")))?),
         }
     }
 
