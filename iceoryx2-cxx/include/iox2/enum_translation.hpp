@@ -22,6 +22,8 @@
 #include "iox2/client_error.hpp"
 #include "iox2/config_creation_error.hpp"
 #include "iox2/connection_failure.hpp"
+#include "iox2/degradation_action.hpp"
+#include "iox2/degradation_cause.hpp"
 #include "iox2/entry_handle_error.hpp"
 #include "iox2/entry_handle_mut_error.hpp"
 #include "iox2/iceoryx2.h"
@@ -44,6 +46,7 @@
 #include "iox2/signal_handling_mode.hpp"
 #include "iox2/subscriber_error.hpp"
 #include "iox2/type_variant.hpp"
+#include "iox2/unable_to_deliver_action.hpp"
 #include "iox2/unable_to_deliver_strategy.hpp"
 #include "iox2/waitset_enums.hpp"
 #include "iox2/writer_error.hpp"
@@ -1913,8 +1916,8 @@ constexpr auto from<int, iox2::UnableToDeliverStrategy>(const int value) noexcep
     switch (variant) {
     case iox2_unable_to_deliver_strategy_e_RETRY_UNTIL_DELIVERED:
         return iox2::UnableToDeliverStrategy::RetryUntilDelivered;
-    case iox2_unable_to_deliver_strategy_e_DISCARD_SAMPLE:
-        return iox2::UnableToDeliverStrategy::DiscardSample;
+    case iox2_unable_to_deliver_strategy_e_DISCARD_DATA:
+        return iox2::UnableToDeliverStrategy::DiscardData;
     }
 
     IOX2_UNREACHABLE();
@@ -1925,8 +1928,8 @@ constexpr auto from<iox2::UnableToDeliverStrategy, int>(const iox2::UnableToDeli
     switch (value) {
     case iox2::UnableToDeliverStrategy::RetryUntilDelivered:
         return iox2_unable_to_deliver_strategy_e_RETRY_UNTIL_DELIVERED;
-    case iox2::UnableToDeliverStrategy::DiscardSample:
-        return iox2_unable_to_deliver_strategy_e_DISCARD_SAMPLE;
+    case iox2::UnableToDeliverStrategy::DiscardData:
+        return iox2_unable_to_deliver_strategy_e_DISCARD_DATA;
     }
 
     IOX2_UNREACHABLE();
@@ -2282,6 +2285,52 @@ constexpr auto from<int, iox2::AttributeDefinitionError>(const int value) noexce
     switch (error) {
     case iox2_attribute_definition_error_e_EXCEEDS_MAX_SUPPORTED_ATTRIBUTES:
         return iox2::AttributeDefinitionError::ExceedsMaxSupportedAttributes;
+    }
+
+    IOX2_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<iox2_degradation_cause_e, iox2::DegradationCause>(const iox2_degradation_cause_e value) noexcept
+    -> iox2::DegradationCause {
+    switch (value) {
+    case iox2_degradation_cause_e_FAILED_TO_ESTABLISH_CONNECTION:
+        return iox2::DegradationCause::FailedToEstablishConnection;
+    case iox2_degradation_cause_e_CONNECTION_CORRUPTED:
+        return iox2::DegradationCause::ConnectionCorrupted;
+    }
+
+    IOX2_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<iox2::DegradationAction, iox2_degradation_action_e>(const iox2::DegradationAction value) noexcept
+    -> iox2_degradation_action_e {
+    switch (value) {
+    case iox2::DegradationAction::Ignore:
+        return iox2_degradation_action_e_IGNORE;
+    case iox2::DegradationAction::Warn:
+        return iox2_degradation_action_e_WARN;
+    case iox2::DegradationAction::DegradeAndFail:
+        return iox2_degradation_action_e_DEGRADE_AND_FAIL;
+    }
+
+    IOX2_UNREACHABLE();
+}
+
+template <>
+constexpr auto
+from<iox2::UnableToDeliverAction, iox2_unable_to_deliver_action_e>(const iox2::UnableToDeliverAction value) noexcept
+    -> iox2_unable_to_deliver_action_e {
+    switch (value) {
+    case iox2::UnableToDeliverAction::FollowUnableToDeliveryStrategy:
+        return iox2_unable_to_deliver_action_e_FOLLOW_UNABLE_TO_DELIVERY_STRATEGY;
+    case iox2::UnableToDeliverAction::Retry:
+        return iox2_unable_to_deliver_action_e_RETRY;
+    case iox2::UnableToDeliverAction::DiscardData:
+        return iox2_unable_to_deliver_action_e_DISCARD_DATA;
+    case iox2::UnableToDeliverAction::DiscardDataAndFail:
+        return iox2_unable_to_deliver_action_e_DISCARD_DATA_AND_FAIL;
     }
 
     IOX2_UNREACHABLE();

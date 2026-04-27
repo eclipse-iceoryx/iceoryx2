@@ -130,22 +130,21 @@ impl core::fmt::Display for ZeroCopyReleaseError {
 
 impl core::error::Error for ZeroCopyReleaseError {}
 
-/// Defines the action that shall be take when an a sample cannot be delivered. Is used as
-/// return value of the `UnableToDeliverHandler`, `UnableToDeliverFn` and
-/// [`UnableToDeliverToReceiverFn`] to define a custom behavior.
+/// Defines the action that shall be take when a [`PointerOffset`]
+/// cannot be delivered.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum UnableToDeliverAction {
+pub enum UnableToDeliverToReceiverAction {
     /// Use an action which is derived from the `UnableToDeliverStrategy`
     FollowUnableToDeliveryStrategy,
     /// Retry to send and invoke the handler again, if sending does not succeed
     Retry,
-    /// Discard the sample for the receiver which cause the incident and continue
-    /// to deliver the sample to the remaining receivers
-    DiscardSample,
-    /// Discard the sample for the receiver which caused the incident, continue
-    /// to deliver the sample to the remaining receivers;
-    /// return with an error if the sample was not delivered to all receivers
-    DiscardSampleAndFail,
+    /// Discard the [`PointerOffset`] for the [`ZeroCopyReceiver`] which cause the incident
+    /// and continue to deliver the [`PointerOffset`] to the remaining [`ZeroCopyReceiver`]s
+    DiscardPointerOffset,
+    /// Discard the [`PointerOffset`] for the [`ZeroCopyReceiver`] which caused the incident,
+    /// continue to deliver the [`PointerOffset`] to the remaining [`ZeroCopyReceiver`]s;
+    /// return with an error if the [`PointerOffset`] was not delivered to all [`ZeroCopyReceiver`]s
+    DiscardPointerOffsetAndFail,
 }
 
 #[repr(C)]
@@ -308,8 +307,8 @@ pub trait ZeroCopyPortDetails {
     }
 }
 
-/// The unable to delivery handler invoked by a send function when a sample cannot be delivered
-/// to a receiver
+/// The unable to delivery handler invoked by a send function when a [`PointerOffset`]
+/// cannot be delivered to a [`ZeroCopyReceiver`]
 ///
 /// # Arguments
 ///
@@ -318,10 +317,13 @@ pub trait ZeroCopyPortDetails {
 ///
 /// # Returns
 ///
-/// The [`UnableToDeliverAction`] to be taken to mitigate the incident
-pub trait UnableToDeliverToReceiverFn: Fn(u64, Duration) -> UnableToDeliverAction {}
+/// The [`UnableToDeliverToReceiverAction`] to be taken to mitigate the incident
+pub trait UnableToDeliverToReceiverFn:
+    Fn(u64, Duration) -> UnableToDeliverToReceiverAction
+{
+}
 
-impl<F: Fn(u64, Duration) -> UnableToDeliverAction> UnableToDeliverToReceiverFn for F {}
+impl<F: Fn(u64, Duration) -> UnableToDeliverToReceiverAction> UnableToDeliverToReceiverFn for F {}
 
 pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept + Send {
     fn try_send(
@@ -337,7 +339,7 @@ pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept + Send {
         sample_size: usize,
         channel_id: ChannelId,
         unable_to_deliver_to_receiver_handler: F,
-        unable_to_deliver_action_for_strategy: UnableToDeliverAction,
+        unable_to_deliver_action_for_strategy: UnableToDeliverToReceiverAction,
     ) -> Result<Option<PointerOffset>, ZeroCopySendError>;
 
     fn reclaim(&self, channel_id: ChannelId)

@@ -139,8 +139,8 @@ payload data segment
 * `defaults.publish-subscribe.enable-safe-overflow` - [`true`|`false`]: Default
   overflow behavior.
 * `defaults.publish-subscribe.unable-to-deliver-strategy` -
-  [`Block`|`DiscardSample`]: Default strategy for non-overflowing setups when
-  delivery fails.
+  [`RetryUntilDelivered`|`DiscardData`]: Default strategy for non-overflowing
+  setups when delivery fails.
 * `defaults.publish-subscribe.subscriber-expired-connection-buffer` - [int]:
   Expired connection buffer size of the subscriber. Connections to publishers
   are expired when the publisher disconnected from the service and the
@@ -149,7 +149,7 @@ payload data segment
 ### Service: Request Response Messaging Pattern
 
 * `defaults.request-response.client-unable-to-deliver-strategy` -
-  [`Block`|`DiscardSample`]: Default strategy for non-overflowing setups
+  [`RetryUntilDelivered`|`DiscardData`]: Default strategy for non-overflowing setups
   when delivery fails.
 * `defaults.request-response.client-expired-connection-buffer` - [int]:
   Expired connection buffer size of the client. Connections to servers
@@ -183,7 +183,7 @@ payload data segment
 * `defaults.request-response.max-servers` - [int]:
   The maximum amount of supported servers.
 * `defaults.request-response.server-unable-to-deliver-strategy` -
-  [`Block`|`DiscardSample`]: Default strategy for non-overflowing setups
+  [`RetryUntilDelivered`|`DiscardData`]: Default strategy for non-overflowing setups
   when delivery fails.
 * `defaults.request-response.server-expired-connection-buffer` - [int]:
   Expired connection buffer size of the server. Connections to clients

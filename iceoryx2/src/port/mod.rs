@@ -45,7 +45,43 @@ pub mod writer;
 /// receiver is full and the service does not overflow.
 pub mod unable_to_deliver_strategy;
 
-pub use iceoryx2_cal::zero_copy_connection::UnableToDeliverAction;
+pub use iceoryx2_cal::zero_copy_connection::UnableToDeliverToReceiverAction;
+
+/// Defines the action that shall be take when data cannot be delivered. Is used as
+/// return value of the [`UnableToDeliverHandler`] and  [`UnableToDeliverFn`] to
+///  define a custom behavior.
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum UnableToDeliverAction {
+    /// Use an action which is derived from the
+    /// [`UnableToDeliverStrategy`](crate::port::unable_to_deliver_strategy::UnableToDeliverStrategy)
+    FollowUnableToDeliveryStrategy,
+    /// Retry to send and invoke the handler again, if sending does not succeed
+    Retry,
+    /// Discard the data for the receiver which cause the incident and continue
+    /// to deliver the data to the remaining receivers
+    DiscardData,
+    /// Discard the data for the receiver which caused the incident, continue
+    /// to deliver the data to the remaining receivers;
+    /// return with an error if the data was not delivered to all receivers
+    DiscardDataAndFail,
+}
+
+impl From<UnableToDeliverAction> for UnableToDeliverToReceiverAction {
+    fn from(value: UnableToDeliverAction) -> Self {
+        match value {
+            UnableToDeliverAction::FollowUnableToDeliveryStrategy => {
+                UnableToDeliverToReceiverAction::FollowUnableToDeliveryStrategy
+            }
+            UnableToDeliverAction::Retry => UnableToDeliverToReceiverAction::Retry,
+            UnableToDeliverAction::DiscardData => {
+                UnableToDeliverToReceiverAction::DiscardPointerOffset
+            }
+            UnableToDeliverAction::DiscardDataAndFail => {
+                UnableToDeliverToReceiverAction::DiscardPointerOffsetAndFail
+            }
+        }
+    }
+}
 
 /// The unable to deliver context information passed to the [`UnableToDeliverHandler`]
 pub struct UnableToDeliverInfo {
@@ -61,7 +97,7 @@ pub struct UnableToDeliverInfo {
     pub elapsed_time: Duration,
 }
 
-/// The unable to delivery handler invoked by a send function when a sample cannot be delivered
+/// The unable to delivery handler invoked by a send function when data cannot be delivered
 /// to a receiver
 ///
 /// # Arguments
@@ -96,8 +132,8 @@ impl UnableToDeliverHandler<'_> {
     }
 }
 
-/// Defines the action that shall be take when an degradation is detected. This can happen when a
-/// sample cannot be delivered, or when the system is corrupted and files are modified by
+/// Defines the action that shall be take when an degradation is detected. This can happen when
+/// data cannot be delivered, or when the system is corrupted and files are modified by
 /// non-iceoryx2 instances. Is used as return value of the [`DegradationHandler`] to define a
 /// custom behavior.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]

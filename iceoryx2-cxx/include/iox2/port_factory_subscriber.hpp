@@ -15,6 +15,7 @@
 
 #include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
+#include "iox2/degradation_handler.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/subscriber.hpp"
@@ -42,6 +43,14 @@ class PortFactorySubscriber {
     auto operator=(PortFactorySubscriber&&) -> PortFactorySubscriber& = default;
     ~PortFactorySubscriber() = default;
 
+    /// Sets the [`DegradationHandler`] of the [`Subscriber`]. Whenever a connection to a
+    /// [`Publisher`] is corrupted, this handler is called and depending on the returned
+    /// [`DegradationAction`] measures will be taken.
+    /// @attention The handler function needs to live as long as the generated subscriber. If the [`Subscriber`],
+    /// including the receive function, is accessed from multiple threads, the handler must be thread-safe if it
+    /// captures data
+    auto set_degradation_handler(DegradationHandler* handler) && -> PortFactorySubscriber&&;
+
     /// Creates a new [`Subscriber`] or returns a [`SubscriberCreateError`] on failure.
     auto create() && -> bb::Expected<Subscriber<S, Payload, UserHeader>, SubscriberCreateError>;
 
@@ -52,6 +61,7 @@ class PortFactorySubscriber {
     explicit PortFactorySubscriber(iox2_port_factory_subscriber_builder_h handle);
 
     iox2_port_factory_subscriber_builder_h m_handle = nullptr;
+    bb::Optional<DegradationHandler* const> m_degradation_handler;
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -61,11 +71,23 @@ inline PortFactorySubscriber<S, Payload, UserHeader>::PortFactorySubscriber(
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
+inline auto PortFactorySubscriber<S, Payload, UserHeader>::set_degradation_handler(
+    DegradationHandler* handler) && -> PortFactorySubscriber&& {
+    m_degradation_handler.emplace(handler);
+    return std::move(*this);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
 inline auto
 PortFactorySubscriber<S, Payload, UserHeader>::create() && -> bb::Expected<Subscriber<S, Payload, UserHeader>,
                                                                            SubscriberCreateError> {
     if (m_buffer_size.has_value()) {
         iox2_port_factory_subscriber_builder_set_buffer_size(&m_handle, m_buffer_size.value());
+    }
+
+    if (m_degradation_handler.has_value()) {
+        iox2_port_factory_subscriber_builder_set_degradation_handler(
+            &m_handle, detail::degradation_handler_delegate, static_cast<void*>(m_degradation_handler.value()));
     }
 
     iox2_subscriber_h sub_handle {};

@@ -731,7 +731,7 @@ pub mod details {
             sample_size: usize,
             channel_id: ChannelId,
             unable_to_deliver_to_receiver_handler: F,
-            unable_to_deliver_action_for_strategy: UnableToDeliverAction,
+            unable_to_deliver_action_for_strategy: UnableToDeliverToReceiverAction,
         ) -> Result<Option<PointerOffset>, ZeroCopySendError> {
             let msg = "Unable to blocking send the offset";
             debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
@@ -745,7 +745,7 @@ pub mod details {
                 let mut retry_counter = 0;
                 let start = Time::now().unwrap();
 
-                const WAIT_CONTINURE: bool = true;
+                const WAIT_CONTINUE: bool = true;
                 const WAIT_ABORT: bool = false;
 
                 if let Err(e) = AdaptiveWaitBuilder::new().create().unwrap().wait_while(|| {
@@ -759,24 +759,24 @@ pub mod details {
                         && mgmt.channels[channel_id.value()].submission_queue.is_full()
                     {
                         if retry_until_delivered {
-                            WAIT_CONTINURE
+                            WAIT_CONTINUE
                         } else {
                             let wait_action = match unable_to_deliver_to_receiver_handler(
                                 retry_counter,
                                 start.elapsed().unwrap_or(Duration::MAX),
                             ) {
-                                UnableToDeliverAction::FollowUnableToDeliveryStrategy => {
+                                UnableToDeliverToReceiverAction::FollowUnableToDeliveryStrategy => {
                                     match unable_to_deliver_action_for_strategy {
-                                        UnableToDeliverAction::Retry => {
+                                        UnableToDeliverToReceiverAction::Retry => {
                                             retry_until_delivered = true;
-                                            WAIT_CONTINURE
+                                            WAIT_CONTINUE
                                         }
                                         _ => WAIT_ABORT,
                                     }
                                 }
-                                UnableToDeliverAction::Retry => WAIT_CONTINURE,
-                                UnableToDeliverAction::DiscardSample => WAIT_ABORT,
-                                UnableToDeliverAction::DiscardSampleAndFail => {
+                                UnableToDeliverToReceiverAction::Retry => WAIT_CONTINUE,
+                                UnableToDeliverToReceiverAction::DiscardPointerOffset => WAIT_ABORT,
+                                UnableToDeliverToReceiverAction::DiscardPointerOffsetAndFail => {
                                     do_fail = true;
                                     WAIT_ABORT
                                 }

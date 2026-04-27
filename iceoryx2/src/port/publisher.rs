@@ -28,7 +28,7 @@
 //!     // defines how many samples can be loaned in parallel
 //!     .max_loaned_samples(5)
 //!     // defines behavior when subscriber queue is full in an non-overflowing service
-//!     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
+//!     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
 //!     .create()?;
 //!
 //! // loan some initialized memory and send it
@@ -73,7 +73,7 @@
 //!     // defines how many samples can be loaned in parallel
 //!     .max_loaned_samples(5)
 //!     // defines behavior when subscriber queue is full in an non-overflowing service
-//!     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
+//!     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
 //!     .create()?;
 //!
 //! // loan some initialized memory and send it

@@ -35,13 +35,15 @@ pub mod zero_copy_connection_trait {
     use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptMgmt};
     use iceoryx2_cal::shm_allocator::{PointerOffset, SegmentId};
     use iceoryx2_cal::testing::generate_isolated_config;
-    use iceoryx2_cal::zero_copy_connection::{ChannelId, ChannelState, UnableToDeliverAction, *};
+    use iceoryx2_cal::zero_copy_connection::{
+        ChannelId, ChannelState, UnableToDeliverToReceiverAction, *,
+    };
 
     const SAMPLE_SIZE: usize = 123;
     const NUMBER_OF_SAMPLES: usize = 2345;
 
-    fn follow_unable_to_deliver_stratety(_: u64, _: Duration) -> UnableToDeliverAction {
-        UnableToDeliverAction::FollowUnableToDeliveryStrategy
+    fn follow_unable_to_deliver_stratety(_: u64, _: Duration) -> UnableToDeliverToReceiverAction {
+        UnableToDeliverToReceiverAction::FollowUnableToDeliveryStrategy
     }
 
     #[conformance_test]
@@ -847,7 +849,7 @@ pub mod zero_copy_connection_trait {
                     SAMPLE_SIZE,
                     id,
                     follow_unable_to_deliver_stratety,
-                    UnableToDeliverAction::Retry,
+                    UnableToDeliverToReceiverAction::Retry,
                 ),
                 is_ok
             );
@@ -857,7 +859,7 @@ pub mod zero_copy_connection_trait {
                     SAMPLE_SIZE,
                     id,
                     follow_unable_to_deliver_stratety,
-                    UnableToDeliverAction::Retry,
+                    UnableToDeliverToReceiverAction::Retry,
                 ),
                 is_ok
             );
@@ -907,8 +909,8 @@ pub mod zero_copy_connection_trait {
                 PointerOffset::new(sample_offset_1),
                 SAMPLE_SIZE,
                 id,
-                |_, _| UnableToDeliverAction::Retry,
-                UnableToDeliverAction::Retry,
+                |_, _| UnableToDeliverToReceiverAction::Retry,
+                UnableToDeliverToReceiverAction::Retry,
             ),
             is_ok
         );
@@ -918,7 +920,7 @@ pub mod zero_copy_connection_trait {
                 SAMPLE_SIZE,
                 id,
                 unable_to_deliver_handler,
-                UnableToDeliverAction::Retry,
+                UnableToDeliverToReceiverAction::Retry,
             ),
             eq(Err(blocking_send_error))
         );
@@ -934,7 +936,7 @@ pub mod zero_copy_connection_trait {
     }
 
     #[conformance_test]
-    pub fn blocking_send_returns_when_unable_to_deliver_handler_discards_sample<
+    pub fn blocking_send_returns_when_unable_to_deliver_handler_discards_pointer_offset<
         Sut: ZeroCopyConnection,
     >() {
         let call_count = AtomicU64::new(0);
@@ -942,7 +944,7 @@ pub mod zero_copy_connection_trait {
         blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
             |_, _| {
                 call_count.fetch_add(1, Ordering::Relaxed);
-                UnableToDeliverAction::DiscardSample
+                UnableToDeliverToReceiverAction::DiscardPointerOffset
             },
             ZeroCopySendError::ReceiveBufferFull,
         );
@@ -959,7 +961,7 @@ pub mod zero_copy_connection_trait {
         blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
             |_, _| {
                 call_count.fetch_add(1, Ordering::Relaxed);
-                UnableToDeliverAction::DiscardSampleAndFail
+                UnableToDeliverToReceiverAction::DiscardPointerOffsetAndFail
             },
             ZeroCopySendError::UnableToDeliver,
         );
@@ -977,10 +979,10 @@ pub mod zero_copy_connection_trait {
         blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
             |retries, _| {
                 if retries == RETRY_COUNT {
-                    UnableToDeliverAction::DiscardSample
+                    UnableToDeliverToReceiverAction::DiscardPointerOffset
                 } else {
                     call_count.fetch_add(1, Ordering::Relaxed);
-                    UnableToDeliverAction::Retry
+                    UnableToDeliverToReceiverAction::Retry
                 }
             },
             ZeroCopySendError::ReceiveBufferFull,
@@ -999,9 +1001,9 @@ pub mod zero_copy_connection_trait {
             blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
                 |_, elapsed_time| {
                     if elapsed_time > TIMEOUT {
-                        UnableToDeliverAction::DiscardSample
+                        UnableToDeliverToReceiverAction::DiscardPointerOffset
                     } else {
-                        UnableToDeliverAction::Retry
+                        UnableToDeliverToReceiverAction::Retry
                     }
                 },
                 ZeroCopySendError::ReceiveBufferFull,
@@ -1052,7 +1054,7 @@ pub mod zero_copy_connection_trait {
                         SAMPLE_SIZE,
                         id,
                         follow_unable_to_deliver_stratety,
-                        UnableToDeliverAction::Retry,
+                        UnableToDeliverToReceiverAction::Retry,
                     ),
                     is_ok
                 );
@@ -1062,7 +1064,7 @@ pub mod zero_copy_connection_trait {
                         SAMPLE_SIZE,
                         id,
                         follow_unable_to_deliver_stratety,
-                        UnableToDeliverAction::Retry,
+                        UnableToDeliverToReceiverAction::Retry,
                     ).err(),
                      eq Some(ZeroCopySendError::NoConnectedReceiver)
                 );
@@ -1122,7 +1124,7 @@ pub mod zero_copy_connection_trait {
                         SAMPLE_SIZE,
                         id,
                         follow_unable_to_deliver_stratety,
-                        UnableToDeliverAction::Retry,
+                        UnableToDeliverToReceiverAction::Retry,
                     ),
                     is_ok
                 );
@@ -1132,7 +1134,7 @@ pub mod zero_copy_connection_trait {
                         SAMPLE_SIZE,
                         id,
                         follow_unable_to_deliver_stratety,
-                        UnableToDeliverAction::Retry,
+                        UnableToDeliverToReceiverAction::Retry,
                     ).err(),
                     eq Some(ZeroCopySendError::ChannelIsClosed)
                 );
@@ -2016,7 +2018,7 @@ pub mod zero_copy_connection_trait {
             SAMPLE_SIZE,
             ChannelId::new(1),
             follow_unable_to_deliver_stratety,
-            UnableToDeliverAction::Retry,
+            UnableToDeliverToReceiverAction::Retry,
         );
     }
 

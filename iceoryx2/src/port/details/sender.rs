@@ -23,8 +23,9 @@ use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
-    ChannelId, ChannelState, UnableToDeliverAction, ZeroCopyConnection, ZeroCopyConnectionBuilder,
-    ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySendError, ZeroCopySender,
+    ChannelId, ChannelState, UnableToDeliverToReceiverAction, ZeroCopyConnection,
+    ZeroCopyConnectionBuilder, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySendError,
+    ZeroCopySender,
 };
 use iceoryx2_log::{error, fail, fatal_panic, warn};
 
@@ -168,8 +169,12 @@ impl<Service: service::Service> Sender<Service> {
                 self.unable_to_deliver_handler.as_ref()
             {
                 let unablet_to_deliver_action_for_strategy = match self.unable_to_deliver_strategy {
-                    UnableToDeliverStrategy::RetryUntilDelivered => UnableToDeliverAction::Retry,
-                    UnableToDeliverStrategy::DiscardSample => UnableToDeliverAction::DiscardSample,
+                    UnableToDeliverStrategy::RetryUntilDelivered => {
+                        UnableToDeliverToReceiverAction::Retry
+                    }
+                    UnableToDeliverStrategy::DiscardData => {
+                        UnableToDeliverToReceiverAction::DiscardPointerOffset
+                    }
                 };
 
                 <Service::Connection as ZeroCopyConnection>::Sender::blocking_send(
@@ -178,23 +183,25 @@ impl<Service: service::Service> Sender<Service> {
                     sample_size,
                     channel_id,
                     |retries, elapsed_time| {
-                        handler.call(&UnableToDeliverInfo {
-                            service_id: self
-                                .service_state
-                                .static_config
-                                .unique_service_id()
-                                .value(),
-                            sender_port_id: self.sender_port_id,
-                            receiver_port_id: connection.receiver_port_id,
-                            retries,
-                            elapsed_time,
-                        })
+                        handler
+                            .call(&UnableToDeliverInfo {
+                                service_id: self
+                                    .service_state
+                                    .static_config
+                                    .unique_service_id()
+                                    .value(),
+                                sender_port_id: self.sender_port_id,
+                                receiver_port_id: connection.receiver_port_id,
+                                retries,
+                                elapsed_time,
+                            })
+                            .into()
                     },
                     unablet_to_deliver_action_for_strategy,
                 )
             } else {
                 match self.unable_to_deliver_strategy {
-                    UnableToDeliverStrategy::DiscardSample => {
+                    UnableToDeliverStrategy::DiscardData => {
                         <Service::Connection as ZeroCopyConnection>::Sender::try_send(
                             &connection.sender,
                             offset,
@@ -208,8 +215,8 @@ impl<Service: service::Service> Sender<Service> {
                             offset,
                             sample_size,
                             channel_id,
-                            |_, _| UnableToDeliverAction::FollowUnableToDeliveryStrategy,
-                            UnableToDeliverAction::Retry,
+                            |_, _| UnableToDeliverToReceiverAction::FollowUnableToDeliveryStrategy,
+                            UnableToDeliverToReceiverAction::Retry,
                         )
                     }
                 }

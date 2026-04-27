@@ -733,10 +733,10 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_unable_to_deliver_stra
                          .create()
                          .value();
     auto sut_pub_2 =
-        service.publisher_builder().unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample).create().value();
+        service.publisher_builder().unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData).create().value();
 
     ASSERT_THAT(sut_pub_1.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::RetryUntilDelivered));
-    ASSERT_THAT(sut_pub_2.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::DiscardSample));
+    ASSERT_THAT(sut_pub_2.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::DiscardData));
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_max_slice_len) {

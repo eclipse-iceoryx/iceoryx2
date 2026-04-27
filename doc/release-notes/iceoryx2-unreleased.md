@@ -45,6 +45,8 @@
   the trait impl and enforce all invariants (`#[repr(C)]`, no padding, field
   bounds) at compile time
   [#1547](https://github.com/eclipse-iceoryx/iceoryx2/issues/1547)
+* Enhance degradation handler and add unable to deliver handler
+  [#1573](https://github.com/eclipse-iceoryx/iceoryx2/issues/1573)
 
 ### Bugfixes
 
@@ -86,7 +88,7 @@
   feature aliases in the `iceoryx2` crate
   [#1369](https://github.com/eclipse-iceoryx/iceoryx2/issues/1369)
 * Resources cannot always be cleaned up with `dev_permissions` feature flag
-  [#1365](https://github.com/eclipse-iceoryx/iceoryx2/issues/1370)
+  [#1370](https://github.com/eclipse-iceoryx/iceoryx2/issues/1370)
 * Add `update_connection` to Python bindings
   [#1380](https://github.com/eclipse-iceoryx/iceoryx2/issues/1380)
 * Add `Config::setup_global_config_from_file` to C++ bindings
@@ -315,7 +317,8 @@
     use iceoryx2_services_tunnel::{Config, Tunnel};
     ```
 
-1. The `UnableToDeliveryStrategy::Block` was renamed to `UnableToDeliveryStrategy::RetryUntilDelivered`.
+1. The `UnableToDeliveryStrategy` enum tags are renamed to from `Block` and
+   `DiscardSample` to `RetryUntilDelivered` and `DiscardData`.
 
     ```rust
     // old

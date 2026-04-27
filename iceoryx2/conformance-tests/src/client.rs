@@ -324,7 +324,7 @@ pub mod client {
     }
 
     #[conformance_test]
-    pub fn unable_to_deliver_strategy_discard_discards_sample<Sut: Service>() {
+    pub fn unable_to_deliver_strategy_discard_discards_request<Sut: Service>() {
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
         let service = node
@@ -338,11 +338,11 @@ pub mod client {
 
         let sut = service
             .client_builder()
-            .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
+            .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
             .create()
             .unwrap();
 
-        assert_that!(sut.unable_to_deliver_strategy(), eq UnableToDeliverStrategy::DiscardSample);
+        assert_that!(sut.unable_to_deliver_strategy(), eq UnableToDeliverStrategy::DiscardData);
 
         let request = sut.send_copy(123);
         assert_that!(request, is_ok);
@@ -492,7 +492,7 @@ pub mod client {
                     let handler_call_count = handler_call_count.clone();
                     move |_| {
                         handler_call_count.fetch_add(1, Ordering::Relaxed);
-                        UnableToDeliverAction::DiscardSample
+                        UnableToDeliverAction::DiscardData
                     }
                 })
             },
@@ -521,7 +521,7 @@ pub mod client {
                     let handler_call_count = handler_call_count.clone();
                     move |info| {
                         if info.retries == RETRY_COUNT {
-                            UnableToDeliverAction::DiscardSample
+                            UnableToDeliverAction::DiscardData
                         } else {
                             handler_call_count.fetch_add(1, Ordering::Relaxed);
                             UnableToDeliverAction::Retry
@@ -551,7 +551,7 @@ pub mod client {
                 client_port_factory.set_unable_to_deliver_handler({
                     move |info| {
                         if info.elapsed_time > TIMEOUT {
-                            UnableToDeliverAction::DiscardSample
+                            UnableToDeliverAction::DiscardData
                         } else {
                             UnableToDeliverAction::Retry
                         }
@@ -583,7 +583,7 @@ pub mod client {
                     let handler_call_count = handler_call_count.clone();
                     move |_| {
                         handler_call_count.fetch_add(1, Ordering::Relaxed);
-                        UnableToDeliverAction::DiscardSampleAndFail
+                        UnableToDeliverAction::DiscardDataAndFail
                     }
                 })
             },
@@ -596,7 +596,7 @@ pub mod client {
     }
 
     #[conformance_test]
-    pub fn client_with_unable_to_deliver_handler_follows_unable_to_deliver_strategy_with_discard_request<
+    pub fn client_with_unable_to_deliver_handler_follows_unable_to_deliver_strategy_with_discard_data<
         Sut: Service,
     >() {
         const SAFE_OVERFLOW: bool = false;
@@ -610,7 +610,7 @@ pub mod client {
             SAFE_OVERFLOW,
             |client_port_factory| {
                 client_port_factory
-                    .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
+                    .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
                     .set_unable_to_deliver_handler({
                         let handler_call_count = handler_call_count.clone();
                         move |_| {

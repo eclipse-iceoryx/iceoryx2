@@ -39,7 +39,7 @@ auto main() -> int {
         auto initialized_sample =
             sample.write_payload(TransmissionData { counter, counter * 3, counter * 812.12 }); // NOLINT
 
-        send(std::move(initialized_sample)).value();
+        send(std::move(initialized_sample)).has_value();
 
         std::cout << "Send sample " << counter << "..." << std::endl;
     }

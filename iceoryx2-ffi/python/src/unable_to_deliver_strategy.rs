@@ -21,7 +21,7 @@ pub enum UnableToDeliverStrategy {
     /// data from the full buffer and there is space again
     RetryUntilDelivered,
     /// Do not deliver the data to receiver with a full buffer
-    DiscardSample,
+    DiscardData,
 }
 
 #[pymethods]
@@ -37,8 +37,8 @@ impl From<iceoryx2::prelude::UnableToDeliverStrategy> for UnableToDeliverStrateg
             iceoryx2::prelude::UnableToDeliverStrategy::RetryUntilDelivered => {
                 UnableToDeliverStrategy::RetryUntilDelivered
             }
-            iceoryx2::prelude::UnableToDeliverStrategy::DiscardSample => {
-                UnableToDeliverStrategy::DiscardSample
+            iceoryx2::prelude::UnableToDeliverStrategy::DiscardData => {
+                UnableToDeliverStrategy::DiscardData
             }
         }
     }
@@ -50,8 +50,8 @@ impl From<UnableToDeliverStrategy> for iceoryx2::prelude::UnableToDeliverStrateg
             UnableToDeliverStrategy::RetryUntilDelivered => {
                 iceoryx2::prelude::UnableToDeliverStrategy::RetryUntilDelivered
             }
-            UnableToDeliverStrategy::DiscardSample => {
-                iceoryx2::prelude::UnableToDeliverStrategy::DiscardSample
+            UnableToDeliverStrategy::DiscardData => {
+                iceoryx2::prelude::UnableToDeliverStrategy::DiscardData
             }
         }
     }

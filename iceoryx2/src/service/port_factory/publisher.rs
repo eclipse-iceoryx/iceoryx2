@@ -25,7 +25,7 @@
 //!
 //! let publisher = pubsub.publisher_builder()
 //!                     .max_loaned_samples(6)
-//!                     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
+//!                     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
 //!                     .create()?;
 //!
 //! # Ok(())
