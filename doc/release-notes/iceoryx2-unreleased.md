@@ -310,7 +310,23 @@
     ```rust
     // old
     use iceoryx2_tunnel::{Config, Tunnel};
-    
+
     // new
     use iceoryx2_services_tunnel::{Config, Tunnel};
+    ```
+
+1. The `UnableToDeliveryStrategy::Block` was renamed to `UnableToDeliveryStrategy::RetryUntilDelivered`.
+
+    ```rust
+    // old
+    service
+        .publisher_builder()
+        .unable_to_deliver_strategy(UnableToDeliverStrategy::Block)
+        .create()?;
+
+    // new
+    service
+        .publisher_builder()
+        .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
+        .create()?;
     ```

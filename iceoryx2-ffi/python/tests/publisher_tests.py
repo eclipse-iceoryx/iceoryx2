@@ -39,7 +39,7 @@ def test_unable_to_deliver_strategy_can_be_configured(
 
     sut_1 = (
         service.publisher_builder()
-        .unable_to_deliver_strategy(iox2.UnableToDeliverStrategy.Block)
+        .unable_to_deliver_strategy(iox2.UnableToDeliverStrategy.RetryUntilDelivered)
         .create()
     )
     sut_2 = (
@@ -48,7 +48,10 @@ def test_unable_to_deliver_strategy_can_be_configured(
         .create()
     )
 
-    assert sut_1.unable_to_deliver_strategy == iox2.UnableToDeliverStrategy.Block
+    assert (
+        sut_1.unable_to_deliver_strategy
+        == iox2.UnableToDeliverStrategy.RetryUntilDelivered
+    )
     assert (
         sut_2.unable_to_deliver_strategy == iox2.UnableToDeliverStrategy.DiscardSample
     )

@@ -167,8 +167,9 @@ TEST(Config, defaults_publish_subscribe_enable_safe_overflow) {
 TEST(Config, defaults_publish_subscribe_unable_to_deliver_strategy) {
     auto config = Config();
 
-    config.defaults().publish_subscribe().set_unable_to_deliver_strategy(UnableToDeliverStrategy::Block);
-    ASSERT_THAT(config.defaults().publish_subscribe().unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::Block));
+    config.defaults().publish_subscribe().set_unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered);
+    ASSERT_THAT(config.defaults().publish_subscribe().unable_to_deliver_strategy(),
+                Eq(UnableToDeliverStrategy::RetryUntilDelivered));
     config.defaults().publish_subscribe().set_unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample);
     ASSERT_THAT(config.defaults().publish_subscribe().unable_to_deliver_strategy(),
                 Eq(UnableToDeliverStrategy::DiscardSample));
@@ -375,16 +376,18 @@ TEST(Config, defaults_request_response_server_max_loaned_responses_per_request) 
 TEST(Config, defaults_request_response_unable_to_deliver_strategy) {
     auto config = Config();
 
-    config.defaults().request_response().set_client_unable_to_deliver_strategy(UnableToDeliverStrategy::Block);
+    config.defaults().request_response().set_client_unable_to_deliver_strategy(
+        UnableToDeliverStrategy::RetryUntilDelivered);
     ASSERT_THAT(config.defaults().request_response().client_unable_to_deliver_strategy(),
-                Eq(UnableToDeliverStrategy::Block));
+                Eq(UnableToDeliverStrategy::RetryUntilDelivered));
     config.defaults().request_response().set_client_unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample);
     ASSERT_THAT(config.defaults().request_response().client_unable_to_deliver_strategy(),
                 Eq(UnableToDeliverStrategy::DiscardSample));
 
-    config.defaults().request_response().set_server_unable_to_deliver_strategy(UnableToDeliverStrategy::Block);
+    config.defaults().request_response().set_server_unable_to_deliver_strategy(
+        UnableToDeliverStrategy::RetryUntilDelivered);
     ASSERT_THAT(config.defaults().request_response().server_unable_to_deliver_strategy(),
-                Eq(UnableToDeliverStrategy::Block));
+                Eq(UnableToDeliverStrategy::RetryUntilDelivered));
     config.defaults().request_response().set_server_unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample);
     ASSERT_THAT(config.defaults().request_response().server_unable_to_deliver_strategy(),
                 Eq(UnableToDeliverStrategy::DiscardSample));

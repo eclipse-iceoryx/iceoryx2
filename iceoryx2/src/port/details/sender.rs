@@ -23,13 +23,16 @@ use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
-    ChannelId, ChannelState, ZeroCopyConnection, ZeroCopyConnectionBuilder, ZeroCopyCreationError,
-    ZeroCopyPortDetails, ZeroCopySendError, ZeroCopySender,
+    ChannelId, ChannelState, UnableToDeliverAction, ZeroCopyConnection, ZeroCopyConnectionBuilder,
+    ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySendError, ZeroCopySender,
 };
 use iceoryx2_log::{error, fail, fatal_panic, warn};
 
 use crate::node::SharedNode;
-use crate::port::{DegradationAction, DegradationCallback, LoanError, SendError};
+use crate::port::{
+    DegradationAction, DegradationCallback, DegradationCause, DegradationInfo, LoanError,
+    SendError, UnableToDeliverHandler, UnableToDeliverInfo,
+};
 use crate::prelude::UnableToDeliverStrategy;
 use crate::service::config_scheme::connection_config;
 use crate::service::static_config::message_type_details::{MessageTypeDetails, TypeVariant};
@@ -113,7 +116,8 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) enable_safe_overflow: bool,
     pub(crate) number_of_samples: usize,
     pub(crate) max_number_of_segments: u8,
-    pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
+    pub(crate) degradation_callback: DegradationCallback<'static>,
+    pub(crate) unable_to_deliver_handler: Option<UnableToDeliverHandler<'static>>,
     pub(crate) service_state: Arc<ServiceState<Service, NoResource>>,
     pub(crate) tagger: CyclicTagger,
     pub(crate) loan_counter: AtomicUsize,
@@ -157,18 +161,67 @@ impl<Service: service::Service> Sender<Service> {
         connection_id: usize,
     ) -> Result<usize, SendError> {
         let msg = "While delivering the sample:";
-        let deliver_call = match self.unable_to_deliver_strategy {
-            UnableToDeliverStrategy::Block => {
-                <Service::Connection as ZeroCopyConnection>::Sender::blocking_send
-            }
-            UnableToDeliverStrategy::DiscardSample => {
-                <Service::Connection as ZeroCopyConnection>::Sender::try_send
-            }
-        };
 
         let mut number_of_recipients = 0;
         if let Some(connection) = self.get(connection_id) {
-            match deliver_call(&connection.sender, offset, sample_size, channel_id) {
+            let delivery_call_result = if let Some(handler) =
+                self.unable_to_deliver_handler.as_ref()
+            {
+                let unablet_to_deliver_action_for_strategy = match self.unable_to_deliver_strategy {
+                    UnableToDeliverStrategy::RetryUntilDelivered => UnableToDeliverAction::Retry,
+                    UnableToDeliverStrategy::DiscardSample => UnableToDeliverAction::DiscardSample,
+                };
+
+                <Service::Connection as ZeroCopyConnection>::Sender::blocking_send(
+                    &connection.sender,
+                    offset,
+                    sample_size,
+                    channel_id,
+                    |retries, elapsed_time| {
+                        handler.call(&UnableToDeliverInfo {
+                            service_id: self
+                                .service_state
+                                .static_config
+                                .unique_service_id()
+                                .value(),
+                            sender_port_id: self.sender_port_id,
+                            receiver_port_id: connection.receiver_port_id,
+                            retries,
+                            elapsed_time,
+                        })
+                    },
+                    unablet_to_deliver_action_for_strategy,
+                )
+            } else {
+                match self.unable_to_deliver_strategy {
+                    UnableToDeliverStrategy::DiscardSample => {
+                        <Service::Connection as ZeroCopyConnection>::Sender::try_send(
+                            &connection.sender,
+                            offset,
+                            sample_size,
+                            channel_id,
+                        )
+                    }
+                    UnableToDeliverStrategy::RetryUntilDelivered => {
+                        <Service::Connection as ZeroCopyConnection>::Sender::blocking_send(
+                            &connection.sender,
+                            offset,
+                            sample_size,
+                            channel_id,
+                            |_, _| UnableToDeliverAction::FollowUnableToDeliveryStrategy,
+                            UnableToDeliverAction::Retry,
+                        )
+                    }
+                }
+            };
+
+            match delivery_call_result {
+                Err(ZeroCopySendError::UnableToDeliver) => {
+                    // can only happen with blocking send and the degradation callback triggered a failure
+                    fail!(from self, with SendError::UnableToDeliver,
+                          "{msg} {:?} could not be delivered to receiver {:?}.",
+                          offset, connection.receiver_port_id);
+                }
                 Err(ZeroCopySendError::ReceiveBufferFull)
                 | Err(ZeroCopySendError::UsedChunkListFull) => {
                     /* causes no problem
@@ -187,11 +240,18 @@ impl<Service: service::Service> Sender<Service> {
                     fail!(from self, with SendError::InternalError,
                         "{msg} {:?} to receiver {:?} an internal mechanism failed and the offset was delivered only to a subset of receivers.", offset, connection.receiver_port_id);
                 }
-                Err(ZeroCopySendError::ConnectionCorrupted) => match &self.degradation_callback {
-                    Some(c) => match c.call(
-                        &self.service_state.static_config,
-                        self.sender_port_id,
-                        connection.receiver_port_id,
+                Err(ZeroCopySendError::ConnectionCorrupted) => {
+                    match self.degradation_callback.call(
+                        DegradationCause::ConnectionCorrupted,
+                        &DegradationInfo {
+                            service_id: self
+                                .service_state
+                                .static_config
+                                .unique_service_id()
+                                .value(),
+                            sender_port_id: self.sender_port_id,
+                            receiver_port_id: connection.receiver_port_id,
+                        },
                     ) {
                         DegradationAction::Ignore => (),
                         DegradationAction::Warn => {
@@ -199,18 +259,13 @@ impl<Service: service::Service> Sender<Service> {
                                         "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
                                         offset, connection.receiver_port_id);
                         }
-                        DegradationAction::Fail => {
+                        DegradationAction::DegradeAndFail => {
                             fail!(from self, with SendError::ConnectionCorrupted,
                                         "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
                                         offset, connection.receiver_port_id);
                         }
-                    },
-                    None => {
-                        error!(from self,
-                                    "{msg} {:?} a corrupted connection was detected with receiver {:?}.",
-                                    offset, connection.receiver_port_id);
                     }
-                },
+                }
                 Ok(overflow) => {
                     self.borrow_sample(offset);
                     number_of_recipients += 1;
@@ -281,11 +336,40 @@ impl<Service: service::Service> Sender<Service> {
         self.retrieve_returned_samples();
 
         let mut number_of_recipients = 0;
+        let mut delivery_error = None;
         for i in 0..self.len() {
-            number_of_recipients +=
-                self.deliver_offset_to_connection_impl(offset, sample_size, channel_id, i)?;
+            match self.deliver_offset_to_connection_impl(offset, sample_size, channel_id, i) {
+                Ok(n) => number_of_recipients += n,
+                Err(error) => match error {
+                    SendError::ConnectionCorrupted => {
+                        // `ConnectionCorrupted` has the highest priority and will overwrite
+                        // an existing `UnableToDeliver` error
+                        delivery_error = Some(error)
+                    }
+                    SendError::UnableToDeliver if delivery_error.is_none() => {
+                        // only store the `UnableToDeliver` if there is no existing error
+                        // to prevent overriding a higher priority `ConnectionCorrupted` error
+                        delivery_error = Some(error)
+                    }
+                    SendError::UnableToDeliver => {
+                        // there is already an error stored; nothing to do
+                    }
+                    e => {
+                        // the `deliver_offset_to_connection_impl` cannot fail with
+                        // `ConnectionBrokenSinceSenderNoLongerExists`, `ConnectionError`,
+                        // or `LoanError`, since these types of errors are triggered one layer
+                        // above this function; this leaves the `InternalError` which can be
+                        // triggered by EINTR, which should return immediately
+                        fail!(with e, "Delivery of the data was aborted due to error: {:?}", e);
+                    }
+                },
+            }
         }
-        Ok(number_of_recipients)
+        if let Some(e) = delivery_error {
+            Err(e)
+        } else {
+            Ok(number_of_recipients)
+        }
     }
 
     pub(crate) fn return_loaned_sample(&self, distance_to_chunk: PointerOffset) {
@@ -441,28 +525,24 @@ impl<Service: service::Service> Sender<Service> {
                         fatal_panic!(from self, "This should never happen! Unable to acquire previously created receiver connection.")
                     }
                 },
-                Err(e) => match &self.degradation_callback {
-                    Some(c) => match c.call(
-                        &self.service_state.static_config,
-                        self.sender_port_id,
-                        receiver_details.port_id,
-                    ) {
-                        DegradationAction::Ignore => (),
-                        DegradationAction::Warn => {
-                            warn!(from self,
+                Err(e) => match self.degradation_callback.call(
+                    DegradationCause::FailedToEstablishConnection,
+                    &DegradationInfo {
+                        service_id: self.service_state.static_config.unique_service_id().value(),
+                        sender_port_id: self.sender_port_id,
+                        receiver_port_id: receiver_details.port_id,
+                    },
+                ) {
+                    DegradationAction::Ignore => (),
+                    DegradationAction::Warn => {
+                        warn!(from self,
                                             "Unable to establish connection to new receiver {:?}.",
                                             receiver_details.port_id )
-                        }
-                        DegradationAction::Fail => {
-                            fail!(from self, with e,
+                    }
+                    DegradationAction::DegradeAndFail => {
+                        fail!(from self, with e,
                                            "Unable to establish connection to new receiver {:?}.",
                                            receiver_details.port_id );
-                        }
-                    },
-                    None => {
-                        warn!(from self,
-                                        "Unable to establish connection to new receiver {:?}.",
-                                        receiver_details.port_id )
                     }
                 },
             }

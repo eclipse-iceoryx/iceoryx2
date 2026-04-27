@@ -19,7 +19,7 @@ pub mod zero_copy_connection_trait {
     use alloc::sync::Arc;
     use alloc::vec;
     use core::time::Duration;
-    use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
+    use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, Ordering};
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_posix::clock::{Time, nanosleep};
@@ -35,10 +35,14 @@ pub mod zero_copy_connection_trait {
     use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptMgmt};
     use iceoryx2_cal::shm_allocator::{PointerOffset, SegmentId};
     use iceoryx2_cal::testing::generate_isolated_config;
-    use iceoryx2_cal::zero_copy_connection::{ChannelId, ChannelState, *};
+    use iceoryx2_cal::zero_copy_connection::{ChannelId, ChannelState, UnableToDeliverAction, *};
 
     const SAMPLE_SIZE: usize = 123;
     const NUMBER_OF_SAMPLES: usize = 2345;
+
+    fn follow_unable_to_deliver_stratety(_: u64, _: Duration) -> UnableToDeliverAction {
+        UnableToDeliverAction::FollowUnableToDeliveryStrategy
+    }
 
     #[conformance_test]
     pub fn create_non_existing_connection_works<Sut: ZeroCopyConnection>() {
@@ -838,11 +842,23 @@ pub mod zero_copy_connection_trait {
             let now = Time::now().unwrap();
 
             assert_that!(
-                sut_sender.blocking_send(PointerOffset::new(sample_offset_1), SAMPLE_SIZE, id),
+                sut_sender.blocking_send(
+                    PointerOffset::new(sample_offset_1),
+                    SAMPLE_SIZE,
+                    id,
+                    follow_unable_to_deliver_stratety,
+                    UnableToDeliverAction::Retry,
+                ),
                 is_ok
             );
             assert_that!(
-                sut_sender.blocking_send(PointerOffset::new(sample_offset_2), SAMPLE_SIZE, id),
+                sut_sender.blocking_send(
+                    PointerOffset::new(sample_offset_2),
+                    SAMPLE_SIZE,
+                    id,
+                    follow_unable_to_deliver_stratety,
+                    UnableToDeliverAction::Retry,
+                ),
                 is_ok
             );
             assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
@@ -850,6 +866,148 @@ pub mod zero_copy_connection_trait {
             Ok(())
         })
         .unwrap();
+    }
+
+    fn blocking_send_returns_when_unable_to_deliver_handler_is_used<
+        Sut: ZeroCopyConnection,
+        F: UnableToDeliverToReceiverFn,
+    >(
+        unable_to_deliver_handler: F,
+        blocking_send_error: ZeroCopySendError,
+    ) -> Duration {
+        let id = ChannelId::new(0);
+        let _watchdog = Watchdog::new();
+        let name = generate_file_path().file_name();
+        let mutex_handle = MutexHandle::new();
+        let config = MutexBuilder::new()
+            .create(generate_isolated_config::<Sut>(), &mutex_handle)
+            .unwrap();
+
+        let sut_sender = Sut::Builder::new(&name)
+            .buffer_size(1)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .config(&config.lock().unwrap())
+            .create_sender()
+            .unwrap();
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .buffer_size(1)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .config(&config.lock().unwrap())
+            .create_receiver()
+            .unwrap();
+
+        let sample_offset_1 = SAMPLE_SIZE * 12;
+        let sample_offset_2 = SAMPLE_SIZE * 234;
+
+        let now = Time::now().unwrap();
+
+        assert_that!(
+            sut_sender.blocking_send(
+                PointerOffset::new(sample_offset_1),
+                SAMPLE_SIZE,
+                id,
+                |_, _| UnableToDeliverAction::Retry,
+                UnableToDeliverAction::Retry,
+            ),
+            is_ok
+        );
+        assert_that!(
+            sut_sender.blocking_send(
+                PointerOffset::new(sample_offset_2),
+                SAMPLE_SIZE,
+                id,
+                unable_to_deliver_handler,
+                UnableToDeliverAction::Retry,
+            ),
+            eq(Err(blocking_send_error))
+        );
+        let elapsed_blocking_time = now.elapsed().unwrap();
+
+        assert_that!(
+            sut_receiver.receive(id),
+            eq(Ok(Some(PointerOffset::new(sample_offset_1))))
+        );
+        assert_that!(sut_receiver.receive(id), eq(Ok(None)));
+
+        elapsed_blocking_time
+    }
+
+    #[conformance_test]
+    pub fn blocking_send_returns_when_unable_to_deliver_handler_discards_sample<
+        Sut: ZeroCopyConnection,
+    >() {
+        let call_count = AtomicU64::new(0);
+
+        blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
+            |_, _| {
+                call_count.fetch_add(1, Ordering::Relaxed);
+                UnableToDeliverAction::DiscardSample
+            },
+            ZeroCopySendError::ReceiveBufferFull,
+        );
+
+        assert_that!(call_count.load(Ordering::Relaxed), eq(1));
+    }
+
+    #[conformance_test]
+    pub fn blocking_send_returns_when_unable_to_deliver_handler_aborts_delivery_and_fails<
+        Sut: ZeroCopyConnection,
+    >() {
+        let call_count = AtomicU64::new(0);
+
+        blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
+            |_, _| {
+                call_count.fetch_add(1, Ordering::Relaxed);
+                UnableToDeliverAction::DiscardSampleAndFail
+            },
+            ZeroCopySendError::UnableToDeliver,
+        );
+
+        assert_that!(call_count.load(Ordering::Relaxed), eq(1));
+    }
+
+    #[conformance_test]
+    pub fn blocking_send_returns_when_unable_to_deliver_handler_retries_twice<
+        Sut: ZeroCopyConnection,
+    >() {
+        let call_count = AtomicU64::new(0);
+        const RETRY_COUNT: u64 = 2;
+
+        blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
+            |retries, _| {
+                if retries == RETRY_COUNT {
+                    UnableToDeliverAction::DiscardSample
+                } else {
+                    call_count.fetch_add(1, Ordering::Relaxed);
+                    UnableToDeliverAction::Retry
+                }
+            },
+            ZeroCopySendError::ReceiveBufferFull,
+        );
+
+        assert_that!(call_count.load(Ordering::Relaxed), eq(RETRY_COUNT));
+    }
+
+    #[conformance_test]
+    pub fn blocking_send_returns_when_unable_to_deliver_handler_retries_until_timeout<
+        Sut: ZeroCopyConnection,
+    >() {
+        const TIMEOUT: Duration = Duration::from_millis(25);
+
+        let elapsed_blocking_time =
+            blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
+                |_, elapsed_time| {
+                    if elapsed_time > TIMEOUT {
+                        UnableToDeliverAction::DiscardSample
+                    } else {
+                        UnableToDeliverAction::Retry
+                    }
+                },
+                ZeroCopySendError::ReceiveBufferFull,
+            );
+
+        assert_that!(elapsed_blocking_time,  time_at_least TIMEOUT);
     }
 
     #[conformance_test]
@@ -889,12 +1047,24 @@ pub mod zero_copy_connection_trait {
 
                 barrier.wait();
                 assert_that!(
-                    sut_sender.blocking_send(PointerOffset::new(sample_offset_1), SAMPLE_SIZE, id),
+                    sut_sender.blocking_send(
+                        PointerOffset::new(sample_offset_1),
+                        SAMPLE_SIZE,
+                        id,
+                        follow_unable_to_deliver_stratety,
+                        UnableToDeliverAction::Retry,
+                    ),
                     is_ok
                 );
                 assert_that!(
-                    sut_sender.blocking_send(PointerOffset::new(sample_offset_2), SAMPLE_SIZE, id).err(),
-                    eq Some(ZeroCopySendError::NoConnectedReceiver)
+                    sut_sender.blocking_send(
+                        PointerOffset::new(sample_offset_2),
+                        SAMPLE_SIZE,
+                        id,
+                        follow_unable_to_deliver_stratety,
+                        UnableToDeliverAction::Retry,
+                    ).err(),
+                     eq Some(ZeroCopySendError::NoConnectedReceiver)
                 );
                 has_finished_send_thread.store(true, Ordering::Relaxed);
             })?;
@@ -947,11 +1117,23 @@ pub mod zero_copy_connection_trait {
 
                 barrier.wait();
                 assert_that!(
-                    sut_sender.blocking_send(PointerOffset::new(sample_offset_1), SAMPLE_SIZE, id),
+                    sut_sender.blocking_send(
+                        PointerOffset::new(sample_offset_1),
+                        SAMPLE_SIZE,
+                        id,
+                        follow_unable_to_deliver_stratety,
+                        UnableToDeliverAction::Retry,
+                    ),
                     is_ok
                 );
                 assert_that!(
-                    sut_sender.blocking_send(PointerOffset::new(sample_offset_2), SAMPLE_SIZE, id).err(),
+                    sut_sender.blocking_send(
+                        PointerOffset::new(sample_offset_2),
+                        SAMPLE_SIZE,
+                        id,
+                        follow_unable_to_deliver_stratety,
+                        UnableToDeliverAction::Retry,
+                    ).err(),
                     eq Some(ZeroCopySendError::ChannelIsClosed)
                 );
                 has_finished_send_thread.store(true, Ordering::Relaxed);
@@ -1829,7 +2011,13 @@ pub mod zero_copy_connection_trait {
             .unwrap();
 
         // panics here
-        let _ = sut_sender.blocking_send(PointerOffset::new(0), SAMPLE_SIZE, ChannelId::new(1));
+        let _ = sut_sender.blocking_send(
+            PointerOffset::new(0),
+            SAMPLE_SIZE,
+            ChannelId::new(1),
+            follow_unable_to_deliver_stratety,
+            UnableToDeliverAction::Retry,
+        );
     }
 
     #[cfg(debug_assertions)]

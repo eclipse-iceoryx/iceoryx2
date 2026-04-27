@@ -16,16 +16,14 @@
 #include <cstdint>
 
 namespace iox2 {
-/// Defines the strategy the [`Publisher`] shall pursue in
-/// [`send_sample(`] or
-/// [`Publisher::send_copy()`] when the buffer of a
-/// [`Subscriber`] is full and the service does not overflow.
+/// Defines the strategy a sender shall pursue when the buffer of the receiver is full
+/// and the service does not overflow.
 enum class UnableToDeliverStrategy : uint8_t {
-    /// Blocks until the [`Subscriber`] has consumed the
-    /// [`Sample`] from the buffer and there is space again
-    Block,
-    /// Do not deliver the [`Sample`].
-    DiscardSample
+    /// Retries until the receiver has consumed some
+    /// data from the full buffer and there is space again
+    RetryUntilDelivered,
+    /// Do not deliver the data to receiver with a full buffer
+    DiscardSample,
 };
 } // namespace iox2
 
