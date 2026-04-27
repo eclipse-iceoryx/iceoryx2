@@ -46,6 +46,7 @@ pub enum iox2_send_error_e {
     LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE,
     LOAN_ERROR_INTERNAL_FAILURE,
     CONNECTION_ERROR,
+    INTERRUPTED_BY_SIGNAL,
     INTERNAL_ERROR,
 }
 
@@ -69,6 +70,7 @@ impl IntoCInt for SendError {
             SendError::LoanError(LoanError::InternalFailure) => {
                 iox2_send_error_e::LOAN_ERROR_INTERNAL_FAILURE
             }
+            SendError::InterruptedBySignal => iox2_send_error_e::INTERRUPTED_BY_SIGNAL,
             SendError::ConnectionError(_) => iox2_send_error_e::CONNECTION_ERROR,
         }) as c_int
     }

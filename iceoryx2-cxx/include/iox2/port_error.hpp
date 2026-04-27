@@ -55,6 +55,8 @@ enum class SendError : uint8_t {
     LoanErrorInternalFailure,
     /// A failure occurred while establishing a connection to the ports counterpart port.
     ConnectionError,
+    /// A signal was raised and interrupted a system call.
+    InterruptedBySignal,
     /// An internal mechanisms failed and the data could not be delivered to all receivers.
     InternalError
 };
@@ -98,6 +100,8 @@ enum class RequestSendError : uint8_t {
     LoanErrorInternalFailure,
     /// A failure occurred while establishing a connection to the ports counterpart port.
     ConnectionError,
+    /// A signal was raised and interrupted a system call.
+    InterruptedBySignal,
     /// An internal mechanisms failed and the data could not be delivered to all receivers.
     InternalError,
 };
