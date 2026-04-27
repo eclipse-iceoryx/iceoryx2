@@ -78,12 +78,21 @@ jobs:
       - name: Run cargo build
         shell: bash
         run: |
-          cargo build --workspace --all-targets ${{ steps.set-build-flags.outputs.cargo-build-mode }}
+          cargo \
+          ${{ steps.set-build-flags.outputs.cargo-build-config }} \
+          build \
+          --workspace --all-targets \
+          ${{ steps.set-build-flags.outputs.cargo-build-mode }}
 
       - name: Run cargo nextest
         shell: bash
         run: |
-          cargo nextest run --workspace --all-targets --no-fail-fast ${{ steps.set-build-flags.outputs.cargo-build-mode }}
+          cargo \
+          ${{ steps.set-build-flags.outputs.cargo-build-config }} \
+          nextest run \
+          --workspace --all-targets \
+          --no-fail-fast \
+          ${{ steps.set-build-flags.outputs.cargo-build-mode }}
 
       - name: Cleanup build artifacts
         uses: ./.github/actions/save-disk-space
