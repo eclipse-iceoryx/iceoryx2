@@ -80,12 +80,27 @@ jobs:
       - name: Run cargo build
         shell: bash
         run: |
-          cargo build --workspace --exclude iceoryx2-ffi-python --all-targets ${{ steps.set-build-flags.outputs.cargo-build-mode }} --target i686-unknown-linux-gnu
+          cargo \
+          ${{ steps.set-build-flags.outputs.cargo-build-config }} \
+          build \
+          --workspace \
+          --exclude iceoryx2-ffi-python \
+          --all-targets \
+          --target i686-unknown-linux-gnu \
+          ${{ steps.set-build-flags.outputs.cargo-build-mode }}
 
       - name: Run cargo nextest
         shell: bash
         run: |
-          cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${{ steps.set-build-flags.outputs.cargo-build-mode }} --target i686-unknown-linux-gnu
+          cargo \
+          ${{ steps.set-build-flags.outputs.cargo-build-config }} \
+          nextest run \
+          --workspace \
+          --exclude iceoryx2-ffi-python \
+          --all-targets \
+          --no-fail-fast \
+          --target i686-unknown-linux-gnu \
+          ${{ steps.set-build-flags.outputs.cargo-build-mode }}
 
       - name: Cleanup build artifacts
         uses: ./.github/actions/save-disk-space
