@@ -37,7 +37,7 @@ use iceoryx2_log::fail;
 
 use crate::{
     port::{
-        DegradationAction, DegradationCallback, DegradationFn,
+        DegradationAction, DegradationFn, DegradationHandler,
         subscriber::{Subscriber, SubscriberCreateError},
     },
     service,
@@ -48,7 +48,7 @@ use super::publish_subscribe::PortFactory;
 #[derive(Debug)]
 pub(crate) struct SubscriberConfig {
     pub(crate) buffer_size: Option<usize>,
-    pub(crate) degradation_callback: DegradationCallback<'static>,
+    pub(crate) degradation_handler: DegradationHandler<'static>,
 }
 
 /// Factory to create a new [`Subscriber`] port/endpoint for
@@ -88,7 +88,7 @@ impl<
         Self {
             config: SubscriberConfig {
                 buffer_size: self.config.buffer_size,
-                degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
+                degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
             },
             factory: self.factory,
         }
@@ -98,7 +98,7 @@ impl<
         Self {
             config: SubscriberConfig {
                 buffer_size: None,
-                degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
+                degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
             },
             factory,
         }
@@ -110,11 +110,11 @@ impl<
         self
     }
 
-    /// Sets the [`DegradationCallback`] of the [`Subscriber`]. Whenever a connection to a
-    /// [`crate::port::subscriber::Subscriber`] is corrupted or it seems to be dead, this callback
+    /// Sets the [`DegradationHandler`] of the [`Subscriber`]. Whenever a connection to a
+    /// [`crate::port::subscriber::Subscriber`] is corrupted or it seems to be dead, this handler
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
-    pub fn set_degradation_callback<F: DegradationFn + 'static>(mut self, callback: F) -> Self {
-        self.config.degradation_callback = DegradationCallback::new(callback);
+    pub fn set_degradation_handler<F: DegradationFn + 'static>(mut self, handler: F) -> Self {
+        self.config.degradation_handler = DegradationHandler::new(handler);
 
         self
     }

@@ -330,3 +330,67 @@
         .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
         .create()?;
     ```
+
+1. The `DegradationCallback` was renamed to `DegradationHandler`, as well as its
+   setters and the parameter changed from port IDs to `DegradationCause` and
+   `DegradationInfo`
+
+    ```rust
+    /// old
+    pub_sub_service
+        .publisher_builder()
+        .set_degradation_callback(|sender_port_id, receiver_port_id| /* ... */)
+        .create()?
+    pub_sub_service
+        .subscriber_builder()
+        .set_degradation_callback(|sender_port_id, receiver_port_id| /* ... */)
+        .create()?
+
+    request_response_service
+        .client_builder()
+        .set_request_degradation_callback(|sender_port_id, receiver_port_id| /* ... */)
+        .set_response_degradation_callback(|sender_port_id, receiver_port_id| /* ... */)
+        .create()?
+    request_response_service
+        .server_builder()
+        .set_request_degradation_callback(|sender_port_id, receiver_port_id| /* ... */)
+        .set_response_degradation_callback(|sender_port_id, receiver_port_id| /* ... */)
+        .create()?
+
+    /// new
+    pub_sub_service
+        .publisher_builder()
+        .set_degradation_handler(|cause, info| /* ... */)
+        .create()?
+    pub_sub_service
+        .subscriber_builder()
+        .set_degradation_handler(|cause, info| /* ... */)
+        .create()?
+
+    request_response_service
+        .client_builder()
+        .set_request_degradation_handler(|cause, info| /* ... */)
+        .set_response_degradation_handler(/* ... */)
+        .create()?
+    request_response_service
+        .server_builder()
+        .set_request_degradation_handler(|cause, info|/* ... */)
+        .set_response_degradation_handler(|cause, info|/* ... */)
+        .create()?
+    ```
+
+1. The `DegradationAction::Fail` was renamed to `DegradationAction::DegradeAndFail`.
+
+    ```rust
+    // old
+    service
+        .publisher_builder()
+        .set_degradation_callback(|_, _| DegradationAction::Fail)
+        .create()?;
+
+    // new
+    service
+        .publisher_builder()
+        .set_degradation_handler(|_, _| DegradationAction::DegradeAndFail)
+        .create()?;
+    ```

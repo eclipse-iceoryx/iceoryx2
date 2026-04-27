@@ -27,7 +27,7 @@ use iceoryx2_log::{error, fail, warn};
 use crate::port::DegradationCause;
 use crate::port::DegradationInfo;
 use crate::port::update_connections::ConnectionFailure;
-use crate::port::{DegradationAction, DegradationCallback, ReceiveError};
+use crate::port::{DegradationAction, DegradationHandler, ReceiveError};
 use crate::service::NoResource;
 use crate::service::ServiceState;
 use crate::service::naming_scheme::data_segment_name;
@@ -123,7 +123,7 @@ pub(crate) struct Receiver<Service: service::Service> {
     pub(crate) tagger: CyclicTagger,
     pub(crate) to_be_removed_connections:
         Option<UnsafeCell<PolymorphicVec<'static, SlotMapKey, HeapAllocator>>>,
-    pub(crate) degradation_callback: DegradationCallback<'static>,
+    pub(crate) degradation_handler: DegradationHandler<'static>,
     pub(crate) message_type_details: MessageTypeDetails,
     pub(crate) receiver_max_borrowed_samples: usize,
     pub(crate) enable_safe_overflow: bool,
@@ -461,7 +461,7 @@ impl<Service: service::Service> Receiver<Service> {
 
             match self.create(index, &sender_details) {
                 Ok(()) => Ok(()),
-                Err(e) => match self.degradation_callback.call(
+                Err(e) => match self.degradation_handler.call(
                     DegradationCause::FailedToEstablishConnection,
                     &DegradationInfo {
                         service_id: self.service_state.static_config.unique_service_id().value(),

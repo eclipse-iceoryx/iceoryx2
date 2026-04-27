@@ -30,8 +30,8 @@ use iceoryx2_log::{error, fail, fatal_panic, warn};
 
 use crate::node::SharedNode;
 use crate::port::{
-    DegradationAction, DegradationCallback, DegradationCause, DegradationInfo, LoanError,
-    SendError, UnableToDeliverHandler, UnableToDeliverInfo,
+    DegradationAction, DegradationCause, DegradationHandler, DegradationInfo, LoanError, SendError,
+    UnableToDeliverHandler, UnableToDeliverInfo,
 };
 use crate::prelude::UnableToDeliverStrategy;
 use crate::service::config_scheme::connection_config;
@@ -116,7 +116,7 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) enable_safe_overflow: bool,
     pub(crate) number_of_samples: usize,
     pub(crate) max_number_of_segments: u8,
-    pub(crate) degradation_callback: DegradationCallback<'static>,
+    pub(crate) degradation_handler: DegradationHandler<'static>,
     pub(crate) unable_to_deliver_handler: Option<UnableToDeliverHandler<'static>>,
     pub(crate) service_state: Arc<ServiceState<Service, NoResource>>,
     pub(crate) tagger: CyclicTagger,
@@ -217,7 +217,7 @@ impl<Service: service::Service> Sender<Service> {
 
             match delivery_call_result {
                 Err(ZeroCopySendError::UnableToDeliver) => {
-                    // can only happen with blocking send and the degradation callback triggered a failure
+                    // can only happen with blocking send and the degradation handler triggered a failure
                     fail!(from self, with SendError::UnableToDeliver,
                           "{msg} {:?} could not be delivered to receiver {:?}.",
                           offset, connection.receiver_port_id);
@@ -241,7 +241,7 @@ impl<Service: service::Service> Sender<Service> {
                         "{msg} {:?} to receiver {:?} an internal mechanism failed and the offset was delivered only to a subset of receivers.", offset, connection.receiver_port_id);
                 }
                 Err(ZeroCopySendError::ConnectionCorrupted) => {
-                    match self.degradation_callback.call(
+                    match self.degradation_handler.call(
                         DegradationCause::ConnectionCorrupted,
                         &DegradationInfo {
                             service_id: self
@@ -525,7 +525,7 @@ impl<Service: service::Service> Sender<Service> {
                         fatal_panic!(from self, "This should never happen! Unable to acquire previously created receiver connection.")
                     }
                 },
-                Err(e) => match self.degradation_callback.call(
+                Err(e) => match self.degradation_handler.call(
                     DegradationCause::FailedToEstablishConnection,
                     &DegradationInfo {
                         service_id: self.service_state.static_config.unique_service_id().value(),

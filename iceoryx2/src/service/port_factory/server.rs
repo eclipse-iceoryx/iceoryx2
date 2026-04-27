@@ -36,7 +36,7 @@
 use super::request_response::PortFactory;
 use crate::{
     port::{
-        DegradationAction, DegradationCallback, DegradationFn, UnableToDeliverFn,
+        DegradationAction, DegradationFn, DegradationHandler, UnableToDeliverFn,
         UnableToDeliverHandler, server::Server,
     },
     prelude::UnableToDeliverStrategy,
@@ -123,8 +123,8 @@ pub struct PortFactoryServer<
     >,
 
     pub(crate) config: LocalServerConfig,
-    pub(crate) request_degradation_callback: DegradationCallback<'static>,
-    pub(crate) response_degradation_callback: DegradationCallback<'static>,
+    pub(crate) request_degradation_handler: DegradationHandler<'static>,
+    pub(crate) response_degradation_handler: DegradationHandler<'static>,
     pub(crate) unable_to_deliver_handler: Option<UnableToDeliverHandler<'static>>,
     pub(crate) preallocated_number_of_responses_override: PreallocatedResponseOverride<'static>,
 }
@@ -172,8 +172,8 @@ impl<
         Self {
             factory: self.factory,
             config: self.config,
-            request_degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
-            response_degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
+            request_degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
+            response_degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
             unable_to_deliver_handler: None,
             preallocated_number_of_responses_override: PreallocatedResponseOverride::new(|v| v),
         }
@@ -203,8 +203,8 @@ impl<
                 allocation_strategy: AllocationStrategy::Static,
                 max_loaned_responses_per_request: defs.server_max_loaned_responses_per_request,
             },
-            request_degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
-            response_degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
+            request_degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
+            response_degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
             unable_to_deliver_handler: None,
             preallocated_number_of_responses_override: PreallocatedResponseOverride::new(|v| v),
         }
@@ -252,29 +252,29 @@ impl<
         self
     }
 
-    /// Sets the [`DegradationCallback`] for receiving [`ActiveRequest`](crate::active_request::ActiveRequest)s
+    /// Sets the [`DegradationHandler`] for receiving [`ActiveRequest`](crate::active_request::ActiveRequest)s
     /// from a [`Client`](crate::port::client::Client). Whenever a request connection to a
-    /// [`Client`](crate::port::client::Client) is corrupted or it seems to be dead, this callback
+    /// [`Client`](crate::port::client::Client) is corrupted or it seems to be dead, this handler
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
-    pub fn set_request_degradation_callback<F: DegradationFn + 'static>(
+    pub fn set_request_degradation_handler<F: DegradationFn + 'static>(
         mut self,
-        callback: F,
+        handler: F,
     ) -> Self {
-        self.request_degradation_callback = DegradationCallback::new(callback);
+        self.request_degradation_handler = DegradationHandler::new(handler);
 
         self
     }
 
-    /// Sets the [`DegradationCallback`] for sending
+    /// Sets the [`DegradationHandler`] for sending
     /// [`ResponseMut`](crate::response_mut::ResponseMut)s
     /// to a [`Client`](crate::port::client::Client). Whenever a response connection to a
-    /// [`Client`](crate::port::client::Client) is corrupted or it seems to be dead, this callback
+    /// [`Client`](crate::port::client::Client) is corrupted or it seems to be dead, this handler
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
-    pub fn set_response_degradation_callback<F: DegradationFn + 'static>(
+    pub fn set_response_degradation_handler<F: DegradationFn + 'static>(
         mut self,
-        callback: F,
+        handler: F,
     ) -> Self {
-        self.response_degradation_callback = DegradationCallback::new(callback);
+        self.response_degradation_handler = DegradationHandler::new(handler);
 
         self
     }

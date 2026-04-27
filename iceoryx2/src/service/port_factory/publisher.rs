@@ -56,7 +56,7 @@
 
 use crate::{
     port::{
-        DegradationAction, DegradationCallback, DegradationFn, UnableToDeliverFn,
+        DegradationAction, DegradationFn, DegradationHandler, UnableToDeliverFn,
         UnableToDeliverHandler,
         publisher::{Publisher, PublisherCreateError},
         unable_to_deliver_strategy::UnableToDeliverStrategy,
@@ -113,7 +113,7 @@ pub struct PortFactoryPublisher<
     UserHeader: Debug + ZeroCopySend,
 > {
     pub(crate) config: LocalPublisherConfig,
-    pub(crate) degradation_callback: DegradationCallback<'static>,
+    pub(crate) degradation_handler: DegradationHandler<'static>,
     pub(crate) unable_to_deliver_handler: Option<UnableToDeliverHandler<'static>>,
     pub(crate) preallocate_number_of_samples_override: PreallocatedSamplesOverride<'static>,
     pub(crate) factory: &'factory PortFactory<Service, Payload, UserHeader>,
@@ -141,7 +141,7 @@ impl<
         Self {
             config: self.config,
             factory: self.factory,
-            degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
+            degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
             unable_to_deliver_handler: None,
             preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),
         }
@@ -175,7 +175,7 @@ impl<
                     .publish_subscribe
                     .unable_to_deliver_strategy,
             },
-            degradation_callback: DegradationCallback::new_with(DegradationAction::Warn),
+            degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
             unable_to_deliver_handler: None,
             preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),
             factory,
@@ -217,11 +217,11 @@ impl<
         self
     }
 
-    /// Sets the [`DegradationCallback`] of the [`Publisher`]. Whenever a connection to a
-    /// [`crate::port::subscriber::Subscriber`] is corrupted or it seems to be dead, this callback
+    /// Sets the [`DegradationHandler`] of the [`Publisher`]. Whenever a connection to a
+    /// [`crate::port::subscriber::Subscriber`] is corrupted or it seems to be dead, this handler
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
-    pub fn set_degradation_callback<F: DegradationFn + 'static>(mut self, callback: F) -> Self {
-        self.degradation_callback = DegradationCallback::new(callback);
+    pub fn set_degradation_handler<F: DegradationFn + 'static>(mut self, handler: F) -> Self {
+        self.degradation_handler = DegradationHandler::new(handler);
 
         self
     }
