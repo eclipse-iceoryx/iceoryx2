@@ -16,8 +16,8 @@
 #include <cstdint>
 
 namespace iox2 {
-/// Defines the action that shall be take when an degradation is detected. This can happen when a
-/// sample cannot be delivered, or when the system is corrupted and files are modified by
+/// Defines the action that shall be take when an degradation is detected. This can happen when
+/// data cannot be delivered, or when the system is corrupted and files are modified by
 /// non-iceoryx2 instances. Is used as return value of the [`DegradationHandler`] to define a
 /// custom behavior.
 enum class DegradationAction : uint8_t {

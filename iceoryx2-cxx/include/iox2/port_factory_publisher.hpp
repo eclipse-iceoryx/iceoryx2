@@ -84,14 +84,18 @@ class PortFactoryPublisher {
     /// Sets the [`DegradationHandler`] of the [`Publisher`]. Whenever a connection to a
     /// [`Subscriber`] is corrupted, this handler is called and depending on the returned
     /// [`DegradationAction`] measures will be taken.
-    /// @attention The handler function needs to live as long as the generated publisher. If the publisher, including
-    /// the send function, is accessed from multiple threads, the handler must be thread-safe if it captures data
+    /// @attention The handler function needs to live as long as the generated publisher. If the [`Publisher`],
+    /// including the send function, is accessed from multiple threads, the handler must be thread-safe if it captures
+    /// data
     auto set_degradation_handler(DegradationHandler* handler) && -> PortFactoryPublisher&&;
 
     /// Sets the [`UnableToDeliverHandler`] of the [`Publisher`]. Whenever a [`SampleMut`] cannot be sent to a
     /// [`Subscriber`], this handler is called and depending on the returned [`UnableToDeliverAction`], measures will be
     /// taken.
     /// If no handler is set, the measures will be determined by the value set in [`UnableToDeliverStrategy`].
+    /// @attention The handler function needs to live as long as the generated publisher. If the [`Publisher`],
+    /// including the send function, is accessed from multiple threads, the handler must be thread-safe if it captures
+    /// data
     auto set_unable_to_deliver_handler(UnableToDeliverHandler* handler) && -> PortFactoryPublisher&&;
 
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.

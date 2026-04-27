@@ -16,18 +16,18 @@
 #include <cstdint>
 
 namespace iox2 {
-/// Defines the action that shall be take when an a sample cannot be delivered.
+/// Defines the action that shall be take when data cannot be delivered.
 enum class UnableToDeliverAction : uint8_t {
     /// Use an action which is derived from the `UnableToDeliverStrategy`
     FollowUnableToDeliveryStrategy,
     /// Retry to send and invoke the handler again, if sending does not succeed
     Retry,
-    /// Discard the sample for the receiver which cause the incident and continue
-    /// to deliver the sample to the remaining receivers
+    /// Discard the data for the receiver which cause the incident and continue
+    /// to deliver the data to the remaining receivers
     DiscardSample,
-    /// Discard the sample for the receiver which caused the incident, continue
-    /// to deliver the sample to the remaining receivers;
-    /// return with an error if the sample was not delivered to all receivers
+    /// Discard the data for the receiver which caused the incident, continue
+    /// to deliver the data to the remaining receivers;
+    /// return with an error if the data was not delivered to all receivers
     DiscardSampleAndFail,
 };
 } // namespace iox2

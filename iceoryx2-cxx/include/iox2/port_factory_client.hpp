@@ -79,7 +79,7 @@ class PortFactoryClient {
     /// Sets the [`DegradationHandler`] for sending [`RequestMut`] from the [`Client`]. Whenever a request connection
     /// to a [`Server`] is corrupted, this handler is called and depending on the returned [`DegradationAction`]
     /// measures will be taken.
-    /// @attention The handler function needs to live as long as the generated client. If the client, including
+    /// @attention The handler function needs to live as long as the generated client. If the [`Client`], including
     /// the send and receive functions, is accessed from multiple threads, the handler must be thread-safe if it
     /// captures data
     auto set_request_degradation_handler(DegradationHandler* handler) && -> PortFactoryClient&&;
@@ -87,7 +87,7 @@ class PortFactoryClient {
     /// Sets the [`DegradationHandler`] for receiving [`Response`]s from a [`Server`]. Whenever a response connection
     /// to a [`Server`] is corrupted, this handler is called and depending on the returned [`DegradationAction`]
     /// measures will be taken.
-    /// @attention The handler function needs to live as long as the generated client. If the client, including
+    /// @attention The handler function needs to live as long as the generated client. If the [`Client`], including
     /// the send and receive functions, is accessed from multiple threads, the handler must be thread-safe if it
     /// captures data
     auto set_response_degradation_handler(DegradationHandler* handler) && -> PortFactoryClient&&;
@@ -95,6 +95,9 @@ class PortFactoryClient {
     /// Sets the [`UnableToDeliverHandler`] of the [`Client`]. Whenever a [`RequestMut`] cannot be sent to a [`Server`],
     /// this handler is called and depending on the returned [`UnableToDeliverAction`], measures will be taken.
     /// If no handler is set, the measures will be determined by the value set in [`UnableToDeliverStrategy`].
+    /// @attention The handler function needs to live as long as the generated client. If the [`Client`], including
+    /// the send and receive functions, is accessed from multiple threads, the handler must be thread-safe if it
+    /// captures data
     auto set_unable_to_deliver_handler(UnableToDeliverHandler* handler) && -> PortFactoryClient&&;
 
     /// Creates a new [`Client`] or returns a [`ClientCreateError`] on failure.

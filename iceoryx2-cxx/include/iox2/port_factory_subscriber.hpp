@@ -46,8 +46,9 @@ class PortFactorySubscriber {
     /// Sets the [`DegradationHandler`] of the [`Subscriber`]. Whenever a connection to a
     /// [`Publisher`] is corrupted, this handler is called and depending on the returned
     /// [`DegradationAction`] measures will be taken.
-    /// @attention The handler function needs to live as long as the generated subscriber. If the subscriber, including
-    /// the receive function, is accessed from multiple threads, the handler must be thread-safe if it captures data
+    /// @attention The handler function needs to live as long as the generated subscriber. If the [`Subscriber`],
+    /// including the receive function, is accessed from multiple threads, the handler must be thread-safe if it
+    /// captures data
     auto set_degradation_handler(DegradationHandler* handler) && -> PortFactorySubscriber&&;
 
     /// Creates a new [`Subscriber`] or returns a [`SubscriberCreateError`] on failure.

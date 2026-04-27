@@ -745,7 +745,7 @@ pub mod details {
                 let mut retry_counter = 0;
                 let start = Time::now().unwrap();
 
-                const WAIT_CONTINURE: bool = true;
+                const WAIT_CONTINUE: bool = true;
                 const WAIT_ABORT: bool = false;
 
                 if let Err(e) = AdaptiveWaitBuilder::new().create().unwrap().wait_while(|| {
@@ -759,7 +759,7 @@ pub mod details {
                         && mgmt.channels[channel_id.value()].submission_queue.is_full()
                     {
                         if retry_until_delivered {
-                            WAIT_CONTINURE
+                            WAIT_CONTINUE
                         } else {
                             let wait_action = match unable_to_deliver_to_receiver_handler(
                                 retry_counter,
@@ -769,12 +769,12 @@ pub mod details {
                                     match unable_to_deliver_action_for_strategy {
                                         UnableToDeliverAction::Retry => {
                                             retry_until_delivered = true;
-                                            WAIT_CONTINURE
+                                            WAIT_CONTINUE
                                         }
                                         _ => WAIT_ABORT,
                                     }
                                 }
-                                UnableToDeliverAction::Retry => WAIT_CONTINURE,
+                                UnableToDeliverAction::Retry => WAIT_CONTINUE,
                                 UnableToDeliverAction::DiscardSample => WAIT_ABORT,
                                 UnableToDeliverAction::DiscardSampleAndFail => {
                                     do_fail = true;
