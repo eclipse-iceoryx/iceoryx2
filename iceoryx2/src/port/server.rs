@@ -27,7 +27,7 @@
 //!
 //! let server = service.server_builder()
 //!    // defines behavior when client queue is full in a non-overflowing service
-//!    .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
+//!    .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
 //!    .create()?;
 //!
 //! while let Some(active_request) = server.receive()? {

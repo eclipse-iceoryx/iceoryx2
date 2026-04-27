@@ -287,7 +287,7 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                 },
                 Field {
                     key: "defaults.publish-subscribe.unable-to-deliver-strategy",
-                    value_type: "`Block`|`DiscardSample`",
+                    value_type: "`RetryUntilDelivered`|`DiscardData`",
                     default_value: format!(
                         "{:?}",
                         config.defaults.publish_subscribe.unable_to_deliver_strategy
@@ -474,7 +474,7 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                 },
                 Field {
                     key: "defaults.request-response.client-unable-to-deliver-strategy",
-                    value_type: "`Block`|`DiscardSample`",
+                    value_type: "`RetryUntilDelivered`|`DiscardData`",
                     default_value: format!(
                         "{:?}",
                         config
@@ -486,7 +486,7 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                 },
                 Field {
                     key: "defaults.request-response.server-unable-to-deliver-strategy",
-                    value_type: "`Block`|`DiscardSample`",
+                    value_type: "`RetryUntilDelivered`|`DiscardData`",
                     default_value: format!(
                         "{:?}",
                         config

@@ -58,12 +58,12 @@ pub enum UnableToDeliverAction {
     /// Retry to send and invoke the handler again, if sending does not succeed
     Retry,
     /// Discard the data for the receiver which cause the incident and continue
-    /// to deliver the sample to the remaining receivers
-    DiscardSample,
+    /// to deliver the data to the remaining receivers
+    DiscardData,
     /// Discard the data for the receiver which caused the incident, continue
     /// to deliver the data to the remaining receivers;
     /// return with an error if the data was not delivered to all receivers
-    DiscardSampleAndFail,
+    DiscardDataAndFail,
 }
 
 impl From<UnableToDeliverAction> for UnableToDeliverToReceiverAction {
@@ -73,10 +73,10 @@ impl From<UnableToDeliverAction> for UnableToDeliverToReceiverAction {
                 UnableToDeliverToReceiverAction::FollowUnableToDeliveryStrategy
             }
             UnableToDeliverAction::Retry => UnableToDeliverToReceiverAction::Retry,
-            UnableToDeliverAction::DiscardSample => {
+            UnableToDeliverAction::DiscardData => {
                 UnableToDeliverToReceiverAction::DiscardPointerOffset
             }
-            UnableToDeliverAction::DiscardSampleAndFail => {
+            UnableToDeliverAction::DiscardDataAndFail => {
                 UnableToDeliverToReceiverAction::DiscardPointerOffsetAndFail
             }
         }
@@ -132,8 +132,8 @@ impl UnableToDeliverHandler<'_> {
     }
 }
 
-/// Defines the action that shall be take when an degradation is detected. This can happen when a
-/// sample cannot be delivered, or when the system is corrupted and files are modified by
+/// Defines the action that shall be take when an degradation is detected. This can happen when
+/// data cannot be delivered, or when the system is corrupted and files are modified by
 /// non-iceoryx2 instances. Is used as return value of the [`DegradationHandler`] to define a
 /// custom behavior.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]

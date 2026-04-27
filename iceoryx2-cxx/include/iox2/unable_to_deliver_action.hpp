@@ -24,11 +24,11 @@ enum class UnableToDeliverAction : uint8_t {
     Retry,
     /// Discard the data for the receiver which cause the incident and continue
     /// to deliver the data to the remaining receivers
-    DiscardSample,
+    DiscardData,
     /// Discard the data for the receiver which caused the incident, continue
     /// to deliver the data to the remaining receivers;
     /// return with an error if the data was not delivered to all receivers
-    DiscardSampleAndFail,
+    DiscardDataAndFail,
 };
 } // namespace iox2
 

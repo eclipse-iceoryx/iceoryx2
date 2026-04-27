@@ -18,7 +18,7 @@ use iceoryx2_ffi_macros::CStrRepr;
 
 // BEGIN types definition
 
-/// Defines the action that shall be take when an a sample cannot be delivered.
+/// Defines the action that shall be take when an a data cannot be delivered.
 #[repr(C)]
 #[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_unable_to_deliver_action_e {
@@ -26,13 +26,13 @@ pub enum iox2_unable_to_deliver_action_e {
     FOLLOW_UNABLE_TO_DELIVERY_STRATEGY,
     /// Retry to send and invoke the handler again, if sending does not succeed
     RETRY,
-    /// Discard the sample for the receiver which cause the incident and continue
-    /// to deliver the sample to the remaining receivers
-    DISCARD_SAMPLE,
-    /// Discard the sample for the receiver which caused the incident, continue
-    /// to deliver the sample to the remaining receivers;
-    /// return with an error if the sample was not delivered to all receivers
-    DISCARD_SAMPLE_AND_FAIL,
+    /// Discard the data for the receiver which cause the incident and continue
+    /// to deliver the data to the remaining receivers
+    DISCARD_DATA,
+    /// Discard the data for the receiver which caused the incident, continue
+    /// to deliver the data to the remaining receivers;
+    /// return with an error if the data was not delivered to all receivers
+    DISCARD_DATA_AND_FAIL,
 }
 
 impl From<iox2_unable_to_deliver_action_e> for UnableToDeliverAction {
@@ -42,9 +42,9 @@ impl From<iox2_unable_to_deliver_action_e> for UnableToDeliverAction {
                 UnableToDeliverAction::FollowUnableToDeliveryStrategy
             }
             iox2_unable_to_deliver_action_e::RETRY => UnableToDeliverAction::Retry,
-            iox2_unable_to_deliver_action_e::DISCARD_SAMPLE => UnableToDeliverAction::DiscardSample,
-            iox2_unable_to_deliver_action_e::DISCARD_SAMPLE_AND_FAIL => {
-                UnableToDeliverAction::DiscardSampleAndFail
+            iox2_unable_to_deliver_action_e::DISCARD_DATA => UnableToDeliverAction::DiscardData,
+            iox2_unable_to_deliver_action_e::DISCARD_DATA_AND_FAIL => {
+                UnableToDeliverAction::DiscardDataAndFail
             }
         }
     }

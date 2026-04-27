@@ -1076,10 +1076,10 @@ TYPED_TEST(ServiceRequestResponseTest, client_applies_unable_to_deliver_strategy
                             .create()
                             .value();
     auto sut_client_2 =
-        service.client_builder().unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample).create().value();
+        service.client_builder().unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData).create().value();
 
     ASSERT_THAT(sut_client_1.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::RetryUntilDelivered));
-    ASSERT_THAT(sut_client_2.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::DiscardSample));
+    ASSERT_THAT(sut_client_2.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::DiscardData));
 }
 
 TYPED_TEST(ServiceRequestResponseTest, client_applies_initial_max_slice_length) {

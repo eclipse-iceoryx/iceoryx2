@@ -1916,8 +1916,8 @@ constexpr auto from<int, iox2::UnableToDeliverStrategy>(const int value) noexcep
     switch (variant) {
     case iox2_unable_to_deliver_strategy_e_RETRY_UNTIL_DELIVERED:
         return iox2::UnableToDeliverStrategy::RetryUntilDelivered;
-    case iox2_unable_to_deliver_strategy_e_DISCARD_SAMPLE:
-        return iox2::UnableToDeliverStrategy::DiscardSample;
+    case iox2_unable_to_deliver_strategy_e_DISCARD_DATA:
+        return iox2::UnableToDeliverStrategy::DiscardData;
     }
 
     IOX2_UNREACHABLE();
@@ -1928,8 +1928,8 @@ constexpr auto from<iox2::UnableToDeliverStrategy, int>(const iox2::UnableToDeli
     switch (value) {
     case iox2::UnableToDeliverStrategy::RetryUntilDelivered:
         return iox2_unable_to_deliver_strategy_e_RETRY_UNTIL_DELIVERED;
-    case iox2::UnableToDeliverStrategy::DiscardSample:
-        return iox2_unable_to_deliver_strategy_e_DISCARD_SAMPLE;
+    case iox2::UnableToDeliverStrategy::DiscardData:
+        return iox2_unable_to_deliver_strategy_e_DISCARD_DATA;
     }
 
     IOX2_UNREACHABLE();
@@ -2327,10 +2327,10 @@ from<iox2::UnableToDeliverAction, iox2_unable_to_deliver_action_e>(const iox2::U
         return iox2_unable_to_deliver_action_e_FOLLOW_UNABLE_TO_DELIVERY_STRATEGY;
     case iox2::UnableToDeliverAction::Retry:
         return iox2_unable_to_deliver_action_e_RETRY;
-    case iox2::UnableToDeliverAction::DiscardSample:
-        return iox2_unable_to_deliver_action_e_DISCARD_SAMPLE;
-    case iox2::UnableToDeliverAction::DiscardSampleAndFail:
-        return iox2_unable_to_deliver_action_e_DISCARD_SAMPLE_AND_FAIL;
+    case iox2::UnableToDeliverAction::DiscardData:
+        return iox2_unable_to_deliver_action_e_DISCARD_DATA;
+    case iox2::UnableToDeliverAction::DiscardDataAndFail:
+        return iox2_unable_to_deliver_action_e_DISCARD_DATA_AND_FAIL;
     }
 
     IOX2_UNREACHABLE();

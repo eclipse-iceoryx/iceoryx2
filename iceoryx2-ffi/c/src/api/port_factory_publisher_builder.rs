@@ -61,7 +61,7 @@ impl From<iox2_allocation_strategy_e> for AllocationStrategy {
 #[derive(Copy, Clone)]
 pub enum iox2_unable_to_deliver_strategy_e {
     RETRY_UNTIL_DELIVERED,
-    DISCARD_SAMPLE,
+    DISCARD_DATA,
 }
 
 impl From<iox2_unable_to_deliver_strategy_e> for UnableToDeliverStrategy {
@@ -70,9 +70,7 @@ impl From<iox2_unable_to_deliver_strategy_e> for UnableToDeliverStrategy {
             iox2_unable_to_deliver_strategy_e::RETRY_UNTIL_DELIVERED => {
                 UnableToDeliverStrategy::RetryUntilDelivered
             }
-            iox2_unable_to_deliver_strategy_e::DISCARD_SAMPLE => {
-                UnableToDeliverStrategy::DiscardSample
-            }
+            iox2_unable_to_deliver_strategy_e::DISCARD_DATA => UnableToDeliverStrategy::DiscardData,
         }
     }
 }
@@ -83,9 +81,7 @@ impl From<UnableToDeliverStrategy> for iox2_unable_to_deliver_strategy_e {
             UnableToDeliverStrategy::RetryUntilDelivered => {
                 iox2_unable_to_deliver_strategy_e::RETRY_UNTIL_DELIVERED
             }
-            UnableToDeliverStrategy::DiscardSample => {
-                iox2_unable_to_deliver_strategy_e::DISCARD_SAMPLE
-            }
+            UnableToDeliverStrategy::DiscardData => iox2_unable_to_deliver_strategy_e::DISCARD_DATA,
         }
     }
 }

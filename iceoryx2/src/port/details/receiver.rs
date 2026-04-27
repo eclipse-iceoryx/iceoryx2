@@ -251,7 +251,7 @@ impl<Service: service::Service> Receiver<Service> {
                         .is_err()
                     {
                         warn!(from self,
-                            "Expired connection buffer exceeded. A sender disconnected with undelivered samples that will be discarded. Increase the expired connection buffer to mitigate the problem.");
+                            "Expired connection buffer exceeded. A sender disconnected with undelivered data that will be discarded. Increase the expired connection buffer to mitigate the problem.");
                         connection_storage.remove(key);
                     }
                 } else {

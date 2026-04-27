@@ -48,7 +48,7 @@ static iox2_unable_to_deliver_action_e unable_to_deliver_handler(iox2_unable_to_
         (*callback_ctx).fail_counter += 1;
         printf("Fail counter: %i\n", (*callback_ctx).fail_counter);
     }
-    return iox2_unable_to_deliver_action_e_DISCARD_SAMPLE_AND_FAIL;
+    return iox2_unable_to_deliver_action_e_DISCARD_DATA_AND_FAIL;
 }
 
 int main(void) {

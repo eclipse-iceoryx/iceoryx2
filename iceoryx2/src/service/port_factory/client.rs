@@ -22,7 +22,7 @@
 //!     .open_or_create()?;
 //!
 //! let client = request_response.client_builder()
-//!                     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
+//!                     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
 //!                     .create()?;
 //!
 //! # Ok(())

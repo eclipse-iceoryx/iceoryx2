@@ -75,7 +75,7 @@ auto main() -> int {
                 return UnableToDeliverAction::Retry;
             } else {
                 std::cout << "    Retried for 10ms! Discarding sample and failing" << std::endl;
-                return UnableToDeliverAction::DiscardSampleAndFail;
+                return UnableToDeliverAction::DiscardDataAndFail;
             }
         }
         case 1: {
@@ -90,7 +90,7 @@ auto main() -> int {
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 return UnableToDeliverAction::Retry;
             } else {
-                return UnableToDeliverAction::DiscardSampleAndFail;
+                return UnableToDeliverAction::DiscardDataAndFail;
             }
         }
         case 2: {
@@ -98,7 +98,7 @@ auto main() -> int {
             // continue to try delivering the sample to all other receiver to whom no
             // attempt was taken to deliver the sample, yet
             std::cout << "    Discarding sample silently" << std::endl;
-            return UnableToDeliverAction::DiscardSample;
+            return UnableToDeliverAction::DiscardData;
         }
         default: {
             // just discard the sample for the receiver involved in the incident and
@@ -106,7 +106,7 @@ auto main() -> int {
             // no attempt was taken to deliver the sample, yet;
             // return with an error if the sample was not delivered to all receivers
             std::cout << "    Discarding sample and failing" << std::endl;
-            return UnableToDeliverAction::DiscardSampleAndFail;
+            return UnableToDeliverAction::DiscardDataAndFail;
         }
         }
     };

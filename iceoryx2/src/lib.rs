@@ -485,7 +485,7 @@
 //!     .max_loaned_samples(2)
 //!     // defines the behavior when a sample could not be delivered when the subscriber buffer is
 //!     // full, only useful in an non-overflow scenario
-//!     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
+//!     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
 //!     .create()?;
 //!
 //! # Ok(())

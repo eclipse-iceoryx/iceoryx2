@@ -936,7 +936,7 @@ pub mod zero_copy_connection_trait {
     }
 
     #[conformance_test]
-    pub fn blocking_send_returns_when_unable_to_deliver_handler_discards_sample<
+    pub fn blocking_send_returns_when_unable_to_deliver_handler_discards_pointer_offset<
         Sut: ZeroCopyConnection,
     >() {
         let call_count = AtomicU64::new(0);

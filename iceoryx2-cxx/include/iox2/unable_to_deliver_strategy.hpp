@@ -23,7 +23,7 @@ enum class UnableToDeliverStrategy : uint8_t {
     /// data from the full buffer and there is space again
     RetryUntilDelivered,
     /// Do not deliver the data to receiver with a full buffer
-    DiscardSample,
+    DiscardData,
 };
 } // namespace iox2
 

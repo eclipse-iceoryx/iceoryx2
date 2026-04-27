@@ -58,8 +58,8 @@ pub mod service_request_response {
                 request_overflow: true,
                 response_overflow: true,
                 enable_fire_and_forget: false,
-                client_unable_to_deliver_strategy: UnableToDeliverStrategy::DiscardSample,
-                server_unable_to_deliver_strategy: UnableToDeliverStrategy::DiscardSample,
+                client_unable_to_deliver_strategy: UnableToDeliverStrategy::DiscardData,
+                server_unable_to_deliver_strategy: UnableToDeliverStrategy::DiscardData,
             }
         }
     }
@@ -196,7 +196,7 @@ pub mod service_request_response {
         let test_args = Args {
             response_buffer_size: 9,
             response_overflow: false,
-            server_unable_to_deliver_strategy: UnableToDeliverStrategy::DiscardSample,
+            server_unable_to_deliver_strategy: UnableToDeliverStrategy::DiscardData,
             ..Default::default()
         };
 

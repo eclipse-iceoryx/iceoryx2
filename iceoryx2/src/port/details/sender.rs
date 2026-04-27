@@ -172,7 +172,7 @@ impl<Service: service::Service> Sender<Service> {
                     UnableToDeliverStrategy::RetryUntilDelivered => {
                         UnableToDeliverToReceiverAction::Retry
                     }
-                    UnableToDeliverStrategy::DiscardSample => {
+                    UnableToDeliverStrategy::DiscardData => {
                         UnableToDeliverToReceiverAction::DiscardPointerOffset
                     }
                 };
@@ -201,7 +201,7 @@ impl<Service: service::Service> Sender<Service> {
                 )
             } else {
                 match self.unable_to_deliver_strategy {
-                    UnableToDeliverStrategy::DiscardSample => {
+                    UnableToDeliverStrategy::DiscardData => {
                         <Service::Connection as ZeroCopyConnection>::Sender::try_send(
                             &connection.sender,
                             offset,
