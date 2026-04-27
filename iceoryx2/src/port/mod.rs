@@ -98,7 +98,7 @@ impl UnableToDeliverHandler<'_> {
 
 /// Defines the action that shall be take when an degradation is detected. This can happen when a
 /// sample cannot be delivered, or when the system is corrupted and files are modified by
-/// non-iceoryx2 instances. Is used as return value of the [`DegradationCallback`] to define a
+/// non-iceoryx2 instances. Is used as return value of the [`DegradationHandler`] to define a
 /// custom behavior.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum DegradationAction {
@@ -110,7 +110,7 @@ pub enum DegradationAction {
     DegradeAndFail,
 }
 
-/// Defines the cause of a degradation and is a parameter of the [`DegradationCallback`].
+/// Defines the cause of a degradation and is a parameter of the [`DegradationHandler`].
 pub enum DegradationCause {
     /// Connection could not be established
     FailedToEstablishConnection,
@@ -118,7 +118,7 @@ pub enum DegradationCause {
     ConnectionCorrupted,
 }
 
-/// The degradation context passed to the [`DegradationCallback`]
+/// The degradation context passed to the [`DegradationHandler`]
 pub struct DegradationInfo {
     /// The service id, which is involved in the degradation
     pub service_id: u128,
@@ -128,11 +128,11 @@ pub struct DegradationInfo {
     pub receiver_port_id: u128,
 }
 
-/// The degradation callback invoked when a degradation is detected
+/// The degradation handler which is invoked when a degradation is detected
 ///
 /// # Arguments
 ///
-/// * DegradationCause: is the cause that triggered the callback
+/// * DegradationCause: is the cause that triggered the handler
 /// * DegradationInfo: is a reference to [`DegradationInfo`] with additional information
 ///   for the user to handle the incident
 ///
@@ -148,19 +148,19 @@ impl<F: Fn(DegradationCause, &DegradationInfo) -> DegradationAction + Send> Degr
 
 tiny_fn! {
     /// Defines a custom behavior whenever a port detects a degradation.
-    pub struct DegradationCallback = Fn(cause: DegradationCause, context: &DegradationInfo) -> DegradationAction;
+    pub struct DegradationHandler = Fn(cause: DegradationCause, context: &DegradationInfo) -> DegradationAction;
 }
 
-unsafe impl Send for DegradationCallback<'_> {}
+unsafe impl Send for DegradationHandler<'_> {}
 
-impl Debug for DegradationCallback<'_> {
+impl Debug for DegradationHandler<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "")
     }
 }
 
-impl DegradationCallback<'_> {
-    /// A convenience function that takes a [`DegradationAction`] and returns a [`DegradationCallback`].
+impl DegradationHandler<'_> {
+    /// A convenience function that takes a [`DegradationAction`] and returns a [`DegradationHandler`].
     pub fn new_with(action: DegradationAction) -> Self {
         Self::new(move |_, _| action)
     }
