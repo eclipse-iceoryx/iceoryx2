@@ -52,9 +52,7 @@ def test_unable_to_deliver_strategy_can_be_configured(
         sut_1.unable_to_deliver_strategy
         == iox2.UnableToDeliverStrategy.RetryUntilDelivered
     )
-    assert (
-        sut_2.unable_to_deliver_strategy == iox2.UnableToDeliverStrategy.DiscardData
-    )
+    assert sut_2.unable_to_deliver_strategy == iox2.UnableToDeliverStrategy.DiscardData
 
 
 @pytest.mark.parametrize("service_type", service_types)
