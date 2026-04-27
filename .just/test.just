@@ -174,12 +174,15 @@ _test-package package toolchain target_triplet has_nostd has_doc extra_args:
     #!/usr/bin/env bash
     set -euo pipefail
 
+    WORKSPACE=$(just _find-package-workspace "{{package}}")
+    MANIFEST_ARG=$(just _workspace-manifest-arg "$WORKSPACE")
+
     if [ "{{has_doc}}" = "true" ]; then
         if [ "{{has_nostd}}" = "true" ]; then
             echo "Error: --doc cannot be combined with --no_std" >&2
             exit 1
         fi
-        cargo {{toolchain}} test --package {{package}} --doc {{extra_args}}
+        cargo {{toolchain}} test --package {{package}} $MANIFEST_ARG --doc {{extra_args}}
         exit 0
     fi
 
@@ -192,15 +195,16 @@ _test-package package toolchain target_triplet has_nostd has_doc extra_args:
             TARGET_ARG="--target $HOST_TARGET"
         fi
 
-        TEST_PACKAGE=$(just _nostd-test-crate-for "{{package}}")
+        NOSTD_TEST_PACKAGE=$(just _nostd-test-crate-for "{{package}}")
 
         RUSTC_BOOTSTRAP=1 RUSTFLAGS="-C panic=abort" \
             cargo {{toolchain}} run \
-                --package "$TEST_PACKAGE" \
+                --package "$NOSTD_TEST_PACKAGE" \
+                $MANIFEST_ARG \
                 --no-default-features \
                 -Zbuild-std=core,alloc \
                 $TARGET_ARG \
                 {{extra_args}}
     else
-        cargo {{toolchain}} nextest run --package {{package}} {{extra_args}}
+        cargo {{toolchain}} nextest run --package {{package}} $MANIFEST_ARG {{extra_args}}
     fi
