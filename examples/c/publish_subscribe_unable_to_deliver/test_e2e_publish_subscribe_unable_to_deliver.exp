@@ -22,10 +22,10 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 set timeout 10
 
-spawn target/ff/cc/build/examples/c/publish_subscribe_with_unable_to_deliver_handler/example_c_publish_subscribe_with_unable_to_deliver_handler_publisher
+spawn target/ff/cc/build/examples/c/publish_subscribe_unable_to_deliver/example_c_publish_subscribe_unable_to_deliver_publisher
 set id_publisher $spawn_id
 
-spawn target/ff/cc/build/examples/c/publish_subscribe_with_unable_to_deliver_handler/example_c_publish_subscribe_with_unable_to_deliver_handler_subscriber
+spawn target/ff/cc/build/examples/c/publish_subscribe_unable_to_deliver/example_c_publish_subscribe_unable_to_deliver_subscriber
 set id_subscriber $spawn_id
 
 #### Test Assertion

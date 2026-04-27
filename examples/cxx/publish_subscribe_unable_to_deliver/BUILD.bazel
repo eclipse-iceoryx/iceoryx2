@@ -13,7 +13,7 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
 cc_binary(
-    name = "example_cxx_publish_subscribe_with_unable_to_deliver_handler_publisher",
+    name = "example_cxx_publish_subscribe_unable_to_deliver_publisher",
     srcs = [
         "src/publisher.cpp",
         "src/transmission_data.hpp",
@@ -25,7 +25,7 @@ cc_binary(
 )
 
 cc_binary(
-    name = "example_cxx_publish_subscribe_with_unable_to_deliver_handler_subscriber",
+    name = "example_cxx_publish_subscribe_unable_to_deliver_subscriber",
     srcs = [
         "src/subscriber.cpp",
         "src/transmission_data.hpp",

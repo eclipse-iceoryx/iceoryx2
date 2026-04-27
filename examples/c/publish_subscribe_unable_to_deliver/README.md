@@ -8,13 +8,6 @@
 > * have a uniform memory representation, ensuring that shared structs have the
 >     same data layout
 > * not use pointers to manage their internal structure
-> * must be trivially destructible, see `std::is_trivially_destructible`
->
-> Data types like `std::string` or `std::vector` will cause undefined behavior
-> and may result in segmentation faults. We provide alternative data types
-> that are compatible with shared memory. See the
-> [complex data type example](../complex_data_types) for guidance on how to
-> use them.
 >
 > **Only fixed-size integers (like `uint8_t`), `float`, `double`, and the**
 > **types in the `iceoryx2-bb-container` library are cross-language**
@@ -34,12 +27,12 @@ The subscriber is printing the sample on the console whenever new data arrives.
 ## How to Build
 
 Before proceeding, all dependencies need to be installed. You can find
-instructions in the [C++ Examples Readme](../README.md).
+instructions in the [C Examples Readme](../README.md).
 
-First you have to build the C++ examples:
+First you have to build the C examples:
 
 ```sh
-cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON
+cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON -DBUILD_CXX=OFF
 cmake --build target/ff/cc/build
 ```
 
@@ -51,22 +44,21 @@ and execute the following commands:
 ### Terminal 1
 
 ```sh
-./target/ff/cc/build/examples/cxx/publish_subscribe_with_unable_to_deliver_handler/example_cxx_publish_subscribe_with_unable_to_deliver_handler_subscriber
+./target/ff/cc/build/examples/c/publish_subscribe_unable_to_deliver/example_c_publish_subscribe_unable_to_deliver_subscriber
 ```
 
 ### Terminal 2
 
 ```sh
-./target/ff/cc/build/examples/cxx/publish_subscribe_with_unable_to_deliver_handler/example_cxx_publish_subscribe_with_unable_to_deliver_handler_publisher
+./target/ff/cc/build/examples/c/publish_subscribe_unable_to_deliver/example_c_publish_subscribe_unable_to_deliver_publisher
 ```
 
 Feel free to run multiple instances of publisher or subscriber processes
 simultaneously to explore how iceoryx2 handles publisher-subscriber
 communication efficiently.
 
-> [!TIP]
-> You may hit the maximum supported number of ports when too many publisher or
-> subscriber processes run. Take a look at the
-> [iceoryx2 config](../../../config) to set the limits globally or at the
-> [API of the Service builder](https://docs.rs/iceoryx2/latest/iceoryx2/service/index.html)
-> to set them for a single service.
+You may hit the maximum supported number of ports when too many publisher or
+subscriber processes run. Take a look at the [iceoryx2 config](../../../config)
+to set the limits globally or at the
+[API of the Service builder](https://docs.rs/iceoryx2/latest/iceoryx2/service/index.html)
+to set them for a single service.
