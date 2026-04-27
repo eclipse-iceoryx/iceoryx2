@@ -12,7 +12,6 @@
 
 use core::error::Error;
 
-use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2_services_common::DiscoveryEvent;
 
 /// Service discovery interface for discoverying and announcing
@@ -134,7 +133,7 @@ pub trait Discovery {
     ///
     /// * `process_discovery` - Callback provided by the caller to process the
     ///   [`StaticConfig`] of each discovered [`Service`](iceoryx2::service::Service).
-    fn discover<E: Error, F: FnMut(&StaticConfig) -> Result<(), E>>(
+    fn discover<E: Error, F: FnMut(&DiscoveryEvent) -> Result<(), E>>(
         &self,
         process_discovery: F,
     ) -> Result<(), Self::DiscoveryError>;

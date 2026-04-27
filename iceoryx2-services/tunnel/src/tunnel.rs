@@ -236,8 +236,8 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         let tunneled_services = self.tunneled_services();
         fail!(
             from self,
-            when self.backend.discovery().discover(|static_config| {
-                on_discovery(static_config, &self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays)
+            when self.backend.discovery().discover(|discovery_event| {
+                on_discovery(discovery_event, &self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays)
             }),
             with DiscoveryError::DiscoveryOverBackend,
             "Failed to discover services via Backend"
@@ -284,7 +284,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
 }
 
 fn on_discovery<S: Service, B: Backend<S> + Debug>(
-    static_config: &StaticConfig,
+    discovery_event: &DiscoveryEvent,
     node: &Node<S>,
     backend: &B,
     services: &BTreeSet<ServiceHash>,
@@ -297,31 +297,31 @@ fn on_discovery<S: Service, B: Backend<S> + Debug>(
         core::any::type_name::<B>()
     );
 
-    if services.contains(static_config.service_hash()) {
-        // Nothing to do.
-        return Ok(());
-    }
+    match discovery_event {
+        DiscoveryEvent::Added(static_config) => {
+            if services.contains(static_config.service_hash()) {
+                // Nothing to do.
+                return Ok(());
+            }
 
-    info!(
-        from origin,
-        "Discovered {}({})",
-        static_config.messaging_pattern(),
-        static_config.name()
-    );
-
-    match static_config.messaging_pattern() {
-        MessagingPattern::PublishSubscribe(_) => {
-            setup_publish_subscribe(static_config, node, backend, ports, relays)
-        }
-        MessagingPattern::Event(_) => setup_event(static_config, node, backend, ports, relays),
-        _ => {
-            // Not supported. Nothing to do.
             info!(
                 from origin,
-                "Unsupported discovery {}({})",
+                "Discovered {}({})",
                 static_config.messaging_pattern(),
                 static_config.name()
             );
+
+            if let MessagingPattern::PublishSubscribe(_) = static_config.messaging_pattern() {
+                return setup_publish_subscribe(static_config, node, backend, ports, relays);
+            }
+            if let MessagingPattern::Event(_) = static_config.messaging_pattern() {
+                return setup_event(static_config, node, backend, ports, relays);
+            }
+
+            Ok(())
+        }
+        DiscoveryEvent::Removed(_) => {
+            // TODO: Detect and react to removed services.
             Ok(())
         }
     }
