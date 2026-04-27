@@ -45,6 +45,11 @@
   the trait impl and enforce all invariants (`#[repr(C)]`, no padding, field
   bounds) at compile time
   [#1547](https://github.com/eclipse-iceoryx/iceoryx2/issues/1547)
+* Add `Service::remove()` so that orphaned static service configs left behind
+  after an abrupt process termination (e.g. `SIGKILL`) can be cleaned up
+  programmatically (also surfaced via the C and Python FFIs as
+  `iox2_service_remove` and `Service.remove`)
+  [#1584](https://github.com/eclipse-iceoryx/iceoryx2/issues/1584)
 
 ### Bugfixes
 

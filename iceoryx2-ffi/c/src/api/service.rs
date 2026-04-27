@@ -23,6 +23,7 @@ use iceoryx2::service::{
 };
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::AsCStr;
+use iceoryx2_cal::named_concept::NamedConceptRemoveError;
 use iceoryx2_ffi_macros::CStrRepr;
 
 use crate::{
@@ -142,6 +143,24 @@ pub type iox2_service_list_callback = extern "C" fn(
     *const iox2_static_config_t,
     iox2_callback_context,
 ) -> iox2_callback_progression_e;
+
+#[repr(C)]
+#[derive(Copy, Clone, CStrRepr)]
+pub enum iox2_service_remove_error_e {
+    INSUFFICIENT_PERMISSIONS = IOX2_OK as isize + 1,
+    INTERNAL_ERROR,
+}
+
+impl IntoCInt for NamedConceptRemoveError {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            NamedConceptRemoveError::InsufficientPermissions => {
+                iox2_service_remove_error_e::INSUFFICIENT_PERMISSIONS
+            }
+            NamedConceptRemoveError::InternalError => iox2_service_remove_error_e::INTERNAL_ERROR,
+        }) as c_int
+    }
+}
 
 // END type definition
 
@@ -333,6 +352,73 @@ pub unsafe extern "C" fn iox2_service_list(
     match result {
         Ok(()) => IOX2_OK,
         Err(e) => e.into_c_int(),
+    }
+}
+
+/// Returns a string literal describing the provided [`iox2_service_remove_error_e`].
+///
+/// # Arguments
+///
+/// * `error` - The error value for which a description should be returned
+///
+/// # Returns
+///
+/// A pointer to a null-terminated string containing the error message.
+/// The string is stored in the .rodata section of the binary.
+///
+/// # Safety
+///
+/// The returned pointer must not be modified or freed and is valid as long as the program runs.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_service_remove_error_string(
+    error: iox2_service_remove_error_e,
+) -> *const c_char {
+    error.as_const_cstr().as_ptr() as *const c_char
+}
+
+/// Removes the static service config of a service. On success `has_been_removed`
+/// contains `true` if a config was removed and `false` if no matching service
+/// existed. On error it returns `iox2_service_remove_error_e`, otherwise `IOX2_OK`.
+///
+/// # Safety
+///
+/// * The `service_name` must be valid and non-null
+/// * The `config` must be valid and non-null
+/// * The `has_been_removed` must be valid and non-null
+/// * No other process must be creating, opening or otherwise using the same
+///   service while this call runs
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_service_remove(
+    service_type: iox2_service_type_e,
+    service_name: iox2_service_name_ptr,
+    config: iox2_config_ptr,
+    messaging_pattern: iox2_messaging_pattern_e,
+    has_been_removed: *mut bool,
+) -> c_int {
+    debug_assert!(!service_name.is_null());
+    debug_assert!(!config.is_null());
+    debug_assert!(!has_been_removed.is_null());
+    unsafe {
+        let config = &*config;
+        let service_name = &*service_name;
+        let messaging_pattern = messaging_pattern.into();
+
+        let result = match service_type {
+            iox2_service_type_e::IPC => {
+                IpcService::remove(service_name, config, messaging_pattern)
+            }
+            iox2_service_type_e::LOCAL => {
+                LocalService::remove(service_name, config, messaging_pattern)
+            }
+        };
+
+        match result {
+            Ok(value) => {
+                *has_been_removed = value;
+                IOX2_OK
+            }
+            Err(e) => e.into_c_int(),
+        }
     }
 }
 
