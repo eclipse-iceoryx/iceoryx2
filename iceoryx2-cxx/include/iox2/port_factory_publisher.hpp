@@ -22,6 +22,7 @@
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/publisher.hpp"
 #include "iox2/service_type.hpp"
+#include "iox2/unable_to_deliver_handler.hpp"
 #include "iox2/unable_to_deliver_strategy.hpp"
 
 #include <cstdint>
@@ -87,6 +88,12 @@ class PortFactoryPublisher {
     /// the send function, is accessed from multiple threads, the handler must be thread-safe if it captures data
     auto set_degradation_handler(DegradationHandler* handler) && -> PortFactoryPublisher&&;
 
+    /// Sets the [`UnableToDeliverHandler`] of the [`Publisher`]. Whenever a [`SampleMut`] cannot be sent to a
+    /// [`Subscriber`], this handler is called and depending on the returned [`UnableToDeliverAction`], measures will be
+    /// taken.
+    /// If no handler is set, the measures will be determined by the value set in [`UnableToDeliverStrategy`].
+    auto set_unable_to_deliver_handler(UnableToDeliverHandler* handler) && -> PortFactoryPublisher&&;
+
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
     auto create() && -> bb::Expected<Publisher<S, Payload, UserHeader>, PublisherCreateError>;
 
@@ -101,6 +108,7 @@ class PortFactoryPublisher {
     bb::Optional<AllocationStrategy> m_allocation_strategy;
     bb::Optional<OverridePreallocationCallback> m_override_preallocation_callback;
     bb::Optional<DegradationHandler* const> m_degradation_handler;
+    bb::Optional<UnableToDeliverHandler* const> m_unable_to_deliver_handler;
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -139,6 +147,13 @@ inline auto PortFactoryPublisher<S, Payload, UserHeader>::set_degradation_handle
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
+inline auto PortFactoryPublisher<S, Payload, UserHeader>::set_unable_to_deliver_handler(
+    UnableToDeliverHandler* handler) && -> PortFactoryPublisher&& {
+    m_unable_to_deliver_handler.emplace(handler);
+    return std::move(*this);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
 inline auto PortFactoryPublisher<S, Payload, UserHeader>::create() && -> bb::Expected<Publisher<S, Payload, UserHeader>,
                                                                                       PublisherCreateError> {
     if (m_unable_to_deliver_strategy.has_value()) {
@@ -162,6 +177,13 @@ inline auto PortFactoryPublisher<S, Payload, UserHeader>::create() && -> bb::Exp
     if (m_degradation_handler.has_value()) {
         iox2_port_factory_publisher_builder_set_degradation_handler(
             &m_handle, detail::degradation_handler_delegate, static_cast<void*>(m_degradation_handler.value()));
+    }
+
+    if (m_unable_to_deliver_handler.has_value()) {
+        iox2_port_factory_publisher_builder_set_unable_to_deliver_handler(
+            &m_handle,
+            detail::unable_to_deliver_handler_delegate,
+            static_cast<void*>(m_unable_to_deliver_handler.value()));
     }
 
     if (m_override_preallocation_callback.has_value()) {

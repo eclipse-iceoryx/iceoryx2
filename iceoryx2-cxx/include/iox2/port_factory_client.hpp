@@ -22,6 +22,7 @@
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/service_type.hpp"
+#include "iox2/unable_to_deliver_handler.hpp"
 #include "iox2/unable_to_deliver_strategy.hpp"
 
 namespace iox2 {
@@ -91,6 +92,11 @@ class PortFactoryClient {
     /// captures data
     auto set_response_degradation_handler(DegradationHandler* handler) && -> PortFactoryClient&&;
 
+    /// Sets the [`UnableToDeliverHandler`] of the [`Client`]. Whenever a [`RequestMut`] cannot be sent to a [`Server`],
+    /// this handler is called and depending on the returned [`UnableToDeliverAction`], measures will be taken.
+    /// If no handler is set, the measures will be determined by the value set in [`UnableToDeliverStrategy`].
+    auto set_unable_to_deliver_handler(UnableToDeliverHandler* handler) && -> PortFactoryClient&&;
+
     /// Creates a new [`Client`] or returns a [`ClientCreateError`] on failure.
     auto
     create() && -> bb::Expected<Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
@@ -108,6 +114,7 @@ class PortFactoryClient {
     bb::Optional<OverridePreallocationCallback> m_override_preallocation_callback;
     bb::Optional<DegradationHandler* const> m_request_degradation_handler;
     bb::Optional<DegradationHandler* const> m_response_degradation_handler;
+    bb::Optional<UnableToDeliverHandler* const> m_unable_to_deliver_handler;
 };
 
 template <ServiceType Service,
@@ -174,6 +181,17 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseUserHeader>
 inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    set_unable_to_deliver_handler(UnableToDeliverHandler* handler) && -> PortFactoryClient&& {
+    m_unable_to_deliver_handler.emplace(handler);
+    return std::move(*this);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     create() && -> bb::Expected<Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
                                 ClientCreateError> {
     if (m_unable_to_deliver_strategy.has_value()) {
@@ -209,6 +227,13 @@ inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, Respon
             &m_handle,
             detail::degradation_handler_delegate,
             static_cast<void*>(m_response_degradation_handler.value()));
+    }
+
+    if (m_unable_to_deliver_handler.has_value()) {
+        iox2_port_factory_client_builder_set_unable_to_deliver_handler(
+            &m_handle,
+            detail::unable_to_deliver_handler_delegate,
+            static_cast<void*>(m_unable_to_deliver_handler.value()));
     }
 
     iox2_client_h client_handle {};

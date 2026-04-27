@@ -46,6 +46,7 @@
 #include "iox2/signal_handling_mode.hpp"
 #include "iox2/subscriber_error.hpp"
 #include "iox2/type_variant.hpp"
+#include "iox2/unable_to_deliver_action.hpp"
 #include "iox2/unable_to_deliver_strategy.hpp"
 #include "iox2/waitset_enums.hpp"
 #include "iox2/writer_error.hpp"
@@ -2312,6 +2313,24 @@ constexpr auto from<iox2::DegradationAction, iox2_degradation_action_e>(const io
         return iox2_degradation_action_e_WARN;
     case iox2::DegradationAction::DegradeAndFail:
         return iox2_degradation_action_e_DEGRADE_AND_FAIL;
+    }
+
+    IOX2_UNREACHABLE();
+}
+
+template <>
+constexpr auto
+from<iox2::UnableToDeliverAction, iox2_unable_to_deliver_action_e>(const iox2::UnableToDeliverAction value) noexcept
+    -> iox2_unable_to_deliver_action_e {
+    switch (value) {
+    case iox2::UnableToDeliverAction::FollowUnableToDeliveryStrategy:
+        return iox2_unable_to_deliver_action_e_FOLLOW_UNABLE_TO_DELIVERY_STRATEGY;
+    case iox2::UnableToDeliverAction::Retry:
+        return iox2_unable_to_deliver_action_e_RETRY;
+    case iox2::UnableToDeliverAction::DiscardSample:
+        return iox2_unable_to_deliver_action_e_DISCARD_SAMPLE;
+    case iox2::UnableToDeliverAction::DiscardSampleAndFail:
+        return iox2_unable_to_deliver_action_e_DISCARD_SAMPLE_AND_FAIL;
     }
 
     IOX2_UNREACHABLE();
