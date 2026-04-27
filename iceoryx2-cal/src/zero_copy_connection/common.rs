@@ -731,7 +731,7 @@ pub mod details {
             sample_size: usize,
             channel_id: ChannelId,
             unable_to_deliver_to_receiver_handler: F,
-            unable_to_deliver_action_for_strategy: UnableToDeliverAction,
+            unable_to_deliver_action_for_strategy: UnableToDeliverToReceiverAction,
         ) -> Result<Option<PointerOffset>, ZeroCopySendError> {
             let msg = "Unable to blocking send the offset";
             debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
@@ -765,18 +765,18 @@ pub mod details {
                                 retry_counter,
                                 start.elapsed().unwrap_or(Duration::MAX),
                             ) {
-                                UnableToDeliverAction::FollowUnableToDeliveryStrategy => {
+                                UnableToDeliverToReceiverAction::FollowUnableToDeliveryStrategy => {
                                     match unable_to_deliver_action_for_strategy {
-                                        UnableToDeliverAction::Retry => {
+                                        UnableToDeliverToReceiverAction::Retry => {
                                             retry_until_delivered = true;
                                             WAIT_CONTINUE
                                         }
                                         _ => WAIT_ABORT,
                                     }
                                 }
-                                UnableToDeliverAction::Retry => WAIT_CONTINUE,
-                                UnableToDeliverAction::DiscardSample => WAIT_ABORT,
-                                UnableToDeliverAction::DiscardSampleAndFail => {
+                                UnableToDeliverToReceiverAction::Retry => WAIT_CONTINUE,
+                                UnableToDeliverToReceiverAction::DiscardPointerOffset => WAIT_ABORT,
+                                UnableToDeliverToReceiverAction::DiscardPointerOffsetAndFail => {
                                     do_fail = true;
                                     WAIT_ABORT
                                 }
