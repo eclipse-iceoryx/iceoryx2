@@ -45,6 +45,8 @@
   the trait impl and enforce all invariants (`#[repr(C)]`, no padding, field
   bounds) at compile time
   [#1547](https://github.com/eclipse-iceoryx/iceoryx2/issues/1547)
+* Enhance degradation handler and add unable to deliver handler
+  [#1573](https://github.com/eclipse-iceoryx/iceoryx2/issues/1573)
 
 ### Bugfixes
 
