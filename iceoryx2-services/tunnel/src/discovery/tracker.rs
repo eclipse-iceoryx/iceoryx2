@@ -10,10 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::{
-    config::Config,
-    service::{Service, static_config::StaticConfig},
-};
+use iceoryx2::{config::Config, service::Service};
 use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_log::{fail, fatal_panic};
 use iceoryx2_services_common::DiscoveryEvent;
@@ -64,7 +61,7 @@ impl<S: Service> Discovery for DiscoveryTracker<S> {
         Ok(())
     }
 
-    fn discover<E: core::error::Error, F: FnMut(&StaticConfig) -> Result<(), E>>(
+    fn discover<E: core::error::Error, F: FnMut(&DiscoveryEvent) -> Result<(), E>>(
         &self,
         mut process_discovery: F,
     ) -> Result<(), Self::DiscoveryError> {
@@ -81,7 +78,7 @@ impl<S: Service> Discovery for DiscoveryTracker<S> {
                 Some(service_details) => {
                     fail!(
                         from self,
-                        when process_discovery(&service_details.static_details),
+                        when process_discovery(&DiscoveryEvent::Added(service_details.static_details.clone())),
                         with DiscoveryError::DiscoveryProcessing,
                         "Failed to process discovery event"
                     );

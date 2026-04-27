@@ -158,7 +158,7 @@ impl iceoryx2_services_tunnel_backend::traits::Discovery for Discovery {
         Ok(())
     }
 
-    fn discover<E: core::error::Error, F: FnMut(&StaticConfig) -> Result<(), E>>(
+    fn discover<E: core::error::Error, F: FnMut(&DiscoveryEvent) -> Result<(), E>>(
         &self,
         mut process_discovery: F,
     ) -> Result<(), DiscoveryError> {
@@ -170,7 +170,7 @@ impl iceoryx2_services_tunnel_backend::traits::Discovery for Discovery {
                         Ok(static_config) => {
                             fail!(
                                 from &self,
-                                when process_discovery(&static_config),
+                                when process_discovery(&DiscoveryEvent::Added(static_config)),
                                 with DiscoveryError::DiscoveryProcessing,
                                 "Failed to process discovery event"
                             )

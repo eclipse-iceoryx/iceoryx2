@@ -14,7 +14,6 @@ use alloc::format;
 
 use iceoryx2::node::Node;
 use iceoryx2::prelude::ServiceName;
-use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::{port::subscriber::Subscriber, service::Service};
 use iceoryx2_log::fail;
 
@@ -96,7 +95,7 @@ impl<S: Service> Discovery for DiscoverySubscriber<S> {
         Ok(())
     }
 
-    fn discover<E: core::error::Error, F: FnMut(&StaticConfig) -> Result<(), E>>(
+    fn discover<E: core::error::Error, F: FnMut(&DiscoveryEvent) -> Result<(), E>>(
         &self,
         mut process_discovery: F,
     ) -> Result<(), Self::DiscoveryError> {
@@ -104,14 +103,12 @@ impl<S: Service> Discovery for DiscoverySubscriber<S> {
         loop {
             match subscriber.receive() {
                 Ok(Some(sample)) => {
-                    if let DiscoveryEvent::Added(static_config) = sample.payload() {
-                        fail!(
-                            from self,
-                            when process_discovery(static_config),
-                            with DiscoveryError::DiscoveryProcessing,
-                            "Failed to process discovery event"
-                        );
-                    }
+                    fail!(
+                        from self,
+                        when process_discovery(sample.payload()),
+                        with DiscoveryError::DiscoveryProcessing,
+                        "Failed to process discovery event"
+                    );
                 }
                 Ok(None) => break Ok(()),
                 Err(_) => {
