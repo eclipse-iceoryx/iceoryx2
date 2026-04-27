@@ -51,7 +51,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                     );
 
                     println!(
-                        "    Could not deliver sample {}  from publisher sender id {:?} to subscriber receiver id {:?}",
+                        "    Could not deliver sample {} from publisher sender id 0x{:02X} to subscriber receiver id 0x{:02X}",
                         counter.load(Ordering::SeqCst),
                         info.sender_port_id,
                         info.receiver_port_id

@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::api::iox2_callback_context;
+use crate::api::{iox2_buffer_16_align_4_t, iox2_callback_context};
 
 use iceoryx2::port::{UnableToDeliverAction, UnableToDeliverInfo};
 use iceoryx2_bb_elementary_traits::AsCStr;
@@ -71,16 +71,25 @@ fn unable_to_deliver_info_as_type<'a>(
 /// # Arguments
 ///
 /// * `info_handle` - Must be a valid [`iox2_unable_to_deliver_info_h_ref`] provided as parameter by [`iox2_unable_to_deliver_handler`]
+/// * `service_id` - Must be a pointer to a [`iox2_buffer_16_align_4_t`](crate::api::iox2_buffer_16_align_4_t)
 ///
 /// # Safety
 ///
 /// * `info_handle` must be a valid handle
+/// * `service_id` must not be a null pointer
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_unable_to_deliver_info_service_id(
     info_handle: iox2_unable_to_deliver_info_h_ref,
-) -> u64 {
-    // TODO: How to pass a u128 to the caller? Via in-parameter?
-    unable_to_deliver_info_as_type(info_handle).service_id as u64
+    service_id: *mut iox2_buffer_16_align_4_t,
+) {
+    unsafe {
+        iox2_buffer_16_align_4_t::write(
+            service_id,
+            unable_to_deliver_info_as_type(info_handle)
+                .service_id
+                .to_be_bytes(),
+        );
+    }
 }
 
 /// Obtains the receiver port id, which is involved in the delivery incident
@@ -88,16 +97,25 @@ pub unsafe extern "C" fn iox2_unable_to_deliver_info_service_id(
 /// # Arguments
 ///
 /// * `info_handle` - Must be a valid [`iox2_unable_to_deliver_info_h_ref`] provided as parameter by [`iox2_unable_to_deliver_handler`]
+/// * `service_id` - Must be a pointer to a [`iox2_buffer_16_align_4_t`](crate::api::iox2_buffer_16_align_4_t)
 ///
 /// # Safety
 ///
 /// * `info_handle` must be a valid handle
+/// * `service_id` must not be a null pointer
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_unable_to_deliver_info_receiver_port_id(
     info_handle: iox2_unable_to_deliver_info_h_ref,
-) -> u64 {
-    // TODO: How to pass a u128 to the caller? Via in-parameter?
-    unable_to_deliver_info_as_type(info_handle).receiver_port_id as u64
+    receiver_port_id: *mut iox2_buffer_16_align_4_t,
+) {
+    unsafe {
+        iox2_buffer_16_align_4_t::write(
+            receiver_port_id,
+            unable_to_deliver_info_as_type(info_handle)
+                .receiver_port_id
+                .to_be_bytes(),
+        );
+    }
 }
 
 /// Obtains the sender port id, which is involved in the delivery incident
@@ -105,16 +123,25 @@ pub unsafe extern "C" fn iox2_unable_to_deliver_info_receiver_port_id(
 /// # Arguments
 ///
 /// * `info_handle` - Must be a valid [`iox2_unable_to_deliver_info_h_ref`] provided as parameter by [`iox2_unable_to_deliver_handler`]
+/// * `service_id` - Must be a pointer to a [`iox2_buffer_16_align_4_t`](crate::api::iox2_buffer_16_align_4_t)
 ///
 /// # Safety
 ///
 /// * `info_handle` must be a valid handle
+/// * `service_id` must not be a null pointer
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_unable_to_deliver_info_sender_port_id(
     info_handle: iox2_unable_to_deliver_info_h_ref,
-) -> u64 {
-    // TODO: How to pass a u128 to the caller? Via in-parameter?
-    unable_to_deliver_info_as_type(info_handle).sender_port_id as u64
+    sender_port_id: *mut iox2_buffer_16_align_4_t,
+) {
+    unsafe {
+        iox2_buffer_16_align_4_t::write(
+            sender_port_id,
+            unable_to_deliver_info_as_type(info_handle)
+                .sender_port_id
+                .to_be_bytes(),
+        );
+    }
 }
 
 /// Obtains the number of retries for the running delivery to the receiver port

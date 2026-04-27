@@ -17,6 +17,8 @@
 #include <iostream>
 
 struct TransmissionData {
+    // IOX2_TYPE_NAME is equivalent to the payload type name used on the Rust side
+    static constexpr const char* IOX2_TYPE_NAME = "TransmissionData";
     std::int32_t x;
     std::int32_t y;
     double funky;

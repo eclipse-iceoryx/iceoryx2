@@ -17,6 +17,7 @@
 #include "transmission_data.hpp"
 
 #include <chrono>
+#include <iomanip>
 #include <iostream>
 #include <thread>
 #include <utility>
@@ -43,10 +44,22 @@ auto main() -> int {
         // only print the port IDs in the first iteration of the retry loop of each delivery incident
         if (info.retries() == 0) {
             delivery_incident_counter += 1;
-            std::cout << "Sample delivery interruption count " << delivery_incident_counter << std::endl;
+            std::cout << std::endl << std::setw(2) << std::setfill('0');
+            std::cout << "Sample delivery interruption count " << delivery_incident_counter;
 
-            std::cout << "    Could not deliver sample " << counter << " from publisher sender id "
-                      << info.sender_port_id() << " to subscriber receiver id " << info.receiver_port_id() << std::endl;
+            auto sender_port_id = info.sender_port_id();
+            auto receiver_port_id = info.sender_port_id();
+            std::cout << "    Could not deliver sample " << counter << " from publisher sender id 0x" << std::hex;
+            for (uint32_t i = 0; i < sender_port_id.size(); ++i) {
+                // NOTE: the + promotes the value to an integer, else it will be interpreted as char
+                std::cout << +*sender_port_id.element_at(i);
+            }
+            std::cout << " to subscriber receiver id 0x" << std::hex;
+            for (uint32_t i = 0; i < receiver_port_id.size(); ++i) {
+                // NOTE: the + promotes the value to an integer, else it will be interpreted as char
+                std::cout << +*receiver_port_id.element_at(i);
+            }
+            std::cout << std::dec << std::endl;
         }
 
         // there are multiple mitigation options available and to showcase these options,

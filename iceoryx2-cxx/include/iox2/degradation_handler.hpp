@@ -17,6 +17,7 @@
 #include "iox2/degradation_action.hpp"
 #include "iox2/degradation_cause.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/unique_port_id.hpp"
 
 namespace iox2 {
 namespace detail {
@@ -40,21 +41,27 @@ class DegradationInfo {
                                                            iox2_callback_context callback_cxt)
         -> iox2_degradation_action_e;
 
+    static_assert(sizeof(iox2_buffer_16_align_4_t::data) == RawIdType::capacity(),
+                  "RawIdType capacity must match iox2_buffer_16_align_4_t capacity");
+
   public:
     /// Returns the ServiceId of the involved ports
-    // TODO: change to ServiceId
-    auto service_id() const -> uint64_t {
-        return iox2_degradation_info_service_id(m_info);
+    auto service_id() const -> RawIdType {
+        iox2_buffer_16_align_4_t buf;
+        iox2_degradation_info_service_id(m_info, &buf);
+        return RawIdType::from_range_unchecked(buf.data).value();
     }
     /// Returns the ReceiverPortId of the involved ports
-    // TODO: change to ReceiverPortId
-    auto receiver_port_id() const -> uint64_t {
-        return iox2_degradation_info_receiver_port_id(m_info);
+    auto receiver_port_id() const -> RawIdType {
+        iox2_buffer_16_align_4_t buf;
+        iox2_degradation_info_receiver_port_id(m_info, &buf);
+        return RawIdType::from_range_unchecked(buf.data).value();
     }
     /// Returns the ReceiverPortId of the involved ports
-    // TODO: change to SenderPortId
-    auto sender_port_id() const -> uint64_t {
-        return iox2_degradation_info_sender_port_id(m_info);
+    auto sender_port_id() const -> RawIdType {
+        iox2_buffer_16_align_4_t buf;
+        iox2_degradation_info_sender_port_id(m_info, &buf);
+        return RawIdType::from_range_unchecked(buf.data).value();
     }
 };
 

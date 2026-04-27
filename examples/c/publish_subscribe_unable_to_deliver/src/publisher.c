@@ -22,8 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define DURATION_0S 0            // NOLINT
-#define DURATION_500MS 500000000 // NOLINT
+// NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers) fine for examples
 
 // NOLINTNEXTLINE
 struct callback_context_t {
@@ -32,7 +31,18 @@ struct callback_context_t {
 
 static iox2_unable_to_deliver_action_e unable_to_deliver_handler(iox2_unable_to_deliver_info_h_ref info,
                                                                  iox2_callback_context ctx) {
-    printf("Discarded sample from service id: %lu\n", (unsigned long) iox2_unable_to_deliver_info_service_id(info));
+    iox2_buffer_16_align_4_t buf;
+    printf("Discarded sample from publisher sender id 0x");
+    iox2_unable_to_deliver_info_sender_port_id(info, &buf);
+    for (int i = 0; i < 16; ++i) {
+        printf("%02X", buf.data[i]);
+    }
+    printf(" to subscriber receiver id 0x");
+    iox2_unable_to_deliver_info_receiver_port_id(info, &buf);
+    for (int i = 0; i < 16; ++i) {
+        printf("%02X", buf.data[i]);
+    }
+    printf("\n");
     if (ctx) {
         struct callback_context_t* callback_ctx = (struct callback_context_t*) ctx;
         (*callback_ctx).fail_counter += 1;
@@ -67,7 +77,7 @@ int main(void) {
     iox2_service_builder_pub_sub_h service_builder_pub_sub = iox2_service_builder_pub_sub(service_builder);
 
     // set pub sub payload type
-    const char* payload_type_name = "16TransmissionData";
+    const char* payload_type_name = "TransmissionData";
     if (iox2_service_builder_pub_sub_set_payload_type_details(&service_builder_pub_sub,
                                                               iox2_type_variant_e_FIXED_SIZE,
                                                               payload_type_name,
@@ -106,6 +116,8 @@ int main(void) {
     }
 
     int32_t counter = 0;
+    const uint64_t DURATION_0S = 0;
+    const uint32_t DURATION_500MS = 500000000;
     while (iox2_node_wait(&node_handle, DURATION_0S, DURATION_500MS) == IOX2_OK) {
         counter += 1;
 
@@ -121,7 +133,7 @@ int main(void) {
         iox2_sample_mut_payload_mut(&sample, (void**) &payload, NULL);
         payload->x = counter;
         payload->y = counter * 3;
-        payload->funky = counter * 812.12; // NOLINT
+        payload->funky = counter * 812.12;
 
         // send sample
         printf("Sending sample %d ...\n", counter);
@@ -146,3 +158,5 @@ drop_node:
 end:
     return 0;
 }
+
+// NOLINTEND(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)

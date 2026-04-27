@@ -48,7 +48,7 @@ int main(void) {
     iox2_service_builder_pub_sub_h service_builder_pub_sub = iox2_service_builder_pub_sub(service_builder);
 
     // set pub sub payload type
-    const char* payload_type_name = "16TransmissionData";
+    const char* payload_type_name = "TransmissionData";
     if (iox2_service_builder_pub_sub_set_payload_type_details(&service_builder_pub_sub,
                                                               iox2_type_variant_e_FIXED_SIZE,
                                                               payload_type_name,

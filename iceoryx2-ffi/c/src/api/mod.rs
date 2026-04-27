@@ -321,3 +321,19 @@ pub unsafe extern "C" fn iox2_semantic_string_error_string(
 ) -> *const c_char {
     error.as_const_cstr().as_ptr() as *const c_char
 }
+
+// A 16 byte buffer which is aligned to 4 bytes
+#[repr(C)]
+#[repr(align(4))]
+pub struct iox2_buffer_16_align_4_t {
+    data: [u8; 16],
+}
+
+impl iox2_buffer_16_align_4_t {
+    pub(crate) unsafe fn write(buf: *mut iox2_buffer_16_align_4_t, data: [u8; 16]) {
+        assert!(!buf.is_null());
+        unsafe {
+            core::ptr::write(buf, iox2_buffer_16_align_4_t { data });
+        }
+    }
+}

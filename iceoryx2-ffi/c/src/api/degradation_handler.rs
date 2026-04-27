@@ -12,6 +12,7 @@
 
 use crate::api::iox2_callback_context;
 
+use crate::api::iox2_buffer_16_align_4_t;
 use iceoryx2::port::{DegradationAction, DegradationCause, DegradationInfo};
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::CStrRepr;
@@ -92,16 +93,25 @@ fn degradation_info_as_type<'a>(info: iox2_degradation_info_h_ref) -> &'a Degrad
 /// # Arguments
 ///
 /// * `info_handle` - Must be a valid [`iox2_degradation_info_h_ref`] provided as parameter by [`iox2_degradation_handler`]
+/// * `service_id` - Must be a pointer to a [`iox2_buffer_16_align_4_t`](crate::api::iox2_buffer_16_align_4_t)
 ///
 /// # Safety
 ///
 /// * `info_handle` must be a valid handle
+/// * `service_id` must not be a null pointer
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_degradation_info_service_id(
     info_handle: iox2_degradation_info_h_ref,
-) -> u64 {
-    // TODO: How to pass a u128 to the caller? Via in-parameter?
-    degradation_info_as_type(info_handle).service_id as u64
+    service_id: *mut iox2_buffer_16_align_4_t,
+) {
+    unsafe {
+        iox2_buffer_16_align_4_t::write(
+            service_id,
+            degradation_info_as_type(info_handle)
+                .service_id
+                .to_be_bytes(),
+        );
+    }
 }
 
 /// Obtains the receiver port id, which is involved in the degradation
@@ -109,16 +119,25 @@ pub unsafe extern "C" fn iox2_degradation_info_service_id(
 /// # Arguments
 ///
 /// * `info_handle` - Must be a valid [`iox2_degradation_info_h_ref`] provided as parameter by [`iox2_degradation_handler`]
+/// * `receiver_port_id` - Must be a pointer to a [`iox2_buffer_16_align_4_t`](crate::api::iox2_buffer_16_align_4_t)
 ///
 /// # Safety
 ///
 /// * `info_handle` must be a valid handle
+/// * `receiver_port_id` must not be a null pointer
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_degradation_info_receiver_port_id(
     info_handle: iox2_degradation_info_h_ref,
-) -> u64 {
-    // TODO: How to pass a u128 to the caller? Via in-parameter?
-    degradation_info_as_type(info_handle).receiver_port_id as u64
+    receiver_port_id: *mut iox2_buffer_16_align_4_t,
+) {
+    unsafe {
+        iox2_buffer_16_align_4_t::write(
+            receiver_port_id,
+            degradation_info_as_type(info_handle)
+                .receiver_port_id
+                .to_be_bytes(),
+        );
+    }
 }
 
 /// Obtains the sender port id, which is involved in the degradation
@@ -126,16 +145,25 @@ pub unsafe extern "C" fn iox2_degradation_info_receiver_port_id(
 /// # Arguments
 ///
 /// * `info_handle` - Must be a valid [`iox2_degradation_info_h_ref`] provided as parameter by [`iox2_degradation_handler`]
+/// * `sender_port_id` - Must be a pointer to a [`iox2_buffer_16_align_4_t`](crate::api::iox2_buffer_16_align_4_t)
 ///
 /// # Safety
 ///
 /// * `info_handle` must be a valid handle
+/// * `sender_port_id` must not be a null pointer
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_degradation_info_sender_port_id(
     info_handle: iox2_degradation_info_h_ref,
-) -> u64 {
-    // TODO: How to pass a u128 to the caller? Via in-parameter?
-    degradation_info_as_type(info_handle).sender_port_id as u64
+    sender_port_id: *mut iox2_buffer_16_align_4_t,
+) {
+    unsafe {
+        iox2_buffer_16_align_4_t::write(
+            sender_port_id,
+            degradation_info_as_type(info_handle)
+                .sender_port_id
+                .to_be_bytes(),
+        );
+    }
 }
 
 /// The degradation handler signature
