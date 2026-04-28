@@ -21,10 +21,10 @@ cmake -S . -B target/ff/cc/build \
     -DBUILD_TESTING=ON
 cmake --build target/ff/cc/build -j$NUM_JOBS
 
-iterations=100
+iterations=10000
 for i in $(seq 1 $iterations); do
     echo "#### Iteration: $i of $iterations"
-    target/ff/cc/build/examples/cxx/publish_subscribe/example_cxx_publish_subscribe_publisher # acts as cleaner
+    # target/ff/cc/build/examples/cxx/publish_subscribe/example_cxx_publish_subscribe_publisher # acts as cleaner
     # examples/cross-language-end-to-end-tests/test_e2e_server_cxx_client_c.exp
     examples/cxx/request_response/test_e2e_request_response.exp
 done

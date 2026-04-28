@@ -117,8 +117,10 @@ pub enum MonitoringCreateCleanerError {
     Interrupt,
     InstanceStillAlive,
     AlreadyOwnedByAnotherInstance,
+    LockFileRaceDetected,
     DoesNotExist,
     InternalError,
+    ProcessIsBeingCleanedUpOrCrashedDuringCleanup,
 }
 
 impl core::fmt::Display for MonitoringCreateCleanerError {

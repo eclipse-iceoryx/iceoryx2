@@ -13,9 +13,9 @@
 #include "iox2/iceoryx2.hpp"
 #include "transmission_data.hpp"
 
-constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_millis(100);
+constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_millis(10);
 
-const char* ServiceOpenOrCreateErrorStrings[] = {
+const char* RequestResponseOpenOrCreateErrorString[] = {
     "OpenDoesNotExist",
     "OpenDoesNotSupportRequestedAmountOfClientRequestLoans",
     "OpenDoesNotSupportRequestedAmountOfActiveRequestsPerClient",
@@ -57,24 +57,38 @@ auto main() -> int {
     set_log_level_from_env_or(LogLevel::Info);
 
     auto config = Config::global_config().to_owned();
-    config.global().node().set_cleanup_dead_nodes_on_creation(false);
+    config.global().node().set_cleanup_dead_nodes_on_creation(true);
     config.global().node().set_cleanup_dead_nodes_on_destruction(false);
 
     auto node = NodeBuilder().config(config).create<ServiceType::Ipc>().value();
 
     auto service_result = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
                               .request_response<uint64_t, TransmissionData>()
-                              .max_servers(3)
+                              .max_servers(2)
+                              .max_clients(1)
                               .open_or_create();
+    while (!service_result.has_value()
+           && (service_result.error() == RequestResponseOpenOrCreateError::OpenHangsInCreation
+               || service_result.error() == RequestResponseOpenOrCreateError::CreateHangsInCreation)) {
+        service_result = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
+                             .request_response<uint64_t, TransmissionData>()
+                             .max_servers(2)
+                             .max_clients(1)
+                             .open_or_create();
+    }
 
     if (!service_result.has_value()) {
         auto error_index = static_cast<uint64_t>(service_result.error());
         std::cout << "#### service open or create error: [" << error_index << "] "
-                  << ServiceOpenOrCreateErrorStrings[error_index] << std::endl;
+                  << RequestResponseOpenOrCreateErrorString[error_index] << std::endl;
     }
     auto service = std::move(service_result).value();
 
     auto server_result = service.server_builder().create();
+    while (!server_result.has_value() && server_result.error() == ServerCreateError::ExceedsMaxSupportedServers) {
+        server_result = service.server_builder().create();
+    }
+
     if (!server_result.has_value()) {
         auto error_index = static_cast<uint64_t>(server_result.error());
         std::cout << "#### server create error: [" << error_index << "] " << ServerCreateErrorStrings[error_index]

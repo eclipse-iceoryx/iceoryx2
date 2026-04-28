@@ -35,5 +35,7 @@ spawn target/ff/cc/build/examples/cxx/request_response/example_cxx_request_respo
 expect_output_from $id_server_1 "Server ready to receive requests!"
 expect_output_from $id_server_2 "Server ready to receive requests!"
 expect_output "send request"
+expect_output_from $id_server_1 "received request*"
+expect_output_from $id_server_2 "received request*"
 
 show_test_passed

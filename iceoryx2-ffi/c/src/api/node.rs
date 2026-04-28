@@ -104,6 +104,7 @@ impl IntoCInt for NodeCleanupFailure {
                 iox2_node_cleanup_failure_e::INSUFFICIENT_PERMISSIONS
             }
             NodeCleanupFailure::VersionMismatch => iox2_node_cleanup_failure_e::VERSION_MISMATCH,
+            _ => todo!(),
         }) as c_int
     }
 }

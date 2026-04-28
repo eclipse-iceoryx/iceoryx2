@@ -265,6 +265,9 @@ pub enum NodeCleanupFailure {
     InsufficientPermissions,
     /// Trying to cleanup resources from a dead [`Node`] which was using a different iceoryx2 version.
     VersionMismatch,
+    DoesNotExist,
+    AcquiredByAnotherProcess,
+    LockFileRaceDetected,
 }
 
 impl core::fmt::Display for NodeCleanupFailure {
@@ -509,11 +512,26 @@ impl<Service: service::Service> DeadNodeView<Service> {
 
         // if swap returns true, someone else is holding the lock
         if IN_CLEANUP_SECTION.swap(true, Ordering::Relaxed) {
-            return Ok(false);
+            panic!("Should never happen to not get process lock!");
+            // return Ok(false);
         }
 
-        let cleaner = fail!(from self, when self.acquire_cleaner_lock(&monitor_name, config),
-                        "{} since the monitor cleaner lock could not be acquired.", msg);
+        let cleaner = loop {
+            match self.acquire_cleaner_lock(&monitor_name, config) {
+                Ok(Some(v)) => break Some(v),
+                Ok(None) => panic!("Should never happen to get None!"),
+                Err(NodeCleanupFailure::DoesNotExist) => {
+                    IN_CLEANUP_SECTION.store(false, Ordering::Relaxed);
+                    return Ok(false);
+                }
+                Err(NodeCleanupFailure::AcquiredByAnotherProcess)
+                | Err(NodeCleanupFailure::LockFileRaceDetected) => {
+                    std::thread::sleep(core::time::Duration::from_millis(1));
+                    continue;
+                }
+                Err(e) => panic!("Should never happen! Error: {:?}", e),
+            }
+        };
 
         if cleaner.is_none() {
             IN_CLEANUP_SECTION.store(false, Ordering::Relaxed);
@@ -616,8 +634,18 @@ impl<Service: service::Service> DeadNodeView<Service> {
             .cleaner()
         {
             Ok(cleaner) => Ok(Some(cleaner)),
-            Err(MonitoringCreateCleanerError::AlreadyOwnedByAnotherInstance)
-            | Err(MonitoringCreateCleanerError::DoesNotExist) => Ok(None),
+            Err(MonitoringCreateCleanerError::ProcessIsBeingCleanedUpOrCrashedDuringCleanup) => {
+                Err(NodeCleanupFailure::AcquiredByAnotherProcess)
+            }
+            Err(MonitoringCreateCleanerError::AlreadyOwnedByAnotherInstance) => {
+                Err(NodeCleanupFailure::AcquiredByAnotherProcess)
+            }
+            Err(MonitoringCreateCleanerError::DoesNotExist) => {
+                Err(NodeCleanupFailure::DoesNotExist)
+            }
+            Err(MonitoringCreateCleanerError::LockFileRaceDetected) => {
+                Err(NodeCleanupFailure::LockFileRaceDetected)
+            }
             Err(MonitoringCreateCleanerError::Interrupt) => {
                 fail!(from self, with NodeCleanupFailure::Interrupt,
                     "{} since an interrupt signal was received.", msg);

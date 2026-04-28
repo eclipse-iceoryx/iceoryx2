@@ -187,6 +187,10 @@ enum_gen! {
     InvalidCleanerPathName,
     FailedToWriteUniqueProcessIdIntoContextFile,
     FailedToAcquireUniqueProcessId,
+    // NOTE: during the small window of creating the lock file and acquiring the lock,
+    //       another process might have taken the lock, cleaned up, released the lock
+    //       and removed the file
+    LockFileRaceDetected,
     UnknownError(i32)
 }
 
@@ -194,6 +198,10 @@ enum_gen! { ProcessGuardLockError
   entry:
     OwnedByAnotherProcess,
     Interrupt,
+    // NOTE: during the small window of creating the lock file and acquiring the lock,
+    //       another process might have taken the lock, cleaned up, released the lock
+    //       and removed the file
+    FileDoesNotExistInFilesystemAnymore,
     UnknownError(i32)
 }
 
@@ -259,6 +267,7 @@ enum_gen! {
     UnableToOpenOwnerLockFile,
     InvalidCleanerPathName,
     DoesNotExist,
+    LockFileRaceDetected,
     UnknownError
 
   mapping:
@@ -384,6 +393,10 @@ impl ProcessGuardBuilder {
                 ProcessGuardLockError::Interrupt => {
                     fail!(from origin, with ProcessGuardCreateError::Interrupt,
                             "{} since an interrupt signal was received while locking the file.", msg);
+                }
+                ProcessGuardLockError::FileDoesNotExistInFilesystemAnymore => {
+                    fail!(from origin, with ProcessGuardCreateError::LockFileRaceDetected,
+                          "{} since the another process was able to take ownership of the lock file and deleted if after if was finished with the action under the lock.", msg);
                 }
                 ProcessGuardLockError::OwnedByAnotherProcess => {
                     fail!(from origin, with ProcessGuardCreateError::ContractViolation,
@@ -537,7 +550,7 @@ impl ProcessGuardBuilder {
         } != -1
         {
             if file.metadata().unwrap().number_of_links() == 0 {
-                panic!("AJSKLDHJALKSJDLKASDKJASLKDJSAKLD");
+                return Err(ProcessGuardLockError::FileDoesNotExistInFilesystemAnymore);
             }
 
             return Ok(());
@@ -1083,6 +1096,10 @@ impl ProcessCleaner {
             Err(ProcessGuardLockError::Interrupt) => {
                 fail!(from origin, with ProcessCleanerCreateError::Interrupt,
                     "{} since an interrupt signal was received.", msg);
+            }
+            Err(ProcessGuardLockError::FileDoesNotExistInFilesystemAnymore) => {
+                fail!(from origin, with ProcessCleanerCreateError::LockFileRaceDetected,
+                      "{} the another process was able to steal the lock and delete the lock file.", msg);
             }
             Err(e) => {
                 fail!(from origin, with ProcessCleanerCreateError::UnknownError,

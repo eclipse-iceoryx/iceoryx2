@@ -730,7 +730,8 @@ impl<
             match self.is_service_available(msg)? {
                 Some(_) => match self.open_impl(verifier) {
                     Ok(factory) => return Ok(factory),
-                    Err(PublishSubscribeOpenError::ServiceInCorruptedState)
+                    Err(PublishSubscribeOpenError::DoesNotExist)
+                    | Err(PublishSubscribeOpenError::ServiceInCorruptedState)
                     | Err(PublishSubscribeOpenError::IsMarkedForDestruction) => continue,
                     Err(e) => return Err(e.into()),
                 },

@@ -273,6 +273,10 @@ impl MonitoringBuilder<FileLockMonitoring> for Builder {
                 fail!(from self, with MonitoringCreateTokenError::AlreadyExists,
                     "{} since it already exists.", msg);
             }
+            Err(ProcessGuardCreateError::LockFileRaceDetected) => {
+                fail!(from self, with MonitoringCreateTokenError::InternalError,
+                      "{} the another process was able to steal the lock and delete the lock file.", msg);
+            }
             Err(v) => {
                 fail!(from self, with MonitoringCreateTokenError::InternalError,
                     "{} due to an internal failure ({:?}).", msg, v);
@@ -326,6 +330,14 @@ impl MonitoringBuilder<FileLockMonitoring> for Builder {
             Err(ProcessCleanerCreateError::DoesNotExist) => {
                 fail!(from self, with MonitoringCreateCleanerError::DoesNotExist,
                     "{} since it does not exist.", msg);
+            }
+            Err(ProcessCleanerCreateError::ProcessIsBeingCleanedUpOrCrashedDuringCleanup) => {
+                fail!(from self, with MonitoringCreateCleanerError::ProcessIsBeingCleanedUpOrCrashedDuringCleanup,
+                      "{} since it does not exist.", msg);
+            }
+            Err(ProcessCleanerCreateError::LockFileRaceDetected) => {
+                fail!(from self, with MonitoringCreateCleanerError::LockFileRaceDetected,
+                      "{} the another process was able to steal the lock and delete the lock file.", msg);
             }
             Err(e) => {
                 fail!(from self, with MonitoringCreateCleanerError::InternalError,
