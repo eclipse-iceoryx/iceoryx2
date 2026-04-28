@@ -34,7 +34,7 @@ pub struct ByteAtomic<T: AtomicCopy, const SIZE: usize> {
     _inner_type: PhantomData<T>,
 }
 
-unsafe impl<T: AtomicCopy, const SIZE: usize> ZeroCopySend for ByteAtomic<T, SIZE> {}
+unsafe impl<T: AtomicCopy + ZeroCopySend, const SIZE: usize> ZeroCopySend for ByteAtomic<T, SIZE> {}
 
 impl<T: AtomicCopy, const SIZE: usize> ByteAtomic<T, SIZE> {
     /// Creates a new [`ByteAtomic`] that contains the passed value. It fails when the size

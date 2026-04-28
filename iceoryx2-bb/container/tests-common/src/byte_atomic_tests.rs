@@ -12,20 +12,19 @@
 
 use iceoryx2_bb_container::byte_atomic::*;
 use iceoryx2_bb_container::string::StaticString;
-use iceoryx2_bb_derive_macros::{AtomicCopy, ZeroCopySend};
+use iceoryx2_bb_derive_macros::AtomicCopy;
 use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
 #[repr(C)]
-#[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+#[derive(AtomicCopy, Clone, Copy)]
 struct Foo(u8, u64, u32, u16);
 
 #[repr(C)]
-#[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+#[derive(AtomicCopy, Clone, Copy)]
 struct ComplexType {
     a: u8,
     b: StaticString<6>,

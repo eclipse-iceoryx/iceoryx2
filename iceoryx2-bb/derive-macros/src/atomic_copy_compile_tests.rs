@@ -36,12 +36,11 @@ fn atomic_copy_derive_does_not_work_for_unions() {}
 fn atomic_copy_derive_does_not_work_for_generic_unions() {}
 
 /// ``` compile_fail
-/// use iceoryx2_bb_derive_macros::{AtomicCopy, ZeroCopySend};
+/// use iceoryx2_bb_derive_macros::AtomicCopy;
 /// use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
-/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
 /// #[repr(C)]
-/// #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+/// #[derive(AtomicCopy, Clone, Copy)]
 /// struct NamedStruct {
 ///     a: u8,
 ///     b: u64,
@@ -71,21 +70,8 @@ fn atomic_copy_derive_does_not_work_for_enums() {}
 /// use iceoryx2_bb_derive_macros::AtomicCopy;
 /// use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
 ///
-/// #[derive(AtomicCopy, Clone, Copy)]
-/// struct Foo {
-///     a: u32,
-///     b: u64,
-/// }
-#[cfg(doctest)]
-fn atomic_copy_derive_does_not_work_when_struct_is_not_zero_copy_send() {}
-
-/// ``` compile_fail
-/// use iceoryx2_bb_derive_macros::{AtomicCopy, ZeroCopySend};
-/// use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
-/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-///
 /// #[repr(C)]
-/// #[derive(AtomicCopy, ZeroCopySend)]
+/// #[derive(AtomicCopy)]
 /// struct Foo {
 ///     a: u32,
 ///     b: u64,
@@ -94,16 +80,15 @@ fn atomic_copy_derive_does_not_work_when_struct_is_not_zero_copy_send() {}
 fn atomic_copy_derive_does_not_work_when_struct_is_not_copy() {}
 
 /// ``` compile_fail
-/// use iceoryx2_bb_derive_macros::{AtomicCopy, ZeroCopySend};
+/// use iceoryx2_bb_derive_macros::AtomicCopy;
 /// use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
-/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
 /// #[repr(C)]
-/// #[derive(Copy, Clone, ZeroCopySend)]
+/// #[derive(Copy, Clone)]
 /// struct A(u16);
 ///
 /// #[repr(C)]
-/// #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+/// #[derive(AtomicCopy, Clone, Copy)]
 /// struct B {
 ///     a: u8,
 ///     b: u16,

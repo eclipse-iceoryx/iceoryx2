@@ -13,17 +13,15 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use iceoryx2_bb_derive_macros::{AtomicCopy, ZeroCopySend};
+use iceoryx2_bb_derive_macros::AtomicCopy;
 use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
 #[allow(dead_code)]
 #[derive(Copy, Clone)]
 struct Foo(u16);
-unsafe impl ZeroCopySend for Foo {}
 unsafe impl AtomicCopy for Foo {
     fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
         callback(align_to::<u16>(base_offset), 2);
@@ -32,13 +30,13 @@ unsafe impl AtomicCopy for Foo {
 
 #[allow(dead_code)]
 #[repr(C)]
-#[derive(ZeroCopySend, Clone, Copy, AtomicCopy)]
+#[derive(Clone, Copy, AtomicCopy)]
 struct NestedUnnamedTestStruct(i32, u64, Foo);
 
 #[test]
 pub fn field_offsets_and_sizes_are_correct_for_named_struct() {
     #[repr(C)]
-    #[derive(ZeroCopySend, Copy, Clone, AtomicCopy)]
+    #[derive(Copy, Clone, AtomicCopy)]
     struct NamedTestStruct {
         a: u64,
         b: Foo,
@@ -58,7 +56,7 @@ pub fn field_offsets_and_sizes_are_correct_for_named_struct() {
 #[test]
 pub fn field_offsets_and_sizes_are_correct_for_generic_named_struct() {
     #[repr(C)]
-    #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+    #[derive(AtomicCopy, Clone, Copy)]
     struct GenericNamedTestStruct<T1, T2>
     where
         T1: AtomicCopy,
@@ -111,7 +109,7 @@ pub fn field_offsets_and_sizes_are_correct_for_unnamed_struct() {
 #[test]
 pub fn field_offsets_and_sizes_are_correct_for_generic_unnamed_struct() {
     #[repr(C)]
-    #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+    #[derive(AtomicCopy, Clone, Copy)]
     struct GenericUnnamedTestStruct<T1, T2>(T1, T2)
     where
         T1: AtomicCopy,
@@ -158,11 +156,11 @@ pub fn field_offsets_and_sizes_are_correct_for_generic_unnamed_struct() {
 pub fn field_offsets_and_sizes_are_correct_when_alignment_changes_inner_padding() {
     #[repr(C)]
     #[repr(align(16))]
-    #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+    #[derive(AtomicCopy, Clone, Copy)]
     struct AlignedU32(u32);
 
     #[repr(C)]
-    #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+    #[derive(AtomicCopy, Clone, Copy)]
     struct SomeNamedStruct {
         a: u8,
         b: AlignedU32,
@@ -185,11 +183,11 @@ pub fn field_offsets_and_sizes_are_correct_when_alignment_changes_inner_padding(
 #[test]
 pub fn field_offsets_and_sizes_are_correct_for_nested_structs() {
     #[repr(C)]
-    #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+    #[derive(AtomicCopy, Clone, Copy)]
     struct SomeUnnamedStruct(u64);
 
     #[repr(C)]
-    #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+    #[derive(AtomicCopy, Clone, Copy)]
     struct SomeNamedStruct {
         a: u8,
         b: i16,
@@ -197,7 +195,7 @@ pub fn field_offsets_and_sizes_are_correct_for_nested_structs() {
     }
 
     #[repr(C)]
-    #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+    #[derive(AtomicCopy, Clone, Copy)]
     struct NestedStruct {
         a: SomeUnnamedStruct,
         b: u32,
@@ -229,7 +227,7 @@ pub fn field_offsets_and_sizes_are_correct_for_nested_structs() {
 #[test]
 pub fn field_offsets_are_correct_with_custom_implementation() {
     #[repr(C)]
-    #[derive(Clone, Copy, ZeroCopySend)]
+    #[derive(Clone, Copy)]
     struct Foo(u32, u8);
     unsafe impl AtomicCopy for Foo {
         fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
@@ -240,7 +238,7 @@ pub fn field_offsets_are_correct_with_custom_implementation() {
     }
 
     #[repr(C)]
-    #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+    #[derive(AtomicCopy, Clone, Copy)]
     struct Bar(u8, Foo);
 
     let mut v = Vec::new();

@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::zero_copy_send::ZeroCopySend;
-
 /// Trait for types that can be byte-wise atomically copied.
 ///
 /// This trait provides a method to apply a callback to each offset-size pair of every field
@@ -19,10 +17,9 @@ use crate::zero_copy_send::ZeroCopySend;
 ///
 /// # Safety
 ///
-/// * See Safety section of [`crate::zero_copy_send::ZeroCopySend`].
 /// * Implementations of this trait must ensure that the offset and size of each field are
 ///   calculated correctly. Otherwise, undefined behavior may occur.
-pub unsafe trait AtomicCopy: ZeroCopySend + Copy + 'static {
+pub unsafe trait AtomicCopy: Copy + 'static {
     #[doc(hidden)]
     /// Iterates over the fields of the type, calculates the offset relative to the provided
     /// base_offset, and applies the provided callback to each offset-size pair of the field.
