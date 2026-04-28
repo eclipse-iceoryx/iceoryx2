@@ -71,7 +71,8 @@ auto main() -> int {
                               .open_or_create();
     while (!service_result.has_value()
            && (service_result.error() == RequestResponseOpenOrCreateError::OpenHangsInCreation
-               || service_result.error() == RequestResponseOpenOrCreateError::CreateHangsInCreation)) {
+               || service_result.error() == RequestResponseOpenOrCreateError::CreateHangsInCreation
+               || service_result.error() == RequestResponseOpenOrCreateError::SystemInFlux)) {
         service_result = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
                              .request_response<uint64_t, TransmissionData>()
                              .max_servers(2)
