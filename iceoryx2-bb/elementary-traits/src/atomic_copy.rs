@@ -23,85 +23,79 @@ pub unsafe trait AtomicCopy: Copy + 'static {
     #[doc(hidden)]
     /// Iterates over the fields of the type, calculates the offset relative to the provided
     /// base_offset, and applies the provided callback to each offset-size pair of the field.
-    fn __for_each_field<F: FnMut(usize, usize)>(&self, _base_offset: usize, _callback: &mut F) {}
-
-    #[doc(hidden)]
-    /// Returns true for scalar types.
-    fn __is_scalar(&self) -> bool {
-        false
-    }
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, _base_offset: usize, _callback: &mut F);
 }
 
 unsafe impl AtomicCopy for usize {
-    fn __is_scalar(&self) -> bool {
-        true
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+        callback(base_offset, size_of::<usize>());
     }
 }
 unsafe impl AtomicCopy for u8 {
-    fn __is_scalar(&self) -> bool {
-        true
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+        callback(base_offset, size_of::<u8>());
     }
 }
 unsafe impl AtomicCopy for u16 {
-    fn __is_scalar(&self) -> bool {
-        true
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+        callback(base_offset, size_of::<u16>());
     }
 }
 unsafe impl AtomicCopy for u32 {
-    fn __is_scalar(&self) -> bool {
-        true
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+        callback(base_offset, size_of::<u32>());
     }
 }
 unsafe impl AtomicCopy for u64 {
-    fn __is_scalar(&self) -> bool {
-        true
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+        callback(base_offset, size_of::<u64>());
     }
 }
 
 unsafe impl AtomicCopy for isize {
-    fn __is_scalar(&self) -> bool {
-        true
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+        callback(base_offset, size_of::<isize>());
     }
 }
 unsafe impl AtomicCopy for i8 {
-    fn __is_scalar(&self) -> bool {
-        true
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+        callback(base_offset, size_of::<i8>());
     }
 }
 unsafe impl AtomicCopy for i16 {
-    fn __is_scalar(&self) -> bool {
-        true
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+        callback(base_offset, size_of::<i16>());
     }
 }
 unsafe impl AtomicCopy for i32 {
-    fn __is_scalar(&self) -> bool {
-        true
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+        callback(base_offset, size_of::<i32>());
     }
 }
 unsafe impl AtomicCopy for i64 {
-    fn __is_scalar(&self) -> bool {
-        true
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+        callback(base_offset, size_of::<i64>());
     }
 }
 
 unsafe impl AtomicCopy for f32 {
-    fn __is_scalar(&self) -> bool {
-        true
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+        callback(base_offset, size_of::<f32>());
     }
 }
 unsafe impl AtomicCopy for f64 {
-    fn __is_scalar(&self) -> bool {
-        true
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+        callback(base_offset, size_of::<f64>());
     }
 }
 
 unsafe impl AtomicCopy for bool {
-    fn __is_scalar(&self) -> bool {
-        true
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+        callback(base_offset, size_of::<bool>());
     }
 }
 unsafe impl AtomicCopy for char {
-    fn __is_scalar(&self) -> bool {
-        true
+    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+        callback(base_offset, size_of::<char>());
     }
 }

@@ -70,13 +70,16 @@ unsafe impl<const CAPACITY: usize> AtomicCopy for StaticString<CAPACITY> {
         let aligned_base_offset = align_to::<Self>(base_offset);
         callback(
             aligned_base_offset + core::mem::offset_of!(Self, data),
-            self.len(),
+            size_of::<u8>() * self.len(),
         );
         callback(
             aligned_base_offset + core::mem::offset_of!(Self, terminator),
-            1,
+            size_of::<u8>(),
         );
-        callback(aligned_base_offset + core::mem::offset_of!(Self, len), 8);
+        callback(
+            aligned_base_offset + core::mem::offset_of!(Self, len),
+            size_of::<u64>(),
+        );
     }
 }
 

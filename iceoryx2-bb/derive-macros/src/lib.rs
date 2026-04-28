@@ -393,15 +393,7 @@ pub fn atomic_copy_derive(input: TokenStream) -> TokenStream {
                         let rel_offset = core::mem::offset_of!(#struct_name #ty_generics, #field_name);
                         let abs_offset = base_offset + rel_offset;
                         let size = core::mem::size_of::<#field_type>();
-
-                        // if a field is a struct, its offset and size are not considered,
-                        // but the offsets and sizes of its fields are
-                        if AtomicCopy::__is_scalar(&self.#field_name) {
-                            callback(abs_offset, size);
-                        }
-                        else {
-                            AtomicCopy::__for_each_field(&self.#field_name, abs_offset, callback);
-                        }
+                        AtomicCopy::__for_each_field(&self.#field_name, abs_offset, callback);
                     };
                     field_offsets_and_sizes.push(block);
                 }
@@ -422,15 +414,7 @@ pub fn atomic_copy_derive(input: TokenStream) -> TokenStream {
                         let rel_offset = core::mem::offset_of!(#struct_name #ty_generics, #field_index);
                         let abs_offset = base_offset + rel_offset;
                         let size = core::mem::size_of::<#field_type>();
-
-                        // if a field is a struct, its offset and size are not considered,
-                        // but the offsets and sizes of its fields are
-                        if AtomicCopy::__is_scalar(&self.#field_index) {
-                            callback(abs_offset, size);
-                        }
-                        else {
-                            AtomicCopy::__for_each_field(&self.#field_index, abs_offset, callback);
-                        }
+                        AtomicCopy::__for_each_field(&self.#field_index, abs_offset, callback);
                     };
                     field_offsets_and_sizes.push(block);
                 }

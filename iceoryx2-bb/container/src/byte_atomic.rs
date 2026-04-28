@@ -49,16 +49,9 @@ impl<T: AtomicCopy, const SIZE: usize> ByteAtomic<T, SIZE> {
 
         let value_ptr = (&value as *const T) as *const u8;
 
-        if value.__is_scalar() {
-            return Ok(Self {
-                data: core::array::from_fn(|i| AtomicU8::new(unsafe { *value_ptr.add(i) })),
-                _inner_type: PhantomData,
-            });
-        }
-
-        // If the passed value is not a scalar, it may contain padding bytes. Reading or copying
-        // these padding bytes would lead to undefined behavior. Therefore, we first set all bytes
-        // to zero and then copy only the fields, i.e. the initialized bytes, of the passed value.
+        // The passed value may contain padding bytes. Reading or copying these padding bytes
+        // would lead to undefined behavior. Therefore, we first set all bytes to zero and
+        // then copy only the fields, i.e. the initialized bytes, of the passed value.
         let mut bytes = [0u8; SIZE];
         value.__for_each_field(0, &mut |offset, size| {
             for (i, byte) in bytes.iter_mut().enumerate().skip(offset).take(size) {
@@ -96,16 +89,10 @@ impl<T: AtomicCopy, const SIZE: usize> ByteAtomic<T, SIZE> {
     ///   of the data integrity.
     pub unsafe fn write(&self, value: T) {
         let value_ptr = (&value as *const T) as *const u8;
-        if value.__is_scalar() {
-            for i in 0..SIZE {
+        value.__for_each_field(0, &mut |offset, size| {
+            for i in offset..offset + size {
                 self.data[i].store(unsafe { *value_ptr.add(i) }, Ordering::Relaxed);
             }
-        } else {
-            value.__for_each_field(0, &mut |offset, size| {
-                for i in offset..offset + size {
-                    self.data[i].store(unsafe { *value_ptr.add(i) }, Ordering::Relaxed);
-                }
-            });
-        }
+        });
     }
 }
