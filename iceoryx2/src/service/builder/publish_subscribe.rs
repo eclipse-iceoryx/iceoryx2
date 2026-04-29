@@ -730,7 +730,12 @@ impl<
             match self.is_service_available(msg)? {
                 Some(_) => match self.open_impl(verifier) {
                     Ok(factory) => return Ok(factory),
-                    Err(PublishSubscribeOpenError::DoesNotExist) => continue,
+                    Err(PublishSubscribeOpenError::DoesNotExist)
+                    // If the service is currently being cleaned up then this process might identify
+                    // the service like this. Therefore, it makes sense to retry it multiple times until
+                    // the external cleanup process if finished.
+                    | Err(PublishSubscribeOpenError::ServiceInCorruptedState)
+                    | Err(PublishSubscribeOpenError::IsMarkedForDestruction) => continue,
                     Err(e) => return Err(e.into()),
                 },
                 None => {
@@ -739,6 +744,10 @@ impl<
                     {
                         Ok(factory) => return Ok(factory),
                         Err(PublishSubscribeCreateError::AlreadyExists)
+                        // If the service is currently being cleaned up then this process might identify
+                        // the service like this. Therefore, it makes sense to retry it multiple times until
+                        // the external cleanup process if finished.
+                        | Err(PublishSubscribeCreateError::ServiceInCorruptedState)
                         | Err(PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance) => {
                             continue;
                         }

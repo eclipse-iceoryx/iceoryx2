@@ -893,7 +893,12 @@ impl<
             if self.is_service_available(msg)?.is_some() {
                 match self.open_impl(verifier) {
                     Ok(factory) => return Ok(factory),
-                    Err(RequestResponseOpenError::DoesNotExist) => continue,
+                    Err(RequestResponseOpenError::DoesNotExist)
+                    // If the service is currently being cleaned up then this process might identify
+                    // the service like this. Therefore, it makes sense to retry it multiple times until
+                    // the external cleanup process if finished.
+                    | Err(RequestResponseOpenError::ServiceInCorruptedState)
+                    | Err(RequestResponseOpenError::IsMarkedForDestruction) => continue,
                     Err(e) => return Err(e.into()),
                 }
             } else {
@@ -901,6 +906,10 @@ impl<
                 {
                     Ok(factory) => return Ok(factory),
                     Err(RequestResponseCreateError::AlreadyExists)
+                    // If the service is currently being cleaned up then this process might identify
+                    // the service like this. Therefore, it makes sense to retry it multiple times until
+                    // the external cleanup process if finished.
+                    | Err(RequestResponseCreateError::ServiceInCorruptedState)
                     | Err(RequestResponseCreateError::IsBeingCreatedByAnotherInstance) => {
                         continue;
                     }
