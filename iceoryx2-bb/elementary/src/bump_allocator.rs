@@ -14,6 +14,34 @@
 //! It can be allocated with `BumpAllocator::allocate()` but `BumpAllocator::deallocate`
 //! deallocate all allocated chunks. See this: `https://os.phil-opp.com/allocator-designs/`
 //! for more details.
+//!
+//! ```
+//! use core::alloc::Layout;
+//!
+//! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+//! use iceoryx2_bb_elementary_traits::{non_null::NonNull, non_null::NonNullCompat};
+//! use crate::iceoryx2_bb_elementary::bump_allocator::BaseAllocator;
+//! extern crate iceoryx2_bb_loggers;
+//!
+//! let mut memory = [0u8; 8192];
+//! const MEM_SIZE: usize = 128;
+//! const MEM_ALIGN: usize = 64;
+//! let layout = Layout::from_size_align(MEM_SIZE, MEM_ALIGN).unwrap();
+//!
+//! let allocator = BumpAllocator::new(
+//!     <NonNull<u8> as NonNullCompat<u8>>::from_ref(&memory[0]),
+//!     memory.len(),
+//! );
+//!
+//! let mut memory = allocator.allocate(layout).unwrap();
+//!
+//! unsafe {
+//!     allocator.deallocate(
+//!         NonNull::new(memory.as_mut().as_mut_ptr().cast()).unwrap(),
+//!         layout,
+//!     )
+//! };
+//! ```
 
 use core::{fmt::Display, ptr::NonNull};
 
