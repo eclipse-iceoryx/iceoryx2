@@ -207,6 +207,8 @@ pub enum NodeCreationFailure {
     InsufficientPermissions,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalError,
+    /// Indicates that another "instance" on the system removed the resource required by the [`Node`].
+    SystemCorrupted,
 }
 
 impl core::fmt::Display for NodeCreationFailure {
@@ -617,6 +619,9 @@ impl<Service: service::Service> DeadNodeView<Service> {
         {
             Ok(cleaner) => Ok(Some(cleaner)),
             Err(MonitoringCreateCleanerError::AlreadyOwnedByAnotherInstance)
+            | Err(
+                MonitoringCreateCleanerError::IsBeingCleanedUpOrAnotherCleanerCrashedDuringCleanup,
+            )
             | Err(MonitoringCreateCleanerError::DoesNotExist) => Ok(None),
             Err(MonitoringCreateCleanerError::Interrupt) => {
                 fail!(from self, with NodeCleanupFailure::Interrupt,
@@ -1315,6 +1320,10 @@ impl NodeBuilder {
             Err(MonitoringCreateTokenError::InternalError) => {
                 fail!(from self, with NodeCreationFailure::InternalError,
                     "{msg} since the monitor token could not be created.");
+            }
+            Err(MonitoringCreateTokenError::SystemCorrupted) => {
+                fail!(from self, with NodeCreationFailure::SystemCorrupted,
+                    "{msg} since some external instance removed the underlying resources of the monitoring token.");
             }
         }
     }

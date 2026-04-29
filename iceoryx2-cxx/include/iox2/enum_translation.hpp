@@ -120,6 +120,8 @@ constexpr auto from<int, iox2::NodeCreationFailure>(const int value) noexcept ->
         return iox2::NodeCreationFailure::InsufficientPermissions;
     case iox2_node_creation_failure_e_INTERNAL_ERROR:
         return iox2::NodeCreationFailure::InternalError;
+    case iox2_node_creation_failure_e_SYSTEM_CORRUPTED:
+        return iox2::NodeCreationFailure::SystemCorrupted;
     }
 
     IOX2_UNREACHABLE();
@@ -134,6 +136,8 @@ from<iox2::NodeCreationFailure, iox2_node_creation_failure_e>(const iox2::NodeCr
         return iox2_node_creation_failure_e_INSUFFICIENT_PERMISSIONS;
     case iox2::NodeCreationFailure::InternalError:
         return iox2_node_creation_failure_e_INTERNAL_ERROR;
+    case iox2::NodeCreationFailure::SystemCorrupted:
+        return iox2_node_creation_failure_e_SYSTEM_CORRUPTED;
     }
 
     IOX2_UNREACHABLE();

@@ -273,6 +273,10 @@ impl MonitoringBuilder<FileLockMonitoring> for Builder {
                 fail!(from self, with MonitoringCreateTokenError::AlreadyExists,
                     "{} since it already exists.", msg);
             }
+            Err(ProcessGuardCreateError::SystemCorrupted) => {
+                fail!(from self, with MonitoringCreateTokenError::SystemCorrupted,
+                    "{} since another process corrupted the process guard while it was created.", msg);
+            }
             Err(v) => {
                 fail!(from self, with MonitoringCreateTokenError::InternalError,
                     "{} due to an internal failure ({:?}).", msg, v);
@@ -322,6 +326,10 @@ impl MonitoringBuilder<FileLockMonitoring> for Builder {
             Err(ProcessCleanerCreateError::OwnedByAnotherProcess) => {
                 fail!(from self, with MonitoringCreateCleanerError::AlreadyOwnedByAnotherInstance,
                     "{} since another instance already acquired the cleaner.", msg);
+            }
+            Err(ProcessCleanerCreateError::ProcessIsBeingCleanedUpOrCrashedDuringCleanup) => {
+                fail!(from self, with MonitoringCreateCleanerError::IsBeingCleanedUpOrAnotherCleanerCrashedDuringCleanup,
+                    "{} since the process is currently being cleaned up (or crashed during cleanup).", msg);
             }
             Err(ProcessCleanerCreateError::DoesNotExist) => {
                 fail!(from self, with MonitoringCreateCleanerError::DoesNotExist,

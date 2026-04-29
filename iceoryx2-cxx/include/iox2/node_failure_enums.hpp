@@ -33,7 +33,9 @@ enum class NodeCreationFailure : uint8_t {
     InsufficientPermissions,
     /// Maybe the configuration/system is broken since someone has
     /// removed/modified internal resources
-    InternalError
+    InternalError,
+    /// Indicates that another "instance" on the system removed the resource required by the [`Node`].
+    SystemCorrupted,
 };
 
 /// Failures of [`DeadNodeView::remove_stale_resources()`] that occur when the stale resources of
