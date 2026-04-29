@@ -498,6 +498,20 @@ impl<Service: service::Service> DeadNodeView<Service> {
         .try_remove_stale_resources()
     }
 
+    #[doc(hidden)]
+    pub fn __internal_blocking_remove_stale_resources(
+        id: UniqueNodeId,
+        details: NodeDetails,
+        timeout: Duration,
+    ) -> Result<(), NodeCleanupFailure> {
+        DeadNodeView(AliveNodeView {
+            id,
+            details: Some(details),
+            _service: PhantomData::<Service>,
+        })
+        .blocking_remove_stale_resources(timeout)
+    }
+
     /// Removes all stale resources of a dead [`Node`]. If another instance
     /// is already removing the dead [`Node`] it waits until the other instance
     /// has cleaned up the dead [`Node`] completely. If the other cleanup instance

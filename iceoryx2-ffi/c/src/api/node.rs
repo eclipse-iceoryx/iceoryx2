@@ -378,6 +378,57 @@ pub unsafe extern "C" fn iox2_unique_node_id(
     }
 }
 
+/// Removes all stale resources of a dead node under a provided config. If another instance
+/// is already removing the stale resources it waits until the resources are cleaned up
+/// or the timeout has passed.
+///
+/// Returns [`IOX2_OK`] on success, otherwise [`iox2_node_cleanup_failure_e`].
+///
+/// # Safety
+///
+/// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
+/// * The `node_id` must be valid
+/// * The `config` must be valid
+/// * `has_success` must point to a valid memory location
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_dead_node_blocking_remove_stale_resources(
+    service_type: iox2_service_type_e,
+    node_id: iox2_unique_node_id_h_ref,
+    config: iox2_config_h_ref,
+    timeout_sec: u64,
+    timeout_nsec: u32,
+) -> c_int {
+    node_id.assert_non_null();
+    config.assert_non_null();
+    unsafe {
+        let node_id = (*node_id.as_type()).value.as_ref();
+        let config = (*config.as_type()).value.as_ref();
+        let timeout = Duration::from_secs(timeout_sec) + Duration::from_nanos(timeout_nsec as u64);
+
+        let result = match service_type {
+            iox2_service_type_e::IPC => {
+                DeadNodeView::<crate::IpcService>::__internal_blocking_remove_stale_resources(
+                    *node_id,
+                    NodeDetails::__internal_new(&None, &config.value),
+                    timeout,
+                )
+            }
+            iox2_service_type_e::LOCAL => {
+                DeadNodeView::<crate::LocalService>::__internal_blocking_remove_stale_resources(
+                    *node_id,
+                    NodeDetails::__internal_new(&None, &config.value),
+                    timeout,
+                )
+            }
+        };
+
+        match result {
+            Ok(()) => IOX2_OK,
+            Err(e) => e.into_c_int(),
+        }
+    }
+}
+
 /// Removes all stale resources of a dead node under a provided config.
 ///
 /// Returns [`IOX2_OK`] on success, otherwise [`iox2_node_cleanup_failure_e`].

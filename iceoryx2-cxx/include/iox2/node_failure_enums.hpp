@@ -50,6 +50,10 @@ enum class NodeCleanupFailure : uint8_t {
     InsufficientPermissions,
     /// Trying to cleanup resources from a [`Node`] node which was using a different iceoryx2 version.
     VersionMismatch,
+    /// Another instance has successfully cleaned up all resources.
+    ResourcesAlreadyCleanedUp,
+    /// Another instance has acquired the ownership of all resources and is currently cleaning up.
+    AnotherInstanceIsCleaningUpTheNode,
 };
 
 } // namespace iox2
