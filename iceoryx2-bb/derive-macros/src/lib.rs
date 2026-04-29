@@ -349,18 +349,15 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
 }
 
 /// Implements the [`iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy`] trait for structs
-/// when all fields of the struct implement it and the struct implements `Copy` +
-/// [`iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend`].
+/// when all fields of the struct implement it and the struct implements `Copy`.
 ///
 /// ```
-/// use iceoryx2_bb_derive_macros::{AtomicCopy, ZeroCopySend};
+/// use iceoryx2_bb_derive_macros::AtomicCopy;
 /// use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
-/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
 /// fn needs_atomic_copy_type<T: AtomicCopy>(_: &T) {}
 ///
-/// #[repr(C)]
-/// #[derive(AtomicCopy, Clone, Copy, ZeroCopySend)]
+/// #[derive(AtomicCopy, Clone, Copy)]
 /// struct MyAtomicCopyStruct {
 ///     a: bool,
 ///     b: i64,
@@ -390,6 +387,10 @@ pub fn atomic_copy_derive(input: TokenStream) -> TokenStream {
                     let field_type = &field.ty;
 
                     let block = quote! {
+                        // Since struct fields can also be structs, we must traverse the fields recursively. The
+                        // callback must still be applied to field offsets relative to the root struct. So we
+                        // convert "local" offsets (relative to the field) into "absolute" offsets (relative to
+                        // the root struct) and pass these to `__for_each_field`.
                         let rel_offset = core::mem::offset_of!(#struct_name #ty_generics, #field_name);
                         let abs_offset = base_offset + rel_offset;
                         let size = core::mem::size_of::<#field_type>();
@@ -411,6 +412,10 @@ pub fn atomic_copy_derive(input: TokenStream) -> TokenStream {
                     let field_type = &field.ty;
 
                     let block = quote! {
+                        // Since struct fields can also be structs, we must traverse the fields recursively. The
+                        // callback must still be applied to field offsets relative to the root struct. So we
+                        // convert "local" offsets (relative to the field) into "absolute" offsets (relative to
+                        // the root struct) and pass these to `__for_each_field`.
                         let rel_offset = core::mem::offset_of!(#struct_name #ty_generics, #field_index);
                         let abs_offset = base_offset + rel_offset;
                         let size = core::mem::size_of::<#field_type>();

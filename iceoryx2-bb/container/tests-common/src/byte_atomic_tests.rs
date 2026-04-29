@@ -116,11 +116,11 @@ pub fn atomic_memcpy_contains_passed_complex_value_after_write() {
     }
 }
 
-// TODO: The following tests should be run with Miri but using iceoryx2_bb_posix::barrier/thread::*
-// causes the error: "unsupported operation: can't call foreign function ... this means the program
-// tried to do something Miri does not support; it does not indicate a bug in the program" for
-// `pthread_attr_init` and `pthread_barrieratrr_init`. The tests pass when std::sync::Barrier and
-// std::thread are used.
+// TODO #1601: The following tests should be run with Miri but using
+// iceoryx2_bb_posix::barrier/thread::* causes the error: "unsupported operation: can't call
+// foreign function ... this means the program tried to do something Miri does not support; it does
+// not indicate a bug in the program" for `pthread_attr_init` and `pthread_barrieratrr_init`. The
+// tests pass when std::sync::Barrier and std::thread are used.
 #[test]
 pub fn concurrent_read_without_write_always_returns_correct_data() {
     const SIZE: usize = size_of::<u64>();
