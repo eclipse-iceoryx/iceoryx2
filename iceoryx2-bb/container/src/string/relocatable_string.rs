@@ -39,9 +39,9 @@
 //!         };
 //!
 //!         let allocator = BumpAllocator::new(
-//!         core::ptr::NonNull::<u8>::new(new_self.str_memory.as_mut_ptr().cast())
-//!         .expect("Precondition failed: Pointer to memory is null"),
-//!         new_self.str_memory.len()
+//!             core::ptr::NonNull::<u8>::new(new_self.str_memory.as_mut_ptr().cast())
+//!                 .expect("Precondition failed: Pointer to memory is null"),
+//!             new_self.str_memory.len()
 //!         );
 //!
 //!         unsafe {
@@ -66,9 +66,9 @@
 //! let mut memory = [0u8; MEM_SIZE];
 //!
 //! let bump_allocator = BumpAllocator::new(
-//!     core::ptr::NonNull::<u8>::new(memory.as_mut_ptr().cast())
-//!     .expect("Precondition failed: Pointer to memory is null"),
-//!     memory.len()
+//!         core::ptr::NonNull::<u8>::new(memory.as_mut_ptr().cast())
+//!             .expect("Precondition failed: Pointer to memory is null"),
+//!         memory.len()
 //!     );
 //!
 //! let mut my_str = unsafe { RelocatableString::new_uninit(STRING_CAPACITY) };

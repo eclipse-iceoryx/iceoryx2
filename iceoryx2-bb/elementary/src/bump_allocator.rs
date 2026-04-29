@@ -63,7 +63,7 @@ impl Display for BumpAllocator {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "BumpAllocator {{ start: {}, size: {}, current_position: {} }}",
+            "BumpAllocator {{ start: {}, current_position: {}, size: {} }}",
             self.start,
             self.addr_next_free_memory
                 .load(core::sync::atomic::Ordering::Relaxed),

@@ -109,7 +109,7 @@
 //!
 //! let bump_allocator = BumpAllocator::new(
 //!     core::ptr::NonNull::<u8>::new(memory.as_mut_ptr().cast())
-//!     .expect("Precondition failed: Pointer to memory is null"),
+//!         .expect("Precondition failed: Pointer to memory is null"),
 //!     memory.len()
 //!     );
 //!
