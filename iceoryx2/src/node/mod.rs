@@ -162,8 +162,11 @@ use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
+use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
+use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::clock::{NanosleepError, nanosleep};
 use iceoryx2_bb_posix::mutex::Handle;
 use iceoryx2_bb_posix::mutex::Mutex;
@@ -267,6 +270,10 @@ pub enum NodeCleanupFailure {
     InsufficientPermissions,
     /// Trying to cleanup resources from a dead [`Node`] which was using a different iceoryx2 version.
     VersionMismatch,
+    /// Another instance has successfully cleaned up all resources.
+    ResourcesAlreadyCleanedUp,
+    /// Another instance has acquired the ownership of all resources and is currently cleaning up.
+    AnotherInstanceIsCleaningUpTheNode,
 }
 
 impl core::fmt::Display for NodeCleanupFailure {
@@ -479,29 +486,76 @@ impl<Service: service::Service> NodeView for DeadNodeView<Service> {
 
 impl<Service: service::Service> DeadNodeView<Service> {
     #[doc(hidden)]
-    pub fn __internal_remove_stale_resources(
+    pub fn __internal_try_remove_stale_resources(
         id: UniqueNodeId,
         details: NodeDetails,
-    ) -> Result<bool, NodeCleanupFailure> {
+    ) -> Result<(), NodeCleanupFailure> {
         DeadNodeView(AliveNodeView {
             id,
             details: Some(details),
             _service: PhantomData::<Service>,
         })
-        .remove_stale_resources()
+        .try_remove_stale_resources()
     }
 
-    /// Removes all stale resources of a dead [`Node`].
-    pub fn remove_stale_resources(self) -> Result<bool, NodeCleanupFailure> {
+    /// Removes all stale resources of a dead [`Node`]. If another instance
+    /// is already removing the dead [`Node`] it waits until the other instance
+    /// has cleaned up the dead [`Node`] completely. If the other cleanup instance
+    /// crashes, it will take over the ownership and continue the cleanup.
+    /// If the process does not have the permission to cleanup all resources it
+    /// aborts with an error.
+    ///
+    /// If the provided timeout is expired it will return with
+    /// [`NodeCleanupFailure::AnotherInstanceIsCleaningUp`].
+    pub fn blocking_remove_stale_resources(
+        self,
+        timeout: Duration,
+    ) -> Result<(), NodeCleanupFailure> {
+        let msg = "Unable to block until the stale resources of the dead node are removed";
+        let mut adaptive_wait = fail!(from self,
+                                        when AdaptiveWaitBuilder::new().create(),
+                                        with NodeCleanupFailure::InternalError,
+                                       "{msg} since the adaptive wait builder could not be initiated.");
+        let start = fail!(from self,
+                          when Time::now(),
+                          with NodeCleanupFailure::InternalError,
+                          "{msg} since the current system time could not be acquired.");
+
+        loop {
+            match self.remove_stale_resources_impl() {
+                Ok(()) | Err(NodeCleanupFailure::ResourcesAlreadyCleanedUp) => return Ok(()),
+                Err(NodeCleanupFailure::AnotherInstanceIsCleaningUpTheNode) => (),
+                Err(e) => return Err(e),
+            }
+
+            fail!(from self,
+                  when adaptive_wait.wait(),
+                  with NodeCleanupFailure::InternalError,
+                  "{msg} since the adaptive wait failed.");
+
+            let elapsed = fail!(from self,
+                                when start.elapsed(),
+                                with NodeCleanupFailure::InternalError,
+                                "{msg} due to a failure while acquiring the elapsed time.");
+
+            if elapsed > timeout {
+                fail!(from self, with NodeCleanupFailure::AnotherInstanceIsCleaningUpTheNode,
+                    "{msg} since another instance requires longer than {timeout:?} to cleanup the resources.");
+            }
+        }
+    }
+
+    /// Tries to remove all stale resources of a dead [`Node`]. If another instance
+    /// is already removing the dead [`Node`] or the [`Node`] is already removed it will
+    /// return immediately.
+    pub fn try_remove_stale_resources(self) -> Result<(), NodeCleanupFailure> {
+        self.remove_stale_resources_impl()
+    }
+
+    fn remove_stale_resources_impl(&self) -> Result<(), NodeCleanupFailure> {
         let msg = "Unable to remove stale resources";
         let monitor_name = fatal_panic!(from self, when FileName::new(self.id().0.value().to_string().as_bytes()),
                                 "This should never happen! {msg} since the NodeId is not a valid file name.");
-
-        let config = if let Some(d) = self.details() {
-            d.config()
-        } else {
-            Config::global_config()
-        };
 
         // The cleaner guarantees that the lock can be acquired only once in the inter-process context.
         // But the same process could acquire the same cleaner multiple times. To avoid intra-process
@@ -509,19 +563,27 @@ impl<Service: service::Service> DeadNodeView<Service> {
         // remove_stale_resources.
         static IN_CLEANUP_SECTION: AtomicBool = AtomicBool::new(false);
 
-        // if swap returns true, someone else is holding the lock
-        if IN_CLEANUP_SECTION.swap(true, Ordering::Relaxed) {
-            return Ok(false);
-        }
+        let _cleanup_section_guard = ScopeGuardBuilder::new(&IN_CLEANUP_SECTION)
+            .on_init(|v| {
+                // if swap returns true, someone else is holding the lock
+                if v.swap(true, Ordering::Relaxed) {
+                    fail!(from self, with NodeCleanupFailure::AnotherInstanceIsCleaningUpTheNode,
+                        "{msg} since another instance is already cleaning up the dead nodes resources.");
+                }
+
+                Ok(())
+            })
+            .on_drop(|v| v.store(false, Ordering::Relaxed))
+            .create()?;
+
+        let config = if let Some(d) = self.details() {
+            d.config()
+        } else {
+            Config::global_config()
+        };
 
         let cleaner = fail!(from self, when self.acquire_cleaner_lock(&monitor_name, config),
                         "{} since the monitor cleaner lock could not be acquired.", msg);
-
-        if cleaner.is_none() {
-            IN_CLEANUP_SECTION.store(false, Ordering::Relaxed);
-            return Ok(false);
-        }
-        let cleaner = cleaner.unwrap();
 
         let mut cleanup_failure = Ok(());
         let remove_node_from_service = |service_hash: &ServiceHash| {
@@ -584,7 +646,6 @@ impl<Service: service::Service> DeadNodeView<Service> {
             Ok(()) => (),
             Err(e) => {
                 cleaner.abandon();
-                IN_CLEANUP_SECTION.store(false, Ordering::Relaxed);
                 fail!(from self, with NodeCleanupFailure::InsufficientPermissions,
                     "{} since the service tags could not be read ({:?}).", msg, e);
             }
@@ -595,12 +656,10 @@ impl<Service: service::Service> DeadNodeView<Service> {
         match remove_node::<Service>(*self.id(), config) {
             Ok(_) => {
                 drop(cleaner);
-                IN_CLEANUP_SECTION.store(false, Ordering::Relaxed);
-                Ok(true)
+                Ok(())
             }
             Err(e) => {
                 cleaner.abandon();
-                IN_CLEANUP_SECTION.store(false, Ordering::Relaxed);
                 fail!(from self, with e, "{} since the node itself could not be removed.", msg);
             }
         }
@@ -610,19 +669,25 @@ impl<Service: service::Service> DeadNodeView<Service> {
         &self,
         monitor_name: &FileName,
         config: &Config,
-    ) -> Result<Option<<Service::Monitoring as Monitoring>::Cleaner>, NodeCleanupFailure> {
+    ) -> Result<<Service::Monitoring as Monitoring>::Cleaner, NodeCleanupFailure> {
         let msg = "Unable to acquire monitor cleaner";
 
         match <Service::Monitoring as Monitoring>::Builder::new(monitor_name)
             .config(&node_monitoring_config::<Service>(config))
             .cleaner()
         {
-            Ok(cleaner) => Ok(Some(cleaner)),
+            Ok(cleaner) => Ok(cleaner),
             Err(MonitoringCreateCleanerError::AlreadyOwnedByAnotherInstance)
             | Err(
                 MonitoringCreateCleanerError::IsBeingCleanedUpOrAnotherCleanerCrashedDuringCleanup,
-            )
-            | Err(MonitoringCreateCleanerError::DoesNotExist) => Ok(None),
+            ) => {
+                fail!(from self, with NodeCleanupFailure::AnotherInstanceIsCleaningUpTheNode,
+                    "{} since another instance is already cleaning up all resources.", msg);
+            }
+            Err(MonitoringCreateCleanerError::DoesNotExist) => {
+                fail!(from self, with NodeCleanupFailure::ResourcesAlreadyCleanedUp,
+                    "{} since another instance has already cleaned up all resources.", msg);
+            }
             Err(MonitoringCreateCleanerError::Interrupt) => {
                 fail!(from self, with NodeCleanupFailure::Interrupt,
                     "{} since an interrupt signal was received.", msg);
@@ -848,7 +913,7 @@ impl<Service: service::Service> Drop for SharedNode<Service> {
     fn drop(&mut self) {
         if self.monitoring_token.get_mut().is_some() {
             if self.config().global.node.cleanup_dead_nodes_on_destruction {
-                Node::<Service>::cleanup_dead_nodes(self.config());
+                Node::<Service>::try_cleanup_dead_nodes(self.config());
             }
 
             warn!(from self, when remove_node::<Service>(self.id, self.details.config()),
@@ -989,7 +1054,7 @@ impl<Service: service::Service> Node<Service> {
     ///
     /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions then
     /// the [`Node`] is skipped.
-    pub fn cleanup_dead_nodes(config: &Config) -> CleanupState {
+    pub fn try_cleanup_dead_nodes(config: &Config) -> CleanupState {
         let mut cleanup_state = CleanupState {
             cleanups: 0,
             failed_cleanups: 0,
@@ -1003,7 +1068,7 @@ impl<Service: service::Service> Node<Service> {
             if let NodeState::Dead(dead_node) = node_state {
                 let node_id = *dead_node.id();
                 debug!(from origin, "Dead node ({:?}) detected", node_id);
-                match dead_node.remove_stale_resources() {
+                match dead_node.try_remove_stale_resources() {
                     Ok(_) => {
                         cleanup_state.cleanups += 1;
                         trace!(from origin, "The dead node ({:?}) was successfully removed.", node_id)
@@ -1275,7 +1340,7 @@ impl NodeBuilder {
         };
 
         if config.global.node.cleanup_dead_nodes_on_creation {
-            Node::<Service>::cleanup_dead_nodes(&config);
+            Node::<Service>::try_cleanup_dead_nodes(&config);
         }
 
         let msg = "Unable to create node";

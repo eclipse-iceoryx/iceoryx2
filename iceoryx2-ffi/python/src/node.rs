@@ -172,13 +172,15 @@ impl Node {
     ///
     /// If a `Node` cannot be cleaned up since the process has insufficient permissions then
     /// the `Node` is skipped.
-    pub fn cleanup_dead_nodes(service_type: &ServiceType, config: &Config) -> CleanupState {
+    pub fn try_cleanup_dead_nodes(service_type: &ServiceType, config: &Config) -> CleanupState {
         match service_type {
             ServiceType::Ipc => CleanupState(
-                iceoryx2::prelude::Node::<crate::IpcService>::cleanup_dead_nodes(&config.0.lock()),
+                iceoryx2::prelude::Node::<crate::IpcService>::try_cleanup_dead_nodes(
+                    &config.0.lock(),
+                ),
             ),
             ServiceType::Local => CleanupState(
-                iceoryx2::prelude::Node::<crate::LocalService>::cleanup_dead_nodes(
+                iceoryx2::prelude::Node::<crate::LocalService>::try_cleanup_dead_nodes(
                     &config.0.lock(),
                 ),
             ),
