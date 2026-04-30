@@ -34,19 +34,18 @@
 //! # Ok(())
 //! # }
 //! ```
-use iceoryx2_bb_elementary::CallbackProgression;
-use iceoryx2_cal::dynamic_storage::DynamicStorage;
-
-use crate::identifiers::UniqueServiceId;
-use crate::node::NodeListFailure;
-use crate::service::attribute::AttributeSet;
-use crate::service::service_hash::ServiceHash;
-use crate::service::{self, NoResource, ServiceState, static_config};
-use crate::service::{ServiceName, dynamic_config};
-
 use super::listener::PortFactoryListener;
 use super::nodes;
 use super::notifier::PortFactoryNotifier;
+use crate::identifiers::UniqueServiceId;
+use crate::node::NodeListFailure;
+use crate::service::attribute::AttributeSet;
+use crate::service::port_factory::cleanup_dead_nodes_in_service;
+use crate::service::service_hash::ServiceHash;
+use crate::service::{self, NoResource, ServiceState, static_config};
+use crate::service::{ServiceName, dynamic_config};
+use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 extern crate alloc;
 use alloc::sync::Arc;
@@ -106,9 +105,12 @@ impl<Service: service::Service> crate::service::port_factory::PortFactory for Po
 
 impl<Service: service::Service> PortFactory<Service> {
     pub(crate) fn new(service: ServiceState<Service, NoResource>) -> Self {
-        Self {
+        let shared_node = service.shared_node.clone();
+        let new_self = Self {
             service: Arc::new(service),
-        }
+        };
+        cleanup_dead_nodes_in_service(&new_self, shared_node);
+        new_self
     }
 
     /// Returns a [`PortFactoryNotifier`] to create a new [`crate::port::notifier::Notifier`] port

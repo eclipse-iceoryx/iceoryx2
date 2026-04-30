@@ -41,22 +41,20 @@
 //! ```
 extern crate alloc;
 
-use core::{fmt::Debug, marker::PhantomData};
-
-use iceoryx2_bb_elementary::CallbackProgression;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::dynamic_storage::DynamicStorage;
-
+use super::nodes;
+use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
 use crate::identifiers::UniqueServiceId;
 use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
+use crate::service::port_factory::cleanup_dead_nodes_in_service;
 use crate::service::service_hash::ServiceHash;
 use crate::service::service_name::ServiceName;
 use crate::service::{self, NoResource, ServiceState, dynamic_config, static_config};
 use alloc::sync::Arc;
-
-use super::nodes;
-use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
+use core::{fmt::Debug, marker::PhantomData};
+use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 /// The factory for
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe).
@@ -142,11 +140,15 @@ impl<
 > PortFactory<Service, Payload, UserHeader>
 {
     pub(crate) fn new(service: ServiceState<Service, NoResource>) -> Self {
-        Self {
+        let shared_node = service.shared_node.clone();
+        let new_self = Self {
             service: Arc::new(service),
             _payload: PhantomData,
             _user_header: PhantomData,
-        }
+        };
+        cleanup_dead_nodes_in_service(&new_self, shared_node);
+
+        new_self
     }
 
     /// Returns a [`PortFactorySubscriber`] to create a new

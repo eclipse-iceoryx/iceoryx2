@@ -364,11 +364,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     {
                         Ok(factory) => return Ok(factory),
                         Err(EventCreateError::AlreadyExists)
-                        | Err(EventCreateError::IsBeingCreatedByAnotherInstance)
-                        // If the service is currently being cleaned up then this process might identify
-                        // the service like this. Therefore, it makes sense to retry it multiple times until
-                        // the external cleanup process if finished.
-                        | Err(EventCreateError::ServiceInCorruptedState) => {
+                        | Err(EventCreateError::IsBeingCreatedByAnotherInstance) => {
                             continue;
                         }
                         Err(e) => return Err(e.into()),

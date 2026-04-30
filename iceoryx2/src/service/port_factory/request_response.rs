@@ -38,26 +38,24 @@
 //! # }
 //! ```
 
-use core::{fmt::Debug, marker::PhantomData};
+extern crate alloc;
 
-use iceoryx2_bb_elementary::CallbackProgression;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::dynamic_storage::DynamicStorage;
-
+use super::{client::PortFactoryClient, nodes, server::PortFactoryServer};
 use crate::{
     identifiers::UniqueServiceId,
     node::NodeListFailure,
     prelude::AttributeSet,
     service::{
-        self, NoResource, ServiceState, dynamic_config, service_hash::ServiceHash,
+        self, NoResource, ServiceState, dynamic_config,
+        port_factory::cleanup_dead_nodes_in_service, service_hash::ServiceHash,
         service_name::ServiceName, static_config,
     },
 };
-
-use super::{client::PortFactoryClient, nodes, server::PortFactoryServer};
-
-extern crate alloc;
 use alloc::sync::Arc;
+use core::{fmt::Debug, marker::PhantomData};
+use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 /// The factory for
 /// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse).
@@ -176,13 +174,17 @@ impl<
 > PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     pub(crate) fn new(service: ServiceState<Service, NoResource>) -> Self {
-        Self {
+        let shared_node = service.shared_node.clone();
+        let new_self = Self {
             service: Arc::new(service),
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,
             _response_header: PhantomData,
-        }
+        };
+
+        cleanup_dead_nodes_in_service(&new_self, shared_node);
+        new_self
     }
 
     /// Returns a [`PortFactoryClient`] to create a new
