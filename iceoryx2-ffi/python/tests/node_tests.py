@@ -47,7 +47,7 @@ def test_cleanup_dead_nodes_can_be_called(
     service_type: iox2.ServiceType,
 ) -> None:
     try:
-        iox2.Node.cleanup_dead_nodes(
+        iox2.Node.try_cleanup_dead_nodes(
             service_type, iox2.testing.generate_isolated_config()
         )
     except iox2.NodeCleanupFailure:

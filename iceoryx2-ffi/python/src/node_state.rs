@@ -109,9 +109,9 @@ impl DeadNodeView {
         }
     }
 
-    /// Removes all stale resources of a dead [`Node`]. If another instance
-    /// is already removing the dead [`Node`] it waits until the other instance
-    /// has cleaned up the dead [`Node`] completely. If the other cleanup instance
+    /// Removes all stale resources of a dead `Node`. If another instance
+    /// is already removing the dead `Node` it waits until the other instance
+    /// has cleaned up the dead `Node` completely. If the other cleanup instance
     /// crashes, it will take over the ownership and continue the cleanup.
     /// If the process does not have the permission to cleanup all resources it
     /// aborts with an error.

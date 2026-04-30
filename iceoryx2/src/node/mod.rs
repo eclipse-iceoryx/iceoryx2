@@ -52,7 +52,7 @@
 //! Node::<ipc::Service>::list(Config::global_config(), |node_state| {
 //!     if let NodeState::<ipc::Service>::Dead(view) = node_state {
 //!         println!("cleanup resources of dead node {:?}", view);
-//!         if let Err(e) = view.remove_stale_resources() {
+//!         if let Err(e) = view.try_remove_stale_resources() {
 //!             println!("failed to cleanup resources due to {:?}", e);
 //!         }
 //!     }
@@ -258,7 +258,7 @@ impl core::fmt::Display for NodeListFailure {
 
 impl core::error::Error for NodeListFailure {}
 
-/// Failures of [`DeadNodeView::remove_stale_resources()`] that occur when the stale resources of
+/// Failures of [`DeadNodeView::try_remove_stale_resources()`] that occur when the stale resources of
 /// a dead [`Node`] are removed.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NodeCleanupFailure {
@@ -351,7 +351,7 @@ impl NodeDetails {
 }
 
 /// The current state of the [`Node`]. If the [`Node`] is dead all of its resources can be removed
-/// with [`DeadNodeView::remove_stale_resources()`].
+/// with [`DeadNodeView::try_remove_stale_resources()`].
 #[derive(Debug)]
 pub enum NodeState<Service: service::Service> {
     /// The [`Node`]s process is still alive.
@@ -414,7 +414,7 @@ impl<Service: service::Service> NodeState<Service> {
     }
 }
 
-/// Returned by [`Node::cleanup_dead_nodes()`]. Contains the cleanup report of the call
+/// Returned by [`Node::try_cleanup_dead_nodes()`]. Contains the cleanup report of the call
 /// and contains the number of dead nodes that were successfully cleaned up and how many
 /// could not be cleaned up.
 /// This does not have to be an error, for instance when the current process does not
@@ -520,7 +520,7 @@ impl<Service: service::Service> DeadNodeView<Service> {
     /// aborts with an error.
     ///
     /// If the provided timeout is expired it will return with
-    /// [`NodeCleanupFailure::AnotherInstanceIsCleaningUp`].
+    /// [`NodeCleanupFailure::AnotherInstanceIsCleaningUpTheNode`].
     pub fn blocking_remove_stale_resources(
         self,
         timeout: Duration,

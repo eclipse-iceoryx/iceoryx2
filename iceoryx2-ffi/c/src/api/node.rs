@@ -80,7 +80,7 @@ impl IntoCInt for NodeWaitFailure {
     }
 }
 
-/// Failures of [`iox2_dead_node_remove_stale_resources()`] that occur when the stale resources of
+/// Failures of [`iox2_dead_node_try_remove_stale_resources()`] that occur when the stale resources of
 /// a dead node are removed.
 #[repr(C)]
 #[derive(Copy, Clone, CStrRepr)]
