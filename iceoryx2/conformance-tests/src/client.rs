@@ -1323,8 +1323,6 @@ pub mod client {
 
         let client = service.client_builder().initial_max_slice_len(4).create()?;
 
-        // Requesting a larger slice should trigger reallocation under
-        // the PowerOfTwo strategy.
         let request = client.loan_slice(5)?;
         assert_that!(request.payload().len(), eq 5);
 

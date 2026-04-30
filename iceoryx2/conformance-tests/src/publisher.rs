@@ -847,15 +847,11 @@ pub mod publisher {
             .publish_subscribe::<[u64]>()
             .create()?;
 
-        // Set initial_max_slice_len explicitly on the builder so the strategy
-        // gets exercised when a larger slice is requested.
         let publisher = service
             .publisher_builder()
             .initial_max_slice_len(4)
             .create()?;
 
-        // With PowerOfTwo strategy, requesting a larger slice should trigger
-        // reallocation and round up to the next power of two.
         let sample = publisher.loan_slice(5)?;
         assert_that!(sample.payload().len(), eq 5);
 

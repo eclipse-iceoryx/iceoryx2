@@ -1249,8 +1249,6 @@ pub mod server {
         let _pending_response = client.send_copy(0)?;
         let active_request = server.receive()?.unwrap();
 
-        // Requesting a larger slice should trigger reallocation under
-        // the PowerOfTwo strategy.
         let response = active_request.loan_slice(5)?;
         assert_that!(response.payload().len(), eq 5);
 
