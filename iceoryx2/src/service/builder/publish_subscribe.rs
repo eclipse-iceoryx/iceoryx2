@@ -265,13 +265,6 @@ impl<
 > Builder<Payload, UserHeader, ServiceType>
 {
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
-        let default_payload_alignment = base
-            .shared_node
-            .config()
-            .defaults
-            .publish_subscribe
-            .publisher_payload_alignment;
-
         let mut new_self = Self {
             base,
             verify_number_of_publishers: false,
@@ -281,7 +274,7 @@ impl<
             verify_subscriber_max_borrowed_samples: false,
             verify_enable_safe_overflow: false,
             verify_max_nodes: false,
-            override_alignment: Some(default_payload_alignment),
+            override_alignment: None,
             override_payload_type: None,
             override_user_header_type: None,
             _data: PhantomData,

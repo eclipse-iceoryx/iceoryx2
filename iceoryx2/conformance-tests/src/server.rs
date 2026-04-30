@@ -1230,51 +1230,12 @@ pub mod server {
     }
 
     #[conformance_test]
-    pub fn server_initial_max_slice_len_default_is_taken_from_config<Sut: Service>()
-    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
-        const CONFIG_SLICE_LEN: usize = 32;
-        let service_name = generate_service_name();
-        let mut config = generate_isolated_config();
-        config
-            .defaults
-            .request_response
-            .server_initial_max_slice_len = CONFIG_SLICE_LEN;
-
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let service = node
-            .service_builder(&service_name)
-            .request_response::<u64, [u64]>()
-            .create()?;
-
-        // Build the server without overriding initial_max_slice_len so the
-        // config default applies.
-        let server = service.server_builder().create()?;
-        let client = service.client_builder().create()?;
-
-        let _pending_response = client.send_copy(0)?;
-        let active_request = server.receive()?.unwrap();
-
-        let response = active_request.loan_slice(CONFIG_SLICE_LEN)?;
-        assert_that!(response.payload().len(), eq CONFIG_SLICE_LEN);
-        drop(response);
-
-        let too_large = active_request.loan_slice(CONFIG_SLICE_LEN + 1);
-        assert_that!(too_large, is_err);
-
-        Ok(())
-    }
-
-    #[conformance_test]
     pub fn server_allocation_strategy_default_is_taken_from_config<Sut: Service>()
     -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
         config.defaults.request_response.server_allocation_strategy =
             AllocationStrategy::PowerOfTwo;
-        config
-            .defaults
-            .request_response
-            .server_initial_max_slice_len = 4;
 
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
@@ -1282,7 +1243,7 @@ pub mod server {
             .request_response::<u64, [u64]>()
             .create()?;
 
-        let server = service.server_builder().create()?;
+        let server = service.server_builder().initial_max_slice_len(4).create()?;
         let client = service.client_builder().create()?;
 
         let _pending_response = client.send_copy(0)?;

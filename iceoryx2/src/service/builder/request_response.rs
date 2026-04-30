@@ -296,14 +296,10 @@ impl<
 > Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
 {
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
-        let defaults = &base.shared_node.config().defaults.request_response;
-        let default_request_alignment = defaults.request_payload_alignment;
-        let default_response_alignment = defaults.response_payload_alignment;
-
         Self {
             base,
-            override_request_alignment: Some(default_request_alignment),
-            override_response_alignment: Some(default_response_alignment),
+            override_request_alignment: None,
+            override_response_alignment: None,
             override_request_header_type: None,
             override_request_payload_type: None,
             override_response_header_type: None,

@@ -166,7 +166,7 @@ impl<
         Self {
             config: LocalPublisherConfig {
                 allocation_strategy: defaults.publisher_allocation_strategy,
-                initial_max_slice_len: defaults.publisher_initial_max_slice_len,
+                initial_max_slice_len: 1,
                 max_loaned_samples: defaults.publisher_max_loaned_samples,
                 unable_to_deliver_strategy: defaults.unable_to_deliver_strategy,
             },

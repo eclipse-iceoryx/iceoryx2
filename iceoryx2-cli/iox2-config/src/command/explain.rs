@@ -305,26 +305,6 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                     description: "Expired connection buffer size of the subscriber. Connections to publishers are expired when the publisher disconnected from the service and the connection contains unconsumed samples.",
                 },
                 Field {
-                    key: "defaults.publish-subscribe.publisher-payload-alignment",
-                    value_type: "int",
-                    default_value: config
-                        .defaults
-                        .publish_subscribe
-                        .publisher_payload_alignment
-                        .to_string(),
-                    description: "Default payload alignment used by the publisher. The actual alignment is the maximum of this value and the payload type's natural alignment. Must be a power of two.",
-                },
-                Field {
-                    key: "defaults.publish-subscribe.publisher-initial-max-slice-len",
-                    value_type: "int",
-                    default_value: config
-                        .defaults
-                        .publish_subscribe
-                        .publisher_initial_max_slice_len
-                        .to_string(),
-                    description: "Default initial maximum slice length for samples loaned by the publisher.",
-                },
-                Field {
                     key: "defaults.publish-subscribe.publisher-allocation-strategy",
                     value_type: "`Static`|`BestFit`|`PowerOfTwo`",
                     default_value: format!(
@@ -559,36 +539,6 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                     description: "Expired connection buffer size of the server. Connections to clients are expired when the client disconnected from the service and the connection contains unconsumed active requests.",
                 },
                 Field {
-                    key: "defaults.request-response.request-payload-alignment",
-                    value_type: "int",
-                    default_value: config
-                        .defaults
-                        .request_response
-                        .request_payload_alignment
-                        .to_string(),
-                    description: "Default request payload alignment used by the service. The actual alignment is the maximum of this value and the request type's natural alignment. Must be a power of two.",
-                },
-                Field {
-                    key: "defaults.request-response.response-payload-alignment",
-                    value_type: "int",
-                    default_value: config
-                        .defaults
-                        .request_response
-                        .response_payload_alignment
-                        .to_string(),
-                    description: "Default response payload alignment used by the service. The actual alignment is the maximum of this value and the response type's natural alignment. Must be a power of two.",
-                },
-                Field {
-                    key: "defaults.request-response.client-initial-max-slice-len",
-                    value_type: "int",
-                    default_value: config
-                        .defaults
-                        .request_response
-                        .client_initial_max_slice_len
-                        .to_string(),
-                    description: "Default initial maximum slice length for requests loaned by the client.",
-                },
-                Field {
                     key: "defaults.request-response.client-allocation-strategy",
                     value_type: "`Static`|`BestFit`|`PowerOfTwo`",
                     default_value: format!(
@@ -596,16 +546,6 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                         config.defaults.request_response.client_allocation_strategy
                     ),
                     description: "Default allocation strategy used by the client when the initially preallocated memory is insufficient.",
-                },
-                Field {
-                    key: "defaults.request-response.server-initial-max-slice-len",
-                    value_type: "int",
-                    default_value: config
-                        .defaults
-                        .request_response
-                        .server_initial_max_slice_len
-                        .to_string(),
-                    description: "Default initial maximum slice length for responses loaned by the server.",
                 },
                 Field {
                     key: "defaults.request-response.server-allocation-strategy",

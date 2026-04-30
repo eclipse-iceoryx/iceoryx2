@@ -832,65 +832,6 @@ pub mod publisher {
     }
 
     #[conformance_test]
-    pub fn publisher_payload_alignment_default_is_taken_from_config<Sut: Service>()
-    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
-        const CONFIG_ALIGNMENT: usize = 64;
-        let service_name = generate_service_name();
-        let mut config = testing::generate_isolated_config();
-        config
-            .defaults
-            .publish_subscribe
-            .publisher_payload_alignment = CONFIG_ALIGNMENT;
-
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let service = node
-            .service_builder(&service_name)
-            .publish_subscribe::<u64>()
-            .create()?;
-
-        // The effective alignment is max(natural, config). u64's natural alignment
-        // (8) is smaller than the config value, so the config value wins.
-        assert_that!(
-            service.static_config().message_type_details().payload.alignment(),
-            eq CONFIG_ALIGNMENT
-        );
-
-        Ok(())
-    }
-
-    #[conformance_test]
-    pub fn publisher_initial_max_slice_len_default_is_taken_from_config<Sut: Service>()
-    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
-        const CONFIG_SLICE_LEN: usize = 32;
-        let service_name = generate_service_name();
-        let mut config = testing::generate_isolated_config();
-        config
-            .defaults
-            .publish_subscribe
-            .publisher_initial_max_slice_len = CONFIG_SLICE_LEN;
-
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let service = node
-            .service_builder(&service_name)
-            .publish_subscribe::<[u64]>()
-            .create()?;
-
-        // Build the publisher without overriding initial_max_slice_len so the
-        // config default applies.
-        let publisher = service.publisher_builder().create()?;
-
-        let sample = publisher.loan_slice(CONFIG_SLICE_LEN)?;
-        assert_that!(sample.payload().len(), eq CONFIG_SLICE_LEN);
-        drop(sample);
-
-        let too_large = publisher.loan_slice(CONFIG_SLICE_LEN + 1);
-        assert_that!(too_large, is_err);
-        assert_that!(too_large.err().unwrap(), eq LoanError::ExceedsMaxLoanSize);
-
-        Ok(())
-    }
-
-    #[conformance_test]
     pub fn publisher_allocation_strategy_default_is_taken_from_config<Sut: Service>()
     -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
         let service_name = generate_service_name();
@@ -899,11 +840,6 @@ pub mod publisher {
             .defaults
             .publish_subscribe
             .publisher_allocation_strategy = AllocationStrategy::PowerOfTwo;
-        // Allow growth so the non-default strategy is exercised at least once.
-        config
-            .defaults
-            .publish_subscribe
-            .publisher_initial_max_slice_len = 4;
 
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
@@ -911,7 +847,12 @@ pub mod publisher {
             .publish_subscribe::<[u64]>()
             .create()?;
 
-        let publisher = service.publisher_builder().create()?;
+        // Set initial_max_slice_len explicitly on the builder so the strategy
+        // gets exercised when a larger slice is requested.
+        let publisher = service
+            .publisher_builder()
+            .initial_max_slice_len(4)
+            .create()?;
 
         // With PowerOfTwo strategy, requesting a larger slice should trigger
         // reallocation and round up to the next power of two.
