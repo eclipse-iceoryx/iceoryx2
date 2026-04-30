@@ -134,6 +134,9 @@
   [#1560](https://github.com/eclipse-iceoryx/iceoryx2/issues/1560)
 * Fix alignment of the `variant` alternatives
   [#1567](https://github.com/eclipse-iceoryx/iceoryx2/issues/1567)
+* Fix connecting to service while dead node is cleaned up and still blocks a
+  port entry
+  [#1578](https://github.com/eclipse-iceoryx/iceoryx2/issues/1578)
 
 ### Refactoring
 
