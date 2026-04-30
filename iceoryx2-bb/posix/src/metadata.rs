@@ -112,7 +112,7 @@ impl Metadata {
             file_type: FileType::from_mode_t(attr.st_mode),
             uid: Uid::new_from_native(attr.st_uid),
             gid: Gid::new_from_native(attr.st_gid),
-            number_of_links: attr.st_nlink,
+            number_of_links: attr.st_nlink as _,
         }
     }
 }
