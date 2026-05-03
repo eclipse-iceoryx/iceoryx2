@@ -47,7 +47,7 @@ use crate::{
     prelude::AttributeSet,
     service::{
         self, NoResource, ServiceState, dynamic_config,
-        port_factory::cleanup_dead_nodes_in_service, service_hash::ServiceHash,
+        port_factory::blocking_cleanup_dead_nodes_in_service, service_hash::ServiceHash,
         service_name::ServiceName, static_config,
     },
 };
@@ -183,7 +183,7 @@ impl<
             _response_header: PhantomData,
         };
 
-        cleanup_dead_nodes_in_service(&new_self, shared_node);
+        blocking_cleanup_dead_nodes_in_service(&new_self, shared_node);
         new_self
     }
 

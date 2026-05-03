@@ -46,7 +46,7 @@ use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
 use crate::identifiers::UniqueServiceId;
 use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
-use crate::service::port_factory::cleanup_dead_nodes_in_service;
+use crate::service::port_factory::blocking_cleanup_dead_nodes_in_service;
 use crate::service::service_hash::ServiceHash;
 use crate::service::service_name::ServiceName;
 use crate::service::{self, NoResource, ServiceState, dynamic_config, static_config};
@@ -146,7 +146,7 @@ impl<
             _payload: PhantomData,
             _user_header: PhantomData,
         };
-        cleanup_dead_nodes_in_service(&new_self, shared_node);
+        blocking_cleanup_dead_nodes_in_service(&new_self, shared_node);
 
         new_self
     }

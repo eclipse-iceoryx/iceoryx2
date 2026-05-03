@@ -400,3 +400,25 @@
         .set_degradation_handler(|_, _| DegradationAction::DegradeAndFail)
         .create()?;
     ```
+
+1. The `Node::remove_stale_resources` was renamed to
+   `Node::try_remove_stale_resources` and a
+   `Node::blocking_remove_stale_resources` was added
+
+    ```rust
+    // old
+    Node::<ipc::Service>::list(Config::global_config(), |node_state| {
+        if let NodeState::Dead(state) = node_state {
+            state.remove_stale_resources().expect("");
+        }
+        CallbackProgression::Continue
+    })?;
+
+    // new
+    Node::<ipc::Service>::list(Config::global_config(), |node_state| {
+        if let NodeState::Dead(state) = node_state {
+            state.try_remove_stale_resources().expect("");
+        }
+        CallbackProgression::Continue
+    })?;
+    ```

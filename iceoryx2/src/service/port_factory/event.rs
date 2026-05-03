@@ -40,7 +40,7 @@ use super::notifier::PortFactoryNotifier;
 use crate::identifiers::UniqueServiceId;
 use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
-use crate::service::port_factory::cleanup_dead_nodes_in_service;
+use crate::service::port_factory::blocking_cleanup_dead_nodes_in_service;
 use crate::service::service_hash::ServiceHash;
 use crate::service::{self, NoResource, ServiceState, static_config};
 use crate::service::{ServiceName, dynamic_config};
@@ -109,7 +109,7 @@ impl<Service: service::Service> PortFactory<Service> {
         let new_self = Self {
             service: Arc::new(service),
         };
-        cleanup_dead_nodes_in_service(&new_self, shared_node);
+        blocking_cleanup_dead_nodes_in_service(&new_self, shared_node);
         new_self
     }
 

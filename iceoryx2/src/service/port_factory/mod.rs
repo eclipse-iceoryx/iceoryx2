@@ -107,7 +107,7 @@ pub trait PortFactory: Debug {
     ) -> Result<(), NodeListFailure>;
 }
 
-pub(crate) fn cleanup_dead_nodes_in_service<T: PortFactory>(
+pub(crate) fn blocking_cleanup_dead_nodes_in_service<T: PortFactory>(
     port_factory: &T,
     shared_node: Arc<SharedNode<T::Service>>,
 ) {

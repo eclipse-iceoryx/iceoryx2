@@ -46,7 +46,7 @@ use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
 use crate::service::builder::CustomKeyMarker;
 use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
-use crate::service::port_factory::cleanup_dead_nodes_in_service;
+use crate::service::port_factory::blocking_cleanup_dead_nodes_in_service;
 use crate::service::service_hash::ServiceHash;
 use crate::service::service_name::ServiceName;
 use crate::service::{self, ServiceState, dynamic_config, static_config};
@@ -130,7 +130,7 @@ impl<
             _key: PhantomData,
         };
 
-        cleanup_dead_nodes_in_service(&new_self, shared_node);
+        blocking_cleanup_dead_nodes_in_service(&new_self, shared_node);
         new_self
     }
 
