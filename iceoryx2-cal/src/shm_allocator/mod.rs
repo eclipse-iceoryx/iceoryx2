@@ -20,6 +20,7 @@ use iceoryx2_bb_elementary::enum_gen;
 pub use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
 pub use pointer_offset::*;
+use serde::{Deserialize, Serialize};
 
 /// Trait that identifies a configuration of a [`ShmAllocator`].
 pub trait ShmAllocatorConfig: Copy + Default + Debug + Send {}
@@ -35,7 +36,7 @@ enum_gen! {
 
 /// Describes generically an [`AllocationStrategy`], meaning how the memory is increased when the
 /// available memory is insufficient.
-#[derive(Clone, Copy, Eq, PartialEq, Debug, Default)]
+#[derive(Clone, Copy, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub enum AllocationStrategy {
     /// Increases the memory so that it perfectly fits the new size requirements. This may lead
     /// to a lot of reallocations but has the benefit that no byte is wasted.

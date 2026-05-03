@@ -88,6 +88,7 @@ use serde::{Deserialize, Serialize};
 use iceoryx2_log::{debug, fail, fatal_panic, info, trace, warn};
 
 use crate::port::unable_to_deliver_strategy::UnableToDeliverStrategy;
+use iceoryx2_cal::shm_allocator::AllocationStrategy;
 
 use iceoryx2_pal_configuration::ICEORYX2_ROOT_PATH;
 
@@ -313,6 +314,10 @@ pub struct PublishSubscribe {
     /// disconnected from a service and the connection
     /// still contains unconsumed [`Sample`](crate::sample::Sample)s.
     pub subscriber_expired_connection_buffer: usize,
+    /// Defines the default [`AllocationStrategy`] used by the
+    /// [`Publisher`](crate::port::publisher::Publisher) when the initially preallocated memory is
+    /// insufficient.
+    pub publisher_allocation_strategy: AllocationStrategy,
 }
 
 impl Default for PublishSubscribe {
@@ -328,6 +333,7 @@ impl Default for PublishSubscribe {
             enable_safe_overflow: true,
             unable_to_deliver_strategy: UnableToDeliverStrategy::RetryUntilDelivered,
             subscriber_expired_connection_buffer: 128,
+            publisher_allocation_strategy: AllocationStrategy::Static,
         }
     }
 }
@@ -444,6 +450,14 @@ pub struct RequestResonse {
     /// disconnected from a service and the connection
     /// still contains unconsumed [`ActiveRequest`](crate::active_request::ActiveRequest)s.
     pub server_expired_connection_buffer: usize,
+    /// Defines the default [`AllocationStrategy`] used by the
+    /// [`Client`](crate::port::client::Client) when the initially preallocated memory is
+    /// insufficient.
+    pub client_allocation_strategy: AllocationStrategy,
+    /// Defines the default [`AllocationStrategy`] used by the
+    /// [`Server`](crate::port::server::Server) when the initially preallocated memory is
+    /// insufficient.
+    pub server_allocation_strategy: AllocationStrategy,
 }
 
 impl Default for RequestResonse {
@@ -464,6 +478,8 @@ impl Default for RequestResonse {
             client_expired_connection_buffer: 128,
             server_expired_connection_buffer: 128,
             enable_fire_and_forget_requests: true,
+            client_allocation_strategy: AllocationStrategy::Static,
+            server_allocation_strategy: AllocationStrategy::Static,
         }
     }
 }

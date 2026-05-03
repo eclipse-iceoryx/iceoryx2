@@ -1228,4 +1228,30 @@ pub mod server {
             assert_that!(loans, len MAX_LOANED_RESPONSES * MAX_ACTIVE_REQUESTS * MAX_CLIENTS);
         }
     }
+
+    #[conformance_test]
+    pub fn server_allocation_strategy_default_is_taken_from_config<Sut: Service>()
+    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.defaults.request_response.server_allocation_strategy =
+            AllocationStrategy::PowerOfTwo;
+
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, [u64]>()
+            .create()?;
+
+        let server = service.server_builder().initial_max_slice_len(4).create()?;
+        let client = service.client_builder().create()?;
+
+        let _pending_response = client.send_copy(0)?;
+        let active_request = server.receive()?.unwrap();
+
+        let response = active_request.loan_slice(5)?;
+        assert_that!(response.payload().len(), eq 5);
+
+        Ok(())
+    }
 }

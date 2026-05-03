@@ -195,7 +195,7 @@ impl<
             config: LocalClientConfig {
                 unable_to_deliver_strategy: defs.client_unable_to_deliver_strategy,
                 initial_max_slice_len: 1,
-                allocation_strategy: AllocationStrategy::Static,
+                allocation_strategy: defs.client_allocation_strategy,
             },
             preallocate_number_of_requests_override: PreallocatedRequestsOverride::new(|v| v),
             request_degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),

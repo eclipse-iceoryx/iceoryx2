@@ -304,6 +304,18 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                         .to_string(),
                     description: "Expired connection buffer size of the subscriber. Connections to publishers are expired when the publisher disconnected from the service and the connection contains unconsumed samples.",
                 },
+                Field {
+                    key: "defaults.publish-subscribe.publisher-allocation-strategy",
+                    value_type: "`Static`|`BestFit`|`PowerOfTwo`",
+                    default_value: format!(
+                        "{:?}",
+                        config
+                            .defaults
+                            .publish_subscribe
+                            .publisher_allocation_strategy
+                    ),
+                    description: "Default allocation strategy used by the publisher when the initially preallocated memory is insufficient.",
+                },
             ],
         },
         Section {
@@ -525,6 +537,24 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                         .server_expired_connection_buffer
                         .to_string(),
                     description: "Expired connection buffer size of the server. Connections to clients are expired when the client disconnected from the service and the connection contains unconsumed active requests.",
+                },
+                Field {
+                    key: "defaults.request-response.client-allocation-strategy",
+                    value_type: "`Static`|`BestFit`|`PowerOfTwo`",
+                    default_value: format!(
+                        "{:?}",
+                        config.defaults.request_response.client_allocation_strategy
+                    ),
+                    description: "Default allocation strategy used by the client when the initially preallocated memory is insufficient.",
+                },
+                Field {
+                    key: "defaults.request-response.server-allocation-strategy",
+                    value_type: "`Static`|`BestFit`|`PowerOfTwo`",
+                    default_value: format!(
+                        "{:?}",
+                        config.defaults.request_response.server_allocation_strategy
+                    ),
+                    description: "Default allocation strategy used by the server when the initially preallocated memory is insufficient.",
                 },
             ],
         },

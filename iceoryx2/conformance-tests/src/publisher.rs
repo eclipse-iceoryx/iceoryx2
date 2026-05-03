@@ -830,4 +830,31 @@ pub mod publisher {
 
         Ok(())
     }
+
+    #[conformance_test]
+    pub fn publisher_allocation_strategy_default_is_taken_from_config<Sut: Service>()
+    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        let service_name = generate_service_name();
+        let mut config = testing::generate_isolated_config();
+        config
+            .defaults
+            .publish_subscribe
+            .publisher_allocation_strategy = AllocationStrategy::PowerOfTwo;
+
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u64]>()
+            .create()?;
+
+        let publisher = service
+            .publisher_builder()
+            .initial_max_slice_len(4)
+            .create()?;
+
+        let sample = publisher.loan_slice(5)?;
+        assert_that!(sample.payload().len(), eq 5);
+
+        Ok(())
+    }
 }
