@@ -96,11 +96,11 @@ impl<S: Service> Tracker<S> {
             let id = *service.static_details.service_hash();
             discovered_ids.insert(id);
 
-            // Track new services.
-            if let Entry::Vacant(e) = self.services.entry(id) {
-                e.insert(service);
+            if !self.services.contains_key(&id) {
                 added_ids.push(id);
             }
+            self.services.insert(id, service);
+
             CallbackProgression::Continue
         })?;
 
