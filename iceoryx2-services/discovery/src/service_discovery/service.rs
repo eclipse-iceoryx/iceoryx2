@@ -442,8 +442,9 @@ impl<S: ServiceType> Service<S> {
             }
             if let Some(publisher) = &self.publisher {
                 let sample = publisher.loan_uninit()?;
-                let sample =
-                    sample.write_payload(DiscoveryEvent::Removed(service.static_details.clone()));
+                let sample = sample.write_payload(DiscoveryEvent::Removed(
+                    *service.static_details.service_hash(),
+                ));
                 sample.send()?;
             }
             on_removed(service);
