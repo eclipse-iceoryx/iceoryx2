@@ -105,6 +105,7 @@ macro_rules! test_harness {
                                 $crate::test_harness::expect_panic(test_fn, msg)
                             }
                             _ => {
+                                $crate::internal::coutln!("");
                                 test_fn();
                                 Ok(())
                             }
