@@ -25,8 +25,8 @@ pub mod event_discovery {
 
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
-    use iceoryx2_services_discovery::service_discovery::Config as DiscoveryConfig;
-    use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
+    use iceoryx2_services_common::DiscoveryEvent;
+    use iceoryx2_services_discovery::service_discovery::Tracker;
     use iceoryx2_services_tunnel::Config as TunnelConfig;
     use iceoryx2_services_tunnel::Tunnel;
     use iceoryx2_services_tunnel_backend::traits::Backend;
@@ -34,6 +34,8 @@ pub mod event_discovery {
 
     // TODO: Move to iceoryx2::testing
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+
+    const DISCOVERY_TOPIC: &str = "iox2://discovery/services/";
 
     fn generate_service_name() -> ServiceName {
         ServiceName::new(&format!(
@@ -44,8 +46,12 @@ pub mod event_discovery {
     }
 
     #[conformance_test]
-    pub fn discovers_services_via_subscriber<S: Service, B: Backend<S> + Debug, T: Testing>() {
-        // === SETUP ==
+    pub fn discovers_added_and_removed_services_via_subscriber<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing,
+    >() {
+        // === SETUP ===
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
         let node = NodeBuilder::new()
@@ -57,59 +63,96 @@ pub mod event_discovery {
             .event()
             .open_or_create()
             .unwrap();
+        let service_hash = *service.service_hash();
 
-        let discovery_service_config = DiscoveryConfig {
-            sync_on_initialization: false,
-            include_internal: false,
-            publish_events: true,
-            enable_server: false,
-            ..Default::default()
-        };
-        let mut discovery_service =
-            DiscoveryService::<S>::create(&discovery_service_config, &iceoryx_config).unwrap();
+        // Set up discovery service manually to better simulate test scenario.
+        let discovery_service_name: ServiceName = DISCOVERY_TOPIC.try_into().unwrap();
+        let discovery_service = node
+            .service_builder(&discovery_service_name)
+            .publish_subscribe::<DiscoveryEvent>()
+            .max_publishers(1)
+            .open_or_create()
+            .unwrap();
+        let discovery_publisher = discovery_service.publisher_builder().create().unwrap();
 
+        // Capture the full StaticConfig for the user-created service so we can inject Added
+        // into the discovery service manually.
+        let mut tracker = Tracker::<S>::new(&iceoryx_config);
+        tracker.sync().unwrap();
+        let static_config = tracker.get(&service_hash).unwrap().static_details.clone();
+
+        // Create the tunnel.
         let tunnel_config = TunnelConfig {
-            discovery_service: Some("iox2://discovery/services/".into()),
+            discovery_service: Some(DISCOVERY_TOPIC.into()),
         };
         let mut tunnel =
             Tunnel::<S, B>::create(&tunnel_config, &iceoryx_config, &B::Config::default()).unwrap();
 
-        // === TEST ===
-        discovery_service.spin(|_| {}, |_| {}).unwrap();
-        tunnel.discover_over_iceoryx().unwrap();
+        // === ADDITION ===
+        discovery_publisher
+            .send_copy(DiscoveryEvent::Added(static_config))
+            .unwrap();
 
+        tunnel.discover_over_iceoryx().unwrap();
         assert_that!(tunnel.tunneled_services().len(), eq 1);
-        assert_that!(tunnel.tunneled_services().contains(service.service_hash()), eq true);
+        assert_that!(tunnel.tunneled_services().contains(&service_hash), eq true);
+
+        // === REMOVAL ===
+        discovery_publisher
+            .send_copy(DiscoveryEvent::Removed(service_hash))
+            .unwrap();
+
+        tunnel.discover_over_iceoryx().unwrap();
+        assert_that!(tunnel.tunneled_services().len(), eq 0);
+        assert_that!(tunnel.tunneled_services().contains(&service_hash), eq false);
     }
 
     #[conformance_test]
-    pub fn discovers_services_via_tracker<S: Service, B: Backend<S> + Debug, T: Testing>() {
-        // === SETUP ==
+    pub fn discovers_added_and_removed_services_via_tracker<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing,
+    >() {
+        // === SETUP ===
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
-        let node = NodeBuilder::new()
-            .config(&iceoryx_config)
-            .create::<S>()
-            .unwrap();
-        let service = node
-            .service_builder(&service_name)
-            .event()
-            .open_or_create()
-            .unwrap();
-
         let tunnel_config = TunnelConfig::default();
         let mut tunnel =
             Tunnel::<S, B>::create(&tunnel_config, &iceoryx_config, &B::Config::default()).unwrap();
 
-        // === TEST ===
-        tunnel.discover_over_iceoryx().unwrap();
+        // === ADDITION ===
+        let node = NodeBuilder::new()
+            .config(&iceoryx_config)
+            .create::<S>()
+            .unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .event()
+            .open_or_create()
+            .unwrap();
+        let service_hash = *service.service_hash();
 
+        tunnel.discover_over_iceoryx().unwrap();
         assert_that!(tunnel.tunneled_services().len(), eq 1);
-        assert_that!(tunnel.tunneled_services().contains(service.service_hash()), eq true);
+        assert_that!(tunnel.tunneled_services().contains(&service_hash), eq true);
+
+        // === REMOVAL ===
+        drop(service);
+
+        tunnel.discover_over_iceoryx().unwrap();
+        assert_that!(tunnel.tunneled_services().len(), eq 0);
+        assert_that!(tunnel.tunneled_services().contains(&service_hash), eq false);
     }
 
     #[conformance_test]
-    pub fn discovers_services_via_backend<S: Service, B: Backend<S> + Debug, T: Testing>() {
+    pub fn discovers_added_and_removed_services_via_backend<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing,
+    >() {
+        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
+        const MAX_RETRIES: usize = 5;
+
         // === SETUP ===
         let service_name = generate_service_name();
 
@@ -129,6 +172,7 @@ pub mod event_discovery {
             Tunnel::<S, B>::create(&tunnel_config_b, &iceoryx_config_b, &backend_config_b).unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
+        // === ADDITION ===
         // Create a service on Host B
         let node_b = NodeBuilder::new()
             .config(&iceoryx_config_b)
@@ -139,24 +183,24 @@ pub mod event_discovery {
             .event()
             .open_or_create()
             .unwrap();
+        let service_hash = *service_b.service_hash();
 
-        // === TEST ===
+        // Initially, Host A discovers no remote services.
         tunnel_a.discover_over_backend().unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
+        // Host B discovers the local service.
         tunnel_b.discover_over_iceoryx().unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 1);
-        assert_that!(tunnel_b.tunneled_services().contains(service_b.service_hash()), eq true);
+        assert_that!(tunnel_b.tunneled_services().contains(&service_hash), eq true);
 
-        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
-        const MAX_RETRIES: usize = 5;
+        // Host B propagates the service over the Backend.
         T::retry(
             || {
+                // The service becomes visible to Host A.
                 tunnel_a.discover_over_backend().unwrap();
 
-                let service_discovered = tunnel_a.tunneled_services().len() == 1;
-
-                if service_discovered {
+                if tunnel_a.tunneled_services().len() == 1 {
                     return Ok(());
                 }
                 Err("Failed to discover remote services")
@@ -167,6 +211,31 @@ pub mod event_discovery {
         .unwrap();
 
         assert_that!(tunnel_a.tunneled_services().len(), eq 1);
-        assert_that!(tunnel_a.tunneled_services().contains(service_b.service_hash()), eq true);
+        assert_that!(tunnel_a.tunneled_services().contains(&service_hash), eq true);
+
+        // === REMOVAL ===
+        // Remove the service on Host B
+        drop(service_b);
+        tunnel_b.discover_over_iceoryx().unwrap();
+        assert_that!(tunnel_b.tunneled_services().len(), eq 0);
+
+        // Host B propagates the service over the Backend.
+        T::retry(
+            || {
+                // The service is dropped on Host A.
+                tunnel_a.discover_over_backend().unwrap();
+
+                if tunnel_a.tunneled_services().is_empty() {
+                    return Ok(());
+                }
+                Err("Failed to detect remote service removal")
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        )
+        .unwrap();
+
+        assert_that!(tunnel_a.tunneled_services().len(), eq 0);
+        assert_that!(tunnel_a.tunneled_services().contains(&service_hash), eq false);
     }
 }
