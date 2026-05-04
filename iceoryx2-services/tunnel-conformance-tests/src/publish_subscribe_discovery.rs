@@ -233,4 +233,407 @@ pub mod publish_subscribe_discovery {
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
         assert_that!(tunnel_a.tunneled_services().contains(&service_hash), eq false);
     }
+
+    #[conformance_test]
+    pub fn aggregates_announcements_from_multiple_hosts<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing,
+    >() {
+        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
+        const MAX_RETRIES: usize = 5;
+
+        // === SETUP ===
+        let service_name = generate_service_name();
+
+        // Host A — observer, announces nothing locally.
+        let iceoryx_config_a = generate_isolated_config();
+        let mut tunnel_a = Tunnel::<S, B>::create(
+            &TunnelConfig::default(),
+            &iceoryx_config_a,
+            &B::Config::default(),
+        )
+        .unwrap();
+
+        // Host B — announces the service.
+        let iceoryx_config_b = generate_isolated_config();
+        let mut tunnel_b = Tunnel::<S, B>::create(
+            &TunnelConfig::default(),
+            &iceoryx_config_b,
+            &B::Config::default(),
+        )
+        .unwrap();
+
+        let node_b = NodeBuilder::new()
+            .config(&iceoryx_config_b)
+            .create::<S>()
+            .unwrap();
+        let service_b = node_b
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+        let service_hash = *service_b.service_hash();
+
+        // Host C — announces the same service (same name → same hash).
+        let iceoryx_config_c = generate_isolated_config();
+        let mut tunnel_c = Tunnel::<S, B>::create(
+            &TunnelConfig::default(),
+            &iceoryx_config_c,
+            &B::Config::default(),
+        )
+        .unwrap();
+
+        let node_c = NodeBuilder::new()
+            .config(&iceoryx_config_c)
+            .create::<S>()
+            .unwrap();
+        let service_c = node_c
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+
+        // === ANNOUNCE FROM B AND C ===
+        tunnel_b.discover_over_iceoryx().unwrap();
+        tunnel_c.discover_over_iceoryx().unwrap();
+
+        // Host A discovers the service exactly once despite two hosts announcing.
+        T::retry(
+            || {
+                tunnel_a.discover_over_backend().unwrap();
+                if tunnel_a.tunneled_services().contains(&service_hash) {
+                    return Ok(());
+                }
+                Err("Failed to discover remote service")
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        )
+        .unwrap();
+        assert_that!(tunnel_a.tunneled_services().len(), eq 1);
+
+        // === REMOVE FROM B ===
+        drop(service_b);
+        tunnel_b.discover_over_iceoryx().unwrap();
+        assert_that!(tunnel_b.tunneled_services().len(), eq 0);
+
+        // Host A keeps the service since one remote still offering service
+        for _ in 0..MAX_RETRIES {
+            tunnel_a.discover_over_backend().unwrap();
+        }
+        assert_that!(tunnel_a.tunneled_services().contains(&service_hash), eq true);
+
+        // === REMOVE FROM C ===
+        drop(service_c);
+        tunnel_c.discover_over_iceoryx().unwrap();
+        assert_that!(tunnel_c.tunneled_services().len(), eq 0);
+
+        // Host A observes the service removal.
+        T::retry(
+            || {
+                tunnel_a.discover_over_backend().unwrap();
+                if tunnel_a.tunneled_services().is_empty() {
+                    return Ok(());
+                }
+                Err("Failed to detect remote service removal")
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        )
+        .unwrap();
+    }
+
+    #[conformance_test]
+    pub fn detects_ungraceful_remote_departure<S: Service, B: Backend<S> + Debug, T: Testing>() {
+        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(500);
+        const MAX_RETRIES: usize = 20;
+
+        // === SETUP ===
+        let service_name = generate_service_name();
+
+        // Host A
+        let iceoryx_config_a = generate_isolated_config();
+        let mut tunnel_a = Tunnel::<S, B>::create(
+            &TunnelConfig::default(),
+            &iceoryx_config_a,
+            &B::Config::default(),
+        )
+        .unwrap();
+
+        // Host B
+        let iceoryx_config_b = generate_isolated_config();
+        let mut tunnel_b = Tunnel::<S, B>::create(
+            &TunnelConfig::default(),
+            &iceoryx_config_b,
+            &B::Config::default(),
+        )
+        .unwrap();
+        let node_b = NodeBuilder::new()
+            .config(&iceoryx_config_b)
+            .create::<S>()
+            .unwrap();
+        let service_b = node_b
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+        let service_hash = *service_b.service_hash();
+
+        // === ADDITION ===
+        tunnel_b.discover_over_iceoryx().unwrap();
+        assert_that!(tunnel_b.tunneled_services().len(), eq 1);
+
+        T::retry(
+            || {
+                tunnel_a.discover_over_backend().unwrap();
+                if tunnel_a.tunneled_services().contains(&service_hash) {
+                    return Ok(());
+                }
+                Err("Failed to discover remote service")
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        )
+        .unwrap();
+
+        // === UNGRACEFUL DEPARTURE ===
+        drop(service_b);
+        drop(node_b);
+        drop(tunnel_b);
+
+        T::retry(
+            || {
+                // Service from crashed tunnel should be detected as removed.
+                tunnel_a.discover_over_backend().unwrap();
+
+                if tunnel_a.tunneled_services().is_empty() {
+                    return Ok(());
+                }
+                Err("Failed to detect ungraceful remote departure")
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        )
+        .unwrap();
+    }
+
+    #[conformance_test]
+    pub fn discovers_pre_existing_remote_services<S: Service, B: Backend<S> + Debug, T: Testing>() {
+        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
+        const MAX_RETRIES: usize = 5;
+
+        // === SETUP — Host B announces FIRST ===
+        let service_name = generate_service_name();
+
+        let iceoryx_config_b = generate_isolated_config();
+        let mut tunnel_b = Tunnel::<S, B>::create(
+            &TunnelConfig::default(),
+            &iceoryx_config_b,
+            &B::Config::default(),
+        )
+        .unwrap();
+
+        let node_b = NodeBuilder::new()
+            .config(&iceoryx_config_b)
+            .create::<S>()
+            .unwrap();
+        let service_b = node_b
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+        let service_hash = *service_b.service_hash();
+
+        tunnel_b.discover_over_iceoryx().unwrap();
+        assert_that!(tunnel_b.tunneled_services().len(), eq 1);
+
+        // === LATE-JOINING HOST A ===
+        // Host A is created after Host B has already announced.
+        let iceoryx_config_a = generate_isolated_config();
+        let mut tunnel_a = Tunnel::<S, B>::create(
+            &TunnelConfig::default(),
+            &iceoryx_config_a,
+            &B::Config::default(),
+        )
+        .unwrap();
+
+        T::retry(
+            || {
+                tunnel_a.discover_over_backend().unwrap();
+                if tunnel_a.tunneled_services().contains(&service_hash) {
+                    return Ok(());
+                }
+                Err("Failed to discover pre-existing remote service via history replay")
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        )
+        .unwrap();
+
+        assert_that!(tunnel_a.tunneled_services().len(), eq 1);
+    }
+
+    #[conformance_test]
+    pub fn rediscovers_service_after_removal<S: Service, B: Backend<S> + Debug, T: Testing>() {
+        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
+        const MAX_RETRIES: usize = 5;
+
+        // === SETUP ===
+        let service_name = generate_service_name();
+
+        // Host A — observer.
+        let iceoryx_config_a = generate_isolated_config();
+        let mut tunnel_a = Tunnel::<S, B>::create(
+            &TunnelConfig::default(),
+            &iceoryx_config_a,
+            &B::Config::default(),
+        )
+        .unwrap();
+
+        // Host B — announces, removes, re-announces the same service.
+        let iceoryx_config_b = generate_isolated_config();
+        let mut tunnel_b = Tunnel::<S, B>::create(
+            &TunnelConfig::default(),
+            &iceoryx_config_b,
+            &B::Config::default(),
+        )
+        .unwrap();
+        let node_b = NodeBuilder::new()
+            .config(&iceoryx_config_b)
+            .create::<S>()
+            .unwrap();
+
+        let service_b = node_b
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+        let service_hash = *service_b.service_hash();
+
+        // === FIRST ADDITION ===
+        tunnel_b.discover_over_iceoryx().unwrap();
+
+        T::retry(
+            || {
+                tunnel_a.discover_over_backend().unwrap();
+                if tunnel_a.tunneled_services().contains(&service_hash) {
+                    return Ok(());
+                }
+                Err("Failed to discover remote service")
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        )
+        .unwrap();
+
+        // === REMOVAL ===
+        drop(service_b);
+        tunnel_b.discover_over_iceoryx().unwrap();
+        assert_that!(tunnel_b.tunneled_services().len(), eq 0);
+
+        T::retry(
+            || {
+                tunnel_a.discover_over_backend().unwrap();
+                if tunnel_a.tunneled_services().is_empty() {
+                    return Ok(());
+                }
+                Err("Failed to detect remote service removal")
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        )
+        .unwrap();
+
+        // === SECOND ADDITION ===
+        // Recreate the service with the same name (same hash).
+        let service_b = node_b
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+        assert_that!(*service_b.service_hash(), eq service_hash);
+
+        tunnel_b.discover_over_iceoryx().unwrap();
+        assert_that!(tunnel_b.tunneled_services().contains(&service_hash), eq true);
+
+        T::retry(
+            || {
+                tunnel_a.discover_over_backend().unwrap();
+                if tunnel_a.tunneled_services().contains(&service_hash) {
+                    return Ok(());
+                }
+                Err("Failed to rediscover service after removal")
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        )
+        .unwrap();
+    }
+
+    #[conformance_test]
+    pub fn ignores_duplicate_added_events<S: Service, B: Backend<S> + Debug, T: Testing>() {
+        // === SETUP ===
+        let iceoryx_config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let tunnel_config = TunnelConfig {
+            discovery_service: Some(DISCOVERY_TOPIC.into()),
+        };
+        let mut tunnel =
+            Tunnel::<S, B>::create(&tunnel_config, &iceoryx_config, &B::Config::default()).unwrap();
+
+        // Create a service
+        let node = NodeBuilder::new()
+            .config(&iceoryx_config)
+            .create::<S>()
+            .unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+        let service_hash = *service.service_hash();
+
+        // Set up discovery service manually so we can inject events.
+        let discovery_service_name: ServiceName = DISCOVERY_TOPIC.try_into().unwrap();
+        let discovery_service = node
+            .service_builder(&discovery_service_name)
+            .publish_subscribe::<DiscoveryEvent>()
+            .max_publishers(1)
+            .open_or_create()
+            .unwrap();
+        let discovery_publisher = discovery_service.publisher_builder().create().unwrap();
+
+        let mut tracker = Tracker::<S>::new(&iceoryx_config);
+        tracker.sync().unwrap();
+        let static_config = tracker.get(&service_hash).unwrap().static_details.clone();
+
+        // === DUPLICATE ANNOUNCEMENT ===
+        // Inject the same Added event twice.
+        discovery_publisher
+            .send_copy(DiscoveryEvent::Added(static_config.clone()))
+            .unwrap();
+        discovery_publisher
+            .send_copy(DiscoveryEvent::Added(static_config))
+            .unwrap();
+
+        tunnel.discover_over_iceoryx().unwrap();
+
+        assert_that!(tunnel.tunneled_services().len(), eq 1);
+        assert_that!(tunnel.tunneled_services().contains(&service_hash), eq true);
+    }
 }
