@@ -50,23 +50,41 @@ auto DeadNodeView<T>::details() const -> bb::Optional<NodeDetails> {
 }
 
 template <ServiceType T>
-auto DeadNodeView<T>::remove_stale_resources() -> iox2::bb::Expected<bool, NodeCleanupFailure> {
+auto DeadNodeView<T>::try_remove_stale_resources() -> iox2::bb::Expected<void, NodeCleanupFailure> {
     if (!m_view.details().has_value()) {
         return iox2::bb::err(NodeCleanupFailure::InsufficientPermissions);
     }
 
-    bool has_success = false;
-    auto result = iox2_dead_node_remove_stale_resources(iox2::bb::into<iox2_service_type_e>(T),
-                                                        &m_view.id().m_handle,
-                                                        &m_view.details().value().config().m_handle,
-                                                        &has_success);
+    auto result = iox2_dead_node_try_remove_stale_resources(
+        iox2::bb::into<iox2_service_type_e>(T), &m_view.id().m_handle, &m_view.details().value().config().m_handle);
 
     if (result == IOX2_OK) {
-        return has_success;
+        return {};
     }
 
     return iox2::bb::err(iox2::bb::into<NodeCleanupFailure>(result));
 }
+
+template <ServiceType T>
+auto DeadNodeView<T>::blocking_remove_stale_resources(iox2::bb::Duration timeout)
+    -> iox2::bb::Expected<void, NodeCleanupFailure> {
+    if (!m_view.details().has_value()) {
+        return iox2::bb::err(NodeCleanupFailure::InsufficientPermissions);
+    }
+
+    auto result = iox2_dead_node_blocking_remove_stale_resources(iox2::bb::into<iox2_service_type_e>(T),
+                                                                 &m_view.id().m_handle,
+                                                                 &m_view.details().value().config().m_handle,
+                                                                 timeout.as_secs(),
+                                                                 timeout.subsec_nanos());
+
+    if (result == IOX2_OK) {
+        return {};
+    }
+
+    return iox2::bb::err(iox2::bb::into<NodeCleanupFailure>(result));
+}
+
 
 template <ServiceType T>
 NodeState<T>::NodeState(const AliveNodeView<T>& view)

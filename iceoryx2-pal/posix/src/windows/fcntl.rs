@@ -136,6 +136,8 @@ pub unsafe fn fstat(fd: int, buf: *mut stat_t) -> int {
                     S_IFREG
                 };
 
+                file_stat.st_nlink = info.nNumberOfLinks as _;
+
                 handle.handle
             }
             _ => {

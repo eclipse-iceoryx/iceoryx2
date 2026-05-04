@@ -80,7 +80,7 @@ impl IntoCInt for NodeWaitFailure {
     }
 }
 
-/// Failures of [`iox2_dead_node_remove_stale_resources()`] that occur when the stale resources of
+/// Failures of [`iox2_dead_node_try_remove_stale_resources()`] that occur when the stale resources of
 /// a dead node are removed.
 #[repr(C)]
 #[derive(Copy, Clone, CStrRepr)]
@@ -93,11 +93,21 @@ pub enum iox2_node_cleanup_failure_e {
     INSUFFICIENT_PERMISSIONS,
     /// Trying to cleanup resources from a dead node which was using a different iceoryx2 version.
     VERSION_MISMATCH,
+    /// Another instance has successfully cleaned up all resources.
+    RESOURCES_ALREADY_CLEANED_UP,
+    /// Another instance has acquired the ownership of all resources and is currently cleaning up.
+    ANOTHER_INSTANCE_IS_CLEANING_UP_THE_NODE,
 }
 
 impl IntoCInt for NodeCleanupFailure {
     fn into_c_int(self) -> c_int {
         (match self {
+            NodeCleanupFailure::AnotherInstanceIsCleaningUpTheNode => {
+                iox2_node_cleanup_failure_e::ANOTHER_INSTANCE_IS_CLEANING_UP_THE_NODE
+            }
+            NodeCleanupFailure::ResourcesAlreadyCleanedUp => {
+                iox2_node_cleanup_failure_e::RESOURCES_ALREADY_CLEANED_UP
+            }
             NodeCleanupFailure::Interrupt => iox2_node_cleanup_failure_e::INTERRUPT,
             NodeCleanupFailure::InternalError => iox2_node_cleanup_failure_e::INTERNAL_ERROR,
             NodeCleanupFailure::InsufficientPermissions => {
@@ -368,6 +378,57 @@ pub unsafe extern "C" fn iox2_unique_node_id(
     }
 }
 
+/// Removes all stale resources of a dead node under a provided config. If another instance
+/// is already removing the stale resources it waits until the resources are cleaned up
+/// or the timeout has passed.
+///
+/// Returns [`IOX2_OK`] on success, otherwise [`iox2_node_cleanup_failure_e`].
+///
+/// # Safety
+///
+/// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
+/// * The `node_id` must be valid
+/// * The `config` must be valid
+/// * `has_success` must point to a valid memory location
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_dead_node_blocking_remove_stale_resources(
+    service_type: iox2_service_type_e,
+    node_id: iox2_unique_node_id_h_ref,
+    config: iox2_config_h_ref,
+    timeout_sec: u64,
+    timeout_nsec: u32,
+) -> c_int {
+    node_id.assert_non_null();
+    config.assert_non_null();
+    unsafe {
+        let node_id = (*node_id.as_type()).value.as_ref();
+        let config = (*config.as_type()).value.as_ref();
+        let timeout = Duration::from_secs(timeout_sec) + Duration::from_nanos(timeout_nsec as u64);
+
+        let result = match service_type {
+            iox2_service_type_e::IPC => {
+                DeadNodeView::<crate::IpcService>::__internal_blocking_remove_stale_resources(
+                    *node_id,
+                    NodeDetails::__internal_new(&None, &config.value),
+                    timeout,
+                )
+            }
+            iox2_service_type_e::LOCAL => {
+                DeadNodeView::<crate::LocalService>::__internal_blocking_remove_stale_resources(
+                    *node_id,
+                    NodeDetails::__internal_new(&None, &config.value),
+                    timeout,
+                )
+            }
+        };
+
+        match result {
+            Ok(()) => IOX2_OK,
+            Err(e) => e.into_c_int(),
+        }
+    }
+}
+
 /// Removes all stale resources of a dead node under a provided config.
 ///
 /// Returns [`IOX2_OK`] on success, otherwise [`iox2_node_cleanup_failure_e`].
@@ -379,28 +440,26 @@ pub unsafe extern "C" fn iox2_unique_node_id(
 /// * The `config` must be valid
 /// * `has_success` must point to a valid memory location
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_dead_node_remove_stale_resources(
+pub unsafe extern "C" fn iox2_dead_node_try_remove_stale_resources(
     service_type: iox2_service_type_e,
     node_id: iox2_unique_node_id_h_ref,
     config: iox2_config_h_ref,
-    has_success: *mut bool,
 ) -> c_int {
     node_id.assert_non_null();
     config.assert_non_null();
-    debug_assert!(!has_success.is_null());
     unsafe {
         let node_id = (*node_id.as_type()).value.as_ref();
         let config = (*config.as_type()).value.as_ref();
 
         let result = match service_type {
             iox2_service_type_e::IPC => {
-                DeadNodeView::<crate::IpcService>::__internal_remove_stale_resources(
+                DeadNodeView::<crate::IpcService>::__internal_try_remove_stale_resources(
                     *node_id,
                     NodeDetails::__internal_new(&None, &config.value),
                 )
             }
             iox2_service_type_e::LOCAL => {
-                DeadNodeView::<crate::LocalService>::__internal_remove_stale_resources(
+                DeadNodeView::<crate::LocalService>::__internal_try_remove_stale_resources(
                     *node_id,
                     NodeDetails::__internal_new(&None, &config.value),
                 )
@@ -408,10 +467,7 @@ pub unsafe extern "C" fn iox2_dead_node_remove_stale_resources(
         };
 
         match result {
-            Ok(v) => {
-                *has_success = v;
-                IOX2_OK
-            }
+            Ok(()) => IOX2_OK,
             Err(e) => e.into_c_int(),
         }
     }

@@ -10,11 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate alloc;
+use alloc::sync::Arc;
+use core::fmt::Debug;
+
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_log::{debug, warn};
 
 use crate::config::Config;
 use crate::identifiers::UniqueServiceId;
-use crate::node::{NodeListFailure, NodeState};
+use crate::node::{NodeListFailure, NodeState, NodeView, SharedNode};
 use crate::service::service_hash::ServiceHash;
 
 use super::dynamic_config::DynamicConfig;
@@ -60,7 +65,7 @@ pub mod subscriber;
 
 /// The trait that contains the interface of all port factories for any kind of
 /// [`crate::service::messaging_pattern::MessagingPattern`].
-pub trait PortFactory {
+pub trait PortFactory: Debug {
     /// The underlying [`crate::service::Service`] of the port factory.
     type Service: crate::service::Service;
 
@@ -100,6 +105,26 @@ pub trait PortFactory {
         &self,
         callback: F,
     ) -> Result<(), NodeListFailure>;
+}
+
+pub(crate) fn blocking_cleanup_dead_nodes_in_service<T: PortFactory>(
+    port_factory: &T,
+    shared_node: Arc<SharedNode<T::Service>>,
+) {
+    if let Err(e) =  port_factory.nodes(|node_state| {
+        if let NodeState::Dead(node) = node_state {
+            let node_id = *node.id();
+            debug!(from port_factory, "Dead node ({:?}) detected", node_id);
+            let timeout = shared_node.config().global.service.creation_timeout;
+            if let Err(e) = node.blocking_remove_stale_resources(timeout) {
+                warn!(from port_factory, "Failed to remove dead node ({:?}) from service. Abandoned ports of the dead node might block the creation of new ports! [{e:?}]", node_id);
+            }
+        }
+        CallbackProgression::Continue
+    }) {
+        warn!(from port_factory,
+            "Unable to iterate through service nodes to detect dead nodes. This might cause that abandoned ports of dead nodes block the creation of new ports! [{e:?}]");
+    }
 }
 
 pub(crate) fn nodes<

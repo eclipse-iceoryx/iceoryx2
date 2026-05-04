@@ -14,8 +14,8 @@ use iceoryx2::node::NodeView;
 use pyo3::prelude::*;
 
 use crate::{
-    config::Config, error::NodeCleanupFailure, file_name::FileName, node_name::NodeName,
-    parc::Parc, unique_node_id::UniqueNodeId,
+    config::Config, duration::Duration, error::NodeCleanupFailure, file_name::FileName,
+    node_name::NodeName, parc::Parc, unique_node_id::UniqueNodeId,
 };
 
 #[derive(Clone)]
@@ -109,21 +109,50 @@ impl DeadNodeView {
         }
     }
 
+    /// Removes all stale resources of a dead `Node`. If another instance
+    /// is already removing the dead `Node` it waits until the other instance
+    /// has cleaned up the dead `Node` completely. If the other cleanup instance
+    /// crashes, it will take over the ownership and continue the cleanup.
+    /// If the process does not have the permission to cleanup all resources it
+    /// aborts with an error.
+    ///
+    /// If the provided timeout is expired it will return.
+    pub fn blocking_remove_stale_resources(
+        &self,
+        timeout: &Duration,
+        py: Python<'_>,
+    ) -> PyResult<()> {
+        py.detach(move || {
+            match &self.0 {
+                DeadNodeViewType::Ipc(n) => n
+                    .clone()
+                    .blocking_remove_stale_resources(timeout.0)
+                    .map_err(|e| NodeCleanupFailure::new_err(format!("{e:?}")))?,
+                DeadNodeViewType::Local(n) => n
+                    .clone()
+                    .blocking_remove_stale_resources(timeout.0)
+                    .map_err(|e| NodeCleanupFailure::new_err(format!("{e:?}")))?,
+            };
+
+            Ok(())
+        })
+    }
+
     /// Removes all stale resources of the dead `Node`. On error it emits a `NodeCleanupFailure`.
     /// It returns true if the stale resources could be removed, otherwise false.
-    pub fn remove_stale_resources(&self) -> PyResult<bool> {
-        let result = match &self.0 {
+    pub fn try_remove_stale_resources(&self) -> PyResult<()> {
+        match &self.0 {
             DeadNodeViewType::Ipc(n) => n
                 .clone()
-                .remove_stale_resources()
+                .try_remove_stale_resources()
                 .map_err(|e| NodeCleanupFailure::new_err(format!("{e:?}")))?,
             DeadNodeViewType::Local(n) => n
                 .clone()
-                .remove_stale_resources()
+                .try_remove_stale_resources()
                 .map_err(|e| NodeCleanupFailure::new_err(format!("{e:?}")))?,
         };
 
-        Ok(result)
+        Ok(())
     }
 }
 

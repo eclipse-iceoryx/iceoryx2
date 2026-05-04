@@ -101,7 +101,7 @@ fn find_and_cleanup_dead_nodes() {
                 "detected dead node: {:?}",
                 state.details().as_ref().map(|v| v.name())
             );
-            state.remove_stale_resources().expect("");
+            state.try_remove_stale_resources().expect("");
         }
 
         CallbackProgression::Continue

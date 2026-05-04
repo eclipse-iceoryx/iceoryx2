@@ -38,9 +38,14 @@ pub struct Metadata {
     modification_time: Time,
     creation_time: Time,
     device_id: u64,
+    number_of_links: u64,
 }
 
 impl Metadata {
+    pub fn number_of_links(&self) -> u64 {
+        self.number_of_links
+    }
+
     pub fn access_time(&self) -> Time {
         self.access_time
     }
@@ -107,6 +112,7 @@ impl Metadata {
             file_type: FileType::from_mode_t(attr.st_mode),
             uid: Uid::new_from_native(attr.st_uid),
             gid: Gid::new_from_native(attr.st_gid),
+            number_of_links: attr.st_nlink as _,
         }
     }
 }

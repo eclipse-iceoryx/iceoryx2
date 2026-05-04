@@ -36,6 +36,7 @@ use super::iox2_signal_handling_mode_e;
 pub enum iox2_node_creation_failure_e {
     INSUFFICIENT_PERMISSIONS = IOX2_OK as isize + 1,
     INTERNAL_ERROR,
+    SYSTEM_CORRUPTED,
 }
 
 impl IntoCInt for NodeCreationFailure {
@@ -45,6 +46,7 @@ impl IntoCInt for NodeCreationFailure {
                 iox2_node_creation_failure_e::INSUFFICIENT_PERMISSIONS
             }
             NodeCreationFailure::InternalError => iox2_node_creation_failure_e::INTERNAL_ERROR,
+            NodeCreationFailure::SystemCorrupted => iox2_node_creation_failure_e::SYSTEM_CORRUPTED,
         }) as c_int
     }
 }

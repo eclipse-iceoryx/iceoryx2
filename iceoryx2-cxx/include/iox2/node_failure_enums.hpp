@@ -33,7 +33,9 @@ enum class NodeCreationFailure : uint8_t {
     InsufficientPermissions,
     /// Maybe the configuration/system is broken since someone has
     /// removed/modified internal resources
-    InternalError
+    InternalError,
+    /// Indicates that another "instance" on the system removed the resource required by the [`Node`].
+    SystemCorrupted,
 };
 
 /// Failures of [`DeadNodeView::remove_stale_resources()`] that occur when the stale resources of
@@ -48,6 +50,10 @@ enum class NodeCleanupFailure : uint8_t {
     InsufficientPermissions,
     /// Trying to cleanup resources from a [`Node`] node which was using a different iceoryx2 version.
     VersionMismatch,
+    /// Another instance has successfully cleaned up all resources.
+    ResourcesAlreadyCleanedUp,
+    /// Another instance has acquired the ownership of all resources and is currently cleaning up.
+    AnotherInstanceIsCleaningUpTheNode,
 };
 
 } // namespace iox2

@@ -68,7 +68,18 @@ class DeadNodeView {
 
     /// Removes all stale resources of the dead [`Node`]. On error it returns a [`NodeCleanupFailure`].
     /// It returns true if the stale resources could be removed, otherwise false.
-    auto remove_stale_resources() -> iox2::bb::Expected<bool, NodeCleanupFailure>;
+    auto try_remove_stale_resources() -> iox2::bb::Expected<void, NodeCleanupFailure>;
+
+    /// Removes all stale resources of a dead [`Node`]. If another instance
+    /// is already removing the dead [`Node`] it waits until the other instance
+    /// has cleaned up the dead [`Node`] completely. If the other cleanup instance
+    /// crashes, it will take over the ownership and continue the cleanup.
+    /// If the process does not have the permission to cleanup all resources it
+    /// aborts with an error.
+    ///
+    /// If the provided timeout is expired it will return with
+    /// [`NodeCleanupFailure::AnotherInstanceIsCleaningUp`].
+    auto blocking_remove_stale_resources(iox2::bb::Duration timeout) -> iox2::bb::Expected<void, NodeCleanupFailure>;
 
   private:
     AliveNodeView<T> m_view;

@@ -101,7 +101,7 @@ pub mod node_death {
 
             for _ in 0..i {
                 if let Some(NodeState::Dead(state)) = node_list.pop() {
-                    assert_that!(state.remove_stale_resources(), eq Ok(true));
+                    assert_that!(state.try_remove_stale_resources(), is_ok);
                 } else {
                     test_fail!("all nodes shall be dead");
                 }
@@ -190,7 +190,7 @@ pub mod node_death {
         core::mem::forget(bad_publishers);
         core::mem::forget(bad_subscribers);
 
-        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
+        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(&config), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
 
         for service in &services {
             assert_that!(service.dynamic_config().number_of_publishers(), eq NUMBER_OF_PUBLISHERS - NUMBER_OF_BAD_NODES);
@@ -272,7 +272,7 @@ pub mod node_death {
         core::mem::forget(bad_notifiers);
         core::mem::forget(bad_listeners);
 
-        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
+        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(&config), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
 
         for service in &services {
             assert_that!(service.dynamic_config().number_of_notifiers(), eq NUMBER_OF_NOTIFIERS - NUMBER_OF_BAD_NODES);
@@ -310,7 +310,7 @@ pub mod node_death {
         S::staged_death(&mut dead_node);
         core::mem::forget(dead_notifier);
 
-        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         let mut received_events = 0;
         listener
@@ -397,7 +397,7 @@ pub mod node_death {
         core::mem::forget(bad_clients);
         core::mem::forget(bad_servers);
 
-        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
+        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(&config), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
 
         for service in &services {
             assert_that!(service.dynamic_config().number_of_clients(), eq NUMBER_OF_CLIENTS - NUMBER_OF_BAD_NODES);
@@ -478,7 +478,7 @@ pub mod node_death {
 
         core::mem::forget(bad_readers);
 
-        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
+        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(&config), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
 
         for service in &services {
             assert_that!(service.dynamic_config().number_of_readers(), eq NUMBER_OF_READERS - NUMBER_OF_BAD_NODES);
@@ -515,7 +515,7 @@ pub mod node_death {
         S::staged_death(&mut bad_node);
         core::mem::forget(writer);
         core::mem::forget(bad_service);
-        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(good_service.dynamic_config().number_of_readers(), eq 1);
         assert_that!(good_service.dynamic_config().number_of_writers(), eq 0);
@@ -554,7 +554,7 @@ pub mod node_death {
             is_ok
         );
 
-        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
             S::Service::list(&config, |_| {
@@ -588,7 +588,7 @@ pub mod node_death {
             is_ok
         );
 
-        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
             S::Service::list(&config, |_| {
@@ -622,7 +622,7 @@ pub mod node_death {
             is_ok
         );
 
-        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
             S::Service::list(&config, |_| {
@@ -657,7 +657,7 @@ pub mod node_death {
             is_ok
         );
 
-        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
             S::Service::list(&config, |_| {
@@ -695,7 +695,7 @@ pub mod node_death {
         let reader = bad_service.reader_builder().create().unwrap();
 
         S::staged_death(&mut bad_node);
-        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
         core::mem::forget(writer);
         core::mem::forget(reader);
 
@@ -737,7 +737,7 @@ pub mod node_death {
             is_ok
         );
 
-        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
             S::Service::list(&config, |_| {
@@ -785,7 +785,7 @@ pub mod node_death {
             is_ok
         );
 
-        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
             S::Service::list(&config, |_| {

@@ -137,6 +137,9 @@
   [#1560](https://github.com/eclipse-iceoryx/iceoryx2/issues/1560)
 * Fix alignment of the `variant` alternatives
   [#1567](https://github.com/eclipse-iceoryx/iceoryx2/issues/1567)
+* Fix connecting to service while dead node is cleaned up and still blocks a
+  port entry
+  [#1578](https://github.com/eclipse-iceoryx/iceoryx2/issues/1578)
 
 ### Refactoring
 
@@ -399,4 +402,26 @@
         .publisher_builder()
         .set_degradation_handler(|_, _| DegradationAction::DegradeAndFail)
         .create()?;
+    ```
+
+1. The `Node::remove_stale_resources` was renamed to
+   `Node::try_remove_stale_resources` and a
+   `Node::blocking_remove_stale_resources` was added
+
+    ```rust
+    // old
+    Node::<ipc::Service>::list(Config::global_config(), |node_state| {
+        if let NodeState::Dead(state) = node_state {
+            state.remove_stale_resources().expect("");
+        }
+        CallbackProgression::Continue
+    })?;
+
+    // new
+    Node::<ipc::Service>::list(Config::global_config(), |node_state| {
+        if let NodeState::Dead(state) = node_state {
+            state.try_remove_stale_resources().expect("");
+        }
+        CallbackProgression::Continue
+    })?;
     ```

@@ -99,6 +99,7 @@ pub enum State {
 pub enum MonitoringCreateTokenError {
     InsufficientPermissions,
     AlreadyExists,
+    SystemCorrupted,
     InternalError,
 }
 
@@ -117,6 +118,7 @@ pub enum MonitoringCreateCleanerError {
     Interrupt,
     InstanceStillAlive,
     AlreadyOwnedByAnotherInstance,
+    IsBeingCleanedUpOrAnotherCleanerCrashedDuringCleanup,
     DoesNotExist,
     InternalError,
 }
