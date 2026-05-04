@@ -16,7 +16,10 @@
 
 #![no_std]
 
-use iceoryx2::{prelude::ZeroCopySend, service::static_config::StaticConfig};
+use iceoryx2::{
+    prelude::ZeroCopySend,
+    service::{service_hash::ServiceHash, static_config::StaticConfig},
+};
 
 extern crate alloc;
 
@@ -32,6 +35,6 @@ pub enum DiscoveryEvent {
 
     /// A service has been removed from the system.
     ///
-    /// Contains the static configuration of the removed service.
-    Removed(StaticConfig),
+    /// Contains the hash identifying the removed service.
+    Removed(ServiceHash),
 }
