@@ -12,8 +12,11 @@
 
 extern crate alloc;
 use alloc::boxed::Box;
+use alloc::collections::BTreeMap;
 
 use iceoryx2::prelude::*;
+use iceoryx2::service::service_hash::ServiceHash;
+use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2_services_common::DiscoveryEvent;
 use iceoryx2_services_discovery::*;
 
@@ -47,6 +50,11 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     coutln!("Discovery service ready!");
 
+    // Optionally store StaticConfigs if required.
+    // The StaticConfig is provided for Added services, but only the hash
+    // is provided for Removed services.
+    let mut known: BTreeMap<ServiceHash, StaticConfig> = BTreeMap::new();
+
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
         if attachment_id == attachment {
             // Drain all pending.
@@ -56,11 +64,21 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             while let Ok(Some(sample)) = subscriber.receive() {
                 match sample.payload() {
                     DiscoveryEvent::Added(details) => {
-                        coutln!("Added: {:?}", details.name());
+                        coutln!("Added: {}({})", details.messaging_pattern(), details.name());
+
+                        // Store the StaticDetails if needed.
+                        known.insert(*details.service_hash(), details.clone());
                     }
-                    DiscoveryEvent::Removed(details) => {
-                        coutln!("Removed: {:?}", details.name());
-                    }
+                    DiscoveryEvent::Removed(service_hash) => match known.remove(service_hash) {
+                        Some(details) => coutln!(
+                            "Removed: {}({})",
+                            details.messaging_pattern(),
+                            details.name()
+                        ),
+                        None => {
+                            coutln!("Removed: {}", service_hash.as_str())
+                        }
+                    },
                 }
             }
         }
