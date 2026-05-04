@@ -43,8 +43,8 @@ use iceoryx2_services_common::DiscoveryEvent;
 /// impl core::error::Error for MyDiscoveryError {}
 ///
 /// fn list_services<DiscoveryError, ProcessingError>(discovery: &impl Discovery<DiscoveryError = DiscoveryError>) -> Result<(), DiscoveryError> {
-///     discovery.discover(|static_config| -> Result<(), MyDiscoveryError> {
-///         println!("Found service: {:?}", static_config.name());
+///     discovery.discover(|event| -> Result<(), MyDiscoveryError> {
+///         println!("Discovery event: {:?}", event);
 ///         Ok(())
 ///     })?;
 ///     Ok(())
@@ -55,7 +55,6 @@ use iceoryx2_services_common::DiscoveryEvent;
 ///
 /// ```no_run
 /// use iceoryx2_services_tunnel_backend::traits::Discovery;
-/// use iceoryx2::service::static_config::StaticConfig;
 /// use iceoryx2_services_common::DiscoveryEvent;
 ///
 /// struct MyDiscovery {
@@ -91,13 +90,13 @@ use iceoryx2_services_common::DiscoveryEvent;
 ///         Ok(())
 ///     }
 ///
-///     fn discover<E: core::error::Error, F: FnMut(&StaticConfig) -> Result<(), E>>(
+///     fn discover<E: core::error::Error, F: FnMut(&DiscoveryEvent) -> Result<(), E>>(
 ///         &self,
 ///         process_discovery: F,
 ///     ) -> Result<(), Self::DiscoveryError> {
 ///         // Query backend for available services
-///         // For each service found, call process_discovery with its
-///         // static config
+///         // For each service found, call process_discovery with the
+///         // corresponding discovery event
 ///         Ok(())
 ///     }
 /// }

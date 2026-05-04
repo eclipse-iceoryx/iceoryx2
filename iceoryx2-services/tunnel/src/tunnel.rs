@@ -184,7 +184,8 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
             }
             None => {
                 info!(from origin,"Local Discovery via Tracker");
-                let tracker = discovery::tracker::DiscoveryTracker::create(iceoryx_config);
+                let tracker =
+                    discovery::tracker::DiscoveryTracker::create(iceoryx_config, *node.id());
                 (None, Some(tracker))
             }
         };
@@ -320,8 +321,26 @@ fn on_discovery<S: Service, B: Backend<S> + Debug>(
 
             Ok(())
         }
-        DiscoveryEvent::Removed(_) => {
-            // TODO: Detect and react to removed services.
+        DiscoveryEvent::Removed(service_hash) => {
+            if !services.contains(service_hash) {
+                // Nothing to tear down.
+                return Ok(());
+            }
+
+            info!(from origin, "Service removed: {}", service_hash.as_str());
+
+            ports.publish_subscribe.remove(service_hash);
+            ports.event.remove(service_hash);
+            relays.publish_subscribe.remove(service_hash);
+            relays.event.remove(service_hash);
+
+            fail!(
+                from origin,
+                when backend.discovery().announce(DiscoveryEvent::Removed(*service_hash)),
+                with DiscoveryError::DiscoveryAnnouncement,
+                "Failed to announce service removal over backend"
+            );
+
             Ok(())
         }
     }

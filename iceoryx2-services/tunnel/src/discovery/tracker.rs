@@ -10,7 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::{config::Config, service::Service};
+use alloc::vec::Vec;
+
+use iceoryx2::config::Config;
+use iceoryx2::identifiers::UniqueNodeId;
+use iceoryx2::node::{NodeState, NodeView};
+use iceoryx2::service::Service;
+use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_log::{fail, fatal_panic};
 use iceoryx2_services_common::DiscoveryEvent;
@@ -43,12 +49,24 @@ impl core::fmt::Display for AnnouncementError {
 impl core::error::Error for AnnouncementError {}
 
 #[derive(Debug)]
-pub struct DiscoveryTracker<S: Service>(RefCell<Tracker<S>>);
+pub struct DiscoveryTracker<S: Service> {
+    tracker: RefCell<Tracker<S>>,
+    node_id: UniqueNodeId,
+}
 
 impl<S: Service> DiscoveryTracker<S> {
-    pub fn create(iceoryx_config: &Config) -> Self {
+    /// Creates a [`DiscoveryTracker`].
+    ///
+    /// `node_id` must be the [`UniqueNodeId`] of the tunnel's own
+    /// [`Node`](iceoryx2::node::Node). It is used during `discover` to
+    /// recognise services that remain in the system listing only because the
+    /// tunnel itself opened a port on them.
+    pub fn create(iceoryx_config: &Config, node_id: UniqueNodeId) -> Self {
         let tracker = Tracker::new(iceoryx_config);
-        DiscoveryTracker(RefCell::new(tracker))
+        DiscoveryTracker {
+            tracker: RefCell::new(tracker),
+            node_id,
+        }
     }
 }
 
@@ -65,16 +83,18 @@ impl<S: Service> Discovery for DiscoveryTracker<S> {
         &self,
         mut process_discovery: F,
     ) -> Result<(), Self::DiscoveryError> {
-        let tracker = &mut self.0.borrow_mut();
-        let (added, _removed) = fail!(
+        let tracker = &mut self.tracker.borrow_mut();
+
+        let (added, removed) = fail!(
             from self,
             when tracker.sync(),
             with DiscoveryError::TrackerSynchronization,
             "Failed to synchronize tracker"
         );
 
+        // Newly-appeared services.
         for id in added {
-            match &tracker.get(&id) {
+            match tracker.get(&id) {
                 Some(service_details) => {
                     fail!(
                         from self,
@@ -92,6 +112,51 @@ impl<S: Service> Discovery for DiscoveryTracker<S> {
             }
         }
 
+        // Services that disappeared from the listing entirely.
+        for service_details in removed {
+            fail!(
+                from self,
+                when process_discovery(&DiscoveryEvent::Removed(*service_details.static_details.service_hash())),
+                with DiscoveryError::DiscoveryProcessing,
+                "Failed to process discovery event"
+            );
+        }
+
+        // Services still listed but only held by this tunnel's node: the user-side owner is
+        // gone, so the service is logically removed from the tunnel's perspective.
+        let abandoned: Vec<ServiceHash> = tracker
+            .get_all()
+            .iter()
+            .filter(|service_details| {
+                service_details.dynamic_details.as_ref().is_some_and(|d| {
+                    d.nodes
+                        .iter()
+                        .filter_map(node_id)
+                        .all(|id| id == &self.node_id)
+                })
+            })
+            .map(|details| *details.static_details.service_hash())
+            .collect();
+
+        for hash in abandoned {
+            tracker.forget(&hash);
+            fail!(
+                from self,
+                when process_discovery(&DiscoveryEvent::Removed(hash)),
+                with DiscoveryError::DiscoveryProcessing,
+                "Failed to process discovery event"
+            );
+        }
+
         Ok(())
+    }
+}
+
+fn node_id<S: Service>(node: &NodeState<S>) -> Option<&UniqueNodeId> {
+    match node {
+        NodeState::Alive(view) => Some(view.id()),
+        NodeState::Inaccessible(id) | NodeState::Undefined(id) => Some(id),
+        // Dead nodes are not active holders.
+        NodeState::Dead(_) => None,
     }
 }

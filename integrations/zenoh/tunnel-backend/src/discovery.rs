@@ -10,7 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::service::static_config::StaticConfig;
+use std::collections::BTreeMap;
+
+use iceoryx2::service::{service_hash::ServiceHash, static_config::StaticConfig};
 use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_log::{error, fail, warn};
 use iceoryx2_services_common::DiscoveryEvent;
@@ -18,16 +20,17 @@ use iceoryx2_services_common::DiscoveryEvent;
 use zenoh::{
     Session, Wait,
     handlers::FifoChannelHandler,
-    query::{Querier, Reply},
-    sample::Locality,
+    liveliness::LivelinessToken,
+    pubsub::Subscriber,
+    query::Queryable,
+    sample::{Locality, Sample, SampleKind},
 };
 
 use crate::keys;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    QuerierCreation,
-    DiscoveryQuery,
+    UnableToSubscribeToRemoteDiscoveryUpdates,
 }
 
 impl core::fmt::Display for CreationError {
@@ -40,9 +43,9 @@ impl core::error::Error for CreationError {}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
-    DiscoveryProcessing,
+    SubscriberReceive,
     DiscoveryQuery,
-    QueryReplyReceive,
+    DiscoveryProcessing,
 }
 
 impl core::fmt::Display for DiscoveryError {
@@ -53,10 +56,19 @@ impl core::fmt::Display for DiscoveryError {
 
 impl core::error::Error for DiscoveryError {}
 
+#[derive(Debug)]
+struct AnnouncedService {
+    // Indicates that the service is available locally. Dropping triggers a
+    // liveliness `Delete` for remote subscribers.
+    _token: LivelinessToken,
+    // Responds to remote peers who query for the static config of the service.
+    _queryable: Queryable<()>,
+}
+
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum AnnouncementError {
     Serialization,
-    NotifyingKnownHosts,
+    LivelinessTokenDeclaration,
     QueryableDeclaration,
 }
 
@@ -71,36 +83,31 @@ impl core::error::Error for AnnouncementError {}
 #[derive(Debug)]
 pub struct Discovery {
     session: Session,
-    querier: Querier<'static>,
-    replies: RefCell<FifoChannelHandler<Reply>>,
+    // Subscribes to liveliness changes for service announcements.
+    subscriber: Subscriber<FifoChannelHandler<Sample>>,
+    // Keeps track of services that have been announced locally.
+    announced: RefCell<BTreeMap<ServiceHash, AnnouncedService>>,
 }
 
 impl Discovery {
     pub fn create(session: &Session) -> Result<Self, CreationError> {
         let origin = "Discovery::create()";
 
-        let querier = fail!(
+        let subscriber = fail!(
             from origin,
             when session
-                    .declare_querier(keys::service_discovery())
-                    .allowed_destination(Locality::Remote)
+                    .liveliness()
+                    .declare_subscriber(keys::service_discovery())
+                    .history(true)
                     .wait(),
-            with CreationError::QuerierCreation,
-            "Failed to create querier for service discovery"
-        );
-
-        // Make query immediately - replies processed in first `discover()` call
-        let replies = fail!(
-            from origin,
-            when querier.get().wait(),
-            with CreationError::DiscoveryQuery,
-            "Failed to make query for service discovery"
+            with CreationError::UnableToSubscribeToRemoteDiscoveryUpdates,
+            "Failed to create subscriber for remote discovery updates"
         );
 
         Ok(Self {
             session: session.clone(),
-            querier,
-            replies: RefCell::new(replies),
+            subscriber,
+            announced: RefCell::new(BTreeMap::new()),
         })
     }
 }
@@ -109,51 +116,65 @@ impl iceoryx2_services_tunnel_backend::traits::Discovery for Discovery {
     type DiscoveryError = DiscoveryError;
     type AnnouncementError = AnnouncementError;
 
-    fn announce(&self, discovery: DiscoveryEvent) -> Result<(), Self::AnnouncementError> {
-        let static_config = match discovery {
-            DiscoveryEvent::Added(static_config) => static_config,
-            DiscoveryEvent::Removed(static_config) => static_config,
-        };
+    fn announce(&self, discovery_event: DiscoveryEvent) -> Result<(), Self::AnnouncementError> {
+        match discovery_event {
+            DiscoveryEvent::Added(static_config) => {
+                let service_hash = *static_config.service_hash();
+                let mut announced = self.announced.borrow_mut();
+                if announced.contains_key(&service_hash) {
+                    return Ok(());
+                }
 
-        let key = keys::service_details(static_config.service_hash());
-        let service_config_serialized = fail!(
-            from self,
-            when serde_json::to_string(&static_config),
-            with AnnouncementError::Serialization,
-            "Failed to serialize service config"
-        );
+                let key = keys::service_details(&service_hash);
 
-        // Notify all current hosts.
-        fail!(
-            from self,
-            when self.session
-                .put(key.clone(), service_config_serialized.clone())
-                .allowed_destination(Locality::Remote)
-                .wait(),
-            with AnnouncementError::NotifyingKnownHosts,
-            "Failed to notify known hosts of discovery"
-        );
+                let serialized = fail!(
+                    from self,
+                    when serde_json::to_string(&static_config),
+                    with AnnouncementError::Serialization,
+                    "Failed to serialize service config"
+                );
 
-        // TODO: Need to work out mechanism to stop announcing when service is gone
-        // Set up a queryable to respond to future hosts.
-        fail!(
-            from self,
-            when self.session
-                .declare_queryable(key.clone())
-                .callback(move |query| {
-                    let _ = query
-                        .reply(key.clone(), service_config_serialized.clone())
-                        .wait()
-                        .inspect_err(|e| {
-                            error!("Failed to announce service {}: {}", key, e);
-                        });
-                })
-                .allowed_origin(Locality::Remote)
-                .background()
-                .wait(),
-            with AnnouncementError::QueryableDeclaration,
-            "Failed to declare queryable for future hosts to discover service"
-        );
+                let token = fail!(
+                    from self,
+                    when self.session
+                        .liveliness()
+                        .declare_token(key.clone())
+                        .wait(),
+                    with AnnouncementError::LivelinessTokenDeclaration,
+                    "Failed to declare liveliness token for service"
+                );
+
+                let reply_key = key.clone();
+                let queryable = fail!(
+                    from self,
+                    when self.session
+                        .declare_queryable(key.clone())
+                        .callback(move |query| {
+                            let _ = query
+                                .reply(reply_key.clone(), serialized.clone())
+                                .wait()
+                                .inspect_err(|e| {
+                                    error!("Failed to reply with service details for {}: {}", reply_key, e);
+                                });
+                        })
+                        .allowed_origin(Locality::Remote)
+                        .wait(),
+                    with AnnouncementError::QueryableDeclaration,
+                    "Failed to declare queryable for service"
+                );
+
+                announced.insert(
+                    service_hash,
+                    AnnouncedService {
+                        _token: token,
+                        _queryable: queryable,
+                    },
+                );
+            }
+            DiscoveryEvent::Removed(service_hash) => {
+                self.announced.borrow_mut().remove(&service_hash);
+            }
+        }
 
         Ok(())
     }
@@ -162,48 +183,93 @@ impl iceoryx2_services_tunnel_backend::traits::Discovery for Discovery {
         &self,
         mut process_discovery: F,
     ) -> Result<(), DiscoveryError> {
-        // Drain all replies from previous query
-        for reply in self.replies.borrow_mut().drain() {
-            match reply.result() {
-                Ok(sample) => {
-                    match serde_json::from_slice::<StaticConfig>(&sample.payload().to_bytes()) {
-                        Ok(static_config) => {
-                            fail!(
-                                from &self,
-                                when process_discovery(&DiscoveryEvent::Added(static_config)),
-                                with DiscoveryError::DiscoveryProcessing,
-                                "Failed to process discovery event"
-                            )
-                        }
-                        Err(e) => {
-                            warn!(
-                                "Skipping discovered service config, unable to deserialize: {}",
-                                e
-                            );
-                        }
+        loop {
+            let sample = match fail!(
+                from self,
+                when self.subscriber.try_recv(),
+                with DiscoveryError::SubscriberReceive,
+                "Failed to receive liveliness sample"
+            ) {
+                Some(sample) => sample,
+                None => return Ok(()),
+            };
+
+            let key_str: &str = sample.key_expr().as_ref();
+            let service_hash = match parse_service_hash(key_str) {
+                Some(h) => h,
+                None => {
+                    warn!(
+                        "Skipping liveliness sample with unparseable key: {}",
+                        key_str
+                    );
+                    continue;
+                }
+            };
+
+            match sample.kind() {
+                SampleKind::Put => {
+                    if let Some(static_config) = self.fetch_static_config(&service_hash)? {
+                        fail!(
+                            from self,
+                            when process_discovery(&DiscoveryEvent::Added(static_config)),
+                            with DiscoveryError::DiscoveryProcessing,
+                            "Failed to process Added discovery event for {}", service_hash.as_str()
+                        );
                     }
                 }
-                Err(e) => fail!(
-                    from self,
-                    when Err(e),
-                    with DiscoveryError::QueryReplyReceive,
-                    "Erroneous reply received from zenoh discovery query"
-                ),
+                SampleKind::Delete => {
+                    fail!(
+                        from self,
+                        when process_discovery(&DiscoveryEvent::Removed(service_hash)),
+                        with DiscoveryError::DiscoveryProcessing,
+                        "Failed to process Removed discovery event for {}", service_hash.as_str()
+                    );
+                }
+            }
+        }
+    }
+}
+
+impl Discovery {
+    fn fetch_static_config(
+        &self,
+        service_hash: &ServiceHash,
+    ) -> Result<Option<StaticConfig>, DiscoveryError> {
+        let key = keys::service_details(service_hash);
+
+        let replies = fail!(
+            from self,
+            when self.session
+                .get(key.clone())
+                .allowed_destination(Locality::Remote)
+                .wait(),
+            with DiscoveryError::DiscoveryQuery,
+            "Failed to query for static config of {}", key
+        );
+
+        for reply in replies {
+            match reply.result() {
+                Ok(reply_sample) => {
+                    match serde_json::from_slice::<StaticConfig>(
+                        &reply_sample.payload().to_bytes(),
+                    ) {
+                        Ok(static_config) => return Ok(Some(static_config)),
+                        Err(e) => warn!("Skipping unparseable reply for {}: {}", key, e),
+                    }
+                }
+                Err(e) => warn!("Erroneous reply for {}: {:?}", key, e),
             }
         }
 
-        // Make a new query for next `discover()` call
-        // NOTE: This results in all service details being resent - not optimal
-        // TODO(optimization): A solution to request all quereyables once whilst still retrieving
-        //                     querying new quereyables that appear
-        let next_query = fail!(
-            from &self,
-            when self.querier.get().wait(),
-            with DiscoveryError::DiscoveryQuery,
-            "Failed to query Zenoh for services"
+        warn!(
+            "No usable reply received for service {} after liveliness Put",
+            service_hash.as_str()
         );
-        *self.replies.borrow_mut() = next_query;
-
-        Ok(())
+        Ok(None)
     }
+}
+
+fn parse_service_hash(key: &str) -> Option<ServiceHash> {
+    let suffix = key.rsplit('/').next()?;
+    ServiceHash::try_from(suffix).ok()
 }
