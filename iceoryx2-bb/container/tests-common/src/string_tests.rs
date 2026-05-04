@@ -30,9 +30,14 @@ pub mod generic {
     use iceoryx2_bb_container::string::{RelocatableString, *};
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
     use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+    use iceoryx2_bb_elementary_traits::{non_null::NonNull, non_null::NonNullCompat};
     use iceoryx2_bb_testing::assert_that;
 
     const SUT_CAPACITY: usize = 129;
+    const RELOCATABLE_STRING_MEM_SIZE: usize =
+        RelocatableString::const_memory_size(SUT_CAPACITY) * 3;
+    const POLYMORPHIC_STRING_MEM_SIZE: usize =
+        core::mem::size_of::<u8>() * ((SUT_CAPACITY + 1) * 3);
 
     pub trait StringTestFactory {
         type Sut: String;
@@ -56,7 +61,7 @@ pub mod generic {
     }
 
     pub struct RelocatableStringFactory {
-        raw_memory: UnsafeCell<Box<[u8; RelocatableString::const_memory_size(SUT_CAPACITY) * 3]>>,
+        raw_memory: UnsafeCell<Box<[u8; RELOCATABLE_STRING_MEM_SIZE]>>,
         allocator: UnsafeCell<Option<Box<BumpAllocator>>>,
     }
 
@@ -65,7 +70,8 @@ pub mod generic {
             unsafe {
                 if (*self.allocator.get()).is_none() {
                     *self.allocator.get() = Some(Box::new(BumpAllocator::new(
-                        (*self.raw_memory.get()).as_mut_ptr(),
+                        <NonNull<u8> as NonNullCompat<u8>>::from_ref(&(*self.raw_memory.get())[0]),
+                        RELOCATABLE_STRING_MEM_SIZE,
                     )))
                 }
             };
@@ -79,9 +85,7 @@ pub mod generic {
 
         fn new() -> Self {
             Self {
-                raw_memory: UnsafeCell::new(Box::new(
-                    [0u8; RelocatableString::const_memory_size(SUT_CAPACITY) * 3],
-                )),
+                raw_memory: UnsafeCell::new(Box::new([0u8; RELOCATABLE_STRING_MEM_SIZE])),
                 allocator: UnsafeCell::new(None),
             }
         }
@@ -95,7 +99,7 @@ pub mod generic {
     }
 
     pub struct PolymorphicStringFactory {
-        raw_memory: UnsafeCell<Box<[u8; core::mem::size_of::<u8>() * ((SUT_CAPACITY + 1) * 3)]>>,
+        raw_memory: UnsafeCell<Box<[u8; POLYMORPHIC_STRING_MEM_SIZE]>>,
         allocator: UnsafeCell<Option<Box<BumpAllocator>>>,
     }
 
@@ -104,7 +108,8 @@ pub mod generic {
             unsafe {
                 if (*self.allocator.get()).is_none() {
                     *self.allocator.get() = Some(Box::new(BumpAllocator::new(
-                        (*self.raw_memory.get()).as_mut_ptr(),
+                        <NonNull<u8> as NonNullCompat<u8>>::from_ref(&(*self.raw_memory.get())[0]),
+                        POLYMORPHIC_STRING_MEM_SIZE,
                     )))
                 }
             };
@@ -118,9 +123,7 @@ pub mod generic {
 
         fn new() -> Self {
             Self {
-                raw_memory: UnsafeCell::new(Box::new(
-                    [0u8; core::mem::size_of::<u8>() * ((SUT_CAPACITY + 1) * 3)],
-                )),
+                raw_memory: UnsafeCell::new(Box::new([0u8; POLYMORPHIC_STRING_MEM_SIZE])),
                 allocator: UnsafeCell::new(None),
             }
         }

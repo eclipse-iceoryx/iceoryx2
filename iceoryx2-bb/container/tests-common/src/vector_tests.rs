@@ -23,6 +23,10 @@ pub mod generic {
     use iceoryx2_bb_testing::{assert_that, lifetime_tracker::LifetimeTracker};
 
     const SUT_CAPACITY: usize = 10;
+    const RELOCATABLE_VEC_MEMORY_SIZE: usize =
+        RelocatableVec::<LifetimeTracker>::const_memory_size(SUT_CAPACITY);
+    const POLYMORPHIC_VEC_MEMORY_SIZE: usize =
+        core::mem::size_of::<LifetimeTracker>() * SUT_CAPACITY;
 
     pub trait VectorTestFactory {
         type Sut: Vector<LifetimeTracker>;
@@ -56,16 +60,18 @@ pub mod generic {
 
         fn new() -> Self {
             Self {
-                raw_memory: UnsafeCell::new(Box::new(
-                    [0u8; RelocatableVec::<LifetimeTracker>::const_memory_size(SUT_CAPACITY)],
-                )),
+                raw_memory: UnsafeCell::new(Box::new([0u8; RELOCATABLE_VEC_MEMORY_SIZE])),
             }
         }
 
         fn create_sut(&self) -> Box<Self::Sut> {
             let mut sut = Box::new(unsafe { Self::Sut::new_uninit(SUT_CAPACITY) });
-            let bump_allocator =
-                BumpAllocator::new(unsafe { &mut *self.raw_memory.get() }.as_mut_ptr());
+            let bump_allocator = BumpAllocator::new(
+                core::ptr::NonNull::<u8>::new(unsafe { &mut *self.raw_memory.get() }.as_mut_ptr())
+                    .expect("Precondition failed: Pointer to memory is null"),
+                RELOCATABLE_VEC_MEMORY_SIZE,
+            );
+
             unsafe { sut.init(&bump_allocator).unwrap() };
 
             sut
@@ -82,9 +88,7 @@ pub mod generic {
 
         fn new() -> Self {
             Self {
-                raw_memory: UnsafeCell::new(Box::new(
-                    [0u8; core::mem::size_of::<LifetimeTracker>() * SUT_CAPACITY],
-                )),
+                raw_memory: UnsafeCell::new(Box::new([0u8; POLYMORPHIC_VEC_MEMORY_SIZE])),
                 allocator: UnsafeCell::new(None),
             }
         }
@@ -93,7 +97,9 @@ pub mod generic {
             unsafe {
                 if (*self.allocator.get()).is_none() {
                     *self.allocator.get() = Some(Box::new(BumpAllocator::new(
-                        (*self.raw_memory.get()).as_mut_ptr(),
+                        core::ptr::NonNull::<u8>::new({ &mut *self.raw_memory.get() }.as_mut_ptr())
+                            .expect("Precondition failed: Pointer to memory is null"),
+                        POLYMORPHIC_VEC_MEMORY_SIZE,
                     )))
                 }
             };

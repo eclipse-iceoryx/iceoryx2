@@ -286,7 +286,7 @@ use iceoryx2_cal::reactor::Reactor;
 use iceoryx2_cal::resizable_shared_memory::ResizableSharedMemoryForPoolAllocator;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryForPoolAllocator};
-use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
+use iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator;
 use iceoryx2_cal::static_storage::*;
 use iceoryx2_cal::zero_copy_connection::ZeroCopyConnection;
 use iceoryx2_log::{debug, fail, trace, warn};

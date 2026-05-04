@@ -21,6 +21,7 @@ use core::fmt::Display;
 ///
 /// ```
 /// use iceoryx2_bb_elementary::package_version::PackageVersion;
+/// extern crate iceoryx2_bb_loggers;
 ///
 /// let version = PackageVersion::get();
 ///

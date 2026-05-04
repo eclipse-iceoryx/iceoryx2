@@ -1466,11 +1466,13 @@ dependencies = [
 name = "iceoryx2-bb-elementary"
 version = "0.8.999"
 dependencies = [
+ "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary-tests-common",
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-testing",
  "iceoryx2-bb-testing-macros",
+ "iceoryx2-log",
  "iceoryx2-pal-concurrency-sync",
 ]
 
