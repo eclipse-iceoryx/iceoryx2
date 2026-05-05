@@ -195,7 +195,7 @@ enum-iterator = { version = "2.1.0" }
 better-panic = { version = "0.3.0" }
 colored = { version = "2.1" }
 generic-tests = { version = "0.1.2" }
-human-panic = { version = "2.0.8" }
+human-panic = { version = "2.0.5" }
 libc = { version = "0.2.183", default-features = false, features = ['extra_traits'] }
 inventory = { version = "0.3.24", default-features = false }
 libtest-mimic = { version = "0.8.2" }
