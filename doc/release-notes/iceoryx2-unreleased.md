@@ -140,6 +140,8 @@
 * Fix connecting to service while dead node is cleaned up and still blocks a
   port entry
   [#1578](https://github.com/eclipse-iceoryx/iceoryx2/issues/1578)
+* Fix various CLI quirks
+  [#1595](https://github.com/eclipse-iceoryx/iceoryx2/issues/1595)
 
 ### Refactoring
 
