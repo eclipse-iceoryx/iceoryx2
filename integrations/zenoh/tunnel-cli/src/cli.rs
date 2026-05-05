@@ -12,6 +12,8 @@
 
 use clap::Parser;
 
+use iceoryx2_cli::help_template;
+
 #[derive(Parser)]
 #[command(
     name = "iox2 tunnel zenoh",
@@ -19,6 +21,7 @@ use clap::Parser;
     about = "Launch an iceoryx2 tunnel using Zenoh as the transport.",
     long_about = None,
     version = env!("CARGO_PKG_VERSION"),
+    help_template = help_template().build(),
 )]
 pub struct Cli {
     #[clap(

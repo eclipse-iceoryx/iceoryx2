@@ -14,7 +14,6 @@ use clap::Parser;
 use clap::Subcommand;
 
 use iceoryx2_bb_elementary::package_version::PackageVersion;
-use iceoryx2_cli::HelpOptions;
 use iceoryx2_cli::help_template;
 
 #[derive(Parser)]
@@ -26,7 +25,7 @@ use iceoryx2_cli::help_template;
     version = PackageVersion::get_str(),
     disable_help_subcommand = true,
     arg_required_else_help = false,
-    help_template = help_template(HelpOptions::PrintCommandSection),
+    help_template = help_template().with_subcommands().build(),
 )]
 pub struct Cli {
     #[clap(subcommand)]
@@ -37,12 +36,12 @@ pub struct Cli {
 pub enum ShowSubcommand {
     #[clap(
         about = "Show the system-wide configuration",
-        help_template = help_template(HelpOptions::DontPrintCommandSection)
+        help_template = help_template().build()
     )]
     System,
     #[clap(
         about = "Show the currently loaded configuration",
-        help_template = help_template(HelpOptions::DontPrintCommandSection)
+        help_template = help_template().build()
     )]
     Current,
 }
@@ -51,12 +50,12 @@ pub enum ShowSubcommand {
 pub enum GenerateSubcommand {
     #[clap(
         about = "Generate a local configuration file",
-        help_template = help_template(HelpOptions::DontPrintCommandSection)
+        help_template = help_template().build()
     )]
     Local,
     #[clap(
         about = "Generate a global configuration file",
-        help_template = help_template(HelpOptions::DontPrintCommandSection)
+        help_template = help_template().build()
     )]
     Global,
 }
@@ -67,7 +66,7 @@ pub enum Action {
         about = "Show the currently used configuration",
         subcommand_required = true,
         arg_required_else_help = true,
-        help_template = help_template(HelpOptions::PrintCommandSection)
+        help_template = help_template().with_subcommands().build()
     )]
     Show {
         #[clap(subcommand)]
@@ -77,7 +76,7 @@ pub enum Action {
         about = "Generate a default configuration file",
         subcommand_required = true,
         arg_required_else_help = true,
-        help_template = help_template(HelpOptions::PrintCommandSection)
+        help_template = help_template().with_subcommands().build()
     )]
     Generate {
         #[clap(subcommand)]
@@ -92,7 +91,7 @@ pub enum Action {
     },
     #[clap(
         about = "Explain the configuration parameters and their descriptions",
-        help_template = help_template(HelpOptions::DontPrintCommandSection)
+        help_template = help_template().build()
     )]
     Explain,
 }
