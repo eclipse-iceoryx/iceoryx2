@@ -190,7 +190,7 @@ bindgen = { version = "0.72.1" }
 cargo_metadata = { version = "0.18.1" }
 cbindgen = { version = "0.29.0" }
 cc = { version = "1.0.98" }
-clap = { version = "4.5.4", features = ["derive"] }
+clap = { version = "4.6.1", features = ["derive"] }
 enum-iterator = { version = "2.1.0" }
 better-panic = { version = "0.3.0" }
 colored = { version = "2.1" }
