@@ -33,6 +33,10 @@
 #![deny(unsafe_code)]
 
 pub mod connection;
+#[cfg(all(target_os = "linux", feature = "dma-buf"))]
+pub mod dmabuf_publisher;
+#[cfg(all(target_os = "linux", feature = "dma-buf"))]
+pub mod dmabuf_subscriber;
 pub mod external_buffer;
 pub(crate) mod path;
 pub mod port_factory;
@@ -41,3 +45,13 @@ pub mod service_error;
 pub mod service_publisher;
 pub mod service_subscriber;
 pub mod shm;
+
+#[cfg(all(target_os = "linux", feature = "dma-buf"))]
+pub use dmabuf_publisher::{DmaBufError, DmaBufPublisher};
+#[cfg(all(target_os = "linux", feature = "dma-buf"))]
+pub use dmabuf_subscriber::DmaBufSubscriber;
+
+#[cfg(all(target_os = "linux", feature = "dma-buf"))]
+pub use dma_buf::{DmaBuf, MappedDmaBuf};
+
+pub use service::Service as DmaBufService;

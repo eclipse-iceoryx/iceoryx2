@@ -43,3 +43,8 @@ path = "tests/connection_tests.rs"
 [[test]]
 name = "service_tests"
 path = "tests/service_tests.rs"
+
+[[test]]
+name = "it_roundtrip"
+path = "tests/it_roundtrip.rs"
+required-features = ["dma-buf"]
