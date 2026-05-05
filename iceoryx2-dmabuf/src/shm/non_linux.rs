@@ -16,9 +16,13 @@ use std::os::fd::{BorrowedFd, OwnedFd};
 
 use super::FdBackedSharedMemory;
 
-/// Non-Linux stub. Always errors on construction; methods unreachable.
+/// Non-Linux stub. Uninhabited — cannot be constructed at runtime.
+///
+/// `from_owned_fd` always returns `Unsupported`, so no value of this type
+/// can ever exist. The trait methods use `match *self {}` to exploit that
+/// invariant at compile time, producing no code and no panic.
 #[derive(Debug)]
-pub struct NonLinux;
+pub enum NonLinux {}
 
 impl FdBackedSharedMemory for NonLinux {
     fn from_owned_fd(_fd: OwnedFd, _len: usize) -> io::Result<Self> {
@@ -29,14 +33,15 @@ impl FdBackedSharedMemory for NonLinux {
     }
 
     fn as_fd(&self) -> BorrowedFd<'_> {
-        unreachable!("NonLinux cannot be constructed because from_owned_fd always errors")
+        // Match an empty enum — the compiler proves this branch is dead.
+        match *self {}
     }
 
     fn len(&self) -> usize {
-        0
+        match *self {}
     }
 
     fn payload_ptr(&self) -> *mut u8 {
-        core::ptr::null_mut()
+        match *self {}
     }
 }

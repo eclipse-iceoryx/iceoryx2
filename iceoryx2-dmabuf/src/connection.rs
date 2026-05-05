@@ -27,6 +27,7 @@ pub mod non_linux;
 
 /// Errors returned by [`FdPassingConnection`] operations.
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// Underlying I/O failure.
     Io(io::Error),

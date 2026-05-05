@@ -37,9 +37,10 @@ fn send_recv_memfd_roundtrip() {
     let subscriber = Linux::open_subscriber(&path).expect("connect");
 
     // Wait for publisher's accept thread to register the subscriber.
+    // Test code: unwrap_or(0) is safe here since a poisoned lock means no subscribers.
     assert!(
         wait_until(Duration::from_millis(500), || {
-            publisher.connected_subscriber_count() >= 1
+            publisher.connected_subscriber_count().unwrap_or(0) >= 1
         }),
         "subscriber connect not seen"
     );
@@ -62,8 +63,9 @@ fn fanout_one_pub_three_sub_100_frames() {
         .map(|_| Linux::open_subscriber(&path).expect("connect"))
         .collect();
 
+    // Test code: unwrap_or(0) is safe here since a poisoned lock means no subscribers.
     assert!(wait_until(Duration::from_millis(500), || {
-        publisher.connected_subscriber_count() >= 3
+        publisher.connected_subscriber_count().unwrap_or(0) >= 3
     }));
 
     for _ in 0..100 {
@@ -89,15 +91,17 @@ fn subscriber_disconnect_publisher_prunes() {
     let publisher = Linux::open_publisher(&path).expect("bind");
     {
         let _sub = Linux::open_subscriber(&path).expect("connect");
+        // Test code: unwrap_or(0) is safe here since a poisoned lock means no subscribers.
         assert!(wait_until(Duration::from_millis(500), || {
-            publisher.connected_subscriber_count() >= 1
+            publisher.connected_subscriber_count().unwrap_or(0) >= 1
         }));
     } // sub dropped
     let fd = memfd(c"d");
     // First send may succeed (kernel hasn't seen disconnect); second send must prune.
     let _ = publisher.send_with_fd(fd.as_fd(), 1024);
     let _ = publisher.send_with_fd(fd.as_fd(), 1024);
+    // Test code: unwrap_or(0) is safe here since a poisoned lock means no subscribers.
     assert!(wait_until(Duration::from_millis(500), || {
-        publisher.connected_subscriber_count() == 0
+        publisher.connected_subscriber_count().unwrap_or(0) == 0
     }));
 }

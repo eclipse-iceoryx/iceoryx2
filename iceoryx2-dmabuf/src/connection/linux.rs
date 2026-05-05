@@ -110,8 +110,17 @@ impl LinuxPublisher {
     /// Number of currently connected subscribers.
     ///
     /// Intended for tests and diagnostics; not part of the hot path.
-    pub fn connected_subscriber_count(&self) -> usize {
-        self.subscribers.lock().map(|v| v.len()).unwrap_or(0)
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::LockPoisoned`] if the internal subscriber mutex was
+    /// poisoned by a panicking thread.
+    pub fn connected_subscriber_count(&self) -> super::Result<usize> {
+        Ok(self
+            .subscribers
+            .lock()
+            .map_err(|_| Error::LockPoisoned)?
+            .len())
     }
 }
 
@@ -146,10 +155,10 @@ impl FdPassingConnection for LinuxPublisher {
 impl Drop for LinuxPublisher {
     fn drop(&mut self) {
         self.shutdown.store(true, Ordering::Relaxed);
-        let _ = std::fs::remove_file(&self.socket_path);
         if let Some(handle) = self.accept_thread.take() {
             let _ = handle.join();
         }
+        let _ = std::fs::remove_file(&self.socket_path);
     }
 }
 
@@ -246,11 +255,13 @@ impl FdPassingConnection for LinuxSubscriber {
 
         // Parse wire header.
         // byte 0..8: payload_len u64 LE
-        let payload_len = u64::from_le_bytes(
-            hdr[PAYLOAD_LEN_OFFSET..RESERVED_OFFSET]
-                .try_into()
-                .unwrap_or([0u8; 8]),
-        );
+        let Ok(len_bytes) = <[u8; 8]>::try_from(&hdr[PAYLOAD_LEN_OFFSET..RESERVED_OFFSET]) else {
+            return Err(Error::Truncated {
+                got: hdr.len(),
+                want: HDR_LEN,
+            });
+        };
+        let payload_len = u64::from_le_bytes(len_bytes);
         // byte 8..16: reserved — ignored on receive.
 
         // Extract OwnedFd from SCM_RIGHTS ancillary.
