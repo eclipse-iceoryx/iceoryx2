@@ -15,6 +15,8 @@ default = ["std"]
 std = ["iceoryx2/std"]
 ## Enables the typed DMA-BUF transport layer. Linux only.
 dma-buf = ["dep:dma-buf"]
+## Enables SO_PEERCRED UID check on accepted UDS connections (Linux only).
+peercred = []
 
 [dependencies]
 iceoryx2 = { workspace = true }
@@ -33,3 +35,7 @@ dma-heap = "0.3"
 [[test]]
 name = "shm_tests"
 path = "tests/shm_tests.rs"
+
+[[test]]
+name = "connection_tests"
+path = "tests/connection_tests.rs"

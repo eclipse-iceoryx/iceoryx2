@@ -32,5 +32,6 @@
 // `shm/linux.rs`, marked `#[allow(unsafe_code)]` at the block level.
 #![deny(unsafe_code)]
 
+pub mod connection;
 pub mod external_buffer;
 pub mod shm;
