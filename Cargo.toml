@@ -62,6 +62,8 @@ members = [
     "iceoryx2/conformance-tests/tests-common",
     "iceoryx2/conformance-tests/tests-nostd",
 
+    "iceoryx2-dmabuf",
+
     "iceoryx2-pal/concurrency-sync",
     "iceoryx2-pal/posix/",
     "iceoryx2-pal/print/",
