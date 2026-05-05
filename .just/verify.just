@@ -42,25 +42,48 @@ _verify-dispatch what tool *flags:
     #!/usr/bin/env bash
     set -euo pipefail
 
+    case "{{what}}" in
+        "")
+            echo "Usage: just verify <what> <tool> [flags]"
+            echo ""
+            echo "Workspace-targeted (require <tool>):"
+            echo "  sdk                    target the main workspace"
+            echo "  integrations           target the integrations workspace"
+            echo "  all                    target all workspaces"
+            echo "  <package>              target a specific package (std-propagation only)"
+            echo ""
+            echo "  Tools:"
+            echo "    clippy               run cargo clippy"
+            echo "    miri                 run cargo miri on allowlisted crates"
+            echo "    std-propagation      verify std feature propagation"
+            echo ""
+            echo "  Flags (clippy):"
+            echo "    --release            run in release profile (default: debug)"
+            echo "    --no_std             run with --no-default-features (sdk only)"
+            echo ""
+            echo "Workspace-orthogonal:"
+            echo "  commits [base]         verify commit messages on the current branch"
+            echo "                         (base defaults to origin/main, then main)"
+            exit 1
+            ;;
+        commits)
+            just _verify-commits "{{tool}}"
+            ;;
+        *)
+            just _verify-workspace-dispatch "{{what}}" "{{tool}}" {{flags}}
+            ;;
+    esac
+
+[private]
+_verify-workspace-dispatch what tool *flags:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
     eval $(just _parse-verify-args {{flags}})
 
-    if [ -z "{{what}}" ] || [ -z "{{tool}}" ]; then
-        echo "Usage: just verify <what> <tool> [flags]"
-        echo ""
-        echo "Scope:"
-        echo "  sdk                    target the main workspace"
-        echo "  integrations           target the integrations workspace"
-        echo "  all                    target all workspaces"
-        echo "  <package>              target a specific package (std-propagation only)"
-        echo ""
-        echo "Static Analysis Tools:"
-        echo "  clippy                 run cargo clippy"
-        echo "  miri                   run cargo miri on allowlisted crates"
-        echo "  std-propagation        verify std feature propagation"
-        echo ""
-        echo "Flags (clippy):"
-        echo "  --release              run in release profile (default: debug)"
-        echo "  --no_std               run with --no-default-features (sdk only)"
+    if [ -z "{{tool}}" ]; then
+        echo "Error: '{{what}}' requires a tool (clippy|miri|std-propagation)" >&2
+        echo "Run 'just verify' for usage." >&2
         exit 1
     fi
 
@@ -220,3 +243,108 @@ _verify-std-propagation-package package:
         MANIFEST=$(just _find-crate-manifest "{{package}}")
         rust-script {{VERIFY_STD_PROPAGATION_SCRIPT}} "$MANIFEST"
     fi
+
+# -----------------------------------------------------------------------------
+# Commits
+# -----------------------------------------------------------------------------
+
+IMPERATIVE_CHECK_SCRIPT := justfile_directory() / "internal/scripts/rust/check_imperative_mood.rs"
+
+[private]
+_verify-commits base="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    GUIDELINES_URL='https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html'
+
+    if ! which rust-script >/dev/null 2>&1; then
+        echo "error: 'rust-script' not found. Run 'cargo install rust-script'" >&2
+        exit 1
+    fi
+
+    resolve_base() {
+        local arg="$1"
+        if [ -n "$arg" ]; then
+            if ! git rev-parse --verify "$arg" >/dev/null 2>&1; then
+                echo "error: base ref '$arg' not found" >&2
+                exit 1
+            fi
+            echo "$arg"
+            return
+        fi
+        if git rev-parse --verify origin/main >/dev/null 2>&1; then
+            echo "origin/main"
+        elif git rev-parse --verify main >/dev/null 2>&1; then
+            echo "main"
+        else
+            echo "error: no base ref found (tried origin/main, main); pass one as argument" >&2
+            exit 1
+        fi
+    }
+
+    check_imperative() {
+        local word="$1"
+        rust-script {{IMPERATIVE_CHECK_SCRIPT}} "$word" 2>&1
+    }
+
+    check_subject() {
+        local subject="$1"
+        local violations=()
+
+        if [[ ! "$subject" =~ ^\[#[0-9]+\]\ .+ ]]; then
+            violations+=("subject must match: [#<issue-number>] <message>")
+        else
+            local rest="${subject#*] }"
+            local first_char="${rest:0:1}"
+            local first_word="${rest%% *}"
+
+            if [[ ! "$first_char" =~ [A-Z] ]]; then
+                violations+=("message after [#...] must start with a capital letter (got: '$first_char')")
+            fi
+
+            if ! check_imperative "$first_word" >/dev/null; then
+                violations+=("message must be in imperative mood (got first word: '$first_word'); see $GUIDELINES_URL")
+            fi
+        fi
+
+        if [ "${#violations[@]}" -gt 0 ]; then
+            printf '%s\n' "${violations[@]}"
+        fi
+    }
+
+    BASE=$(resolve_base "{{base}}")
+    COMMITS=$(git log "$BASE..HEAD" --no-merges --format=%H)
+
+    if [ -z "$COMMITS" ]; then
+        echo "no commits between $BASE and HEAD"
+        exit 0
+    fi
+
+    TOTAL=0
+    FAILED=0
+    while IFS= read -r SHA; do
+        TOTAL=$((TOTAL + 1))
+        SHORT=$(git rev-parse --short "$SHA")
+        SUBJECT=$(git log -1 --format=%s "$SHA")
+
+        VIOLATIONS=$(check_subject "$SUBJECT")
+        if [ -n "$VIOLATIONS" ]; then
+            FAILED=$((FAILED + 1))
+            echo "✗ $SHORT \"$SUBJECT\""
+            while IFS= read -r v; do
+                echo "    - $v"
+            done <<< "$VIOLATIONS"
+        else
+            echo "✓ $SHORT \"$SUBJECT\""
+        fi
+    done <<< "$COMMITS"
+
+    echo ""
+    echo "Checked $TOTAL commit(s) between $BASE and HEAD"
+    if [ "$FAILED" -gt 0 ]; then
+        echo "$FAILED commit(s) failed validation"
+        echo ""
+        echo "See $GUIDELINES_URL for guidelines"
+        exit 1
+    fi
+    echo "All commits passed"
