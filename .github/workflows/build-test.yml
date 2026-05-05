@@ -39,12 +39,17 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
+        with:
+          fetch-depth: 0
 
       - name: Install just
         uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
 
+      - name: Install rust-script
+        run: cargo install rust-script --locked
+
       - name: Check format of all commit messages
-        run: ./internal/scripts/ci_test_commit_msg.sh
+        run: just verify commits
 
       - name: Check license header
         run: ./internal/scripts/ci_test_spdx_license_header.sh
@@ -68,9 +73,6 @@ jobs:
         run: |
           just lint sdk rust
           just lint integrations rust
-
-      - name: Install rust-script
-        run: cargo install rust-script --locked
 
       - name: Verify std feature propagation
         run: |
