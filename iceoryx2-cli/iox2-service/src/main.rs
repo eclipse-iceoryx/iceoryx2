@@ -20,6 +20,7 @@ mod command;
 mod filter;
 
 use anyhow::Result;
+use clap::CommandFactory;
 use clap::Parser;
 use cli::Action;
 use cli::Cli;
@@ -106,6 +107,8 @@ fn main() -> Result<()> {
                 }
             }
         }
+    } else {
+        Cli::command().print_help().expect("Failed to print help");
     }
 
     Ok(())
