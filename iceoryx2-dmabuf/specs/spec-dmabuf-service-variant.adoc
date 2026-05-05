@@ -1,0 +1,268 @@
+= DMA-BUF Service Variant Specification
+:toc:
+:icons: font
+
+[horizontal]
+Version:: 1.0.0
+Status:: Draft
+Domain:: `specs/arch-dmabuf-service-variant.adoc`
+Crates:: `iceoryx2-cal`, `iceoryx2`, `iceoryx2-dmabuf`
+Reference:: branch `feat/dmabuf-sidecar-git-consumable` (sidecar prototype)
+
+== Overview
+
+Re-architect the `iceoryx2-dmabuf` work landed on `feat/dmabuf-sidecar-git-consumable` as an in-tree `dmabuf::Service` variant per maintainer feedback on PR #1572. The reshape requires two new cal-layer concepts (a fd-backed `SharedMemory` flavor and a fd-passing `ZeroCopyConnection` flavor) and a new `Service` trait impl that composes them. The standalone `iceoryx2-dmabuf` crate shrinks to a thin typed convenience over the new variant.
+
+Implementation strategy: create sibling branch `feat/dmabuf-service-variant` from updated `main`, redo work from scratch, freely transcribing proven primitives (SCM_RIGHTS code, peercred, dma-buf wrap/unwrap) from the sidecar branch.
+
+== Requirements
+
+=== Branch / scaffolding
+
+. [MUST] Sibling branch `feat/dmabuf-service-variant` is created from `origin/main` after `git fetch origin && git checkout main && git pull`. Reference branch `feat/dmabuf-sidecar-git-consumable` stays unmerged for reference and rollback.
+. [MUST] Old spec/arch documents (`specs/arch-fd-sidecar.adoc`, `specs/spec-dmabuf-typed-transport.adoc`) gain a "Status: Superseded by Design C" header on the new branch when iceoryx2-dmabuf is touched.
+
+=== iceoryx2-cal: NoAllocator
+
+[start=3]
+. [MUST] Add `iceoryx2-cal/src/shm_allocator/no_allocator.rs` exporting `NoAllocator` and `NoAllocatorConfig`.
+. [MUST] `NoAllocator` implements `ShmAllocator` with:
++
+[source,rust]
+----
+pub struct NoAllocator { fd: std::os::fd::OwnedFd, len: usize }
+pub struct NoAllocatorConfig { pub fd: std::os::fd::OwnedFd, pub len: usize }
+impl ShmAllocatorConfig for NoAllocatorConfig {}
+impl ShmAllocator for NoAllocator {
+    type Configuration = NoAllocatorConfig;
+    fn allocate(&self, _layout: Layout) -> Result<NonNull<[u8]>, ShmAllocationError> {
+        Err(ShmAllocationError::ExternallyAllocated)
+    }
+    // … initialize / max_alignment / total_size / etc. ⇒ documented stubs
+}
+----
+. [MUST] Add `ShmAllocationError::ExternallyAllocated` variant. Update `enum_gen!` mapping in `iceoryx2-cal/src/shm_allocator/mod.rs`. Add release-note entry in `doc/release-notes/iceoryx2-unreleased.md` documenting the new variant.
+. [MUST] Re-export `NoAllocator` from `iceoryx2-cal/src/shm_allocator/mod.rs` (`pub use no_allocator::*;`).
+. [MUST] Cargo `--no-default-features` build of `iceoryx2-cal` continues to compile on macOS and FreeBSD targets — `NoAllocator` is `cfg(target_family = "unix")` if `OwnedFd` is platform-gated.
+
+=== iceoryx2-cal: shared_memory::dmabuf
+
+[start=8]
+. [MUST] Add `iceoryx2-cal/src/shared_memory/dmabuf/{mod.rs, linux.rs, non_linux.rs}`.
+. [MUST] `dmabuf::FdBackedSharedMemory` is a sub-trait of `SharedMemory<NoAllocator>`:
++
+[source,rust]
+----
+pub trait FdBackedSharedMemory: SharedMemory<NoAllocator> {
+    fn from_owned_fd(fd: OwnedFd, len: usize) -> Result<Self, SharedMemoryCreateError>;
+    fn as_fd(&self) -> std::os::fd::BorrowedFd<'_>;
+}
+----
+. [MUST] `linux::Linux` impl mmaps the fd at construction (`mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0)`) and munmaps on drop. `payload_start_address()` returns mmap base.
+. [MUST] `linux::Linux::Builder::create` accepts a `NoAllocatorConfig`; `open` is degenerate (the fd-backed SHM is single-instance — opening reuses the existing mmap).
+. [MUST] `non_linux::NonLinux` is a zero-state struct whose every method returns `Err(SharedMemoryCreateError::InternalError)` or panics in the `unreachable!()` style used by other cal stubs.
+. [MUST] Cargo features: gate `linux.rs` body on `#[cfg(target_os = "linux")]`. The module exists on all platforms; only its body changes.
+. [MUST] Unit tests in `iceoryx2-cal/tests/shared_memory_dmabuf_tests.rs`:
+** `from_owned_fd_with_memfd_succeeds_on_linux`
+** `mmap_payload_writeable_through_pointer`
+** `drop_munmaps_and_closes_fd`
+** `non_linux_returns_internal_error`
+
+=== iceoryx2-cal: zero_copy_connection::dmabuf
+
+[start=15]
+. [MUST] Add `iceoryx2-cal/src/zero_copy_connection/dmabuf/{mod.rs, linux.rs, non_linux.rs}`.
+. [MUST] `dmabuf::FdPassingConnection` extends `ZeroCopyConnection` with:
++
+[source,rust]
+----
+pub trait FdPassingConnection: ZeroCopyConnection {
+    fn send_with_fd(&self, offset: PointerOffset, fd: BorrowedFd<'_>, len: u64)
+        -> Result<(), ZeroCopySendError>;
+    fn recv_with_fd(&self)
+        -> Result<Option<(PointerOffset, OwnedFd, u64)>, ZeroCopyReceiveError>;
+}
+----
+. [MUST] Linux impl uses Unix domain socket per service-name + port-id. Wire frame per message: `[8B len u64 LE][8B reserved u64 LE][SCM_RIGHTS ancillary: 1 fd]`. `offset` field is preserved internally as 0; reserved 8 bytes leave room for future flags.
+. [MUST] Linux impl supports fan-out: publisher binds, accepts subscriber connections in a background thread, each `send_with_fd` iterates connected subscriber streams. Broken-pipe pruning identical to sidecar prototype.
+. [MUST] Linux impl supports `peercred` UID check, gated on `iceoryx2-cal` Cargo feature `peercred`. Same shape as sidecar prototype.
+. [MUST] UDS path under `iceoryx2-cal::config`'s `prefix`-aware naming (NOT `/tmp/iox2-dmabuf/` like sidecar). Use existing `NamedConcept` path derivation so `dmabuf::Service` participates in the standard config machinery.
+. [MUST] `non_linux::NonLinux` stub satisfies `FdPassingConnection`; every method returns `ZeroCopySendError::ConnectionCorrupted` (or equivalent) since the type cannot be constructed.
+. [MUST] Integration tests in `iceoryx2-cal/tests/zero_copy_connection_dmabuf_tests.rs`:
+** `send_recv_memfd_roundtrip_linux`
+** `fanout_one_pub_three_sub_100_frames`
+** `subscriber_disconnect_publisher_prunes`
+** `peer_uid_mismatch_rejected_when_peercred`
+** `non_linux_construction_returns_unsupported`
+
+=== iceoryx2: dmabuf::Service
+
+[start=23]
+. [MUST] Add `iceoryx2/src/service/dmabuf.rs` with `pub struct Service {}` and `impl crate::service::Service for Service` per arch §D5. Fully Linux-only (`#[cfg(target_os = "linux")]`); module body absent on other platforms.
+. [MUST] `iceoryx2/src/service/mod.rs` exports `pub mod dmabuf;` (Linux only).
+. [MUST] `NodeBuilder::new().create::<dmabuf::Service>()` succeeds on Linux. A unit test asserts the Node is constructed without panic.
+. [MUST] `node.service_builder(&svc).publish_subscribe::<Meta>().open_or_create()` succeeds on `dmabuf::Service`, returning a port factory.
+
+=== iceoryx2: dmabuf-aware ports
+
+[start=27]
+. [MUST] Add `iceoryx2/src/port/dmabuf_publisher.rs`:
++
+[source,rust]
+----
+pub struct DmaBufServicePublisher<S: Service<Connection: FdPassingConnection>, Meta>
+where Meta: ZeroCopySend + Debug + Copy {
+    inner_pub: Publisher<S, Meta, ()>,         // sample carries Meta only
+    fd_conn: Arc<S::Connection>,                // shared with subscribers
+}
+impl<S, Meta> DmaBufServicePublisher<S, Meta> { /* … */
+    pub fn publish(&mut self, meta: Meta, fd: BorrowedFd<'_>, len: u64)
+        -> Result<(), PublishError>;
+}
+----
+. [MUST] Add `iceoryx2/src/port/dmabuf_subscriber.rs` symmetrically:
++
+[source,rust]
+----
+pub struct DmaBufServiceSubscriber<S, Meta> { … }
+impl<S, Meta> DmaBufServiceSubscriber<S, Meta> {
+    pub fn receive(&mut self) -> Result<Option<(Meta, OwnedFd, u64)>, ReceiveError>;
+}
+----
+. [MUST] Port factory for `dmabuf::Service` returns these dmabuf-specific port types — NOT the generic `Publisher` / `Subscriber`. The factory is `dmabuf::Service`-specific (lives in `iceoryx2/src/service/port_factory/dmabuf_publish_subscribe.rs`).
+. [MUST] Drop ordering of fd-passing port: connection (which closes the UDS) drops before iceoryx2 sample buffer pool, ensuring no cross-process fd dangle. Documented in port struct doc.
+. [MUST] Integration tests in `iceoryx2/tests/service_dmabuf_publish_subscribe_tests.rs`:
+** `publish_receive_memfd_through_dmabuf_service`
+** `meta_user_header_is_callee_owned` (asserts no internal token leaks)
+** `service_open_create_idempotent`
+
+=== iceoryx2-dmabuf: shrink to typed convenience
+
+[start=32]
+. [MUST] Delete from `iceoryx2-dmabuf/src/`: `back_channel.rs`, `path.rs`, `publisher.rs`, `scm.rs`, `side_channel.rs`, `subscriber.rs`, `token.rs`, `wire.rs`, `error.rs` (replaced by `iceoryx2-cal::zero_copy_connection::dmabuf` machinery). Keep `lib.rs`, `dmabuf_publisher.rs`, `dmabuf_subscriber.rs`.
+. [MUST] Delete from `iceoryx2-dmabuf/src/bin/`: `fd_sidecar_crash_pub.rs`, `fd_sidecar_fd_identity.rs` (sidecar-specific test binaries; replaced by cal-layer or service-layer tests).
+. [MUST] Rewrite `iceoryx2-dmabuf/src/dmabuf_publisher.rs` as newtype wrapping `iceoryx2::port::dmabuf_publisher::DmaBufServicePublisher<dmabuf::Service, Meta>`:
++
+[source,rust]
+----
+pub struct DmaBufPublisher<Meta> { inner: DmaBufServicePublisher<dmabuf::Service, Meta> }
+impl<Meta: ZeroCopySend + Debug + Copy> DmaBufPublisher<Meta> {
+    pub fn create(service_name: &str) -> Result<Self, DmaBufError>;
+    pub fn publish(&mut self, meta: Meta, buf: &dma_buf::DmaBuf) -> Result<(), DmaBufError> {
+        let fd = buf.as_fd().try_clone_to_owned()?;
+        let len = buf.size() as u64;
+        self.inner.publish(meta, fd.as_fd(), len)?;
+        Ok(())
+    }
+}
+----
+. [MUST] Symmetric `DmaBufSubscriber<Meta>` newtype.
+. [MUST] `iceoryx2-dmabuf/src/lib.rs`:
+** Drops `pub mod {back_channel, error, path, publisher, scm, side_channel, subscriber, token, wire}`.
+** Keeps `pub mod dmabuf_publisher; pub mod dmabuf_subscriber;`.
+** Adds `pub use iceoryx2::service::dmabuf::Service as DmaBufService;` for callers who want the service variant directly.
+** Re-exports `dma_buf::{DmaBuf, MappedDmaBuf}` (`#[cfg(feature = "dma-buf")]`).
+. [MUST] `iceoryx2-dmabuf/Cargo.toml` drops: `sha1_smol`, `iceoryx2-pal-concurrency-sync`, `[target.'cfg(target_os = "linux")'.dependencies] rustix`, `libc`, `tracing`. Keeps: `iceoryx2`, optional `dma-buf`.
+. [MUST] CHANGELOG entry under "Breaking" naming all removed types: `FdSidecarPublisher`, `FdSidecarSubscriber`, `FdSidecarToken`, `FdSidecarError`, `BackChannel`, `BufferReleased`, the `peercred`/`memfd`/`test-utils` features (now lifted to `iceoryx2-cal`).
+. [MUST] Examples: replace `examples/publish_subscribe_with_fd/` and `examples/publish_subscribe_dmabuf/` with single new pair `examples/publish_subscribe_dmabuf_service/{publisher.rs, subscriber.rs}` demonstrating the service-variant API end-to-end.
+
+=== Test migration
+
+[start=39]
+. [MUST] Migrate test concepts (not literal tests) from sidecar branch to new locations:
+[options="header"]
+|===
+|Sidecar test |New home |Notes
+|`dmabuf_roundtrip` |`iceoryx2-dmabuf/tests/it_roundtrip.rs` |against service variant
+|`it_fanout` |`iceoryx2-cal/tests/zero_copy_connection_dmabuf_tests.rs::fanout_one_pub_three_sub` |closer to code under test
+|`it_crash_midsend` |drop or document as N/A |service variant has atomic send (single sendmsg ferries fd+sample), so mid-send crash window is structurally narrower
+|`it_service_gone` |`iceoryx2/tests/service_dmabuf_publish_subscribe_tests.rs::service_dropped_subscriber_recovers`|
+|`it_socket_gone` |`iceoryx2-cal/tests/...::peer_disconnects_publisher_prunes` |
+|`refcount_survival` |`iceoryx2-cal/tests/shared_memory_dmabuf_tests.rs::fd_refcount_survives_consumer_drops`|
+|`it_fd_identity` |`iceoryx2/tests/...::fd_inode_preserved_through_service` |two-process fstat
+|`error_paths` |`iceoryx2-cal/tests/...::truncated_frame_returns_error` |internal — no test-utils crate boundary
+|`prop_roundtrip` |`iceoryx2-cal/tests/...::prop_roundtrip` |proptest 1B–16MiB
+|`peercred_mismatch` |`iceoryx2-cal/tests/...::peer_uid_mismatch` |
+|`it_dmabuf_fd_identity` |`iceoryx2-dmabuf/tests/it_dmabuf_identity.rs` |inode preserved through DmaBuf wrap
+|`it_dmabuf_heap_roundtrip` |`iceoryx2-dmabuf/tests/it_dmabuf_heap.rs` |/dev/dma_heap/system + MappedDmaBuf::read CPU-sync
+|===
+. [MUST] Each migrated test passes on Linux (Ubuntu 24.04 / 25.10) and either passes or returns `Unsupported` (no panic) on macOS.
+
+=== Benchmarks
+
+[start=41]
+. [SHOULD] Migrate `benchmarks/dmabuf/{bench_latency, bench_throughput, bench_fanout}.rs` to use `dmabuf::Service` directly. Compare numbers against sidecar prototype in `benchmarks/dmabuf/RESULTS.md`.
+
+=== Quality gates
+
+[start=42]
+. [MUST] `cargo fmt --check` clean across workspace.
+. [MUST] `cargo clippy -p iceoryx2-cal --all-features --all-targets -- -D warnings` clean.
+. [MUST] `cargo clippy -p iceoryx2 --all-features --all-targets -- -D warnings` clean.
+. [MUST] `cargo clippy -p iceoryx2-dmabuf --all-features --all-targets -- -D warnings` clean.
+. [MUST] `cargo doc -p iceoryx2-dmabuf --no-deps --all-features` produces zero broken-link warnings.
+. [MUST] `cargo build --workspace --no-default-features --target aarch64-apple-darwin` succeeds.
+. [MUST] `cargo test --workspace --features "dma-buf"` passes on Linux.
+
+=== Commit shape
+
+[start=49]
+. [MUST] PR is split into reviewable commits:
+[options="header"]
+|===
+|# |Commit message |Scope
+|1 |`feat(iceoryx2-cal): add NoAllocator marker for externally-allocated SHM` |new file + enum variant
+|2 |`feat(iceoryx2-cal): add shared_memory::dmabuf flavor (fd-backed SHM)` |cal SHM module + tests
+|3 |`feat(iceoryx2-cal): add zero_copy_connection::dmabuf flavor (SCM_RIGHTS over UDS)` |cal connection module + tests
+|4 |`feat(iceoryx2): add dmabuf::Service variant + dmabuf-aware port types` |service.rs + port modules + tests
+|5 |`refactor(iceoryx2-dmabuf): shrink crate to typed convenience over dmabuf::Service` |delete sidecar files + rewrite typed wrappers + examples
+|6 |`docs: spec + arch for dmabuf service variant` |this spec/arch + supersession headers on old docs
+|7 |`chore: migrate benchmarks to dmabuf::Service` |benchmarks/dmabuf rewrite
+|===
++
+Each commit compiles, clippies clean, and passes its own crate's tests in isolation. `git bisect` between any two adjacent commits remains green.
+
+== Acceptance Criteria
+
+* [ ] Branch `feat/dmabuf-service-variant` exists, based on `origin/main` post-fetch.
+* [ ] `cargo build --workspace --features "dma-buf"` succeeds on Linux.
+* [ ] `cargo build --workspace --no-default-features --target aarch64-apple-darwin` succeeds.
+* [ ] `cargo test --workspace --features "dma-buf"` passes on Linux (≥40 new tests including migrated sidecar concepts).
+* [ ] `cargo clippy --workspace --all-features --all-targets -- -D warnings` clean.
+* [ ] `cargo doc --workspace --no-deps --all-features` zero broken-link warnings.
+* [ ] `iceoryx2-dmabuf/specs/arch-fd-sidecar.adoc` and `spec-dmabuf-typed-transport.adoc` carry a "Status: Superseded by Design C" header.
+* [ ] PR description references issue #1570 and links to the maintainer's roadmap comment.
+* [ ] `dmabuf::Service` is documented in `iceoryx2/src/service/mod.rs` alongside `ipc::Service` and `local::Service`.
+* [ ] No `FdSidecarToken`, `FdSidecarPublisher`, `FdSidecarSubscriber`, `BackChannel`, or `BufferReleased` symbols remain in the workspace.
+
+== Constraints / Trade-offs
+
+[options="header"]
+|===
+|Decision |Chosen |Rejected |Rationale
+|Cal change shape |Two new concepts (sub-traits) |Widen existing trait |Smaller blast radius; keeps non-Linux impls unchanged
+|Allocator handling |`NoAllocator` marker |Parallel un-genericised SHM trait |Preserves trait shape; minimal new surface
+|Token correlation |Internal to cal connection |User-header `FdSidecarToken` |Returns user-header to user; cleaner abstraction
+|Port types |Dedicated dmabuf-aware ports |Specialise `Publisher` |Stable Rust; clean public API
+|Fresh implementation |Sibling branch from main |Rebase + refactor sidecar branch |Fresh layout prevents cross-layer leftovers
+|Crate footprint |Shrink iceoryx2-dmabuf to ~300 LOC |Delete iceoryx2-dmabuf entirely |`dma-buf` feature ergonomics still valuable
+|Wire reserved field |8 bytes after len |None |Future planar / flag bits without breaking format
+|===
+
+== Out of scope
+
+* Multi-planar (YUV420 with separate Y/UV fds).
+* Async transport (`tokio`-based UDS).
+* `sync_file` / GPU fence propagation.
+* Windows `DXGI_KEYED_MUTEX` handles.
+* `pidfd_getfd(2)` alternative transport.
+* Allocator wrappers (`DmaBufPool`, dma-heap convenience).
+* Removing `iceoryx2-pal-concurrency-sync` dependency from cal-layer SCM machinery (use existing patterns).
+
+== Related
+
+* Architecture: `specs/arch-dmabuf-service-variant.adoc`
+* Plan: `docs/superpowers/plans/2026-05-05-dmabuf-service-variant.md`
+* Reference (sidecar prototype branch): `feat/dmabuf-sidecar-git-consumable`
+* Sidecar PR (open, to be closed in favour of service-variant PR): https://github.com/eclipse-iceoryx/iceoryx2/pull/1572
+* Issue: https://github.com/eclipse-iceoryx/iceoryx2/issues/1570

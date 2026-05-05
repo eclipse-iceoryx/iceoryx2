@@ -1,0 +1,198 @@
+= dmabuf::Service Variant Architecture
+:toc:
+:icons: font
+
+[horizontal]
+Status:: Draft (Design C, supersedes `arch-fd-sidecar.adoc`)
+Specs:: `spec-dmabuf-service-variant.adoc`
+Crates:: `iceoryx2-cal`, `iceoryx2`, `iceoryx2-dmabuf`
+Reference branch:: `feat/dmabuf-sidecar-git-consumable` (sidecar prototype, source for proven SCM_RIGHTS / dma-buf integration patterns)
+
+== Overview
+
+This architecture replaces the standalone sidecar crate (PR #1572) with a fully integrated `dmabuf::Service` variant inside iceoryx2, alongside `ipc::Service` / `local::Service`. Maintainer feedback on #1572 explicitly requested this shape: "should be possible to implement as a service variant in iceoryx2. If necessary, we need to extend some of the concepts in the iceoryx2-cal layer."
+
+DMA-BUF is — fundamentally — shared memory whose lifetime is owned by a kernel-supplied file descriptor rather than by an internal pool allocator. The iceoryx2-cal `SharedMemory` and `ZeroCopyConnection` traits both assume offset-into-pool semantics; DMA-BUF needs neither. We therefore introduce two parallel cal concepts and bind them into a new `Service` impl:
+
+. `shared_memory::dmabuf::*` — fd-backed `SharedMemory` flavor, no allocator, mmap on open, munmap on drop.
+. `zero_copy_connection::dmabuf::*` — fd-passing connection over a Unix domain socket using `SCM_RIGHTS`, replacing `PointerOffset` wire transport with `(meta_offset, fd)` wire transport.
+
+Once these exist, `dmabuf::Service` is a one-page composition that picks them up and reuses `ipc::Service`'s storage / hash / monitoring / reactor types unchanged.
+
+== Key Decisions
+
+=== D1. Two new cal concepts, not trait widening
+
+*Context.* The maintainer comment leaves room for either extending existing cal traits (`ZeroCopyConnection::send_with_fd`, `SharedMemory::from_external_fd`) or adding parallel concepts. Trait widening pollutes every existing impl with `unimplemented!()`-equivalent stubs and breaks non-Linux builds at the trait surface. Parallel concepts isolate the new functionality.
+
+*Decision.* Add `iceoryx2-cal::shared_memory::dmabuf` and `iceoryx2-cal::zero_copy_connection::dmabuf` as siblings to existing `posix`, `process_local`, etc. Existing traits remain untouched. New concepts share their parent trait surface where overlapping (`NamedConcept`, `NamedConceptMgmt`) but introduce their own primary trait when fd semantics are required.
+
+*Rationale.* KISS, minimal blast radius. Existing impls compile unchanged. Non-Linux targets compile because the new modules are `#[cfg(target_os = "linux")]` with `non_linux.rs` stubs that satisfy any cross-platform trait requirement.
+
+*Consequences.* Two new modules per cal concept (`mod.rs` + `linux.rs` + `non_linux.rs`). `dmabuf::Service` cannot share publisher/subscriber port types with `ipc::Service`; iceoryx2 grows a parallel `port::dmabuf_publisher` / `port::dmabuf_subscriber` thin layer.
+
+=== D2. NoAllocator as a marker satisfying ShmAllocator
+
+*Context.* `SharedMemory<Allocator: ShmAllocator>` requires an allocator generic. DMA-BUF has no internal allocator — the kernel/V4L2/GBM owns allocation. Either we add `NoAllocator` (zero-state, errors on `allocate`) or we introduce a parallel un-genericised trait `FdBackedSharedMemory`.
+
+*Decision.* Add `iceoryx2-cal::shm_allocator::no_allocator::NoAllocator`. Implements `ShmAllocator` with `Configuration = OwnedFd`, `allocate` always returns `Err(ShmAllocationError::ExceedsMaxSupportedAlignment)` (or new variant `ExternallyAllocated`), `max_alignment` returns the page size of the underlying fd. The allocator carries the wrapped fd so `SharedMemory` can mmap from it on construction.
+
+*Rationale.* Reuses existing trait surface; downstream code that walks `SharedMemory<A>` continues to compile. `NoAllocator` documents the constraint explicitly: this SHM has no internal allocation. KISS over a parallel trait family.
+
+*Consequences.* `ShmAllocationError` gains one variant (`ExternallyAllocated`) — minor breaking change, gated on the appropriate release notes. Tests that exhaustively match on the enum need a new arm.
+
+=== D3. Connection carries (offset, fd, length); offset always 0 for DMA-BUF
+
+*Context.* `ZeroCopyConnection::send` today carries `PointerOffset` only. For DMA-BUF, "offset" is meaningless because each fd IS its own buffer.
+
+*Decision.* `zero_copy_connection::dmabuf::Connection::send(offset, fd, len)`. `offset` is preserved for trait-shape consistency but is always passed as `PointerOffset::new(0)`. `fd` is duplicated via `fcntl(F_DUPFD_CLOEXEC)` into the SCM_RIGHTS ancillary data; `len` is the DMA-BUF size and travels in the iov payload.
+
+Wire format (per message): `[8B len u64 LE][8B reserved u64 LE for future header][SCM_RIGHTS ancillary: 1 fd]`.
+
+*Rationale.* Keeps the trait shape recognizable to maintainers familiar with the existing `ZeroCopyConnection`. Offset is meaningful when callers wrap multiple frames into one fd in a future extension (planar YUV, ring-buffered fd) — the field is reserved.
+
+*Consequences.* The SHM payload bytes never travel over the connection — only metadata. The DMA-BUF fd carries the bytes via mmap on the receiver. This matches `ipc::Service`'s zero-copy invariant: no payload bytes ever cross the connection.
+
+=== D4. Sidecar correlation token disappears from the user-facing surface
+
+*Context.* Sidecar prototype (PR #1572) put a `FdSidecarToken` in the iceoryx2 sample's user-header. That consumed the user's user-header slot and exposed an internal correlation mechanism.
+
+*Decision.* `dmabuf::Service` keeps correlation entirely inside `zero_copy_connection::dmabuf`. Each fd send is paired one-to-one with a sample sent through the connection (the connection carries both atomically per `sendmsg` call). No application-visible token. User-header is back to being user-owned.
+
+*Rationale.* Clean separation: the connection guarantees fd↔sample pairing as part of its contract, just as `posix_shared_memory` connections guarantee offset↔sample pairing today.
+
+*Consequences.* Removes ~50 LOC of token machinery from the user surface (`FdSidecarToken`, `next_token` counter, `TokenExhausted` error). Internal correlation is implicit in the wire framing.
+
+=== D5. dmabuf::Service reuses every non-payload component from ipc::Service
+
+*Context.* `Service` trait has 14 associated types. Most are payload-agnostic: `StaticStorage`, `DynamicStorage`, `ServiceNameHasher`, `ConfigSerializer`, `Event`, `Monitoring`, `Reactor`, `ArcThreadSafetyPolicy`, `BlackboardMgmt`, `BlackboardPayload`. Only `SharedMemory`, `ResizableSharedMemory`, `Connection` differ for DMA-BUF.
+
+*Decision.* `dmabuf::Service` copies `ipc::Service`'s associated types verbatim, replacing only the three SHM/connection types:
+
+[source,rust]
+----
+impl Service for dmabuf::Service {
+    type StaticStorage = static_storage::recommended::Ipc;          // unchanged
+    type ConfigSerializer = serialize::recommended::Recommended;     // unchanged
+    type DynamicStorage = dynamic_storage::recommended::Ipc<DynamicConfig>; // unchanged
+    type ServiceNameHasher = hash::recommended::Recommended;         // unchanged
+    type SharedMemory = shared_memory::dmabuf::Linux<NoAllocator>;   // ← new
+    type ResizableSharedMemory = shared_memory::dmabuf::Linux<NoAllocator>; // ← new (degenerate)
+    type Connection = zero_copy_connection::dmabuf::Linux;           // ← new
+    type Event = event::recommended::Ipc;                            // unchanged
+    type Monitoring = monitoring::recommended::Ipc;                  // unchanged
+    type Reactor = reactor::recommended::Ipc;                        // unchanged
+    type ArcThreadSafetyPolicy<T: Send + Debug>
+        = arc_sync_policy::single_threaded::SingleThreaded<T>;       // unchanged
+    type BlackboardMgmt<K: Send + Sync + Debug + 'static>
+        = dynamic_storage::recommended::Ipc<K>;                      // unchanged
+    type BlackboardPayload = shared_memory::recommended::Ipc<BumpAllocator>; // unchanged
+}
+----
+
+*Rationale.* DRY. Every component that doesn't carry payload bytes works identically — name resolution, dynamic config, event waitset, monitoring, hash all stay byte-for-byte the same.
+
+*Consequences.* `dmabuf::Service` is a ~80-line file that's mostly a `type` declaration. Its quality is dominated by the two cal-layer concepts.
+
+=== D6. Port factory yields dmabuf-aware publisher / subscriber
+
+*Context.* Existing `Publisher<S, Payload, UserHeader>::publish` takes `Payload` by value (POD ZeroCopySend type). DmaBuf isn't POD. We can't reuse `Publisher` directly without a generic specialization that stable Rust won't give us.
+
+*Decision.* Add `iceoryx2::port::dmabuf_publisher::DmaBufServicePublisher<S, Meta>` and `dmabuf_subscriber::DmaBufServiceSubscriber<S, Meta>` parameterized by `S: Service<Connection: FdPassingConnection>` (a marker bound checked via cal-layer trait). These types live next to `Publisher` / `Subscriber` and are the only ports yielded by `dmabuf::Service`'s port factory.
+
+[source,rust]
+----
+impl<Meta> DmaBufServicePublisher<dmabuf::Service, Meta>
+where Meta: ZeroCopySend + Debug + Copy {
+    pub fn publish(&mut self, meta: Meta, buf: &dma_buf::DmaBuf) -> Result<(), PublishError>;
+}
+----
+
+*Rationale.* The `Publisher` / `Subscriber` API surface is part of iceoryx2's stability guarantee. Keeping `dmabuf::Service`'s ports as separate types avoids polluting that surface.
+
+*Consequences.* Service consumers who want to swap `S = ipc::Service` for `S = dmabuf::Service` still need to switch port type. Acceptable: their `publish` call signature changes anyway (they're handing in a `&DmaBuf` instead of `Meta`).
+
+=== D7. iceoryx2-dmabuf survives as thin typed convenience
+
+*Context.* The standalone sidecar crate had ~3K LOC: SCM machinery, token, wire format, publisher/subscriber, peercred, reconnect logic, examples, tests. Most of that work moves into `iceoryx2-cal::zero_copy_connection::dmabuf`. The crate still has a job: the `dma-buf`-feature ergonomics layer (re-exports `MappedDmaBuf`, `DmaBuf`, error wrapping).
+
+*Decision.* `iceoryx2-dmabuf` remains a workspace crate but shrinks to:
+
+. Re-export `dma_buf::{DmaBuf, MappedDmaBuf}`.
+. `DmaBufPublisher` / `DmaBufSubscriber` as thin newtypes over `iceoryx2::port::dmabuf_publisher::*` (which themselves are over `dmabuf::Service`).
+. `try_clone_to_owned` borrow-and-dup ergonomics so callers pass `&DmaBuf`.
+. Examples + integration tests against the service variant.
+
+*Rationale.* Keeps the audited `dma-buf` 0.x dependency wrapped behind a feature gate at the crate level (where it belongs ergonomically), insulates iceoryx2 core from upstream 0.x semver churn, lets users opt out by depending only on `iceoryx2 + dmabuf::Service`.
+
+*Consequences.* Net code reduction: `iceoryx2-dmabuf` drops from ~3K LOC to ~300 LOC. ~80% of the sidecar crate's tests migrate down into `iceoryx2-cal/tests/zero_copy_connection_dmabuf_tests.rs` — closer to the code under test.
+
+=== D8. Sibling branch, fresh implementation
+
+*Context.* The sidecar prototype on `feat/dmabuf-sidecar-git-consumable` is 7K+ LOC with proven SCM_RIGHTS semantics, test scaffolding, peercred check, ioctl wiring, fanout logic, recovery paths. Re-implementing from scratch risks losing edge-case handling already validated by 28 tests.
+
+*Decision.* Create a sibling branch from updated `main`: `feat/dmabuf-service-variant`. Implement Design C from scratch — fresh file layout, fresh commits — but freely cherry-pick or transcribe code blocks from the sidecar branch when the underlying primitive is unchanged (SCM_RIGHTS sendmsg/recvmsg, peercred check, mmap wrapper, the dma-buf wrap/unwrap dance).
+
+*Rationale.* Service variant has different ownership and lifecycle (cal-owned, not sidecar-crate-owned) — fresh layout prevents copy-paste leftovers from the wrong layer. Reference branch protects the test corpus from regression.
+
+*Consequences.* Two long-lived branches until the service variant is reviewed and the sidecar PR is closed. Once merged, the sidecar branch is archived (or the sidecar PR is closed in favour of a service-variant PR).
+
+== Components
+
+[source,mermaid]
+----
+flowchart TD
+    App["Application"]
+    App -->|"&DmaBuf"| DmaBufConv["iceoryx2-dmabuf<br/>DmaBufPublisher / DmaBufSubscriber<br/>(thin typed convenience)"]
+    DmaBufConv --> Port["iceoryx2::port::dmabuf_publisher / dmabuf_subscriber<br/>DmaBufServicePublisher / DmaBufServiceSubscriber"]
+    Port --> Service["iceoryx2::service::dmabuf::Service<br/>(Service trait impl)"]
+    Service --> ShmCal["iceoryx2-cal::shared_memory::dmabuf::Linux&lt;NoAllocator&gt;<br/>fd-backed SHM, mmap on open"]
+    Service --> ConnCal["iceoryx2-cal::zero_copy_connection::dmabuf::Linux<br/>SCM_RIGHTS over UDS"]
+    Service -.unchanged from ipc::Service.-> Other["StaticStorage · DynamicStorage · Hash ·<br/>Event · Monitoring · Reactor · Blackboard · ConfigSerializer"]
+    ShmCal -->|"OwnedFd"| Kernel["dma-heap / V4L2 / GBM / Vulkan / memfd"]
+    ConnCal -->|"sendmsg/recvmsg"| Uds["Unix-domain socket"]
+    DmaBufConv -.optional ergonomics: feature='dma-buf'.-> Upstream["dma-buf crate (mripard)<br/>MappedDmaBuf · DMA_BUF_IOCTL_SYNC"]
+----
+
+== Interfaces
+
+* `iceoryx2_cal::shm_allocator::no_allocator::NoAllocator` (new) — implements `ShmAllocator` with `Configuration = OwnedFd`, errors on `allocate`. Carries the wrapped fd to the SHM layer.
+* `iceoryx2_cal::shared_memory::dmabuf::FdBackedSharedMemory` (new sub-trait) — extends `SharedMemory<NoAllocator>` with `from_owned_fd(fd: OwnedFd, len: usize) -> Result<Self, _>` constructor.
+* `iceoryx2_cal::zero_copy_connection::dmabuf::FdPassingConnection` (new sub-trait) — extends `ZeroCopyConnection` with `send_with_fd(offset, fd, len)` / `recv_with_fd() -> (offset, fd, len)`.
+* `iceoryx2::service::dmabuf::Service` (new) — `Service` trait impl. Type alias of `Service` trait associated types.
+* `iceoryx2::port::dmabuf_publisher::DmaBufServicePublisher` / `dmabuf_subscriber::DmaBufServiceSubscriber` (new) — port types yielded by `dmabuf::Service`'s port factory.
+* `iceoryx2_dmabuf::{DmaBufPublisher, DmaBufSubscriber}` (refactored) — newtype wrappers; only crate-level public API.
+
+== Constraints
+
+* *Linux-only runtime.* `dmabuf::Service::open_or_create` returns `ServiceOpenError::Unsupported` on non-Linux. cal-layer modules compile on non-Linux via `non_linux.rs` stubs that satisfy trait shapes but always return errors.
+* *Single fd per sample.* Multi-planar (YUV420/NV12 separate planes) is out of scope; future extension reserves the second 8-byte field in the wire header.
+* *Synchronous.* `sendmsg`/`recvmsg` are blocking; an async variant is a separate spec.
+* *No GPU fence support.* `sync_file` is a different fd kind; out of scope.
+* *No allocator ownership.* `dmabuf::Service` cannot allocate DMA-BUFs — users bring their own from `dma-heap`, V4L2, GBM, Vulkan.
+* *Token-free user-header.* Users get their full user-header slot back. Internal correlation is implicit per-message in the cal-layer wire framing.
+* *Peer trust.* `peercred` UID check is configurable via service config (default off, per existing `iceoryx2-cal` config patterns).
+
+== Trade-offs vs sidecar prototype
+
+[options="header"]
+|===
+|Dimension |Sidecar (PR #1572) |Service variant (this arch)
+|Land cost |~2 weeks reviewable |~3-5 weeks, multi-crate
+|Surface area |2 ports per service (UDS + iceoryx2) |1 port — uniform
+|Maintainer fit |Standalone crate, opt-in |Roadmap-aligned
+|Token in user-header |Yes (`FdSidecarToken`) |No — internal
+|Cross-platform compile |Yes (stubs) |Yes (stubs)
+|Test count |28 |≥40 (cal + service + crate)
+|Reuses Service infra |No (parallel) |Yes (`open_or_create`, dynamic config, monitoring)
+|Crate footprint |~3K LOC standalone |~300 LOC + cal layer absorbing ~2K
+|Dependency direction |sidecar → iceoryx2 |iceoryx2-dmabuf → iceoryx2 → iceoryx2-cal
+|===
+
+== Related
+
+* Spec: `specs/spec-dmabuf-service-variant.adoc`
+* Plan: `docs/superpowers/plans/2026-05-05-dmabuf-service-variant.md`
+* Reference (sidecar prototype): `specs/arch-fd-sidecar.adoc`, `specs/spec-dmabuf-typed-transport.adoc`
+* Maintainer comment on PR #1572: roadmap-aligned, requests service variant, suggests cal-layer extension.
+* Issue: https://github.com/eclipse-iceoryx/iceoryx2/issues/1570
