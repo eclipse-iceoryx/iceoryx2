@@ -48,33 +48,27 @@ fn main() -> Result<()> {
     if let Some(action) = cli.action {
         match action {
             Action::Show { config } => match config {
-                Some(ShowSubcommand::System) => {
+                ShowSubcommand::System => {
                     if let Err(e) = command::show_system_config() {
                         eprintln!("Failed to show options: {e}");
                     }
                 }
-                Some(ShowSubcommand::Current) => {
+                ShowSubcommand::Current => {
                     if let Err(e) = command::show_current_config() {
                         eprintln!("Failed to show options: {e}");
                     }
                 }
-                None => {
-                    Cli::command().print_help().expect("Failed to print help");
-                }
             },
             Action::Generate { config, force } => match config {
-                Some(GenerateSubcommand::Local) => {
+                GenerateSubcommand::Local => {
                     if let Err(e) = command::generate_local(force) {
                         eprintln!("Failed to generate configuration file: {e}");
                     }
                 }
-                Some(GenerateSubcommand::Global) => {
+                GenerateSubcommand::Global => {
                     if let Err(e) = command::generate_global(force) {
                         eprintln!("Failed to generate configuration file: {e}");
                     }
-                }
-                None => {
-                    Cli::command().print_help().expect("Failed to print help");
                 }
             },
             Action::Explain => {
