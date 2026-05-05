@@ -18,29 +18,14 @@ use clap::CommandFactory;
 use clap::Parser;
 use cli::Action;
 use cli::Cli;
+use iceoryx2_cli::install_panic_handlers;
 use iceoryx2_log::{LogLevel, set_log_level_from_env_or};
-
-#[cfg(not(debug_assertions))]
-use human_panic::setup_panic;
 
 use crate::cli::GenerateSubcommand;
 use crate::cli::ShowSubcommand;
-#[cfg(debug_assertions)]
-extern crate better_panic;
 
 fn main() -> Result<()> {
-    #[cfg(not(debug_assertions))]
-    {
-        setup_panic!();
-    }
-    #[cfg(debug_assertions)]
-    {
-        better_panic::Settings::debug()
-            .most_recent_first(false)
-            .lineno_suffix(true)
-            .verbosity(better_panic::Verbosity::Full)
-            .install();
-    }
+    install_panic_handlers!();
 
     set_log_level_from_env_or(LogLevel::Warn);
 
