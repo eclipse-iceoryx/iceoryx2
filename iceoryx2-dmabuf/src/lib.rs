@@ -34,4 +34,10 @@
 
 pub mod connection;
 pub mod external_buffer;
+pub(crate) mod path;
+pub mod port_factory;
+pub mod service;
+pub mod service_error;
+pub mod service_publisher;
+pub mod service_subscriber;
 pub mod shm;

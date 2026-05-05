@@ -39,3 +39,7 @@ path = "tests/shm_tests.rs"
 [[test]]
 name = "connection_tests"
 path = "tests/connection_tests.rs"
+
+[[test]]
+name = "service_tests"
+path = "tests/service_tests.rs"
