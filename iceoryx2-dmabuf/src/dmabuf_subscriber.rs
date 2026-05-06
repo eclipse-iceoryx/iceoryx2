@@ -25,9 +25,11 @@ pub struct DmaBufSubscriber<Meta>
 where
     Meta: ZeroCopySend + Debug + Copy + 'static,
 {
-    /// Must be dropped after `inner` (declared first = dropped last).
-    _factory: DmabufPortFactory<Meta>,
     inner: DmaBufServiceSubscriber<Meta>,
+    /// Declared LAST — dropped last (Rust drops fields in declaration order;
+    /// last declared = last dropped). `inner` must drop before `_factory`
+    /// so the iceoryx2 node outlives any port it created.
+    _factory: DmabufPortFactory<Meta>,
 }
 
 impl<Meta> DmaBufSubscriber<Meta>
@@ -44,8 +46,8 @@ where
         let factory = Service::open_or_create::<Meta>(service_name)?;
         let inner = factory.subscriber_builder().create()?;
         Ok(Self {
-            _factory: factory,
             inner,
+            _factory: factory,
         })
     }
 

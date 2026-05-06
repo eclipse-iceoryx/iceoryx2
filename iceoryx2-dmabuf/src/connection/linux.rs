@@ -55,8 +55,6 @@ const ACK_TOKEN_OFFSET: usize = 8;
 
 /// Magic sentinel for ack frames: ASCII `b"MOSF"` as little-endian u32 in
 /// the low 32 bits, zero in the high 32 bits.
-///
-/// Matches `iceoryx2-dmabuf/src/wire.rs:7`: `pub const MAGIC: u32 = 0x4D4F_5346;`
 const MAGIC_BUFFER_RELEASED: u32 = 0x4D4F_5346;
 
 // ── LinuxPublisher ────────────────────────────────────────────────────────────
@@ -88,9 +86,11 @@ impl LinuxPublisher {
         let subs_clone = Arc::clone(&subscribers);
         let shutdown_clone = Arc::clone(&shutdown);
         let listener_clone = listener.try_clone()?;
+        listener_clone
+            .set_nonblocking(true)
+            .map_err(|e| std::io::Error::new(e.kind(), format!("set_nonblocking: {e}")))?;
 
         let accept_thread = thread::spawn(move || {
-            listener_clone.set_nonblocking(true).ok();
             while !shutdown_clone.load(Ordering::Relaxed) {
                 match listener_clone.accept() {
                     Ok((stream, _addr)) => {
@@ -187,7 +187,10 @@ impl FdPassingConnection for LinuxPublisher {
     fn recv_release_ack(&self) -> Result<Option<u64>> {
         let mut subs = self.subscribers.lock().map_err(|_| Error::LockPoisoned)?;
 
-        for stream in subs.iter_mut() {
+        let mut dead_indices: Vec<usize> = Vec::new();
+        let mut found_token: Option<u64> = None;
+
+        'outer: for (i, stream) in subs.iter_mut().enumerate() {
             // Non-blocking poll: check if data is available on this subscriber stream.
             // SAFETY: poll(2) is a plain Linux syscall; pfd is stack-allocated and
             // valid for the duration of the call. We use libc directly because rustix
@@ -210,6 +213,11 @@ impl FdPassingConnection for LinuxPublisher {
                 if e.kind() == std::io::ErrorKind::Interrupted {
                     continue;
                 }
+                // Propagate non-EINTR poll errors after pruning dead streams.
+                // Remove dead streams first to avoid CPU spin on future calls.
+                for idx in dead_indices.into_iter().rev() {
+                    subs.remove(idx);
+                }
                 return Err(Error::Io(e));
             }
 
@@ -231,17 +239,23 @@ impl FdPassingConnection for LinuxPublisher {
                     continue;
                 }
                 Err(e) => {
+                    for idx in dead_indices.into_iter().rev() {
+                        subs.remove(idx);
+                    }
                     return Err(Error::Io(std::io::Error::from_raw_os_error(
                         e.raw_os_error(),
                     )));
                 }
                 Ok(msg) => {
                     if msg.bytes == 0 {
-                        // Peer closed — this subscriber is gone; it will be pruned
-                        // on the next send_with_fd call. Skip for now.
+                        // Peer disconnected — mark for pruning to avoid POLLHUP spin.
+                        dead_indices.push(i);
                         continue;
                     }
                     if msg.bytes < HDR_LEN {
+                        for idx in dead_indices.into_iter().rev() {
+                            subs.remove(idx);
+                        }
                         return Err(Error::Truncated {
                             got: msg.bytes,
                             want: HDR_LEN,
@@ -254,6 +268,9 @@ impl FdPassingConnection for LinuxPublisher {
             // frame that arrived on the back-channel — protocol drift.
             let has_ancillary = cmsg_buf.drain().next().is_some();
             if has_ancillary {
+                for idx in dead_indices.into_iter().rev() {
+                    subs.remove(idx);
+                }
                 return Err(Error::ProtocolDrift);
             }
 
@@ -261,6 +278,9 @@ impl FdPassingConnection for LinuxPublisher {
             // The magic u64 has MAGIC_BUFFER_RELEASED in low-32 bits and 0 in high-32.
             let Ok(magic_bytes) = <[u8; 8]>::try_from(&hdr[ACK_MAGIC_OFFSET..ACK_TOKEN_OFFSET])
             else {
+                for idx in dead_indices.into_iter().rev() {
+                    subs.remove(idx);
+                }
                 return Err(Error::Truncated {
                     got: hdr.len(),
                     want: HDR_LEN,
@@ -270,21 +290,31 @@ impl FdPassingConnection for LinuxPublisher {
             // Low-32 bits of the magic_u64 LE value.
             let magic_lo = magic_u64 as u32;
             if magic_lo != MAGIC_BUFFER_RELEASED {
+                for idx in dead_indices.into_iter().rev() {
+                    subs.remove(idx);
+                }
                 return Err(Error::BadMagic { got: magic_lo });
             }
 
             let Ok(token_bytes) = <[u8; 8]>::try_from(&hdr[ACK_TOKEN_OFFSET..HDR_LEN]) else {
+                for idx in dead_indices.into_iter().rev() {
+                    subs.remove(idx);
+                }
                 return Err(Error::Truncated {
                     got: hdr.len(),
                     want: HDR_LEN,
                 });
             };
-            let token = u64::from_le_bytes(token_bytes);
-            return Ok(Some(token));
+            found_token = Some(u64::from_le_bytes(token_bytes));
+            break 'outer;
         }
 
-        // No ack available on any subscriber stream.
-        Ok(None)
+        // Prune dead streams (reverse order to preserve lower indices).
+        for idx in dead_indices.into_iter().rev() {
+            subs.remove(idx);
+        }
+
+        Ok(found_token)
     }
 }
 
@@ -436,11 +466,17 @@ impl FdPassingConnection for LinuxSubscriber {
         frame[ACK_MAGIC_OFFSET..ACK_TOKEN_OFFSET].copy_from_slice(&magic_u64.to_le_bytes());
         frame[ACK_TOKEN_OFFSET..HDR_LEN].copy_from_slice(&token.to_le_bytes());
 
-        // write_all on a blocking-mode stream. The stream was opened non-blocking
-        // for recv, but we set it back to blocking for write to match best-effort.
-        // If EAGAIN / EWOULDBLOCK: treat as best-effort success.
-        match (&self.stream).write_all(&frame) {
-            Ok(()) => Ok(()),
+        // The stream is non-blocking (set in LinuxSubscriber::open).
+        // Use a single write; EAGAIN/EWOULDBLOCK means the send buffer is full —
+        // treat as best-effort success (drop the ack silently).
+        // A 16-byte frame is smaller than any UDS kernel buffer, so a partial
+        // write should never occur in practice, but we guard for it anyway.
+        match (&self.stream).write(&frame) {
+            Ok(n) if n == frame.len() => Ok(()),
+            Ok(_) => Err(Error::Truncated {
+                got: 0,
+                want: frame.len(),
+            }),
             Err(e)
                 if e.kind() == std::io::ErrorKind::WouldBlock
                     || e.raw_os_error() == Some(libc::EAGAIN) =>

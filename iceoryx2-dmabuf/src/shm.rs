@@ -22,9 +22,15 @@ use std::io;
 use std::os::fd::{BorrowedFd, OwnedFd};
 
 #[cfg(target_os = "linux")]
-pub mod linux;
+pub(crate) mod linux;
 #[cfg(not(target_os = "linux"))]
-pub mod non_linux;
+pub(crate) mod non_linux;
+
+// Re-export concrete types needed by integration tests.
+#[cfg(target_os = "linux")]
+pub use linux::Linux;
+#[cfg(not(target_os = "linux"))]
+pub use non_linux::NonLinux;
 
 /// Trait for shared memory backed by an externally-supplied file descriptor
 /// (DMA-BUF, memfd). The fd is mmapped on construction and munmapped on drop.

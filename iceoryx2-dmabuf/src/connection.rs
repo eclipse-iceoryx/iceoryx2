@@ -31,9 +31,15 @@ use std::io;
 use std::os::fd::{BorrowedFd, OwnedFd};
 
 #[cfg(target_os = "linux")]
-pub mod linux;
+pub(crate) mod linux;
 #[cfg(not(target_os = "linux"))]
-pub mod non_linux;
+pub(crate) mod non_linux;
+
+// Re-export concrete types needed by integration tests.
+#[cfg(target_os = "linux")]
+pub use linux::{Linux, LinuxPublisher, LinuxSubscriber};
+#[cfg(not(target_os = "linux"))]
+pub use non_linux::NonLinux;
 
 /// Errors returned by [`FdPassingConnection`] operations.
 #[derive(Debug)]

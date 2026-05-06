@@ -44,6 +44,12 @@ mod linux {
         use std::time::{Duration, Instant};
 
         let svc = format!("bench/dmabuf/fanout/n{n}");
+
+        // Publisher MUST be created first: its UDS socket must be bound before
+        // subscribers attempt to connect. The barrier only synchronises the
+        // measurement start, not connection setup.
+        let mut pub_ = DmaBufPublisher::<u64>::create(&svc)?;
+
         let barrier = Arc::new(Barrier::new(n + 1));
 
         // Spawn N subscriber threads; each records per-frame receive latency.
@@ -61,7 +67,7 @@ mod linux {
             let handle = std::thread::spawn(
                 move || -> Result<(), Box<dyn core::error::Error + Send + Sync>> {
                     let mut sub_ = DmaBufSubscriber::<u64>::create(&svc_clone)?;
-                    bar.wait();
+                    bar.wait(); // wait until all subscribers are connected + publisher is ready
                     for _ in 0..iters {
                         let t0 = Instant::now();
                         let mut polls = 0usize;
@@ -85,10 +91,7 @@ mod linux {
             handles.push(handle);
         }
 
-        // Publisher: created after subscribers so open_or_create sees them.
-        let mut pub_ = DmaBufPublisher::<u64>::create(&svc)?;
-
-        barrier.wait(); // release subscriber threads
+        barrier.wait(); // release subscriber threads; start measurement
 
         for seq in 0..iters as u64 {
             let buf = crate::common::make_memfd(PAYLOAD_BYTES)?;

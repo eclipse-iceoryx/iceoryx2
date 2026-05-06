@@ -137,6 +137,15 @@ where
     /// [`ServiceError::Connection`] wrapping
     /// [`crate::connection::Error::UnsupportedPlatform`].
     ///
+    /// # Protocol violation handling
+    ///
+    /// If the iceoryx2 metadata sample arrives but `recv_with_fd` then fails
+    /// (publisher crashed between the two sends, ordering invariant broken,
+    /// etc.), the metadata is permanently consumed. Any subsequent
+    /// `receive`/`receive_with_token` call would mis-correlate. Callers MUST
+    /// re-open the service after a failed `receive_with_token`. Track
+    /// follow-up at [GH issue placeholder] for recovery semantics.
+    ///
     /// # Errors
     ///
     /// - [`ServiceError::Iceoryx`] — if the iceoryx2 receive fails.

@@ -12,7 +12,7 @@
 #![cfg(target_os = "linux")]
 
 use iceoryx2_dmabuf::external_buffer::ExternalFdBuffer;
-use iceoryx2_dmabuf::shm::{FdBackedSharedMemory, linux::Linux};
+use iceoryx2_dmabuf::shm::{FdBackedSharedMemory, Linux};
 use std::os::fd::{FromRawFd as _, OwnedFd};
 
 fn memfd(name: &core::ffi::CStr, len: i64) -> OwnedFd {
@@ -50,4 +50,23 @@ fn fd_backed_shm_payload_writeable() {
         let read = std::slice::from_raw_parts(shm.payload_ptr(), 64);
         assert!(read.iter().all(|&b| b == 0xAB));
     }
+}
+
+// TEST 1 — spec §12: drop closes the fd and unmaps the region.
+#[test]
+fn drop_munmaps_and_closes_fd() {
+    use std::os::fd::AsRawFd as _;
+    let fd = memfd(c"droptest", 4096);
+    let raw = fd.as_raw_fd();
+    let shm = Linux::from_owned_fd(fd, 4096).expect("from_owned_fd");
+    let proc_path = format!("/proc/self/fd/{raw}");
+    assert!(
+        std::path::Path::new(&proc_path).exists(),
+        "fd should exist before drop"
+    );
+    drop(shm);
+    assert!(
+        !std::path::Path::new(&proc_path).exists(),
+        "fd should be closed after drop"
+    );
 }

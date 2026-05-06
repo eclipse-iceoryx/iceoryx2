@@ -8,23 +8,26 @@
 //! - A `Node<ipc::Service>` for service discovery and lifetime management.
 //! - An iceoryx2 `PortFactory<ipc::Service, Meta, ()>` for the **metadata channel**
 //!   — `Meta` values travel inside iceoryx2's shared memory as publish payloads.
-//!   The user-header is `()` (no internal token; ordering relies on SPSC guarantee).
+//!   The user-header is `()` (no internal token; ordering relies on single-publisher FIFO guarantee).
 //! - A Unix-domain socket path for the **fd channel** — DMA-BUF file descriptors
 //!   travel out-of-band via `SCM_RIGHTS` over a Unix-domain socket.
 //!
-//! ## Ordering invariant (SPSC contract)
+//! ## Ordering invariant
 //!
 //! The publisher sends the fd **first** (via the fd channel), then publishes the
 //! iceoryx2 metadata sample. The subscriber dequeues the iceoryx2 sample **first**,
 //! then drains the fd from the socket. This relies on:
 //!
 //! 1. The iceoryx2 channel and the UDS socket both maintain FIFO ordering.
-//! 2. A single active publisher and a single active subscriber share both channels
-//!    (SPSC). Multi-publisher or multi-subscriber use-cases are **not** supported
-//!    by this ordering scheme — widen the wire format (Task 4b) for that.
+//! 2. A single active publisher shares both channels. Multi-publisher is **NOT**
+//!    supported in this version — two concurrent publishers would silently
+//!    correlate the wrong fd with the wrong metadata sample.
 //!
-//! Violating the SPSC constraint (e.g. two concurrent publishers) will silently
-//! correlate the wrong fd with the wrong metadata sample.
+//! Multi-subscriber fanout IS supported: each subscriber has its own UDS
+//! connection and receives all fds independently. See `bench_fanout` and
+//! `connection_tests::fanout_one_pub_three_sub_100_frames` for examples.
+//!
+//! Multi-publisher support requires widening the wire format (planned for Task 4b).
 
 use core::fmt::Debug;
 use iceoryx2::node::NodeBuilder;

@@ -22,19 +22,20 @@ use crate::service_subscriber::DmaBufServiceSubscriber;
 ///
 /// ## Lifetime contract
 ///
-/// `_node` is declared **first** so it is dropped **last** (Rust drops struct
-/// fields in declaration order). All iceoryx2 ports created from this factory
-/// must not outlive the factory itself — which in turn must not outlive the node.
-/// Enforce this by keeping the factory alive (e.g. in the same scope) as any
-/// publisher or subscriber built from it.
+/// Field order: `meta_factory` and `socket_path` MUST drop before `_node`.
+/// `_node` is declared LAST so Rust drops it last (Rust drops fields in
+/// declaration order; last declared = last dropped). All iceoryx2 ports
+/// created from this factory must not outlive the factory itself — which
+/// in turn must not outlive the node. Enforce this by keeping the factory
+/// alive (e.g. in the same scope) as any publisher or subscriber built from it.
 pub struct DmabufPortFactory<Meta>
 where
     Meta: ZeroCopySend + Debug + Copy + 'static,
 {
-    /// Node MUST be declared first — dropped last. See struct-level doc.
-    _node: Node<ipc::Service>,
     meta_factory: IceoryxPortFactory<ipc::Service, Meta, ()>,
     socket_path: String,
+    /// Declared LAST — dropped last. See struct-level doc.
+    _node: Node<ipc::Service>,
 }
 
 impl<Meta> DmabufPortFactory<Meta>
@@ -48,9 +49,9 @@ where
         socket_path: String,
     ) -> Self {
         Self {
-            _node: node,
             meta_factory,
             socket_path,
+            _node: node,
         }
     }
 

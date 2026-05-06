@@ -11,6 +11,7 @@ use super::{Error, FdPassingConnection, Result};
 /// Stub connection type for non-Linux platforms.
 ///
 /// All methods return [`Error::UnsupportedPlatform`].
+#[allow(dead_code)]
 pub struct NonLinux;
 
 impl FdPassingConnection for NonLinux {

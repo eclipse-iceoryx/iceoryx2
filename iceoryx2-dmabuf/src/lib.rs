@@ -31,6 +31,7 @@
 // The sole exceptions are the Linux-specific syscall wrappers in
 // `shm/linux.rs`, marked `#[allow(unsafe_code)]` at the block level.
 #![deny(unsafe_code)]
+#![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 pub mod connection;
 #[cfg(all(target_os = "linux", feature = "dma-buf"))]
@@ -54,4 +55,5 @@ pub use dmabuf_subscriber::DmaBufSubscriber;
 #[cfg(all(target_os = "linux", feature = "dma-buf"))]
 pub use dma_buf::{DmaBuf, MappedDmaBuf};
 
+pub use external_buffer::ExternalFdBuffer;
 pub use service::Service as DmaBufService;
