@@ -626,4 +626,212 @@ pub mod event_discovery {
         assert_that!(tunnel.tunneled_services().len(), eq 1);
         assert_that!(tunnel.tunneled_services().contains(&service_hash), eq true);
     }
+
+    #[conformance_test]
+    pub fn lifecycle_with_local_service_on_one_host<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing,
+    >() {
+        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
+        const MAX_RETRIES: usize = 5;
+
+        // === SETUP ===
+        let service_name = generate_service_name();
+
+        // Host A — no local user; mirrors Host B's service in via the backend.
+        let iceoryx_config_a = generate_isolated_config();
+        let mut tunnel_a = Tunnel::<S, B>::create(
+            &TunnelConfig::default(),
+            &iceoryx_config_a,
+            &B::Config::default(),
+        )
+        .unwrap();
+
+        // Host B — will own the service.
+        let iceoryx_config_b = generate_isolated_config();
+        let mut tunnel_b = Tunnel::<S, B>::create(
+            &TunnelConfig::default(),
+            &iceoryx_config_b,
+            &B::Config::default(),
+        )
+        .unwrap();
+
+        // === ADDITION ===
+        let node_b = NodeBuilder::new()
+            .config(&iceoryx_config_b)
+            .create::<S>()
+            .unwrap();
+        let service_b = node_b
+            .service_builder(&service_name)
+            .event()
+            .open_or_create()
+            .unwrap();
+        let service_hash = *service_b.service_hash();
+
+        tunnel_b.discover_over_iceoryx().unwrap();
+
+        T::retry(
+            || {
+                tunnel_a.discover_over_backend().unwrap();
+                if tunnel_a.tunneled_services().contains(&service_hash) {
+                    return Ok(());
+                }
+                Err("Failed to discover remote service")
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        )
+        .unwrap();
+
+        // Local discovery on Host A must not tear down the mirror.
+        for _ in 0..5 {
+            tunnel_a.discover_over_iceoryx().unwrap();
+            assert_that!(tunnel_a.tunneled_services().contains(&service_hash), eq true);
+        }
+
+        // === REMOVAL ===
+        drop(service_b);
+        drop(node_b);
+
+        // Host B detects the local user is gone and tears down its port.
+        T::retry(
+            || {
+                tunnel_b.discover_over_iceoryx().unwrap();
+                if tunnel_b.tunneled_services().is_empty() {
+                    return Ok(());
+                }
+                Err("Failed to detect local service removal")
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        )
+        .unwrap();
+
+        // Host A receives the removal over the backend and tears down the mirror.
+        T::retry(
+            || {
+                tunnel_a.discover_over_backend().unwrap();
+                if tunnel_a.tunneled_services().is_empty() {
+                    return Ok(());
+                }
+                Err("Failed to tear down mirrored service")
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        )
+        .unwrap();
+    }
+
+    #[conformance_test]
+    pub fn lifecycle_with_local_service_on_two_hosts<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing,
+    >() {
+        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
+        const MAX_RETRIES: usize = 5;
+
+        // === SETUP ===
+        let service_name = generate_service_name();
+
+        // Host A — will own the service first.
+        let iceoryx_config_a = generate_isolated_config();
+        let mut tunnel_a = Tunnel::<S, B>::create(
+            &TunnelConfig::default(),
+            &iceoryx_config_a,
+            &B::Config::default(),
+        )
+        .unwrap();
+
+        // Host B — will mirror Host A's service before a local
+        // offerer appears
+        let iceoryx_config_b = generate_isolated_config();
+        let mut tunnel_b = Tunnel::<S, B>::create(
+            &TunnelConfig::default(),
+            &iceoryx_config_b,
+            &B::Config::default(),
+        )
+        .unwrap();
+
+        // === ADDITION ===
+        // Host A has a local
+        let node_a = NodeBuilder::new()
+            .config(&iceoryx_config_a)
+            .create::<S>()
+            .unwrap();
+        let service_a = node_a
+            .service_builder(&service_name)
+            .event()
+            .open_or_create()
+            .unwrap();
+        let service_hash = *service_a.service_hash();
+
+        tunnel_a.discover_over_iceoryx().unwrap();
+
+        // Wait until Host B mirrors Host A's service via the backend before
+        // adding B's own local user.
+        T::retry(
+            || {
+                tunnel_b.discover_over_backend().unwrap();
+                if tunnel_b.tunneled_services().contains(&service_hash) {
+                    return Ok(());
+                }
+                Err("Failed to mirror remote service")
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        )
+        .unwrap();
+
+        // Host B has a local offerer for the same service
+        let node_b = NodeBuilder::new()
+            .config(&iceoryx_config_b)
+            .create::<S>()
+            .unwrap();
+        let service_b = node_b
+            .service_builder(&service_name)
+            .event()
+            .open_or_create()
+            .unwrap();
+        assert_that!(*service_b.service_hash(), eq service_hash);
+
+        tunnel_b.discover_over_iceoryx().unwrap();
+
+        // === REMOVAL ===
+        // Local offerer in host B is removed
+        drop(service_b);
+        drop(node_b);
+
+        // Host A is still offering. Host B must retain the mirror across
+        // repeated discovery cycles.
+        for _ in 0..5 {
+            tunnel_b.discover_over_iceoryx().unwrap();
+            tunnel_b.discover_over_backend().unwrap();
+            assert_that!(tunnel_b.tunneled_services().contains(&service_hash), eq true);
+        }
+
+        // Local offerer in host A is removed
+        drop(service_a);
+        drop(node_a);
+
+        // No offerer remains anywhere. Both hosts tear down.
+        T::retry(
+            || {
+                tunnel_a.discover_over_iceoryx().unwrap();
+                tunnel_a.discover_over_backend().unwrap();
+                tunnel_b.discover_over_iceoryx().unwrap();
+                tunnel_b.discover_over_backend().unwrap();
+                if tunnel_a.tunneled_services().is_empty()
+                    && tunnel_b.tunneled_services().is_empty()
+                {
+                    return Ok(());
+                }
+                Err("Failed to tear down service")
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        )
+        .unwrap();
+    }
 }
