@@ -588,13 +588,7 @@ pub mod publish_subscribe_discovery {
         // === SETUP ===
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
-        let tunnel_config = TunnelConfig {
-            discovery_service: Some(DISCOVERY_TOPIC.into()),
-        };
-        let mut tunnel =
-            Tunnel::<S, B>::create(&tunnel_config, &iceoryx_config, &B::Config::default()).unwrap();
 
-        // Create a service
         let node = NodeBuilder::new()
             .config(&iceoryx_config)
             .create::<S>()
@@ -621,6 +615,12 @@ pub mod publish_subscribe_discovery {
         let mut tracker = Tracker::<S>::new(&iceoryx_config);
         tracker.sync().unwrap();
         let static_config = tracker.get(&service_hash).unwrap().static_details.clone();
+
+        let tunnel_config = TunnelConfig {
+            discovery_service: Some(DISCOVERY_TOPIC.into()),
+        };
+        let mut tunnel =
+            Tunnel::<S, B>::create(&tunnel_config, &iceoryx_config, &B::Config::default()).unwrap();
 
         // === DUPLICATE ANNOUNCEMENT ===
         // Inject the same Added event twice.
