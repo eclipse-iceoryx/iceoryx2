@@ -21,6 +21,8 @@ use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
+// TODO: refactor tests
+
 #[repr(C)]
 #[derive(AtomicCopy, Clone, Copy)]
 struct Foo(u8, u64, u32, u16);
@@ -55,7 +57,7 @@ pub fn new_creates_fixed_size_byte_atomic_containing_passed_value() {
 }
 
 #[test]
-pub fn new_creates_fixed_size_bye_atomic_containing_passed_complex_value() {
+pub fn new_creates_fixed_size_byte_atomic_containing_passed_complex_value() {
     let value = ComplexType {
         a: 5,
         b: StaticString::<6>::try_from("ato").unwrap(),
@@ -98,6 +100,12 @@ pub fn byte_atomic_contains_passed_value_after_write() {
         relocatable_sut.write(new_value);
         assert_that!(relocatable_sut.read().assume_init(), eq new_value);
     }
+
+    let heap_sut = ByteAtomic::<u64>::new(0);
+    unsafe {
+        heap_sut.write(new_value);
+        assert_that!(heap_sut.read().assume_init(), eq new_value);
+    }
 }
 
 #[test]
@@ -139,6 +147,19 @@ pub fn byte_atomic_contains_passed_complex_value_after_write() {
             .expect("RelocatableByteAtomic initialized.");
         relocatable_sut.write(new_value);
         let read_value = relocatable_sut.read().assume_init();
+        assert_that!(read_value.a, eq new_value.a);
+        assert_that!(read_value.b, eq new_value.b);
+        assert_that!(read_value.c, eq new_value.c);
+        assert_that!(read_value.d.0, eq new_value.d.0);
+        assert_that!(read_value.d.1, eq new_value.d.1);
+        assert_that!(read_value.d.2, eq new_value.d.2);
+        assert_that!(read_value.d.3, eq new_value.d.3);
+    }
+
+    let heap_sut = ByteAtomic::<ComplexType>::new(init_value);
+    unsafe {
+        heap_sut.write(new_value);
+        let read_value = heap_sut.read().assume_init();
         assert_that!(read_value.a, eq new_value.a);
         assert_that!(read_value.b, eq new_value.b);
         assert_that!(read_value.c, eq new_value.c);
@@ -340,4 +361,33 @@ pub fn panic_is_called_in_debug_mode_if_map_is_not_initialized() {
         let sut = RelocatableByteAtomic::<u8>::new_uninit(0);
         sut.write(9);
     }
+}
+
+#[test]
+pub fn new_creates_byte_atomic_containing_passed_value() {
+    let value = 963;
+    let sut = ByteAtomic::<u64>::new(value);
+
+    let read_value = unsafe { sut.read().assume_init() };
+    assert_that!(read_value, eq value);
+}
+
+#[test]
+pub fn new_creates_byte_atomic_containing_passed_complex_value() {
+    let value = ComplexType {
+        a: 5,
+        b: StaticString::<6>::try_from("ato").unwrap(),
+        c: -9.3,
+        d: Foo(1, 111111, 444, 99),
+    };
+    let sut = ByteAtomic::<ComplexType>::new(value);
+
+    let read_value = unsafe { sut.read().assume_init() };
+    assert_that!(read_value.a, eq value.a);
+    assert_that!(read_value.b, eq value.b);
+    assert_that!(read_value.c, eq value.c);
+    assert_that!(read_value.d.0, eq value.d.0);
+    assert_that!(read_value.d.1, eq value.d.1);
+    assert_that!(read_value.d.2, eq value.d.2);
+    assert_that!(read_value.d.3, eq value.d.3);
 }
