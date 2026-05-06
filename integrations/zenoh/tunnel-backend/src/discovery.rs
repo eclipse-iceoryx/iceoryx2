@@ -336,9 +336,9 @@ impl Discovery {
             let pending = self.pending.borrow();
             for (hash, handler) in pending.iter() {
                 match check_pending(hash, handler) {
-                    PendingQuery::Resolved(static_config) => resolved.push(static_config),
-                    PendingQuery::Waiting => {}
-                    PendingQuery::Failed => failed.push(*hash),
+                    Ok(Some(static_config)) => resolved.push(static_config),
+                    Ok(None) => {}
+                    Err(()) => failed.push(*hash),
                 }
             }
         }
@@ -365,19 +365,16 @@ impl Discovery {
     }
 }
 
-enum PendingQuery {
-    Resolved(StaticConfig),
-    Waiting,
-    Failed,
-}
-
-fn check_pending(hash: &ServiceHash, handler: &FifoChannelHandler<Reply>) -> PendingQuery {
+fn check_pending(
+    hash: &ServiceHash,
+    handler: &FifoChannelHandler<Reply>,
+) -> Result<Option<StaticConfig>, ()> {
     loop {
         match handler.try_recv() {
             Ok(Some(reply)) => match reply.result() {
                 Ok(sample) => {
                     match serde_json::from_slice::<StaticConfig>(&sample.payload().to_bytes()) {
-                        Ok(static_config) => return PendingQuery::Resolved(static_config),
+                        Ok(static_config) => return Ok(Some(static_config)),
                         Err(e) => warn!(
                             "Skipping unparseable reply for service {}: {}",
                             hash.as_str(),
@@ -387,8 +384,8 @@ fn check_pending(hash: &ServiceHash, handler: &FifoChannelHandler<Reply>) -> Pen
                 }
                 Err(e) => warn!("Erroneous reply for service {}: {:?}", hash.as_str(), e),
             },
-            Ok(None) => return PendingQuery::Waiting,
-            Err(_) => return PendingQuery::Failed,
+            Ok(None) => return Ok(None),
+            Err(_) => return Err(()),
         }
     }
 }
