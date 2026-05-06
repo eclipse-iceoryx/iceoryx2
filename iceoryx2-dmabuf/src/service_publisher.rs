@@ -108,7 +108,8 @@ where
     /// the sample.
     ///
     /// On non-Linux targets this always returns
-    /// [`ServiceError::Connection(Error::UnsupportedPlatform)`].
+    /// [`ServiceError::Connection`] wrapping
+    /// [`crate::connection::Error::UnsupportedPlatform`].
     ///
     /// # Errors
     ///
@@ -136,7 +137,8 @@ where
     /// buffer lifecycle by token.
     ///
     /// On non-Linux targets this always returns
-    /// [`ServiceError::Connection(Error::UnsupportedPlatform)`].
+    /// [`ServiceError::Connection`] wrapping
+    /// [`crate::connection::Error::UnsupportedPlatform`].
     ///
     /// # Errors
     ///

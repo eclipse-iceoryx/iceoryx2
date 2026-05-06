@@ -1,0 +1,353 @@
+= DMA-BUF Typed Transport Specification
+:toc:
+:icons: font
+
+[horizontal]
+Version:: 1.1.0
+Status:: Superseded by Design C — see `arch-dmabuf-service-variant.adoc` and `spec-dmabuf-service-variant.adoc`. Retained for historical context and primitive reference.
+Domain:: `specs/arch-fd-sidecar.adoc`
+Crate:: `iceoryx2-dmabuf`
+Change log:: 1.1.0 — applies 20 gaps from self-review + architect review (token rename, deprecation policy, newtype composition, CHANGELOG requirement, test migration enumeration, MSRV, unit test matrix, Send+Sync bounds, BufferError wrapping, commit sequence).
+
+== Overview
+
+`iceoryx2-dmabuf` today implements a correct `SCM_RIGHTS` fd sidecar for iceoryx2 pub/sub but exposes only a raw `OwnedFd` API. The crate name and description claim DMA-BUF support, yet no DMA-BUF-specific semantics (CPU-sync ioctls, heap allocation, buffer naming) are implemented. This specification adds a thin typed wrapper over the existing transport that delegates all DMA-BUF semantics to the upstream https://crates.io/crates/dma-buf[`dma-buf`] crate (v0.5, maintained by Maxime Ripard).
+
+The result: two clearly scoped types coexist in the crate.
+
+* `FdSidecarPublisher` / `FdSidecarSubscriber` — the unchanged, generic fd-passing transport (what today's `DmabufPublisher` / `DmabufSubscriber` actually are).
+* `DmaBufPublisher` / `DmaBufSubscriber` — newtype wrappers over `FdSidecar*` that accept and yield `dma_buf::DmaBuf`, giving subscribers safe CPU access via `MappedDmaBuf::read/write/readwrite` (which wrap `DMA_BUF_IOCTL_SYNC`).
+
+== Requirements
+
+=== Functional Requirements
+
+==== Dependencies and features
+
+. [MUST] Add `dma-buf = { version = "0.5", optional = true }` to `iceoryx2-dmabuf/Cargo.toml` as a Linux-only dependency behind a new `dma-buf` Cargo feature.
+. [MUST] The Cargo feature is named `dma-buf` to match the crate name; Cargo allows hyphenated feature names and this is an intentional convention (compare `serde = { version = "1", features = ["serde_derive"] }`).
+. [MUST] Verify MSRV: the workspace `rust-version` must meet or exceed the maximum MSRV of `dma-buf 0.5` and `dma-heap 0.3`. If upstream requires a bump, raise the workspace `rust-version` as part of this change and document the bump in the CHANGELOG.
+. [MUST] Add `dma-heap = "0.3"` as a `dev-dependency` only (used by the heap roundtrip test and the new example pair; not in the public API).
+
+==== Renames (backwards-compat aliases preserved)
+
+[start=5]
+. [MUST] Rename the public types to match their actual scope:
+** `DmabufPublisher` → `FdSidecarPublisher`
+** `DmabufSubscriber` → `FdSidecarSubscriber`
+** `DmabufIpcPublisher<Meta>` → `FdSidecarIpcPublisher<Meta>`
+** `DmabufIpcSubscriber<Meta>` → `FdSidecarIpcSubscriber<Meta>`
+** `DmabufError` → `FdSidecarError`
+** `DmabufToken` → `FdSidecarToken` (part of the sidecar correlation protocol, not DMA-BUF specific)
+. [MUST] Provide deprecation aliases for one minor release:
++
+[source,rust]
+----
+#[deprecated(since = "<next-version>", note = "renamed to FdSidecarPublisher")]
+pub type DmabufPublisher<S, Meta> = FdSidecarPublisher<S, Meta>;
+// … likewise for Subscriber, IpcPublisher, IpcSubscriber, Error, Token
+----
++
+Internal call sites use the new names; `#[allow(deprecated)]` is NOT used — our own code must not reference the aliases.
+. [MUST] Rename the binaries for consistency (Cargo.toml `[[bin]]` entries):
+** `dmabuf_fd_identity` → `fd_sidecar_fd_identity`
+** `dmabuf_crash_pub` → `fd_sidecar_crash_pub`
++
+The test files that spawn them (`it_fd_identity.rs`, `it_crash_midsend.rs`) update their `Command::new("dmabuf_fd_identity")` calls accordingly.
+. [MUST] Migrate every existing test to the new names — no test may rely on deprecated aliases:
+** `tests/unit_token.rs`
+** `tests/unit_path.rs`
+** `tests/unit_scm.rs`
+** `tests/peercred_mismatch.rs`
+** `tests/dmabuf_roundtrip.rs`
+** `tests/it_fd_identity.rs`
+** `tests/it_fanout.rs`
+** `tests/refcount_survival.rs`
+** `tests/it_crash_midsend.rs`
+** `tests/it_service_gone.rs`
+** `tests/it_socket_gone.rs`
+** `tests/prop_roundtrip.rs`
+** `tests/unit_generic_service.rs`
+** `tests/error_paths.rs`
+** `src/bin/dmabuf_fd_identity.rs` (moved to `src/bin/fd_sidecar_fd_identity.rs`)
+** `src/bin/dmabuf_crash_pub.rs` (moved to `src/bin/fd_sidecar_crash_pub.rs`)
+. [MUST] Update all rustdoc intra-doc links (`[\`DmabufError::X\`]`) to the new names. `cargo doc -p iceoryx2-dmabuf --no-deps --all-features` must produce zero broken-link warnings.
+. [MUST] Update the crate-level module doc (`src/lib.rs`) and the README so that no text or code example references `DmabufPublisher` / `DmabufSubscriber` as primary names. The deprecated aliases are mentioned only in a dedicated "Migration" section.
+
+==== New DMA-BUF typed layer
+
+[start=11]
+. [MUST] Introduce `DmaBufPublisher<S, Meta>` as a *newtype* over `FdSidecarPublisher`:
++
+[source,rust]
+----
+#[cfg(all(target_os = "linux", feature = "dma-buf"))]
+pub struct DmaBufPublisher<S: Service, Meta: ZeroCopySend + Debug + 'static> {
+    inner: FdSidecarPublisher<S, Meta>,
+}
+
+impl<S, Meta> DmaBufPublisher<S, Meta> where /* same bounds */ {
+    pub fn create(service_name: &str) -> Result<Self> { /* delegates to inner::create */ }
+    pub fn send(&mut self, meta: Meta, buf: &dma_buf::DmaBuf) -> Result<()> {
+        let fd = buf.as_fd().try_clone_to_owned()
+            .map_err(FdSidecarError::SideChannelIo)?;
+        self.inner.send(meta, fd)
+    }
+}
+----
++
+The `try_clone_to_owned()` call fires one `fcntl(F_DUPFD_CLOEXEC)` per frame. This is documented in the method's rustdoc as the per-frame overhead.
+. [MUST] Introduce `DmaBufSubscriber<S, Meta>` as a newtype over `FdSidecarSubscriber`:
++
+[source,rust]
+----
+#[cfg(all(target_os = "linux", feature = "dma-buf"))]
+pub struct DmaBufSubscriber<S: Service, Meta: ZeroCopySend + Debug + 'static> {
+    inner: FdSidecarSubscriber<S, Meta>,
+}
+
+impl<S, Meta> DmaBufSubscriber<S, Meta> where /* same bounds */ {
+    pub fn create(service_name: &str) -> Result<Self> { /* delegates to inner::create */ }
+    pub fn recv(&mut self) -> Result<Option<(Meta, dma_buf::DmaBuf)>> {
+        let Some((meta, fd)) = self.inner.recv()? else { return Ok(None); };
+        Ok(Some((meta, dma_buf::DmaBuf::from(fd))))
+    }
+    pub fn reconnect(&mut self) -> Result<()> { self.inner.reconnect() }
+}
+----
++
+`reconnect` is forwarded (KISS — the DmaBuf layer adds nothing to the side-channel reconnect semantics).
+. [MUST] Both `DmaBufPublisher` and `DmaBufSubscriber` reuse `crate::build_node_and_service` (DRY); no duplicate node/service construction.
+. [MUST] Re-export only the upstream types users *need*:
++
+[source,rust]
+----
+#[cfg(all(target_os = "linux", feature = "dma-buf"))]
+pub use dma_buf::{DmaBuf, MappedDmaBuf};
+----
++
+`dma_buf::BufferError` is *not* re-exported. Instead it is wrapped when it can cross our API surface:
++
+[source,rust]
+----
+#[non_exhaustive]
+pub enum FdSidecarError {
+    // … existing variants …
+    /// A DMA-BUF CPU-access ioctl failed (only surfaces if the crate exposes
+    /// helpers that invoke MappedDmaBuf::read/write; today the user invokes
+    /// those directly, so this variant is reserved for future use).
+    #[cfg(feature = "dma-buf")]
+    DmaBuf(dma_buf::BufferError),
+}
+----
++
+This isolates the crate's public API from `dma-buf`'s 0.x semver churn.
+
+==== Test-utils forwarding
+
+[start=15]
+. [SHOULD] `DmaBufPublisher` exposes `inject_raw_for_test` and `send_metadata_only_for_test` (gated on `feature = "test-utils"`) by forwarding to `self.inner.*`. Without this, error-path tests cannot exercise the DmaBuf layer.
+
+==== Thread-safety
+
+[start=16]
+. [MUST] `DmaBufPublisher<S, Meta>` and `DmaBufSubscriber<S, Meta>` are `Send` when `FdSidecar*` are `Send`; `Sync` likewise. A compile-time trait-bound test in `tests/unit_bounds.rs` asserts this:
++
+[source,rust]
+----
+const _: fn() = || {
+    fn assert_send<T: Send>() {}
+    fn assert_sync<T: Sync>() {}
+    assert_send::<DmaBufPublisher<iceoryx2::service::ipc::Service, u64>>();
+    assert_sync::<DmaBufPublisher<iceoryx2::service::ipc::Service, u64>>();
+    // same for DmaBufSubscriber and the FdSidecar* types
+};
+----
+
+==== Documentation and examples
+
+[start=17]
+. [MUST] Update `Cargo.toml` `description` from `"iceoryx2: DMA-BUF fd side-channel for zero-copy frame delivery"` to a phrase that distinguishes transport (SCM_RIGHTS fd sidecar) from payload (DMA-BUF typed wrapper). Proposed: `"iceoryx2: SCM_RIGHTS fd sidecar + typed DMA-BUF wrapper for zero-copy frame delivery"`.
+. [MUST] Rewrite `README.md` into two sections: *Transport* (`FdSidecar*`) and *Payload* (`DmaBuf*`), with the decision matrix below.
+. [MUST] Update `CHANGELOG.md` with a "Breaking" subsection enumerating every renamed symbol (including the `DmabufToken` → `FdSidecarToken` rename that breaks service-signature compatibility with older publishers/subscribers) and the deprecation cycle.
+. [SHOULD] Ship an integration test `tests/it_dmabuf_heap_roundtrip.rs` that:
+** Allocates a 4 KiB buffer via `dma_heap::Heap::new(dma_heap::HeapKind::System).allocate(4096)`.
+** Skips with a clear message when `/dev/dma_heap/system` is absent (not a panic).
+** Publishes the buffer, receives it, maps it via `MappedDmaBuf::read`, asserts a known byte pattern.
+** Cargo entry: `[[test]] name = "it_dmabuf_heap_roundtrip"` with `required-features = ["dma-buf"]`.
+. [SHOULD] Add an example pair `examples/publish_subscribe_dmabuf/{publisher.rs, subscriber.rs}` demonstrating `dma-heap` allocation + `MappedDmaBuf::read`. Cargo entries have `required-features = ["dma-buf"]`.
+
+==== Deferred (optional, out of scope)
+
+[start=22]
+. [MAY] Probe received fds with `DMA_BUF_IOCTL_NAME` at `DmaBufSubscriber::recv` to reject non-DMA-BUF fds (e.g. memfd). Defer unless a real user requires it — the probe adds a syscall per frame.
+. [MAY] Add an `allocator::DmaBufAllocator` helper that wraps `dma_heap::Heap`. Defer to a follow-up if users demand it.
+
+=== Unit-test matrix for new types
+
+|===
+|Test | Purpose | File
+
+|`dmabuf_publisher_create_linux`
+|`DmaBufPublisher::create(service)` succeeds on Linux, constructs inner FdSidecar.
+|`tests/unit_dmabuf_publisher.rs`
+
+|`dmabuf_publisher_create_unsupported`
+|On non-Linux stubs, `create` returns `UnsupportedPlatform`.
+|`tests/unit_dmabuf_publisher.rs`
+
+|`dmabuf_send_via_memfd_adapted`
+|`DmaBufPublisher::send` with `DmaBuf::from(memfd_owned_fd)` completes without error (behavioural equivalence to raw fd send).
+|`tests/unit_dmabuf_publisher.rs`
+
+|`dmabuf_subscriber_recv_roundtrip`
+|Publisher sends a memfd wrapped in DmaBuf; subscriber receives and mmaps via `MappedDmaBuf::read`; byte pattern matches.
+|`tests/it_dmabuf_memfd_roundtrip.rs`
+
+|`dmabuf_heap_roundtrip`
+|End-to-end using `dma-heap` allocator; skipped when `/dev/dma_heap/system` missing.
+|`tests/it_dmabuf_heap_roundtrip.rs`
+
+|`fd_identity_preserved_through_wrap`
+|Asserts inode of publisher's `DmaBuf` equals inode of subscriber's received `DmaBuf` (fstat or /proc/self/fd/N → same inode).
+|`tests/it_dmabuf_fd_identity.rs`
+
+|`send_sync_bounds`
+|Compile-time assertion; panics at build time if trait bounds regress.
+|`tests/unit_bounds.rs`
+
+|`deprecated_aliases_resolve`
+|`#[allow(deprecated)] let _: DmabufPublisher<_,_> = /* new FdSidecarPublisher */;` compiles (with a `#[deprecated]` warning).
+|`tests/unit_deprecation.rs`
+|===
+
+=== Non-Functional Requirements
+
+* *Performance:* `DmaBufPublisher::send` adds one `fcntl(F_DUPFD_CLOEXEC)` per frame (cost of borrowing the DmaBuf instead of taking ownership). `DmaBufSubscriber::recv` adds one `DmaBuf::from(OwnedFd)` (zero syscall). CPU-sync ioctls fire only at user-initiated `MappedDmaBuf::read/write/readwrite`.
+* *Portability:* `cargo build -p iceoryx2-dmabuf --no-default-features` must still succeed on macOS. The `DmaBuf*` type family is gated on `cfg(all(target_os = "linux", feature = "dma-buf"))`.
+* *Compile time:* Default features unchanged; `dma-buf` gate keeps existing users unaffected. `dma-buf`'s transitive deps (`rustix`, `tracing`) are already in the workspace tree.
+* *Safety:* Crate-level `#![deny(unsafe_code)]` preserved (`src/lib.rs:71`). All `unsafe` stays confined to upstream `dma-buf` (audited) and existing `scm.rs` blocks.
+* *Clippy:* `--all-features --all-targets -- -D warnings` clean. The `clippy::module_name_repetitions` lint (triggered by `FdSidecarPublisher` in `src/publisher.rs`) is explicitly allowed at the module level with a rationale comment; renaming the module adds churn without benefit.
+
+== Commit sequence (bisectable review)
+
+To keep the upstream PR reviewable, split the change into three atomic commits:
+
+. `refactor(iceoryx2-dmabuf): rename DmabufPublisher/Subscriber/Error/Token to FdSidecar* — deprecation aliases preserved`
+** Pure rename; deprecation aliases added; all tests migrated; CHANGELOG breaking-change section added.
+** CI: green on this commit alone.
+. `feat(iceoryx2-dmabuf): add optional dma-buf dependency + Cargo feature`
+** Cargo.toml only; no code change.
+** CI: green (`--features dma-buf` compiles; existing tests unaffected).
+. `feat(iceoryx2-dmabuf): add DmaBufPublisher/Subscriber typed wrapper + heap example`
+** New types, re-exports, unit + integration tests, example pair, README rewrite.
+** CI: green including new heap-roundtrip test (skipped where `/dev/dma_heap/system` missing).
+
+Each commit compiles and passes `cargo fmt`, `cargo clippy`, and `cargo test` in isolation.
+
+== Acceptance Criteria
+
+* [ ] Three commits land in the sequence above; `git bisect` between them keeps CI green.
+* [ ] `cargo build -p iceoryx2-dmabuf --features "dma-buf memfd"` succeeds on Linux.
+* [ ] `cargo build -p iceoryx2-dmabuf --no-default-features --target aarch64-apple-darwin` succeeds.
+* [ ] `cargo clippy -p iceoryx2-dmabuf --all-features --all-targets -- -D warnings` is clean.
+* [ ] `cargo test -p iceoryx2-dmabuf --features "dma-buf memfd test-utils"` passes.
+* [ ] `cargo doc -p iceoryx2-dmabuf --no-deps --all-features` emits zero broken-intra-doc-link warnings.
+* [ ] `tests/it_dmabuf_heap_roundtrip.rs` passes when `/dev/dma_heap/system` exists; otherwise prints a skip message and returns 0.
+* [ ] `Cargo.toml` `description` no longer reads `"DMA-BUF fd side-channel for zero-copy frame delivery"` verbatim; new text distinguishes transport from payload.
+* [ ] `README.md` contains a "Transport" section, a "Payload" section, and the decision matrix.
+* [ ] `CHANGELOG.md` lists every renamed symbol under a "Breaking" subsection and documents the deprecation cycle.
+* [ ] `grep -r "DmabufPublisher\|DmabufSubscriber\|DmabufError\|DmabufToken" iceoryx2-dmabuf/src iceoryx2-dmabuf/tests iceoryx2-dmabuf/examples` returns only:
+** deprecation-alias definitions in `src/lib.rs`
+** the `unit_deprecation.rs` test (which uses `#[allow(deprecated)]`)
+** the "Migration" paragraph in `README.md`
+* [ ] `cargo tree -p iceoryx2-dmabuf --features dma-buf` shows `dma-buf 0.5.x` and `dma-heap 0.3.x` (the latter only under `--features dma-buf --all-targets` since it is a dev-dep).
+* [ ] Workspace `rust-version` unchanged OR bumped with CHANGELOG rationale.
+
+== Decision matrix (for README)
+
+|===
+|User has... |Use
+
+|Arbitrary `OwnedFd` with no kernel-coherency concern (memfd, eventfd, pipe end)
+|`FdSidecarPublisher` / `FdSidecarSubscriber`
+
+|`dma_buf::DmaBuf` (from `dma-heap`, V4L2, GBM, Vulkan)
+|`DmaBufPublisher` / `DmaBufSubscriber`
+
+|Neither — want allocation helper
+|`dma_heap::Heap::allocate` → wrap in `DmaBuf` → `DmaBufPublisher`
+|===
+
+== Constraints
+
+* Linux-only runtime. Non-Linux targets compile but construction of `DmaBufPublisher` / `DmaBufSubscriber` returns `FdSidecarError::UnsupportedPlatform`.
+* `dma-buf` crate version floor `0.5.0` (caret). The `0.x` semver risk is mitigated by NOT re-exporting `BufferError` and by a CI job that runs `cargo update -p dma-buf && cargo test` nightly.
+* Service-signature breakage: an old binary using `DmabufToken` as the user-header type cannot connect to a new binary using `FdSidecarToken`, even though the `#[repr(C)]` layout is identical. iceoryx2 derives part of the service key from the type name. This is an intentional breaking change; documented in CHANGELOG.
+* No allocator ownership: the crate does not allocate DMA-BUFs. Users bring their own or use `dma-heap` directly.
+* No async support (transport is synchronous `sendmsg`/`recvmsg`). Future async sidecar is a separate spec.
+
+== Trade-offs
+
+|===
+|Decision |Chosen |Rejected |Rationale
+
+|Wrap vs. vendor DMA-BUF code
+|Wrap `dma-buf` crate
+|Vendor ioctl helpers
+|DRY; mripard maintains it; audited syscall layer.
+
+|Two types vs. polymorphic type
+|Two types (`FdSidecar*` + `DmaBuf*`)
+|Single polymorphic type
+|Clarity: each type states what it actually does, no runtime dispatch on payload kind.
+
+|Composition style
+|Newtype over `FdSidecarPublisher` (single `inner` field)
+|Reimplement fields
+|KISS + DRY; forwards all correctness guarantees including `reconnect` and `test-utils` helpers.
+
+|`BufferError` handling
+|Wrap into `FdSidecarError::DmaBuf(BufferError)` (feature-gated)
+|Re-export `dma_buf::BufferError`
+|Insulates public API from upstream 0.x semver churn.
+
+|Token rename
+|`DmabufToken` → `FdSidecarToken`
+|Keep old name for compat
+|The token is transport-correlation; keeping the old name locks in the misleading scope.
+
+|Pool/allocator now vs. later
+|Defer
+|Ship full platform
+|YAGNI — no concrete user yet for pooling.
+
+|Reject non-DMA-BUF fds at `recv`
+|Optional follow-up
+|Always probe
+|Syscall per frame is costly; type system already nudges users to the correct API.
+
+|Feature default
+|`dma-buf` off by default
+|`dma-buf` on by default
+|Keep fd-only users at minimal compile cost; opt-in matches `memfd`/`peercred` convention.
+
+|PR shape
+|Three atomic commits (rename, add dep, add types)
+|One big commit
+|Bisectable; smaller reviewer diffs; each commit independently green.
+
+|`clippy::module_name_repetitions`
+|Allow at module level with rationale
+|Rename the module
+|Rename churn without correctness benefit.
+|===
+
+== Related
+
+* Architecture: `specs/arch-fd-sidecar.adoc`
+* Upstream `SideChannel` trait: `iceoryx2/src/port/side_channel.rs:73`
+* Upstream `dma-buf` crate: https://docs.rs/dma-buf/0.5
+* Upstream `dma-heap` crate: https://docs.rs/dma-heap/0.3
+* Existing SCM_RIGHTS implementation: `src/scm.rs`
+* Internal `FdSideChannel` trait: `src/side_channel.rs` (stays `pub(crate)`)

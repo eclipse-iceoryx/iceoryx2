@@ -48,7 +48,7 @@ impl Service {
     /// underlying iceoryx2 service.
     ///
     /// The Unix-domain socket path is derived deterministically from `name`
-    /// via [`crate::path::uds_path_for_service`]. The socket parent directory
+    /// via `crate::path::uds_path_for_service`. The socket parent directory
     /// is created if it does not exist.
     ///
     /// # Type parameters

@@ -110,7 +110,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 
 /// Standalone trait for fd-passing connections (wire format v2).
 ///
-/// Implemented by [`linux::LinuxPublisher`] and [`linux::LinuxSubscriber`]
+/// Implemented by `linux::LinuxPublisher` and `linux::LinuxSubscriber`
 /// on Linux, and [`non_linux::NonLinux`] elsewhere.
 ///
 /// Each forward message carries one file descriptor via `SCM_RIGHTS` ancillary

@@ -1,0 +1,145 @@
+= fd-sidecar Architecture
+:toc:
+:icons: font
+
+[horizontal]
+Status:: Superseded by Design C — see `arch-dmabuf-service-variant.adoc` and `spec-dmabuf-service-variant.adoc`. Retained for historical context and primitive reference.
+Specs:: `spec-dmabuf-typed-transport.adoc`
+Crate:: `iceoryx2-dmabuf`
+
+== Overview
+
+`iceoryx2-dmabuf` composes iceoryx2's typed pub/sub with an out-of-band fd-delivery channel, enabling zero-copy transfer of kernel-owned resources (DMA-BUF frames, memfds, event fds) across address spaces. It implements iceoryx2's `SideChannel` extension point.
+
+The crate has two conceptually orthogonal concerns:
+
+. *Transport* — _how_ a file descriptor crosses an address-space boundary.
+. *Payload type* — _what_ the descriptor represents and what contract accessing it entails.
+
+Before this architecture note, the two were conflated: a single `DmabufPublisher`/`DmabufSubscriber` pair claimed to handle DMA-BUF but in fact only moved arbitrary fds via `SCM_RIGHTS`, with no CPU-sync contract or heap-aware allocation. The present architecture separates them so each concern lives in its own type, and DMA-BUF semantics are delegated to the audited upstream https://crates.io/crates/dma-buf[`dma-buf`] crate.
+
+== Key Decisions
+
+=== D1. Separate transport from payload in the type system
+
+*Context.* The old single-type API silently accepted memfds, eventfds, socket fds, and dma-bufs interchangeably. This is correct for transport (SCM_RIGHTS passes any fd) but wrong for payload: a real DMA-BUF requires `DMA_BUF_IOCTL_SYNC` around CPU access on cache-incoherent SoCs, a constraint the old API could not express or enforce.
+
+*Decision.*
+
+* Rename the existing types (`Dmabuf*` → `FdSidecar*`) so the transport-only scope is clear, including `DmabufToken` → `FdSidecarToken`.
+* Add `DmaBufPublisher<S, Meta>` / `DmaBufSubscriber<S, Meta>` as *newtypes over `FdSidecar*`* that accept and yield `dma_buf::DmaBuf` values.
+* Re-export `dma_buf::{DmaBuf, MappedDmaBuf}`; wrap `BufferError` inside `FdSidecarError::DmaBuf(…)` instead of re-exporting it (insulates the crate from upstream 0.x semver churn).
+
+*Rationale.* The type system should refuse to mix payload kinds. A user with a memfd gets `FdSidecar*`; a user with a real DMA-BUF gets `DmaBuf*`. Each API's methods describe the contract in place: `FdSidecarSubscriber::recv -> OwnedFd` (no guarantees), `DmaBufSubscriber::recv -> DmaBuf` (sync ioctls available via `MappedDmaBuf`).
+
+*Consequences.*
+
+* Two sets of types to maintain, both thin façades over the same underlying `ScmRightsPublisher`/`Subscriber`.
+* Users porting from the old API must choose the right façade; the README's decision matrix guides them.
+* Tests that today use memfd + roundtrip + raw mmap remain valid for the `FdSidecar*` path; a new heap-backed test exercises `DmaBuf*`.
+
+=== D2. Delegate DMA-BUF semantics to the `dma-buf` crate
+
+*Context.* Rolling our own `DMA_BUF_IOCTL_*` wrappers duplicates work done correctly by Maxime Ripard's `dma-buf` crate (v0.5). His crate already handles `DMA_BUF_IOCTL_SYNC` start/end pairing, mmap, and safe closure-based accessors.
+
+*Decision.* Add `dma-buf = "0.5"` as an optional dependency behind a new `dma-buf` Cargo feature. Do not reimplement its ioctl surface.
+
+*Rationale.*
+
+* DRY: the ioctl dance is a solved problem.
+* Audit delegation: mripard is a kernel DRM contributor; his Rust wrappers are the de facto reference.
+* Dep-tree cost is near zero: `dma-buf` pulls `rustix` and `tracing`, both already in this workspace.
+* Our concern stays narrowly "how do these travel over iceoryx2 + a Unix socket"; DMA-BUF ergonomics stay upstream.
+
+*Consequences.*
+
+* A new feature flag (`dma-buf`, off by default).
+* Version pinning discipline: we watch for breaking changes in `dma-buf 0.6+` via a nightly `cargo update -p dma-buf && cargo test` CI job.
+* Users who only want fd-passing pay no compile cost.
+
+=== D3. Do not own allocation
+
+*Context.* `dma-heap` can allocate kernel-backed DMA-BUFs from `/dev/dma_heap/*`. We could wrap it as a `DmaBufAllocator` or a `DmaBufPool`.
+
+*Decision.* Do not wrap allocation. Users bring their own `DmaBuf` — from `dma-heap`, V4L2's `VIDIOC_EXPBUF`, GBM's `gbm_bo_get_fd`, or Vulkan's `VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT`.
+
+*Rationale.* KISS + YAGNI. No current integrator has asked for a pool. A pool or allocator couples to one heap kind / one allocation policy and would prematurely constrain the crate. `dma_heap::Heap::allocate` is a single function call; wrapping adds no value.
+
+*Consequences.*
+
+* Crate API stays minimal.
+* Follow-up brainstorm may add `DmaBufPool` when a concrete workload (e.g., >30 fps 4K ISP pipeline) proves the benefit.
+* Examples use `dma-heap` directly, making the pattern obvious to copy-paste.
+
+=== D4. Retain SCM_RIGHTS as the transport
+
+*Context.* Alternatives considered: `pidfd_getfd(2)` (needs peer pid, poor fit for fanout pub/sub), ABI-fragile cross-process fd tables (flag and drop), async Unix sockets via tokio (orthogonal; can layer later).
+
+*Decision.* Keep the synchronous `SCM_RIGHTS` pipe in `src/scm.rs` as-is.
+
+*Rationale.* The existing implementation is correct, audited, and has extensive tests (`tests/it_*`, `tests/error_paths.rs`, property tests in `tests/prop_roundtrip.rs`). Cost of changing it is high; benefit unclear. The `SideChannel` trait lets a future async transport coexist without re-architecting the payload-typed wrappers.
+
+*Consequences.* `DmaBuf*` inherits the SCM_RIGHTS correctness story, the 50 ms fd-wait timeout, the peercred feature, and the reconnect ergonomics for free.
+
+=== D5. Newtype composition with explicit forwarding
+
+*Context.* `DmaBuf*` could either duplicate all the fields of `FdSidecar*` (node, port factory, inner port, side channel, token counter) or hold a single `inner: FdSidecar*` field.
+
+*Decision.* Newtype composition: `struct DmaBufPublisher<S, Meta> { inner: FdSidecarPublisher<S, Meta> }` (and symmetrically for the subscriber). All methods forward explicitly — `create`, `send`, `recv`, `reconnect`, and test-utils helpers (`inject_raw_for_test`, `send_metadata_only_for_test`).
+
+*Rationale.* KISS + DRY. A single field means there is exactly one source of truth for the transport state, the token counter, and the node lifetime contract. The typed layer adds exactly two operations: borrow-and-duplicate the fd on `send` (`try_clone_to_owned`), and `DmaBuf::from(fd)` on `recv`. Everything else is a one-line forward.
+
+*Consequences.* The typed layer cannot diverge from transport semantics by accident. Future additions to `FdSidecar*` (e.g. peercred allowlists) are automatically available via delegation if we choose to forward them; otherwise they remain transport-only.
+
+=== D6. Do not re-export `BufferError`
+
+*Context.* Re-exporting `dma_buf::BufferError` would make it part of `iceoryx2-dmabuf`'s public API, semver-coupled to upstream `dma-buf` 0.x.
+
+*Decision.* Wrap it in `FdSidecarError::DmaBuf(dma_buf::BufferError)` (feature-gated) instead of re-exporting.
+
+*Rationale.* Shields downstream users from upstream 0.x breaking changes. If a future major version of `dma-buf` changes `BufferError`, only our conversion site needs to be updated.
+
+*Consequences.* Users who want to pattern-match on `BufferError` variants must depend on `dma-buf` directly — not a problem in practice since they already do to obtain `DmaBuf` / `MappedDmaBuf`.
+
+=== D7. Bisectable three-commit PR shape
+
+*Context.* The change bundles three concerns: renaming `Dmabuf*` → `FdSidecar*`, adding the `dma-buf` dep + feature, and adding the typed layer. Bundled into one commit the diff is large.
+
+*Decision.* Three atomic commits in this order:
+
+. `refactor: rename to FdSidecar* with deprecation aliases`
+. `feat: add optional dma-buf dep + Cargo feature`
+. `feat: add DmaBufPublisher/Subscriber typed wrapper`
+
+*Rationale.* Each commit compiles, clippies, and tests in isolation → `git bisect` works end-to-end. Reviewers can read the rename, the dep addition, and the typed layer independently.
+
+*Consequences.* More commit-crafting discipline; zero ongoing cost.
+
+== Components
+
+[source,mermaid]
+----
+flowchart TD
+    App["Application (integrator)"]
+    App --> FdSide["FdSidecarPublisher / FdSidecarSubscriber\naccepts/yields: OwnedFd"]
+    App --> DmaBuf["DmaBufPublisher / DmaBufSubscriber\nnewtype over FdSidecar*\naccepts/yields: DmaBuf"]
+    DmaBuf -- "inner: FdSidecar*" --> FdSide
+    DmaBuf -.wraps DmaBuf::from(fd) / as_fd().try_clone_to_owned().-> Upstream["dma-buf crate (upstream)\nDmaBuf · MappedDmaBuf · DMA_BUF_IOCTL_SYNC"]
+    FdSide --> Scm["ScmRightsPublisher / ScmRightsSubscriber\n(src/scm.rs — unchanged)\nSCM_RIGHTS over Unix-domain socket"]
+    Scm --> Iceoryx["iceoryx2 pub/sub service\nmetadata + FdSidecarToken correlation id"]
+----
+
+== Interfaces
+
+* `iceoryx2::port::side_channel::SideChannel` (upstream) — abstract transport trait. `ScmRightsPublisher` / `Subscriber` already implement it; the typed façades expose it transitively via their inner fields.
+* `crate::side_channel::FdSideChannel` (internal, `pub(crate)`) — Linux-specific fd-transfer extension documenting the contract between `scm.rs` and the publisher/subscriber layers. Not part of the public API.
+* `dma_buf::DmaBuf` (upstream) — payload type for the DMA-BUF path. Constructed via `From<OwnedFd>` on the subscriber side; cloned via `AsFd::as_fd().try_clone_to_owned()` on the publisher side.
+* `dma_heap::Heap` (optional, dev-only) — used in the heap-roundtrip integration test and the `publish_subscribe_dmabuf` example. Not part of the public crate API.
+
+== Constraints
+
+* *Linux-only runtime.* Both the SCM_RIGHTS path and the `dma-buf` crate are Linux-specific. The crate compiles on macOS via conditional-compilation stubs in `scm.rs`; the `DmaBuf*` types are gated on `cfg(all(target_os = "linux", feature = "dma-buf"))`.
+* *Synchronous.* No async. A future async sidecar is a separate brainstorm.
+* *Single-fd per sample.* Each iceoryx2 sample correlates to exactly one DMA-BUF fd. Multi-planar frames (e.g., YUV420 with separate Y and UV planes) require either a multi-fd extension or packing planes into one buffer.
+* *No GPU fence support.* `sync_file` handles are fds too but require a different subscriber contract. Separate spec if demanded.
+* *Peer trust.* The `peercred` feature checks peer UID; no SELinux or capability gating. Enterprise multi-tenant use cases require additional policy outside this crate.

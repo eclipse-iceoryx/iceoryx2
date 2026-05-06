@@ -106,7 +106,8 @@ where
     /// between the two sends, violating the ordering contract).
     ///
     /// On non-Linux targets this always returns
-    /// [`ServiceError::Connection(Error::UnsupportedPlatform)`].
+    /// [`ServiceError::Connection`] wrapping
+    /// [`crate::connection::Error::UnsupportedPlatform`].
     ///
     /// # Errors
     ///
@@ -133,7 +134,8 @@ where
     /// call. Use [`release`](Self::release) to send an ack back.
     ///
     /// On non-Linux targets this always returns
-    /// [`ServiceError::Connection(Error::UnsupportedPlatform)`].
+    /// [`ServiceError::Connection`] wrapping
+    /// [`crate::connection::Error::UnsupportedPlatform`].
     ///
     /// # Errors
     ///
