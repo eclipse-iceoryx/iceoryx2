@@ -23,9 +23,10 @@ use iceoryx2::{
 
 extern crate alloc;
 
-/// Events emitted by the service discovery service.
+/// Communicates discovered changes to services in the system.
 #[derive(Debug, ZeroCopySend, serde::Serialize, serde::Deserialize)]
-#[allow(dead_code)] // Fields used by subscribers
+// Largest variant dictates the size for use as Payload.
+#[allow(clippy::large_enum_variant)]
 #[repr(C)]
 pub enum DiscoveryEvent {
     /// A service has been added to the system.
