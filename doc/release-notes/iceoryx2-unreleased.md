@@ -197,6 +197,10 @@
     conflicts when merging.
 -->
 
+* Add per-package coverage filtering support to `just coverage` system
+  [#372](https://github.com/eclipse-iceoryx/iceoryx2/issues/372)
+* Split workspace into separate `sdk` and `integrations` workspaces
+  [#1244](https://github.com/eclipse-iceoryx/iceoryx2/issues/1244)
 * Add custom test framework that supports `no_std` testing
   [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300)
 * Add `no_std` tests for `iceoryx2` and crates below it in the architecture
@@ -207,8 +211,6 @@
   [#1355](https://github.com/eclipse-iceoryx/iceoryx2/issues/1355)
 * Add `just` scripts for some common maintenance tasks
   [#1408](https://github.com/eclipse-iceoryx/iceoryx2/issues/1408)
-* Split workspace into separate `sdk` and `integrations` workspaces
-  [#1244](https://github.com/eclipse-iceoryx/iceoryx2/issues/1244)
 
 ### New API features
 

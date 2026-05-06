@@ -74,28 +74,29 @@ _coverage-dispatch action *flags:
             echo "Usage: just coverage <command> [flags]"
             echo ""
             echo "Commands:"
-            echo "  generate-profile                      generate coverage profile"
-            echo "  generate-report --html|--lcov         generate rendered report"
+            echo "  generate-profile [--package X]        generate coverage profile"
+            echo "  generate-report --html|--lcov [--package X]  generate rendered report"
             echo "  summarize [--detailed] [--package X]  show coverage summary"
             echo "  clean                                 remove all coverage data"
+            echo ""
+            echo "Examples:"
+            echo "  just coverage generate-profile"
+            echo "  just coverage generate-profile --package iceoryx2-cal"
+            echo "  just coverage generate-report --html"
+            echo "  just coverage generate-report --html --package iceoryx2 --package iceoryx2-cal"
+            echo "  just coverage summarize --detailed"
             exit 1
             ;;
         generate-profile)
-            if [ "${#PACKAGES[@]}" -gt 0 ]; then
-                echo "error: '--package' is not supported for 'just coverage generate-profile'" >&2; exit 1
-            fi
-            just _coverage-profile
+            just _coverage-profile "${PACKAGES[@]}"
             ;;
         generate-report)
-            if [ "${#PACKAGES[@]}" -gt 0 ]; then
-                echo "error: '--package' is not supported for 'just coverage generate-report'" >&2; exit 1
-            fi
             if [ "$HAS_HTML" = "false" ] && [ "$HAS_LCOV" = "false" ]; then
                 echo "error: 'just coverage report' requires --html, --lcov, or both" >&2
                 exit 1
             fi
-            if [ "$HAS_HTML" = "true" ]; then just _coverage-generate-report-html; fi
-            if [ "$HAS_LCOV" = "true" ]; then just _coverage-generate-report-lcov; fi
+            if [ "$HAS_HTML" = "true" ]; then just _coverage-generate-report-html "${PACKAGES[@]}"; fi
+            if [ "$HAS_LCOV" = "true" ]; then just _coverage-generate-report-lcov "${PACKAGES[@]}"; fi
             ;;
         summarize)
             just _coverage-summarize "$HAS_DETAILED" "${PACKAGES[@]}"
@@ -111,13 +112,13 @@ _coverage-dispatch action *flags:
 # --- profile -----------------------------------------------------------------
 
 [private]
-_coverage-profile:
+_coverage-profile *packages:
     #!/usr/bin/env bash
     set -euo pipefail
 
     mkdir -p "{{CMAKE_COV_DIR}}"
     just _coverage-profile-cmake
-    just _coverage-profile-rust
+    just _coverage-profile-rust "${@}"
 
 [private]
 _coverage-profile-cmake:
@@ -129,7 +130,7 @@ _coverage-profile-cmake:
     ctest --test-dir "{{CMAKE_COV_DIR}}" --output-on-failure
 
 [private]
-_coverage-profile-rust:
+_coverage-profile-rust *packages:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -143,12 +144,23 @@ _coverage-profile-rust:
         echo -e "{{COLOR_YELLOW}}no rust nightly compiler found, MC/DC coverage is not available only line coverage{{COLOR_OFF}}"
         export RUSTFLAGS="-C instrument-coverage"
     fi
-    just test sdk
+    
+    if [ "$#" -gt 0 ]; then
+        # Test specific packages
+        for PACKAGE in "$@"; do
+            echo -e "{{COLOR_GREEN}}Running tests for package: $PACKAGE{{COLOR_OFF}}"
+            just test "$PACKAGE"
+        done
+    else
+        # Test entire sdk workspace
+        echo -e "{{COLOR_GREEN}}Running tests for entire sdk workspace{{COLOR_OFF}}"
+        just test sdk
+    fi
 
 # --- generate-report ---------------------------------------------------------
 
 [private]
-_coverage-generate-report-html:
+_coverage-generate-report-html *packages:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -158,12 +170,17 @@ _coverage-generate-report-html:
         "html" \
         "{{COVERAGE_OUT_DIR}}/html/rust" \
         "--html-details" \
-        "{{COVERAGE_OUT_DIR}}/html/cpp/index.html"
+        "{{COVERAGE_OUT_DIR}}/html/cpp/index.html" \
+        "${@}"
+    
+    if [ "$#" -gt 0 ]; then
+        echo -e "{{COLOR_GREEN}}Coverage report generated for packages: $*{{COLOR_OFF}}"
+    fi
     echo "Rust HTML report: {{COVERAGE_OUT_DIR}}/html/rust/index.html"
     echo "C++ HTML report:  {{COVERAGE_OUT_DIR}}/html/cpp/index.html"
 
 [private]
-_coverage-generate-report-lcov:
+_coverage-generate-report-lcov *packages:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -173,10 +190,11 @@ _coverage-generate-report-lcov:
         "lcov" \
         "{{COVERAGE_OUT_DIR}}/lcov/iceoryx2_lcov_rust.info" \
         "--lcov" \
-        "{{COVERAGE_OUT_DIR}}/lcov/iceoryx2_lcov_cpp.info"
+        "{{COVERAGE_OUT_DIR}}/lcov/iceoryx2_lcov_cpp.info" \
+        "${@}"
 
 [private]
-_coverage-generate-report-impl output_type grcov_output gcovr_flag gcovr_output:
+_coverage-generate-report-impl output_type grcov_output gcovr_flag gcovr_output *packages:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -196,6 +214,15 @@ _coverage-generate-report-impl output_type grcov_output gcovr_flag gcovr_output:
         GRCOV_IGNORE_FLAGS+=(--ignore "*${pattern}*")
     done
 
+    # Add package filters if specified
+    GRCOV_FILTER_FLAGS=()
+    if [ "$#" -gt 0 ]; then
+        echo "Filtering coverage for packages: $*"
+        for pkg in "$@"; do
+            GRCOV_FILTER_FLAGS+=(--filter "${pkg}/")
+        done
+    fi
+
     grcov \
         **/{{LLVM_PROFILE_PATH}} \
         **/**/{{LLVM_PROFILE_PATH}} \
@@ -205,6 +232,7 @@ _coverage-generate-report-impl output_type grcov_output gcovr_flag gcovr_output:
         --branch \
         --ignore-not-existing \
         "${GRCOV_IGNORE_FLAGS[@]}" \
+        "${GRCOV_FILTER_FLAGS[@]}" \
         --llvm-path "$LLVM_PATH" \
         --output-path "{{grcov_output}}"
 
@@ -243,7 +271,7 @@ _coverage-summarize detailed *packages:
     done
     IGNORE_REGEX=$(IFS='|'; echo "${IGNORE_PATTERNS[*]}")
 
-    CMD="$LLVM_COV report --use-color --ignore-filename-regex='$IGNORE_REGEX' --instr-profile=./{{RUST_COV_DIR}}/json5format.profdata"
+    CMD="$LLVM_COV report --use-color --ignore-filename-regex='$IGNORE_REGEX' --show-branch-summary --instr-profile=./{{RUST_COV_DIR}}/json5format.profdata"
     for FILE in $FILES; do
         CMD="$CMD --object $FILE"
     done
