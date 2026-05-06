@@ -152,6 +152,9 @@ pub struct Service {
     pub blackboard_mgmt_suffix: FileName,
     /// The suffix of the blackboard payload data segment
     pub blackboard_data_suffix: FileName,
+    /// Whenever an existing [`Service`](crate::service::Service) is opened the builder will
+    /// scan for dead nodes and clean up the stale resources that might block another process.
+    pub cleanup_dead_nodes_on_connection: bool,
 }
 
 impl Default for Service {
@@ -166,6 +169,7 @@ impl Default for Service {
             event_connection_suffix: FileName::new(b".event").unwrap(),
             blackboard_mgmt_suffix: FileName::new(b".blackboard_mgmt").unwrap(),
             blackboard_data_suffix: FileName::new(b".blackboard_data").unwrap(),
+            cleanup_dead_nodes_on_connection: true,
         }
     }
 }

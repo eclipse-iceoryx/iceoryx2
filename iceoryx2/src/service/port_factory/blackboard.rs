@@ -130,7 +130,15 @@ impl<
             _key: PhantomData,
         };
 
-        blocking_cleanup_dead_nodes_in_service(&new_self, shared_node);
+        if shared_node
+            .config()
+            .global
+            .service
+            .cleanup_dead_nodes_on_connection
+        {
+            blocking_cleanup_dead_nodes_in_service(&new_self, shared_node);
+        }
+
         new_self
     }
 
