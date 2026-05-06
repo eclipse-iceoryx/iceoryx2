@@ -54,6 +54,9 @@ where
     /// Returns `Ok(None)` if no sample is queued. On success, the received
     /// `OwnedFd` is wrapped via `dma_buf::DmaBuf::from(fd)` (zero syscall).
     ///
+    /// The token embedded in the wire frame is discarded. Use
+    /// [`receive_with_token`](Self::receive_with_token) to retrieve it.
+    ///
     /// # Errors
     ///
     /// Returns [`DmaBufError::Service`] on any underlying receive failure.
@@ -62,5 +65,39 @@ where
             return Ok(None);
         };
         Ok(Some((meta, dma_buf::DmaBuf::from(fd))))
+    }
+
+    /// Non-blocking receive with token.
+    ///
+    /// Returns `Ok(None)` if no sample is queued. On success returns
+    /// `(meta, buf, token)`.
+    ///
+    /// The `token` matches the one passed to the publisher's
+    /// [`crate::dmabuf_publisher::DmaBufPublisher::publish_with_token`] call
+    /// (or the internal counter token from [`crate::dmabuf_publisher::DmaBufPublisher::publish`]).
+    /// Use [`release`](Self::release) to send an ack back.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`DmaBufError::Service`] on any underlying receive failure.
+    pub fn receive_with_token(
+        &mut self,
+    ) -> Result<Option<(Meta, dma_buf::DmaBuf, u64)>, DmaBufError> {
+        let Some((meta, fd, _len, token)) = self.inner.receive_with_token()? else {
+            return Ok(None);
+        };
+        Ok(Some((meta, dma_buf::DmaBuf::from(fd), token)))
+    }
+
+    /// Send a "buffer released" ack back to the publisher carrying `token`.
+    ///
+    /// Best-effort: dropped silently if the subscriber's send buffer is full.
+    /// Callers must tolerate occasional missed acks.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`DmaBufError::Service`] on connection-level send errors.
+    pub fn release(&mut self, token: u64) -> Result<(), DmaBufError> {
+        self.inner.release(token).map_err(DmaBufError::Service)
     }
 }

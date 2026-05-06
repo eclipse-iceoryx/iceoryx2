@@ -14,11 +14,19 @@ use super::{Error, FdPassingConnection, Result};
 pub struct NonLinux;
 
 impl FdPassingConnection for NonLinux {
-    fn send_with_fd(&self, _fd: BorrowedFd<'_>, _len: u64) -> Result<()> {
+    fn send_with_fd(&self, _fd: BorrowedFd<'_>, _len: u64, _token: u64) -> Result<()> {
         Err(Error::UnsupportedPlatform)
     }
 
-    fn recv_with_fd(&self) -> Result<Option<(OwnedFd, u64)>> {
+    fn recv_with_fd(&self) -> Result<Option<(OwnedFd, u64, u64)>> {
+        Err(Error::UnsupportedPlatform)
+    }
+
+    fn send_release_ack(&self, _token: u64) -> Result<()> {
+        Err(Error::UnsupportedPlatform)
+    }
+
+    fn recv_release_ack(&self) -> Result<Option<u64>> {
         Err(Error::UnsupportedPlatform)
     }
 }

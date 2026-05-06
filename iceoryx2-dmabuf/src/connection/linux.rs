@@ -9,19 +9,26 @@
 //! - `Linux::open_publisher(path)` → `Result<LinuxPublisher>`
 //! - `Linux::open_subscriber(path)` → `Result<LinuxSubscriber>`
 //!
-//! Wire format (v1) — matches `connection.rs` header:
+//! Wire format (v2) — matches `connection.rs` header:
+//!
+//! ## Forward frames (publisher → subscriber, fd-carrying):
 //! ```text
-//! [8B payload_len u64 LE][8B reserved u64 LE][SCM_RIGHTS ancillary: 1 fd]
+//! [8B payload_len u64 LE][8B token u64 LE][SCM_RIGHTS ancillary: 1 fd]
 //! ```
-//! Wire offsets: byte 0..8 = payload_len, byte 8..16 = reserved (= 0).
-//! Total iov payload = 16 bytes.
+//!
+//! ## Back-channel ack frames (subscriber → publisher, no ancillary):
+//! ```text
+//! [8B magic u64 LE (low-32 = 0x4D4F5346, high-32 = 0)][8B token u64 LE]
+//! ```
+//!
+//! Disambiguation: ancillary present = forward fd frame; no ancillary = ack.
 
 use super::{Error, FdPassingConnection, Result};
 use rustix::net::{
     RecvAncillaryBuffer, RecvAncillaryMessage, RecvFlags, SendAncillaryBuffer,
     SendAncillaryMessage, SendFlags,
 };
-use std::io::{IoSlice, IoSliceMut};
+use std::io::{IoSlice, IoSliceMut, Write as _};
 use std::os::fd::{AsFd as _, BorrowedFd, OwnedFd};
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -29,10 +36,28 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-// Wire format constants (v1).
-const HDR_LEN: usize = 16; // total iov payload size: [payload_len 8B][reserved 8B]
-const PAYLOAD_LEN_OFFSET: usize = 0; // bytes 0..8: payload_len u64 LE
-const RESERVED_OFFSET: usize = 8; // bytes 8..16: reserved u64 LE (= 0)
+// ── Wire format constants (v2) ────────────────────────────────────────────────
+
+/// Total iov payload size for both forward and ack frames (16 bytes).
+const HDR_LEN: usize = 16;
+
+/// Byte offset of payload_len in a forward frame (bytes 0..8).
+const PAYLOAD_LEN_OFFSET: usize = 0;
+
+/// Byte offset of token in a forward frame (bytes 8..16).
+const TOKEN_OFFSET: usize = 8;
+
+/// Byte offset of magic sentinel in an ack frame (bytes 0..8).
+const ACK_MAGIC_OFFSET: usize = 0;
+
+/// Byte offset of token in an ack frame (bytes 8..16).
+const ACK_TOKEN_OFFSET: usize = 8;
+
+/// Magic sentinel for ack frames: ASCII `b"MOSF"` as little-endian u32 in
+/// the low 32 bits, zero in the high 32 bits.
+///
+/// Matches `iceoryx2-dmabuf/src/wire.rs:7`: `pub const MAGIC: u32 = 0x4D4F_5346;`
+const MAGIC_BUFFER_RELEASED: u32 = 0x4D4F_5346;
 
 // ── LinuxPublisher ────────────────────────────────────────────────────────────
 
@@ -125,11 +150,11 @@ impl LinuxPublisher {
 }
 
 impl FdPassingConnection for LinuxPublisher {
-    fn send_with_fd(&self, fd: BorrowedFd<'_>, len: u64) -> Result<()> {
-        // Wire header: [payload_len 8B LE][reserved 8B = 0].
+    fn send_with_fd(&self, fd: BorrowedFd<'_>, len: u64, token: u64) -> Result<()> {
+        // Wire v2 forward header: [payload_len 8B LE][token 8B LE].
         let mut hdr = [0u8; HDR_LEN];
-        hdr[PAYLOAD_LEN_OFFSET..RESERVED_OFFSET].copy_from_slice(&len.to_le_bytes());
-        // hdr[RESERVED_OFFSET..HDR_LEN] remains 0 (reserved).
+        hdr[PAYLOAD_LEN_OFFSET..TOKEN_OFFSET].copy_from_slice(&len.to_le_bytes());
+        hdr[TOKEN_OFFSET..HDR_LEN].copy_from_slice(&token.to_le_bytes());
         let iov = [IoSlice::new(&hdr)];
 
         let mut subs = self.subscribers.lock().map_err(|_| Error::LockPoisoned)?;
@@ -146,8 +171,119 @@ impl FdPassingConnection for LinuxPublisher {
         Ok(())
     }
 
-    fn recv_with_fd(&self) -> Result<Option<(OwnedFd, u64)>> {
-        // Publisher role never receives — always empty.
+    fn recv_with_fd(&self) -> Result<Option<(OwnedFd, u64, u64)>> {
+        // Publisher role never receives forward frames — always empty.
+        Ok(None)
+    }
+
+    fn send_release_ack(&self, _token: u64) -> Result<()> {
+        // Publisher role does not send acks — acks flow subscriber → publisher.
+        Err(Error::Io(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "publisher cannot send release acks",
+        )))
+    }
+
+    fn recv_release_ack(&self) -> Result<Option<u64>> {
+        let mut subs = self.subscribers.lock().map_err(|_| Error::LockPoisoned)?;
+
+        for stream in subs.iter_mut() {
+            // Non-blocking poll: check if data is available on this subscriber stream.
+            // SAFETY: poll(2) is a plain Linux syscall; pfd is stack-allocated and
+            // valid for the duration of the call. We use libc directly because rustix
+            // does not expose a zero-timeout poll shorthand in v1.x.
+            #[allow(unsafe_code)]
+            let ready = unsafe {
+                let mut pfd = libc::pollfd {
+                    fd: stream.as_fd().as_raw_fd(),
+                    events: libc::POLLIN,
+                    revents: 0,
+                };
+                libc::poll(core::ptr::addr_of_mut!(pfd), 1, 0)
+            };
+
+            if ready == 0 {
+                continue; // No data on this subscriber — check next.
+            }
+            if ready < 0 {
+                let e = std::io::Error::last_os_error();
+                if e.kind() == std::io::ErrorKind::Interrupted {
+                    continue;
+                }
+                return Err(Error::Io(e));
+            }
+
+            // Data available — receive the 16-byte frame.
+            let mut hdr = [0u8; HDR_LEN];
+            let mut iov = [IoSliceMut::new(&mut hdr)];
+            // Use a space large enough for SCM_RIGHTS(1) — so we can detect drift.
+            let mut space = [core::mem::MaybeUninit::uninit(); rustix::cmsg_space!(ScmRights(1))];
+            let mut cmsg_buf = RecvAncillaryBuffer::new(&mut space);
+
+            let result =
+                rustix::net::recvmsg(stream.as_fd(), &mut iov, &mut cmsg_buf, RecvFlags::empty());
+
+            match result {
+                Err(e) if e == rustix::io::Errno::AGAIN || e == rustix::io::Errno::WOULDBLOCK => {
+                    continue;
+                }
+                Err(e) if e == rustix::io::Errno::INTR => {
+                    continue;
+                }
+                Err(e) => {
+                    return Err(Error::Io(std::io::Error::from_raw_os_error(
+                        e.raw_os_error(),
+                    )));
+                }
+                Ok(msg) => {
+                    if msg.bytes == 0 {
+                        // Peer closed — this subscriber is gone; it will be pruned
+                        // on the next send_with_fd call. Skip for now.
+                        continue;
+                    }
+                    if msg.bytes < HDR_LEN {
+                        return Err(Error::Truncated {
+                            got: msg.bytes,
+                            want: HDR_LEN,
+                        });
+                    }
+                }
+            }
+
+            // Disambiguation: if ancillary data is present, this is a forward fd
+            // frame that arrived on the back-channel — protocol drift.
+            let has_ancillary = cmsg_buf.drain().next().is_some();
+            if has_ancillary {
+                return Err(Error::ProtocolDrift);
+            }
+
+            // Parse ack frame: [8B magic u64 LE][8B token u64 LE].
+            // The magic u64 has MAGIC_BUFFER_RELEASED in low-32 bits and 0 in high-32.
+            let Ok(magic_bytes) = <[u8; 8]>::try_from(&hdr[ACK_MAGIC_OFFSET..ACK_TOKEN_OFFSET])
+            else {
+                return Err(Error::Truncated {
+                    got: hdr.len(),
+                    want: HDR_LEN,
+                });
+            };
+            let magic_u64 = u64::from_le_bytes(magic_bytes);
+            // Low-32 bits of the magic_u64 LE value.
+            let magic_lo = magic_u64 as u32;
+            if magic_lo != MAGIC_BUFFER_RELEASED {
+                return Err(Error::BadMagic { got: magic_lo });
+            }
+
+            let Ok(token_bytes) = <[u8; 8]>::try_from(&hdr[ACK_TOKEN_OFFSET..HDR_LEN]) else {
+                return Err(Error::Truncated {
+                    got: hdr.len(),
+                    want: HDR_LEN,
+                });
+            };
+            let token = u64::from_le_bytes(token_bytes);
+            return Ok(Some(token));
+        }
+
+        // No ack available on any subscriber stream.
         Ok(None)
     }
 }
@@ -180,7 +316,7 @@ impl LinuxSubscriber {
 }
 
 impl FdPassingConnection for LinuxSubscriber {
-    fn send_with_fd(&self, _fd: BorrowedFd<'_>, _len: u64) -> Result<()> {
+    fn send_with_fd(&self, _fd: BorrowedFd<'_>, _len: u64, _token: u64) -> Result<()> {
         Err(Error::Io(std::io::Error::new(
             std::io::ErrorKind::InvalidInput,
             "subscriber cannot send fds",
@@ -188,7 +324,7 @@ impl FdPassingConnection for LinuxSubscriber {
     }
 
     #[allow(unsafe_code)]
-    fn recv_with_fd(&self) -> Result<Option<(OwnedFd, u64)>> {
+    fn recv_with_fd(&self) -> Result<Option<(OwnedFd, u64, u64)>> {
         // Non-blocking poll(2) with 0ms timeout.
         // SAFETY: poll(2) is a plain Linux syscall; pfd is stack-allocated and
         // valid for the duration of the call.  We use libc directly because
@@ -253,18 +389,27 @@ impl FdPassingConnection for LinuxSubscriber {
             }
         }
 
-        // Parse wire header.
-        // byte 0..8: payload_len u64 LE
-        let Ok(len_bytes) = <[u8; 8]>::try_from(&hdr[PAYLOAD_LEN_OFFSET..RESERVED_OFFSET]) else {
+        // Parse wire v2 forward header.
+        // bytes 0..8: payload_len u64 LE
+        let Ok(len_bytes) = <[u8; 8]>::try_from(&hdr[PAYLOAD_LEN_OFFSET..TOKEN_OFFSET]) else {
             return Err(Error::Truncated {
                 got: hdr.len(),
                 want: HDR_LEN,
             });
         };
         let payload_len = u64::from_le_bytes(len_bytes);
-        // byte 8..16: reserved — ignored on receive.
+
+        // bytes 8..16: token u64 LE
+        let Ok(token_bytes) = <[u8; 8]>::try_from(&hdr[TOKEN_OFFSET..HDR_LEN]) else {
+            return Err(Error::Truncated {
+                got: hdr.len(),
+                want: HDR_LEN,
+            });
+        };
+        let token = u64::from_le_bytes(token_bytes);
 
         // Extract OwnedFd from SCM_RIGHTS ancillary.
+        // If ancillary is absent, this is an ack frame — protocol drift.
         let owned_fd = cmsg_buf
             .drain()
             .filter_map(|msg| {
@@ -277,9 +422,39 @@ impl FdPassingConnection for LinuxSubscriber {
             .next();
 
         match owned_fd {
-            Some(fd) => Ok(Some((fd, payload_len))),
-            None => Err(Error::NoFdInMessage),
+            Some(fd) => Ok(Some((fd, payload_len, token))),
+            None => Err(Error::ProtocolDrift),
         }
+    }
+
+    fn send_release_ack(&self, token: u64) -> Result<()> {
+        // Build 16-byte ack frame: [magic_u64 LE][token u64 LE].
+        // magic_u64 = MAGIC_BUFFER_RELEASED (0x4D4F_5346) in low-32 bits,
+        // 0x0000_0000 in high-32 bits → u64 = 0x0000_0000_4D4F_5346.
+        let magic_u64: u64 = u64::from(MAGIC_BUFFER_RELEASED); // low-32 = magic, high-32 = 0
+        let mut frame = [0u8; HDR_LEN];
+        frame[ACK_MAGIC_OFFSET..ACK_TOKEN_OFFSET].copy_from_slice(&magic_u64.to_le_bytes());
+        frame[ACK_TOKEN_OFFSET..HDR_LEN].copy_from_slice(&token.to_le_bytes());
+
+        // write_all on a blocking-mode stream. The stream was opened non-blocking
+        // for recv, but we set it back to blocking for write to match best-effort.
+        // If EAGAIN / EWOULDBLOCK: treat as best-effort success.
+        match (&self.stream).write_all(&frame) {
+            Ok(()) => Ok(()),
+            Err(e)
+                if e.kind() == std::io::ErrorKind::WouldBlock
+                    || e.raw_os_error() == Some(libc::EAGAIN) =>
+            {
+                // Best-effort: subscriber send buffer full. Drop the ack.
+                Ok(())
+            }
+            Err(e) => Err(Error::Io(e)),
+        }
+    }
+
+    fn recv_release_ack(&self) -> Result<Option<u64>> {
+        // Subscriber role does not receive acks — acks flow to publisher.
+        Ok(None)
     }
 }
 

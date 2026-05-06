@@ -58,6 +58,10 @@ where
     fd_pub: LinuxPublisher,
     #[cfg(not(target_os = "linux"))]
     _socket_path: String,
+    /// Monotonically increasing token counter for auto-token assignment.
+    /// All callers of `publish` take `&mut self`, so a plain `u64` suffices
+    /// (no shared mutability, no atomics needed).
+    token_counter: u64,
 }
 
 impl<Meta> DmaBufServicePublisher<Meta>
@@ -89,10 +93,15 @@ where
             fd_pub,
             #[cfg(not(target_os = "linux"))]
             _socket_path: socket_path.to_owned(),
+            token_counter: 0,
         })
     }
 
     /// Publish `meta` alongside `fd` with an associated byte `len`.
+    ///
+    /// An internal monotonic counter supplies the token automatically. Use
+    /// [`publish_with_token`](Self::publish_with_token) to supply a caller-chosen
+    /// token for pool-ack correlation.
     ///
     /// Step 1: sends `fd` to all connected subscribers via the fd channel
     /// (SCM_RIGHTS). Step 2: loans an iceoryx2 slot, writes `meta`, and sends
@@ -111,11 +120,40 @@ where
         fd: BorrowedFd<'_>,
         len: u64,
     ) -> Result<(), ServiceError> {
+        // Auto-increment token. Wrapping add is intentional (u64 overflow =
+        // restart from 0 after 2^64 frames, which is safe for pool-ack purposes).
+        let token = self.token_counter;
+        self.token_counter = self.token_counter.wrapping_add(1);
+        self.publish_with_token(meta, fd, len, token)
+    }
+
+    /// Publish `meta` alongside `fd` with an associated byte `len` and a
+    /// caller-supplied `token`.
+    ///
+    /// The token is embedded in the wire frame and returned by the subscriber's
+    /// [`crate::service_subscriber::DmaBufServiceSubscriber::receive_with_token`].
+    /// Use this when implementing pool-ack semantics where the caller tracks
+    /// buffer lifecycle by token.
+    ///
+    /// On non-Linux targets this always returns
+    /// [`ServiceError::Connection(Error::UnsupportedPlatform)`].
+    ///
+    /// # Errors
+    ///
+    /// - [`ServiceError::Connection`] — if the fd send fails.
+    /// - [`ServiceError::Iceoryx`] — if the iceoryx2 loan or send fails.
+    pub fn publish_with_token(
+        &mut self,
+        meta: Meta,
+        fd: BorrowedFd<'_>,
+        len: u64,
+        token: u64,
+    ) -> Result<(), ServiceError> {
         #[cfg(target_os = "linux")]
         {
             // 1. Send fd first — queued in subscriber socket buffer before sample arrives.
             self.fd_pub
-                .send_with_fd(fd, len)
+                .send_with_fd(fd, len, token)
                 .map_err(ServiceError::Connection)?;
 
             // 2. Loan iceoryx2 slot, write payload, send.
@@ -133,10 +171,34 @@ where
 
         #[cfg(not(target_os = "linux"))]
         {
-            let _ = (meta, fd, len);
+            let _ = (meta, fd, len, token);
             Err(ServiceError::Connection(
                 crate::connection::Error::UnsupportedPlatform,
             ))
+        }
+    }
+
+    /// Non-blocking drain of one back-channel ack from any subscriber.
+    ///
+    /// Returns `Ok(None)` if no ack is currently queued.
+    /// Returns `Ok(Some(token))` when an ack is drained.
+    ///
+    /// On non-Linux targets this always returns `Ok(None)`.
+    ///
+    /// # Errors
+    ///
+    /// - [`ServiceError::Connection`] — if the ack receive fails (e.g. bad magic).
+    pub fn recv_release_ack(&mut self) -> Result<Option<u64>, ServiceError> {
+        #[cfg(target_os = "linux")]
+        {
+            self.fd_pub
+                .recv_release_ack()
+                .map_err(ServiceError::Connection)
+        }
+
+        #[cfg(not(target_os = "linux"))]
+        {
+            Ok(None)
         }
     }
 }

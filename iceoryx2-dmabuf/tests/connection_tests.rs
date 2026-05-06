@@ -46,7 +46,8 @@ fn send_recv_memfd_roundtrip() {
     );
 
     let fd = memfd(c"rt");
-    publisher.send_with_fd(fd.as_fd(), 4096).expect("send");
+    // token=0: wire v2, token field unused in this test.
+    publisher.send_with_fd(fd.as_fd(), 4096, 0).expect("send");
 
     // Wait for the message to land.
     let recvd = wait_until(Duration::from_millis(500), || {
@@ -70,7 +71,8 @@ fn fanout_one_pub_three_sub_100_frames() {
 
     for _ in 0..100 {
         let fd = memfd(c"f");
-        publisher.send_with_fd(fd.as_fd(), 1024).expect("send");
+        // token=0: wire v2, token field unused in this test.
+        publisher.send_with_fd(fd.as_fd(), 1024, 0).expect("send");
     }
 
     for sub in &subs {
@@ -97,11 +99,40 @@ fn subscriber_disconnect_publisher_prunes() {
         }));
     } // sub dropped
     let fd = memfd(c"d");
-    // First send may succeed (kernel hasn't seen disconnect); second send must prune.
-    let _ = publisher.send_with_fd(fd.as_fd(), 1024);
-    let _ = publisher.send_with_fd(fd.as_fd(), 1024);
+    // token=0: wire v2, token field unused in this test.
+    let _ = publisher.send_with_fd(fd.as_fd(), 1024, 0);
+    let _ = publisher.send_with_fd(fd.as_fd(), 1024, 0);
     // Test code: unwrap_or(0) is safe here since a poisoned lock means no subscribers.
     assert!(wait_until(Duration::from_millis(500), || {
         publisher.connected_subscriber_count().unwrap_or(0) == 0
     }));
+}
+
+#[test]
+fn back_channel_release_roundtrip() {
+    let path = unique_socket_path("ack");
+    let publisher = Linux::open_publisher(&path).expect("bind");
+    let subscriber = Linux::open_subscriber(&path).expect("connect");
+    assert!(wait_until(Duration::from_millis(500), || {
+        publisher.connected_subscriber_count().unwrap_or(0) >= 1
+    }));
+
+    // Publisher sends an fd with token=42.
+    let fd = memfd(c"ack");
+    publisher
+        .send_with_fd(fd.as_fd(), 4096, 42)
+        .expect("send fd");
+
+    // Subscriber receives + releases.
+    let recvd = wait_until(Duration::from_millis(500), || {
+        matches!(subscriber.recv_with_fd(), Ok(Some(_)))
+    });
+    assert!(recvd, "no fd received");
+    subscriber.send_release_ack(42).expect("send ack");
+
+    // Publisher drains the ack.
+    let acked = wait_until(Duration::from_millis(500), || {
+        matches!(publisher.recv_release_ack(), Ok(Some(42)))
+    });
+    assert!(acked, "no ack drained");
 }

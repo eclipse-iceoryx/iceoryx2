@@ -98,6 +98,9 @@ where
     /// 2. Drains the fd from the socket (non-blocking).
     /// 3. Returns `(meta, fd, len)`.
     ///
+    /// The token embedded in the wire frame is discarded. Use
+    /// [`receive_with_token`](Self::receive_with_token) to retrieve it.
+    ///
     /// Returns `Err(ServiceError::Connection(Error::NoFdInMessage))` if the
     /// iceoryx2 sample arrived but the fd socket is empty (publisher crashed
     /// between the two sends, violating the ordering contract).
@@ -110,6 +113,35 @@ where
     /// - [`ServiceError::Iceoryx`] — if the iceoryx2 receive fails.
     /// - [`ServiceError::Connection`] — if the fd receive fails.
     pub fn receive(&mut self) -> Result<Option<(Meta, OwnedFd, u64)>, ServiceError> {
+        let Some((meta, fd, len, _token)) = self.receive_with_token()? else {
+            return Ok(None);
+        };
+        Ok(Some((meta, fd, len)))
+    }
+
+    /// Non-blocking receive with token.
+    ///
+    /// Returns `Ok(None)` if no iceoryx2 sample is currently queued.
+    ///
+    /// On success:
+    /// 1. Dequeues the iceoryx2 metadata sample.
+    /// 2. Drains the fd from the socket (non-blocking).
+    /// 3. Returns `(meta, fd, len, token)`.
+    ///
+    /// The `token` value matches the one passed to the publisher's
+    /// [`crate::service_publisher::DmaBufServicePublisher::publish_with_token`]
+    /// call. Use [`release`](Self::release) to send an ack back.
+    ///
+    /// On non-Linux targets this always returns
+    /// [`ServiceError::Connection(Error::UnsupportedPlatform)`].
+    ///
+    /// # Errors
+    ///
+    /// - [`ServiceError::Iceoryx`] — if the iceoryx2 receive fails.
+    /// - [`ServiceError::Connection`] — if the fd receive fails.
+    pub fn receive_with_token(
+        &mut self,
+    ) -> Result<Option<(Meta, OwnedFd, u64, u64)>, ServiceError> {
         #[cfg(target_os = "linux")]
         {
             // 1. Check iceoryx2 metadata channel first.
@@ -128,7 +160,7 @@ where
             // 2. Drain the fd from the socket. Publisher sent it before the sample,
             //    so it must be present. If not, the publisher violated the ordering
             //    contract (e.g. crash mid-send).
-            let Some((fd, len)) = self
+            let Some((fd, len, token)) = self
                 .fd_sub
                 .recv_with_fd()
                 .map_err(ServiceError::Connection)?
@@ -138,7 +170,7 @@ where
                 ));
             };
 
-            Ok(Some((meta, fd, len)))
+            Ok(Some((meta, fd, len, token)))
         }
 
         #[cfg(not(target_os = "linux"))]
@@ -146,6 +178,32 @@ where
             Err(ServiceError::Connection(
                 crate::connection::Error::UnsupportedPlatform,
             ))
+        }
+    }
+
+    /// Send a "buffer released" ack back to the publisher carrying `token`.
+    ///
+    /// Best-effort: drops the ack silently if the subscriber's send buffer is
+    /// full (EAGAIN). Callers must tolerate occasional missed acks.
+    ///
+    /// On non-Linux targets this always returns `Ok(())`.
+    ///
+    /// # Errors
+    ///
+    /// - [`ServiceError::Connection`] — if the send fails for reasons other
+    ///   than a full send buffer.
+    pub fn release(&mut self, token: u64) -> Result<(), ServiceError> {
+        #[cfg(target_os = "linux")]
+        {
+            self.fd_sub
+                .send_release_ack(token)
+                .map_err(ServiceError::Connection)
+        }
+
+        #[cfg(not(target_os = "linux"))]
+        {
+            let _ = token;
+            Ok(())
         }
     }
 }
