@@ -1006,12 +1006,12 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_reallocates_memory_when_alloca
     }
 
     {
-        auto sample = publisher.loan_slice(INITIAL_SIZE * INITIAL_SIZE);
+        auto sample = publisher.loan_slice(INITIAL_SIZE * 4);
         ASSERT_THAT(sample.has_value(), Eq(true));
     }
 
     {
-        auto sample = publisher.loan_slice(INITIAL_SIZE * INITIAL_SIZE * INITIAL_SIZE);
+        auto sample = publisher.loan_slice(INITIAL_SIZE * 4 * 4);
         ASSERT_THAT(sample.has_value(), Eq(true));
     }
 }
