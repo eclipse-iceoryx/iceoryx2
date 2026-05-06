@@ -1,0 +1,74 @@
+[package]
+name = "iceoryx2-dmabuf"
+description = "iceoryx2: typed DMA-BUF transport via parallel dmabuf::Service variant"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[features]
+default = ["std"]
+std = ["iceoryx2/std"]
+## Enables the typed DMA-BUF transport layer. Linux only.
+dma-buf = ["dep:dma-buf"]
+## Enables SO_PEERCRED UID check on accepted UDS connections (Linux only).
+peercred = []
+
+[dependencies]
+iceoryx2 = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+rustix = { version = "1", features = ["fs", "net", "mm"] }
+libc = { workspace = true }
+dma-buf = { version = "0.5", optional = true }
+
+[dev-dependencies]
+libc = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+dma-heap = "0.3"
+
+[[example]]
+name = "dmabuf-service-publisher"
+path = "examples/publish_subscribe_dmabuf_service/publisher.rs"
+required-features = ["dma-buf"]
+
+[[example]]
+name = "dmabuf-service-subscriber"
+path = "examples/publish_subscribe_dmabuf_service/subscriber.rs"
+required-features = ["dma-buf"]
+
+[[test]]
+name = "shm_tests"
+path = "tests/shm_tests.rs"
+
+[[test]]
+name = "shm_non_linux_tests"
+path = "tests/shm_non_linux_tests.rs"
+
+[[test]]
+name = "connection_tests"
+path = "tests/connection_tests.rs"
+
+[[test]]
+name = "service_tests"
+path = "tests/service_tests.rs"
+
+[[test]]
+name = "it_roundtrip"
+path = "tests/it_roundtrip.rs"
+required-features = ["dma-buf"]
+
+[[test]]
+name = "it_dmabuf_identity"
+path = "tests/it_dmabuf_identity.rs"
+required-features = ["dma-buf"]
+
+[[test]]
+name = "it_dmabuf_heap"
+path = "tests/it_dmabuf_heap.rs"
+required-features = ["dma-buf"]

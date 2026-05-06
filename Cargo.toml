@@ -62,6 +62,8 @@ members = [
     "iceoryx2/conformance-tests/tests-common",
     "iceoryx2/conformance-tests/tests-nostd",
 
+    "iceoryx2-dmabuf",
+
     "iceoryx2-pal/concurrency-sync",
     "iceoryx2-pal/posix/",
     "iceoryx2-pal/print/",
@@ -87,6 +89,7 @@ members = [
     "benchmarks/publish-subscribe",
     "benchmarks/event",
     "benchmarks/queue",
+    "benchmarks/dmabuf",
 
     "component-tests/rust",
 ]
@@ -137,6 +140,7 @@ iceoryx2-cal = { version = "0.8.999", path = "iceoryx2-cal" }
 iceoryx2-cal-conformance-tests = { version = "0.8.999", path = "iceoryx2-cal/conformance-tests"}
 iceoryx2 = { version = "0.8.999", path = "iceoryx2/", default-features = false }
 iceoryx2-conformance-tests = { version = "0.8.999", path = "iceoryx2/conformance-tests"}
+iceoryx2-dmabuf = { version = "0.8.999", path = "iceoryx2-dmabuf" }
 iceoryx2-cli = { version = "0.8.999", path = "iceoryx2-cli/"}
 iceoryx2-ffi-c = { version = "0.8.999", path = "iceoryx2-ffi/c" }
 iceoryx2-ffi-python = { version = "0.8.999", path = "iceoryx2-ffi/python" }

@@ -45,6 +45,16 @@
   the trait impl and enforce all invariants (`#[repr(C)]`, no padding, field
   bounds) at compile time
   [#1547](https://github.com/eclipse-iceoryx/iceoryx2/issues/1547)
+* Add `iceoryx2-dmabuf` crate providing a `dmabuf::Service` variant for
+  zero-copy DMA-BUF frame delivery (V4L2 ISP, DRM scanout, GBM, Vulkan
+  external memory, dma-heap allocation). Built as a parallel construct
+  alongside `ipc::Service` (NOT `impl iceoryx2::service::Service`) per
+  the Task 0a architecture spike. Linux only at runtime; non-Linux
+  targets compile via stubs. Includes a typed convenience layer
+  (`DmaBufPublisher` / `DmaBufSubscriber`) gated on the `dma-buf` Cargo
+  feature, and a back-channel ack API (`release(token)` /
+  `recv_release_ack()`) for buffer-pool integration.
+  [#1570](https://github.com/eclipse-iceoryx/iceoryx2/issues/1570)
 * Enhance degradation handler and add unable to deliver handler
   [#1573](https://github.com/eclipse-iceoryx/iceoryx2/issues/1573)
 * Expose `allocation_strategy` in the iceoryx2 config for `Publisher`,
