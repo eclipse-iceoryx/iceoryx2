@@ -106,6 +106,7 @@ INTEGRATIONS_CRATES_TO_IGNORE := `echo \
     iceoryx2-bb-testing                     \
     iceoryx2-bb-testing-macros              \
     iceoryx2-log                            \
+    iceoryx2-services-common                \
     iceoryx2-services-tunnel                \
     iceoryx2-services-tunnel-backend        \
     iceoryx2-services-tunnel-conformance-tests`
