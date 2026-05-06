@@ -46,6 +46,7 @@ use iceoryx2_bb_elementary::relocatable_ptr::{
 };
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
+use iceoryx2_bb_elementary_traits::owning_pointer::{GenericOwningPointer, OwningPointer};
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::{atomic_copy::AtomicCopy, zero_copy_send::ZeroCopySend};
 use iceoryx2_log::fail;
@@ -57,6 +58,8 @@ pub enum ByteAtomicError {
     /// The size of the passed value and SIZE do not match.
     SizesDoNotMatch,
 }
+
+pub type ByteAtomic<T> = MetaByteAtomic<T, GenericOwningPointer>;
 
 /// A runtime fixed-size, shared-memory compatible [`RelocatableByteAtomic`].
 pub type RelocatableByteAtomic<T> = MetaByteAtomic<T, GenericRelocatablePointer>;
@@ -108,7 +111,51 @@ impl<T: AtomicCopy, Ptr: GenericPointer> MetaByteAtomic<T, Ptr> {
     }
 }
 
+impl<T: AtomicCopy> ByteAtomic<T> {
+    pub fn new(value: T) -> Self {
+        let capacity = size_of::<T>();
+        let mut new_self = Self {
+            data_ptr: OwningPointer::new_with_alloc(capacity),
+            capacity,
+            is_initialized: AtomicBool::new(false),
+            _inner_type: PhantomData,
+        };
+
+        for i in 0..capacity {
+            unsafe {
+                new_self
+                    .data_ptr
+                    .as_mut_ptr()
+                    .add(i)
+                    .write(AtomicU8::new(0));
+            }
+        }
+
+        let value_ptr = (&value as *const T) as *const u8;
+        value.__for_each_field(0, &mut |offset, size| {
+            for i in offset..offset + size {
+                unsafe {
+                    (*new_self.data_ptr.as_ptr().add(i))
+                        .store(*value_ptr.add(i), Ordering::Relaxed);
+                }
+            }
+        });
+
+        new_self.is_initialized.store(true, Ordering::Relaxed);
+        new_self
+    }
+
+    pub unsafe fn read(&self) -> MaybeUninit<T> {
+        unsafe { self.read_impl() }
+    }
+
+    pub unsafe fn write(&self, value: T) {
+        unsafe { self.write_impl(value) };
+    }
+}
+
 impl<T: AtomicCopy> RelocatableContainer for RelocatableByteAtomic<T> {
+    // TODO: capacity?
     unsafe fn new_uninit(_capacity: usize) -> Self {
         Self {
             data_ptr: unsafe { RelocatablePointer::new_uninit() },
