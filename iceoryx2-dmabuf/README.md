@@ -15,15 +15,18 @@ descriptors alongside iceoryx2 typed metadata — rather than implementing the
 ### Lowest level — raw connection (no metadata)
 
 ```rust
-use iceoryx2_dmabuf::connection::linux::Linux;
+use iceoryx2_dmabuf::connection::FdPassingConnection;
+use iceoryx2_dmabuf::connection::linux::{LinuxPublisher, LinuxSubscriber};
 
-let mut pub_conn = Linux::open_publisher("camera/frames")?;
-pub_conn.send_with_fd(borrowed_fd, byte_len)?;
+let publisher = LinuxPublisher::open("camera/frames")?;
+let subscriber = LinuxSubscriber::open("camera/frames")?;
 
-let mut sub_conn = Linux::open_subscriber("camera/frames")?;
-if let Some((owned_fd, len)) = sub_conn.recv_with_fd()? {
-    // use fd
-}
+publisher.send_with_fd(fd.as_fd(), len, token)?;
+let Some((received_fd, len, token)) = subscriber.recv_with_fd()? else { return Ok(()); };
+
+// Back-channel ack:
+subscriber.send_release_ack(token)?;
+let Some(acked) = publisher.recv_release_ack()? else { return Ok(()); };
 ```
 
 ### Service level — typed metadata + raw fd
@@ -35,9 +38,17 @@ let factory = Service::open_or_create::<u64>("camera/frames")?;
 let mut publisher = factory.publisher_builder().create()?;
 publisher.publish(frame_id, borrowed_fd, byte_len)?;
 
+// With caller-supplied token for pool-ack correlation:
+publisher.publish_with_token(frame_id, borrowed_fd, byte_len, my_token)?;
+let Some(acked_token) = publisher.recv_release_ack()? else { return Ok(()); };
+
 let mut subscriber = factory.subscriber_builder().create()?;
 if let Some((frame_id, owned_fd, len)) = subscriber.receive()? {
     // use fd and frame_id
+}
+// With token:
+if let Some((frame_id, owned_fd, len, token)) = subscriber.receive_with_token()? {
+    subscriber.release(token)?;
 }
 ```
 

@@ -79,7 +79,7 @@ typed `DmaBufPublisher<Meta>` convenience layer is gated.
 
 ## Commit structure
 
-11 commits ahead of `upstream/main`:
+12 commits ahead of `upstream/main` (excludes this PR-MESSAGE commit `1485d610c`; re-verify before push — commit list correct as of `1485d610c`):
 
 ```
 dd0c18ff9 docs: spec + arch + plan for dmabuf service variant
@@ -104,7 +104,7 @@ Grouping:
   Tasks 1-4 (shm layer, connection layer, service + port factory, typed
   convenience).
 - **1 fix commit** (`a21ec5be4`): review findings on connection + shm.
-- **3 feat/test/bench/docs commits** (`8fc49e811`, `c5c736e2d`, `076bcc657`,
+- **4 feat/test/bench/docs commits** (`8fc49e811`, `c5c736e2d`, `076bcc657`,
   `16ce87546`): Tasks 5-7 (wire v2 + ack, test migration, examples + README,
   benchmarks).
 - **1 final doc commit** (`7da2d5ee3`): Task 8 sweep (release notes, sidecar

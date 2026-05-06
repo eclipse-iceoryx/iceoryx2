@@ -419,7 +419,7 @@ Wire format v2: `[8B len][8B token][SCM_RIGHTS fd]`.
 
 - [ ] **Step 5: Run + commit**
 
-- [ ] **Step 6: Update spec + arch documents to reflect v2 wire**
+- [x] **Step 6: Update spec + arch documents to reflect v2 wire**
 
 Update `spec-dmabuf-service-variant.adoc` §15 wire format and add back-channel requirements. Update `arch-dmabuf-service-variant.adoc` D3 (wire) and D4 (token correlation).
 

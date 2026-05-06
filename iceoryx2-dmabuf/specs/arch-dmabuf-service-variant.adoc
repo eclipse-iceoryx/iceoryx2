@@ -50,9 +50,12 @@ pub trait FdBackedSharedMemory {
 }
 
 // iceoryx2-dmabuf/src/connection.rs
+// v2 trait surface; ack methods landed in Task 4b.
 pub trait FdPassingConnection {
-    fn send_with_fd(&self, fd: BorrowedFd<'_>, len: u64) -> Result<(), SendError>;
-    fn recv_with_fd(&self) -> Result<Option<(OwnedFd, u64)>, RecvError>;
+    fn send_with_fd(&self, fd: BorrowedFd<'_>, len: u64, token: u64) -> Result<()>;
+    fn recv_with_fd(&self) -> Result<Option<(OwnedFd, u64, u64)>>;
+    fn send_release_ack(&self, token: u64) -> Result<()>;
+    fn recv_release_ack(&self) -> Result<Option<u64>>;
 }
 ----
 
@@ -83,13 +86,20 @@ No `ShmAllocationError::ExternallyAllocated` variant, no `ShmAllocatorConfig: Co
 
 *Context.* `ZeroCopyConnection::send` today carries `PointerOffset` only. For DMA-BUF, "offset" is meaningless because each fd IS its own buffer. Since `FdPassingConnection` is standalone, we do not carry a synthetic offset.
 
-*Decision.* `FdPassingConnection::send_with_fd(fd, len)`. No `PointerOffset` in the wire. `fd` is duplicated via `fcntl(F_DUPFD_CLOEXEC)` into the SCM_RIGHTS ancillary data; `len` is the DMA-BUF size and travels in the iov payload.
+*Decision.* Wire format v2 (atomic per-message via `sendmsg` with SCM_RIGHTS ancillary):
 
-Wire format (per message): `[8B len u64 LE][8B reserved u64 LE for future header][SCM_RIGHTS ancillary: 1 fd]`.
+* Forward (publisher → subscriber):
+  `[8B payload_len u64 LE][8B token u64 LE][SCM_RIGHTS ancillary: 1 fd]`
+* Back-channel ack (subscriber → publisher):
+  `[8B magic u64 LE = 0x4D4F5346][8B token u64 LE]`
 
-*Rationale.* Cleaner wire: offset always 0 had no semantic value; removing it avoids a misleading field. The reserved 8 bytes retain forward-compatibility room.
+Both directions on the same Unix-domain `UnixStream` (UnixStream is bidirectional). Disambiguation: forward frames carry SCM_RIGHTS ancillary; ack frames carry no ancillary. Receiver checks the cmsg buffer drain — empty = ack.
 
-*Consequences.* Wire format is simpler than the earlier `(offset, fd, len)` triple.
+`MAGIC_BUFFER_RELEASED = 0x4D4F5346` is `b"MOSF"` interpreted as little-endian u32 (matches the prior sidecar prototype's wire constant).
+
+*Rationale.* Cleaner wire: offset always 0 had no semantic value; removing it avoids a misleading field. The token field enables pool-ack correlation without a separate socket.
+
+*Consequences.* Wire format v2 supersedes the earlier `(len, reserved, fd)` triple. The back-channel ack eliminates the need for a separate `BackChannel` socket.
 
 === D4. Sidecar correlation token disappears from the user-facing surface
 
@@ -139,9 +149,16 @@ pub struct Service {
 
 [source,rust]
 ----
-impl<Meta> DmaBufServicePublisher<Meta>
-where Meta: Send + Debug + Copy {
-    pub fn publish(&mut self, meta: Meta, buf: &dma_buf::DmaBuf) -> Result<(), PublishError>;
+impl<Meta: ZeroCopySend + Debug + Copy + 'static> DmaBufServicePublisher<Meta> {
+    pub fn publish(&mut self, meta: Meta, fd: BorrowedFd<'_>, len: u64) -> Result<(), ServiceError>;
+    pub fn publish_with_token(&mut self, meta: Meta, fd: BorrowedFd<'_>, len: u64, token: u64) -> Result<(), ServiceError>;
+    pub fn recv_release_ack(&mut self) -> Result<Option<u64>, ServiceError>;
+}
+
+impl<Meta: ZeroCopySend + Debug + Copy + 'static> DmaBufServiceSubscriber<Meta> {
+    pub fn receive(&mut self) -> Result<Option<(Meta, OwnedFd, u64)>, ServiceError>;
+    pub fn receive_with_token(&mut self) -> Result<Option<(Meta, OwnedFd, u64, u64)>, ServiceError>;
+    pub fn release(&mut self, token: u64) -> Result<(), ServiceError>;
 }
 ----
 

@@ -94,7 +94,20 @@ pub trait FdPassingConnection {
         -> Result<Option<(OwnedFd, u64)>, RecvError>;
 }
 ----
-. [MUST] Linux impl uses Unix domain socket per service-name + port-id. Wire frame per message: `[8B len u64 LE][8B reserved u64 LE][SCM_RIGHTS ancillary: 1 fd]`.
+. [MUST] Wire format v2 — forward (publisher→subscriber):
+  `[8B payload_len u64 LE][8B token u64 LE][SCM_RIGHTS ancillary: 1 fd]`.
+
+. [MUST] Wire format v2 — back-channel ack (subscriber→publisher):
+  `[8B magic u64 LE (low 32 bits = 0x4D4F5346)][8B token u64 LE]`.
+  No ancillary. Best-effort: EAGAIN → drop.
+
+. [MUST] Both directions share the same Unix-domain `UnixStream`. Disambiguation: forward = SCM_RIGHTS ancillary present; ack = ancillary absent.
+
+. [MUST] If `recv_with_fd` receives a frame without ancillary, return
+  `Error::ProtocolDrift`. If `recv_release_ack` receives a frame WITH
+  ancillary, return `Error::ProtocolDrift`.
+
+. [MUST] Linux impl uses Unix domain socket per service-name + port-id.
 . [MUST] Linux impl supports fan-out: publisher binds, accepts subscriber connections in a background thread, each `send_with_fd` iterates connected subscriber streams. Broken-pipe pruning identical to sidecar prototype.
 . [MUST] Linux impl supports `peercred` UID check, gated on `iceoryx2-dmabuf` Cargo feature `peercred`.
 . [MUST] UDS path derived from service name + port id (same derivation pattern as sidecar prototype `src/path.rs`, adapted to use service-name rather than hardcoded prefix).
