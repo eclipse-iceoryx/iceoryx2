@@ -48,3 +48,13 @@ path = "tests/service_tests.rs"
 name = "it_roundtrip"
 path = "tests/it_roundtrip.rs"
 required-features = ["dma-buf"]
+
+[[test]]
+name = "it_dmabuf_identity"
+path = "tests/it_dmabuf_identity.rs"
+required-features = ["dma-buf"]
+
+[[test]]
+name = "it_dmabuf_heap"
+path = "tests/it_dmabuf_heap.rs"
+required-features = ["dma-buf"]
