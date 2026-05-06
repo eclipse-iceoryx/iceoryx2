@@ -49,7 +49,7 @@ jobs:
         run: cargo install rust-script --locked
 
       - name: Check format of all commit messages
-        run: just verify commits
+        run: just lint commits
 
       - name: Check license header
         run: ./internal/scripts/ci_test_spdx_license_header.sh
