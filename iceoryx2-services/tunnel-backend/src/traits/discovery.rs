@@ -23,8 +23,8 @@ use iceoryx2_services_common::DiscoveryEvent;
 /// [`Backend`](crate::traits::Backend) and announce local services
 /// so they can be discovered remotely. Implementations query the
 /// [`Backend`](crate::traits::Backend)'s communication layer to find active
-/// [`Service`](iceoryx2::service::Service) and provide their [`StaticConfig`]s
-/// to be processed by the caller.
+/// [`Service`](iceoryx2::service::Service) and provide their
+/// [`iceoryx2::service::static_config::StaticConfig`]s to be processed by the caller.
 ///
 /// # Examples
 ///
@@ -117,7 +117,8 @@ pub trait Discovery {
     ///
     /// # Parameters
     ///
-    /// * `static_config` - The [`StaticConfig`] of the service to announce.
+    /// * `static_config` - The [`iceoryx2::service::static_config::StaticConfig`]
+    ///   of the service to announce.
     fn announce(&self, discovery: DiscoveryEvent) -> Result<(), Self::AnnouncementError>;
 
     /// Discovers available services and processes each one with the provided
@@ -125,13 +126,14 @@ pub trait Discovery {
     ///
     /// This method queries the backend's communication mechanism for all
     /// accessible [`Service`](iceoryx2::service::Service)s, then invokes
-    /// `process_discovery` for each discovered [`StaticConfig`].
+    /// `process_discovery` for each discovered [`iceoryx2::service::static_config::StaticConfig`].
     /// Discovery continues until all services are processed or an error occurs.
     ///
     /// # Parameters
     ///
     /// * `process_discovery` - Callback provided by the caller to process the
-    ///   [`StaticConfig`] of each discovered [`Service`](iceoryx2::service::Service).
+    ///   [`iceoryx2::service::static_config::StaticConfig`] of each discovered
+    ///   [`Service`](iceoryx2::service::Service).
     fn discover<E: Error, F: FnMut(&DiscoveryEvent) -> Result<(), E>>(
         &self,
         process_discovery: F,
