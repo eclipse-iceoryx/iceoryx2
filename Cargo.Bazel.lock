@@ -1,5 +1,5 @@
 {
-  "checksum": "75db716086988ff56b9f9b127bc3e0a37b6f428e6b9d29aed5743442048c0129",
+  "checksum": "114634ad2f91451a9aa8bc64f6bea05d64d2d1e7c33c90ccc226c25480ba0da7",
   "crates": {
     "addr2line 0.25.1": {
       "name": "addr2line",
@@ -6467,6 +6467,15 @@
           "common": [
             "default",
             "std"
+          ],
+          "selects": {}
+        },
+        "deps": {
+          "common": [
+            {
+              "id": "serde 1.0.228",
+              "target": "serde"
+            }
           ],
           "selects": {}
         },
