@@ -72,7 +72,6 @@ crate.from_cargo(
         "//:iceoryx2-services/tunnel/Cargo.toml",
         "//:iceoryx2-services/tunnel-end-to-end-tests/Cargo.toml",
         "//:iceoryx2-services/tunnel-backend/Cargo.toml",
-        "//:iceoryx2-services/tunnel-zenoh/Cargo.toml",
         "//:iceoryx2-services/tunnel-conformance-tests/Cargo.toml",
         "//:iceoryx2-services/discovery/Cargo.toml",
         "//:iceoryx2-log/log/Cargo.toml",

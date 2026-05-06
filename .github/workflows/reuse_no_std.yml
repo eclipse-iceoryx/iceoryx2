@@ -14,6 +14,9 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
+      - name: Install just
+        uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
         with:
@@ -23,9 +26,6 @@ jobs:
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
-
-      - name: Install just
-        uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
 
       - name: Set caching env vars on non-Windows
         run: |
@@ -37,11 +37,11 @@ jobs:
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
 
-      - name: Build iceoryx2 (no_std)
-        run: just build iceoryx2 --no_std
+      - name: Build sdk (no_std)
+        run: just build sdk --no_std
 
-      - name: Test iceoryx2 (no_std)
-        run: just test workspace --no_std
+      - name: Test sdk (no_std)
+        run: just test sdk --no_std
 
       - name: Build bare-metal examples (no_std)
         run: cd examples/nostd/bare-metal/rust && cargo build --examples && cd -

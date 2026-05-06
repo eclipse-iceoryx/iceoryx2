@@ -38,15 +38,10 @@ path = "iox2-tunnel/src/main.rs"
 name = "iceoryx2_cli"
 path = "lib/src/lib.rs"
 
-[features]
-default = ["tunnel_zenoh"]
-tunnel_zenoh = ["iceoryx2-services-tunnel-zenoh"]
-
 [dependencies]
 iceoryx2-log = { workspace = true, features = ["std"] }
 iceoryx2-userland-record-and-replay = { workspace = true }
 iceoryx2-services-discovery = { workspace = true, features = ["std"] }
-iceoryx2-services-tunnel = { workspace = true, features = ["std"] }
 iceoryx2 = { workspace = true, features = ["std"] }
 iceoryx2-cal = { workspace = true, features = ["std"] }
 iceoryx2-bb-loggers = { workspace = true, features = ["std", "console"] }
@@ -70,11 +65,6 @@ ron = { workspace = true }
 toml = { workspace = true }
 dirs = { workspace = true }
 dialoguer = { workspace = true }
-
-# Zenoh does not build on FreeBSD
-[target.'cfg(not(target_os = "freebsd"))'.dependencies]
-iceoryx2-services-tunnel-zenoh = { workspace = true, optional = true }
-zenoh = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }

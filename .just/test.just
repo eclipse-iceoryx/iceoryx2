@@ -20,22 +20,29 @@ _parse-test-args *flags:
     set -euo pipefail
 
     TOOLCHAIN=""
-    HAS_NOSTD="false"
     TARGET_TRIPLET=""
+    HAS_NOSTD="false"
+    HAS_DOC="false"
+    EXTRA_ARGS=""
 
     set -- {{flags}}
     while [[ $# -gt 0 ]]; do
         case "$1" in
+            --)         shift; EXTRA_ARGS="$*";            break ;;
             +*)         TOOLCHAIN="$1";                    shift ;;
-            --no_std)   HAS_NOSTD="true";                  shift ;;
+            --target)   TARGET_TRIPLET="$2";               shift 2 ;;
             --target=*) TARGET_TRIPLET="${1#--target=}";   shift ;;
+            --no_std)   HAS_NOSTD="true";                  shift ;;
+            --doc)      HAS_DOC="true";                    shift ;;
             *)          shift ;;
         esac
     done
 
     echo "TOOLCHAIN='$TOOLCHAIN'"
-    echo "HAS_NOSTD='$HAS_NOSTD'"
     echo "TARGET_TRIPLET='$TARGET_TRIPLET'"
+    echo "HAS_NOSTD='$HAS_NOSTD'"
+    echo "HAS_DOC='$HAS_DOC'"
+    echo "EXTRA_ARGS='$EXTRA_ARGS'"
 
 [private]
 _test-dispatch what *flags:
@@ -46,32 +53,47 @@ _test-dispatch what *flags:
 
     case "{{what}}" in
         "")
-            echo "Usage: just test <what> [flags]"
+            echo "Usage: just test <scope> [flags]"
             echo ""
-            echo "  workspace              run all tests"
+            echo "Scope:"
+            echo "  sdk                    run all tests for the main workspace"
+            echo "  integrations           run all tests for the integrations workspace"
             echo "  <package>              run tests for a specific package"
             echo ""
             echo "Flags:"
-            echo "  --no_std               test without std"
             echo "  +<toolchain>           use a specific toolchain"
-            echo "  --target=<triplet>     cross-compile for target"
+            echo "  --target <triplet>     cross-compile for target"
+            echo "  --no_std               test without std"
+            echo "  --doc                  run documentation tests"
             exit 1
             ;;
-        workspace)
-            just _test-workspace "$TOOLCHAIN" "$HAS_NOSTD" "$TARGET_TRIPLET"
+        sdk)
+            just _test-sdk "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
+            ;;
+        integrations)
+            just _test-integrations "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
             ;;
         *)
-            just _test-package "{{what}}" "$TOOLCHAIN" "$HAS_NOSTD" "$TARGET_TRIPLET"
+            just _test-package "{{what}}" "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
             ;;
     esac
 
 [private]
-_test-workspace toolchain has_nostd target_triplet:
+_test-sdk toolchain target_triplet has_nostd has_doc extra_args:
     #!/usr/bin/env bash
     set -euo pipefail
 
+    if [ "{{has_doc}}" = "true" ]; then
+        if [ "{{has_nostd}}" = "true" ]; then
+            echo "Error: --doc cannot be combined with --no_std" >&2
+            exit 1
+        fi
+        cargo {{toolchain}} test --workspace --doc {{extra_args}}
+        exit 0
+    fi
+
     if [ "{{has_nostd}}" = "true" ]; then
-        NOSTD_CRATES=$(just _discover-nostd-test-crates)
+        NOSTD_CRATES=$(just _discover-nostd-crates)
 
         CRATE_COUNT=$(echo "$NOSTD_CRATES" | wc -l)
         echo ""
@@ -86,19 +108,17 @@ _test-workspace toolchain has_nostd target_triplet:
         FAILED_CRATES=()
 
         for crate in $NOSTD_CRATES; do
-            BASE_CRATE="${crate%-tests-nostd}"
-
-            echo "[$((PASSED + FAILED + 1))/$CRATE_COUNT] Running tests for $BASE_CRATE..."
+            echo "[$((PASSED + FAILED + 1))/$CRATE_COUNT] Running tests for $crate..."
             echo "------------------------------------------"
 
-            if just _test-package "$BASE_CRATE" "{{toolchain}}" "true" "{{target_triplet}}"; then
-                echo "✓ $BASE_CRATE PASSED"
+            if just _test-package "$crate" "{{toolchain}}" "{{target_triplet}}" "true" "false" "{{extra_args}}"; then
+                echo "✓ $crate PASSED"
                 PASSED=$((PASSED + 1))
-                PASSED_CRATES+=("$BASE_CRATE")
+                PASSED_CRATES+=("$crate")
             else
-                echo "✗ $BASE_CRATE FAILED"
+                echo "✗ $crate FAILED"
                 FAILED=$((FAILED + 1))
-                FAILED_CRATES+=("$BASE_CRATE")
+                FAILED_CRATES+=("$crate")
             fi
             echo ""
         done
@@ -128,13 +148,43 @@ _test-workspace toolchain has_nostd target_triplet:
             exit 1
         fi
     else
-        cargo {{toolchain}} nextest run --workspace
+        cargo {{toolchain}} nextest run --workspace {{extra_args}}
     fi
 
 [private]
-_test-package package toolchain has_nostd target_triplet:
+_test-integrations toolchain target_triplet has_nostd has_doc extra_args:
     #!/usr/bin/env bash
     set -euo pipefail
+
+    if [ "{{has_nostd}}" = "true" ]; then
+        echo "Error: the integrations workspace cannot be built with --no_std" >&2
+        exit 1
+    fi
+
+    MANIFEST_ARG=$(just _workspace-manifest-arg integrations)
+
+    if [ "{{has_doc}}" = "true" ]; then
+        cargo {{toolchain}} test --workspace --doc $MANIFEST_ARG {{extra_args}}
+    else
+        cargo {{toolchain}} nextest run --workspace $MANIFEST_ARG {{extra_args}}
+    fi
+
+[private]
+_test-package package toolchain target_triplet has_nostd has_doc extra_args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    WORKSPACE=$(just _find-package-workspace "{{package}}")
+    MANIFEST_ARG=$(just _workspace-manifest-arg "$WORKSPACE")
+
+    if [ "{{has_doc}}" = "true" ]; then
+        if [ "{{has_nostd}}" = "true" ]; then
+            echo "Error: --doc cannot be combined with --no_std" >&2
+            exit 1
+        fi
+        cargo {{toolchain}} test --package {{package}} $MANIFEST_ARG --doc {{extra_args}}
+        exit 0
+    fi
 
     if [ "{{has_nostd}}" = "true" ]; then
         TARGET_ARG=""
@@ -145,18 +195,16 @@ _test-package package toolchain has_nostd target_triplet:
             TARGET_ARG="--target $HOST_TARGET"
         fi
 
-        if [[ "{{package}}" == *-tests-nostd ]]; then
-            TEST_PACKAGE="{{package}}"
-        else
-            TEST_PACKAGE="{{package}}-tests-nostd"
-        fi
+        NOSTD_TEST_PACKAGE=$(just _nostd-test-crate-for "{{package}}")
 
         RUSTC_BOOTSTRAP=1 RUSTFLAGS="-C panic=abort" \
             cargo {{toolchain}} run \
-                --package "$TEST_PACKAGE" \
+                --package "$NOSTD_TEST_PACKAGE" \
+                $MANIFEST_ARG \
                 --no-default-features \
                 -Zbuild-std=core,alloc \
-                $TARGET_ARG
+                $TARGET_ARG \
+                {{extra_args}}
     else
-        cargo {{toolchain}} nextest run --package {{package}}
+        cargo {{toolchain}} nextest run --package {{package}} $MANIFEST_ARG {{extra_args}}
     fi

@@ -10,7 +10,7 @@ Install via `cargo`:
 cargo install iceoryx2-cli
 ```
 
-## Usage
+## Entrypoint
 
 The entrypoint to the CLI is `iox2`:
 
@@ -40,7 +40,12 @@ Discovered Commands:
   service
 ```
 
-Sub-commands can be run using their discovered name:
+Sub-commands can be run using their discovered name.
+
+## Service
+
+The `iox2 service` sub-command queries information about `iceoryx2`
+services.
 
 ```console
 $ iox2 service --help
@@ -58,6 +63,10 @@ Commands:
   details  Show service details
 ```
 
+## Node
+
+The `iox2 node` sub-command queries information about `iceoryx2` nodes.
+
 ```console
 $ iox2 node --help
 Query information about iceoryx2 nodes
@@ -72,6 +81,62 @@ Options:
 Commands:
   list     List all nodes
   details  Show node details
+```
+
+## Tunnel
+
+The `iox2 tunnel` sub-command bridges `iceoryx2` instances running on
+different hosts or networks. `iox2-tunnel` itself does not implement any
+transport; it discovers and delegates to backend-specific binaries named
+`iox2-tunnel-<backend>`, which must be installed separately.
+
+```console
+$ iox2 tunnel --help
+Launch a tunnel between iceoryx2 instances.
+
+Usage: iox2 tunnel [OPTIONS]
+
+Options:
+  -l, --list     List all installed tunnel backends
+  -p, --paths    Display paths that will be checked for tunnel backends
+  -h, --help     Print help
+  -V, --version  Print version
+
+Commands:
+  ...            See installed tunnel backends with --list
+```
+
+### Backends
+
+Available backends:
+
+* **Zenoh** — `cargo install iceoryx2-integrations-zenoh-tunnel-cli`
+
+Once installed, a backend is discovered automatically:
+
+```console
+$ iox2 tunnel --list
+Discovered Commands:
+  zenoh
+```
+
+Invoke a backend by name; any additional arguments are forwarded to the
+backend binary:
+
+```console
+$ iox2 tunnel zenoh --help
+Launch an iceoryx2 tunnel using Zenoh as the transport.
+
+Usage: iox2 tunnel zenoh [OPTIONS]
+
+Options:
+  -z, --zenoh-config <PATH>          Path to a zenoh configuration file
+  -d, --discovery-service <DISCOVERY_SERVICE>
+                                     Name of a service providing discovery updates to connect to
+      --poll <RATE>                  Poll for discovery updates and samples at the provided rate in milliseconds [default: 100]
+      --reactive                     Reactively process discovery updates and samples
+  -h, --help                         Print help
+  -V, --version                      Print version
 ```
 
 ## Extending
