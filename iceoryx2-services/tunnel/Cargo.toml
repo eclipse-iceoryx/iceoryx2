@@ -15,6 +15,7 @@ version = { workspace = true }
 default = ["std"]
 std = [
   "iceoryx2-log/std",
+  "iceoryx2-services-common/std",
   "iceoryx2-services-discovery/std",
   "iceoryx2-services-tunnel-backend/std",
   "iceoryx2/std",

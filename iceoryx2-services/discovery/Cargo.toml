@@ -22,6 +22,7 @@ std = [
   "iceoryx2-bb-container/std",
   "iceoryx2-bb-elementary/std",
   "iceoryx2/std",
+  "iceoryx2-services-common/std",
 ]
 
 [dependencies]

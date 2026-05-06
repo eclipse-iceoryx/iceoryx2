@@ -13,7 +13,9 @@ version = { workspace = true }
 
 [features]
 default = []
-std = []
+std = [
+  "iceoryx2/std",
+]
 
 [dependencies]
 iceoryx2 = { workspace = true }
