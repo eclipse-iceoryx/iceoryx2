@@ -80,7 +80,7 @@ class UnableToDeliverInfo {
 /// handle the incident
 ///
 /// @eturn The [`UnableToDeliverAction`] to be taken to mitigate the incident
-using UnableToDeliverHandler = iox2::bb::StaticFunction<UnableToDeliverAction(UnableToDeliverInfo&)>;
+using UnableToDeliverHandler = iox2::bb::StaticFunction<UnableToDeliverAction(const UnableToDeliverInfo&)>;
 
 namespace detail {
 inline auto unable_to_deliver_handler_delegate(iox2_unable_to_deliver_info_h_ref info_handle,

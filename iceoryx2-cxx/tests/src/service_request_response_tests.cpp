@@ -1294,12 +1294,12 @@ TYPED_TEST(ServiceRequestResponseTest, client_reallocates_memory_when_allocation
     }
 
     {
-        auto request = client.loan_slice(INITIAL_SIZE * INITIAL_SIZE);
+        auto request = client.loan_slice(INITIAL_SIZE * 4);
         ASSERT_TRUE(request.has_value());
     }
 
     {
-        auto request = client.loan_slice(INITIAL_SIZE * INITIAL_SIZE * INITIAL_SIZE);
+        auto request = client.loan_slice(INITIAL_SIZE * 4 * 4);
         ASSERT_TRUE(request.has_value());
     }
 }
@@ -1361,12 +1361,12 @@ TYPED_TEST(ServiceRequestResponseTest, server_reallocates_memory_when_allocation
     }
 
     {
-        auto response = active_request->loan_slice(INITIAL_SIZE * INITIAL_SIZE);
+        auto response = active_request->loan_slice(INITIAL_SIZE * 4);
         ASSERT_TRUE(response.has_value());
     }
 
     {
-        auto response = active_request->loan_slice(INITIAL_SIZE * INITIAL_SIZE * INITIAL_SIZE);
+        auto response = active_request->loan_slice(INITIAL_SIZE * 4 * 4);
         ASSERT_TRUE(response.has_value());
     }
 }

@@ -40,7 +40,7 @@ auto main() -> int {
     auto counter = 0;
     auto delivery_incident_counter = 0;
 
-    UnableToDeliverHandler unable_to_deliver_handler = [&](UnableToDeliverInfo& info) -> auto {
+    UnableToDeliverHandler unable_to_deliver_handler = [&](const UnableToDeliverInfo& info) -> auto {
         // only print the port IDs in the first iteration of the retry loop of each delivery incident
         if (info.retries() == 0) {
             delivery_incident_counter += 1;
