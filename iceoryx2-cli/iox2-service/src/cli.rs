@@ -16,7 +16,6 @@ use clap::Subcommand;
 use clap::ValueEnum;
 
 use iceoryx2_cli::Format;
-use iceoryx2_cli::HelpOptions;
 use iceoryx2_cli::filter::MessagingPatternFilter;
 use iceoryx2_cli::help_template;
 
@@ -29,7 +28,7 @@ use iceoryx2_cli::help_template;
     version = env!("CARGO_PKG_VERSION"),
     disable_help_subcommand = true,
     arg_required_else_help = false,
-    help_template = help_template(HelpOptions::PrintCommandSection),
+    help_template = help_template().with_subcommands().build(),
 )]
 pub struct Cli {
     #[clap(subcommand)]
@@ -453,52 +452,52 @@ pub struct ReplayOptions {
 pub enum Action {
     #[clap(
         about = "List all services",
-        help_template = help_template(HelpOptions::DontPrintCommandSection)
+        help_template = help_template().build()
     )]
     List(ListOptions),
     #[clap(
         about = "Show service details",
-        help_template = help_template(HelpOptions::DontPrintCommandSection)
+        help_template = help_template().with_positionals().build()
     )]
     Details(DetailsOptions),
     #[clap(
         about = "Runs the service discovery service within a process",
-        help_template = help_template(HelpOptions::DontPrintCommandSection)
+        help_template = help_template().build()
     )]
     Discovery(DiscoveryOptions),
     #[clap(
         about = "Send a notification",
-        help_template = help_template(HelpOptions::DontPrintCommandSection)
+        help_template = help_template().with_positionals().build()
     )]
     Notify(NotifyOptions),
     #[clap(
         about = "Wait until a notification arrives",
-        help_template = help_template(HelpOptions::DontPrintCommandSection)
+        help_template = help_template().with_positionals().build()
     )]
     Listen(ListenOptions),
     #[clap(
         about = "Publish a message to any service.",
-        help_template = help_template(HelpOptions::DontPrintCommandSection)
+        help_template = help_template().with_positionals().build()
     )]
     Publish(PublishOptions),
     #[clap(
         about = "Subscribe to any service and introspect its messages.",
-        help_template = help_template(HelpOptions::DontPrintCommandSection)
+        help_template = help_template().with_positionals().build()
     )]
     Subscribe(SubscribeOptions),
     #[clap(
         about = "Record data from any service.",
-        help_template = help_template(HelpOptions::DontPrintCommandSection)
+        help_template = help_template().with_positionals().build()
     )]
     Record(RecordOptions),
     #[clap(
         about = "Replay pre-recorded data to any service.",
-        help_template = help_template(HelpOptions::DontPrintCommandSection)
+        help_template = help_template().with_positionals().build()
     )]
     Replay(ReplayOptions),
     #[clap(
         about = "Measure the message frequency (Hz) of a publish-subscribe service.",
-        help_template = help_template(HelpOptions::DontPrintCommandSection)
+        help_template = help_template().with_positionals().build()
     )]
     Hz(HzOptions),
 }

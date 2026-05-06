@@ -13,6 +13,7 @@
 mod cli;
 pub mod command;
 mod format;
+mod panic;
 
 pub mod filter;
 pub mod output;

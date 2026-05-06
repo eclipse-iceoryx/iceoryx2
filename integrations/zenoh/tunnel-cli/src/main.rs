@@ -13,14 +13,11 @@
 mod cli;
 
 use clap::Parser;
-#[cfg(not(debug_assertions))]
-use human_panic::setup_panic;
-#[cfg(debug_assertions)]
-extern crate better_panic;
 
 use cli::Cli;
 
 use iceoryx2::prelude::*;
+use iceoryx2_cli::install_panic_handlers;
 use iceoryx2_log::LogLevel;
 use iceoryx2_log::fail;
 use iceoryx2_log::info;
@@ -32,18 +29,7 @@ use iceoryx2_services_tunnel::Config as TunnelConfig;
 use iceoryx2_services_tunnel::Tunnel;
 
 fn main() -> anyhow::Result<()> {
-    #[cfg(not(debug_assertions))]
-    {
-        setup_panic!();
-    }
-    #[cfg(debug_assertions)]
-    {
-        better_panic::Settings::debug()
-            .most_recent_first(false)
-            .lineno_suffix(true)
-            .verbosity(better_panic::Verbosity::Full)
-            .install();
-    }
+    install_panic_handlers!();
 
     set_log_level_from_env_or(LogLevel::Info);
 

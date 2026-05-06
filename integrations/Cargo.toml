@@ -27,6 +27,7 @@ iceoryx2-integrations-zenoh-tunnel-cli = { version = "0.8.999", path = "zenoh/tu
 iceoryx2-integrations-zenoh-tunnel-backend = { version = "0.8.999", path = "zenoh/tunnel-backend" }
 
 iceoryx2 = { version = "0.8.999", path = "../iceoryx2/" }
+iceoryx2-cli = { version = "0.8.999", path = "../iceoryx2-cli/" }
 iceoryx2-log = { version = "0.8.999", path = "../iceoryx2-log/log/" }
 iceoryx2-bb-concurrency = { version = "0.8.999", path = "../iceoryx2-bb/concurrency/" }
 iceoryx2-bb-posix = { version = "0.8.999", path = "../iceoryx2-bb/posix/" }
@@ -38,7 +39,7 @@ iceoryx2-services-tunnel-conformance-tests = { version = "0.8.999", path = "../i
 
 anyhow = { version = "1.0.86" }
 better-panic = { version = "0.3.0" }
-clap = { version = "4.5.4", features = ["derive"] }
-human-panic = { version = "=2.0.2" }
+clap = { version = "4.6.1", features = ["derive"] }
+human-panic = { version = "2.0.5" }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 zenoh = { version = "1.7.2", features = ["default", "unstable"] }

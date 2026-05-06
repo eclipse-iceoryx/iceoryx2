@@ -15,7 +15,6 @@ use clap::Parser;
 use clap::Subcommand;
 
 use iceoryx2_cli::Format;
-use iceoryx2_cli::HelpOptions;
 use iceoryx2_cli::filter::NodeIdentifier;
 use iceoryx2_cli::filter::StateFilter;
 use iceoryx2_cli::help_template;
@@ -29,7 +28,7 @@ use iceoryx2_cli::help_template;
     version = env!("CARGO_PKG_VERSION"),
     disable_help_subcommand = true,
     arg_required_else_help = false,
-    help_template = help_template(HelpOptions::PrintCommandSection),
+    help_template = help_template().with_subcommands().build(),
 )]
 pub struct Cli {
     #[clap(subcommand)]
@@ -62,8 +61,8 @@ pub struct DetailsOptions {
 
 #[derive(Subcommand)]
 pub enum Action {
-    #[clap(about = "List all nodes", help_template = help_template(HelpOptions::DontPrintCommandSection))]
+    #[clap(about = "List all nodes", help_template = help_template().build())]
     List(ListOptions),
-    #[clap(about = "Show node details", help_template = help_template(HelpOptions::DontPrintCommandSection))]
+    #[clap(about = "Show node details", help_template = help_template().with_positionals().build())]
     Details(DetailsOptions),
 }

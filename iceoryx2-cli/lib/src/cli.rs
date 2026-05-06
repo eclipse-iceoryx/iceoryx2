@@ -12,44 +12,69 @@
 
 use colored::*;
 
-pub enum HelpOptions {
-    DontPrintCommandSection,
-    PrintCommandSection,
-    PrintCommandSectionWithExternalCommandHint,
+#[derive(Default)]
+pub struct HelpTemplate {
+    has_positionals: bool,
+    has_subcommands: bool,
+    show_external_command_hint: bool,
 }
 
-pub fn help_template(command_help: HelpOptions) -> String {
-    let mut template = format!(
-        "{{about}}\n\n\
-         {} {{usage}}\n\n\
-         {{positionals}}\n\n\
-         {}\n\
-         {{options}}",
-        "Usage:".bright_green().bold(),
-        "Options:".bright_green().bold(),
-    );
+pub fn help_template() -> HelpTemplate {
+    HelpTemplate::default()
+}
 
-    match command_help {
-        HelpOptions::PrintCommandSection
-        | HelpOptions::PrintCommandSectionWithExternalCommandHint => {
+impl HelpTemplate {
+    pub fn with_positionals(mut self) -> Self {
+        self.has_positionals = true;
+        self
+    }
+
+    pub fn with_subcommands(mut self) -> Self {
+        self.has_subcommands = true;
+        self
+    }
+
+    pub fn with_external_command_hint(mut self) -> Self {
+        self.has_subcommands = true;
+        self.show_external_command_hint = true;
+        self
+    }
+
+    pub fn build(self) -> String {
+        let mut template = format!(
+            "{{about}}\n\n\
+             {} {{usage}}\n\n",
+            "Usage:".bright_green().bold(),
+        );
+
+        if self.has_positionals {
+            template.push_str("{positionals}\n\n");
+        }
+
+        template.push_str(&format!(
+            "{}\n\
+             {{options}}",
+            "Options:".bright_green().bold(),
+        ));
+
+        if self.has_subcommands {
             template.push_str(&format!(
                 "\n\n\
-                {}\n\
-                {{subcommands}}",
+                 {}\n\
+                 {{subcommands}}",
                 "Commands:".bright_green().bold(),
             ));
 
-            if let HelpOptions::PrintCommandSectionWithExternalCommandHint = command_help {
+            if self.show_external_command_hint {
                 template.push_str(&format!(
                     "\n\
-                    {}{}",
+                     {}{}",
                     "  ...            ".bold(),
-                    "See external installed commands with --list"
+                    "See external installed commands with --list",
                 ));
             }
         }
-        HelpOptions::DontPrintCommandSection => {}
-    }
 
-    template
+        template
+    }
 }
