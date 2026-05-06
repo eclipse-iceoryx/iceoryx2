@@ -22,5 +22,8 @@ filegroup(
 rust_library(
     name = "iceoryx2-services-common",
     srcs = glob(["src/**/*.rs"]),
-    deps = [],
+    deps = [
+        "//iceoryx2",
+        "@crate_index//:serde",
+    ],
 )
