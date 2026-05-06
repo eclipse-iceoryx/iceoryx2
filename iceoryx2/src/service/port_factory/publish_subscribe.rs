@@ -147,17 +147,14 @@ impl<
             _user_header: PhantomData,
         };
 
-        println!("A1");
         if shared_node
             .config()
             .global
             .service
             .cleanup_dead_nodes_on_connection
         {
-            println!("A2");
             blocking_cleanup_dead_nodes_in_service(&new_self, shared_node);
         }
-        println!("A3");
 
         new_self
     }
