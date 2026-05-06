@@ -32,6 +32,16 @@ libc = { workspace = true }
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 dma-heap = "0.3"
 
+[[example]]
+name = "dmabuf-service-publisher"
+path = "examples/publish_subscribe_dmabuf_service/publisher.rs"
+required-features = ["dma-buf"]
+
+[[example]]
+name = "dmabuf-service-subscriber"
+path = "examples/publish_subscribe_dmabuf_service/subscriber.rs"
+required-features = ["dma-buf"]
+
 [[test]]
 name = "shm_tests"
 path = "tests/shm_tests.rs"
