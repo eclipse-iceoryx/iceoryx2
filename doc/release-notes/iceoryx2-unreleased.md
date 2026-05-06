@@ -120,6 +120,10 @@
   [#1477](https://github.com/eclipse-iceoryx/iceoryx2/issues/1463)
 * Bump requests from 2.32.5 to 2.33.0 in iceoryx2-ffi/python
   [#1486](https://github.com/eclipse-iceoryx/iceoryx2/issues/1486)
+* Service builder silently accepted lifecycle event IDs exceeding `event_id_max_value`;
+  now returns `EventCreateError::EventIdExceedsMaxSupportedValue` on create and
+  `DoesNotSupportRequestedMaxEventId` on open
+  [#1488](https://github.com/eclipse-iceoryx/iceoryx2/issues/1488)
 * Bump cryptography from 46.0.5 to 46.0.6 in /iceoryx2-ffi/python
   [#1499](https://github.com/eclipse-iceoryx/iceoryx2/issues/1499)
 * Make `UniqueSystemId` unique accross docker containers and pid namespaces

@@ -364,6 +364,8 @@ constexpr auto from<int, iox2::EventOpenOrCreateError>(const int value) noexcept
         return iox2::EventOpenOrCreateError::CreateInsufficientPermissions;
     case iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE:
         return iox2::EventOpenOrCreateError::CreateOldConnectionsStillActive;
+    case iox2_event_open_or_create_error_e_C_EVENT_ID_EXCEEDS_MAX_SUPPORTED_VALUE:
+        return iox2::EventOpenOrCreateError::CreateEventIdExceedsMaxSupportedValue;
     case iox2_event_open_or_create_error_e_SYSTEM_IN_FLUX:
         return iox2::EventOpenOrCreateError::SystemInFlux;
     }
@@ -417,6 +419,8 @@ from<iox2::EventOpenOrCreateError, iox2_event_open_or_create_error_e>(const iox2
         return iox2_event_open_or_create_error_e_C_INSUFFICIENT_PERMISSIONS;
     case iox2::EventOpenOrCreateError::CreateOldConnectionsStillActive:
         return iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE;
+    case iox2::EventOpenOrCreateError::CreateEventIdExceedsMaxSupportedValue:
+        return iox2_event_open_or_create_error_e_C_EVENT_ID_EXCEEDS_MAX_SUPPORTED_VALUE;
     default:
         IOX2_UNREACHABLE();
     }
@@ -519,6 +523,8 @@ constexpr auto from<int, iox2::EventCreateError>(const int value) noexcept -> io
         return iox2::EventCreateError::HangsInCreation;
     case iox2_event_open_or_create_error_e_C_INSUFFICIENT_PERMISSIONS:
         return iox2::EventCreateError::InsufficientPermissions;
+    case iox2_event_open_or_create_error_e_C_EVENT_ID_EXCEEDS_MAX_SUPPORTED_VALUE:
+        return iox2::EventCreateError::EventIdExceedsMaxSupportedValue;
     default:
         IOX2_UNREACHABLE();
     }
@@ -543,6 +549,8 @@ from<iox2::EventCreateError, iox2_event_open_or_create_error_e>(const iox2::Even
         return iox2_event_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE;
     case iox2::EventCreateError::OldConnectionsStillActive:
         return iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE;
+    case iox2::EventCreateError::EventIdExceedsMaxSupportedValue:
+        return iox2_event_open_or_create_error_e_C_EVENT_ID_EXCEEDS_MAX_SUPPORTED_VALUE;
     default:
         IOX2_UNREACHABLE();
     }
