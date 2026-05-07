@@ -943,6 +943,8 @@ impl<Service: service::Service> Drop for SharedNode<Service> {
             warn!(from self, when remove_node::<Service>(self.id, self.details.config()),
                 "Unable to remove node resources.");
         }
+
+        trace!(from self, "removed");
     }
 }
 
@@ -1379,7 +1381,7 @@ impl NodeBuilder {
             self.create_node_details_storage::<Service>(&config, &node_id)?;
         let monitoring_token = self.create_token::<Service>(&config, &monitor_name)?;
 
-        Ok(Node {
+        let new_node = Node {
             shared: Arc::new(SharedNode {
                 id: node_id,
                 monitoring_token: UnsafeCell::new(Some(monitoring_token)),
@@ -1388,7 +1390,10 @@ impl NodeBuilder {
                 signal_handling_mode: self.signal_handling_mode,
                 details,
             }),
-        })
+        };
+
+        trace!(from new_node, "created");
+        Ok(new_node)
     }
 
     fn create_token<Service: service::Service>(
