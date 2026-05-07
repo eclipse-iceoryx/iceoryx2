@@ -17,9 +17,9 @@
 //! does only ensure that the memory copy does not cause undefined behavior, but does not care
 //! about data integrity.
 //!
-//!  * [`FizedSizeByteAtomic`], compile-time fixed-size ByteAtomic that is self-contained and
+//!  * FixedSizeByteAtomic: compile-time fixed-size ByteAtomic that is self-contained and
 //!    shared-memory compatible.
-//!  * [`RelocatableByteAtomic`], runtime fixed-size ByteAtomic that is shared-memory compatible.
+//!  * RelocatableByteAtomic: runtime fixed-size ByteAtomic that is shared-memory compatible.
 //!
 //! # User Examples
 //!
@@ -27,12 +27,12 @@
 //! use iceoryx2_bb_container::byte_atomic::FixedSizeByteAtomic;
 //!
 //! const SIZE: usize = size_of::<u64>();
-//! let wrapper = ByteAtomic::<u64, SIZE>::new(0).unwrap();
+//! let wrapper = FixedSizeByteAtomic::<u64, SIZE>::new(0).unwrap();
 //!
 //! let new_value: u64 = 752389;
 //! unsafe {
 //!     wrapper.write(new_value);
-//!     assert_eq!(wrapper.read().assume_init(), eq new_value);
+//!     assert_eq!(wrapper.read().assume_init(), new_value);
 //! }
 //!
 //! ```
@@ -80,8 +80,8 @@ impl<T: AtomicCopy> RelocatableByteAtomic<T> {
     ///
     /// # Safety
     ///
-    ///   * Before the ByteAtomic can be used, [`RelocatableByteAtomic::init()`] must be called
-    ///     exactly once.
+    ///   * Before the RelocatableByteAtomic can be used, [`RelocatableByteAtomic::init()`] must
+    ///     be called exactly once.
     pub unsafe fn new_uninit() -> Self {
         Self {
             data_ptr: unsafe { RelocatablePointer::new_uninit() },
@@ -179,8 +179,8 @@ unsafe impl<T: AtomicCopy + ZeroCopySend, const SIZE: usize> ZeroCopySend
 }
 
 impl<T: AtomicCopy, const SIZE: usize> FixedSizeByteAtomic<T, SIZE> {
-    /// Creates a new [`ByteAtomic`] that contains the passed value. It fails when the size
-    /// of the value and `SIZE` do not match.
+    /// Creates a new [`FixedSizeByteAtomic`] that contains the passed value. It fails when
+    /// the size of the value and `SIZE` do not match.
     pub fn new(value: T) -> Result<Self, ByteAtomicError> {
         // TODO: The following check and the SIZE parameter can be removed once size_of::<T>()
         // can be directly used in the struct definition. Consider then to remove the
