@@ -24,7 +24,7 @@ use iceoryx2::{
 extern crate alloc;
 
 /// Communicates discovered changes to services in the system.
-#[derive(Debug, ZeroCopySend, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, ZeroCopySend, serde::Serialize, serde::Deserialize)]
 // Largest variant dictates the size for use as Payload.
 #[allow(clippy::large_enum_variant)]
 #[repr(C)]
