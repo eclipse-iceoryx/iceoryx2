@@ -12,6 +12,9 @@ on:
       profile:
         required: true
         type: string
+      workspace:
+        required: true
+        type: string
 
 jobs:
   stable:
@@ -25,10 +28,13 @@ jobs:
         uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
 
       - name: Setup cmake
+        if: ${{ inputs.workspace == 'sdk' }}
         uses: jwlawson/actions-setup-cmake@3a6cbe35ba64df7ca70c51365c4aff65db9a9037 # version: v2.1.1
         with:
           cmake-version: "3.31.x"
+
       - name: Use cmake
+        if: ${{ inputs.workspace == 'sdk' }}
         run: cmake --version
 
       - name: Setup Rust
@@ -68,7 +74,7 @@ jobs:
           uname -a
 
       - name: Additional setup for libc platform binding
-        if: ${{ runner.os == 'Linux' }}
+        if: ${{ runner.os == 'Linux' && inputs.workspace == 'sdk' }}
         run: sudo apt remove -y --purge '^libclang-.*-dev' # remove libclang to force a compile error if libc binding is not used correctly and bindgen is invoked
 
       - name: Save disk space
@@ -82,17 +88,25 @@ jobs:
         with:
           profile: ${{ inputs.profile }}
 
-      - name: Build workspaces
+      - name: Build sdk workspace
+        if: ${{ inputs.workspace == 'sdk' }}
         shell: bash
-        run: |
-          just build sdk ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
-          just build integrations ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
+        run: just build sdk ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
 
-      - name: Test workspaces
+      - name: Test sdk workspace
+        if: ${{ inputs.workspace == 'sdk' }}
         shell: bash
-        run: |
-          just test sdk ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast 
-          just test integrations ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast 
+        run: just test sdk ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast
+
+      - name: Build integrations workspace
+        if: ${{ inputs.workspace == 'integrations' }}
+        shell: bash
+        run: just build integrations ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
+
+      - name: Test integrations workspace
+        if: ${{ inputs.workspace == 'integrations' }}
+        shell: bash
+        run: just test integrations ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast
 
       - name: Cleanup build artifacts
         uses: ./.github/actions/save-disk-space
@@ -106,6 +120,7 @@ jobs:
           cargo rustc -q -- --print=native-static-libs
 
       - name: Build language bindings
+        if: ${{ inputs.workspace == 'sdk' }}
         shell: bash
         run: |
           cmake -S . \
@@ -122,19 +137,24 @@ jobs:
           cmake --install target/ff/cc/build ${{ steps.set-build-flags.outputs.cmake-build-config }}
 
       - name: Run C++ iceoryx2-bb tests
+        if: ${{ inputs.workspace == 'sdk' }}
         run: target/ff/cc/build/tests/iceoryx2-bb-cxx-tests
 
       - name: Run C language binding tests
+        if: ${{ inputs.workspace == 'sdk' }}
         run: target/ff/cc/build/tests/iceoryx2-c-tests
 
       - name: Run C++ language binding tests
+        if: ${{ inputs.workspace == 'sdk' }}
         run: target/ff/cc/build/tests/iceoryx2-cxx-tests
 
       - name: Remove language binding build artifacts
+        if: ${{ inputs.workspace == 'sdk' }}
         shell: bash
         run: rm -rf target/ff/cc/build
 
       - name: Build C language binding examples in out-of-tree configuration
+        if: ${{ inputs.workspace == 'sdk' }}
         shell: bash
         run: |
           cmake -S examples/c \
@@ -146,6 +166,7 @@ jobs:
           cmake --build target/ff/out-of-tree-c ${{ steps.set-build-flags.outputs.cmake-build-config }}
 
       - name: Build C++ language binding examples in out-of-tree configuration
+        if: ${{ inputs.workspace == 'sdk' }}
         shell: bash
         run: |
           cmake -S examples/cxx \
