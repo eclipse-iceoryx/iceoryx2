@@ -347,7 +347,7 @@ jobs:
       toolchain: ${{ matrix.toolchain }}
       profile: "debug"
 
-  stable-debug:
+  sdk-stable-debug:
     needs: [preflight-check, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
@@ -362,8 +362,23 @@ jobs:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
       profile: "debug"
+      workspace: sdk
 
-  stable-release:
+  integrations-stable-debug:
+    needs: [preflight-check, cargo-nextest]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        toolchain: [stable, 1.88.0]
+    uses: ./.github/workflows/reuse_stable.yml
+    with:
+      os: ${{ matrix.os }}
+      toolchain: ${{ matrix.toolchain }}
+      profile: "debug"
+      workspace: integrations
+
+  sdk-stable-release:
     needs: [preflight-check, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     uses: ./.github/workflows/reuse_stable.yml
@@ -371,6 +386,17 @@ jobs:
       os: ubuntu-latest
       toolchain: stable
       profile: "release"
+      workspace: sdk
+
+  integrations-stable-release:
+    needs: [preflight-check, cargo-nextest]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    uses: ./.github/workflows/reuse_stable.yml
+    with:
+      os: ubuntu-latest
+      toolchain: stable
+      profile: "release"
+      workspace: integrations
 
   unstable:
     needs: [preflight-check, cargo-nextest]
@@ -492,7 +518,8 @@ jobs:
         rust-doc-check,
         static-code-analysis-rust,
         static-code-analysis-cpp,
-        stable-debug,
+        sdk-stable-debug,
+        integrations-stable-debug,
         Bazel,
         x86_32-debug,
         no_std,
