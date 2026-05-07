@@ -149,15 +149,7 @@ impl<T: AtomicCopy> RelocatableByteAtomic<T> {
     ///   care of the data integrity.
     pub unsafe fn read(&self) -> MaybeUninit<T> {
         self.verify_init("read()");
-
-        let mut data: MaybeUninit<T> = MaybeUninit::uninit();
-        let data_ptr = data.as_mut_ptr() as *mut u8;
-        for i in 0..self.capacity {
-            unsafe {
-                *data_ptr.add(i) = (*self.data_ptr.as_ptr().add(i)).load(Ordering::Relaxed);
-            }
-        }
-        data
+        read_impl(unsafe { self.data_ptr.as_ptr() })
     }
 
     /// Stores the passed value byte-wise atomically.
@@ -168,15 +160,7 @@ impl<T: AtomicCopy> RelocatableByteAtomic<T> {
     ///   care of the data integrity.
     pub unsafe fn write(&self, value: T) {
         self.verify_init("write()");
-
-        let value_ptr = (&value as *const T) as *const u8;
-        value.__for_each_field(0, &mut |offset, size| {
-            for i in offset..offset + size {
-                unsafe {
-                    (*self.data_ptr.as_ptr().add(i)).store(*value_ptr.add(i), Ordering::Relaxed);
-                }
-            }
-        });
+        write_impl(unsafe { self.data_ptr.as_ptr() }, value);
     }
 }
 
@@ -196,8 +180,10 @@ impl<T: AtomicCopy, const SIZE: usize> FixedSizeByteAtomic<T, SIZE> {
     /// Creates a new [`ByteAtomic`] that contains the passed value. It fails when the size
     /// of the value and `SIZE` do not match.
     pub fn new(value: T) -> Result<Self, ByteAtomicError> {
-        // TODO: remove the following check once size_of::<T>() can be directly used in the
-        // struct definition
+        // TODO: The following check and the SIZE parameter can be removed once size_of::<T>()
+        // can be directly used in the struct definition. Consider then to remove the
+        // RelocatableByteAtomic implementation as well; maybe add a placement_new() to the
+        // FixedSizeByteAtomic.
         if size_of::<T>() != SIZE {
             fail!(from "ByteAtomic::new()", with ByteAtomicError::SizesDoNotMatch,
                 "size_of::<T>() and SIZE must be equal.");
@@ -227,14 +213,7 @@ impl<T: AtomicCopy, const SIZE: usize> FixedSizeByteAtomic<T, SIZE> {
     /// * When the value is concurrently written to, torn-reads are possible. The user must take care
     ///   of the data integrity.
     pub unsafe fn read(&self) -> MaybeUninit<T> {
-        let mut data: MaybeUninit<T> = MaybeUninit::uninit();
-        let data_ptr = data.as_mut_ptr() as *mut u8;
-        for (i, byte) in self.data.iter().enumerate() {
-            unsafe {
-                *data_ptr.add(i) = byte.load(Ordering::Relaxed);
-            }
-        }
-        data
+        read_impl(self.data.as_ptr())
     }
 
     /// Stores the passed value byte-wise atomically.
@@ -244,11 +223,28 @@ impl<T: AtomicCopy, const SIZE: usize> FixedSizeByteAtomic<T, SIZE> {
     /// * When used concurrently, torn-writes and torn-reads are possible. The user must take care
     ///   of the data integrity.
     pub unsafe fn write(&self, value: T) {
-        let value_ptr = (&value as *const T) as *const u8;
-        value.__for_each_field(0, &mut |offset, size| {
-            for i in offset..offset + size {
-                self.data[i].store(unsafe { *value_ptr.add(i) }, Ordering::Relaxed);
-            }
-        });
+        write_impl(self.data.as_ptr(), value);
     }
+}
+
+fn read_impl<T: AtomicCopy>(src_data_ptr: *const AtomicU8) -> MaybeUninit<T> {
+    let mut data: MaybeUninit<T> = MaybeUninit::uninit();
+    let dest_data_ptr = data.as_mut_ptr() as *mut u8;
+    for i in 0..size_of::<T>() {
+        unsafe {
+            *dest_data_ptr.add(i) = (*src_data_ptr.add(i)).load(Ordering::Relaxed);
+        }
+    }
+    data
+}
+
+fn write_impl<T: AtomicCopy>(dest_data_ptr: *const AtomicU8, value: T) {
+    let value_ptr = (&value as *const T) as *const u8;
+    value.__for_each_field(0, &mut |offset, size| {
+        for i in offset..offset + size {
+            unsafe {
+                (*dest_data_ptr.add(i)).store(*value_ptr.add(i), Ordering::Relaxed);
+            }
+        }
+    });
 }
