@@ -149,7 +149,7 @@ impl<T: AtomicCopy> RelocatableByteAtomic<T> {
     ///   care of the data integrity.
     pub unsafe fn read(&self) -> MaybeUninit<T> {
         self.verify_init("read()");
-        read_impl(unsafe { self.data_ptr.as_ptr() })
+        unsafe { read_impl(self.data_ptr.as_ptr()) }
     }
 
     /// Stores the passed value byte-wise atomically.
@@ -160,7 +160,9 @@ impl<T: AtomicCopy> RelocatableByteAtomic<T> {
     ///   care of the data integrity.
     pub unsafe fn write(&self, value: T) {
         self.verify_init("write()");
-        write_impl(unsafe { self.data_ptr.as_ptr() }, value);
+        unsafe {
+            write_impl(self.data_ptr.as_ptr(), value);
+        }
     }
 }
 
@@ -213,7 +215,7 @@ impl<T: AtomicCopy, const SIZE: usize> FixedSizeByteAtomic<T, SIZE> {
     /// * When the value is concurrently written to, torn-reads are possible. The user must take care
     ///   of the data integrity.
     pub unsafe fn read(&self) -> MaybeUninit<T> {
-        read_impl(self.data.as_ptr())
+        unsafe { read_impl(self.data.as_ptr()) }
     }
 
     /// Stores the passed value byte-wise atomically.
@@ -223,11 +225,11 @@ impl<T: AtomicCopy, const SIZE: usize> FixedSizeByteAtomic<T, SIZE> {
     /// * When used concurrently, torn-writes and torn-reads are possible. The user must take care
     ///   of the data integrity.
     pub unsafe fn write(&self, value: T) {
-        write_impl(self.data.as_ptr(), value);
+        unsafe { write_impl(self.data.as_ptr(), value) };
     }
 }
 
-fn read_impl<T: AtomicCopy>(src_data_ptr: *const AtomicU8) -> MaybeUninit<T> {
+unsafe fn read_impl<T: AtomicCopy>(src_data_ptr: *const AtomicU8) -> MaybeUninit<T> {
     let mut data: MaybeUninit<T> = MaybeUninit::uninit();
     let dest_data_ptr = data.as_mut_ptr() as *mut u8;
     for i in 0..size_of::<T>() {
@@ -238,7 +240,7 @@ fn read_impl<T: AtomicCopy>(src_data_ptr: *const AtomicU8) -> MaybeUninit<T> {
     data
 }
 
-fn write_impl<T: AtomicCopy>(dest_data_ptr: *const AtomicU8, value: T) {
+unsafe fn write_impl<T: AtomicCopy>(dest_data_ptr: *const AtomicU8, value: T) {
     let value_ptr = (&value as *const T) as *const u8;
     value.__for_each_field(0, &mut |offset, size| {
         for i in offset..offset + size {
