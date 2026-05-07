@@ -334,6 +334,15 @@ pub mod details {
         _phantom: PhantomData<Allocator>,
     }
 
+    impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
+        Leakable for Memory<Allocator, Storage>
+    {
+        unsafe fn leak_in_place(this: *mut Self) {
+            let this = unsafe { &mut *this };
+            unsafe { Storage::leak_in_place(&mut this.storage) };
+        }
+    }
+
     #[derive(Debug)]
     #[repr(C)]
     pub struct AllocatorDetails<Allocator: ShmAllocator> {

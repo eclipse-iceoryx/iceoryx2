@@ -131,6 +131,13 @@ pub struct Locked {
     static_storage: Storage,
 }
 
+impl Leakable for Locked {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { Storage::leak_in_place(&mut this.static_storage) };
+    }
+}
+
 impl NamedConcept for Locked {
     fn name(&self) -> &FileName {
         self.static_storage.name()
@@ -171,6 +178,13 @@ pub struct Storage {
     has_ownership: AtomicBool,
     file: File,
     len: u64,
+}
+
+impl Leakable for Storage {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { File::leak_in_place(&mut this.file) };
+    }
 }
 
 impl Drop for Storage {

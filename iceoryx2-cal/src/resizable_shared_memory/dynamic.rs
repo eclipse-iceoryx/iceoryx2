@@ -29,6 +29,7 @@ use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_bb_testing::leakable::Leakable;
 use iceoryx2_log::fatal_panic;
 use iceoryx2_log::{fail, warn};
 
@@ -86,11 +87,27 @@ struct InternalState<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     current_idx: SlotMapKey,
 }
 
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Leakable
+    for InternalState<Allocator, Shm>
+{
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { SlotMap::leak_in_place(&mut this.shared_memory_map) };
+    }
+}
+
 #[derive(Debug)]
 struct ShmEntry<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     shm: Shm,
     chunk_count: AtomicU64,
     _data: PhantomData<Allocator>,
+}
+
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Leakable for ShmEntry<Allocator, Shm> {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { Shm::leak_in_place(&mut this.shm) };
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -299,7 +316,7 @@ where
                 current_idx,
                 shared_state: self.shared_state,
             }),
-            _mgmt_segment: mgmt_segment,
+            mgmt_segment,
             _data: PhantomData,
         })
     }
@@ -406,8 +423,17 @@ where
 #[derive(Debug)]
 pub struct DynamicMemory<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     state: UnsafeCell<InternalState<Allocator, Shm>>,
-    _mgmt_segment: Shm,
+    mgmt_segment: Shm,
     _data: PhantomData<Allocator>,
+}
+
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Leakable
+    for DynamicMemory<Allocator, Shm>
+{
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { Shm::leak_in_place(&mut this.mgmt_segment) };
+    }
 }
 
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> NamedConcept

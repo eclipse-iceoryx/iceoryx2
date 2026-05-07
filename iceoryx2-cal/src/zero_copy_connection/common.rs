@@ -618,6 +618,13 @@ pub mod details {
         name: FileName,
     }
 
+    impl<Storage: DynamicStorage<SharedManagementData>> Leakable for Sender<Storage> {
+        unsafe fn leak_in_place(this: *mut Self) {
+            let this = unsafe { &mut *this };
+            unsafe { Storage::leak_in_place(&mut this.storage) };
+        }
+    }
+
     impl<Storage: DynamicStorage<SharedManagementData>> Drop for Sender<Storage> {
         fn drop(&mut self) {
             cleanup_shared_memory(&self.storage, State::Sender);
@@ -903,6 +910,13 @@ pub mod details {
         storage: Storage,
         borrow_counter: Vec<UnsafeCell<usize>>,
         name: FileName,
+    }
+
+    impl<Storage: DynamicStorage<SharedManagementData>> Leakable for Receiver<Storage> {
+        unsafe fn leak_in_place(this: *mut Self) {
+            let this = unsafe { &mut *this };
+            unsafe { Storage::leak_in_place(&mut this.storage) };
+        }
     }
 
     impl<Storage: DynamicStorage<SharedManagementData>> Drop for Receiver<Storage> {

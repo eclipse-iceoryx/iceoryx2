@@ -43,14 +43,13 @@
 pub use crate::named_concept::*;
 pub use crate::static_storage::*;
 
-use iceoryx2_bb_concurrency::atomic::Ordering;
-
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::mutex::*;
@@ -132,6 +131,13 @@ pub struct Locked {
     storage: Storage,
 }
 
+impl Leakable for Locked {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { Storage::leak_in_place(&mut this.storage) };
+    }
+}
+
 impl NamedConcept for Locked {
     fn name(&self) -> &FileName {
         self.storage.name()
@@ -173,6 +179,14 @@ pub struct Storage {
     has_ownership: AtomicBool,
     config: Configuration,
     content: Arc<StorageContent>,
+}
+
+impl Leakable for Storage {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        this.has_ownership.store(false, Ordering::Relaxed);
+        unsafe { core::ptr::drop_in_place(this) };
+    }
 }
 
 impl Drop for Storage {

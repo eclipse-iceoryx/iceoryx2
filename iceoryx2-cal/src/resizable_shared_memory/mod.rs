@@ -98,6 +98,7 @@ use core::time::Duration;
 
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_posix::file::AccessMode;
+use iceoryx2_bb_testing::leakable::Leakable;
 
 use crate::named_concept::*;
 use crate::shared_memory::{
@@ -204,7 +205,7 @@ pub trait ResizableSharedMemoryView<Allocator: ShmAllocator, Shm: SharedMemory<A
 /// [`ResizableSharedMemory::allocate()`] memory and distribute the memory to all
 /// [`ResizableSharedMemoryView`]s.
 pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>:
-    Sized + NamedConcept + NamedConceptMgmt + Debug + Send
+    Sized + NamedConcept + NamedConceptMgmt + Debug + Send + Leakable
 {
     /// Type alias to the [`ResizableSharedMemoryViewBuilder`] to open a
     /// [`ResizableSharedMemoryView`] to an existing [`ResizableSharedMemory`].

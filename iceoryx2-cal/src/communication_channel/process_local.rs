@@ -241,7 +241,11 @@ pub struct Duplex {
 }
 
 impl Leakable for Duplex {
-    unsafe fn leak_in_place(_this: *mut Self) {}
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        this.has_ownership = false;
+        unsafe { core::ptr::drop_in_place(this) };
+    }
 }
 
 impl Drop for Duplex {
