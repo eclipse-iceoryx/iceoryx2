@@ -204,22 +204,14 @@ impl Service {
     /// When true, the `ServiceBuilder` will clean up dead nodes when opening an
     /// existing service.
     #[getter]
-    pub fn cleanup_dead_nodes_on_connection(&self) -> bool {
-        self.0
-            .lock()
-            .global
-            .service
-            .cleanup_dead_nodes_on_connection
+    pub fn cleanup_dead_nodes_on_open(&self) -> bool {
+        self.0.lock().global.service.cleanup_dead_nodes_on_open
     }
     /// Sets if dead nodes shall be cleaned up whenever the `ServiceBuilder` opens
     /// an existing service.
     #[setter]
-    pub fn set_cleanup_dead_nodes_on_connection(&self, value: bool) {
-        self.0
-            .lock()
-            .global
-            .service
-            .cleanup_dead_nodes_on_connection = value
+    pub fn set_cleanup_dead_nodes_on_open(&self, value: bool) {
+        self.0.lock().global.service.cleanup_dead_nodes_on_open = value
     }
 }
 

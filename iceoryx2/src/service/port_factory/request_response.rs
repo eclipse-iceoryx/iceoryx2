@@ -187,7 +187,7 @@ impl<
             .config()
             .global
             .service
-            .cleanup_dead_nodes_on_connection
+            .cleanup_dead_nodes_on_open
         {
             blocking_cleanup_dead_nodes_in_service(&new_self, shared_node);
         }

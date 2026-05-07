@@ -189,7 +189,7 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                     value_type: "string",
                     default_value: format!(
                         "\"{}\"",
-                        config.global.service.cleanup_dead_nodes_on_connection
+                        config.global.service.cleanup_dead_nodes_on_open
                     ),
                     description: "Defines if there shall be a scan for dead nodes with a following stale resource cleanup whenever an existing service is opened.",
                 },

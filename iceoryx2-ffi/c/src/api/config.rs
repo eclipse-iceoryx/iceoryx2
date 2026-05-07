@@ -1005,7 +1005,7 @@ pub unsafe extern "C" fn iox2_config_global_service_set_dynamic_config_storage_s
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_config_global_service_cleanup_dead_nodes_on_connection(
+pub unsafe extern "C" fn iox2_config_global_service_cleanup_dead_nodes_on_open(
     handle: iox2_config_h_ref,
 ) -> bool {
     handle.assert_non_null();
@@ -1017,7 +1017,7 @@ pub unsafe extern "C" fn iox2_config_global_service_cleanup_dead_nodes_on_connec
             .value
             .global
             .service
-            .cleanup_dead_nodes_on_connection
+            .cleanup_dead_nodes_on_open
     }
 }
 
@@ -1028,7 +1028,7 @@ pub unsafe extern "C" fn iox2_config_global_service_cleanup_dead_nodes_on_connec
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_config_global_service_set_cleanup_dead_nodes_on_connection(
+pub unsafe extern "C" fn iox2_config_global_service_set_cleanup_dead_nodes_on_open(
     handle: iox2_config_h_ref,
     value: bool,
 ) {
@@ -1041,7 +1041,7 @@ pub unsafe extern "C" fn iox2_config_global_service_set_cleanup_dead_nodes_on_co
             .value
             .global
             .service
-            .cleanup_dead_nodes_on_connection = value;
+            .cleanup_dead_nodes_on_open = value;
     }
 }
 

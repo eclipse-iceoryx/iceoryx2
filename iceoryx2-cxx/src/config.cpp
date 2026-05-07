@@ -457,12 +457,12 @@ void Service::set_event_connection_suffix(const iox2::bb::FileName& value) && {
     iox2_config_global_service_set_event_connection_suffix(m_config, value.as_string().unchecked_access().c_str());
 }
 
-auto Service::cleanup_dead_nodes_on_connection() && -> bool {
-    return iox2_config_global_service_cleanup_dead_nodes_on_connection(m_config);
+auto Service::cleanup_dead_nodes_on_open() && -> bool {
+    return iox2_config_global_service_cleanup_dead_nodes_on_open(m_config);
 }
 
-void Service::set_cleanup_dead_nodes_on_connection(bool value) && {
-    iox2_config_global_service_set_cleanup_dead_nodes_on_connection(m_config, value);
+void Service::set_cleanup_dead_nodes_on_open(bool value) && {
+    iox2_config_global_service_set_cleanup_dead_nodes_on_open(m_config, value);
 }
 
 /////////////////////////

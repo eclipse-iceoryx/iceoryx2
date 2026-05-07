@@ -940,7 +940,7 @@ pub mod node_death {
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
         config.global.node.cleanup_dead_nodes_on_destruction = false;
-        config.global.service.cleanup_dead_nodes_on_connection = true;
+        config.global.service.cleanup_dead_nodes_on_open = true;
 
         node_cleanup_on_service_connection_works::<S, _, _, _>(
             &config,
@@ -971,7 +971,7 @@ pub mod node_death {
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
         config.global.node.cleanup_dead_nodes_on_destruction = false;
-        config.global.service.cleanup_dead_nodes_on_connection = false;
+        config.global.service.cleanup_dead_nodes_on_open = false;
 
         node_cleanup_on_service_connection_works::<S, _, _, _>(
             &config,
@@ -1002,7 +1002,7 @@ pub mod node_death {
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
         config.global.node.cleanup_dead_nodes_on_destruction = false;
-        config.global.service.cleanup_dead_nodes_on_connection = true;
+        config.global.service.cleanup_dead_nodes_on_open = true;
 
         node_cleanup_on_service_connection_works::<S, _, _, _>(
             &config,
@@ -1033,7 +1033,7 @@ pub mod node_death {
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
         config.global.node.cleanup_dead_nodes_on_destruction = false;
-        config.global.service.cleanup_dead_nodes_on_connection = false;
+        config.global.service.cleanup_dead_nodes_on_open = false;
 
         node_cleanup_on_service_connection_works::<S, _, _, _>(
             &config,
@@ -1064,7 +1064,7 @@ pub mod node_death {
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
         config.global.node.cleanup_dead_nodes_on_destruction = false;
-        config.global.service.cleanup_dead_nodes_on_connection = true;
+        config.global.service.cleanup_dead_nodes_on_open = true;
 
         node_cleanup_on_service_connection_works::<S, _, _, _>(
             &config,
@@ -1095,7 +1095,7 @@ pub mod node_death {
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
         config.global.node.cleanup_dead_nodes_on_destruction = false;
-        config.global.service.cleanup_dead_nodes_on_connection = false;
+        config.global.service.cleanup_dead_nodes_on_open = false;
 
         node_cleanup_on_service_connection_works::<S, _, _, _>(
             &config,
@@ -1126,7 +1126,7 @@ pub mod node_death {
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
         config.global.node.cleanup_dead_nodes_on_destruction = false;
-        config.global.service.cleanup_dead_nodes_on_connection = true;
+        config.global.service.cleanup_dead_nodes_on_open = true;
 
         let sut = S::create_test_node(&config);
         let _service = sut
@@ -1166,7 +1166,7 @@ pub mod node_death {
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
         config.global.node.cleanup_dead_nodes_on_destruction = false;
-        config.global.service.cleanup_dead_nodes_on_connection = false;
+        config.global.service.cleanup_dead_nodes_on_open = false;
 
         let sut = S::create_test_node(&config);
         let _service = sut

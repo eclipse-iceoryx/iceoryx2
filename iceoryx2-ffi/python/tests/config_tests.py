@@ -63,11 +63,11 @@ def test_global_service_creation_timeout_can_be_set() -> None:
     assert sut.global_cfg.service.creation_timeout == path
 
 
-def test_global_service_cleanup_dead_nodes_on_connection_can_be_set() -> None:
+def test_global_service_cleanup_dead_nodes_on_open_can_be_set() -> None:
     sut = iox2.config.default()
     value = False
-    sut.global_cfg.service.cleanup_dead_nodes_on_connection = value
-    assert sut.global_cfg.service.cleanup_dead_nodes_on_connection == value
+    sut.global_cfg.service.cleanup_dead_nodes_on_open = value
+    assert sut.global_cfg.service.cleanup_dead_nodes_on_open == value
 
 
 def test_global_service_connection_suffix_can_be_set() -> None:

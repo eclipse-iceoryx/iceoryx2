@@ -244,12 +244,12 @@ TEST(Config, global_service_event_connection_suffix) {
                 StrEq(test_value.as_string().unchecked_access().c_str()));
 }
 
-TEST(Config, global_service_cleanup_dead_nodes_on_connection) {
+TEST(Config, global_service_cleanup_dead_nodes_on_open) {
     const auto test_value = false;
     auto config = Config();
 
-    config.global().service().set_cleanup_dead_nodes_on_connection(test_value);
-    ASSERT_THAT(config.global().service().cleanup_dead_nodes_on_connection(), Eq(test_value));
+    config.global().service().set_cleanup_dead_nodes_on_open(test_value);
+    ASSERT_THAT(config.global().service().cleanup_dead_nodes_on_open(), Eq(test_value));
 }
 
 TEST(Config, global_node_directory) {
