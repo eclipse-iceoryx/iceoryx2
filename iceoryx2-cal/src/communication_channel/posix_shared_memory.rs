@@ -263,6 +263,12 @@ pub struct Receiver {
     shared_memory: SharedMemory,
 }
 
+impl Leakable for Receiver {
+    unsafe fn leak_in_place(this: *mut Self) {
+        unsafe { SharedMemory::leak_in_place(&mut (&mut *this).shared_memory) }
+    }
+}
+
 impl NamedConcept for Receiver {
     fn name(&self) -> &FileName {
         self.shared_memory.name()
@@ -294,6 +300,12 @@ impl CommunicationChannelReceiver<u64> for Receiver {
 #[derive(Debug)]
 pub struct Sender {
     shared_memory: SharedMemory,
+}
+
+impl Leakable for Sender {
+    unsafe fn leak_in_place(this: *mut Self) {
+        unsafe { SharedMemory::leak_in_place(&mut (&mut *this).shared_memory) }
+    }
 }
 
 impl Sender {

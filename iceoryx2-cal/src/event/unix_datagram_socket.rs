@@ -163,6 +163,13 @@ pub struct Notifier {
     name: FileName,
 }
 
+impl Leakable for Notifier {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { UnixDatagramSender::leak_in_place(&mut this.sender) };
+    }
+}
+
 impl NamedConcept for Notifier {
     fn name(&self) -> &FileName {
         &self.name
@@ -255,6 +262,13 @@ impl crate::event::NotifierBuilder<EventImpl> for NotifierBuilder {
 pub struct Listener {
     receiver: UnixDatagramReceiver,
     name: FileName,
+}
+
+impl Leakable for Listener {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { UnixDatagramReceiver::leak_in_place(&mut this.receiver) };
+    }
 }
 
 impl FileDescriptorBased for Listener {

@@ -28,6 +28,7 @@ use iceoryx2_bb_posix::{
     testing::__internal_process_guard_staged_death,
 };
 use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
+use iceoryx2_bb_testing::leakable::Leakable;
 use iceoryx2_log::fail;
 
 use crate::{
@@ -154,6 +155,12 @@ pub struct Cleaner {
     name: FileName,
 }
 
+impl Leakable for Cleaner {
+    unsafe fn leak_in_place(this: *mut Self) {
+        unsafe { ProcessCleaner::leak_in_place(&mut (&mut *this).cleaner) };
+    }
+}
+
 impl NamedConcept for Cleaner {
     fn name(&self) -> &FileName {
         &self.name
@@ -170,6 +177,12 @@ impl MonitoringCleaner for Cleaner {
 pub struct Token {
     guard: ProcessGuard,
     name: FileName,
+}
+
+impl Leakable for Token {
+    unsafe fn leak_in_place(this: *mut Self) {
+        unsafe { ProcessGuard::leak_in_place(&mut (&mut *this).guard) };
+    }
 }
 
 impl NamedConcept for Token {

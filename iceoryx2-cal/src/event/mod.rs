@@ -24,6 +24,7 @@ use core::{fmt::Debug, time::Duration};
 pub use crate::named_concept::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 pub use iceoryx2_bb_system_types::file_name::*;
 pub use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_bb_testing::leakable::Leakable;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum NotifierNotifyError {
@@ -103,7 +104,7 @@ impl TriggerId {
     }
 }
 
-pub trait Notifier: NamedConcept + Debug + Send {
+pub trait Notifier: NamedConcept + Debug + Send + Leakable {
     fn trigger_id_max(&self) -> TriggerId {
         TriggerId::new(usize::MAX)
     }
@@ -115,7 +116,7 @@ pub trait NotifierBuilder<T: Event>: NamedConceptBuilder<T> + Debug {
     fn open(self) -> Result<T::Notifier, NotifierCreateError>;
 }
 
-pub trait Listener: NamedConcept + Debug + Send {
+pub trait Listener: NamedConcept + Debug + Send + Leakable {
     const IS_FILE_DESCRIPTOR_BASED: bool = false;
 
     fn try_wait_one(&self) -> Result<Option<TriggerId>, ListenerWaitError>;

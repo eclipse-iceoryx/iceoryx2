@@ -419,11 +419,6 @@ pub struct SharedMemory {
 }
 
 impl Leakable for SharedMemory {
-    fn leak(mut self) {
-        unsafe { SharedMemory::leak_in_place(&mut self) };
-        core::mem::forget(self);
-    }
-
     unsafe fn leak_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
         unsafe { core::ptr::drop_in_place(&mut this.memory_mapping) };

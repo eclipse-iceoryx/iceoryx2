@@ -240,6 +240,10 @@ pub struct Duplex {
     pub(crate) has_ownership: bool,
 }
 
+impl Leakable for Duplex {
+    unsafe fn leak_in_place(_this: *mut Self) {}
+}
+
 impl Drop for Duplex {
     fn drop(&mut self) {
         if self.has_ownership {

@@ -472,11 +472,6 @@ pub struct File {
 }
 
 impl Leakable for File {
-    fn leak(mut self) {
-        unsafe { File::leak_in_place(&mut self) };
-        core::mem::forget(self)
-    }
-
     unsafe fn leak_in_place(this: *mut Self) {
         unsafe { core::ptr::drop_in_place(&mut (&mut *this).file_descriptor) };
     }

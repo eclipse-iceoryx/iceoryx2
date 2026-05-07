@@ -17,6 +17,7 @@ use alloc::vec::Vec;
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
+use iceoryx2_bb_testing::leakable::Leakable;
 use iceoryx2_log::{fail, fatal_panic};
 
 use crate::{
@@ -176,6 +177,10 @@ impl MonitoringCleaner for Cleaner {
     fn abandon(self) {}
 }
 
+impl Leakable for Cleaner {
+    unsafe fn leak_in_place(_this: *mut Self) {}
+}
+
 #[derive(Debug)]
 pub struct Token {
     name: FileName,
@@ -189,6 +194,10 @@ impl NamedConcept for Token {
 }
 
 impl MonitoringToken for Token {}
+
+impl Leakable for Token {
+    unsafe fn leak_in_place(_this: *mut Self) {}
+}
 
 impl Drop for Token {
     fn drop(&mut self) {

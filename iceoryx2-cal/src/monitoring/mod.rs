@@ -73,6 +73,7 @@ use core::fmt::Debug;
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 pub use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_testing::leakable::Leakable;
 
 pub use crate::{
     named_concept::NamedConcept, named_concept::NamedConceptBuilder,
@@ -167,11 +168,11 @@ impl core::fmt::Display for MonitoringStateError {
 impl core::error::Error for MonitoringStateError {}
 
 /// The token enables a process to be monitored by another process.
-pub trait MonitoringToken: NamedConcept {}
+pub trait MonitoringToken: NamedConcept + Leakable {}
 
 /// The cleaner owns the remains of a dead process and is the only one that is allowed to clean up
 /// those resources.
-pub trait MonitoringCleaner: NamedConcept {
+pub trait MonitoringCleaner: NamedConcept + Leakable {
     /// Abandons the [`MonitoringCleaner`] without removing the underlying [`Monitoring`] concept. This is useful
     /// when another process tried to cleanup the stale resources of the dead process but is unable
     /// to due to insufficient permissions.

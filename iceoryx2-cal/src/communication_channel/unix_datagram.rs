@@ -343,6 +343,13 @@ pub struct Sender<T> {
     _phantom_data: PhantomData<T>,
 }
 
+impl<T: Copy + Debug> Leakable for Sender<T> {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { UnixDatagramSender::leak_in_place(&mut this.sender) };
+    }
+}
+
 impl<T: Copy + Debug> CommunicationChannelParticipant for Sender<T> {
     fn does_enable_safe_overflow(&self) -> bool {
         false
@@ -404,6 +411,13 @@ pub struct Receiver<T: Debug> {
     name: FileName,
     receiver: UnixDatagramReceiver,
     _phantom_data: PhantomData<T>,
+}
+
+impl<T: Copy + Debug> Leakable for Receiver<T> {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { UnixDatagramReceiver::leak_in_place(&mut this.receiver) };
+    }
 }
 
 impl<T: Copy + Debug> CommunicationChannelParticipant for Receiver<T> {

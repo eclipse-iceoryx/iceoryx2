@@ -601,11 +601,6 @@ pub struct ProcessGuard {
 }
 
 impl Leakable for ProcessGuard {
-    fn leak(mut self) {
-        unsafe { ProcessGuard::leak_in_place(&mut self) };
-        core::mem::forget(self);
-    }
-
     unsafe fn leak_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
         for file in [
@@ -1015,6 +1010,12 @@ impl ProcessMonitor {
 #[derive(Debug)]
 pub struct ProcessCleaner {
     guard: ProcessGuard,
+}
+
+impl Leakable for ProcessCleaner {
+    unsafe fn leak_in_place(this: *mut Self) {
+        unsafe { ProcessGuard::leak_in_place(&mut (&mut *this).guard) };
+    }
 }
 
 impl ProcessCleaner {

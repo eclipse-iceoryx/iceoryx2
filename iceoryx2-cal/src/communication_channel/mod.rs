@@ -74,6 +74,7 @@ use core::fmt::Debug;
 
 use iceoryx2_bb_system_types::file_name::*;
 use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_bb_testing::leakable::Leakable;
 
 use crate::named_concept::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 
@@ -183,7 +184,7 @@ pub trait CommunicationChannelParticipant {
 
 /// Sends data to the corresponding [`CommunicationChannelReceiver`].
 pub trait CommunicationChannelSender<T>:
-    Debug + CommunicationChannelParticipant + NamedConcept
+    Debug + CommunicationChannelParticipant + NamedConcept + Leakable
 {
     /// If the corresponding receiver is able to receive it sends the data and returns true,
     /// otherwise false. If the channel is configured to be safely overflowing it returns the
@@ -200,7 +201,7 @@ pub trait CommunicationChannelSender<T>:
 
 /// Receives data from a corresponding [`CommunicationChannelSender`].
 pub trait CommunicationChannelReceiver<T>:
-    Debug + CommunicationChannelParticipant + NamedConcept
+    Debug + CommunicationChannelParticipant + NamedConcept + Leakable
 {
     /// Returns the maximum amount of message the [`CommunicationChannelReceiver`] can receive
     /// without acquiring them. If underlying buffer is full the [`CommunicationChannelSender`]

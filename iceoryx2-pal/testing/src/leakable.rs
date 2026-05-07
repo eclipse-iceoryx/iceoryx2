@@ -19,8 +19,11 @@
 /// * file descriptors
 /// * memory mappings
 /// * ...
-pub trait Leakable {
-    fn leak(self);
+pub trait Leakable: Sized {
+    fn leak(mut self) {
+        unsafe { Self::leak_in_place(&mut self) };
+        core::mem::forget(self);
+    }
 
     /// Leaks a resource in place. Shall be used when a struct of multiple resources
     /// shall be leaked and the resources cannot be moved out of the struct.

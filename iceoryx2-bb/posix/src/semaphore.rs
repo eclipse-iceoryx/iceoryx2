@@ -408,11 +408,6 @@ unsafe impl Send for NamedSemaphore {}
 unsafe impl Sync for NamedSemaphore {}
 
 impl Leakable for NamedSemaphore {
-    fn leak(mut self) {
-        unsafe { NamedSemaphore::leak_in_place(&mut self) };
-        core::mem::forget(self);
-    }
-
     unsafe fn leak_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
         if core::ptr::eq(this.handle, posix::SEM_FAILED) {
@@ -774,10 +769,6 @@ unsafe impl Send for UnnamedSemaphore<'_> {}
 unsafe impl Sync for UnnamedSemaphore<'_> {}
 
 impl Leakable for UnnamedSemaphore<'_> {
-    fn leak(self) {
-        core::mem::forget(self);
-    }
-
     unsafe fn leak_in_place(_this: *mut Self) {}
 }
 
