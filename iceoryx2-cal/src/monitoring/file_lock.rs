@@ -25,7 +25,6 @@ use iceoryx2_bb_posix::{
         ProcessCleaner, ProcessCleanerCreateError, ProcessGuard, ProcessGuardCreateError,
         ProcessMonitor, ProcessMonitorCreateError, ProcessMonitorStateError, ProcessState,
     },
-    testing::__internal_process_guard_staged_death,
 };
 use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
 use iceoryx2_bb_testing::leakable::Leakable;
@@ -42,7 +41,6 @@ use crate::{
 use super::{
     Monitoring, MonitoringBuilder, MonitoringCleaner, MonitoringCreateTokenError,
     MonitoringMonitor, MonitoringStateError, MonitoringToken,
-    testing::__InternalMonitoringTokenTestable,
 };
 
 #[cfg(not(feature = "dev_permissions"))]
@@ -192,12 +190,6 @@ impl NamedConcept for Token {
 }
 
 impl MonitoringToken for Token {}
-
-impl __InternalMonitoringTokenTestable for Token {
-    fn staged_death(self) {
-        __internal_process_guard_staged_death(self.guard);
-    }
-}
 
 #[derive(Debug)]
 pub struct Monitor {

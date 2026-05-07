@@ -12,6 +12,9 @@
 
 use core::time::Duration;
 
+use alloc::string::ToString;
+use alloc::vec;
+use iceoryx2::config::Config;
 use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::node::{CleanupState, NodeState};
 use iceoryx2::prelude::*;
@@ -23,16 +26,6 @@ use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing::{assert_that, test_fail};
 use iceoryx2_bb_testing_macros::conformance_test;
 use iceoryx2_bb_testing_macros::conformance_tests;
-
-use iceoryx2::config::Config;
-use iceoryx2::node::testing::__internal_node_staged_death;
-
-use alloc::string::ToString;
-use alloc::vec;
-
-pub struct TestDetails<S: Service> {
-    node: Node<S>,
-}
 
 pub trait Test {
     type Service: Service;
@@ -69,24 +62,20 @@ pub trait Test {
         node_list
     }
 
-    fn create_bad_node(&self) -> TestDetails<Self::Service> {
+    fn create_bad_node(&self) -> Node<Self::Service> {
         static COUNTER: AtomicU32 = AtomicU32::new(0);
         let node_name = Self::generate_node_name(0, "toby or no toby");
         let fake_node_id = ((u32::MAX - COUNTER.fetch_add(1, Ordering::Relaxed)) as u128) << 96;
         let fake_node_id = unsafe { core::mem::transmute::<u128, UniqueNodeId>(fake_node_id) };
 
-        let node = unsafe {
+        unsafe {
             NodeBuilder::new()
                 .name(&node_name)
                 .config(self.config())
                 .__internal_create_with_custom_node_id::<Self::Service>(fake_node_id)
                 .unwrap()
-        };
-
-        TestDetails { node }
+        }
     }
-
-    fn staged_death(node: &mut Node<Self::Service>);
 
     fn cleanup_dead_nodes(config: &Config) {
         Node::<Self::Service>::list(config, |node_state| {
@@ -133,17 +122,13 @@ impl Test for ZeroCopy {
     fn config_mut(&mut self) -> &mut Config {
         &mut self.config
     }
-
-    fn staged_death(node: &mut Node<Self::Service>) {
-        use iceoryx2_cal::monitoring::testing::__InternalMonitoringTokenTestable;
-        let monitor = unsafe { __internal_node_staged_death(node) };
-        monitor.staged_death();
-    }
 }
 
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod node_death {
+    use iceoryx2_bb_testing::leakable::Leakable;
+
     use super::*;
 
     #[conformance_test]
@@ -154,9 +139,8 @@ pub mod node_death {
 
         for i in 1..NUMBER_OF_DEAD_NODES_LIMIT {
             for _ in 0..i {
-                let mut sut = test.create_bad_node();
-                S::staged_death(&mut sut.node);
-                core::mem::forget(sut.node);
+                let sut = test.create_bad_node();
+                Node::leak(sut);
             }
 
             let mut node_list = test.list_nodes();
@@ -164,7 +148,8 @@ pub mod node_death {
 
             for _ in 0..i {
                 if let Some(NodeState::Dead(state)) = node_list.pop() {
-                    assert_that!(state.try_remove_stale_resources(), is_ok);
+                    let result = state.try_remove_stale_resources();
+                    assert_that!(result, is_ok);
                 } else {
                     test_fail!("all nodes shall be dead");
                 }
@@ -188,7 +173,7 @@ pub mod node_death {
         let mut good_nodes = vec![];
 
         for _ in 0..NUMBER_OF_BAD_NODES {
-            bad_nodes.push(test.create_bad_node().node);
+            bad_nodes.push(test.create_bad_node());
         }
 
         for _ in 0..NUMBER_OF_GOOD_NODES {
@@ -233,8 +218,8 @@ pub mod node_death {
         }
 
         for _ in 0..NUMBER_OF_BAD_NODES {
-            let mut node = bad_nodes.pop().unwrap();
-            S::staged_death(&mut node);
+            let node = bad_nodes.pop().unwrap();
+            Node::leak(node);
         }
 
         core::mem::forget(bad_publishers);
@@ -262,7 +247,7 @@ pub mod node_death {
         let mut good_nodes = vec![];
 
         for _ in 0..NUMBER_OF_BAD_NODES {
-            bad_nodes.push(test.create_bad_node().node);
+            bad_nodes.push(test.create_bad_node());
         }
 
         for _ in 0..NUMBER_OF_GOOD_NODES {
@@ -308,8 +293,8 @@ pub mod node_death {
         }
 
         for _ in 0..NUMBER_OF_BAD_NODES {
-            let mut node = bad_nodes.pop().unwrap();
-            S::staged_death(&mut node);
+            let node = bad_nodes.pop().unwrap();
+            Node::leak(node);
         }
 
         core::mem::forget(bad_notifiers);
@@ -330,7 +315,7 @@ pub mod node_death {
         let service_name = generate_service_name();
         let notifier_dead_event = EventId::new(8);
 
-        let mut dead_node = test.create_bad_node().node;
+        let dead_node = test.create_bad_node();
         let node = test.create_good_node();
 
         let dead_service = dead_node
@@ -346,7 +331,7 @@ pub mod node_death {
         let service = node.service_builder(&service_name).event().open().unwrap();
         let listener = service.listener_builder().create().unwrap();
 
-        S::staged_death(&mut dead_node);
+        Node::leak(dead_node);
         core::mem::forget(dead_notifier);
 
         assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
@@ -376,7 +361,7 @@ pub mod node_death {
         let mut good_nodes = vec![];
 
         for _ in 0..NUMBER_OF_BAD_NODES {
-            bad_nodes.push(test.create_bad_node().node);
+            bad_nodes.push(test.create_bad_node());
         }
 
         for _ in 0..NUMBER_OF_GOOD_NODES {
@@ -422,8 +407,8 @@ pub mod node_death {
         }
 
         for _ in 0..NUMBER_OF_BAD_NODES {
-            let mut node = bad_nodes.pop().unwrap();
-            S::staged_death(&mut node);
+            let node = bad_nodes.pop().unwrap();
+            Node::leak(node);
         }
 
         core::mem::forget(bad_clients);
@@ -450,7 +435,7 @@ pub mod node_death {
         let mut good_nodes = vec![];
 
         for _ in 0..NUMBER_OF_BAD_NODES {
-            bad_nodes.push(test.create_bad_node().node);
+            bad_nodes.push(test.create_bad_node());
         }
 
         for _ in 0..NUMBER_OF_GOOD_NODES {
@@ -497,8 +482,8 @@ pub mod node_death {
         }
 
         for _ in 0..NUMBER_OF_BAD_NODES {
-            let mut node = bad_nodes.pop().unwrap();
-            S::staged_death(&mut node);
+            let node = bad_nodes.pop().unwrap();
+            Node::leak(node);
         }
 
         core::mem::forget(bad_readers);
@@ -515,7 +500,7 @@ pub mod node_death {
         let test = S::new();
         let service_name = generate_service_name();
 
-        let mut bad_node = test.create_bad_node().node;
+        let bad_node = test.create_bad_node();
         let bad_service = bad_node
             .service_builder(&service_name)
             .blackboard_creator::<u64>()
@@ -535,7 +520,7 @@ pub mod node_death {
             .unwrap();
         let reader = good_service.reader_builder().create().unwrap();
 
-        S::staged_death(&mut bad_node);
+        Node::leak(bad_node);
         core::mem::forget(writer);
         core::mem::forget(bad_service);
         assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
@@ -558,14 +543,14 @@ pub mod node_death {
         let test = S::new();
         let service_name = generate_service_name();
 
-        let mut sut = test.create_bad_node().node;
+        let sut = test.create_bad_node();
         core::mem::forget(
             sut.service_builder(&service_name)
                 .event()
                 .open_or_create()
                 .unwrap(),
         );
-        S::staged_death(&mut sut);
+        Node::leak(sut);
 
         assert_that!(
             S::Service::list(test.config(), |service_details| {
@@ -590,27 +575,27 @@ pub mod node_death {
         let test = S::new();
         let service_name = generate_service_name();
 
-        let mut sut = test.create_bad_node().node;
+        let sut = test.create_bad_node();
         core::mem::forget(
             sut.service_builder(&service_name)
                 .publish_subscribe::<u64>()
                 .open_or_create()
                 .unwrap(),
         );
-        S::staged_death(&mut sut);
+        Node::leak(sut);
 
         assert_that!(
-            S::Service::list(sut.config(), |service_details| {
+            S::Service::list(test.config(), |service_details| {
                 assert_that!(*service_details.static_details.name(), eq service_name);
                 CallbackProgression::Continue
             }),
             is_ok
         );
 
-        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(sut.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
-            S::Service::list(sut.config(), |_| {
+            S::Service::list(test.config(), |_| {
                 test_fail!("after the cleanup there shall be no more services");
             }),
             is_ok
@@ -622,14 +607,14 @@ pub mod node_death {
         let test = S::new();
         let service_name = generate_service_name();
 
-        let mut sut = test.create_bad_node().node;
+        let sut = test.create_bad_node();
         core::mem::forget(
             sut.service_builder(&service_name)
                 .request_response::<u64, u64>()
                 .open_or_create()
                 .unwrap(),
         );
-        S::staged_death(&mut sut);
+        Node::leak(sut);
 
         assert_that!(
             S::Service::list(test.config(), |service_details| {
@@ -654,7 +639,7 @@ pub mod node_death {
         let test = S::new();
         let service_name = generate_service_name();
 
-        let mut sut = test.create_bad_node().node;
+        let sut = test.create_bad_node();
         core::mem::forget(
             sut.service_builder(&service_name)
                 .blackboard_creator::<u64>()
@@ -662,7 +647,7 @@ pub mod node_death {
                 .create()
                 .unwrap(),
         );
-        S::staged_death(&mut sut);
+        Node::leak(sut);
 
         assert_that!(
             S::Service::list(test.config(), |service_details| {
@@ -696,7 +681,7 @@ pub mod node_death {
             .create()
             .unwrap();
 
-        let mut bad_node = test.create_bad_node().node;
+        let bad_node = test.create_bad_node();
         let bad_service = bad_node
             .service_builder(&service_name)
             .blackboard_opener::<u64>()
@@ -705,7 +690,7 @@ pub mod node_death {
         let writer = bad_service.writer_builder().create().unwrap();
         let reader = bad_service.reader_builder().create().unwrap();
 
-        S::staged_death(&mut bad_node);
+        Node::leak(bad_node);
         assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
         core::mem::forget(writer);
         core::mem::forget(reader);
@@ -728,7 +713,7 @@ pub mod node_death {
         #[type_name("SoSpecial")]
         struct SpecialKey(u64);
 
-        let mut sut = test.create_bad_node().node;
+        let sut = test.create_bad_node();
         core::mem::forget(
             sut.service_builder(&service_name)
                 .blackboard_creator::<SpecialKey>()
@@ -736,7 +721,7 @@ pub mod node_death {
                 .create()
                 .unwrap(),
         );
-        S::staged_death(&mut sut);
+        Node::leak(sut);
 
         assert_that!(
             S::Service::list(test.config(), |service_details| {
@@ -771,7 +756,7 @@ pub mod node_death {
         let test = S::new();
         let service_name = generate_service_name();
 
-        let mut sut = test.create_bad_node().node;
+        let sut = test.create_bad_node();
         core::mem::forget(
             sut.service_builder(&service_name)
                 .blackboard_creator::<u64>()
@@ -779,7 +764,7 @@ pub mod node_death {
                 .create()
                 .unwrap(),
         );
-        S::staged_death(&mut sut);
+        Node::leak(sut);
 
         assert_that!(
             S::Service::list(test.config(), |service_details| {
@@ -811,9 +796,8 @@ pub mod node_death {
     pub fn node_cleanup_option_works_on_node_creation<S: Test>() {
         let test = S::new();
 
-        let mut sut = test.create_bad_node();
-        S::staged_death(&mut sut.node);
-        core::mem::forget(sut.node);
+        let sut = test.create_bad_node();
+        Node::leak(sut);
 
         assert_that!(test.number_of_nodes(), eq 1);
 
@@ -853,9 +837,8 @@ pub mod node_death {
             .create::<S::Service>()
             .unwrap();
 
-        let mut sut = test.create_bad_node();
-        S::staged_death(&mut sut.node);
-        core::mem::forget(sut.node);
+        let sut = test.create_bad_node();
+        Node::leak(sut);
 
         assert_that!(test.number_of_nodes(), eq 3);
 
@@ -871,16 +854,15 @@ pub mod node_death {
     pub fn node_cleanup_on_service_connection_works<
         S: Test,
         T,
-        F: FnMut(&TestDetails<S::Service>) -> T,
+        F: FnMut(&Node<S::Service>) -> T,
     >(
         test: S,
         total_number_of_nodes: usize,
         mut service_builder: F,
     ) {
-        let mut sut = test.create_bad_node();
+        let sut = test.create_bad_node();
         core::mem::forget(service_builder(&sut));
-        S::staged_death(&mut sut.node);
-        core::mem::forget(sut.node);
+        Node::leak(sut);
 
         let sut = test.create_bad_node();
         let _service = service_builder(&sut);
@@ -901,8 +883,7 @@ pub mod node_death {
             test,
             NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION,
             |sut| {
-                sut.node
-                    .service_builder(&service_name)
+                sut.service_builder(&service_name)
                     .publish_subscribe::<u64>()
                     .open_or_create()
                     .unwrap()
@@ -920,8 +901,7 @@ pub mod node_death {
             test,
             NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION,
             |sut| {
-                sut.node
-                    .service_builder(&service_name)
+                sut.service_builder(&service_name)
                     .publish_subscribe::<u64>()
                     .open_or_create()
                     .unwrap()
@@ -940,8 +920,7 @@ pub mod node_death {
             test,
             NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION,
             |sut| {
-                sut.node
-                    .service_builder(&service_name)
+                sut.service_builder(&service_name)
                     .request_response::<u64, u64>()
                     .open_or_create()
                     .unwrap()
@@ -959,8 +938,7 @@ pub mod node_death {
             test,
             NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION,
             |sut| {
-                sut.node
-                    .service_builder(&service_name)
+                sut.service_builder(&service_name)
                     .request_response::<u64, u64>()
                     .open_or_create()
                     .unwrap()
@@ -979,8 +957,7 @@ pub mod node_death {
             test,
             NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION,
             |sut| {
-                sut.node
-                    .service_builder(&service_name)
+                sut.service_builder(&service_name)
                     .event()
                     .open_or_create()
                     .unwrap()
@@ -998,8 +975,7 @@ pub mod node_death {
             test,
             NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION,
             |sut| {
-                sut.node
-                    .service_builder(&service_name)
+                sut.service_builder(&service_name)
                     .event()
                     .open_or_create()
                     .unwrap()
@@ -1016,7 +992,6 @@ pub mod node_death {
 
         let sut = test.create_bad_node();
         let _service = sut
-            .node
             .service_builder(&service_name)
             .blackboard_creator::<u64>()
             .add_with_default::<u64>(0)
@@ -1027,8 +1002,7 @@ pub mod node_death {
             test,
             NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION,
             |sut| {
-                sut.node
-                    .service_builder(&service_name)
+                sut.service_builder(&service_name)
                     .blackboard_opener::<u64>()
                     .open()
                     .unwrap()
@@ -1044,7 +1018,6 @@ pub mod node_death {
 
         let sut = test.create_bad_node();
         let _service = sut
-            .node
             .service_builder(&service_name)
             .blackboard_creator::<u64>()
             .add_with_default::<u64>(0)
@@ -1055,8 +1028,7 @@ pub mod node_death {
             test,
             NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION,
             |sut| {
-                sut.node
-                    .service_builder(&service_name)
+                sut.service_builder(&service_name)
                     .blackboard_opener::<u64>()
                     .open()
                     .unwrap()

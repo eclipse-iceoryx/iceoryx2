@@ -603,6 +603,17 @@ pub struct ProcessGuard {
 impl Leakable for ProcessGuard {
     unsafe fn leak_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
+        let msg = "Unable to stage death";
+
+        if let Err(e) = this
+            .context_file
+            .as_mut()
+            .expect("contains always a value, only removed on destruction")
+            .write_val_at(0, &UniqueProcessId::new_zeroed())
+        {
+            fatal_panic!(from this, "{msg} since the state file could not be overridden with zeros. [{e:?}]");
+        }
+
         for file in [
             &mut this.state_file,
             &mut this.owner_lock_file,
@@ -702,21 +713,6 @@ impl ProcessGuard {
             .expect("contains always a value, only removed on destruction")
             .path()
             .expect("file is created from path and contains always a path")
-    }
-
-    pub(crate) fn staged_death(mut self) {
-        let msg = "Unable to stage death";
-
-        if let Err(e) = self
-            .context_file
-            .as_mut()
-            .expect("contains always a value, only removed on destruction")
-            .write_val_at(0, &UniqueProcessId::new_zeroed())
-        {
-            fatal_panic!(from self, "{msg} since the state file could not be overridden with zeros. [{e:?}]");
-        }
-
-        self.leak();
     }
 
     fn release_ownership(self) {

@@ -142,9 +142,6 @@
 /// The name for a node.
 pub mod node_name;
 
-#[doc(hidden)]
-pub mod testing;
-
 use core::marker::PhantomData;
 use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::Ordering;
@@ -176,6 +173,7 @@ use iceoryx2_bb_posix::mutex::MutexType;
 use iceoryx2_bb_posix::process::Process;
 use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_testing::leakable::Leakable;
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
@@ -903,11 +901,23 @@ pub(crate) struct SharedNode<Service: service::Service> {
     monitoring_token: UnsafeCell<Option<<Service::Monitoring as Monitoring>::Token>>,
     registered_services: RegisteredServices,
     signal_handling_mode: SignalHandlingMode,
-    _details_storage: Service::StaticStorage,
+    details_storage: Service::StaticStorage,
 }
 
 unsafe impl<Service: service::Service> Send for SharedNode<Service> {}
 unsafe impl<Service: service::Service> Sync for SharedNode<Service> {}
+
+impl<Service: service::Service> Leakable for SharedNode<Service> {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { <Service::StaticStorage as Leakable>::leak_in_place(&mut this.details_storage) };
+        if let Some(token) = this.monitoring_token.get_mut() {
+            unsafe {
+                <<Service::Monitoring as Monitoring>::Token as Leakable>::leak_in_place(token)
+            };
+        }
+    }
+}
 
 impl<Service: service::Service> SharedNode<Service> {
     pub(crate) fn config(&self) -> &Config {
@@ -949,6 +959,15 @@ pub struct Node<Service: service::Service> {
 }
 
 unsafe impl<Service: service::Service> Send for Node<Service> {}
+
+impl<Service: service::Service> Leakable for Node<Service> {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        if let Some(shared) = Arc::get_mut(&mut this.shared) {
+            unsafe { SharedNode::leak_in_place(shared) };
+        }
+    }
+}
 
 impl<Service: service::Service> Node<Service> {
     /// Returns the [`NodeName`].
@@ -1017,10 +1036,6 @@ impl<Service: service::Service> Node<Service> {
         }
 
         Ok(())
-    }
-
-    pub(crate) unsafe fn staged_death(&mut self) -> <Service::Monitoring as Monitoring>::Token {
-        unsafe { (*self.shared.monitoring_token.get()).take().unwrap() }
     }
 
     fn handle_termination_request(&self, error_msg: &str) -> Result<(), NodeWaitFailure> {
@@ -1369,7 +1384,7 @@ impl NodeBuilder {
                 id: node_id,
                 monitoring_token: UnsafeCell::new(Some(monitoring_token)),
                 registered_services: RegisteredServices::new(),
-                _details_storage: details_storage,
+                details_storage,
                 signal_handling_mode: self.signal_handling_mode,
                 details,
             }),

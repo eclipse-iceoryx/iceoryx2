@@ -48,6 +48,7 @@ rust_library(
         "//iceoryx2-cal:iceoryx2-cal",
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
         "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
+        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "@crate_index//:serde",
         "@crate_index//:tiny-fn",
         "@crate_index//:toml",
@@ -63,6 +64,5 @@ rust_test(
     use_libtest_harness = False,
     deps = [
         "//iceoryx2/tests-common:iceoryx2-tests-common",
-        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
     ],
 )
