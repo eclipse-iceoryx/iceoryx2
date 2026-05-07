@@ -14,6 +14,7 @@
 //! inter-process context to signal events between processes.
 
 pub use crate::ipc_capable::{Handle, IpcCapable};
+use crate::testing::LeakableResource;
 
 use core::fmt::Debug;
 
@@ -406,6 +407,20 @@ pub struct NamedSemaphore {
 unsafe impl Send for NamedSemaphore {}
 unsafe impl Sync for NamedSemaphore {}
 
+impl LeakableResource for NamedSemaphore {
+    fn leak(self) {
+        if core::ptr::eq(self.handle, posix::SEM_FAILED) {
+            return;
+        }
+
+        if unsafe { posix::sem_close(self.handle) } != 0 {
+            fatal_panic!(from self, "This should never happen! The semaphore handle is invalid and cannot be closed.");
+        }
+
+        core::mem::forget(self);
+    }
+}
+
 impl Drop for NamedSemaphore {
     fn drop(&mut self) {
         if core::ptr::eq(self.handle, posix::SEM_FAILED) {
@@ -711,8 +726,6 @@ impl Drop for UnnamedSemaphoreHandle {
                     }
                 });
             };
-
-            trace!(from self, "removed");
         }
     }
 }
@@ -755,6 +768,18 @@ pub struct UnnamedSemaphore<'a> {
 
 unsafe impl Send for UnnamedSemaphore<'_> {}
 unsafe impl Sync for UnnamedSemaphore<'_> {}
+
+impl LeakableResource for UnnamedSemaphore<'_> {
+    fn leak(self) {
+        core::mem::forget(self);
+    }
+}
+
+impl Drop for UnnamedSemaphore<'_> {
+    fn drop(&mut self) {
+        trace!(from self, "removed");
+    }
+}
 
 impl<'a> IpcConstructible<'a, UnnamedSemaphoreHandle> for UnnamedSemaphore<'a> {
     fn new(handle: &'a UnnamedSemaphoreHandle) -> Self {

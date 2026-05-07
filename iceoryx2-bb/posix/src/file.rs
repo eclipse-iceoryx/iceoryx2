@@ -64,6 +64,7 @@ use crate::file_descriptor::{FileDescriptor, FileDescriptorBased, FileDescriptor
 use crate::group::Gid;
 use crate::group::GroupError;
 use crate::ownership::OwnershipBuilder;
+use crate::testing::LeakableResource;
 use crate::user::{Uid, UserError};
 pub use crate::{access_mode::AccessMode, permission::*};
 
@@ -468,6 +469,13 @@ pub struct File {
     file_descriptor: FileDescriptor,
     access_mode: AccessMode,
     has_ownership: AtomicBool,
+}
+
+impl LeakableResource for File {
+    fn leak(mut self) {
+        unsafe { core::ptr::drop_in_place(&mut self.file_descriptor) };
+        core::mem::forget(self)
+    }
 }
 
 impl Drop for File {

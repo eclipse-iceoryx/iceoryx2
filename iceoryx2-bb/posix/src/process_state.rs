@@ -155,6 +155,7 @@ use crate::{
     file_lock::LockType,
     permission::Permission,
     process::{Process, UniqueProcessId},
+    testing::LeakableResource,
     unix_datagram_socket::CreationMode,
 };
 
@@ -599,6 +600,22 @@ pub struct ProcessGuard {
     context_file: Option<File>,
 }
 
+impl LeakableResource for ProcessGuard {
+    fn leak(mut self) {
+        for file in [
+            &mut self.state_file,
+            &mut self.owner_lock_file,
+            &mut self.context_file,
+        ] {
+            if let Some(f) = file.take() {
+                f.leak();
+            }
+        }
+
+        core::mem::forget(self);
+    }
+}
+
 impl Drop for ProcessGuard {
     fn drop(&mut self) {
         let msg = "Unable to remove the ProcessGuard";
@@ -700,7 +717,7 @@ impl ProcessGuard {
             fatal_panic!(from self, "{msg} since the state file could not be overridden with zeros. [{e:?}]");
         }
 
-        self.release_ownership();
+        self.leak();
     }
 
     fn release_ownership(self) {

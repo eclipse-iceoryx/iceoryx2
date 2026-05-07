@@ -142,6 +142,7 @@ use crate::clock::AsTimeval;
 use crate::file_descriptor::{FileDescriptor, FileDescriptorBased, FileDescriptorManagement};
 use crate::file_descriptor_set::SynchronousMultiplexing;
 use crate::socket_ancillary::*;
+use crate::testing::LeakableResource;
 use crate::{config::UNIX_DOMAIN_SOCKET_PATH_LENGTH, file::*, permission::Permission};
 
 pub use crate::creation_mode::CreationMode;
@@ -544,6 +545,13 @@ pub struct UnixDatagramSender {
     socket: UnixDatagramSocket,
 }
 
+impl LeakableResource for UnixDatagramSender {
+    fn leak(mut self) {
+        unsafe { core::ptr::drop_in_place(&mut self.socket) };
+        core::mem::forget(self)
+    }
+}
+
 impl Drop for UnixDatagramSender {
     fn drop(&mut self) {
         trace!(from self, "disconnected");
@@ -764,6 +772,13 @@ impl UnixDatagramReceiverBuilder {
 #[derive(Debug)]
 pub struct UnixDatagramReceiver {
     socket: UnixDatagramSocket,
+}
+
+impl LeakableResource for UnixDatagramReceiver {
+    fn leak(mut self) {
+        unsafe { core::ptr::drop_in_place(&mut self.socket) };
+        core::mem::forget(self);
+    }
 }
 
 impl Drop for UnixDatagramReceiver {

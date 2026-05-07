@@ -97,6 +97,7 @@ use crate::memory_mapping::{
 pub use crate::permission::Permission;
 use crate::signal::SignalHandler;
 use crate::system_configuration::Limit;
+use crate::testing::LeakableResource;
 
 enum_gen! { SharedMemoryCreationError
   entry:
@@ -415,6 +416,15 @@ pub struct SharedMemory {
     memory_mapping: MemoryMapping,
     memory_lock: Option<MemoryLock>,
     mapping_offset: isize,
+}
+
+impl LeakableResource for SharedMemory {
+    fn leak(mut self) {
+        unsafe { core::ptr::drop_in_place(&mut self.memory_mapping) };
+        unsafe { core::ptr::drop_in_place(&mut self.memory_lock) };
+
+        core::mem::forget(self);
+    }
 }
 
 impl Drop for SharedMemory {
