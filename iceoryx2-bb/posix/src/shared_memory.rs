@@ -79,6 +79,7 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::file_name::*;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_bb_system_types::path::*;
+use iceoryx2_bb_testing::leakable::Leakable;
 use iceoryx2_log::{error, fail, fatal_panic, trace, warn};
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING;
@@ -97,7 +98,6 @@ use crate::memory_mapping::{
 pub use crate::permission::Permission;
 use crate::signal::SignalHandler;
 use crate::system_configuration::Limit;
-use crate::testing::LeakableResource;
 
 enum_gen! { SharedMemoryCreationError
   entry:
@@ -418,7 +418,7 @@ pub struct SharedMemory {
     mapping_offset: isize,
 }
 
-impl LeakableResource for SharedMemory {
+impl Leakable for SharedMemory {
     fn leak(mut self) {
         unsafe { core::ptr::drop_in_place(&mut self.memory_mapping) };
         unsafe { core::ptr::drop_in_place(&mut self.memory_lock) };

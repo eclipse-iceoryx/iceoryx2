@@ -14,7 +14,6 @@
 //! inter-process context to signal events between processes.
 
 pub use crate::ipc_capable::{Handle, IpcCapable};
-use crate::testing::LeakableResource;
 
 use core::fmt::Debug;
 
@@ -25,6 +24,7 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_bb_system_types::path::*;
+use iceoryx2_bb_testing::leakable::Leakable;
 use iceoryx2_log::trace;
 use iceoryx2_log::{debug, fail, fatal_panic, warn};
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
@@ -407,7 +407,7 @@ pub struct NamedSemaphore {
 unsafe impl Send for NamedSemaphore {}
 unsafe impl Sync for NamedSemaphore {}
 
-impl LeakableResource for NamedSemaphore {
+impl Leakable for NamedSemaphore {
     fn leak(self) {
         if core::ptr::eq(self.handle, posix::SEM_FAILED) {
             return;
@@ -769,7 +769,7 @@ pub struct UnnamedSemaphore<'a> {
 unsafe impl Send for UnnamedSemaphore<'_> {}
 unsafe impl Sync for UnnamedSemaphore<'_> {}
 
-impl LeakableResource for UnnamedSemaphore<'_> {
+impl Leakable for UnnamedSemaphore<'_> {
     fn leak(self) {
         core::mem::forget(self);
     }

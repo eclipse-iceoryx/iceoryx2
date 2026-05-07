@@ -23,24 +23,8 @@ use crate::permission::Permission;
 use crate::process_state::ProcessGuard;
 use crate::unique_system_id::UniqueSystemId;
 
-/// Marks types that can leak resources required for cleanup testing.
-/// The system resource is leaked but the process local internal constructs
-/// are still cleaned up properly. Those internal constructs could be:
-///
-/// * file descriptors
-/// * memory mappings
-/// * ...
-#[doc(hidden)]
-pub trait LeakableResource {
-    fn leak(self);
-}
-
 pub fn __internal_process_guard_staged_death(state: ProcessGuard) {
     state.staged_death();
-}
-
-pub unsafe fn leak_posix_resource<T: LeakableResource>(resource: T) {
-    resource.leak()
 }
 
 pub fn create_test_directory() {

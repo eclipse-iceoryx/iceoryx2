@@ -135,6 +135,7 @@ use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
 use iceoryx2_bb_system_types::file_path::FilePath;
+use iceoryx2_bb_testing::leakable::Leakable;
 use iceoryx2_log::{fail, fatal_panic, trace};
 use iceoryx2_pal_posix::posix::{MemZeroedStruct, errno::Errno};
 
@@ -142,7 +143,6 @@ use crate::clock::AsTimeval;
 use crate::file_descriptor::{FileDescriptor, FileDescriptorBased, FileDescriptorManagement};
 use crate::file_descriptor_set::SynchronousMultiplexing;
 use crate::socket_ancillary::*;
-use crate::testing::LeakableResource;
 use crate::{config::UNIX_DOMAIN_SOCKET_PATH_LENGTH, file::*, permission::Permission};
 
 pub use crate::creation_mode::CreationMode;
@@ -545,7 +545,7 @@ pub struct UnixDatagramSender {
     socket: UnixDatagramSocket,
 }
 
-impl LeakableResource for UnixDatagramSender {
+impl Leakable for UnixDatagramSender {
     fn leak(mut self) {
         unsafe { core::ptr::drop_in_place(&mut self.socket) };
         core::mem::forget(self)
@@ -774,7 +774,7 @@ pub struct UnixDatagramReceiver {
     socket: UnixDatagramSocket,
 }
 
-impl LeakableResource for UnixDatagramReceiver {
+impl Leakable for UnixDatagramReceiver {
     fn leak(mut self) {
         unsafe { core::ptr::drop_in_place(&mut self.socket) };
         core::mem::forget(self);

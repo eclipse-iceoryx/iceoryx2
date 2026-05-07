@@ -138,6 +138,7 @@
 use alloc::format;
 use core::fmt::Debug;
 use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
+use iceoryx2_bb_testing::leakable::Leakable;
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 pub use iceoryx2_bb_system_types::file_path::FilePath;
@@ -155,7 +156,6 @@ use crate::{
     file_lock::LockType,
     permission::Permission,
     process::{Process, UniqueProcessId},
-    testing::LeakableResource,
     unix_datagram_socket::CreationMode,
 };
 
@@ -600,7 +600,7 @@ pub struct ProcessGuard {
     context_file: Option<File>,
 }
 
-impl LeakableResource for ProcessGuard {
+impl Leakable for ProcessGuard {
     fn leak(mut self) {
         for file in [
             &mut self.state_file,
