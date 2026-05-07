@@ -934,7 +934,7 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn publish_subscribe_node_cleanup_on_connection_works_when_enabled<S: Test>() {
+    pub fn publish_subscribe_node_cleanup_on_open_works_when_enabled<S: Test>() {
         const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 1;
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
@@ -965,7 +965,7 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn publish_subscribe_no_node_cleanup_on_connection_when_disabled<S: Test>() {
+    pub fn publish_subscribe_no_node_cleanup_on_open_when_disabled<S: Test>() {
         const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 2;
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
@@ -996,7 +996,7 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn request_response_node_cleanup_on_connection_works_when_enabled<S: Test>() {
+    pub fn request_response_node_cleanup_on_open_works_when_enabled<S: Test>() {
         const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 1;
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
@@ -1027,7 +1027,7 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn request_response_no_node_cleanup_on_connection_when_disabled<S: Test>() {
+    pub fn request_response_no_node_cleanup_on_open_when_disabled<S: Test>() {
         const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 2;
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
@@ -1058,7 +1058,7 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn event_node_cleanup_on_connection_works_when_enabled<S: Test>() {
+    pub fn event_node_cleanup_on_open_works_when_enabled<S: Test>() {
         const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 1;
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
@@ -1089,7 +1089,7 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn event_no_node_cleanup_on_connection_when_disabled<S: Test>() {
+    pub fn event_no_node_cleanup_on_open_when_disabled<S: Test>() {
         const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 2;
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
@@ -1120,7 +1120,7 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn blackboard_node_cleanup_on_connection_works_when_enabled<S: Test>() {
+    pub fn blackboard_node_cleanup_on_open_works_when_enabled<S: Test>() {
         const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 2;
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
@@ -1160,7 +1160,7 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn blackboard_no_node_cleanup_on_connection_when_disabled<S: Test>() {
+    pub fn blackboard_no_node_cleanup_on_open_when_disabled<S: Test>() {
         const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 3;
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();

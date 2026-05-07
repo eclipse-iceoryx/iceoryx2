@@ -185,7 +185,7 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                     description: "The suffix of the blackboard payload data segment.",
                 },
                 Field {
-                    key: "global.service.cleanup-dead-nodes-on-connection",
+                    key: "global.service.cleanup-dead-nodes-on-open",
                     value_type: "string",
                     default_value: format!(
                         "\"{}\"",
