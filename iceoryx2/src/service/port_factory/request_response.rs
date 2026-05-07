@@ -46,7 +46,7 @@ use crate::{
     node::NodeListFailure,
     prelude::AttributeSet,
     service::{
-        self, NoResource, ServiceState, dynamic_config,
+        self, NoResource, ServiceState, SharedServiceState, dynamic_config,
         port_factory::blocking_cleanup_dead_nodes_in_service, service_hash::ServiceHash,
         service_name::ServiceName, static_config,
     },
@@ -55,6 +55,7 @@ use alloc::sync::Arc;
 use core::{fmt::Debug, marker::PhantomData};
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_testing::leakable::Leakable;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 /// The factory for
@@ -70,7 +71,7 @@ pub struct PortFactory<
     ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) service: Arc<ServiceState<Service, NoResource>>,
+    pub(crate) service: SharedServiceState<Service, NoResource>,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
     _response_payload: PhantomData<ResponsePayload>,
@@ -95,6 +96,20 @@ unsafe impl<
     ResponseHeader: Debug + ZeroCopySend,
 > Sync for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
+}
+
+impl<
+    Service: service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Leakable
+    for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    unsafe fn leak_in_place(this: *mut Self) {
+        unsafe { SharedServiceState::leak_in_place(&mut (&mut *this).service) };
+    }
 }
 
 impl<
@@ -130,27 +145,27 @@ impl<
     type DynamicConfig = dynamic_config::request_response::DynamicConfig;
 
     fn name(&self) -> &ServiceName {
-        self.service.static_config.name()
+        self.service.static_config().name()
     }
 
     fn unique_service_id(&self) -> UniqueServiceId {
-        self.service.static_config.unique_service_id()
+        self.service.static_config().unique_service_id()
     }
 
     fn service_hash(&self) -> &ServiceHash {
-        self.service.static_config.service_hash()
+        self.service.static_config().service_hash()
     }
 
     fn attributes(&self) -> &AttributeSet {
-        self.service.static_config.attributes()
+        self.service.static_config().attributes()
     }
 
     fn static_config(&self) -> &Self::StaticConfig {
-        self.service.static_config.request_response()
+        self.service.static_config().request_response()
     }
 
     fn dynamic_config(&self) -> &Self::DynamicConfig {
-        self.service.dynamic_storage.get().request_response()
+        self.service.dynamic_storage().get().request_response()
     }
 
     fn nodes<F: FnMut(crate::node::NodeState<Service>) -> CallbackProgression>(
@@ -158,8 +173,8 @@ impl<
         callback: F,
     ) -> Result<(), NodeListFailure> {
         nodes(
-            self.service.dynamic_storage.get(),
-            self.service.shared_node.config(),
+            self.service.dynamic_storage().get(),
+            self.service.shared_node().config(),
             callback,
         )
     }
@@ -176,7 +191,9 @@ impl<
     pub(crate) fn new(service: ServiceState<Service, NoResource>) -> Self {
         let shared_node = service.shared_node.clone();
         let new_self = Self {
-            service: Arc::new(service),
+            service: SharedServiceState {
+                state: Arc::new(service),
+            },
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,

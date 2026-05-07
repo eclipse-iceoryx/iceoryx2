@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::format;
-use alloc::sync::Arc;
 
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::slotmap::SlotMap;
@@ -29,7 +28,7 @@ use crate::port::DegradationInfo;
 use crate::port::update_connections::ConnectionFailure;
 use crate::port::{DegradationAction, DegradationHandler, ReceiveError};
 use crate::service::NoResource;
-use crate::service::ServiceState;
+use crate::service::SharedServiceState;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::static_config::message_type_details::MessageTypeDetails;
 use crate::service::{self, config_scheme::connection_config, naming_scheme::connection_name};
@@ -75,7 +74,7 @@ impl<Service: service::Service> Connection<Service> {
             sender_port_id, this.receiver_port_id
         );
 
-        let global_config = this.service_state.shared_node.config();
+        let global_config = this.service_state.shared_node().config();
         let receiver = fail!(from this,
                         when <Service::Connection as ZeroCopyConnection>::
                             Builder::new( &connection_name(sender_port_id, this.receiver_port_id))
@@ -118,7 +117,7 @@ impl<Service: service::Service> Connection<Service> {
 pub(crate) struct Receiver<Service: service::Service> {
     pub(crate) connections: PolymorphicVec<'static, UnsafeCell<Option<SlotMapKey>>, HeapAllocator>,
     pub(crate) receiver_port_id: u128,
-    pub(crate) service_state: Arc<ServiceState<Service, NoResource>>,
+    pub(crate) service_state: SharedServiceState<Service, NoResource>,
     pub(crate) buffer_size: usize,
     pub(crate) tagger: CyclicTagger,
     pub(crate) to_be_removed_connections:
@@ -464,7 +463,11 @@ impl<Service: service::Service> Receiver<Service> {
                 Err(e) => match self.degradation_handler.call(
                     DegradationCause::FailedToEstablishConnection,
                     &DegradationInfo {
-                        service_id: self.service_state.static_config.unique_service_id().value(),
+                        service_id: self
+                            .service_state
+                            .static_config()
+                            .unique_service_id()
+                            .value(),
                         sender_port_id: sender_details.port_id,
                         receiver_port_id: self.receiver_port_id(),
                     },

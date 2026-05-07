@@ -262,6 +262,7 @@ use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 use iceoryx2_bb_posix::file::AccessMode;
+use iceoryx2_bb_testing::leakable::Leakable;
 
 use crate::config;
 use crate::constants::MAX_TYPE_NAME_LENGTH;
@@ -390,17 +391,70 @@ pub struct ServiceState<S: Service, R: ServiceResource> {
     // must be destructed after the dynamic resources
     pub(crate) additional_resource: R,
     pub(crate) static_config: StaticConfig,
-    pub(crate) shared_node: Arc<SharedNode<S>>,
+    pub(crate) shared_node: SharedNode<S>,
     // must be destructed last, otherwise other processes might create a new service with the same
     // name and their resources are then removed by another process while they are creating them
     // which would end up in a completely corrupted service
     pub(crate) static_storage: S::StaticStorage,
 }
 
+impl<S: Service, R: ServiceResource> Leakable for ServiceState<S, R> {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+
+        unsafe { S::DynamicStorage::leak_in_place(&mut this.dynamic_storage) };
+        unsafe { R::leak_in_place(&mut this.additional_resource) };
+        unsafe { SharedNode::<S>::leak_in_place(&mut this.shared_node) };
+        unsafe { S::StaticStorage::leak_in_place(&mut this.static_storage) };
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct SharedServiceState<S: Service, R: ServiceResource> {
+    state: Arc<ServiceState<S, R>>,
+}
+
+impl<S: Service, R: ServiceResource> Clone for SharedServiceState<S, R> {
+    fn clone(&self) -> Self {
+        Self {
+            state: self.state.clone(),
+        }
+    }
+}
+
+impl<S: Service, R: ServiceResource> Leakable for SharedServiceState<S, R> {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        if let Some(state) = Arc::get_mut(&mut this.state) {
+            unsafe { ServiceState::leak_in_place(state) };
+        } else {
+            unsafe { core::ptr::drop_in_place(&mut this.state) };
+        }
+    }
+}
+
+impl<S: Service, R: ServiceResource> SharedServiceState<S, R> {
+    pub(crate) fn static_config(&self) -> &StaticConfig {
+        &self.state.static_config
+    }
+
+    pub(crate) fn dynamic_storage(&self) -> &S::DynamicStorage {
+        &self.state.dynamic_storage
+    }
+
+    pub(crate) fn shared_node(&self) -> &SharedNode<S> {
+        &self.state.shared_node
+    }
+
+    pub(crate) fn additional_resource(&self) -> &R {
+        &self.state.additional_resource
+    }
+}
+
 impl<S: Service, R: ServiceResource> ServiceState<S, R> {
     pub(crate) fn new(
         static_config: StaticConfig,
-        shared_node: Arc<SharedNode<S>>,
+        shared_node: SharedNode<S>,
         dynamic_storage: S::DynamicStorage,
         static_storage: S::StaticStorage,
         additional_resource: R,
@@ -801,7 +855,7 @@ pub mod internal {
 
 /// Represents additional resources a service could use and have to be cleaned up when no owners
 /// are left
-pub trait ServiceResource {
+pub trait ServiceResource: Leakable {
     /// Acquires the ownership of the additional resources. When the objects go out of scope the
     /// underlying resources will be removed.
     fn acquire_ownership(&self);
@@ -811,6 +865,10 @@ pub trait ServiceResource {
 pub(crate) struct NoResource;
 impl ServiceResource for NoResource {
     fn acquire_ownership(&self) {}
+}
+
+impl Leakable for NoResource {
+    unsafe fn leak_in_place(_this: *mut Self) {}
 }
 
 /// Represents a service. Used to create or open new services with the

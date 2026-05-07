@@ -895,7 +895,7 @@ impl RegisteredServices {
 }
 
 #[derive(Debug)]
-pub(crate) struct SharedNode<Service: service::Service> {
+struct SharedNodeState<Service: service::Service> {
     id: UniqueNodeId,
     details: NodeDetails,
     monitoring_token: UnsafeCell<Option<<Service::Monitoring as Monitoring>::Token>>,
@@ -904,10 +904,10 @@ pub(crate) struct SharedNode<Service: service::Service> {
     details_storage: Service::StaticStorage,
 }
 
-unsafe impl<Service: service::Service> Send for SharedNode<Service> {}
-unsafe impl<Service: service::Service> Sync for SharedNode<Service> {}
+unsafe impl<Service: service::Service> Send for SharedNodeState<Service> {}
+unsafe impl<Service: service::Service> Sync for SharedNodeState<Service> {}
 
-impl<Service: service::Service> Leakable for SharedNode<Service> {
+impl<Service: service::Service> Leakable for SharedNodeState<Service> {
     unsafe fn leak_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
         unsafe { <Service::StaticStorage as Leakable>::leak_in_place(&mut this.details_storage) };
@@ -919,32 +919,53 @@ impl<Service: service::Service> Leakable for SharedNode<Service> {
     }
 }
 
-impl<Service: service::Service> SharedNode<Service> {
-    pub(crate) fn config(&self) -> &Config {
-        &self.details.config
-    }
-
-    pub(crate) fn id(&self) -> &UniqueNodeId {
-        &self.id
-    }
-
-    pub(crate) fn registered_services(&self) -> &RegisteredServices {
-        &self.registered_services
-    }
-}
-
-impl<Service: service::Service> Drop for SharedNode<Service> {
+impl<Service: service::Service> Drop for SharedNodeState<Service> {
     fn drop(&mut self) {
+        let config = self.details.config();
         if self.monitoring_token.get_mut().is_some() {
-            if self.config().global.node.cleanup_dead_nodes_on_destruction {
-                Node::<Service>::try_cleanup_dead_nodes(self.config());
+            if config.global.node.cleanup_dead_nodes_on_destruction {
+                Node::<Service>::try_cleanup_dead_nodes(config);
             }
 
-            warn!(from self, when remove_node::<Service>(self.id, self.details.config()),
+            warn!(from self, when remove_node::<Service>(self.id, config),
                 "Unable to remove node resources.");
         }
 
         trace!(from self, "removed");
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct SharedNode<Service: service::Service> {
+    state: Arc<SharedNodeState<Service>>,
+}
+
+impl<Service: service::Service> Leakable for SharedNode<Service> {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        if let Some(state) = Arc::get_mut(&mut this.state) {
+            unsafe { SharedNodeState::leak_in_place(state) };
+        } else {
+            unsafe { core::ptr::drop_in_place(&mut this.state) };
+        }
+    }
+}
+
+impl<Service: service::Service> SharedNode<Service> {
+    pub(crate) fn config(&self) -> &Config {
+        &self.state.details.config
+    }
+
+    pub(crate) fn id(&self) -> &UniqueNodeId {
+        &self.state.id
+    }
+
+    pub(crate) fn registered_services(&self) -> &RegisteredServices {
+        &self.state.registered_services
+    }
+
+    pub(crate) fn name(&self) -> &NodeName {
+        &self.state.details.name
     }
 }
 
@@ -957,34 +978,31 @@ impl<Service: service::Service> Drop for SharedNode<Service> {
 /// Can be created via the [`NodeBuilder`].
 #[derive(Debug)]
 pub struct Node<Service: service::Service> {
-    shared: Arc<SharedNode<Service>>,
+    shared: SharedNode<Service>,
 }
 
 unsafe impl<Service: service::Service> Send for Node<Service> {}
 
 impl<Service: service::Service> Leakable for Node<Service> {
     unsafe fn leak_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
-        if let Some(shared) = Arc::get_mut(&mut this.shared) {
-            unsafe { SharedNode::leak_in_place(shared) };
-        }
+        unsafe { SharedNode::leak_in_place(&mut (&mut *this).shared) };
     }
 }
 
 impl<Service: service::Service> Node<Service> {
     /// Returns the [`NodeName`].
     pub fn name(&self) -> &NodeName {
-        &self.shared.details.name
+        self.shared.name()
     }
 
     /// Returns the [`Config`] that the [`Node`] will use to create any iceoryx2 entity.
     pub fn config(&self) -> &Config {
-        &self.shared.details.config
+        self.shared.config()
     }
 
     /// Returns the [`UniqueNodeId`] of the [`Node`].
     pub fn id(&self) -> &UniqueNodeId {
-        &self.shared.id
+        self.shared.id()
     }
 
     /// Instantiates a [`ServiceBuilder`](Builder) for a service with the provided name.
@@ -1041,7 +1059,7 @@ impl<Service: service::Service> Node<Service> {
     }
 
     fn handle_termination_request(&self, error_msg: &str) -> Result<(), NodeWaitFailure> {
-        if self.shared.signal_handling_mode == SignalHandlingMode::HandleTerminationRequests
+        if self.signal_handling_mode() == SignalHandlingMode::HandleTerminationRequests
             && SignalHandler::termination_requested()
         {
             fail!(from self, with NodeWaitFailure::TerminationRequest,
@@ -1077,7 +1095,7 @@ impl<Service: service::Service> Node<Service> {
 
     /// Returns the [`SignalHandlingMode`] with which the [`Node`] was created.
     pub fn signal_handling_mode(&self) -> SignalHandlingMode {
-        self.shared.signal_handling_mode
+        self.shared.state.signal_handling_mode
     }
 
     /// Removes the stale system resources of all dead [`Node`]s. The dead [`Node`]s are also
@@ -1382,14 +1400,16 @@ impl NodeBuilder {
         let monitoring_token = self.create_token::<Service>(&config, &monitor_name)?;
 
         let new_node = Node {
-            shared: Arc::new(SharedNode {
-                id: node_id,
-                monitoring_token: UnsafeCell::new(Some(monitoring_token)),
-                registered_services: RegisteredServices::new(),
-                details_storage,
-                signal_handling_mode: self.signal_handling_mode,
-                details,
-            }),
+            shared: SharedNode {
+                state: Arc::new(SharedNodeState {
+                    id: node_id,
+                    monitoring_token: UnsafeCell::new(Some(monitoring_token)),
+                    registered_services: RegisteredServices::new(),
+                    details_storage,
+                    signal_handling_mode: self.signal_handling_mode,
+                    details,
+                }),
+            },
         };
 
         trace!(from new_node, "created");

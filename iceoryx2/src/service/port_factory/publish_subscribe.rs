@@ -40,6 +40,8 @@
 //! # }
 //! ```
 extern crate alloc;
+use alloc::sync::Arc;
+use iceoryx2_bb_testing::leakable::Leakable;
 
 use super::nodes;
 use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
@@ -49,8 +51,9 @@ use crate::service::attribute::AttributeSet;
 use crate::service::port_factory::blocking_cleanup_dead_nodes_in_service;
 use crate::service::service_hash::ServiceHash;
 use crate::service::service_name::ServiceName;
-use crate::service::{self, NoResource, ServiceState, dynamic_config, static_config};
-use alloc::sync::Arc;
+use crate::service::{
+    self, NoResource, ServiceState, SharedServiceState, dynamic_config, static_config,
+};
 use core::{fmt::Debug, marker::PhantomData};
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -67,7 +70,7 @@ pub struct PortFactory<
     Payload: Debug + ZeroCopySend + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) service: Arc<ServiceState<Service, NoResource>>,
+    pub(crate) service: SharedServiceState<Service, NoResource>,
     _payload: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
 }
@@ -91,6 +94,17 @@ impl<
     Service: service::Service,
     Payload: Debug + ZeroCopySend + ?Sized,
     UserHeader: Debug + ZeroCopySend,
+> Leakable for PortFactory<Service, Payload, UserHeader>
+{
+    unsafe fn leak_in_place(this: *mut Self) {
+        unsafe { SharedServiceState::leak_in_place(&mut (&mut *this).service) };
+    }
+}
+
+impl<
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
 > crate::service::port_factory::PortFactory for PortFactory<Service, Payload, UserHeader>
 {
     type Service = Service;
@@ -98,27 +112,27 @@ impl<
     type DynamicConfig = dynamic_config::publish_subscribe::DynamicConfig;
 
     fn name(&self) -> &ServiceName {
-        self.service.static_config.name()
+        self.service.static_config().name()
     }
 
     fn unique_service_id(&self) -> UniqueServiceId {
-        self.service.static_config.unique_service_id()
+        self.service.static_config().unique_service_id()
     }
 
     fn service_hash(&self) -> &ServiceHash {
-        self.service.static_config.service_hash()
+        self.service.static_config().service_hash()
     }
 
     fn attributes(&self) -> &AttributeSet {
-        self.service.static_config.attributes()
+        self.service.static_config().attributes()
     }
 
     fn static_config(&self) -> &static_config::publish_subscribe::StaticConfig {
-        self.service.static_config.publish_subscribe()
+        self.service.static_config().publish_subscribe()
     }
 
     fn dynamic_config(&self) -> &dynamic_config::publish_subscribe::DynamicConfig {
-        self.service.dynamic_storage.get().publish_subscribe()
+        self.service.dynamic_storage().get().publish_subscribe()
     }
 
     fn nodes<F: FnMut(crate::node::NodeState<Service>) -> CallbackProgression>(
@@ -126,8 +140,8 @@ impl<
         callback: F,
     ) -> Result<(), NodeListFailure> {
         nodes(
-            self.service.dynamic_storage.get(),
-            self.service.shared_node.config(),
+            self.service.dynamic_storage().get(),
+            self.service.shared_node().config(),
             callback,
         )
     }
@@ -142,7 +156,9 @@ impl<
     pub(crate) fn new(service: ServiceState<Service, NoResource>) -> Self {
         let shared_node = service.shared_node.clone();
         let new_self = Self {
-            service: Arc::new(service),
+            service: SharedServiceState {
+                state: Arc::new(service),
+            },
             _payload: PhantomData,
             _user_header: PhantomData,
         };

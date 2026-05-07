@@ -190,7 +190,7 @@ impl<
     ) -> Self {
         let defs = &factory
             .service
-            .shared_node
+            .shared_node()
             .config()
             .defaults
             .request_response;

@@ -58,12 +58,15 @@
 //! # }
 //! ```
 
+use crate::config::Config;
+use crate::service::config_scheme::event_config;
+use crate::service::dynamic_config::event::ListenerDetails;
+use crate::service::naming_scheme::event_concept_name;
+use crate::service::{NoResource, SharedServiceState};
+use crate::{identifiers::UniqueListenerId, service};
+use alloc::format;
 use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::Ordering;
-
-use alloc::format;
-use alloc::sync::Arc;
-
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
 use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
@@ -72,13 +75,6 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::{ListenerBuilder, ListenerWaitError, NamedConceptMgmt, TriggerId};
 use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptRemoveError};
 use iceoryx2_log::fail;
-
-use crate::config::Config;
-use crate::service::config_scheme::event_config;
-use crate::service::dynamic_config::event::ListenerDetails;
-use crate::service::naming_scheme::event_concept_name;
-use crate::service::{NoResource, ServiceState};
-use crate::{identifiers::UniqueListenerId, service};
 
 use super::event_id::EventId;
 
@@ -112,7 +108,7 @@ pub struct Listener<Service: service::Service> {
     dynamic_listener_handle: Option<ContainerHandle>,
     listener:
         Service::ArcThreadSafetyPolicy<<Service::Event as iceoryx2_cal::event::Event>::Listener>,
-    service_state: Arc<ServiceState<Service, NoResource>>,
+    service_state: SharedServiceState<Service, NoResource>,
     listener_id: UniqueListenerId,
 }
 
@@ -149,7 +145,7 @@ impl<Service: service::Service> Drop for Listener<Service> {
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_listener_handle {
             self.service_state
-                .dynamic_storage
+                .dynamic_storage()
                 .get()
                 .event()
                 .release_listener_handle(handle)
@@ -159,18 +155,18 @@ impl<Service: service::Service> Drop for Listener<Service> {
 
 impl<Service: service::Service> Listener<Service> {
     pub(crate) fn new(
-        service: Arc<ServiceState<Service, NoResource>>,
+        service: SharedServiceState<Service, NoResource>,
     ) -> Result<Self, ListenerCreateError> {
         let msg = "Failed to create listener";
         let origin = "Listener::new()";
         let listener_id = UniqueListenerId::new();
 
         let event_name = event_concept_name(&listener_id);
-        let event_config = event_config::<Service>(service.shared_node.config());
+        let event_config = event_config::<Service>(service.shared_node().config());
 
         let listener = fail!(from origin,
                              when <Service::Event as iceoryx2_cal::event::Event>::ListenerBuilder::new(&event_name).config(&event_config)
-                                .trigger_id_max(TriggerId::new(service.static_config.event().event_id_max_value))
+                                .trigger_id_max(TriggerId::new(service.static_config().event().event_id_max_value))
                                 .create(),
                              with ListenerCreateError::ResourceCreationFailed,
                              "{} since the underlying event concept \"{}\" could not be created.", msg, event_name);
@@ -194,17 +190,17 @@ impl<Service: service::Service> Listener<Service> {
 
         // !MUST! be the last task otherwise a listener is added to the dynamic config without
         // the creation of all required channels
-        let dynamic_listener_handle = match service.dynamic_storage.get().event().add_listener_id(
+        let dynamic_listener_handle = match service.dynamic_storage().get().event().add_listener_id(
             ListenerDetails {
                 listener_id,
-                node_id: *service.shared_node.id(),
+                node_id: *service.shared_node().id(),
             },
         ) {
             Some(unique_index) => unique_index,
             None => {
                 fail!(from origin, with ListenerCreateError::ExceedsMaxSupportedListeners,
                                  "{} since it would exceed the maximum supported amount of listeners of {}.",
-                                 msg, service.static_config.event().max_listeners);
+                                 msg, service.static_config().event().max_listeners);
             }
         };
 
@@ -216,7 +212,7 @@ impl<Service: service::Service> Listener<Service> {
     /// Returns the deadline of the corresponding [`Service`](crate::service::Service).
     pub fn deadline(&self) -> Option<Duration> {
         self.service_state
-            .static_config
+            .static_config()
             .event()
             .deadline
             .map(|v| v.value.into())

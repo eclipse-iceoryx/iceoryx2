@@ -36,6 +36,8 @@
 //! # Ok(())
 //! # }
 //! ```
+extern crate alloc;
+use alloc::sync::Arc;
 
 use super::nodes;
 use super::reader::PortFactoryReader;
@@ -49,16 +51,14 @@ use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
 use crate::service::port_factory::blocking_cleanup_dead_nodes_in_service;
 use crate::service::service_hash::ServiceHash;
 use crate::service::service_name::ServiceName;
-use crate::service::{self, ServiceState, dynamic_config, static_config};
+use crate::service::{self, ServiceState, SharedServiceState, dynamic_config, static_config};
 use core::fmt::Debug;
 use core::hash::Hash;
 use core::marker::PhantomData;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_testing::leakable::Leakable;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
-
-extern crate alloc;
-use alloc::sync::Arc;
 
 /// The factory for
 /// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard).
@@ -69,8 +69,18 @@ pub struct PortFactory<
     Service: service::Service,
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > {
-    pub(crate) service: Arc<ServiceState<Service, BlackboardResources<Service>>>,
+    pub(crate) service: SharedServiceState<Service, BlackboardResources<Service>>,
     _key: PhantomData<KeyType>,
+}
+
+impl<
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
+> Leakable for PortFactory<Service, KeyType>
+{
+    unsafe fn leak_in_place(this: *mut Self) {
+        unsafe { SharedServiceState::leak_in_place(&mut (&mut *this).service) };
+    }
 }
 
 impl<
@@ -83,27 +93,27 @@ impl<
     type DynamicConfig = dynamic_config::blackboard::DynamicConfig;
 
     fn name(&self) -> &ServiceName {
-        self.service.static_config.name()
+        self.service.static_config().name()
     }
 
     fn unique_service_id(&self) -> UniqueServiceId {
-        self.service.static_config.unique_service_id()
+        self.service.static_config().unique_service_id()
     }
 
     fn service_hash(&self) -> &ServiceHash {
-        self.service.static_config.service_hash()
+        self.service.static_config().service_hash()
     }
 
     fn attributes(&self) -> &AttributeSet {
-        self.service.static_config.attributes()
+        self.service.static_config().attributes()
     }
 
     fn static_config(&self) -> &static_config::blackboard::StaticConfig {
-        self.service.static_config.blackboard()
+        self.service.static_config().blackboard()
     }
 
     fn dynamic_config(&self) -> &dynamic_config::blackboard::DynamicConfig {
-        self.service.dynamic_storage.get().blackboard()
+        self.service.dynamic_storage().get().blackboard()
     }
 
     fn nodes<F: FnMut(crate::node::NodeState<Service>) -> CallbackProgression>(
@@ -111,8 +121,8 @@ impl<
         callback: F,
     ) -> Result<(), NodeListFailure> {
         nodes(
-            self.service.dynamic_storage.get(),
-            self.service.shared_node.config(),
+            self.service.dynamic_storage().get(),
+            self.service.shared_node().config(),
             callback,
         )
     }
@@ -126,7 +136,9 @@ impl<
     pub(crate) fn new(service: ServiceState<Service, BlackboardResources<Service>>) -> Self {
         let shared_node = service.shared_node.clone();
         let new_self = Self {
-            service: Arc::new(service),
+            service: SharedServiceState {
+                state: Arc::new(service),
+            },
             _key: PhantomData,
         };
 
@@ -215,7 +227,7 @@ impl<
     /// # }
     /// ```
     pub fn list_keys<F: FnMut(&KeyType) -> CallbackProgression>(&self, mut callback: F) {
-        self.service.additional_resource.mgmt.get().map.list_keys(
+        self.service.additional_resource().mgmt.get().map.list_keys(
             |key: &KeyMemory<MAX_BLACKBOARD_KEY_SIZE>| {
                 callback(unsafe { &*(key.data.as_ptr() as *const KeyType) })
             },
@@ -230,7 +242,7 @@ impl<Service: service::Service> PortFactory<Service, CustomKeyMarker> {
         mut callback: F,
     ) {
         self.service
-            .additional_resource
+            .additional_resource()
             .mgmt
             .get()
             .map

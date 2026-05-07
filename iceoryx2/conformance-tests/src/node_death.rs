@@ -22,6 +22,7 @@ use iceoryx2::service::Service;
 use iceoryx2::testing::*;
 use iceoryx2_bb_concurrency::atomic::AtomicU32;
 use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_testing::leakable::Leakable;
 use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing::{assert_that, test_fail};
 use iceoryx2_bb_testing_macros::conformance_test;
@@ -35,6 +36,12 @@ pub trait Test {
     fn config(&self) -> &Config;
 
     fn config_mut(&mut self) -> &mut Config;
+
+    fn leak_contents<T: Leakable>(mut contents: Vec<T>) {
+        while let Some(element) = contents.pop() {
+            T::leak(element);
+        }
+    }
 
     fn generate_node_name(i: usize, prefix: &str) -> NodeName {
         NodeName::new(&(prefix.to_string() + &i.to_string())).unwrap()
@@ -180,11 +187,12 @@ pub mod node_death {
             good_nodes.push(test.create_good_node());
         }
 
-        let mut services = vec![];
+        let mut bad_services = vec![];
         let mut bad_publishers = vec![];
         let mut bad_subscribers = vec![];
         let mut good_publishers = vec![];
         let mut good_subscribers = vec![];
+        let mut good_services = vec![];
 
         for _ in 0..NUMBER_OF_SERVICES {
             let service_name = generate_service_name();
@@ -200,7 +208,7 @@ pub mod node_death {
                 bad_publishers.push(service.publisher_builder().create().unwrap());
                 bad_subscribers.push(service.subscriber_builder().create().unwrap());
 
-                services.push(service);
+                bad_services.push(service);
             }
 
             for node in &good_nodes {
@@ -213,7 +221,7 @@ pub mod node_death {
                     .unwrap();
                 good_publishers.push(service.publisher_builder().create().unwrap());
                 good_subscribers.push(service.subscriber_builder().create().unwrap());
-                services.push(service);
+                good_services.push(service);
             }
         }
 
@@ -222,12 +230,15 @@ pub mod node_death {
             Node::leak(node);
         }
 
+        S::leak_contents(bad_services);
+
+        //core::mem::forget(bad_services);
         core::mem::forget(bad_publishers);
         core::mem::forget(bad_subscribers);
 
         assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
 
-        for service in &services {
+        for service in &good_services {
             assert_that!(service.dynamic_config().number_of_publishers(), eq NUMBER_OF_PUBLISHERS - NUMBER_OF_BAD_NODES);
             assert_that!(service.dynamic_config().number_of_subscribers(), eq NUMBER_OF_SUBSCRIBERS - NUMBER_OF_BAD_NODES);
         }

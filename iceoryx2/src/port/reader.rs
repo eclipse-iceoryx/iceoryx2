@@ -41,7 +41,7 @@ use crate::service::builder::CustomKeyMarker;
 use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
 use crate::service::dynamic_config::blackboard::ReaderDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-use crate::service::{self, ServiceState};
+use crate::service::{self, SharedServiceState};
 use core::alloc::Layout;
 use core::fmt::Debug;
 use core::hash::Hash;
@@ -100,7 +100,7 @@ struct ReaderSharedState<
     KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
 > {
     dynamic_reader_handle: Option<ContainerHandle>,
-    service_state: Arc<ServiceState<Service, BlackboardResources<Service>>>,
+    service_state: SharedServiceState<Service, BlackboardResources<Service>>,
     _key: PhantomData<KeyType>,
 }
 
@@ -112,7 +112,7 @@ impl<
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_reader_handle {
             self.service_state
-                .dynamic_storage
+                .dynamic_storage()
                 .get()
                 .blackboard()
                 .release_reader_handle(handle)
@@ -155,7 +155,7 @@ impl<
 > Reader<Service, KeyType>
 {
     pub(crate) fn new(
-        service: Arc<ServiceState<Service, BlackboardResources<Service>>>,
+        service: SharedServiceState<Service, BlackboardResources<Service>>,
     ) -> Result<Self, ReaderCreateError> {
         let origin = "Reader::new()";
         let msg = "Unable to create Reader port";
@@ -174,17 +174,19 @@ impl<
 
         // !MUST! be the last task otherwise a reader is added to the dynamic config without the
         // creation of all required resources
-        let dynamic_reader_handle = match service.dynamic_storage.get().blackboard().add_reader_id(
-            ReaderDetails {
+        let dynamic_reader_handle = match service
+            .dynamic_storage()
+            .get()
+            .blackboard()
+            .add_reader_id(ReaderDetails {
                 reader_id,
-                node_id: *service.shared_node.id(),
-            },
-        ) {
+                node_id: *service.shared_node().id(),
+            }) {
             Some(unique_index) => unique_index,
             None => {
                 fail!(from origin, with ReaderCreateError::ExceedsMaxSupportedReaders,
                             "{} since it would exceed the maximum supported amount of readers of {}.",
-                            msg, service.static_config.blackboard().max_readers);
+                            msg, service.static_config().blackboard().max_readers);
             }
         };
 
@@ -244,7 +246,7 @@ impl<
         let atomic = (self
             .shared_state
             .service_state
-            .additional_resource
+            .additional_resource()
             .data
             .payload_start_address() as u64
             + offset) as *const UnrestrictedAtomic<ValueType>;
@@ -262,7 +264,7 @@ impl<
         let index = match unsafe {
             self.shared_state
                 .service_state
-                .additional_resource
+                .additional_resource()
                 .mgmt
                 .get()
                 .map
@@ -270,7 +272,7 @@ impl<
                     key_mem,
                     self.shared_state
                         .service_state
-                        .additional_resource
+                        .additional_resource()
                         .key_eq_func
                         .as_ref(),
                 )
@@ -285,7 +287,7 @@ impl<
         let entry = &self
             .shared_state
             .service_state
-            .additional_resource
+            .additional_resource()
             .mgmt
             .get()
             .entries[index];
@@ -443,7 +445,7 @@ impl<Service: service::Service> Reader<Service, CustomKeyMarker> {
         let key_type_details = self
             .shared_state
             .service_state
-            .static_config
+            .static_config()
             .blackboard()
             .type_details();
         let key_layout = unsafe {
@@ -465,7 +467,7 @@ impl<Service: service::Service> Reader<Service, CustomKeyMarker> {
         let atomic_mgmt_ptr = (self
             .shared_state
             .service_state
-            .additional_resource
+            .additional_resource()
             .data
             .payload_start_address() as u64
             + offset) as *const UnrestrictedAtomicMgmt;

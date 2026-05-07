@@ -14,7 +14,6 @@ use core::alloc::Layout;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use alloc::format;
-use alloc::sync::Arc;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
@@ -37,7 +36,7 @@ use crate::port::{
 use crate::prelude::UnableToDeliverStrategy;
 use crate::service::config_scheme::connection_config;
 use crate::service::static_config::message_type_details::{MessageTypeDetails, TypeVariant};
-use crate::service::{NoResource, ServiceState};
+use crate::service::{NoResource, SharedServiceState};
 use crate::{service, service::naming_scheme::connection_name};
 
 use super::chunk::ChunkMut;
@@ -110,7 +109,7 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) data_segment: DataSegment<Service>,
     pub(crate) connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
     pub(crate) sender_port_id: u128,
-    pub(crate) shared_node: Arc<SharedNode<Service>>,
+    pub(crate) shared_node: SharedNode<Service>,
     pub(crate) receiver_max_buffer_size: usize,
     pub(crate) receiver_max_borrowed_samples: usize,
     pub(crate) sender_max_borrowed_samples: usize,
@@ -119,7 +118,7 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) max_number_of_segments: u8,
     pub(crate) degradation_handler: DegradationHandler<'static>,
     pub(crate) unable_to_deliver_handler: Option<UnableToDeliverHandler<'static>>,
-    pub(crate) service_state: Arc<ServiceState<Service, NoResource>>,
+    pub(crate) service_state: SharedServiceState<Service, NoResource>,
     pub(crate) tagger: CyclicTagger,
     pub(crate) loan_counter: AtomicUsize,
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
@@ -187,7 +186,7 @@ impl<Service: service::Service> Sender<Service> {
                             .call(&UnableToDeliverInfo {
                                 service_id: self
                                     .service_state
-                                    .static_config
+                                    .static_config()
                                     .unique_service_id()
                                     .value(),
                                 sender_port_id: self.sender_port_id,
@@ -253,7 +252,7 @@ impl<Service: service::Service> Sender<Service> {
                         &DegradationInfo {
                             service_id: self
                                 .service_state
-                                .static_config
+                                .static_config()
                                 .unique_service_id()
                                 .value(),
                             sender_port_id: self.sender_port_id,
@@ -535,7 +534,11 @@ impl<Service: service::Service> Sender<Service> {
                 Err(e) => match self.degradation_handler.call(
                     DegradationCause::FailedToEstablishConnection,
                     &DegradationInfo {
-                        service_id: self.service_state.static_config.unique_service_id().value(),
+                        service_id: self
+                            .service_state
+                            .static_config()
+                            .unique_service_id()
+                            .value(),
                         sender_port_id: self.sender_port_id,
                         receiver_port_id: receiver_details.port_id,
                     },
