@@ -41,13 +41,8 @@ use core::alloc::Layout;
 use core::marker::PhantomData;
 use core::mem::MaybeUninit;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU8, Ordering};
-use iceoryx2_bb_elementary::relocatable_ptr::{
-    GenericRelocatablePointer, PointerTrait, RelocatablePointer,
-};
+use iceoryx2_bb_elementary::relocatable_ptr::{PointerTrait, RelocatablePointer};
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
-use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
-use iceoryx2_bb_elementary_traits::owning_pointer::{GenericOwningPointer, OwningPointer};
-use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::{atomic_copy::AtomicCopy, zero_copy_send::ZeroCopySend};
 use iceoryx2_log::fail;
 use iceoryx2_log::fatal_panic;
@@ -59,104 +54,35 @@ pub enum ByteAtomicError {
     SizesDoNotMatch,
 }
 
-pub type ByteAtomic<T> = MetaByteAtomic<T, GenericOwningPointer>;
-
 /// A runtime fixed-size, shared-memory compatible [`RelocatableByteAtomic`].
-pub type RelocatableByteAtomic<T> = MetaByteAtomic<T, GenericRelocatablePointer>;
-
-#[doc(hidden)]
-#[repr(C)]
-pub struct MetaByteAtomic<T: AtomicCopy, Ptr: GenericPointer> {
-    data_ptr: Ptr::Type<AtomicU8>,
+pub struct RelocatableByteAtomic<T: AtomicCopy> {
+    data_ptr: RelocatablePointer<AtomicU8>,
     capacity: usize,
     is_initialized: AtomicBool,
     _inner_type: PhantomData<T>,
 }
 
-impl<T: AtomicCopy, Ptr: GenericPointer> MetaByteAtomic<T, Ptr> {
+unsafe impl<T: AtomicCopy + ZeroCopySend> ZeroCopySend for RelocatableByteAtomic<T> {}
+
+impl<T: AtomicCopy> RelocatableByteAtomic<T> {
     #[inline(always)]
     fn verify_init(&self, source: &str) {
         debug_assert!(
             self.is_initialized.load(Ordering::Relaxed),
-            "From: MetaByteAtomic<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
+            "From: RelocatableByteAtomic<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
             core::any::type_name::<T>(),
             source,
         );
     }
 
-    pub(crate) unsafe fn read_impl(&self) -> MaybeUninit<T> {
-        self.verify_init("read()");
-
-        let mut data: MaybeUninit<T> = MaybeUninit::uninit();
-        let data_ptr = data.as_mut_ptr() as *mut u8;
-        for i in 0..self.capacity {
-            unsafe {
-                *data_ptr.add(i) = (*self.data_ptr.as_ptr().add(i)).load(Ordering::Relaxed);
-            }
-        }
-        data
-    }
-
-    pub(crate) unsafe fn write_impl(&self, value: T) {
-        self.verify_init("write()");
-
-        let value_ptr = (&value as *const T) as *const u8;
-        value.__for_each_field(0, &mut |offset, size| {
-            for i in offset..offset + size {
-                unsafe {
-                    (*self.data_ptr.as_ptr().add(i)).store(*value_ptr.add(i), Ordering::Relaxed);
-                }
-            }
-        });
-    }
-}
-
-impl<T: AtomicCopy> ByteAtomic<T> {
-    pub fn new(value: T) -> Self {
-        let capacity = size_of::<T>();
-        let mut new_self = Self {
-            data_ptr: OwningPointer::new_with_alloc(capacity),
-            capacity,
-            is_initialized: AtomicBool::new(false),
-            _inner_type: PhantomData,
-        };
-
-        for i in 0..capacity {
-            unsafe {
-                new_self
-                    .data_ptr
-                    .as_mut_ptr()
-                    .add(i)
-                    .write(AtomicU8::new(0));
-            }
-        }
-
-        let value_ptr = (&value as *const T) as *const u8;
-        value.__for_each_field(0, &mut |offset, size| {
-            for i in offset..offset + size {
-                unsafe {
-                    (*new_self.data_ptr.as_ptr().add(i))
-                        .store(*value_ptr.add(i), Ordering::Relaxed);
-                }
-            }
-        });
-
-        new_self.is_initialized.store(true, Ordering::Relaxed);
-        new_self
-    }
-
-    pub unsafe fn read(&self) -> MaybeUninit<T> {
-        unsafe { self.read_impl() }
-    }
-
-    pub unsafe fn write(&self, value: T) {
-        unsafe { self.write_impl(value) };
-    }
-}
-
-impl<T: AtomicCopy> RelocatableContainer for RelocatableByteAtomic<T> {
-    // TODO: capacity?
-    unsafe fn new_uninit(_capacity: usize) -> Self {
+    /// Creates a new uninitialized RelocatableByteAtomic. Before it can be used, the method
+    /// [`RelocatableByteAtomic::init()`] must be called.
+    ///
+    /// # Safety
+    ///
+    ///   * Before the ByteAtomic can be used, [`RelocatableByteAtomic::init()`] must be called
+    ///     exactly once.
+    pub unsafe fn new_uninit() -> Self {
         Self {
             data_ptr: unsafe { RelocatablePointer::new_uninit() },
             capacity: size_of::<T>(),
@@ -165,9 +91,19 @@ impl<T: AtomicCopy> RelocatableContainer for RelocatableByteAtomic<T> {
         }
     }
 
-    unsafe fn init<Allocator: BaseAllocator>(
+    /// Initializes an uninitialized RelocatableByteAtomic. It allocates the required memory from
+    /// the provided allocator. The allocator must have at least
+    /// [`RelocatableByteAtomic::const_memory_size()`] bytes available.
+    ///
+    /// # Safety
+    ///
+    ///   * Must be called exactly once before any other method is called.
+    ///   * Shall be only used when the RelocatableByteAtomic was created with
+    ///     [`RelocatableByteAtomic::new_uninit()`].
+    pub unsafe fn init<Allocator: BaseAllocator>(
         &mut self,
         allocator: &Allocator,
+        value: T,
     ) -> Result<(), AllocationError> {
         if self.is_initialized.load(Ordering::Relaxed) {
             fatal_panic!(from "RelocatableByteAtomic::init()", "Memory already initialized.
@@ -185,19 +121,20 @@ impl<T: AtomicCopy> RelocatableContainer for RelocatableByteAtomic<T> {
             }
         }
 
+        let value_ptr = (&value as *const T) as *const u8;
+        value.__for_each_field(0, &mut |offset, size| {
+            for i in offset..offset + size {
+                unsafe {
+                    (*self.data_ptr.as_ptr().add(i)).store(*value_ptr.add(i), Ordering::Relaxed);
+                }
+            }
+        });
+
         self.is_initialized.store(true, Ordering::Relaxed);
 
         Ok(())
     }
 
-    fn memory_size(_capacity: usize) -> usize {
-        Self::const_memory_size()
-    }
-}
-
-unsafe impl<T: AtomicCopy + ZeroCopySend> ZeroCopySend for RelocatableByteAtomic<T> {}
-
-impl<T: AtomicCopy> RelocatableByteAtomic<T> {
     /// Returns how much memory the [`RelocatableByteAtomic`] will allocate from the
     /// allocator in [`RelocatableByteAtomic::init()`].
     pub const fn const_memory_size() -> usize {
@@ -211,7 +148,16 @@ impl<T: AtomicCopy> RelocatableByteAtomic<T> {
     /// * When the value is concurrently written to, torn-reads are possible. The user must take
     ///   care of the data integrity.
     pub unsafe fn read(&self) -> MaybeUninit<T> {
-        unsafe { self.read_impl() }
+        self.verify_init("read()");
+
+        let mut data: MaybeUninit<T> = MaybeUninit::uninit();
+        let data_ptr = data.as_mut_ptr() as *mut u8;
+        for i in 0..self.capacity {
+            unsafe {
+                *data_ptr.add(i) = (*self.data_ptr.as_ptr().add(i)).load(Ordering::Relaxed);
+            }
+        }
+        data
     }
 
     /// Stores the passed value byte-wise atomically.
@@ -221,7 +167,16 @@ impl<T: AtomicCopy> RelocatableByteAtomic<T> {
     /// * When used concurrently, torn-writes and torn-reads are possible. The user must take
     ///   care of the data integrity.
     pub unsafe fn write(&self, value: T) {
-        unsafe { self.write_impl(value) };
+        self.verify_init("write()");
+
+        let value_ptr = (&value as *const T) as *const u8;
+        value.__for_each_field(0, &mut |offset, size| {
+            for i in offset..offset + size {
+                unsafe {
+                    (*self.data_ptr.as_ptr().add(i)).store(*value_ptr.add(i), Ordering::Relaxed);
+                }
+            }
+        });
     }
 }
 
