@@ -461,6 +461,21 @@ pub struct Storage<T: Debug + Send + Sync> {
 unsafe impl<T: Debug + Send + Sync> Send for Storage<T> {}
 unsafe impl<T: Debug + Send + Sync> Sync for Storage<T> {}
 
+impl<T: Debug + Send + Sync> Leakable for Storage<T> {
+    fn leak(mut self) {
+        unsafe { Storage::<T>::leak_in_place(&mut self) };
+        core::mem::forget(self);
+    }
+
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { File::leak_in_place(&mut this.file) };
+        unsafe {
+            core::ptr::drop_in_place(&mut this.memory_mapping);
+        }
+    }
+}
+
 impl<T: Debug + Send + Sync> Drop for Storage<T> {
     fn drop(&mut self) {
         if self.file.has_ownership() {

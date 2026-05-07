@@ -602,17 +602,21 @@ pub struct ProcessGuard {
 
 impl Leakable for ProcessGuard {
     fn leak(mut self) {
+        unsafe { ProcessGuard::leak_in_place(&mut self) };
+        core::mem::forget(self);
+    }
+
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
         for file in [
-            &mut self.state_file,
-            &mut self.owner_lock_file,
-            &mut self.context_file,
+            &mut this.state_file,
+            &mut this.owner_lock_file,
+            &mut this.context_file,
         ] {
             if let Some(f) = file.take() {
                 f.leak();
             }
         }
-
-        core::mem::forget(self);
     }
 }
 

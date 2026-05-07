@@ -325,6 +325,18 @@ impl<T: Send + Sync + Debug + 'static> DynamicStorage<T> for Storage<T> {
     }
 }
 
+impl<T: Send + Sync + Debug + 'static> Leakable for Storage<T> {
+    fn leak(mut self) {
+        unsafe { Storage::<T>::leak_in_place(&mut self) };
+    }
+
+    unsafe fn leak_in_place(this: *mut Self) {
+        unsafe { &mut *this }
+            .has_ownership
+            .store(false, Ordering::Relaxed);
+    }
+}
+
 impl<T: Send + Sync + Debug + 'static> Drop for Storage<T> {
     fn drop(&mut self) {
         if self.has_ownership() {

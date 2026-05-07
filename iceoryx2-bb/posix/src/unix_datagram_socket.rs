@@ -547,8 +547,13 @@ pub struct UnixDatagramSender {
 
 impl Leakable for UnixDatagramSender {
     fn leak(mut self) {
-        unsafe { core::ptr::drop_in_place(&mut self.socket) };
+        unsafe { UnixDatagramSender::leak_in_place(&mut self) };
         core::mem::forget(self)
+    }
+
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { core::ptr::drop_in_place(&mut this.socket) };
     }
 }
 
@@ -776,8 +781,13 @@ pub struct UnixDatagramReceiver {
 
 impl Leakable for UnixDatagramReceiver {
     fn leak(mut self) {
-        unsafe { core::ptr::drop_in_place(&mut self.socket) };
+        unsafe { UnixDatagramReceiver::leak_in_place(&mut self) };
         core::mem::forget(self);
+    }
+
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { core::ptr::drop_in_place(&mut this.socket) };
     }
 }
 

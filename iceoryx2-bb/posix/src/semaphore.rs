@@ -408,16 +408,20 @@ unsafe impl Send for NamedSemaphore {}
 unsafe impl Sync for NamedSemaphore {}
 
 impl Leakable for NamedSemaphore {
-    fn leak(self) {
-        if core::ptr::eq(self.handle, posix::SEM_FAILED) {
+    fn leak(mut self) {
+        unsafe { NamedSemaphore::leak_in_place(&mut self) };
+        core::mem::forget(self);
+    }
+
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        if core::ptr::eq(this.handle, posix::SEM_FAILED) {
             return;
         }
 
-        if unsafe { posix::sem_close(self.handle) } != 0 {
-            fatal_panic!(from self, "This should never happen! The semaphore handle is invalid and cannot be closed.");
+        if unsafe { posix::sem_close(this.handle) } != 0 {
+            fatal_panic!(from this, "This should never happen! The semaphore handle is invalid and cannot be closed.");
         }
-
-        core::mem::forget(self);
     }
 }
 
@@ -773,6 +777,8 @@ impl Leakable for UnnamedSemaphore<'_> {
     fn leak(self) {
         core::mem::forget(self);
     }
+
+    unsafe fn leak_in_place(_this: *mut Self) {}
 }
 
 impl Drop for UnnamedSemaphore<'_> {

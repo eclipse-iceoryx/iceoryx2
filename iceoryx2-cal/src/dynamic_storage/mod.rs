@@ -61,6 +61,7 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::*;
+use iceoryx2_bb_testing::leakable::Leakable;
 use tiny_fn::tiny_fn;
 
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
@@ -171,7 +172,7 @@ pub trait DynamicStorageBuilder<'builder, T: Send + Sync, D: DynamicStorage<T>>:
 /// Is being built by the [`DynamicStorageBuilder`]. The [`DynamicStorage`] trait shall provide
 /// inter-process access to a modifyable piece of memory identified by some name.
 pub trait DynamicStorage<T: Send + Sync>:
-    Sized + Debug + NamedConceptMgmt + NamedConcept + Send + Sync
+    Sized + Debug + NamedConceptMgmt + NamedConcept + Send + Sync + Leakable
 {
     type Builder<'builder>: DynamicStorageBuilder<'builder, T, Self>;
 

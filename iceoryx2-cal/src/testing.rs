@@ -10,7 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub use iceoryx2_bb_testing::*;
+
 use crate::named_concept::*;
+
 use iceoryx2_bb_posix::{
     config::TEST_DIRECTORY,
     directory::{Directory, DirectoryCreateError},
