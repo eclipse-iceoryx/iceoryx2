@@ -13,20 +13,17 @@
 use alloc::vec::Vec;
 
 use iceoryx2::config::Config;
-use iceoryx2::identifiers::UniqueNodeId;
-use iceoryx2::node::{NodeState, NodeView};
 use iceoryx2::service::Service;
+use iceoryx2::service::ServiceDetails;
 use iceoryx2::service::service_hash::ServiceHash;
+use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_log::{fail, fatal_panic};
-use iceoryx2_services_common::DiscoveryEvent;
 use iceoryx2_services_discovery::service_discovery::Tracker;
-use iceoryx2_services_tunnel_backend::traits::Discovery;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
     TrackerSynchronization,
-    DiscoveryProcessing,
 }
 
 impl core::fmt::Display for DiscoveryError {
@@ -37,126 +34,74 @@ impl core::fmt::Display for DiscoveryError {
 
 impl core::error::Error for DiscoveryError {}
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum AnnouncementError {}
-
-impl core::fmt::Display for AnnouncementError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "AnnouncementError::{self:?}")
-    }
+/// Result of a single [`DiscoveryTracker::sync`] cycle.
+#[derive(Debug)]
+pub struct DiscoverySync {
+    /// Static configs of services newly visible in the local registry.
+    pub added: Vec<StaticConfig>,
+    /// Hashes of services that have disappeared from the local registry entirely.
+    pub removed: Vec<ServiceHash>,
 }
-
-impl core::error::Error for AnnouncementError {}
 
 #[derive(Debug)]
 pub struct DiscoveryTracker<S: Service> {
     tracker: RefCell<Tracker<S>>,
-    node_id: UniqueNodeId,
 }
 
 impl<S: Service> DiscoveryTracker<S> {
-    /// Creates a [`DiscoveryTracker`].
-    ///
-    /// `node_id` must be the [`UniqueNodeId`] of the tunnel's own
-    /// [`Node`](iceoryx2::node::Node). It is used during `discover` to
-    /// recognise services that remain in the system listing only because the
-    /// tunnel itself opened a port on them.
-    pub fn create(iceoryx_config: &Config, node_id: UniqueNodeId) -> Self {
-        let tracker = Tracker::new(iceoryx_config);
+    pub fn create(iceoryx_config: &Config) -> Self {
         DiscoveryTracker {
-            tracker: RefCell::new(tracker),
-            node_id,
+            tracker: RefCell::new(Tracker::new(iceoryx_config)),
         }
     }
-}
 
-impl<S: Service> Discovery for DiscoveryTracker<S> {
-    type DiscoveryError = DiscoveryError;
-    type AnnouncementError = AnnouncementError;
-
-    fn announce(&self, _discovery: DiscoveryEvent) -> Result<(), Self::AnnouncementError> {
-        // NOOP - iceoryx2 handles discovery internally
-        Ok(())
-    }
-
-    fn discover<E: core::error::Error, F: FnMut(&DiscoveryEvent) -> Result<(), E>>(
-        &self,
-        mut process_discovery: F,
-    ) -> Result<(), Self::DiscoveryError> {
-        let tracker = &mut self.tracker.borrow_mut();
-
-        let (added, removed) = fail!(
-            from self,
+    /// Synchronises against the local iceoryx registry and returns the services
+    /// that newly appeared or fully disappeared since the last sync.
+    pub fn sync(&self) -> Result<DiscoverySync, DiscoveryError> {
+        let origin = "DiscoveryTracker::sync";
+        let mut tracker = self.tracker.borrow_mut();
+        let (added_ids, removed_services) = fail!(
+            from origin,
             when tracker.sync(),
             with DiscoveryError::TrackerSynchronization,
             "Failed to synchronize tracker"
         );
 
-        // Newly-appeared services.
-        for id in added {
-            match tracker.get(&id) {
-                Some(service_details) => {
-                    fail!(
-                        from self,
-                        when process_discovery(&DiscoveryEvent::Added(service_details.static_details.clone())),
-                        with DiscoveryError::DiscoveryProcessing,
-                        "Failed to process discovery event"
-                    );
-                }
-                None => {
-                    fatal_panic!(
-                        from "DiscoveryTracker::discover",
-                        "This should never happen. Service discovered by tracker is not retrievable."
-                    )
-                }
-            }
-        }
-
-        // Services that disappeared from the listing entirely.
-        for service_details in removed {
-            fail!(
-                from self,
-                when process_discovery(&DiscoveryEvent::Removed(*service_details.static_details.service_hash())),
-                with DiscoveryError::DiscoveryProcessing,
-                "Failed to process discovery event"
-            );
-        }
-
-        // Services still listed but only held by this tunnel's node: the user-side owner is
-        // gone, so the service is logically removed from the tunnel's perspective.
-        let abandoned: Vec<ServiceHash> = tracker
-            .get_all()
-            .iter()
-            .filter(|service_details| {
-                service_details.dynamic_details.as_ref().is_some_and(|d| {
-                    d.nodes
-                        .iter()
-                        .filter_map(node_id)
-                        .all(|id| id == &self.node_id)
-                })
+        let added = added_ids
+            .into_iter()
+            .map(|id| match tracker.get(&id) {
+                Some(details) => details.static_details.clone(),
+                None => fatal_panic!(
+                    from origin,
+                    "This should never happen. Service discovered by tracker is not retrievable."
+                ),
             })
-            .map(|details| *details.static_details.service_hash())
+            .collect();
+        let removed = removed_services
+            .into_iter()
+            .map(|d| *d.static_details.service_hash())
             .collect();
 
-        for hash in abandoned {
-            tracker.forget(&hash);
-            fail!(
-                from self,
-                when process_discovery(&DiscoveryEvent::Removed(hash)),
-                with DiscoveryError::DiscoveryProcessing,
-                "Failed to process discovery event"
-            );
-        }
-
-        Ok(())
+        Ok(DiscoverySync { added, removed })
     }
-}
 
-fn node_id<S: Service>(node: &NodeState<S>) -> Option<&UniqueNodeId> {
-    match node {
-        NodeState::Alive(view) => Some(view.id()),
-        NodeState::Inaccessible(id) | NodeState::Undefined(id) => Some(id),
-        // Dead nodes are not active holders.
-        NodeState::Dead(_) => None,
+    /// Drops the cached snapshot for `hash`, allowing a subsequent [`sync`]
+    /// to re-emit `added` if the service is still present in the registry.
+    /// Used by the tunnel after tearing down its ports and relay so a same-hash
+    /// service that is recreated by a user is observed as a fresh addition.
+    ///
+    /// [`sync`]: Self::sync
+    pub fn forget(&self, hash: &ServiceHash) {
+        let mut tracker = self.tracker.borrow_mut();
+        tracker.forget(hash);
+    }
+
+    /// Invokes `callback` with the cached snapshot for `hash`, or `None` if
+    /// the service is not currently tracked. The closure form sidesteps the
+    /// `RefCell` borrow lifetime that would otherwise leak out through a
+    /// returned reference.
+    pub fn get<R>(&self, hash: &ServiceHash, f: impl FnOnce(Option<&ServiceDetails<S>>) -> R) -> R {
+        let tracker = self.tracker.borrow();
+        f(tracker.get(hash))
     }
 }
