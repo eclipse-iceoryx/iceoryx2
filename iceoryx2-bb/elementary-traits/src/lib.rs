@@ -20,6 +20,7 @@ extern crate alloc;
 pub mod allocator;
 mod as_cstr;
 pub use crate::as_cstr::*;
+pub mod atomic_copy;
 pub mod generic_pointer;
 pub mod owning_pointer;
 pub mod placement_default;

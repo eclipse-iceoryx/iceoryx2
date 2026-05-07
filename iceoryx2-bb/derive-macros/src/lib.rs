@@ -128,7 +128,7 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
 ///     val2: u64,
 /// }
 ///
-/// let x = MyZeroCopySendStruct{
+/// let x = MyZeroCopySendStruct {
 ///     val1: 23,
 ///     val2: 4,
 /// };
@@ -348,6 +348,108 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
+/// Implements the [`iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy`] trait for structs
+/// when all fields of the struct implement it and the struct implements `Copy`.
+///
+/// ```
+/// use iceoryx2_bb_derive_macros::AtomicCopy;
+/// use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
+///
+/// fn needs_atomic_copy_type<T: AtomicCopy>(_: &T) {}
+///
+/// #[derive(AtomicCopy, Clone, Copy)]
+/// struct MyAtomicCopyStruct {
+///     a: bool,
+///     b: i64,
+///     c: u32,
+/// }
+///
+/// let x = MyAtomicCopyStruct {
+///     a: true,
+///     b: -19,
+///     c: 84,
+/// };
+/// needs_atomic_copy_type(&x);
+/// ```
+#[proc_macro_derive(AtomicCopy)]
+pub fn atomic_copy_derive(input: TokenStream) -> TokenStream {
+    let ast = parse_macro_input!(input as DeriveInput);
+    let struct_name = &ast.ident;
+
+    let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
+
+    let atomic_copy_impl = match ast.data {
+        Data::Struct(ref data_struct) => match data_struct.fields {
+            Fields::Named(ref fields_named) => {
+                let mut field_offsets_and_sizes = Vec::new();
+                for field in fields_named.named.iter() {
+                    let field_name = &field.ident;
+                    let field_type = &field.ty;
+
+                    let block = quote! {
+                        // Since struct fields can also be structs, we must traverse the fields recursively. The
+                        // callback must still be applied to field offsets relative to the root struct. So we
+                        // convert "local" offsets (relative to the field) into "absolute" offsets (relative to
+                        // the root struct) and pass these to `__for_each_field`.
+                        let rel_offset = core::mem::offset_of!(#struct_name #ty_generics, #field_name);
+                        let abs_offset = base_offset + rel_offset;
+                        let size = core::mem::size_of::<#field_type>();
+                        AtomicCopy::__for_each_field(&self.#field_name, abs_offset, callback);
+                    };
+                    field_offsets_and_sizes.push(block);
+                }
+
+                quote! {
+                    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+                        #(#field_offsets_and_sizes)*
+                    }
+                }
+            }
+            Fields::Unnamed(ref fields_unnamed) => {
+                let mut field_offsets_and_sizes = Vec::new();
+                for (i, field) in fields_unnamed.unnamed.iter().enumerate() {
+                    let field_index = syn::Index::from(i);
+                    let field_type = &field.ty;
+
+                    let block = quote! {
+                        // Since struct fields can also be structs, we must traverse the fields recursively. The
+                        // callback must still be applied to field offsets relative to the root struct. So we
+                        // convert "local" offsets (relative to the field) into "absolute" offsets (relative to
+                        // the root struct) and pass these to `__for_each_field`.
+                        let rel_offset = core::mem::offset_of!(#struct_name #ty_generics, #field_index);
+                        let abs_offset = base_offset + rel_offset;
+                        let size = core::mem::size_of::<#field_type>();
+                        AtomicCopy::__for_each_field(&self.#field_index, abs_offset, callback);
+                    };
+                    field_offsets_and_sizes.push(block);
+                }
+
+                quote! {
+                    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+                        #(#field_offsets_and_sizes)*
+                    }
+                }
+            }
+            Fields::Unit => quote! {},
+        },
+        Data::Enum(_) => {
+            // Can be implemented once core::mem::offset_of! is stable for enums.
+            panic!("`#[derive(AtomicCopy)]` is not implemented for enums, only for structs.");
+        }
+        Data::Union(_) => {
+            panic!("`#[derive(AtomicCopy)]` is not implemented for unions, only for structs.");
+        }
+    };
+
+    let expanded = quote! {
+        unsafe impl #impl_generics AtomicCopy for #struct_name #ty_generics #where_clause {
+            #atomic_copy_impl
+        }
+    };
+
+    TokenStream::from(expanded)
+}
+
 /// Implements the [`iceoryx2_bb_elementary_traits::zeroable::Zeroable`] trait
 /// when all fields of the struct also implement it. Rejects enums, unions, and
 /// structs whose fields violate the `Zeroable` invariant at compile time.
@@ -526,3 +628,6 @@ mod zeroable_compile_tests;
 
 #[cfg(doctest)]
 mod plain_old_data_without_padding_compile_tests;
+
+#[cfg(doctest)]
+mod atomic_copy_compile_tests;

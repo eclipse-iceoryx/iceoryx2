@@ -118,3 +118,6 @@ pub mod relocatable_option;
 pub(crate) mod vec;
 /// A trait that defines the interface of a vector and several vector variants.
 pub mod vector;
+
+/// A wrapper that provides byte-wise atomic read and write accesses on the inner type.
+pub mod byte_atomic;
