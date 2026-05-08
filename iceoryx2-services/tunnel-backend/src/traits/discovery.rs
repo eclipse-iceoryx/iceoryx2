@@ -83,7 +83,7 @@ use iceoryx2_services_common::DiscoveryEvent;
 ///     type DiscoveryError = MyDiscoveryError;
 ///     type AnnouncementError = MyAnnouncementError;
 ///
-///     fn announce(&self, discovery: DiscoveryEvent)
+///     fn announce(&self, discovery: &DiscoveryEvent)
 ///         -> Result<(), Self::AnnouncementError> {
 ///         // Make the service described by the provided static config
 ///         // discoverable over the backend
@@ -119,7 +119,7 @@ pub trait Discovery {
     ///
     /// * `static_config` - The [`iceoryx2::service::static_config::StaticConfig`]
     ///   of the service to announce.
-    fn announce(&self, discovery: DiscoveryEvent) -> Result<(), Self::AnnouncementError>;
+    fn announce(&self, discovery: &DiscoveryEvent) -> Result<(), Self::AnnouncementError>;
 
     /// Discovers available services and processes each one with the provided
     /// `process_discovery` callback.
