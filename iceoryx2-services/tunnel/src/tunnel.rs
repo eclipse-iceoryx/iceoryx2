@@ -602,7 +602,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         );
         fail!(
             from "Tunnel::announce_added",
-            when self.backend.discovery().announce(DiscoveryEvent::Added(state.static_config.clone())),
+            when self.backend.discovery().announce(&DiscoveryEvent::Added(state.static_config.clone())),
             with DiscoveryError::DiscoveryAnnouncement,
             "Failed to announce service over backend"
         );
@@ -620,7 +620,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         }
         fail!(
             from "Tunnel::announce_removed",
-            when self.backend.discovery().announce(DiscoveryEvent::Removed(*hash)),
+            when self.backend.discovery().announce(&DiscoveryEvent::Removed(*hash)),
             with DiscoveryError::DiscoveryAnnouncement,
             "Failed to announce service removal over backend"
         );

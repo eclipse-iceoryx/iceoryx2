@@ -121,7 +121,7 @@ impl iceoryx2_services_tunnel_backend::traits::Discovery for Discovery {
     type DiscoveryError = DiscoveryError;
     type AnnouncementError = AnnouncementError;
 
-    fn announce(&self, discovery_event: DiscoveryEvent) -> Result<(), Self::AnnouncementError> {
+    fn announce(&self, discovery_event: &DiscoveryEvent) -> Result<(), Self::AnnouncementError> {
         match discovery_event {
             DiscoveryEvent::Added(static_config) => self.announce_added(static_config),
             DiscoveryEvent::Removed(service_hash) => self.announce_removed(service_hash),
@@ -178,7 +178,7 @@ impl Discovery {
     /// its details and a liveliness token at its key.
     ///
     /// No-op if the service has already been announced.
-    fn announce_added(&self, static_config: StaticConfig) -> Result<(), AnnouncementError> {
+    fn announce_added(&self, static_config: &StaticConfig) -> Result<(), AnnouncementError> {
         let service_hash = *static_config.service_hash();
 
         if self.announced.borrow().contains_key(&service_hash) {
@@ -188,7 +188,7 @@ impl Discovery {
         let key = keys::service_details(&service_hash);
         let serialized = fail!(
             from self,
-            when serde_json::to_string(&static_config),
+            when serde_json::to_string(static_config),
             with AnnouncementError::Serialization,
             "Failed to serialize service config"
         );
@@ -210,8 +210,8 @@ impl Discovery {
 
     /// Withdraws a service announcement by dropping its queryable and
     /// liveliness token, propagating a liveliness Delete to remote peers.
-    fn announce_removed(&self, service_hash: ServiceHash) -> Result<(), AnnouncementError> {
-        self.announced.borrow_mut().remove(&service_hash);
+    fn announce_removed(&self, service_hash: &ServiceHash) -> Result<(), AnnouncementError> {
+        self.announced.borrow_mut().remove(service_hash);
         Ok(())
     }
 
