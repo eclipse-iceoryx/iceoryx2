@@ -328,7 +328,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
                 }
                 None => {
                     warn!(from "Tunnel::propagate", "No relay available for {:?}", service_hash);
-                    return Ok(());
+                    continue;
                 }
             };
         }
@@ -340,7 +340,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
                 }
                 None => {
                     warn!(from "Tunnel::propagate", "No relay available for {:?}", service_hash);
-                    return Ok(());
+                    continue;
                 }
             };
         }
