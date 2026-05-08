@@ -23,6 +23,9 @@ enum class ReaderCreateError : uint8_t {
     /// defined in [`Config`]. When this is exceeded no more [`Reader`]s can be
     /// created for a specific [`Service`].
     ExceedsMaxSupportedReaders,
+    /// Caused by a failure when instantiating a [`ArcSyncPolicy`] defined in the
+    /// [`Service`] as `ArcThreadSafetyPolicy`.
+    FailedToDeployThreadsafetyPolicy,
 };
 } // namespace iox2
 

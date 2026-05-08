@@ -59,6 +59,17 @@ enum class EventOpenError : uint8_t {
     /// [`Service`] should be
     /// recreatable.
     IsMarkedForDestruction,
+    /// The [`Service`]s deadline settings are not equal the the user given requirements.
+    IncompatibleDeadline,
+    /// The event id that is emitted for a newly created [`Notifier`](crate::port::notifier::Notifier)
+    /// does not fit the required event id.
+    IncompatibleNotifierCreatedEvent,
+    /// The event id that is emitted if a [`Notifier`](crate::port::notifier::Notifier) is dropped
+    /// does not fit the required event id.
+    IncompatibleNotifierDroppedEvent,
+    /// The event id that is emitted if a [`Notifier`](crate::port::notifier::Notifier) is
+    /// identified as dead does not fit the required event id.
+    IncompatibleNotifierDeadEvent,
 };
 
 /// Failures that can occur when a new [`MessagingPattern::Event`] [`Service`] shall be created.

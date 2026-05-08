@@ -402,6 +402,17 @@ from<iox2::EventOpenOrCreateError, iox2_event_open_or_create_error_e>(const iox2
         return iox2_event_open_or_create_error_e_O_EXCEEDS_MAX_NUMBER_OF_NODES;
     case iox2::EventOpenOrCreateError::OpenIsMarkedForDestruction:
         return iox2_event_open_or_create_error_e_O_IS_MARKED_FOR_DESTRUCTION;
+    case iox2::EventOpenOrCreateError::OpenIncompatibleNotifierCreatedEvent:
+        return iox2_event_open_or_create_error_e_O_INCOMPATIBLE_NOTIFIER_CREATED_EVENT;
+    case iox2::EventOpenOrCreateError::OpenIncompatibleDeadline:
+        return iox2_event_open_or_create_error_e_O_INCOMPATIBLE_DEADLINE;
+    case iox2::EventOpenOrCreateError::OpenIncompatibleNotifierDroppedEvent:
+        return iox2_event_open_or_create_error_e_O_INCOMPATIBLE_NOTIFIER_DROPPED_EVENT;
+    case iox2::EventOpenOrCreateError::OpenIncompatibleNotifierDeadEvent:
+        return iox2_event_open_or_create_error_e_O_INCOMPATIBLE_NOTIFIER_DEAD_EVENT;
+
+    case iox2::EventOpenOrCreateError::SystemInFlux:
+        return iox2_event_open_or_create_error_e_SYSTEM_IN_FLUX;
 
     case iox2::EventOpenOrCreateError::CreateServiceInCorruptedState:
         return iox2_event_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE;
@@ -417,9 +428,9 @@ from<iox2::EventOpenOrCreateError, iox2_event_open_or_create_error_e>(const iox2
         return iox2_event_open_or_create_error_e_C_INSUFFICIENT_PERMISSIONS;
     case iox2::EventOpenOrCreateError::CreateOldConnectionsStillActive:
         return iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE;
-    default:
-        IOX2_UNREACHABLE();
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -458,7 +469,17 @@ constexpr auto from<int, iox2::EventOpenError>(const int value) noexcept -> iox2
         return iox2::EventOpenError::ExceedsMaxNumberOfNodes;
     case iox2_event_open_or_create_error_e_O_IS_MARKED_FOR_DESTRUCTION:
         return iox2::EventOpenError::IsMarkedForDestruction;
+    case iox2_event_open_or_create_error_e_O_INCOMPATIBLE_DEADLINE:
+        return iox2::EventOpenError::IncompatibleDeadline;
+    case iox2_event_open_or_create_error_e_O_INCOMPATIBLE_NOTIFIER_CREATED_EVENT:
+        return iox2::EventOpenError::IncompatibleNotifierCreatedEvent;
+    case iox2_event_open_or_create_error_e_O_INCOMPATIBLE_NOTIFIER_DROPPED_EVENT:
+        return iox2::EventOpenError::IncompatibleNotifierDroppedEvent;
+    case iox2_event_open_or_create_error_e_O_INCOMPATIBLE_NOTIFIER_DEAD_EVENT:
+        return iox2::EventOpenError::IncompatibleNotifierDeadEvent;
     default:
+        // we should avoid using default but this is here necessary since it is only a
+        // partial translation, only the open errors are handled
         IOX2_UNREACHABLE();
     }
 }
@@ -493,9 +514,17 @@ constexpr auto from<iox2::EventOpenError, iox2_event_open_or_create_error_e>(con
         return iox2_event_open_or_create_error_e_O_EXCEEDS_MAX_NUMBER_OF_NODES;
     case iox2::EventOpenError::IsMarkedForDestruction:
         return iox2_event_open_or_create_error_e_O_IS_MARKED_FOR_DESTRUCTION;
-    default:
-        IOX2_UNREACHABLE();
+    case iox2::EventOpenError::IncompatibleNotifierCreatedEvent:
+        return iox2_event_open_or_create_error_e_O_INCOMPATIBLE_NOTIFIER_CREATED_EVENT;
+    case iox2::EventOpenError::IncompatibleNotifierDroppedEvent:
+        return iox2_event_open_or_create_error_e_O_INCOMPATIBLE_NOTIFIER_DROPPED_EVENT;
+    case iox2::EventOpenError::IncompatibleNotifierDeadEvent:
+        return iox2_event_open_or_create_error_e_O_INCOMPATIBLE_NOTIFIER_DEAD_EVENT;
+    case iox2::EventOpenError::IncompatibleDeadline:
+        return iox2_event_open_or_create_error_e_O_INCOMPATIBLE_DEADLINE;
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -520,6 +549,8 @@ constexpr auto from<int, iox2::EventCreateError>(const int value) noexcept -> io
     case iox2_event_open_or_create_error_e_C_INSUFFICIENT_PERMISSIONS:
         return iox2::EventCreateError::InsufficientPermissions;
     default:
+        // we should avoid using default but this is here necessary since it is only a
+        // partial translation, only the create errors are handled
         IOX2_UNREACHABLE();
     }
 }
@@ -543,9 +574,9 @@ from<iox2::EventCreateError, iox2_event_open_or_create_error_e>(const iox2::Even
         return iox2_event_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE;
     case iox2::EventCreateError::OldConnectionsStillActive:
         return iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE;
-    default:
-        IOX2_UNREACHABLE();
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -655,6 +686,8 @@ constexpr auto from<int, iox2::PublishSubscribeOpenError>(const int value) noexc
     case iox2_pub_sub_open_or_create_error_e_O_IS_MARKED_FOR_DESTRUCTION:
         return iox2::PublishSubscribeOpenError::IsMarkedForDestruction;
     default:
+        // we should avoid using default but this is here necessary since it is only a
+        // partial translation, only the open errors are handled
         IOX2_UNREACHABLE();
     }
 }
@@ -697,9 +730,9 @@ constexpr auto from<iox2::PublishSubscribeOpenError, iox2_pub_sub_open_or_create
         return iox2_pub_sub_open_or_create_error_e_O_EXCEEDS_MAX_NUMBER_OF_NODES;
     case iox2::PublishSubscribeOpenError::IsMarkedForDestruction:
         return iox2_pub_sub_open_or_create_error_e_O_IS_MARKED_FOR_DESTRUCTION;
-    default:
-        IOX2_UNREACHABLE();
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -728,6 +761,8 @@ constexpr auto from<int, iox2::PublishSubscribeCreateError>(const int value) noe
     case iox2_pub_sub_open_or_create_error_e_C_HANGS_IN_CREATION:
         return iox2::PublishSubscribeCreateError::HangsInCreation;
     default:
+        // we should avoid using default but this is here necessary since it is only a
+        // partial translation, only the create errors are handled
         IOX2_UNREACHABLE();
     }
 }
@@ -750,9 +785,9 @@ constexpr auto from<iox2::PublishSubscribeCreateError, iox2_pub_sub_open_or_crea
         return iox2_pub_sub_open_or_create_error_e_C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE;
     case iox2::PublishSubscribeCreateError::HangsInCreation:
         return iox2_pub_sub_open_or_create_error_e_C_HANGS_IN_CREATION;
-    default:
-        IOX2_UNREACHABLE();
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -799,6 +834,10 @@ constexpr auto from<iox2::PublishSubscribeOpenOrCreateError, iox2_pub_sub_open_o
         return iox2_pub_sub_open_or_create_error_e_O_EXCEEDS_MAX_NUMBER_OF_NODES;
     case iox2::PublishSubscribeOpenOrCreateError::OpenIsMarkedForDestruction:
         return iox2_pub_sub_open_or_create_error_e_O_IS_MARKED_FOR_DESTRUCTION;
+
+    case iox2::PublishSubscribeOpenOrCreateError::SystemInFlux:
+        return iox2_pub_sub_open_or_create_error_e_SYSTEM_IN_FLUX;
+
     case iox2::PublishSubscribeOpenOrCreateError::CreateServiceInCorruptedState:
         return iox2_pub_sub_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE;
     case iox2::PublishSubscribeOpenOrCreateError::CreateSubscriberBufferMustBeLargerThanHistorySize:
@@ -815,9 +854,9 @@ constexpr auto from<iox2::PublishSubscribeOpenOrCreateError, iox2_pub_sub_open_o
         return iox2_pub_sub_open_or_create_error_e_C_HANGS_IN_CREATION;
     case iox2::PublishSubscribeOpenOrCreateError::CreateOldConnectionsStillActive:
         return iox2_pub_sub_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE;
-    default:
-        IOX2_UNREACHABLE();
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -845,6 +884,8 @@ constexpr auto from<int, iox2::RequestResponseCreateError>(const int value) noex
     case iox2_request_response_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE:
         return iox2::RequestResponseCreateError::ServiceInCorruptedState;
     default:
+        // we should avoid using default but this is here necessary since it is only a
+        // partial translation, only the create errors are handled
         IOX2_UNREACHABLE();
     }
 }
@@ -865,9 +906,9 @@ constexpr auto from<iox2::RequestResponseCreateError, iox2_request_response_open
         return iox2_request_response_open_or_create_error_e_C_HANGS_IN_CREATION;
     case iox2::RequestResponseCreateError::ServiceInCorruptedState:
         return iox2_request_response_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE;
-    default:
-        IOX2_UNREACHABLE();
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -924,6 +965,8 @@ constexpr auto from<int, iox2::RequestResponseOpenError>(const int value) noexce
     case iox2_request_response_open_or_create_error_e_O_SERVICE_IN_CORRUPTED_STATE:
         return iox2::RequestResponseOpenError::ServiceInCorruptedState;
     default:
+        // we should avoid using default but this is here necessary since it is only a
+        // partial translation, only the open errors are handled
         IOX2_UNREACHABLE();
     }
 }
@@ -974,9 +1017,9 @@ constexpr auto from<iox2::RequestResponseOpenError, iox2_request_response_open_o
         return iox2_request_response_open_or_create_error_e_O_IS_MARKED_FOR_DESTRUCTION;
     case iox2::RequestResponseOpenError::ServiceInCorruptedState:
         return iox2_request_response_open_or_create_error_e_O_SERVICE_IN_CORRUPTED_STATE;
-    default:
-        IOX2_UNREACHABLE();
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1049,10 +1092,9 @@ constexpr auto from<int, iox2::RequestResponseOpenOrCreateError>(const int value
         return iox2::RequestResponseOpenOrCreateError::CreateServiceInCorruptedState;
     case iox2_request_response_open_or_create_error_e_SYSTEM_IN_FLUX:
         return iox2::RequestResponseOpenOrCreateError::SystemInFlux;
-
-    default:
-        IOX2_UNREACHABLE();
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1116,9 +1158,9 @@ constexpr auto from<iox2::RequestResponseOpenOrCreateError, iox2_request_respons
         return iox2_request_response_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE;
     case iox2::RequestResponseOpenOrCreateError::SystemInFlux:
         return iox2_request_response_open_or_create_error_e_SYSTEM_IN_FLUX;
-    default:
-        IOX2_UNREACHABLE();
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1147,9 +1189,9 @@ constexpr auto from<int, iox2::BlackboardCreateError>(const int value) noexcept 
         return iox2::BlackboardCreateError::HangsInCreation;
     case iox2_blackboard_create_error_e_C_NO_ENTRIES_PROVIDED:
         return iox2::BlackboardCreateError::NoEntriesProvided;
-    default:
-        IOX2_UNREACHABLE();
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1171,9 +1213,9 @@ from<iox2::BlackboardCreateError, iox2_blackboard_create_error_e>(const iox2::Bl
         return iox2_blackboard_create_error_e_C_HANGS_IN_CREATION;
     case iox2::BlackboardCreateError::NoEntriesProvided:
         return iox2_blackboard_create_error_e_C_NO_ENTRIES_PROVIDED;
-    default:
-        IOX2_UNREACHABLE();
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1210,9 +1252,9 @@ constexpr auto from<int, iox2::BlackboardOpenError>(const int value) noexcept ->
         return iox2::BlackboardOpenError::ExceedsMaxNumberOfNodes;
     case iox2_blackboard_open_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES:
         return iox2::BlackboardOpenError::DoesNotSupportRequestedAmountOfNodes;
-    default:
-        IOX2_UNREACHABLE();
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1244,9 +1286,9 @@ from<iox2::BlackboardOpenError, iox2_blackboard_open_error_e>(const iox2::Blackb
         return iox2_blackboard_open_error_e_O_EXCEEDS_MAX_NUMBER_OF_NODES;
     case iox2::BlackboardOpenError::DoesNotSupportRequestedAmountOfNodes:
         return iox2_blackboard_open_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES;
-    default:
-        IOX2_UNREACHABLE();
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1263,9 +1305,11 @@ constexpr auto from<int, iox2::WriterCreateError>(const int value) noexcept -> i
         return iox2::WriterCreateError::ExceedsMaxSupportedWriters;
     case iox2_writer_create_error_e_INTERNAL_FAILURE:
         return iox2::WriterCreateError::InternalFailure;
-    default:
-        IOX2_UNREACHABLE();
+    case iox2_writer_create_error_e_FAILED_TO_DEPLOY_THREADSAFETY_POLICY:
+        return iox2::WriterCreateError::FailedToDeployThreadsafetyPolicy;
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1276,9 +1320,11 @@ constexpr auto from<iox2::WriterCreateError, iox2_writer_create_error_e>(const i
         return iox2_writer_create_error_e_EXCEEDS_MAX_SUPPORTED_WRITERS;
     case iox2::WriterCreateError::InternalFailure:
         return iox2_writer_create_error_e_INTERNAL_FAILURE;
-    default:
-        IOX2_UNREACHABLE();
+    case iox2::WriterCreateError::FailedToDeployThreadsafetyPolicy:
+        return iox2_writer_create_error_e_FAILED_TO_DEPLOY_THREADSAFETY_POLICY;
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1294,9 +1340,9 @@ constexpr auto from<int, iox2::EntryHandleMutError>(const int value) noexcept ->
         return iox2::EntryHandleMutError::EntryDoesNotExist;
     case iox2_entry_handle_mut_error_e_HANDLE_ALREADY_EXISTS:
         return iox2::EntryHandleMutError::HandleAlreadyExists;
-    default:
-        IOX2_UNREACHABLE();
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1308,9 +1354,9 @@ from<iox2::EntryHandleMutError, iox2_entry_handle_mut_error_e>(const iox2::Entry
         return iox2_entry_handle_mut_error_e_ENTRY_DOES_NOT_EXIST;
     case iox2::EntryHandleMutError::HandleAlreadyExists:
         return iox2_entry_handle_mut_error_e_HANDLE_ALREADY_EXISTS;
-    default:
-        IOX2_UNREACHABLE();
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1325,9 +1371,11 @@ constexpr auto from<int, iox2::ReaderCreateError>(const int value) noexcept -> i
     switch (error) {
     case iox2_reader_create_error_e_EXCEEDS_MAX_SUPPORTED_READERS:
         return iox2::ReaderCreateError::ExceedsMaxSupportedReaders;
-    default:
-        IOX2_UNREACHABLE();
+    case iox2_reader_create_error_e_FAILED_TO_DEPLOY_THREADSAFETY_POLICY:
+        return iox2::ReaderCreateError::FailedToDeployThreadsafetyPolicy;
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1336,9 +1384,11 @@ constexpr auto from<iox2::ReaderCreateError, iox2_reader_create_error_e>(const i
     switch (value) {
     case iox2::ReaderCreateError::ExceedsMaxSupportedReaders:
         return iox2_reader_create_error_e_EXCEEDS_MAX_SUPPORTED_READERS;
-    default:
-        IOX2_UNREACHABLE();
+    case iox2::ReaderCreateError::FailedToDeployThreadsafetyPolicy:
+        return iox2_reader_create_error_e_FAILED_TO_DEPLOY_THREADSAFETY_POLICY;
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1352,9 +1402,9 @@ constexpr auto from<int, iox2::EntryHandleError>(const int value) noexcept -> io
     switch (error) {
     case iox2_entry_handle_error_e_ENTRY_DOES_NOT_EXIST:
         return iox2::EntryHandleError::EntryDoesNotExist;
-    default:
-        IOX2_UNREACHABLE();
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -1363,9 +1413,9 @@ constexpr auto from<iox2::EntryHandleError, iox2_entry_handle_error_e>(const iox
     switch (value) {
     case iox2::EntryHandleError::EntryDoesNotExist:
         return iox2_entry_handle_error_e_ENTRY_DOES_NOT_EXIST;
-    default:
-        IOX2_UNREACHABLE();
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
@@ -2053,9 +2103,9 @@ constexpr auto from<int, iox2::LogLevel>(int value) noexcept -> iox2::LogLevel {
         return iox2::LogLevel::Error;
     case iox2_log_level_e_FATAL:
         return iox2::LogLevel::Fatal;
-    default:
-        IOX2_UNREACHABLE();
     }
+
+    IOX2_UNREACHABLE();
 }
 
 template <>
