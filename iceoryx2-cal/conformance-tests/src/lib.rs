@@ -17,7 +17,7 @@
 
 extern crate alloc;
 
-pub mod arc_sync_policy_leakable_trait;
+pub mod arc_sync_policy_abandonable_trait;
 pub mod arc_sync_policy_trait;
 pub mod communication_channel_trait;
 pub mod dynamic_storage_trait;

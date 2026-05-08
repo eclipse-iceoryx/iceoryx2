@@ -560,7 +560,7 @@ pub mod static_storage_trait {
     }
 
     #[conformance_test]
-    pub fn leaking_locked_static_storage_keeps_it_locked<Sut: StaticStorage>() {
+    pub fn abandoning_locked_static_storage_keeps_it_locked<Sut: StaticStorage>() {
         let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -578,7 +578,7 @@ pub mod static_storage_trait {
     }
 
     #[conformance_test]
-    pub fn leaking_static_storage_keeps_it_available<Sut: StaticStorage>() {
+    pub fn abandoning_static_storage_keeps_it_available<Sut: StaticStorage>() {
         let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
         let content = "another one bites the toad".to_string();

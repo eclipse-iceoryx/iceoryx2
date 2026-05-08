@@ -34,7 +34,7 @@ impl AbandonTrackingState {
         *DROP_COUNTER.lock().unwrap_or_else(|e| e.into_inner())
     }
 
-    pub fn leak_count(&self) -> usize {
+    pub fn abandon_count(&self) -> usize {
         *LEAK_COUNTER.lock().unwrap_or_else(|e| e.into_inner())
     }
 }

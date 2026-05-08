@@ -18,8 +18,8 @@ pub mod communication_channel_trait {
     use alloc::vec;
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::testing::generate_file_path;
-    use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::abandonable::Abandonable;
+    use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::communication_channel::*;
@@ -502,7 +502,7 @@ pub mod communication_channel_trait {
     }
 
     #[conformance_test]
-    pub fn leaking_receiver_keeps_channel_available<Sut: CommunicationChannel<u64>>() {
+    pub fn abandon_receiver_keeps_channel_available<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -518,7 +518,7 @@ pub mod communication_channel_trait {
     }
 
     #[conformance_test]
-    pub fn leaking_sender_keeps_channel_available<Sut: CommunicationChannel<u64>>() {
+    pub fn abandon_sender_keeps_channel_available<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 

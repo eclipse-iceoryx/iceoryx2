@@ -14,9 +14,9 @@ use alloc::vec;
 
 use iceoryx2_bb_container::slotmap::*;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
+use iceoryx2_bb_testing::abandon_tracker::AbandonTacker;
 use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing::leak_tracker::AbandonTacker;
 use iceoryx2_bb_testing::memory::RawMemory;
 use iceoryx2_bb_testing_macros::test;
 
@@ -261,8 +261,8 @@ pub fn panic_is_called_in_debug_mode_if_map_is_not_initialized() {
 }
 
 #[test]
-pub fn drop_does_not_leak() {
-    let leak_state = AbandonTacker::start_tracking();
+pub fn drop_does_not_abandon() {
+    let abandon_state = AbandonTacker::start_tracking();
     let mut sut = SlotMap::<AbandonTacker>::new(SUT_CAPACITY);
     let mut keys = vec![];
 
@@ -270,20 +270,20 @@ pub fn drop_does_not_leak() {
         keys.push(sut.insert(AbandonTacker::new()).unwrap());
     }
 
-    assert_that!(leak_state.creation_count(), eq SUT_CAPACITY);
-    assert_that!(leak_state.drop_count(), eq 0);
-    assert_that!(leak_state.leak_count(), eq 0);
+    assert_that!(abandon_state.creation_count(), eq SUT_CAPACITY);
+    assert_that!(abandon_state.drop_count(), eq 0);
+    assert_that!(abandon_state.abandon_count(), eq 0);
 
     drop(sut);
 
-    assert_that!(leak_state.creation_count(), eq SUT_CAPACITY);
-    assert_that!(leak_state.drop_count(), eq SUT_CAPACITY);
-    assert_that!(leak_state.leak_count(), eq 0);
+    assert_that!(abandon_state.creation_count(), eq SUT_CAPACITY);
+    assert_that!(abandon_state.drop_count(), eq SUT_CAPACITY);
+    assert_that!(abandon_state.abandon_count(), eq 0);
 }
 
 #[test]
-pub fn leak_does_not_drop() {
-    let leak_state = AbandonTacker::start_tracking();
+pub fn abandon_does_not_drop() {
+    let abandon_state = AbandonTacker::start_tracking();
     let mut sut = SlotMap::<AbandonTacker>::new(SUT_CAPACITY);
     let mut keys = vec![];
 
@@ -291,13 +291,13 @@ pub fn leak_does_not_drop() {
         keys.push(sut.insert(AbandonTacker::new()).unwrap());
     }
 
-    assert_that!(leak_state.creation_count(), eq SUT_CAPACITY);
-    assert_that!(leak_state.drop_count(), eq 0);
-    assert_that!(leak_state.leak_count(), eq 0);
+    assert_that!(abandon_state.creation_count(), eq SUT_CAPACITY);
+    assert_that!(abandon_state.drop_count(), eq 0);
+    assert_that!(abandon_state.abandon_count(), eq 0);
 
     SlotMap::abandon(sut);
 
-    assert_that!(leak_state.creation_count(), eq SUT_CAPACITY);
-    assert_that!(leak_state.drop_count(), eq 0);
-    assert_that!(leak_state.leak_count(), eq SUT_CAPACITY);
+    assert_that!(abandon_state.creation_count(), eq SUT_CAPACITY);
+    assert_that!(abandon_state.drop_count(), eq 0);
+    assert_that!(abandon_state.abandon_count(), eq SUT_CAPACITY);
 }

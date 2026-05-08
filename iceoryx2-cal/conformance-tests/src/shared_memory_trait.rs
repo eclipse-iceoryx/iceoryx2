@@ -413,7 +413,7 @@ pub mod shared_memory_trait {
     }
 
     #[conformance_test]
-    pub fn leaking_keeps_resources_alive<Sut: SharedMemory<DefaultAllocator>>() {
+    pub fn abandoning_keeps_resources_alive<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 

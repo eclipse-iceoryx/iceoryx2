@@ -30,7 +30,7 @@ pub mod event_trait {
     use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::watchdog::Watchdog;
-    use iceoryx2_bb_testing::{assert_that, abandonable::Abandonable, test_requires};
+    use iceoryx2_bb_testing::{abandonable::Abandonable, assert_that, test_requires};
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::event::{TriggerId, *};
     use iceoryx2_cal::named_concept::*;
@@ -768,7 +768,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn leaking_listener_keeps_event<Sut: Event>() {
+    pub fn abandoning_listener_keeps_event<Sut: Event>() {
         let _watchdog = Watchdog::new();
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
@@ -782,5 +782,26 @@ pub mod event_trait {
 
         assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(true));
         assert_that!(unsafe { Sut::remove_cfg(&name, &config).unwrap() }, eq true);
+    }
+
+    #[conformance_test]
+    pub fn abandoning_notifier_keeps_event<Sut: Event>() {
+        let _watchdog = Watchdog::new();
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let _sut_listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
+
+        let sut_notifier = Sut::NotifierBuilder::new(&name)
+            .config(&config)
+            .open()
+            .unwrap();
+
+        sut_notifier.abandon();
+
+        assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(true));
     }
 }

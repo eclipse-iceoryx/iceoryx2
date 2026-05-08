@@ -936,7 +936,7 @@ pub mod dynamic_storage_trait {
     }
 
     #[conformance_test]
-    pub fn leaking_dynamic_storage_keeps_storage_available<
+    pub fn abandon_dynamic_storage_keeps_storage_available<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {

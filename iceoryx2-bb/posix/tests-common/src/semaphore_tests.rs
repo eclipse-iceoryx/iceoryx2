@@ -18,8 +18,8 @@ use iceoryx2_bb_posix::semaphore::*;
 use iceoryx2_bb_posix::system_configuration::Feature;
 use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_posix::thread::thread_scope;
-use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::abandonable::Abandonable;
+use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::test;
@@ -443,7 +443,7 @@ pub fn unnamed_semaphore_acquiring_non_ipc_capable_handle_fails() {
 }
 
 #[test]
-pub fn named_semaphore_leak_keeps_semaphore() {
+pub fn abandoning_named_semaphore_keeps_semaphore() {
     test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
 
     let initial_value = 31;

@@ -2253,7 +2253,7 @@ pub mod zero_copy_connection_trait {
     }
 
     #[conformance_test]
-    pub fn leaking_sender_keeps_everything_unchanged<Sut: ZeroCopyConnection>() {
+    pub fn abandoning_sender_keeps_everything_unchanged<Sut: ZeroCopyConnection>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -2278,7 +2278,7 @@ pub mod zero_copy_connection_trait {
     }
 
     #[conformance_test]
-    pub fn leaking_receiver_keeps_everything_unchanged<Sut: ZeroCopyConnection>() {
+    pub fn abandoning_receiver_keeps_everything_unchanged<Sut: ZeroCopyConnection>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 

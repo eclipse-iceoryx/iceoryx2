@@ -996,7 +996,7 @@ pub mod resizable_shared_memory_trait {
     }
 
     #[conformance_test]
-    pub fn leaking_creator_keeps_resources_alive<
+    pub fn abandoning_creator_keeps_resources_alive<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -1033,7 +1033,7 @@ pub mod resizable_shared_memory_trait {
     }
 
     #[conformance_test]
-    pub fn leaking_view_has_no_effect<
+    pub fn abandoning_view_has_no_effect<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {

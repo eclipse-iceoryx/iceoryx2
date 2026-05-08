@@ -528,7 +528,7 @@ pub fn owner_lock_cannot_be_acquired_twice() {
 // END: OS with IPC only lock detection
 
 #[test]
-pub fn leaking_a_process_guard_results_in_a_dead_process() {
+pub fn abandoning_a_process_guard_results_in_a_dead_process() {
     create_test_directory();
     let path = generate_file_path();
 
@@ -542,7 +542,7 @@ pub fn leaking_a_process_guard_results_in_a_dead_process() {
 }
 
 #[test]
-pub fn leaking_a_process_cleaner_allows_to_reacquire_the_cleaner() {
+pub fn abandoning_a_process_cleaner_allows_to_reacquire_the_cleaner() {
     create_test_directory();
     let path = generate_file_path();
 

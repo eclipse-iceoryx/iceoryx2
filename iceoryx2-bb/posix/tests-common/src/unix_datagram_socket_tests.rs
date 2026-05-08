@@ -27,8 +27,8 @@ use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_posix::unix_datagram_socket::*;
 use iceoryx2_bb_system_types::file_path::FilePath;
-use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::abandonable::Abandonable;
+use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::test;
@@ -358,7 +358,7 @@ pub fn sending_receiving_with_max_supported_fd_and_credentials_works() {
 }
 
 #[test]
-pub fn leaking_receiver_leaves_the_socket_but_closes_the_file_descriptor() {
+pub fn abandoning_receiver_leaves_the_socket_but_closes_the_file_descriptor() {
     create_test_directory();
     let socket_name = generate_file_path();
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
@@ -382,7 +382,7 @@ pub fn leaking_receiver_leaves_the_socket_but_closes_the_file_descriptor() {
 }
 
 #[test]
-pub fn leaking_sender_closes_file_descriptor_and_socket_is_still_cleaned_up_from_receiver() {
+pub fn abandoning_sender_closes_file_descriptor_and_socket_is_still_cleaned_up_from_receiver() {
     create_test_directory();
     let socket_name = generate_file_path();
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)

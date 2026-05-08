@@ -14,9 +14,9 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 
 #[allow(clippy::module_inception)]
 #[conformance_tests]
-pub mod arc_sync_policy_leakable_trait {
+pub mod arc_sync_policy_abandonable_trait {
+    use iceoryx2_bb_testing::abandon_tracker::AbandonTacker;
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_bb_testing::leak_tracker::AbandonTacker;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 
@@ -27,12 +27,12 @@ pub mod arc_sync_policy_leakable_trait {
 
         assert_that!(tracker.creation_count(), eq 1);
         assert_that!(tracker.drop_count(), eq 0);
-        assert_that!(tracker.leak_count(), eq 0);
+        assert_that!(tracker.abandon_count(), eq 0);
 
         Sut::abandon(sut);
 
         assert_that!(tracker.creation_count(), eq 1);
         assert_that!(tracker.drop_count(), eq 0);
-        assert_that!(tracker.leak_count(), eq 1);
+        assert_that!(tracker.abandon_count(), eq 1);
     }
 }

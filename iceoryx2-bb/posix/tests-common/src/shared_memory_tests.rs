@@ -14,7 +14,7 @@ use alloc::vec;
 
 use iceoryx2_bb_posix::shared_memory::*;
 use iceoryx2_bb_posix::testing::generate_file_path;
-use iceoryx2_bb_testing::{assert_that, abandonable::Abandonable, test_requires};
+use iceoryx2_bb_testing::{abandonable::Abandonable, assert_that, test_requires};
 use iceoryx2_bb_testing_macros::test;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
@@ -269,7 +269,7 @@ pub fn can_be_mapped_with_a_custom_offset() {
 }
 
 #[test]
-pub fn leaking_shared_memory_keeps_resources() {
+pub fn abandoning_shared_memory_keeps_resources() {
     let shm_name = generate_file_path().file_name();
     let sut_create = SharedMemoryBuilder::new(&shm_name)
         .creation_mode(CreationMode::PurgeAndCreate)

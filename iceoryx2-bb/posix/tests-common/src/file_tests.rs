@@ -22,8 +22,8 @@ use iceoryx2_bb_posix::file_descriptor::*;
 use iceoryx2_bb_posix::testing::create_test_directory;
 use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_system_types::file_path::FilePath;
-use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::abandonable::Abandonable;
+use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing_macros::test;
 use iceoryx2_pal_posix::posix;
@@ -568,7 +568,7 @@ pub fn cannot_write_to_file_that_was_not_opened_with_write_access_mode() {
 }
 
 #[test]
-pub fn leaked_file_keeps_all_resources() {
+pub fn abandon_file_keeps_all_resources() {
     let test = TestFixture::new();
     let sut = FileBuilder::new(&test.file)
         .has_ownership(true)
