@@ -15,11 +15,10 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod arc_sync_policy_trait {
-    use iceoryx2_bb_concurrency::atomic::Ordering;
-
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
-    use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_testing::abandonable::Abandonable;
+    use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 

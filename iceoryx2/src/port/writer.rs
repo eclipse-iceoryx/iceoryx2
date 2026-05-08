@@ -54,6 +54,7 @@ use core::hash::Hash;
 use core::marker::PhantomData;
 use core::mem::MaybeUninit;
 use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
@@ -72,7 +73,24 @@ struct WriterSharedState<
     KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
 > {
     service_state: SharedServiceState<Service, BlackboardResources<Service>>,
+    dynamic_writer_handle: UnsafeCell<Option<ContainerHandle>>,
     _key: PhantomData<KeyType>,
+}
+
+impl<
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+> Drop for WriterSharedState<Service, KeyType>
+{
+    fn drop(&mut self) {
+        if let Some(handle) = unsafe { &*self.dynamic_writer_handle.get() } {
+            self.service_state
+                .dynamic_storage()
+                .get()
+                .blackboard()
+                .release_writer_handle(*handle)
+        }
+    }
 }
 
 unsafe impl<
@@ -124,7 +142,6 @@ pub struct Writer<
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > {
     shared_state: Service::ArcThreadSafetyPolicy<WriterSharedState<Service, KeyType>>,
-    dynamic_writer_handle: Option<ContainerHandle>,
     writer_id: UniqueWriterId,
 }
 
@@ -142,24 +159,6 @@ impl<
 impl<
     Service: service::Service,
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
-> Drop for Writer<Service, KeyType>
-{
-    fn drop(&mut self) {
-        if let Some(handle) = self.dynamic_writer_handle {
-            self.shared_state
-                .lock()
-                .service_state
-                .dynamic_storage()
-                .get()
-                .blackboard()
-                .release_writer_handle(handle)
-        }
-    }
-}
-
-impl<
-    Service: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > Writer<Service, KeyType>
 {
     pub(crate) fn new(
@@ -171,6 +170,7 @@ impl<
         let writer_id = UniqueWriterId::new();
         let shared_state = Service::ArcThreadSafetyPolicy::new(WriterSharedState {
             service_state: service.clone(),
+            dynamic_writer_handle: UnsafeCell::new(None),
             _key: PhantomData,
         });
 
@@ -182,10 +182,9 @@ impl<
             }
         };
 
-        let mut new_self = Self {
+        let new_self = Self {
             shared_state,
             writer_id,
-            dynamic_writer_handle: None,
         };
 
         core::sync::atomic::compiler_fence(Ordering::SeqCst);
@@ -208,7 +207,9 @@ impl<
             }
         };
 
-        new_self.dynamic_writer_handle = Some(dynamic_writer_handle);
+        unsafe {
+            *new_self.shared_state.lock().dynamic_writer_handle.get() = Some(dynamic_writer_handle)
+        };
         Ok(new_self)
     }
 
