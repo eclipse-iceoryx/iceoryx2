@@ -100,6 +100,12 @@ class Service {
     auto event_connection_suffix() && -> const char*;
     /// Set the suffix of a one-to-one connection
     void set_event_connection_suffix(const iox2::bb::FileName& value) &&;
+    /// When true, the `ServiceBuilder` will clean up dead nodes when opening an
+    /// existing service.
+    auto cleanup_dead_nodes_on_open() && -> bool;
+    /// Sets if dead nodes shall be cleaned up whenever the `ServiceBuilder` opens
+    /// an existing service.
+    void set_cleanup_dead_nodes_on_open(bool value) &&;
 
   private:
     friend class Global;

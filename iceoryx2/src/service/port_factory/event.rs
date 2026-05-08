@@ -109,7 +109,16 @@ impl<Service: service::Service> PortFactory<Service> {
         let new_self = Self {
             service: Arc::new(service),
         };
-        blocking_cleanup_dead_nodes_in_service(&new_self, shared_node);
+
+        if shared_node
+            .config()
+            .global
+            .service
+            .cleanup_dead_nodes_on_open
+        {
+            blocking_cleanup_dead_nodes_in_service(&new_self, shared_node);
+        }
+
         new_self
     }
 

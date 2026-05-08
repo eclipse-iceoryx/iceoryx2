@@ -998,6 +998,53 @@ pub unsafe extern "C" fn iox2_config_global_service_set_dynamic_config_storage_s
     }
 }
 
+/// Returns if a dead node cleanup is performed whenever an existing service is
+/// opened by the builder.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_config_global_service_cleanup_dead_nodes_on_open(
+    handle: iox2_config_h_ref,
+) -> bool {
+    handle.assert_non_null();
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .global
+            .service
+            .cleanup_dead_nodes_on_open
+    }
+}
+
+/// Sets if a dead node cleanup is performed whenever an existing service is
+/// opened by the builder.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_config_global_service_set_cleanup_dead_nodes_on_open(
+    handle: iox2_config_h_ref,
+    value: bool,
+) {
+    handle.assert_non_null();
+    unsafe {
+        let config = &mut *handle.as_type();
+        config
+            .value
+            .as_mut()
+            .value
+            .global
+            .service
+            .cleanup_dead_nodes_on_open = value;
+    }
+}
+
 /// Returns the duration how long another process will wait until the service
 /// creation is finalized
 ///
@@ -1025,9 +1072,6 @@ pub unsafe extern "C" fn iox2_config_global_service_creation_timeout(
 }
 
 /// Sets the creation timeout
-///
-/// Returns: [`iox2_semantic_string_error_e`](crate::api::iox2_semantic_string_error_e) when an
-/// invalid file name was provided
 ///
 /// # Safety
 ///

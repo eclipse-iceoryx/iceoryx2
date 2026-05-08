@@ -200,6 +200,19 @@ impl Service {
     pub fn set_event_connection_suffix(&self, value: &FileName) {
         self.0.lock().global.service.event_connection_suffix = value.0
     }
+
+    /// When true, the `ServiceBuilder` will clean up dead nodes when opening an
+    /// existing service.
+    #[getter]
+    pub fn cleanup_dead_nodes_on_open(&self) -> bool {
+        self.0.lock().global.service.cleanup_dead_nodes_on_open
+    }
+    /// Sets if dead nodes shall be cleaned up whenever the `ServiceBuilder` opens
+    /// an existing service.
+    #[setter]
+    pub fn set_cleanup_dead_nodes_on_open(&self, value: bool) {
+        self.0.lock().global.service.cleanup_dead_nodes_on_open = value
+    }
 }
 
 #[pyclass]

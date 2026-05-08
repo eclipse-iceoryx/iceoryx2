@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::time::Duration;
+
 use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_concurrency::atomic::AtomicU32;
@@ -51,6 +53,19 @@ pub trait Test {
     }
 
     fn staged_death(node: &mut Node<Self::Service>);
+
+    fn cleanup_dead_nodes(config: &Config) {
+        Node::<Self::Service>::list(config, |node_state| {
+            if let NodeState::Dead(state) = node_state {
+                state
+                    .blocking_remove_stale_resources(Duration::MAX)
+                    .unwrap();
+            }
+
+            CallbackProgression::Continue
+        })
+        .unwrap();
+    }
 }
 
 pub struct ZeroCopy;
@@ -890,5 +905,297 @@ pub mod node_death {
         drop(node_with_cleanup);
 
         assert_that!(number_of_nodes(), eq 0);
+    }
+
+    pub fn node_cleanup_on_service_connection_works<
+        S: Test,
+        T,
+        F: FnMut(&TestDetails<S::Service>) -> T,
+        NumberOfNodes: FnMut(&T) -> usize,
+    >(
+        config: &Config,
+        total_number_of_nodes: usize,
+        mut service_builder: F,
+        mut number_of_nodes: NumberOfNodes,
+    ) {
+        let _watchdog = Watchdog::new();
+
+        let mut sut = S::create_test_node(config);
+        core::mem::forget(service_builder(&sut));
+        S::staged_death(&mut sut.node);
+        core::mem::forget(sut.node);
+
+        let sut = S::create_test_node(config);
+        let service = service_builder(&sut);
+
+        let number_of_nodes = number_of_nodes(&service);
+        S::cleanup_dead_nodes(config);
+        assert_that!(number_of_nodes, eq total_number_of_nodes);
+    }
+
+    #[conformance_test]
+    pub fn publish_subscribe_node_cleanup_on_open_works_when_enabled<S: Test>() {
+        const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 1;
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+        config.global.node.cleanup_dead_nodes_on_destruction = false;
+        config.global.service.cleanup_dead_nodes_on_open = true;
+
+        node_cleanup_on_service_connection_works::<S, _, _, _>(
+            &config,
+            NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION,
+            |sut| {
+                sut.node
+                    .service_builder(&service_name)
+                    .publish_subscribe::<u64>()
+                    .open_or_create()
+                    .unwrap()
+            },
+            |s| {
+                let mut counter = 0;
+                s.nodes(|_| {
+                    counter += 1;
+                    CallbackProgression::Continue
+                })
+                .unwrap();
+                counter
+            },
+        );
+    }
+
+    #[conformance_test]
+    pub fn publish_subscribe_no_node_cleanup_on_open_when_disabled<S: Test>() {
+        const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 2;
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+        config.global.node.cleanup_dead_nodes_on_destruction = false;
+        config.global.service.cleanup_dead_nodes_on_open = false;
+
+        node_cleanup_on_service_connection_works::<S, _, _, _>(
+            &config,
+            NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION,
+            |sut| {
+                sut.node
+                    .service_builder(&service_name)
+                    .publish_subscribe::<u64>()
+                    .open_or_create()
+                    .unwrap()
+            },
+            |s| {
+                let mut counter = 0;
+                s.nodes(|_| {
+                    counter += 1;
+                    CallbackProgression::Continue
+                })
+                .unwrap();
+                counter
+            },
+        );
+    }
+
+    #[conformance_test]
+    pub fn request_response_node_cleanup_on_open_works_when_enabled<S: Test>() {
+        const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 1;
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+        config.global.node.cleanup_dead_nodes_on_destruction = false;
+        config.global.service.cleanup_dead_nodes_on_open = true;
+
+        node_cleanup_on_service_connection_works::<S, _, _, _>(
+            &config,
+            NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION,
+            |sut| {
+                sut.node
+                    .service_builder(&service_name)
+                    .request_response::<u64, u64>()
+                    .open_or_create()
+                    .unwrap()
+            },
+            |s| {
+                let mut counter = 0;
+                s.nodes(|_| {
+                    counter += 1;
+                    CallbackProgression::Continue
+                })
+                .unwrap();
+                counter
+            },
+        );
+    }
+
+    #[conformance_test]
+    pub fn request_response_no_node_cleanup_on_open_when_disabled<S: Test>() {
+        const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 2;
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+        config.global.node.cleanup_dead_nodes_on_destruction = false;
+        config.global.service.cleanup_dead_nodes_on_open = false;
+
+        node_cleanup_on_service_connection_works::<S, _, _, _>(
+            &config,
+            NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION,
+            |sut| {
+                sut.node
+                    .service_builder(&service_name)
+                    .request_response::<u64, u64>()
+                    .open_or_create()
+                    .unwrap()
+            },
+            |s| {
+                let mut counter = 0;
+                s.nodes(|_| {
+                    counter += 1;
+                    CallbackProgression::Continue
+                })
+                .unwrap();
+                counter
+            },
+        );
+    }
+
+    #[conformance_test]
+    pub fn event_node_cleanup_on_open_works_when_enabled<S: Test>() {
+        const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 1;
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+        config.global.node.cleanup_dead_nodes_on_destruction = false;
+        config.global.service.cleanup_dead_nodes_on_open = true;
+
+        node_cleanup_on_service_connection_works::<S, _, _, _>(
+            &config,
+            NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION,
+            |sut| {
+                sut.node
+                    .service_builder(&service_name)
+                    .event()
+                    .open_or_create()
+                    .unwrap()
+            },
+            |s| {
+                let mut counter = 0;
+                s.nodes(|_| {
+                    counter += 1;
+                    CallbackProgression::Continue
+                })
+                .unwrap();
+                counter
+            },
+        );
+    }
+
+    #[conformance_test]
+    pub fn event_no_node_cleanup_on_open_when_disabled<S: Test>() {
+        const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 2;
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+        config.global.node.cleanup_dead_nodes_on_destruction = false;
+        config.global.service.cleanup_dead_nodes_on_open = false;
+
+        node_cleanup_on_service_connection_works::<S, _, _, _>(
+            &config,
+            NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION,
+            |sut| {
+                sut.node
+                    .service_builder(&service_name)
+                    .event()
+                    .open_or_create()
+                    .unwrap()
+            },
+            |s| {
+                let mut counter = 0;
+                s.nodes(|_| {
+                    counter += 1;
+                    CallbackProgression::Continue
+                })
+                .unwrap();
+                counter
+            },
+        );
+    }
+
+    #[conformance_test]
+    pub fn blackboard_node_cleanup_on_open_works_when_enabled<S: Test>() {
+        const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 2;
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+        config.global.node.cleanup_dead_nodes_on_destruction = false;
+        config.global.service.cleanup_dead_nodes_on_open = true;
+
+        let sut = S::create_test_node(&config);
+        let _service = sut
+            .node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add_with_default::<u64>(0)
+            .create()
+            .unwrap();
+
+        node_cleanup_on_service_connection_works::<S, _, _, _>(
+            &config,
+            NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION,
+            |sut| {
+                sut.node
+                    .service_builder(&service_name)
+                    .blackboard_opener::<u64>()
+                    .open()
+                    .unwrap()
+            },
+            |s| {
+                let mut counter = 0;
+                s.nodes(|_| {
+                    counter += 1;
+                    CallbackProgression::Continue
+                })
+                .unwrap();
+                counter
+            },
+        );
+    }
+
+    #[conformance_test]
+    pub fn blackboard_no_node_cleanup_on_open_when_disabled<S: Test>() {
+        const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 3;
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+        config.global.node.cleanup_dead_nodes_on_destruction = false;
+        config.global.service.cleanup_dead_nodes_on_open = false;
+
+        let sut = S::create_test_node(&config);
+        let _service = sut
+            .node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add_with_default::<u64>(0)
+            .create()
+            .unwrap();
+
+        node_cleanup_on_service_connection_works::<S, _, _, _>(
+            &config,
+            NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION,
+            |sut| {
+                sut.node
+                    .service_builder(&service_name)
+                    .blackboard_opener::<u64>()
+                    .open()
+                    .unwrap()
+            },
+            |s| {
+                let mut counter = 0;
+                s.nodes(|_| {
+                    counter += 1;
+                    CallbackProgression::Continue
+                })
+                .unwrap();
+                counter
+            },
+        );
     }
 }

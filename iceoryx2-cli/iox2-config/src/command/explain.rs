@@ -184,6 +184,15 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                     default_value: format!("\"{}\"", config.global.service.blackboard_data_suffix),
                     description: "The suffix of the blackboard payload data segment.",
                 },
+                Field {
+                    key: "global.service.cleanup-dead-nodes-on-open",
+                    value_type: "string",
+                    default_value: format!(
+                        "\"{}\"",
+                        config.global.service.cleanup_dead_nodes_on_open
+                    ),
+                    description: "Defines if there shall be a scan for dead nodes with a following stale resource cleanup whenever an existing service is opened.",
+                },
             ],
         },
         Section {
