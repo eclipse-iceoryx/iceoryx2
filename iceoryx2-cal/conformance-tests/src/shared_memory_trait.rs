@@ -411,4 +411,21 @@ pub mod shared_memory_trait {
         drop(sut);
         assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(false));
     }
+
+    #[conformance_test]
+    pub fn leaking_keeps_resources_alive<Sut: SharedMemory<DefaultAllocator>>() {
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_create = Sut::Builder::new(&name)
+            .size(DEFAULT_SIZE)
+            .config(&config)
+            .has_ownership(true)
+            .create(&SHM_CONFIG)
+            .unwrap();
+
+        sut_create.leak();
+
+        assert_that!(unsafe { Sut::remove_cfg(&name, &config) }, eq Ok(true));
+    }
 }
