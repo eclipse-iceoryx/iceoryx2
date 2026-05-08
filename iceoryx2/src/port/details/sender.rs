@@ -19,6 +19,7 @@ use alloc::vec::Vec;
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
+use iceoryx2_bb_testing::leakable::Leakable;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
@@ -54,6 +55,15 @@ pub(crate) struct Connection<Service: service::Service> {
     pub(crate) sender: <Service::Connection as ZeroCopyConnection>::Sender,
     pub(crate) receiver_port_id: u128,
     tag: Tag,
+}
+
+impl<Service: service::Service> Leakable for Connection<Service> {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe {
+            <Service::Connection as ZeroCopyConnection>::Sender::leak_in_place(&mut this.sender)
+        };
+    }
 }
 
 impl<Service: service::Service> Taggable for Connection<Service> {
@@ -125,6 +135,21 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) message_type_details: MessageTypeDetails,
     pub(crate) number_of_channels: usize,
     pub(crate) initial_channel_state: ChannelState,
+}
+
+impl<Service: service::Service> Leakable for Sender<Service> {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { SharedNode::<Service>::leak_in_place(&mut this.shared_node) };
+        unsafe { SharedServiceState::leak_in_place(&mut this.service_state) };
+        unsafe { DataSegment::<Service>::leak_in_place(&mut this.data_segment) };
+
+        for connection in &mut this.connections {
+            if let Some(c) = connection.get_mut() {
+                unsafe { Connection::<Service>::leak_in_place(c) };
+            }
+        }
+    }
 }
 
 impl<Service: service::Service> Sender<Service> {

@@ -12,6 +12,7 @@
 
 use alloc::rc::Rc;
 use core::{fmt::Debug, marker::PhantomData, ops::Deref};
+use iceoryx2_bb_testing::leakable::Leakable;
 
 use crate::arc_sync_policy::{ArcSyncPolicy, LockGuard};
 
@@ -24,18 +25,18 @@ impl<T: Send + Debug> Deref for Guard<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        self.data.as_ref()
+        self.data.deref()
     }
 }
 
-impl<'parent, T: Send + Debug> LockGuard<'parent, T> for Guard<'parent, T> {}
+impl<'parent, T: Send + Debug + Leakable> LockGuard<'parent, T> for Guard<'parent, T> {}
 
 #[derive(Debug)]
-pub struct SingleThreaded<T: Send + Debug> {
+pub struct SingleThreaded<T: Send + Debug + Leakable> {
     data: Rc<T>,
 }
 
-impl<T: Send + Debug> Clone for SingleThreaded<T> {
+impl<T: Send + Debug + Leakable> Clone for SingleThreaded<T> {
     fn clone(&self) -> Self {
         Self {
             data: self.data.clone(),
@@ -43,7 +44,19 @@ impl<T: Send + Debug> Clone for SingleThreaded<T> {
     }
 }
 
-impl<T: Send + Debug> ArcSyncPolicy<T> for SingleThreaded<T> {
+impl<T: Send + Debug + Leakable> Leakable for SingleThreaded<T> {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+
+        if let Some(value) = Rc::get_mut(&mut this.data) {
+            unsafe { T::leak_in_place(value) };
+        } else {
+            unsafe { core::ptr::drop_in_place(&mut this.data) };
+        }
+    }
+}
+
+impl<T: Send + Debug + Leakable> ArcSyncPolicy<T> for SingleThreaded<T> {
     type LockGuard<'parent>
         = Guard<'parent, T>
     where

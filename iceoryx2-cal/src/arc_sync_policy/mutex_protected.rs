@@ -18,6 +18,7 @@ use alloc::sync::Arc;
 use iceoryx2_bb_posix::mutex::{
     Handle, Mutex, MutexBuilder, MutexCreationError, MutexGuard, MutexHandle, MutexType,
 };
+use iceoryx2_bb_testing::leakable::Leakable;
 use iceoryx2_log::{fail, fatal_panic};
 
 use crate::arc_sync_policy::{ArcSyncPolicy, ArcSyncPolicyCreationError, LockGuard};
@@ -34,14 +35,14 @@ impl<T: Send + Debug> Deref for Guard<'_, T> {
     }
 }
 
-impl<'parent, T: Send + Debug> LockGuard<'parent, T> for Guard<'parent, T> {}
+impl<'parent, T: Send + Debug + Leakable> LockGuard<'parent, T> for Guard<'parent, T> {}
 
 #[derive(Debug)]
-pub struct MutexProtected<T: Send + Debug> {
+pub struct MutexProtected<T: Send + Debug + Leakable> {
     handle: Arc<MutexHandle<T>>,
 }
 
-impl<T: Send + Debug> Clone for MutexProtected<T> {
+impl<T: Send + Debug + Leakable> Clone for MutexProtected<T> {
     fn clone(&self) -> Self {
         Self {
             handle: self.handle.clone(),
@@ -49,10 +50,28 @@ impl<T: Send + Debug> Clone for MutexProtected<T> {
     }
 }
 
-unsafe impl<T: Send + Debug> Send for MutexProtected<T> {}
-unsafe impl<T: Send + Debug> Sync for MutexProtected<T> {}
+unsafe impl<T: Send + Debug + Leakable> Send for MutexProtected<T> {}
+unsafe impl<T: Send + Debug + Leakable> Sync for MutexProtected<T> {}
 
-impl<T: Send + Debug> ArcSyncPolicy<T> for MutexProtected<T> {
+impl<T: Send + Debug + Leakable> Leakable for MutexProtected<T> {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        let origin = format!("{this:?}");
+        if let Some(v) = Arc::get_mut(&mut this.handle) {
+            match unsafe { Mutex::from_handle(v) }.lock() {
+                Ok(mut guard) => unsafe { T::leak_in_place(&mut *guard) },
+                Err(e) => {
+                    fatal_panic!(from origin,
+                        "This should never happen! Failed to lock the underlying mutex ({e:?}).")
+                }
+            }
+        } else {
+            unsafe { core::ptr::drop_in_place(&mut this.handle) };
+        }
+    }
+}
+
+impl<T: Send + Debug + Leakable> ArcSyncPolicy<T> for MutexProtected<T> {
     type LockGuard<'parent>
         = Guard<'parent, T>
     where
@@ -92,7 +111,6 @@ impl<T: Send + Debug> ArcSyncPolicy<T> for MutexProtected<T> {
                     Ok(guard) => guard,
                     Err(e) => {
                         fatal_panic!(from self,
-                            when unsafe { Mutex::from_handle(&self.handle) }.lock(),
                             "This should never happen! Failed to lock the underlying mutex ({e:?}).")
                     }
                 }

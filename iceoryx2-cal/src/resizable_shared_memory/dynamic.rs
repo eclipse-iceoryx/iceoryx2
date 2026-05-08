@@ -198,7 +198,7 @@ where
 
         Ok(DynamicView {
             view_config: self.config,
-            _mgmt_segment: mgmt_segment,
+            mgmt_segment,
             shared_memory_map: UnsafeCell::new(shared_memory_map),
             current_idx: AtomicUsize::new(INVALID_KEY),
             access_mode,
@@ -325,11 +325,20 @@ where
 #[derive(Debug)]
 pub struct DynamicView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     view_config: ViewConfig<Allocator, Shm>,
-    _mgmt_segment: Shm,
+    mgmt_segment: Shm,
     shared_memory_map: UnsafeCell<SlotMap<ShmEntry<Allocator, Shm>>>,
     current_idx: AtomicUsize,
     access_mode: AccessMode,
     _data: PhantomData<Allocator>,
+}
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Leakable
+    for DynamicView<Allocator, Shm>
+{
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { Shm::leak_in_place(&mut this.mgmt_segment) };
+        unsafe { SlotMap::leak_in_place(this.shared_memory_map.get_mut()) };
+    }
 }
 
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicView<Allocator, Shm>

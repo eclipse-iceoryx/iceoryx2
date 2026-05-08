@@ -68,6 +68,8 @@ mod single_threaded_compile_tests;
 
 use core::{fmt::Debug, ops::Deref};
 
+use iceoryx2_bb_testing::leakable::Leakable;
+
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum ArcSyncPolicyCreationError {
     InsufficientResources,
@@ -83,10 +85,10 @@ impl core::fmt::Display for ArcSyncPolicyCreationError {
 impl core::error::Error for ArcSyncPolicyCreationError {}
 
 /// The [`LockGuard`] provides access to the underlying object.
-pub trait LockGuard<'parent, T: Send>: Deref<Target = T> {}
+pub trait LockGuard<'parent, T: Send + Leakable>: Deref<Target = T> {}
 
 /// The actual [`ArcSyncPolicy`] concept trait.
-pub trait ArcSyncPolicy<T: Send>: Sized + Clone + Debug {
+pub trait ArcSyncPolicy<T: Send + Leakable>: Sized + Clone + Debug + Leakable {
     type LockGuard<'parent>: LockGuard<'parent, T>
     where
         Self: 'parent,

@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub use iceoryx2_bb_testing::*;
+
 use alloc::format;
 
 use iceoryx2_bb_elementary::math::ToB64;

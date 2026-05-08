@@ -18,6 +18,7 @@ use iceoryx2_bb_container::slotmap::SlotMapKey;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
+use iceoryx2_bb_testing::leakable::Leakable;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::zero_copy_connection::*;
 use iceoryx2_log::fatal_panic;
@@ -51,6 +52,17 @@ pub(crate) struct Connection<Service: service::Service> {
     pub(crate) data_segment: DataSegmentView<Service>,
     pub(crate) sender_port_id: u128,
     tag: Tag,
+}
+
+impl<Service: service::Service> Leakable for Connection<Service> {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+
+        unsafe {
+            <Service::Connection as ZeroCopyConnection>::Receiver::leak_in_place(&mut this.receiver)
+        };
+        unsafe { DataSegmentView::leak_in_place(&mut this.data_segment) };
+    }
 }
 
 impl<Service: service::Service> Taggable for Connection<Service> {
@@ -129,6 +141,14 @@ pub(crate) struct Receiver<Service: service::Service> {
     pub(crate) number_of_channels: usize,
     pub(crate) connection_storage: UnsafeCell<SlotMap<Connection<Service>>>,
     pub(crate) initial_channel_state: ChannelState,
+}
+
+impl<Service: service::Service> Leakable for Receiver<Service> {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+
+        unsafe { SharedServiceState::leak_in_place(&mut this.service_state) };
+    }
 }
 
 impl<Service: service::Service> Receiver<Service> {

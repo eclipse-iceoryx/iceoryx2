@@ -82,6 +82,7 @@ use iceoryx2_bb_elementary::{CallbackProgression, cyclic_tagger::CyclicTagger};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
+use iceoryx2_bb_testing::leakable::Leakable;
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_CLOSED, CHANNEL_STATE_OPEN};
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy,
@@ -169,6 +170,14 @@ pub(crate) struct ClientSharedState<Service: service::Service> {
     server_list_state: UnsafeCell<ContainerState<ServerDetails>>,
     pub(crate) active_request_counter: AtomicUsize,
     pub(crate) available_channel_ids: UnsafeCell<Queue<ChannelId>>,
+}
+
+impl<Service: service::Service> Leakable for ClientSharedState<Service> {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { Sender::leak_in_place(&mut this.request_sender) };
+        unsafe { Receiver::leak_in_place(&mut this.response_receiver) };
+    }
 }
 
 impl<Service: service::Service> Drop for ClientSharedState<Service> {

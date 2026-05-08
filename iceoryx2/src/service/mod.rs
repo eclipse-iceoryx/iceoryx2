@@ -915,7 +915,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
     /// to [`SingleThreaded`](iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded),
     /// the [`Service`]s ports and payload cannot be shared ([`Sync`]) between threads or moved
     /// ([`Send`]) into other threads.
-    type ArcThreadSafetyPolicy<T: Send + Debug>: ArcSyncPolicy<T>;
+    type ArcThreadSafetyPolicy<T: Send + Debug + Leakable>: ArcSyncPolicy<T>;
 
     /// Defines the construct used to store the management data of the blackboard service.
     type BlackboardMgmt<T: Send + Sync + Debug + 'static>: DynamicStorage<T>;

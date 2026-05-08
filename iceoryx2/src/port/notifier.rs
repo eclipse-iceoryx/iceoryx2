@@ -44,6 +44,7 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
+use iceoryx2_bb_testing::leakable::Leakable;
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy, dynamic_storage::DynamicStorage, event::NotifierBuilder,
 };
@@ -123,6 +124,13 @@ struct ListenerConnections<Service: service::Service> {
     connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
     service_state: SharedServiceState<Service, NoResource>,
     list_state: UnsafeCell<ContainerState<ListenerDetails>>,
+}
+
+impl<Service: service::Service> Leakable for ListenerConnections<Service> {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { SharedServiceState::leak_in_place(&mut this.service_state) };
+    }
 }
 
 impl<Service: service::Service> ListenerConnections<Service> {
@@ -268,6 +276,13 @@ unsafe impl<Service: service::Service> Send for Notifier<Service> where
 unsafe impl<Service: service::Service> Sync for Notifier<Service> where
     Service::ArcThreadSafetyPolicy<ListenerConnections<Service>>: Send + Sync
 {
+}
+
+impl<Service: service::Service> Leakable for Notifier<Service> {
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { Service::ArcThreadSafetyPolicy::leak_in_place(&mut this.listener_connections) };
+    }
 }
 
 impl<Service: service::Service> Drop for Notifier<Service> {

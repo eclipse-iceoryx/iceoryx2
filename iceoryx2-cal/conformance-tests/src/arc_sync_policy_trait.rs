@@ -19,43 +19,65 @@ pub mod arc_sync_policy_trait {
 
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::leakable::Leakable;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 
-    #[conformance_test]
-    pub fn create_and_locked_access_to_value_works<Sut: ArcSyncPolicy<AtomicU64>>() {
-        let sut = Sut::new(AtomicU64::new(1234)).unwrap();
-        sut.lock().store(4567, Ordering::Relaxed);
-        assert_that!(sut.lock().load(Ordering::Relaxed), eq 4567);
+    #[derive(Debug)]
+    pub struct TestAtomic(AtomicU64);
+
+    impl TestAtomic {
+        fn new(value: u64) -> Self {
+            Self(AtomicU64::new(value))
+        }
+
+        fn store(&self, value: u64) {
+            self.0.store(value, Ordering::Relaxed);
+        }
+
+        fn load(&self) -> u64 {
+            self.0.load(Ordering::Relaxed)
+        }
+    }
+
+    impl Leakable for TestAtomic {
+        unsafe fn leak_in_place(_this: *mut TestAtomic) {}
     }
 
     #[conformance_test]
-    pub fn create_and_guarded_access_to_value_works<Sut: ArcSyncPolicy<AtomicU64>>() {
-        let sut = Sut::new(AtomicU64::new(987)).unwrap();
+    pub fn create_and_locked_access_to_value_works<Sut: ArcSyncPolicy<TestAtomic>>() {
+        let sut = Sut::new(TestAtomic::new(1234)).unwrap();
+        sut.lock().store(4567);
+        assert_that!(sut.lock().load(), eq 4567);
+    }
+
+    #[conformance_test]
+    pub fn create_and_guarded_access_to_value_works<Sut: ArcSyncPolicy<TestAtomic>>() {
+        let sut = Sut::new(TestAtomic::new(987)).unwrap();
         let guard = sut.lock();
-        guard.store(765, Ordering::Relaxed);
-        assert_that!(guard.load(Ordering::Relaxed), eq 765);
+        guard.store(765);
+        assert_that!(guard.load(), eq 765);
     }
 
     #[conformance_test]
-    pub fn has_arc_behavior_and_performs_shallow_copy<Sut: ArcSyncPolicy<AtomicU64>>() {
-        let sut_1 = Sut::new(AtomicU64::new(5543)).unwrap();
+    pub fn has_arc_behavior_and_performs_shallow_copy<Sut: ArcSyncPolicy<TestAtomic>>() {
+        let sut_1 = Sut::new(TestAtomic::new(5543)).unwrap();
         let sut_2 = sut_1.clone();
 
-        sut_2.lock().store(1010101, Ordering::Relaxed);
-        let value_1 = sut_1.lock().load(Ordering::Relaxed);
-        let value_2 = sut_2.lock().load(Ordering::Relaxed);
+        sut_2.lock().store(1010101);
+        let value_1 = sut_1.lock().load();
+        let value_2 = sut_2.lock().load();
 
         assert_that!(value_1, eq 1010101);
         assert_that!(value_2, eq 1010101);
     }
 
     #[conformance_test]
-    pub fn uses_recursive_locking<Sut: ArcSyncPolicy<AtomicU64>>() {
-        let sut = Sut::new(AtomicU64::new(55355)).unwrap();
+    pub fn uses_recursive_locking<Sut: ArcSyncPolicy<TestAtomic>>() {
+        let sut = Sut::new(TestAtomic::new(55355)).unwrap();
         let guard_1 = sut.lock();
         let guard_2 = sut.lock();
-        guard_1.store(33533, Ordering::Relaxed);
-        assert_that!(guard_2.load(Ordering::Relaxed), eq 33533);
+        guard_1.store(33533);
+        assert_that!(guard_2.load(), eq 33533);
     }
 }
