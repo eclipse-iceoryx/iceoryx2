@@ -317,6 +317,20 @@ pub struct Client<
     _response_header: PhantomData<ResponseHeader>,
 }
 
+impl<
+    Service: service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Leakable for Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { Service::ArcThreadSafetyPolicy::leak_in_place(&mut this.client_shared_state) };
+    }
+}
+
 unsafe impl<
     Service: service::Service,
     RequestPayload: Debug + ZeroCopySend + ?Sized,

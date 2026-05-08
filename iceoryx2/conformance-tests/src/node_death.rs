@@ -134,6 +134,7 @@ impl Test for ZeroCopy {
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod node_death {
+    use iceoryx2::{port::notifier::Notifier, service::port_factory};
     use iceoryx2_bb_testing::leakable::Leakable;
 
     use super::*;
@@ -263,9 +264,10 @@ pub mod node_death {
             good_nodes.push(test.create_good_node());
         }
 
-        let mut services = vec![];
+        let mut bad_services = vec![];
         let mut bad_notifiers = vec![];
         let mut bad_listeners = vec![];
+        let mut good_services = vec![];
         let mut good_notifiers = vec![];
         let mut good_listeners = vec![];
 
@@ -282,8 +284,7 @@ pub mod node_death {
                     .unwrap();
                 bad_notifiers.push(service.notifier_builder().create().unwrap());
                 bad_listeners.push(service.listener_builder().create().unwrap());
-
-                services.push(service);
+                bad_services.push(service);
             }
 
             for node in &good_nodes {
@@ -296,8 +297,7 @@ pub mod node_death {
                     .unwrap();
                 good_notifiers.push(service.notifier_builder().create().unwrap());
                 good_listeners.push(service.listener_builder().create().unwrap());
-
-                services.push(service);
+                good_services.push(service);
             }
         }
 
@@ -306,12 +306,13 @@ pub mod node_death {
             Node::leak(node);
         }
 
-        core::mem::forget(bad_notifiers);
-        core::mem::forget(bad_listeners);
+        S::leak_contents(bad_notifiers);
+        S::leak_contents(bad_listeners);
+        S::leak_contents(bad_services);
 
         assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
 
-        for service in &services {
+        for service in &good_services {
             assert_that!(service.dynamic_config().number_of_notifiers(), eq NUMBER_OF_NOTIFIERS - NUMBER_OF_BAD_NODES);
             assert_that!(service.dynamic_config().number_of_listeners(), eq NUMBER_OF_LISTENERS - NUMBER_OF_BAD_NODES);
         }
@@ -341,7 +342,8 @@ pub mod node_death {
         let listener = service.listener_builder().create().unwrap();
 
         Node::leak(dead_node);
-        core::mem::forget(dead_notifier);
+        Notifier::leak(dead_notifier);
+        port_factory::event::PortFactory::leak(dead_service);
 
         assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
@@ -367,6 +369,12 @@ pub mod node_death {
         const NUMBER_OF_SERVERS: usize = NUMBER_OF_BAD_NODES + NUMBER_OF_GOOD_NODES;
 
         let mut bad_nodes = vec![];
+        let mut bad_services = vec![];
+        let mut bad_clients = vec![];
+        let mut bad_servers = vec![];
+        let mut good_services = vec![];
+        let mut good_clients = vec![];
+        let mut good_servers = vec![];
         let mut good_nodes = vec![];
 
         for _ in 0..NUMBER_OF_BAD_NODES {
@@ -376,12 +384,6 @@ pub mod node_death {
         for _ in 0..NUMBER_OF_GOOD_NODES {
             good_nodes.push(test.create_good_node());
         }
-
-        let mut services = vec![];
-        let mut bad_clients = vec![];
-        let mut bad_servers = vec![];
-        let mut good_clients = vec![];
-        let mut good_servers = vec![];
 
         for _ in 0..NUMBER_OF_SERVICES {
             let service_name = generate_service_name();
@@ -396,8 +398,7 @@ pub mod node_death {
                     .unwrap();
                 bad_clients.push(service.client_builder().create().unwrap());
                 bad_servers.push(service.server_builder().create().unwrap());
-
-                services.push(service);
+                bad_services.push(service);
             }
 
             for node in &good_nodes {
@@ -410,22 +411,18 @@ pub mod node_death {
                     .unwrap();
                 good_clients.push(service.client_builder().create().unwrap());
                 good_servers.push(service.server_builder().create().unwrap());
-
-                services.push(service);
+                good_services.push(service);
             }
         }
 
-        for _ in 0..NUMBER_OF_BAD_NODES {
-            let node = bad_nodes.pop().unwrap();
-            Node::leak(node);
-        }
-
-        core::mem::forget(bad_clients);
-        core::mem::forget(bad_servers);
+        S::leak_contents(bad_nodes);
+        S::leak_contents(bad_services);
+        S::leak_contents(bad_servers);
+        S::leak_contents(bad_clients);
 
         assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
 
-        for service in &services {
+        for service in &good_services {
             assert_that!(service.dynamic_config().number_of_clients(), eq NUMBER_OF_CLIENTS - NUMBER_OF_BAD_NODES);
             assert_that!(service.dynamic_config().number_of_servers(), eq NUMBER_OF_SERVERS - NUMBER_OF_BAD_NODES);
         }
@@ -440,8 +437,12 @@ pub mod node_death {
         const NUMBER_OF_SERVICES: usize = 5;
         const NUMBER_OF_READERS: usize = NUMBER_OF_BAD_NODES + NUMBER_OF_GOOD_NODES;
 
+        let mut bad_services = vec![];
         let mut bad_nodes = vec![];
+        let mut bad_readers = vec![];
+        let mut good_services = vec![];
         let mut good_nodes = vec![];
+        let mut good_readers = vec![];
 
         for _ in 0..NUMBER_OF_BAD_NODES {
             bad_nodes.push(test.create_bad_node());
@@ -450,10 +451,6 @@ pub mod node_death {
         for _ in 0..NUMBER_OF_GOOD_NODES {
             good_nodes.push(test.create_good_node());
         }
-
-        let mut services = vec![];
-        let mut bad_readers = vec![];
-        let mut good_readers = vec![];
 
         for _ in 0..NUMBER_OF_SERVICES {
             let service_name = generate_service_name();
@@ -473,8 +470,7 @@ pub mod node_death {
                     .open()
                     .unwrap();
                 bad_readers.push(service.reader_builder().create().unwrap());
-
-                services.push(service);
+                bad_services.push(service);
             }
 
             for node in &good_nodes {
@@ -485,21 +481,17 @@ pub mod node_death {
                     .open()
                     .unwrap();
                 good_readers.push(service.reader_builder().create().unwrap());
-
-                services.push(service);
+                good_services.push(service);
             }
         }
 
-        for _ in 0..NUMBER_OF_BAD_NODES {
-            let node = bad_nodes.pop().unwrap();
-            Node::leak(node);
-        }
-
-        core::mem::forget(bad_readers);
+        S::leak_contents(bad_nodes);
+        S::leak_contents(bad_services);
+        //S::leak_contents(bad_readers);
 
         assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
 
-        for service in &services {
+        for service in &good_services {
             assert_that!(service.dynamic_config().number_of_readers(), eq NUMBER_OF_READERS - NUMBER_OF_BAD_NODES);
         }
     }
