@@ -68,7 +68,7 @@ impl WriterUnion {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<WriterUnion>
 pub struct iox2_writer_storage_t {
-    internal: [u8; 32], // magic number obtained with size_of::<Option<WriterUnion>>()
+    internal: [u8; 56], // magic number obtained with size_of::<Option<WriterUnion>>()
 }
 
 #[repr(C)]

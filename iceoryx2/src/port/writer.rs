@@ -41,6 +41,7 @@
 //! ```
 
 use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
+use crate::identifiers::UniqueWriterId;
 use crate::prelude::EventId;
 use crate::service::builder::CustomKeyMarker;
 use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
@@ -59,38 +60,36 @@ use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
     Producer, UnrestrictedAtomic, UnrestrictedAtomicMgmt,
 };
+use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
 use iceoryx2_log::{fail, fatal_panic};
-
-extern crate alloc;
-use alloc::sync::Arc;
-
-use crate::identifiers::UniqueWriterId;
 
 #[derive(Debug)]
 struct WriterSharedState<
     Service: service::Service,
     KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
 > {
-    dynamic_writer_handle: Option<ContainerHandle>,
     service_state: SharedServiceState<Service, BlackboardResources<Service>>,
     _key: PhantomData<KeyType>,
+}
+
+unsafe impl<
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+> Send for WriterSharedState<Service, KeyType>
+{
 }
 
 impl<
     Service: service::Service,
     KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-> Drop for WriterSharedState<Service, KeyType>
+> Leakable for WriterSharedState<Service, KeyType>
 {
-    fn drop(&mut self) {
-        if let Some(handle) = self.dynamic_writer_handle {
-            self.service_state
-                .dynamic_storage()
-                .get()
-                .blackboard()
-                .release_writer_handle(handle)
-        }
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { SharedServiceState::leak_in_place(&mut this.service_state) };
     }
 }
 
@@ -105,6 +104,9 @@ pub enum WriterCreateError {
     ExceedsMaxSupportedWriters,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalFailure,
+    /// Caused by a failure when instantiating a [`ArcSyncPolicy`] defined in the
+    /// [`Service`](crate::service::Service) as `ArcThreadSafetyPolicy`.
+    FailedToDeployThreadsafetyPolicy,
 }
 
 impl core::fmt::Display for WriterCreateError {
@@ -121,8 +123,38 @@ pub struct Writer<
     Service: service::Service,
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > {
-    shared_state: Arc<WriterSharedState<Service, KeyType>>,
+    shared_state: Service::ArcThreadSafetyPolicy<WriterSharedState<Service, KeyType>>,
+    dynamic_writer_handle: Option<ContainerHandle>,
     writer_id: UniqueWriterId,
+}
+
+impl<
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
+> Leakable for Writer<Service, KeyType>
+{
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { Service::ArcThreadSafetyPolicy::leak_in_place(&mut this.shared_state) };
+    }
+}
+
+impl<
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
+> Drop for Writer<Service, KeyType>
+{
+    fn drop(&mut self) {
+        if let Some(handle) = self.dynamic_writer_handle {
+            self.shared_state
+                .lock()
+                .service_state
+                .dynamic_storage()
+                .get()
+                .blackboard()
+                .release_writer_handle(handle)
+        }
+    }
 }
 
 impl<
@@ -137,13 +169,23 @@ impl<
         let msg = "Unable to create Writer port";
 
         let writer_id = UniqueWriterId::new();
+        let shared_state = Service::ArcThreadSafetyPolicy::new(WriterSharedState {
+            service_state: service.clone(),
+            _key: PhantomData,
+        });
+
+        let shared_state = match shared_state {
+            Ok(v) => v,
+            Err(e) => {
+                fail!(from origin, with WriterCreateError::FailedToDeployThreadsafetyPolicy,
+                      "{msg} since the threadsafety policy could not be instantiated ({e:?}).");
+            }
+        };
+
         let mut new_self = Self {
-            shared_state: Arc::new(WriterSharedState {
-                service_state: service.clone(),
-                dynamic_writer_handle: None,
-                _key: PhantomData,
-            }),
+            shared_state,
             writer_id,
+            dynamic_writer_handle: None,
         };
 
         core::sync::atomic::compiler_fence(Ordering::SeqCst);
@@ -166,13 +208,7 @@ impl<
             }
         };
 
-        match Arc::get_mut(&mut new_self.shared_state) {
-            None => {
-                fail!(from origin, with WriterCreateError::InternalFailure,
-                    "{} due to an internal failure.", msg);
-            }
-            Some(writer_state) => writer_state.dynamic_writer_handle = Some(dynamic_writer_handle),
-        }
+        new_self.dynamic_writer_handle = Some(dynamic_writer_handle);
         Ok(new_self)
     }
 
@@ -236,8 +272,9 @@ impl<
         msg: &str,
     ) -> Result<u64, EntryHandleMutError> {
         // check if key exists
+        let shared_state = self.shared_state.lock();
         let index = match unsafe {
-            self.shared_state
+            shared_state
                 .service_state
                 .additional_resource()
                 .mgmt
@@ -245,7 +282,7 @@ impl<
                 .map
                 .__internal_get(
                     key_mem,
-                    self.shared_state
+                    shared_state
                         .service_state
                         .additional_resource()
                         .key_eq_func
@@ -259,8 +296,7 @@ impl<
             }
         };
 
-        let entry = &self
-            .shared_state
+        let entry = &shared_state
             .service_state
             .additional_resource()
             .mgmt
@@ -304,7 +340,7 @@ pub struct EntryHandleMut<
 > {
     producer: Producer<'static, ValueType>,
     entry_id: EventId,
-    _shared_state: Arc<WriterSharedState<Service, KeyType>>,
+    _shared_state: Service::ArcThreadSafetyPolicy<WriterSharedState<Service, KeyType>>,
 }
 
 // Safe since the producer implements Send + Sync and shared_state ensures the lifetime of the
@@ -331,10 +367,11 @@ impl<
 > EntryHandleMut<Service, KeyType, ValueType>
 {
     fn new(
-        writer_state: Arc<WriterSharedState<Service, KeyType>>,
+        writer_state: Service::ArcThreadSafetyPolicy<WriterSharedState<Service, KeyType>>,
         offset: u64,
     ) -> Result<Self, EntryHandleMutError> {
         let atomic = (writer_state
+            .lock()
             .service_state
             .additional_resource()
             .data
@@ -588,8 +625,8 @@ impl<Service: service::Service> Writer<Service, CustomKeyMarker> {
     ) -> Result<__InternalEntryHandleMut<Service>, EntryHandleMutError> {
         let msg = "Unable to create entry handle";
 
-        let key_type_details = self
-            .shared_state
+        let shared_state = self.shared_state.lock();
+        let key_type_details = shared_state
             .service_state
             .static_config()
             .blackboard()
@@ -610,8 +647,7 @@ impl<Service: service::Service> Writer<Service, CustomKeyMarker> {
 
         let offset = self.get_entry_offset(&key_mem, value_type_details, msg)?;
 
-        let atomic_mgmt_ptr = (self
-            .shared_state
+        let atomic_mgmt_ptr = (shared_state
             .service_state
             .additional_resource()
             .data
@@ -643,7 +679,7 @@ pub struct __InternalEntryHandleMut<Service: service::Service> {
     atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
     data_ptr: *mut u8,
     entry_id: EventId,
-    _shared_state: Arc<WriterSharedState<Service, CustomKeyMarker>>,
+    _shared_state: Service::ArcThreadSafetyPolicy<WriterSharedState<Service, CustomKeyMarker>>,
 }
 
 impl<Service: service::Service> Drop for __InternalEntryHandleMut<Service> {
@@ -663,7 +699,7 @@ impl<Service: service::Service> __InternalEntryHandleMut<Service> {
         atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
         data_ptr: *mut u8,
         entry_id: EventId,
-        writer_state: Arc<WriterSharedState<Service, CustomKeyMarker>>,
+        writer_state: Service::ArcThreadSafetyPolicy<WriterSharedState<Service, CustomKeyMarker>>,
     ) -> Result<Self, EntryHandleMutError> {
         match unsafe { (*atomic_mgmt_ptr).__internal_acquire_producer() } {
             Ok(_) => Ok(Self {

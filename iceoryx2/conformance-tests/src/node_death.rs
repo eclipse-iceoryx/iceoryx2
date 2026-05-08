@@ -10,10 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate alloc;
+
 use core::time::Duration;
 
 use alloc::string::ToString;
 use alloc::vec;
+use alloc::vec::Vec;
 use iceoryx2::config::Config;
 use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::node::{CleanupState, NodeState};
@@ -41,6 +44,10 @@ pub trait Test {
         while let Some(element) = contents.pop() {
             T::leak(element);
         }
+    }
+
+    fn leak<T: Leakable>(thing: T) {
+        T::leak(thing);
     }
 
     fn generate_node_name(i: usize, prefix: &str) -> NodeName {
@@ -134,7 +141,6 @@ impl Test for ZeroCopy {
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod node_death {
-    use iceoryx2::{port::notifier::Notifier, service::port_factory};
     use iceoryx2_bb_testing::leakable::Leakable;
 
     use super::*;
@@ -148,7 +154,7 @@ pub mod node_death {
         for i in 1..NUMBER_OF_DEAD_NODES_LIMIT {
             for _ in 0..i {
                 let sut = test.create_bad_node();
-                Node::leak(sut);
+                S::leak(sut);
             }
 
             let mut node_list = test.list_nodes();
@@ -226,11 +232,7 @@ pub mod node_death {
             }
         }
 
-        for _ in 0..NUMBER_OF_BAD_NODES {
-            let node = bad_nodes.pop().unwrap();
-            Node::leak(node);
-        }
-
+        S::leak_contents(bad_nodes);
         S::leak_contents(bad_services);
         S::leak_contents(bad_publishers);
         S::leak_contents(bad_subscribers);
@@ -301,11 +303,7 @@ pub mod node_death {
             }
         }
 
-        for _ in 0..NUMBER_OF_BAD_NODES {
-            let node = bad_nodes.pop().unwrap();
-            Node::leak(node);
-        }
-
+        S::leak_contents(bad_nodes);
         S::leak_contents(bad_notifiers);
         S::leak_contents(bad_listeners);
         S::leak_contents(bad_services);
@@ -341,9 +339,9 @@ pub mod node_death {
         let service = node.service_builder(&service_name).event().open().unwrap();
         let listener = service.listener_builder().create().unwrap();
 
-        Node::leak(dead_node);
-        Notifier::leak(dead_notifier);
-        port_factory::event::PortFactory::leak(dead_service);
+        S::leak(dead_node);
+        S::leak(dead_notifier);
+        S::leak(dead_service);
 
         assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
@@ -487,7 +485,7 @@ pub mod node_death {
 
         S::leak_contents(bad_nodes);
         S::leak_contents(bad_services);
-        //S::leak_contents(bad_readers);
+        S::leak_contents(bad_readers);
 
         assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
 
@@ -508,7 +506,7 @@ pub mod node_death {
             .add_with_default::<u64>(0)
             .create()
             .unwrap();
-        let writer = bad_service.writer_builder().create().unwrap();
+        let bad_writer = bad_service.writer_builder().create().unwrap();
 
         let good_node = NodeBuilder::new()
             .config(test.config())
@@ -521,9 +519,10 @@ pub mod node_death {
             .unwrap();
         let reader = good_service.reader_builder().create().unwrap();
 
-        Node::leak(bad_node);
-        core::mem::forget(writer);
-        core::mem::forget(bad_service);
+        S::leak(bad_node);
+        S::leak(bad_writer);
+        S::leak(bad_service);
+
         assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(good_service.dynamic_config().number_of_readers(), eq 1);
@@ -544,14 +543,14 @@ pub mod node_death {
         let test = S::new();
         let service_name = generate_service_name();
 
-        let sut = test.create_bad_node();
-        core::mem::forget(
-            sut.service_builder(&service_name)
-                .event()
-                .open_or_create()
-                .unwrap(),
-        );
-        Node::leak(sut);
+        let bad_node = test.create_bad_node();
+        let bad_service = bad_node
+            .service_builder(&service_name)
+            .event()
+            .open_or_create()
+            .unwrap();
+        S::leak(bad_node);
+        S::leak(bad_service);
 
         assert_that!(
             S::Service::list(test.config(), |service_details| {
@@ -576,14 +575,14 @@ pub mod node_death {
         let test = S::new();
         let service_name = generate_service_name();
 
-        let sut = test.create_bad_node();
-        core::mem::forget(
-            sut.service_builder(&service_name)
-                .publish_subscribe::<u64>()
-                .open_or_create()
-                .unwrap(),
-        );
-        Node::leak(sut);
+        let bad_node = test.create_bad_node();
+        let bad_service = bad_node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .open_or_create()
+            .unwrap();
+        S::leak(bad_node);
+        S::leak(bad_service);
 
         assert_that!(
             S::Service::list(test.config(), |service_details| {
@@ -608,14 +607,14 @@ pub mod node_death {
         let test = S::new();
         let service_name = generate_service_name();
 
-        let sut = test.create_bad_node();
-        core::mem::forget(
-            sut.service_builder(&service_name)
-                .request_response::<u64, u64>()
-                .open_or_create()
-                .unwrap(),
-        );
-        Node::leak(sut);
+        let bad_node = test.create_bad_node();
+        let bad_service = bad_node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .open_or_create()
+            .unwrap();
+        S::leak(bad_node);
+        S::leak(bad_service);
 
         assert_that!(
             S::Service::list(test.config(), |service_details| {
@@ -640,15 +639,15 @@ pub mod node_death {
         let test = S::new();
         let service_name = generate_service_name();
 
-        let sut = test.create_bad_node();
-        core::mem::forget(
-            sut.service_builder(&service_name)
-                .blackboard_creator::<u64>()
-                .add_with_default::<u64>(0)
-                .create()
-                .unwrap(),
-        );
-        Node::leak(sut);
+        let bad_node = test.create_bad_node();
+        let bad_service = bad_node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add_with_default::<u64>(0)
+            .create()
+            .unwrap();
+        S::leak(bad_node);
+        S::leak(bad_service);
 
         assert_that!(
             S::Service::list(test.config(), |service_details| {
@@ -688,13 +687,15 @@ pub mod node_death {
             .blackboard_opener::<u64>()
             .open()
             .unwrap();
-        let writer = bad_service.writer_builder().create().unwrap();
-        let reader = bad_service.reader_builder().create().unwrap();
+        let bad_writer = bad_service.writer_builder().create().unwrap();
+        let bad_reader = bad_service.reader_builder().create().unwrap();
 
-        Node::leak(bad_node);
+        S::leak(bad_node);
+        S::leak(bad_writer);
+        S::leak(bad_reader);
+        S::leak(bad_service);
+
         assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
-        core::mem::forget(writer);
-        core::mem::forget(reader);
 
         let writer = good_service.writer_builder().create();
         assert_that!(writer, is_ok);
@@ -714,15 +715,15 @@ pub mod node_death {
         #[type_name("SoSpecial")]
         struct SpecialKey(u64);
 
-        let sut = test.create_bad_node();
-        core::mem::forget(
-            sut.service_builder(&service_name)
-                .blackboard_creator::<SpecialKey>()
-                .add_with_default::<u64>(SpecialKey(0))
-                .create()
-                .unwrap(),
-        );
-        Node::leak(sut);
+        let bad_node = test.create_bad_node();
+        let bad_service = bad_node
+            .service_builder(&service_name)
+            .blackboard_creator::<SpecialKey>()
+            .add_with_default::<u64>(SpecialKey(0))
+            .create()
+            .unwrap();
+        S::leak(bad_node);
+        S::leak(bad_service);
 
         assert_that!(
             S::Service::list(test.config(), |service_details| {
@@ -757,15 +758,15 @@ pub mod node_death {
         let test = S::new();
         let service_name = generate_service_name();
 
-        let sut = test.create_bad_node();
-        core::mem::forget(
-            sut.service_builder(&service_name)
-                .blackboard_creator::<u64>()
-                .add_with_default::<u64>(0)
-                .create()
-                .unwrap(),
-        );
-        Node::leak(sut);
+        let bad_node = test.create_bad_node();
+        let bad_service = bad_node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add_with_default::<u64>(0)
+            .create()
+            .unwrap();
+        S::leak(bad_node);
+        S::leak(bad_service);
 
         assert_that!(
             S::Service::list(test.config(), |service_details| {
@@ -797,8 +798,8 @@ pub mod node_death {
     pub fn node_cleanup_option_works_on_node_creation<S: Test>() {
         let test = S::new();
 
-        let sut = test.create_bad_node();
-        Node::leak(sut);
+        let bad_node = test.create_bad_node();
+        S::leak(bad_node);
 
         assert_that!(test.number_of_nodes(), eq 1);
 
@@ -838,8 +839,8 @@ pub mod node_death {
             .create::<S::Service>()
             .unwrap();
 
-        let sut = test.create_bad_node();
-        Node::leak(sut);
+        let bad_node = test.create_bad_node();
+        S::leak(bad_node);
 
         assert_that!(test.number_of_nodes(), eq 3);
 
@@ -854,18 +855,19 @@ pub mod node_death {
 
     pub fn node_cleanup_on_service_connection_works<
         S: Test,
-        T,
+        T: Leakable,
         F: FnMut(&Node<S::Service>) -> T,
     >(
         test: S,
         total_number_of_nodes: usize,
         mut service_builder: F,
     ) {
-        let sut = test.create_bad_node();
-        core::mem::forget(service_builder(&sut));
-        Node::leak(sut);
+        let bad_node = test.create_bad_node();
+        let bad_service = service_builder(&bad_node);
+        S::leak(bad_node);
+        S::leak(bad_service);
 
-        let sut = test.create_bad_node();
+        let sut = test.create_good_node();
         let _service = service_builder(&sut);
 
         let number_of_nodes = test.number_of_nodes();

@@ -155,6 +155,17 @@ pub struct Reader<
 impl<
     Service: service::Service,
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
+> Leakable for Reader<Service, KeyType>
+{
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { Service::ArcThreadSafetyPolicy::leak_in_place(&mut this.shared_state) };
+    }
+}
+
+impl<
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > Drop for Reader<Service, KeyType>
 {
     fn drop(&mut self) {
