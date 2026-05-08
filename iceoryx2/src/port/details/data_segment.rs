@@ -14,7 +14,7 @@ use core::alloc::Layout;
 
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
-use iceoryx2_bb_testing::leakable::Abandonable;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_cal::{
     event::NamedConceptBuilder,
     resizable_shared_memory::*,

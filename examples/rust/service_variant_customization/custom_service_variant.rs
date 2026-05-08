@@ -12,7 +12,7 @@
 
 use std::fmt::Debug;
 
-use iceoryx2::testing::leakable::Abandonable;
+use iceoryx2::testing::abandonable::Abandonable;
 
 #[derive(Debug, Clone)]
 pub struct CustomServiceVariant {}

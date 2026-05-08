@@ -79,7 +79,7 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::file_name::*;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_bb_system_types::path::*;
-use iceoryx2_bb_testing::leakable::Abandonable;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_log::{error, fail, fatal_panic, trace, warn};
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING;

@@ -28,7 +28,7 @@ use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_posix::unix_datagram_socket::*;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing::leakable::Abandonable;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::test;

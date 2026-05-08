@@ -14,9 +14,9 @@ use alloc::vec;
 
 use iceoryx2_bb_container::slotmap::*;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing::leak_tracker::LeakTracker;
-use iceoryx2_bb_testing::leakable::Abandonable;
+use iceoryx2_bb_testing::leak_tracker::AbandonTacker;
 use iceoryx2_bb_testing::memory::RawMemory;
 use iceoryx2_bb_testing_macros::test;
 
@@ -262,12 +262,12 @@ pub fn panic_is_called_in_debug_mode_if_map_is_not_initialized() {
 
 #[test]
 pub fn drop_does_not_leak() {
-    let leak_state = LeakTracker::start_tracking();
-    let mut sut = SlotMap::<LeakTracker>::new(SUT_CAPACITY);
+    let leak_state = AbandonTacker::start_tracking();
+    let mut sut = SlotMap::<AbandonTacker>::new(SUT_CAPACITY);
     let mut keys = vec![];
 
     for _ in 0..SUT_CAPACITY {
-        keys.push(sut.insert(LeakTracker::new()).unwrap());
+        keys.push(sut.insert(AbandonTacker::new()).unwrap());
     }
 
     assert_that!(leak_state.creation_count(), eq SUT_CAPACITY);
@@ -283,12 +283,12 @@ pub fn drop_does_not_leak() {
 
 #[test]
 pub fn leak_does_not_drop() {
-    let leak_state = LeakTracker::start_tracking();
-    let mut sut = SlotMap::<LeakTracker>::new(SUT_CAPACITY);
+    let leak_state = AbandonTacker::start_tracking();
+    let mut sut = SlotMap::<AbandonTacker>::new(SUT_CAPACITY);
     let mut keys = vec![];
 
     for _ in 0..SUT_CAPACITY {
-        keys.push(sut.insert(LeakTracker::new()).unwrap());
+        keys.push(sut.insert(AbandonTacker::new()).unwrap());
     }
 
     assert_that!(leak_state.creation_count(), eq SUT_CAPACITY);

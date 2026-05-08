@@ -17,7 +17,7 @@ use alloc::vec::Vec;
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
-use iceoryx2_bb_testing::leakable::Abandonable;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_log::{fail, fatal_panic};
 
 use crate::{

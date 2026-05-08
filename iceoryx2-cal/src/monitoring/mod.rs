@@ -73,7 +73,7 @@ use core::fmt::Debug;
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 pub use iceoryx2_bb_system_types::file_name::FileName;
-use iceoryx2_bb_testing::leakable::Abandonable;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 
 pub use crate::{
     named_concept::NamedConcept, named_concept::NamedConceptBuilder,

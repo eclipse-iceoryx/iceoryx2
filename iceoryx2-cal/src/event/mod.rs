@@ -24,7 +24,7 @@ use core::{fmt::Debug, time::Duration};
 pub use crate::named_concept::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 pub use iceoryx2_bb_system_types::file_name::*;
 pub use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_bb_testing::leakable::Abandonable;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum NotifierNotifyError {

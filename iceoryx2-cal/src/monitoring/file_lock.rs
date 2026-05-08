@@ -27,7 +27,7 @@ use iceoryx2_bb_posix::{
     },
 };
 use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
-use iceoryx2_bb_testing::leakable::Abandonable;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_log::fail;
 
 use crate::{

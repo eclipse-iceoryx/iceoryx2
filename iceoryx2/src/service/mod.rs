@@ -262,7 +262,7 @@ use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 use iceoryx2_bb_posix::file::AccessMode;
-use iceoryx2_bb_testing::leakable::Abandonable;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 
 use crate::config;
 use crate::constants::MAX_TYPE_NAME_LENGTH;

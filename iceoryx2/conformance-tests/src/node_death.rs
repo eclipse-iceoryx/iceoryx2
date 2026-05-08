@@ -25,7 +25,7 @@ use iceoryx2::service::Service;
 use iceoryx2::testing::*;
 use iceoryx2_bb_concurrency::atomic::AtomicU32;
 use iceoryx2_bb_concurrency::atomic::Ordering;
-use iceoryx2_bb_testing::leakable::Abandonable;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing::{assert_that, test_fail};
 use iceoryx2_bb_testing_macros::conformance_test;
@@ -141,7 +141,7 @@ impl Test for ZeroCopy {
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod node_death {
-    use iceoryx2_bb_testing::leakable::Abandonable;
+    use iceoryx2_bb_testing::abandonable::Abandonable;
 
     use super::*;
 

@@ -74,7 +74,7 @@ use core::fmt::Debug;
 
 use iceoryx2_bb_system_types::file_name::*;
 use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_bb_testing::leakable::Abandonable;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 
 use crate::named_concept::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 

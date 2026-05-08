@@ -68,7 +68,7 @@ mod single_threaded_compile_tests;
 
 use core::{fmt::Debug, ops::Deref};
 
-use iceoryx2_bb_testing::leakable::Abandonable;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum ArcSyncPolicyCreationError {

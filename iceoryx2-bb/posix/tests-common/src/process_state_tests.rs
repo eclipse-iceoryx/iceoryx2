@@ -24,8 +24,8 @@ use iceoryx2_bb_posix::testing::create_test_directory;
 use iceoryx2_bb_posix::unix_datagram_socket::CreationMode;
 use iceoryx2_bb_posix::{process_state::*, unique_system_id::UniqueSystemId};
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath};
+use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_bb_testing_macros::test;
 
 fn generate_file_path() -> FilePath {

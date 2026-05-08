@@ -21,7 +21,7 @@ pub mod details {
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_posix::file::AccessMode;
     use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
-    use iceoryx2_bb_testing::leakable::Abandonable;
+    use iceoryx2_bb_testing::abandonable::Abandonable;
     use iceoryx2_log::{debug, fail};
 
     use crate::{

@@ -16,16 +16,16 @@ use std::sync::Mutex;
 #[cfg(not(feature = "std"))]
 use iceoryx2_pal_concurrency_sync::spin_lock::SpinLock as Mutex;
 
-use crate::leakable::Abandonable;
+use crate::abandonable::Abandonable;
 
 static CREATION_COUNTER: Mutex<usize> = Mutex::new(0);
 static DROP_COUNTER: Mutex<usize> = Mutex::new(0);
 static LEAK_COUNTER: Mutex<usize> = Mutex::new(0);
 
 #[derive(Debug)]
-pub struct LeakTrackingState {}
+pub struct AbandonTrackingState {}
 
-impl LeakTrackingState {
+impl AbandonTrackingState {
     pub fn creation_count(&self) -> usize {
         *CREATION_COUNTER.lock().unwrap_or_else(|e| e.into_inner())
     }
@@ -41,17 +41,17 @@ impl LeakTrackingState {
 
 #[repr(C)]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct LeakTracker {
+pub struct AbandonTacker {
     pub value: usize,
 }
 
-impl Abandonable for LeakTracker {
+impl Abandonable for AbandonTacker {
     unsafe fn abandon_in_place(_this: *mut Self) {
         *LEAK_COUNTER.lock().unwrap_or_else(|e| e.into_inner()) += 1;
     }
 }
 
-impl Default for LeakTracker {
+impl Default for AbandonTacker {
     fn default() -> Self {
         *CREATION_COUNTER.lock().unwrap_or_else(|e| e.into_inner()) += 1;
 
@@ -59,7 +59,7 @@ impl Default for LeakTracker {
     }
 }
 
-impl LeakTracker {
+impl AbandonTacker {
     pub fn new() -> Self {
         Self::default()
     }
@@ -70,16 +70,16 @@ impl LeakTracker {
         new_self
     }
 
-    pub fn start_tracking() -> LeakTrackingState {
+    pub fn start_tracking() -> AbandonTrackingState {
         *CREATION_COUNTER.lock().unwrap_or_else(|e| e.into_inner()) = 0;
         *LEAK_COUNTER.lock().unwrap_or_else(|e| e.into_inner()) = 0;
         *DROP_COUNTER.lock().unwrap_or_else(|e| e.into_inner()) = 0;
 
-        LeakTrackingState {}
+        AbandonTrackingState {}
     }
 }
 
-impl Clone for LeakTracker {
+impl Clone for AbandonTacker {
     fn clone(&self) -> Self {
         let mut new_self = Self::new();
         new_self.value = self.value;
@@ -87,7 +87,7 @@ impl Clone for LeakTracker {
     }
 }
 
-impl Drop for LeakTracker {
+impl Drop for AbandonTacker {
     fn drop(&mut self) {
         *DROP_COUNTER.lock().unwrap_or_else(|e| e.into_inner()) += 1;
     }

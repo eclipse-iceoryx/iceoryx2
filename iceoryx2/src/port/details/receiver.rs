@@ -18,7 +18,7 @@ use iceoryx2_bb_container::slotmap::SlotMapKey;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
-use iceoryx2_bb_testing::leakable::Abandonable;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::zero_copy_connection::*;
 use iceoryx2_log::fatal_panic;
@@ -59,7 +59,9 @@ impl<Service: service::Service> Abandonable for Connection<Service> {
         let this = unsafe { &mut *this };
 
         unsafe {
-            <Service::Connection as ZeroCopyConnection>::Receiver::abandon_in_place(&mut this.receiver)
+            <Service::Connection as ZeroCopyConnection>::Receiver::abandon_in_place(
+                &mut this.receiver,
+            )
         };
         unsafe { DataSegmentView::abandon_in_place(&mut this.data_segment) };
     }

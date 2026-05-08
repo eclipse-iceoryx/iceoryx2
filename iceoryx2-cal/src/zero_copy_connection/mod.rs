@@ -23,7 +23,7 @@ use core::time::Duration;
 pub use crate::shared_memory::PointerOffset;
 pub use iceoryx2_bb_system_types::file_name::*;
 pub use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_bb_testing::leakable::Abandonable;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_log::fail;
 
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
@@ -355,7 +355,9 @@ pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept + Send + Ab
     unsafe fn acquire_used_offsets<F: FnMut(PointerOffset)>(&self, callback: F);
 }
 
-pub trait ZeroCopyReceiver: Debug + ZeroCopyPortDetails + NamedConcept + Send + Abandonable {
+pub trait ZeroCopyReceiver:
+    Debug + ZeroCopyPortDetails + NamedConcept + Send + Abandonable
+{
     fn has_data(&self, channel_id: ChannelId) -> bool;
     fn receive(&self, channel_id: ChannelId)
     -> Result<Option<PointerOffset>, ZeroCopyReceiveError>;

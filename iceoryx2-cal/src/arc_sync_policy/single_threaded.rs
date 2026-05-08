@@ -12,7 +12,7 @@
 
 use alloc::rc::Rc;
 use core::{fmt::Debug, marker::PhantomData, ops::Deref};
-use iceoryx2_bb_testing::leakable::Abandonable;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 
 use crate::arc_sync_policy::{ArcSyncPolicy, LockGuard};
 

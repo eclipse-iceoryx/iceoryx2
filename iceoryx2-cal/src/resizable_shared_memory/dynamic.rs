@@ -29,7 +29,7 @@ use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_bb_testing::leakable::Abandonable;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_log::fatal_panic;
 use iceoryx2_log::{fail, warn};
 
