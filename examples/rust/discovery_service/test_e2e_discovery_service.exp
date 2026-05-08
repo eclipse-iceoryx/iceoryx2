@@ -35,7 +35,7 @@ spawn cargo run --example publish_subscribe_subscriber
 set id_subscriber $spawn_id
 expect_output "Subscriber ready to receive data!"
 
-expect_output_from $id_discovery_service "Added: ServiceName*My/Funk/ServiceName*"
+expect_output_from $id_discovery_service "Added: PublishSubscribe*My/Funk/ServiceName*"
 
 spawn cargo run --example discovery_service_client
 expect_output "Service Name: \"My/Funk/ServiceName\""
@@ -43,6 +43,6 @@ expect_output "Service Name: \"My/Funk/ServiceName\""
 # Send CTRL+C (SIGINT) to the subscriber process
 exec kill -SIGINT [exp_pid -i $id_subscriber]
 
-expect_output_from $id_discovery_service "Removed: ServiceName*My/Funk/ServiceName*"
+expect_output_from $id_discovery_service "Removed: PublishSubscribe*My/Funk/ServiceName*"
 
 show_test_passed
