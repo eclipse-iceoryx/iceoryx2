@@ -16,6 +16,11 @@ workspace = true
 [features]
 default = []
 std = [
+  "iceoryx2-services-tunnel-backend/std",
+  "iceoryx2/std",
 ]
 
 [dependencies]
+iceoryx2-services-common = { workspace = true }
+iceoryx2-services-tunnel-backend = { workspace = true }
+iceoryx2 = { workspace = true }

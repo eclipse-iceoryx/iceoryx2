@@ -10,9 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![no_std]
-#![warn(clippy::alloc_instead_of_core)]
-#![warn(clippy::std_instead_of_alloc)]
-#![warn(clippy::std_instead_of_core)]
-
-pub mod backend;
+pub(crate) mod event;
+pub(crate) mod factory;
+pub(crate) mod publish_subscribe;
