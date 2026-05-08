@@ -1,0 +1,21 @@
+[package]
+name = "iceoryx2-services-tunnel-tests-common"
+description = "iceoryx2: [internal] common test utilities for iceoryx2-services-tunnel"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[lints]
+workspace = true
+
+[features]
+default = []
+std = [
+]
+
+[dependencies]
