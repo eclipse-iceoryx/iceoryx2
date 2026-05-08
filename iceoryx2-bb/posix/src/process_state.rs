@@ -1010,7 +1010,16 @@ pub struct ProcessCleaner {
 
 impl Leakable for ProcessCleaner {
     unsafe fn leak_in_place(this: *mut Self) {
-        unsafe { ProcessGuard::leak_in_place(&mut (&mut *this).guard) };
+        let this = unsafe { &mut *this };
+        for file in [
+            &mut this.guard.state_file,
+            &mut this.guard.owner_lock_file,
+            &mut this.guard.context_file,
+        ] {
+            if let Some(f) = file.take() {
+                f.leak();
+            }
+        }
     }
 }
 

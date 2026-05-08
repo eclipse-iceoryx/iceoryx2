@@ -526,3 +526,30 @@ pub fn owner_lock_cannot_be_acquired_twice() {
 }
 
 // END: OS with IPC only lock detection
+
+#[test]
+pub fn leaking_a_process_guard_results_in_a_dead_process() {
+    create_test_directory();
+    let path = generate_file_path();
+
+    let guard = ProcessGuardBuilder::new().create(&path).unwrap();
+    ProcessGuard::leak(guard);
+
+    let state = ProcessMonitor::new(&path).unwrap().state().unwrap();
+    assert_that!(state, eq ProcessState::Dead);
+
+    ProcessCleaner::new(&path).unwrap();
+}
+
+#[test]
+pub fn leaking_a_process_cleaner_allows_to_reacquire_the_cleaner() {
+    create_test_directory();
+    let path = generate_file_path();
+
+    let guard = ProcessGuardBuilder::new().create(&path).unwrap();
+    ProcessGuard::leak(guard);
+    let cleaner = ProcessCleaner::new(&path).unwrap();
+    ProcessCleaner::leak(cleaner);
+
+    assert_that!(ProcessCleaner::new(&path), is_ok);
+}

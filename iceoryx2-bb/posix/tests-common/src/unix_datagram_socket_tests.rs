@@ -28,9 +28,12 @@ use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_posix::unix_datagram_socket::*;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::leakable::Leakable;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::test;
+use iceoryx2_pal_posix::posix;
+use iceoryx2_pal_posix::posix::Errno;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA;
 
 pub const TIMEOUT: core::time::Duration = core::time::Duration::from_millis(100);
@@ -352,4 +355,58 @@ pub fn sending_receiving_with_max_supported_fd_and_credentials_works() {
 
         assert_that!(file_recv_content, eq(*send_content));
     }
+}
+
+#[test]
+pub fn leaking_receiver_leaves_the_socket_but_closes_the_file_descriptor() {
+    create_test_directory();
+    let socket_name = generate_file_path();
+    let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
+        .permission(Permission::OWNER_ALL)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+
+    let fd = unsafe { sut_receiver.file_descriptor().native_handle() };
+
+    UnixDatagramReceiver::leak(sut_receiver);
+
+    let close_result = unsafe { posix::close(fd) };
+    let errno = Errno::get();
+
+    assert_that!(File::does_exist(&socket_name).unwrap(), eq true);
+    assert_that!(close_result, eq - 1);
+    assert_that!(errno, eq Errno::EBADF);
+
+    File::remove(&socket_name).unwrap();
+}
+
+#[test]
+pub fn leaking_sender_closes_file_descriptor_and_socket_is_still_cleaned_up_from_receiver() {
+    create_test_directory();
+    let socket_name = generate_file_path();
+    let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
+        .permission(Permission::OWNER_ALL)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+
+    let sut_sender = UnixDatagramSenderBuilder::new(&socket_name)
+        .create()
+        .unwrap();
+
+    let fd = unsafe { sut_sender.file_descriptor().native_handle() };
+
+    UnixDatagramSender::leak(sut_sender);
+
+    let close_result = unsafe { posix::close(fd) };
+    let errno = Errno::get();
+
+    assert_that!(File::does_exist(&socket_name).unwrap(), eq true);
+    assert_that!(close_result, eq - 1);
+    assert_that!(errno, eq Errno::EBADF);
+
+    drop(sut_receiver);
+
+    assert_that!(File::does_exist(&socket_name).unwrap(), eq false);
 }
