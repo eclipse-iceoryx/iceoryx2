@@ -295,9 +295,11 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     }
 
     pub fn discover_over_backend(&mut self) -> Result<(), DiscoveryError> {
+        let origin = format!("Tunnel({})::discover_over_backend", self.node.id());
+
         let mut events: Vec<DiscoveryEvent> = Vec::new();
         fail!(
-            from "Tunnel::discover_over_backend",
+            from origin,
             when self.backend.discovery().discover(|event| -> Result<(), Infallible> {
                 events.push(event.clone());
                 Ok(())
@@ -313,13 +315,15 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     }
 
     pub fn propagate(&mut self) -> Result<(), PropagateError> {
+        let origin = format!("Tunnel({})::propagate", self.node.id());
+
         for (service_hash, port) in &self.ports.publish_subscribe {
             match self.relays.publish_subscribe.get(service_hash) {
                 Some(relay) => {
                     propagate_publish_subscribe_payloads::<S, B>(self.node.id(), port, relay)?;
                 }
                 None => {
-                    warn!(from "Tunnel::propagate", "No relay available for {:?}", service_hash);
+                    warn!(from origin, "No relay available for {:?}", service_hash);
                     continue;
                 }
             };
@@ -328,10 +332,10 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         for (service_hash, port) in &self.ports.event {
             match self.relays.event.get(service_hash) {
                 Some(relay) => {
-                    propagate_events::<S, B>(port, relay)?;
+                    propagate_events::<S, B>(self.node.id(), port, relay)?;
                 }
                 None => {
-                    warn!(from "Tunnel::propagate", "No relay available for {:?}", service_hash);
+                    warn!(from origin, "No relay available for {:?}", service_hash);
                     continue;
                 }
             };
@@ -347,13 +351,15 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     /// Subscriber-mode local discovery: events from the discovery service
     /// describe local additions and removals.
     fn discover_over_subscriber(&mut self) -> Result<(), DiscoveryError> {
+        let origin = format!("Tunnel({})::discover_over_subscriber", self.node.id());
+
         let mut events: Vec<DiscoveryEvent> = Vec::new();
         let subscriber = self
             .subscriber
             .as_mut()
             .expect("Should never happen. Subscriber created in constructor.");
         fail!(
-            from "Tunnel::discover_over_subscriber",
+            from origin,
             when subscriber.discover(|event| -> Result<(), Infallible> {
                 events.push(event.clone());
                 Ok(())
@@ -373,6 +379,8 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     /// considered locally offered when at least one non-tunnel, non-dead node
     /// is offering it.
     fn discover_over_tracker(&mut self) -> Result<(), DiscoveryError> {
+        let origin = format!("Tunnel({})::discover_over_tracker", self.node.id());
+
         let mut events: Vec<DiscoveryEvent> = Vec::new();
         {
             let tracker = self
@@ -381,7 +389,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
                 .expect("Should never happen. Tracker created in constructor.");
 
             let sync = fail!(
-                from "Tunnel::discover_over_tracker",
+                from origin,
                 when tracker.sync(),
                 with DiscoveryError::DiscoveryOverTracker,
                 "Failed to synchronize discovery tracker"
@@ -445,6 +453,8 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         event: DiscoveryEvent,
         origin: Origin,
     ) -> Result<(), DiscoveryError> {
+        let log_origin = format!("Tunnel({})::process_discovery", self.node.id());
+
         match event {
             DiscoveryEvent::Added(static_config) => {
                 if !matches!(
@@ -452,7 +462,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
                     MessagingPattern::PublishSubscribe(_) | MessagingPattern::Event(_)
                 ) {
                     debug!(
-                        from "Tunnel::process_discovery",
+                        from log_origin,
                         "Skipping unsupported messaging pattern: {}({})",
                         static_config.messaging_pattern(),
                         static_config.name()
@@ -465,7 +475,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
                 // If the service was not already tracked, mirror the service
                 if !self.services.contains_key(&hash) {
                     info!(
-                        from "Tunnel::process_discovery",
+                        from log_origin,
                         "Opening mirror ({:?}): {}({})",
                         origin,
                         static_config.messaging_pattern(),
@@ -502,7 +512,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
             DiscoveryEvent::Removed(hash) => {
                 let Some(tracked_service) = self.services.get_mut(&hash) else {
                     debug!(
-                        from "Tunnel::process_discovery",
+                        from log_origin,
                         "Ignoring Removed for untracked service: {}",
                         hash.as_str()
                     );
@@ -528,7 +538,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
                         .remove(&hash)
                         .expect("Should never happen. Entry was confirmed above.");
                     info!(
-                        from "Tunnel::process_discovery",
+                        from log_origin,
                         "Closing mirror ({:?}): {}({})",
                         origin,
                         removed_service.static_config.messaging_pattern(),
@@ -552,11 +562,13 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
 
     /// Creates the mirror ports for a service.
     fn open_ports(&mut self, static_config: &StaticConfig) -> Result<(), DiscoveryError> {
+        let origin = format!("Tunnel({})::open_ports", self.node.id());
+
         let hash = *static_config.service_hash();
         match static_config.messaging_pattern() {
             MessagingPattern::PublishSubscribe(_) => {
                 let port = fail!(
-                    from "Tunnel::open_ports",
+                    from origin,
                     when PublishSubscribePorts::new(static_config, &self.node),
                     with DiscoveryError::PublishSubscribePortCreation,
                     "Failed to create publish-subscribe ports"
@@ -565,7 +577,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
             }
             MessagingPattern::Event(_) => {
                 let port = fail!(
-                    from "Tunnel::open_ports",
+                    from origin,
                     when EventPorts::new(static_config, &self.node),
                     with DiscoveryError::EventPortsCreation,
                     "Failed to create event ports"
@@ -579,11 +591,13 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
 
     /// Creates the backend relay for a service.
     fn open_relay(&mut self, static_config: &StaticConfig) -> Result<(), DiscoveryError> {
+        let origin = format!("Tunnel({})::open_relay", self.node.id());
+
         let hash = *static_config.service_hash();
         match static_config.messaging_pattern() {
             MessagingPattern::PublishSubscribe(_) => {
                 let relay = fail!(
-                    from "Tunnel::open_relay",
+                    from origin,
                     when self.backend
                         .relay_builder()
                         .publish_subscribe(static_config)
@@ -595,7 +609,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
             }
             MessagingPattern::Event(_) => {
                 let relay = fail!(
-                    from "Tunnel::open_relay",
+                    from origin,
                     when self.backend
                         .relay_builder()
                         .event(static_config)
@@ -624,14 +638,16 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
 
     /// Broadcasts a service's availability to remote peers over the backend.
     fn announce_added(&self, static_config: &StaticConfig) -> Result<(), DiscoveryError> {
+        let origin = format!("Tunnel({})::announce_added", self.node.id());
+
         info!(
-            from "Tunnel::announce_added",
+            from origin,
             "Announcing addition: {}({})",
             static_config.messaging_pattern(),
             static_config.name()
         );
         fail!(
-            from "Tunnel::announce_added",
+            from origin,
             when self.backend.discovery().announce(&DiscoveryEvent::Added(static_config.clone())),
             with DiscoveryError::DiscoveryAnnouncement,
             "Failed to announce service over backend"
@@ -641,14 +657,15 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
 
     /// Withdraws a previously-announced service from remote peers over the backend.
     fn announce_removed(&self, static_config: &StaticConfig) -> Result<(), DiscoveryError> {
+        let origin = format!("Tunnel({})::announce_removed", self.node.id());
         info!(
-            from "Tunnel::announce_removed",
+            from origin,
             "Announcing removal: {}({})",
             static_config.messaging_pattern(),
             static_config.name()
         );
         fail!(
-            from "Tunnel::announce_removed",
+            from origin,
             when self.backend.discovery().announce(&DiscoveryEvent::Removed(*static_config.service_hash())),
             with DiscoveryError::DiscoveryAnnouncement,
             "Failed to announce service removal over backend"
@@ -662,11 +679,7 @@ fn propagate_publish_subscribe_payloads<S: Service, B: Backend<S> + Debug>(
     port: &PublishSubscribePorts<S>,
     relay: &B::PublishSubscribeRelay,
 ) -> Result<(), PropagateError> {
-    let origin = format!(
-        "Tunnel<{}, {}>::propagate_publish_subscribe_payloads()",
-        core::any::type_name::<S>(),
-        core::any::type_name::<B>()
-    );
+    let origin = format!("Tunnel({})::propagate_publish_subscribe_payloads", node_id);
 
     let propagated = fail!(
         from origin,
@@ -707,14 +720,11 @@ fn propagate_publish_subscribe_payloads<S: Service, B: Backend<S> + Debug>(
 }
 
 fn propagate_events<S: Service, B: Backend<S> + Debug>(
+    node_id: &UniqueNodeId,
     port: &EventPorts<S>,
     relay: &B::EventRelay,
 ) -> Result<(), PropagateError> {
-    let origin = format!(
-        "Tunnel<{}, {}>::propagate_events()",
-        core::any::type_name::<S>(),
-        core::any::type_name::<B>()
-    );
+    let origin = format!("Tunnel({})::propagate_events", node_id);
 
     let propagated = fail!(
         from origin,
