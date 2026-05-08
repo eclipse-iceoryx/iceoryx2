@@ -22,6 +22,7 @@ pub mod resizable_shared_memory_trait {
     use core::alloc::Layout;
     use iceoryx2_bb_posix::file::AccessMode;
     use iceoryx2_bb_testing::abandonable::Abandonable;
+    use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_testing::assert_that;
@@ -1000,6 +1001,8 @@ pub mod resizable_shared_memory_trait {
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
+        test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
+
         let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 

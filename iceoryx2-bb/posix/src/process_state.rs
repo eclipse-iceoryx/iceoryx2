@@ -383,7 +383,7 @@ impl ProcessGuardBuilder {
               with ProcessGuardCreateError::FailedToWriteUniqueProcessIdIntoContextFile,
               "{msg} since the unique process could not be written to the owner file.");
 
-        match Self::lock_state_file(&state_file) {
+        match Self::set_lock(&state_file, LockType::Write) {
             Ok(()) => (),
             Err(lock_error) => match lock_error {
                 ProcessGuardLockError::Interrupt => {
@@ -537,25 +537,17 @@ impl ProcessGuardBuilder {
         }
     }
 
-    fn unlock_state_file(file: &File) -> Result<(), ProcessGuardLockError> {
-        Self::set_lock(file, posix::F_UNLCK)
-    }
-
-    fn lock_state_file(file: &File) -> Result<(), ProcessGuardLockError> {
-        Self::set_lock(file, posix::F_SETLK)
-    }
-
-    fn set_lock(file: &File, lock_type: posix::int) -> Result<(), ProcessGuardLockError> {
+    fn set_lock(file: &File, lock_type: LockType) -> Result<(), ProcessGuardLockError> {
         let origin = "ProcessState::set_lock()";
         let msg = format!("Unable to lock process state file {file:?}");
         let mut new_lock_state = posix::flock::new_zeroed();
-        new_lock_state.l_type = LockType::Write as _;
+        new_lock_state.l_type = lock_type as _;
         new_lock_state.l_whence = posix::SEEK_SET as _;
 
         if unsafe {
             posix::fcntl(
                 file.file_descriptor().native_handle(),
-                lock_type,
+                posix::F_SETLK,
                 &mut new_lock_state,
             )
         } != -1
@@ -686,7 +678,7 @@ impl Abandonable for ProcessGuard {
         }
 
         if let Some(f) = &this.files.state {
-            if let Err(e) = ProcessGuardBuilder::unlock_state_file(f) {
+            if let Err(e) = ProcessGuardBuilder::set_lock(f, LockType::Unlock) {
                 warn!(from this,
                     "{msg} since the lock of the state file could not be released. [{e:?}]");
             }
@@ -701,7 +693,7 @@ impl Drop for ProcessGuard {
         let msg = "Unable to remove the ProcessGuard";
 
         if let Some(f) = &self.files.state {
-            if let Err(e) = ProcessGuardBuilder::unlock_state_file(f) {
+            if let Err(e) = ProcessGuardBuilder::set_lock(f, LockType::Unlock) {
                 warn!(from self,
                     "{msg} since the lock of the state file could not be released. [{e:?}]");
             }
@@ -1052,7 +1044,7 @@ impl Abandonable for ProcessCleaner {
         let this = unsafe { &mut *this };
 
         if let Some(f) = &this.files.owner_lock {
-            if let Err(e) = ProcessGuardBuilder::unlock_state_file(f) {
+            if let Err(e) = ProcessGuardBuilder::set_lock(f, LockType::Unlock) {
                 warn!(from this,
                     "Unable to abandon ProcessCleaner since the lock of the owner file could not be released. [{e:?}]");
             }
@@ -1155,7 +1147,7 @@ impl ProcessCleaner {
                 "{} since the corresponding process is still alive.", msg);
         }
 
-        match ProcessGuardBuilder::lock_state_file(&owner_lock_file) {
+        match ProcessGuardBuilder::set_lock(&owner_lock_file, LockType::Write) {
             Ok(()) => {
                 context_file.acquire_ownership();
                 state_file.acquire_ownership();

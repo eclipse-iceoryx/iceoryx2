@@ -28,6 +28,7 @@ pub mod zero_copy_connection_trait {
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_system_types::file_name::FileName;
+    use iceoryx2_bb_testing::test_requires;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{abandonable::Abandonable, assert_that};
     use iceoryx2_bb_testing_macros::conformance_test;
@@ -38,6 +39,7 @@ pub mod zero_copy_connection_trait {
     use iceoryx2_cal::zero_copy_connection::{
         ChannelId, ChannelState, UnableToDeliverToReceiverAction, *,
     };
+    use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
     const SAMPLE_SIZE: usize = 123;
     const NUMBER_OF_SAMPLES: usize = 2345;
@@ -2254,6 +2256,8 @@ pub mod zero_copy_connection_trait {
 
     #[conformance_test]
     pub fn abandoning_sender_keeps_everything_unchanged<Sut: ZeroCopyConnection>() {
+        test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
+
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -2279,6 +2283,8 @@ pub mod zero_copy_connection_trait {
 
     #[conformance_test]
     pub fn abandoning_receiver_keeps_everything_unchanged<Sut: ZeroCopyConnection>() {
+        test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
+
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 

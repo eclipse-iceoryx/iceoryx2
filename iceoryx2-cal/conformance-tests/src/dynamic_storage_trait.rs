@@ -940,6 +940,8 @@ pub mod dynamic_storage_trait {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
+        test_requires!(Sut::does_support_persistency());
+
         let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
