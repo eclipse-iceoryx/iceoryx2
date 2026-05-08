@@ -16,10 +16,10 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 #[conformance_tests]
 pub mod communication_channel_trait {
     use alloc::vec;
-
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::leakable::Leakable;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::communication_channel::*;
@@ -499,5 +499,60 @@ pub mod communication_channel_trait {
         assert_that!(*config.get_suffix(), eq Sut::default_suffix());
         assert_that!(*config.get_path_hint(), eq Sut::default_path_hint());
         assert_that!(*config.get_prefix(), eq Sut::default_prefix());
+    }
+
+    #[conformance_test]
+    pub fn leaking_receiver_keeps_channel_available<Sut: CommunicationChannel<u64>>() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_receiver = Sut::Creator::new(&storage_name)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+
+        Sut::Receiver::leak(sut_receiver);
+
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
+        assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config).unwrap() }, eq true);
+    }
+
+    #[conformance_test]
+    pub fn leaking_sender_keeps_channel_available<Sut: CommunicationChannel<u64>>() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_receiver = Sut::Creator::new(&storage_name)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+
+        let sut_sender = Sut::Connector::new(&storage_name)
+            .config(&config)
+            .open_sender()
+            .unwrap();
+
+        Sut::Sender::leak(sut_sender);
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
+
+        let sut_sender = Sut::Connector::new(&storage_name)
+            .config(&config)
+            .open_sender()
+            .unwrap();
+
+        const MAX_NUMBER_OF_PACKETS: usize = 16;
+
+        for i in 0..MAX_NUMBER_OF_PACKETS {
+            let data: u64 = 12 * i as u64;
+
+            assert_that!(sut_sender.send(&data), is_ok);
+            let received = sut_receiver.receive();
+            assert_that!(received, is_ok);
+            let received = received.unwrap();
+            assert_that!(received, is_some);
+            assert_that!(received.unwrap(), eq data);
+        }
+
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
     }
 }

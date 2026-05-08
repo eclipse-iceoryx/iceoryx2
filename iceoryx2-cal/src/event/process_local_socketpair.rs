@@ -191,7 +191,8 @@ pub struct Notifier {
 
 impl Leakable for Notifier {
     unsafe fn leak_in_place(this: *mut Self) {
-        unsafe { core::ptr::drop_in_place(this) };
+        let this = unsafe { &mut *this };
+        unsafe { core::ptr::drop_in_place(&mut this.socket) };
     }
 }
 
@@ -303,7 +304,8 @@ pub struct Listener {
 
 impl Leakable for Listener {
     unsafe fn leak_in_place(this: *mut Self) {
-        unsafe { core::ptr::drop_in_place(this) };
+        let this = unsafe { &mut *this };
+        unsafe { core::ptr::drop_in_place(&mut this.socket) };
     }
 }
 
