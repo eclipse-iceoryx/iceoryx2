@@ -14,7 +14,10 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
+use alloc::rc::Rc;
 use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
+
+use crate::backend::session::Session;
 
 #[derive(Debug)]
 pub enum DiscoveryError {}
@@ -28,7 +31,10 @@ impl core::fmt::Display for DiscoveryError {
 impl core::error::Error for DiscoveryError {}
 
 #[derive(Debug)]
-pub enum AnnouncementError {}
+pub enum AnnouncementError {
+    AnnounceAdded(crate::backend::session::AnnounceError),
+    AnnounceRemoved(crate::backend::session::AnnounceError),
+}
 
 impl core::fmt::Display for AnnouncementError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -39,11 +45,13 @@ impl core::fmt::Display for AnnouncementError {
 impl core::error::Error for AnnouncementError {}
 
 #[derive(Debug)]
-pub struct Discovery {}
+pub struct Discovery {
+    session: Rc<Session>,
+}
 
 impl Discovery {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(session: Rc<Session>) -> Self {
+        Self { session }
     }
 }
 
@@ -53,13 +61,32 @@ impl iceoryx2_services_tunnel_backend::traits::Discovery for Discovery {
     type AnnouncementError = AnnouncementError;
 
     fn announce(&self, event: DiscoveryEventRef<'_>) -> Result<(), Self::AnnouncementError> {
-        todo!()
+        match event {
+            DiscoveryEventRef::Added(static_config) => self
+                .session
+                .announce_added(static_config)
+                .map_err(AnnouncementError::AnnounceAdded),
+            DiscoveryEventRef::Removed(service_hash) => self
+                .session
+                .announce_removed(service_hash)
+                .map_err(AnnouncementError::AnnounceRemoved),
+        }
     }
 
     fn discover<E: core::error::Error, F: FnMut(DiscoveryEvent) -> Result<(), E>>(
         &self,
-        process_discovery: F,
+        mut process_discovery: F,
     ) -> Result<(), Self::DiscoveryError> {
-        todo!()
+        self.session.discover().unwrap();
+        let (added, removed) = self.session.pending_discoveries();
+
+        for static_config in added {
+            process_discovery(DiscoveryEvent::Added(static_config)).unwrap();
+        }
+        for service_hash in removed {
+            process_discovery(DiscoveryEvent::Removed(service_hash)).unwrap();
+        }
+
+        Ok(())
     }
 }

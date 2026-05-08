@@ -14,12 +14,14 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
+use alloc::rc::Rc;
 use iceoryx2::service::Service;
 use iceoryx2_services_tunnel_backend::traits::Backend;
 
 use crate::backend::{
     discovery::Discovery,
     relays::{self, factory::Factory},
+    session::Session,
 };
 
 #[derive(Debug, Clone)]
@@ -44,6 +46,7 @@ impl core::error::Error for CreationError {}
 
 #[derive(Debug)]
 pub struct TestBackend<S: Service> {
+    session: Rc<Session>,
     discovery: Discovery,
     _phantom: core::marker::PhantomData<S>,
 }
@@ -63,9 +66,11 @@ impl<S: Service> Backend<S> for TestBackend<S> {
         Self: 'a;
 
     fn create(config: &Self::Config) -> Result<Self, Self::CreationError> {
-        let discovery = Discovery::new();
+        let session = Rc::new(Session::create().unwrap());
+        let discovery = Discovery::new(session.clone());
 
         Ok(Self {
+            session,
             discovery,
             _phantom: core::marker::PhantomData,
         })
@@ -76,6 +81,6 @@ impl<S: Service> Backend<S> for TestBackend<S> {
     }
 
     fn relay_builder(&self) -> Self::RelayFactory<'_> {
-        Factory::new()
+        Factory::new(self.session.clone())
     }
 }

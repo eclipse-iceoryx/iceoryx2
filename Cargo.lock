@@ -1540,8 +1540,12 @@ name = "iceoryx2-services-tunnel-tests-common"
 version = "0.9.999"
 dependencies = [
  "iceoryx2",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-system-types",
  "iceoryx2-services-common",
  "iceoryx2-services-tunnel-backend",
+ "postcard",
 ]
 
 [[package]]

@@ -14,19 +14,25 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
+use alloc::rc::Rc;
 use iceoryx2::service::Service;
 use iceoryx2_services_tunnel_backend::traits::RelayFactory;
 
-use crate::backend::relays::{event, publish_subscribe};
+use crate::backend::{
+    relays::{event, publish_subscribe},
+    session::Session,
+};
 
 #[derive(Debug)]
 pub struct Factory<S: Service> {
+    session: Rc<Session>,
     _phantom: core::marker::PhantomData<S>,
 }
 
 impl<S: Service> Factory<S> {
-    pub fn new() -> Self {
+    pub fn new(session: Rc<Session>) -> Self {
         Self {
+            session,
             _phantom: core::marker::PhantomData,
         }
     }
@@ -52,7 +58,7 @@ impl<S: Service> RelayFactory<S> for Factory<S> {
     where
         Self: 'a,
     {
-        todo!()
+        publish_subscribe::Builder::new(self.session.clone(), static_config)
     }
 
     fn event<'a>(
@@ -62,6 +68,6 @@ impl<S: Service> RelayFactory<S> for Factory<S> {
     where
         Self: 'a,
     {
-        todo!()
+        event::Builder::new(self.session.clone(), static_config)
     }
 }

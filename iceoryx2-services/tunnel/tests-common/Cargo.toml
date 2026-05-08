@@ -24,3 +24,8 @@ std = [
 iceoryx2-services-common = { workspace = true }
 iceoryx2-services-tunnel-backend = { workspace = true }
 iceoryx2 = { workspace = true }
+iceoryx2-bb-elementary = { workspace = true }
+iceoryx2-bb-posix = { workspace = true }
+iceoryx2-bb-system-types = { workspace = true }
+
+postcard = { workspace = true }

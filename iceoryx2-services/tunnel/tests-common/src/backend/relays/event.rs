@@ -14,8 +14,11 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
+use alloc::rc::Rc;
 use iceoryx2::service::{Service, service_hash::ServiceHash, static_config::StaticConfig};
 use iceoryx2_services_tunnel_backend::traits::{EventRelay, RelayBuilder};
+
+use crate::backend::session::Session;
 
 #[derive(Debug)]
 pub enum CreationError {}
@@ -52,13 +55,15 @@ impl core::error::Error for ReceiveError {}
 
 #[derive(Debug)]
 pub struct Builder<'a, S: Service> {
+    session: Rc<Session>,
     static_config: &'a StaticConfig,
     _phantom: core::marker::PhantomData<S>,
 }
 
 impl<'a, S: Service> Builder<'a, S> {
-    pub fn new(static_config: &'a StaticConfig) -> Self {
+    pub fn new(session: Rc<Session>, static_config: &'a StaticConfig) -> Self {
         Self {
+            session,
             static_config,
             _phantom: core::marker::PhantomData,
         }
@@ -71,6 +76,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
 
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
         Ok(Relay {
+            session: self.session.clone(),
             service_hash: *self.static_config.service_hash(),
             _phantom: core::marker::PhantomData,
         })
@@ -79,6 +85,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
 
 #[derive(Debug)]
 pub struct Relay<S: Service> {
+    session: Rc<Session>,
     service_hash: ServiceHash,
     _phantom: core::marker::PhantomData<S>,
 }

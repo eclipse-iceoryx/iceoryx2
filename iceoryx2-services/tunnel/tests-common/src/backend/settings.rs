@@ -10,12 +10,5 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod session;
-mod settings;
-
-mod backend;
-pub use backend::*;
-
-pub mod discovery;
-pub mod relays;
-pub mod testing;
+pub const SESSIONS_DIR: &[u8] = b"/tmp/iceoryx2/tunnels/test-backend/sessions";
+pub const LOCKFILE_NAME: &[u8] = b"session.lock";
