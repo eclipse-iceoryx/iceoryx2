@@ -423,9 +423,11 @@ impl ProcessGuardBuilder {
             Ok(()) => {
                 trace!(from "ProcessGuard::new()", "create process state \"{}\" for monitoring", path);
                 Ok(ProcessGuard {
-                    state_file: Some(state_file),
-                    owner_lock_file: Some(owner_lock_file),
-                    context_file: Some(context_file),
+                    files: StateFiles {
+                        state: Some(state_file),
+                        owner_lock: Some(owner_lock_file),
+                        context: Some(context_file),
+                    },
                 })
             }
             Err(v) => {
@@ -583,6 +585,68 @@ impl ProcessGuardBuilder {
     }
 }
 
+#[derive(Debug)]
+struct StateFiles {
+    state: Option<File>,
+    owner_lock: Option<File>,
+    context: Option<File>,
+}
+
+impl StateFiles {
+    fn release_ownership(self) {
+        self.context
+            .as_ref()
+            .expect("contains always a value, only removed on destruction")
+            .release_ownership();
+        self.state
+            .as_ref()
+            .expect("contains always a value, only removed on destruction")
+            .release_ownership();
+        self.owner_lock
+            .as_ref()
+            .expect("contains always a value, only removed on destruction")
+            .release_ownership();
+    }
+}
+
+impl Abandonable for StateFiles {
+    unsafe fn abandon_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        for file in [&mut this.state, &mut this.owner_lock, &mut this.context] {
+            if let Some(f) = file.take() {
+                f.abandon();
+            }
+        }
+    }
+}
+
+impl Drop for StateFiles {
+    fn drop(&mut self) {
+        let msg = "Unable to remove the ProcessGuard";
+        let origin = format!("{:?}", self);
+
+        // The drop order is important, the last entry must be the context file so that we can also recover if
+        // the cleaner process dies in the middle of cleaning up the resources
+        //
+        // Therefore, we check explicitly if a file has the ownership and remove it explicitly instead of
+        // handling this via RAII
+        for file in [&mut self.state, &mut self.owner_lock, &mut self.context] {
+            let file = file
+                .take()
+                .expect("contains always a value, only removed on destruction");
+
+            if file.has_ownership() {
+                let file_path = *file
+                    .path()
+                    .expect("created from path therefore it always contains a value");
+                if let Err(e) = file.remove_self() {
+                    warn!(from origin, "{msg} since the file \"{:?}\" could not be removed. [{e:?}]", file_path)
+                }
+            }
+        }
+    }
+}
+
 /// A guard for a process that makes the process monitorable by a [`ProcessMonitor`] as long as it
 /// is in scope. When it goes out of scope the process is no longer monitorable.
 ///
@@ -603,9 +667,7 @@ impl ProcessGuardBuilder {
 /// ```
 #[derive(Debug)]
 pub struct ProcessGuard {
-    state_file: Option<File>,
-    owner_lock_file: Option<File>,
-    context_file: Option<File>,
+    files: StateFiles,
 }
 
 impl Abandonable for ProcessGuard {
@@ -614,7 +676,8 @@ impl Abandonable for ProcessGuard {
         let msg = "Unable to stage death";
 
         if let Err(e) = this
-            .context_file
+            .files
+            .context
             .as_mut()
             .expect("contains always a value, only removed on destruction")
             .write_val_at(0, &UniqueProcessId::new_zeroed())
@@ -622,58 +685,25 @@ impl Abandonable for ProcessGuard {
             fatal_panic!(from this, "{msg} since the state file could not be overridden with zeros. [{e:?}]");
         }
 
-        if let Some(f) = &this.state_file {
+        if let Some(f) = &this.files.state {
             if let Err(e) = ProcessGuardBuilder::unlock_state_file(f) {
                 warn!(from this,
                     "{msg} since the lock of the state file could not be released. [{e:?}]");
             }
         }
 
-        for file in [
-            &mut this.state_file,
-            &mut this.owner_lock_file,
-            &mut this.context_file,
-        ] {
-            if let Some(f) = file.take() {
-                f.abandon();
-            }
-        }
+        unsafe { StateFiles::abandon_in_place(&mut this.files) };
     }
 }
 
 impl Drop for ProcessGuard {
     fn drop(&mut self) {
         let msg = "Unable to remove the ProcessGuard";
-        let origin = format!("{:?}", self);
 
-        if let Some(f) = &self.state_file {
+        if let Some(f) = &self.files.state {
             if let Err(e) = ProcessGuardBuilder::unlock_state_file(f) {
                 warn!(from self,
                     "{msg} since the lock of the state file could not be released. [{e:?}]");
-            }
-        }
-
-        // The drop order is important, the last entry must be the context file so that we can also recover if
-        // the cleaner process dies in the middle of cleaning up the resources
-        //
-        // Therefore, we check explicitly if a file has the ownership and remove it explicitly instead of
-        // handling this via RAII
-        for file in [
-            &mut self.state_file,
-            &mut self.owner_lock_file,
-            &mut self.context_file,
-        ] {
-            let file = file
-                .take()
-                .expect("contains always a value, only removed on destruction");
-
-            if file.has_ownership() {
-                let file_path = *file
-                    .path()
-                    .expect("created from path therefore it always contains a value");
-                if let Err(e) = file.remove_self() {
-                    warn!(from origin, "{msg} since the file \"{:?}\" could not be removed. [{e:?}]", file_path)
-                }
             }
         }
     }
@@ -731,26 +761,12 @@ impl ProcessGuard {
 
     /// Returns the [`FilePath`] under which the underlying file is stored.
     pub fn path(&self) -> &FilePath {
-        self.state_file
+        self.files
+            .state
             .as_ref()
             .expect("contains always a value, only removed on destruction")
             .path()
             .expect("file is created from path and contains always a path")
-    }
-
-    fn release_ownership(self) {
-        self.context_file
-            .as_ref()
-            .expect("contains always a value, only removed on destruction")
-            .release_ownership();
-        self.state_file
-            .as_ref()
-            .expect("contains always a value, only removed on destruction")
-            .release_ownership();
-        self.owner_lock_file
-            .as_ref()
-            .expect("contains always a value, only removed on destruction")
-            .release_ownership();
     }
 }
 
@@ -1028,29 +1044,21 @@ impl ProcessMonitor {
 /// ```
 #[derive(Debug)]
 pub struct ProcessCleaner {
-    guard: ProcessGuard,
+    files: StateFiles,
 }
 
 impl Abandonable for ProcessCleaner {
     unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
 
-        if let Some(f) = &this.guard.owner_lock_file {
+        if let Some(f) = &this.files.owner_lock {
             if let Err(e) = ProcessGuardBuilder::unlock_state_file(f) {
                 warn!(from this,
                     "Unable to abandon ProcessCleaner since the lock of the owner file could not be released. [{e:?}]");
             }
         }
 
-        for file in [
-            &mut this.guard.state_file,
-            &mut this.guard.owner_lock_file,
-            &mut this.guard.context_file,
-        ] {
-            if let Some(f) = file.take() {
-                f.abandon();
-            }
-        }
+        unsafe { StateFiles::abandon_in_place(&mut this.files) };
     }
 }
 
@@ -1153,10 +1161,10 @@ impl ProcessCleaner {
                 state_file.acquire_ownership();
                 owner_lock_file.acquire_ownership();
                 Ok(Self {
-                    guard: ProcessGuard {
-                        state_file: Some(state_file),
-                        owner_lock_file: Some(owner_lock_file),
-                        context_file: Some(context_file),
+                    files: StateFiles {
+                        state: Some(state_file),
+                        owner_lock: Some(owner_lock_file),
+                        context: Some(context_file),
                     },
                 })
             }
@@ -1183,6 +1191,6 @@ impl ProcessCleaner {
     /// when another process tried to cleanup the stale resources of the dead process but is unable
     /// to due to insufficient permissions.
     pub fn abandon(self) {
-        self.guard.release_ownership();
+        self.files.release_ownership();
     }
 }
