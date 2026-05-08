@@ -10,9 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod backend;
-pub use backend::*;
+mod event_discovery_tests;
+mod event_propagation_tests;
+mod publish_subscribe_discovery_tests;
+mod publish_subscribe_propagation_tests;
 
-pub mod discovery;
-pub mod relays;
-pub mod testing;
+iceoryx2_bb_testing::test_harness!();

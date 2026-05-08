@@ -10,9 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod backend;
-pub use backend::*;
+#![warn(clippy::alloc_instead_of_core)]
+#![warn(clippy::std_instead_of_alloc)]
+#![warn(clippy::std_instead_of_core)]
 
-pub mod discovery;
-pub mod relays;
-pub mod testing;
+pub struct Testing;
+
+impl iceoryx2_services_tunnel_backend::traits::testing::Testing for Testing {}
