@@ -23,8 +23,11 @@ use iceoryx2_bb_posix::testing::create_test_directory;
 use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::leakable::Leakable;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing_macros::test;
+use iceoryx2_pal_posix::posix;
+use iceoryx2_pal_posix::posix::Errno;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERMISSIONS;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_USERS_AND_GROUPS;
 
@@ -562,4 +565,29 @@ pub fn cannot_write_to_file_that_was_not_opened_with_write_access_mode() {
     assert_that!(sut.access_mode(), eq AccessMode::Read);
     let buffer = [0u8; 8];
     assert_that!(sut.write(&buffer).err(), eq Some(FileWriteError::OpenedWithoutWriteAccessMode));
+}
+
+#[test]
+pub fn leaked_file_keeps_all_resources() {
+    let test = TestFixture::new();
+    let sut = FileBuilder::new(&test.file)
+        .has_ownership(true)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+
+    let native_handle = unsafe { sut.file_descriptor().native_handle() };
+
+    File::leak(sut);
+
+    assert_that!(File::does_exist(&test.file), eq Ok(true));
+
+    let close_result = unsafe { posix::close(native_handle) };
+    let errno = Errno::get();
+
+    // the file descriptor should be closed even with a leak
+    assert_that!(close_result, eq - 1);
+    assert_that!(errno, eq Errno::EBADF);
+
+    File::remove(&test.file).unwrap();
 }
