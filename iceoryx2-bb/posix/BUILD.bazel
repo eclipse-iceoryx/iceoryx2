@@ -56,5 +56,6 @@ rust_test(
     tags = ["exclusive"],
     deps = [
         "//iceoryx2-bb/posix/tests-common:iceoryx2-bb-posix-tests-common",
+        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
     ],
 )

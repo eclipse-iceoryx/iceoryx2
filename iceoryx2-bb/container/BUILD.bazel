@@ -41,5 +41,6 @@ rust_test(
     use_libtest_harness = False,
     deps = [
         "//iceoryx2-bb/container/tests-common:iceoryx2-bb-container-tests-common",
+        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
     ],
 )
