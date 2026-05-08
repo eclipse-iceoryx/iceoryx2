@@ -20,18 +20,10 @@ filegroup(
 )
 
 rust_library(
-    name = "iceoryx2-services-tunnel-conformance-tests",
+    name = "iceoryx2-services-common",
     srcs = glob(["src/**/*.rs"]),
     deps = [
-        "//iceoryx2-services/common:iceoryx2-services-common",
-        "//iceoryx2-services/tunnel:iceoryx2-services-tunnel",
-        "//iceoryx2-services/tunnel-backend:iceoryx2-services-tunnel-backend",
-        "//iceoryx2-services/discovery:iceoryx2-services-discovery",
-        "//iceoryx2:iceoryx2",
-        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
-        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
-    ],
-    proc_macro_deps = [
-        "//iceoryx2-bb/testing-macros:iceoryx2-bb-testing-macros",
+        "//iceoryx2",
+        "@crate_index//:serde",
     ],
 )

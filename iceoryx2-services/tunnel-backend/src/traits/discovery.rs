@@ -12,7 +12,7 @@
 
 use core::error::Error;
 
-use iceoryx2::service::static_config::StaticConfig;
+use iceoryx2_services_common::DiscoveryEvent;
 
 /// Service discovery interface for discoverying and announcing
 /// [`Service`](iceoryx2::service::Service)s over the [`Backend`](crate::traits::Backend)
@@ -23,8 +23,8 @@ use iceoryx2::service::static_config::StaticConfig;
 /// [`Backend`](crate::traits::Backend) and announce local services
 /// so they can be discovered remotely. Implementations query the
 /// [`Backend`](crate::traits::Backend)'s communication layer to find active
-/// [`Service`](iceoryx2::service::Service) and provide their [`StaticConfig`]s
-/// to be processed by the caller.
+/// [`Service`](iceoryx2::service::Service) and provide their
+/// [`iceoryx2::service::static_config::StaticConfig`]s to be processed by the caller.
 ///
 /// # Examples
 ///
@@ -43,8 +43,8 @@ use iceoryx2::service::static_config::StaticConfig;
 /// impl core::error::Error for MyDiscoveryError {}
 ///
 /// fn list_services<DiscoveryError, ProcessingError>(discovery: &impl Discovery<DiscoveryError = DiscoveryError>) -> Result<(), DiscoveryError> {
-///     discovery.discover(|static_config| -> Result<(), MyDiscoveryError> {
-///         println!("Found service: {:?}", static_config.name());
+///     discovery.discover(|event| -> Result<(), MyDiscoveryError> {
+///         println!("Discovery event: {:?}", event);
 ///         Ok(())
 ///     })?;
 ///     Ok(())
@@ -55,7 +55,7 @@ use iceoryx2::service::static_config::StaticConfig;
 ///
 /// ```no_run
 /// use iceoryx2_services_tunnel_backend::traits::Discovery;
-/// use iceoryx2::service::static_config::StaticConfig;
+/// use iceoryx2_services_common::DiscoveryEvent;
 ///
 /// struct MyDiscovery {
 ///     // Discovery state
@@ -83,20 +83,20 @@ use iceoryx2::service::static_config::StaticConfig;
 ///     type DiscoveryError = MyDiscoveryError;
 ///     type AnnouncementError = MyAnnouncementError;
 ///
-///     fn announce(&self, static_config: &StaticConfig)
+///     fn announce(&self, discovery: &DiscoveryEvent)
 ///         -> Result<(), Self::AnnouncementError> {
 ///         // Make the service described by the provided static config
 ///         // discoverable over the backend
 ///         Ok(())
 ///     }
 ///
-///     fn discover<E: core::error::Error, F: FnMut(&StaticConfig) -> Result<(), E>>(
+///     fn discover<E: core::error::Error, F: FnMut(&DiscoveryEvent) -> Result<(), E>>(
 ///         &self,
 ///         process_discovery: F,
 ///     ) -> Result<(), Self::DiscoveryError> {
 ///         // Query backend for available services
-///         // For each service found, call process_discovery with its
-///         // static config
+///         // For each service found, call process_discovery with the
+///         // corresponding discovery event
 ///         Ok(())
 ///     }
 /// }
@@ -117,22 +117,24 @@ pub trait Discovery {
     ///
     /// # Parameters
     ///
-    /// * `static_config` - The [`StaticConfig`] of the service to announce.
-    fn announce(&self, static_config: &StaticConfig) -> Result<(), Self::AnnouncementError>;
+    /// * `static_config` - The [`iceoryx2::service::static_config::StaticConfig`]
+    ///   of the service to announce.
+    fn announce(&self, discovery: &DiscoveryEvent) -> Result<(), Self::AnnouncementError>;
 
     /// Discovers available services and processes each one with the provided
     /// `process_discovery` callback.
     ///
     /// This method queries the backend's communication mechanism for all
     /// accessible [`Service`](iceoryx2::service::Service)s, then invokes
-    /// `process_discovery` for each discovered [`StaticConfig`].
+    /// `process_discovery` for each discovered [`iceoryx2::service::static_config::StaticConfig`].
     /// Discovery continues until all services are processed or an error occurs.
     ///
     /// # Parameters
     ///
     /// * `process_discovery` - Callback provided by the caller to process the
-    ///   [`StaticConfig`] of each discovered [`Service`](iceoryx2::service::Service).
-    fn discover<E: Error, F: FnMut(&StaticConfig) -> Result<(), E>>(
+    ///   [`iceoryx2::service::static_config::StaticConfig`] of each discovered
+    ///   [`Service`](iceoryx2::service::Service).
+    fn discover<E: Error, F: FnMut(&DiscoveryEvent) -> Result<(), E>>(
         &self,
         process_discovery: F,
     ) -> Result<(), Self::DiscoveryError>;

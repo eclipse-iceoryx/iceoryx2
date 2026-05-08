@@ -58,3 +58,11 @@ impl ServiceHash {
         unsafe { core::str::from_utf8_unchecked(self.0.as_bytes()) }
     }
 }
+
+impl core::convert::TryFrom<&str> for ServiceHash {
+    type Error = iceoryx2_bb_container::semantic_string::SemanticStringError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Ok(Self(RestrictedFileName::try_from(value)?))
+    }
+}

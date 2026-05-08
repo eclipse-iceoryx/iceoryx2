@@ -10,20 +10,23 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::convert::Infallible;
 use core::fmt::Debug;
 
 use alloc::collections::BTreeMap;
 use alloc::collections::BTreeSet;
 use alloc::format;
 use alloc::string::String;
+use alloc::vec::Vec;
 
 use iceoryx2::identifiers::UniqueNodeId;
-use iceoryx2::node::{Node, NodeBuilder};
+use iceoryx2::node::{Node, NodeBuilder, NodeState, NodeView};
 use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
-use iceoryx2_log::{fail, info, trace, warn};
+use iceoryx2_log::{debug, fail, info, trace, warn};
+use iceoryx2_services_common::DiscoveryEvent;
 use iceoryx2_services_tunnel_backend::traits::{
     Backend, Discovery, EventRelay, PublishSubscribeRelay, RelayBuilder, RelayFactory,
 };
@@ -115,6 +118,80 @@ impl<S: Service, B: Backend<S>> Relays<S, B> {
     }
 }
 
+/// Side of the system that a discovery event refers to.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub(crate) enum Origin {
+    /// Service was discovered (or its absence detected) on the local iceoryx system.
+    Local,
+    /// Service was discovered (or its absence detected) over the backend.
+    Remote,
+}
+
+/// Outcome of marking a side as offering.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub(crate) enum AddOutcome {
+    /// Side just started offering.
+    NewlyOffering,
+    /// Side was already offering.
+    AlreadyOffering,
+}
+
+/// Outcome of marking a side as no longer offering.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub(crate) enum RemoveOutcome {
+    /// Side just stopped offering.
+    NoLongerOffering,
+    /// Side was already not offering.
+    AlreadyNotOffering,
+}
+
+/// Per-service lifecycle state tracked by the tunnel.
+///
+/// Required to determine that services that only exist because the tunnel
+/// is mirroring it rather than an active node offering the service.
+#[derive(Debug)]
+pub(crate) struct TrackedService {
+    static_config: StaticConfig,
+    locally_offered: bool,
+    remotely_offered: bool,
+}
+
+impl TrackedService {
+    fn is_offered(&self) -> bool {
+        self.locally_offered || self.remotely_offered
+    }
+
+    /// Sets the service as offered from `origin`.
+    fn set_offered(&mut self, origin: Origin) -> AddOutcome {
+        let flag = match origin {
+            Origin::Local => &mut self.locally_offered,
+            Origin::Remote => &mut self.remotely_offered,
+        };
+        let was = *flag;
+        *flag = true;
+        if was {
+            AddOutcome::AlreadyOffering
+        } else {
+            AddOutcome::NewlyOffering
+        }
+    }
+
+    /// Sets the service as no longer offered from `origin`.
+    fn set_not_offered(&mut self, origin: Origin) -> RemoveOutcome {
+        let flag = match origin {
+            Origin::Local => &mut self.locally_offered,
+            Origin::Remote => &mut self.remotely_offered,
+        };
+        let was = *flag;
+        *flag = false;
+        if was {
+            RemoveOutcome::NoLongerOffering
+        } else {
+            RemoveOutcome::AlreadyNotOffering
+        }
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct Config {
     pub discovery_service: Option<String>,
@@ -124,6 +201,7 @@ pub struct Config {
 pub struct Tunnel<S: Service, B: for<'a> Backend<S> + Debug> {
     node: Node<S>,
     backend: B,
+    services: BTreeMap<ServiceHash, TrackedService>,
     ports: Ports<S>,
     relays: Relays<S, B>,
     subscriber: Option<discovery::subscriber::DiscoverySubscriber<S>>,
@@ -191,6 +269,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         Ok(Self {
             node,
             backend,
+            services: BTreeMap::new(),
             ports: Ports::new(),
             relays: Relays::new(),
             subscriber,
@@ -206,53 +285,46 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     }
 
     pub fn discover_over_iceoryx(&mut self) -> Result<(), DiscoveryError> {
-        let tunneled_services = self.tunneled_services();
-        if let Some(subscriber) = &mut self.subscriber {
-            fail!(
-                from self,
-                when subscriber.discover(|static_config| {
-                    on_discovery(static_config, &self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays)
-                }),
-                with DiscoveryError::DiscoveryOverService,
-                "Failed to discover services via subscriber to discovery service"
-            );
+        if self.subscriber.is_some() {
+            self.discover_over_subscriber()?;
         }
-        if let Some(tracker) = &mut self.tracker {
-            fail!(
-                from self,
-                when tracker.discover(|static_config| {
-                    on_discovery(static_config, &self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays)
-                }),
-                with DiscoveryError::DiscoveryOverTracker,
-                "Failed to discover services via discovery tracker"
-            );
+        if self.tracker.is_some() {
+            self.discover_over_tracker()?;
         }
-
         Ok(())
     }
 
     pub fn discover_over_backend(&mut self) -> Result<(), DiscoveryError> {
-        let tunneled_services = self.tunneled_services();
+        let origin = format!("Tunnel({})::discover_over_backend", self.node.id());
+
+        let mut events: Vec<DiscoveryEvent> = Vec::new();
         fail!(
-            from self,
-            when self.backend.discovery().discover(|static_config| {
-                on_discovery(static_config, &self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays)
+            from origin,
+            when self.backend.discovery().discover(|event| -> Result<(), Infallible> {
+                events.push(event.clone());
+                Ok(())
             }),
             with DiscoveryError::DiscoveryOverBackend,
             "Failed to discover services via Backend"
         );
+
+        for event in events {
+            self.process_discovery(event, Origin::Remote)?;
+        }
         Ok(())
     }
 
     pub fn propagate(&mut self) -> Result<(), PropagateError> {
+        let origin = format!("Tunnel({})::propagate", self.node.id());
+
         for (service_hash, port) in &self.ports.publish_subscribe {
             match self.relays.publish_subscribe.get(service_hash) {
                 Some(relay) => {
                     propagate_publish_subscribe_payloads::<S, B>(self.node.id(), port, relay)?;
                 }
                 None => {
-                    warn!(from "Tunnel::propagate", "No relay available for {:?}", service_hash);
-                    return Ok(());
+                    warn!(from origin, "No relay available for {:?}", service_hash);
+                    continue;
                 }
             };
         }
@@ -260,11 +332,11 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         for (service_hash, port) in &self.ports.event {
             match self.relays.event.get(service_hash) {
                 Some(relay) => {
-                    propagate_events::<S, B>(port, relay)?;
+                    propagate_events::<S, B>(self.node.id(), port, relay)?;
                 }
                 None => {
-                    warn!(from "Tunnel::propagate", "No relay available for {:?}", service_hash);
-                    return Ok(());
+                    warn!(from origin, "No relay available for {:?}", service_hash);
+                    continue;
                 }
             };
         }
@@ -273,145 +345,333 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     }
 
     pub fn tunneled_services(&self) -> BTreeSet<ServiceHash> {
-        self.ports
-            .publish_subscribe
-            .keys()
-            .chain(self.ports.event.keys())
-            .cloned()
-            .collect()
-    }
-}
-
-fn on_discovery<S: Service, B: Backend<S> + Debug>(
-    static_config: &StaticConfig,
-    node: &Node<S>,
-    backend: &B,
-    services: &BTreeSet<ServiceHash>,
-    ports: &mut Ports<S>,
-    relays: &mut Relays<S, B>,
-) -> Result<(), DiscoveryError> {
-    let origin = format!(
-        "Tunnel<{}, {}>::on_discovery()",
-        core::any::type_name::<S>(),
-        core::any::type_name::<B>()
-    );
-
-    if services.contains(static_config.service_hash()) {
-        // Nothing to do.
-        return Ok(());
+        self.services.keys().cloned().collect()
     }
 
-    info!(
-        from origin,
-        "Discovered {}({})",
-        static_config.messaging_pattern(),
-        static_config.name()
-    );
+    /// Subscriber-mode local discovery: events from the discovery service
+    /// describe local additions and removals.
+    fn discover_over_subscriber(&mut self) -> Result<(), DiscoveryError> {
+        let origin = format!("Tunnel({})::discover_over_subscriber", self.node.id());
 
-    match static_config.messaging_pattern() {
-        MessagingPattern::PublishSubscribe(_) => {
-            setup_publish_subscribe(static_config, node, backend, ports, relays)
+        let mut events: Vec<DiscoveryEvent> = Vec::new();
+        let subscriber = self
+            .subscriber
+            .as_mut()
+            .expect("Should never happen. Subscriber created in constructor.");
+        fail!(
+            from origin,
+            when subscriber.discover(|event| -> Result<(), Infallible> {
+                events.push(event.clone());
+                Ok(())
+            }),
+            with DiscoveryError::DiscoveryOverService,
+            "Failed to discover services via subscriber to discovery service"
+        );
+
+        for event in events {
+            self.process_discovery(event, Origin::Local)?;
         }
-        MessagingPattern::Event(_) => setup_event(static_config, node, backend, ports, relays),
-        _ => {
-            // Not supported. Nothing to do.
-            info!(
+        Ok(())
+    }
+
+    /// Tracker-mode local discovery: sync against the local registry, then
+    /// derive `locally_offered` transitions from the snapshot. A service is
+    /// considered locally offered when at least one non-tunnel, non-dead node
+    /// is offering it.
+    fn discover_over_tracker(&mut self) -> Result<(), DiscoveryError> {
+        let origin = format!("Tunnel({})::discover_over_tracker", self.node.id());
+
+        let mut events: Vec<DiscoveryEvent> = Vec::new();
+        {
+            let tracker = self
+                .tracker
+                .as_ref()
+                .expect("Should never happen. Tracker created in constructor.");
+
+            let sync = fail!(
                 from origin,
-                "Unsupported discovery {}({})",
-                static_config.messaging_pattern(),
-                static_config.name()
+                when tracker.sync(),
+                with DiscoveryError::DiscoveryOverTracker,
+                "Failed to synchronize discovery tracker"
             );
-            Ok(())
+
+            // A service is considered locally offered when at least one
+            // non-tunnel, non-dead node is currently registered for it.
+            // Inaccessible/Undefined nodes are counted to give them the
+            // benefit of the doubt.
+            let tunnel_node_id = *self.node.id();
+            let is_offered_by_other = |hash: &ServiceHash| -> bool {
+                tracker.get(hash, |service_details| {
+                    service_details
+                        .and_then(|d| d.dynamic_details.as_ref())
+                        .map(|d| {
+                            d.nodes.iter().any(|node| match node {
+                                NodeState::Alive(view) => view.id() != &tunnel_node_id,
+                                NodeState::Inaccessible(id) | NodeState::Undefined(id) => {
+                                    id != &tunnel_node_id
+                                }
+                                NodeState::Dead(_) => false,
+                            })
+                        })
+                        .unwrap_or(false)
+                })
+            };
+
+            // Newly-listed services with at least one non-tunnel offerer.
+            for static_config in sync.added {
+                if is_offered_by_other(static_config.service_hash()) {
+                    events.push(DiscoveryEvent::Added(static_config));
+                }
+            }
+
+            // Services that disappeared from the registry entirely.
+            for hash in sync.removed {
+                events.push(DiscoveryEvent::Removed(hash));
+            }
+
+            // Currently-tracked services whose local offerer has gone away.
+            for (hash, state) in &self.services {
+                if state.locally_offered && !is_offered_by_other(hash) {
+                    events.push(DiscoveryEvent::Removed(*hash));
+                }
+            }
         }
+
+        for event in events {
+            self.process_discovery(event, Origin::Local)?;
+        }
+        Ok(())
     }
-}
 
-fn setup_publish_subscribe<S: Service, B: Backend<S> + Debug>(
-    static_config: &StaticConfig,
-    node: &Node<S>,
-    backend: &B,
-    ports: &mut Ports<S>,
-    relays: &mut Relays<S, B>,
-) -> Result<(), DiscoveryError> {
-    let origin = format!(
-        "Tunnel<{}, {}>::setup_publish_subscribe()",
-        core::any::type_name::<S>(),
-        core::any::type_name::<B>()
-    );
+    /// Processes a discovery event from `origin`, advancing per-service state.
+    ///
+    /// Opens the mirror on first observation, announces over the backend on
+    /// local-side 0 → 1 and 1 → 0 transitions, and tears the mirror down once
+    /// neither side is offering.
+    fn process_discovery(
+        &mut self,
+        event: DiscoveryEvent,
+        origin: Origin,
+    ) -> Result<(), DiscoveryError> {
+        let log_origin = format!("Tunnel({})::process_discovery", self.node.id());
 
-    let service_hash = static_config.service_hash();
+        match event {
+            DiscoveryEvent::Added(static_config) => {
+                if !matches!(
+                    static_config.messaging_pattern(),
+                    MessagingPattern::PublishSubscribe(_) | MessagingPattern::Event(_)
+                ) {
+                    debug!(
+                        from log_origin,
+                        "Skipping unsupported messaging pattern: {}({})",
+                        static_config.messaging_pattern(),
+                        static_config.name()
+                    );
+                    return Ok(());
+                }
 
-    let port = fail!(
-        from origin,
-        when PublishSubscribePorts::new(static_config, node),
-        with DiscoveryError::PublishSubscribePortCreation,
-        "Failed to create publish-subscribe ports"
-    );
-    ports.publish_subscribe.insert(*service_hash, port);
+                let hash = *static_config.service_hash();
 
-    let relay = fail!(
-        from origin,
-        when backend
-            .relay_builder()
-            .publish_subscribe(static_config)
-            .create(),
-        with DiscoveryError::PublishSubscribeRelayCreation,
-        "Failed to create publish-subscribe relay"
-    );
-    relays.publish_subscribe.insert(*service_hash, relay);
+                // If the service was not already tracked, mirror the service
+                if !self.services.contains_key(&hash) {
+                    info!(
+                        from log_origin,
+                        "Opening mirror ({:?}): {}({})",
+                        origin,
+                        static_config.messaging_pattern(),
+                        static_config.name()
+                    );
 
-    fail!(
-        from origin,
-        when backend.discovery().announce(static_config),
-        with DiscoveryError::DiscoveryAnnouncement,
-        "Failed to announce service over backend"
-    );
+                    self.open_ports(&static_config)?;
+                    self.open_relay(&static_config)?;
+                    self.services.insert(
+                        hash,
+                        TrackedService {
+                            static_config,
+                            locally_offered: false,
+                            remotely_offered: false,
+                        },
+                    );
+                }
 
-    Ok(())
-}
+                // Mark this side as offered; announce on local 0 → 1 transitions.
+                let outcome = self
+                    .services
+                    .get_mut(&hash)
+                    .expect("Should never happen. Entry was just inserted.")
+                    .set_offered(origin);
 
-fn setup_event<S: Service, B: Backend<S> + Debug>(
-    static_config: &StaticConfig,
-    node: &Node<S>,
-    backend: &B,
-    ports: &mut Ports<S>,
-    relays: &mut Relays<S, B>,
-) -> Result<(), DiscoveryError> {
-    let origin = format!(
-        "Tunnel<{}, {}>::setup_event()",
-        core::any::type_name::<S>(),
-        core::any::type_name::<B>()
-    );
+                if origin == Origin::Local && outcome == AddOutcome::NewlyOffering {
+                    let tracked_service = self
+                        .services
+                        .get(&hash)
+                        .expect("Should never happen. Entry was confirmed above.");
+                    self.announce_added(&tracked_service.static_config)?;
+                }
+            }
+            DiscoveryEvent::Removed(hash) => {
+                let Some(tracked_service) = self.services.get_mut(&hash) else {
+                    debug!(
+                        from log_origin,
+                        "Ignoring Removed for untracked service: {}",
+                        hash.as_str()
+                    );
+                    return Ok(());
+                };
 
-    let service_hash = static_config.service_hash();
+                // Mark this side as not offered; announce on local 1 → 0 transitions.
+                let outcome = tracked_service.set_not_offered(origin);
+                let last_offerer_gone = !tracked_service.is_offered();
 
-    let port = fail!(
-        from origin,
-        when EventPorts::new(static_config, node),
-        with DiscoveryError::EventPortsCreation,
-        "Failed to create event ports"
-    );
-    ports.event.insert(*service_hash, port);
+                if origin == Origin::Local && outcome == RemoveOutcome::NoLongerOffering {
+                    let tracked_service = self
+                        .services
+                        .get(&hash)
+                        .expect("Should never happen. Entry was confirmed above.");
+                    self.announce_removed(&tracked_service.static_config)?;
+                }
 
-    let relay = fail!(
-        from origin,
-        when backend
-            .relay_builder()
-            .event(static_config)
-            .create(),
-        with DiscoveryError::EventRelayCreation,
-        "Failed to create event relay"
-    );
-    relays.event.insert(*service_hash, relay);
+                // If no side is offering anymore, close the mirror.
+                if last_offerer_gone {
+                    let removed_service = self
+                        .services
+                        .remove(&hash)
+                        .expect("Should never happen. Entry was confirmed above.");
+                    info!(
+                        from log_origin,
+                        "Closing mirror ({:?}): {}({})",
+                        origin,
+                        removed_service.static_config.messaging_pattern(),
+                        removed_service.static_config.name()
+                    );
+                    self.close_ports(&hash);
+                    self.close_relay(&hash);
 
-    fail!(
-        from origin,
-        when backend.discovery().announce(static_config),
-        with DiscoveryError::DiscoveryAnnouncement,
-        "Failed to announce service over backend"
-    );
+                    // Drop the tracker's cached snapshot so a same-hash service
+                    // recreated by a another node reappears as a fresh `added` on the
+                    // next sync.
+                    if let Some(tracker) = &self.tracker {
+                        tracker.forget(&hash);
+                    }
+                }
+            }
+        }
 
-    Ok(())
+        Ok(())
+    }
+
+    /// Creates the mirror ports for a service.
+    fn open_ports(&mut self, static_config: &StaticConfig) -> Result<(), DiscoveryError> {
+        let origin = format!("Tunnel({})::open_ports", self.node.id());
+
+        let hash = *static_config.service_hash();
+        match static_config.messaging_pattern() {
+            MessagingPattern::PublishSubscribe(_) => {
+                let port = fail!(
+                    from origin,
+                    when PublishSubscribePorts::new(static_config, &self.node),
+                    with DiscoveryError::PublishSubscribePortCreation,
+                    "Failed to create publish-subscribe ports"
+                );
+                self.ports.publish_subscribe.insert(hash, port);
+            }
+            MessagingPattern::Event(_) => {
+                let port = fail!(
+                    from origin,
+                    when EventPorts::new(static_config, &self.node),
+                    with DiscoveryError::EventPortsCreation,
+                    "Failed to create event ports"
+                );
+                self.ports.event.insert(hash, port);
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    /// Creates the backend relay for a service.
+    fn open_relay(&mut self, static_config: &StaticConfig) -> Result<(), DiscoveryError> {
+        let origin = format!("Tunnel({})::open_relay", self.node.id());
+
+        let hash = *static_config.service_hash();
+        match static_config.messaging_pattern() {
+            MessagingPattern::PublishSubscribe(_) => {
+                let relay = fail!(
+                    from origin,
+                    when self.backend
+                        .relay_builder()
+                        .publish_subscribe(static_config)
+                        .create(),
+                    with DiscoveryError::PublishSubscribeRelayCreation,
+                    "Failed to create publish-subscribe relay"
+                );
+                self.relays.publish_subscribe.insert(hash, relay);
+            }
+            MessagingPattern::Event(_) => {
+                let relay = fail!(
+                    from origin,
+                    when self.backend
+                        .relay_builder()
+                        .event(static_config)
+                        .create(),
+                    with DiscoveryError::EventRelayCreation,
+                    "Failed to create event relay"
+                );
+                self.relays.event.insert(hash, relay);
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    /// Drops a service's mirrored ports.
+    fn close_ports(&mut self, hash: &ServiceHash) {
+        self.ports.publish_subscribe.remove(hash);
+        self.ports.event.remove(hash);
+    }
+
+    /// Drops a service's backend relay.
+    fn close_relay(&mut self, hash: &ServiceHash) {
+        self.relays.publish_subscribe.remove(hash);
+        self.relays.event.remove(hash);
+    }
+
+    /// Broadcasts a service's availability to remote peers over the backend.
+    fn announce_added(&self, static_config: &StaticConfig) -> Result<(), DiscoveryError> {
+        let origin = format!("Tunnel({})::announce_added", self.node.id());
+
+        info!(
+            from origin,
+            "Announcing addition: {}({})",
+            static_config.messaging_pattern(),
+            static_config.name()
+        );
+        fail!(
+            from origin,
+            when self.backend.discovery().announce(&DiscoveryEvent::Added(static_config.clone())),
+            with DiscoveryError::DiscoveryAnnouncement,
+            "Failed to announce service over backend"
+        );
+        Ok(())
+    }
+
+    /// Withdraws a previously-announced service from remote peers over the backend.
+    fn announce_removed(&self, static_config: &StaticConfig) -> Result<(), DiscoveryError> {
+        let origin = format!("Tunnel({})::announce_removed", self.node.id());
+        info!(
+            from origin,
+            "Announcing removal: {}({})",
+            static_config.messaging_pattern(),
+            static_config.name()
+        );
+        fail!(
+            from origin,
+            when self.backend.discovery().announce(&DiscoveryEvent::Removed(*static_config.service_hash())),
+            with DiscoveryError::DiscoveryAnnouncement,
+            "Failed to announce service removal over backend"
+        );
+        Ok(())
+    }
 }
 
 fn propagate_publish_subscribe_payloads<S: Service, B: Backend<S> + Debug>(
@@ -419,11 +679,7 @@ fn propagate_publish_subscribe_payloads<S: Service, B: Backend<S> + Debug>(
     port: &PublishSubscribePorts<S>,
     relay: &B::PublishSubscribeRelay,
 ) -> Result<(), PropagateError> {
-    let origin = format!(
-        "Tunnel<{}, {}>::propagate_publish_subscribe_payloads()",
-        core::any::type_name::<S>(),
-        core::any::type_name::<B>()
-    );
+    let origin = format!("Tunnel({})::propagate_publish_subscribe_payloads", node_id);
 
     let propagated = fail!(
         from origin,
@@ -464,14 +720,11 @@ fn propagate_publish_subscribe_payloads<S: Service, B: Backend<S> + Debug>(
 }
 
 fn propagate_events<S: Service, B: Backend<S> + Debug>(
+    node_id: &UniqueNodeId,
     port: &EventPorts<S>,
     relay: &B::EventRelay,
 ) -> Result<(), PropagateError> {
-    let origin = format!(
-        "Tunnel<{}, {}>::propagate_events()",
-        core::any::type_name::<S>(),
-        core::any::type_name::<B>()
-    );
+    let origin = format!("Tunnel({})::propagate_events", node_id);
 
     let propagated = fail!(
         from origin,

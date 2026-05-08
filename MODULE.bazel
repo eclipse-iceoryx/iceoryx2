@@ -69,6 +69,7 @@ crate.from_cargo(
         "//:benchmarks/request-response/Cargo.toml",
         "//:component-tests/rust/Cargo.toml",
         "//:examples/Cargo.toml",
+        "//:iceoryx2-services/common/Cargo.toml",
         "//:iceoryx2-services/tunnel/Cargo.toml",
         "//:iceoryx2-services/tunnel-end-to-end-tests/Cargo.toml",
         "//:iceoryx2-services/tunnel-backend/Cargo.toml",

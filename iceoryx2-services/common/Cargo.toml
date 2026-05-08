@@ -1,25 +1,23 @@
 [package]
-name = "iceoryx2-services-tunnel-backend"
-description = "iceoryx2-services: traits and types for tunnel backends"
+name = "iceoryx2-services-common"
+description = "iceoryx2-services: common types and utilities"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }
+readme = "README.md"
 repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
 [features]
-default = ["std"]
-
+default = []
 std = [
-  "iceoryx2-services-common/std",
   "iceoryx2/std",
-  "iceoryx2-bb-posix/std"
 ]
 
 [dependencies]
-iceoryx2-services-common = { workspace = true }
 iceoryx2 = { workspace = true }
-iceoryx2-bb-posix = { workspace = true }
+
+serde = { workspace = true }

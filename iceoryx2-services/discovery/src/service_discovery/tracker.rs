@@ -12,7 +12,6 @@
 
 use alloc::collections::BTreeMap;
 use alloc::collections::BTreeSet;
-use alloc::collections::btree_map::Entry;
 use alloc::vec::Vec;
 
 use iceoryx2::{
@@ -96,11 +95,11 @@ impl<S: Service> Tracker<S> {
             let id = *service.static_details.service_hash();
             discovered_ids.insert(id);
 
-            // Track new services.
-            if let Entry::Vacant(e) = self.services.entry(id) {
-                e.insert(service);
+            if !self.services.contains_key(&id) {
                 added_ids.push(id);
             }
+            self.services.insert(id, service);
+
             CallbackProgression::Continue
         })?;
 
@@ -120,6 +119,13 @@ impl<S: Service> Tracker<S> {
         }
 
         Ok((added_ids, removed_services))
+    }
+
+    /// Removes a service from the tracker without waiting for it to disappear from the
+    /// system listing. Intended for callers that have determined a service is logically
+    /// gone (e.g., they are the only remaining holder).
+    pub fn forget(&mut self, id: &ServiceHash) -> Option<ServiceDetails<S>> {
+        self.services.remove(id)
     }
 
     /// Retrieves service details for a specific service ID if tracked.

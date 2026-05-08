@@ -521,6 +521,7 @@ dependencies = [
  "iceoryx2-bb-system-types",
  "iceoryx2-cal",
  "iceoryx2-log",
+ "iceoryx2-services-common",
  "iceoryx2-services-discovery",
 ]
 
@@ -1288,6 +1289,7 @@ dependencies = [
  "iceoryx2-cal",
  "iceoryx2-log",
  "iceoryx2-pal-posix",
+ "iceoryx2-services-common",
  "iceoryx2-services-discovery",
  "iceoryx2-userland-record-and-replay",
  "ron",
@@ -1450,6 +1452,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-services-common"
+version = "0.8.999"
+dependencies = [
+ "iceoryx2",
+ "serde",
+]
+
+[[package]]
 name = "iceoryx2-services-discovery"
 version = "0.8.999"
 dependencies = [
@@ -1461,6 +1471,7 @@ dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
+ "iceoryx2-services-common",
  "serde",
 ]
 
@@ -1475,6 +1486,7 @@ dependencies = [
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-log",
+ "iceoryx2-services-common",
  "iceoryx2-services-discovery",
  "iceoryx2-services-tunnel-backend",
 ]
@@ -1485,6 +1497,7 @@ version = "0.8.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-posix",
+ "iceoryx2-services-common",
 ]
 
 [[package]]
@@ -1495,6 +1508,7 @@ dependencies = [
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-bb-testing-macros",
+ "iceoryx2-services-common",
  "iceoryx2-services-discovery",
  "iceoryx2-services-tunnel",
  "iceoryx2-services-tunnel-backend",

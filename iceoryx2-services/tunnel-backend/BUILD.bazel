@@ -23,6 +23,7 @@ rust_library(
     name = "iceoryx2-services-tunnel-backend",
     srcs = glob(["src/**/*.rs"]),
     deps = [
+        "//iceoryx2-services/common:iceoryx2-services-common",
         "//iceoryx2:iceoryx2",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",

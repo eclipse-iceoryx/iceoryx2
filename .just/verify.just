@@ -93,6 +93,7 @@ _verify-clippy workspace profile has_nostd extra_args:
 
         MANIFEST_ARG=$(just _workspace-manifest-arg "$WS")
 
+        # TODO: Only run on subset of crates included in the no_std deployment
         if [ "{{has_nostd}}" = "true" ]; then
             echo "Running clippy for '$WS' (no_std {{profile}})..."
             cargo clippy --no-deps --workspace --all-targets {{profile}} \

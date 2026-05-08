@@ -12,7 +12,7 @@
 
 use crate::service_discovery::{SyncError, Tracker};
 use iceoryx2::port::ReceiveError;
-use iceoryx2::prelude::{AllocationStrategy, ZeroCopySend};
+use iceoryx2::prelude::AllocationStrategy;
 use iceoryx2::{
     config::Config as IceoryxConfig,
     node::{Node, NodeBuilder, NodeCreationFailure},
@@ -33,27 +33,12 @@ use iceoryx2::{
     },
 };
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
+use iceoryx2_services_common::DiscoveryEvent;
 
 const SERVICE_NAME: &str = "discovery/services/";
 
-/// Events emitted by the service discovery service.
-#[derive(Debug, ZeroCopySend, serde::Serialize, serde::Deserialize)]
-#[allow(dead_code)] // Fields used by subscribers
-#[repr(C)]
-pub enum Discovery {
-    /// A service has been added to the system.
-    ///
-    /// Contains the static configuration of the newly added service.
-    Added(StaticConfig),
-
-    /// A service has been removed from the system.
-    ///
-    /// Contains the static configuration of the removed service.
-    Removed(StaticConfig),
-}
-
 /// The payload type used for publishing discovery changes
-pub type Payload = Discovery;
+pub type Payload = DiscoveryEvent;
 
 /// Errors that can occur when creating the service discovery service.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -442,7 +427,7 @@ impl<S: ServiceType> Service<S> {
                 if let Some(publisher) = &self.publisher {
                     let sample = publisher.loan_uninit()?;
                     let sample =
-                        sample.write_payload(Discovery::Added(service.static_details.clone()));
+                        sample.write_payload(DiscoveryEvent::Added(service.static_details.clone()));
                     sample.send()?;
                 }
                 on_added(service);
@@ -457,8 +442,9 @@ impl<S: ServiceType> Service<S> {
             }
             if let Some(publisher) = &self.publisher {
                 let sample = publisher.loan_uninit()?;
-                let sample =
-                    sample.write_payload(Discovery::Removed(service.static_details.clone()));
+                let sample = sample.write_payload(DiscoveryEvent::Removed(
+                    *service.static_details.service_hash(),
+                ));
                 sample.send()?;
             }
             on_removed(service);

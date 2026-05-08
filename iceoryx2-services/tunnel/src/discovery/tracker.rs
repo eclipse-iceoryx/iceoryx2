@@ -10,19 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::{
-    config::Config,
-    service::{Service, static_config::StaticConfig},
-};
+use alloc::vec::Vec;
+
+use iceoryx2::config::Config;
+use iceoryx2::service::Service;
+use iceoryx2::service::ServiceDetails;
+use iceoryx2::service::service_hash::ServiceHash;
+use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_log::{fail, fatal_panic};
 use iceoryx2_services_discovery::service_discovery::Tracker;
-use iceoryx2_services_tunnel_backend::traits::Discovery;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
     TrackerSynchronization,
-    DiscoveryProcessing,
 }
 
 impl core::fmt::Display for DiscoveryError {
@@ -33,70 +34,72 @@ impl core::fmt::Display for DiscoveryError {
 
 impl core::error::Error for DiscoveryError {}
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum AnnouncementError {}
-
-impl core::fmt::Display for AnnouncementError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "AnnouncementError::{self:?}")
-    }
+/// Result of a single [`DiscoveryTracker::sync`] cycle.
+#[derive(Debug)]
+pub struct DiscoverySync {
+    /// Static configs of services newly visible in the local registry.
+    pub added: Vec<StaticConfig>,
+    /// Hashes of services that have disappeared from the local registry entirely.
+    pub removed: Vec<ServiceHash>,
 }
 
-impl core::error::Error for AnnouncementError {}
-
 #[derive(Debug)]
-pub struct DiscoveryTracker<S: Service>(RefCell<Tracker<S>>);
+pub struct DiscoveryTracker<S: Service> {
+    tracker: RefCell<Tracker<S>>,
+}
 
 impl<S: Service> DiscoveryTracker<S> {
     pub fn create(iceoryx_config: &Config) -> Self {
-        let tracker = Tracker::new(iceoryx_config);
-        DiscoveryTracker(RefCell::new(tracker))
-    }
-}
-
-impl<S: Service> Discovery for DiscoveryTracker<S> {
-    type DiscoveryError = DiscoveryError;
-    type AnnouncementError = AnnouncementError;
-
-    fn announce(
-        &self,
-        _static_config: &iceoryx2::service::static_config::StaticConfig,
-    ) -> Result<(), Self::AnnouncementError> {
-        // NOOP - iceoryx2 handles discovery internally
-        Ok(())
+        DiscoveryTracker {
+            tracker: RefCell::new(Tracker::new(iceoryx_config)),
+        }
     }
 
-    fn discover<E: core::error::Error, F: FnMut(&StaticConfig) -> Result<(), E>>(
-        &self,
-        mut process_discovery: F,
-    ) -> Result<(), Self::DiscoveryError> {
-        let tracker = &mut self.0.borrow_mut();
-        let (added, _removed) = fail!(
-            from self,
+    /// Synchronises against the local iceoryx registry and returns the services
+    /// that newly appeared or fully disappeared since the last sync.
+    pub fn sync(&self) -> Result<DiscoverySync, DiscoveryError> {
+        let origin = "DiscoveryTracker::sync";
+        let mut tracker = self.tracker.borrow_mut();
+        let (added_ids, removed_services) = fail!(
+            from origin,
             when tracker.sync(),
             with DiscoveryError::TrackerSynchronization,
             "Failed to synchronize tracker"
         );
 
-        for id in added {
-            match &tracker.get(&id) {
-                Some(service_details) => {
-                    fail!(
-                        from self,
-                        when process_discovery(&service_details.static_details),
-                        with DiscoveryError::DiscoveryProcessing,
-                        "Failed to process discovery event"
-                    );
-                }
-                None => {
-                    fatal_panic!(
-                        from "DiscoveryTracker::discover",
-                        "This should never happen. Service discovered by tracker is not retrievable."
-                    )
-                }
-            }
-        }
+        let added = added_ids
+            .into_iter()
+            .map(|id| match tracker.get(&id) {
+                Some(details) => details.static_details.clone(),
+                None => fatal_panic!(
+                    from origin,
+                    "This should never happen. Service discovered by tracker is not retrievable."
+                ),
+            })
+            .collect();
+        let removed = removed_services
+            .into_iter()
+            .map(|d| *d.static_details.service_hash())
+            .collect();
 
-        Ok(())
+        Ok(DiscoverySync { added, removed })
+    }
+
+    /// Drops the cached snapshot for `hash`, allowing a subsequent [`sync`]
+    /// to re-emit `added` if the service is still present in the registry.
+    /// Used by the tunnel after tearing down its ports and relay so a same-hash
+    /// service that is recreated by a user is observed as a fresh addition.
+    ///
+    /// [`sync`]: Self::sync
+    pub fn forget(&self, hash: &ServiceHash) {
+        let mut tracker = self.tracker.borrow_mut();
+        tracker.forget(hash);
+    }
+
+    /// Invokes `f` with the cached snapshot for `hash`, or `None` if the
+    /// service is not currently tracked.
+    pub fn get<R>(&self, hash: &ServiceHash, f: impl FnOnce(Option<&ServiceDetails<S>>) -> R) -> R {
+        let tracker = self.tracker.borrow();
+        f(tracker.get(hash))
     }
 }
