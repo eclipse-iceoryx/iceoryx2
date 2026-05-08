@@ -96,10 +96,8 @@ impl<S: Service> DiscoveryTracker<S> {
         tracker.forget(hash);
     }
 
-    /// Invokes `callback` with the cached snapshot for `hash`, or `None` if
-    /// the service is not currently tracked. The closure form sidesteps the
-    /// `RefCell` borrow lifetime that would otherwise leak out through a
-    /// returned reference.
+    /// Invokes `f` with the cached snapshot for `hash`, or `None` if the
+    /// service is not currently tracked.
     pub fn get<R>(&self, hash: &ServiceHash, f: impl FnOnce(Option<&ServiceDetails<S>>) -> R) -> R {
         let tracker = self.tracker.borrow();
         f(tracker.get(hash))
