@@ -25,10 +25,17 @@
 //! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
+//! use iceoryx2_bb_testing::abandonable::Abandonable;
 //!
-//! fn example<Policy: ArcSyncPolicy<u64>>() {
-//!     let my_thing = Policy::new(1234).unwrap();
-//!     assert!(*my_thing.lock() == 1234);
+//! struct Data(u64);
+//!
+//! impl Abandonable for Data {
+//!     unsafe fn abandon_in_place(this: *mut Self) {}
+//! }
+//!
+//! fn example<Policy: ArcSyncPolicy<Data>>() {
+//!     let my_thing = Policy::new(Data(1234)).unwrap();
+//!     assert!(my_thing.lock().0 == 1234);
 //! }
 //! ```
 //!
@@ -38,11 +45,20 @@
 //! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
-//! type Policy = iceoryx2_cal::arc_sync_policy::mutex_protected::MutexProtected<u64>;
+//! use iceoryx2_bb_testing::abandonable::Abandonable;
 //!
-//! fn my_concurrent_function<T: ArcSyncPolicy<u64> + Send + Sync>(value: &T) {}
+//! #[derive(Debug)]
+//! struct Data(u64);
 //!
-//! let my_thing = Policy::new(1234).unwrap();
+//! impl Abandonable for Data {
+//!     unsafe fn abandon_in_place(this: *mut Self) {}
+//! }
+//!
+//! type Policy = iceoryx2_cal::arc_sync_policy::mutex_protected::MutexProtected<Data>;
+//!
+//! fn my_concurrent_function<T: ArcSyncPolicy<Data> + Send + Sync>(value: &T) {}
+//!
+//! let my_thing = Policy::new(Data(1234)).unwrap();
 //! my_concurrent_function(&my_thing);
 //! ```
 //!
@@ -50,11 +66,18 @@
 //!
 //! ```compile_fail
 //! # extern crate iceoryx2_bb_loggers;
+//! use iceoryx2_bb_testing::abandonable::Abandonable;
+//!
+//! struct Data(u64);
+//!
+//! impl Abandonable for Data {
+//!     unsafe fn abandon_in_place(this: *mut Self) {}
+//! }
 //!
 //! use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
-//! type Policy = iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded<u64>;
+//! type Policy = iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded<Data>;
 //!
-//! fn my_concurrent_function<T: ArcSyncPolicy<u64> + Send + Sync>(value: &T) {}
+//! fn my_concurrent_function<T: ArcSyncPolicy<Data> + Send + Sync>(value: &T) {}
 //!
 //! let my_thing = Policy::new(1234).unwrap();
 //! // fails here since this policy does not implement `Send` or `Sync`

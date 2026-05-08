@@ -329,6 +329,7 @@ pub union sigval {
 impl MemZeroedStruct for sigval {}
 
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct timer_t {
     pub(crate) id: u64,
 }

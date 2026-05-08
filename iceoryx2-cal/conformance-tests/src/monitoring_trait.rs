@@ -232,7 +232,7 @@ pub mod monitoring_trait {
             let config = generate_isolated_config::<Sut>();
 
             let sut_token = Sut::Builder::new(&name).config(&config).token().unwrap();
-            Sut::Token::leak(sut_token);
+            Sut::Token::abandon(sut_token);
 
             let sut_cleaner = Sut::Builder::new(&name).config(&config).cleaner().unwrap();
             assert_that!(Sut::Builder::new(&name).config(&config).cleaner().err(), eq Some(MonitoringCreateCleanerError::AlreadyOwnedByAnotherInstance));
