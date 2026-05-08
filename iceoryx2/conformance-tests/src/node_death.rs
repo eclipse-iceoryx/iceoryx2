@@ -232,10 +232,7 @@ pub mod node_death {
 
         S::leak_contents(bad_services);
         S::leak_contents(bad_publishers);
-
-        //core::mem::forget(bad_services);
-        //core::mem::forget(bad_publishers);
-        core::mem::forget(bad_subscribers);
+        S::leak_contents(bad_subscribers);
 
         assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
 

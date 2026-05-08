@@ -143,6 +143,18 @@ impl<
     Service: service::Service,
     Payload: Debug + ZeroCopySend + ?Sized,
     UserHeader: Debug + ZeroCopySend,
+> Leakable for Subscriber<Service, Payload, UserHeader>
+{
+    unsafe fn leak_in_place(this: *mut Self) {
+        let this = unsafe { &mut *this };
+        unsafe { Service::ArcThreadSafetyPolicy::leak_in_place(&mut this.subscriber_shared_state) };
+    }
+}
+
+impl<
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
 > Drop for Subscriber<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
