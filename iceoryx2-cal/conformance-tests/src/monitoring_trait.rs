@@ -19,7 +19,7 @@ pub mod monitoring_trait {
 
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_system_types::file_name::*;
-    use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::{assert_that, leakable::Leakable};
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::monitoring::*;
     use iceoryx2_cal::named_concept::*;
@@ -185,5 +185,78 @@ pub mod monitoring_trait {
         assert_that!(*config.get_suffix(), eq Sut::default_suffix());
         assert_that!(*config.get_path_hint(), eq Sut::default_path_hint());
         assert_that!(*config.get_prefix(), eq Sut::default_prefix());
+    }
+
+    #[conformance_test]
+    pub fn leaked_token_is_detected_as_dead<Sut: Monitoring>() {
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_token = Sut::Builder::new(&name).config(&config).token().unwrap();
+        Sut::Token::leak(sut_token);
+
+        let sut_monitor = Sut::Builder::new(&name).config(&config).monitor().unwrap();
+
+        assert_that!(sut_monitor.state().unwrap(), eq State::Dead);
+        assert_that!(unsafe { Sut::remove_cfg(&name, &config).unwrap() }, eq true);
+    }
+
+    #[conformance_test]
+    pub fn cleaner_of_leaked_token_can_be_acquired<Sut: Monitoring>() {
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_token = Sut::Builder::new(&name).config(&config).token().unwrap();
+        Sut::Token::leak(sut_token);
+
+        let sut_cleaner = Sut::Builder::new(&name).config(&config).cleaner().unwrap();
+
+        drop(sut_cleaner);
+        assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq false);
+    }
+
+    #[conformance_test]
+    pub fn cleaner_of_leaked_token_can_be_acquired_once<Sut: Monitoring>() {
+        // the lock detection does work on some OS only in the inter process context.
+        // In the process local context the lock is not detected when the fcntl GETLK call is originating
+        // from the same thread os the fcntl SETLK call. If it is called from a different thread GETLK
+        // blocks despite it should be non-blocking.
+        #[cfg(not(any(
+            target_os = "linux",
+            target_os = "freebsd",
+            target_os = "macos",
+            target_os = "nto"
+        )))]
+        {
+            let name = generate_file_path().file_name();
+            let config = generate_isolated_config::<Sut>();
+
+            let sut_token = Sut::Builder::new(&name).config(&config).token().unwrap();
+            Sut::Token::leak(sut_token);
+
+            let sut_cleaner = Sut::Builder::new(&name).config(&config).cleaner().unwrap();
+            assert_that!(Sut::Builder::new(&name).config(&config).cleaner().err(), eq Some(MonitoringCreateCleanerError::AlreadyOwnedByAnotherInstance));
+
+            drop(sut_cleaner);
+
+            assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq false);
+        }
+    }
+
+    #[conformance_test]
+    pub fn leaked_cleaner_can_be_reacquired<Sut: Monitoring>() {
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_token = Sut::Builder::new(&name).config(&config).token().unwrap();
+        sut_token.leak();
+
+        let sut_cleaner = Sut::Builder::new(&name).config(&config).cleaner().unwrap();
+        sut_cleaner.leak();
+        let sut_cleaner = Sut::Builder::new(&name).config(&config).cleaner().unwrap();
+
+        drop(sut_cleaner);
+
+        assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq false);
     }
 }
