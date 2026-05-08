@@ -333,11 +333,11 @@ pub(crate) struct BlackboardResources<ServiceType: service::Service> {
     pub(crate) key_eq_func: Arc<dyn Fn(*const u8, *const u8) -> bool + Send + Sync>,
 }
 
-impl<ServiceType: service::Service> Leakable for BlackboardResources<ServiceType> {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl<ServiceType: service::Service> Abandonable for BlackboardResources<ServiceType> {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
-        unsafe { ServiceType::BlackboardMgmt::<Mgmt>::leak_in_place(&mut this.mgmt) };
-        unsafe { ServiceType::BlackboardPayload::leak_in_place(&mut this.data) };
+        unsafe { ServiceType::BlackboardMgmt::<Mgmt>::abandon_in_place(&mut this.mgmt) };
+        unsafe { ServiceType::BlackboardPayload::abandon_in_place(&mut this.data) };
     }
 }
 

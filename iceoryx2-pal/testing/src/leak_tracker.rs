@@ -16,7 +16,7 @@ use std::sync::Mutex;
 #[cfg(not(feature = "std"))]
 use iceoryx2_pal_concurrency_sync::spin_lock::SpinLock as Mutex;
 
-use crate::leakable::Leakable;
+use crate::leakable::Abandonable;
 
 static CREATION_COUNTER: Mutex<usize> = Mutex::new(0);
 static DROP_COUNTER: Mutex<usize> = Mutex::new(0);
@@ -45,8 +45,8 @@ pub struct LeakTracker {
     pub value: usize,
 }
 
-impl Leakable for LeakTracker {
-    unsafe fn leak_in_place(_this: *mut Self) {
+impl Abandonable for LeakTracker {
+    unsafe fn abandon_in_place(_this: *mut Self) {
         *LEAK_COUNTER.lock().unwrap_or_else(|e| e.into_inner()) += 1;
     }
 }

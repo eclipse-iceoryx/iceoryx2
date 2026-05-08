@@ -29,7 +29,7 @@ pub mod arc_sync_policy_leakable_trait {
         assert_that!(tracker.drop_count(), eq 0);
         assert_that!(tracker.leak_count(), eq 0);
 
-        Sut::leak(sut);
+        Sut::abandon(sut);
 
         assert_that!(tracker.creation_count(), eq 1);
         assert_that!(tracker.drop_count(), eq 0);

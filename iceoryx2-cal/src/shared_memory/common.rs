@@ -335,11 +335,11 @@ pub mod details {
     }
 
     impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
-        Leakable for Memory<Allocator, Storage>
+        Abandonable for Memory<Allocator, Storage>
     {
-        unsafe fn leak_in_place(this: *mut Self) {
+        unsafe fn abandon_in_place(this: *mut Self) {
             let this = unsafe { &mut *this };
-            unsafe { Storage::leak_in_place(&mut this.storage) };
+            unsafe { Storage::abandon_in_place(&mut this.storage) };
         }
     }
 

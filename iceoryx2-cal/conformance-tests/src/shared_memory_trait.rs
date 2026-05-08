@@ -424,7 +424,7 @@ pub mod shared_memory_trait {
             .create(&SHM_CONFIG)
             .unwrap();
 
-        sut_create.leak();
+        sut_create.abandon();
 
         assert_that!(unsafe { Sut::remove_cfg(&name, &config) }, eq Ok(true));
     }

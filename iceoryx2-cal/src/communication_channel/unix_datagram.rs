@@ -343,10 +343,10 @@ pub struct Sender<T> {
     _phantom_data: PhantomData<T>,
 }
 
-impl<T: Copy + Debug> Leakable for Sender<T> {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl<T: Copy + Debug> Abandonable for Sender<T> {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
-        unsafe { UnixDatagramSender::leak_in_place(&mut this.sender) };
+        unsafe { UnixDatagramSender::abandon_in_place(&mut this.sender) };
     }
 }
 
@@ -413,10 +413,10 @@ pub struct Receiver<T: Debug> {
     _phantom_data: PhantomData<T>,
 }
 
-impl<T: Copy + Debug> Leakable for Receiver<T> {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl<T: Copy + Debug> Abandonable for Receiver<T> {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
-        unsafe { UnixDatagramReceiver::leak_in_place(&mut this.receiver) };
+        unsafe { UnixDatagramReceiver::abandon_in_place(&mut this.receiver) };
     }
 }
 

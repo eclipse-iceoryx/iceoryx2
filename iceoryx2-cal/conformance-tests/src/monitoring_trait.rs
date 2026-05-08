@@ -19,7 +19,7 @@ pub mod monitoring_trait {
 
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_system_types::file_name::*;
-    use iceoryx2_bb_testing::{assert_that, leakable::Leakable};
+    use iceoryx2_bb_testing::{assert_that, leakable::Abandonable};
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::monitoring::*;
     use iceoryx2_cal::named_concept::*;
@@ -193,7 +193,7 @@ pub mod monitoring_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_token = Sut::Builder::new(&name).config(&config).token().unwrap();
-        Sut::Token::leak(sut_token);
+        Sut::Token::abandon(sut_token);
 
         let sut_monitor = Sut::Builder::new(&name).config(&config).monitor().unwrap();
 
@@ -207,7 +207,7 @@ pub mod monitoring_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_token = Sut::Builder::new(&name).config(&config).token().unwrap();
-        Sut::Token::leak(sut_token);
+        Sut::Token::abandon(sut_token);
 
         let sut_cleaner = Sut::Builder::new(&name).config(&config).cleaner().unwrap();
 
@@ -249,10 +249,10 @@ pub mod monitoring_trait {
         let config = generate_isolated_config::<Sut>();
 
         let sut_token = Sut::Builder::new(&name).config(&config).token().unwrap();
-        sut_token.leak();
+        sut_token.abandon();
 
         let sut_cleaner = Sut::Builder::new(&name).config(&config).cleaner().unwrap();
-        sut_cleaner.leak();
+        sut_cleaner.abandon();
         let sut_cleaner = Sut::Builder::new(&name).config(&config).cleaner().unwrap();
 
         drop(sut_cleaner);

@@ -28,7 +28,7 @@ pub mod static_storage_trait {
     use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::watchdog::Watchdog;
-    use iceoryx2_bb_testing::{assert_that, leakable::Leakable};
+    use iceoryx2_bb_testing::{assert_that, leakable::Abandonable};
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::static_storage::StaticStorageCreateError;
@@ -568,7 +568,7 @@ pub mod static_storage_trait {
             .config(&config)
             .create_locked()
             .unwrap();
-        sut.leak();
+        sut.abandon();
 
         let result = Sut::Builder::new(&storage_name)
             .config(&config)
@@ -587,7 +587,7 @@ pub mod static_storage_trait {
             .config(&config)
             .create(content.as_bytes())
             .unwrap();
-        sut.leak();
+        sut.abandon();
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)

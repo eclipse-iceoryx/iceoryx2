@@ -135,7 +135,7 @@ use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
 use iceoryx2_bb_system_types::file_path::FilePath;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_log::{fail, fatal_panic, trace};
 use iceoryx2_pal_posix::posix::{MemZeroedStruct, errno::Errno};
 
@@ -545,8 +545,8 @@ pub struct UnixDatagramSender {
     socket: UnixDatagramSocket,
 }
 
-impl Leakable for UnixDatagramSender {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl Abandonable for UnixDatagramSender {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
         unsafe { core::ptr::drop_in_place(&mut this.socket) };
     }
@@ -774,8 +774,8 @@ pub struct UnixDatagramReceiver {
     socket: UnixDatagramSocket,
 }
 
-impl Leakable for UnixDatagramReceiver {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl Abandonable for UnixDatagramReceiver {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
         unsafe { core::ptr::drop_in_place(&mut this.socket) };
     }

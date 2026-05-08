@@ -138,7 +138,7 @@
 use alloc::format;
 use core::fmt::Debug;
 use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 pub use iceoryx2_bb_system_types::file_path::FilePath;
@@ -600,8 +600,8 @@ pub struct ProcessGuard {
     context_file: Option<File>,
 }
 
-impl Leakable for ProcessGuard {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl Abandonable for ProcessGuard {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
         let msg = "Unable to stage death";
 
@@ -620,7 +620,7 @@ impl Leakable for ProcessGuard {
             &mut this.context_file,
         ] {
             if let Some(f) = file.take() {
-                f.leak();
+                f.abandon();
             }
         }
     }
@@ -1008,8 +1008,8 @@ pub struct ProcessCleaner {
     guard: ProcessGuard,
 }
 
-impl Leakable for ProcessCleaner {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl Abandonable for ProcessCleaner {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
         for file in [
             &mut this.guard.state_file,
@@ -1017,7 +1017,7 @@ impl Leakable for ProcessCleaner {
             &mut this.guard.context_file,
         ] {
             if let Some(f) = file.take() {
-                f.leak();
+                f.abandon();
             }
         }
     }

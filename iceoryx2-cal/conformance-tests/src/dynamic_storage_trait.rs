@@ -948,7 +948,7 @@ pub mod dynamic_storage_trait {
             .create(TestData::new(919))
             .unwrap();
 
-        Sut::leak(sut);
+        Sut::abandon(sut);
 
         assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
 

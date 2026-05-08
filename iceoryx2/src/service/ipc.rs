@@ -34,7 +34,7 @@
 
 use crate::service::dynamic_config::DynamicConfig;
 use core::fmt::Debug;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
 use iceoryx2_cal::*;
@@ -54,7 +54,7 @@ impl crate::service::Service for Service {
     type Event = event::recommended::Ipc;
     type Monitoring = monitoring::recommended::Ipc;
     type Reactor = reactor::recommended::Ipc;
-    type ArcThreadSafetyPolicy<T: Send + Debug + Leakable> =
+    type ArcThreadSafetyPolicy<T: Send + Debug + Abandonable> =
         arc_sync_policy::single_threaded::SingleThreaded<T>;
     type BlackboardMgmt<KeyType: Send + Sync + Debug + 'static> =
         dynamic_storage::recommended::Ipc<KeyType>;

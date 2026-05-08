@@ -14,7 +14,7 @@ use core::alloc::Layout;
 
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_cal::{
     event::NamedConceptBuilder,
     resizable_shared_memory::*,
@@ -67,15 +67,15 @@ pub(crate) struct DataSegment<Service: service::Service> {
     memory: MemoryType<Service>,
 }
 
-impl<Service: service::Service> Leakable for DataSegment<Service> {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl<Service: service::Service> Abandonable for DataSegment<Service> {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
         match &mut this.memory {
             MemoryType::Static(shm) => {
-                unsafe { Service::SharedMemory::leak_in_place(shm) };
+                unsafe { Service::SharedMemory::abandon_in_place(shm) };
             }
             MemoryType::Dynamic(shm) => unsafe {
-                Service::ResizableSharedMemory::leak_in_place(shm);
+                Service::ResizableSharedMemory::abandon_in_place(shm);
             },
         }
     }
@@ -206,18 +206,18 @@ pub(crate) struct DataSegmentView<Service: service::Service> {
     memory: MemoryViewType<Service>,
 }
 
-impl<Service: service::Service> Leakable for DataSegmentView<Service> {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl<Service: service::Service> Abandonable for DataSegmentView<Service> {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
         match &mut this.memory {
             MemoryViewType::Dynamic(shm) => unsafe {
                 <Service::ResizableSharedMemory as ResizableSharedMemory<
                     PoolAllocator,
                     Service::SharedMemory,
-                >>::View::leak_in_place(shm)
+                >>::View::abandon_in_place(shm)
             },
             MemoryViewType::Static(shm) => unsafe {
-                Service::SharedMemory::leak_in_place(shm);
+                Service::SharedMemory::abandon_in_place(shm);
             },
         }
     }

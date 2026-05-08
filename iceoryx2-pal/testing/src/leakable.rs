@@ -12,21 +12,21 @@
 
 /// **Only for testing purposes!**
 ///
-/// Marks types that can leak resources required for cleanup tests.
-/// The system resource is leaked but the process local internal constructs
+/// Marks types that can abandon resources required for cleanup tests.
+/// The system resource is abandon but the process local internal constructs
 /// are still cleaned up properly. Those internal constructs could be:
 ///
 /// * file descriptors
 /// * memory mappings
 /// * ...
-pub trait Leakable: Sized {
-    fn leak(mut self) {
-        unsafe { Self::leak_in_place(&mut self) };
+pub trait Abandonable: Sized {
+    fn abandon(mut self) {
+        unsafe { Self::abandon_in_place(&mut self) };
         core::mem::forget(self);
     }
 
-    /// Leaks a resource in place. Shall be used when a struct of multiple resources
-    /// shall be leaked and the resources cannot be moved out of the struct.
+    /// Abandon a resource in place. Shall be used when a struct of multiple resources
+    /// shall be abandoned and the resources cannot be moved out of the struct.
     ///
     /// # Safety
     ///
@@ -36,5 +36,5 @@ pub trait Leakable: Sized {
     /// * `this` cannot be used after this operation, you should most likely call
     ///   [`core::mem::forget()`] afterwards.
     ///
-    unsafe fn leak_in_place(this: *mut Self);
+    unsafe fn abandon_in_place(this: *mut Self);
 }

@@ -131,10 +131,10 @@ pub struct Locked {
     static_storage: Storage,
 }
 
-impl Leakable for Locked {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl Abandonable for Locked {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
-        unsafe { Storage::leak_in_place(&mut this.static_storage) };
+        unsafe { Storage::abandon_in_place(&mut this.static_storage) };
     }
 }
 
@@ -180,10 +180,10 @@ pub struct Storage {
     len: u64,
 }
 
-impl Leakable for Storage {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl Abandonable for Storage {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
-        unsafe { File::leak_in_place(&mut this.file) };
+        unsafe { File::abandon_in_place(&mut this.file) };
     }
 }
 

@@ -240,8 +240,8 @@ pub struct Duplex {
     pub(crate) has_ownership: bool,
 }
 
-impl Leakable for Duplex {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl Abandonable for Duplex {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
         this.has_ownership = false;
         unsafe { core::ptr::drop_in_place(this) };

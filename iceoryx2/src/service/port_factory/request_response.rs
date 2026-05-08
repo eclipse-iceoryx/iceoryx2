@@ -55,7 +55,7 @@ use alloc::sync::Arc;
 use core::{fmt::Debug, marker::PhantomData};
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 /// The factory for
@@ -104,11 +104,11 @@ impl<
     RequestHeader: Debug + ZeroCopySend,
     ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
-> Leakable
+> Abandonable
     for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
-    unsafe fn leak_in_place(this: *mut Self) {
-        unsafe { SharedServiceState::leak_in_place(&mut (&mut *this).service) };
+    unsafe fn abandon_in_place(this: *mut Self) {
+        unsafe { SharedServiceState::abandon_in_place(&mut (&mut *this).service) };
     }
 }
 

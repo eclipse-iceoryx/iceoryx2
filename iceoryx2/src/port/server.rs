@@ -101,7 +101,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_CLOSED, CHANNEL_STATE_OPEN, ChannelId};
@@ -136,13 +136,13 @@ pub(crate) struct SharedServerState<Service: service::Service> {
     service_state: SharedServiceState<Service, NoResource>,
 }
 
-impl<Service: service::Service> Leakable for SharedServerState<Service> {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl<Service: service::Service> Abandonable for SharedServerState<Service> {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
 
-        unsafe { Sender::leak_in_place(&mut this.response_sender) };
-        unsafe { Receiver::leak_in_place(&mut this.request_receiver) };
-        unsafe { SharedServiceState::leak_in_place(&mut this.service_state) };
+        unsafe { Sender::abandon_in_place(&mut this.response_sender) };
+        unsafe { Receiver::abandon_in_place(&mut this.request_receiver) };
+        unsafe { SharedServiceState::abandon_in_place(&mut this.service_state) };
     }
 }
 
@@ -247,12 +247,12 @@ impl<
     RequestHeader: Debug + ZeroCopySend,
     ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
-> Leakable for Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+> Abandonable for Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
-    unsafe fn leak_in_place(this: *mut Self) {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
         unsafe {
-            Service::ArcThreadSafetyPolicy::leak_in_place(&mut this.shared_state);
+            Service::ArcThreadSafetyPolicy::abandon_in_place(&mut this.shared_state);
         }
     }
 }

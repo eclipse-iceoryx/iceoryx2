@@ -29,7 +29,7 @@ use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_log::fatal_panic;
 use iceoryx2_log::{fail, warn};
 
@@ -87,12 +87,12 @@ struct InternalState<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     current_idx: SlotMapKey,
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Leakable
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Abandonable
     for InternalState<Allocator, Shm>
 {
-    unsafe fn leak_in_place(this: *mut Self) {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
-        unsafe { SlotMap::leak_in_place(&mut this.shared_memory_map) };
+        unsafe { SlotMap::abandon_in_place(&mut this.shared_memory_map) };
     }
 }
 
@@ -103,10 +103,12 @@ struct ShmEntry<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     _data: PhantomData<Allocator>,
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Leakable for ShmEntry<Allocator, Shm> {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Abandonable
+    for ShmEntry<Allocator, Shm>
+{
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
-        unsafe { Shm::leak_in_place(&mut this.shm) };
+        unsafe { Shm::abandon_in_place(&mut this.shm) };
     }
 }
 
@@ -331,13 +333,13 @@ pub struct DynamicView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     access_mode: AccessMode,
     _data: PhantomData<Allocator>,
 }
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Leakable
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Abandonable
     for DynamicView<Allocator, Shm>
 {
-    unsafe fn leak_in_place(this: *mut Self) {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
-        unsafe { Shm::leak_in_place(&mut this.mgmt_segment) };
-        unsafe { SlotMap::leak_in_place(this.shared_memory_map.get_mut()) };
+        unsafe { Shm::abandon_in_place(&mut this.mgmt_segment) };
+        unsafe { SlotMap::abandon_in_place(this.shared_memory_map.get_mut()) };
     }
 }
 
@@ -436,12 +438,12 @@ pub struct DynamicMemory<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> 
     _data: PhantomData<Allocator>,
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Leakable
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Abandonable
     for DynamicMemory<Allocator, Shm>
 {
-    unsafe fn leak_in_place(this: *mut Self) {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
-        unsafe { Shm::leak_in_place(&mut this.mgmt_segment) };
+        unsafe { Shm::abandon_in_place(&mut this.mgmt_segment) };
     }
 }
 

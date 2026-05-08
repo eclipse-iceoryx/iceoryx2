@@ -19,7 +19,7 @@ pub mod communication_channel_trait {
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_bb_testing::leakable::Leakable;
+    use iceoryx2_bb_testing::leakable::Abandonable;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::communication_channel::*;
@@ -511,7 +511,7 @@ pub mod communication_channel_trait {
             .create_receiver()
             .unwrap();
 
-        Sut::Receiver::leak(sut_receiver);
+        Sut::Receiver::abandon(sut_receiver);
 
         assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
         assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config).unwrap() }, eq true);
@@ -532,7 +532,7 @@ pub mod communication_channel_trait {
             .open_sender()
             .unwrap();
 
-        Sut::Sender::leak(sut_sender);
+        Sut::Sender::abandon(sut_sender);
         assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
 
         let sut_sender = Sut::Connector::new(&storage_name)

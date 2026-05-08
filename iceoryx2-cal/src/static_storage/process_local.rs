@@ -131,10 +131,10 @@ pub struct Locked {
     storage: Storage,
 }
 
-impl Leakable for Locked {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl Abandonable for Locked {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
-        unsafe { Storage::leak_in_place(&mut this.storage) };
+        unsafe { Storage::abandon_in_place(&mut this.storage) };
     }
 }
 
@@ -181,8 +181,8 @@ pub struct Storage {
     content: Arc<StorageContent>,
 }
 
-impl Leakable for Storage {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl Abandonable for Storage {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
         this.has_ownership.store(false, Ordering::Relaxed);
         unsafe { core::ptr::drop_in_place(this) };

@@ -20,7 +20,7 @@ pub mod recommended;
 use core::{fmt::Debug, time::Duration};
 
 use iceoryx2_bb_system_types::file_name::*;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_log::fail;
 
 use crate::named_concept::{
@@ -128,7 +128,7 @@ pub trait StaticStorageBuilder<T: StaticStorage>: Sized + NamedConceptBuilder<T>
 }
 
 /// A locked (uninitialized) static storage which is present but without content
-pub trait StaticStorageLocked<T: StaticStorage>: Sized + NamedConcept + Leakable {
+pub trait StaticStorageLocked<T: StaticStorage>: Sized + NamedConcept + Abandonable {
     /// Unlocks the static storage by writing the contents to it
     fn unlock(self, contents: &[u8]) -> Result<T, StaticStorageUnlockError>;
 }
@@ -136,7 +136,7 @@ pub trait StaticStorageLocked<T: StaticStorage>: Sized + NamedConcept + Leakable
 /// A static storage which owns its underlying resources. When it goes out of scope those resources
 /// shall be removed.
 pub trait StaticStorage:
-    Debug + Sized + NamedConceptMgmt + NamedConcept + Send + Sync + Leakable
+    Debug + Sized + NamedConceptMgmt + NamedConcept + Send + Sync + Abandonable
 {
     type Builder: StaticStorageBuilder<Self> + NamedConceptBuilder<Self>;
     type Locked: StaticStorageLocked<Self>;

@@ -17,7 +17,7 @@ use alloc::vec::Vec;
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_log::{fail, fatal_panic};
 
 use crate::{
@@ -198,13 +198,13 @@ impl NamedConcept for Cleaner {
 }
 
 impl MonitoringCleaner for Cleaner {
-    fn abandon(self) {
-        self.leak();
+    fn relinquish(self) {
+        self.abandon();
     }
 }
 
-impl Leakable for Cleaner {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl Abandonable for Cleaner {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
         let msg = "Failed to remove";
 
@@ -236,8 +236,8 @@ impl NamedConcept for Token {
 
 impl MonitoringToken for Token {}
 
-impl Leakable for Token {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl Abandonable for Token {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let msg = "Failed to leak";
 
         let this = unsafe { &mut *this };

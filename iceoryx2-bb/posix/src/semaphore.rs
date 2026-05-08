@@ -24,7 +24,7 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_bb_system_types::path::*;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_log::trace;
 use iceoryx2_log::{debug, fail, fatal_panic, warn};
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
@@ -407,8 +407,8 @@ pub struct NamedSemaphore {
 unsafe impl Send for NamedSemaphore {}
 unsafe impl Sync for NamedSemaphore {}
 
-impl Leakable for NamedSemaphore {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl Abandonable for NamedSemaphore {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
         if core::ptr::eq(this.handle, posix::SEM_FAILED) {
             return;
@@ -768,8 +768,8 @@ pub struct UnnamedSemaphore<'a> {
 unsafe impl Send for UnnamedSemaphore<'_> {}
 unsafe impl Sync for UnnamedSemaphore<'_> {}
 
-impl Leakable for UnnamedSemaphore<'_> {
-    unsafe fn leak_in_place(_this: *mut Self) {}
+impl Abandonable for UnnamedSemaphore<'_> {
+    unsafe fn abandon_in_place(_this: *mut Self) {}
 }
 
 impl Drop for UnnamedSemaphore<'_> {

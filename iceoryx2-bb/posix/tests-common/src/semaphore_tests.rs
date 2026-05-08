@@ -19,7 +19,7 @@ use iceoryx2_bb_posix::system_configuration::Feature;
 use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::test;
@@ -455,7 +455,7 @@ pub fn named_semaphore_leak_keeps_semaphore() {
         .create()
         .unwrap();
 
-    NamedSemaphore::leak(creator);
+    NamedSemaphore::abandon(creator);
 
     let sut = NamedSemaphoreBuilder::new(&sem_name)
         .clock_type(ClockType::Monotonic)

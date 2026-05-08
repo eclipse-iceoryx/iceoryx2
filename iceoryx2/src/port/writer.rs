@@ -60,7 +60,7 @@ use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
     Producer, UnrestrictedAtomic, UnrestrictedAtomicMgmt,
 };
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
@@ -85,11 +85,11 @@ unsafe impl<
 impl<
     Service: service::Service,
     KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-> Leakable for WriterSharedState<Service, KeyType>
+> Abandonable for WriterSharedState<Service, KeyType>
 {
-    unsafe fn leak_in_place(this: *mut Self) {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
-        unsafe { SharedServiceState::leak_in_place(&mut this.service_state) };
+        unsafe { SharedServiceState::abandon_in_place(&mut this.service_state) };
     }
 }
 
@@ -131,11 +131,11 @@ pub struct Writer<
 impl<
     Service: service::Service,
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
-> Leakable for Writer<Service, KeyType>
+> Abandonable for Writer<Service, KeyType>
 {
-    unsafe fn leak_in_place(this: *mut Self) {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
-        unsafe { Service::ArcThreadSafetyPolicy::leak_in_place(&mut this.shared_state) };
+        unsafe { Service::ArcThreadSafetyPolicy::abandon_in_place(&mut this.shared_state) };
     }
 }
 

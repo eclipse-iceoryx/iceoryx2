@@ -68,7 +68,7 @@ pub use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::*;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use pool_allocator::PoolAllocator;
 
 /// Failure returned by [`SharedMemoryBuilder::create()`]
@@ -166,7 +166,7 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
     + NamedConceptMgmt
     + details::SharedMemoryLowLevelAPI<Allocator>
     + Send
-    + Leakable
+    + Abandonable
 {
     type Builder: SharedMemoryBuilder<Allocator, Self>;
 

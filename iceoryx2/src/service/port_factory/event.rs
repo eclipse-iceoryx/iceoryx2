@@ -48,7 +48,7 @@ use crate::service::service_hash::ServiceHash;
 use crate::service::{self, NoResource, ServiceState, SharedServiceState, static_config};
 use crate::service::{ServiceName, dynamic_config};
 use iceoryx2_bb_elementary::CallbackProgression;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 /// The factory for
@@ -63,9 +63,9 @@ pub struct PortFactory<Service: service::Service> {
 unsafe impl<Service: service::Service> Send for PortFactory<Service> {}
 unsafe impl<Service: service::Service> Sync for PortFactory<Service> {}
 
-impl<Service: service::Service> Leakable for PortFactory<Service> {
-    unsafe fn leak_in_place(this: *mut Self) {
-        unsafe { SharedServiceState::leak_in_place(&mut (&mut *this).service) };
+impl<Service: service::Service> Abandonable for PortFactory<Service> {
+    unsafe fn abandon_in_place(this: *mut Self) {
+        unsafe { SharedServiceState::abandon_in_place(&mut (&mut *this).service) };
     }
 }
 

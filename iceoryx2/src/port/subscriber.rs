@@ -45,7 +45,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_OPEN, ChannelId};
@@ -98,10 +98,10 @@ pub(crate) struct SubscriberSharedState<Service: service::Service> {
     pub(crate) publisher_list_state: UnsafeCell<ContainerState<PublisherDetails>>,
 }
 
-impl<Service: service::Service> Leakable for SubscriberSharedState<Service> {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl<Service: service::Service> Abandonable for SubscriberSharedState<Service> {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
-        unsafe { Receiver::leak_in_place(&mut this.receiver) };
+        unsafe { Receiver::abandon_in_place(&mut this.receiver) };
     }
 }
 
@@ -143,11 +143,11 @@ impl<
     Service: service::Service,
     Payload: Debug + ZeroCopySend + ?Sized,
     UserHeader: Debug + ZeroCopySend,
-> Leakable for Subscriber<Service, Payload, UserHeader>
+> Abandonable for Subscriber<Service, Payload, UserHeader>
 {
-    unsafe fn leak_in_place(this: *mut Self) {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
-        unsafe { Service::ArcThreadSafetyPolicy::leak_in_place(&mut this.subscriber_shared_state) };
+        unsafe { Service::ArcThreadSafetyPolicy::abandon_in_place(&mut this.subscriber_shared_state) };
     }
 }
 

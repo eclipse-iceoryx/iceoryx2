@@ -325,8 +325,8 @@ impl<T: Send + Sync + Debug + 'static> DynamicStorage<T> for Storage<T> {
     }
 }
 
-impl<T: Send + Sync + Debug + 'static> Leakable for Storage<T> {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl<T: Send + Sync + Debug + 'static> Abandonable for Storage<T> {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
         this.has_ownership.store(false, Ordering::Relaxed);
         unsafe { core::ptr::drop_in_place(this) };

@@ -21,7 +21,7 @@ pub mod resizable_shared_memory_trait {
     use alloc::vec;
     use core::alloc::Layout;
     use iceoryx2_bb_posix::file::AccessMode;
-    use iceoryx2_bb_testing::leakable::Leakable;
+    use iceoryx2_bb_testing::leakable::Abandonable;
 
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_testing::assert_that;
@@ -1015,7 +1015,7 @@ pub mod resizable_shared_memory_trait {
 
         unsafe { (ptr_creator.data_ptr as *mut u64).write(test_value) };
 
-        sut_creator.leak();
+        sut_creator.abandon();
 
         let sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
@@ -1052,7 +1052,7 @@ pub mod resizable_shared_memory_trait {
             .open(AccessMode::ReadWrite)
             .unwrap();
 
-        sut_viewer.leak();
+        sut_viewer.abandon();
 
         assert_that!(Sut::does_exist_cfg(&storage_name, &config).unwrap(), eq true);
         drop(sut_creator);

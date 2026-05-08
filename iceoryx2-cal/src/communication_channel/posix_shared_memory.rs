@@ -263,9 +263,9 @@ pub struct Receiver {
     shared_memory: SharedMemory,
 }
 
-impl Leakable for Receiver {
-    unsafe fn leak_in_place(this: *mut Self) {
-        unsafe { SharedMemory::leak_in_place(&mut (&mut *this).shared_memory) }
+impl Abandonable for Receiver {
+    unsafe fn abandon_in_place(this: *mut Self) {
+        unsafe { SharedMemory::abandon_in_place(&mut (&mut *this).shared_memory) }
     }
 }
 
@@ -302,9 +302,9 @@ pub struct Sender {
     shared_memory: SharedMemory,
 }
 
-impl Leakable for Sender {
-    unsafe fn leak_in_place(this: *mut Self) {
-        unsafe { SharedMemory::leak_in_place(&mut (&mut *this).shared_memory) }
+impl Abandonable for Sender {
+    unsafe fn abandon_in_place(this: *mut Self) {
+        unsafe { SharedMemory::abandon_in_place(&mut (&mut *this).shared_memory) }
     }
 }
 

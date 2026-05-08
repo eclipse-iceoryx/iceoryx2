@@ -173,7 +173,7 @@ use iceoryx2_bb_posix::mutex::MutexType;
 use iceoryx2_bb_posix::process::Process;
 use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_bb_system_types::file_name::FileName;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
@@ -907,13 +907,15 @@ struct SharedNodeState<Service: service::Service> {
 unsafe impl<Service: service::Service> Send for SharedNodeState<Service> {}
 unsafe impl<Service: service::Service> Sync for SharedNodeState<Service> {}
 
-impl<Service: service::Service> Leakable for SharedNodeState<Service> {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl<Service: service::Service> Abandonable for SharedNodeState<Service> {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
-        unsafe { <Service::StaticStorage as Leakable>::leak_in_place(&mut this.details_storage) };
+        unsafe {
+            <Service::StaticStorage as Abandonable>::abandon_in_place(&mut this.details_storage)
+        };
         if let Some(token) = this.monitoring_token.get_mut() {
             unsafe {
-                <<Service::Monitoring as Monitoring>::Token as Leakable>::leak_in_place(token)
+                <<Service::Monitoring as Monitoring>::Token as Abandonable>::abandon_in_place(token)
             };
         }
     }
@@ -940,11 +942,11 @@ pub(crate) struct SharedNode<Service: service::Service> {
     state: Arc<SharedNodeState<Service>>,
 }
 
-impl<Service: service::Service> Leakable for SharedNode<Service> {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl<Service: service::Service> Abandonable for SharedNode<Service> {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
         if let Some(state) = Arc::get_mut(&mut this.state) {
-            unsafe { SharedNodeState::leak_in_place(state) };
+            unsafe { SharedNodeState::abandon_in_place(state) };
         } else {
             unsafe { core::ptr::drop_in_place(&mut this.state) };
         }
@@ -983,9 +985,9 @@ pub struct Node<Service: service::Service> {
 
 unsafe impl<Service: service::Service> Send for Node<Service> {}
 
-impl<Service: service::Service> Leakable for Node<Service> {
-    unsafe fn leak_in_place(this: *mut Self) {
-        unsafe { SharedNode::leak_in_place(&mut (&mut *this).shared) };
+impl<Service: service::Service> Abandonable for Node<Service> {
+    unsafe fn abandon_in_place(this: *mut Self) {
+        unsafe { SharedNode::abandon_in_place(&mut (&mut *this).shared) };
     }
 }
 

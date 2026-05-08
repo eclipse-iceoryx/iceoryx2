@@ -25,7 +25,7 @@ use iceoryx2::service::Service;
 use iceoryx2::testing::*;
 use iceoryx2_bb_concurrency::atomic::AtomicU32;
 use iceoryx2_bb_concurrency::atomic::Ordering;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing::{assert_that, test_fail};
 use iceoryx2_bb_testing_macros::conformance_test;
@@ -40,14 +40,14 @@ pub trait Test {
 
     fn config_mut(&mut self) -> &mut Config;
 
-    fn leak_contents<T: Leakable>(mut contents: Vec<T>) {
+    fn leak_contents<T: Abandonable>(mut contents: Vec<T>) {
         while let Some(element) = contents.pop() {
-            T::leak(element);
+            T::abandon(element);
         }
     }
 
-    fn leak<T: Leakable>(thing: T) {
-        T::leak(thing);
+    fn leak<T: Abandonable>(thing: T) {
+        T::abandon(thing);
     }
 
     fn generate_node_name(i: usize, prefix: &str) -> NodeName {
@@ -141,7 +141,7 @@ impl Test for ZeroCopy {
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod node_death {
-    use iceoryx2_bb_testing::leakable::Leakable;
+    use iceoryx2_bb_testing::leakable::Abandonable;
 
     use super::*;
 
@@ -855,7 +855,7 @@ pub mod node_death {
 
     pub fn node_cleanup_on_service_connection_works<
         S: Test,
-        T: Leakable,
+        T: Abandonable,
         F: FnMut(&Node<S::Service>) -> T,
     >(
         test: S,

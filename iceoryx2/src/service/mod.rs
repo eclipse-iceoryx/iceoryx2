@@ -262,7 +262,7 @@ use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 use iceoryx2_bb_posix::file::AccessMode;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 
 use crate::config;
 use crate::constants::MAX_TYPE_NAME_LENGTH;
@@ -398,14 +398,14 @@ pub struct ServiceState<S: Service, R: ServiceResource> {
     pub(crate) static_storage: S::StaticStorage,
 }
 
-impl<S: Service, R: ServiceResource> Leakable for ServiceState<S, R> {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl<S: Service, R: ServiceResource> Abandonable for ServiceState<S, R> {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
 
-        unsafe { S::DynamicStorage::leak_in_place(&mut this.dynamic_storage) };
-        unsafe { R::leak_in_place(&mut this.additional_resource) };
-        unsafe { SharedNode::<S>::leak_in_place(&mut this.shared_node) };
-        unsafe { S::StaticStorage::leak_in_place(&mut this.static_storage) };
+        unsafe { S::DynamicStorage::abandon_in_place(&mut this.dynamic_storage) };
+        unsafe { R::abandon_in_place(&mut this.additional_resource) };
+        unsafe { SharedNode::<S>::abandon_in_place(&mut this.shared_node) };
+        unsafe { S::StaticStorage::abandon_in_place(&mut this.static_storage) };
     }
 }
 
@@ -422,11 +422,11 @@ impl<S: Service, R: ServiceResource> Clone for SharedServiceState<S, R> {
     }
 }
 
-impl<S: Service, R: ServiceResource> Leakable for SharedServiceState<S, R> {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl<S: Service, R: ServiceResource> Abandonable for SharedServiceState<S, R> {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
         if let Some(state) = Arc::get_mut(&mut this.state) {
-            unsafe { ServiceState::leak_in_place(state) };
+            unsafe { ServiceState::abandon_in_place(state) };
         } else {
             unsafe { core::ptr::drop_in_place(&mut this.state) };
         }
@@ -855,7 +855,7 @@ pub mod internal {
 
 /// Represents additional resources a service could use and have to be cleaned up when no owners
 /// are left
-pub trait ServiceResource: Leakable {
+pub trait ServiceResource: Abandonable {
     /// Acquires the ownership of the additional resources. When the objects go out of scope the
     /// underlying resources will be removed.
     fn acquire_ownership(&self);
@@ -867,8 +867,8 @@ impl ServiceResource for NoResource {
     fn acquire_ownership(&self) {}
 }
 
-impl Leakable for NoResource {
-    unsafe fn leak_in_place(_this: *mut Self) {}
+impl Abandonable for NoResource {
+    unsafe fn abandon_in_place(_this: *mut Self) {}
 }
 
 /// Represents a service. Used to create or open new services with the
@@ -915,7 +915,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
     /// to [`SingleThreaded`](iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded),
     /// the [`Service`]s ports and payload cannot be shared ([`Sync`]) between threads or moved
     /// ([`Send`]) into other threads.
-    type ArcThreadSafetyPolicy<T: Send + Debug + Leakable>: ArcSyncPolicy<T>;
+    type ArcThreadSafetyPolicy<T: Send + Debug + Abandonable>: ArcSyncPolicy<T>;
 
     /// Defines the construct used to store the management data of the blackboard service.
     type BlackboardMgmt<T: Send + Sync + Debug + 'static>: DynamicStorage<T>;

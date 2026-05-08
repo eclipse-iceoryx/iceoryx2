@@ -163,10 +163,10 @@ pub struct Notifier {
     name: FileName,
 }
 
-impl Leakable for Notifier {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl Abandonable for Notifier {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
-        unsafe { UnixDatagramSender::leak_in_place(&mut this.sender) };
+        unsafe { UnixDatagramSender::abandon_in_place(&mut this.sender) };
     }
 }
 
@@ -264,10 +264,10 @@ pub struct Listener {
     name: FileName,
 }
 
-impl Leakable for Listener {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl Abandonable for Listener {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
-        unsafe { UnixDatagramReceiver::leak_in_place(&mut this.receiver) };
+        unsafe { UnixDatagramReceiver::abandon_in_place(&mut this.receiver) };
     }
 }
 

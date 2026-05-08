@@ -41,7 +41,7 @@
 //! ```
 extern crate alloc;
 use alloc::sync::Arc;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 
 use super::nodes;
 use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
@@ -94,10 +94,10 @@ impl<
     Service: service::Service,
     Payload: Debug + ZeroCopySend + ?Sized,
     UserHeader: Debug + ZeroCopySend,
-> Leakable for PortFactory<Service, Payload, UserHeader>
+> Abandonable for PortFactory<Service, Payload, UserHeader>
 {
-    unsafe fn leak_in_place(this: *mut Self) {
-        unsafe { SharedServiceState::leak_in_place(&mut (&mut *this).service) };
+    unsafe fn abandon_in_place(this: *mut Self) {
+        unsafe { SharedServiceState::abandon_in_place(&mut (&mut *this).service) };
     }
 }
 

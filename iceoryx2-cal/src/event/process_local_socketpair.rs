@@ -29,7 +29,7 @@ use iceoryx2_bb_posix::{
         StreamingSocketPairReceiveError, StreamingSocketPairSendError,
     },
 };
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_log::{debug, fail, fatal_panic};
 
 use crate::named_concept::{
@@ -189,8 +189,8 @@ pub struct Notifier {
     name: FileName,
 }
 
-impl Leakable for Notifier {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl Abandonable for Notifier {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
         unsafe { core::ptr::drop_in_place(&mut this.socket) };
     }
@@ -302,8 +302,8 @@ pub struct Listener {
     config: Configuration,
 }
 
-impl Leakable for Listener {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl Abandonable for Listener {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
         unsafe { core::ptr::drop_in_place(&mut this.socket) };
     }

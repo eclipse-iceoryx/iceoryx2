@@ -54,7 +54,7 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::plain_old_data_without_padding::PlainOldDataWithoutPadding;
 use iceoryx2_bb_system_types::file_path::FilePath;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_log::{fail, trace, warn};
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::posix::errno::Errno;
@@ -471,8 +471,8 @@ pub struct File {
     has_ownership: AtomicBool,
 }
 
-impl Leakable for File {
-    unsafe fn leak_in_place(this: *mut Self) {
+impl Abandonable for File {
+    unsafe fn abandon_in_place(this: *mut Self) {
         unsafe { core::ptr::drop_in_place(&mut (&mut *this).file_descriptor) };
     }
 }

@@ -618,10 +618,10 @@ pub mod details {
         name: FileName,
     }
 
-    impl<Storage: DynamicStorage<SharedManagementData>> Leakable for Sender<Storage> {
-        unsafe fn leak_in_place(this: *mut Self) {
+    impl<Storage: DynamicStorage<SharedManagementData>> Abandonable for Sender<Storage> {
+        unsafe fn abandon_in_place(this: *mut Self) {
             let this = unsafe { &mut *this };
-            unsafe { Storage::leak_in_place(&mut this.storage) };
+            unsafe { Storage::abandon_in_place(&mut this.storage) };
         }
     }
 
@@ -912,10 +912,10 @@ pub mod details {
         name: FileName,
     }
 
-    impl<Storage: DynamicStorage<SharedManagementData>> Leakable for Receiver<Storage> {
-        unsafe fn leak_in_place(this: *mut Self) {
+    impl<Storage: DynamicStorage<SharedManagementData>> Abandonable for Receiver<Storage> {
+        unsafe fn abandon_in_place(this: *mut Self) {
             let this = unsafe { &mut *this };
-            unsafe { Storage::leak_in_place(&mut this.storage) };
+            unsafe { Storage::abandon_in_place(&mut this.storage) };
         }
     }
 

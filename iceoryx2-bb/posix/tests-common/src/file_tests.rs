@@ -23,7 +23,7 @@ use iceoryx2_bb_posix::testing::create_test_directory;
 use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing_macros::test;
 use iceoryx2_pal_posix::posix;
@@ -578,7 +578,7 @@ pub fn leaked_file_keeps_all_resources() {
 
     let native_handle = unsafe { sut.file_descriptor().native_handle() };
 
-    File::leak(sut);
+    File::abandon(sut);
 
     assert_that!(File::does_exist(&test.file), eq Ok(true));
 

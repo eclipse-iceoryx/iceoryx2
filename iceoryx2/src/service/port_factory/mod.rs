@@ -14,7 +14,7 @@ extern crate alloc;
 use core::fmt::Debug;
 
 use iceoryx2_bb_elementary::CallbackProgression;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_log::{debug, warn};
 
 use crate::config::Config;
@@ -65,7 +65,7 @@ pub mod subscriber;
 
 /// The trait that contains the interface of all port factories for any kind of
 /// [`crate::service::messaging_pattern::MessagingPattern`].
-pub trait PortFactory: Debug + Leakable {
+pub trait PortFactory: Debug + Abandonable {
     /// The underlying [`crate::service::Service`] of the port factory.
     type Service: crate::service::Service;
 

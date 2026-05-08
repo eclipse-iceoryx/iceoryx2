@@ -28,7 +28,7 @@ use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_posix::unix_datagram_socket::*;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::test;
@@ -369,7 +369,7 @@ pub fn leaking_receiver_leaves_the_socket_but_closes_the_file_descriptor() {
 
     let fd = unsafe { sut_receiver.file_descriptor().native_handle() };
 
-    UnixDatagramReceiver::leak(sut_receiver);
+    UnixDatagramReceiver::abandon(sut_receiver);
 
     let close_result = unsafe { posix::close(fd) };
     let errno = Errno::get();
@@ -397,7 +397,7 @@ pub fn leaking_sender_closes_file_descriptor_and_socket_is_still_cleaned_up_from
 
     let fd = unsafe { sut_sender.file_descriptor().native_handle() };
 
-    UnixDatagramSender::leak(sut_sender);
+    UnixDatagramSender::abandon(sut_sender);
 
     let close_result = unsafe { posix::close(fd) };
     let errno = Errno::get();

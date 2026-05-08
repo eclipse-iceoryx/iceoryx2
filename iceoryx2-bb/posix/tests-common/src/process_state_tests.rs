@@ -25,7 +25,7 @@ use iceoryx2_bb_posix::unix_datagram_socket::CreationMode;
 use iceoryx2_bb_posix::{process_state::*, unique_system_id::UniqueSystemId};
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath};
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_bb_testing_macros::test;
 
 fn generate_file_path() -> FilePath {
@@ -108,7 +108,7 @@ pub fn monitor_detects_dead_state() {
     let path = generate_file_path();
 
     let guard = ProcessGuardBuilder::new().create(&path).unwrap();
-    ProcessGuard::leak(guard);
+    ProcessGuard::abandon(guard);
 
     let monitor = ProcessMonitor::new(&path).unwrap();
     assert_that!(monitor.state().unwrap(), eq ProcessState::Dead);
@@ -533,7 +533,7 @@ pub fn leaking_a_process_guard_results_in_a_dead_process() {
     let path = generate_file_path();
 
     let guard = ProcessGuardBuilder::new().create(&path).unwrap();
-    ProcessGuard::leak(guard);
+    ProcessGuard::abandon(guard);
 
     let state = ProcessMonitor::new(&path).unwrap().state().unwrap();
     assert_that!(state, eq ProcessState::Dead);
@@ -547,9 +547,9 @@ pub fn leaking_a_process_cleaner_allows_to_reacquire_the_cleaner() {
     let path = generate_file_path();
 
     let guard = ProcessGuardBuilder::new().create(&path).unwrap();
-    ProcessGuard::leak(guard);
+    ProcessGuard::abandon(guard);
     let cleaner = ProcessCleaner::new(&path).unwrap();
-    ProcessCleaner::leak(cleaner);
+    ProcessCleaner::abandon(cleaner);
 
     assert_that!(ProcessCleaner::new(&path), is_ok);
 }

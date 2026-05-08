@@ -14,7 +14,7 @@ use alloc::vec;
 
 use iceoryx2_bb_posix::shared_memory::*;
 use iceoryx2_bb_posix::testing::generate_file_path;
-use iceoryx2_bb_testing::{assert_that, leakable::Leakable, test_requires};
+use iceoryx2_bb_testing::{assert_that, leakable::Abandonable, test_requires};
 use iceoryx2_bb_testing_macros::test;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
@@ -280,7 +280,7 @@ pub fn leaking_shared_memory_keeps_resources() {
         .create()
         .unwrap();
 
-    SharedMemory::leak(sut_create);
+    SharedMemory::abandon(sut_create);
 
     let sut_open = SharedMemoryBuilder::new(&shm_name)
         .open_existing(AccessMode::Read)

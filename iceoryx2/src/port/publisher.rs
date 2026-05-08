@@ -116,7 +116,7 @@ use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_bb_testing::leakable::Leakable;
+use iceoryx2_bb_testing::leakable::Abandonable;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shm_allocator::{AllocationStrategy, PointerOffset};
@@ -183,9 +183,9 @@ pub(crate) struct PublisherSharedState<Service: service::Service> {
     is_active: AtomicBool,
 }
 
-impl<Service: service::Service> Leakable for PublisherSharedState<Service> {
-    unsafe fn leak_in_place(this: *mut Self) {
-        unsafe { Sender::<Service>::leak_in_place(&mut (&mut *this).sender) }
+impl<Service: service::Service> Abandonable for PublisherSharedState<Service> {
+    unsafe fn abandon_in_place(this: *mut Self) {
+        unsafe { Sender::<Service>::abandon_in_place(&mut (&mut *this).sender) }
     }
 }
 
@@ -344,11 +344,11 @@ impl<
     Service: service::Service,
     Payload: Debug + ZeroCopySend + ?Sized,
     UserHeader: Debug + ZeroCopySend,
-> Leakable for Publisher<Service, Payload, UserHeader>
+> Abandonable for Publisher<Service, Payload, UserHeader>
 {
-    unsafe fn leak_in_place(this: *mut Self) {
+    unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
-        unsafe { Service::ArcThreadSafetyPolicy::leak_in_place(&mut this.publisher_shared_state) };
+        unsafe { Service::ArcThreadSafetyPolicy::abandon_in_place(&mut this.publisher_shared_state) };
     }
 }
 
