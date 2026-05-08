@@ -32,6 +32,7 @@ use core::mem::ManuallyDrop;
 #[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_reader_create_error_e {
     EXCEEDS_MAX_SUPPORTED_READERS = IOX2_OK as isize + 1,
+    FAILED_TO_DEPLOY_THREADSAFETY_POLICY,
 }
 
 impl IntoCInt for ReaderCreateError {
@@ -39,6 +40,9 @@ impl IntoCInt for ReaderCreateError {
         (match self {
             ReaderCreateError::ExceedsMaxSupportedReaders => {
                 iox2_reader_create_error_e::EXCEEDS_MAX_SUPPORTED_READERS
+            }
+            ReaderCreateError::FailedToDeployThreadsafetyPolicy => {
+                iox2_reader_create_error_e::FAILED_TO_DEPLOY_THREADSAFETY_POLICY
             }
         }) as c_int
     }
