@@ -14,12 +14,12 @@ use iceoryx2::service::ipc::Service as Ipc;
 use iceoryx2::service::local::Service as Local;
 use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
-use iceoryx2_services_tunnel_tests_common::backend::TestBackend;
-use iceoryx2_services_tunnel_tests_common::backend::testing::Testing;
+use iceoryx2_services_tunnel_testing::backend::TestBackend;
+use iceoryx2_services_tunnel_testing::backend::testing::Testing;
 
 instantiate_conformance_tests_with_module!(
     ipc,
-    iceoryx2_services_tunnel_conformance_tests::publish_subscribe_discovery,
+    iceoryx2_services_tunnel_conformance_tests::event_propagation,
     super::Ipc,
     super::TestBackend<super::Ipc>,
     super::Testing
@@ -27,7 +27,7 @@ instantiate_conformance_tests_with_module!(
 
 instantiate_conformance_tests_with_module!(
     local,
-    iceoryx2_services_tunnel_conformance_tests::publish_subscribe_discovery,
+    iceoryx2_services_tunnel_conformance_tests::event_propagation,
     super::Local,
     super::TestBackend<super::Local>,
     super::Testing

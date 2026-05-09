@@ -73,10 +73,11 @@ members = [
     "iceoryx2-services/common",
     "iceoryx2-services/discovery",
     "iceoryx2-services/tunnel",
-    "iceoryx2-services/tunnel/tests-common",
-    "iceoryx2-services/tunnel/tests-nostd",
+    "iceoryx2-services/tunnel-testing",
     "iceoryx2-services/tunnel-backend",
     "iceoryx2-services/tunnel-conformance-tests",
+    "iceoryx2-services/tunnel-conformance-tests/tests-common",
+    "iceoryx2-services/tunnel-conformance-tests/tests-nostd",
     "iceoryx2-services/tunnel-end-to-end-tests",
 
 
@@ -188,8 +189,9 @@ iceoryx2-conformance-tests-common = { path = "iceoryx2/conformance-tests/tests-c
 iceoryx2-conformance-tests-nostd = { path = "iceoryx2/conformance-tests/tests-nostd"}
 iceoryx2-tests-common = { path = "iceoryx2/tests-common" }
 iceoryx2-tests-nostd = { path = "iceoryx2/tests-nostd" }
-iceoryx2-services-tunnel-tests-common = { path = "iceoryx2-services/tunnel/tests-common"}
-iceoryx2-services-tunnel-tests-nostd = { path = "iceoryx2-services/tunnel/tests-nostd"}
+iceoryx2-services-tunnel-testing = { path = "iceoryx2-services/tunnel-testing", default-features = false }
+iceoryx2-services-tunnel-conformance-tests-common = { path = "iceoryx2-services/tunnel-conformance-tests/tests-common", default-features = false }
+iceoryx2-services-tunnel-conformance-tests-nostd = { path = "iceoryx2-services/tunnel-conformance-tests/tests-nostd"}
 
 ################################################################################
 

@@ -1,6 +1,6 @@
 [package]
-name = "iceoryx2-services-tunnel-tests-common"
-description = "iceoryx2: [internal] common test utilities for iceoryx2-services-tunnel"
+name = "iceoryx2-services-tunnel-testing"
+description = "iceoryx2-services: testing infrastructure for the tunnel service"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

@@ -1,7 +1,6 @@
 [package]
 name = "iceoryx2-services-tunnel"
 description = "iceoryx2-services: network tunneling service"
-autotests = false
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -32,15 +31,3 @@ iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-services-common = { workspace = true }
 iceoryx2-services-discovery = { workspace = true }
 iceoryx2-services-tunnel-backend = { workspace = true }
-
-[[test]]
-name = "tunnel-tests"
-path = "tests/main.rs"
-harness = false
-
-[dev-dependencies]
-iceoryx2-bb-loggers = { workspace = true, features = ["std", "console"] }
-iceoryx2-bb-testing = { workspace = true, features = ["std"] }
-iceoryx2-bb-testing-macros = { workspace = true, features = ["std"] }
-iceoryx2-services-tunnel-conformance-tests = { workspace = true, features = ["std"] }
-iceoryx2-services-tunnel-tests-common = { workspace = true, features = ["std"] }

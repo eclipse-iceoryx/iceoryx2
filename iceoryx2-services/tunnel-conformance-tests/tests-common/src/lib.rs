@@ -10,9 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod event_discovery_tests;
-mod event_propagation_tests;
-mod publish_subscribe_discovery_tests;
-mod publish_subscribe_propagation_tests;
+#![cfg_attr(not(feature = "std"), no_std)]
 
-iceoryx2_bb_testing::test_harness!();
+extern crate alloc;
+extern crate iceoryx2_bb_loggers;
+
+pub mod event_discovery_tests;
+pub mod event_propagation_tests;
+pub mod publish_subscribe_discovery_tests;
+pub mod publish_subscribe_propagation_tests;

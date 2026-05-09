@@ -1490,15 +1490,10 @@ dependencies = [
  "iceoryx2",
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
- "iceoryx2-bb-loggers",
- "iceoryx2-bb-testing",
- "iceoryx2-bb-testing-macros",
  "iceoryx2-log",
  "iceoryx2-services-common",
  "iceoryx2-services-discovery",
  "iceoryx2-services-tunnel-backend",
- "iceoryx2-services-tunnel-conformance-tests",
- "iceoryx2-services-tunnel-tests-common",
 ]
 
 [[package]]
@@ -1522,6 +1517,33 @@ dependencies = [
  "iceoryx2-services-discovery",
  "iceoryx2-services-tunnel",
  "iceoryx2-services-tunnel-backend",
+ "iceoryx2-services-tunnel-conformance-tests-common",
+]
+
+[[package]]
+name = "iceoryx2-services-tunnel-conformance-tests-common"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-pal-print",
+ "iceoryx2-services-tunnel-conformance-tests",
+ "iceoryx2-services-tunnel-testing",
+]
+
+[[package]]
+name = "iceoryx2-services-tunnel-conformance-tests-nostd"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-memory",
+ "iceoryx2-bb-testing",
+ "iceoryx2-services-tunnel-conformance-tests",
+ "iceoryx2-services-tunnel-conformance-tests-common",
 ]
 
 [[package]]
@@ -1536,7 +1558,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "iceoryx2-services-tunnel-tests-common"
+name = "iceoryx2-services-tunnel-testing"
 version = "0.9.999"
 dependencies = [
  "iceoryx2",
@@ -1547,20 +1569,6 @@ dependencies = [
  "iceoryx2-services-tunnel-backend",
  "postcard",
  "serde",
-]
-
-[[package]]
-name = "iceoryx2-services-tunnel-tests-nostd"
-version = "0.9.999"
-dependencies = [
- "iceoryx2-bb-elementary-traits",
- "iceoryx2-bb-loggers",
- "iceoryx2-bb-memory",
- "iceoryx2-bb-testing",
- "iceoryx2-bb-testing-macros",
- "iceoryx2-pal-print",
- "iceoryx2-services-tunnel",
- "iceoryx2-services-tunnel-tests-common",
 ]
 
 [[package]]
