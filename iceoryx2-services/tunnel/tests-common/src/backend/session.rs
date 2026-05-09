@@ -144,8 +144,8 @@ enum Kind {
 
 #[derive(Debug)]
 pub struct Session {
-    /// Unique ID for this session.
-    id: UniqueSystemId,
+    /// Unique session ID
+    id: SessionId,
     /// Path to directory containing all session files.
     sessions_dir_path: Path,
     /// Directory containing all session files.
@@ -190,7 +190,11 @@ struct DiscoveredPeer {
 
 impl Session {
     pub fn create() -> Result<Self, CreationError> {
-        let id = UniqueSystemId::new().map_err(CreationError::UniqueIdCreation)?;
+        let id = UniqueSystemId::new()
+            .map_err(CreationError::UniqueIdCreation)?
+            .value()
+            .to_b64()
+            .to_lowercase();
 
         // Create or open common sessions directory
         let sessions_dir_path = Path::new(SESSIONS_DIR).unwrap();
@@ -208,8 +212,7 @@ impl Session {
 
         // Create directory for this session and its service files
         let mut session_dir_path = sessions_dir_path.clone();
-        let id_b64 = id.value().to_b64().to_lowercase();
-        add_to_path(&mut session_dir_path, id_b64.as_bytes()).map_err(CreationError::Path)?;
+        add_to_path(&mut session_dir_path, id.as_bytes()).map_err(CreationError::Path)?;
 
         let mut services_dir_path = session_dir_path.clone();
         add_to_path(&mut services_dir_path, b"services").map_err(CreationError::Path)?;
@@ -219,8 +222,8 @@ impl Session {
         }
 
         // Create liveliness lockfile
-        let lockfile_path =
-            file_path_in_directory(LOCKFILE_NAME, &session_dir_path).map_err(CreationError::Path)?;
+        let lockfile_path = file_path_in_directory(LOCKFILE_NAME, &session_dir_path)
+            .map_err(CreationError::Path)?;
 
         let guard = ProcessGuardBuilder::new()
             .guard_permissions(Permission::OWNER_ALL)
@@ -367,7 +370,7 @@ impl Session {
 
     fn broadcast(&self, kind: Kind) -> Result<(), SendError> {
         let envelope = Envelope {
-            from: self.id.value().to_b64().to_lowercase(),
+            from: self.id.clone(),
             kind,
         };
         let bytes = postcard::to_allocvec(&envelope).map_err(|_| SendError::Encode)?;
@@ -394,8 +397,8 @@ impl Session {
                 Ok(e) => e,
                 Err(_) => continue, // skip malformed datagrams
             };
-            if envelope.from == self.id.value().to_b64().to_lowercase() {
-                continue; // defensive: never accept our own broadcasts
+            if envelope.from == self.id {
+                continue;
             }
             match envelope.kind {
                 Kind::Event { service_hash, id } => {
@@ -435,7 +438,7 @@ impl Session {
 
         let mut active_peers: Vec<DiscoveredPeer> = Vec::new();
         for entry in entries {
-            if entry.name().as_bytes() == self.id.value().to_b64().to_lowercase().as_bytes() {
+            if entry.name().as_bytes() == self.id.as_bytes() {
                 continue;
             }
             let mut session_dir_path = self.sessions_dir_path.clone();
