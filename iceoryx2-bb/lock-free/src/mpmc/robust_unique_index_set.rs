@@ -96,7 +96,7 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::relocatable_ptr::{PointerTrait, RelocatablePointer};
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
-use iceoryx2_log::{fail, fatal_panic};
+use iceoryx2_log::{error, fail, fatal_panic};
 
 use crate::mpmc::unique_index_set_enums::{
     ReleaseMode, ReleaseState, UniqueIndexCreationError, UniqueIndexSetAcquireFailure,
@@ -122,6 +122,11 @@ impl OwnerId {
 
         Ok(Self(value))
     }
+}
+
+struct RepairState {
+    generation_counter: u64,
+    borrowed_indices: u64,
 }
 
 #[repr(C)]
@@ -199,29 +204,39 @@ impl RobustUniqueIndexSet {
     /// Returns if the [`RobustUniqueIndexSet`] is locked or not. If the set is locked no more indices
     /// can be borrowed.
     pub fn is_locked(&self) -> bool {
-        self.borrowed_indices.load(Ordering::Relaxed) == u64::MAX
+        self.generation_counter.load(Ordering::Relaxed) == u64::MAX
     }
 
     fn lock(&self) -> ReleaseState {
-        match self.borrowed_indices.compare_exchange(
-            0,
-            u64::MAX,
-            Ordering::Relaxed,
-            Ordering::Relaxed,
-        ) {
-            Ok(_) => ReleaseState::Locked,
-            Err(_) => ReleaseState::Unlocked,
+        if self.is_locked() {
+            return ReleaseState::Locked;
+        }
+
+        loop {
+            let state = self.repair_borrowed_indices();
+
+            if state.borrowed_indices == 0 {
+                match self.generation_counter.compare_exchange(
+                    state.generation_counter,
+                    u64::MAX,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(_) => return ReleaseState::Locked,
+                    Err(_) => continue,
+                }
+            } else {
+                return ReleaseState::Unlocked;
+            }
         }
     }
 
     /// Returns the current len.
     pub fn borrowed_indices(&self) -> usize {
-        let borrowed_indices = self.borrowed_indices.load(Ordering::Relaxed);
-
-        if borrowed_indices == u64::MAX {
+        if self.is_locked() {
             0
         } else {
-            borrowed_indices as _
+            self.borrowed_indices.load(Ordering::Relaxed) as _
         }
     }
 
@@ -278,13 +293,13 @@ impl RobustUniqueIndexSet {
             //////////////////////////////////////
             let current_generation_count = self.generation_counter.load(Ordering::Acquire);
 
+            if current_generation_count == u64::MAX {
+                fail!(from self, with UniqueIndexSetAcquireFailure::IsLocked,
+                    "{msg} since the RobustUniqueIndexSet is locked.");
+            }
+
             for n in 0..self.capacity {
                 let cell = unsafe { &*self.data_ptr.as_ptr().add(n) };
-
-                if self.is_locked() {
-                    fail!(from self, with UniqueIndexSetAcquireFailure::IsLocked,
-                        "{msg} since the RobustUniqueIndexSet is locked.");
-                }
 
                 match cell.compare_exchange(
                     OwnerId::EMPTY.0,
@@ -293,11 +308,6 @@ impl RobustUniqueIndexSet {
                     Ordering::Relaxed,
                 ) {
                     Ok(_) => {
-                        if self.is_locked() {
-                            fail!(from self, with UniqueIndexSetAcquireFailure::IsLocked,
-                                "{msg} since the RobustUniqueIndexSet is locked.");
-                        }
-
                         self.borrowed_indices.fetch_add(1, Ordering::Relaxed);
 
                         //////////////////////////////////////
@@ -305,7 +315,15 @@ impl RobustUniqueIndexSet {
                         //   1. cell & borrowed_indices
                         //   2. generation counter
                         //////////////////////////////////////
-                        self.generation_counter.fetch_add(1, Ordering::Release);
+                        if self.increment_generation_counter(Ordering::Release)
+                            == ReleaseState::Locked
+                        {
+                            // revert the increment, not important, just for consistency
+                            self.borrowed_indices.fetch_sub(1, Ordering::Relaxed);
+                            cell.store(OwnerId::EMPTY.0, Ordering::Relaxed);
+                            fail!(from self, with UniqueIndexSetAcquireFailure::IsLocked,
+                                "{msg} since the RobustUniqueIndexSet is locked.");
+                        }
                         return Ok(n);
                     }
                     Err(_) => continue,
@@ -333,16 +351,40 @@ impl RobustUniqueIndexSet {
         self.verify_init("release()");
 
         let cell = unsafe { &*self.data_ptr.as_ptr().add(index) };
-        cell.store(OwnerId::EMPTY.0, Ordering::Relaxed);
 
-        self.borrowed_indices.fetch_sub(1, Ordering::Relaxed);
+        let cell_content = cell.load(Ordering::Relaxed);
 
-        //////////////////////////////////////
-        // SYNC POINT enforce order of:
-        //   1. cell & borrowed_indices
-        //   2. generation counter
-        //////////////////////////////////////
-        self.generation_counter.fetch_add(1, Ordering::Release);
+        if cell_content == OwnerId::EMPTY.0 {
+            error!(from self, "Release of the not acquired index {index} prevented." );
+        } else {
+            match cell.compare_exchange(
+                cell_content,
+                OwnerId::EMPTY.0,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => {
+                    cell.store(OwnerId::EMPTY.0, Ordering::Relaxed);
+                    self.borrowed_indices.fetch_sub(1, Ordering::Relaxed);
+
+                    //////////////////////////////////////
+                    // SYNC POINT enforce order of:
+                    //   1. cell & borrowed_indices
+                    //   2. generation counter
+                    //////////////////////////////////////
+                    self.increment_generation_counter(Ordering::Release);
+                }
+                Err(v) => {
+                    if v == OwnerId::EMPTY.0 {
+                        error!(from self,
+                            "Prevented race in releasing the index {index} which would have resulted in a double free.");
+                    } else {
+                        error!(from self,
+                            "It seems like the index {index} was modified while releasing it. This could indicate a corrupted system.");
+                    }
+                }
+            }
+        }
 
         if mode == ReleaseMode::LockIfLastIndex {
             self.lock()
@@ -382,17 +424,21 @@ impl RobustUniqueIndexSet {
                     )
                     .is_ok()
             {
-                self.borrowed_indices.fetch_sub(1, Ordering::Relaxed);
-
                 //////////////////////////////////////
                 // SYNC POINT enforce order of:
-                //   1. cell & borrowed_indices
+                //   1. cell
                 //   2. generation counter
                 //////////////////////////////////////
-                self.generation_counter.fetch_add(1, Ordering::Release);
+                if self.increment_generation_counter(Ordering::Release) == ReleaseState::Locked {
+                    return ReleaseState::Locked;
+                }
 
                 if mode == ReleaseMode::LockIfLastIndex {
                     self.lock();
+                } else {
+                    // must be called here explicitly since self.lock() calls this
+                    // already
+                    self.repair_borrowed_indices();
                 }
             }
         }
@@ -400,6 +446,73 @@ impl RobustUniqueIndexSet {
         match self.is_locked() {
             true => ReleaseState::Locked,
             false => ReleaseState::Unlocked,
+        }
+    }
+
+    fn increment_generation_counter(&self, ordering: Ordering) -> ReleaseState {
+        let mut current_generation_count = self.generation_counter.load(Ordering::Relaxed);
+        loop {
+            if current_generation_count == u64::MAX {
+                return ReleaseState::Locked;
+            }
+
+            match self.generation_counter.compare_exchange(
+                current_generation_count,
+                current_generation_count + 1,
+                ordering,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => return ReleaseState::Unlocked,
+                Err(v) => current_generation_count = v,
+            }
+        }
+    }
+
+    fn repair_borrowed_indices(&self) -> RepairState {
+        loop {
+            //////////////////////////////////////
+            // SYNC POINT enforce order of:
+            //   1. cell
+            //   2. generation counter
+            //////////////////////////////////////
+            let current_generation_count = self.generation_counter.load(Ordering::Acquire);
+
+            if current_generation_count == u64::MAX {
+                return RepairState {
+                    generation_counter: current_generation_count,
+                    borrowed_indices: 0,
+                };
+            }
+
+            let mut count = 0;
+            for n in 0..self.capacity {
+                let cell = unsafe { &*self.data_ptr.as_ptr().add(n) };
+                if cell.load(Ordering::Relaxed) != OwnerId::EMPTY.0 {
+                    count += 1;
+                }
+            }
+
+            self.borrowed_indices.store(count, Ordering::Relaxed);
+
+            //////////////////////////////////////
+            // SYNC POINT enforce order of:
+            //   1. borrowed_indices
+            //   2. generation counter
+            //////////////////////////////////////
+            match self.generation_counter.compare_exchange(
+                current_generation_count,
+                current_generation_count + 1,
+                Ordering::Release,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => {
+                    return RepairState {
+                        generation_counter: current_generation_count + 1,
+                        borrowed_indices: count,
+                    };
+                }
+                Err(_) => continue,
+            }
         }
     }
 }
