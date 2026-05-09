@@ -16,6 +16,13 @@
 //! processes. Can be used as a building block for
 //! allocators or lock-free containers.
 //!
+//! The key properties of the robust unique index set:
+//!
+//!  * contains unique indices from 0 to CAPACITY
+//!  * indices can be acquired or released
+//!  * when releasing the last index the user has the option to lock the index set which means that
+//!    new indices can be never acquired again
+//!
 //! # Example
 //!
 //! ## Runtime fixed size RobustUniqueIndexSet
@@ -44,7 +51,7 @@
 //! println!("Acquired index {}", new_index);
 //!
 //! // return the index to the index set
-//! unsafe { index_set.release(new_index, ReleaseMode::default()) };
+//! unsafe { index_set.release(new_index, owner_id, ReleaseMode::default()) };
 //! ```
 //!
 //! ## Compile time FixedSizeUniqueIndexSet
@@ -68,7 +75,7 @@
 //! println!("Acquired index {}", new_index);
 //!
 //! // return the index to the index set
-//! index_set.release(new_index, ReleaseMode::default());
+//! index_set.release(new_index, owner_id, ReleaseMode::default());
 //! ```
 //!
 //! ## Recover indices from a dead process
@@ -96,7 +103,7 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::relocatable_ptr::{PointerTrait, RelocatablePointer};
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
-use iceoryx2_log::{error, fail, fatal_panic};
+use iceoryx2_log::{fail, fatal_panic};
 
 use crate::mpmc::unique_index_set_enums::{
     ReleaseMode, ReleaseState, UniqueIndexCreationError, UniqueIndexSetAcquireFailure,
@@ -105,6 +112,11 @@ use crate::mpmc::unique_index_set_enums::{
 enum_gen! { OwnerIdNewError
   entry:
     InvalidOwnerValue
+}
+
+enum_gen! { RobustUniqueIndexSetReleaseError
+  entry:
+    IndexIsNotOwnedByProvidedOwner
 }
 
 #[repr(C)]
@@ -245,7 +257,7 @@ impl RobustUniqueIndexSet {
         self.capacity
     }
 
-    /// The compile time version of [`UniqueIndexSet::memory_size()`]
+    /// The compile time version of [`RobustUniqueIndexSet::memory_size()`]
     pub const fn const_memory_size(capacity: usize) -> usize {
         core::mem::size_of::<AtomicU64>() * capacity + core::mem::align_of::<AtomicU64>() - 1
     }
@@ -274,7 +286,7 @@ impl RobustUniqueIndexSet {
     /// println!("Acquired index {}", new_index);
     ///
     /// // return the index to the index set
-    /// unsafe { index_set.release(new_index, ReleaseMode::Default) };
+    /// unsafe { index_set.release(new_index, owner_id, ReleaseMode::Default) };
     /// ```
     ///
     /// # Safety
@@ -318,9 +330,10 @@ impl RobustUniqueIndexSet {
                         if self.increment_generation_counter(Ordering::Release)
                             == ReleaseState::Locked
                         {
-                            // revert the increment, not important, just for consistency
+                            // revert the increment, and the reservation not important, just for consistency
                             self.borrowed_indices.fetch_sub(1, Ordering::Relaxed);
                             cell.store(OwnerId::EMPTY.0, Ordering::Relaxed);
+
                             fail!(from self, with UniqueIndexSetAcquireFailure::IsLocked,
                                 "{msg} since the RobustUniqueIndexSet is locked.");
                         }
@@ -341,55 +354,49 @@ impl RobustUniqueIndexSet {
     ///
     /// # Example
     ///
-    /// See [`RobustUniqueIndexSet::acquire_raw_index()`].
+    /// See [`RobustUniqueIndexSet::acquire()`].
     ///
     /// # Safety
     ///
-    ///  * Ensure that [`UniqueIndexSet::init()`] was called once.
+    ///  * Ensure that [`RobustUniqueIndexSet::init()`] was called once.
     ///
-    pub unsafe fn release(&self, index: usize, mode: ReleaseMode) -> ReleaseState {
+    pub unsafe fn release(
+        &self,
+        index: usize,
+        owner_id: OwnerId,
+        mode: ReleaseMode,
+    ) -> Result<ReleaseState, RobustUniqueIndexSetReleaseError> {
         self.verify_init("release()");
 
         let cell = unsafe { &*self.data_ptr.as_ptr().add(index) };
 
-        let cell_content = cell.load(Ordering::Relaxed);
+        match cell.compare_exchange(
+            owner_id.0,
+            OwnerId::EMPTY.0,
+            Ordering::Relaxed,
+            Ordering::Relaxed,
+        ) {
+            Ok(_) => {
+                self.borrowed_indices.fetch_sub(1, Ordering::Relaxed);
 
-        if cell_content == OwnerId::EMPTY.0 {
-            error!(from self, "Release of the not acquired index {index} prevented." );
-        } else {
-            match cell.compare_exchange(
-                cell_content,
-                OwnerId::EMPTY.0,
-                Ordering::Relaxed,
-                Ordering::Relaxed,
-            ) {
-                Ok(_) => {
-                    cell.store(OwnerId::EMPTY.0, Ordering::Relaxed);
-                    self.borrowed_indices.fetch_sub(1, Ordering::Relaxed);
-
-                    //////////////////////////////////////
-                    // SYNC POINT enforce order of:
-                    //   1. cell & borrowed_indices
-                    //   2. generation counter
-                    //////////////////////////////////////
-                    self.increment_generation_counter(Ordering::Release);
-                }
-                Err(v) => {
-                    if v == OwnerId::EMPTY.0 {
-                        error!(from self,
-                            "Prevented race in releasing the index {index} which would have resulted in a double free.");
-                    } else {
-                        error!(from self,
-                            "It seems like the index {index} was modified while releasing it. This could indicate a corrupted system.");
-                    }
-                }
+                //////////////////////////////////////
+                // SYNC POINT enforce order of:
+                //   1. cell & borrowed_indices
+                //   2. generation counter
+                //////////////////////////////////////
+                self.increment_generation_counter(Ordering::Release);
+            }
+            Err(v) => {
+                fail!(from self,
+                    with RobustUniqueIndexSetReleaseError::IndexIsNotOwnedByProvidedOwner,
+                    "The index {index} that shall be released is not owned by {} but by {}.", owner_id.0, v);
             }
         }
 
         if mode == ReleaseMode::LockIfLastIndex {
-            self.lock()
+            Ok(self.lock())
         } else {
-            ReleaseState::Unlocked
+            Ok(ReleaseState::Unlocked)
         }
     }
 
@@ -405,6 +412,10 @@ impl RobustUniqueIndexSet {
         mut predicate: F,
     ) -> ReleaseState {
         self.verify_init("acquire()");
+
+        if self.is_locked() {
+            return ReleaseState::Locked;
+        }
 
         for n in 0..self.capacity {
             let cell = unsafe { &*self.data_ptr.as_ptr().add(n) };
@@ -449,6 +460,10 @@ impl RobustUniqueIndexSet {
         }
     }
 
+    /// This function ensures that a generation counter with the value `u64::MAX` is
+    /// never changed since it indicates a locked index set. If this would happen
+    /// the index set would be opened for modification again and the lock would be
+    /// reverted.
     fn increment_generation_counter(&self, ordering: Ordering) -> ReleaseState {
         let mut current_generation_count = self.generation_counter.load(Ordering::Relaxed);
         loop {
@@ -499,19 +514,13 @@ impl RobustUniqueIndexSet {
             //   1. borrowed_indices
             //   2. generation counter
             //////////////////////////////////////
-            match self.generation_counter.compare_exchange(
-                current_generation_count,
-                current_generation_count + 1,
-                Ordering::Release,
-                Ordering::Relaxed,
-            ) {
-                Ok(_) => {
-                    return RepairState {
-                        generation_counter: current_generation_count + 1,
-                        borrowed_indices: count,
-                    };
-                }
-                Err(_) => continue,
+            self.increment_generation_counter(Ordering::Release);
+
+            if current_generation_count + 1 == self.generation_counter.load(Ordering::Relaxed) {
+                return RepairState {
+                    generation_counter: current_generation_count + 1,
+                    borrowed_indices: count,
+                };
             }
         }
     }
@@ -593,15 +602,20 @@ impl<const CAPACITY: usize> StaticRobustUniqueIndexSet<CAPACITY> {
     /// println!("Acquired index {}", new_index);
     ///
     /// // return the index to the index set
-    /// unsafe { index_set.release(new_index, ReleaseMode::Default) };
+    /// unsafe { index_set.release(new_index, owner_id, ReleaseMode::Default) };
     /// ```
     pub fn acquire(&self, owner_id: OwnerId) -> Result<usize, UniqueIndexSetAcquireFailure> {
         unsafe { self.state.acquire(owner_id) }
     }
 
     /// Releases a raw index.
-    pub fn release(&self, index: usize, mode: ReleaseMode) -> ReleaseState {
-        unsafe { self.state.release(index, mode) }
+    pub fn release(
+        &self,
+        index: usize,
+        owner_id: OwnerId,
+        mode: ReleaseMode,
+    ) -> Result<ReleaseState, RobustUniqueIndexSetReleaseError> {
+        unsafe { self.state.release(index, owner_id, mode) }
     }
 
     /// See [`StaticRobustUniqueIndexSet::capacity()`]

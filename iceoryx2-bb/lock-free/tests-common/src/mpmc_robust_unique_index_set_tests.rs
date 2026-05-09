@@ -55,7 +55,10 @@ pub fn acquire_and_release_works() {
 
     for n in (1..CAPACITY + 1).rev() {
         assert_that!(sut.borrowed_indices(), eq n);
-        sut.release(indices.pop().unwrap(), ReleaseMode::Default);
+        assert_that!(
+            sut.release(indices.pop().unwrap(), owner_id, ReleaseMode::Default),
+            is_ok
+        );
         assert_that!(sut.borrowed_indices(), eq n - 1);
     }
 }
@@ -107,7 +110,10 @@ pub fn release_makes_space_for_more_indices() {
         sut.acquire(owner_id).unwrap();
     }
 
-    sut.release(CAPACITY / 2, ReleaseMode::Default);
+    assert_that!(
+        sut.release(CAPACITY / 2, owner_id, ReleaseMode::Default),
+        is_ok
+    );
 
     assert_that!(sut.acquire(owner_id), is_ok);
     assert_that!(sut.acquire(owner_id).err(), eq Some(UniqueIndexSetAcquireFailure::OutOfIndices));
@@ -128,7 +134,7 @@ pub fn release_last_index_and_set_release_mode_to_locked_locks_set() {
     let owner_id = OwnerId::new(123).unwrap();
     let index = sut.acquire(owner_id).unwrap();
 
-    assert_that!(sut.release(index, ReleaseMode::LockIfLastIndex), eq ReleaseState::Locked);
+    assert_that!(sut.release(index, owner_id, ReleaseMode::LockIfLastIndex), eq Ok(ReleaseState::Locked));
     assert_that!(sut.is_locked(), eq true);
 }
 
@@ -140,7 +146,19 @@ pub fn release_not_last_index_and_set_release_mode_to_locked_does_not_lock_the_s
     let index_1 = sut.acquire(owner_id).unwrap();
     let _index_2 = sut.acquire(owner_id).unwrap();
 
-    assert_that!(sut.release(index_1, ReleaseMode::LockIfLastIndex), eq ReleaseState::Unlocked);
+    assert_that!(sut.release(index_1, owner_id, ReleaseMode::LockIfLastIndex), eq Ok(ReleaseState::Unlocked));
+    assert_that!(sut.is_locked(), eq false);
+}
+
+#[test]
+pub fn releasing_non_owned_index_fails() {
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+
+    let owner_id = OwnerId::new(123).unwrap();
+    let bad_owner_id = OwnerId::new(7127).unwrap();
+    let index = sut.acquire(owner_id).unwrap();
+
+    assert_that!(sut.release(index, bad_owner_id, ReleaseMode::LockIfLastIndex), eq Err(RobustUniqueIndexSetReleaseError::IndexIsNotOwnedByProvidedOwner));
     assert_that!(sut.is_locked(), eq false);
 }
 
@@ -156,10 +174,10 @@ pub fn acquire_all_indices_and_release_with_release_mode_lock_locks_set_after_la
     }
 
     for _ in 0..CAPACITY - 1 {
-        assert_that!(sut.release(indices.pop().unwrap(), ReleaseMode::LockIfLastIndex), eq ReleaseState::Unlocked);
+        assert_that!(sut.release(indices.pop().unwrap(), owner_id, ReleaseMode::LockIfLastIndex), eq Ok(ReleaseState::Unlocked));
     }
 
-    assert_that!(sut.release(indices.pop().unwrap(), ReleaseMode::LockIfLastIndex), eq ReleaseState::Locked);
+    assert_that!(sut.release(indices.pop().unwrap(), owner_id, ReleaseMode::LockIfLastIndex), eq Ok(ReleaseState::Locked));
     assert_that!(sut.is_locked(), eq true);
 }
 
@@ -169,7 +187,10 @@ pub fn new_indices_cannot_be_acquired_from_locked_set() {
 
     let owner_id = OwnerId::new(123).unwrap();
     let index = sut.acquire(owner_id).unwrap();
-    sut.release(index, ReleaseMode::LockIfLastIndex);
+    assert_that!(
+        sut.release(index, owner_id, ReleaseMode::LockIfLastIndex),
+        is_ok
+    );
 
     assert_that!(sut.acquire(owner_id).err(), eq Some(UniqueIndexSetAcquireFailure::IsLocked));
 }
@@ -180,7 +201,10 @@ pub fn zero_borrowed_indices_in_locked_set() {
 
     let owner_id = OwnerId::new(123).unwrap();
     let index = sut.acquire(owner_id).unwrap();
-    sut.release(index, ReleaseMode::LockIfLastIndex);
+    assert_that!(
+        sut.release(index, owner_id, ReleaseMode::LockIfLastIndex),
+        is_ok
+    );
 
     assert_that!(sut.borrowed_indices(), eq 0);
 }
@@ -233,6 +257,20 @@ pub fn recover_does_not_lock_the_set_if_release_mode_is_lock_and_the_set_is_not_
 }
 
 #[test]
+pub fn recover_of_locked_set_always_returns_locked() {
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+
+    let owner_id = OwnerId::new(123).unwrap();
+    let index = sut.acquire(owner_id).unwrap();
+    assert_that!(
+        sut.release(index, owner_id, ReleaseMode::LockIfLastIndex),
+        is_ok
+    );
+
+    assert_that!(sut.recover(ReleaseMode::Default, |id| id == owner_id), eq ReleaseState::Locked);
+}
+
+#[test]
 pub fn acquire_and_release_works_with_uninitialized_memory() {
     let mut memory = [0u8; RobustUniqueIndexSet::const_memory_size(CAPACITY)];
     let allocator = BumpAllocator::new(memory.as_mut_ptr());
@@ -249,7 +287,10 @@ pub fn acquire_and_release_works_with_uninitialized_memory() {
 
     for n in (1..CAPACITY + 1).rev() {
         assert_that!(sut.borrowed_indices(), eq n);
-        unsafe { sut.release(indices.pop().unwrap(), ReleaseMode::Default) };
+        assert_that!(
+            unsafe { sut.release(indices.pop().unwrap(), owner_id, ReleaseMode::Default) },
+            is_ok
+        );
         assert_that!(sut.borrowed_indices(), eq n - 1);
     }
 }
@@ -257,7 +298,7 @@ pub fn acquire_and_release_works_with_uninitialized_memory() {
 #[test]
 pub fn concurrent_acquire_release() {
     const REPETITIONS: i64 = 1000;
-    let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
+    let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, usize::MAX);
 
     let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
     let barrier_handle = BarrierHandle::new();
@@ -282,7 +323,10 @@ pub fn concurrent_acquire_release() {
                             Err(UniqueIndexSetAcquireFailure::OutOfIndices) => {
                                 repetition += 1;
                                 while let Some(index) = indices.pop() {
-                                    sut.release(index, ReleaseMode::Default);
+                                    assert_that!(
+                                        sut.release(index, owner_id, ReleaseMode::Default),
+                                        is_ok
+                                    );
                                 }
                                 if repetition == REPETITIONS {
                                     break;
