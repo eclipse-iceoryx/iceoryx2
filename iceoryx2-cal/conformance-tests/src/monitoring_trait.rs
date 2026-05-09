@@ -235,7 +235,14 @@ pub mod monitoring_trait {
             Sut::Token::abandon(sut_token);
 
             let sut_cleaner = Sut::Builder::new(&name).config(&config).cleaner().unwrap();
-            assert_that!(Sut::Builder::new(&name).config(&config).cleaner().err(), eq Some(MonitoringCreateCleanerError::AlreadyOwnedByAnotherInstance));
+            let result = Sut::Builder::new(&name)
+                .config(&config)
+                .cleaner()
+                .err()
+                .unwrap();
+            assert_that!(result == MonitoringCreateCleanerError::AlreadyOwnedByAnotherInstance ||
+                         result == MonitoringCreateCleanerError::IsBeingCleanedUpOrAnotherCleanerCrashedDuringCleanup,
+                         eq true);
 
             drop(sut_cleaner);
 

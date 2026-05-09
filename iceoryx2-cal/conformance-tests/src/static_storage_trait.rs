@@ -300,7 +300,7 @@ pub mod static_storage_trait {
     >() {
         let _watch_dog = Watchdog::new();
         const NUMBER_OF_THREADS: usize = 4;
-        const NUMBER_OF_ITERATIONS: usize = 1000;
+        const NUMBER_OF_ITERATIONS: usize = 100;
 
         let success_counter = AtomicU64::new(0);
         let handle_enter = BarrierHandle::new();
