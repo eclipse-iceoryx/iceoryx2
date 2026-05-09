@@ -15,6 +15,8 @@
 #![warn(clippy::std_instead_of_core)]
 
 use alloc::rc::Rc;
+use alloc::vec::Vec;
+use iceoryx2::service::builder::CustomHeaderMarker;
 use iceoryx2::service::{Service, static_config::StaticConfig};
 use iceoryx2_services_tunnel_backend::traits::{PublishSubscribeRelay, RelayBuilder};
 
@@ -32,7 +34,9 @@ impl core::fmt::Display for CreationError {
 impl core::error::Error for CreationError {}
 
 #[derive(Debug)]
-pub enum SendError {}
+pub enum SendError {
+    Broadcast,
+}
 
 impl core::fmt::Display for SendError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -42,8 +46,12 @@ impl core::fmt::Display for SendError {
 
 impl core::error::Error for SendError {}
 
+//TODO: Better name
 #[derive(Debug)]
-pub enum ReceiveError {}
+pub enum ReceiveError {
+    Recv,
+    Loan,
+}
 
 impl core::fmt::Display for ReceiveError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -99,7 +107,28 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         &self,
         sample: iceoryx2_services_tunnel_backend::types::publish_subscribe::Sample<S>,
     ) -> Result<(), Self::SendError> {
-        todo!()
+        let user_header = sample.user_header();
+        let payload = sample.payload();
+
+        let header_bytes: Vec<u8> = unsafe {
+            core::slice::from_raw_parts(
+                user_header as *const CustomHeaderMarker as *const u8,
+                user_header_size(&self.static_config),
+            )
+        }
+        .to_vec();
+        let payload_bytes: Vec<u8> =
+            unsafe { core::slice::from_raw_parts(payload.as_ptr() as *const u8, payload.len()) }
+                .to_vec();
+
+        self.session
+            .send_sample(
+                self.static_config.service_hash(),
+                header_bytes,
+                payload_bytes,
+            )
+            // TODO: Wrap error
+            .map_err(|_| SendError::Broadcast)
     }
 
     fn receive<LoanError>(
@@ -113,6 +142,41 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         Option<iceoryx2_services_tunnel_backend::types::publish_subscribe::SampleMut<S>>,
         Self::ReceiveError,
     > {
-        todo!()
+        let received = match self
+            .session
+            .recv_sample(self.static_config.service_hash())
+            .map_err(|_| ReceiveError::Recv)?
+        {
+            Some(s) => s,
+            None => return Ok(None),
+        };
+
+        let mut sample = loan(received.payload.len()).map_err(|_| ReceiveError::Loan)?;
+
+        let header_size = user_header_size(&self.static_config);
+        debug_assert_eq!(received.header.len(), header_size);
+        debug_assert!(sample.payload_mut().len() >= received.payload.len());
+
+        unsafe {
+            core::ptr::copy_nonoverlapping(
+                received.header.as_ptr(),
+                sample.user_header_mut() as *mut CustomHeaderMarker as *mut u8,
+                header_size,
+            );
+            core::ptr::copy_nonoverlapping(
+                received.payload.as_ptr(),
+                sample.payload_mut().as_mut_ptr().cast::<u8>(),
+                received.payload.len(),
+            );
+        }
+        Ok(Some(unsafe { sample.assume_init() }))
     }
+}
+
+fn user_header_size(static_config: &StaticConfig) -> usize {
+    static_config
+        .publish_subscribe()
+        .message_type_details()
+        .user_header
+        .size()
 }

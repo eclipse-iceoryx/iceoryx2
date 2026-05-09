@@ -65,7 +65,7 @@ impl<S: Service> Backend<S> for TestBackend<S> {
     where
         Self: 'a;
 
-    fn create(config: &Self::Config) -> Result<Self, Self::CreationError> {
+    fn create(_config: &Self::Config) -> Result<Self, Self::CreationError> {
         let session = Rc::new(Session::create().unwrap());
         let discovery = Discovery::new(session.clone());
 

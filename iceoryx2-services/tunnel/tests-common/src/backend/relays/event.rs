@@ -15,7 +15,10 @@
 #![warn(clippy::std_instead_of_core)]
 
 use alloc::rc::Rc;
-use iceoryx2::service::{Service, service_hash::ServiceHash, static_config::StaticConfig};
+use iceoryx2::{
+    port::event_id::EventId,
+    service::{Service, service_hash::ServiceHash, static_config::StaticConfig},
+};
 use iceoryx2_services_tunnel_backend::traits::{EventRelay, RelayBuilder};
 
 use crate::backend::session::Session;
@@ -32,7 +35,10 @@ impl core::fmt::Display for CreationError {
 impl core::error::Error for CreationError {}
 
 #[derive(Debug)]
-pub enum SendError {}
+pub enum SendError {
+    // TODO: Errors
+    Error,
+}
 
 impl core::fmt::Display for SendError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -43,7 +49,10 @@ impl core::fmt::Display for SendError {
 impl core::error::Error for SendError {}
 
 #[derive(Debug)]
-pub enum ReceiveError {}
+pub enum ReceiveError {
+    // TODO: Errors
+    Error,
+}
 
 impl core::fmt::Display for ReceiveError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -95,10 +104,16 @@ impl<S: Service> EventRelay<S> for Relay<S> {
     type ReceiveError = ReceiveError;
 
     fn send(&self, event_id: iceoryx2::prelude::EventId) -> Result<(), Self::SendError> {
-        todo!()
+        self.session
+            .send_event(&self.service_hash, event_id.as_value() as u64)
+            .map_err(|_| SendError::Error)
     }
 
     fn receive(&self) -> Result<Option<iceoryx2::prelude::EventId>, Self::ReceiveError> {
-        todo!()
+        Ok(self
+            .session
+            .recv_event(&self.service_hash)
+            .map_err(|_| ReceiveError::Error)?
+            .map(|id| EventId::new(id as usize)))
     }
 }

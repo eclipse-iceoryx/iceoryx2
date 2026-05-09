@@ -14,10 +14,12 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
-use alloc::collections::BTreeMap;
+use alloc::collections::{BTreeMap, VecDeque};
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::cell::RefCell;
+
+use serde::{Deserialize, Serialize};
 
 use iceoryx2::prelude::SemanticStringError;
 use iceoryx2::service::service_hash::ServiceHash;
@@ -33,11 +35,15 @@ use iceoryx2_bb_posix::process_state::{
     ProcessGuard, ProcessGuardBuilder, ProcessGuardCreateError, ProcessMonitor, ProcessState,
 };
 use iceoryx2_bb_posix::unique_system_id::{UniqueSystemId, UniqueSystemIdCreationError};
+use iceoryx2_bb_posix::unix_datagram_socket::{
+    UnixDatagramReceiver, UnixDatagramReceiverBuilder, UnixDatagramReceiverCreationError,
+    UnixDatagramSender, UnixDatagramSenderBuilder,
+};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 
-use crate::backend::settings::{LOCKFILE_NAME, SESSIONS_DIR};
+use crate::backend::settings::{LOCKFILE_NAME, MAX_DATAGRAM, SESSIONS_DIR, SOCKET_NAME};
 
 #[derive(Debug)]
 pub enum CreationError {
@@ -47,6 +53,7 @@ pub enum CreationError {
     DirectoryCreation(DirectoryCreateError),
     DirectoryOpen(DirectoryOpenError),
     ProcessGuard(ProcessGuardCreateError),
+    SocketBind(UnixDatagramReceiverCreationError),
 }
 
 impl core::fmt::Display for CreationError {
@@ -82,6 +89,32 @@ impl core::fmt::Display for AnnounceError {
 
 impl core::error::Error for AnnounceError {}
 
+#[derive(Debug)]
+pub enum SendError {
+    Encode,
+}
+
+impl core::fmt::Display for SendError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "SendError::{self:?}")
+    }
+}
+
+impl core::error::Error for SendError {}
+
+#[derive(Debug)]
+pub enum ReceiveError {
+    Io,
+}
+
+impl core::fmt::Display for ReceiveError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ReceiveError::{self:?}")
+    }
+}
+
+impl core::error::Error for ReceiveError {}
+
 type SessionId = String;
 
 #[derive(Debug, Default)]
@@ -90,6 +123,32 @@ struct PendingDiscovery {
     removed: Vec<ServiceHash>,
 }
 
+#[derive(Debug)]
+pub struct Sample {
+    pub header: Vec<u8>,
+    pub payload: Vec<u8>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Envelope {
+    from: SessionId,
+    kind: Kind,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+enum Kind {
+    Event {
+        service_hash: ServiceHash,
+        id: u64,
+    },
+    Sample {
+        service_hash: ServiceHash,
+        header: Vec<u8>,
+        payload: Vec<u8>,
+    },
+}
+
+// TODO: Cleanup resources left by failed tests
 #[derive(Debug)]
 pub struct Session {
     /// Unique ID for this session.
@@ -109,22 +168,31 @@ pub struct Session {
     /// Discovery events accumulated by `discover()` and drained by
     /// `discover()`.
     pending_discoveries: RefCell<PendingDiscovery>,
-
+    /// Per-service event id queues populated by `recv_event`'s drain.
+    received_events: RefCell<BTreeMap<ServiceHash, VecDeque<u64>>>,
+    /// Per-service sample queues populated by `recv_sample`'s drain.
+    received_samples: RefCell<BTreeMap<ServiceHash, VecDeque<Sample>>>,
+    /// Datagram receive buffer
+    recv_buffer: RefCell<Vec<u8>>,
+    // Field-drop order matters: Rust drops fields in declaration order.
+    // `receiver` drops first to remove the socket file, then `_guard`
+    // releases the lock, and finally `_cleanup` removes the now-empty
+    // session directory.
+    receiver: UnixDatagramReceiver,
     _guard: ProcessGuard,
     _cleanup: SessionCleanup,
 }
 
 #[derive(Debug)]
 struct Peer {
-    // The lockfile representing the liveliness of the peer.
-    lockfile_path: FilePath,
+    sender: UnixDatagramSender,
 }
 
 #[derive(Debug)]
 struct DiscoveredPeer {
     session_id: SessionId,
     services_dir: Path,
-    liveliness_lockfile: FilePath,
+    sock_path: FilePath,
 }
 
 impl Session {
@@ -162,6 +230,14 @@ impl Session {
             .create(&lockfile_path)
             .map_err(CreationError::ProcessGuard)?;
 
+        // Create a UDS receiver
+        let sock_path = file_path_in_directory(SOCKET_NAME, &session_dir_path)?;
+        let receiver = UnixDatagramReceiverBuilder::new(&sock_path)
+            .creation_mode(CreationMode::PurgeAndCreate)
+            .permission(Permission::OWNER_ALL)
+            .create()
+            .map_err(CreationError::SocketBind)?;
+
         let cleanup = SessionCleanup {
             session_dir: session_dir_path,
             sessions_dir: sessions_dir_path,
@@ -175,6 +251,10 @@ impl Session {
             discovered_peers: RefCell::new(BTreeMap::new()),
             discovered_services: RefCell::new(BTreeMap::new()),
             pending_discoveries: RefCell::new(PendingDiscovery::default()),
+            received_events: RefCell::new(BTreeMap::new()),
+            received_samples: RefCell::new(BTreeMap::new()),
+            recv_buffer: RefCell::new(alloc::vec![0u8; MAX_DATAGRAM]),
+            receiver,
             _guard: guard,
             _cleanup: cleanup,
         })
@@ -207,7 +287,7 @@ impl Session {
     /// added/removed events into `pending_discoveries` for the next
     /// `discover()` call.
     pub fn discover(&self) -> Result<(), DiscoveryError> {
-        let active_peers = self.discover_active_peers()?;
+        let active_peers = self.discover_peers();
 
         // Build the new aggregated set: union of all active peers' services.
         let mut new_aggregated: BTreeMap<ServiceHash, StaticConfig> = BTreeMap::new();
@@ -233,7 +313,6 @@ impl Session {
             }
         }
 
-        self.reconcile_peers(active_peers);
         *self.discovered_services.borrow_mut() = new_aggregated;
 
         Ok(())
@@ -250,6 +329,111 @@ impl Session {
         (added, removed)
     }
 
+    pub fn send_event(&self, service_hash: &ServiceHash, id: u64) -> Result<(), SendError> {
+        self.discover_peers();
+        self.broadcast(Kind::Event {
+            service_hash: *service_hash,
+            id,
+        })
+    }
+
+    pub fn send_sample(
+        &self,
+        service_hash: &ServiceHash,
+        header: Vec<u8>,
+        payload: Vec<u8>,
+    ) -> Result<(), SendError> {
+        self.discover_peers();
+        self.broadcast(Kind::Sample {
+            service_hash: *service_hash,
+            header,
+            payload,
+        })
+    }
+
+    pub fn recv_event(&self, service_hash: &ServiceHash) -> Result<Option<u64>, ReceiveError> {
+        self.recv()?;
+        Ok(self
+            .received_events
+            .borrow_mut()
+            .get_mut(service_hash)
+            .and_then(|q| q.pop_front()))
+    }
+
+    pub fn recv_sample(&self, service_hash: &ServiceHash) -> Result<Option<Sample>, ReceiveError> {
+        self.recv()?;
+        Ok(self
+            .received_samples
+            .borrow_mut()
+            .get_mut(service_hash)
+            .and_then(|q| q.pop_front()))
+    }
+
+    fn broadcast(&self, kind: Kind) -> Result<(), SendError> {
+        let envelope = Envelope {
+            from: self.id.value().to_b64().to_lowercase(),
+            kind,
+        };
+        let bytes = postcard::to_allocvec(&envelope).map_err(|_| SendError::Encode)?;
+        for peer in self.discovered_peers.borrow().values() {
+            // `try_send` is non-blocking; ignore EAGAIN/ECONNREFUSED
+            // (peer slow or just exited).
+            let _ = peer.sender.try_send(&bytes);
+        }
+        Ok(())
+    }
+
+    pub fn recv(&self) -> Result<(), ReceiveError> {
+        let mut buf = self.recv_buffer.borrow_mut();
+        loop {
+            let n = self
+                .receiver
+                .try_receive(&mut buf)
+                .map_err(|_| ReceiveError::Io)? as usize;
+            if n == 0 {
+                return Ok(());
+            }
+
+            let envelope: Envelope = match postcard::from_bytes(&buf[..n]) {
+                Ok(e) => e,
+                Err(_) => continue, // skip malformed datagrams
+            };
+            if envelope.from == self.id.value().to_b64().to_lowercase() {
+                continue; // defensive: never accept our own broadcasts
+            }
+            match envelope.kind {
+                Kind::Event { service_hash, id } => {
+                    self.received_events
+                        .borrow_mut()
+                        .entry(service_hash)
+                        .or_default()
+                        .push_back(id);
+                }
+                Kind::Sample {
+                    service_hash,
+                    header,
+                    payload,
+                } => {
+                    self.received_samples
+                        .borrow_mut()
+                        .entry(service_hash)
+                        .or_default()
+                        .push_back(Sample { header, payload });
+                }
+            }
+        }
+    }
+
+    /// Update peer table.
+    fn discover_peers(&self) -> Vec<DiscoveredPeer> {
+        let active = match self.discover_active_peers() {
+            Ok(a) => a,
+            Err(_) => return Vec::new(),
+        };
+        self.reconcile_peers(&active);
+        active
+    }
+
     fn discover_active_peers(&self) -> Result<Vec<DiscoveredPeer>, DiscoveryError> {
         let entries = self.sessions_dir.contents().unwrap();
 
@@ -258,7 +442,6 @@ impl Session {
             if entry.name().as_bytes() == self.id.value().to_b64().to_lowercase().as_bytes() {
                 continue;
             }
-
             let mut session_dir_path = self.sessions_dir_path.clone();
             if add_to_path(&mut session_dir_path, entry.name().as_bytes()).is_err() {
                 continue;
@@ -285,11 +468,15 @@ impl Session {
                         Ok(s) => s.to_string(),
                         Err(_) => continue,
                     };
+                    let sock_path = match file_path_in_directory(SOCKET_NAME, &session_dir_path) {
+                        Ok(p) => p,
+                        Err(_) => continue,
+                    };
 
                     active_peers.push(DiscoveredPeer {
                         session_id: id_str,
                         services_dir: services_path,
-                        liveliness_lockfile: lockfile_path,
+                        sock_path,
                     });
                 }
                 Ok(ProcessState::Dead) | Ok(ProcessState::CleaningUp) => {
@@ -309,30 +496,13 @@ impl Session {
         Ok(active_peers)
     }
 
-    fn reconcile_peers<I>(&self, active_peers: I)
-    where
-        I: IntoIterator<Item = DiscoveredPeer>,
-    {
-        let active_peers: Vec<DiscoveredPeer> = active_peers.into_iter().collect();
-
-        // Get IDs of active peers.
-        let active_ids: alloc::collections::BTreeSet<SessionId> = active_peers
-            .iter()
-            .map(|peer| peer.session_id.clone())
-            .collect();
-
-        // Remove peers that are no longer present.
-        let stale: Vec<SessionId> = self
-            .discovered_peers
-            .borrow()
-            .keys()
-            .filter(|session_id| !active_ids.contains(*session_id))
-            .cloned()
-            .collect();
-
-        for id in stale {
-            self.discovered_peers.borrow_mut().remove(&id);
-        }
+    fn reconcile_peers(&self, active_peers: &[DiscoveredPeer]) {
+        // Drop peers no longer present.
+        self.discovered_peers.borrow_mut().retain(|id, _| {
+            active_peers
+                .iter()
+                .any(|p| p.session_id.as_str() == id.as_str())
+        });
 
         // Track to new peers.
         for peer in active_peers {
@@ -344,12 +514,14 @@ impl Session {
                 continue;
             }
 
-            self.discovered_peers.borrow_mut().insert(
-                peer.session_id,
-                Peer {
-                    lockfile_path: peer.liveliness_lockfile,
-                },
-            );
+            let sender = match UnixDatagramSenderBuilder::new(&peer.sock_path).create() {
+                Ok(s) => s,
+                Err(_) => continue, // peer may have just exited
+            };
+
+            self.discovered_peers
+                .borrow_mut()
+                .insert(peer.session_id.clone(), Peer { sender });
         }
     }
 

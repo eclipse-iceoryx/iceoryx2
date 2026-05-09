@@ -29,3 +29,4 @@ iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
 
 postcard = { workspace = true }
+serde = { workspace = true }

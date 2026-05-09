@@ -1546,6 +1546,7 @@ dependencies = [
  "iceoryx2-services-common",
  "iceoryx2-services-tunnel-backend",
  "postcard",
+ "serde",
 ]
 
 [[package]]

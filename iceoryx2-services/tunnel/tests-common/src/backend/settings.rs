@@ -12,3 +12,9 @@
 
 pub const SESSIONS_DIR: &[u8] = b"/tmp/iceoryx2/tunnels/test-backend/sessions";
 pub const LOCKFILE_NAME: &[u8] = b"session.lock";
+pub const SOCKET_NAME: &[u8] = b"session.sock";
+
+/// Maximum size of any single datagram. Pub-sub samples in the
+/// conformance suite are sub-kilobyte; 256 KiB is comfortably above any
+/// plausible per-sample size.
+pub const MAX_DATAGRAM: usize = 256 * 1024;
