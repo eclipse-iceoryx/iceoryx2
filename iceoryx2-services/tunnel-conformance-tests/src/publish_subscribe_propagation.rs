@@ -305,6 +305,167 @@ pub mod publish_subscribe_propagation {
     }
 
     #[conformance_test]
+    pub fn samples_are_routed_to_their_own_service<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing,
+    >() {
+        const MAX_ATTEMPTS: usize = 25;
+        const TIMEOUT: Duration = Duration::from_millis(250);
+
+        // === SETUP ===
+        let service_name_1 = generate_service_name();
+        let service_name_2 = generate_service_name();
+
+        // --- Host A: two services, one publisher each ---
+        let iceoryx_config_a = generate_isolated_config();
+        let backend_config_a = B::Config::default();
+        let tunnel_config_a = TunnelConfig::default();
+        let mut tunnel_a =
+            Tunnel::<S, B>::create(&tunnel_config_a, &iceoryx_config_a, &backend_config_a).unwrap();
+
+        let node_a = NodeBuilder::new()
+            .config(&iceoryx_config_a)
+            .create::<S>()
+            .unwrap();
+
+        let service_a1 = node_a
+            .service_builder(&service_name_1)
+            .publish_subscribe::<MyType>()
+            .user_header::<MyHeader>()
+            .open_or_create()
+            .unwrap();
+        let publisher_a1 = service_a1.publisher_builder().create().unwrap();
+
+        let service_a2 = node_a
+            .service_builder(&service_name_2)
+            .publish_subscribe::<MyType>()
+            .user_header::<MyHeader>()
+            .open_or_create()
+            .unwrap();
+        let publisher_a2 = service_a2.publisher_builder().create().unwrap();
+
+        tunnel_a.discover_over_iceoryx().unwrap();
+        assert_that!(tunnel_a.tunneled_services().len(), eq 2);
+        assert_that!(tunnel_a.tunneled_services().contains(service_a1.service_hash()), eq true);
+        assert_that!(tunnel_a.tunneled_services().contains(service_a2.service_hash()), eq true);
+
+        // --- Host B ---
+        let iceoryx_config_b = generate_isolated_config();
+        let backend_config_b = B::Config::default();
+        let tunnel_config_b = TunnelConfig::default();
+        let mut tunnel_b =
+            Tunnel::<S, B>::create(&tunnel_config_b, &iceoryx_config_b, &backend_config_b).unwrap();
+
+        // Wait for tunnel on host B to discover both services on host A
+        T::retry(
+            || {
+                tunnel_b.discover_over_backend().unwrap();
+                if tunnel_b.tunneled_services().len() == 2 {
+                    return Ok(());
+                }
+                Err("Both services not yet discovered")
+            },
+            TIMEOUT,
+            Some(MAX_ATTEMPTS),
+        )
+        .unwrap_or_else(|e| panic!("Failed to discover remote services:\n{}", e));
+
+        T::sync(service_a1.service_hash().as_str().to_string(), TIMEOUT);
+        T::sync(service_a2.service_hash().as_str().to_string(), TIMEOUT);
+
+        // Subscribers on host B
+        let node_b = NodeBuilder::new()
+            .config(&iceoryx_config_b)
+            .create::<S>()
+            .unwrap();
+        let service_b1 = node_b
+            .service_builder(&service_name_1)
+            .publish_subscribe::<MyType>()
+            .user_header::<MyHeader>()
+            .open_or_create()
+            .unwrap();
+        let subscriber_b1 = service_b1.subscriber_builder().create().unwrap();
+
+        let service_b2 = node_b
+            .service_builder(&service_name_2)
+            .publish_subscribe::<MyType>()
+            .user_header::<MyHeader>()
+            .open_or_create()
+            .unwrap();
+        let subscriber_b2 = service_b2.subscriber_builder().create().unwrap();
+
+        // === TEST ===
+        // Distinct payloads per service.
+        let header_for_service_1 = MyHeader {
+            version: 1,
+            timestamp: 100,
+        };
+        let header_for_service_2 = MyHeader {
+            version: 2,
+            timestamp: 200,
+        };
+        let payload_for_service_1 = MyType {
+            id: 1,
+            value: 1.0,
+            active: true,
+        };
+        let payload_for_service_2 = MyType {
+            id: 2,
+            value: 2.0,
+            active: false,
+        };
+
+        let mut s1 = publisher_a1.loan_uninit().unwrap();
+        *s1.user_header_mut() = header_for_service_1.clone();
+        let s1 = s1.write_payload(payload_for_service_1.clone());
+        s1.send().unwrap();
+
+        let mut s2 = publisher_a2.loan_uninit().unwrap();
+        *s2.user_header_mut() = header_for_service_2.clone();
+        let s2 = s2.write_payload(payload_for_service_2.clone());
+        s2.send().unwrap();
+
+        // Each subscriber must receive the sample published the corresponding service.
+        for (label, subscriber, expected_header, expected_payload) in [
+            (
+                "service_1",
+                &subscriber_b1,
+                &header_for_service_1,
+                &payload_for_service_1,
+            ),
+            (
+                "service_2",
+                &subscriber_b2,
+                &header_for_service_2,
+                &payload_for_service_2,
+            ),
+        ] {
+            T::retry(
+                || match subscriber.receive().unwrap() {
+                    Some(received) => {
+                        if *received.user_header() != *expected_header {
+                            test_fail!("{}: received header from a different service", label);
+                        }
+                        if *received.payload() != *expected_payload {
+                            test_fail!("{}: received payload from a different service", label);
+                        }
+                        Ok(())
+                    }
+                    None => {
+                        tunnel_a.propagate().unwrap();
+                        tunnel_b.propagate().unwrap();
+                        Err("not yet received")
+                    }
+                },
+                TIMEOUT,
+                Some(MAX_ATTEMPTS),
+            )
+            .unwrap_or_else(|e| panic!("{} failed: {}", label, e));
+        }
+    }
+
+    #[conformance_test]
     pub fn propagated_payloads_do_not_loop_back<S: Service, B: Backend<S> + Debug, T: Testing>() {
         const PAYLOAD_DATA: &str = "WhenItRegisters";
 
