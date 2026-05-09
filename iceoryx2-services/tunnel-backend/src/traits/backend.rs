@@ -16,6 +16,7 @@ use core::fmt::Debug;
 use iceoryx2::service::Service;
 
 use crate::traits::{Discovery, EventRelay, PublishSubscribeRelay, RelayFactory};
+use crate::types::wake::WakeHandle;
 
 /// Core interface for tunnel backends that extend iceoryx2 over another
 /// communication mechanism.
@@ -117,4 +118,12 @@ pub trait BackendBuilder<S: Service> {
 
     /// Consumes the builder, producing a configured [`Backend`].
     fn create(self) -> Result<Self::Backend, Self::CreationError>;
+}
+
+/// Opt-in capability for backends that signal a [`WakeHandle`] when
+/// new data is ready to propagate. Polling-only backends must not implement it.
+pub trait ReactiveBackendBuilder<S: Service>: BackendBuilder<S> {
+    /// Configures the builder to produce a [`Backend`] that signals `wake`
+    /// whenever it has new data ready to be propagated.
+    fn reactive(self, wake: WakeHandle) -> Self;
 }

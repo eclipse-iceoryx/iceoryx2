@@ -50,30 +50,53 @@ fn main() -> anyhow::Result<()> {
         None => zenoh::Config::default(),
     };
 
-    let tunnel = Tunnel::<ipc::Service, ZenohBackend<ipc::Service>>::create(
-        &tunnel_config,
-        &iceoryx_config,
-        &zenoh_config,
-    );
-    let mut tunnel = fail!(
-        from "iox2-tunnel-zenoh",
-        when tunnel,
-        "Failed to create Tunnel"
-    );
-
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
 
     if cli.reactive {
-        // TODO(functionality): Make tunnel (or its endpoints) attachable to waitset
-        unimplemented!("Reactive mode is not yet supported.");
+        let result = Tunnel::<ipc::Service, ZenohBackend<ipc::Service>>::new()
+            .tunnel_config(tunnel_config)
+            .iceoryx_config(iceoryx_config)
+            .backend_config(zenoh_config)
+            .reactive()
+            .create();
+        let (mut tunnel, listener) = fail!(
+            from "iox2-tunnel-zenoh",
+            when result,
+            "Failed to create reactive Tunnel"
+        );
+
+        let _guard = waitset.attach_notification(&listener)?;
+        info!(from "iox2-tunnel-zenoh", "Reactive mode");
+
+        waitset.wait_and_process(|_id| {
+            let _ = tunnel.discover().inspect_err(|e| {
+                warn!("Error encountered whilst discovering services: {}", e);
+            });
+            let _ = tunnel.propagate().inspect_err(|e| {
+                warn!("Error encountered whilst propagating between hosts: {e}");
+            });
+            CallbackProgression::Continue
+        })?;
     } else {
+        let result = Tunnel::<ipc::Service, ZenohBackend<ipc::Service>>::new()
+            .tunnel_config(tunnel_config)
+            .iceoryx_config(iceoryx_config)
+            .backend_config(zenoh_config)
+            .polled()
+            .create();
+        let mut tunnel = fail!(
+            from "iox2-tunnel-zenoh",
+            when result,
+            "Failed to create Tunnel"
+        );
+
         let rate = cli.poll.unwrap_or(100);
         info!(from "iox2-tunnel-zenoh", "Polling rate {}ms", rate);
 
         let guard = waitset.attach_interval(core::time::Duration::from_millis(rate))?;
         let tick = WaitSetAttachmentId::from_guard(&guard);
 
-        let on_event = |id: WaitSetAttachmentId<ipc::Service>| {
+        waitset.wait_and_process(|id| {
             if id == tick {
                 let _ = tunnel.discover().inspect_err(|e| {
                     warn!("Error encountered whilst discovering services: {}", e);
@@ -83,9 +106,7 @@ fn main() -> anyhow::Result<()> {
                 });
             }
             CallbackProgression::Continue
-        };
-
-        waitset.wait_and_process(on_event)?;
+        })?;
     }
 
     Ok(())

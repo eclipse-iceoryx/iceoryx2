@@ -12,7 +12,8 @@
 
 use iceoryx2::service::Service;
 use iceoryx2_log::{fail, trace};
-use iceoryx2_services_tunnel_backend::traits::{Backend, BackendBuilder};
+use iceoryx2_services_tunnel_backend::traits::{Backend, BackendBuilder, ReactiveBackendBuilder};
+use iceoryx2_services_tunnel_backend::types::wake::WakeHandle;
 
 use zenoh::{Config, Session, Wait};
 
@@ -76,6 +77,7 @@ impl<S: Service> Backend<S> for ZenohBackend<S> {
 #[derive(Debug)]
 pub struct Builder<'config, S: Service> {
     config: &'config Config,
+    wake: Option<WakeHandle>,
     _phantom: core::marker::PhantomData<S>,
 }
 
@@ -83,6 +85,7 @@ impl<'config, S: Service> Builder<'config, S> {
     pub fn new(config: &'config Config) -> Self {
         Self {
             config,
+            wake: None,
             _phantom: core::marker::PhantomData,
         }
     }
@@ -94,6 +97,10 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
 
     fn create(self) -> Result<Self::Backend, Self::CreationError> {
         let origin = "ZenohBackend::Builder::create";
+
+        if self.wake.is_some() {
+            todo!();
+        }
 
         trace!(
             from origin,
@@ -121,5 +128,12 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
             discovery,
             _phantom: core::marker::PhantomData,
         })
+    }
+}
+
+impl<S: Service> ReactiveBackendBuilder<S> for Builder<'_, S> {
+    fn reactive(mut self, wake: WakeHandle) -> Self {
+        self.wake = Some(wake);
+        self
     }
 }

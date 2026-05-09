@@ -88,8 +88,13 @@ pub mod event_discovery {
             discovery_service: Some(DISCOVERY_TOPIC.into()),
             ..Default::default()
         };
-        let mut tunnel =
-            Tunnel::<S, B>::create(&tunnel_config, &iceoryx_config, &B::Config::default()).unwrap();
+        let mut tunnel = Tunnel::<S, B>::new()
+            .tunnel_config(tunnel_config.clone())
+            .iceoryx_config(iceoryx_config.clone())
+            .backend_config(B::Config::default())
+            .polled()
+            .create()
+            .unwrap();
 
         // === ADDITION ===
         discovery_publisher
@@ -120,8 +125,13 @@ pub mod event_discovery {
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
         let tunnel_config = TunnelConfig::default();
-        let mut tunnel =
-            Tunnel::<S, B>::create(&tunnel_config, &iceoryx_config, &B::Config::default()).unwrap();
+        let mut tunnel = Tunnel::<S, B>::new()
+            .tunnel_config(tunnel_config.clone())
+            .iceoryx_config(iceoryx_config.clone())
+            .backend_config(B::Config::default())
+            .polled()
+            .create()
+            .unwrap();
 
         // === ADDITION ===
         let node = NodeBuilder::new()
@@ -163,16 +173,26 @@ pub mod event_discovery {
         let iceoryx_config_a = generate_isolated_config();
         let backend_config_a = B::Config::default();
         let tunnel_config_a = TunnelConfig::default();
-        let mut tunnel_a =
-            Tunnel::<S, B>::create(&tunnel_config_a, &iceoryx_config_a, &backend_config_a).unwrap();
+        let mut tunnel_a = Tunnel::<S, B>::new()
+            .tunnel_config(tunnel_config_a.clone())
+            .iceoryx_config(iceoryx_config_a.clone())
+            .backend_config(backend_config_a)
+            .polled()
+            .create()
+            .unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         // Host B
         let iceoryx_config_b = generate_isolated_config();
         let backend_config_b = B::Config::default();
         let tunnel_config_b = TunnelConfig::default();
-        let mut tunnel_b =
-            Tunnel::<S, B>::create(&tunnel_config_b, &iceoryx_config_b, &backend_config_b).unwrap();
+        let mut tunnel_b = Tunnel::<S, B>::new()
+            .tunnel_config(tunnel_config_b.clone())
+            .iceoryx_config(iceoryx_config_b.clone())
+            .backend_config(backend_config_b)
+            .polled()
+            .create()
+            .unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
         // === ADDITION ===
@@ -256,21 +276,23 @@ pub mod event_discovery {
 
         // Host A — observer, announces nothing locally.
         let iceoryx_config_a = generate_isolated_config();
-        let mut tunnel_a = Tunnel::<S, B>::create(
-            &TunnelConfig::default(),
-            &iceoryx_config_a,
-            &B::Config::default(),
-        )
-        .unwrap();
+        let mut tunnel_a = Tunnel::<S, B>::new()
+            .tunnel_config(TunnelConfig::default().clone())
+            .iceoryx_config(iceoryx_config_a.clone())
+            .backend_config(B::Config::default())
+            .polled()
+            .create()
+            .unwrap();
 
         // Host B — announces the service.
         let iceoryx_config_b = generate_isolated_config();
-        let mut tunnel_b = Tunnel::<S, B>::create(
-            &TunnelConfig::default(),
-            &iceoryx_config_b,
-            &B::Config::default(),
-        )
-        .unwrap();
+        let mut tunnel_b = Tunnel::<S, B>::new()
+            .tunnel_config(TunnelConfig::default().clone())
+            .iceoryx_config(iceoryx_config_b.clone())
+            .backend_config(B::Config::default())
+            .polled()
+            .create()
+            .unwrap();
 
         let node_b = NodeBuilder::new()
             .config(&iceoryx_config_b)
@@ -285,12 +307,13 @@ pub mod event_discovery {
 
         // Host C — announces the same service (same name → same hash).
         let iceoryx_config_c = generate_isolated_config();
-        let mut tunnel_c = Tunnel::<S, B>::create(
-            &TunnelConfig::default(),
-            &iceoryx_config_c,
-            &B::Config::default(),
-        )
-        .unwrap();
+        let mut tunnel_c = Tunnel::<S, B>::new()
+            .tunnel_config(TunnelConfig::default().clone())
+            .iceoryx_config(iceoryx_config_c.clone())
+            .backend_config(B::Config::default())
+            .polled()
+            .create()
+            .unwrap();
 
         let node_c = NodeBuilder::new()
             .config(&iceoryx_config_c)
@@ -362,21 +385,23 @@ pub mod event_discovery {
 
         // Host A
         let iceoryx_config_a = generate_isolated_config();
-        let mut tunnel_a = Tunnel::<S, B>::create(
-            &TunnelConfig::default(),
-            &iceoryx_config_a,
-            &B::Config::default(),
-        )
-        .unwrap();
+        let mut tunnel_a = Tunnel::<S, B>::new()
+            .tunnel_config(TunnelConfig::default().clone())
+            .iceoryx_config(iceoryx_config_a.clone())
+            .backend_config(B::Config::default())
+            .polled()
+            .create()
+            .unwrap();
 
         // Host B
         let iceoryx_config_b = generate_isolated_config();
-        let mut tunnel_b = Tunnel::<S, B>::create(
-            &TunnelConfig::default(),
-            &iceoryx_config_b,
-            &B::Config::default(),
-        )
-        .unwrap();
+        let mut tunnel_b = Tunnel::<S, B>::new()
+            .tunnel_config(TunnelConfig::default().clone())
+            .iceoryx_config(iceoryx_config_b.clone())
+            .backend_config(B::Config::default())
+            .polled()
+            .create()
+            .unwrap();
         let node_b = NodeBuilder::new()
             .config(&iceoryx_config_b)
             .create::<S>()
@@ -435,12 +460,13 @@ pub mod event_discovery {
         let service_name = generate_service_name();
 
         let iceoryx_config_b = generate_isolated_config();
-        let mut tunnel_b = Tunnel::<S, B>::create(
-            &TunnelConfig::default(),
-            &iceoryx_config_b,
-            &B::Config::default(),
-        )
-        .unwrap();
+        let mut tunnel_b = Tunnel::<S, B>::new()
+            .tunnel_config(TunnelConfig::default().clone())
+            .iceoryx_config(iceoryx_config_b.clone())
+            .backend_config(B::Config::default())
+            .polled()
+            .create()
+            .unwrap();
 
         let node_b = NodeBuilder::new()
             .config(&iceoryx_config_b)
@@ -459,12 +485,13 @@ pub mod event_discovery {
         // === LATE-JOINING HOST A ===
         // Host A is created after Host B has already announced.
         let iceoryx_config_a = generate_isolated_config();
-        let mut tunnel_a = Tunnel::<S, B>::create(
-            &TunnelConfig::default(),
-            &iceoryx_config_a,
-            &B::Config::default(),
-        )
-        .unwrap();
+        let mut tunnel_a = Tunnel::<S, B>::new()
+            .tunnel_config(TunnelConfig::default().clone())
+            .iceoryx_config(iceoryx_config_a.clone())
+            .backend_config(B::Config::default())
+            .polled()
+            .create()
+            .unwrap();
 
         T::retry(
             || {
@@ -492,21 +519,23 @@ pub mod event_discovery {
 
         // Host A — observer.
         let iceoryx_config_a = generate_isolated_config();
-        let mut tunnel_a = Tunnel::<S, B>::create(
-            &TunnelConfig::default(),
-            &iceoryx_config_a,
-            &B::Config::default(),
-        )
-        .unwrap();
+        let mut tunnel_a = Tunnel::<S, B>::new()
+            .tunnel_config(TunnelConfig::default().clone())
+            .iceoryx_config(iceoryx_config_a.clone())
+            .backend_config(B::Config::default())
+            .polled()
+            .create()
+            .unwrap();
 
         // Host B — announces, removes, re-announces the same service.
         let iceoryx_config_b = generate_isolated_config();
-        let mut tunnel_b = Tunnel::<S, B>::create(
-            &TunnelConfig::default(),
-            &iceoryx_config_b,
-            &B::Config::default(),
-        )
-        .unwrap();
+        let mut tunnel_b = Tunnel::<S, B>::new()
+            .tunnel_config(TunnelConfig::default().clone())
+            .iceoryx_config(iceoryx_config_b.clone())
+            .backend_config(B::Config::default())
+            .polled()
+            .create()
+            .unwrap();
         let node_b = NodeBuilder::new()
             .config(&iceoryx_config_b)
             .create::<S>()
@@ -613,8 +642,13 @@ pub mod event_discovery {
             discovery_service: Some(DISCOVERY_TOPIC.into()),
             ..Default::default()
         };
-        let mut tunnel =
-            Tunnel::<S, B>::create(&tunnel_config, &iceoryx_config, &B::Config::default()).unwrap();
+        let mut tunnel = Tunnel::<S, B>::new()
+            .tunnel_config(tunnel_config.clone())
+            .iceoryx_config(iceoryx_config.clone())
+            .backend_config(B::Config::default())
+            .polled()
+            .create()
+            .unwrap();
 
         // === DUPLICATE ANNOUNCEMENT ===
         // Inject the same Added event twice. The second one must be a no-op.
@@ -644,21 +678,23 @@ pub mod event_discovery {
 
         // Host A — no local user; mirrors Host B's service in via the backend.
         let iceoryx_config_a = generate_isolated_config();
-        let mut tunnel_a = Tunnel::<S, B>::create(
-            &TunnelConfig::default(),
-            &iceoryx_config_a,
-            &B::Config::default(),
-        )
-        .unwrap();
+        let mut tunnel_a = Tunnel::<S, B>::new()
+            .tunnel_config(TunnelConfig::default().clone())
+            .iceoryx_config(iceoryx_config_a.clone())
+            .backend_config(B::Config::default())
+            .polled()
+            .create()
+            .unwrap();
 
         // Host B — will own the service.
         let iceoryx_config_b = generate_isolated_config();
-        let mut tunnel_b = Tunnel::<S, B>::create(
-            &TunnelConfig::default(),
-            &iceoryx_config_b,
-            &B::Config::default(),
-        )
-        .unwrap();
+        let mut tunnel_b = Tunnel::<S, B>::new()
+            .tunnel_config(TunnelConfig::default().clone())
+            .iceoryx_config(iceoryx_config_b.clone())
+            .backend_config(B::Config::default())
+            .polled()
+            .create()
+            .unwrap();
 
         // === ADDITION ===
         let node_b = NodeBuilder::new()
@@ -740,22 +776,24 @@ pub mod event_discovery {
 
         // Host A — will own the service first.
         let iceoryx_config_a = generate_isolated_config();
-        let mut tunnel_a = Tunnel::<S, B>::create(
-            &TunnelConfig::default(),
-            &iceoryx_config_a,
-            &B::Config::default(),
-        )
-        .unwrap();
+        let mut tunnel_a = Tunnel::<S, B>::new()
+            .tunnel_config(TunnelConfig::default().clone())
+            .iceoryx_config(iceoryx_config_a.clone())
+            .backend_config(B::Config::default())
+            .polled()
+            .create()
+            .unwrap();
 
         // Host B — will mirror Host A's service before a local
         // offerer appears
         let iceoryx_config_b = generate_isolated_config();
-        let mut tunnel_b = Tunnel::<S, B>::create(
-            &TunnelConfig::default(),
-            &iceoryx_config_b,
-            &B::Config::default(),
-        )
-        .unwrap();
+        let mut tunnel_b = Tunnel::<S, B>::new()
+            .tunnel_config(TunnelConfig::default().clone())
+            .iceoryx_config(iceoryx_config_b.clone())
+            .backend_config(B::Config::default())
+            .polled()
+            .create()
+            .unwrap();
 
         // === ADDITION ===
         // Host A has a local
@@ -867,8 +905,13 @@ pub mod event_discovery {
             services: Some(vec![allowed_name.as_str().to_string()]),
             ..Default::default()
         };
-        let mut tunnel =
-            Tunnel::<S, B>::create(&tunnel_config, &iceoryx_config, &B::Config::default()).unwrap();
+        let mut tunnel = Tunnel::<S, B>::new()
+            .tunnel_config(tunnel_config.clone())
+            .iceoryx_config(iceoryx_config.clone())
+            .backend_config(B::Config::default())
+            .polled()
+            .create()
+            .unwrap();
 
         // === TEST ===
         tunnel.discover_over_iceoryx().unwrap();
@@ -900,8 +943,13 @@ pub mod event_discovery {
             .unwrap();
 
         let tunnel_config = TunnelConfig::default();
-        let mut tunnel =
-            Tunnel::<S, B>::create(&tunnel_config, &iceoryx_config, &B::Config::default()).unwrap();
+        let mut tunnel = Tunnel::<S, B>::new()
+            .tunnel_config(tunnel_config.clone())
+            .iceoryx_config(iceoryx_config.clone())
+            .backend_config(B::Config::default())
+            .polled()
+            .create()
+            .unwrap();
 
         // === TEST ===
         tunnel.discover_over_iceoryx().unwrap();
@@ -930,8 +978,13 @@ pub mod event_discovery {
             services: Some(vec![]),
             ..Default::default()
         };
-        let mut tunnel =
-            Tunnel::<S, B>::create(&tunnel_config, &iceoryx_config, &B::Config::default()).unwrap();
+        let mut tunnel = Tunnel::<S, B>::new()
+            .tunnel_config(tunnel_config.clone())
+            .iceoryx_config(iceoryx_config.clone())
+            .backend_config(B::Config::default())
+            .polled()
+            .create()
+            .unwrap();
 
         // === TEST ===
         tunnel.discover_over_iceoryx().unwrap();
