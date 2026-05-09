@@ -464,6 +464,9 @@ pub mod event_propagation {
             .notify_with_custom_event_id(event_id_for_service_2)
             .unwrap();
 
+        tunnel_a.propagate().unwrap();
+        tunnel_b.propagate().unwrap();
+
         // Each listener must receive the event id sent on the corresponding service.
         for (label, listener, expected_id) in [
             ("service_1", &listener_b1, event_id_for_service_1),

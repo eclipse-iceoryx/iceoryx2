@@ -131,29 +131,30 @@ pub mod publish_subscribe_propagation {
             let sample_sent_at_a = sample_sent_at_a.write_payload(payload_sent_at_a.clone());
             sample_sent_at_a.send().unwrap();
 
-            // Propagate over tunnels
+            tunnel_a.propagate().unwrap();
+            tunnel_b.propagate().unwrap();
+
+            // Sync backends will see the sample on the first attempt; async
+            // backends drive delivery forward via the in-closure propagate.
             T::retry(
-                || {
-                    match subscriber_b.receive().unwrap() {
-                        Some(sample_received_at_b) => {
-                            let user_header_received_at_b = sample_received_at_b.user_header();
-                            let payload_received_at_b = sample_received_at_b.payload();
+                || match subscriber_b.receive().unwrap() {
+                    Some(sample_received_at_b) => {
+                        let user_header_received_at_b = sample_received_at_b.user_header();
+                        let payload_received_at_b = sample_received_at_b.payload();
 
-                            // Check correctly received header and payload
-                            if *user_header_received_at_b != user_header_sent_at_a {
-                                return Err("Failed to receive user header");
-                            }
-                            if *payload_received_at_b != payload_sent_at_a {
-                                return Err("Failed to receive payload");
-                            };
+                        if *user_header_received_at_b != user_header_sent_at_a {
+                            return Err("Failed to receive user header");
+                        }
+                        if *payload_received_at_b != payload_sent_at_a {
+                            return Err("Failed to receive payload");
+                        };
 
-                            Ok(())
-                        }
-                        None => {
-                            tunnel_a.propagate().unwrap();
-                            tunnel_b.propagate().unwrap();
-                            Err("Failed to receive sample")
-                        }
+                        Ok(())
+                    }
+                    None => {
+                        tunnel_a.propagate().unwrap();
+                        tunnel_b.propagate().unwrap();
+                        Err("Failed to receive sample")
                     }
                 },
                 TIMEOUT,
@@ -254,14 +255,17 @@ pub mod publish_subscribe_propagation {
             let sample_sent_at_a = sample_sent_at_a.write_from_slice(payload_sent_at_a.as_bytes());
             sample_sent_at_a.send().unwrap();
 
-            // Propagate over tunnels
+            tunnel_a.propagate().unwrap();
+            tunnel_b.propagate().unwrap();
+
+            // Sync backends will see the sample on the first attempt; async
+            // backends drive delivery forward via the in-closure propagate.
             T::retry(
                 || match subscriber_b.receive().unwrap() {
                     Some(sample_received_at_b) => {
                         let user_header_received_at_b = sample_received_at_b.user_header();
                         let payload_received_at_b = sample_received_at_b.payload();
 
-                        // Check correctly received headers and payload
                         if *user_header_received_at_b != user_header_sent_at_a {
                             return Err("Failed to receive user header");
                         }
@@ -426,7 +430,10 @@ pub mod publish_subscribe_propagation {
         let s2 = s2.write_payload(payload_for_service_2.clone());
         s2.send().unwrap();
 
-        // Each subscriber must receive the sample published the corresponding service.
+        tunnel_a.propagate().unwrap();
+        tunnel_b.propagate().unwrap();
+
+        // Each subscriber must receive the sample published on the corresponding service.
         for (label, subscriber, expected_header, expected_payload) in [
             (
                 "service_1",
