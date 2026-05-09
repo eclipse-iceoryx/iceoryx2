@@ -30,6 +30,7 @@ use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing::{assert_that, test_fail};
 use iceoryx2_bb_testing_macros::conformance_test;
 use iceoryx2_bb_testing_macros::conformance_tests;
+use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 pub trait Test {
     type Service: Service;
@@ -175,6 +176,8 @@ pub mod node_death {
 
     #[conformance_test]
     pub fn dead_node_is_removed_from_pub_sub_service<S: Test>() {
+        test_requires!(<S::Service as Service>::DynamicStorage::does_support_persistency());
+
         let test = S::new();
 
         const NUMBER_OF_BAD_NODES: usize = 3;
@@ -358,6 +361,8 @@ pub mod node_death {
 
     #[conformance_test]
     pub fn dead_node_is_removed_from_request_response_service<S: Test>() {
+        test_requires!(<S::Service as Service>::DynamicStorage::does_support_persistency());
+
         let test = S::new();
 
         const NUMBER_OF_BAD_NODES: usize = 2;
@@ -862,6 +867,8 @@ pub mod node_death {
         total_number_of_nodes: usize,
         mut service_builder: F,
     ) {
+        test_requires!(<S::Service as Service>::DynamicStorage::does_support_persistency());
+
         let bad_node = test.create_bad_node();
         let bad_service = service_builder(&bad_node);
         S::leak(bad_node);
