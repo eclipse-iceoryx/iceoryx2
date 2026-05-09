@@ -165,8 +165,10 @@ pub struct Session {
     received_events: RefCell<BTreeMap<ServiceHash, VecDeque<u64>>>,
     /// Per-service sample queues populated by `recv_sample`'s drain.
     received_samples: RefCell<BTreeMap<ServiceHash, VecDeque<Sample>>>,
-    /// Datagram receive buffer
+    /// Datagram receive buffer.
     recv_buffer: RefCell<Vec<u8>>,
+    /// Datagram serialize buffer.
+    send_buffer: RefCell<Vec<u8>>,
     // Field-drop order matters: Rust drops fields in declaration order.
     // `receiver` drops first to remove the socket file, then `_guard`
     // releases the lock, and finally `_cleanup` removes the now-empty
@@ -255,6 +257,7 @@ impl Session {
             received_events: RefCell::new(BTreeMap::new()),
             received_samples: RefCell::new(BTreeMap::new()),
             recv_buffer: RefCell::new(alloc::vec![0u8; MAX_DATAGRAM]),
+            send_buffer: RefCell::new(alloc::vec![0u8; MAX_DATAGRAM]),
             receiver,
             _guard: guard,
             _cleanup: cleanup,
@@ -373,11 +376,12 @@ impl Session {
             from: self.id.clone(),
             kind,
         };
-        let bytes = postcard::to_allocvec(&envelope).map_err(|_| SendError::Encode)?;
+        let mut buf = self.send_buffer.borrow_mut();
+        let bytes = postcard::to_slice(&envelope, &mut buf).map_err(|_| SendError::Encode)?;
         for peer in self.discovered_peers.borrow().values() {
             // `try_send` is non-blocking; ignore EAGAIN/ECONNREFUSED
             // (peer slow or just exited).
-            let _ = peer.sender.try_send(&bytes);
+            let _ = peer.sender.try_send(bytes);
         }
         Ok(())
     }
