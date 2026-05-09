@@ -20,7 +20,9 @@ use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
 use crate::backend::session::Session;
 
 #[derive(Debug)]
-pub enum DiscoveryError {}
+pub enum DiscoveryError {
+    Processing,
+}
 
 impl core::fmt::Display for DiscoveryError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -77,14 +79,16 @@ impl iceoryx2_services_tunnel_backend::traits::Discovery for Discovery {
         &self,
         mut process_discovery: F,
     ) -> Result<(), Self::DiscoveryError> {
-        self.session.discover().unwrap();
+        self.session.discover();
         let (added, removed) = self.session.pending_discoveries();
 
         for static_config in added {
-            process_discovery(DiscoveryEvent::Added(static_config)).unwrap();
+            process_discovery(DiscoveryEvent::Added(static_config))
+                .map_err(|_| DiscoveryError::Processing)?;
         }
         for service_hash in removed {
-            process_discovery(DiscoveryEvent::Removed(service_hash)).unwrap();
+            process_discovery(DiscoveryEvent::Removed(service_hash))
+                .map_err(|_| DiscoveryError::Processing)?;
         }
 
         Ok(())

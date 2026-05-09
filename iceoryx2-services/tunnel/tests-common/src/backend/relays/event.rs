@@ -21,7 +21,7 @@ use iceoryx2::{
 };
 use iceoryx2_services_tunnel_backend::traits::{EventRelay, RelayBuilder};
 
-use crate::backend::session::Session;
+use crate::backend::session::{self, Session};
 
 #[derive(Debug)]
 pub enum CreationError {}
@@ -36,8 +36,7 @@ impl core::error::Error for CreationError {}
 
 #[derive(Debug)]
 pub enum SendError {
-    // TODO: Errors
-    Error,
+    SendEvent(session::SendError),
 }
 
 impl core::fmt::Display for SendError {
@@ -50,8 +49,7 @@ impl core::error::Error for SendError {}
 
 #[derive(Debug)]
 pub enum ReceiveError {
-    // TODO: Errors
-    Error,
+    ReceiveEvent(session::ReceiveError),
 }
 
 impl core::fmt::Display for ReceiveError {
@@ -106,14 +104,14 @@ impl<S: Service> EventRelay<S> for Relay<S> {
     fn send(&self, event_id: iceoryx2::prelude::EventId) -> Result<(), Self::SendError> {
         self.session
             .send_event(&self.service_hash, event_id.as_value() as u64)
-            .map_err(|_| SendError::Error)
+            .map_err(SendError::SendEvent)
     }
 
     fn receive(&self) -> Result<Option<iceoryx2::prelude::EventId>, Self::ReceiveError> {
         Ok(self
             .session
             .recv_event(&self.service_hash)
-            .map_err(|_| ReceiveError::Error)?
+            .map_err(ReceiveError::ReceiveEvent)?
             .map(|id| EventId::new(id as usize)))
     }
 }

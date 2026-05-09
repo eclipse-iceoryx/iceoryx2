@@ -20,7 +20,7 @@ use iceoryx2::service::builder::CustomHeaderMarker;
 use iceoryx2::service::{Service, static_config::StaticConfig};
 use iceoryx2_services_tunnel_backend::traits::{PublishSubscribeRelay, RelayBuilder};
 
-use crate::backend::session::Session;
+use crate::backend::session::{self, Session};
 
 #[derive(Debug)]
 pub enum CreationError {}
@@ -35,7 +35,7 @@ impl core::error::Error for CreationError {}
 
 #[derive(Debug)]
 pub enum SendError {
-    Broadcast,
+    SendSample(session::SendError),
 }
 
 impl core::fmt::Display for SendError {
@@ -46,11 +46,10 @@ impl core::fmt::Display for SendError {
 
 impl core::error::Error for SendError {}
 
-//TODO: Better name
 #[derive(Debug)]
 pub enum ReceiveError {
-    Recv,
-    Loan,
+    ReceiveSample(session::ReceiveError),
+    LoanSample,
 }
 
 impl core::fmt::Display for ReceiveError {
@@ -127,8 +126,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
                 header_bytes,
                 payload_bytes,
             )
-            // TODO: Wrap error
-            .map_err(|_| SendError::Broadcast)
+            .map_err(SendError::SendSample)
     }
 
     fn receive<LoanError>(
@@ -145,13 +143,13 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         let received = match self
             .session
             .recv_sample(self.static_config.service_hash())
-            .map_err(|_| ReceiveError::Recv)?
+            .map_err(ReceiveError::ReceiveSample)?
         {
             Some(s) => s,
             None => return Ok(None),
         };
 
-        let mut sample = loan(received.payload.len()).map_err(|_| ReceiveError::Loan)?;
+        let mut sample = loan(received.payload.len()).map_err(|_| ReceiveError::LoanSample)?;
 
         let header_size = user_header_size(&self.static_config);
         debug_assert_eq!(received.header.len(), header_size);

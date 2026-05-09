@@ -187,7 +187,7 @@ iceoryx2-conformance-tests-common = { path = "iceoryx2/conformance-tests/tests-c
 iceoryx2-conformance-tests-nostd = { path = "iceoryx2/conformance-tests/tests-nostd"}
 iceoryx2-tests-common = { path = "iceoryx2/tests-common" }
 iceoryx2-tests-nostd = { path = "iceoryx2/tests-nostd" }
-iceoryx2-services-tunnel-tests-common = { version = "0.8.999", path = "iceoryx2-services/tunnel/tests-common"}
+iceoryx2-services-tunnel-tests-common = { path = "iceoryx2-services/tunnel/tests-common"}
 
 ################################################################################
 

@@ -21,7 +21,7 @@ use iceoryx2_services_tunnel_backend::traits::Backend;
 use crate::backend::{
     discovery::Discovery,
     relays::{self, factory::Factory},
-    session::Session,
+    session::{self, Session},
 };
 
 #[derive(Debug, Clone)]
@@ -34,7 +34,9 @@ impl Default for Config {
 }
 
 #[derive(Debug)]
-pub enum CreationError {}
+pub enum CreationError {
+    CreateSession(session::CreationError),
+}
 
 impl core::fmt::Display for CreationError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -66,7 +68,7 @@ impl<S: Service> Backend<S> for TestBackend<S> {
         Self: 'a;
 
     fn create(_config: &Self::Config) -> Result<Self, Self::CreationError> {
-        let session = Rc::new(Session::create().unwrap());
+        let session = Rc::new(Session::create().map_err(CreationError::CreateSession)?);
         let discovery = Discovery::new(session.clone());
 
         Ok(Self {

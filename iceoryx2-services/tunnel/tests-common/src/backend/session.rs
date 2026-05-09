@@ -29,7 +29,9 @@ use iceoryx2_bb_posix::creation_mode::CreationMode;
 use iceoryx2_bb_posix::directory::{
     Directory, DirectoryAccessError, DirectoryCreateError, DirectoryOpenError,
 };
-use iceoryx2_bb_posix::file::{AccessMode, File, FileBuilder, Permission};
+use iceoryx2_bb_posix::file::{
+    AccessMode, File, FileBuilder, FileCreationError, FileRemoveError, FileWriteError, Permission,
+};
 use iceoryx2_bb_posix::memory_mapping::SemanticString;
 use iceoryx2_bb_posix::process_state::{
     ProcessGuard, ProcessGuardBuilder, ProcessGuardCreateError, ProcessMonitor, ProcessState,
@@ -65,20 +67,12 @@ impl core::fmt::Display for CreationError {
 impl core::error::Error for CreationError {}
 
 #[derive(Debug)]
-pub enum DiscoveryError {}
-
-impl core::fmt::Display for DiscoveryError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "DiscoveryError::{self:?}")
-    }
-}
-
-impl core::error::Error for DiscoveryError {}
-
-#[derive(Debug)]
 pub enum AnnounceError {
-    Io,
+    Path(SemanticStringError),
     Encode,
+    FileCreate(FileCreationError),
+    FileWrite(FileWriteError),
+    FileRemove(FileRemoveError),
 }
 
 impl core::fmt::Display for AnnounceError {
@@ -215,17 +209,18 @@ impl Session {
         // Create directory for this session and its service files
         let mut session_dir_path = sessions_dir_path.clone();
         let id_b64 = id.value().to_b64().to_lowercase();
-        add_to_path(&mut session_dir_path, id_b64.as_bytes())?;
+        add_to_path(&mut session_dir_path, id_b64.as_bytes()).map_err(CreationError::Path)?;
 
         let mut services_dir_path = session_dir_path.clone();
-        add_to_path(&mut services_dir_path, b"services")?;
+        add_to_path(&mut services_dir_path, b"services").map_err(CreationError::Path)?;
         match Directory::create(&services_dir_path, Permission::OWNER_ALL) {
             Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => {}
             Err(e) => return Err(CreationError::DirectoryCreation(e)),
         }
 
         // Create liveliness lockfile
-        let lockfile_path = file_path_in_directory(LOCKFILE_NAME, &session_dir_path)?;
+        let lockfile_path =
+            file_path_in_directory(LOCKFILE_NAME, &session_dir_path).map_err(CreationError::Path)?;
 
         let guard = ProcessGuardBuilder::new()
             .guard_permissions(Permission::OWNER_ALL)
@@ -233,7 +228,8 @@ impl Session {
             .map_err(CreationError::ProcessGuard)?;
 
         // Create a UDS receiver
-        let sock_path = file_path_in_directory(SOCKET_NAME, &session_dir_path)?;
+        let sock_path =
+            file_path_in_directory(SOCKET_NAME, &session_dir_path).map_err(CreationError::Path)?;
         let receiver = UnixDatagramReceiverBuilder::new(&sock_path)
             .creation_mode(CreationMode::PurgeAndCreate)
             .permission(Permission::OWNER_ALL)
@@ -268,27 +264,27 @@ impl Session {
             static_config.service_hash().as_str().as_bytes(),
             &self.services_dir_path,
         )
-        .map_err(|_| AnnounceError::Io)?;
+        .map_err(AnnounceError::Path)?;
         let mut file = FileBuilder::new(&path)
             .creation_mode(CreationMode::PurgeAndCreate)
             .permission(Permission::OWNER_ALL)
             .create()
-            .map_err(|_| AnnounceError::Io)?;
-        file.write(&bytes).map_err(|_| AnnounceError::Io)?;
+            .map_err(AnnounceError::FileCreate)?;
+        file.write(&bytes).map_err(AnnounceError::FileWrite)?;
         Ok(())
     }
 
     pub fn announce_removed(&self, hash: &ServiceHash) -> Result<(), AnnounceError> {
         let path = file_path_in_directory(hash.as_str().as_bytes(), &self.services_dir_path)
-            .map_err(|_| AnnounceError::Io)?;
-        File::remove(&path).map_err(|_| AnnounceError::Io)?;
+            .map_err(AnnounceError::Path)?;
+        File::remove(&path).map_err(AnnounceError::FileRemove)?;
         Ok(())
     }
 
     /// Scan active peers, refresh the aggregated service set, and queue
     /// added/removed events into `pending_discoveries` for the next
     /// `discover()` call.
-    pub fn discover(&self) -> Result<(), DiscoveryError> {
+    pub fn discover(&self) {
         let active_peers = self.discover_peers();
 
         // Build the new aggregated set: union of all active peers' services.
@@ -316,8 +312,6 @@ impl Session {
         }
 
         *self.discovered_services.borrow_mut() = new_aggregated;
-
-        Ok(())
     }
 
     /// Drain discovery events accumulated since the last call.
@@ -428,16 +422,16 @@ impl Session {
 
     /// Update peer table.
     fn discover_peers(&self) -> Vec<DiscoveredPeer> {
-        let active = match self.discover_active_peers() {
-            Ok(a) => a,
-            Err(_) => return Vec::new(),
-        };
+        let active = self.discover_active_peers();
         self.reconcile_peers(&active);
         active
     }
 
-    fn discover_active_peers(&self) -> Result<Vec<DiscoveredPeer>, DiscoveryError> {
-        let entries = self.sessions_dir.contents().unwrap();
+    fn discover_active_peers(&self) -> Vec<DiscoveredPeer> {
+        let entries = match self.sessions_dir.contents() {
+            Ok(e) => e,
+            Err(_) => return Vec::new(),
+        };
 
         let mut active_peers: Vec<DiscoveredPeer> = Vec::new();
         for entry in entries {
@@ -478,7 +472,7 @@ impl Session {
             }
         }
 
-        Ok(active_peers)
+        active_peers
     }
 
     fn reconcile_peers(&self, active_peers: &[DiscoveredPeer]) {
@@ -560,14 +554,14 @@ impl Drop for SessionCleanup {
     }
 }
 
-fn add_to_path(path: &mut Path, name: &[u8]) -> Result<(), CreationError> {
-    let entry = Path::new(name).map_err(CreationError::Path)?;
-    path.add_path_entry(&entry).map_err(CreationError::Path)
+fn add_to_path(path: &mut Path, name: &[u8]) -> Result<(), SemanticStringError> {
+    let entry = Path::new(name)?;
+    path.add_path_entry(&entry)
 }
 
-fn file_path_in_directory(name: &[u8], dir: &Path) -> Result<FilePath, CreationError> {
-    let file = FileName::new(name).map_err(CreationError::Path)?;
-    FilePath::from_path_and_file(dir, &file).map_err(CreationError::Path)
+fn file_path_in_directory(name: &[u8], dir: &Path) -> Result<FilePath, SemanticStringError> {
+    let file = FileName::new(name)?;
+    FilePath::from_path_and_file(dir, &file)
 }
 
 enum SessionState {
