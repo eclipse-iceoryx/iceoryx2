@@ -10,11 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub const SESSIONS_DIR: &[u8] = b"/tmp/iceoryx2/tunnels/test-backend/sessions";
+#[cfg(all(not(target_os = "windows"), not(target_os = "nto")))]
+pub const ROOT_DIR: &[u8] = b"/tmp/iceoryx2/tunnels/test-backend";
+#[cfg(target_os = "nto")]
+pub const ROOT_DIR: &[u8] = b"/data/iceoryx2/tunnels/test-backend";
+#[cfg(target_os = "windows")]
+pub const ROOT_DIR: &[u8] = b"C:\\Temp\\iceoryx2\\tunnels\\test-backend";
+
+pub const SESSIONS_DIR_NAME: &[u8] = b"sessions";
+pub const SERVICES_DIR_NAME: &[u8] = b"services";
 pub const LOCKFILE_NAME: &[u8] = b"session.lock";
 pub const SOCKET_NAME: &[u8] = b"session.sock";
-
-/// Maximum size of any single datagram. Pub-sub samples in the
-/// conformance suite are sub-kilobyte; 256 KiB is comfortably above any
-/// plausible per-sample size.
 pub const MAX_DATAGRAM: usize = 256 * 1024;

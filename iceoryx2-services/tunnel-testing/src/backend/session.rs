@@ -45,7 +45,9 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 
-use crate::backend::settings::{LOCKFILE_NAME, MAX_DATAGRAM, SESSIONS_DIR, SOCKET_NAME};
+use crate::backend::settings::{
+    LOCKFILE_NAME, MAX_DATAGRAM, ROOT_DIR, SERVICES_DIR_NAME, SESSIONS_DIR_NAME, SOCKET_NAME,
+};
 
 #[derive(Debug)]
 pub enum CreationError {
@@ -167,10 +169,7 @@ pub struct Session {
     recv_buffer: RefCell<Vec<u8>>,
     /// Datagram serialize buffer.
     send_buffer: RefCell<Vec<u8>>,
-    // Field-drop order matters: Rust drops fields in declaration order.
-    // `receiver` drops first to remove the socket file, then `_guard`
-    // releases the lock, and finally `_cleanup` removes the now-empty
-    // session directory.
+    /// Unix soscket abstraction for payloads
     receiver: UnixDatagramReceiver,
     _guard: ProcessGuard,
     _cleanup: SessionCleanup,
@@ -199,7 +198,8 @@ impl Session {
             .to_lowercase();
 
         // Create or open common sessions directory
-        let sessions_dir_path = Path::new(SESSIONS_DIR).unwrap();
+        let mut sessions_dir_path = Path::new(ROOT_DIR).unwrap();
+        add_to_path(&mut sessions_dir_path, SESSIONS_DIR_NAME).map_err(CreationError::Path)?;
         let sessions_dir = if !Directory::does_exist(&sessions_dir_path)
             .map_err(CreationError::DirectoryPermissions)?
         {
@@ -217,7 +217,7 @@ impl Session {
         add_to_path(&mut session_dir_path, id.as_bytes()).map_err(CreationError::Path)?;
 
         let mut services_dir_path = session_dir_path.clone();
-        add_to_path(&mut services_dir_path, b"services").map_err(CreationError::Path)?;
+        add_to_path(&mut services_dir_path, SERVICES_DIR_NAME).map_err(CreationError::Path)?;
         match Directory::create(&services_dir_path, Permission::OWNER_ALL) {
             Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => {}
             Err(e) => return Err(CreationError::DirectoryCreation(e)),
@@ -325,11 +325,8 @@ impl Session {
     /// last call.
     pub fn pending_discoveries(&self) -> (Vec<StaticConfig>, Vec<ServiceHash>) {
         let mut pending = self.pending_discoveries.borrow_mut();
-
-        // TODO: Is take correct?
         let added = core::mem::take(&mut pending.added);
         let removed = core::mem::take(&mut pending.removed);
-
         (added, removed)
     }
 
@@ -462,8 +459,7 @@ impl Session {
             match classify_session(&session_dir_path) {
                 SessionState::Alive => {
                     let mut services_path = session_dir_path.clone();
-                    // TODO: Make services leaf a const
-                    if add_to_path(&mut services_path, b"services").is_err() {
+                    if add_to_path(&mut services_path, SERVICES_DIR_NAME).is_err() {
                         continue;
                     }
                     let id_str = match core::str::from_utf8(entry.name().as_bytes()) {
