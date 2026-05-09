@@ -148,7 +148,6 @@ enum Kind {
     },
 }
 
-// TODO: Cleanup resources left by failed tests
 #[derive(Debug)]
 pub struct Session {
     /// Unique ID for this session.
@@ -209,6 +208,9 @@ impl Session {
         } else {
             Directory::new(&sessions_dir_path).map_err(CreationError::DirectoryOpen)?
         };
+
+        // Sweep dirs left behind by aborted prior runs before adding our own.
+        sweep_stale_sessions(&sessions_dir, &sessions_dir_path);
 
         // Create directory for this session and its service files
         let mut session_dir_path = sessions_dir_path.clone();
@@ -447,18 +449,8 @@ impl Session {
                 continue;
             }
 
-            // Verify peer liveliness
-            let lockfile_path = match file_path_in_directory(LOCKFILE_NAME, &session_dir_path) {
-                Ok(path) => path,
-                Err(_) => continue,
-            };
-
-            let monitor = match ProcessMonitor::new(&lockfile_path) {
-                Ok(m) => m,
-                Err(_) => continue,
-            };
-            match monitor.state() {
-                Ok(ProcessState::Alive) | Ok(ProcessState::Starting) => {
+            match classify_session(&session_dir_path) {
+                SessionState::Alive => {
                     let mut services_path = session_dir_path.clone();
                     // TODO: Make services leaf a const
                     if add_to_path(&mut services_path, b"services").is_err() {
@@ -479,17 +471,10 @@ impl Session {
                         sock_path,
                     });
                 }
-                Ok(ProcessState::Dead) | Ok(ProcessState::CleaningUp) => {
-                    // Crash cleanup: tear down the stale directory so we
-                    // stop re-detecting it.
+                SessionState::Stale => {
                     let _ = Directory::remove(&session_dir_path);
                 }
-                Ok(ProcessState::DoesNotExist) => {
-                    // Graceful exit already removed the lock file. Treat
-                    // any leftover sibling files as stale.
-                    let _ = Directory::remove(&session_dir_path);
-                }
-                Err(_) => continue,
+                SessionState::Indeterminate => continue,
             }
         }
 
@@ -583,4 +568,48 @@ fn add_to_path(path: &mut Path, name: &[u8]) -> Result<(), CreationError> {
 fn file_path_in_directory(name: &[u8], dir: &Path) -> Result<FilePath, CreationError> {
     let file = FileName::new(name).map_err(CreationError::Path)?;
     FilePath::from_path_and_file(dir, &file).map_err(CreationError::Path)
+}
+
+enum SessionState {
+    Alive,
+    Stale,
+    Indeterminate,
+}
+
+/// Classify a session directory by inspecting its lockfile. A missing or
+/// dead-process lockfile means the directory was left behind by a crashed
+/// or aborted run.
+fn classify_session(session_dir_path: &Path) -> SessionState {
+    let lockfile_path = match file_path_in_directory(LOCKFILE_NAME, session_dir_path) {
+        Ok(p) => p,
+        Err(_) => return SessionState::Indeterminate,
+    };
+    let monitor = match ProcessMonitor::new(&lockfile_path) {
+        Ok(m) => m,
+        Err(_) => return SessionState::Stale,
+    };
+    match monitor.state() {
+        Ok(ProcessState::Alive) | Ok(ProcessState::Starting) => SessionState::Alive,
+        Ok(ProcessState::Dead) | Ok(ProcessState::CleaningUp) | Ok(ProcessState::DoesNotExist) => {
+            SessionState::Stale
+        }
+        Err(_) => SessionState::Indeterminate,
+    }
+}
+
+/// Remove every session directory whose owning process is no longer alive.
+fn sweep_stale_sessions(sessions_dir: &Directory, sessions_dir_path: &Path) {
+    let entries = match sessions_dir.contents() {
+        Ok(e) => e,
+        Err(_) => return,
+    };
+    for entry in entries {
+        let mut session_dir_path = sessions_dir_path.clone();
+        if add_to_path(&mut session_dir_path, entry.name().as_bytes()).is_err() {
+            continue;
+        }
+        if matches!(classify_session(&session_dir_path), SessionState::Stale) {
+            let _ = Directory::remove(&session_dir_path);
+        }
+    }
 }
