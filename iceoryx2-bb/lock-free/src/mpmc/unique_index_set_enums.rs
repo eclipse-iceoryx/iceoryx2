@@ -14,13 +14,14 @@ use iceoryx2_bb_elementary::enum_gen;
 
 /// Describes if indices can still be acquired after the call to
 /// [`UniqueIndexSet::release_raw_index()`].
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub enum ReleaseMode {
     /// No more indices can be acquired with [`UniqueIndexSet::acquire_raw_index()`] if the
     /// released index was the last one.
     LockIfLastIndex,
     /// Indices can still be acquired with [`UniqueIndexSet::acquire_raw_index()`] after the
     /// operation
+    #[default]
     Default,
 }
 

@@ -14,6 +14,9 @@ use alloc::vec;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
+use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::{
+    ReleaseMode, ReleaseState, UniqueIndexSetAcquireFailure,
+};
 use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle, Handle};
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_posix::thread::thread_scope;
