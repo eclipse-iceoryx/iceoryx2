@@ -189,6 +189,8 @@ struct DiscoveredPeer {
 }
 
 impl Session {
+    /// Create a new session that can announce services to and exchange
+    /// samples/events with other live sessions on the same host.
     pub fn create() -> Result<Self, CreationError> {
         let id = UniqueSystemId::new()
             .map_err(CreationError::UniqueIdCreation)?
@@ -262,6 +264,7 @@ impl Session {
         })
     }
 
+    /// Make a service offered by this session discoverable to peers.
     pub fn announce_added(&self, static_config: &StaticConfig) -> Result<(), AnnounceError> {
         let bytes = postcard::to_allocvec(static_config).map_err(|_| AnnounceError::Encode)?;
         let path = file_path_in_directory(
@@ -278,6 +281,7 @@ impl Session {
         Ok(())
     }
 
+    /// Withdraw a previously-announced service so peers stop discovering it.
     pub fn announce_removed(&self, hash: &ServiceHash) -> Result<(), AnnounceError> {
         let path = file_path_in_directory(hash.as_str().as_bytes(), &self.services_dir_path)
             .map_err(AnnounceError::Path)?;
@@ -285,9 +289,8 @@ impl Session {
         Ok(())
     }
 
-    /// Scan active peers, refresh the known-service set, and queue
-    /// added/removed events into `pending_discoveries` for the next
-    /// `pending_discoveries()` drain.
+    /// Refresh the known-service set; new and dropped hashes are queued for
+    /// the next `pending_discoveries()` drain.
     pub fn discover(&self) {
         let active_peers = self.discover_peers();
         let mut pending = self.pending_discoveries.borrow_mut();
@@ -318,7 +321,8 @@ impl Session {
         *self.discovered_services.borrow_mut() = current;
     }
 
-    /// Drain discovery events accumulated since the last call.
+    /// Drain (added, removed) service-discovery events accumulated since the
+    /// last call.
     pub fn pending_discoveries(&self) -> (Vec<StaticConfig>, Vec<ServiceHash>) {
         let mut pending = self.pending_discoveries.borrow_mut();
 
@@ -329,6 +333,7 @@ impl Session {
         (added, removed)
     }
 
+    /// Send an event id for the given service to all live peers.
     pub fn send_event(&self, service_hash: &ServiceHash, id: u64) -> Result<(), SendError> {
         self.discover_peers();
         self.broadcast(Kind::Event {
@@ -337,6 +342,7 @@ impl Session {
         })
     }
 
+    /// Send a publish-subscribe sample for the given service to all live peers.
     pub fn send_sample(
         &self,
         service_hash: &ServiceHash,
@@ -351,6 +357,7 @@ impl Session {
         })
     }
 
+    /// Return the next event id received for the given service, or `None`.
     pub fn recv_event(&self, service_hash: &ServiceHash) -> Result<Option<u64>, ReceiveError> {
         self.recv()?;
         Ok(self
@@ -360,6 +367,7 @@ impl Session {
             .and_then(|q| q.pop_front()))
     }
 
+    /// Return the next sample received for the given service, or `None`.
     pub fn recv_sample(&self, service_hash: &ServiceHash) -> Result<Option<Sample>, ReceiveError> {
         self.recv()?;
         Ok(self
@@ -369,6 +377,7 @@ impl Session {
             .and_then(|q| q.pop_front()))
     }
 
+    /// Send the given message to every currently-tracked peer.
     fn broadcast(&self, kind: Kind) -> Result<(), SendError> {
         let envelope = Envelope {
             from: self.id.clone(),
@@ -384,6 +393,7 @@ impl Session {
         Ok(())
     }
 
+    /// Drain all pending datagrams from peers into the per-service queues.
     pub fn recv(&self) -> Result<(), ReceiveError> {
         let mut buf = self.recv_buffer.borrow_mut();
         loop {
@@ -425,13 +435,14 @@ impl Session {
         }
     }
 
-    /// Update peer table.
+    /// Refresh the peer table to match what is currently live on disk.
     fn discover_peers(&self) -> Vec<DiscoveredPeer> {
         let active = self.discover_active_peers();
         self.reconcile_peers(&active);
         active
     }
 
+    /// Return the peers currently alive on disk.
     fn discover_active_peers(&self) -> Vec<DiscoveredPeer> {
         let entries = match self.sessions_dir.contents() {
             Ok(e) => e,
@@ -480,6 +491,7 @@ impl Session {
         active_peers
     }
 
+    /// Align the tracked peer set with the given live peers.
     fn reconcile_peers(&self, active_peers: &[DiscoveredPeer]) {
         let mut peers = self.discovered_peers.borrow_mut();
 
@@ -503,6 +515,7 @@ impl Session {
         }
     }
 
+    /// Return the services a peer is currently announcing.
     fn discover_peer_services(services_dir_path: &Path) -> BTreeMap<ServiceHash, StaticConfig> {
         let mut discovered_services = BTreeMap::new();
 
@@ -553,11 +566,13 @@ impl Drop for SessionCleanup {
     }
 }
 
+/// Append a name component to a path.
 fn add_to_path(path: &mut Path, name: &[u8]) -> Result<(), SemanticStringError> {
     let entry = Path::new(name)?;
     path.add_path_entry(&entry)
 }
 
+/// Build the path of a file inside the given directory.
 fn file_path_in_directory(name: &[u8], dir: &Path) -> Result<FilePath, SemanticStringError> {
     let file = FileName::new(name)?;
     FilePath::from_path_and_file(dir, &file)
@@ -569,9 +584,8 @@ enum SessionState {
     Indeterminate,
 }
 
-/// Classify a session directory by inspecting its lockfile. A missing or
-/// dead-process lockfile means the directory was left behind by a crashed
-/// or aborted run.
+/// Determine whether a session directory belongs to a live process, a
+/// crashed/aborted one, or cannot be classified.
 fn classify_session(session_dir_path: &Path) -> SessionState {
     let lockfile_path = match file_path_in_directory(LOCKFILE_NAME, session_dir_path) {
         Ok(p) => p,
