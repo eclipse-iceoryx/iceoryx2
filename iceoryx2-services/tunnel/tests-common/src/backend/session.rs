@@ -481,31 +481,25 @@ impl Session {
     }
 
     fn reconcile_peers(&self, active_peers: &[DiscoveredPeer]) {
+        let mut peers = self.discovered_peers.borrow_mut();
+
         // Drop peers no longer present.
-        self.discovered_peers.borrow_mut().retain(|id, _| {
+        peers.retain(|id, _| {
             active_peers
                 .iter()
                 .any(|p| p.session_id.as_str() == id.as_str())
         });
 
-        // Track to new peers.
+        // Track new peers.
         for peer in active_peers {
-            if self
-                .discovered_peers
-                .borrow_mut()
-                .contains_key(&peer.session_id)
-            {
+            if peers.contains_key(&peer.session_id) {
                 continue;
             }
-
             let sender = match UnixDatagramSenderBuilder::new(&peer.sock_path).create() {
                 Ok(s) => s,
                 Err(_) => continue, // peer may have just exited
             };
-
-            self.discovered_peers
-                .borrow_mut()
-                .insert(peer.session_id.clone(), Peer { sender });
+            peers.insert(peer.session_id.clone(), Peer { sender });
         }
     }
 
