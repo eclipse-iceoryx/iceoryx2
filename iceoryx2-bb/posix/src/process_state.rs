@@ -623,7 +623,7 @@ impl Drop for StateFiles {
         // Therefore, we check explicitly if a file has the ownership and remove it explicitly instead of
         // handling this via RAII
         for file in [&mut self.state, &mut self.owner_lock, &mut self.context] {
-            let file = file
+            let mut file = file
                 .take()
                 .expect("contains always a value, only removed on destruction");
 
@@ -631,6 +631,11 @@ impl Drop for StateFiles {
                 let file_path = *file
                     .path()
                     .expect("created from path therefore it always contains a value");
+                if let Err(e) = file.set_permission(Permission::OWNER_ALL) {
+                    warn!(from origin,
+                        "{msg} since the access rights of the file \"{:?}\" could not be elevated to grant permissions to remove the file. [{e:?}]",
+                        file_path);
+                }
                 if let Err(e) = file.remove_self() {
                     warn!(from origin, "{msg} since the file \"{:?}\" could not be removed. [{e:?}]", file_path)
                 }
