@@ -270,6 +270,8 @@ pub fn can_be_mapped_with_a_custom_offset() {
 
 #[test]
 pub fn abandoning_shared_memory_keeps_resources() {
+    test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
+
     let shm_name = generate_file_path().file_name();
     let sut_create = SharedMemoryBuilder::new(&shm_name)
         .creation_mode(CreationMode::PurgeAndCreate)

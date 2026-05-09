@@ -535,8 +535,16 @@ impl ProcessGuardBuilder {
         }
     }
 
+    fn unlock_state_file(file: &File) -> Result<(), ProcessGuardLockError> {
+        Self::set_lock(file, posix::F_UNLCK)
+    }
+
     fn lock_state_file(file: &File) -> Result<(), ProcessGuardLockError> {
-        let origin = "ProcessState::lock_state_file()";
+        Self::set_lock(file, posix::F_SETLK)
+    }
+
+    fn set_lock(file: &File, lock_type: posix::int) -> Result<(), ProcessGuardLockError> {
+        let origin = "ProcessState::set_lock()";
         let msg = format!("Unable to lock process state file {file:?}");
         let mut new_lock_state = posix::flock::new_zeroed();
         new_lock_state.l_type = LockType::Write as _;
@@ -545,7 +553,7 @@ impl ProcessGuardBuilder {
         if unsafe {
             posix::fcntl(
                 file.file_descriptor().native_handle(),
-                posix::F_SETLK,
+                lock_type,
                 &mut new_lock_state,
             )
         } != -1
@@ -614,6 +622,13 @@ impl Abandonable for ProcessGuard {
             fatal_panic!(from this, "{msg} since the state file could not be overridden with zeros. [{e:?}]");
         }
 
+        if let Some(f) = &this.state_file {
+            if let Err(e) = ProcessGuardBuilder::unlock_state_file(f) {
+                warn!(from this,
+                    "{msg} since the lock of the state file could not be released. [{e:?}]");
+            }
+        }
+
         for file in [
             &mut this.state_file,
             &mut this.owner_lock_file,
@@ -630,6 +645,14 @@ impl Drop for ProcessGuard {
     fn drop(&mut self) {
         let msg = "Unable to remove the ProcessGuard";
         let origin = format!("{:?}", self);
+
+        if let Some(f) = &self.state_file {
+            if let Err(e) = ProcessGuardBuilder::unlock_state_file(f) {
+                warn!(from self,
+                    "{msg} since the lock of the state file could not be released. [{e:?}]");
+            }
+        }
+
         // The drop order is important, the last entry must be the context file so that we can also recover if
         // the cleaner process dies in the middle of cleaning up the resources
         //
@@ -1011,6 +1034,14 @@ pub struct ProcessCleaner {
 impl Abandonable for ProcessCleaner {
     unsafe fn abandon_in_place(this: *mut Self) {
         let this = unsafe { &mut *this };
+
+        if let Some(f) = &this.guard.owner_lock_file {
+            if let Err(e) = ProcessGuardBuilder::unlock_state_file(f) {
+                warn!(from this,
+                    "Unable to abandon ProcessCleaner since the lock of the owner file could not be released. [{e:?}]");
+            }
+        }
+
         for file in [
             &mut this.guard.state_file,
             &mut this.guard.owner_lock_file,
