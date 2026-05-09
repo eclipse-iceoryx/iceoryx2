@@ -83,7 +83,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
 
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
         Ok(Relay {
-            session: self.session.clone(),
+            session: self.session,
             service_hash: *self.static_config.service_hash(),
             _phantom: core::marker::PhantomData,
         })
