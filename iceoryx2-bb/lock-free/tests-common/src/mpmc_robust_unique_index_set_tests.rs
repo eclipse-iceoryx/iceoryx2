@@ -40,3 +40,216 @@ pub fn capacity_is_set_correctly() {
     let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new_with_reduced_capacity(0);
     assert_that!(sut, is_err);
 }
+
+#[test]
+pub fn acquire_and_release_works() {
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+
+    let owner_id = OwnerId::new(123).unwrap();
+    let mut indices = vec![];
+    for n in 0..CAPACITY {
+        assert_that!(sut.borrowed_indices(), eq n);
+        indices.push(sut.acquire(owner_id).unwrap());
+        assert_that!(sut.borrowed_indices(), eq n + 1);
+    }
+
+    for n in (1..CAPACITY + 1).rev() {
+        assert_that!(sut.borrowed_indices(), eq n);
+        sut.release(indices.pop().unwrap(), ReleaseMode::Default);
+        assert_that!(sut.borrowed_indices(), eq n - 1);
+    }
+}
+
+#[test]
+pub fn indices_are_unique() {
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+
+    let owner_id = OwnerId::new(123).unwrap();
+    let mut indices = vec![];
+    for _ in 0..CAPACITY {
+        let index = sut.acquire(owner_id).unwrap();
+
+        assert_that!(indices, not_contains index);
+        indices.push(index);
+    }
+}
+
+#[test]
+pub fn indices_are_between_zero_and_capacity() {
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+
+    let owner_id = OwnerId::new(123).unwrap();
+    for _ in 0..CAPACITY {
+        let index = sut.acquire(owner_id).unwrap();
+
+        assert_that!(index, lt CAPACITY);
+    }
+}
+
+#[test]
+pub fn when_full_acquire_returns_out_of_indices() {
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+
+    let owner_id = OwnerId::new(123).unwrap();
+    for _ in 0..CAPACITY {
+        sut.acquire(owner_id).unwrap();
+    }
+
+    assert_that!(sut.acquire(owner_id).err(), eq Some(UniqueIndexSetAcquireFailure::OutOfIndices));
+}
+
+#[test]
+pub fn release_makes_space_for_more_indices() {
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+
+    let owner_id = OwnerId::new(123).unwrap();
+    for _ in 0..CAPACITY {
+        sut.acquire(owner_id).unwrap();
+    }
+
+    sut.release(CAPACITY / 2, ReleaseMode::Default);
+
+    assert_that!(sut.acquire(owner_id), is_ok);
+    assert_that!(sut.acquire(owner_id).err(), eq Some(UniqueIndexSetAcquireFailure::OutOfIndices));
+}
+
+#[test]
+pub fn new_set_is_not_locked_and_empty() {
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+
+    assert_that!(sut.is_locked(), eq false);
+    assert_that!(sut.borrowed_indices(), eq 0);
+}
+
+#[test]
+pub fn release_last_index_and_set_release_mode_to_locked_locks_set() {
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+
+    let owner_id = OwnerId::new(123).unwrap();
+    let index = sut.acquire(owner_id).unwrap();
+
+    assert_that!(sut.release(index, ReleaseMode::LockIfLastIndex), eq ReleaseState::Locked);
+    assert_that!(sut.is_locked(), eq true);
+}
+
+#[test]
+pub fn release_not_last_index_and_set_release_mode_to_locked_does_not_lock_the_set() {
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+
+    let owner_id = OwnerId::new(123).unwrap();
+    let index_1 = sut.acquire(owner_id).unwrap();
+    let _index_2 = sut.acquire(owner_id).unwrap();
+
+    assert_that!(sut.release(index_1, ReleaseMode::LockIfLastIndex), eq ReleaseState::Unlocked);
+    assert_that!(sut.is_locked(), eq false);
+}
+
+#[test]
+pub fn acquire_all_indices_and_release_with_release_mode_lock_locks_set_after_last_release() {
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+
+    let owner_id = OwnerId::new(123).unwrap();
+    let mut indices = vec![];
+
+    for _ in 0..CAPACITY {
+        indices.push(sut.acquire(owner_id).unwrap());
+    }
+
+    for _ in 0..CAPACITY - 1 {
+        assert_that!(sut.release(indices.pop().unwrap(), ReleaseMode::LockIfLastIndex), eq ReleaseState::Unlocked);
+    }
+
+    assert_that!(sut.release(indices.pop().unwrap(), ReleaseMode::LockIfLastIndex), eq ReleaseState::Locked);
+    assert_that!(sut.is_locked(), eq true);
+}
+
+#[test]
+pub fn new_indices_cannot_be_acquired_from_locked_set() {
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+
+    let owner_id = OwnerId::new(123).unwrap();
+    let index = sut.acquire(owner_id).unwrap();
+    sut.release(index, ReleaseMode::LockIfLastIndex);
+
+    assert_that!(sut.acquire(owner_id).err(), eq Some(UniqueIndexSetAcquireFailure::IsLocked));
+}
+
+#[test]
+pub fn zero_borrowed_indices_in_locked_set() {
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+
+    let owner_id = OwnerId::new(123).unwrap();
+    let index = sut.acquire(owner_id).unwrap();
+    sut.release(index, ReleaseMode::LockIfLastIndex);
+
+    assert_that!(sut.borrowed_indices(), eq 0);
+}
+
+#[test]
+pub fn recover_releases_indices_of_owner() {
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+
+    let mut indices = vec![];
+    for n in 0..CAPACITY {
+        let owner_id = OwnerId::new(n as u64 + 1).unwrap();
+        let index = sut.acquire(owner_id).unwrap();
+        indices.push(index);
+    }
+
+    for n in 0..CAPACITY {
+        let id_to_remove = OwnerId::new(n as u64 + 1).unwrap();
+        sut.recover(ReleaseMode::Default, |owner_id| owner_id == id_to_remove);
+
+        assert_that!(sut.borrowed_indices(), eq CAPACITY - n - 1);
+    }
+}
+
+#[test]
+pub fn recover_locks_the_set_if_release_mode_is_lock() {
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+
+    let owner_id = OwnerId::new(558).unwrap();
+    for _ in 0..CAPACITY {
+        sut.acquire(owner_id).unwrap();
+    }
+
+    assert_that!(sut.recover(ReleaseMode::LockIfLastIndex, |id| id == owner_id), eq ReleaseState::Locked);
+    assert_that!(sut.is_locked(), eq true);
+}
+
+#[test]
+pub fn recover_does_not_lock_the_set_if_release_mode_is_lock_and_the_set_is_not_empty_after_recover()
+ {
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+
+    let owner_id = OwnerId::new(558).unwrap();
+    for _ in 0..CAPACITY / 2 {
+        sut.acquire(owner_id).unwrap();
+    }
+    sut.acquire(OwnerId::new(912).unwrap()).unwrap();
+
+    assert_that!(sut.recover(ReleaseMode::LockIfLastIndex, |id| id == owner_id), eq ReleaseState::Unlocked);
+    assert_that!(sut.is_locked(), eq false);
+}
+
+#[test]
+pub fn acquire_and_release_works_with_uninitialized_memory() {
+    let mut memory = [0u8; RobustUniqueIndexSet::const_memory_size(CAPACITY)];
+    let allocator = BumpAllocator::new(memory.as_mut_ptr());
+    let mut sut = unsafe { RobustUniqueIndexSet::new_uninit(CAPACITY) };
+    unsafe { assert_that!(sut.init(&allocator), is_ok) };
+
+    let owner_id = OwnerId::new(123).unwrap();
+    let mut indices = vec![];
+    for n in 0..CAPACITY {
+        assert_that!(sut.borrowed_indices(), eq n);
+        indices.push(unsafe { sut.acquire(owner_id).unwrap() });
+        assert_that!(sut.borrowed_indices(), eq n + 1);
+    }
+
+    for n in (1..CAPACITY + 1).rev() {
+        assert_that!(sut.borrowed_indices(), eq n);
+        unsafe { sut.release(indices.pop().unwrap(), ReleaseMode::Default) };
+        assert_that!(sut.borrowed_indices(), eq n - 1);
+    }
+}
