@@ -14,7 +14,7 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
-use alloc::collections::{BTreeMap, VecDeque};
+use alloc::collections::{BTreeMap, BTreeSet, VecDeque};
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::cell::RefCell;
@@ -154,10 +154,8 @@ pub struct Session {
     services_dir_path: Path,
     /// Live peer sessions keyed by id.
     discovered_peers: RefCell<BTreeMap<SessionId, Peer>>,
-    /// Aggregated set of services offered by any live peer. Updated on
-    /// each `discover()`; the diff against the previous snapshot is
-    /// surfaced through `pending_discoveries`.
-    discovered_services: RefCell<BTreeMap<ServiceHash, StaticConfig>>,
+    /// Hashes of services offered by any live peer at the last `discover()`.
+    discovered_services: RefCell<BTreeSet<ServiceHash>>,
     /// Discovery events accumulated by `discover()` and drained by
     /// `discover()`.
     pending_discoveries: RefCell<PendingDiscovery>,
@@ -252,7 +250,7 @@ impl Session {
             sessions_dir,
             services_dir_path,
             discovered_peers: RefCell::new(BTreeMap::new()),
-            discovered_services: RefCell::new(BTreeMap::new()),
+            discovered_services: RefCell::new(BTreeSet::new()),
             pending_discoveries: RefCell::new(PendingDiscovery::default()),
             received_events: RefCell::new(BTreeMap::new()),
             received_samples: RefCell::new(BTreeMap::new()),
@@ -287,37 +285,37 @@ impl Session {
         Ok(())
     }
 
-    /// Scan active peers, refresh the aggregated service set, and queue
+    /// Scan active peers, refresh the known-service set, and queue
     /// added/removed events into `pending_discoveries` for the next
-    /// `discover()` call.
+    /// `pending_discoveries()` drain.
     pub fn discover(&self) {
         let active_peers = self.discover_peers();
+        let mut pending = self.pending_discoveries.borrow_mut();
 
-        // Build the new aggregated set: union of all active peers' services.
-        let mut new_aggregated: BTreeMap<ServiceHash, StaticConfig> = BTreeMap::new();
-        for peer in &active_peers {
-            for (hash, cfg) in Self::discover_peer_services(&peer.services_dir) {
-                new_aggregated.entry(hash).or_insert(cfg);
-            }
-        }
-
-        // Diff against the previous aggregated set.
-        {
-            let mut pending = self.pending_discoveries.borrow_mut();
+        let current = {
             let prev = self.discovered_services.borrow();
-            for (hash, cfg) in &new_aggregated {
-                if !prev.contains_key(hash) {
-                    pending.added.push(cfg.clone());
+
+            // Mark newly-discovered hashes as added
+            let mut current: BTreeSet<ServiceHash> = BTreeSet::new();
+            for peer in &active_peers {
+                for (hash, cfg) in Self::discover_peer_services(&peer.services_dir) {
+                    if current.insert(hash) && !prev.contains(&hash) {
+                        pending.added.push(cfg);
+                    }
                 }
             }
-            for hash in prev.keys() {
-                if !new_aggregated.contains_key(hash) {
+
+            // Mark previously-known hashes that are absent as removed
+            for hash in prev.iter() {
+                if !current.contains(hash) {
                     pending.removed.push(*hash);
                 }
             }
-        }
 
-        *self.discovered_services.borrow_mut() = new_aggregated;
+            current
+        };
+
+        *self.discovered_services.borrow_mut() = current;
     }
 
     /// Drain discovery events accumulated since the last call.
