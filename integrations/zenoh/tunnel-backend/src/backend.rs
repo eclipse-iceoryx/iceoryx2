@@ -12,7 +12,7 @@
 
 use iceoryx2::service::Service;
 use iceoryx2_log::{fail, trace};
-use iceoryx2_services_tunnel_backend::traits::Backend;
+use iceoryx2_services_tunnel_backend::traits::{Backend, BackendBuilder};
 
 use zenoh::{Config, Session, Wait};
 
@@ -45,6 +45,10 @@ pub struct ZenohBackend<S: Service> {
 impl<S: Service> Backend<S> for ZenohBackend<S> {
     type Config = Config;
     type CreationError = CreationError;
+    type Builder<'config>
+        = Builder<'config, S>
+    where
+        Self::Config: 'config;
     type Discovery = Discovery;
 
     type PublishSubscribeRelay = publish_subscribe::Relay<S>;
@@ -55,19 +59,52 @@ impl<S: Service> Backend<S> for ZenohBackend<S> {
     where
         Self: 'b;
 
-    fn create(config: &Self::Config) -> Result<Self, Self::CreationError> {
-        let origin = "ZenohBackend::create";
+    fn builder(config: &Self::Config) -> Self::Builder<'_> {
+        Builder::new(config)
+    }
+
+    fn relay_builder(&self) -> Self::RelayFactory<'_> {
+        Self::RelayFactory::new(&self.session)
+    }
+
+    fn discovery(&self) -> &impl iceoryx2_services_tunnel_backend::traits::Discovery {
+        &self.discovery
+    }
+}
+
+/// Builder for [`ZenohBackend`].
+#[derive(Debug)]
+pub struct Builder<'config, S: Service> {
+    config: &'config Config,
+    _phantom: core::marker::PhantomData<S>,
+}
+
+impl<'config, S: Service> Builder<'config, S> {
+    pub fn new(config: &'config Config) -> Self {
+        Self {
+            config,
+            _phantom: core::marker::PhantomData,
+        }
+    }
+}
+
+impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
+    type Backend = ZenohBackend<S>;
+    type CreationError = CreationError;
+
+    fn create(self) -> Result<Self::Backend, Self::CreationError> {
+        let origin = "ZenohBackend::Builder::create";
 
         trace!(
             from origin,
             "Initializing Zenoh backend"
         );
 
-        let session = zenoh::open(config.clone()).wait();
+        let session = zenoh::open(self.config.clone()).wait();
         let session = fail!(
             from origin,
             when session,
-            with Self::CreationError::Session,
+            with CreationError::Session,
             "Failed to create zenoh session"
         );
 
@@ -79,18 +116,10 @@ impl<S: Service> Backend<S> for ZenohBackend<S> {
             "Failed to create zenoh discovery"
         );
 
-        Ok(Self {
+        Ok(ZenohBackend {
             session,
             discovery,
             _phantom: core::marker::PhantomData,
         })
-    }
-
-    fn relay_builder(&self) -> Self::RelayFactory<'_> {
-        Self::RelayFactory::new(&self.session)
-    }
-
-    fn discovery(&self) -> &impl iceoryx2_services_tunnel_backend::traits::Discovery {
-        &self.discovery
     }
 }

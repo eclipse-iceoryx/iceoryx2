@@ -25,6 +25,9 @@ use crate::traits::{Discovery, EventRelay, PublishSubscribeRelay, RelayFactory};
 /// protocols, IPC mechanisms, or custom communication channels). It manages
 /// service discovery and creates relays for different messaging patterns.
 ///
+/// Backends are constructed via their associated [`Backend::Builder`] type,
+/// obtained from [`Backend::builder()`].
+///
 /// # Type Parameters
 ///
 /// * `S` - The [`iceoryx2::service::Service`] type being tunneled
@@ -36,6 +39,7 @@ use crate::traits::{Discovery, EventRelay, PublishSubscribeRelay, RelayFactory};
 /// ```text
 /// Backend
 ///   ├── Config
+///   ├── Builder (BackendBuilder)
 ///   ├── Discovery
 ///   ├── RelayFactory
 ///   │   ├── PublishSubscribeRelay
@@ -47,47 +51,25 @@ use crate::traits::{Discovery, EventRelay, PublishSubscribeRelay, RelayFactory};
 ///
 /// Each component has specific responsibilities:
 /// - **Config**: Backend-specific connection and initialization settings
+/// - **Builder**: Constructs the [`Backend`] from its [`Backend::Config`]
 /// - **Discovery**: Mechanisms to query the backend communication mechanism for remote services and announce local [`Service`]s
 /// - **Relays**: Handle data transmission for each messaging pattern between the backend and iceoryx2
 /// - **Factory**: Create [`RelayBuilder`](crate::traits::RelayBuilder) instances for specific relay types
 /// - **Builders**: Construct relays with appropriate configuration
 ///
-/// # Example: Basic [`Backend`] Structure
-///
-/// ```ignore
-/// use iceoryx2::service::ipc::Service;
-/// use iceoryx2_services_tunnel_backend::traits::Backend;
-///
-/// struct MyBackend {
-///     // Your transport-specific state, e.g.:
-///     // connection: TcpStream,
-///     // discovery: ServiceRegistry,
-/// }
-///
-/// impl Backend<Service> for MyBackend {
-///     // ... associated types ...
-///     
-///     fn create(config: &Self::Config) -> Result<Self, Self::CreationError> {
-///         // Establish connection to your backend transport
-///         // let connection = TcpStream::connect(&config.endpoint)?;
-///         
-///         // Initialize your backend with the connection
-///         // Ok(Self { connection, ... })
-///         # unimplemented!()
-///     }
-///     
-///     // ... implement discovery() and relay_builder() ...
-/// }
-/// ```
-///
-/// See individual trait documentation for [`Discovery`], [`PublishSubscribeRelay`],
-/// and [`EventRelay`] for implementation details.
+/// See individual trait documentation for [`BackendBuilder`], [`Discovery`],
+/// [`PublishSubscribeRelay`], and [`EventRelay`] for implementation details.
 pub trait Backend<S: Service>: Sized {
     /// Configuration type for the backend initialization
     type Config: Default + Debug;
 
     /// Error type that can occur during backend creation
     type CreationError: Error;
+
+    /// Builder used to construct the backend.
+    type Builder<'config>: BackendBuilder<S, Backend = Self, CreationError = Self::CreationError>
+    where
+        Self::Config: 'config;
 
     /// [`Discovery`] implementation for finding services using the [`Backend`]
     /// communication mechanism
@@ -108,8 +90,8 @@ pub trait Backend<S: Service>: Sized {
     where
         Self: 'a;
 
-    /// Creates a new [`Backend`] instance with the provided configuration.
-    fn create(config: &Self::Config) -> Result<Self, Self::CreationError>;
+    /// Returns a [`BackendBuilder`] bound to the provided configuration.
+    fn builder(config: &Self::Config) -> Self::Builder<'_>;
 
     /// Returns a reference to the [`Discovery`] implementation.
     fn discovery(&self) -> &impl Discovery;
@@ -119,4 +101,20 @@ pub trait Backend<S: Service>: Sized {
     /// The [`RelayFactory`] is used to create specific builder instances for
     /// relays for the supported messaging patterns.
     fn relay_builder(&self) -> Self::RelayFactory<'_>;
+}
+
+/// Builds a [`Backend`] from its [`Backend::Config`].
+///
+/// Each [`Backend`] has an associated [`BackendBuilder`] type accessed via
+/// [`Backend::builder()`]. The builder is consumed by [`BackendBuilder::create`],
+/// which performs any work required to bring the backend online.
+pub trait BackendBuilder<S: Service> {
+    /// The [`Backend`] this builder constructs.
+    type Backend: Backend<S>;
+
+    /// Error type returned by [`BackendBuilder::create`].
+    type CreationError: Error;
+
+    /// Consumes the builder, producing a configured [`Backend`].
+    fn create(self) -> Result<Self::Backend, Self::CreationError>;
 }

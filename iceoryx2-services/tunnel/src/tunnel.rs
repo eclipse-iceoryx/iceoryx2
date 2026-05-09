@@ -28,7 +28,8 @@ use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2_log::{debug, fail, info, trace, warn};
 use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
 use iceoryx2_services_tunnel_backend::traits::{
-    Backend, Discovery, EventRelay, PublishSubscribeRelay, RelayBuilder, RelayFactory,
+    Backend, BackendBuilder, Discovery, EventRelay, PublishSubscribeRelay, RelayBuilder,
+    RelayFactory,
 };
 use iceoryx2_services_tunnel_backend::types::publish_subscribe::LoanFn;
 
@@ -234,7 +235,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
 
         let backend = fail!(
             from origin,
-            when Backend::create(backend_config),
+            when B::builder(backend_config).create(),
             with CreationError::Backend,
             "Failed to create provided Backend"
         );
