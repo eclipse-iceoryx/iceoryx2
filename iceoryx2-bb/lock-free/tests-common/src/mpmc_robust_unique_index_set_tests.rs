@@ -253,3 +253,70 @@ pub fn acquire_and_release_works_with_uninitialized_memory() {
         assert_that!(sut.borrowed_indices(), eq n - 1);
     }
 }
+
+#[test]
+pub fn concurrent_acquire_release() {
+    const REPETITIONS: i64 = 1000;
+    let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
+
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(number_of_threads as u32)
+        .create(&barrier_handle)
+        .unwrap();
+    let owner_id = OwnerId::new(9191).unwrap();
+
+    thread_scope(|s| {
+        for _ in 0..number_of_threads {
+            s.thread_builder()
+                .spawn(|| {
+                    let mut indices = vec![];
+                    let mut repetition = 0;
+
+                    barrier.wait();
+                    loop {
+                        match sut.acquire(owner_id) {
+                            Ok(e) => {
+                                indices.push(e);
+                            }
+                            Err(UniqueIndexSetAcquireFailure::OutOfIndices) => {
+                                repetition += 1;
+                                while let Some(index) = indices.pop() {
+                                    sut.release(index, ReleaseMode::Default);
+                                }
+                                if repetition == REPETITIONS {
+                                    break;
+                                }
+                            }
+                            Err(UniqueIndexSetAcquireFailure::IsLocked) => {
+                                assert_that!(true, eq false);
+                            }
+                        }
+                    }
+                })
+                .expect("failed to spawn thread");
+        }
+
+        Ok(())
+    })
+    .expect("failed to run thread scope");
+
+    // check if the sut is still in an consistent state
+    let mut ids = vec![];
+    let mut id_counter = [0u64; CAPACITY];
+
+    for id in id_counter.iter_mut().take(CAPACITY) {
+        let e = sut.acquire(owner_id);
+        assert_that!(e, is_ok);
+        *id += 1;
+        ids.push(e.unwrap());
+    }
+
+    for id in id_counter.iter_mut().take(CAPACITY) {
+        assert_that!(*id, eq 1);
+    }
+
+    let e = sut.acquire(owner_id);
+    assert_that!(e, is_err);
+    assert_that!(e.err().unwrap(), eq UniqueIndexSetAcquireFailure::OutOfIndices);
+}
