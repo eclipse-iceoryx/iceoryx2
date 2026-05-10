@@ -66,7 +66,7 @@ impl ReaderUnion {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<ReaderUnion>
 pub struct iox2_reader_storage_t {
-    internal: [u8; 56], // magic number obtained with size_of::<Option<ReaderUnion>>()
+    internal: [u8; 64], // magic number obtained with size_of::<Option<ReaderUnion>>()
 }
 
 #[repr(C)]
