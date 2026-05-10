@@ -10,8 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::sync::Arc;
+
 use iceoryx2::service::{Service, static_config::StaticConfig};
-use iceoryx2_services_tunnel_backend::traits::RelayFactory;
+use iceoryx2_services_tunnel_backend::{traits::RelayFactory, types::wake::WakeHandle};
 
 use zenoh::Session;
 
@@ -24,13 +26,17 @@ use crate::relays::{event, publish_subscribe};
 pub struct Factory<'session, S: Service> {
     /// Reference to the Zenoh session. The session must outlive the Factory.
     session: &'session Session,
+    /// Wake handle to be signaled by relays when new data arrives.
+    /// `None` when the backend was constructed in polled mode.
+    wake: Option<Arc<WakeHandle>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
 impl<'session, S: Service> Factory<'session, S> {
-    pub fn new(session: &'session Session) -> Self {
+    pub fn new(session: &'session Session, wake: Option<Arc<WakeHandle>>) -> Self {
         Factory {
             session,
+            wake,
             _phantom: core::marker::PhantomData,
         }
     }
@@ -57,13 +63,13 @@ impl<S: Service> RelayFactory<S> for Factory<'_, S> {
     where
         Self: 'config,
     {
-        publish_subscribe::Builder::new(self.session, static_config)
+        publish_subscribe::Builder::new(self.session, static_config, self.wake.clone())
     }
 
     fn event<'config>(&self, static_config: &'config StaticConfig) -> Self::EventBuilder<'config>
     where
         Self: 'config,
     {
-        event::Builder::new(self.session, static_config)
+        event::Builder::new(self.session, static_config, self.wake.clone())
     }
 }

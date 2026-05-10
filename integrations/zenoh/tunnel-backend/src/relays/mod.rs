@@ -13,5 +13,6 @@
 pub mod event;
 mod factory;
 pub mod publish_subscribe;
+mod wake_handler;
 
 pub use factory::*;

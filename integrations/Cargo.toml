@@ -40,7 +40,8 @@ iceoryx2-services-tunnel-conformance-tests = { version = "0.9.999", path = "../i
 
 anyhow = { version = "1.0.86" }
 better-panic = { version = "0.3.0" }
-clap = { version = "4.6.1", features = ["derive"] }
+clap = { version = "4.5.4", features = ["derive"] }
+flume = { version = "0.12.0" }
 human-panic = { version = "2.0.5" }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 zenoh = { version = "1.9.0", features = ["default", "unstable"] }

@@ -908,6 +908,9 @@ name = "fastrand"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f1f227452a390804cdb637b74a86990f2a7d7ba4b7d5693aac9b4dd6defd8d6"
+dependencies = [
+ "getrandom 0.3.4",
+]
 
 [[package]]
 name = "find-msvc-tools"
@@ -940,6 +943,18 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "nanorand",
+ "spin 0.9.8",
+]
+
+[[package]]
+name = "flume"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e139bc46ca777eb5efaf62df0ab8cc5fd400866427e56c68b22e414e53bd3be"
+dependencies = [
+ "fastrand",
+ "futures-core",
+ "futures-sink",
  "spin 0.9.8",
 ]
 
@@ -1517,6 +1532,7 @@ dependencies = [
 name = "iceoryx2-integrations-zenoh-tunnel-backend"
 version = "0.9.999"
 dependencies = [
+ "flume 0.12.0",
  "iceoryx2",
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-posix",
@@ -4755,7 +4771,7 @@ dependencies = [
  "bytes",
  "const_format",
  "flate2",
- "flume",
+ "flume 0.11.1",
  "futures",
  "git-version",
  "itertools 0.14.0",
@@ -4920,7 +4936,7 @@ dependencies = [
  "async-trait",
  "base64",
  "bytes",
- "flume",
+ "flume 0.11.1",
  "futures",
  "quinn",
  "quinn-proto",
@@ -5200,7 +5216,7 @@ checksum = "80800c4adc26dbe81418735068541cf39820a95ec988114f04dd014775ba7c97"
 dependencies = [
  "async-trait",
  "crossbeam-utils",
- "flume",
+ "flume 0.11.1",
  "futures",
  "lazy_static",
  "lz4_flex",
@@ -5235,7 +5251,7 @@ checksum = "1b10369df18a781a3e675c9a2cbf54adb44c9dc2a376c1014c5e488410df2179"
 dependencies = [
  "async-trait",
  "const_format",
- "flume",
+ "flume 0.11.1",
  "home",
  "humantime",
  "lazy_static",

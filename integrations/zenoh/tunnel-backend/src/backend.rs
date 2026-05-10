@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::sync::Arc;
+
 use iceoryx2::service::Service;
 use iceoryx2_log::{fail, trace};
 use iceoryx2_services_tunnel_backend::traits::{Backend, BackendBuilder, ReactiveBackendBuilder};
@@ -40,6 +42,9 @@ impl core::error::Error for CreationError {}
 pub struct ZenohBackend<S: Service> {
     session: Session,
     discovery: Discovery,
+    /// `Some` when constructed in reactive mode. Cloned into each relay's
+    /// subscriber callback so that incoming network data signals the wake.
+    wake: Option<Arc<WakeHandle>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
@@ -65,7 +70,7 @@ impl<S: Service> Backend<S> for ZenohBackend<S> {
     }
 
     fn relay_builder(&self) -> Self::RelayFactory<'_> {
-        Self::RelayFactory::new(&self.session)
+        Self::RelayFactory::new(&self.session, self.wake.clone())
     }
 
     fn discovery(&self) -> &impl iceoryx2_services_tunnel_backend::traits::Discovery {
@@ -98,10 +103,6 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
     fn create(self) -> Result<Self::Backend, Self::CreationError> {
         let origin = "ZenohBackend::Builder::create";
 
-        if self.wake.is_some() {
-            todo!();
-        }
-
         trace!(
             from origin,
             "Initializing Zenoh backend"
@@ -126,6 +127,7 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
         Ok(ZenohBackend {
             session,
             discovery,
+            wake: self.wake.map(Arc::new),
             _phantom: core::marker::PhantomData,
         })
     }
