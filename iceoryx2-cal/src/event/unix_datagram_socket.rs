@@ -15,6 +15,7 @@ use core::mem::MaybeUninit;
 use alloc::format;
 use alloc::vec::Vec;
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
+use iceoryx2_bb_testing::abandonable::NonNullFromRef;
 
 pub use crate::event::*;
 use crate::static_storage::file::NamedConceptConfiguration;
@@ -163,6 +164,17 @@ pub struct Notifier {
     name: FileName,
 }
 
+impl Abandonable for Notifier {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            UnixDatagramSender::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.sender,
+            ))
+        };
+    }
+}
+
 impl NamedConcept for Notifier {
     fn name(&self) -> &FileName {
         &self.name
@@ -255,6 +267,17 @@ impl crate::event::NotifierBuilder<EventImpl> for NotifierBuilder {
 pub struct Listener {
     receiver: UnixDatagramReceiver,
     name: FileName,
+}
+
+impl Abandonable for Listener {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            UnixDatagramReceiver::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.receiver,
+            ))
+        };
+    }
 }
 
 impl FileDescriptorBased for Listener {

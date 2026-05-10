@@ -10,13 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use alloc::collections::BTreeSet;
+use alloc::collections::BTreeMap;
 use alloc::vec;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
+use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_log::{fail, fatal_panic};
 
 use crate::{
@@ -29,17 +30,25 @@ use super::{
     NamedConcept, NamedConceptBuilder, NamedConceptMgmt, State,
 };
 
-static PROCESS_LOCAL_MTX_HANDLE: LazyLock<MutexHandle<BTreeSet<FilePath>>> =
+#[derive(Debug)]
+enum MonitoringState {
+    Alive,
+    Dead,
+    OwnedByCleaner,
+}
+
+static PROCESS_LOCAL_MTX_HANDLE: LazyLock<MutexHandle<BTreeMap<FilePath, MonitoringState>>> =
     LazyLock::new(MutexHandle::new);
 
-static PROCESS_LOCAL_STORAGE: LazyLock<Mutex<'static, 'static, BTreeSet<FilePath>>> =
-    LazyLock::new(|| {
-        fatal_panic!(from "PROCESS_LOCAL_STORAGE",
+static PROCESS_LOCAL_STORAGE: LazyLock<
+    Mutex<'static, 'static, BTreeMap<FilePath, MonitoringState>>,
+> = LazyLock::new(|| {
+    fatal_panic!(from "PROCESS_LOCAL_STORAGE",
             when MutexBuilder::new()
                 .is_interprocess_capable(false)
-                .create(BTreeSet::new(), &PROCESS_LOCAL_MTX_HANDLE),
+                .create(BTreeMap::new(), &PROCESS_LOCAL_MTX_HANDLE),
             "Failed to create global monitoring storage")
-    });
+});
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Configuration {
@@ -105,7 +114,7 @@ impl NamedConceptMgmt for ProcessLocalMonitoring {
 
         let mut result = vec![];
         for storage_name in guard.iter() {
-            if let Some(v) = cfg.extract_name_from_path(storage_name) {
+            if let Some(v) = cfg.extract_name_from_path(storage_name.0) {
                 result.push(v);
             }
         }
@@ -144,7 +153,7 @@ impl NamedConceptMgmt for ProcessLocalMonitoring {
                 "{} since the lock could not be acquired.", msg);
         }
 
-        Ok(guard.unwrap().remove(&storage_name))
+        Ok(guard.unwrap().remove(&storage_name).is_some())
     }
 
     fn remove_path_hint(
@@ -164,6 +173,22 @@ impl Monitoring for ProcessLocalMonitoring {
 #[derive(Debug)]
 pub struct Cleaner {
     name: FileName,
+    config: Configuration,
+}
+
+impl Drop for Cleaner {
+    fn drop(&mut self) {
+        let msg = "Failed to remove";
+
+        let mut guard = fatal_panic!(from self, when PROCESS_LOCAL_STORAGE.lock(),
+            "{} due to a failure while acquiring the lock.", msg);
+
+        let full_name = self.config.path_for(&self.name);
+        if guard.remove(&full_name).is_none() {
+            fatal_panic!(from self,
+                "{} since the entry was not existing anymore. This should never happen!", msg);
+        }
+    }
 }
 
 impl NamedConcept for Cleaner {
@@ -173,7 +198,28 @@ impl NamedConcept for Cleaner {
 }
 
 impl MonitoringCleaner for Cleaner {
-    fn abandon(self) {}
+    fn relinquish(self) {
+        self.abandon();
+    }
+}
+
+impl Abandonable for Cleaner {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        let msg = "Failed to remove";
+
+        let mut guard = fatal_panic!(from this, when PROCESS_LOCAL_STORAGE.lock(),
+            "{} due to a failure while acquiring the lock.", msg);
+
+        let full_name = this.config.path_for(&this.name);
+        match guard.get_mut(&full_name) {
+            Some(v) => *v = MonitoringState::Dead,
+            None => {
+                fatal_panic!(from this,
+                "{msg} the key \"{:?}\" no longer exist. This should never happen!", full_name);
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -190,6 +236,25 @@ impl NamedConcept for Token {
 
 impl MonitoringToken for Token {}
 
+impl Abandonable for Token {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let msg = "Failed to leak";
+
+        let this = unsafe { this.as_mut() };
+        let mut guard = fatal_panic!(from this, when PROCESS_LOCAL_STORAGE.lock(),
+            "{} due to a failure while acquiring the lock.", msg);
+
+        let full_name = this.config.path_for(&this.name);
+        match guard.get_mut(&full_name) {
+            Some(v) => *v = MonitoringState::Dead,
+            None => {
+                fatal_panic!(from this,
+                "{msg} the key \"{:?}\" no longer exist. This should never happen!", full_name);
+            }
+        }
+    }
+}
+
 impl Drop for Token {
     fn drop(&mut self) {
         let msg = "Failed to remove";
@@ -198,7 +263,7 @@ impl Drop for Token {
             "{} due to a failure while acquiring the lock.", msg);
 
         let full_name = self.config.path_for(&self.name);
-        if !guard.remove(&full_name) {
+        if guard.remove(&full_name).is_none() {
             fatal_panic!(from self,
                 "{} since the entry was not existing anymore. This should never happen!", msg);
         }
@@ -226,7 +291,8 @@ impl MonitoringMonitor for Monitor {
             "{} due to a failure while acquiring the lock.", msg);
 
         match guard.get(&self.full_name) {
-            Some(_) => Ok(State::Alive),
+            Some(MonitoringState::Alive) => Ok(State::Alive),
+            Some(MonitoringState::Dead) | Some(MonitoringState::OwnedByCleaner) => Ok(State::Dead),
             None => Ok(State::DoesNotExist),
         }
     }
@@ -267,12 +333,12 @@ impl MonitoringBuilder<ProcessLocalMonitoring> for Builder {
             "{} due to a failure while acquiring the lock.", msg);
 
         let full_name = self.config.path_for(&self.name);
-        if guard.contains(&full_name) {
+        if guard.contains_key(&full_name) {
             fail!(from self, with MonitoringCreateTokenError::AlreadyExists,
                 "{} since the token already exists.", msg);
         }
 
-        guard.insert(full_name);
+        guard.insert(full_name, MonitoringState::Alive);
 
         Ok(Token {
             name: self.name,
@@ -298,17 +364,30 @@ impl MonitoringBuilder<ProcessLocalMonitoring> for Builder {
     {
         let msg = "Failed to create monitoring cleaner";
 
-        let guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
+        let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
             with MonitoringCreateCleanerError::InternalError,
             "{} due to a failure while acquiring the lock.", msg);
 
         let full_name = self.config.path_for(&self.name);
 
-        match guard.get(&full_name) {
-            Some(_) => {
-                fail!(from self, with MonitoringCreateCleanerError::InstanceStillAlive,
-                    "{} since the instance is still alive.", msg);
-            }
+        match guard.get_mut(&full_name) {
+            Some(v) => match v {
+                MonitoringState::Alive => {
+                    fail!(from self, with MonitoringCreateCleanerError::InstanceStillAlive,
+                            "{} since the instance is still alive.", msg);
+                }
+                MonitoringState::Dead => {
+                    *v = MonitoringState::OwnedByCleaner;
+                    Ok(Cleaner {
+                        name: self.name,
+                        config: self.config,
+                    })
+                }
+                MonitoringState::OwnedByCleaner => {
+                    fail!(from self, with MonitoringCreateCleanerError::AlreadyOwnedByAnotherInstance,
+                            "{} since the instance is currently cleaned up by another cleaner.", msg);
+                }
+            },
             None => {
                 fail!(from self, with MonitoringCreateCleanerError::DoesNotExist,
                     "{} since the instance does not exist.", msg);

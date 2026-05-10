@@ -219,23 +219,36 @@ pub unsafe fn close(fd: int) -> int {
         match HandleTranslator::get_instance().get(fd) {
             Some(FdHandleEntry::SharedMemory(handle)) => {
                 HandleTranslator::get_instance().remove(fd);
-                win32call! { CloseHandle(handle.handle.handle)};
-                win32call! { CloseHandle(handle.state_handle)};
-                0
+                let result_handle = win32call! { CloseHandle(handle.handle.handle)};
+                let result_state = win32call! { CloseHandle(handle.state_handle)};
+                if result_handle.0 == 0 || result_state.0 == 0 {
+                    -1
+                } else {
+                    0
+                }
             }
             Some(FdHandleEntry::File(handle)) => {
                 HandleTranslator::get_instance().remove(fd);
-                win32call! { CloseHandle(handle.handle)};
-                0
+                if win32call! { CloseHandle(handle.handle)}.0 == 0 {
+                    -1
+                } else {
+                    0
+                }
             }
             Some(FdHandleEntry::Socket(handle)) => {
                 HandleTranslator::get_instance().remove(fd);
-                win32call! { winsock closesocket(handle.fd) };
-                0
+                if win32call! { winsock closesocket(handle.fd) }.0 != 0 {
+                    -1
+                } else {
+                    0
+                }
             }
             Some(FdHandleEntry::UdsDatagramSocket(handle)) => {
-                win32call! { winsock closesocket(handle.fd)};
-                0
+                if win32call! { winsock closesocket(handle.fd)}.0 != 0 {
+                    -1
+                } else {
+                    0
+                }
             }
             _ => {
                 Errno::set(Errno::EBADF);

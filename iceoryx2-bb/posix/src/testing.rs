@@ -20,12 +20,7 @@ use iceoryx2_log::fatal_panic;
 use crate::config::TEST_DIRECTORY;
 use crate::directory::{Directory, DirectoryCreateError};
 use crate::permission::Permission;
-use crate::process_state::ProcessGuard;
 use crate::unique_system_id::UniqueSystemId;
-
-pub fn __internal_process_guard_staged_death(state: ProcessGuard) {
-    state.staged_death();
-}
 
 pub fn create_test_directory() {
     match Directory::create(&TEST_DIRECTORY, Permission::OWNER_ALL) {

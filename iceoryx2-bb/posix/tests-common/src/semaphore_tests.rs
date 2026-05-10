@@ -18,6 +18,7 @@ use iceoryx2_bb_posix::semaphore::*;
 use iceoryx2_bb_posix::system_configuration::Feature;
 use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_posix::thread::thread_scope;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -439,4 +440,30 @@ pub fn unnamed_semaphore_acquiring_non_ipc_capable_handle_fails() {
         .create(&handle);
 
     unsafe { UnnamedSemaphore::from_ipc_handle(&handle) };
+}
+
+#[test]
+pub fn abandoning_named_semaphore_keeps_semaphore() {
+    test_requires!(POSIX_SUPPORT_NAMED_SEMAPHORE);
+
+    let initial_value = 31;
+    let sem_name = generate_file_path().file_name();
+    let creator = NamedSemaphoreBuilder::new(&sem_name)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .initial_value(initial_value)
+        .permission(Permission::OWNER_ALL)
+        .create()
+        .unwrap();
+
+    NamedSemaphore::abandon(creator);
+
+    let sut = NamedSemaphoreBuilder::new(&sem_name)
+        .clock_type(ClockType::Monotonic)
+        .open_existing()
+        .unwrap();
+
+    for _i in 0..initial_value {
+        assert_that!(sut.try_wait().unwrap(), eq true);
+    }
+    assert_that!(sut.try_wait().unwrap(), eq false);
 }

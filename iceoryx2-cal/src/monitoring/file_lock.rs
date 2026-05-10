@@ -25,9 +25,10 @@ use iceoryx2_bb_posix::{
         ProcessCleaner, ProcessCleanerCreateError, ProcessGuard, ProcessGuardCreateError,
         ProcessMonitor, ProcessMonitorCreateError, ProcessMonitorStateError, ProcessState,
     },
-    testing::__internal_process_guard_staged_death,
 };
 use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
+use iceoryx2_bb_testing::abandonable::Abandonable;
+use iceoryx2_bb_testing::abandonable::NonNullFromRef;
 use iceoryx2_log::fail;
 
 use crate::{
@@ -41,7 +42,6 @@ use crate::{
 use super::{
     Monitoring, MonitoringBuilder, MonitoringCleaner, MonitoringCreateTokenError,
     MonitoringMonitor, MonitoringStateError, MonitoringToken,
-    testing::__InternalMonitoringTokenTestable,
 };
 
 #[cfg(not(feature = "dev_permissions"))]
@@ -154,6 +154,15 @@ pub struct Cleaner {
     name: FileName,
 }
 
+impl Abandonable for Cleaner {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            ProcessCleaner::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.cleaner))
+        };
+    }
+}
+
 impl NamedConcept for Cleaner {
     fn name(&self) -> &FileName {
         &self.name
@@ -161,7 +170,7 @@ impl NamedConcept for Cleaner {
 }
 
 impl MonitoringCleaner for Cleaner {
-    fn abandon(self) {
+    fn relinquish(self) {
         self.cleaner.abandon()
     }
 }
@@ -172,6 +181,15 @@ pub struct Token {
     name: FileName,
 }
 
+impl Abandonable for Token {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            ProcessGuard::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.guard))
+        };
+    }
+}
+
 impl NamedConcept for Token {
     fn name(&self) -> &FileName {
         &self.name
@@ -179,12 +197,6 @@ impl NamedConcept for Token {
 }
 
 impl MonitoringToken for Token {}
-
-impl __InternalMonitoringTokenTestable for Token {
-    fn staged_death(self) {
-        __internal_process_guard_staged_death(self.guard);
-    }
-}
 
 #[derive(Debug)]
 pub struct Monitor {

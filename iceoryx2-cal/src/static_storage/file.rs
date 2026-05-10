@@ -51,6 +51,7 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use alloc::format;
 use alloc::vec;
 use alloc::vec::Vec;
+use iceoryx2_bb_testing::abandonable::NonNullFromRef;
 
 pub use crate::named_concept::*;
 pub use crate::static_storage::*;
@@ -131,6 +132,15 @@ pub struct Locked {
     static_storage: Storage,
 }
 
+impl Abandonable for Locked {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            Storage::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.static_storage))
+        };
+    }
+}
+
 impl NamedConcept for Locked {
     fn name(&self) -> &FileName {
         self.static_storage.name()
@@ -171,6 +181,13 @@ pub struct Storage {
     has_ownership: AtomicBool,
     file: File,
     len: u64,
+}
+
+impl Abandonable for Storage {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe { File::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.file)) };
+    }
 }
 
 impl Drop for Storage {

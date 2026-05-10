@@ -38,6 +38,7 @@ rust_library(
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
         "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
         "//iceoryx2-pal/posix:iceoryx2-pal-posix",
+        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "@crate_index//:enum-iterator",
         "@crate_index//:tiny-fn",
         "@crate_index//:serde",

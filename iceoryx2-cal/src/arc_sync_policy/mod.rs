@@ -25,10 +25,17 @@
 //! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
+//! use iceoryx2_bb_testing::abandonable::Abandonable;
 //!
-//! fn example<Policy: ArcSyncPolicy<u64>>() {
-//!     let my_thing = Policy::new(1234).unwrap();
-//!     assert!(*my_thing.lock() == 1234);
+//! struct Data(u64);
+//!
+//! impl Abandonable for Data {
+//!     unsafe fn abandon_in_place(this: core::ptr::NonNull<Self>) {}
+//! }
+//!
+//! fn example<Policy: ArcSyncPolicy<Data>>() {
+//!     let my_thing = Policy::new(Data(1234)).unwrap();
+//!     assert!(my_thing.lock().0 == 1234);
 //! }
 //! ```
 //!
@@ -38,11 +45,20 @@
 //! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
-//! type Policy = iceoryx2_cal::arc_sync_policy::mutex_protected::MutexProtected<u64>;
+//! use iceoryx2_bb_testing::abandonable::Abandonable;
 //!
-//! fn my_concurrent_function<T: ArcSyncPolicy<u64> + Send + Sync>(value: &T) {}
+//! #[derive(Debug)]
+//! struct Data(u64);
 //!
-//! let my_thing = Policy::new(1234).unwrap();
+//! impl Abandonable for Data {
+//!     unsafe fn abandon_in_place(this: core::ptr::NonNull<Self>) {}
+//! }
+//!
+//! type Policy = iceoryx2_cal::arc_sync_policy::mutex_protected::MutexProtected<Data>;
+//!
+//! fn my_concurrent_function<T: ArcSyncPolicy<Data> + Send + Sync>(value: &T) {}
+//!
+//! let my_thing = Policy::new(Data(1234)).unwrap();
 //! my_concurrent_function(&my_thing);
 //! ```
 //!
@@ -50,11 +66,18 @@
 //!
 //! ```compile_fail
 //! # extern crate iceoryx2_bb_loggers;
+//! use iceoryx2_bb_testing::abandonable::Abandonable;
+//!
+//! struct Data(u64);
+//!
+//! impl Abandonable for Data {
+//!     unsafe fn abandon_in_place(this: core::ptr::NonNull<Self>) {}
+//! }
 //!
 //! use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
-//! type Policy = iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded<u64>;
+//! type Policy = iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded<Data>;
 //!
-//! fn my_concurrent_function<T: ArcSyncPolicy<u64> + Send + Sync>(value: &T) {}
+//! fn my_concurrent_function<T: ArcSyncPolicy<Data> + Send + Sync>(value: &T) {}
 //!
 //! let my_thing = Policy::new(1234).unwrap();
 //! // fails here since this policy does not implement `Send` or `Sync`
@@ -67,6 +90,8 @@ pub mod single_threaded;
 mod single_threaded_compile_tests;
 
 use core::{fmt::Debug, ops::Deref};
+
+use iceoryx2_bb_testing::abandonable::Abandonable;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum ArcSyncPolicyCreationError {
@@ -83,10 +108,10 @@ impl core::fmt::Display for ArcSyncPolicyCreationError {
 impl core::error::Error for ArcSyncPolicyCreationError {}
 
 /// The [`LockGuard`] provides access to the underlying object.
-pub trait LockGuard<'parent, T: Send>: Deref<Target = T> {}
+pub trait LockGuard<'parent, T: Send + Abandonable>: Deref<Target = T> {}
 
 /// The actual [`ArcSyncPolicy`] concept trait.
-pub trait ArcSyncPolicy<T: Send>: Sized + Clone + Debug {
+pub trait ArcSyncPolicy<T: Send + Abandonable>: Sized + Clone + Debug + Abandonable {
     type LockGuard<'parent>: LockGuard<'parent, T>
     where
         Self: 'parent,

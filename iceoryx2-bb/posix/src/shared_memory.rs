@@ -79,6 +79,7 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::file_name::*;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_bb_system_types::path::*;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_log::{error, fail, fatal_panic, trace, warn};
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING;
@@ -415,6 +416,14 @@ pub struct SharedMemory {
     memory_mapping: MemoryMapping,
     memory_lock: Option<MemoryLock>,
     mapping_offset: isize,
+}
+
+impl Abandonable for SharedMemory {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe { core::ptr::drop_in_place(&mut this.memory_mapping) };
+        unsafe { core::ptr::drop_in_place(&mut this.memory_lock) };
+    }
 }
 
 impl Drop for SharedMemory {

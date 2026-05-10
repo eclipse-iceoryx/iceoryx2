@@ -23,6 +23,7 @@ use core::time::Duration;
 pub use crate::shared_memory::PointerOffset;
 pub use iceoryx2_bb_system_types::file_name::*;
 pub use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_log::fail;
 
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
@@ -325,7 +326,7 @@ pub trait UnableToDeliverToReceiverFn:
 
 impl<F: Fn(u64, Duration) -> UnableToDeliverToReceiverAction> UnableToDeliverToReceiverFn for F {}
 
-pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept + Send {
+pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept + Send + Abandonable {
     fn try_send(
         &self,
         ptr: PointerOffset,
@@ -354,7 +355,9 @@ pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept + Send {
     unsafe fn acquire_used_offsets<F: FnMut(PointerOffset)>(&self, callback: F);
 }
 
-pub trait ZeroCopyReceiver: Debug + ZeroCopyPortDetails + NamedConcept + Send {
+pub trait ZeroCopyReceiver:
+    Debug + ZeroCopyPortDetails + NamedConcept + Send + Abandonable
+{
     fn has_data(&self, channel_id: ChannelId) -> bool;
     fn receive(&self, channel_id: ChannelId)
     -> Result<Option<PointerOffset>, ZeroCopyReceiveError>;

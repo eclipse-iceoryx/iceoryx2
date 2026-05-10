@@ -75,16 +75,16 @@
 
 use crate::port::update_connections::UpdateConnections;
 use crate::prelude::UnableToDeliverStrategy;
-use crate::service::NoResource;
 use crate::service::builder::CustomPayloadMarker;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::server::LocalServerConfig;
+use crate::service::{NoResource, SharedServiceState};
 use crate::{
     active_request::ActiveRequest,
     prelude::PortFactory,
     raw_sample::RawSample,
     service::{
-        self, ServiceState,
+        self,
         dynamic_config::request_response::{ClientDetails, ServerDetails},
         port_factory::server::{PortFactoryServer, ServerCreateError},
     },
@@ -101,6 +101,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_CLOSED, CHANNEL_STATE_OPEN, ChannelId};
@@ -132,14 +133,34 @@ pub(crate) struct SharedServerState<Service: service::Service> {
     server_handle: UnsafeCell<Option<ContainerHandle>>,
     pub(crate) request_receiver: Receiver<Service>,
     client_list_state: UnsafeCell<ContainerState<ClientDetails>>,
-    service_state: Arc<ServiceState<Service, NoResource>>,
+    service_state: SharedServiceState<Service, NoResource>,
+}
+
+impl<Service: service::Service> Abandonable for SharedServerState<Service> {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+
+        unsafe {
+            Sender::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.response_sender))
+        };
+        unsafe {
+            Receiver::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.request_receiver,
+            ))
+        };
+        unsafe {
+            SharedServiceState::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.service_state,
+            ))
+        };
+    }
 }
 
 impl<Service: service::Service> Drop for SharedServerState<Service> {
     fn drop(&mut self) {
         if let Some(handle) = unsafe { *self.server_handle.get() } {
             self.service_state
-                .dynamic_storage
+                .dynamic_storage()
                 .get()
                 .request_response()
                 .release_server_handle(handle);
@@ -152,7 +173,7 @@ impl<Service: service::Service> SharedServerState<Service> {
         if unsafe {
             self.request_receiver
                 .service_state
-                .dynamic_storage
+                .dynamic_storage()
                 .get()
                 .request_response()
                 .clients
@@ -230,6 +251,24 @@ pub struct Server<
     _response_header: PhantomData<ResponseHeader>,
 }
 
+impl<
+    Service: service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Abandonable for Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            Service::ArcThreadSafetyPolicy::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.shared_state,
+            ));
+        }
+    }
+}
+
 unsafe impl<
     Service: service::Service,
     RequestPayload: Debug + ZeroCopySend + ?Sized,
@@ -291,13 +330,13 @@ impl<
         let service = &server_factory.factory.service;
         let static_config = server_factory.factory.static_config();
         let number_of_requests_per_client =
-            unsafe { service.static_config.messaging_pattern.request_response() }
+            unsafe { service.static_config().messaging_pattern.request_response() }
                 .required_amount_of_chunks_per_client_data_segment(
                     static_config.max_loaned_requests,
                 );
 
         let number_of_responses =
-            unsafe { service.static_config.messaging_pattern.request_response() }
+            unsafe { service.static_config().messaging_pattern.request_response() }
                 .required_amount_of_chunks_per_server_data_segment(
                     server_factory.config.max_loaned_responses_per_request,
                 );
@@ -305,10 +344,10 @@ impl<
             .preallocated_number_of_responses_override
             .call(number_of_responses);
 
-        let client_list = &service.dynamic_storage.get().request_response().clients;
+        let client_list = &service.dynamic_storage().get().request_response().clients;
 
         let number_of_to_be_removed_connections = service
-            .shared_node
+            .shared_node()
             .config()
             .defaults
             .request_response
@@ -348,7 +387,7 @@ impl<
             initial_channel_state: CHANNEL_STATE_OPEN,
         };
 
-        let global_config = service.shared_node.config();
+        let global_config = service.shared_node().config();
         let data_segment_type = DataSegmentType::new_from_allocation_strategy(
             server_factory.config.allocation_strategy,
         );
@@ -393,7 +432,7 @@ impl<
                 .map(|_| UnsafeCell::new(None))
                 .collect(),
             sender_port_id: server_id.value(),
-            shared_node: service.shared_node.clone(),
+            shared_node: service.shared_node().clone(),
             receiver_max_buffer_size: static_config.max_response_buffer_size,
             receiver_max_borrowed_samples: static_config
                 .max_borrowed_responses_per_pending_response,
@@ -436,7 +475,7 @@ impl<
                 .config
                 .max_loaned_responses_per_request,
             enable_fire_and_forget: service
-                .static_config
+                .static_config()
                 .request_response()
                 .enable_fire_and_forget_requests,
             shared_state,
@@ -456,12 +495,12 @@ impl<
         // creation of all required resources
         unsafe {
             *new_self.shared_state.lock().server_handle.get() = match service
-                .dynamic_storage
+                .dynamic_storage()
                 .get()
                 .request_response()
                 .add_server_id(ServerDetails {
                     server_id,
-                    node_id: *service.shared_node.id(),
+                    node_id: *service.shared_node().id(),
                     request_buffer_size: static_config.max_active_requests_per_client,
                     number_of_responses,
                     max_slice_len: server_factory.config.initial_max_slice_len,
@@ -473,7 +512,7 @@ impl<
                     fail!(from origin,
                     with ServerCreateError::ExceedsMaxSupportedServers,
                     "{} since it would exceed the maximum supported amount of servers of {}.",
-                    msg, service.static_config.request_response().max_servers());
+                    msg, service.static_config().request_response().max_servers());
                 }
             }
         };

@@ -26,6 +26,7 @@ std = [
   "iceoryx2-bb-system-types/std",
   "iceoryx2-bb-posix/std",
   "iceoryx2-bb-print/std",
+  "iceoryx2-bb-testing/std",
 ]
 # Logger backend selection - choose at most one; defaults to console
 console = ["iceoryx2-bb-loggers/console"]
@@ -52,6 +53,7 @@ iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-pal-configuration = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }
 
 serde = { workspace = true }
 toml = { workspace = true }
@@ -60,7 +62,6 @@ tiny-fn = { workspace = true }
 [dev-dependencies]
 iceoryx2-tests-common = { workspace = true, features = ["std"] }
 iceoryx2-bb-loggers = { workspace = true, features = ["std"] }
-iceoryx2-bb-testing = { workspace = true, features = ["std"] }
 
 [[test]]
 name = "tests"

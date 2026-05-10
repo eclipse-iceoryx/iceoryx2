@@ -36,12 +36,13 @@
 //! ```
 
 use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
+use crate::identifiers::UniqueReaderId;
 use crate::prelude::EventId;
 use crate::service::builder::CustomKeyMarker;
 use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
 use crate::service::dynamic_config::blackboard::ReaderDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-use crate::service::{self, ServiceState};
+use crate::service::{self, SharedServiceState};
 use core::alloc::Layout;
 use core::fmt::Debug;
 use core::hash::Hash;
@@ -54,14 +55,11 @@ use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
     UnrestrictedAtomic, UnrestrictedAtomicMgmt,
 };
+use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
+use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
 use iceoryx2_log::{fail, fatal_panic};
-
-extern crate alloc;
-use alloc::sync::Arc;
-
-use crate::identifiers::UniqueReaderId;
 
 /// A wrapper for the value returned by [`EntryHandle::get()`].
 pub struct BlackboardValue<ValueType: Copy> {
@@ -99,24 +97,29 @@ struct ReaderSharedState<
     Service: service::Service,
     KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
 > {
-    dynamic_reader_handle: Option<ContainerHandle>,
-    service_state: Arc<ServiceState<Service, BlackboardResources<Service>>>,
+    service_state: SharedServiceState<Service, BlackboardResources<Service>>,
     _key: PhantomData<KeyType>,
+}
+
+unsafe impl<
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+> Send for ReaderSharedState<Service, KeyType>
+{
 }
 
 impl<
     Service: service::Service,
     KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
-> Drop for ReaderSharedState<Service, KeyType>
+> Abandonable for ReaderSharedState<Service, KeyType>
 {
-    fn drop(&mut self) {
-        if let Some(handle) = self.dynamic_reader_handle {
-            self.service_state
-                .dynamic_storage
-                .get()
-                .blackboard()
-                .release_reader_handle(handle)
-        }
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            SharedServiceState::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.service_state,
+            ))
+        };
     }
 }
 
@@ -129,6 +132,9 @@ pub enum ReaderCreateError {
     /// [`Config`](crate::config::Config). When this is exceeded no more [`Reader`]s
     /// can be created for a specific [`Service`](crate::service::Service).
     ExceedsMaxSupportedReaders,
+    /// Caused by a failure when instantiating a [`ArcSyncPolicy`] defined in the
+    /// [`Service`](crate::service::Service) as `ArcThreadSafetyPolicy`.
+    FailedToDeployThreadsafetyPolicy,
 }
 
 impl core::fmt::Display for ReaderCreateError {
@@ -145,8 +151,42 @@ pub struct Reader<
     Service: service::Service,
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > {
-    shared_state: Arc<ReaderSharedState<Service, KeyType>>,
+    shared_state: Service::ArcThreadSafetyPolicy<ReaderSharedState<Service, KeyType>>,
+    dynamic_reader_handle: Option<ContainerHandle>,
     reader_id: UniqueReaderId,
+}
+
+impl<
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
+> Abandonable for Reader<Service, KeyType>
+{
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            Service::ArcThreadSafetyPolicy::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.shared_state,
+            ))
+        };
+    }
+}
+
+impl<
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
+> Drop for Reader<Service, KeyType>
+{
+    fn drop(&mut self) {
+        if let Some(handle) = self.dynamic_reader_handle {
+            self.shared_state
+                .lock()
+                .service_state
+                .dynamic_storage()
+                .get()
+                .blackboard()
+                .release_reader_handle(handle)
+        }
+    }
 }
 
 impl<
@@ -155,46 +195,53 @@ impl<
 > Reader<Service, KeyType>
 {
     pub(crate) fn new(
-        service: Arc<ServiceState<Service, BlackboardResources<Service>>>,
+        service: SharedServiceState<Service, BlackboardResources<Service>>,
     ) -> Result<Self, ReaderCreateError> {
         let origin = "Reader::new()";
         let msg = "Unable to create Reader port";
 
         let reader_id = UniqueReaderId::new();
-        let mut new_self = Self {
-            shared_state: Arc::new(ReaderSharedState {
-                dynamic_reader_handle: None,
+        let shared_state =
+            <Service as service::Service>::ArcThreadSafetyPolicy::new(ReaderSharedState {
                 service_state: service.clone(),
                 _key: PhantomData,
-            }),
+            });
+
+        let shared_state = match shared_state {
+            Ok(v) => v,
+            Err(e) => {
+                fail!(from origin, with ReaderCreateError::FailedToDeployThreadsafetyPolicy,
+                      "{msg} since the threadsafety policy could not be instantiated ({e:?}).");
+            }
+        };
+
+        let mut new_self = Self {
+            shared_state,
             reader_id,
+            dynamic_reader_handle: None,
         };
 
         core::sync::atomic::compiler_fence(Ordering::SeqCst);
 
         // !MUST! be the last task otherwise a reader is added to the dynamic config without the
         // creation of all required resources
-        let dynamic_reader_handle = match service.dynamic_storage.get().blackboard().add_reader_id(
-            ReaderDetails {
+        let dynamic_reader_handle = match service
+            .dynamic_storage()
+            .get()
+            .blackboard()
+            .add_reader_id(ReaderDetails {
                 reader_id,
-                node_id: *service.shared_node.id(),
-            },
-        ) {
+                node_id: *service.shared_node().id(),
+            }) {
             Some(unique_index) => unique_index,
             None => {
                 fail!(from origin, with ReaderCreateError::ExceedsMaxSupportedReaders,
                             "{} since it would exceed the maximum supported amount of readers of {}.",
-                            msg, service.static_config.blackboard().max_readers);
+                            msg, service.static_config().blackboard().max_readers);
             }
         };
 
-        match Arc::get_mut(&mut new_self.shared_state) {
-            None => {
-                fatal_panic!(from origin,
-                    "This should never happen! Member has already multiple references while Reader creation is not yet completed.");
-            }
-            Some(reader_state) => reader_state.dynamic_reader_handle = Some(dynamic_reader_handle),
-        }
+        new_self.dynamic_reader_handle = Some(dynamic_reader_handle);
         Ok(new_self)
     }
 
@@ -243,8 +290,9 @@ impl<
 
         let atomic = (self
             .shared_state
+            .lock()
             .service_state
-            .additional_resource
+            .additional_resource()
             .data
             .payload_start_address() as u64
             + offset) as *const UnrestrictedAtomic<ValueType>;
@@ -261,16 +309,18 @@ impl<
         // check if key exists
         let index = match unsafe {
             self.shared_state
+                .lock()
                 .service_state
-                .additional_resource
+                .additional_resource()
                 .mgmt
                 .get()
                 .map
                 .__internal_get(
                     key_mem,
                     self.shared_state
+                        .lock()
                         .service_state
-                        .additional_resource
+                        .additional_resource()
                         .key_eq_func
                         .as_ref(),
                 )
@@ -282,10 +332,10 @@ impl<
             }
         };
 
-        let entry = &self
-            .shared_state
+        let shared_state = self.shared_state.lock();
+        let entry = &shared_state
             .service_state
-            .additional_resource
+            .additional_resource()
             .mgmt
             .get()
             .entries[index];
@@ -325,7 +375,7 @@ pub struct EntryHandle<
 > {
     atomic: *const UnrestrictedAtomic<ValueType>,
     entry_id: EventId,
-    _shared_state: Arc<ReaderSharedState<Service, KeyType>>,
+    _shared_state: Service::ArcThreadSafetyPolicy<ReaderSharedState<Service, KeyType>>,
 }
 
 // Safe since the pointer to the UnrestrictedAtomic doesn't change and the UnrestrictedAtomic
@@ -353,7 +403,7 @@ impl<
 > EntryHandle<Service, KeyType, ValueType>
 {
     fn new(
-        reader_state: Arc<ReaderSharedState<Service, KeyType>>,
+        reader_state: Service::ArcThreadSafetyPolicy<ReaderSharedState<Service, KeyType>>,
         atomic: *const UnrestrictedAtomic<ValueType>,
         offset: u64,
     ) -> Self {
@@ -440,10 +490,10 @@ impl<Service: service::Service> Reader<Service, CustomKeyMarker> {
     ) -> Result<__InternalEntryHandle<Service>, EntryHandleError> {
         let msg = "Unable to create entry handle";
 
-        let key_type_details = self
-            .shared_state
+        let shared_state = self.shared_state.lock();
+        let key_type_details = shared_state
             .service_state
-            .static_config
+            .static_config()
             .blackboard()
             .type_details();
         let key_layout = unsafe {
@@ -462,10 +512,9 @@ impl<Service: service::Service> Reader<Service, CustomKeyMarker> {
 
         let offset = self.get_entry_offset(&key_mem, value_type_details, msg)?;
 
-        let atomic_mgmt_ptr = (self
-            .shared_state
+        let atomic_mgmt_ptr = (shared_state
             .service_state
-            .additional_resource
+            .additional_resource()
             .data
             .payload_start_address() as u64
             + offset) as *const UnrestrictedAtomicMgmt;
@@ -489,7 +538,7 @@ pub struct __InternalEntryHandle<Service: service::Service> {
     atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
     data_ptr: *const u8,
     entry_id: EventId,
-    _shared_state: Arc<ReaderSharedState<Service, CustomKeyMarker>>,
+    _shared_state: Service::ArcThreadSafetyPolicy<ReaderSharedState<Service, CustomKeyMarker>>,
 }
 
 // Safe since the pointer to the UnrestrictedAtomicMgmt and the data pointer don't change and the

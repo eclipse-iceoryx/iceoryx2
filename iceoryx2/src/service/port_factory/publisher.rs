@@ -158,7 +158,7 @@ impl<
     pub(crate) fn new(factory: &'factory PortFactory<Service, Payload, UserHeader>) -> Self {
         let defaults = &factory
             .service
-            .shared_node
+            .shared_node()
             .config()
             .defaults
             .publish_subscribe;

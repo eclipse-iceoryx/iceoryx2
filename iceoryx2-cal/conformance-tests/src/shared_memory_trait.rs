@@ -21,6 +21,7 @@ pub mod shared_memory_trait {
     use alloc::vec;
     use core::alloc::Layout;
     use iceoryx2_bb_posix::file::AccessMode;
+    use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::testing::generate_file_path;
@@ -410,5 +411,24 @@ pub mod shared_memory_trait {
 
         drop(sut);
         assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(false));
+    }
+
+    #[conformance_test]
+    pub fn abandoning_keeps_resources_alive<Sut: SharedMemory<DefaultAllocator>>() {
+        test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
+
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_create = Sut::Builder::new(&name)
+            .size(DEFAULT_SIZE)
+            .config(&config)
+            .has_ownership(true)
+            .create(&SHM_CONFIG)
+            .unwrap();
+
+        sut_create.abandon();
+
+        assert_that!(unsafe { Sut::remove_cfg(&name, &config) }, eq Ok(true));
     }
 }

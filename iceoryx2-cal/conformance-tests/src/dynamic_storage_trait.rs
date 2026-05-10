@@ -934,4 +934,32 @@ pub mod dynamic_storage_trait {
             .unwrap();
         assert_that!(unsafe { WrongTypeSut::remove_cfg(&storage_name, &wrong_type_config) }, eq Ok(false));
     }
+
+    #[conformance_test]
+    pub fn abandon_dynamic_storage_keeps_storage_available<
+        Sut: DynamicStorage<TestData>,
+        WrongTypeSut: DynamicStorage<u64>,
+    >() {
+        test_requires!(Sut::does_support_persistency());
+
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .create(TestData::new(919))
+            .unwrap();
+
+        Sut::abandon(sut);
+
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
+
+        let sut = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .has_ownership(true)
+            .open(AccessMode::ReadWrite)
+            .unwrap();
+
+        assert_that!(sut.get().value.load(Ordering::Relaxed), eq 919);
+    }
 }

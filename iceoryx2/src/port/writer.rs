@@ -41,40 +41,39 @@
 //! ```
 
 use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
+use crate::identifiers::UniqueWriterId;
 use crate::prelude::EventId;
 use crate::service::builder::CustomKeyMarker;
 use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
 use crate::service::dynamic_config::blackboard::WriterDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-use crate::service::{self, ServiceState};
+use crate::service::{self, SharedServiceState};
 use core::alloc::Layout;
 use core::fmt::Debug;
 use core::hash::Hash;
 use core::marker::PhantomData;
 use core::mem::MaybeUninit;
 use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
     Producer, UnrestrictedAtomic, UnrestrictedAtomicMgmt,
 };
+use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
+use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
 use iceoryx2_log::{fail, fatal_panic};
-
-extern crate alloc;
-use alloc::sync::Arc;
-
-use crate::identifiers::UniqueWriterId;
 
 #[derive(Debug)]
 struct WriterSharedState<
     Service: service::Service,
     KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
 > {
-    dynamic_writer_handle: Option<ContainerHandle>,
-    service_state: Arc<ServiceState<Service, BlackboardResources<Service>>>,
+    service_state: SharedServiceState<Service, BlackboardResources<Service>>,
+    dynamic_writer_handle: UnsafeCell<Option<ContainerHandle>>,
     _key: PhantomData<KeyType>,
 }
 
@@ -84,13 +83,35 @@ impl<
 > Drop for WriterSharedState<Service, KeyType>
 {
     fn drop(&mut self) {
-        if let Some(handle) = self.dynamic_writer_handle {
+        if let Some(handle) = unsafe { &*self.dynamic_writer_handle.get() } {
             self.service_state
-                .dynamic_storage
+                .dynamic_storage()
                 .get()
                 .blackboard()
-                .release_writer_handle(handle)
+                .release_writer_handle(*handle)
         }
+    }
+}
+
+unsafe impl<
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+> Send for WriterSharedState<Service, KeyType>
+{
+}
+
+impl<
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+> Abandonable for WriterSharedState<Service, KeyType>
+{
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            SharedServiceState::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.service_state,
+            ))
+        };
     }
 }
 
@@ -105,6 +126,9 @@ pub enum WriterCreateError {
     ExceedsMaxSupportedWriters,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalFailure,
+    /// Caused by a failure when instantiating a [`ArcSyncPolicy`] defined in the
+    /// [`Service`](crate::service::Service) as `ArcThreadSafetyPolicy`.
+    FailedToDeployThreadsafetyPolicy,
 }
 
 impl core::fmt::Display for WriterCreateError {
@@ -121,8 +145,23 @@ pub struct Writer<
     Service: service::Service,
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > {
-    shared_state: Arc<WriterSharedState<Service, KeyType>>,
+    shared_state: Service::ArcThreadSafetyPolicy<WriterSharedState<Service, KeyType>>,
     writer_id: UniqueWriterId,
+}
+
+impl<
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
+> Abandonable for Writer<Service, KeyType>
+{
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            Service::ArcThreadSafetyPolicy::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.shared_state,
+            ))
+        };
+    }
 }
 
 impl<
@@ -131,18 +170,28 @@ impl<
 > Writer<Service, KeyType>
 {
     pub(crate) fn new(
-        service: Arc<ServiceState<Service, BlackboardResources<Service>>>,
+        service: SharedServiceState<Service, BlackboardResources<Service>>,
     ) -> Result<Self, WriterCreateError> {
         let origin = "Writer::new()";
         let msg = "Unable to create Writer port";
 
         let writer_id = UniqueWriterId::new();
-        let mut new_self = Self {
-            shared_state: Arc::new(WriterSharedState {
-                service_state: service.clone(),
-                dynamic_writer_handle: None,
-                _key: PhantomData,
-            }),
+        let shared_state = Service::ArcThreadSafetyPolicy::new(WriterSharedState {
+            service_state: service.clone(),
+            dynamic_writer_handle: UnsafeCell::new(None),
+            _key: PhantomData,
+        });
+
+        let shared_state = match shared_state {
+            Ok(v) => v,
+            Err(e) => {
+                fail!(from origin, with WriterCreateError::FailedToDeployThreadsafetyPolicy,
+                      "{msg} since the threadsafety policy could not be instantiated ({e:?}).");
+            }
+        };
+
+        let new_self = Self {
+            shared_state,
             writer_id,
         };
 
@@ -150,27 +199,25 @@ impl<
 
         // !MUST! be the last task otherwise a writer is added to the dynamic config without the
         // creation of all required resources
-        let dynamic_writer_handle = match service.dynamic_storage.get().blackboard().add_writer_id(
-            WriterDetails {
+        let dynamic_writer_handle = match service
+            .dynamic_storage()
+            .get()
+            .blackboard()
+            .add_writer_id(WriterDetails {
                 writer_id,
-                node_id: *service.shared_node.id(),
-            },
-        ) {
+                node_id: *service.shared_node().id(),
+            }) {
             Some(unique_index) => unique_index,
             None => {
                 fail!(from origin, with WriterCreateError::ExceedsMaxSupportedWriters,
                             "{} since it would exceed the maximum supported amount of writers of {}.",
-                            msg, service.static_config.blackboard().max_writers);
+                            msg, service.static_config().blackboard().max_writers);
             }
         };
 
-        match Arc::get_mut(&mut new_self.shared_state) {
-            None => {
-                fail!(from origin, with WriterCreateError::InternalFailure,
-                    "{} due to an internal failure.", msg);
-            }
-            Some(writer_state) => writer_state.dynamic_writer_handle = Some(dynamic_writer_handle),
-        }
+        unsafe {
+            *new_self.shared_state.lock().dynamic_writer_handle.get() = Some(dynamic_writer_handle)
+        };
         Ok(new_self)
     }
 
@@ -234,18 +281,19 @@ impl<
         msg: &str,
     ) -> Result<u64, EntryHandleMutError> {
         // check if key exists
+        let shared_state = self.shared_state.lock();
         let index = match unsafe {
-            self.shared_state
+            shared_state
                 .service_state
-                .additional_resource
+                .additional_resource()
                 .mgmt
                 .get()
                 .map
                 .__internal_get(
                     key_mem,
-                    self.shared_state
+                    shared_state
                         .service_state
-                        .additional_resource
+                        .additional_resource()
                         .key_eq_func
                         .as_ref(),
                 )
@@ -257,10 +305,9 @@ impl<
             }
         };
 
-        let entry = &self
-            .shared_state
+        let entry = &shared_state
             .service_state
-            .additional_resource
+            .additional_resource()
             .mgmt
             .get()
             .entries[index];
@@ -302,7 +349,7 @@ pub struct EntryHandleMut<
 > {
     producer: Producer<'static, ValueType>,
     entry_id: EventId,
-    _shared_state: Arc<WriterSharedState<Service, KeyType>>,
+    _shared_state: Service::ArcThreadSafetyPolicy<WriterSharedState<Service, KeyType>>,
 }
 
 // Safe since the producer implements Send + Sync and shared_state ensures the lifetime of the
@@ -329,12 +376,13 @@ impl<
 > EntryHandleMut<Service, KeyType, ValueType>
 {
     fn new(
-        writer_state: Arc<WriterSharedState<Service, KeyType>>,
+        writer_state: Service::ArcThreadSafetyPolicy<WriterSharedState<Service, KeyType>>,
         offset: u64,
     ) -> Result<Self, EntryHandleMutError> {
         let atomic = (writer_state
+            .lock()
             .service_state
-            .additional_resource
+            .additional_resource()
             .data
             .payload_start_address() as u64
             + offset) as *mut UnrestrictedAtomic<ValueType>;
@@ -586,10 +634,10 @@ impl<Service: service::Service> Writer<Service, CustomKeyMarker> {
     ) -> Result<__InternalEntryHandleMut<Service>, EntryHandleMutError> {
         let msg = "Unable to create entry handle";
 
-        let key_type_details = self
-            .shared_state
+        let shared_state = self.shared_state.lock();
+        let key_type_details = shared_state
             .service_state
-            .static_config
+            .static_config()
             .blackboard()
             .type_details();
         let key_layout = unsafe {
@@ -608,10 +656,9 @@ impl<Service: service::Service> Writer<Service, CustomKeyMarker> {
 
         let offset = self.get_entry_offset(&key_mem, value_type_details, msg)?;
 
-        let atomic_mgmt_ptr = (self
-            .shared_state
+        let atomic_mgmt_ptr = (shared_state
             .service_state
-            .additional_resource
+            .additional_resource()
             .data
             .payload_start_address() as u64
             + offset) as *const UnrestrictedAtomicMgmt;
@@ -641,7 +688,7 @@ pub struct __InternalEntryHandleMut<Service: service::Service> {
     atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
     data_ptr: *mut u8,
     entry_id: EventId,
-    _shared_state: Arc<WriterSharedState<Service, CustomKeyMarker>>,
+    _shared_state: Service::ArcThreadSafetyPolicy<WriterSharedState<Service, CustomKeyMarker>>,
 }
 
 impl<Service: service::Service> Drop for __InternalEntryHandleMut<Service> {
@@ -661,7 +708,7 @@ impl<Service: service::Service> __InternalEntryHandleMut<Service> {
         atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
         data_ptr: *mut u8,
         entry_id: EventId,
-        writer_state: Arc<WriterSharedState<Service, CustomKeyMarker>>,
+        writer_state: Service::ArcThreadSafetyPolicy<WriterSharedState<Service, CustomKeyMarker>>,
     ) -> Result<Self, EntryHandleMutError> {
         match unsafe { (*atomic_mgmt_ptr).__internal_acquire_producer() } {
             Ok(_) => Ok(Self {

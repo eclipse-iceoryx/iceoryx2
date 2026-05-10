@@ -14,12 +14,12 @@ use core::alloc::Layout;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use alloc::format;
-use alloc::sync::Arc;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
+use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
@@ -37,7 +37,7 @@ use crate::port::{
 use crate::prelude::UnableToDeliverStrategy;
 use crate::service::config_scheme::connection_config;
 use crate::service::static_config::message_type_details::{MessageTypeDetails, TypeVariant};
-use crate::service::{NoResource, ServiceState};
+use crate::service::{NoResource, SharedServiceState};
 use crate::{service, service::naming_scheme::connection_name};
 
 use super::chunk::ChunkMut;
@@ -55,6 +55,17 @@ pub(crate) struct Connection<Service: service::Service> {
     pub(crate) sender: <Service::Connection as ZeroCopyConnection>::Sender,
     pub(crate) receiver_port_id: u128,
     tag: Tag,
+}
+
+impl<Service: service::Service> Abandonable for Connection<Service> {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            <Service::Connection as ZeroCopyConnection>::Sender::abandon_in_place(
+                core::ptr::NonNull::iox2_from_mut(&mut this.sender),
+            )
+        };
+    }
 }
 
 impl<Service: service::Service> Taggable for Connection<Service> {
@@ -110,7 +121,7 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) data_segment: DataSegment<Service>,
     pub(crate) connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
     pub(crate) sender_port_id: u128,
-    pub(crate) shared_node: Arc<SharedNode<Service>>,
+    pub(crate) shared_node: SharedNode<Service>,
     pub(crate) receiver_max_buffer_size: usize,
     pub(crate) receiver_max_borrowed_samples: usize,
     pub(crate) sender_max_borrowed_samples: usize,
@@ -119,13 +130,42 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) max_number_of_segments: u8,
     pub(crate) degradation_handler: DegradationHandler<'static>,
     pub(crate) unable_to_deliver_handler: Option<UnableToDeliverHandler<'static>>,
-    pub(crate) service_state: Arc<ServiceState<Service, NoResource>>,
+    pub(crate) service_state: SharedServiceState<Service, NoResource>,
     pub(crate) tagger: CyclicTagger,
     pub(crate) loan_counter: AtomicUsize,
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
     pub(crate) message_type_details: MessageTypeDetails,
     pub(crate) number_of_channels: usize,
     pub(crate) initial_channel_state: ChannelState,
+}
+
+impl<Service: service::Service> Abandonable for Sender<Service> {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            SharedNode::<Service>::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.shared_node,
+            ))
+        };
+        unsafe {
+            SharedServiceState::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.service_state,
+            ))
+        };
+        unsafe {
+            DataSegment::<Service>::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.data_segment,
+            ))
+        };
+
+        for connection in &mut this.connections {
+            if let Some(c) = connection.get_mut() {
+                unsafe {
+                    Connection::<Service>::abandon_in_place(core::ptr::NonNull::iox2_from_mut(c))
+                };
+            }
+        }
+    }
 }
 
 impl<Service: service::Service> Sender<Service> {
@@ -187,7 +227,7 @@ impl<Service: service::Service> Sender<Service> {
                             .call(&UnableToDeliverInfo {
                                 service_id: self
                                     .service_state
-                                    .static_config
+                                    .static_config()
                                     .unique_service_id()
                                     .value(),
                                 sender_port_id: self.sender_port_id,
@@ -253,7 +293,7 @@ impl<Service: service::Service> Sender<Service> {
                         &DegradationInfo {
                             service_id: self
                                 .service_state
-                                .static_config
+                                .static_config()
                                 .unique_service_id()
                                 .value(),
                             sender_port_id: self.sender_port_id,
@@ -535,7 +575,11 @@ impl<Service: service::Service> Sender<Service> {
                 Err(e) => match self.degradation_handler.call(
                     DegradationCause::FailedToEstablishConnection,
                     &DegradationInfo {
-                        service_id: self.service_state.static_config.unique_service_id().value(),
+                        service_id: self
+                            .service_state
+                            .static_config()
+                            .unique_service_id()
+                            .value(),
                         sender_port_id: self.sender_port_id,
                         receiver_port_id: receiver_details.port_id,
                     },

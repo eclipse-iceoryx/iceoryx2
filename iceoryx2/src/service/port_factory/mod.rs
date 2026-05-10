@@ -11,10 +11,10 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 extern crate alloc;
-use alloc::sync::Arc;
 use core::fmt::Debug;
 
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_log::{debug, warn};
 
 use crate::config::Config;
@@ -65,7 +65,7 @@ pub mod subscriber;
 
 /// The trait that contains the interface of all port factories for any kind of
 /// [`crate::service::messaging_pattern::MessagingPattern`].
-pub trait PortFactory: Debug {
+pub trait PortFactory: Debug + Abandonable {
     /// The underlying [`crate::service::Service`] of the port factory.
     type Service: crate::service::Service;
 
@@ -109,7 +109,7 @@ pub trait PortFactory: Debug {
 
 pub(crate) fn blocking_cleanup_dead_nodes_in_service<T: PortFactory>(
     port_factory: &T,
-    shared_node: Arc<SharedNode<T::Service>>,
+    shared_node: SharedNode<T::Service>,
 ) {
     if let Err(e) =  port_factory.nodes(|node_state| {
         if let NodeState::Dead(node) = node_state {

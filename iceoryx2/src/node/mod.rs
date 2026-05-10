@@ -142,9 +142,6 @@
 /// The name for a node.
 pub mod node_name;
 
-#[doc(hidden)]
-pub mod testing;
-
 use core::marker::PhantomData;
 use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::Ordering;
@@ -176,6 +173,8 @@ use iceoryx2_bb_posix::mutex::MutexType;
 use iceoryx2_bb_posix::process::Process;
 use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_testing::abandonable::Abandonable;
+use iceoryx2_bb_testing::abandonable::NonNullFromRef;
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
@@ -897,42 +896,83 @@ impl RegisteredServices {
 }
 
 #[derive(Debug)]
-pub(crate) struct SharedNode<Service: service::Service> {
+struct SharedNodeState<Service: service::Service> {
     id: UniqueNodeId,
     details: NodeDetails,
     monitoring_token: UnsafeCell<Option<<Service::Monitoring as Monitoring>::Token>>,
     registered_services: RegisteredServices,
     signal_handling_mode: SignalHandlingMode,
-    _details_storage: Service::StaticStorage,
+    details_storage: Service::StaticStorage,
 }
 
-unsafe impl<Service: service::Service> Send for SharedNode<Service> {}
-unsafe impl<Service: service::Service> Sync for SharedNode<Service> {}
+unsafe impl<Service: service::Service> Send for SharedNodeState<Service> {}
+unsafe impl<Service: service::Service> Sync for SharedNodeState<Service> {}
+
+impl<Service: service::Service> Abandonable for SharedNodeState<Service> {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            <Service::StaticStorage as Abandonable>::abandon_in_place(
+                core::ptr::NonNull::iox2_from_mut(&mut this.details_storage),
+            )
+        };
+        if let Some(token) = this.monitoring_token.get_mut() {
+            unsafe {
+                <<Service::Monitoring as Monitoring>::Token as Abandonable>::abandon_in_place(
+                    core::ptr::NonNull::iox2_from_mut(token),
+                )
+            };
+        }
+    }
+}
+
+impl<Service: service::Service> Drop for SharedNodeState<Service> {
+    fn drop(&mut self) {
+        let config = self.details.config();
+        if self.monitoring_token.get_mut().is_some() {
+            if config.global.node.cleanup_dead_nodes_on_destruction {
+                Node::<Service>::try_cleanup_dead_nodes(config);
+            }
+
+            warn!(from self, when remove_node::<Service>(self.id, config),
+                "Unable to remove node resources.");
+        }
+
+        trace!(from self, "removed");
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct SharedNode<Service: service::Service> {
+    state: Arc<SharedNodeState<Service>>,
+}
+
+impl<Service: service::Service> Abandonable for SharedNode<Service> {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        if let Some(state) = Arc::get_mut(&mut this.state) {
+            unsafe { SharedNodeState::abandon_in_place(core::ptr::NonNull::iox2_from_mut(state)) };
+        } else {
+            unsafe { core::ptr::drop_in_place(&mut this.state) };
+        }
+    }
+}
 
 impl<Service: service::Service> SharedNode<Service> {
     pub(crate) fn config(&self) -> &Config {
-        &self.details.config
+        &self.state.details.config
     }
 
     pub(crate) fn id(&self) -> &UniqueNodeId {
-        &self.id
+        &self.state.id
     }
 
     pub(crate) fn registered_services(&self) -> &RegisteredServices {
-        &self.registered_services
+        &self.state.registered_services
     }
-}
 
-impl<Service: service::Service> Drop for SharedNode<Service> {
-    fn drop(&mut self) {
-        if self.monitoring_token.get_mut().is_some() {
-            if self.config().global.node.cleanup_dead_nodes_on_destruction {
-                Node::<Service>::try_cleanup_dead_nodes(self.config());
-            }
-
-            warn!(from self, when remove_node::<Service>(self.id, self.details.config()),
-                "Unable to remove node resources.");
-        }
+    pub(crate) fn name(&self) -> &NodeName {
+        &self.state.details.name
     }
 }
 
@@ -945,25 +985,34 @@ impl<Service: service::Service> Drop for SharedNode<Service> {
 /// Can be created via the [`NodeBuilder`].
 #[derive(Debug)]
 pub struct Node<Service: service::Service> {
-    shared: Arc<SharedNode<Service>>,
+    shared: SharedNode<Service>,
 }
 
 unsafe impl<Service: service::Service> Send for Node<Service> {}
 
+impl<Service: service::Service> Abandonable for Node<Service> {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            SharedNode::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.shared))
+        };
+    }
+}
+
 impl<Service: service::Service> Node<Service> {
     /// Returns the [`NodeName`].
     pub fn name(&self) -> &NodeName {
-        &self.shared.details.name
+        self.shared.name()
     }
 
     /// Returns the [`Config`] that the [`Node`] will use to create any iceoryx2 entity.
     pub fn config(&self) -> &Config {
-        &self.shared.details.config
+        self.shared.config()
     }
 
     /// Returns the [`UniqueNodeId`] of the [`Node`].
     pub fn id(&self) -> &UniqueNodeId {
-        &self.shared.id
+        self.shared.id()
     }
 
     /// Instantiates a [`ServiceBuilder`](Builder) for a service with the provided name.
@@ -1019,12 +1068,8 @@ impl<Service: service::Service> Node<Service> {
         Ok(())
     }
 
-    pub(crate) unsafe fn staged_death(&mut self) -> <Service::Monitoring as Monitoring>::Token {
-        unsafe { (*self.shared.monitoring_token.get()).take().unwrap() }
-    }
-
     fn handle_termination_request(&self, error_msg: &str) -> Result<(), NodeWaitFailure> {
-        if self.shared.signal_handling_mode == SignalHandlingMode::HandleTerminationRequests
+        if self.signal_handling_mode() == SignalHandlingMode::HandleTerminationRequests
             && SignalHandler::termination_requested()
         {
             fail!(from self, with NodeWaitFailure::TerminationRequest,
@@ -1060,7 +1105,7 @@ impl<Service: service::Service> Node<Service> {
 
     /// Returns the [`SignalHandlingMode`] with which the [`Node`] was created.
     pub fn signal_handling_mode(&self) -> SignalHandlingMode {
-        self.shared.signal_handling_mode
+        self.shared.state.signal_handling_mode
     }
 
     /// Removes the stale system resources of all dead [`Node`]s. The dead [`Node`]s are also
@@ -1364,16 +1409,21 @@ impl NodeBuilder {
             self.create_node_details_storage::<Service>(&config, &node_id)?;
         let monitoring_token = self.create_token::<Service>(&config, &monitor_name)?;
 
-        Ok(Node {
-            shared: Arc::new(SharedNode {
-                id: node_id,
-                monitoring_token: UnsafeCell::new(Some(monitoring_token)),
-                registered_services: RegisteredServices::new(),
-                _details_storage: details_storage,
-                signal_handling_mode: self.signal_handling_mode,
-                details,
-            }),
-        })
+        let new_node = Node {
+            shared: SharedNode {
+                state: Arc::new(SharedNodeState {
+                    id: node_id,
+                    monitoring_token: UnsafeCell::new(Some(monitoring_token)),
+                    registered_services: RegisteredServices::new(),
+                    details_storage,
+                    signal_handling_mode: self.signal_handling_mode,
+                    details,
+                }),
+            },
+        };
+
+        trace!(from new_node, "created");
+        Ok(new_node)
     }
 
     fn create_token<Service: service::Service>(

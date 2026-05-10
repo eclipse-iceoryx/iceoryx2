@@ -26,6 +26,9 @@ enum class WriterCreateError : uint8_t {
     /// Errors that indicate either an implementation issue or a wrongly
     /// configured system.
     InternalFailure,
+    /// Caused by a failure when instantiating a [`ArcSyncPolicy`] defined in the
+    /// [`Service`] as `ArcThreadSafetyPolicy`.
+    FailedToDeployThreadsafetyPolicy,
 };
 } // namespace iox2
 

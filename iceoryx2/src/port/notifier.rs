@@ -37,7 +37,6 @@
 
 use core::time::Duration;
 
-use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 
@@ -45,17 +44,19 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
+use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy, dynamic_storage::DynamicStorage, event::NotifierBuilder,
 };
 use iceoryx2_cal::{event::Event, named_concept::NamedConceptBuilder};
 use iceoryx2_log::{debug, fail, warn};
 
+use crate::service::SharedServiceState;
 use crate::{
     identifiers::{UniqueListenerId, UniqueNodeId, UniqueNotifierId},
     port::update_connections::UpdateConnections,
     service::{
-        self, NoResource, ServiceState,
+        self, NoResource,
         config_scheme::event_config,
         dynamic_config::event::{ListenerDetails, NotifierDetails},
         naming_scheme::event_concept_name,
@@ -121,14 +122,25 @@ struct Connection<Service: service::Service> {
 struct ListenerConnections<Service: service::Service> {
     #[allow(clippy::type_complexity)]
     connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
-    service_state: Arc<ServiceState<Service, NoResource>>,
+    service_state: SharedServiceState<Service, NoResource>,
     list_state: UnsafeCell<ContainerState<ListenerDetails>>,
+}
+
+impl<Service: service::Service> Abandonable for ListenerConnections<Service> {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            SharedServiceState::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.service_state,
+            ))
+        };
+    }
 }
 
 impl<Service: service::Service> ListenerConnections<Service> {
     fn new(
         size: usize,
-        service_state: Arc<ServiceState<Service, NoResource>>,
+        service_state: SharedServiceState<Service, NoResource>,
         list_state: UnsafeCell<ContainerState<ListenerDetails>>,
     ) -> Self {
         let mut new_self = Self {
@@ -148,7 +160,7 @@ impl<Service: service::Service> ListenerConnections<Service> {
     fn create(&self, index: usize, listener_id: UniqueListenerId, node_id: UniqueNodeId) {
         let msg = "Unable to establish connection to listener";
         let event_name = event_concept_name(&listener_id);
-        let event_config = event_config::<Service>(self.service_state.shared_node.config());
+        let event_config = event_config::<Service>(self.service_state.shared_node().config());
         if self.get(index).is_none() {
             match <Service::Event as iceoryx2_cal::event::Event>::NotifierBuilder::new(&event_name)
                 .config(&event_config)
@@ -203,7 +215,7 @@ impl<Service: service::Service> ListenerConnections<Service> {
     fn update_connections(&self) {
         if unsafe {
             self.service_state
-                .dynamic_storage
+                .dynamic_storage()
                 .get()
                 .event()
                 .listeners
@@ -270,6 +282,17 @@ unsafe impl<Service: service::Service> Sync for Notifier<Service> where
 {
 }
 
+impl<Service: service::Service> Abandonable for Notifier<Service> {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            Service::ArcThreadSafetyPolicy::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.listener_connections,
+            ))
+        };
+    }
+}
+
 impl<Service: service::Service> Drop for Notifier<Service> {
     fn drop(&mut self) {
         if let Some(event_id) = self.on_drop_notification {
@@ -283,7 +306,7 @@ impl<Service: service::Service> Drop for Notifier<Service> {
             self.listener_connections
                 .lock()
                 .service_state
-                .dynamic_storage
+                .dynamic_storage()
                 .get()
                 .event()
                 .release_notifier_handle(handle)
@@ -300,13 +323,13 @@ impl<Service: service::Service> UpdateConnections for Notifier<Service> {
 
 impl<Service: service::Service> Notifier<Service> {
     pub(crate) fn new(
-        service: Arc<ServiceState<Service, NoResource>>,
+        service: SharedServiceState<Service, NoResource>,
         default_event_id: EventId,
     ) -> Result<Self, NotifierCreateError> {
         let mut new_self =
             Self::new_without_auto_event_emission(service.clone(), default_event_id)?;
 
-        let static_config = service.static_config.event();
+        let static_config = service.static_config().event();
         new_self.on_drop_notification = static_config
             .notifier_dropped_event
             .map(EventId::new)
@@ -331,17 +354,17 @@ impl<Service: service::Service> Notifier<Service> {
     }
 
     pub(crate) fn new_without_auto_event_emission(
-        service: Arc<ServiceState<Service, NoResource>>,
+        service: SharedServiceState<Service, NoResource>,
         default_event_id: EventId,
     ) -> Result<Self, NotifierCreateError> {
         let msg = "Unable to create Notifier port";
         let origin = "Notifier::new()";
         let notifier_id = UniqueNotifierId::new();
 
-        let listener_list = &service.dynamic_storage.get().event().listeners;
+        let listener_list = &service.dynamic_storage().get().event().listeners;
 
-        let node_id = *service.shared_node.id();
-        let static_config = service.static_config.event();
+        let node_id = *service.shared_node().id();
+        let static_config = service.static_config().event();
         let listener_connections = Service::ArcThreadSafetyPolicy::new(ListenerConnections::new(
             listener_list.capacity(),
             service.clone(),
@@ -379,7 +402,7 @@ impl<Service: service::Service> Notifier<Service> {
             .listener_connections
             .lock()
             .service_state
-            .dynamic_storage
+            .dynamic_storage()
             .get()
             .event()
             .add_notifier_id(NotifierDetails {
@@ -390,7 +413,7 @@ impl<Service: service::Service> Notifier<Service> {
             None => {
                 fail!(from origin, with NotifierCreateError::ExceedsMaxSupportedNotifiers,
                             "{} since it would exceed the maximum supported amount of notifiers of {}.",
-                            msg, service.static_config.event().max_notifiers);
+                            msg, service.static_config().event().max_notifiers);
             }
         };
         new_self.dynamic_notifier_handle = Some(dynamic_notifier_handle);
@@ -417,7 +440,7 @@ impl<Service: service::Service> Notifier<Service> {
         self.listener_connections
             .lock()
             .service_state
-            .static_config
+            .static_config()
             .event()
             .deadline
             .map(|v| v.value.into())
@@ -485,7 +508,7 @@ impl<Service: service::Service> Notifier<Service> {
 
         if let Some(deadline) = listener_connections
             .service_state
-            .static_config
+            .static_config()
             .event()
             .deadline
             .as_option_ref()
@@ -498,7 +521,7 @@ impl<Service: service::Service> Notifier<Service> {
 
             let previous_duration_since_creation = listener_connections
                 .service_state
-                .dynamic_storage
+                .dynamic_storage()
                 .get()
                 .event()
                 .elapsed_time_since_last_notification

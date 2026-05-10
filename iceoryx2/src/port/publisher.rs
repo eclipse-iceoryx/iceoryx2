@@ -116,6 +116,7 @@ use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shm_allocator::{AllocationStrategy, PointerOffset};
@@ -182,6 +183,15 @@ pub(crate) struct PublisherSharedState<Service: service::Service> {
     is_active: AtomicBool,
 }
 
+impl<Service: service::Service> Abandonable for PublisherSharedState<Service> {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            Sender::<Service>::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.sender))
+        }
+    }
+}
+
 impl<Service: service::Service> PublisherSharedState<Service> {
     fn add_sample_to_history(&self, offset: PointerOffset, sample_size: usize) {
         match &self.history {
@@ -233,7 +243,7 @@ impl<Service: service::Service> PublisherSharedState<Service> {
         if unsafe {
             self.sender
                 .service_state
-                .dynamic_storage
+                .dynamic_storage()
                 .get()
                 .publish_subscribe()
                 .subscribers
@@ -337,6 +347,22 @@ impl<
     Service: service::Service,
     Payload: Debug + ZeroCopySend + ?Sized,
     UserHeader: Debug + ZeroCopySend,
+> Abandonable for Publisher<Service, Payload, UserHeader>
+{
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            Service::ArcThreadSafetyPolicy::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.publisher_shared_state,
+            ))
+        };
+    }
+}
+
+impl<
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
 > Drop for Publisher<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
@@ -346,7 +372,7 @@ impl<
             shared_state
                 .sender
                 .service_state
-                .dynamic_storage
+                .dynamic_storage()
                 .get()
                 .publish_subscribe()
                 .release_publisher_handle(handle)
@@ -370,18 +396,22 @@ impl<
         let static_config = publisher_factory
             .factory
             .service
-            .static_config
+            .static_config()
             .publish_subscribe();
         let service = &publisher_factory.factory.service;
         let subscriber_list = &service
-            .dynamic_storage
+            .dynamic_storage()
             .get()
             .publish_subscribe()
             .subscribers;
 
-        let number_of_samples =
-            unsafe { service.static_config.messaging_pattern.publish_subscribe() }
-                .required_amount_of_samples_per_data_segment(config.max_loaned_samples);
+        let number_of_samples = unsafe {
+            service
+                .static_config()
+                .messaging_pattern
+                .publish_subscribe()
+        }
+        .required_amount_of_samples_per_data_segment(config.max_loaned_samples);
 
         let number_of_samples = publisher_factory
             .preallocate_number_of_samples_override
@@ -402,10 +432,10 @@ impl<
             publisher_id: port_id,
             number_of_samples,
             max_slice_len,
-            node_id: *service.shared_node.id(),
+            node_id: *service.shared_node().id(),
             max_number_of_segments,
         };
-        let global_config = service.shared_node.config();
+        let global_config = service.shared_node().config();
 
         let segment_name = data_segment_name(publisher_details.publisher_id.value());
         let data_segment = match data_segment_type {
@@ -446,7 +476,7 @@ impl<
                         .map(|_| UnsafeCell::new(None))
                         .collect(),
                     sender_port_id: port_id.value(),
-                    shared_node: service.shared_node.clone(),
+                    shared_node: service.shared_node().clone(),
                     receiver_max_buffer_size: static_config.subscriber_max_buffer_size,
                     receiver_max_borrowed_samples: static_config.subscriber_max_borrowed_samples,
                     enable_safe_overflow: static_config.enable_safe_overflow,
@@ -501,7 +531,7 @@ impl<
         // !MUST! be the last task otherwise a publisher is added to the dynamic config without the
         // creation of all required resources
         let dynamic_publisher_handle = match service
-            .dynamic_storage
+            .dynamic_storage()
             .get()
             .publish_subscribe()
             .add_publisher_id(publisher_details)
@@ -510,7 +540,7 @@ impl<
             None => {
                 fail!(from origin, with PublisherCreateError::ExceedsMaxSupportedPublishers,
                             "{} since it would exceed the maximum supported amount of publishers of {}.",
-                            msg, service.static_config.publish_subscribe().max_publishers);
+                            msg, service.static_config().publish_subscribe().max_publishers);
             }
         };
 
@@ -609,7 +639,7 @@ impl<
         let chunk = shared_state
             .sender
             .allocate(shared_state.sender.sample_layout(1))?;
-        let node_id = shared_state.sender.service_state.shared_node.id();
+        let node_id = shared_state.sender.service_state.shared_node().id();
         let header_ptr = chunk.header as *mut Header;
         let user_header_ptr: *mut UserHeader = chunk.user_header.cast();
         unsafe { header_ptr.write(Header::new(*node_id, self.id(), 1)) };
@@ -793,7 +823,7 @@ impl<
         let chunk = shared_state.sender.allocate(sample_layout)?;
         let user_header_ptr: *mut UserHeader = chunk.user_header.cast();
         let header_ptr = chunk.header as *mut Header;
-        let node_id = shared_state.sender.service_state.shared_node.id();
+        let node_id = shared_state.sender.service_state.shared_node().id();
         unsafe { header_ptr.write(Header::new(*node_id, self.id(), slice_len as _)) };
         unsafe { user_header_ptr.write(UserHeader::default()) };
 

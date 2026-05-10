@@ -31,7 +31,6 @@ use core::hash::Hash;
 use core::marker::PhantomData;
 
 use alloc::string::String;
-use alloc::sync::Arc;
 use alloc::vec;
 
 use iceoryx2_bb_derive_macros::ZeroCopySend;
@@ -115,12 +114,12 @@ enum_gen! {
 #[derive(Debug, Clone)]
 pub struct Builder<S: Service> {
     name: ServiceName,
-    shared_node: Arc<SharedNode<S>>,
+    shared_node: SharedNode<S>,
     _phantom_s: PhantomData<S>,
 }
 
 impl<S: Service> Builder<S> {
-    pub(crate) fn new(name: &ServiceName, shared_node: Arc<SharedNode<S>>) -> Self {
+    pub(crate) fn new(name: &ServiceName, shared_node: SharedNode<S>) -> Self {
         Self {
             name: *name,
             shared_node,
@@ -210,12 +209,12 @@ impl<S: Service> Builder<S> {
 #[derive(Debug, Clone)]
 pub struct BuilderWithServiceType<ServiceType: service::Service> {
     service_config: StaticConfig,
-    shared_node: Arc<SharedNode<ServiceType>>,
+    shared_node: SharedNode<ServiceType>,
     _phantom_data: PhantomData<ServiceType>,
 }
 
 impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
-    fn new(service_config: StaticConfig, shared_node: Arc<SharedNode<ServiceType>>) -> Self {
+    fn new(service_config: StaticConfig, shared_node: SharedNode<ServiceType>) -> Self {
         Self {
             service_config,
             shared_node,

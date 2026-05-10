@@ -240,6 +240,14 @@ pub struct Duplex {
     pub(crate) has_ownership: bool,
 }
 
+impl Abandonable for Duplex {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        this.has_ownership = false;
+        unsafe { core::ptr::drop_in_place(this) };
+    }
+}
+
 impl Drop for Duplex {
     fn drop(&mut self) {
         if self.has_ownership {

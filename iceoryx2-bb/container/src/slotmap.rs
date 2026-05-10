@@ -59,6 +59,7 @@ use iceoryx2_bb_elementary_traits::owning_pointer::GenericOwningPointer;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_log::{fail, fatal_panic};
 
 /// A key of a [`SlotMap`], [`RelocatableSlotMap`] or [`FixedSizeSlotMap`] that identifies a
@@ -130,6 +131,15 @@ pub struct MetaSlotMap<T, Ptr: GenericPointer> {
     idx_to_data_free_list_head: usize,
     is_initialized: AtomicBool,
     len: usize,
+}
+
+impl<T: Abandonable, Ptr: GenericPointer> Abandonable for MetaSlotMap<T, Ptr> {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        for element in this.data.iter_mut().flatten() {
+            unsafe { T::abandon_in_place(core::ptr::NonNull::iox2_from_mut(element)) };
+        }
+    }
 }
 
 impl<T, Ptr: GenericPointer> MetaSlotMap<T, Ptr> {

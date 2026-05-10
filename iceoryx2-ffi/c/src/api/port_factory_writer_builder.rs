@@ -34,6 +34,7 @@ use core::mem::ManuallyDrop;
 pub enum iox2_writer_create_error_e {
     EXCEEDS_MAX_SUPPORTED_WRITERS = IOX2_OK as isize + 1,
     INTERNAL_FAILURE,
+    FAILED_TO_DEPLOY_THREADSAFETY_POLICY,
 }
 
 impl IntoCInt for WriterCreateError {
@@ -43,6 +44,9 @@ impl IntoCInt for WriterCreateError {
                 iox2_writer_create_error_e::EXCEEDS_MAX_SUPPORTED_WRITERS
             }
             WriterCreateError::InternalFailure => iox2_writer_create_error_e::INTERNAL_FAILURE,
+            WriterCreateError::FailedToDeployThreadsafetyPolicy => {
+                iox2_writer_create_error_e::FAILED_TO_DEPLOY_THREADSAFETY_POLICY
+            }
         }) as c_int
     }
 }

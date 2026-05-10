@@ -21,6 +21,8 @@ pub mod resizable_shared_memory_trait {
     use alloc::vec;
     use core::alloc::Layout;
     use iceoryx2_bb_posix::file::AccessMode;
+    use iceoryx2_bb_testing::abandonable::Abandonable;
+    use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_testing::assert_that;
@@ -992,5 +994,71 @@ pub mod resizable_shared_memory_trait {
         unsafe { sut_viewer.register_and_translate_offset(chunk).unwrap() };
 
         assert_that!(sut_viewer.number_of_active_segments(), eq 1);
+    }
+
+    #[conformance_test]
+    pub fn abandoning_creator_keeps_resources_alive<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
+
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_creator = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .max_number_of_chunks_hint(1)
+            .allocation_strategy(AllocationStrategy::PowerOfTwo)
+            .create()
+            .unwrap();
+
+        let test_value = 189273771;
+        let ptr_creator = sut_creator.allocate(Layout::new::<u64>()).unwrap();
+
+        unsafe { (ptr_creator.data_ptr as *mut u64).write(test_value) };
+
+        sut_creator.abandon();
+
+        let sut_viewer = Sut::ViewBuilder::new(&storage_name)
+            .config(&config)
+            .open(AccessMode::ReadWrite)
+            .unwrap();
+
+        let ptr_view = unsafe {
+            sut_viewer
+                .register_and_translate_offset(ptr_creator.offset)
+                .unwrap() as *const u64
+        };
+
+        assert_that!(unsafe{ *ptr_view }, eq test_value);
+        assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config).unwrap() }, eq true);
+    }
+
+    #[conformance_test]
+    pub fn abandoning_view_has_no_effect<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_creator = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .max_number_of_chunks_hint(1)
+            .allocation_strategy(AllocationStrategy::PowerOfTwo)
+            .create()
+            .unwrap();
+
+        let sut_viewer = Sut::ViewBuilder::new(&storage_name)
+            .config(&config)
+            .open(AccessMode::ReadWrite)
+            .unwrap();
+
+        sut_viewer.abandon();
+
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config).unwrap(), eq true);
+        drop(sut_creator);
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config).unwrap(), eq false);
     }
 }

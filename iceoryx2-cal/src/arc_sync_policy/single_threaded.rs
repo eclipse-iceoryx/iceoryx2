@@ -12,6 +12,7 @@
 
 use alloc::rc::Rc;
 use core::{fmt::Debug, marker::PhantomData, ops::Deref};
+use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 
 use crate::arc_sync_policy::{ArcSyncPolicy, LockGuard};
 
@@ -24,18 +25,18 @@ impl<T: Send + Debug> Deref for Guard<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        self.data.as_ref()
+        self.data.deref()
     }
 }
 
-impl<'parent, T: Send + Debug> LockGuard<'parent, T> for Guard<'parent, T> {}
+impl<'parent, T: Send + Debug + Abandonable> LockGuard<'parent, T> for Guard<'parent, T> {}
 
 #[derive(Debug)]
-pub struct SingleThreaded<T: Send + Debug> {
+pub struct SingleThreaded<T: Send + Debug + Abandonable> {
     data: Rc<T>,
 }
 
-impl<T: Send + Debug> Clone for SingleThreaded<T> {
+impl<T: Send + Debug + Abandonable> Clone for SingleThreaded<T> {
     fn clone(&self) -> Self {
         Self {
             data: self.data.clone(),
@@ -43,7 +44,19 @@ impl<T: Send + Debug> Clone for SingleThreaded<T> {
     }
 }
 
-impl<T: Send + Debug> ArcSyncPolicy<T> for SingleThreaded<T> {
+impl<T: Send + Debug + Abandonable> Abandonable for SingleThreaded<T> {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+
+        if let Some(value) = Rc::get_mut(&mut this.data) {
+            unsafe { T::abandon_in_place(core::ptr::NonNull::iox2_from_mut(value)) };
+        } else {
+            unsafe { core::ptr::drop_in_place(&mut this.data) };
+        }
+    }
+}
+
+impl<T: Send + Debug + Abandonable> ArcSyncPolicy<T> for SingleThreaded<T> {
     type LockGuard<'parent>
         = Guard<'parent, T>
     where

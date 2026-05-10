@@ -24,6 +24,7 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_bb_system_types::path::*;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_log::trace;
 use iceoryx2_log::{debug, fail, fatal_panic, warn};
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
@@ -406,6 +407,20 @@ pub struct NamedSemaphore {
 unsafe impl Send for NamedSemaphore {}
 unsafe impl Sync for NamedSemaphore {}
 
+impl Abandonable for NamedSemaphore {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        if core::ptr::eq(this.handle, posix::SEM_FAILED) {
+            return;
+        }
+
+        if unsafe { posix::sem_close(this.handle) } != 0 {
+            // Usage of `fatal_panic` is safe since the abandon API shall only be used for testing.
+            fatal_panic!(from this, "This should never happen! The semaphore handle is invalid and cannot be closed.");
+        }
+    }
+}
+
 impl Drop for NamedSemaphore {
     fn drop(&mut self) {
         if core::ptr::eq(self.handle, posix::SEM_FAILED) {
@@ -413,6 +428,8 @@ impl Drop for NamedSemaphore {
         }
 
         if unsafe { posix::sem_close(self.handle) } != 0 {
+            // Usage of `fatal_panic` is safe since the handle is never shared with the user or other processes.
+            // When this happens either we have an iceoryx2 bug or an issue with the underlying OS.
             fatal_panic!(from self, "This should never happen! The semaphore handle is invalid and cannot be closed.");
         }
 
@@ -421,7 +438,8 @@ impl Drop for NamedSemaphore {
                 .unlink(UnlinkMode::FailWhenSemaphoreDoesNotExist)
                 .is_err()
         {
-            fatal_panic!(from self, "Failed to cleanup semaphore. Something else removed a managed semaphore which should never happen!");
+            warn!(from self,
+                "Failed to cleanup semaphore. Something else removed a managed semaphore which should never happen!");
         }
 
         trace!(from self, "closed");
@@ -711,8 +729,6 @@ impl Drop for UnnamedSemaphoreHandle {
                     }
                 });
             };
-
-            trace!(from self, "removed");
         }
     }
 }
@@ -755,6 +771,16 @@ pub struct UnnamedSemaphore<'a> {
 
 unsafe impl Send for UnnamedSemaphore<'_> {}
 unsafe impl Sync for UnnamedSemaphore<'_> {}
+
+impl Abandonable for UnnamedSemaphore<'_> {
+    unsafe fn abandon_in_place(_this: core::ptr::NonNull<Self>) {}
+}
+
+impl Drop for UnnamedSemaphore<'_> {
+    fn drop(&mut self) {
+        trace!(from self, "removed");
+    }
+}
 
 impl<'a> IpcConstructible<'a, UnnamedSemaphoreHandle> for UnnamedSemaphore<'a> {
     fn new(handle: &'a UnnamedSemaphoreHandle) -> Self {

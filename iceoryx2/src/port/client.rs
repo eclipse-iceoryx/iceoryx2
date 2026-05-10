@@ -82,6 +82,7 @@ use iceoryx2_bb_elementary::{CallbackProgression, cyclic_tagger::CyclicTagger};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
+use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_CLOSED, CHANNEL_STATE_OPEN};
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy,
@@ -171,12 +172,26 @@ pub(crate) struct ClientSharedState<Service: service::Service> {
     pub(crate) available_channel_ids: UnsafeCell<Queue<ChannelId>>,
 }
 
+impl<Service: service::Service> Abandonable for ClientSharedState<Service> {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            Sender::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.request_sender))
+        };
+        unsafe {
+            Receiver::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.response_receiver,
+            ))
+        };
+    }
+}
+
 impl<Service: service::Service> Drop for ClientSharedState<Service> {
     fn drop(&mut self) {
         if let Some(handle) = unsafe { *self.client_handle.get() } {
             self.request_sender
                 .service_state
-                .dynamic_storage
+                .dynamic_storage()
                 .get()
                 .request_response()
                 .release_client_handle(handle)
@@ -203,7 +218,7 @@ impl<Service: service::Service> ClientSharedState<Service> {
         if self
             .request_sender
             .service_state
-            .static_config
+            .static_config()
             .request_response()
             .max_active_requests_per_client
             <= active_request_counter
@@ -233,7 +248,7 @@ impl<Service: service::Service> ClientSharedState<Service> {
         if unsafe {
             self.request_sender
                 .service_state
-                .dynamic_storage
+                .dynamic_storage()
                 .get()
                 .request_response()
                 .servers
@@ -308,6 +323,24 @@ pub struct Client<
     _response_header: PhantomData<ResponseHeader>,
 }
 
+impl<
+    Service: service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Abandonable for Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            Service::ArcThreadSafetyPolicy::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.client_shared_state,
+            ))
+        };
+    }
+}
+
 unsafe impl<
     Service: service::Service,
     RequestPayload: Debug + ZeroCopySend + ?Sized,
@@ -355,16 +388,16 @@ impl<
         let client_id = UniqueClientId::new();
         let static_config = client_factory.factory.static_config();
         let number_of_requests =
-            unsafe { service.static_config.messaging_pattern.request_response() }
+            unsafe { service.static_config().messaging_pattern.request_response() }
                 .required_amount_of_chunks_per_client_data_segment(
                     static_config.max_loaned_requests,
                 );
         let number_of_requests = client_factory
             .preallocate_number_of_requests_override
             .call(number_of_requests);
-        let server_list = &service.dynamic_storage.get().request_response().servers;
+        let server_list = &service.dynamic_storage().get().request_response().servers;
 
-        let global_config = service.shared_node.config();
+        let global_config = service.shared_node().config();
         let segment_name = data_segment_name(client_id.value());
         let data_segment_type = DataSegmentType::new_from_allocation_strategy(
             client_factory.config.allocation_strategy,
@@ -399,7 +432,7 @@ impl<
 
         let client_details = ClientDetails {
             client_id,
-            node_id: *service.shared_node.id(),
+            node_id: *service.shared_node().id(),
             number_of_requests,
             response_buffer_size: static_config.max_response_buffer_size,
             max_slice_len: client_factory.config.initial_max_slice_len,
@@ -418,7 +451,7 @@ impl<
                 v
             },
             sender_port_id: client_id.value(),
-            shared_node: service.shared_node.clone(),
+            shared_node: service.shared_node().clone(),
             connections: (0..server_list.capacity())
                 .map(|_| UnsafeCell::new(None))
                 .collect(),
@@ -445,7 +478,7 @@ impl<
         };
 
         let number_of_to_be_removed_connections = service
-            .shared_node
+            .shared_node()
             .config()
             .defaults
             .request_response
@@ -528,7 +561,7 @@ impl<
         // creation of all required resources
         unsafe {
             *new_self.client_shared_state.lock().client_handle.get() = match service
-                .dynamic_storage
+                .dynamic_storage()
                 .get()
                 .request_response()
                 .add_client_id(client_details)
@@ -538,7 +571,7 @@ impl<
                     fail!(from origin,
                       with ClientCreateError::ExceedsMaxSupportedClients,
                       "{} since it would exceed the maximum support amount of clients of {}.",
-                      msg, service.static_config.request_response().max_clients());
+                      msg, service.static_config().request_response().max_clients());
                 }
             }
         };

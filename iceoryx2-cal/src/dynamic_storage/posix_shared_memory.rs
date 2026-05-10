@@ -63,6 +63,7 @@ use iceoryx2_bb_posix::directory::*;
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
 use iceoryx2_bb_posix::shared_memory::*;
 use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_bb_testing::abandonable::NonNullFromRef;
 use iceoryx2_log::fail;
 use iceoryx2_log::warn;
 
@@ -434,6 +435,13 @@ pub struct Storage<T: Debug + Send + Sync> {
 
 unsafe impl<T: Debug + Send + Sync> Send for Storage<T> {}
 unsafe impl<T: Debug + Send + Sync> Sync for Storage<T> {}
+
+impl<T: Debug + Send + Sync> Abandonable for Storage<T> {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe { SharedMemory::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.shm)) };
+    }
+}
 
 impl<T: Debug + Send + Sync> Drop for Storage<T> {
     fn drop(&mut self) {

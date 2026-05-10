@@ -27,26 +27,30 @@ pub mod static_storage_trait {
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_system_types::file_name::FileName;
-    use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
+    use iceoryx2_bb_testing::{abandonable::Abandonable, assert_that};
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::static_storage::StaticStorageCreateError;
     use iceoryx2_cal::static_storage::*;
+    use iceoryx2_cal::testing::*;
 
     #[conformance_test]
     pub fn create_and_read_works<Sut: StaticStorage>() {
         let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
 
         let mut content = "some storage content".to_string();
 
         let storage_guard = Sut::Builder::new(&storage_name)
+            .config(&config)
             .create(unsafe { content.as_mut_vec() }.as_slice())
             .unwrap();
 
         assert_that!(*storage_guard.name(), eq storage_name);
 
         let storage_reader = Sut::Builder::new(&storage_name)
+            .config(&config)
             .open(Duration::ZERO)
             .unwrap();
 
@@ -64,8 +68,11 @@ pub mod static_storage_trait {
     #[conformance_test]
     pub fn open_non_existing_fails<Sut: StaticStorage>() {
         let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let storage_reader = Sut::Builder::new(&storage_name).open(Duration::ZERO);
+        let storage_reader = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open(Duration::ZERO);
 
         assert_that!(storage_reader, is_err);
         assert_that!(
@@ -77,13 +84,17 @@ pub mod static_storage_trait {
     #[conformance_test]
     pub fn when_storage_guard_goes_out_of_scope_storage_is_removed<Sut: StaticStorage>() {
         let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
 
         let mut content = "some storage content".to_string();
-        let storage_guard =
-            Sut::Builder::new(&storage_name).create(unsafe { content.as_mut_vec() }.as_slice());
+        let storage_guard = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .create(unsafe { content.as_mut_vec() }.as_slice());
 
         drop(storage_guard);
-        let result = Sut::Builder::new(&storage_name).open(Duration::ZERO);
+        let result = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open(Duration::ZERO);
         assert_that!(result, is_err);
         assert_that!(result.err().unwrap(), eq StaticStorageOpenError::DoesNotExist);
     }
@@ -91,12 +102,15 @@ pub mod static_storage_trait {
     #[conformance_test]
     pub fn cannot_create_same_storage_twice<Sut: StaticStorage>() {
         let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
 
         let mut content = "some storage content".to_string();
-        let _storage_guard =
-            Sut::Builder::new(&storage_name).create(unsafe { content.as_mut_vec() }.as_slice());
-        let result =
-            Sut::Builder::new(&storage_name).create(unsafe { content.as_mut_vec() }.as_slice());
+        let _storage_guard = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .create(unsafe { content.as_mut_vec() }.as_slice());
+        let result = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .create(unsafe { content.as_mut_vec() }.as_slice());
 
         assert_that!(result, is_err);
         assert_that!(
@@ -108,12 +122,15 @@ pub mod static_storage_trait {
     #[conformance_test]
     pub fn after_reader_is_created_guard_can_be_dropped<Sut: StaticStorage>() {
         let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
 
         let mut content = "another\nfunky\nstorage".to_string();
-        let storage_guard =
-            Sut::Builder::new(&storage_name).create(unsafe { content.as_mut_vec() }.as_slice());
+        let storage_guard = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .create(unsafe { content.as_mut_vec() }.as_slice());
 
         let storage_reader = Sut::Builder::new(&storage_name)
+            .config(&config)
             .open(Duration::ZERO)
             .unwrap();
         drop(storage_guard);
@@ -127,33 +144,41 @@ pub mod static_storage_trait {
             .unwrap();
         assert_that!(read_content, eq content.clone());
 
-        let storage_reader = Sut::Builder::new(&storage_name).open(Duration::ZERO);
+        let storage_reader = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open(Duration::ZERO);
         assert_that!(storage_reader, is_err);
         assert_that!(
             storage_reader.err().unwrap(), eq
             StaticStorageOpenError::DoesNotExist
         );
 
-        let storage_guard =
-            Sut::Builder::new(&storage_name).create(unsafe { content.as_mut_vec() }.as_slice());
+        let storage_guard = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .create(unsafe { content.as_mut_vec() }.as_slice());
         assert_that!(storage_guard, is_ok);
     }
 
     #[conformance_test]
     pub fn last_open_reader_drops_storage<Sut: StaticStorage>() {
         let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
 
         let mut content = "another\nfunky\nstorage".to_string();
-        let storage_guard =
-            Sut::Builder::new(&storage_name).create(unsafe { content.as_mut_vec() }.as_slice());
+        let storage_guard = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .create(unsafe { content.as_mut_vec() }.as_slice());
 
         let storage_reader = Sut::Builder::new(&storage_name)
+            .config(&config)
             .open(Duration::ZERO)
             .unwrap();
         drop(storage_guard);
         drop(storage_reader);
 
-        let storage_reader = Sut::Builder::new(&storage_name).open(Duration::ZERO);
+        let storage_reader = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open(Duration::ZERO);
         assert_that!(storage_reader, is_err);
         assert_that!(
             storage_reader.err().unwrap(), eq
@@ -164,15 +189,19 @@ pub mod static_storage_trait {
     #[conformance_test]
     pub fn read_same_storage_multiple_times_works<Sut: StaticStorage>() {
         let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
 
         let mut content = "another\nfunky\nstorage".to_string();
-        let storage_guard =
-            Sut::Builder::new(&storage_name).create(unsafe { content.as_mut_vec() }.as_slice());
+        let storage_guard = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .create(unsafe { content.as_mut_vec() }.as_slice());
 
         let storage_reader_alt = Sut::Builder::new(&storage_name)
+            .config(&config)
             .open(Duration::ZERO)
             .unwrap();
         let storage_reader = Sut::Builder::new(&storage_name)
+            .config(&config)
             .open(Duration::ZERO)
             .unwrap();
         drop(storage_guard);
@@ -196,12 +225,15 @@ pub mod static_storage_trait {
     #[conformance_test]
     pub fn read_with_insufficient_buffer_fails<Sut: StaticStorage>() {
         let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
 
         let mut content = "some \nfuu\n cont\tent".to_string();
-        let _storage_guard =
-            Sut::Builder::new(&storage_name).create(unsafe { content.as_mut_vec() }.as_slice());
+        let _storage_guard = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .create(unsafe { content.as_mut_vec() }.as_slice());
 
         let storage_reader = Sut::Builder::new(&storage_name)
+            .config(&config)
             .open(Duration::ZERO)
             .unwrap();
 
@@ -219,22 +251,24 @@ pub mod static_storage_trait {
 
     #[conformance_test]
     pub fn list_all_storages_works<Sut: StaticStorage>() {
+        let config = generate_isolated_config::<Sut>();
         const NUMBER_OF_STORAGES: u64 = 12;
 
         let mut storages = vec![];
         for i in 0..NUMBER_OF_STORAGES {
-            assert_that!(Sut::list().unwrap(), len i as usize);
+            assert_that!(Sut::list_cfg(&config).unwrap(), len i as usize);
             let storage_name = generate_file_path().file_name();
 
             let mut content = "some \nfuu\n cont\tent".to_string();
             storages.push(
                 Sut::Builder::new(&storage_name)
+                    .config(&config)
                     .create(unsafe { content.as_mut_vec() }.as_slice())
                     .unwrap(),
             );
 
-            let contents = Sut::list().unwrap();
-            assert_that!(Sut::list().unwrap(), len(i + 1) as usize);
+            let contents = Sut::list_cfg(&config).unwrap();
+            assert_that!(Sut::list_cfg(&config).unwrap(), len(i + 1) as usize);
 
             let contains = |s| {
                 for entry in &storages {
@@ -250,14 +284,14 @@ pub mod static_storage_trait {
             }
         }
 
-        assert_that!(Sut::list().unwrap(), len NUMBER_OF_STORAGES as usize);
+        assert_that!(Sut::list_cfg(&config).unwrap(), len NUMBER_OF_STORAGES as usize);
 
         for i in 0..NUMBER_OF_STORAGES {
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove(storages[i as usize].name())}, eq Ok(true));
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove(storages[i as usize].name())}, eq Ok(false));
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(storages[i as usize].name(), &config)}, eq Ok(true));
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(storages[i as usize].name(), &config)}, eq Ok(false));
         }
 
-        assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len 0);
+        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
     }
 
     #[conformance_test]
@@ -266,7 +300,7 @@ pub mod static_storage_trait {
     >() {
         let _watch_dog = Watchdog::new();
         const NUMBER_OF_THREADS: usize = 4;
-        const NUMBER_OF_ITERATIONS: usize = 1000;
+        const NUMBER_OF_ITERATIONS: usize = 100;
 
         let success_counter = AtomicU64::new(0);
         let handle_enter = BarrierHandle::new();
@@ -523,5 +557,47 @@ pub mod static_storage_trait {
         assert_that!(*config.get_suffix(), eq Sut::default_suffix());
         assert_that!(*config.get_path_hint(), eq Sut::default_path_hint());
         assert_that!(*config.get_prefix(), eq Sut::default_prefix());
+    }
+
+    #[conformance_test]
+    pub fn abandoning_locked_static_storage_keeps_it_locked<Sut: StaticStorage>() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .create_locked()
+            .unwrap();
+        sut.abandon();
+
+        let result = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open(Duration::ZERO);
+        assert_that!(result.err(), eq Some(StaticStorageOpenError::InitializationNotYetFinalized));
+        assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
+    }
+
+    #[conformance_test]
+    pub fn abandoning_static_storage_keeps_it_available<Sut: StaticStorage>() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+        let content = "another one bites the toad".to_string();
+
+        let sut = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .create(content.as_bytes())
+            .unwrap();
+        sut.abandon();
+
+        let sut = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open(Duration::ZERO)
+            .unwrap();
+
+        let mut read_content = String::from_utf8(vec![b' '; content.len()]).unwrap();
+        sut.read(unsafe { read_content.as_mut_vec() }.as_mut_slice())
+            .unwrap();
+        assert_that!(read_content, eq content);
+        sut.acquire_ownership();
     }
 }

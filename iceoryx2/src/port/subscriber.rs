@@ -45,6 +45,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_OPEN, ChannelId};
@@ -56,7 +57,7 @@ use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, Subscr
 use crate::service::header::publish_subscribe::Header;
 use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::static_config::publish_subscribe::StaticConfig;
-use crate::service::{NoResource, ServiceState};
+use crate::service::{NoResource, SharedServiceState};
 use crate::{raw_sample::RawSample, sample::Sample, service};
 
 use super::ReceiveError;
@@ -65,8 +66,6 @@ use super::details::chunk_details::ChunkDetails;
 use super::details::receiver::*;
 use super::update_connections::ConnectionFailure;
 use crate::identifiers::UniqueSubscriberId;
-
-use alloc::sync::Arc;
 
 /// Describes the failures when a new [`Subscriber`] is created via the
 /// [`crate::service::port_factory::subscriber::PortFactorySubscriber`].
@@ -97,6 +96,15 @@ impl core::error::Error for SubscriberCreateError {}
 pub(crate) struct SubscriberSharedState<Service: service::Service> {
     pub(crate) receiver: Receiver<Service>,
     pub(crate) publisher_list_state: UnsafeCell<ContainerState<PublisherDetails>>,
+}
+
+impl<Service: service::Service> Abandonable for SubscriberSharedState<Service> {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            Receiver::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.receiver))
+        };
+    }
 }
 
 /// The receiving endpoint of a publish-subscribe communication.
@@ -137,6 +145,22 @@ impl<
     Service: service::Service,
     Payload: Debug + ZeroCopySend + ?Sized,
     UserHeader: Debug + ZeroCopySend,
+> Abandonable for Subscriber<Service, Payload, UserHeader>
+{
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            Service::ArcThreadSafetyPolicy::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.subscriber_shared_state,
+            ))
+        };
+    }
+}
+
+impl<
+    Service: service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
 > Drop for Subscriber<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
@@ -145,7 +169,7 @@ impl<
                 .lock()
                 .receiver
                 .service_state
-                .dynamic_storage
+                .dynamic_storage()
                 .get()
                 .publish_subscribe()
                 .release_subscriber_handle(handle)
@@ -160,7 +184,7 @@ impl<
 > Subscriber<Service, Payload, UserHeader>
 {
     pub(crate) fn new(
-        service: Arc<ServiceState<Service, NoResource>>,
+        service: SharedServiceState<Service, NoResource>,
         static_config: &StaticConfig,
         config: SubscriberConfig,
     ) -> Result<Self, SubscriberCreateError> {
@@ -168,7 +192,11 @@ impl<
         let origin = "Subscriber::new()";
         let subscriber_id = UniqueSubscriberId::new();
 
-        let publisher_list = &service.dynamic_storage.get().publish_subscribe().publishers;
+        let publisher_list = &service
+            .dynamic_storage()
+            .get()
+            .publish_subscribe()
+            .publishers;
 
         let buffer_size = match config.buffer_size {
             Some(buffer_size) => {
@@ -183,7 +211,7 @@ impl<
         };
 
         let number_of_to_be_removed_connections = service
-            .shared_node
+            .shared_node()
             .config()
             .defaults
             .publish_subscribe
@@ -248,19 +276,19 @@ impl<
         // !MUST! be the last task otherwise a subscriber is added to the dynamic config without
         // the creation of all required channels
         let dynamic_subscriber_handle = match service
-            .dynamic_storage
+            .dynamic_storage()
             .get()
             .publish_subscribe()
             .add_subscriber_id(SubscriberDetails {
                 subscriber_id,
                 buffer_size,
-                node_id: *service.shared_node.id(),
+                node_id: *service.shared_node().id(),
             }) {
             Some(unique_index) => unique_index,
             None => {
                 fail!(from new_self, with SubscriberCreateError::ExceedsMaxSupportedSubscribers,
                                 "{} since it would exceed the maximum supported amount of subscribers of {}.",
-                                msg, service.static_config.publish_subscribe().max_subscribers);
+                                msg, service.static_config().publish_subscribe().max_subscribers);
             }
         };
 
@@ -353,7 +381,7 @@ impl<
             subscriber_shared_state
                 .receiver
                 .service_state
-                .dynamic_storage
+                .dynamic_storage()
                 .get()
                 .publish_subscribe()
                 .publishers

@@ -29,6 +29,7 @@ use iceoryx2_bb_posix::{
         StreamingSocketPairReceiveError, StreamingSocketPairSendError,
     },
 };
+use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_log::{debug, fail, fatal_panic};
 
 use crate::named_concept::{
@@ -188,6 +189,13 @@ pub struct Notifier {
     name: FileName,
 }
 
+impl Abandonable for Notifier {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe { core::ptr::drop_in_place(&mut this.socket) };
+    }
+}
+
 impl NamedConcept for Notifier {
     fn name(&self) -> &FileName {
         &self.name
@@ -292,6 +300,13 @@ pub struct Listener {
     name: FileName,
     socket: StreamingSocket,
     config: Configuration,
+}
+
+impl Abandonable for Listener {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe { core::ptr::drop_in_place(&mut this.socket) };
+    }
 }
 
 impl Drop for Listener {

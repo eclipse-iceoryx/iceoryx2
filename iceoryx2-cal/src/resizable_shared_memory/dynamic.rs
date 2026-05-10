@@ -29,6 +29,7 @@ use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_log::fatal_panic;
 use iceoryx2_log::{fail, warn};
 
@@ -86,11 +87,33 @@ struct InternalState<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     current_idx: SlotMapKey,
 }
 
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Abandonable
+    for InternalState<Allocator, Shm>
+{
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            SlotMap::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.shared_memory_map,
+            ))
+        };
+    }
+}
+
 #[derive(Debug)]
 struct ShmEntry<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     shm: Shm,
     chunk_count: AtomicU64,
     _data: PhantomData<Allocator>,
+}
+
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Abandonable
+    for ShmEntry<Allocator, Shm>
+{
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe { Shm::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.shm)) };
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -181,7 +204,7 @@ where
 
         Ok(DynamicView {
             view_config: self.config,
-            _mgmt_segment: mgmt_segment,
+            mgmt_segment,
             shared_memory_map: UnsafeCell::new(shared_memory_map),
             current_idx: AtomicUsize::new(INVALID_KEY),
             access_mode,
@@ -299,7 +322,7 @@ where
                 current_idx,
                 shared_state: self.shared_state,
             }),
-            _mgmt_segment: mgmt_segment,
+            mgmt_segment,
             _data: PhantomData,
         })
     }
@@ -308,11 +331,24 @@ where
 #[derive(Debug)]
 pub struct DynamicView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     view_config: ViewConfig<Allocator, Shm>,
-    _mgmt_segment: Shm,
+    mgmt_segment: Shm,
     shared_memory_map: UnsafeCell<SlotMap<ShmEntry<Allocator, Shm>>>,
     current_idx: AtomicUsize,
     access_mode: AccessMode,
     _data: PhantomData<Allocator>,
+}
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Abandonable
+    for DynamicView<Allocator, Shm>
+{
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe { Shm::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.mgmt_segment)) };
+        unsafe {
+            SlotMap::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                this.shared_memory_map.get_mut(),
+            ))
+        };
+    }
 }
 
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicView<Allocator, Shm>
@@ -406,8 +442,17 @@ where
 #[derive(Debug)]
 pub struct DynamicMemory<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     state: UnsafeCell<InternalState<Allocator, Shm>>,
-    _mgmt_segment: Shm,
+    mgmt_segment: Shm,
     _data: PhantomData<Allocator>,
+}
+
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Abandonable
+    for DynamicMemory<Allocator, Shm>
+{
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe { Shm::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.mgmt_segment)) };
+    }
 }
 
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> NamedConcept

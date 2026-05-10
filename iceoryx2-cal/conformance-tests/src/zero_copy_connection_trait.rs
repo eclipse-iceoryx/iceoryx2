@@ -28,8 +28,9 @@ pub mod zero_copy_connection_trait {
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_system_types::file_name::FileName;
-    use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::test_requires;
     use iceoryx2_bb_testing::watchdog::Watchdog;
+    use iceoryx2_bb_testing::{abandonable::Abandonable, assert_that};
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptMgmt};
@@ -38,6 +39,7 @@ pub mod zero_copy_connection_trait {
     use iceoryx2_cal::zero_copy_connection::{
         ChannelId, ChannelState, UnableToDeliverToReceiverAction, *,
     };
+    use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
     const SAMPLE_SIZE: usize = 123;
     const NUMBER_OF_SAMPLES: usize = 2345;
@@ -2250,5 +2252,59 @@ pub mod zero_copy_connection_trait {
             .store(789, Ordering::Relaxed);
 
         assert_that!(sut_receiver.__internal_get_channel_state(CHANNEL_ID).load(Ordering::Relaxed), eq 789);
+    }
+
+    #[conformance_test]
+    pub fn abandoning_sender_keeps_everything_unchanged<Sut: ZeroCopyConnection>() {
+        test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
+
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .config(&config)
+            .create_sender()
+            .unwrap();
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+
+        sut_sender.abandon();
+
+        assert_that!(sut_receiver.is_connected(), eq true);
+
+        drop(sut_receiver);
+        assert_that!(unsafe { Sut::remove_cfg(&name, &config) }, eq Ok(true));
+    }
+
+    #[conformance_test]
+    pub fn abandoning_receiver_keeps_everything_unchanged<Sut: ZeroCopyConnection>() {
+        test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
+
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .config(&config)
+            .create_sender()
+            .unwrap();
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+
+        sut_receiver.abandon();
+
+        assert_that!(sut_sender.is_connected(), eq true);
+
+        drop(sut_sender);
+        assert_that!(unsafe { Sut::remove_cfg(&name, &config) }, eq Ok(true));
     }
 }

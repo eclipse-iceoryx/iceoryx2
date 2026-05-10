@@ -68,6 +68,7 @@ pub use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::*;
+use iceoryx2_bb_testing::abandonable::Abandonable;
 use pool_allocator::PoolAllocator;
 
 /// Failure returned by [`SharedMemoryBuilder::create()`]
@@ -159,7 +160,13 @@ pub trait SharedMemoryBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocat
 /// Abstract concept of a memory shared between multiple processes. Can be created with the
 /// [`SharedMemoryBuilder`].
 pub trait SharedMemory<Allocator: ShmAllocator>:
-    Sized + Debug + NamedConcept + NamedConceptMgmt + details::SharedMemoryLowLevelAPI<Allocator> + Send
+    Sized
+    + Debug
+    + NamedConcept
+    + NamedConceptMgmt
+    + details::SharedMemoryLowLevelAPI<Allocator>
+    + Send
+    + Abandonable
 {
     type Builder: SharedMemoryBuilder<Allocator, Self>;
 

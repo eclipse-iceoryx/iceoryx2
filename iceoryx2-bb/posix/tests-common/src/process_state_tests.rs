@@ -20,11 +20,11 @@ use iceoryx2_bb_posix::file::{File, FileBuilder};
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
 use iceoryx2_bb_posix::process::UniqueProcessId;
 use iceoryx2_bb_posix::shared_memory::Permission;
-use iceoryx2_bb_posix::testing::__internal_process_guard_staged_death;
 use iceoryx2_bb_posix::testing::create_test_directory;
 use iceoryx2_bb_posix::unix_datagram_socket::CreationMode;
 use iceoryx2_bb_posix::{process_state::*, unique_system_id::UniqueSystemId};
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath};
+use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
@@ -108,7 +108,7 @@ pub fn monitor_detects_dead_state() {
     let path = generate_file_path();
 
     let guard = ProcessGuardBuilder::new().create(&path).unwrap();
-    __internal_process_guard_staged_death(guard);
+    ProcessGuard::abandon(guard);
 
     let monitor = ProcessMonitor::new(&path).unwrap();
     assert_that!(monitor.state().unwrap(), eq ProcessState::Dead);
@@ -526,3 +526,30 @@ pub fn owner_lock_cannot_be_acquired_twice() {
 }
 
 // END: OS with IPC only lock detection
+
+#[test]
+pub fn abandoning_a_process_guard_results_in_a_dead_process() {
+    create_test_directory();
+    let path = generate_file_path();
+
+    let guard = ProcessGuardBuilder::new().create(&path).unwrap();
+    ProcessGuard::abandon(guard);
+
+    let state = ProcessMonitor::new(&path).unwrap().state().unwrap();
+    assert_that!(state, eq ProcessState::Dead);
+
+    ProcessCleaner::new(&path).unwrap();
+}
+
+#[test]
+pub fn abandoning_a_process_cleaner_allows_to_reacquire_the_cleaner() {
+    create_test_directory();
+    let path = generate_file_path();
+
+    let guard = ProcessGuardBuilder::new().create(&path).unwrap();
+    ProcessGuard::abandon(guard);
+    let cleaner = ProcessCleaner::new(&path).unwrap();
+    ProcessCleaner::abandon(cleaner);
+
+    assert_that!(ProcessCleaner::new(&path), is_ok);
+}

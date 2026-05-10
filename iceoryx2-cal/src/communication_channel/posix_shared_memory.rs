@@ -22,6 +22,7 @@ use alloc::vec::Vec;
 use iceoryx2_bb_elementary_traits::relocatable_container::*;
 use iceoryx2_bb_lock_free::spsc::safely_overflowing_index_queue::*;
 use iceoryx2_bb_posix::file::AccessMode;
+use iceoryx2_bb_testing::abandonable::NonNullFromRef;
 use iceoryx2_log::fail;
 
 use crate::dynamic_storage::{
@@ -263,6 +264,17 @@ pub struct Receiver {
     shared_memory: SharedMemory,
 }
 
+impl Abandonable for Receiver {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            SharedMemory::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.shared_memory,
+            ))
+        }
+    }
+}
+
 impl NamedConcept for Receiver {
     fn name(&self) -> &FileName {
         self.shared_memory.name()
@@ -294,6 +306,17 @@ impl CommunicationChannelReceiver<u64> for Receiver {
 #[derive(Debug)]
 pub struct Sender {
     shared_memory: SharedMemory,
+}
+
+impl Abandonable for Sender {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            SharedMemory::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.shared_memory,
+            ))
+        }
+    }
 }
 
 impl Sender {

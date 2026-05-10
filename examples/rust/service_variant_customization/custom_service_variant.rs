@@ -12,6 +12,8 @@
 
 use std::fmt::Debug;
 
+use iceoryx2::testing::abandonable::Abandonable;
+
 #[derive(Debug, Clone)]
 pub struct CustomServiceVariant {}
 
@@ -41,7 +43,7 @@ impl iceoryx2::service::Service for CustomServiceVariant {
     type Event = iceoryx2_cal::event::recommended::Ipc;
     type Monitoring = iceoryx2_cal::monitoring::recommended::Ipc;
     type Reactor = iceoryx2_cal::reactor::recommended::Ipc;
-    type ArcThreadSafetyPolicy<T: Send + Debug> =
+    type ArcThreadSafetyPolicy<T: Send + Debug + Abandonable> =
         iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded<T>;
     // the blackboard mgmt segment is replaced with a file based version
     type BlackboardMgmt<KeyType: Send + Sync + Debug + 'static> =
