@@ -527,10 +527,29 @@ impl RobustUniqueIndexSet {
 }
 
 #[derive(Debug)]
+pub struct StaticRobustUniqueIndexSetData<const CAPACITY: usize> {
+    cells: [AtomicU64; CAPACITY],
+}
+
+impl<const CAPACITY: usize> Default for StaticRobustUniqueIndexSetData<CAPACITY> {
+    fn default() -> Self {
+        Self {
+            cells: [const { AtomicU64::new(0) }; CAPACITY],
+        }
+    }
+}
+
+impl<const CAPACITY: usize> StaticRobustUniqueIndexSetData<CAPACITY> {
+    pub fn allocator(&mut self) -> BumpAllocator {
+        BumpAllocator::new(self.cells.as_mut_ptr().cast())
+    }
+}
+
+#[derive(Debug)]
 #[repr(C)]
 pub struct StaticRobustUniqueIndexSet<const CAPACITY: usize> {
     state: RobustUniqueIndexSet,
-    cells: [AtomicU64; CAPACITY],
+    cells: StaticRobustUniqueIndexSetData<CAPACITY>,
 }
 
 impl<const CAPACITY: usize> Default for StaticRobustUniqueIndexSet<CAPACITY> {
@@ -566,14 +585,13 @@ impl<const CAPACITY: usize> StaticRobustUniqueIndexSet<CAPACITY> {
 
         let mut new_self = Self {
             state: unsafe { RobustUniqueIndexSet::new_uninit(capacity) },
-            cells: core::array::from_fn(|_| AtomicU64::new(0)),
+            cells: StaticRobustUniqueIndexSetData::default(),
         };
 
-        let allocator = BumpAllocator::new(new_self.cells.as_mut_ptr().cast());
         unsafe {
             new_self
                 .state
-                .init(&allocator)
+                .init(&new_self.cells.allocator())
                 .expect("All required memory is preallocated")
         };
 
