@@ -223,7 +223,11 @@ pub fn recover_releases_indices_of_owner() {
 
     for n in 0..CAPACITY {
         let id_to_remove = OwnerId::new(n as u64 + 1).unwrap();
-        sut.recover(ReleaseMode::Default, |owner_id| owner_id == id_to_remove);
+        sut.recover(
+            ReleaseMode::Default,
+            |owner_id, _| owner_id == id_to_remove,
+            |_, _| {},
+        );
 
         assert_that!(sut.borrowed_indices(), eq CAPACITY - n - 1);
     }
@@ -238,7 +242,7 @@ pub fn recover_locks_the_set_if_release_mode_is_lock() {
         sut.acquire(owner_id).unwrap();
     }
 
-    assert_that!(sut.recover(ReleaseMode::LockIfLastIndex, |id| id == owner_id), eq ReleaseState::Locked);
+    assert_that!(sut.recover(ReleaseMode::LockIfLastIndex, |id, _| id == owner_id, |_,_| {}), eq ReleaseState::Locked);
     assert_that!(sut.borrowed_indices(), eq 0);
     assert_that!(sut.is_locked(), eq true);
 }
@@ -254,7 +258,7 @@ pub fn recover_does_not_lock_the_set_if_release_mode_is_lock_and_the_set_is_not_
     }
     sut.acquire(OwnerId::new(912).unwrap()).unwrap();
 
-    assert_that!(sut.recover(ReleaseMode::LockIfLastIndex, |id| id == owner_id), eq ReleaseState::Unlocked);
+    assert_that!(sut.recover(ReleaseMode::LockIfLastIndex, |id, _| id == owner_id, |_,_| {}), eq ReleaseState::Unlocked);
     assert_that!(sut.is_locked(), eq false);
 }
 
@@ -269,7 +273,7 @@ pub fn recover_of_locked_set_always_returns_locked() {
         is_ok
     );
 
-    assert_that!(sut.recover(ReleaseMode::Default, |id| id == owner_id), eq ReleaseState::Locked);
+    assert_that!(sut.recover(ReleaseMode::Default, |id, _| id == owner_id, |_,_| {}), eq ReleaseState::Locked);
 }
 
 #[test]

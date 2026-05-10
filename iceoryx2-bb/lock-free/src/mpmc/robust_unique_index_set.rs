@@ -400,10 +400,11 @@ impl RobustUniqueIndexSet {
     ///
     /// * Ensure that [`RobustUniqueIndexSet::init()`] was called once.
     ///
-    pub unsafe fn recover<F: FnMut(OwnerId) -> bool>(
+    pub unsafe fn recover<F: FnMut(OwnerId, usize) -> bool, S: FnMut(OwnerId, usize)>(
         &self,
         mode: ReleaseMode,
         mut predicate: F,
+        mut recover_success: S,
     ) -> ReleaseState {
         self.verify_init("acquire()");
 
@@ -415,22 +416,23 @@ impl RobustUniqueIndexSet {
 
         for n in 0..self.capacity {
             let cell = unsafe { &*cell_ptr.add(n) };
-            let value = cell.load(Ordering::Relaxed);
+            let owner_id = OwnerId(cell.load(Ordering::Relaxed));
 
-            if value == OwnerId::EMPTY.0 {
+            if owner_id == OwnerId::EMPTY {
                 continue;
             }
 
-            if predicate(OwnerId(value))
+            if predicate(owner_id, n)
                 && cell
                     .compare_exchange(
-                        value,
+                        owner_id.0,
                         OwnerId::EMPTY.0,
                         Ordering::Relaxed,
                         Ordering::Relaxed,
                     )
                     .is_ok()
             {
+                recover_success(owner_id, n);
                 //////////////////////////////////////
                 // SYNC POINT enforce order of:
                 //   1. cell
@@ -654,11 +656,12 @@ impl<const CAPACITY: usize> StaticRobustUniqueIndexSet<CAPACITY> {
     }
 
     /// Recovers leaked indices for which the predicate with the [`OwnerId`] returns true.
-    pub fn recover<F: FnMut(OwnerId) -> bool>(
+    pub fn recover<F: FnMut(OwnerId, usize) -> bool, S: FnMut(OwnerId, usize)>(
         &self,
         mode: ReleaseMode,
         predicate: F,
+        recover_success: S,
     ) -> ReleaseState {
-        unsafe { self.state.recover(mode, predicate) }
+        unsafe { self.state.recover(mode, predicate, recover_success) }
     }
 }

@@ -19,6 +19,7 @@ pub mod generic {
     use alloc::vec;
     use alloc::vec::Vec;
     use core::fmt::Debug;
+    use iceoryx2_bb_lock_free::mpmc::robust_unique_index_set::OwnerId;
     use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::{ReleaseMode, ReleaseState};
 
     use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
@@ -69,28 +70,25 @@ pub mod generic {
     pub fn add_elements_until_full_works<T: Debug + Copy + From<usize> + Into<usize>>() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         assert_that!(sut.capacity(), eq CAPACITY);
+        let owner_id = OwnerId::new(2).unwrap();
         for i in 0..CAPACITY {
-            let index = unsafe { sut.add((i * 5 + 2).into()) };
+            let index = unsafe { sut.add((i * 5 + 2).into(), owner_id) };
             assert_that!(index, is_ok);
         }
-        let index = unsafe { sut.add(0.into()) };
+        let index = unsafe { sut.add(0.into(), owner_id) };
         assert_that!(index, is_err);
         assert_that!(index.err().unwrap(), eq ContainerAddFailure::OutOfSpace);
 
         let state = sut.get_state();
-        let mut contained_values: Vec<(usize, usize)> = vec![];
-        state.for_each(|h: ContainerHandle, value: &T| {
-            contained_values.push((h.index(), (*value).into()));
+        let mut contained_values: Vec<usize> = vec![];
+        state.for_each(|value: &T| {
+            contained_values.push((*value).into());
             CallbackProgression::Continue
         });
 
-        contained_values
-            .iter()
-            .enumerate()
-            .for_each(|(i, &(index, value))| {
-                assert_that!(index, eq i);
-                assert_that!(value, eq i * 5 + 2);
-            });
+        contained_values.iter().enumerate().for_each(|(i, &value)| {
+            assert_that!(value, eq i * 5 + 2);
+        });
     }
 
     #[test]
@@ -98,12 +96,13 @@ pub mod generic {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         assert_that!(sut.is_empty(), eq true);
         let mut stored_indices = vec![];
+        let owner_id = OwnerId::new(2).unwrap();
         for i in 0..CAPACITY - 1 {
-            let index = unsafe { sut.add((i * 3 + 1).into()) };
+            let index = unsafe { sut.add((i * 3 + 1).into(), owner_id) };
             assert_that!(index, is_ok);
             stored_indices.push(index.unwrap());
 
-            let index = unsafe { sut.add((i * 7 + 5).into()) };
+            let index = unsafe { sut.add((i * 7 + 5).into(), owner_id) };
             assert_that!(index, is_ok);
             stored_indices.push(index.unwrap());
 
@@ -118,7 +117,7 @@ pub mod generic {
 
         let state = sut.get_state();
         let mut contained_values = vec![];
-        state.for_each(|_: ContainerHandle, value: &T| {
+        state.for_each(|value: &T| {
             contained_values.push((*value).into());
             CallbackProgression::Continue
         });
@@ -140,12 +139,13 @@ pub mod generic {
         unsafe { assert_that!(sut.init(&allocator), is_ok) };
 
         let mut stored_indices = vec![];
+        let owner_id = OwnerId::new(2).unwrap();
         for i in 0..CAPACITY - 1 {
-            let index = unsafe { sut.add((i * 3 + 1).into()) };
+            let index = unsafe { sut.add((i * 3 + 1).into(), owner_id) };
             assert_that!(index, is_ok);
             stored_indices.push(index.unwrap());
 
-            let index = unsafe { sut.add((i * 7 + 5).into()) };
+            let index = unsafe { sut.add((i * 7 + 5).into(), owner_id) };
             assert_that!(index, is_ok);
             stored_indices.push(index.unwrap());
 
@@ -159,7 +159,7 @@ pub mod generic {
 
         let state = unsafe { sut.get_state() };
         let mut contained_values = vec![];
-        state.for_each(|_: ContainerHandle, value: &T| {
+        state.for_each(|value: &T| {
             contained_values.push((*value).into());
             CallbackProgression::Continue
         });
@@ -174,12 +174,13 @@ pub mod generic {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut stored_handles: Vec<ContainerHandle> = vec![];
 
+        let owner_id = OwnerId::new(2).unwrap();
         for i in 0..CAPACITY - 1 {
-            let handle = unsafe { sut.add((i * 3 + 1).into()) };
+            let handle = unsafe { sut.add((i * 3 + 1).into(), owner_id) };
             assert_that!(handle, is_ok);
             stored_handles.push(handle.unwrap());
 
-            let handle = unsafe { sut.add((i * 7 + 5).into()) };
+            let handle = unsafe { sut.add((i * 7 + 5).into(), owner_id) };
             assert_that!(handle, is_ok);
             stored_handles.push(handle.unwrap());
 
@@ -193,7 +194,7 @@ pub mod generic {
 
         let state = sut.get_state();
         let mut contained_values = vec![];
-        state.for_each(|_: ContainerHandle, value: &T| {
+        state.for_each(|value: &T| {
             contained_values.push((*value).into());
             CallbackProgression::Continue
         });
@@ -209,14 +210,14 @@ pub mod generic {
         let mut counter = 0;
 
         let mut state = sut.get_state();
-        state.for_each(|_, _| {
+        state.for_each(|_| {
             counter += 1;
             CallbackProgression::Continue
         });
         assert_that!(counter, eq 0);
 
         unsafe { sut.update_state(&mut state) };
-        state.for_each(|_, _| {
+        state.for_each(|_| {
             counter += 1;
             CallbackProgression::Continue
         });
@@ -228,22 +229,23 @@ pub mod generic {
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
+        let owner_id = OwnerId::new(4).unwrap();
 
         for i in 0..CAPACITY - 1 {
-            let index = unsafe { sut.add((i * 3 + 1).into()) };
+            let index = unsafe { sut.add((i * 3 + 1).into(), owner_id) };
             assert_that!(index, is_ok);
         }
 
         let mut state = sut.get_state();
         let mut contained_values1 = vec![];
-        state.for_each(|_: ContainerHandle, value: &T| {
+        state.for_each(|value: &T| {
             contained_values1.push((*value).into());
             CallbackProgression::Continue
         });
 
         assert_that!(unsafe { sut.update_state(&mut state) }, eq false);
         let mut contained_values2 = vec![];
-        state.for_each(|_: ContainerHandle, value: &T| {
+        state.for_each(|value: &T| {
             contained_values2.push((*value).into());
             CallbackProgression::Continue
         });
@@ -258,9 +260,10 @@ pub mod generic {
     pub fn state_updated_when_contents_are_removed<T: Debug + Copy + From<usize> + Into<usize>>() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut stored_indices: Vec<ContainerHandle> = vec![];
+        let owner_id = OwnerId::new(12903).unwrap();
 
         for i in 0..CAPACITY - 1 {
-            let index = unsafe { sut.add((i * 3 + 1).into()) };
+            let index = unsafe { sut.add((i * 3 + 1).into(), owner_id) };
             assert_that!(index, is_ok);
             stored_indices.push(index.unwrap());
         }
@@ -273,7 +276,7 @@ pub mod generic {
 
         assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
         let mut contained_values = vec![];
-        state.for_each(|_: ContainerHandle, value: &T| {
+        state.for_each(|value: &T| {
             contained_values.push((*value).into());
             CallbackProgression::Continue
         });
@@ -285,9 +288,10 @@ pub mod generic {
     pub fn state_updated_when_contents_are_changed<T: Debug + Copy + From<usize> + Into<usize>>() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut stored_indices: Vec<ContainerHandle> = vec![];
+        let owner_id = OwnerId::new(12903).unwrap();
 
         for i in 0..CAPACITY - 1 {
-            let index = unsafe { sut.add((i * 3 + 1).into()) };
+            let index = unsafe { sut.add((i * 3 + 1).into(), owner_id) };
             assert_that!(index, is_ok);
             stored_indices.push(index.unwrap());
         }
@@ -299,14 +303,14 @@ pub mod generic {
 
         let mut results = BTreeMap::<usize, usize>::new();
         for i in 0..CAPACITY - 1 {
-            let index = unsafe { sut.add((i * 81 + 56).into()) };
+            let index = unsafe { sut.add((i * 81 + 56).into(), owner_id) };
             assert_that!(index, is_ok);
             results.insert(index.as_ref().unwrap().index(), i * 81 + 56);
         }
 
         assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
         let mut contained_values = vec![];
-        state.for_each(|_: ContainerHandle, value: &T| {
+        state.for_each(|value: &T| {
             contained_values.push((*value).into());
             CallbackProgression::Continue
         });
@@ -323,19 +327,20 @@ pub mod generic {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut state = sut.get_state();
         let mut stored_indices: Vec<ContainerHandle> = vec![];
-        let mut stored_values: Vec<(usize, usize)> = vec![];
+        let mut stored_values: Vec<usize> = vec![];
+        let owner_id = OwnerId::new(12903).unwrap();
 
         for i in 0..CAPACITY {
             let v = i * 3 + 1;
-            let index = unsafe { sut.add(v.into()) };
+            let index = unsafe { sut.add(v.into(), owner_id) };
             assert_that!(index, is_ok);
-            stored_values.push((index.as_ref().unwrap().index(), v));
+            stored_values.push(v);
             stored_indices.push(index.unwrap());
 
             unsafe { sut.update_state(&mut state) };
             let mut contained_values = vec![];
-            state.for_each(|h: ContainerHandle, value: &T| {
-                contained_values.push((h.index(), (*value).into()));
+            state.for_each(|value: &T| {
+                contained_values.push((*value).into());
                 CallbackProgression::Continue
             });
 
@@ -351,8 +356,8 @@ pub mod generic {
 
             unsafe { sut.update_state(&mut state) };
             let mut contained_values = vec![];
-            state.for_each(|h: ContainerHandle, value: &T| {
-                contained_values.push((h.index(), (*value).into()));
+            state.for_each(|value: &T| {
+                contained_values.push((*value).into());
                 CallbackProgression::Continue
             });
 
@@ -369,8 +374,9 @@ pub mod generic {
     >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut state = sut.get_state();
+        let owner_id = OwnerId::new(123).unwrap();
 
-        let index = unsafe { sut.add(123.into()) }.unwrap();
+        let index = unsafe { sut.add(123.into(), owner_id) }.unwrap();
         unsafe { sut.remove(index, ReleaseMode::Default) };
         assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
     }
@@ -380,6 +386,7 @@ pub mod generic {
         const REPETITIONS: i64 = 1000;
         let number_of_threads_per_op =
             (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
+        let owner_id = OwnerId::new(123).unwrap();
 
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let barrier_handle = BarrierHandle::new();
@@ -387,11 +394,11 @@ pub mod generic {
             .create(&barrier_handle)
             .unwrap();
 
-        let added_handle = MutexHandle::<Vec<(usize, usize)>>::new();
+        let added_handle = MutexHandle::<Vec<usize>>::new();
         let added = MutexBuilder::new()
             .create(vec![], &added_handle)
             .expect("failed to create mutex");
-        let extracted_handle = MutexHandle::<Vec<(usize, usize)>>::new();
+        let extracted_handle = MutexHandle::<Vec<usize>>::new();
         let extracted = MutexBuilder::new()
             .create(vec![], &extracted_handle)
             .expect("failed to create mutex");
@@ -411,14 +418,10 @@ pub mod generic {
                             counter += 1;
                             let value = counter * number_of_threads_per_op + thread_number;
 
-                            match unsafe { sut.add(value.into()) } {
+                            match unsafe { sut.add(value.into(), owner_id) } {
                                 Ok(index) => {
-                                    let index_value = index.index();
                                     ids.push(index);
-                                    added
-                                        .lock()
-                                        .expect("failed to lock mutex")
-                                        .push((index_value, value));
+                                    added.lock().expect("failed to lock mutex").push(value);
                                 }
                                 Err(ContainerAddFailure::OutOfSpace) => {
                                     repetition += 1;
@@ -448,11 +451,11 @@ pub mod generic {
                             != number_of_threads_per_op as u32
                         {
                             if unsafe { sut.update_state(&mut state) } {
-                                state.for_each(|h: ContainerHandle, value: &T| {
+                                state.for_each(|value: &T| {
                                     extracted
                                         .lock()
                                         .expect("failed to lock mutex")
-                                        .push((h.index(), (*value).into()));
+                                        .push((*value).into());
                                     CallbackProgression::Continue
                                 })
                             }
@@ -465,7 +468,7 @@ pub mod generic {
         })
         .expect("failed to run thread scope");
 
-        let added_set: BTreeSet<(usize, usize)> = added
+        let added_set: BTreeSet<usize> = added
             .lock()
             .expect("failed to lock mutex")
             .iter()

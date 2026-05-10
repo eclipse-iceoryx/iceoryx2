@@ -130,7 +130,7 @@ pub struct ContainerState<T: Copy + Debug> {
     container_id: u64,
     current_change_counter: u64,
     data: Vec<MaybeUninit<T>>,
-    active_index: Vec<u64>,
+    element_generation_counter: Vec<u64>,
 }
 
 impl<T: Copy + Debug> ContainerState<T> {
@@ -139,7 +139,7 @@ impl<T: Copy + Debug> ContainerState<T> {
             container_id,
             current_change_counter: 0,
             data: vec![MaybeUninit::uninit(); capacity],
-            active_index: vec![0; capacity],
+            element_generation_counter: vec![0; capacity],
         }
     }
 
@@ -160,17 +160,10 @@ impl<T: Copy + Debug> ContainerState<T> {
     ///     CallbackProgression::Continue
     /// });
     /// ```
-    pub fn for_each<F: FnMut(ContainerHandle, &T) -> CallbackProgression>(&self, mut callback: F) {
+    pub fn for_each<F: FnMut(&T) -> CallbackProgression>(&self, mut callback: F) {
         for i in 0..self.data.len() {
-            if self.active_index[i] % 2 == 1
-                && callback(
-                    ContainerHandle {
-                        index: i as _,
-                        owner_id: OwnerId::new(1).unwrap(),
-                        container_id: self.container_id,
-                    },
-                    unsafe { self.data[i].assume_init_ref() },
-                ) == CallbackProgression::Stop
+            if self.element_generation_counter[i] % 2 == 1
+                && callback(unsafe { self.data[i].assume_init_ref() }) == CallbackProgression::Stop
             {
                 return;
             }
@@ -186,7 +179,7 @@ impl<T: Copy + Debug> ContainerState<T> {
 #[derive(Debug)]
 pub struct Container<T: Copy + Debug> {
     // must be first member, otherwise the offset calculations fail
-    active_index_ptr: RelocatablePointer<AtomicU64>,
+    element_generation_counter_ptr: RelocatablePointer<AtomicU64>,
     data_ptr: RelocatablePointer<UnsafeCell<MaybeUninit<T>>>,
     capacity: usize,
     change_counter: AtomicU64,
@@ -206,7 +199,7 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
             (core::mem::size_of::<Self>() + UniqueIndexSet::memory_size(capacity)) as isize;
         Self {
             container_id: UniqueId::new(),
-            active_index_ptr: RelocatablePointer::new(distance_to_active_index),
+            element_generation_counter_ptr: RelocatablePointer::new(distance_to_active_index),
             data_ptr: RelocatablePointer::new(align_to::<MaybeUninit<T>>(
                 distance_to_active_index as usize + capacity * core::mem::size_of::<AtomicBool>(),
             ) as isize),
@@ -229,7 +222,7 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
             fail!(from self, when self.index_set.init(allocator),
             "{} since the underlying UniqueIndexSet could not be initialized", msg);
 
-            self.active_index_ptr.init(fail!(from self, when allocator.allocate(Layout::from_size_align_unchecked(
+            self.element_generation_counter_ptr.init(fail!(from self, when allocator.allocate(Layout::from_size_align_unchecked(
                         core::mem::size_of::<AtomicU64>() * self.capacity,
                         core::mem::align_of::<AtomicU64>())), "{} since the allocation of the active index memory failed.",
                 msg));
@@ -242,7 +235,7 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
             );
 
             for i in 0..self.capacity {
-                (self.active_index_ptr.as_ptr() as *mut AtomicU64)
+                (self.element_generation_counter_ptr.as_ptr() as *mut AtomicU64)
                     .add(i)
                     .write(AtomicU64::new(0));
                 (self.data_ptr.as_ptr() as *mut UnsafeCell<MaybeUninit<T>>)
@@ -310,10 +303,13 @@ impl<T: Copy + Debug> Container<T> {
     ///  * Use [`Container::remove()`] to release the acquired index again. Otherwise, the
     ///    element will leak.
     ///
-    pub unsafe fn add(&self, value: T) -> Result<ContainerHandle, ContainerAddFailure> {
+    pub unsafe fn add(
+        &self,
+        value: T,
+        owner_id: OwnerId,
+    ) -> Result<ContainerHandle, ContainerAddFailure> {
         self.verify_init("add()");
 
-        let owner_id = OwnerId::new(1).unwrap();
         unsafe {
             let index = self.index_set.acquire(owner_id)?;
             core::ptr::copy_nonoverlapping(
@@ -322,10 +318,36 @@ impl<T: Copy + Debug> Container<T> {
                 1,
             );
 
+            let element_generation_counter =
+                &*self.element_generation_counter_ptr.as_ptr().add(index as _);
             //////////////////////////////////////
             // SYNC POINT with reading data values
             //////////////////////////////////////
-            (&*self.active_index_ptr.as_ptr().add(index as _)).fetch_add(1, Ordering::Release);
+            let current_generation_count = element_generation_counter.load(Ordering::Relaxed);
+
+            // Another process died and the entry was released by `Self::recover()` but the
+            // generation counter has not yet marked the element as free. Now we race with the
+            // recovery part.
+            //
+            // We increment the generation count by 2 to signal the next generation of an entry that
+            // contains data. If this succeeds we won the race.
+            //
+            // If this fails the entry was released successfully and we need to increment it by 1.
+            if Self::contains_data(current_generation_count) {
+                if element_generation_counter
+                    .compare_exchange(
+                        current_generation_count,
+                        current_generation_count + 2,
+                        Ordering::Release,
+                        Ordering::Relaxed,
+                    )
+                    .is_err()
+                {
+                    element_generation_counter.fetch_add(1, Ordering::Release);
+                }
+            } else {
+                element_generation_counter.fetch_add(1, Ordering::Release);
+            }
 
             // MUST HAPPEN AFTER all other operations
             self.change_counter.fetch_add(1, Ordering::Release);
@@ -357,8 +379,13 @@ impl<T: Copy + Debug> Container<T> {
             "The ContainerHandle used as handle was not created by this Container instance."
         );
 
-        unsafe { &*self.active_index_ptr.as_ptr().add(handle.index as _) }
-            .fetch_add(1, Ordering::Relaxed);
+        unsafe {
+            &*self
+                .element_generation_counter_ptr
+                .as_ptr()
+                .add(handle.index as _)
+        }
+        .fetch_add(1, Ordering::Relaxed);
 
         let release_state = unsafe {
             self.index_set
@@ -386,6 +413,50 @@ impl<T: Copy + Debug> Container<T> {
             self.update_state(&mut state);
         }
         state
+    }
+
+    /// Recovers and releases all entries the dead [`OwnerId`] owned.
+    ///
+    /// # Safety
+    ///
+    ///  * Ensure that [`Container::init()`] was called before calling this method
+    ///  * All existing [`ContainerHandle`] that belong to the [`OwnerId`] must never be removed with
+    ///    [`Container::remove()`] otherwise we corrupt the state.
+    ///
+    pub unsafe fn recover(&self, dead_owner_id: OwnerId, mode: ReleaseMode) -> ReleaseState {
+        self.verify_init("recover()");
+
+        // this is an atomic since the current generation count needs to be borrowed twice as mutable,
+        // once it the predicate to store the generation count before the entry is released and
+        // afterwards to set the entry to empty if no other thread has in the meantime acquired the new
+        // index and repaired it
+        let current_generation_count = AtomicU64::new(0);
+
+        let predicate = |owner_id, index| {
+            let gen_count = unsafe { &*self.element_generation_counter_ptr.as_ptr().add(index) }
+                .load(Ordering::Relaxed);
+            if dead_owner_id == owner_id && Self::contains_data(gen_count) {
+                current_generation_count.store(gen_count, Ordering::Relaxed);
+
+                true
+            } else {
+                false
+            }
+        };
+
+        let on_successful_removal = |_owner_id, index| {
+            let v = current_generation_count.load(Ordering::Relaxed);
+
+            // If setting the entry to empty failed then an other thread won the `Self::add()` race,
+            // acquired the next index and already repaired it.
+            let _ = unsafe { &*self.element_generation_counter_ptr.as_ptr().add(index) }
+                .compare_exchange(v, v + 1, Ordering::Relaxed, Ordering::Relaxed);
+        };
+
+        unsafe {
+            self.index_set
+                .recover(mode, predicate, on_successful_removal)
+        }
     }
 
     /// Syncs the [`ContainerState`] with the current state of the [`Container`]. If the state has
@@ -423,17 +494,18 @@ impl<T: Copy + Debug> Container<T> {
             //////////////////////////////////////
             // SYNC POINT with reading data values
             //////////////////////////////////////
-            let mut current_index_count =
-                unsafe { (*self.active_index_ptr.as_ptr().add(i)).load(Ordering::Acquire) };
+            let mut current_generation_count = unsafe {
+                (*self.element_generation_counter_ptr.as_ptr().add(i)).load(Ordering::Acquire)
+            };
 
             loop {
-                if current_index_count == previous_state.active_index[i] {
+                if current_generation_count == previous_state.element_generation_counter[i] {
                     break;
                 }
 
-                previous_state.active_index[i] = current_index_count;
+                previous_state.element_generation_counter[i] = current_generation_count;
                 unsafe {
-                    if previous_state.active_index[i] % 2 == 1 {
+                    if Self::contains_data(previous_state.element_generation_counter[i]) {
                         core::ptr::copy_nonoverlapping(
                             (*self.data_ptr.as_ptr().add(i)).get(),
                             previous_state.data.as_mut_ptr().add(i),
@@ -442,21 +514,24 @@ impl<T: Copy + Debug> Container<T> {
                     }
 
                     // MUST HAPPEN AFTER all other operations
-                    if let Err(count) = (*self.active_index_ptr.as_ptr().add(i)).compare_exchange(
-                        current_index_count,
-                        current_index_count,
+                    match (*self.element_generation_counter_ptr.as_ptr().add(i)).compare_exchange(
+                        current_generation_count,
+                        current_generation_count,
                         Ordering::AcqRel,
                         Ordering::Acquire,
                     ) {
-                        current_index_count = count
-                    } else {
-                        break;
+                        Err(count) => current_generation_count = count,
+                        Ok(_) => break,
                     }
                 }
             }
         }
 
         true
+    }
+
+    fn contains_data(generation_counter: u64) -> bool {
+        generation_counter % 2 == 1
     }
 }
 
@@ -563,8 +638,12 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///  * Use [`FixedSizeContainer::remove()`] to release the acquired index again. Otherwise,
     ///    the element will leak.
     ///
-    pub unsafe fn add(&self, value: T) -> Result<ContainerHandle, ContainerAddFailure> {
-        unsafe { self.container.add(value) }
+    pub unsafe fn add(
+        &self,
+        value: T,
+        owner_id: OwnerId,
+    ) -> Result<ContainerHandle, ContainerAddFailure> {
+        unsafe { self.container.add(value, owner_id) }
     }
 
     /// Useful in IPC context when an application holding the UniqueIndex has died.
