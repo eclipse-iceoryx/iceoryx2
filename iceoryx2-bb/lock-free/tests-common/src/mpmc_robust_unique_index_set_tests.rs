@@ -53,13 +53,13 @@ pub fn acquire_and_release_works() {
         assert_that!(sut.borrowed_indices(), eq n + 1);
     }
 
-    for n in (1..CAPACITY + 1).rev() {
-        assert_that!(sut.borrowed_indices(), eq n);
+    for n in (0..CAPACITY).rev() {
+        assert_that!(sut.borrowed_indices(), eq n + 1);
         assert_that!(
             sut.release(indices.pop().unwrap(), owner_id, ReleaseMode::Default),
             is_ok
         );
-        assert_that!(sut.borrowed_indices(), eq n - 1);
+        assert_that!(sut.borrowed_indices(), eq n);
     }
 }
 
@@ -72,7 +72,7 @@ pub fn indices_are_unique() {
     for _ in 0..CAPACITY {
         let index = sut.acquire(owner_id).unwrap();
 
-        assert_that!(indices, not_contains index);
+        assert_that!(indices, excludes index);
         indices.push(index);
     }
 }
@@ -177,6 +177,7 @@ pub fn acquire_all_indices_and_release_with_release_mode_lock_locks_set_after_la
         assert_that!(sut.release(indices.pop().unwrap(), owner_id, ReleaseMode::LockIfLastIndex), eq Ok(ReleaseState::Unlocked));
     }
 
+    assert_that!(sut.is_locked(), eq false);
     assert_that!(sut.release(indices.pop().unwrap(), owner_id, ReleaseMode::LockIfLastIndex), eq Ok(ReleaseState::Locked));
     assert_that!(sut.is_locked(), eq true);
 }
@@ -238,6 +239,7 @@ pub fn recover_locks_the_set_if_release_mode_is_lock() {
     }
 
     assert_that!(sut.recover(ReleaseMode::LockIfLastIndex, |id| id == owner_id), eq ReleaseState::Locked);
+    assert_that!(sut.borrowed_indices(), eq 0);
     assert_that!(sut.is_locked(), eq true);
 }
 
@@ -271,7 +273,7 @@ pub fn recover_of_locked_set_always_returns_locked() {
 }
 
 #[test]
-pub fn acquire_and_release_works_with_uninitialized_memory() {
+pub fn acquire_and_release_works_with_relocatable_variant() {
     let mut memory = [0u8; RobustUniqueIndexSet::const_memory_size(CAPACITY)];
     let allocator = BumpAllocator::new(memory.as_mut_ptr());
     let mut sut = unsafe { RobustUniqueIndexSet::new_uninit(CAPACITY) };
@@ -285,13 +287,13 @@ pub fn acquire_and_release_works_with_uninitialized_memory() {
         assert_that!(sut.borrowed_indices(), eq n + 1);
     }
 
-    for n in (1..CAPACITY + 1).rev() {
-        assert_that!(sut.borrowed_indices(), eq n);
+    for n in (0..CAPACITY).rev() {
+        assert_that!(sut.borrowed_indices(), eq n + 1);
         assert_that!(
             unsafe { sut.release(indices.pop().unwrap(), owner_id, ReleaseMode::Default) },
             is_ok
         );
-        assert_that!(sut.borrowed_indices(), eq n - 1);
+        assert_that!(sut.borrowed_indices(), eq n);
     }
 }
 
@@ -353,6 +355,8 @@ pub fn concurrent_acquire_release() {
         let e = sut.acquire(owner_id);
         assert_that!(e, is_ok);
         *id += 1;
+        assert_that!(ids, excludes e.unwrap());
+        assert_that!(e.unwrap(), lt CAPACITY);
         ids.push(e.unwrap());
     }
 
