@@ -140,7 +140,7 @@ impl DynamicConfig {
     ) {
         unsafe {
             self.readers.recover(
-                |owner_id, _, registered_reader| {
+                |owner_id, registered_reader| {
                     owner_id == node_id.owner_id()
                         && port_cleanup_callback(UniquePortId::Reader(registered_reader.reader_id))
                             == PortCleanupAction::RemovePort
@@ -149,7 +149,7 @@ impl DynamicConfig {
             );
 
             self.writers.recover(
-                |owner_id, _, registered_writer| {
+                |owner_id, registered_writer| {
                     owner_id == node_id.owner_id()
                         && port_cleanup_callback(UniquePortId::Writer(registered_writer.writer_id))
                             == PortCleanupAction::RemovePort

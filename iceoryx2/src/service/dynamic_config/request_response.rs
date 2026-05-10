@@ -138,7 +138,7 @@ impl DynamicConfig {
     ) {
         unsafe {
             self.servers.recover(
-                |owner_id, _, registered_server| {
+                |owner_id, registered_server| {
                     owner_id == node_id.owner_id()
                         && port_cleanup_callback(UniquePortId::Server(registered_server.server_id))
                             == PortCleanupAction::RemovePort
@@ -147,7 +147,7 @@ impl DynamicConfig {
             );
 
             self.clients.recover(
-                |owner_id, _, registered_client| {
+                |owner_id, registered_client| {
                     owner_id == node_id.owner_id()
                         && port_cleanup_callback(UniquePortId::Client(registered_client.client_id))
                             == PortCleanupAction::RemovePort

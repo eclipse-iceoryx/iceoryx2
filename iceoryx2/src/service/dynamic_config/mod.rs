@@ -163,7 +163,7 @@ impl DynamicConfig {
             };
 
             match self.nodes.recover(
-                |owner_id, _, _| owner_id == node_id.owner_id(),
+                |owner_id, _| owner_id == node_id.owner_id(),
                 ReleaseMode::LockIfLastIndex,
             ) {
                 ReleaseState::Locked => DeregisterNodeState::NoMoreOwners,

@@ -126,7 +126,7 @@ impl DynamicConfig {
     ) {
         unsafe {
             self.publishers.recover(
-                |owner_id, _, registered_publisher| {
+                |owner_id, registered_publisher| {
                     owner_id == node_id.owner_id()
                         && port_cleanup_callback(UniquePortId::Publisher(
                             registered_publisher.publisher_id,
@@ -136,7 +136,7 @@ impl DynamicConfig {
             );
 
             self.subscribers.recover(
-                |owner_id, _, registered_subscriber| {
+                |owner_id, registered_subscriber| {
                     owner_id == node_id.owner_id()
                         && port_cleanup_callback(UniquePortId::Subscriber(
                             registered_subscriber.subscriber_id,

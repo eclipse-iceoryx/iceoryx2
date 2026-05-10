@@ -424,7 +424,7 @@ impl<T: Copy + Debug> Container<T> {
     ///  * All existing [`ContainerHandle`] that belong to the [`OwnerId`] must never be removed with
     ///    [`Container::remove()`] otherwise we corrupt the state.
     ///
-    pub unsafe fn recover<F: FnMut(OwnerId, usize, T) -> bool>(
+    pub unsafe fn recover<F: FnMut(OwnerId, T) -> bool>(
         &self,
         mut predicate: F,
         mode: ReleaseMode,
@@ -460,7 +460,7 @@ impl<T: Copy + Debug> Container<T> {
 
                     *current_generation_count.borrow_mut() = gen_count;
 
-                    return predicate(owner_id, index, unsafe { contents.assume_init_read() });
+                    return predicate(owner_id, unsafe { contents.assume_init_read() });
                 } else {
                     return false;
                 }
@@ -717,7 +717,7 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///  * All existing [`ContainerHandle`] that belong to the [`OwnerId`] must never be removed with
     ///    [`Container::remove()`] otherwise we corrupt the state.
     ///
-    pub unsafe fn recover<F: FnMut(OwnerId, usize, T) -> bool>(
+    pub unsafe fn recover<F: FnMut(OwnerId, T) -> bool>(
         &self,
         predicate: F,
         mode: ReleaseMode,
