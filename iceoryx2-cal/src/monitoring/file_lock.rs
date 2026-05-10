@@ -28,6 +28,7 @@ use iceoryx2_bb_posix::{
 };
 use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
 use iceoryx2_bb_testing::abandonable::Abandonable;
+use iceoryx2_bb_testing::abandonable::NonNullFromRef;
 use iceoryx2_log::fail;
 
 use crate::{
@@ -154,8 +155,11 @@ pub struct Cleaner {
 }
 
 impl Abandonable for Cleaner {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        unsafe { ProcessCleaner::abandon_in_place(&mut (&mut *this).cleaner) };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            ProcessCleaner::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.cleaner))
+        };
     }
 }
 
@@ -178,8 +182,11 @@ pub struct Token {
 }
 
 impl Abandonable for Token {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        unsafe { ProcessGuard::abandon_in_place(&mut (&mut *this).guard) };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            ProcessGuard::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.guard))
+        };
     }
 }
 

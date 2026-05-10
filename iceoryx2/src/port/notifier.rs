@@ -44,7 +44,7 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
-use iceoryx2_bb_testing::abandonable::Abandonable;
+use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy, dynamic_storage::DynamicStorage, event::NotifierBuilder,
 };
@@ -127,9 +127,13 @@ struct ListenerConnections<Service: service::Service> {
 }
 
 impl<Service: service::Service> Abandonable for ListenerConnections<Service> {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
-        unsafe { SharedServiceState::abandon_in_place(&mut this.service_state) };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            SharedServiceState::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.service_state,
+            ))
+        };
     }
 }
 
@@ -279,9 +283,13 @@ unsafe impl<Service: service::Service> Sync for Notifier<Service> where
 }
 
 impl<Service: service::Service> Abandonable for Notifier<Service> {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
-        unsafe { Service::ArcThreadSafetyPolicy::abandon_in_place(&mut this.listener_connections) };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            Service::ArcThreadSafetyPolicy::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.listener_connections,
+            ))
+        };
     }
 }
 

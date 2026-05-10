@@ -101,7 +101,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_bb_testing::abandonable::Abandonable;
+use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_CLOSED, CHANNEL_STATE_OPEN, ChannelId};
@@ -137,12 +137,22 @@ pub(crate) struct SharedServerState<Service: service::Service> {
 }
 
 impl<Service: service::Service> Abandonable for SharedServerState<Service> {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
 
-        unsafe { Sender::abandon_in_place(&mut this.response_sender) };
-        unsafe { Receiver::abandon_in_place(&mut this.request_receiver) };
-        unsafe { SharedServiceState::abandon_in_place(&mut this.service_state) };
+        unsafe {
+            Sender::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.response_sender))
+        };
+        unsafe {
+            Receiver::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.request_receiver,
+            ))
+        };
+        unsafe {
+            SharedServiceState::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.service_state,
+            ))
+        };
     }
 }
 
@@ -249,10 +259,12 @@ impl<
     ResponseHeader: Debug + ZeroCopySend,
 > Abandonable for Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
         unsafe {
-            Service::ArcThreadSafetyPolicy::abandon_in_place(&mut this.shared_state);
+            Service::ArcThreadSafetyPolicy::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.shared_state,
+            ));
         }
     }
 }

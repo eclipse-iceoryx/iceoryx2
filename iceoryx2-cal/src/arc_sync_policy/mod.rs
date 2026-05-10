@@ -30,7 +30,7 @@
 //! struct Data(u64);
 //!
 //! impl Abandonable for Data {
-//!     unsafe fn abandon_in_place(this: *mut Self) {}
+//!     unsafe fn abandon_in_place(this: core::ptr::NonNull<Self>) {}
 //! }
 //!
 //! fn example<Policy: ArcSyncPolicy<Data>>() {
@@ -51,7 +51,7 @@
 //! struct Data(u64);
 //!
 //! impl Abandonable for Data {
-//!     unsafe fn abandon_in_place(this: *mut Self) {}
+//!     unsafe fn abandon_in_place(this: core::ptr::NonNull<Self>) {}
 //! }
 //!
 //! type Policy = iceoryx2_cal::arc_sync_policy::mutex_protected::MutexProtected<Data>;
@@ -71,7 +71,7 @@
 //! struct Data(u64);
 //!
 //! impl Abandonable for Data {
-//!     unsafe fn abandon_in_place(this: *mut Self) {}
+//!     unsafe fn abandon_in_place(this: core::ptr::NonNull<Self>) {}
 //! }
 //!
 //! use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;

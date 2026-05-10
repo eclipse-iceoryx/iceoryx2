@@ -82,7 +82,7 @@ use iceoryx2_bb_elementary::{CallbackProgression, cyclic_tagger::CyclicTagger};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
-use iceoryx2_bb_testing::abandonable::Abandonable;
+use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_CLOSED, CHANNEL_STATE_OPEN};
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy,
@@ -173,10 +173,16 @@ pub(crate) struct ClientSharedState<Service: service::Service> {
 }
 
 impl<Service: service::Service> Abandonable for ClientSharedState<Service> {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
-        unsafe { Sender::abandon_in_place(&mut this.request_sender) };
-        unsafe { Receiver::abandon_in_place(&mut this.response_receiver) };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            Sender::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.request_sender))
+        };
+        unsafe {
+            Receiver::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.response_receiver,
+            ))
+        };
     }
 }
 
@@ -325,9 +331,13 @@ impl<
     ResponseHeader: Debug + ZeroCopySend,
 > Abandonable for Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
-        unsafe { Service::ArcThreadSafetyPolicy::abandon_in_place(&mut this.client_shared_state) };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            Service::ArcThreadSafetyPolicy::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.client_shared_state,
+            ))
+        };
     }
 }
 

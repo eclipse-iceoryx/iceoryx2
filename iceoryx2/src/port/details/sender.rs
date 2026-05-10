@@ -19,7 +19,7 @@ use alloc::vec::Vec;
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
-use iceoryx2_bb_testing::abandonable::Abandonable;
+use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
@@ -58,10 +58,12 @@ pub(crate) struct Connection<Service: service::Service> {
 }
 
 impl<Service: service::Service> Abandonable for Connection<Service> {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
         unsafe {
-            <Service::Connection as ZeroCopyConnection>::Sender::abandon_in_place(&mut this.sender)
+            <Service::Connection as ZeroCopyConnection>::Sender::abandon_in_place(
+                core::ptr::NonNull::iox2_from_mut(&mut this.sender),
+            )
         };
     }
 }
@@ -138,15 +140,29 @@ pub(crate) struct Sender<Service: service::Service> {
 }
 
 impl<Service: service::Service> Abandonable for Sender<Service> {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
-        unsafe { SharedNode::<Service>::abandon_in_place(&mut this.shared_node) };
-        unsafe { SharedServiceState::abandon_in_place(&mut this.service_state) };
-        unsafe { DataSegment::<Service>::abandon_in_place(&mut this.data_segment) };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            SharedNode::<Service>::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.shared_node,
+            ))
+        };
+        unsafe {
+            SharedServiceState::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.service_state,
+            ))
+        };
+        unsafe {
+            DataSegment::<Service>::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.data_segment,
+            ))
+        };
 
         for connection in &mut this.connections {
             if let Some(c) = connection.get_mut() {
-                unsafe { Connection::<Service>::abandon_in_place(c) };
+                unsafe {
+                    Connection::<Service>::abandon_in_place(core::ptr::NonNull::iox2_from_mut(c))
+                };
             }
         }
     }

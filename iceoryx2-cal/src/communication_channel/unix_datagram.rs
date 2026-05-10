@@ -23,6 +23,7 @@ use iceoryx2_bb_posix::{
     directory::*, file::*, system_configuration::SystemInfo, unix_datagram_socket::*,
 };
 use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_bb_testing::abandonable::NonNullFromRef;
 use iceoryx2_log::{fail, fatal_panic};
 
 pub use crate::communication_channel::*;
@@ -344,9 +345,13 @@ pub struct Sender<T> {
 }
 
 impl<T: Copy + Debug> Abandonable for Sender<T> {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
-        unsafe { UnixDatagramSender::abandon_in_place(&mut this.sender) };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            UnixDatagramSender::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.sender,
+            ))
+        };
     }
 }
 
@@ -414,9 +419,13 @@ pub struct Receiver<T: Debug> {
 }
 
 impl<T: Copy + Debug> Abandonable for Receiver<T> {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
-        unsafe { UnixDatagramReceiver::abandon_in_place(&mut this.receiver) };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            UnixDatagramReceiver::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.receiver,
+            ))
+        };
     }
 }
 

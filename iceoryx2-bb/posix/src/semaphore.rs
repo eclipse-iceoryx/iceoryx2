@@ -408,8 +408,8 @@ unsafe impl Send for NamedSemaphore {}
 unsafe impl Sync for NamedSemaphore {}
 
 impl Abandonable for NamedSemaphore {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
         if core::ptr::eq(this.handle, posix::SEM_FAILED) {
             return;
         }
@@ -773,7 +773,7 @@ unsafe impl Send for UnnamedSemaphore<'_> {}
 unsafe impl Sync for UnnamedSemaphore<'_> {}
 
 impl Abandonable for UnnamedSemaphore<'_> {
-    unsafe fn abandon_in_place(_this: *mut Self) {}
+    unsafe fn abandon_in_place(_this: core::ptr::NonNull<Self>) {}
 }
 
 impl Drop for UnnamedSemaphore<'_> {

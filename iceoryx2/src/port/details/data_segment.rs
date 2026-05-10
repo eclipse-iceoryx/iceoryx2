@@ -14,7 +14,7 @@ use core::alloc::Layout;
 
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
-use iceoryx2_bb_testing::abandonable::Abandonable;
+use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_cal::{
     event::NamedConceptBuilder,
     resizable_shared_memory::*,
@@ -68,14 +68,18 @@ pub(crate) struct DataSegment<Service: service::Service> {
 }
 
 impl<Service: service::Service> Abandonable for DataSegment<Service> {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
         match &mut this.memory {
             MemoryType::Static(shm) => {
-                unsafe { Service::SharedMemory::abandon_in_place(shm) };
+                unsafe {
+                    Service::SharedMemory::abandon_in_place(core::ptr::NonNull::iox2_from_mut(shm))
+                };
             }
             MemoryType::Dynamic(shm) => unsafe {
-                Service::ResizableSharedMemory::abandon_in_place(shm);
+                Service::ResizableSharedMemory::abandon_in_place(
+                    core::ptr::NonNull::iox2_from_mut(shm),
+                );
             },
         }
     }
@@ -207,17 +211,17 @@ pub(crate) struct DataSegmentView<Service: service::Service> {
 }
 
 impl<Service: service::Service> Abandonable for DataSegmentView<Service> {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
         match &mut this.memory {
             MemoryViewType::Dynamic(shm) => unsafe {
                 <Service::ResizableSharedMemory as ResizableSharedMemory<
                     PoolAllocator,
                     Service::SharedMemory,
-                >>::View::abandon_in_place(shm)
+                >>::View::abandon_in_place(core::ptr::NonNull::iox2_from_mut(shm))
             },
             MemoryViewType::Static(shm) => unsafe {
-                Service::SharedMemory::abandon_in_place(shm);
+                Service::SharedMemory::abandon_in_place(core::ptr::NonNull::iox2_from_mut(shm));
             },
         }
     }

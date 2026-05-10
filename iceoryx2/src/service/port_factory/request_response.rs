@@ -55,7 +55,7 @@ use alloc::sync::Arc;
 use core::{fmt::Debug, marker::PhantomData};
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_testing::abandonable::Abandonable;
+use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 /// The factory for
@@ -107,8 +107,13 @@ impl<
 > Abandonable
     for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        unsafe { SharedServiceState::abandon_in_place(&mut (&mut *this).service) };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            SharedServiceState::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.service,
+            ))
+        };
     }
 }
 

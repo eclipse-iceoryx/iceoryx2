@@ -138,7 +138,7 @@
 use alloc::format;
 use core::fmt::Debug;
 use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
-use iceoryx2_bb_testing::abandonable::Abandonable;
+use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 pub use iceoryx2_bb_system_types::file_path::FilePath;
@@ -602,8 +602,8 @@ impl StateFiles {
 }
 
 impl Abandonable for StateFiles {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
         for file in [&mut this.state, &mut this.owner_lock, &mut this.context] {
             if let Some(f) = file.take() {
                 f.abandon();
@@ -668,8 +668,8 @@ pub struct ProcessGuard {
 }
 
 impl Abandonable for ProcessGuard {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
         let msg = "Unable to stage death";
 
         if let Err(e) = this
@@ -690,7 +690,7 @@ impl Abandonable for ProcessGuard {
             }
         }
 
-        unsafe { StateFiles::abandon_in_place(&mut this.files) };
+        unsafe { StateFiles::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.files)) };
     }
 }
 
@@ -1046,8 +1046,8 @@ pub struct ProcessCleaner {
 }
 
 impl Abandonable for ProcessCleaner {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
 
         if let Some(f) = &this.files.owner_lock {
             if let Err(e) = ProcessGuardBuilder::set_lock(f, LockType::Unlock) {
@@ -1056,7 +1056,7 @@ impl Abandonable for ProcessCleaner {
             }
         }
 
-        unsafe { StateFiles::abandon_in_place(&mut this.files) };
+        unsafe { StateFiles::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.files)) };
     }
 }
 

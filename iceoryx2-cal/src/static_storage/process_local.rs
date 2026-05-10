@@ -53,6 +53,7 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::mutex::*;
+use iceoryx2_bb_testing::abandonable::NonNullFromRef;
 use iceoryx2_log::{fail, fatal_panic};
 
 #[derive(Debug)]
@@ -132,9 +133,9 @@ pub struct Locked {
 }
 
 impl Abandonable for Locked {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
-        unsafe { Storage::abandon_in_place(&mut this.storage) };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe { Storage::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.storage)) };
     }
 }
 
@@ -182,8 +183,8 @@ pub struct Storage {
 }
 
 impl Abandonable for Storage {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
         this.has_ownership.store(false, Ordering::Relaxed);
         unsafe { core::ptr::drop_in_place(this) };
     }

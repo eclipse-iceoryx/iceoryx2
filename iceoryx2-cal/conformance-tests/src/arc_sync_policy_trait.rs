@@ -40,7 +40,7 @@ pub mod arc_sync_policy_trait {
     }
 
     impl Abandonable for TestAtomic {
-        unsafe fn abandon_in_place(_this: *mut TestAtomic) {}
+        unsafe fn abandon_in_place(_this: core::ptr::NonNull<TestAtomic>) {}
     }
 
     #[conformance_test]

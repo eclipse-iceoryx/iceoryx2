@@ -204,8 +204,8 @@ impl MonitoringCleaner for Cleaner {
 }
 
 impl Abandonable for Cleaner {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
         let msg = "Failed to remove";
 
         let mut guard = fatal_panic!(from this, when PROCESS_LOCAL_STORAGE.lock(),
@@ -237,10 +237,10 @@ impl NamedConcept for Token {
 impl MonitoringToken for Token {}
 
 impl Abandonable for Token {
-    unsafe fn abandon_in_place(this: *mut Self) {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
         let msg = "Failed to leak";
 
-        let this = unsafe { &mut *this };
+        let this = unsafe { this.as_mut() };
         let mut guard = fatal_panic!(from this, when PROCESS_LOCAL_STORAGE.lock(),
             "{} due to a failure while acquiring the lock.", msg);
 

@@ -419,8 +419,8 @@ pub struct SharedMemory {
 }
 
 impl Abandonable for SharedMemory {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
         unsafe { core::ptr::drop_in_place(&mut this.memory_mapping) };
         unsafe { core::ptr::drop_in_place(&mut this.memory_lock) };
     }

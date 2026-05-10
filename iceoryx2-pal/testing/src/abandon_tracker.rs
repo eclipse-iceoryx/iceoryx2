@@ -46,7 +46,7 @@ pub struct AbandonTacker {
 }
 
 impl Abandonable for AbandonTacker {
-    unsafe fn abandon_in_place(_this: *mut Self) {
+    unsafe fn abandon_in_place(_this: core::ptr::NonNull<Self>) {
         *LEAK_COUNTER.lock().unwrap_or_else(|e| e.into_inner()) += 1;
     }
 }

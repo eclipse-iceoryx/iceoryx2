@@ -32,6 +32,7 @@ pub mod details {
     use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
     use iceoryx2_bb_posix::clock::Time;
     use iceoryx2_bb_posix::file::AccessMode;
+    use iceoryx2_bb_testing::abandonable::NonNullFromRef;
     use iceoryx2_log::{fail, fatal_panic};
 
     pub use crate::zero_copy_connection::*;
@@ -619,9 +620,11 @@ pub mod details {
     }
 
     impl<Storage: DynamicStorage<SharedManagementData>> Abandonable for Sender<Storage> {
-        unsafe fn abandon_in_place(this: *mut Self) {
-            let this = unsafe { &mut *this };
-            unsafe { Storage::abandon_in_place(&mut this.storage) };
+        unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+            let this = unsafe { this.as_mut() };
+            unsafe {
+                Storage::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.storage))
+            };
         }
     }
 
@@ -913,9 +916,11 @@ pub mod details {
     }
 
     impl<Storage: DynamicStorage<SharedManagementData>> Abandonable for Receiver<Storage> {
-        unsafe fn abandon_in_place(this: *mut Self) {
-            let this = unsafe { &mut *this };
-            unsafe { Storage::abandon_in_place(&mut this.storage) };
+        unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+            let this = unsafe { this.as_mut() };
+            unsafe {
+                Storage::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.storage))
+            };
         }
     }
 

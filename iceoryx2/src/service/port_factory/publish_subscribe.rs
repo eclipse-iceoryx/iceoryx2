@@ -41,7 +41,7 @@
 //! ```
 extern crate alloc;
 use alloc::sync::Arc;
-use iceoryx2_bb_testing::abandonable::Abandonable;
+use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 
 use super::nodes;
 use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
@@ -96,8 +96,13 @@ impl<
     UserHeader: Debug + ZeroCopySend,
 > Abandonable for PortFactory<Service, Payload, UserHeader>
 {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        unsafe { SharedServiceState::abandon_in_place(&mut (&mut *this).service) };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            SharedServiceState::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.service,
+            ))
+        };
     }
 }
 

@@ -472,8 +472,9 @@ pub struct File {
 }
 
 impl Abandonable for File {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        unsafe { core::ptr::drop_in_place(&mut (&mut *this).file_descriptor) };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe { core::ptr::drop_in_place(&mut this.file_descriptor) };
     }
 }
 

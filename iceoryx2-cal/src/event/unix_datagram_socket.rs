@@ -15,6 +15,7 @@ use core::mem::MaybeUninit;
 use alloc::format;
 use alloc::vec::Vec;
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
+use iceoryx2_bb_testing::abandonable::NonNullFromRef;
 
 pub use crate::event::*;
 use crate::static_storage::file::NamedConceptConfiguration;
@@ -164,9 +165,13 @@ pub struct Notifier {
 }
 
 impl Abandonable for Notifier {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
-        unsafe { UnixDatagramSender::abandon_in_place(&mut this.sender) };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            UnixDatagramSender::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.sender,
+            ))
+        };
     }
 }
 
@@ -265,9 +270,13 @@ pub struct Listener {
 }
 
 impl Abandonable for Listener {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
-        unsafe { UnixDatagramReceiver::abandon_in_place(&mut this.receiver) };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            UnixDatagramReceiver::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.receiver,
+            ))
+        };
     }
 }
 

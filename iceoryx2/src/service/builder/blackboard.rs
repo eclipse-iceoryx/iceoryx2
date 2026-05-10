@@ -334,10 +334,18 @@ pub(crate) struct BlackboardResources<ServiceType: service::Service> {
 }
 
 impl<ServiceType: service::Service> Abandonable for BlackboardResources<ServiceType> {
-    unsafe fn abandon_in_place(this: *mut Self) {
-        let this = unsafe { &mut *this };
-        unsafe { ServiceType::BlackboardMgmt::<Mgmt>::abandon_in_place(&mut this.mgmt) };
-        unsafe { ServiceType::BlackboardPayload::abandon_in_place(&mut this.data) };
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            ServiceType::BlackboardMgmt::<Mgmt>::abandon_in_place(
+                core::ptr::NonNull::iox2_from_mut(&mut this.mgmt),
+            )
+        };
+        unsafe {
+            ServiceType::BlackboardPayload::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+                &mut this.data,
+            ))
+        };
     }
 }
 
