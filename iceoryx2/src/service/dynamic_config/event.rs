@@ -155,7 +155,6 @@ impl DynamicConfig {
                         )) == PortCleanupAction::RemovePort
                 },
                 ReleaseMode::Default,
-                |_, _| {},
             );
 
             self.notifiers.recover(
@@ -166,7 +165,6 @@ impl DynamicConfig {
                         )) == PortCleanupAction::RemovePort
                 },
                 ReleaseMode::Default,
-                |_, _| {},
             );
         }
     }

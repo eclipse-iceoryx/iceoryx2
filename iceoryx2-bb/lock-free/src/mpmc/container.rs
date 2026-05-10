@@ -424,11 +424,10 @@ impl<T: Copy + Debug> Container<T> {
     ///  * All existing [`ContainerHandle`] that belong to the [`OwnerId`] must never be removed with
     ///    [`Container::remove()`] otherwise we corrupt the state.
     ///
-    pub unsafe fn recover<F: FnMut(OwnerId, usize, T) -> bool, S: FnMut(usize, T)>(
+    pub unsafe fn recover<F: FnMut(OwnerId, usize, T) -> bool>(
         &self,
         mut predicate: F,
         mode: ReleaseMode,
-        mut call_on_recover: S,
     ) -> ReleaseState {
         self.verify_init("recover()");
 
@@ -437,7 +436,6 @@ impl<T: Copy + Debug> Container<T> {
         // afterwards to set the entry to empty if no other thread has in the meantime acquired the new
         // index and repaired it
         let current_generation_count = RefCell::new(0u64);
-        let entry_contents = RefCell::new(MaybeUninit::<T>::uninit());
 
         let p = |owner_id, index| {
             let element_generation_counter =
@@ -447,7 +445,7 @@ impl<T: Copy + Debug> Container<T> {
                 let gen_count = element_generation_counter.load(Ordering::Relaxed);
 
                 if Self::contains_data(gen_count) {
-                    let mut contents = entry_contents.borrow_mut();
+                    let mut contents = MaybeUninit::<T>::uninit();
                     unsafe {
                         core::ptr::copy_nonoverlapping(
                             (*self.data_ptr.as_ptr().add(index)).get(),
@@ -470,7 +468,6 @@ impl<T: Copy + Debug> Container<T> {
         };
 
         let on_success = |_owner_id, index| {
-            call_on_recover(index, unsafe { entry_contents.borrow().assume_init_read() });
             let v = *current_generation_count.borrow();
 
             // If setting the entry to empty failed then an other thread won the `Self::add()` race,
@@ -711,5 +708,20 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///
     pub unsafe fn update_state(&self, previous_state: &mut ContainerState<T>) -> bool {
         unsafe { self.container.update_state(previous_state) }
+    }
+
+    /// Recovers and releases all entries the dead [`OwnerId`] owned.
+    ///
+    /// # Safety
+    ///
+    ///  * All existing [`ContainerHandle`] that belong to the [`OwnerId`] must never be removed with
+    ///    [`Container::remove()`] otherwise we corrupt the state.
+    ///
+    pub unsafe fn recover<F: FnMut(OwnerId, usize, T) -> bool>(
+        &self,
+        predicate: F,
+        mode: ReleaseMode,
+    ) -> ReleaseState {
+        unsafe { self.container.recover(predicate, mode) }
     }
 }

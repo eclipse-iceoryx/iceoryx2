@@ -133,7 +133,6 @@ impl DynamicConfig {
                         )) == PortCleanupAction::RemovePort
                 },
                 ReleaseMode::Default,
-                |_, _| {},
             );
 
             self.subscribers.recover(
@@ -144,7 +143,6 @@ impl DynamicConfig {
                         )) == PortCleanupAction::RemovePort
                 },
                 ReleaseMode::Default,
-                |_, _| {},
             );
         }
     }

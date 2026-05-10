@@ -146,7 +146,6 @@ impl DynamicConfig {
                             == PortCleanupAction::RemovePort
                 },
                 ReleaseMode::Default,
-                |_, _| {},
             );
 
             self.writers.recover(
@@ -156,7 +155,6 @@ impl DynamicConfig {
                             == PortCleanupAction::RemovePort
                 },
                 ReleaseMode::Default,
-                |_, _| {},
             );
         }
     }
