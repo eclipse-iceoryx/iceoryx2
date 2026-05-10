@@ -78,7 +78,7 @@ pub mod generic {
         assert_that!(index.err().unwrap(), eq ContainerAddFailure::OutOfSpace);
 
         let state = sut.get_state();
-        let mut contained_values: Vec<(u32, usize)> = vec![];
+        let mut contained_values: Vec<(usize, usize)> = vec![];
         state.for_each(|h: ContainerHandle, value: &T| {
             contained_values.push((h.index(), (*value).into()));
             CallbackProgression::Continue
@@ -88,7 +88,7 @@ pub mod generic {
             .iter()
             .enumerate()
             .for_each(|(i, &(index, value))| {
-                assert_that!(index, eq i as u32);
+                assert_that!(index, eq i);
                 assert_that!(value, eq i * 5 + 2);
             });
     }
@@ -297,7 +297,7 @@ pub mod generic {
             assert_that!(unsafe { sut.remove(i, ReleaseMode::Default) }, eq ReleaseState::Unlocked);
         }
 
-        let mut results = BTreeMap::<u32, usize>::new();
+        let mut results = BTreeMap::<usize, usize>::new();
         for i in 0..CAPACITY - 1 {
             let index = unsafe { sut.add((i * 81 + 56).into()) };
             assert_that!(index, is_ok);
@@ -312,7 +312,7 @@ pub mod generic {
         });
 
         for (i, value) in contained_values.iter().enumerate() {
-            assert_that!(*value, eq * results.get(&(i as u32)).unwrap());
+            assert_that!(*value, eq * results.get(&i).unwrap());
         }
     }
 
@@ -323,7 +323,7 @@ pub mod generic {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut state = sut.get_state();
         let mut stored_indices: Vec<ContainerHandle> = vec![];
-        let mut stored_values: Vec<(u32, usize)> = vec![];
+        let mut stored_values: Vec<(usize, usize)> = vec![];
 
         for i in 0..CAPACITY {
             let v = i * 3 + 1;
@@ -387,11 +387,11 @@ pub mod generic {
             .create(&barrier_handle)
             .unwrap();
 
-        let added_handle = MutexHandle::<Vec<(u32, usize)>>::new();
+        let added_handle = MutexHandle::<Vec<(usize, usize)>>::new();
         let added = MutexBuilder::new()
             .create(vec![], &added_handle)
             .expect("failed to create mutex");
-        let extracted_handle = MutexHandle::<Vec<(u32, usize)>>::new();
+        let extracted_handle = MutexHandle::<Vec<(usize, usize)>>::new();
         let extracted = MutexBuilder::new()
             .create(vec![], &extracted_handle)
             .expect("failed to create mutex");
@@ -465,7 +465,7 @@ pub mod generic {
         })
         .expect("failed to run thread scope");
 
-        let added_set: BTreeSet<(u32, usize)> = added
+        let added_set: BTreeSet<(usize, usize)> = added
             .lock()
             .expect("failed to lock mutex")
             .iter()

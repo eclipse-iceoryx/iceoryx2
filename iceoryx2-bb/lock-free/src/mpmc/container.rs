@@ -55,6 +55,9 @@
 //! }
 //! ```
 
+use crate::mpmc::robust_unique_index_set::{
+    OwnerId, RobustUniqueIndexSet, StaticRobustUniqueIndexSetData,
+};
 use crate::mpmc::unique_index_set_enums::{
     ReleaseMode, ReleaseState, UniqueIndexSetAcquireFailure,
 };
@@ -108,13 +111,14 @@ impl From<UniqueIndexSetAcquireFailure> for ContainerAddFailure {
 /// [`Container::add()`] and can be released with [`Container::remove()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ContainerHandle {
-    index: u32,
+    index: usize,
+    owner_id: OwnerId,
     container_id: u64,
 }
 
 impl ContainerHandle {
     /// Returns the underlying index of the container handle
-    pub fn index(&self) -> u32 {
+    pub fn index(&self) -> usize {
         self.index
     }
 }
@@ -162,6 +166,7 @@ impl<T: Copy + Debug> ContainerState<T> {
                 && callback(
                     ContainerHandle {
                         index: i as _,
+                        owner_id: OwnerId::new(1).unwrap(),
                         container_id: self.container_id,
                     },
                     unsafe { self.data[i].assume_init_ref() },
@@ -189,7 +194,7 @@ pub struct Container<T: Copy + Debug> {
     container_id: UniqueId,
     // must be the last member, since it is a relocatable container as well and then the offset
     // calculations would again fail
-    index_set: UniqueIndexSet,
+    index_set: RobustUniqueIndexSet,
 }
 
 unsafe impl<T: Copy + Debug> Send for Container<T> {}
@@ -207,7 +212,7 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
             ) as isize),
             capacity,
             change_counter: AtomicU64::new(0),
-            index_set: unsafe { UniqueIndexSet::new_uninit(capacity) },
+            index_set: unsafe { RobustUniqueIndexSet::new_uninit(capacity) },
             is_initialized: AtomicBool::new(false),
         }
     }
@@ -268,7 +273,7 @@ impl<T: Copy + Debug> Container<T> {
 
     /// Returns the required memory size of the data segment of the [`Container`].
     pub const fn const_memory_size(capacity: usize) -> usize {
-        UniqueIndexSet::const_memory_size(capacity)
+        RobustUniqueIndexSet::const_memory_size(capacity)
         //  ActiveIndexPtr
         + unaligned_mem_size::<AtomicU64>(capacity)
         // data ptr
@@ -307,8 +312,10 @@ impl<T: Copy + Debug> Container<T> {
     ///
     pub unsafe fn add(&self, value: T) -> Result<ContainerHandle, ContainerAddFailure> {
         self.verify_init("add()");
+
+        let owner_id = OwnerId::new(1).unwrap();
         unsafe {
-            let index = self.index_set.acquire_raw_index()?;
+            let index = self.index_set.acquire(owner_id)?;
             core::ptr::copy_nonoverlapping(
                 &value,
                 (*self.data_ptr.as_ptr().add(index as _)).get().cast(),
@@ -324,6 +331,7 @@ impl<T: Copy + Debug> Container<T> {
             self.change_counter.fetch_add(1, Ordering::Release);
             Ok(ContainerHandle {
                 index,
+                owner_id,
                 container_id: self.container_id.value(),
             })
         }
@@ -352,7 +360,11 @@ impl<T: Copy + Debug> Container<T> {
         unsafe { &*self.active_index_ptr.as_ptr().add(handle.index as _) }
             .fetch_add(1, Ordering::Relaxed);
 
-        let release_state = unsafe { self.index_set.release_raw_index(handle.index, mode) };
+        let release_state = unsafe {
+            self.index_set
+                .release(handle.index, handle.owner_id, mode)
+                .unwrap()
+        };
 
         // MUST HAPPEN AFTER all other operations
         self.change_counter.fetch_add(1, Ordering::Release);
@@ -448,6 +460,33 @@ impl<T: Copy + Debug> Container<T> {
     }
 }
 
+#[repr(C)]
+#[derive(Debug)]
+pub struct FixedSizeContainerData<T: Copy + Debug, const CAPACITY: usize> {
+    // DO NOT CHANGE MEMBER ORDER UniqueIndexSet variable data
+    unique_index_set_data: StaticRobustUniqueIndexSetData<CAPACITY>,
+
+    // DO NOT CHANGE MEMBER ORDER actual Container variable data
+    active_index: [AtomicU64; CAPACITY],
+    data: [UnsafeCell<MaybeUninit<T>>; CAPACITY],
+}
+
+impl<T: Copy + Debug, const CAPACITY: usize> Default for FixedSizeContainerData<T, CAPACITY> {
+    fn default() -> Self {
+        Self {
+            unique_index_set_data: StaticRobustUniqueIndexSetData::default(),
+            active_index: [const { AtomicU64::new(0) }; CAPACITY],
+            data: [const { UnsafeCell::new(MaybeUninit::uninit()) }; CAPACITY],
+        }
+    }
+}
+
+impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainerData<T, CAPACITY> {
+    fn allocator(&mut self) -> BumpAllocator {
+        self.unique_index_set_data.allocator()
+    }
+}
+
 /// A **threadsafe** and **lock-free** compile time fixed size container. The runtime time fixed size
 /// container is called [`Container`].
 ///
@@ -457,31 +496,20 @@ impl<T: Copy + Debug> Container<T> {
 #[derive(Debug)]
 pub struct FixedSizeContainer<T: Copy + Debug, const CAPACITY: usize> {
     container: Container<T>,
-
-    // DO NOT CHANGE MEMBER ORDER UniqueIndexSet variable data
-    next_free_index: [UnsafeCell<u32>; CAPACITY],
-    next_free_index_plus_one: UnsafeCell<u32>,
-
-    // DO NOT CHANGE MEMBER ORDER actual Container variable data
-    active_index: [AtomicU64; CAPACITY],
-    data: [UnsafeCell<MaybeUninit<T>>; CAPACITY],
+    data: FixedSizeContainerData<T, CAPACITY>,
 }
 
 impl<T: Copy + Debug, const CAPACITY: usize> Default for FixedSizeContainer<T, CAPACITY> {
     fn default() -> Self {
         let mut new_self = Self {
             container: unsafe { Container::new_uninit(CAPACITY) },
-            next_free_index: core::array::from_fn(|i| UnsafeCell::new(i as u32 + 1)),
-            next_free_index_plus_one: UnsafeCell::new(CAPACITY as u32 + 1),
-            active_index: [const { AtomicU64::new(0) }; CAPACITY],
-            data: [const { UnsafeCell::new(MaybeUninit::uninit()) }; CAPACITY],
+            data: FixedSizeContainerData::default(),
         };
 
-        let allocator = BumpAllocator::new(new_self.next_free_index.as_mut_ptr().cast());
         unsafe {
             new_self
                 .container
-                .init(&allocator)
+                .init(&new_self.data.allocator())
                 .expect("All required memory is preallocated.")
         };
 
