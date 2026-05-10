@@ -65,7 +65,7 @@ pub use iceoryx2_bb_elementary::CallbackProgression;
 
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
-use iceoryx2_bb_concurrency::cell::UnsafeCell;
+use iceoryx2_bb_concurrency::cell::{RefCell, UnsafeCell};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
@@ -160,10 +160,11 @@ impl<T: Copy + Debug> ContainerState<T> {
     ///     CallbackProgression::Continue
     /// });
     /// ```
-    pub fn for_each<F: FnMut(&T) -> CallbackProgression>(&self, mut callback: F) {
-        for i in 0..self.data.len() {
-            if self.element_generation_counter[i] % 2 == 1
-                && callback(unsafe { self.data[i].assume_init_ref() }) == CallbackProgression::Stop
+    pub fn for_each<F: FnMut(usize, &T) -> CallbackProgression>(&self, mut callback: F) {
+        for index in 0..self.data.len() {
+            if Container::<T>::contains_data(self.element_generation_counter[index])
+                && callback(index, unsafe { self.data[index].assume_init_ref() })
+                    == CallbackProgression::Stop
             {
                 return;
             }
@@ -423,29 +424,54 @@ impl<T: Copy + Debug> Container<T> {
     ///  * All existing [`ContainerHandle`] that belong to the [`OwnerId`] must never be removed with
     ///    [`Container::remove()`] otherwise we corrupt the state.
     ///
-    pub unsafe fn recover(&self, dead_owner_id: OwnerId, mode: ReleaseMode) -> ReleaseState {
+    pub unsafe fn recover<F: FnMut(OwnerId, usize, T) -> bool, S: FnMut(usize, T)>(
+        &self,
+        mut predicate: F,
+        mode: ReleaseMode,
+        mut call_on_recover: S,
+    ) -> ReleaseState {
         self.verify_init("recover()");
 
         // this is an atomic since the current generation count needs to be borrowed twice as mutable,
         // once it the predicate to store the generation count before the entry is released and
         // afterwards to set the entry to empty if no other thread has in the meantime acquired the new
         // index and repaired it
-        let current_generation_count = AtomicU64::new(0);
+        let current_generation_count = RefCell::new(0u64);
+        let entry_contents = RefCell::new(MaybeUninit::<T>::uninit());
 
-        let predicate = |owner_id, index| {
-            let gen_count = unsafe { &*self.element_generation_counter_ptr.as_ptr().add(index) }
-                .load(Ordering::Relaxed);
-            if dead_owner_id == owner_id && Self::contains_data(gen_count) {
-                current_generation_count.store(gen_count, Ordering::Relaxed);
+        let p = |owner_id, index| {
+            let element_generation_counter =
+                unsafe { &*self.element_generation_counter_ptr.as_ptr().add(index) };
 
-                true
-            } else {
-                false
+            loop {
+                let gen_count = element_generation_counter.load(Ordering::Relaxed);
+
+                if Self::contains_data(gen_count) {
+                    let mut contents = entry_contents.borrow_mut();
+                    unsafe {
+                        core::ptr::copy_nonoverlapping(
+                            (*self.data_ptr.as_ptr().add(index)).get(),
+                            contents.as_mut_ptr().cast(),
+                            1,
+                        )
+                    };
+
+                    if gen_count != element_generation_counter.load(Ordering::Relaxed) {
+                        continue;
+                    }
+
+                    *current_generation_count.borrow_mut() = gen_count;
+
+                    return predicate(owner_id, index, unsafe { contents.assume_init_read() });
+                } else {
+                    return false;
+                }
             }
         };
 
-        let on_successful_removal = |_owner_id, index| {
-            let v = current_generation_count.load(Ordering::Relaxed);
+        let on_success = |_owner_id, index| {
+            call_on_recover(index, unsafe { entry_contents.borrow().assume_init_read() });
+            let v = *current_generation_count.borrow();
 
             // If setting the entry to empty failed then an other thread won the `Self::add()` race,
             // acquired the next index and already repaired it.
@@ -453,10 +479,7 @@ impl<T: Copy + Debug> Container<T> {
                 .compare_exchange(v, v + 1, Ordering::Relaxed, Ordering::Relaxed);
         };
 
-        unsafe {
-            self.index_set
-                .recover(mode, predicate, on_successful_removal)
-        }
+        unsafe { self.index_set.recover(mode, p, on_success) }
     }
 
     /// Syncs the [`ContainerState`] with the current state of the [`Container`]. If the state has

@@ -137,34 +137,30 @@ impl DynamicConfig {
         mut port_cleanup_callback: PortCleanup,
     ) {
         unsafe {
-            self.servers
-                .get_state()
-                .for_each(|handle: ContainerHandle, registered_server| {
-                    if registered_server.node_id == *node_id
+            self.servers.recover(
+                |owner_id, _, registered_server| {
+                    owner_id == node_id.owner_id()
                         && port_cleanup_callback(UniquePortId::Server(registered_server.server_id))
                             == PortCleanupAction::RemovePort
-                    {
-                        self.release_server_handle(handle);
-                    }
-                    CallbackProgression::Continue
-                });
+                },
+                ReleaseMode::Default,
+                |_, _| {},
+            );
 
-            self.clients
-                .get_state()
-                .for_each(|handle: ContainerHandle, registered_client| {
-                    if registered_client.node_id == *node_id
+            self.clients.recover(
+                |owner_id, _, registered_client| {
+                    owner_id == node_id.owner_id()
                         && port_cleanup_callback(UniquePortId::Client(registered_client.client_id))
                             == PortCleanupAction::RemovePort
-                    {
-                        self.release_client_handle(handle);
-                    }
-                    CallbackProgression::Continue
-                });
+                },
+                ReleaseMode::Default,
+                |_, _| {},
+            );
         }
     }
 
     pub(crate) fn add_client_id(&self, details: ClientDetails) -> Option<ContainerHandle> {
-        unsafe { self.clients.add(details).ok() }
+        unsafe { self.clients.add(details, details.node_id.owner_id()).ok() }
     }
 
     pub(crate) fn release_client_handle(&self, handle: ContainerHandle) {
@@ -172,7 +168,7 @@ impl DynamicConfig {
     }
 
     pub(crate) fn add_server_id(&self, details: ServerDetails) -> Option<ContainerHandle> {
-        unsafe { self.servers.add(details).ok() }
+        unsafe { self.servers.add(details, details.node_id.owner_id()).ok() }
     }
 
     pub(crate) fn release_server_handle(&self, handle: ContainerHandle) {

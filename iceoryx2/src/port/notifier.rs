@@ -230,8 +230,8 @@ impl<Service: service::Service> ListenerConnections<Service> {
         visited_indices.resize(self.len(), None);
 
         unsafe {
-            (*self.list_state.get()).for_each(|h, listener_id| {
-                visited_indices[h.index() as usize] = Some(*listener_id);
+            (*self.list_state.get()).for_each(|index, listener_id| {
+                visited_indices[index] = Some(*listener_id);
                 CallbackProgression::Continue
             })
         };

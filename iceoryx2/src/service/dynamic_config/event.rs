@@ -147,44 +147,40 @@ impl DynamicConfig {
         mut port_cleanup_callback: PortCleanup,
     ) {
         unsafe {
-            self.listeners
-                .get_state()
-                .for_each(|handle: ContainerHandle, registered_listener| {
-                    if registered_listener.node_id == *node_id
+            self.listeners.recover(
+                |owner_id, _, registered_listener| {
+                    owner_id == node_id.owner_id()
                         && port_cleanup_callback(UniquePortId::Listener(
                             registered_listener.listener_id,
                         )) == PortCleanupAction::RemovePort
-                    {
-                        self.release_listener_handle(handle);
-                    }
-                    CallbackProgression::Continue
-                });
+                },
+                ReleaseMode::Default,
+                |_, _| {},
+            );
 
-            self.notifiers
-                .get_state()
-                .for_each(|handle: ContainerHandle, registered_notifier| {
-                    if registered_notifier.node_id == *node_id
+            self.notifiers.recover(
+                |owner_id, _, registered_notifier| {
+                    owner_id == node_id.owner_id()
                         && port_cleanup_callback(UniquePortId::Notifier(
                             registered_notifier.notifier_id,
                         )) == PortCleanupAction::RemovePort
-                    {
-                        self.release_notifier_handle(handle);
-                    }
-                    CallbackProgression::Continue
-                });
+                },
+                ReleaseMode::Default,
+                |_, _| {},
+            );
         }
     }
 
-    pub(crate) fn add_listener_id(&self, id: ListenerDetails) -> Option<ContainerHandle> {
-        unsafe { self.listeners.add(id).ok() }
+    pub(crate) fn add_listener_id(&self, details: ListenerDetails) -> Option<ContainerHandle> {
+        unsafe { self.listeners.add(details, details.node_id.owner_id()).ok() }
     }
 
     pub(crate) fn release_listener_handle(&self, handle: ContainerHandle) {
         unsafe { self.listeners.remove(handle, ReleaseMode::Default) };
     }
 
-    pub(crate) fn add_notifier_id(&self, id: NotifierDetails) -> Option<ContainerHandle> {
-        unsafe { self.notifiers.add(id).ok() }
+    pub(crate) fn add_notifier_id(&self, details: NotifierDetails) -> Option<ContainerHandle> {
+        unsafe { self.notifiers.add(details, details.node_id.owner_id()).ok() }
     }
 
     pub(crate) fn release_notifier_handle(&self, handle: ContainerHandle) {

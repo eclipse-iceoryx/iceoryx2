@@ -125,30 +125,26 @@ impl DynamicConfig {
         mut port_cleanup_callback: PortCleanup,
     ) {
         unsafe {
-            self.publishers.get_state().for_each(
-                |handle: ContainerHandle, registered_publisher| {
-                    if registered_publisher.node_id == *node_id
+            self.publishers.recover(
+                |owner_id, _, registered_publisher| {
+                    owner_id == node_id.owner_id()
                         && port_cleanup_callback(UniquePortId::Publisher(
                             registered_publisher.publisher_id,
                         )) == PortCleanupAction::RemovePort
-                    {
-                        self.release_publisher_handle(handle);
-                    }
-                    CallbackProgression::Continue
                 },
+                ReleaseMode::Default,
+                |_, _| {},
             );
 
-            self.subscribers.get_state().for_each(
-                |handle: ContainerHandle, registered_subscriber| {
-                    if registered_subscriber.node_id == *node_id
+            self.subscribers.recover(
+                |owner_id, _, registered_subscriber| {
+                    owner_id == node_id.owner_id()
                         && port_cleanup_callback(UniquePortId::Subscriber(
                             registered_subscriber.subscriber_id,
                         )) == PortCleanupAction::RemovePort
-                    {
-                        self.release_subscriber_handle(handle);
-                    }
-                    CallbackProgression::Continue
                 },
+                ReleaseMode::Default,
+                |_, _| {},
             );
         }
     }
@@ -190,7 +186,11 @@ impl DynamicConfig {
     }
 
     pub(crate) fn add_subscriber_id(&self, details: SubscriberDetails) -> Option<ContainerHandle> {
-        unsafe { self.subscribers.add(details).ok() }
+        unsafe {
+            self.subscribers
+                .add(details, details.node_id.owner_id())
+                .ok()
+        }
     }
 
     pub(crate) fn release_subscriber_handle(&self, handle: ContainerHandle) {
@@ -198,7 +198,11 @@ impl DynamicConfig {
     }
 
     pub(crate) fn add_publisher_id(&self, details: PublisherDetails) -> Option<ContainerHandle> {
-        unsafe { self.publishers.add(details).ok() }
+        unsafe {
+            self.publishers
+                .add(details, details.node_id.owner_id())
+                .ok()
+        }
     }
 
     pub(crate) fn release_publisher_handle(&self, handle: ContainerHandle) {

@@ -14,6 +14,7 @@ use alloc::format;
 
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_lock_free::mpmc::robust_unique_index_set::OwnerId;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_log::fatal_panic;
 
@@ -131,4 +132,13 @@ pub enum UniquePortId {
     Reader(UniqueReaderId),
     /// The system-wide unique id of a [`Writer`](crate::port::writer::Writer).
     Writer(UniqueWriterId),
+}
+
+impl UniqueNodeId {
+    pub(crate) fn owner_id(&self) -> OwnerId {
+        OwnerId::new(
+            (self.0.pid().value() as u64) << 32 | (self.0.creation_time().seconds() as u32) as u64,
+        )
+        .expect("The unique node id is never 0")
+    }
 }

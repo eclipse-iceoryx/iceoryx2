@@ -139,42 +139,38 @@ impl DynamicConfig {
         mut port_cleanup_callback: PortCleanup,
     ) {
         unsafe {
-            self.readers
-                .get_state()
-                .for_each(|handle: ContainerHandle, registered_reader| {
-                    if registered_reader.node_id == *node_id
+            self.readers.recover(
+                |owner_id, _, registered_reader| {
+                    owner_id == node_id.owner_id()
                         && port_cleanup_callback(UniquePortId::Reader(registered_reader.reader_id))
                             == PortCleanupAction::RemovePort
-                    {
-                        self.release_reader_handle(handle);
-                    }
-                    CallbackProgression::Continue
-                });
+                },
+                ReleaseMode::Default,
+                |_, _| {},
+            );
 
-            self.writers
-                .get_state()
-                .for_each(|handle: ContainerHandle, registered_writer| {
-                    if registered_writer.node_id == *node_id
+            self.writers.recover(
+                |owner_id, _, registered_writer| {
+                    owner_id == node_id.owner_id()
                         && port_cleanup_callback(UniquePortId::Writer(registered_writer.writer_id))
                             == PortCleanupAction::RemovePort
-                    {
-                        self.release_writer_handle(handle);
-                    }
-                    CallbackProgression::Continue
-                });
+                },
+                ReleaseMode::Default,
+                |_, _| {},
+            );
         }
     }
 
-    pub(crate) fn add_reader_id(&self, id: ReaderDetails) -> Option<ContainerHandle> {
-        unsafe { self.readers.add(id).ok() }
+    pub(crate) fn add_reader_id(&self, details: ReaderDetails) -> Option<ContainerHandle> {
+        unsafe { self.readers.add(details, details.node_id.owner_id()).ok() }
     }
 
     pub(crate) fn release_reader_handle(&self, handle: ContainerHandle) {
         unsafe { self.readers.remove(handle, ReleaseMode::Default) };
     }
 
-    pub(crate) fn add_writer_id(&self, id: WriterDetails) -> Option<ContainerHandle> {
-        unsafe { self.writers.add(id).ok() }
+    pub(crate) fn add_writer_id(&self, details: WriterDetails) -> Option<ContainerHandle> {
+        unsafe { self.writers.add(details, details.node_id.owner_id()).ok() }
     }
 
     pub(crate) fn release_writer_handle(&self, handle: ContainerHandle) {

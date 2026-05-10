@@ -193,10 +193,10 @@ impl<Service: service::Service> SharedServerState<Service> {
 
         let mut result = Ok(());
         unsafe {
-            (*self.client_list_state.get()).for_each(|h, details| {
+            (*self.client_list_state.get()).for_each(|index, details| {
                 // establish request connection
                 let inner_result = self.request_receiver.update_connection(
-                    h.index() as usize,
+                    index,
                     SenderDetails {
                         port_id: details.client_id.value(),
                         number_of_samples: details.number_of_requests,
@@ -208,7 +208,7 @@ impl<Service: service::Service> SharedServerState<Service> {
 
                 // establish response connection
                 let inner_result = self.response_sender.update_connection(
-                    h.index() as usize,
+                    index,
                     ReceiverDetails {
                         port_id: details.client_id.value(),
                         buffer_size: details.response_buffer_size,

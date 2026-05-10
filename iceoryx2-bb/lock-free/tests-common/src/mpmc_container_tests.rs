@@ -81,7 +81,7 @@ pub mod generic {
 
         let state = sut.get_state();
         let mut contained_values: Vec<usize> = vec![];
-        state.for_each(|value: &T| {
+        state.for_each(|_, value: &T| {
             contained_values.push((*value).into());
             CallbackProgression::Continue
         });
@@ -117,7 +117,7 @@ pub mod generic {
 
         let state = sut.get_state();
         let mut contained_values = vec![];
-        state.for_each(|value: &T| {
+        state.for_each(|_, value: &T| {
             contained_values.push((*value).into());
             CallbackProgression::Continue
         });
@@ -159,7 +159,7 @@ pub mod generic {
 
         let state = unsafe { sut.get_state() };
         let mut contained_values = vec![];
-        state.for_each(|value: &T| {
+        state.for_each(|_, value: &T| {
             contained_values.push((*value).into());
             CallbackProgression::Continue
         });
@@ -194,7 +194,7 @@ pub mod generic {
 
         let state = sut.get_state();
         let mut contained_values = vec![];
-        state.for_each(|value: &T| {
+        state.for_each(|_, value: &T| {
             contained_values.push((*value).into());
             CallbackProgression::Continue
         });
@@ -210,14 +210,14 @@ pub mod generic {
         let mut counter = 0;
 
         let mut state = sut.get_state();
-        state.for_each(|_| {
+        state.for_each(|_, _| {
             counter += 1;
             CallbackProgression::Continue
         });
         assert_that!(counter, eq 0);
 
         unsafe { sut.update_state(&mut state) };
-        state.for_each(|_| {
+        state.for_each(|_, _| {
             counter += 1;
             CallbackProgression::Continue
         });
@@ -238,14 +238,14 @@ pub mod generic {
 
         let mut state = sut.get_state();
         let mut contained_values1 = vec![];
-        state.for_each(|value: &T| {
+        state.for_each(|_, value: &T| {
             contained_values1.push((*value).into());
             CallbackProgression::Continue
         });
 
         assert_that!(unsafe { sut.update_state(&mut state) }, eq false);
         let mut contained_values2 = vec![];
-        state.for_each(|value: &T| {
+        state.for_each(|_, value: &T| {
             contained_values2.push((*value).into());
             CallbackProgression::Continue
         });
@@ -276,7 +276,7 @@ pub mod generic {
 
         assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
         let mut contained_values = vec![];
-        state.for_each(|value: &T| {
+        state.for_each(|_, value: &T| {
             contained_values.push((*value).into());
             CallbackProgression::Continue
         });
@@ -310,7 +310,7 @@ pub mod generic {
 
         assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
         let mut contained_values = vec![];
-        state.for_each(|value: &T| {
+        state.for_each(|_, value: &T| {
             contained_values.push((*value).into());
             CallbackProgression::Continue
         });
@@ -339,7 +339,7 @@ pub mod generic {
 
             unsafe { sut.update_state(&mut state) };
             let mut contained_values = vec![];
-            state.for_each(|value: &T| {
+            state.for_each(|_, value: &T| {
                 contained_values.push((*value).into());
                 CallbackProgression::Continue
             });
@@ -356,7 +356,7 @@ pub mod generic {
 
             unsafe { sut.update_state(&mut state) };
             let mut contained_values = vec![];
-            state.for_each(|value: &T| {
+            state.for_each(|_, value: &T| {
                 contained_values.push((*value).into());
                 CallbackProgression::Continue
             });
@@ -451,7 +451,7 @@ pub mod generic {
                             != number_of_threads_per_op as u32
                         {
                             if unsafe { sut.update_state(&mut state) } {
-                                state.for_each(|value: &T| {
+                                state.for_each(|_, value: &T| {
                                     extracted
                                         .lock()
                                         .expect("failed to lock mutex")

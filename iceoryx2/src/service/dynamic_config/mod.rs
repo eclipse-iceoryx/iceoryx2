@@ -60,11 +60,6 @@ pub(crate) enum DeregisterNodeState {
 }
 
 #[derive(Debug)]
-pub(crate) enum RemoveDeadNodeResult {
-    NodeNotRegistered,
-}
-
-#[derive(Debug)]
 pub(crate) enum MessagingPatternSettings {
     RequestResponse(request_response::DynamicConfigSettings),
     PublishSubscribe(publish_subscribe::DynamicConfigSettings),
@@ -150,7 +145,7 @@ impl DynamicConfig {
         &self,
         node_id: &UniqueNodeId,
         port_cleanup_callback: PortCleanup,
-    ) -> Result<DeregisterNodeState, RemoveDeadNodeResult> {
+    ) -> DeregisterNodeState {
         unsafe {
             match self.messaging_pattern {
                 MessagingPattern::PublishSubscribe(ref v) => {
@@ -167,19 +162,14 @@ impl DynamicConfig {
                 }
             };
 
-            let mut ret_val = Err(RemoveDeadNodeResult::NodeNotRegistered);
-            self.nodes
-                .get_state()
-                .for_each(|handle: ContainerHandle, registered_node_id| {
-                    if registered_node_id == node_id {
-                        ret_val = Ok(self.deregister_node_id(handle));
-                        CallbackProgression::Stop
-                    } else {
-                        CallbackProgression::Continue
-                    }
-                });
-
-            ret_val
+            match self.nodes.recover(
+                |owner_id, _, _| owner_id == node_id.owner_id(),
+                ReleaseMode::LockIfLastIndex,
+                |_, _| {},
+            ) {
+                ReleaseState::Locked => DeregisterNodeState::NoMoreOwners,
+                ReleaseState::Unlocked => DeregisterNodeState::HasOwners,
+            }
         }
     }
 
@@ -188,7 +178,7 @@ impl DynamicConfig {
         node_id: UniqueNodeId,
     ) -> Result<ContainerHandle, RegisterNodeResult> {
         let msg = "Unable to register NodeId in service";
-        match unsafe { self.nodes.add(node_id) } {
+        match unsafe { self.nodes.add(node_id, node_id.owner_id()) } {
             Ok(handle) => Ok(handle),
             Err(ContainerAddFailure::IsLocked) => {
                 fail!(from self, with RegisterNodeResult::MarkedForDestruction,
@@ -207,10 +197,6 @@ impl DynamicConfig {
     ) {
         let state = unsafe { self.nodes.get_state() };
         state.for_each(|_, node_id| callback(node_id));
-    }
-
-    pub(crate) fn is_marked_for_destruction(&self) -> bool {
-        self.nodes.is_locked()
     }
 
     pub(crate) fn deregister_node_id(&self, handle: ContainerHandle) -> DeregisterNodeState {

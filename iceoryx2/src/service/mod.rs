@@ -519,7 +519,7 @@ impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
 #[doc(hidden)]
 pub mod internal {
     use builder::event::EventOpenError;
-    use dynamic_config::{PortCleanupAction, RemoveDeadNodeResult};
+    use dynamic_config::PortCleanupAction;
     use iceoryx2_bb_container::string::*;
     use iceoryx2_log::error;
     use port_factory::PortFactory;
@@ -798,11 +798,8 @@ pub mod internal {
                     .get()
                     .remove_dead_node_id(node_id, cleanup_port_resources)
             } {
-                Ok(DeregisterNodeState::HasOwners) => false,
-                Ok(DeregisterNodeState::NoMoreOwners) => true,
-                Err(RemoveDeadNodeResult::NodeNotRegistered) => {
-                    dynamic_config.get().is_marked_for_destruction()
-                }
+                DeregisterNodeState::HasOwners => false,
+                DeregisterNodeState::NoMoreOwners => true,
             };
 
             if remove_service {
