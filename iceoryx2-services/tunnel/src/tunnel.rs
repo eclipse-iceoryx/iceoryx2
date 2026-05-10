@@ -216,6 +216,11 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         crate::builder::TunnelBuilder::new()
     }
 
+    /// Returns the iceoryx2 [`Node`] hosting the tunnel's services.
+    pub fn node(&self) -> &Node<S> {
+        &self.node
+    }
+
     /// Wires pre-built parts into a [`Tunnel`]. All creation logic lives in
     /// [`crate::builder::TunnelBuilder`].
     pub(crate) fn create(
