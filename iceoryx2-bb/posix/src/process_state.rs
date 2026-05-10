@@ -623,9 +623,9 @@ impl Drop for StateFiles {
         // Therefore, we check explicitly if a file has the ownership and remove it explicitly instead of
         // handling this via RAII
         for file in [&mut self.state, &mut self.owner_lock, &mut self.context] {
-            let mut file = file
-                .take()
-                .expect("contains always a value, only removed on destruction");
+            let Some(mut file) = file.take() else {
+                continue;
+            };
 
             if file.has_ownership() {
                 let file_path = *file
@@ -679,6 +679,7 @@ impl Abandonable for ProcessGuard {
             .expect("contains always a value, only removed on destruction")
             .write_val_at(0, &UniqueProcessId::new_zeroed())
         {
+            // The usage of `fatal_panic` is safe since the API shall be used only for testing.
             fatal_panic!(from this, "{msg} since the state file could not be overridden with zeros. [{e:?}]");
         }
 

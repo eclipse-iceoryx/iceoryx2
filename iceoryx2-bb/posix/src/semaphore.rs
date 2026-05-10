@@ -415,6 +415,7 @@ impl Abandonable for NamedSemaphore {
         }
 
         if unsafe { posix::sem_close(this.handle) } != 0 {
+            // Usage of `fatal_panic` is safe since the abandon API shall only be used for testing.
             fatal_panic!(from this, "This should never happen! The semaphore handle is invalid and cannot be closed.");
         }
     }
@@ -427,6 +428,8 @@ impl Drop for NamedSemaphore {
         }
 
         if unsafe { posix::sem_close(self.handle) } != 0 {
+            // Usage of `fatal_panic` is safe since the handle is never shared with the user or other processes.
+            // When this happens either we have an iceoryx2 bug or an issue with the underlying OS.
             fatal_panic!(from self, "This should never happen! The semaphore handle is invalid and cannot be closed.");
         }
 
@@ -435,7 +438,8 @@ impl Drop for NamedSemaphore {
                 .unlink(UnlinkMode::FailWhenSemaphoreDoesNotExist)
                 .is_err()
         {
-            fatal_panic!(from self, "Failed to cleanup semaphore. Something else removed a managed semaphore which should never happen!");
+            warn!(from self,
+                "Failed to cleanup semaphore. Something else removed a managed semaphore which should never happen!");
         }
 
         trace!(from self, "closed");
