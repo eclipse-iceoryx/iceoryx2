@@ -40,4 +40,12 @@ expect_output_from $id_publisher "Send sample"
 expect_output_from $id_iox2_tunnel "Opening mirror"
 expect_output_from $id_iox2_tunnel "Propagated PublishSubscribe"
 
+#### Shutdown
+send -i $id_publisher $SIGINT
+expect -i $id_publisher eof
+
+send -i $id_iox2_tunnel $SIGINT
+expect_output_from $id_iox2_tunnel "Tunnel stopped"
+expect -i $id_iox2_tunnel eof
+
 show_test_passed
