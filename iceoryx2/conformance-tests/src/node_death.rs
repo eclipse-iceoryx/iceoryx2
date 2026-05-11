@@ -18,12 +18,10 @@ use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
 use iceoryx2::config::Config;
-use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::node::{CleanupState, NodeState};
 use iceoryx2::prelude::*;
 use iceoryx2::service::Service;
 use iceoryx2::testing::*;
-use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing::{assert_that, test_fail};
@@ -78,19 +76,11 @@ pub trait Test {
 
     fn create_bad_node(&self) -> Node<Self::Service> {
         let node_name = Self::generate_node_name(0, "toby or no toby");
-        //let fake_node_id = ((u32::MAX - COUNTER.fetch_add(1, Ordering::Relaxed)) as u128) << 96;
-        //let fake_node_id = unsafe { core::mem::transmute::<u128, UniqueNodeId>(fake_node_id) };
-        let fake_node_id = UniqueSystemId::new().unwrap();
-        let fake_node_id =
-            unsafe { core::mem::transmute::<UniqueSystemId, UniqueNodeId>(fake_node_id) };
-
-        unsafe {
-            NodeBuilder::new()
-                .name(&node_name)
-                .config(self.config())
-                .__internal_create_with_custom_node_id::<Self::Service>(fake_node_id)
-                .unwrap()
-        }
+        NodeBuilder::new()
+            .name(&node_name)
+            .config(self.config())
+            .create()
+            .unwrap()
     }
 
     fn cleanup_dead_nodes(config: &Config) {
