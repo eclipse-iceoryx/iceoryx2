@@ -90,9 +90,14 @@
 //!
 //! let index_set = StaticRobustUniqueIndexSet::<CAPACITY>::new();
 //! let owner_id_of_dead_process = OwnerId::new(313).unwrap();
-//! index_set.recover(ReleaseMode::default(), |owner_id| {
-//!     owner_id == owner_id_of_dead_process
-//! });
+//! index_set.recover(ReleaseMode::default(),
+//!     |owner_id, _index| {
+//!         owner_id == owner_id_of_dead_process
+//!     },
+//!     |owner_id, index| {
+//!         println!("recover index {index} from {owner_id:?}");
+//!     }
+//! );
 //! ```
 
 use core::alloc::Layout;

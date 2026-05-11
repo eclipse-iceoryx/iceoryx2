@@ -32,15 +32,16 @@
 //! const CAPACITY: usize = 139;
 //! let container = FixedSizeContainer::<u32, CAPACITY>::new();
 //! let mut stored_indices = vec![];
+//! let owner_id = OwnerId::new(8192).unwrap();
 //!
-//! match unsafe { container.add(1234567) } {
+//! match unsafe { container.add(1234567, owner_id) } {
 //!     Ok(index) => stored_indices.push(index),
 //!     Err(_) => println!("container is full"),
 //! };
 //!
 //! let mut state = container.get_state();
-//! state.for_each(|handle: ContainerHandle, value: &u32| {
-//!     println!("handle: {:?}, value: {}", handle, value);
+//! state.for_each(|index: usize, value: &u32| {
+//!     println!("index: {}, value: {}", index, value);
 //!     CallbackProgression::Continue
 //! });
 //!
@@ -48,21 +49,27 @@
 //!
 //! if unsafe { container.update_state(&mut state) } {
 //!     println!("container state has changed");
-//!     state.for_each(|handle: ContainerHandle, value: &u32| {
-//!         println!("handle: {:?}, value: {}", handle, value);
+//!     state.for_each(|index: usize, value: &u32| {
+//!         println!("index: {}, value: {}", index, value);
 //!         CallbackProgression::Continue
 //!     });
 //! }
 //! ```
 
-use crate::mpmc::robust_unique_index_set::{
-    OwnerId, RobustUniqueIndexSet, StaticRobustUniqueIndexSetData,
-};
+extern crate alloc;
+
+pub use crate::mpmc::robust_unique_index_set::OwnerId;
+pub use iceoryx2_bb_elementary::CallbackProgression;
+
+use crate::mpmc::robust_unique_index_set::{RobustUniqueIndexSet, StaticRobustUniqueIndexSetData};
 use crate::mpmc::unique_index_set_enums::{
     ReleaseMode, ReleaseState, UniqueIndexSetAcquireFailure,
 };
-pub use iceoryx2_bb_elementary::CallbackProgression;
-
+use alloc::vec;
+use alloc::vec::Vec;
+use core::alloc::Layout;
+use core::fmt::Debug;
+use core::mem::MaybeUninit;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
 use iceoryx2_bb_concurrency::cell::{RefCell, UnsafeCell};
@@ -76,16 +83,6 @@ use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
 use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_log::{fail, fatal_panic};
-
-use crate::mpmc::unique_index_set::*;
-
-extern crate alloc;
-use alloc::vec;
-use alloc::vec::Vec;
-
-use core::alloc::Layout;
-use core::fmt::Debug;
-use core::mem::MaybeUninit;
 
 /// States the reason why an element could not be added to the [`Container`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -155,8 +152,8 @@ impl<T: Copy + Debug> ContainerState<T> {
     /// let container = FixedSizeContainer::<u128, 128>::new();
     ///
     /// let mut state = container.get_state();
-    /// state.for_each(|handle: ContainerHandle, value: &u128| {
-    ///     println!("handle: {:?}, value: {}", handle, value);
+    /// state.for_each(|index: usize, value: &u128| {
+    ///     println!("index: {}, value: {}", index, value);
     ///     CallbackProgression::Continue
     /// });
     /// ```
@@ -197,7 +194,7 @@ unsafe impl<T: Copy + Debug> Sync for Container<T> {}
 impl<T: Copy + Debug> RelocatableContainer for Container<T> {
     unsafe fn new_uninit(capacity: usize) -> Self {
         let distance_to_active_index =
-            (core::mem::size_of::<Self>() + UniqueIndexSet::memory_size(capacity)) as isize;
+            (core::mem::size_of::<Self>() + RobustUniqueIndexSet::memory_size(capacity)) as isize;
         Self {
             container_id: UniqueId::new(),
             element_generation_counter_ptr: RelocatablePointer::new(distance_to_active_index),
@@ -654,8 +651,9 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///
     /// const CAPACITY: usize = 139;
     /// let container = FixedSizeContainer::<u128, CAPACITY>::new();
+    /// let owner_id = OwnerId::new(91230).unwrap();
     ///
-    /// match unsafe { container.add(1234567) } {
+    /// match unsafe { container.add(1234567, owner_id) } {
     ///     Ok(index) => {
     ///         println!("added at index {:?}", index);
     ///         unsafe { container.remove(index, ReleaseMode::Default) };
