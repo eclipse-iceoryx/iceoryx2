@@ -87,11 +87,6 @@ class Service {
     auto dynamic_config_storage_suffix() && -> const char*;
     /// Set the suffix of the dynamic config file
     void set_dynamic_config_storage_suffix(const iox2::bb::FileName& value) &&;
-    /// Defines the time of how long another process will wait until the service creation is
-    /// finalized
-    auto creation_timeout() && -> iox2::bb::Duration;
-    /// Set the creation timeout
-    void set_creation_timeout(const iox2::bb::Duration& value) &&;
     /// The suffix of a one-to-one connection
     auto connection_suffix() && -> const char*;
     /// Set the suffix of a one-to-one connection
@@ -125,6 +120,11 @@ class Global {
     auto root_path() && -> const char*;
     /// Defines the path under which all other directories or files will be created
     void set_root_path(const iox2::bb::Path& value) &&;
+    /// Defines the time of how long another process will wait until an entity creation
+    /// is finished. An entity could be a Node or a Service
+    auto creation_timeout() && -> iox2::bb::Duration;
+    /// Set the creation timeout
+    void set_creation_timeout(const iox2::bb::Duration& value) &&;
 
     /// Returns the service part of the global configuration
     auto service() -> Service;
