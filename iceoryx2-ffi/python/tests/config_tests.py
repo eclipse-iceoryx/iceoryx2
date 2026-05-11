@@ -35,6 +35,13 @@ def test_global_service_directory_can_be_set() -> None:
     assert sut.global_cfg.service.directory == path
 
 
+def test_global_creation_timeout_can_be_set() -> None:
+    sut = iox2.config.default()
+    value = iox2.Duration.from_millis(123)
+    sut.global_cfg.creation_timeout = value
+    assert sut.global_cfg.creation_timeout == value
+
+
 def test_global_service_data_segment_suffix_can_be_set() -> None:
     sut = iox2.config.default()
     path = iox2.FileName.new(".let_suf_the_fix")
@@ -54,13 +61,6 @@ def test_global_service_dynamic_config_storage_suffix_can_be_set() -> None:
     path = iox2.FileName.new(".flufn_fluff")
     sut.global_cfg.service.dynamic_config_storage_suffix = path
     assert sut.global_cfg.service.dynamic_config_storage_suffix == path
-
-
-def test_global_service_creation_timeout_can_be_set() -> None:
-    sut = iox2.config.default()
-    path = iox2.Duration.from_millis(123)
-    sut.global_cfg.service.creation_timeout = path
-    assert sut.global_cfg.service.creation_timeout == path
 
 
 def test_global_service_cleanup_dead_nodes_on_open_can_be_set() -> None:
