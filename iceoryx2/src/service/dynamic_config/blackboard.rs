@@ -142,8 +142,10 @@ impl DynamicConfig {
             self.readers.recover(
                 node_id.owner_id(),
                 |registered_reader| {
-                    port_cleanup_callback(UniquePortId::Reader(registered_reader.reader_id))
-                        == PortCleanupAction::RemovePort
+                    // additional comparision, since the node_id.owner_id() might be not enough
+                    registered_reader.node_id == *node_id
+                        && port_cleanup_callback(UniquePortId::Reader(registered_reader.reader_id))
+                            == PortCleanupAction::RemovePort
                 },
                 ReleaseMode::Default,
             );
@@ -151,8 +153,10 @@ impl DynamicConfig {
             self.writers.recover(
                 node_id.owner_id(),
                 |registered_writer| {
-                    port_cleanup_callback(UniquePortId::Writer(registered_writer.writer_id))
-                        == PortCleanupAction::RemovePort
+                    // additional comparision, since the node_id.owner_id() might be not enough
+                    registered_writer.node_id == *node_id
+                        && port_cleanup_callback(UniquePortId::Writer(registered_writer.writer_id))
+                            == PortCleanupAction::RemovePort
                 },
                 ReleaseMode::Default,
             );

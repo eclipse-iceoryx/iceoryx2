@@ -140,8 +140,10 @@ impl DynamicConfig {
             self.servers.recover(
                 node_id.owner_id(),
                 |registered_server| {
-                    port_cleanup_callback(UniquePortId::Server(registered_server.server_id))
-                        == PortCleanupAction::RemovePort
+                    // additional comparision, since the node_id.owner_id() might be not enough
+                    registered_server.node_id == *node_id
+                        && port_cleanup_callback(UniquePortId::Server(registered_server.server_id))
+                            == PortCleanupAction::RemovePort
                 },
                 ReleaseMode::Default,
             );
@@ -149,8 +151,10 @@ impl DynamicConfig {
             self.clients.recover(
                 node_id.owner_id(),
                 |registered_client| {
-                    port_cleanup_callback(UniquePortId::Client(registered_client.client_id))
-                        == PortCleanupAction::RemovePort
+                    // additional comparision, since the node_id.owner_id() might be not enough
+                    registered_client.node_id == *node_id
+                        && port_cleanup_callback(UniquePortId::Client(registered_client.client_id))
+                            == PortCleanupAction::RemovePort
                 },
                 ReleaseMode::Default,
             );
