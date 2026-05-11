@@ -147,6 +147,12 @@ pub mod node_death {
 
     use super::*;
 
+    fn does_support_persistency<S: Test>() -> bool {
+        <S::Service as Service>::DynamicStorage::<
+                    iceoryx2::service::dynamic_config::DynamicConfig,
+                >::does_support_persistency()
+    }
+
     #[conformance_test]
     pub fn dead_node_is_marked_as_dead_and_can_be_cleaned_up<S: Test>() {
         let test = S::new();
@@ -177,7 +183,7 @@ pub mod node_death {
 
     #[conformance_test]
     pub fn dead_node_is_removed_from_pub_sub_service<S: Test>() {
-        test_requires!(<S::Service as Service>::DynamicStorage::does_support_persistency());
+        test_requires!(does_support_persistency::<S>());
 
         let test = S::new();
 
@@ -362,7 +368,7 @@ pub mod node_death {
 
     #[conformance_test]
     pub fn dead_node_is_removed_from_request_response_service<S: Test>() {
-        test_requires!(<S::Service as Service>::DynamicStorage::does_support_persistency());
+        test_requires!(does_support_persistency::<S>());
 
         let test = S::new();
 
@@ -868,7 +874,7 @@ pub mod node_death {
         total_number_of_nodes: usize,
         mut service_builder: F,
     ) {
-        test_requires!(<S::Service as Service>::DynamicStorage::does_support_persistency());
+        test_requires!(does_support_persistency::<S>());
 
         let bad_node = test.create_bad_node();
         let bad_service = service_builder(&bad_node);

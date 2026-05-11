@@ -124,11 +124,9 @@ impl UniqueSystemId {
     ///
     /// * The user must ensure that the counter is a strictly monotonic counter in the same process.
     ///
-    pub fn from_pid_and_counter(
-        pid: u32,
-        counter: u32,
-    ) -> Result<Self, UniqueSystemIdCreationError> {
+    pub fn from_counter(counter: u32) -> Result<Self, UniqueSystemIdCreationError> {
         let msg = "Failed to create UniqueSystemId from pid and counter";
+        let pid = Process::self_host_pid().value() as _;
         let now = fail!(from "UniqueSystemId::new()",
                         when Time::now_with_clock(ClockType::default()),
                         with UniqueSystemIdCreationError::FailedToAcquireTime,

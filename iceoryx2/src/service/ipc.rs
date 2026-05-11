@@ -32,7 +32,6 @@
 //!
 //! See [`Service`](crate::service) for more detailed examples.
 
-use crate::service::dynamic_config::DynamicConfig;
 use core::fmt::Debug;
 use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
@@ -46,7 +45,7 @@ pub struct Service {}
 impl crate::service::Service for Service {
     type StaticStorage = static_storage::recommended::Ipc;
     type ConfigSerializer = serialize::recommended::Recommended;
-    type DynamicStorage = dynamic_storage::recommended::Ipc<DynamicConfig>;
+    type DynamicStorage<T: Debug + Send + Sync + 'static> = dynamic_storage::recommended::Ipc<T>;
     type ServiceNameHasher = hash::recommended::Recommended;
     type SharedMemory = shared_memory::recommended::Ipc<PoolAllocator>;
     type ResizableSharedMemory = resizable_shared_memory::recommended::Ipc<PoolAllocator>;

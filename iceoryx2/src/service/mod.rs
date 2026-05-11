@@ -387,7 +387,7 @@ pub struct ServiceState<S: Service, R: ServiceResource> {
     // order - not in memory order!
 
     // must be destructed first, to prevent services to open it
-    pub(crate) dynamic_storage: S::DynamicStorage,
+    pub(crate) dynamic_storage: S::DynamicStorage<DynamicConfig>,
     // must be destructed after the dynamic resources
     pub(crate) additional_resource: R,
     pub(crate) static_config: StaticConfig,
@@ -454,7 +454,7 @@ impl<S: Service, R: ServiceResource> SharedServiceState<S, R> {
         &self.state.static_config
     }
 
-    pub(crate) fn dynamic_storage(&self) -> &S::DynamicStorage {
+    pub(crate) fn dynamic_storage(&self) -> &S::DynamicStorage<DynamicConfig> {
         &self.state.dynamic_storage
     }
 
@@ -471,7 +471,7 @@ impl<S: Service, R: ServiceResource> ServiceState<S, R> {
     pub(crate) fn new(
         static_config: StaticConfig,
         shared_node: SharedNode<S>,
-        dynamic_storage: S::DynamicStorage,
+        dynamic_storage: S::DynamicStorage<DynamicConfig>,
         static_storage: S::StaticStorage,
         additional_resource: R,
     ) -> Self {
@@ -902,7 +902,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
 
     /// Defines the construct used to store the [`Service`]s dynamic configuration. This
     /// contains for instance all endpoints and other dynamic details.
-    type DynamicStorage: DynamicStorage<DynamicConfig>;
+    type DynamicStorage<T: Debug + Send + Sync + 'static>: DynamicStorage<T>;
 
     /// The memory used to store the payload.
     type SharedMemory: SharedMemoryForPoolAllocator;
@@ -1132,7 +1132,7 @@ pub fn __internal_details<S: Service>(
 fn open_dynamic_config<S: Service>(
     config: &config::Config,
     service_hash: &ServiceHash,
-) -> Result<Option<S::DynamicStorage>, ServiceDetailsError> {
+) -> Result<Option<S::DynamicStorage<DynamicConfig>>, ServiceDetailsError> {
     let origin = format!(
         "Service::open_dynamic_details<{}>({:?})",
         core::any::type_name::<S>(),
@@ -1140,10 +1140,10 @@ fn open_dynamic_config<S: Service>(
     );
     let msg = "Unable to open the services dynamic config";
     match
-            <<S::DynamicStorage as DynamicStorage<
+            <<S::DynamicStorage<DynamicConfig> as DynamicStorage<
                     DynamicConfig,
                 >>::Builder<'_> as NamedConceptBuilder<
-                    S::DynamicStorage,
+                    S::DynamicStorage<DynamicConfig>,
                 >>::new(&service_hash.0.into())
                     .config(&dynamic_config_storage_config::<S>(config))
                 .has_ownership(false)

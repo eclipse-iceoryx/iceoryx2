@@ -1384,7 +1384,7 @@ impl NodeBuilder {
     /// Creates a new [`Node`] for a specific [`service::Service`]. All entities owned by the
     /// [`Node`] will have the same [`service::Service`].
     pub fn create<Service: service::Service>(self) -> Result<Node<Service>, NodeCreationFailure> {
-        unsafe { self.__internal_create_with_custom_node_id(UniqueNodeId::new()) }
+        unsafe { self.__internal_create_with_custom_node_id(UniqueNodeId::new(1)) }
     }
 
     #[doc(hidden)]
