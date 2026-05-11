@@ -76,6 +76,20 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                     default_value: format!("\"{}\"", config.global.prefix),
                     description: "Prefix that is used for every file iceoryx2 creates.",
                 },
+                Field {
+                    key: "global.creation-timeout.secs",
+                    value_type: "int",
+                    default_value: config.global.creation_timeout.as_secs().to_string(),
+                    description: "Defines timeout that iceoryx2 will wait until an entity like a Node or Service is opened or created.\n
+                    Attention: Both 'secs' and 'nanos' must be set together; leaving one unset will cause the configuration to be invalid.",
+                },
+                Field {
+                    key: "global.creation-timeout.nanos",
+                    value_type: "int",
+                    default_value: config.global.creation_timeout.subsec_nanos().to_string(),
+                    description: "Additional nanoseconds for global entity creation timeout.\n   \
+                    Attention: Both 'secs' and 'nanos' must be set together; leaving one unset will cause the configuration to be invalid.",
+                },
             ],
         },
         Section {
@@ -192,30 +206,6 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                         config.global.service.cleanup_dead_nodes_on_open
                     ),
                     description: "Defines if there shall be a scan for dead nodes with a following stale resource cleanup whenever an existing service is opened.",
-                },
-            ],
-        },
-        Section {
-            name: "Global: Service Creation Timeout",
-            fields: vec![
-                Field {
-                    key: "global.service.creation-timeout.secs",
-                    value_type: "int",
-                    default_value: config.global.service.creation_timeout.as_secs().to_string(),
-                    description: "Maximum time for service setup in seconds. Uncreated services after this are marked as stalled.\n   \
-                    Attention: Both 'secs' and 'nanos' must be set together; leaving one unset will cause the configuration to be invalid.",
-                },
-                Field {
-                    key: "global.service.creation-timeout.nanos",
-                    value_type: "int",
-                    default_value: config
-                        .global
-                        .service
-                        .creation_timeout
-                        .subsec_nanos()
-                        .to_string(),
-                    description: "Additional nanoseconds for service setup timeout.\n   \
-                    Attention: Both 'secs' and 'nanos' must be set together; leaving one unset will cause the configuration to be invalid.",
                 },
             ],
         },

@@ -175,9 +175,7 @@ impl UniqueNodeId {
     }
 
     pub(crate) fn owner_id(&self) -> OwnerId {
-        OwnerId::new(
-            (self.0.pid().value() as u64) << 32 | (self.0.creation_time().seconds() as u32) as u64,
-        )
-        .expect("The unique node id is never 0")
+        OwnerId::new((self.0.pid().value() as u64) << 32 | self.0.counter() as u64)
+            .expect("The unique node id is never 0")
     }
 }

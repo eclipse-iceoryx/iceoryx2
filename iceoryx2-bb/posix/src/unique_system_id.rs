@@ -157,6 +157,11 @@ impl UniqueSystemId {
         }
     }
 
+    /// Returns the counter part of the [`UniqueSystemId`]
+    pub fn counter(&self) -> u32 {
+        self.counter
+    }
+
     /// Returns the underlying value of the new system wide unique id
     pub fn value(&self) -> u128 {
         unsafe { core::mem::transmute(*self) }

@@ -1045,8 +1045,8 @@ pub unsafe extern "C" fn iox2_config_global_service_set_cleanup_dead_nodes_on_op
     }
 }
 
-/// Returns the duration how long another process will wait until the service
-/// creation is finalized
+/// Returns the duration how long another process will wait until an entity like a Node
+/// or Service creation is finalized
 ///
 /// # Safety
 ///
@@ -1054,7 +1054,7 @@ pub unsafe extern "C" fn iox2_config_global_service_set_cleanup_dead_nodes_on_op
 /// * `secs` - A valid pointer pointing to a [`u64`].
 /// * `nsecs` - A valid pointer pointing to a [`u32`]
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_config_global_service_creation_timeout(
+pub unsafe extern "C" fn iox2_config_global_creation_timeout(
     handle: iox2_config_h_ref,
     secs: *mut u64,
     nsecs: *mut u32,
@@ -1065,7 +1065,7 @@ pub unsafe extern "C" fn iox2_config_global_service_creation_timeout(
         debug_assert!(!nsecs.is_null());
 
         let config = &*handle.as_type();
-        let timeout = config.value.as_ref().value.global.service.creation_timeout;
+        let timeout = config.value.as_ref().value.global.creation_timeout;
         *secs = timeout.as_secs();
         *nsecs = timeout.subsec_nanos();
     }
@@ -1078,7 +1078,7 @@ pub unsafe extern "C" fn iox2_config_global_service_creation_timeout(
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_config_global_service_set_creation_timeout(
+pub unsafe extern "C" fn iox2_config_global_set_creation_timeout(
     handle: iox2_config_h_ref,
     sec: u64,
     nsec: u32,
@@ -1086,7 +1086,7 @@ pub unsafe extern "C" fn iox2_config_global_service_set_creation_timeout(
     handle.assert_non_null();
     unsafe {
         let config = &mut *handle.as_type();
-        config.value.as_mut().value.global.service.creation_timeout =
+        config.value.as_mut().value.global.creation_timeout =
             Duration::from_secs(sec) + Duration::from_nanos(nsec as u64);
     }
 }

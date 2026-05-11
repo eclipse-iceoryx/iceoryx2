@@ -165,19 +165,6 @@ impl Service {
     }
 
     #[getter]
-    /// Defines the time of how long another process will wait until the service creation is
-    /// finalized
-    pub fn creation_timeout(&self) -> Duration {
-        Duration(self.0.lock().global.service.creation_timeout)
-    }
-
-    #[setter]
-    /// Set the creation timeout
-    pub fn set_creation_timeout(&self, value: &Duration) {
-        self.0.lock().global.service.creation_timeout = value.0
-    }
-
-    #[getter]
     /// The suffix of a one-to-one connection
     pub fn connection_suffix(&self) -> FileName {
         FileName(self.0.lock().global.service.connection_suffix)
@@ -968,6 +955,19 @@ impl Global {
     /// Set the prefix used for all files created during runtime
     pub fn set_prefix(&self, value: &FileName) {
         self.0.lock().global.prefix = value.0
+    }
+
+    #[getter]
+    /// Defines the time of how long another process will wait until an entity creation is
+    /// finalized. An entity can be a Service or a Node.
+    pub fn creation_timeout(&self) -> Duration {
+        Duration(self.0.lock().global.creation_timeout)
+    }
+
+    #[setter]
+    /// Set the creation timeout
+    pub fn set_creation_timeout(&self, value: &Duration) {
+        self.0.lock().global.creation_timeout = value.0
     }
 }
 

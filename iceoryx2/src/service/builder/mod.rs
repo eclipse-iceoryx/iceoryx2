@@ -264,7 +264,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         let static_storage_config =
             static_config_storage_config::<ServiceType>(self.shared_node.config());
         let file_name_uuid = self.service_config.service_hash().0.into();
-        let creation_timeout = self.shared_node.config().global.service.creation_timeout;
+        let creation_timeout = self.shared_node.config().global.creation_timeout;
 
         match <ServiceType::StaticStorage as NamedConceptMgmt>::does_exist_cfg(
             &file_name_uuid,
@@ -423,7 +423,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 >>::Builder<'_> as NamedConceptBuilder<
                     ServiceType::DynamicStorage<DynamicConfig>,
                 >>::new(&self.service_config.service_hash().0.into())
-                    .timeout(self.shared_node.config().global.service.creation_timeout)
+                    .timeout(self.shared_node.config().global.creation_timeout)
                     .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
                 .has_ownership(false)
                 .open(AccessMode::ReadWrite),

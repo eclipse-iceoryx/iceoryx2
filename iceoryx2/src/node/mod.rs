@@ -139,6 +139,7 @@
 //! # }
 //! ```
 
+mod global_management_segment;
 /// The name for a node.
 pub mod node_name;
 
@@ -182,6 +183,7 @@ use iceoryx2_cal::{
 use iceoryx2_log::{debug, fail, fatal_panic, trace, warn};
 
 use crate::identifiers::UniqueNodeId;
+use crate::node::global_management_segment::GlobalManagementSegment;
 use crate::node::node_name::NodeName;
 use crate::service::builder::{Builder, OpenDynamicStorageFailure};
 use crate::service::config_scheme::{
@@ -1384,7 +1386,12 @@ impl NodeBuilder {
     /// Creates a new [`Node`] for a specific [`service::Service`]. All entities owned by the
     /// [`Node`] will have the same [`service::Service`].
     pub fn create<Service: service::Service>(self) -> Result<Node<Service>, NodeCreationFailure> {
-        unsafe { self.__internal_create_with_custom_node_id(UniqueNodeId::new(1)) }
+        let config = self.config.as_ref().unwrap_or(Config::global_config());
+        let node_counter = GlobalManagementSegment::<Service>::open_or_create(config)
+            .unwrap()
+            .increment_node_counter();
+
+        unsafe { self.__internal_create_with_custom_node_id(UniqueNodeId::new(node_counter)) }
     }
 
     #[doc(hidden)]
@@ -1392,22 +1399,17 @@ impl NodeBuilder {
         self,
         node_id: UniqueNodeId,
     ) -> Result<Node<Service>, NodeCreationFailure> {
-        let config = if let Some(ref config) = self.config {
-            config.clone()
-        } else {
-            Config::global_config().clone()
-        };
-
+        let config = self.config.as_ref().unwrap_or(Config::global_config());
         if config.global.node.cleanup_dead_nodes_on_creation {
-            Node::<Service>::try_cleanup_dead_nodes(&config);
+            Node::<Service>::try_cleanup_dead_nodes(config);
         }
 
         let msg = "Unable to create node";
         let monitor_name = fatal_panic!(from self, when FileName::new(node_id.value().to_string().as_bytes()),
                                 "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
         let (details_storage, details) =
-            self.create_node_details_storage::<Service>(&config, &node_id)?;
-        let monitoring_token = self.create_token::<Service>(&config, &monitor_name)?;
+            self.create_node_details_storage::<Service>(config, &node_id)?;
+        let monitoring_token = self.create_token::<Service>(config, &monitor_name)?;
 
         let new_node = Node {
             shared: SharedNode {

@@ -141,9 +141,6 @@ pub struct Service {
     pub static_config_storage_suffix: FileName,
     /// The suffix of the dynamic config file
     pub dynamic_config_storage_suffix: FileName,
-    /// Defines the time of how long another process will wait until the service creation is
-    /// finalized
-    pub creation_timeout: Duration,
     /// The suffix of a one-to-one connection
     pub connection_suffix: FileName,
     /// The suffix of a one-to-one connection
@@ -164,7 +161,6 @@ impl Default for Service {
             data_segment_suffix: FileName::new(b".data").unwrap(),
             static_config_storage_suffix: FileName::new(b".service").unwrap(),
             dynamic_config_storage_suffix: FileName::new(b".dynamic").unwrap(),
-            creation_timeout: Duration::from_millis(500),
             connection_suffix: FileName::new(b".connection").unwrap(),
             event_connection_suffix: FileName::new(b".event").unwrap(),
             blackboard_mgmt_suffix: FileName::new(b".blackboard_mgmt").unwrap(),
@@ -224,6 +220,9 @@ pub struct Global {
     pub service: Service,
     /// [`Node`](crate::node::Node) settings
     pub node: Node,
+    /// Defines the time how long the process will wait until an entity, that shares inter-process
+    /// resources with others, is opened or created. This entity could be for instance a service
+    pub creation_timeout: Duration,
 }
 
 impl Default for Global {
@@ -233,6 +232,7 @@ impl Default for Global {
             prefix: FileName::new(b"iox2_").unwrap(),
             service: Service::default(),
             node: Node::default(),
+            creation_timeout: Duration::from_millis(500),
         }
     }
 }
