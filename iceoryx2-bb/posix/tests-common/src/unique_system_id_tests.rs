@@ -110,3 +110,13 @@ pub fn is_zeroable() {
 
     assert_that!(sut.value(), eq 0);
 }
+
+#[test]
+pub fn from_pid_and_counter_works() {
+    const PID: u32 = 81293;
+    const COUNTER: u32 = 4889211;
+    let sut = UniqueSystemId::from_pid_and_counter(PID, COUNTER).unwrap();
+
+    assert_that!(sut.pid().value(), eq PID as i32);
+    assert_that!(sut.value() >> 96, eq COUNTER as u128);
+}
