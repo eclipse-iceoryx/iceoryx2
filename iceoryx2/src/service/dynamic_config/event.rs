@@ -148,21 +148,19 @@ impl DynamicConfig {
     ) {
         unsafe {
             self.listeners.recover(
-                |owner_id, registered_listener| {
-                    owner_id == node_id.owner_id()
-                        && port_cleanup_callback(UniquePortId::Listener(
-                            registered_listener.listener_id,
-                        )) == PortCleanupAction::RemovePort
+                node_id.owner_id(),
+                |registered_listener| {
+                    port_cleanup_callback(UniquePortId::Listener(registered_listener.listener_id))
+                        == PortCleanupAction::RemovePort
                 },
                 ReleaseMode::Default,
             );
 
             self.notifiers.recover(
-                |owner_id, registered_notifier| {
-                    owner_id == node_id.owner_id()
-                        && port_cleanup_callback(UniquePortId::Notifier(
-                            registered_notifier.notifier_id,
-                        )) == PortCleanupAction::RemovePort
+                node_id.owner_id(),
+                |registered_notifier| {
+                    port_cleanup_callback(UniquePortId::Notifier(registered_notifier.notifier_id))
+                        == PortCleanupAction::RemovePort
                 },
                 ReleaseMode::Default,
             );

@@ -321,9 +321,6 @@ impl<T: Copy + Debug> Container<T> {
 
             let element_generation_counter =
                 &*self.element_generation_counter_ptr.as_ptr().add(index as _);
-            //////////////////////////////////////
-            // SYNC POINT with reading data values
-            //////////////////////////////////////
             let current_generation_count = element_generation_counter.load(Ordering::Relaxed);
 
             // Another process died and the entry was released by `Self::recover()` but the
@@ -334,6 +331,10 @@ impl<T: Copy + Debug> Container<T> {
             // contains data. If this succeeds we won the race.
             //
             // If this fails the entry was released successfully and we need to increment it by 1.
+
+            //////////////////////////////////////
+            // SYNC POINT all atomic operations with reading data values
+            //////////////////////////////////////
             if Self::contains_data(current_generation_count) {
                 if element_generation_counter
                     .compare_exchange(
@@ -416,7 +417,10 @@ impl<T: Copy + Debug> Container<T> {
         state
     }
 
-    /// Recovers and releases all entries the dead [`OwnerId`] owned.
+    /// Recovers and releases all entries the dead [`OwnerId`] owned. It assumes that the dead owner
+    /// maybe died while adding some entry, therefore it removes all entries where the
+    /// [`OwnerId`] does not contain any data or where there was data and the provided predicate
+    /// returned [`true`].
     ///
     /// # Safety
     ///
@@ -424,8 +428,9 @@ impl<T: Copy + Debug> Container<T> {
     ///  * All existing [`ContainerHandle`] that belong to the [`OwnerId`] must never be removed with
     ///    [`Container::remove()`] otherwise we corrupt the state.
     ///
-    pub unsafe fn recover<F: FnMut(OwnerId, T) -> bool>(
+    pub unsafe fn recover<F: FnMut(T) -> bool>(
         &self,
+        dead_owner_id: OwnerId,
         mut predicate: F,
         mode: ReleaseMode,
     ) -> ReleaseState {
@@ -435,14 +440,21 @@ impl<T: Copy + Debug> Container<T> {
         // once it the predicate to store the generation count before the entry is released and
         // afterwards to set the entry to empty if no other thread has in the meantime acquired the new
         // index and repaired it
-        let current_generation_count = RefCell::new(0u64);
+        let current_element_generation_count = RefCell::new(0u64);
 
         let p = |owner_id, index| {
             let element_generation_counter =
                 unsafe { &*self.element_generation_counter_ptr.as_ptr().add(index) };
 
+            if dead_owner_id != owner_id {
+                return false;
+            }
+
             loop {
-                let gen_count = element_generation_counter.load(Ordering::Relaxed);
+                //////////////////////////////////////
+                // SYNC POINT with reading data values
+                //////////////////////////////////////
+                let gen_count = element_generation_counter.load(Ordering::Acquire);
 
                 if Self::contains_data(gen_count) {
                     let mut contents = MaybeUninit::<T>::uninit();
@@ -458,17 +470,17 @@ impl<T: Copy + Debug> Container<T> {
                         continue;
                     }
 
-                    *current_generation_count.borrow_mut() = gen_count;
+                    *current_element_generation_count.borrow_mut() = gen_count;
 
-                    return predicate(owner_id, unsafe { contents.assume_init_read() });
+                    return predicate(unsafe { contents.assume_init_read() });
                 } else {
-                    return false;
+                    return true;
                 }
             }
         };
 
         let on_success = |_owner_id, index| {
-            let v = *current_generation_count.borrow();
+            let v = *current_element_generation_count.borrow();
 
             // If setting the entry to empty failed then an other thread won the `Self::add()` race,
             // acquired the next index and already repaired it.
@@ -717,11 +729,12 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///  * All existing [`ContainerHandle`] that belong to the [`OwnerId`] must never be removed with
     ///    [`Container::remove()`] otherwise we corrupt the state.
     ///
-    pub unsafe fn recover<F: FnMut(OwnerId, T) -> bool>(
+    pub unsafe fn recover<F: FnMut(T) -> bool>(
         &self,
+        dead_owner_id: OwnerId,
         predicate: F,
         mode: ReleaseMode,
     ) -> ReleaseState {
-        unsafe { self.container.recover(predicate, mode) }
+        unsafe { self.container.recover(dead_owner_id, predicate, mode) }
     }
 }

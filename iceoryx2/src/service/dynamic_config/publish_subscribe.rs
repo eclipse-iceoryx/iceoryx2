@@ -126,21 +126,21 @@ impl DynamicConfig {
     ) {
         unsafe {
             self.publishers.recover(
-                |owner_id, registered_publisher| {
-                    owner_id == node_id.owner_id()
-                        && port_cleanup_callback(UniquePortId::Publisher(
-                            registered_publisher.publisher_id,
-                        )) == PortCleanupAction::RemovePort
+                node_id.owner_id(),
+                |registered_publisher| {
+                    port_cleanup_callback(UniquePortId::Publisher(
+                        registered_publisher.publisher_id,
+                    )) == PortCleanupAction::RemovePort
                 },
                 ReleaseMode::Default,
             );
 
             self.subscribers.recover(
-                |owner_id, registered_subscriber| {
-                    owner_id == node_id.owner_id()
-                        && port_cleanup_callback(UniquePortId::Subscriber(
-                            registered_subscriber.subscriber_id,
-                        )) == PortCleanupAction::RemovePort
+                node_id.owner_id(),
+                |registered_subscriber| {
+                    port_cleanup_callback(UniquePortId::Subscriber(
+                        registered_subscriber.subscriber_id,
+                    )) == PortCleanupAction::RemovePort
                 },
                 ReleaseMode::Default,
             );

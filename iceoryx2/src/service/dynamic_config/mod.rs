@@ -162,10 +162,10 @@ impl DynamicConfig {
                 }
             };
 
-            match self.nodes.recover(
-                |owner_id, _| owner_id == node_id.owner_id(),
-                ReleaseMode::LockIfLastIndex,
-            ) {
+            match self
+                .nodes
+                .recover(node_id.owner_id(), |_| true, ReleaseMode::LockIfLastIndex)
+            {
                 ReleaseState::Locked => DeregisterNodeState::NoMoreOwners,
                 ReleaseState::Unlocked => DeregisterNodeState::HasOwners,
             }
