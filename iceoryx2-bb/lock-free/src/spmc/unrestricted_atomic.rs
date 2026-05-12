@@ -194,12 +194,12 @@ impl UnrestrictedAtomicMgmt {
         value_alignment: usize,
         data_ptr: *const u8,
     ) {
-        /////////////////////////
-        // SYNC POINT - read
-        /////////////////////////
-        let mut read_cell = self.write_cell.load(Ordering::Acquire) - 1;
-
         loop {
+            /////////////////////////
+            // SYNC POINT - read
+            /////////////////////////
+            let read_cell = self.write_cell.load(Ordering::Acquire) - 1;
+
             unsafe {
                 let data_cell_ptr = Self::__internal_get_data_cell(
                     value_size,
@@ -212,19 +212,13 @@ impl UnrestrictedAtomicMgmt {
 
             /////////////////////////
             // SYNC POINT - read (for write while reading)
-            // prevent reordering of reading from `data` after checking for a change
-            // of the `write_cell` position which would result in a data race
+            // * prevent reordering of reading from `data` after checking for a change
+            //   of the `write_cell` position which would result in a data race
+            // * prevent that the write_cell.load is ordered before the copy_nonoverlapping call
+            //   * since it is load and we do not have Release available, we use SeqCst
             /////////////////////////
             let expected_write_cell = read_cell + 1;
-            let write_cell_result = self.write_cell.compare_exchange(
-                expected_write_cell,
-                expected_write_cell,
-                Ordering::Release,
-                Ordering::Acquire,
-            );
-            if let Err(write_cell) = write_cell_result {
-                read_cell = write_cell - 1;
-            } else {
+            if expected_write_cell == self.write_cell.load(Ordering::SeqCst) {
                 break;
             }
         }

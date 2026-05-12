@@ -463,7 +463,11 @@ impl<T: Copy + Debug> Container<T> {
                         )
                     };
 
-                    if gen_count != element_generation_counter.load(Ordering::Relaxed) {
+                    // PREVENT REORDERING: Ordering::SeqCst
+                    // * Release is not available since it is a pure load operation.
+                    // * copying the data out must happen before the element_generation_counter
+                    //   check
+                    if gen_count != element_generation_counter.load(Ordering::SeqCst) {
                         continue;
                     }
 
@@ -515,19 +519,19 @@ impl<T: Copy + Debug> Container<T> {
         previous_state.current_change_counter = current_change_counter;
 
         for i in 0..self.capacity {
+            let element_generation_counter =
+                unsafe { &*self.element_generation_counter_ptr.as_ptr().add(i) };
+
             // go through here element by element and do not start the operation from the
             // beginning when the content has changed.
             // only copy single entries otherwise we encounter starvation since this is a
             // heavy-weight operation
-
-            //////////////////////////////////////
-            // SYNC POINT with reading data values
-            //////////////////////////////////////
-            let mut current_generation_count = unsafe {
-                (*self.element_generation_counter_ptr.as_ptr().add(i)).load(Ordering::Acquire)
-            };
-
             loop {
+                //////////////////////////////////////
+                // SYNC POINT with reading data values
+                //////////////////////////////////////
+                let current_generation_count = element_generation_counter.load(Ordering::Acquire);
+
                 if current_generation_count == previous_state.element_generation_counter[i] {
                     break;
                 }
@@ -542,15 +546,13 @@ impl<T: Copy + Debug> Container<T> {
                         );
                     }
 
-                    // MUST HAPPEN AFTER all other operations
-                    match (*self.element_generation_counter_ptr.as_ptr().add(i)).compare_exchange(
-                        current_generation_count,
-                        current_generation_count,
-                        Ordering::AcqRel,
-                        Ordering::Acquire,
-                    ) {
-                        Err(count) => current_generation_count = count,
-                        Ok(_) => break,
+                    // PREVENT REORDERING: Ordering::SeqCst
+                    // * Release is not available since it is a pure load operation.
+                    // * copying the data out must happen before the element_generation_counter
+                    //   check
+                    if current_generation_count == element_generation_counter.load(Ordering::SeqCst)
+                    {
+                        break;
                     }
                 }
             }
