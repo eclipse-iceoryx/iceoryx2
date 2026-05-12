@@ -31,7 +31,6 @@ use super::naming_scheme::extract_sender_port_id_from_connection;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub(crate) enum RemovePortFromAllConnectionsError {
-    CleanupRaceDetected,
     InsufficientPermissions,
     VersionMismatch,
     InternalError,
@@ -87,13 +86,7 @@ fn handle_port_remove_error(
     connection: &FileName,
 ) -> Result<(), RemovePortFromAllConnectionsError> {
     match result {
-        Ok(()) => Ok(()),
-        Err(ZeroCopyPortRemoveError::DoesNotExist) => {
-            fail!(from origin,
-                with RemovePortFromAllConnectionsError::CleanupRaceDetected,
-                "{} since the connection ({:?}) no longer exists! This could indicate a race in the node cleanup algorithm or that the underlying resources were removed manually.",
-                msg, connection);
-        }
+        Ok(()) | Err(ZeroCopyPortRemoveError::DoesNotExist) => Ok(()),
         Err(ZeroCopyPortRemoveError::InsufficientPermissions) => {
             fail!(from origin,
                 with RemovePortFromAllConnectionsError::InsufficientPermissions,
