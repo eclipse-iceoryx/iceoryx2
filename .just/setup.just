@@ -22,7 +22,7 @@ _setup-dispatch what:
             echo "Usage: just setup <what>"
             echo ""
             echo "  all                    setup all dependencies"
-            echo "  dev-tools              setup development tools (nextest, ...)"
+            echo "  testing-dependencies   setup test dependencies (nextest, ...)"
             echo "  script-dependencies    setup just script dependencies"
             exit 1
             ;;

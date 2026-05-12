@@ -211,6 +211,7 @@
   [#1355](https://github.com/eclipse-iceoryx/iceoryx2/issues/1355)
 * Add `just` scripts for some common maintenance tasks
   [#1408](https://github.com/eclipse-iceoryx/iceoryx2/issues/1408)
+  [#1593](https://github.com/eclipse-iceoryx/iceoryx2/issues/1593)
 * Split workspace into separate `sdk` and `integrations` workspaces
   [#1244](https://github.com/eclipse-iceoryx/iceoryx2/issues/1244)
 

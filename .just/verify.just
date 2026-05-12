@@ -53,7 +53,7 @@ _verify-dispatch what tool *flags:
         echo "  all                    target all workspaces"
         echo "  <package>              target a specific package (std-propagation only)"
         echo ""
-        echo "Static Analysis Tools:"
+        echo "Tools:"
         echo "  clippy                 run cargo clippy"
         echo "  miri                   run cargo miri on allowlisted crates"
         echo "  std-propagation        verify std feature propagation"
