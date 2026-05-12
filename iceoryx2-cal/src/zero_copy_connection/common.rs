@@ -1079,23 +1079,33 @@ pub mod details {
         }
     }
     impl<Storage: DynamicStorage<SharedManagementData>> Connection<Storage> {
-        fn open_storage(
+        fn remove_port(
             name: &FileName,
             config: &<Connection<Storage> as NamedConceptMgmt>::Configuration,
             msg: &str,
-        ) -> Result<Storage, ZeroCopyPortRemoveError> {
+            port: State,
+        ) -> Result<(), ZeroCopyPortRemoveError> {
             let origin = "Connection::open_storage()";
             match <<Storage as DynamicStorage<SharedManagementData>>::Builder<'_> as NamedConceptBuilder<
                     Storage>>::new(name)
                        .config(&config.dynamic_storage_config).open(AccessMode::ReadWrite) {
-                           Ok(storage) => Ok(storage),
+                           Ok(storage) => { cleanup_shared_memory(&storage, port); Ok(())},
+                           Err(DynamicStorageOpenError::InitializationNotYetFinalized) => {
+                               match unsafe { Storage::remove_cfg(name, &config.dynamic_storage_config) } {
+                                   Ok(_) => Ok(()),
+                                   Err(NamedConceptRemoveError::InsufficientPermissions) => {
+                                       fail!(from origin, with ZeroCopyPortRemoveError::InsufficientPermissions,
+                                           "{msg} since the underlying dynamic storage has a different iceoryx2 version.");
+                                   }
+                                   Err(NamedConceptRemoveError::InternalError) => {
+                                       fail!(from origin, with ZeroCopyPortRemoveError::InternalError,
+                                           "{msg} due to an internal error.");
+                                   }
+                               }
+                           }
                            Err(DynamicStorageOpenError::VersionMismatch) => {
                                fail!(from origin, with ZeroCopyPortRemoveError::VersionMismatch,
                                    "{msg} since the underlying dynamic storage has a different iceoryx2 version.");
-                           }
-                           Err(DynamicStorageOpenError::InitializationNotYetFinalized) => {
-                               fail!(from origin, with ZeroCopyPortRemoveError::InsufficientPermissions,
-                                   "{msg} due to insufficient permissions.");
                            }
                            Err(DynamicStorageOpenError::DoesNotExist) => {
                                fail!(from origin, with ZeroCopyPortRemoveError::DoesNotExist,
@@ -1118,26 +1128,24 @@ pub mod details {
             name: &FileName,
             config: &Self::Configuration,
         ) -> Result<(), ZeroCopyPortRemoveError> {
-            let storage = Self::open_storage(
+            Self::remove_port(
                 name,
                 config,
                 "Unable to remove forcefully the sender of the Zero Copy Connection",
-            )?;
-            cleanup_shared_memory(&storage, State::Sender);
-            Ok(())
+                State::Sender,
+            )
         }
 
         unsafe fn remove_receiver(
             name: &FileName,
             config: &Self::Configuration,
         ) -> Result<(), ZeroCopyPortRemoveError> {
-            let storage = Self::open_storage(
+            Self::remove_port(
                 name,
                 config,
                 "Unable to remove forcefully the receiver of the Zero Copy Connection",
-            )?;
-            cleanup_shared_memory(&storage, State::Receiver);
-            Ok(())
+                State::Receiver,
+            )
         }
 
         fn does_support_safe_overflow() -> bool {
