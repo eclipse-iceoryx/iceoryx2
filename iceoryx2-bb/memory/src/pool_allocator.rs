@@ -60,6 +60,7 @@ use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::relocatable_container::*;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
+use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::ReleaseMode;
 use iceoryx2_log::fail;
 use iceoryx2_log::fatal_panic;
 

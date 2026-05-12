@@ -35,7 +35,7 @@ use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::{
     container::{Container, ContainerAddFailure, ContainerHandle},
-    unique_index_set::{ReleaseMode, ReleaseState},
+    unique_index_set_enums::{ReleaseMode, ReleaseState},
 };
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_log::{fail, fatal_panic};

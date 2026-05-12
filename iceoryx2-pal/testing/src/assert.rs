@@ -202,6 +202,20 @@ macro_rules! assert_that {
             }
         }
     };
+    ($lhs:expr, excludes $rhs:expr) => {
+        {
+            let mut does_contain = false;
+            for value in &$lhs {
+                if *value == $rhs {
+                    does_contain = true;
+                    break;
+                }
+            }
+            if does_contain {
+                assert_that!(message_excludes $lhs, $rhs);
+            }
+        }
+    };
     ($lhs:expr, contains_match |$element:ident| $predicate:expr) => {
         {
             let mut does_contain = false;
@@ -273,6 +287,17 @@ macro_rules! assert_that {
     [message_contains $lhs:expr, $rhs:expr] => {
         core::panic!(
             "assertion failed: {}expr: {} contains {} ({:?});  contents: {:?}{}",
+            assert_that![color_start],
+            core::stringify!($lhs),
+            core::stringify!($rhs),
+            $rhs,
+            $lhs,
+            assert_that![color_end]
+        );
+    };
+    [message_excludes $lhs:expr, $rhs:expr] => {
+        core::panic!(
+            "assertion failed: {}expr: {} shall not contain {} ({:?});  contents: {:?}{}",
             assert_that![color_start],
             core::stringify!($lhs),
             core::stringify!($rhs),

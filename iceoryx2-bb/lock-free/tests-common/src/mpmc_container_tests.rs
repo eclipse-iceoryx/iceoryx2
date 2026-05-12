@@ -19,6 +19,7 @@ pub mod generic {
     use alloc::vec;
     use alloc::vec::Vec;
     use core::fmt::Debug;
+    use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::{ReleaseMode, ReleaseState};
 
     use iceoryx2_bb_concurrency::atomic::{AtomicU32, Ordering};
     use iceoryx2_bb_elementary::CallbackProgression;
@@ -26,8 +27,6 @@ pub mod generic {
     use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
     use iceoryx2_bb_lock_free::mpmc::container::ContainerAddFailure;
     use iceoryx2_bb_lock_free::mpmc::container::*;
-    use iceoryx2_bb_lock_free::mpmc::unique_index_set::ReleaseMode;
-    use iceoryx2_bb_lock_free::mpmc::unique_index_set::ReleaseState;
     use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle, Handle};
     use iceoryx2_bb_posix::mutex::{MutexBuilder, MutexHandle};
     use iceoryx2_bb_posix::system_configuration::SystemInfo;

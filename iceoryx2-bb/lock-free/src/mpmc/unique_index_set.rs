@@ -71,6 +71,7 @@
 //! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
+//! use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::*;
 //!
 //! const CAPACITY: usize = 128;
 //!
@@ -95,49 +96,16 @@ use iceoryx2_bb_concurrency::atomic::fence;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_log::{fail, fatal_panic};
 
-enum_gen! { UniqueIndexCreationError
-  entry:
-    ProvidedCapacityGreaterThanMaxCapacity,
-    ProvidedCapacityIsZero
-}
-
-/// Describes if indices can still be acquired after the call to
-/// [`UniqueIndexSet::release_raw_index()`].
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum ReleaseMode {
-    /// No more indices can be acquired with [`UniqueIndexSet::acquire_raw_index()`] if the
-    /// released index was the last one.
-    LockIfLastIndex,
-    /// Indices can still be acquired with [`UniqueIndexSet::acquire_raw_index()`] after the
-    /// operation
-    Default,
-}
-
-/// Defines the state of the [`UniqueIndexSet`] after the release operation
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum ReleaseState {
-    /// The [`UniqueIndexSet`] is in locked mode since the last index was released. New indices
-    /// can no longer acquired from the [`UniqueIndexSet`].
-    Locked,
-    /// New indices can still be acquired from the [`UniqueIndexSet`]
-    Unlocked,
-}
-
-/// It states the reason if an index could not be acquired.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum UniqueIndexSetAcquireFailure {
-    /// The [`UniqueIndexSet`] does not contain any more indices
-    OutOfIndices,
-    /// The [`UniqueIndexSet`] is in a locked state and indices can no longer be acquired.
-    IsLocked,
-}
+use crate::mpmc::unique_index_set_enums::ReleaseMode;
+use crate::mpmc::unique_index_set_enums::ReleaseState;
+use crate::mpmc::unique_index_set_enums::UniqueIndexCreationError;
+use crate::mpmc::unique_index_set_enums::UniqueIndexSetAcquireFailure;
 
 /// Represents a [`UniqueIndex`]. When it goes out of scope it releases the index in the
 /// corresponding [`UniqueIndexSet`] or [`FixedSizeUniqueIndexSet`].
@@ -287,14 +255,23 @@ impl RelocatableContainer for UniqueIndexSet {
     }
 
     unsafe fn init<T: BaseAllocator>(&mut self, allocator: &T) -> Result<(), AllocationError> {
+        let msg = "Failed to initialize";
+
         if self.is_memory_initialized.load(Ordering::Relaxed) {
             fatal_panic!(from self, "Memory already initialized. Initializing it twice may lead to undefined behavior.");
         }
+
+        let layout = match Layout::array::<u32>(self.capacity as usize + 1) {
+            Ok(v) => v,
+            Err(e) => {
+                fail!(from self, with AllocationError::SizeTooLarge,
+                    "{msg} since the provided capacity would exceed the maximum supported size. [{e:?}]");
+            }
+        };
+
         unsafe {
             self.data_ptr.init(fail!(from self, when allocator
-                .allocate(Layout::from_size_align_unchecked(
-                    core::mem::size_of::<u32>() * (self.capacity + 1) as usize,
-                    core::mem::align_of::<u32>())),
+                .allocate(layout),
                 "Failed to initialize since the allocation of the data memory failed."
             ));
 
@@ -370,6 +347,7 @@ impl UniqueIndexSet {
     /// # extern crate iceoryx2_bb_loggers;
     ///
     /// use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
+    /// use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::*;
     ///
     /// const CAPACITY: usize = 128;
     ///
@@ -543,15 +521,16 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
     /// Creates a new [`FixedSizeUniqueIndexSet`] where the capacity is reduced. If the capacity
     /// is greater than CAPACITY or zero it fails.
     pub fn new_with_reduced_capacity(capacity: usize) -> Result<Self, UniqueIndexCreationError> {
+        let origin = "FixedSizeUniqueIndexSet::new_with_reduced_capacity";
         if capacity > CAPACITY {
-            fail!(from "FixedSizeUniqueIndexSet::new_with_reduced_capacity", with UniqueIndexCreationError::ProvidedCapacityGreaterThanMaxCapacity,
-                "Provided value of capacity {} exceeds maximum supported capacity of {}.",
+            fail!(from origin, with UniqueIndexCreationError::ProvidedCapacityGreaterThanMaxCapacity,
+                "Provided capacity value {} exceeds maximum supported capacity of {}.",
                 capacity, CAPACITY);
         }
 
         if capacity == 0 {
-            fail!(from "FixedSizeUniqueIndexSet::new_with_reduced_capacity", with UniqueIndexCreationError::ProvidedCapacityIsZero,
-                "Provided value of capacity is zero.");
+            fail!(from origin, with UniqueIndexCreationError::ProvidedCapacityIsZero,
+                "Provided capacity value is zero.");
         }
 
         let mut new_self = Self {

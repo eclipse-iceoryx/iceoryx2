@@ -55,7 +55,9 @@
 //! }
 //! ```
 
-pub use crate::mpmc::unique_index_set::ReleaseMode;
+use crate::mpmc::unique_index_set_enums::{
+    ReleaseMode, ReleaseState, UniqueIndexSetAcquireFailure,
+};
 pub use iceoryx2_bb_elementary::CallbackProgression;
 
 use iceoryx2_bb_concurrency::atomic::Ordering;
@@ -513,6 +515,7 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     /// # extern crate iceoryx2_bb_loggers;
     ///
     /// use iceoryx2_bb_lock_free::mpmc::container::*;
+    /// use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::*;
     ///
     /// const CAPACITY: usize = 139;
     /// let container = FixedSizeContainer::<u128, CAPACITY>::new();
