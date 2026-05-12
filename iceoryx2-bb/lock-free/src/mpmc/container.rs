@@ -13,8 +13,8 @@
 //! A simplistic **threadsafe** and **lock-free** container which contains element in an
 //! unspecified order.
 //!
-//! Elements can be added with [`Container::add()`]. The method returns an [`UniqueIndex`] which
-//! removes the element as soon as it goes out of scope. Elements are stored under a fixed index
+//! Elements can be added with [`Container::add()`]. The method returns an [`ContainerHandle`] that
+//! can be used to remove the element with [`Container::remove()`]. Elements are stored under a fixed index
 //! which is guaranteed to never change. The index can be acquired inside the callback of
 //! [`ContainerState::for_each()`].
 //!
@@ -363,12 +363,12 @@ impl<T: Copy + Debug> Container<T> {
     /// # Safety
     ///
     ///  * Ensure that [`Container::init()`] was called before calling this method
-    ///  * Ensure that no one else possesses the [`UniqueIndex`] and the index was unrecoverable
+    ///  * Ensure that no one else possesses the [`ContainerHandle`] and the index was unrecoverable
     ///    lost
     ///  * Ensure that the `handle` was acquired by the same [`Container`]
     ///    with [`Container::add()`], otherwise the method will panic.
     ///
-    /// **Important:** If the UniqueIndex still exists it causes double frees or freeing an index
+    /// **Important:** If the [`ContainerHandle`] still exists it causes double frees or freeing an index
     /// which was allocated afterwards
     ///
     pub unsafe fn remove(&self, handle: ContainerHandle, mode: ReleaseMode) -> ReleaseState {
@@ -463,11 +463,7 @@ impl<T: Copy + Debug> Container<T> {
                         )
                     };
 
-                    // PREVENT REORDERING: Ordering::SeqCst
-                    // * Release is not available since it is a pure load operation.
-                    // * copying the data out must happen before the element_generation_counter
-                    //   check
-                    if gen_count != element_generation_counter.load(Ordering::SeqCst) {
+                    if gen_count != element_generation_counter.load(Ordering::Relaxed) {
                         continue;
                     }
 
@@ -546,11 +542,8 @@ impl<T: Copy + Debug> Container<T> {
                         );
                     }
 
-                    // PREVENT REORDERING: Ordering::SeqCst
-                    // * Release is not available since it is a pure load operation.
-                    // * copying the data out must happen before the element_generation_counter
-                    //   check
-                    if current_generation_count == element_generation_counter.load(Ordering::SeqCst)
+                    if current_generation_count
+                        == element_generation_counter.load(Ordering::Relaxed)
                     {
                         break;
                     }

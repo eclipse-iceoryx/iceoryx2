@@ -210,15 +210,7 @@ impl UnrestrictedAtomicMgmt {
                 core::ptr::copy_nonoverlapping(data_cell_ptr as *const u8, value_ptr, value_size);
             }
 
-            /////////////////////////
-            // SYNC POINT - read (for write while reading)
-            // * prevent reordering of reading from `data` after checking for a change
-            //   of the `write_cell` position which would result in a data race
-            // * prevent that the write_cell.load is ordered before the copy_nonoverlapping call
-            //   * since it is load and we do not have Release available, we use SeqCst
-            /////////////////////////
-            let expected_write_cell = read_cell + 1;
-            if expected_write_cell == self.write_cell.load(Ordering::SeqCst) {
+            if read_cell + 1 == self.write_cell.load(Ordering::Relaxed) {
                 break;
             }
         }
