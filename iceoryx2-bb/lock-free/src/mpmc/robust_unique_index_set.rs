@@ -501,11 +501,11 @@ impl RobustUniqueIndexSet {
             //   1. cell
             //   2. generation counter
             //////////////////////////////////////
-            let current_generation_count = self.generation_counter.load(Ordering::Acquire);
+            let initial_generation_count = self.generation_counter.load(Ordering::Acquire);
 
-            if current_generation_count == GENERATION_COUNTER_LOCK_INDICATOR {
+            if initial_generation_count == GENERATION_COUNTER_LOCK_INDICATOR {
                 return SetState {
-                    generation_counter: current_generation_count,
+                    generation_counter: initial_generation_count,
                     borrowed_indices: 0,
                 };
             }
@@ -525,9 +525,9 @@ impl RobustUniqueIndexSet {
             //////////////////////////////////////
             let new_generation_count = self.increment_generation_counter(Ordering::Release);
 
-            if current_generation_count + 1 == new_generation_count {
+            if initial_generation_count + 1 == new_generation_count {
                 return SetState {
-                    generation_counter: current_generation_count + 1,
+                    generation_counter: new_generation_count,
                     borrowed_indices: count,
                 };
             }
