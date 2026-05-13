@@ -1386,7 +1386,10 @@ impl NodeBuilder {
     /// Creates a new [`Node`] for a specific [`service::Service`]. All entities owned by the
     /// [`Node`] will have the same [`service::Service`].
     pub fn create<Service: service::Service>(self) -> Result<Node<Service>, NodeCreationFailure> {
-        let config = self.config.as_ref().unwrap_or(Config::global_config());
+        let config = self
+            .config
+            .as_ref()
+            .unwrap_or_else(|| Config::global_config());
         let node_counter = match GlobalManagementSegment::<Service>::open_or_create(config) {
             Ok(mgmt) => mgmt.increment_node_counter(),
             Err(e) => {
@@ -1404,7 +1407,10 @@ impl NodeBuilder {
         self,
         node_id: UniqueNodeId,
     ) -> Result<Node<Service>, NodeCreationFailure> {
-        let config = self.config.as_ref().unwrap_or(Config::global_config());
+        let config = self
+            .config
+            .as_ref()
+            .unwrap_or_else(|| Config::global_config());
         if config.global.node.cleanup_dead_nodes_on_creation {
             Node::<Service>::try_cleanup_dead_nodes(config);
         }
