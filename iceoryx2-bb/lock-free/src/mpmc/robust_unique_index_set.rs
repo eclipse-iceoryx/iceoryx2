@@ -133,7 +133,7 @@ const GENERATION_COUNTER_LOCK_INDICATOR: u64 = u64::MAX;
 pub struct OwnerId(u64);
 
 impl OwnerId {
-    const EMPTY: OwnerId = OwnerId(0);
+    const EMPTY: OwnerId = OwnerId(u64::MAX);
 
     /// Constructs a new [`OwnerId`]. The value is not allowed to be zero.
     pub fn new(value: u64) -> Result<Self, OwnerIdNewError> {
@@ -198,7 +198,7 @@ impl RelocatableContainer for RobustUniqueIndexSet {
             unsafe {
                 (self.cell_ptr.as_ptr() as *mut AtomicU64)
                     .add(i)
-                    .write(AtomicU64::new(0))
+                    .write(AtomicU64::new(OwnerId::EMPTY.0))
             };
         }
 

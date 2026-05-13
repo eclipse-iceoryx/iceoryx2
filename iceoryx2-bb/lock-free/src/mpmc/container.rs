@@ -72,7 +72,7 @@ use core::fmt::Debug;
 use core::mem::MaybeUninit;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
-use iceoryx2_bb_concurrency::cell::{RefCell, UnsafeCell};
+use iceoryx2_bb_concurrency::cell::{Cell, UnsafeCell};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
@@ -433,11 +433,11 @@ impl<T: Copy + Debug> Container<T> {
     ) -> ReleaseState {
         self.verify_init("recover()");
 
-        // this is an atomic since the current generation count needs to be borrowed twice as mutable,
+        // this is a RefCell since the current generation count needs to be borrowed twice as mutable,
         // once it the predicate to store the generation count before the entry is released and
         // afterwards to set the entry to empty if no other thread has in the meantime acquired the new
         // index and repaired it
-        let current_element_generation_count = RefCell::new(0u64);
+        let current_element_generation_count = Cell::new(0u64);
 
         let p = |owner_id, index| {
             let element_generation_counter =
@@ -467,7 +467,7 @@ impl<T: Copy + Debug> Container<T> {
                         continue;
                     }
 
-                    *current_element_generation_count.borrow_mut() = gen_count;
+                    current_element_generation_count.set(gen_count);
 
                     return predicate(unsafe { contents.assume_init_read() });
                 } else {
@@ -477,7 +477,7 @@ impl<T: Copy + Debug> Container<T> {
         };
 
         let on_success = |_owner_id, index| {
-            let v = *current_element_generation_count.borrow();
+            let v = current_element_generation_count.get();
 
             // If setting the entry to empty failed then an other thread won the `Self::add()` race,
             // acquired the next index and already repaired it.
@@ -513,10 +513,11 @@ impl<T: Copy + Debug> Container<T> {
         // must be set once here, if the current_change_counter changes in the loop below
         // the previous_state is updated again with the next clone_state iteration
         previous_state.current_change_counter = current_change_counter;
+        let element_generation_counter_ptr =
+            unsafe { self.element_generation_counter_ptr.as_ptr() };
 
         for i in 0..self.capacity {
-            let element_generation_counter =
-                unsafe { &*self.element_generation_counter_ptr.as_ptr().add(i) };
+            let element_generation_counter = unsafe { &*element_generation_counter_ptr.add(i) };
 
             // go through here element by element and do not start the operation from the
             // beginning when the content has changed.
@@ -542,8 +543,14 @@ impl<T: Copy + Debug> Container<T> {
                         );
                     }
 
-                    if current_generation_count
-                        == element_generation_counter.load(Ordering::Relaxed)
+                    if element_generation_counter
+                        .compare_exchange(
+                            current_change_counter,
+                            current_change_counter,
+                            Ordering::AcqRel,
+                            Ordering::Acquire,
+                        )
+                        .is_ok()
                     {
                         break;
                     }

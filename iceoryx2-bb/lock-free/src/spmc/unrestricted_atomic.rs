@@ -213,6 +213,25 @@ impl UnrestrictedAtomicMgmt {
             if read_cell + 1 == self.write_cell.load(Ordering::Relaxed) {
                 break;
             }
+
+            /////////////////////////
+            // SYNC POINT - read (for write while reading)
+            // prevent reordering of reading from `data` after checking for a change
+            // of the `write_cell` position which would result in a data race
+            /////////////////////////
+            let expected_write_cell = read_cell + 1;
+            if self
+                .write_cell
+                .compare_exchange(
+                    expected_write_cell,
+                    expected_write_cell,
+                    Ordering::Release,
+                    Ordering::Acquire,
+                )
+                .is_ok()
+            {
+                break;
+            }
         }
     }
 
