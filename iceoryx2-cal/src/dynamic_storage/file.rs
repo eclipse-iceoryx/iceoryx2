@@ -215,11 +215,30 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
         let raw_fd = unsafe { file.file_descriptor().native_handle() };
         let fd = unsafe { FileDescriptor::non_owning_new_unchecked(raw_fd) };
 
-        let file_size = match file.metadata() {
-            Ok(m) => m.size(),
-            Err(e) => {
-                fail!(from self, with DynamicStorageOpenError::InternalError,
-                    "{msg} since the file size could not be acquired ({e:?}).");
+        let file_size = loop {
+            match file.metadata() {
+                Ok(m) => {
+                    let v = m.size();
+                    if v == 0 {
+                        if elapsed_time >= self.timeout {
+                            fail!(from self, with DynamicStorageOpenError::InitializationNotYetFinalized,
+                            "{} since it is not readable - (it is not initialized after {:?}).",
+                            msg, self.timeout);
+                        }
+
+                        elapsed_time = fail!(from self, when wait_for_read_write_access.wait(),
+                                                with DynamicStorageOpenError::InternalError,
+                                                "{} since the adaptive wait call failed.", msg);
+
+                        continue;
+                    } else {
+                        break v;
+                    }
+                }
+                Err(e) => {
+                    fail!(from self, with DynamicStorageOpenError::InternalError,
+                        "{msg} since the file size could not be acquired ({e:?}).");
+                }
             }
         };
 
@@ -565,9 +584,11 @@ impl<T: Send + Sync + Debug> NamedConceptMgmt for Storage<T> {
             }
             Err(DynamicStorageOpenError::DoesNotExist) => Ok(false),
             Err(e) => {
-                warn!(from origin,
+                if e != DynamicStorageOpenError::InitializationNotYetFinalized {
+                    warn!(from origin,
                     "Removing DynamicStorage in broken state ({:?}) will not call drop of the underlying data type {:?}.",
                     e, core::any::type_name::<T>());
+                }
 
                 match File::remove(&full_path) {
                     Ok(v) => Ok(v),

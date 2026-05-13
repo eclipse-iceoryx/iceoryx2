@@ -1387,9 +1387,14 @@ impl NodeBuilder {
     /// [`Node`] will have the same [`service::Service`].
     pub fn create<Service: service::Service>(self) -> Result<Node<Service>, NodeCreationFailure> {
         let config = self.config.as_ref().unwrap_or(Config::global_config());
-        let node_counter = GlobalManagementSegment::<Service>::open_or_create(config)
-            .unwrap()
-            .increment_node_counter();
+        let node_counter = match GlobalManagementSegment::<Service>::open_or_create(config) {
+            Ok(mgmt) => mgmt.increment_node_counter(),
+            Err(e) => {
+                fail!(from "NodeBuilder::create()",
+                    with NodeCreationFailure::InternalError,
+                    "Unable to create node since the global management segment could not be opened. [{e:?}]");
+            }
+        };
 
         unsafe { self.__internal_create_with_custom_node_id(UniqueNodeId::new(node_counter)) }
     }
