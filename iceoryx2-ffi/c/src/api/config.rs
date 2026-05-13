@@ -86,7 +86,7 @@ pub(super) struct ConfigOwner {
 #[repr(C)]
 #[repr(align(8))] // align_of<ConfigOwner>()
 pub struct iox2_config_storage_t {
-    internal: [u8; 4256], // size_of<ConfigOwner>()
+    internal: [u8; 4264], // size_of<ConfigOwner>()
 }
 
 /// Contains the iceoryx2 config
@@ -570,6 +570,56 @@ pub unsafe extern "C" fn iox2_config_global_node_set_monitor_suffix(
         match FileName::from_c_str(value) {
             Ok(n) => {
                 config.value.as_mut().value.global.node.monitor_suffix = n;
+                IOX2_OK as _
+            }
+            Err(e) => e as c_int,
+        }
+    }
+}
+
+/// Returns the suffix of the global management segment.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_config_global_node_global_mgmt_suffix(
+    handle: iox2_config_h_ref,
+) -> *const c_char {
+    handle.assert_non_null();
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .global
+            .node
+            .global_mgmt_suffix
+            .as_c_str()
+    }
+}
+
+/// Sets the suffix of the global management segment.
+///
+/// Returns: [`iox2_semantic_string_error_e`](crate::api::iox2_semantic_string_error_e) when an
+/// invalid file name was provided
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+/// * `value` - A valid file name containing the suffix
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_config_global_node_set_global_mgmt_suffix(
+    handle: iox2_config_h_ref,
+    value: *const c_char,
+) -> c_int {
+    handle.assert_non_null();
+    unsafe {
+        let config = &mut *handle.as_type();
+        match FileName::from_c_str(value) {
+            Ok(n) => {
+                config.value.as_mut().value.global.node.global_mgmt_suffix = n;
                 IOX2_OK as _
             }
             Err(e) => e as c_int,

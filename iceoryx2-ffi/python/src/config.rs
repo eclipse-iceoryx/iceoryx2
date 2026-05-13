@@ -54,6 +54,18 @@ impl Node {
     }
 
     #[getter]
+    /// The suffix of the global management segment.
+    pub fn global_mgmt_suffix(&self) -> FileName {
+        FileName(self.0.lock().global.node.global_mgmt_suffix)
+    }
+
+    #[setter]
+    /// Set the suffix of the files where the node configuration is stored.
+    pub fn set_global_mgmt_suffix(&mut self, value: &FileName) {
+        self.0.lock().global.node.global_mgmt_suffix = value.0
+    }
+
+    #[getter]
     /// The suffix of the files where the node configuration is stored.
     pub fn static_config_suffix(&self) -> FileName {
         FileName(self.0.lock().global.node.static_config_suffix)

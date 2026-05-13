@@ -268,6 +268,14 @@ TEST(Config, global_node_monitor_suffix) {
     ASSERT_THAT(config.global().node().monitor_suffix(), StrEq(test_value.as_string().unchecked_access().c_str()));
 }
 
+TEST(Config, global_node_global_mgmt_suffix) {
+    const auto test_value = iox2::bb::FileName::create("dooo_daaaa").value();
+    auto config = Config();
+
+    config.global().node().set_global_mgmt_suffix(test_value);
+    ASSERT_THAT(config.global().node().global_mgmt_suffix(), StrEq(test_value.as_string().unchecked_access().c_str()));
+}
+
 TEST(Config, global_node_static_config_suffix) {
     const auto test_value = iox2::bb::FileName::create("spin_me_like_a_vinyl_record").value();
     auto config = Config();

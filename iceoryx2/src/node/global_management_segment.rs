@@ -16,8 +16,9 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::dynamic_storage::*;
 use iceoryx2_cal::named_concept::*;
+use iceoryx2_log::fail;
 
-const GLOBAL_MGMT_NAME: FileName = unsafe { FileName::new_unchecked_const(b"mgmt") };
+const GLOBAL_MGMT_NAME: FileName = unsafe { FileName::new_unchecked_const(b"node") };
 
 #[derive(Debug, Default)]
 struct State {
@@ -25,18 +26,30 @@ struct State {
 }
 
 pub(crate) struct GlobalManagementSegment<S: Service> {
-    storage: S::DynamicStorage<State>,
+    storage: S::PersistentDynamicStorage<State>,
 }
 
 impl<S: Service> GlobalManagementSegment<S> {
     pub fn open_or_create(global_config: &Config) -> Result<Self, DynamicStorageOpenOrCreateError> {
+        let origin = "GlobalManagementSegment::open_or_create()";
+        let msg = "Unable to open or create the management segment";
         let config = Self::dynamic_storage_config(global_config);
-        let storage =
-            <<S::DynamicStorage<State> as DynamicStorage<State>>::Builder<'_> as NamedConceptBuilder<S::DynamicStorage<State>>>::new(&GLOBAL_MGMT_NAME)
-                .has_ownership(false)
-                .config(&config)
-                .timeout(global_config.global.creation_timeout)
-                .open_or_create(State::default()).unwrap();
+        let storage = match <<S::PersistentDynamicStorage<State> as DynamicStorage<State>>::Builder<
+            '_,
+        > as NamedConceptBuilder<S::PersistentDynamicStorage<State>>>::new(
+            &GLOBAL_MGMT_NAME
+        )
+        .has_ownership(false)
+        .config(&config)
+        .timeout(global_config.global.creation_timeout)
+        .open_or_create(State::default())
+        {
+            Ok(storage) => storage,
+            Err(e) => {
+                fail!(from origin, with e,
+                    "{msg} since the underlying persistent dynamic storage could not be opened. [{e:?}]");
+            }
+        };
 
         Ok(Self { storage })
     }
@@ -50,9 +63,10 @@ impl<S: Service> GlobalManagementSegment<S> {
 
     fn dynamic_storage_config(
         global_config: &Config,
-    ) -> <S::DynamicStorage<State> as NamedConceptMgmt>::Configuration {
-        <S::DynamicStorage<State> as NamedConceptMgmt>::Configuration::default()
+    ) -> <S::PersistentDynamicStorage<State> as NamedConceptMgmt>::Configuration {
+        <S::PersistentDynamicStorage<State> as NamedConceptMgmt>::Configuration::default()
             .prefix(&global_config.global.prefix)
+            .suffix(&global_config.global.node.global_mgmt_suffix)
             .path_hint(global_config.global.root_path())
     }
 }

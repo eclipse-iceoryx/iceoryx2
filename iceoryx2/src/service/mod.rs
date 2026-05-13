@@ -900,6 +900,10 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
     /// Sets the serializer that is used to serialize the [`StaticConfig`] into the [`StaticStorage`]
     type ConfigSerializer: Serialize;
 
+    /// Defines the construct used to store the data that can be changed at runtime but
+    /// persist after a process crashed.
+    type PersistentDynamicStorage<T: Debug + Send + Sync + 'static>: DynamicStorage<T>;
+
     /// Defines the construct used to store the [`Service`]s dynamic configuration. This
     /// contains for instance all endpoints and other dynamic details.
     type DynamicStorage<T: Debug + Send + Sync + 'static>: DynamicStorage<T>;

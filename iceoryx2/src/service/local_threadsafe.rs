@@ -46,6 +46,8 @@ pub struct Service {}
 impl crate::service::Service for Service {
     type StaticStorage = static_storage::recommended::Local;
     type ConfigSerializer = serialize::recommended::Recommended;
+    type PersistentDynamicStorage<T: Debug + Send + Sync + 'static> =
+        dynamic_storage::recommended::PersistentLocal<T>;
     type DynamicStorage<T: Debug + Send + Sync + 'static> = dynamic_storage::recommended::Local<T>;
     type ServiceNameHasher = hash::recommended::Recommended;
     type SharedMemory = shared_memory::recommended::Local<PoolAllocator>;

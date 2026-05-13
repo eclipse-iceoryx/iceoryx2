@@ -492,6 +492,14 @@ void Node::set_monitor_suffix(const iox2::bb::FileName& value) && {
     iox2_config_global_node_set_monitor_suffix(m_config, value.as_string().unchecked_access().c_str());
 }
 
+auto Node::global_mgmt_suffix() && -> const char* {
+    return iox2_config_global_node_global_mgmt_suffix(m_config);
+}
+
+void Node::set_global_mgmt_suffix(const iox2::bb::FileName& value) && {
+    iox2_config_global_node_set_global_mgmt_suffix(m_config, value.as_string().unchecked_access().c_str());
+}
+
 auto Node::static_config_suffix() && -> const char* {
     return iox2_config_global_node_static_config_suffix(m_config);
 }

@@ -184,6 +184,8 @@ pub struct Node {
     pub static_config_suffix: FileName,
     /// The suffix of the service tags.
     pub service_tag_suffix: FileName,
+    /// The suffix of the global management segment.
+    pub global_mgmt_suffix: FileName,
     /// When true, the [`NodeBuilder`](crate::node::NodeBuilder) checks for dead nodes and
     /// cleans up all their stale resources whenever a new [`Node`](crate::node::Node) is
     /// created.
@@ -199,6 +201,7 @@ impl Default for Node {
         Self {
             directory: Path::new(b"nodes").unwrap(),
             monitor_suffix: FileName::new(b".node_monitor").unwrap(),
+            global_mgmt_suffix: FileName::new(b".global_mgmt").unwrap(),
             static_config_suffix: FileName::new(b".details").unwrap(),
             service_tag_suffix: FileName::new(b".service_tag").unwrap(),
             cleanup_dead_nodes_on_creation: true,

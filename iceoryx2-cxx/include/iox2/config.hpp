@@ -41,6 +41,10 @@ class Node {
     /// Set the suffix of the monitor token
     void set_monitor_suffix(const iox2::bb::FileName& value) &&;
     /// The suffix of the files where the node configuration is stored.
+    auto global_mgmt_suffix() && -> const char*;
+    /// Set the suffix of the files where the node configuration is stored.
+    void set_global_mgmt_suffix(const iox2::bb::FileName& value) &&;
+    /// The suffix of the files where the node configuration is stored.
     auto static_config_suffix() && -> const char*;
     /// Set the suffix of the files where the node configuration is stored.
     void set_static_config_suffix(const iox2::bb::FileName& value) &&;

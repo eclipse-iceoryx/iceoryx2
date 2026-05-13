@@ -98,6 +98,13 @@ def test_global_node_monitor_suffix_can_be_set() -> None:
     assert sut.global_cfg.node.monitor_suffix == value
 
 
+def test_global_node_global_mgmt_suffix_can_be_set() -> None:
+    sut = iox2.config.default()
+    value = iox2.FileName.new(".back_to_the_chopper")
+    sut.global_cfg.node.global_mgmt_suffix = value
+    assert sut.global_cfg.node.global_mgmt_suffix == value
+
+
 def test_global_node_static_config_suffix_can_be_set() -> None:
     sut = iox2.config.default()
     value = iox2.FileName.new(".wuff")

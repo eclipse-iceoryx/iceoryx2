@@ -108,6 +108,12 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                     description: "Suffix added to the node monitor.",
                 },
                 Field {
+                    key: "global.node.global-mgmt-suffix",
+                    value_type: "string",
+                    default_value: format!("\"{}\"", config.global.node.global_mgmt_suffix),
+                    description: "Suffix added to the global management segment.",
+                },
+                Field {
                     key: "global.node.static-config-suffix",
                     value_type: "string",
                     default_value: format!("\"{}\"", config.global.node.static_config_suffix),
