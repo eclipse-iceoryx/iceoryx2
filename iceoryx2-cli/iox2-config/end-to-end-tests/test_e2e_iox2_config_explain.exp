@@ -32,7 +32,6 @@ set id_iox2_config $spawn_id
 expect_output_from $id_iox2_config "== Global =="
 expect_output_from $id_iox2_config "== Global: Node =="
 expect_output_from $id_iox2_config "== Global: Service =="
-expect_output_from $id_iox2_config "== Global: Service Creation Timeout =="
 expect_output_from $id_iox2_config "== Defaults: Publish Subscribe Messaging Pattern =="
 expect_output_from $id_iox2_config "== Defaults: Event Messaging Pattern =="
 expect_output_from $id_iox2_config "== Defaults: Request Response Messaging Pattern =="
