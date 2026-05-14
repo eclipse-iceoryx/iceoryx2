@@ -79,10 +79,10 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, AtomicUsize};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::{CallbackProgression, cyclic_tagger::CyclicTagger};
+use iceoryx2_bb_elementary_traits::testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
-use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_CLOSED, CHANNEL_STATE_OPEN};
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy,

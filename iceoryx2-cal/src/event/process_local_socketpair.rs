@@ -20,6 +20,7 @@ pub use iceoryx2_bb_container::semantic_string::SemanticString;
 pub use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
 
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::{
     file_descriptor::FileDescriptorBased,
     file_descriptor_set::SynchronousMultiplexing,
@@ -29,7 +30,6 @@ use iceoryx2_bb_posix::{
         StreamingSocketPairReceiveError, StreamingSocketPairSendError,
     },
 };
-use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_log::{debug, fail, fatal_panic};
 
 use crate::named_concept::{

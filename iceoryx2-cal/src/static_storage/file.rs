@@ -51,7 +51,7 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use alloc::format;
 use alloc::vec;
 use alloc::vec::Vec;
-use iceoryx2_bb_testing::abandonable::NonNullFromRef;
+use iceoryx2_bb_elementary_traits::testing::abandonable::NonNullFromRef;
 
 pub use crate::named_concept::*;
 pub use crate::static_storage::*;

@@ -261,8 +261,8 @@ use alloc::string::String as CoreString;
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
+use iceoryx2_bb_elementary_traits::testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_bb_posix::file::AccessMode;
-use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 
 use crate::config;
 use crate::constants::MAX_TYPE_NAME_LENGTH;

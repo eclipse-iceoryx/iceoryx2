@@ -14,7 +14,7 @@ extern crate alloc;
 use core::fmt::Debug;
 
 use iceoryx2_bb_elementary::CallbackProgression;
-use iceoryx2_bb_testing::abandonable::Abandonable;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_log::{debug, warn};
 
 use crate::config::Config;

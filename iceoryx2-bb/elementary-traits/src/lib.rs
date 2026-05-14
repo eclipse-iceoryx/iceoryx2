@@ -27,5 +27,6 @@ pub mod placement_default;
 pub mod plain_old_data_without_padding;
 pub mod pointer_trait;
 pub mod relocatable_container;
+pub mod testing;
 pub mod zero_copy_send;
 pub mod zeroable;

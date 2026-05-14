@@ -34,7 +34,7 @@
 
 use core::fmt::Debug;
 
-use iceoryx2_bb_testing::abandonable::Abandonable;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
 use iceoryx2_cal::*;

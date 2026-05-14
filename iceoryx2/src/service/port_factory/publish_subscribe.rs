@@ -41,7 +41,7 @@
 //! ```
 extern crate alloc;
 use alloc::sync::Arc;
-use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
+use iceoryx2_bb_elementary_traits::testing::abandonable::{Abandonable, NonNullFromRef};
 
 use super::nodes;
 use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};

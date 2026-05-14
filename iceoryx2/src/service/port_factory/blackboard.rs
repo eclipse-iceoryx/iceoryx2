@@ -56,8 +56,8 @@ use core::fmt::Debug;
 use core::hash::Hash;
 use core::marker::PhantomData;
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_elementary_traits::testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 /// The factory for

@@ -22,9 +22,9 @@ use iceoryx2::node::{CleanupState, NodeState};
 use iceoryx2::prelude::*;
 use iceoryx2::service::Service;
 use iceoryx2::testing::*;
-use iceoryx2_bb_testing::abandonable::Abandonable;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_testing::watchdog::Watchdog;
-use iceoryx2_bb_testing::{assert_that, test_fail};
+use iceoryx2_bb_testing::{assert_that, test_fail, test_requires};
 use iceoryx2_bb_testing_macros::conformance_test;
 use iceoryx2_bb_testing_macros::conformance_tests;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
@@ -133,7 +133,7 @@ impl Test for ZeroCopy {
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod node_death {
-    use iceoryx2_bb_testing::abandonable::Abandonable;
+    use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 
     use super::*;
 

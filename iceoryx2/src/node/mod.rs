@@ -161,6 +161,8 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_bb_elementary_traits::testing::abandonable::NonNullFromRef;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
@@ -174,8 +176,6 @@ use iceoryx2_bb_posix::mutex::MutexType;
 use iceoryx2_bb_posix::process::Process;
 use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_bb_system_types::file_name::FileName;
-use iceoryx2_bb_testing::abandonable::Abandonable;
-use iceoryx2_bb_testing::abandonable::NonNullFromRef;
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,

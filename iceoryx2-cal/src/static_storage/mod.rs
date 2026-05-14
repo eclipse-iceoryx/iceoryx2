@@ -19,8 +19,8 @@ pub mod recommended;
 
 use core::{fmt::Debug, time::Duration};
 
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_system_types::file_name::*;
-use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_log::fail;
 
 use crate::named_concept::{

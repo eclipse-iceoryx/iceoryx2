@@ -20,9 +20,9 @@ use alloc::format;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_elementary_traits::relocatable_container::*;
+use iceoryx2_bb_elementary_traits::testing::abandonable::NonNullFromRef;
 use iceoryx2_bb_lock_free::spsc::safely_overflowing_index_queue::*;
 use iceoryx2_bb_posix::file::AccessMode;
-use iceoryx2_bb_testing::abandonable::NonNullFromRef;
 use iceoryx2_log::fail;
 
 use crate::dynamic_storage::{

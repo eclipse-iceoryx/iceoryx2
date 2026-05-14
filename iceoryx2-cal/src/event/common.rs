@@ -18,10 +18,10 @@ pub mod details {
 
     use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize};
+    use iceoryx2_bb_elementary_traits::testing::abandonable::{Abandonable, NonNullFromRef};
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_posix::file::AccessMode;
     use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
-    use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
     use iceoryx2_log::{debug, fail};
 
     use crate::{

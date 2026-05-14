@@ -28,6 +28,7 @@ use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::AtomicU64;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
+use iceoryx2_bb_elementary_traits::testing::abandonable::NonNullFromRef;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::directory::*;
 use iceoryx2_bb_posix::file::File;
@@ -45,7 +46,6 @@ use iceoryx2_bb_posix::memory_mapping::MemoryMapping;
 use iceoryx2_bb_posix::memory_mapping::MemoryMappingBuilder;
 use iceoryx2_bb_posix::shared_memory::*;
 use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_bb_testing::abandonable::NonNullFromRef;
 use iceoryx2_log::fail;
 use iceoryx2_log::warn;
 

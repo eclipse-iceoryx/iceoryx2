@@ -14,8 +14,8 @@ use alloc::vec;
 
 use iceoryx2_bb_container::slotmap::*;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_testing::abandon_tracker::AbandonTacker;
-use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::memory::RawMemory;
 use iceoryx2_bb_testing_macros::test;

@@ -20,9 +20,10 @@ rust_binary(
     ],
     deps = [
         "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
+        "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//iceoryx2-cal:iceoryx2-cal",
+        "//iceoryx2-log/log:iceoryx2-log",
         "//examples/rust:examples-common",
     ],
 )
@@ -35,9 +36,10 @@ rust_binary(
     ],
     deps = [
         "//iceoryx2:iceoryx2",
-        "//iceoryx2-log/log:iceoryx2-log",
+        "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
         "//iceoryx2-bb/loggers:iceoryx2-bb-loggers",
         "//iceoryx2-cal:iceoryx2-cal",
+        "//iceoryx2-log/log:iceoryx2-log",
         "//examples/rust:examples-common",
     ],
 )

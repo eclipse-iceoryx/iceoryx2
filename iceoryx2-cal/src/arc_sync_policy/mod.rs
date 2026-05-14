@@ -25,7 +25,7 @@
 //! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
-//! use iceoryx2_bb_testing::abandonable::Abandonable;
+//! use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 //!
 //! struct Data(u64);
 //!
@@ -45,7 +45,7 @@
 //! # extern crate iceoryx2_bb_loggers;
 //!
 //! use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
-//! use iceoryx2_bb_testing::abandonable::Abandonable;
+//! use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 //!
 //! #[derive(Debug)]
 //! struct Data(u64);
@@ -66,7 +66,7 @@
 //!
 //! ```compile_fail
 //! # extern crate iceoryx2_bb_loggers;
-//! use iceoryx2_bb_testing::abandonable::Abandonable;
+//! use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 //!
 //! struct Data(u64);
 //!
@@ -91,7 +91,7 @@ mod single_threaded_compile_tests;
 
 use core::{fmt::Debug, ops::Deref};
 
-use iceoryx2_bb_testing::abandonable::Abandonable;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum ArcSyncPolicyCreationError {

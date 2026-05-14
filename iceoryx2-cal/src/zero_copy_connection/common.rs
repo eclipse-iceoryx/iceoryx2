@@ -24,6 +24,7 @@ pub mod details {
     use iceoryx2_bb_container::vector::relocatable_vec::*;
     use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
     use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+    use iceoryx2_bb_elementary_traits::testing::abandonable::NonNullFromRef;
     use iceoryx2_bb_lock_free::spsc::{
         index_queue::RelocatableIndexQueue,
         safely_overflowing_index_queue::RelocatableSafelyOverflowingIndexQueue,
@@ -32,7 +33,6 @@ pub mod details {
     use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
     use iceoryx2_bb_posix::clock::Time;
     use iceoryx2_bb_posix::file::AccessMode;
-    use iceoryx2_bb_testing::abandonable::NonNullFromRef;
     use iceoryx2_log::{fail, fatal_panic};
 
     pub use crate::zero_copy_connection::*;

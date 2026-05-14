@@ -15,7 +15,7 @@ use core::mem::MaybeUninit;
 use alloc::format;
 use alloc::vec::Vec;
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
-use iceoryx2_bb_testing::abandonable::NonNullFromRef;
+use iceoryx2_bb_elementary_traits::testing::abandonable::NonNullFromRef;
 
 pub use crate::event::*;
 use crate::static_storage::file::NamedConceptConfiguration;

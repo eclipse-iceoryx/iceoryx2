@@ -15,6 +15,7 @@ use alloc::string::ToString;
 
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::plain_old_data_without_padding::PlainOldDataWithoutPadding;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
 use iceoryx2_bb_posix::file::*;
@@ -22,7 +23,6 @@ use iceoryx2_bb_posix::file_descriptor::*;
 use iceoryx2_bb_posix::testing::create_test_directory;
 use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_system_types::file_path::FilePath;
-use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing_macros::test;

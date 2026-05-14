@@ -20,12 +20,12 @@ pub type DefaultAllocator = PoolAllocator;
 pub mod resizable_shared_memory_trait {
     use alloc::vec;
     use core::alloc::Layout;
+    use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
     use iceoryx2_bb_posix::file::AccessMode;
-    use iceoryx2_bb_testing::abandonable::Abandonable;
     use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
     use iceoryx2_bb_posix::testing::generate_file_path;
-    use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::resizable_shared_memory::*;

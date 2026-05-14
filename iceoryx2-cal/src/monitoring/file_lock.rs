@@ -14,6 +14,8 @@ use alloc::format;
 use alloc::vec;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_bb_elementary_traits::testing::abandonable::NonNullFromRef;
 use iceoryx2_bb_posix::file::Permission;
 use iceoryx2_bb_posix::process_state::ProcessGuardBuilder;
 use iceoryx2_bb_posix::process_state::ProcessMonitorOpenError;
@@ -27,8 +29,6 @@ use iceoryx2_bb_posix::{
     },
 };
 use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
-use iceoryx2_bb_testing::abandonable::Abandonable;
-use iceoryx2_bb_testing::abandonable::NonNullFromRef;
 use iceoryx2_log::fail;
 
 use crate::{

@@ -19,7 +19,7 @@ use alloc::vec::Vec;
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
-use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
+use iceoryx2_bb_elementary_traits::testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{

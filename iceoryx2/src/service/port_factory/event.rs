@@ -48,7 +48,7 @@ use crate::service::service_hash::ServiceHash;
 use crate::service::{self, NoResource, ServiceState, SharedServiceState, static_config};
 use crate::service::{ServiceName, dynamic_config};
 use iceoryx2_bb_elementary::CallbackProgression;
-use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
+use iceoryx2_bb_elementary_traits::testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 /// The factory for

@@ -66,9 +66,9 @@ use core::{fmt::Debug, time::Duration};
 
 pub use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::*;
-use iceoryx2_bb_testing::abandonable::Abandonable;
 use pool_allocator::PoolAllocator;
 
 /// Failure returned by [`SharedMemoryBuilder::create()`]

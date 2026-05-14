@@ -16,7 +16,7 @@ use std::sync::Mutex;
 #[cfg(not(feature = "std"))]
 use iceoryx2_pal_concurrency_sync::spin_lock::SpinLock as Mutex;
 
-use crate::abandonable::Abandonable;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 
 static CREATION_COUNTER: Mutex<usize> = Mutex::new(0);
 static DROP_COUNTER: Mutex<usize> = Mutex::new(0);

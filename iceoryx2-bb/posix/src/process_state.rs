@@ -137,8 +137,8 @@
 
 use alloc::format;
 use core::fmt::Debug;
+use iceoryx2_bb_elementary_traits::testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
-use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 pub use iceoryx2_bb_system_types::file_path::FilePath;

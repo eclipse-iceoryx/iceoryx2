@@ -32,8 +32,8 @@ use crate::static_storage::file::{
 pub mod details {
     use alloc::vec::Vec;
 
+    use iceoryx2_bb_elementary_traits::testing::abandonable::NonNullFromRef;
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-    use iceoryx2_bb_testing::abandonable::NonNullFromRef;
     use pool_allocator::PoolAllocator;
 
     use super::*;

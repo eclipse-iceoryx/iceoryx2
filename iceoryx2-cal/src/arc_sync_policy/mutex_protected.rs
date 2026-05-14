@@ -15,10 +15,10 @@ use core::{fmt::Debug, ops::Deref};
 use alloc::format;
 use alloc::sync::Arc;
 
+use iceoryx2_bb_elementary_traits::testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_bb_posix::mutex::{
     Handle, Mutex, MutexBuilder, MutexCreationError, MutexGuard, MutexHandle, MutexType,
 };
-use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_log::{fail, fatal_panic};
 
 use crate::arc_sync_policy::{ArcSyncPolicy, ArcSyncPolicyCreationError, LockGuard};

@@ -16,6 +16,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::clock::{Time, nanosleep};
 use iceoryx2_bb_posix::creation_mode::*;
@@ -27,7 +28,6 @@ use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_posix::unix_datagram_socket::*;
 use iceoryx2_bb_system_types::file_path::FilePath;
-use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing::watchdog::Watchdog;
