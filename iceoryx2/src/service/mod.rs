@@ -290,7 +290,7 @@ use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryForPoolAllocator};
 use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
 use iceoryx2_cal::static_storage::*;
 use iceoryx2_cal::zero_copy_connection::ZeroCopyConnection;
-use iceoryx2_log::{debug, fail, trace, warn};
+use iceoryx2_log::{debug, error, fail, trace, warn};
 use service_hash::ServiceHash;
 
 use self::dynamic_config::DeregisterNodeState;
@@ -500,16 +500,20 @@ impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
             }
 
             match self.dynamic_storage.get().deregister_node_id(handle) {
-                DeregisterNodeState::HasOwners => {
+                Ok(DeregisterNodeState::HasOwners) => {
                     trace!(from origin, "close service: {} ({:?})",
                             self.static_config.name(), hash);
                 }
-                DeregisterNodeState::NoMoreOwners => {
+                Ok(DeregisterNodeState::NoMoreOwners) => {
                     self.static_storage.acquire_ownership();
                     self.dynamic_storage.acquire_ownership();
                     self.additional_resource.acquire_ownership();
                     trace!(from origin, "close and remove service: {} ({:?})",
                             self.static_config.name(), hash);
+                }
+                Err(e) => {
+                    error!(from origin,
+                        "Unable to deregister node {} from service. This could indicate a corrupted system! [{e:?}]", self.shared_node.id())
                 }
             }
         });

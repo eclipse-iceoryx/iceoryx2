@@ -111,6 +111,7 @@ pub mod generic {
                     stored_indices.remove(stored_indices.len() - 2),
                     ReleaseMode::Default,
                 )
+                .unwrap()
             };
         }
         assert_that!(sut.is_empty(), eq false);
@@ -154,6 +155,7 @@ pub mod generic {
                     stored_indices.remove(stored_indices.len() - 2),
                     ReleaseMode::Default,
                 )
+                .unwrap()
             };
         }
 
@@ -189,6 +191,7 @@ pub mod generic {
                     stored_handles[stored_handles.len() - 2],
                     ReleaseMode::Default,
                 )
+                .unwrap()
             };
         }
 
@@ -270,7 +273,7 @@ pub mod generic {
 
         let mut state = sut.get_state();
         for i in &stored_indices {
-            assert_that!(unsafe { sut.remove(*i, ReleaseMode::Default) }, eq ReleaseState::Unlocked);
+            assert_that!(unsafe { sut.remove(*i, ReleaseMode::Default) }.unwrap(), eq ReleaseState::Unlocked);
         }
         stored_indices.clear();
 
@@ -298,7 +301,7 @@ pub mod generic {
 
         let mut state = sut.get_state();
         for i in stored_indices {
-            assert_that!(unsafe { sut.remove(i, ReleaseMode::Default) }, eq ReleaseState::Unlocked);
+            assert_that!(unsafe { sut.remove(i, ReleaseMode::Default).unwrap() }, eq ReleaseState::Unlocked);
         }
 
         let mut results = BTreeMap::<usize, usize>::new();
@@ -351,7 +354,10 @@ pub mod generic {
         }
 
         for _ in 0..CAPACITY {
-            unsafe { sut.remove(stored_indices.pop().unwrap(), ReleaseMode::Default) };
+            unsafe {
+                sut.remove(stored_indices.pop().unwrap(), ReleaseMode::Default)
+                    .unwrap()
+            };
             stored_values.pop();
 
             unsafe { sut.update_state(&mut state) };
@@ -377,7 +383,7 @@ pub mod generic {
         let owner_id = OwnerId::new(123).unwrap();
 
         let index = unsafe { sut.add(123.into(), owner_id) }.unwrap();
-        unsafe { sut.remove(index, ReleaseMode::Default) };
+        unsafe { sut.remove(index, ReleaseMode::Default).unwrap() };
         assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
     }
 
@@ -426,7 +432,7 @@ pub mod generic {
                                 Err(ContainerAddFailure::OutOfSpace) => {
                                     repetition += 1;
                                     for id in &ids {
-                                        unsafe { sut.remove(*id, ReleaseMode::Default) };
+                                        unsafe { sut.remove(*id, ReleaseMode::Default).unwrap() };
                                     }
                                     ids.clear();
                                 }

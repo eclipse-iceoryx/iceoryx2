@@ -29,7 +29,7 @@
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::{container::*, unique_index_set_enums::ReleaseMode};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_log::fatal_panic;
+use iceoryx2_log::{error, fatal_panic};
 
 use crate::{
     identifiers::{UniqueNodeId, UniquePortId, UniquePublisherId, UniqueSubscriberId},
@@ -196,7 +196,9 @@ impl DynamicConfig {
     }
 
     pub(crate) fn release_subscriber_handle(&self, handle: ContainerHandle) {
-        unsafe { self.subscribers.remove(handle, ReleaseMode::Default) };
+        if let Err(e) = unsafe { self.subscribers.remove(handle, ReleaseMode::Default) } {
+            error!(from self, "Unable to deregister subscriber from service. This could indicate a corrupted system! [{e:?}]");
+        }
     }
 
     pub(crate) fn add_publisher_id(&self, details: PublisherDetails) -> Option<ContainerHandle> {
@@ -208,6 +210,8 @@ impl DynamicConfig {
     }
 
     pub(crate) fn release_publisher_handle(&self, handle: ContainerHandle) {
-        unsafe { self.publishers.remove(handle, ReleaseMode::Default) };
+        if let Err(e) = unsafe { self.publishers.remove(handle, ReleaseMode::Default) } {
+            error!(from self, "Unable to deregister publisher from service. This could indicate a corrupted system! [{e:?}]");
+        }
     }
 }

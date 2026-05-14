@@ -104,6 +104,14 @@ impl From<UniqueIndexSetAcquireFailure> for ContainerAddFailure {
     }
 }
 
+/// States the reason why a [`ContainerHandle`] could not be removed to the [`Container`]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ContainerRemoveError {
+    /// The [`ContainerHandle`] is not part of the container. Either it is a double remove, belongs to
+    /// a different [`Container`] or it was forcefully removed with [`Container::recover()`].
+    ContainerHandleNotOwnedByContainer,
+}
+
 /// A handle that corresponds to an element inside the [`Container`]. Will be acquired when using
 /// [`Container::add()`] and can be released with [`Container::remove()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -373,17 +381,26 @@ impl<T: Copy + Debug> Container<T> {
     /// **Important:** If the [`ContainerHandle`] still exists it causes double frees or freeing an index
     /// which was allocated afterwards
     ///
-    pub unsafe fn remove(&self, handle: ContainerHandle, mode: ReleaseMode) -> ReleaseState {
+    pub unsafe fn remove(
+        &self,
+        handle: ContainerHandle,
+        mode: ReleaseMode,
+    ) -> Result<ReleaseState, ContainerRemoveError> {
         self.verify_init("remove()");
         debug_assert!(
             handle.container_id == self.container_id.value(),
             "The ContainerHandle used as handle was not created by this Container instance."
         );
 
-        let release_state = unsafe {
-            self.index_set
-                .release(handle.index, handle.owner_id, mode)
-                .unwrap()
+        let release_state = match unsafe {
+            self.index_set.release(handle.index, handle.owner_id, mode)
+        } {
+            Ok(state) => state,
+            Err(_) => {
+                fail!(from self,
+                        with ContainerRemoveError::ContainerHandleNotOwnedByContainer,
+                        "Since the provided container handle {handle:?} is not owned by this container.");
+            }
         };
 
         // MUST HAPPEN AFTER the index release to ensure that a crash does not leak. It could be
@@ -399,7 +416,7 @@ impl<T: Copy + Debug> Container<T> {
 
         // MUST HAPPEN AFTER all other operations
         self.change_counter.fetch_add(1, Ordering::Release);
-        release_state
+        Ok(release_state)
     }
 
     /// Returns [`ContainerState`] which contains all elements of this container. Be aware that
@@ -682,7 +699,11 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///
     ///  * If the UniqueIndex still exists it causes double frees or freeing an index
     ///    which was allocated afterwards
-    pub unsafe fn remove(&self, handle: ContainerHandle, mode: ReleaseMode) -> ReleaseState {
+    pub unsafe fn remove(
+        &self,
+        handle: ContainerHandle,
+        mode: ReleaseMode,
+    ) -> Result<ReleaseState, ContainerRemoveError> {
         unsafe { self.container.remove(handle, mode) }
     }
 

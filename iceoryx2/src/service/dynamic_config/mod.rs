@@ -34,7 +34,7 @@ use core::fmt::Display;
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::{
-    container::{Container, ContainerAddFailure, ContainerHandle},
+    container::{Container, ContainerAddFailure, ContainerHandle, ContainerRemoveError},
     unique_index_set_enums::{ReleaseMode, ReleaseState},
 };
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
@@ -202,13 +202,17 @@ impl DynamicConfig {
         state.for_each(|_, node_id| callback(node_id));
     }
 
-    pub(crate) fn deregister_node_id(&self, handle: ContainerHandle) -> DeregisterNodeState {
-        if unsafe { self.nodes.remove(handle, ReleaseMode::LockIfLastIndex) }
-            == ReleaseState::Locked
-        {
-            DeregisterNodeState::NoMoreOwners
-        } else {
-            DeregisterNodeState::HasOwners
+    pub(crate) fn deregister_node_id(
+        &self,
+        handle: ContainerHandle,
+    ) -> Result<DeregisterNodeState, ContainerRemoveError> {
+        match unsafe { self.nodes.remove(handle, ReleaseMode::LockIfLastIndex) } {
+            Ok(ReleaseState::Locked) => Ok(DeregisterNodeState::NoMoreOwners),
+            Ok(ReleaseState::Unlocked) => Ok(DeregisterNodeState::HasOwners),
+            Err(e) => {
+                fail!(from self, with e,
+                    "Unable to deregister the node since it was not registered.");
+            }
         }
     }
 

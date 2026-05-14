@@ -17,7 +17,7 @@ use iceoryx2_bb_lock_free::mpmc::{
     unique_index_set_enums::ReleaseMode,
 };
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_log::fatal_panic;
+use iceoryx2_log::{error, fatal_panic};
 
 use crate::{
     identifiers::{UniqueClientId, UniqueNodeId, UniquePortId, UniqueServerId},
@@ -166,7 +166,9 @@ impl DynamicConfig {
     }
 
     pub(crate) fn release_client_handle(&self, handle: ContainerHandle) {
-        unsafe { self.clients.remove(handle, ReleaseMode::Default) };
+        if let Err(e) = unsafe { self.clients.remove(handle, ReleaseMode::Default) } {
+            error!(from self, "Unable to deregister client from service. This could indicate a corrupted system! [{e:?}]");
+        }
     }
 
     pub(crate) fn add_server_id(&self, details: ServerDetails) -> Option<ContainerHandle> {
@@ -174,7 +176,9 @@ impl DynamicConfig {
     }
 
     pub(crate) fn release_server_handle(&self, handle: ContainerHandle) {
-        unsafe { self.servers.remove(handle, ReleaseMode::Default) };
+        if let Err(e) = unsafe { self.servers.remove(handle, ReleaseMode::Default) } {
+            error!(from self, "Unable to deregister server from service. This could indicate a corrupted system! [{e:?}]");
+        }
     }
 
     /// Iterates over all [`Server`](crate::port::server::Server)s and calls the

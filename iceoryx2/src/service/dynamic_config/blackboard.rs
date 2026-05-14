@@ -32,7 +32,7 @@ use crate::identifiers::{UniqueNodeId, UniquePortId, UniqueReaderId, UniqueWrite
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::{container::*, unique_index_set_enums::ReleaseMode};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_log::fatal_panic;
+use iceoryx2_log::{error, fatal_panic};
 
 use super::PortCleanupAction;
 
@@ -168,7 +168,9 @@ impl DynamicConfig {
     }
 
     pub(crate) fn release_reader_handle(&self, handle: ContainerHandle) {
-        unsafe { self.readers.remove(handle, ReleaseMode::Default) };
+        if let Err(e) = unsafe { self.readers.remove(handle, ReleaseMode::Default) } {
+            error!(from self, "Unable to deregister reader from service. This could indicate a corrupted system! [{e:?}]");
+        }
     }
 
     pub(crate) fn add_writer_id(&self, details: WriterDetails) -> Option<ContainerHandle> {
@@ -176,6 +178,8 @@ impl DynamicConfig {
     }
 
     pub(crate) fn release_writer_handle(&self, handle: ContainerHandle) {
-        unsafe { self.writers.remove(handle, ReleaseMode::Default) };
+        if let Err(e) = unsafe { self.writers.remove(handle, ReleaseMode::Default) } {
+            error!(from self, "Unable to deregister writer from service. This could indicate a corrupted system! [{e:?}]");
+        }
     }
 }

@@ -31,7 +31,7 @@ use iceoryx2_bb_concurrency::atomic::AtomicU64;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::{container::*, unique_index_set_enums::ReleaseMode};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_log::fatal_panic;
+use iceoryx2_log::{error, fatal_panic};
 
 use crate::identifiers::{UniqueListenerId, UniqueNodeId, UniqueNotifierId, UniquePortId};
 
@@ -178,7 +178,9 @@ impl DynamicConfig {
     }
 
     pub(crate) fn release_listener_handle(&self, handle: ContainerHandle) {
-        unsafe { self.listeners.remove(handle, ReleaseMode::Default) };
+        if let Err(e) = unsafe { self.listeners.remove(handle, ReleaseMode::Default) } {
+            error!(from self, "Unable to deregister listener from service. This could indicate a corrupted system! [{e:?}]");
+        }
     }
 
     pub(crate) fn add_notifier_id(&self, details: NotifierDetails) -> Option<ContainerHandle> {
@@ -186,6 +188,8 @@ impl DynamicConfig {
     }
 
     pub(crate) fn release_notifier_handle(&self, handle: ContainerHandle) {
-        unsafe { self.notifiers.remove(handle, ReleaseMode::Default) };
+        if let Err(e) = unsafe { self.notifiers.remove(handle, ReleaseMode::Default) } {
+            error!(from self, "Unable to deregister notifier from service. This could indicate a corrupted system! [{e:?}]");
+        }
     }
 }
