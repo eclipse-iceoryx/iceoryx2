@@ -318,25 +318,27 @@ impl<T: Copy + Debug> Container<T> {
 
             let element_generation_counter =
                 &*self.element_generation_counter_ptr.as_ptr().add(index as _);
-            let current_generation_count = element_generation_counter.load(Ordering::Relaxed);
+            let current_element_generation_count =
+                element_generation_counter.load(Ordering::Acquire);
 
-            // Another process died and the entry was released by `Self::recover()` but the
+            // Another process died and the entry was released by `Self::recover()` but the element
             // generation counter has not yet marked the element as free. Now we race with the
-            // recovery part.
+            // recovery part. This is the only part that is allowed to set the
+            // element_generation_counter from contains_data to free since the index set ensures that
+            // we are the only owner of that element.
             //
             // We increment the generation count by 2 to signal the next generation of an entry that
             // contains data. If this succeeds we won the race.
             //
             // If this fails the entry was released successfully and we need to increment it by 1.
-
             //////////////////////////////////////
             // SYNC POINT all atomic operations with reading data values
             //////////////////////////////////////
-            if Self::contains_data(current_generation_count) {
+            if Self::contains_data(current_element_generation_count) {
                 if element_generation_counter
                     .compare_exchange(
-                        current_generation_count,
-                        current_generation_count + 2,
+                        current_element_generation_count,
+                        current_element_generation_count + 2,
                         Ordering::Release,
                         Ordering::Relaxed,
                     )
@@ -378,19 +380,22 @@ impl<T: Copy + Debug> Container<T> {
             "The ContainerHandle used as handle was not created by this Container instance."
         );
 
+        let release_state = unsafe {
+            self.index_set
+                .release(handle.index, handle.owner_id, mode)
+                .unwrap()
+        };
+
+        // MUST HAPPEN AFTER the index release to ensure that a crash does not leak. It could be
+        // recovered but since the add is recovering the element generation counter as well at this
+        // state, we avoid a recover call.
         unsafe {
             &*self
                 .element_generation_counter_ptr
                 .as_ptr()
                 .add(handle.index as _)
         }
-        .fetch_add(1, Ordering::Relaxed);
-
-        let release_state = unsafe {
-            self.index_set
-                .release(handle.index, handle.owner_id, mode)
-                .unwrap()
-        };
+        .fetch_add(1, Ordering::AcqRel);
 
         // MUST HAPPEN AFTER all other operations
         self.change_counter.fetch_add(1, Ordering::Release);
@@ -463,7 +468,7 @@ impl<T: Copy + Debug> Container<T> {
                         )
                     };
 
-                    if gen_count != element_generation_counter.load(Ordering::Relaxed) {
+                    if gen_count != element_generation_counter.load(Ordering::SeqCst) {
                         continue;
                     }
 
@@ -543,14 +548,7 @@ impl<T: Copy + Debug> Container<T> {
                         );
                     }
 
-                    if element_generation_counter
-                        .compare_exchange(
-                            current_change_counter,
-                            current_change_counter,
-                            Ordering::AcqRel,
-                            Ordering::Acquire,
-                        )
-                        .is_ok()
+                    if current_generation_count == element_generation_counter.load(Ordering::SeqCst)
                     {
                         break;
                     }

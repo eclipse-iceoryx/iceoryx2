@@ -458,3 +458,15 @@
    Install a backend to get started, e.g.:
      cargo install iceoryx2-integrations-zenoh-tunnel-cli
    ```
+
+1. `Config::global.service.creation_timeout` renamed to `Config::global.node.creation_timeout`
+
+   ```rust
+   # old
+   let mut config = Config::default();
+   config.global.service.creation_timeout = Duration::from_secs(1);
+
+   # new
+   let mut config = Config::default();
+   config.global.node.creation_timeout = Duration::from_secs(1);
+   ```
