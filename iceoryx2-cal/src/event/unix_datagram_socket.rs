@@ -11,11 +11,12 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::mem::MaybeUninit;
+use core::ptr::NonNull;
 
 use alloc::format;
 use alloc::vec::Vec;
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
-use iceoryx2_bb_elementary_traits::testing::abandonable::NonNullFromRef;
+use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 
 pub use crate::event::*;
 use crate::static_storage::file::NamedConceptConfiguration;
@@ -165,13 +166,9 @@ pub struct Notifier {
 }
 
 impl Abandonable for Notifier {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe {
-            UnixDatagramSender::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
-                &mut this.sender,
-            ))
-        };
+        unsafe { UnixDatagramSender::abandon_in_place(NonNull::iox2_from_mut(&mut this.sender)) };
     }
 }
 
@@ -270,12 +267,10 @@ pub struct Listener {
 }
 
 impl Abandonable for Listener {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe {
-            UnixDatagramReceiver::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
-                &mut this.receiver,
-            ))
+            UnixDatagramReceiver::abandon_in_place(NonNull::iox2_from_mut(&mut this.receiver))
         };
     }
 }

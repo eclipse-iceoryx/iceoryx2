@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::ptr::NonNull;
 use core::time::Duration;
 
 use alloc::collections::BTreeMap;
@@ -190,7 +191,7 @@ pub struct Notifier {
 }
 
 impl Abandonable for Notifier {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe { core::ptr::drop_in_place(&mut this.socket) };
     }
@@ -303,7 +304,7 @@ pub struct Listener {
 }
 
 impl Abandonable for Listener {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe { core::ptr::drop_in_place(&mut this.socket) };
     }

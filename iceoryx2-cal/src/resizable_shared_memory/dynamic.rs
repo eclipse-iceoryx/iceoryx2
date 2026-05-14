@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::alloc::Layout;
+use core::ptr::NonNull;
 use core::time::Duration;
 use core::{fmt::Debug, marker::PhantomData};
 use iceoryx2_bb_concurrency::atomic::Ordering;
@@ -26,7 +27,8 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::slotmap::{SlotMap, SlotMapKey};
 use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
-use iceoryx2_bb_elementary_traits::testing::abandonable::{Abandonable, NonNullFromRef};
+use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
@@ -90,13 +92,9 @@ struct InternalState<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Abandonable
     for InternalState<Allocator, Shm>
 {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe {
-            SlotMap::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
-                &mut this.shared_memory_map,
-            ))
-        };
+        unsafe { SlotMap::abandon_in_place(NonNull::iox2_from_mut(&mut this.shared_memory_map)) };
     }
 }
 
@@ -110,9 +108,9 @@ struct ShmEntry<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Abandonable
     for ShmEntry<Allocator, Shm>
 {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { Shm::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.shm)) };
+        unsafe { Shm::abandon_in_place(NonNull::iox2_from_mut(&mut this.shm)) };
     }
 }
 
@@ -340,13 +338,11 @@ pub struct DynamicView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Abandonable
     for DynamicView<Allocator, Shm>
 {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { Shm::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.mgmt_segment)) };
+        unsafe { Shm::abandon_in_place(NonNull::iox2_from_mut(&mut this.mgmt_segment)) };
         unsafe {
-            SlotMap::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
-                this.shared_memory_map.get_mut(),
-            ))
+            SlotMap::abandon_in_place(NonNull::iox2_from_mut(this.shared_memory_map.get_mut()))
         };
     }
 }
@@ -449,9 +445,9 @@ pub struct DynamicMemory<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> 
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Abandonable
     for DynamicMemory<Allocator, Shm>
 {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { Shm::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.mgmt_segment)) };
+        unsafe { Shm::abandon_in_place(NonNull::iox2_from_mut(&mut this.mgmt_segment)) };
     }
 }
 

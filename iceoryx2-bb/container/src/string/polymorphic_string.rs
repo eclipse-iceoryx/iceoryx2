@@ -20,6 +20,8 @@
 //! use iceoryx2_bb_elementary_traits::allocator::*;
 //! use iceoryx2_bb_container::string::*;
 //!
+//! # use core::ptr::NonNull;
+//!
 //! # struct SomeAllocator {}
 //!
 //! # impl SomeAllocator {
@@ -32,11 +34,11 @@
 //! #     fn allocate(
 //! #         &self,
 //! #         layout: core::alloc::Layout,
-//! #     ) -> Result<core::ptr::NonNull<[u8]>, AllocationError> {
+//! #     ) -> Result<NonNull<[u8]>, AllocationError> {
 //! #         todo!()
 //! #     }
 //! #
-//! #     unsafe fn deallocate(&self, _ptr: core::ptr::NonNull<u8>, _layout: core::alloc::Layout) {
+//! #     unsafe fn deallocate(&self, _ptr: NonNull<u8>, _layout: core::alloc::Layout) {
 //! #         todo!()
 //! #     }
 //! # }

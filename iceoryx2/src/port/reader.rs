@@ -48,9 +48,11 @@ use core::fmt::Debug;
 use core::hash::Hash;
 use core::marker::PhantomData;
 use core::ops::Deref;
+use core::ptr::NonNull;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary::math::align;
-use iceoryx2_bb_elementary_traits::testing::abandonable::{Abandonable, NonNullFromRef};
+use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
@@ -113,12 +115,10 @@ impl<
     KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
 > Abandonable for ReaderSharedState<Service, KeyType>
 {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe {
-            SharedServiceState::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
-                &mut this.service_state,
-            ))
+            SharedServiceState::abandon_in_place(NonNull::iox2_from_mut(&mut this.service_state))
         };
     }
 }
@@ -161,10 +161,10 @@ impl<
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > Abandonable for Reader<Service, KeyType>
 {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe {
-            Service::ArcThreadSafetyPolicy::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+            Service::ArcThreadSafetyPolicy::abandon_in_place(NonNull::iox2_from_mut(
                 &mut this.shared_state,
             ))
         };

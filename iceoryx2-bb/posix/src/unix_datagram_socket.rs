@@ -125,6 +125,7 @@
 //! ```
 
 use core::mem::MaybeUninit;
+use core::ptr::NonNull;
 use core::{mem::size_of, time::Duration};
 
 use alloc::format;
@@ -546,7 +547,7 @@ pub struct UnixDatagramSender {
 }
 
 impl Abandonable for UnixDatagramSender {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe { core::ptr::drop_in_place(&mut this.socket) };
     }
@@ -775,7 +776,7 @@ pub struct UnixDatagramReceiver {
 }
 
 impl Abandonable for UnixDatagramReceiver {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe { core::ptr::drop_in_place(&mut this.socket) };
     }

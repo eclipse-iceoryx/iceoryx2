@@ -18,9 +18,10 @@ pub use crate::communication_channel::*;
 
 use alloc::format;
 use alloc::vec::Vec;
+use core::ptr::NonNull;
 
+use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::relocatable_container::*;
-use iceoryx2_bb_elementary_traits::testing::abandonable::NonNullFromRef;
 use iceoryx2_bb_lock_free::spsc::safely_overflowing_index_queue::*;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_log::fail;
@@ -265,13 +266,9 @@ pub struct Receiver {
 }
 
 impl Abandonable for Receiver {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe {
-            SharedMemory::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
-                &mut this.shared_memory,
-            ))
-        }
+        unsafe { SharedMemory::abandon_in_place(NonNull::iox2_from_mut(&mut this.shared_memory)) }
     }
 }
 
@@ -309,13 +306,9 @@ pub struct Sender {
 }
 
 impl Abandonable for Sender {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe {
-            SharedMemory::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
-                &mut this.shared_memory,
-            ))
-        }
+        unsafe { SharedMemory::abandon_in_place(NonNull::iox2_from_mut(&mut this.shared_memory)) }
     }
 }
 

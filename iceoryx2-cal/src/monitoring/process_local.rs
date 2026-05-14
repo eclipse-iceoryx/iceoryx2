@@ -13,6 +13,7 @@
 use alloc::collections::BTreeMap;
 use alloc::vec;
 use alloc::vec::Vec;
+use core::ptr::NonNull;
 
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
@@ -204,7 +205,7 @@ impl MonitoringCleaner for Cleaner {
 }
 
 impl Abandonable for Cleaner {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         let msg = "Failed to remove";
 
@@ -237,7 +238,7 @@ impl NamedConcept for Token {
 impl MonitoringToken for Token {}
 
 impl Abandonable for Token {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let msg = "Failed to leak";
 
         let this = unsafe { this.as_mut() };

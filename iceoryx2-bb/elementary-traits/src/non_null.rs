@@ -10,7 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub use core::ptr::NonNull;
+use core::ptr::NonNull;
+
+// TODO: #1613 - Temporary addition, remove when iceoryx2 MSRV >= 1.89
 
 /// Trait for creating a `NonNull<T>` from a reference.
 ///
@@ -23,17 +25,17 @@ pub use core::ptr::NonNull;
 /// Since a reference cannot be null we can safely use `core::ptr::NonNull::new_unchecked`
 /// to create and return the NonNull
 pub trait NonNullCompat<T> {
-    fn from_ref(r: &T) -> NonNull<T>;
-    fn from_mut(r: &mut T) -> NonNull<T>;
+    fn iox2_from_ref(r: &T) -> NonNull<T>;
+    fn iox2_from_mut(r: &mut T) -> NonNull<T>;
 }
 
 impl<T> NonNullCompat<T> for NonNull<T> {
-    fn from_ref(r: &T) -> Self {
+    fn iox2_from_ref(r: &T) -> Self {
         // SAFETY: A reference cannot be null.
         unsafe { Self::new_unchecked(r as *const _ as *mut T) }
     }
 
-    fn from_mut(r: &mut T) -> Self {
+    fn iox2_from_mut(r: &mut T) -> Self {
         // SAFETY: A reference cannot be null.
         unsafe { Self::new_unchecked(r as *mut T) }
     }

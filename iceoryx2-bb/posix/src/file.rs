@@ -43,6 +43,7 @@
 //! ```
 
 use core::fmt::Debug;
+use core::ptr::NonNull;
 
 use alloc::format;
 use alloc::string::String;
@@ -472,7 +473,7 @@ pub struct File {
 }
 
 impl Abandonable for File {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe { core::ptr::drop_in_place(&mut this.file_descriptor) };
     }

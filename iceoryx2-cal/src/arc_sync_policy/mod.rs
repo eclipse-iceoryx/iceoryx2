@@ -27,10 +27,12 @@
 //! use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 //! use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 //!
+//! # use core::ptr::NonNull;
+//!
 //! struct Data(u64);
 //!
 //! impl Abandonable for Data {
-//!     unsafe fn abandon_in_place(this: core::ptr::NonNull<Self>) {}
+//!     unsafe fn abandon_in_place(this: NonNull<Self>) {}
 //! }
 //!
 //! fn example<Policy: ArcSyncPolicy<Data>>() {
@@ -47,11 +49,13 @@
 //! use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 //! use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 //!
+//! # use core::ptr::NonNull;
+//!
 //! #[derive(Debug)]
 //! struct Data(u64);
 //!
 //! impl Abandonable for Data {
-//!     unsafe fn abandon_in_place(this: core::ptr::NonNull<Self>) {}
+//!     unsafe fn abandon_in_place(this: NonNull<Self>) {}
 //! }
 //!
 //! type Policy = iceoryx2_cal::arc_sync_policy::mutex_protected::MutexProtected<Data>;
@@ -68,10 +72,12 @@
 //! # extern crate iceoryx2_bb_loggers;
 //! use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 //!
+//! # use core::ptr::NonNull;
+//!
 //! struct Data(u64);
 //!
 //! impl Abandonable for Data {
-//!     unsafe fn abandon_in_place(this: core::ptr::NonNull<Self>) {}
+//!     unsafe fn abandon_in_place(this: NonNull<Self>) {}
 //! }
 //!
 //! use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;

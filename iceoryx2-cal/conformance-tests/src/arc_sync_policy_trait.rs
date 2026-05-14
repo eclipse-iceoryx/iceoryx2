@@ -22,6 +22,8 @@ pub mod arc_sync_policy_trait {
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 
+    use core::ptr::NonNull;
+
     #[derive(Debug)]
     pub struct TestAtomic(AtomicU64);
 
@@ -40,7 +42,7 @@ pub mod arc_sync_policy_trait {
     }
 
     impl Abandonable for TestAtomic {
-        unsafe fn abandon_in_place(_this: core::ptr::NonNull<TestAtomic>) {}
+        unsafe fn abandon_in_place(_this: NonNull<TestAtomic>) {}
     }
 
     #[conformance_test]

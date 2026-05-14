@@ -13,9 +13,10 @@
 use alloc::format;
 use alloc::vec;
 use alloc::vec::Vec;
+use core::ptr::NonNull;
 
+use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-use iceoryx2_bb_elementary_traits::testing::abandonable::NonNullFromRef;
 use iceoryx2_bb_posix::file::Permission;
 use iceoryx2_bb_posix::process_state::ProcessGuardBuilder;
 use iceoryx2_bb_posix::process_state::ProcessMonitorOpenError;
@@ -155,11 +156,9 @@ pub struct Cleaner {
 }
 
 impl Abandonable for Cleaner {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe {
-            ProcessCleaner::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.cleaner))
-        };
+        unsafe { ProcessCleaner::abandon_in_place(NonNull::iox2_from_mut(&mut this.cleaner)) };
     }
 }
 
@@ -182,11 +181,9 @@ pub struct Token {
 }
 
 impl Abandonable for Token {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe {
-            ProcessGuard::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.guard))
-        };
+        unsafe { ProcessGuard::abandon_in_place(NonNull::iox2_from_mut(&mut this.guard)) };
     }
 }
 

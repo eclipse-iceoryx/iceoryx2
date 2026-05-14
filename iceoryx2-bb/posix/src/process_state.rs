@@ -137,7 +137,9 @@
 
 use alloc::format;
 use core::fmt::Debug;
-use iceoryx2_bb_elementary_traits::testing::abandonable::{Abandonable, NonNullFromRef};
+use core::ptr::NonNull;
+use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
@@ -602,7 +604,7 @@ impl StateFiles {
 }
 
 impl Abandonable for StateFiles {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         for file in [&mut this.state, &mut this.owner_lock, &mut this.context] {
             if let Some(f) = file.take() {
@@ -668,7 +670,7 @@ pub struct ProcessGuard {
 }
 
 impl Abandonable for ProcessGuard {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         let msg = "Unable to stage death";
 
@@ -690,7 +692,7 @@ impl Abandonable for ProcessGuard {
             }
         }
 
-        unsafe { StateFiles::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.files)) };
+        unsafe { StateFiles::abandon_in_place(NonNull::iox2_from_mut(&mut this.files)) };
     }
 }
 
@@ -1046,7 +1048,7 @@ pub struct ProcessCleaner {
 }
 
 impl Abandonable for ProcessCleaner {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
 
         if let Some(f) = &this.files.owner_lock {
@@ -1056,7 +1058,7 @@ impl Abandonable for ProcessCleaner {
             }
         }
 
-        unsafe { StateFiles::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.files)) };
+        unsafe { StateFiles::abandon_in_place(NonNull::iox2_from_mut(&mut this.files)) };
     }
 }
 
