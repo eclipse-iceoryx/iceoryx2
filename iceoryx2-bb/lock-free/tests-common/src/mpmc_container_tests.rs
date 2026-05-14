@@ -692,6 +692,32 @@ pub mod generic {
     }
 
     #[test]
+    pub fn update_state_updates_after_recover<T: Debug + Copy + From<usize> + Into<usize>>() {
+        let sut = FixedSizeContainer::<T, CAPACITY>::new();
+        let mut stored_handles: Vec<ContainerHandle> = vec![];
+
+        let bad_owner_id = OwnerId::new(3).unwrap();
+        for i in 0..CAPACITY {
+            let handle = sut.add(i.into(), bad_owner_id).unwrap();
+            stored_handles.push(handle);
+        }
+
+        let mut state = sut.get_state();
+
+        unsafe { sut.recover(bad_owner_id, |_| true, ReleaseMode::Default) };
+
+        unsafe { sut.update_state(&mut state) };
+
+        let mut contained_values = vec![];
+        state.for_each(|_, value: &T| {
+            contained_values.push((*value).into());
+            CallbackProgression::Continue
+        });
+
+        assert_that!(contained_values, is_empty);
+    }
+
+    #[test]
     pub fn concurrent_add_and_recover<T: Debug + Copy + From<usize> + Into<usize> + Send + Ord>() {
         let _watchdog = Watchdog::new();
         const REPETITIONS: i64 = 1000;

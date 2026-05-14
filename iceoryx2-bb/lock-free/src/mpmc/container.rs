@@ -481,7 +481,12 @@ impl<T: Copy + Debug> Container<T> {
                 .compare_exchange(v, v + 1, Ordering::Relaxed, Ordering::Relaxed);
         };
 
-        unsafe { self.index_set.recover(mode, p, on_success) }
+        let result = unsafe { self.index_set.recover(mode, p, on_success) };
+
+        // MUST HAPPEN AFTER all other operations
+        self.change_counter.fetch_add(1, Ordering::Release);
+
+        result
     }
 
     /// Syncs the [`ContainerState`] with the current state of the [`Container`]. If the state has
