@@ -303,11 +303,11 @@ impl<T: Copy + Debug> Container<T> {
     /// Adds a new element to the [`Container`]. If there is no more space available it returns
     /// [`None`], otherwise [`Some`] containing the the index value to the underlying element.
     ///
+    /// Must be released with [`FixedSizeContainer::remove()`].
+    ///
     /// # Safety
     ///
     ///  * Ensure that [`Container::init()`] was called before calling this method
-    ///  * Use [`Container::remove()`] to release the acquired index again. Otherwise, the
-    ///    element will leak.
     ///
     pub unsafe fn add(
         &self,
@@ -643,6 +643,8 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     /// Adds a new element to the [`FixedSizeContainer`]. If there is no more space available it returns
     /// [`None`], otherwise [`Some`] containing the the index value to the underlying element.
     ///
+    /// Must be released with [`FixedSizeContainer::remove()`].
+    ///
     /// ```
     /// # extern crate iceoryx2_bb_loggers;
     ///
@@ -668,11 +670,7 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///  * Use [`FixedSizeContainer::remove()`] to release the acquired index again. Otherwise,
     ///    the element will leak.
     ///
-    pub unsafe fn add(
-        &self,
-        value: T,
-        owner_id: OwnerId,
-    ) -> Result<ContainerHandle, ContainerAddFailure> {
+    pub fn add(&self, value: T, owner_id: OwnerId) -> Result<ContainerHandle, ContainerAddFailure> {
         unsafe { self.container.add(value, owner_id) }
     }
 
@@ -682,6 +680,7 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///
     ///  * If the UniqueIndex still exists it causes double frees or freeing an index
     ///    which was allocated afterwards
+    ///
     pub unsafe fn remove(
         &self,
         handle: ContainerHandle,
@@ -738,5 +737,11 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
         mode: ReleaseMode,
     ) -> ReleaseState {
         unsafe { self.container.recover(dead_owner_id, predicate, mode) }
+    }
+
+    /// Returns true if the container is locked, otherwise false.
+    /// If the [`Container`] is locked no more elements can be added to it.
+    pub fn is_locked(&self) -> bool {
+        self.container.is_locked()
     }
 }

@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::vec;
+use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::robust_unique_index_set::*;
@@ -211,6 +212,21 @@ pub fn zero_borrowed_indices_in_locked_set() {
 }
 
 #[test]
+pub fn cannot_acquire_indices_from_locked_set() {
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+
+    let owner_id = OwnerId::new(123).unwrap();
+    let index = sut.acquire(owner_id).unwrap();
+
+    assert_that!(
+        sut.release(index, owner_id, ReleaseMode::LockIfLastIndex),
+        is_ok
+    );
+
+    assert_that!(sut.acquire(owner_id).err(), eq Some(UniqueIndexSetAcquireFailure::IsLocked));
+}
+
+#[test]
 pub fn recover_releases_indices_of_owner() {
     let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
 
@@ -230,6 +246,86 @@ pub fn recover_releases_indices_of_owner() {
         );
 
         assert_that!(sut.borrowed_indices(), eq CAPACITY - n - 1);
+    }
+}
+
+#[test]
+pub fn recover_provides_index() {
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+
+    let mut indices = vec![];
+    for n in 0..CAPACITY {
+        let owner_id = OwnerId::new(n as u64 + 1).unwrap();
+        let index = sut.acquire(owner_id).unwrap();
+        indices.push(index);
+    }
+
+    for n in 0..CAPACITY {
+        let id_to_remove = OwnerId::new(n as u64 + 1).unwrap();
+        sut.recover(
+            ReleaseMode::Default,
+            |owner_id, idx| {
+                assert_that!(indices, contains idx);
+                owner_id == id_to_remove
+            },
+            |_, _| {},
+        );
+    }
+}
+
+#[test]
+pub fn recover_calls_on_success_when_remove_is_successful() {
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+
+    let mut indices = vec![];
+    for n in 0..CAPACITY {
+        let owner_id = OwnerId::new(n as u64 + 1).unwrap();
+        let index = sut.acquire(owner_id).unwrap();
+        indices.push(index);
+    }
+
+    for n in 0..CAPACITY {
+        let id_to_remove = OwnerId::new(n as u64 + 1).unwrap();
+        let mut on_success_count = 0;
+        sut.recover(
+            ReleaseMode::Default,
+            |owner_id, _| owner_id == id_to_remove,
+            |_, _| {
+                on_success_count += 1;
+            },
+        );
+        assert_that!(on_success_count, eq 1);
+    }
+}
+
+#[test]
+pub fn recover_calls_on_success_with_same_args_as_predicate() {
+    let sut = StaticRobustUniqueIndexSet::<CAPACITY>::new();
+
+    let mut indices = vec![];
+    for n in 0..CAPACITY {
+        let owner_id = OwnerId::new(n as u64 + 1).unwrap();
+        let index = sut.acquire(owner_id).unwrap();
+        indices.push(index);
+    }
+
+    for n in 0..CAPACITY {
+        let id_to_remove = OwnerId::new(n as u64 + 1).unwrap();
+        let mut on_success_count = 0;
+        let recovered_idx = AtomicUsize::new(0);
+        sut.recover(
+            ReleaseMode::Default,
+            |owner_id, idx| {
+                recovered_idx.store(idx, Ordering::Relaxed);
+                owner_id == id_to_remove
+            },
+            |owner_id, idx| {
+                assert_that!(owner_id, eq id_to_remove);
+                assert_that!(idx, eq recovered_idx.load(Ordering::Relaxed));
+                on_success_count += 1;
+            },
+        );
+        assert_that!(on_success_count, eq 1);
     }
 }
 
@@ -371,4 +467,16 @@ pub fn concurrent_acquire_release() {
     let e = sut.acquire(owner_id);
     assert_that!(e, is_err);
     assert_that!(e.err().unwrap(), eq UniqueIndexSetAcquireFailure::OutOfIndices);
+}
+
+#[should_panic]
+#[test]
+pub fn relocatable_variant_panics_when_initialized_twice() {
+    let mut memory = [0u8; RobustUniqueIndexSet::const_memory_size(CAPACITY)];
+    let allocator = BumpAllocator::new(memory.as_mut_ptr());
+    let mut sut = unsafe { RobustUniqueIndexSet::new_uninit(CAPACITY) };
+    unsafe { assert_that!(sut.init(&allocator), is_ok) };
+
+    // panics here
+    let _result = unsafe { sut.init(&allocator) };
 }
