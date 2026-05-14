@@ -444,6 +444,7 @@ impl<T: Copy + Debug> Container<T> {
             // SYNC POINT with reading data values
             //////////////////////////////////////
             let mut current_gen_count = element_generation_counter.load(Ordering::Acquire);
+            current_element_generation_count.set(current_gen_count);
 
             loop {
                 if Self::contains_data(current_gen_count) {
@@ -458,12 +459,12 @@ impl<T: Copy + Debug> Container<T> {
 
                     let old_gen_count = current_gen_count;
                     current_gen_count = element_generation_counter.load(Ordering::SeqCst);
+                    current_element_generation_count.set(current_gen_count);
 
                     if current_gen_count != old_gen_count {
                         continue;
                     }
 
-                    current_element_generation_count.set(current_gen_count);
                     return predicate(unsafe { contents.assume_init_read() });
                 } else {
                     return true;
