@@ -194,11 +194,12 @@ impl UnrestrictedAtomicMgmt {
         value_alignment: usize,
         data_ptr: *const u8,
     ) {
+        /////////////////////////
+        // SYNC POINT - read
+        /////////////////////////
+        let mut current_write_cell = self.write_cell.load(Ordering::Acquire);
+
         loop {
-            /////////////////////////
-            // SYNC POINT - read
-            /////////////////////////
-            let current_write_cell = self.write_cell.load(Ordering::Acquire);
             let read_cell = current_write_cell - 1;
 
             unsafe {
@@ -211,7 +212,14 @@ impl UnrestrictedAtomicMgmt {
                 core::ptr::copy_nonoverlapping(data_cell_ptr as *const u8, value_ptr, value_size);
             }
 
-            if current_write_cell == self.write_cell.load(Ordering::SeqCst) {
+            let old_write_cell = current_write_cell;
+
+            /////////////////////////
+            // SYNC POINT - read, if the cell was updated in the meantime
+            /////////////////////////
+            current_write_cell = self.write_cell.load(Ordering::SeqCst);
+
+            if old_write_cell == current_write_cell {
                 break;
             }
         }

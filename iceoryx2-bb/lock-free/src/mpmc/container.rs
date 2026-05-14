@@ -326,37 +326,11 @@ impl<T: Copy + Debug> Container<T> {
 
             let element_generation_counter =
                 &*self.element_generation_counter_ptr.as_ptr().add(index as _);
-            let current_element_generation_count =
-                element_generation_counter.load(Ordering::Acquire);
 
-            // Another process died and the entry was released by `Self::recover()` but the element
-            // generation counter has not yet marked the element as free. Now we race with the
-            // recovery part. This is the only part that is allowed to set the
-            // element_generation_counter from contains_data to free since the index set ensures that
-            // we are the only owner of that element.
-            //
-            // We increment the generation count by 2 to signal the next generation of an entry that
-            // contains data. If this succeeds we won the race.
-            //
-            // If this fails the entry was released successfully and we need to increment it by 1.
             //////////////////////////////////////
             // SYNC POINT all atomic operations with reading data values
             //////////////////////////////////////
-            if Self::contains_data(current_element_generation_count) {
-                if element_generation_counter
-                    .compare_exchange(
-                        current_element_generation_count,
-                        current_element_generation_count + 2,
-                        Ordering::Release,
-                        Ordering::Relaxed,
-                    )
-                    .is_err()
-                {
-                    element_generation_counter.fetch_add(1, Ordering::Release);
-                }
-            } else {
-                element_generation_counter.fetch_add(1, Ordering::Release);
-            }
+            element_generation_counter.fetch_add(1, Ordering::Release);
 
             // MUST HAPPEN AFTER all other operations
             self.change_counter.fetch_add(1, Ordering::Release);
@@ -392,6 +366,14 @@ impl<T: Copy + Debug> Container<T> {
             "The ContainerHandle used as handle was not created by this Container instance."
         );
 
+        unsafe {
+            &*self
+                .element_generation_counter_ptr
+                .as_ptr()
+                .add(handle.index as _)
+        }
+        .fetch_add(1, Ordering::AcqRel);
+
         let release_state = match unsafe {
             self.index_set.release(handle.index, handle.owner_id, mode)
         } {
@@ -402,17 +384,6 @@ impl<T: Copy + Debug> Container<T> {
                         "Since the provided container handle {handle:?} is not owned by this container.");
             }
         };
-
-        // MUST HAPPEN AFTER the index release to ensure that a crash does not leak. It could be
-        // recovered but since the add is recovering the element generation counter as well at this
-        // state, we avoid a recover call.
-        unsafe {
-            &*self
-                .element_generation_counter_ptr
-                .as_ptr()
-                .add(handle.index as _)
-        }
-        .fetch_add(1, Ordering::AcqRel);
 
         // MUST HAPPEN AFTER all other operations
         self.change_counter.fetch_add(1, Ordering::Release);
@@ -469,13 +440,13 @@ impl<T: Copy + Debug> Container<T> {
                 return false;
             }
 
-            loop {
-                //////////////////////////////////////
-                // SYNC POINT with reading data values
-                //////////////////////////////////////
-                let gen_count = element_generation_counter.load(Ordering::Acquire);
+            //////////////////////////////////////
+            // SYNC POINT with reading data values
+            //////////////////////////////////////
+            let mut current_gen_count = element_generation_counter.load(Ordering::Acquire);
 
-                if Self::contains_data(gen_count) {
+            loop {
+                if Self::contains_data(current_gen_count) {
                     let mut contents = MaybeUninit::<T>::uninit();
                     unsafe {
                         core::ptr::copy_nonoverlapping(
@@ -485,12 +456,14 @@ impl<T: Copy + Debug> Container<T> {
                         )
                     };
 
-                    if gen_count != element_generation_counter.load(Ordering::SeqCst) {
+                    let old_gen_count = current_gen_count;
+                    current_gen_count = element_generation_counter.load(Ordering::SeqCst);
+
+                    if current_gen_count != old_gen_count {
                         continue;
                     }
 
-                    current_element_generation_count.set(gen_count);
-
+                    current_element_generation_count.set(current_gen_count);
                     return predicate(unsafe { contents.assume_init_read() });
                 } else {
                     return true;
@@ -545,17 +518,20 @@ impl<T: Copy + Debug> Container<T> {
             // beginning when the content has changed.
             // only copy single entries otherwise we encounter starvation since this is a
             // heavy-weight operation
-            loop {
-                //////////////////////////////////////
-                // SYNC POINT with reading data values
-                //////////////////////////////////////
-                let current_generation_count = element_generation_counter.load(Ordering::Acquire);
 
-                if current_generation_count == previous_state.element_generation_counter[i] {
+            //////////////////////////////////////
+            // SYNC POINT with reading data values
+            //////////////////////////////////////
+            let mut current_element_generation_count =
+                element_generation_counter.load(Ordering::Acquire);
+
+            loop {
+                if current_element_generation_count == previous_state.element_generation_counter[i]
+                {
                     break;
                 }
 
-                previous_state.element_generation_counter[i] = current_generation_count;
+                previous_state.element_generation_counter[i] = current_element_generation_count;
                 unsafe {
                     if Self::contains_data(previous_state.element_generation_counter[i]) {
                         core::ptr::copy_nonoverlapping(
@@ -565,8 +541,15 @@ impl<T: Copy + Debug> Container<T> {
                         );
                     }
 
-                    if current_generation_count == element_generation_counter.load(Ordering::SeqCst)
-                    {
+                    let old_element_generation_count = current_element_generation_count;
+
+                    //////////////////////////////////////
+                    // SYNC POINT with reading data values, required when something has changed while reading the memory
+                    //////////////////////////////////////
+                    current_element_generation_count =
+                        element_generation_counter.load(Ordering::SeqCst);
+
+                    if old_element_generation_count == current_element_generation_count {
                         break;
                     }
                 }

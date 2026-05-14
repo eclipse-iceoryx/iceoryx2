@@ -209,8 +209,8 @@ impl DynamicConfig {
         match unsafe { self.nodes.remove(handle, ReleaseMode::LockIfLastIndex) } {
             Ok(ReleaseState::Locked) => Ok(DeregisterNodeState::NoMoreOwners),
             Ok(ReleaseState::Unlocked) => Ok(DeregisterNodeState::HasOwners),
-            Err(e) => {
-                fail!(from self, with e,
+            Err(ContainerRemoveError::ContainerHandleNotOwnedByContainer) => {
+                fail!(from self, with ContainerRemoveError::ContainerHandleNotOwnedByContainer,
                     "Unable to deregister the node since it was not registered.");
             }
         }

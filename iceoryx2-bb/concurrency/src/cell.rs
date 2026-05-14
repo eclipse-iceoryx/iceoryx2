@@ -45,7 +45,7 @@ impl<T> Cell<T> {
     where
         T: Copy,
     {
-        unsafe { *self.0.as_ptr() }
+        self.0.get()
     }
 
     pub fn set(&self, value: T) {
