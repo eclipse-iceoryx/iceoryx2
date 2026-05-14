@@ -26,7 +26,6 @@ extern crate alloc;
 
 #[macro_use]
 pub mod assert;
-pub mod abandon_tracker;
 pub mod abandonable;
 pub mod lifetime_tracker;
 pub mod memory;
