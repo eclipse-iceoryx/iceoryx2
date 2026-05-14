@@ -22,6 +22,12 @@ filegroup(
 rust_library(
     name = "iceoryx2-services-tunnel",
     srcs = glob(["src/**/*.rs"]),
+    crate_features = select({
+        "//:cfg_feature_std": [
+            "std",
+        ],
+        "//conditions:default": [],
+    }),
     deps = [
         "//iceoryx2:iceoryx2",
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",

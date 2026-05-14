@@ -61,6 +61,7 @@ rust_test(
     name = "iceoryx2-tests",
     srcs = ["tests/tests.rs"],
     use_libtest_harness = False,
+    crate_features = ["std"],
     deps = [
         "//iceoryx2/tests-common:iceoryx2-tests-common",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
