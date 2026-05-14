@@ -13,7 +13,13 @@
 """Strong type safe extensions for the request-response messaging pattern."""
 
 import ctypes
-from typing import Any, Type, TypeVar, get_args, get_origin
+from typing import Any, Type, TypeVar
+
+import sys
+if sys.version_info >= (3, 8):
+    from typing import get_args, get_origin
+else:
+    from typing_extensions import get_args, get_origin
 
 from ._iceoryx2 import *
 from .slice import Slice
@@ -31,11 +37,17 @@ def request_response(
 
     The request/response payload ctype must be provided as argument.
     """
-    request_type_name = request.__name__
+    if hasattr(t, "__name__"):
+        request_type_name = getattr(request, "__name__")
+    else:
+        request_type_name = get_origin(request).__name__
     request_type_size = 0
     request_type_align = 0
     request_type_variant = TypeVariant.FixedSize
-    response_type_name = response.__name__
+    if hasattr(t, "__name__"):
+        response_type_name = getattr(response, "__name__")
+    else:
+        response_type_name = get_origin(response).__name__
     response_type_size = 0
     response_type_align = 0
     response_type_variant = TypeVariant.FixedSize

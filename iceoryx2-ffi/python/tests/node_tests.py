@@ -73,17 +73,16 @@ def test_created_nodes_can_be_listed(service_type: iox2.ServiceType) -> None:
     node_list = iox2.Node.list(service_type, config)
     assert len(node_list) == 2
     for node in node_list:
-        match node:
-            case node.Alive():
-                assert isinstance(node, iox2.NodeState.Alive)
-                assert node[0].id in (sut_1.id, sut_2.id)
-                assert node[0].details.name in (sut_1.name, sut_2.name)
-            case node.Dead():
-                assert False
-            case node.Inaccessible():
-                assert False
-            case node.Undefined():
-                assert False
+        if isinstance(node, node.Alive):
+            assert isinstance(node, iox2.NodeState.Alive)
+            assert node[0].id in (sut_1.id, sut_2.id)
+            assert node[0].details.name in (sut_1.name, sut_2.name)
+        elif isinstance(node, node.Dead):
+            assert False
+        elif isinstance(node, node.Inaccessible):
+            assert False
+        elif isinstance(node, node.Undefined):
+            assert False
 
 
 @pytest.mark.parametrize("service_type", service_types)
