@@ -105,7 +105,7 @@ impl<Service: service::Service> Connection<Service> {
                                     .number_of_channels(this.number_of_channels)
                                     .initial_channel_state(initial_channel_state)
                                     .max_supported_shared_memory_segments(max_number_of_segments)
-                                    .timeout(global_config.global.service.creation_timeout)
+                                    .timeout(global_config.global.creation_timeout)
                                     .create_receiver(),
                         "{} since the zero copy connection could not be established.", msg);
 

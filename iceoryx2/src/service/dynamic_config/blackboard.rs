@@ -32,7 +32,7 @@ use crate::identifiers::{UniqueNodeId, UniquePortId, UniqueReaderId, UniqueWrite
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::{container::*, unique_index_set_enums::ReleaseMode};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_log::fatal_panic;
+use iceoryx2_log::{error, fatal_panic};
 
 use super::PortCleanupAction;
 
@@ -139,45 +139,47 @@ impl DynamicConfig {
         mut port_cleanup_callback: PortCleanup,
     ) {
         unsafe {
-            self.readers
-                .get_state()
-                .for_each(|handle: ContainerHandle, registered_reader| {
-                    if registered_reader.node_id == *node_id
+            self.readers.recover(
+                node_id.owner_id(),
+                |registered_reader| {
+                    // additional comparision, since the node_id.owner_id() might be not enough
+                    registered_reader.node_id == *node_id
                         && port_cleanup_callback(UniquePortId::Reader(registered_reader.reader_id))
                             == PortCleanupAction::RemovePort
-                    {
-                        self.release_reader_handle(handle);
-                    }
-                    CallbackProgression::Continue
-                });
+                },
+                ReleaseMode::Default,
+            );
 
-            self.writers
-                .get_state()
-                .for_each(|handle: ContainerHandle, registered_writer| {
-                    if registered_writer.node_id == *node_id
+            self.writers.recover(
+                node_id.owner_id(),
+                |registered_writer| {
+                    // additional comparision, since the node_id.owner_id() might be not enough
+                    registered_writer.node_id == *node_id
                         && port_cleanup_callback(UniquePortId::Writer(registered_writer.writer_id))
                             == PortCleanupAction::RemovePort
-                    {
-                        self.release_writer_handle(handle);
-                    }
-                    CallbackProgression::Continue
-                });
+                },
+                ReleaseMode::Default,
+            );
         }
     }
 
-    pub(crate) fn add_reader_id(&self, id: ReaderDetails) -> Option<ContainerHandle> {
-        unsafe { self.readers.add(id).ok() }
+    pub(crate) fn add_reader_id(&self, details: ReaderDetails) -> Option<ContainerHandle> {
+        unsafe { self.readers.add(details, details.node_id.owner_id()).ok() }
     }
 
     pub(crate) fn release_reader_handle(&self, handle: ContainerHandle) {
-        unsafe { self.readers.remove(handle, ReleaseMode::Default) };
+        if let Err(e) = unsafe { self.readers.remove(handle, ReleaseMode::Default) } {
+            error!(from self, "Unable to deregister reader from service. This could indicate a corrupted system! [{e:?}]");
+        }
     }
 
-    pub(crate) fn add_writer_id(&self, id: WriterDetails) -> Option<ContainerHandle> {
-        unsafe { self.writers.add(id).ok() }
+    pub(crate) fn add_writer_id(&self, details: WriterDetails) -> Option<ContainerHandle> {
+        unsafe { self.writers.add(details, details.node_id.owner_id()).ok() }
     }
 
     pub(crate) fn release_writer_handle(&self, handle: ContainerHandle) {
-        unsafe { self.writers.remove(handle, ReleaseMode::Default) };
+        if let Err(e) = unsafe { self.writers.remove(handle, ReleaseMode::Default) } {
+            error!(from self, "Unable to deregister writer from service. This could indicate a corrupted system! [{e:?}]");
+        }
     }
 }

@@ -307,9 +307,9 @@ impl<
 
         let mut result = Ok(());
         unsafe {
-            (*subscriber_shared_state.publisher_list_state.get()).for_each(|h, details| {
+            (*subscriber_shared_state.publisher_list_state.get()).for_each(|index, details| {
                 let inner_result = subscriber_shared_state.receiver.update_connection(
-                    h.index() as usize,
+                    index,
                     SenderDetails {
                         port_id: details.publisher_id.value(),
                         number_of_samples: details.number_of_samples,

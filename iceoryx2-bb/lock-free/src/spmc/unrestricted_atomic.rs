@@ -197,9 +197,11 @@ impl UnrestrictedAtomicMgmt {
         /////////////////////////
         // SYNC POINT - read
         /////////////////////////
-        let mut read_cell = self.write_cell.load(Ordering::Acquire) - 1;
+        let mut current_write_cell = self.write_cell.load(Ordering::Acquire);
 
         loop {
+            let read_cell = current_write_cell - 1;
+
             unsafe {
                 let data_cell_ptr = Self::__internal_get_data_cell(
                     value_size,
@@ -210,21 +212,14 @@ impl UnrestrictedAtomicMgmt {
                 core::ptr::copy_nonoverlapping(data_cell_ptr as *const u8, value_ptr, value_size);
             }
 
+            let old_write_cell = current_write_cell;
+
             /////////////////////////
-            // SYNC POINT - read (for write while reading)
-            // prevent reordering of reading from `data` after checking for a change
-            // of the `write_cell` position which would result in a data race
+            // SYNC POINT - read, if the cell was updated in the meantime
             /////////////////////////
-            let expected_write_cell = read_cell + 1;
-            let write_cell_result = self.write_cell.compare_exchange(
-                expected_write_cell,
-                expected_write_cell,
-                Ordering::Release,
-                Ordering::Acquire,
-            );
-            if let Err(write_cell) = write_cell_result {
-                read_cell = write_cell - 1;
-            } else {
+            current_write_cell = self.write_cell.load(Ordering::SeqCst);
+
+            if old_write_cell == current_write_cell {
                 break;
             }
         }

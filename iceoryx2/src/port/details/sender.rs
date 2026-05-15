@@ -103,7 +103,7 @@ impl<Service: service::Service> Connection<Service> {
                                 .max_supported_shared_memory_segments(this.max_number_of_segments)
                                 .initial_channel_state(initial_channel_state)
                                 .number_of_channels(this.number_of_channels)
-                                .timeout(this.shared_node.config().global.service.creation_timeout)
+                                .timeout(this.shared_node.config().global.creation_timeout)
                                 .create_sender(),
                         "{}.", msg);
 

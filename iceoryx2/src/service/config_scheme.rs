@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::{config, identifiers::UniqueNodeId};
+use crate::{config, identifiers::UniqueNodeId, service::dynamic_config::DynamicConfig};
 use core::fmt::Debug;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::named_concept::{NamedConceptConfiguration, NamedConceptMgmt};
@@ -18,8 +18,8 @@ use iceoryx2_log::fatal_panic;
 
 pub(crate) fn dynamic_config_storage_config<Service: crate::service::Service>(
     global_config: &config::Config,
-) -> <Service::DynamicStorage as NamedConceptMgmt>::Configuration {
-    <<Service::DynamicStorage as NamedConceptMgmt>::Configuration>::default()
+) -> <Service::DynamicStorage<DynamicConfig> as NamedConceptMgmt>::Configuration {
+    <<Service::DynamicStorage<DynamicConfig> as NamedConceptMgmt>::Configuration>::default()
         .prefix(&global_config.global.prefix)
         .suffix(&global_config.global.service.dynamic_config_storage_suffix)
         .path_hint(global_config.global.root_path())

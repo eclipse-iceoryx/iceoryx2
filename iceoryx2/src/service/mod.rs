@@ -290,7 +290,7 @@ use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryForPoolAllocator};
 use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
 use iceoryx2_cal::static_storage::*;
 use iceoryx2_cal::zero_copy_connection::ZeroCopyConnection;
-use iceoryx2_log::{debug, fail, trace, warn};
+use iceoryx2_log::{debug, error, fail, trace, warn};
 use service_hash::ServiceHash;
 
 use self::dynamic_config::DeregisterNodeState;
@@ -387,7 +387,7 @@ pub struct ServiceState<S: Service, R: ServiceResource> {
     // order - not in memory order!
 
     // must be destructed first, to prevent services to open it
-    pub(crate) dynamic_storage: S::DynamicStorage,
+    pub(crate) dynamic_storage: S::DynamicStorage<DynamicConfig>,
     // must be destructed after the dynamic resources
     pub(crate) additional_resource: R,
     pub(crate) static_config: StaticConfig,
@@ -454,7 +454,7 @@ impl<S: Service, R: ServiceResource> SharedServiceState<S, R> {
         &self.state.static_config
     }
 
-    pub(crate) fn dynamic_storage(&self) -> &S::DynamicStorage {
+    pub(crate) fn dynamic_storage(&self) -> &S::DynamicStorage<DynamicConfig> {
         &self.state.dynamic_storage
     }
 
@@ -471,7 +471,7 @@ impl<S: Service, R: ServiceResource> ServiceState<S, R> {
     pub(crate) fn new(
         static_config: StaticConfig,
         shared_node: SharedNode<S>,
-        dynamic_storage: S::DynamicStorage,
+        dynamic_storage: S::DynamicStorage<DynamicConfig>,
         static_storage: S::StaticStorage,
         additional_resource: R,
     ) -> Self {
@@ -500,16 +500,20 @@ impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
             }
 
             match self.dynamic_storage.get().deregister_node_id(handle) {
-                DeregisterNodeState::HasOwners => {
+                Ok(DeregisterNodeState::HasOwners) => {
                     trace!(from origin, "close service: {} ({:?})",
                             self.static_config.name(), hash);
                 }
-                DeregisterNodeState::NoMoreOwners => {
+                Ok(DeregisterNodeState::NoMoreOwners) => {
                     self.static_storage.acquire_ownership();
                     self.dynamic_storage.acquire_ownership();
                     self.additional_resource.acquire_ownership();
                     trace!(from origin, "close and remove service: {} ({:?})",
                             self.static_config.name(), hash);
+                }
+                Err(e) => {
+                    error!(from origin,
+                        "Unable to deregister node {} from service. This could indicate a corrupted system! [{e:?}]", self.shared_node.id())
                 }
             }
         });
@@ -519,7 +523,7 @@ impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
 #[doc(hidden)]
 pub mod internal {
     use builder::event::EventOpenError;
-    use dynamic_config::{PortCleanupAction, RemoveDeadNodeResult};
+    use dynamic_config::PortCleanupAction;
     use iceoryx2_bb_container::string::*;
     use iceoryx2_log::error;
     use port_factory::PortFactory;
@@ -798,11 +802,8 @@ pub mod internal {
                     .get()
                     .remove_dead_node_id(node_id, cleanup_port_resources)
             } {
-                Ok(DeregisterNodeState::HasOwners) => false,
-                Ok(DeregisterNodeState::NoMoreOwners) => true,
-                Err(RemoveDeadNodeResult::NodeNotRegistered) => {
-                    dynamic_config.get().is_marked_for_destruction()
-                }
+                DeregisterNodeState::HasOwners => false,
+                DeregisterNodeState::NoMoreOwners => true,
             };
 
             if remove_service {
@@ -903,9 +904,13 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
     /// Sets the serializer that is used to serialize the [`StaticConfig`] into the [`StaticStorage`]
     type ConfigSerializer: Serialize;
 
+    /// Defines the construct used to store the data that can be changed at runtime but
+    /// persist after a process crashed.
+    type PersistentDynamicStorage<T: Debug + Send + Sync + 'static>: DynamicStorage<T>;
+
     /// Defines the construct used to store the [`Service`]s dynamic configuration. This
     /// contains for instance all endpoints and other dynamic details.
-    type DynamicStorage: DynamicStorage<DynamicConfig>;
+    type DynamicStorage<T: Debug + Send + Sync + 'static>: DynamicStorage<T>;
 
     /// The memory used to store the payload.
     type SharedMemory: SharedMemoryForPoolAllocator;
@@ -1135,7 +1140,7 @@ pub fn __internal_details<S: Service>(
 fn open_dynamic_config<S: Service>(
     config: &config::Config,
     service_hash: &ServiceHash,
-) -> Result<Option<S::DynamicStorage>, ServiceDetailsError> {
+) -> Result<Option<S::DynamicStorage<DynamicConfig>>, ServiceDetailsError> {
     let origin = format!(
         "Service::open_dynamic_details<{}>({:?})",
         core::any::type_name::<S>(),
@@ -1143,10 +1148,10 @@ fn open_dynamic_config<S: Service>(
     );
     let msg = "Unable to open the services dynamic config";
     match
-            <<S::DynamicStorage as DynamicStorage<
+            <<S::DynamicStorage<DynamicConfig> as DynamicStorage<
                     DynamicConfig,
                 >>::Builder<'_> as NamedConceptBuilder<
-                    S::DynamicStorage,
+                    S::DynamicStorage<DynamicConfig>,
                 >>::new(&service_hash.0.into())
                     .config(&dynamic_config_storage_config::<S>(config))
                 .has_ownership(false)

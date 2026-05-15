@@ -118,6 +118,27 @@ impl UniqueSystemId {
         Ok(Self::create(pid, now))
     }
 
+    /// Creates a new system wide unique id.
+    ///
+    /// # Contract
+    ///
+    /// * The user must ensure that the counter is a strictly monotonic counter in the same process.
+    ///
+    pub fn from_counter(counter: u32) -> Result<Self, UniqueSystemIdCreationError> {
+        let msg = "Failed to create UniqueSystemId from pid and counter";
+        let pid = Process::self_host_pid().value() as _;
+        let now = fail!(from "UniqueSystemId::new()",
+                        when Time::now_with_clock(ClockType::default()),
+                        with UniqueSystemIdCreationError::FailedToAcquireTime,
+                        "{} since the current time could not be acquired.", msg);
+        Ok(Self {
+            pid,
+            counter,
+            seconds: now.seconds() as u32,
+            nanoseconds: now.nanoseconds(),
+        })
+    }
+
     fn create(pid: u32, now: Time) -> UniqueSystemId {
         #[cfg(not(all(test, loom, feature = "std")))]
         static COUNTER: AtomicU32 = AtomicU32::new(0);
@@ -134,6 +155,11 @@ impl UniqueSystemId {
             nanoseconds: now.nanoseconds(),
             counter,
         }
+    }
+
+    /// Returns the counter part of the [`UniqueSystemId`]
+    pub fn counter(&self) -> u32 {
+        self.counter
     }
 
     /// Returns the underlying value of the new system wide unique id

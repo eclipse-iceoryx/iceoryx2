@@ -14,6 +14,7 @@ use alloc::format;
 
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_lock_free::mpmc::robust_unique_index_set::OwnerId;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_log::fatal_panic;
 
@@ -107,11 +108,6 @@ generate_id! {
     UniqueServiceId
 }
 
-generate_id! {
-    /// The system-wide unique id of a [`Node`](crate::node::Node).
-    UniqueNodeId
-}
-
 /// Enum that contains the unique port id
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UniquePortId {
@@ -131,4 +127,55 @@ pub enum UniquePortId {
     Reader(UniqueReaderId),
     /// The system-wide unique id of a [`Writer`](crate::port::writer::Writer).
     Writer(UniqueWriterId),
+}
+
+/// The system-wide unique id of a [`Node`](crate::node::Node).
+#[repr(C)]
+#[derive(
+    Debug,
+    Eq,
+    Hash,
+    PartialEq,
+    Clone,
+    Copy,
+    PartialOrd,
+    Ord,
+    ZeroCopySend,
+    serde::Serialize,
+    serde::Deserialize,
+)]
+pub struct UniqueNodeId(pub(crate) UniqueSystemId);
+
+impl core::fmt::Display for UniqueNodeId {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{:x}", self.0.value())
+    }
+}
+
+impl UniqueNodeId {
+    pub(crate) fn new(counter: u32) -> Self {
+        Self(fatal_panic!(from "UniqueNodeId::new",
+                when UniqueSystemId::from_counter(counter),
+                "Unable to generate required UniqueNodeId!"))
+    }
+
+    /// Returns the underlying raw value of the ID
+    pub fn value(&self) -> u128 {
+        self.0.value()
+    }
+
+    /// Returns the [`ProcessId`](iceoryx2_bb_posix::process::ProcessId) of the process that created the id.
+    pub fn pid(&self) -> iceoryx2_bb_posix::process::ProcessId {
+        self.0.pid()
+    }
+
+    /// Returns the [`Time`](iceoryx2_bb_posix::clock::Time) the id was created.
+    pub fn creation_time(&self) -> iceoryx2_bb_posix::clock::Time {
+        self.0.creation_time()
+    }
+
+    pub(crate) fn owner_id(&self) -> OwnerId {
+        OwnerId::new((self.0.pid().value() as u64) << 32 | self.0.counter() as u64)
+            .expect("The unique node id is never 0")
+    }
 }

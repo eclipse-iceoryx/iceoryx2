@@ -218,12 +218,12 @@ TEST(Config, global_service_dynamic_config_storage_suffix) {
                 StrEq(test_value.as_string().unchecked_access().c_str()));
 }
 
-TEST(Config, global_service_creation_timeout) {
+TEST(Config, global_creation_timeout) {
     const auto test_value = iox2::bb::Duration::from_secs(1234);
     auto config = Config();
 
-    config.global().service().set_creation_timeout(test_value);
-    ASSERT_THAT(config.global().service().creation_timeout(), Eq(test_value));
+    config.global().set_creation_timeout(test_value);
+    ASSERT_THAT(config.global().creation_timeout(), Eq(test_value));
 }
 
 TEST(Config, global_service_connection_suffix) {
@@ -266,6 +266,14 @@ TEST(Config, global_node_monitor_suffix) {
 
     config.global().node().set_monitor_suffix(test_value);
     ASSERT_THAT(config.global().node().monitor_suffix(), StrEq(test_value.as_string().unchecked_access().c_str()));
+}
+
+TEST(Config, global_node_global_mgmt_suffix) {
+    const auto test_value = iox2::bb::FileName::create("dooo_daaaa").value();
+    auto config = Config();
+
+    config.global().node().set_global_mgmt_suffix(test_value);
+    ASSERT_THAT(config.global().node().global_mgmt_suffix(), StrEq(test_value.as_string().unchecked_access().c_str()));
 }
 
 TEST(Config, global_node_static_config_suffix) {

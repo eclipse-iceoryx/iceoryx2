@@ -54,6 +54,18 @@ impl Node {
     }
 
     #[getter]
+    /// The suffix of the global management segment.
+    pub fn global_mgmt_suffix(&self) -> FileName {
+        FileName(self.0.lock().global.node.global_mgmt_suffix)
+    }
+
+    #[setter]
+    /// Set the suffix of the files where the node configuration is stored.
+    pub fn set_global_mgmt_suffix(&mut self, value: &FileName) {
+        self.0.lock().global.node.global_mgmt_suffix = value.0
+    }
+
+    #[getter]
     /// The suffix of the files where the node configuration is stored.
     pub fn static_config_suffix(&self) -> FileName {
         FileName(self.0.lock().global.node.static_config_suffix)
@@ -162,19 +174,6 @@ impl Service {
     /// Set the suffix of the dynamic config file
     pub fn set_dynamic_config_storage_suffix(&self, value: &FileName) {
         self.0.lock().global.service.dynamic_config_storage_suffix = value.0
-    }
-
-    #[getter]
-    /// Defines the time of how long another process will wait until the service creation is
-    /// finalized
-    pub fn creation_timeout(&self) -> Duration {
-        Duration(self.0.lock().global.service.creation_timeout)
-    }
-
-    #[setter]
-    /// Set the creation timeout
-    pub fn set_creation_timeout(&self, value: &Duration) {
-        self.0.lock().global.service.creation_timeout = value.0
     }
 
     #[getter]
@@ -968,6 +967,19 @@ impl Global {
     /// Set the prefix used for all files created during runtime
     pub fn set_prefix(&self, value: &FileName) {
         self.0.lock().global.prefix = value.0
+    }
+
+    #[getter]
+    /// Defines the time of how long another process will wait until an entity creation is
+    /// finalized. An entity can be a Service or a Node.
+    pub fn creation_timeout(&self) -> Duration {
+        Duration(self.0.lock().global.creation_timeout)
+    }
+
+    #[setter]
+    /// Set the creation timeout
+    pub fn set_creation_timeout(&self, value: &Duration) {
+        self.0.lock().global.creation_timeout = value.0
     }
 }
 

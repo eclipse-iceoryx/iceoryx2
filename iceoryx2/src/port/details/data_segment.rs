@@ -241,7 +241,7 @@ impl<Service: service::Service> DataSegmentView<Service> {
                             when <Service::SharedMemory as SharedMemory<PoolAllocator>>::
                                 Builder::new(segment_name)
                                 .config(&segment_config)
-                                .timeout(global_config.global.service.creation_timeout)
+                                .timeout(global_config.global.creation_timeout)
                                 .open(AccessMode::Read),
                             "{msg}");
 

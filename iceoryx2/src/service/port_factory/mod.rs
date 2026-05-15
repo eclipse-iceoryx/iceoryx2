@@ -115,7 +115,7 @@ pub(crate) fn blocking_cleanup_dead_nodes_in_service<T: PortFactory>(
         if let NodeState::Dead(node) = node_state {
             let node_id = *node.id();
             debug!(from port_factory, "Dead node ({:?}) detected", node_id);
-            let timeout = shared_node.config().global.service.creation_timeout;
+            let timeout = shared_node.config().global.creation_timeout;
             if let Err(e) = node.blocking_remove_stale_resources(timeout) {
                 warn!(from port_factory, "Failed to remove dead node ({:?}) from service. Abandoned ports of the dead node might block the creation of new ports! [{e:?}]", node_id);
             }

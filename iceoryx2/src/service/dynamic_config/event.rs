@@ -31,7 +31,7 @@ use iceoryx2_bb_concurrency::atomic::AtomicU64;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::{container::*, unique_index_set_enums::ReleaseMode};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_log::fatal_panic;
+use iceoryx2_log::{error, fatal_panic};
 
 use crate::identifiers::{UniqueListenerId, UniqueNodeId, UniqueNotifierId, UniquePortId};
 
@@ -147,47 +147,49 @@ impl DynamicConfig {
         mut port_cleanup_callback: PortCleanup,
     ) {
         unsafe {
-            self.listeners
-                .get_state()
-                .for_each(|handle: ContainerHandle, registered_listener| {
-                    if registered_listener.node_id == *node_id
+            self.listeners.recover(
+                node_id.owner_id(),
+                |registered_listener| {
+                    // additional comparision, since the node_id.owner_id() might be not enough
+                    registered_listener.node_id == *node_id
                         && port_cleanup_callback(UniquePortId::Listener(
                             registered_listener.listener_id,
                         )) == PortCleanupAction::RemovePort
-                    {
-                        self.release_listener_handle(handle);
-                    }
-                    CallbackProgression::Continue
-                });
+                },
+                ReleaseMode::Default,
+            );
 
-            self.notifiers
-                .get_state()
-                .for_each(|handle: ContainerHandle, registered_notifier| {
-                    if registered_notifier.node_id == *node_id
+            self.notifiers.recover(
+                node_id.owner_id(),
+                |registered_notifier| {
+                    // additional comparision, since the node_id.owner_id() might be not enough
+                    registered_notifier.node_id == *node_id
                         && port_cleanup_callback(UniquePortId::Notifier(
                             registered_notifier.notifier_id,
                         )) == PortCleanupAction::RemovePort
-                    {
-                        self.release_notifier_handle(handle);
-                    }
-                    CallbackProgression::Continue
-                });
+                },
+                ReleaseMode::Default,
+            );
         }
     }
 
-    pub(crate) fn add_listener_id(&self, id: ListenerDetails) -> Option<ContainerHandle> {
-        unsafe { self.listeners.add(id).ok() }
+    pub(crate) fn add_listener_id(&self, details: ListenerDetails) -> Option<ContainerHandle> {
+        unsafe { self.listeners.add(details, details.node_id.owner_id()).ok() }
     }
 
     pub(crate) fn release_listener_handle(&self, handle: ContainerHandle) {
-        unsafe { self.listeners.remove(handle, ReleaseMode::Default) };
+        if let Err(e) = unsafe { self.listeners.remove(handle, ReleaseMode::Default) } {
+            error!(from self, "Unable to deregister listener from service. This could indicate a corrupted system! [{e:?}]");
+        }
     }
 
-    pub(crate) fn add_notifier_id(&self, id: NotifierDetails) -> Option<ContainerHandle> {
-        unsafe { self.notifiers.add(id).ok() }
+    pub(crate) fn add_notifier_id(&self, details: NotifierDetails) -> Option<ContainerHandle> {
+        unsafe { self.notifiers.add(details, details.node_id.owner_id()).ok() }
     }
 
     pub(crate) fn release_notifier_handle(&self, handle: ContainerHandle) {
-        unsafe { self.notifiers.remove(handle, ReleaseMode::Default) };
+        if let Err(e) = unsafe { self.notifiers.remove(handle, ReleaseMode::Default) } {
+            error!(from self, "Unable to deregister notifier from service. This could indicate a corrupted system! [{e:?}]");
+        }
     }
 }

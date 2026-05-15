@@ -34,7 +34,7 @@ use core::fmt::Display;
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::{
-    container::{Container, ContainerAddFailure, ContainerHandle},
+    container::{Container, ContainerAddFailure, ContainerHandle, ContainerRemoveError},
     unique_index_set_enums::{ReleaseMode, ReleaseState},
 };
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
@@ -57,11 +57,6 @@ pub(crate) enum RegisterNodeResult {
 pub(crate) enum DeregisterNodeState {
     HasOwners,
     NoMoreOwners,
-}
-
-#[derive(Debug)]
-pub(crate) enum RemoveDeadNodeResult {
-    NodeNotRegistered,
 }
 
 #[derive(Debug)]
@@ -150,7 +145,7 @@ impl DynamicConfig {
         &self,
         node_id: &UniqueNodeId,
         port_cleanup_callback: PortCleanup,
-    ) -> Result<DeregisterNodeState, RemoveDeadNodeResult> {
+    ) -> DeregisterNodeState {
         unsafe {
             match self.messaging_pattern {
                 MessagingPattern::PublishSubscribe(ref v) => {
@@ -167,19 +162,17 @@ impl DynamicConfig {
                 }
             };
 
-            let mut ret_val = Err(RemoveDeadNodeResult::NodeNotRegistered);
-            self.nodes
-                .get_state()
-                .for_each(|handle: ContainerHandle, registered_node_id| {
-                    if registered_node_id == node_id {
-                        ret_val = Ok(self.deregister_node_id(handle));
-                        CallbackProgression::Stop
-                    } else {
-                        CallbackProgression::Continue
-                    }
-                });
-
-            ret_val
+            match self.nodes.recover(
+                node_id.owner_id(),
+                |entry_node_id| {
+                    // additional comparision, since the node_id.owner_id() might be not enough
+                    entry_node_id == *node_id
+                },
+                ReleaseMode::LockIfLastIndex,
+            ) {
+                ReleaseState::Locked => DeregisterNodeState::NoMoreOwners,
+                ReleaseState::Unlocked => DeregisterNodeState::HasOwners,
+            }
         }
     }
 
@@ -188,7 +181,7 @@ impl DynamicConfig {
         node_id: UniqueNodeId,
     ) -> Result<ContainerHandle, RegisterNodeResult> {
         let msg = "Unable to register NodeId in service";
-        match unsafe { self.nodes.add(node_id) } {
+        match unsafe { self.nodes.add(node_id, node_id.owner_id()) } {
             Ok(handle) => Ok(handle),
             Err(ContainerAddFailure::IsLocked) => {
                 fail!(from self, with RegisterNodeResult::MarkedForDestruction,
@@ -209,17 +202,17 @@ impl DynamicConfig {
         state.for_each(|_, node_id| callback(node_id));
     }
 
-    pub(crate) fn is_marked_for_destruction(&self) -> bool {
-        self.nodes.is_locked()
-    }
-
-    pub(crate) fn deregister_node_id(&self, handle: ContainerHandle) -> DeregisterNodeState {
-        if unsafe { self.nodes.remove(handle, ReleaseMode::LockIfLastIndex) }
-            == ReleaseState::Locked
-        {
-            DeregisterNodeState::NoMoreOwners
-        } else {
-            DeregisterNodeState::HasOwners
+    pub(crate) fn deregister_node_id(
+        &self,
+        handle: ContainerHandle,
+    ) -> Result<DeregisterNodeState, ContainerRemoveError> {
+        match unsafe { self.nodes.remove(handle, ReleaseMode::LockIfLastIndex) } {
+            Ok(ReleaseState::Locked) => Ok(DeregisterNodeState::NoMoreOwners),
+            Ok(ReleaseState::Unlocked) => Ok(DeregisterNodeState::HasOwners),
+            Err(ContainerRemoveError::ContainerHandleNotOwnedByContainer) => {
+                fail!(from self, with ContainerRemoveError::ContainerHandleNotOwnedByContainer,
+                    "Unable to deregister the node since it was not registered.");
+            }
         }
     }
 

@@ -13,8 +13,8 @@
 //! A simplistic **threadsafe** and **lock-free** container which contains element in an
 //! unspecified order.
 //!
-//! Elements can be added with [`Container::add()`]. The method returns an [`UniqueIndex`] which
-//! removes the element as soon as it goes out of scope. Elements are stored under a fixed index
+//! Elements can be added with [`Container::add()`]. The method returns an [`ContainerHandle`] that
+//! can be used to remove the element with [`Container::remove()`]. Elements are stored under a fixed index
 //! which is guaranteed to never change. The index can be acquired inside the callback of
 //! [`ContainerState::for_each()`].
 //!
@@ -32,15 +32,16 @@
 //! const CAPACITY: usize = 139;
 //! let container = FixedSizeContainer::<u32, CAPACITY>::new();
 //! let mut stored_indices = vec![];
+//! let owner_id = OwnerId::new(8192).unwrap();
 //!
-//! match unsafe { container.add(1234567) } {
+//! match unsafe { container.add(1234567, owner_id) } {
 //!     Ok(index) => stored_indices.push(index),
 //!     Err(_) => println!("container is full"),
 //! };
 //!
 //! let mut state = container.get_state();
-//! state.for_each(|handle: ContainerHandle, value: &u32| {
-//!     println!("handle: {:?}, value: {}", handle, value);
+//! state.for_each(|index: usize, value: &u32| {
+//!     println!("index: {}, value: {}", index, value);
 //!     CallbackProgression::Continue
 //! });
 //!
@@ -48,21 +49,30 @@
 //!
 //! if unsafe { container.update_state(&mut state) } {
 //!     println!("container state has changed");
-//!     state.for_each(|handle: ContainerHandle, value: &u32| {
-//!         println!("handle: {:?}, value: {}", handle, value);
+//!     state.for_each(|index: usize, value: &u32| {
+//!         println!("index: {}, value: {}", index, value);
 //!         CallbackProgression::Continue
 //!     });
 //! }
 //! ```
 
+extern crate alloc;
+
+pub use crate::mpmc::robust_unique_index_set::OwnerId;
+pub use iceoryx2_bb_elementary::CallbackProgression;
+
+use crate::mpmc::robust_unique_index_set::{RobustUniqueIndexSet, StaticRobustUniqueIndexSetData};
 use crate::mpmc::unique_index_set_enums::{
     ReleaseMode, ReleaseState, UniqueIndexSetAcquireFailure,
 };
-pub use iceoryx2_bb_elementary::CallbackProgression;
-
+use alloc::vec;
+use alloc::vec::Vec;
+use core::alloc::Layout;
+use core::fmt::Debug;
+use core::mem::MaybeUninit;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
-use iceoryx2_bb_concurrency::cell::UnsafeCell;
+use iceoryx2_bb_concurrency::cell::{Cell, UnsafeCell};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
@@ -73,16 +83,6 @@ use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
 use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_log::{fail, fatal_panic};
-
-use crate::mpmc::unique_index_set::*;
-
-extern crate alloc;
-use alloc::vec;
-use alloc::vec::Vec;
-
-use core::alloc::Layout;
-use core::fmt::Debug;
-use core::mem::MaybeUninit;
 
 /// States the reason why an element could not be added to the [`Container`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -104,17 +104,26 @@ impl From<UniqueIndexSetAcquireFailure> for ContainerAddFailure {
     }
 }
 
+/// States the reason why a [`ContainerHandle`] could not be removed to the [`Container`]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ContainerRemoveError {
+    /// The [`ContainerHandle`] is not part of the container. Either it is a double remove, belongs to
+    /// a different [`Container`] or it was forcefully removed with [`Container::recover()`].
+    ContainerHandleNotOwnedByContainer,
+}
+
 /// A handle that corresponds to an element inside the [`Container`]. Will be acquired when using
 /// [`Container::add()`] and can be released with [`Container::remove()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ContainerHandle {
-    index: u32,
+    index: usize,
+    owner_id: OwnerId,
     container_id: u64,
 }
 
 impl ContainerHandle {
     /// Returns the underlying index of the container handle
-    pub fn index(&self) -> u32 {
+    pub fn index(&self) -> usize {
         self.index
     }
 }
@@ -126,7 +135,7 @@ pub struct ContainerState<T: Copy + Debug> {
     container_id: u64,
     current_change_counter: u64,
     data: Vec<MaybeUninit<T>>,
-    active_index: Vec<u64>,
+    element_generation_counter: Vec<u64>,
 }
 
 impl<T: Copy + Debug> ContainerState<T> {
@@ -135,7 +144,7 @@ impl<T: Copy + Debug> ContainerState<T> {
             container_id,
             current_change_counter: 0,
             data: vec![MaybeUninit::uninit(); capacity],
-            active_index: vec![0; capacity],
+            element_generation_counter: vec![0; capacity],
         }
     }
 
@@ -151,21 +160,16 @@ impl<T: Copy + Debug> ContainerState<T> {
     /// let container = FixedSizeContainer::<u128, 128>::new();
     ///
     /// let mut state = container.get_state();
-    /// state.for_each(|handle: ContainerHandle, value: &u128| {
-    ///     println!("handle: {:?}, value: {}", handle, value);
+    /// state.for_each(|index: usize, value: &u128| {
+    ///     println!("index: {}, value: {}", index, value);
     ///     CallbackProgression::Continue
     /// });
     /// ```
-    pub fn for_each<F: FnMut(ContainerHandle, &T) -> CallbackProgression>(&self, mut callback: F) {
-        for i in 0..self.data.len() {
-            if self.active_index[i] % 2 == 1
-                && callback(
-                    ContainerHandle {
-                        index: i as _,
-                        container_id: self.container_id,
-                    },
-                    unsafe { self.data[i].assume_init_ref() },
-                ) == CallbackProgression::Stop
+    pub fn for_each<F: FnMut(usize, &T) -> CallbackProgression>(&self, mut callback: F) {
+        for index in 0..self.data.len() {
+            if Container::<T>::contains_data(self.element_generation_counter[index])
+                && callback(index, unsafe { self.data[index].assume_init_ref() })
+                    == CallbackProgression::Stop
             {
                 return;
             }
@@ -181,7 +185,7 @@ impl<T: Copy + Debug> ContainerState<T> {
 #[derive(Debug)]
 pub struct Container<T: Copy + Debug> {
     // must be first member, otherwise the offset calculations fail
-    active_index_ptr: RelocatablePointer<AtomicU64>,
+    element_generation_counter_ptr: RelocatablePointer<AtomicU64>,
     data_ptr: RelocatablePointer<UnsafeCell<MaybeUninit<T>>>,
     capacity: usize,
     change_counter: AtomicU64,
@@ -189,7 +193,7 @@ pub struct Container<T: Copy + Debug> {
     container_id: UniqueId,
     // must be the last member, since it is a relocatable container as well and then the offset
     // calculations would again fail
-    index_set: UniqueIndexSet,
+    index_set: RobustUniqueIndexSet,
 }
 
 unsafe impl<T: Copy + Debug> Send for Container<T> {}
@@ -198,16 +202,16 @@ unsafe impl<T: Copy + Debug> Sync for Container<T> {}
 impl<T: Copy + Debug> RelocatableContainer for Container<T> {
     unsafe fn new_uninit(capacity: usize) -> Self {
         let distance_to_active_index =
-            (core::mem::size_of::<Self>() + UniqueIndexSet::memory_size(capacity)) as isize;
+            (core::mem::size_of::<Self>() + RobustUniqueIndexSet::memory_size(capacity)) as isize;
         Self {
             container_id: UniqueId::new(),
-            active_index_ptr: RelocatablePointer::new(distance_to_active_index),
+            element_generation_counter_ptr: RelocatablePointer::new(distance_to_active_index),
             data_ptr: RelocatablePointer::new(align_to::<MaybeUninit<T>>(
                 distance_to_active_index as usize + capacity * core::mem::size_of::<AtomicBool>(),
             ) as isize),
             capacity,
             change_counter: AtomicU64::new(0),
-            index_set: unsafe { UniqueIndexSet::new_uninit(capacity) },
+            index_set: unsafe { RobustUniqueIndexSet::new_uninit(capacity) },
             is_initialized: AtomicBool::new(false),
         }
     }
@@ -224,7 +228,7 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
             fail!(from self, when self.index_set.init(allocator),
             "{} since the underlying UniqueIndexSet could not be initialized", msg);
 
-            self.active_index_ptr.init(fail!(from self, when allocator.allocate(Layout::from_size_align_unchecked(
+            self.element_generation_counter_ptr.init(fail!(from self, when allocator.allocate(Layout::from_size_align_unchecked(
                         core::mem::size_of::<AtomicU64>() * self.capacity,
                         core::mem::align_of::<AtomicU64>())), "{} since the allocation of the active index memory failed.",
                 msg));
@@ -237,7 +241,7 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
             );
 
             for i in 0..self.capacity {
-                (self.active_index_ptr.as_ptr() as *mut AtomicU64)
+                (self.element_generation_counter_ptr.as_ptr() as *mut AtomicU64)
                     .add(i)
                     .write(AtomicU64::new(0));
                 (self.data_ptr.as_ptr() as *mut UnsafeCell<MaybeUninit<T>>)
@@ -268,7 +272,7 @@ impl<T: Copy + Debug> Container<T> {
 
     /// Returns the required memory size of the data segment of the [`Container`].
     pub const fn const_memory_size(capacity: usize) -> usize {
-        UniqueIndexSet::const_memory_size(capacity)
+        RobustUniqueIndexSet::const_memory_size(capacity)
         //  ActiveIndexPtr
         + unaligned_mem_size::<AtomicU64>(capacity)
         // data ptr
@@ -299,16 +303,49 @@ impl<T: Copy + Debug> Container<T> {
     /// Adds a new element to the [`Container`]. If there is no more space available it returns
     /// [`None`], otherwise [`Some`] containing the the index value to the underlying element.
     ///
+    /// Must be released with [`FixedSizeContainer::remove()`].
+    ///
     /// # Safety
     ///
     ///  * Ensure that [`Container::init()`] was called before calling this method
-    ///  * Use [`Container::remove()`] to release the acquired index again. Otherwise, the
-    ///    element will leak.
     ///
-    pub unsafe fn add(&self, value: T) -> Result<ContainerHandle, ContainerAddFailure> {
+    pub unsafe fn add(
+        &self,
+        value: T,
+        owner_id: OwnerId,
+    ) -> Result<ContainerHandle, ContainerAddFailure> {
         self.verify_init("add()");
+
         unsafe {
-            let index = self.index_set.acquire_raw_index()?;
+            let index = self.index_set.acquire(owner_id)?;
+
+            let element_generation_counter =
+                &*self.element_generation_counter_ptr.as_ptr().add(index as _);
+
+            let current_element_generation_counter =
+                element_generation_counter.load(Ordering::Acquire);
+
+            // Race against: `Self::remove()` and `Self::recover()` the index could
+            // have been returned to the `index_set` but the element generation count
+            // does not yet markt the element as empty.
+            //
+            // This could cause a data race in `Self::update_state()` when it is not
+            // marked as empty before the data is written. Otherwise the `update_state`
+            // might read it while it is written. When `update_state` returns before
+            // we reach the `fetch_add` of `element_generation_count` we return
+            // corrupted data.
+            if Self::contains_data(current_element_generation_counter) {
+                // MUST HAPPEN BEFORE copy_nonoverlapping
+                // if it fails, we lost the race and `Self::remove` or `Self::recover()`
+                // have set the element to empty.
+                let _dont_care = element_generation_counter.compare_exchange(
+                    current_element_generation_counter,
+                    current_element_generation_counter + 1,
+                    Ordering::AcqRel,
+                    Ordering::Acquire,
+                );
+            }
+
             core::ptr::copy_nonoverlapping(
                 &value,
                 (*self.data_ptr.as_ptr().add(index as _)).get().cast(),
@@ -316,14 +353,15 @@ impl<T: Copy + Debug> Container<T> {
             );
 
             //////////////////////////////////////
-            // SYNC POINT with reading data values
+            // SYNC POINT all atomic operations with reading data values
             //////////////////////////////////////
-            (&*self.active_index_ptr.as_ptr().add(index as _)).fetch_add(1, Ordering::Release);
+            element_generation_counter.fetch_add(1, Ordering::Release);
 
             // MUST HAPPEN AFTER all other operations
             self.change_counter.fetch_add(1, Ordering::Release);
             Ok(ContainerHandle {
                 index,
+                owner_id,
                 container_id: self.container_id.value(),
             })
         }
@@ -334,29 +372,59 @@ impl<T: Copy + Debug> Container<T> {
     /// # Safety
     ///
     ///  * Ensure that [`Container::init()`] was called before calling this method
-    ///  * Ensure that no one else possesses the [`UniqueIndex`] and the index was unrecoverable
+    ///  * Ensure that no one else possesses the [`ContainerHandle`] and the index was unrecoverable
     ///    lost
     ///  * Ensure that the `handle` was acquired by the same [`Container`]
     ///    with [`Container::add()`], otherwise the method will panic.
     ///
-    /// **Important:** If the UniqueIndex still exists it causes double frees or freeing an index
+    /// **Important:** If the [`ContainerHandle`] still exists it causes double frees or freeing an index
     /// which was allocated afterwards
     ///
-    pub unsafe fn remove(&self, handle: ContainerHandle, mode: ReleaseMode) -> ReleaseState {
+    pub unsafe fn remove(
+        &self,
+        handle: ContainerHandle,
+        mode: ReleaseMode,
+    ) -> Result<ReleaseState, ContainerRemoveError> {
         self.verify_init("remove()");
         debug_assert!(
             handle.container_id == self.container_id.value(),
             "The ContainerHandle used as handle was not created by this Container instance."
         );
 
-        unsafe { &*self.active_index_ptr.as_ptr().add(handle.index as _) }
-            .fetch_add(1, Ordering::Relaxed);
+        let element_generation_counter = unsafe {
+            &*self
+                .element_generation_counter_ptr
+                .as_ptr()
+                .add(handle.index)
+        };
+        let current_element_generation_counter = element_generation_counter.load(Ordering::Acquire);
 
-        let release_state = unsafe { self.index_set.release_raw_index(handle.index, mode) };
+        let release_state = match unsafe {
+            self.index_set.release(handle.index, handle.owner_id, mode)
+        } {
+            Ok(state) => {
+                // Race against: `Self::add()`
+                // * index is already released and could be acquired by `Self::add()`
+                // * `Self::add()` increments counter to % 2 == 1 when finished populating data
+                // * when this comes after without case, the element is set to empty
+                let _dont_care = element_generation_counter.compare_exchange(
+                    current_element_generation_counter,
+                    current_element_generation_counter + 1,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                );
+                state
+            }
+            Err(_) => {
+                fail!(from self,
+                        with ContainerRemoveError::ContainerHandleNotOwnedByContainer,
+                        "Since the provided container handle {handle:?} is not owned by this container.");
+            }
+        };
 
         // MUST HAPPEN AFTER all other operations
         self.change_counter.fetch_add(1, Ordering::Release);
-        release_state
+        Ok(release_state)
     }
 
     /// Returns [`ContainerState`] which contains all elements of this container. Be aware that
@@ -374,6 +442,90 @@ impl<T: Copy + Debug> Container<T> {
             self.update_state(&mut state);
         }
         state
+    }
+
+    /// Recovers and releases all entries the dead [`OwnerId`] owned. It assumes that the dead owner
+    /// maybe died while adding some entry, therefore it removes all entries where the
+    /// [`OwnerId`] does not contain any data or where there was data and the provided predicate
+    /// returned [`true`].
+    ///
+    /// # Safety
+    ///
+    ///  * Ensure that [`Container::init()`] was called before calling this method
+    ///  * All existing [`ContainerHandle`] that belong to the [`OwnerId`] must never be removed with
+    ///    [`Container::remove()`] otherwise we corrupt the state.
+    ///
+    pub unsafe fn recover<F: FnMut(T) -> bool>(
+        &self,
+        dead_owner_id: OwnerId,
+        mut predicate: F,
+        mode: ReleaseMode,
+    ) -> ReleaseState {
+        self.verify_init("recover()");
+
+        // this is a RefCell since the current generation count needs to be borrowed twice as mutable,
+        // once it the predicate to store the generation count before the entry is released and
+        // afterwards to set the entry to empty if no other thread has in the meantime acquired the new
+        // index and repaired it
+        let current_element_generation_count = Cell::new(0u64);
+
+        let p = |owner_id, index| {
+            let element_generation_counter =
+                unsafe { &*self.element_generation_counter_ptr.as_ptr().add(index) };
+
+            if dead_owner_id != owner_id {
+                return false;
+            }
+
+            //////////////////////////////////////
+            // SYNC POINT with reading data values
+            //////////////////////////////////////
+            let mut current_gen_count = element_generation_counter.load(Ordering::Acquire);
+            current_element_generation_count.set(current_gen_count);
+
+            loop {
+                if Self::contains_data(current_gen_count) {
+                    let mut contents = MaybeUninit::<T>::uninit();
+                    unsafe {
+                        core::ptr::copy_nonoverlapping(
+                            (*self.data_ptr.as_ptr().add(index)).get(),
+                            contents.as_mut_ptr().cast(),
+                            1,
+                        )
+                    };
+
+                    let old_gen_count = current_gen_count;
+                    current_gen_count = element_generation_counter.load(Ordering::SeqCst);
+                    current_element_generation_count.set(current_gen_count);
+
+                    if current_gen_count != old_gen_count {
+                        continue;
+                    }
+
+                    return predicate(unsafe { contents.assume_init_read() });
+                } else {
+                    return true;
+                }
+            }
+        };
+
+        let on_success = |_owner_id, index| {
+            let v = current_element_generation_count.get();
+
+            // Race against: `Self::add()`
+            // * index is already released and could be acquired by `Self::add()`
+            // * `Self::add()` increments counter to % 2 == 1 when finished populating data
+            // * when this comes after without case, the element is set to empty
+            let _dont_care = unsafe { &*self.element_generation_counter_ptr.as_ptr().add(index) }
+                .compare_exchange(v, v + 1, Ordering::Relaxed, Ordering::Relaxed);
+        };
+
+        let result = unsafe { self.index_set.recover(mode, p, on_success) };
+
+        // MUST HAPPEN AFTER all other operations
+        self.change_counter.fetch_add(1, Ordering::Release);
+
+        result
     }
 
     /// Syncs the [`ContainerState`] with the current state of the [`Container`]. If the state has
@@ -401,8 +553,12 @@ impl<T: Copy + Debug> Container<T> {
         // must be set once here, if the current_change_counter changes in the loop below
         // the previous_state is updated again with the next clone_state iteration
         previous_state.current_change_counter = current_change_counter;
+        let element_generation_counter_ptr =
+            unsafe { self.element_generation_counter_ptr.as_ptr() };
 
         for i in 0..self.capacity {
+            let element_generation_counter = unsafe { &*element_generation_counter_ptr.add(i) };
+
             // go through here element by element and do not start the operation from the
             // beginning when the content has changed.
             // only copy single entries otherwise we encounter starvation since this is a
@@ -411,17 +567,18 @@ impl<T: Copy + Debug> Container<T> {
             //////////////////////////////////////
             // SYNC POINT with reading data values
             //////////////////////////////////////
-            let mut current_index_count =
-                unsafe { (*self.active_index_ptr.as_ptr().add(i)).load(Ordering::Acquire) };
+            let mut current_element_generation_count =
+                element_generation_counter.load(Ordering::Acquire);
 
             loop {
-                if current_index_count == previous_state.active_index[i] {
+                if current_element_generation_count == previous_state.element_generation_counter[i]
+                {
                     break;
                 }
 
-                previous_state.active_index[i] = current_index_count;
+                previous_state.element_generation_counter[i] = current_element_generation_count;
                 unsafe {
-                    if previous_state.active_index[i] % 2 == 1 {
+                    if Self::contains_data(previous_state.element_generation_counter[i]) {
                         core::ptr::copy_nonoverlapping(
                             (*self.data_ptr.as_ptr().add(i)).get(),
                             previous_state.data.as_mut_ptr().add(i),
@@ -429,15 +586,15 @@ impl<T: Copy + Debug> Container<T> {
                         );
                     }
 
-                    // MUST HAPPEN AFTER all other operations
-                    if let Err(count) = (*self.active_index_ptr.as_ptr().add(i)).compare_exchange(
-                        current_index_count,
-                        current_index_count,
-                        Ordering::AcqRel,
-                        Ordering::Acquire,
-                    ) {
-                        current_index_count = count
-                    } else {
+                    let old_element_generation_count = current_element_generation_count;
+
+                    //////////////////////////////////////
+                    // SYNC POINT with reading data values, required when something has changed while reading the memory
+                    //////////////////////////////////////
+                    current_element_generation_count =
+                        element_generation_counter.load(Ordering::SeqCst);
+
+                    if old_element_generation_count == current_element_generation_count {
                         break;
                     }
                 }
@@ -445,6 +602,37 @@ impl<T: Copy + Debug> Container<T> {
         }
 
         true
+    }
+
+    fn contains_data(generation_counter: u64) -> bool {
+        generation_counter % 2 == 1
+    }
+}
+
+#[repr(C)]
+#[derive(Debug)]
+pub struct FixedSizeContainerData<T: Copy + Debug, const CAPACITY: usize> {
+    // DO NOT CHANGE MEMBER ORDER UniqueIndexSet variable data
+    unique_index_set_data: StaticRobustUniqueIndexSetData<CAPACITY>,
+
+    // DO NOT CHANGE MEMBER ORDER actual Container variable data
+    active_index: [AtomicU64; CAPACITY],
+    data: [UnsafeCell<MaybeUninit<T>>; CAPACITY],
+}
+
+impl<T: Copy + Debug, const CAPACITY: usize> Default for FixedSizeContainerData<T, CAPACITY> {
+    fn default() -> Self {
+        Self {
+            unique_index_set_data: StaticRobustUniqueIndexSetData::default(),
+            active_index: [const { AtomicU64::new(0) }; CAPACITY],
+            data: [const { UnsafeCell::new(MaybeUninit::uninit()) }; CAPACITY],
+        }
+    }
+}
+
+impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainerData<T, CAPACITY> {
+    fn allocator(&mut self) -> BumpAllocator {
+        self.unique_index_set_data.allocator()
     }
 }
 
@@ -457,31 +645,20 @@ impl<T: Copy + Debug> Container<T> {
 #[derive(Debug)]
 pub struct FixedSizeContainer<T: Copy + Debug, const CAPACITY: usize> {
     container: Container<T>,
-
-    // DO NOT CHANGE MEMBER ORDER UniqueIndexSet variable data
-    next_free_index: [UnsafeCell<u32>; CAPACITY],
-    next_free_index_plus_one: UnsafeCell<u32>,
-
-    // DO NOT CHANGE MEMBER ORDER actual Container variable data
-    active_index: [AtomicU64; CAPACITY],
-    data: [UnsafeCell<MaybeUninit<T>>; CAPACITY],
+    data: FixedSizeContainerData<T, CAPACITY>,
 }
 
 impl<T: Copy + Debug, const CAPACITY: usize> Default for FixedSizeContainer<T, CAPACITY> {
     fn default() -> Self {
         let mut new_self = Self {
             container: unsafe { Container::new_uninit(CAPACITY) },
-            next_free_index: core::array::from_fn(|i| UnsafeCell::new(i as u32 + 1)),
-            next_free_index_plus_one: UnsafeCell::new(CAPACITY as u32 + 1),
-            active_index: [const { AtomicU64::new(0) }; CAPACITY],
-            data: [const { UnsafeCell::new(MaybeUninit::uninit()) }; CAPACITY],
+            data: FixedSizeContainerData::default(),
         };
 
-        let allocator = BumpAllocator::new(new_self.next_free_index.as_mut_ptr().cast());
         unsafe {
             new_self
                 .container
-                .init(&allocator)
+                .init(&new_self.data.allocator())
                 .expect("All required memory is preallocated.")
         };
 
@@ -511,6 +688,8 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     /// Adds a new element to the [`FixedSizeContainer`]. If there is no more space available it returns
     /// [`None`], otherwise [`Some`] containing the the index value to the underlying element.
     ///
+    /// Must be released with [`FixedSizeContainer::remove()`].
+    ///
     /// ```
     /// # extern crate iceoryx2_bb_loggers;
     ///
@@ -519,8 +698,9 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///
     /// const CAPACITY: usize = 139;
     /// let container = FixedSizeContainer::<u128, CAPACITY>::new();
+    /// let owner_id = OwnerId::new(91230).unwrap();
     ///
-    /// match unsafe { container.add(1234567) } {
+    /// match unsafe { container.add(1234567, owner_id) } {
     ///     Ok(index) => {
     ///         println!("added at index {:?}", index);
     ///         unsafe { container.remove(index, ReleaseMode::Default) };
@@ -535,8 +715,8 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///  * Use [`FixedSizeContainer::remove()`] to release the acquired index again. Otherwise,
     ///    the element will leak.
     ///
-    pub unsafe fn add(&self, value: T) -> Result<ContainerHandle, ContainerAddFailure> {
-        unsafe { self.container.add(value) }
+    pub fn add(&self, value: T, owner_id: OwnerId) -> Result<ContainerHandle, ContainerAddFailure> {
+        unsafe { self.container.add(value, owner_id) }
     }
 
     /// Useful in IPC context when an application holding the UniqueIndex has died.
@@ -545,7 +725,12 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///
     ///  * If the UniqueIndex still exists it causes double frees or freeing an index
     ///    which was allocated afterwards
-    pub unsafe fn remove(&self, handle: ContainerHandle, mode: ReleaseMode) -> ReleaseState {
+    ///
+    pub unsafe fn remove(
+        &self,
+        handle: ContainerHandle,
+        mode: ReleaseMode,
+    ) -> Result<ReleaseState, ContainerRemoveError> {
         unsafe { self.container.remove(handle, mode) }
     }
 
@@ -581,5 +766,27 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///
     pub unsafe fn update_state(&self, previous_state: &mut ContainerState<T>) -> bool {
         unsafe { self.container.update_state(previous_state) }
+    }
+
+    /// Recovers and releases all entries the dead [`OwnerId`] owned.
+    ///
+    /// # Safety
+    ///
+    ///  * All existing [`ContainerHandle`] that belong to the [`OwnerId`] must never be removed with
+    ///    [`Container::remove()`] otherwise we corrupt the state.
+    ///
+    pub unsafe fn recover<F: FnMut(T) -> bool>(
+        &self,
+        dead_owner_id: OwnerId,
+        predicate: F,
+        mode: ReleaseMode,
+    ) -> ReleaseState {
+        unsafe { self.container.recover(dead_owner_id, predicate, mode) }
+    }
+
+    /// Returns true if the container is locked, otherwise false.
+    /// If the [`Container`] is locked no more elements can be added to it.
+    pub fn is_locked(&self) -> bool {
+        self.container.is_locked()
     }
 }

@@ -20,10 +20,11 @@ pub struct CustomServiceVariant {}
 impl iceoryx2::service::Service for CustomServiceVariant {
     type StaticStorage = iceoryx2_cal::static_storage::recommended::Ipc;
     type ConfigSerializer = iceoryx2_cal::serialize::recommended::Recommended;
+    type PersistentDynamicStorage<T: Debug + Send + Sync + 'static> =
+        iceoryx2_cal::dynamic_storage::recommended::PersistentIpc<T>;
     // use a dynamic storage based on a file
-    type DynamicStorage = iceoryx2_cal::dynamic_storage::file::Storage<
-        iceoryx2::service::dynamic_config::DynamicConfig,
-    >;
+    type DynamicStorage<T: Debug + Send + Sync + 'static> =
+        iceoryx2_cal::dynamic_storage::file::Storage<T>;
     type ServiceNameHasher = iceoryx2_cal::hash::recommended::Recommended;
     // instead of using POSIX shared memory, we use a file
     type SharedMemory = iceoryx2_cal::shared_memory::file::Memory<

@@ -216,9 +216,9 @@ impl<Service: service::Service> PublisherSharedState<Service> {
         let mut result = Ok(());
         self.sender.start_update_connection_cycle();
         unsafe {
-            (*self.subscriber_list_state.get()).for_each(|h, port| {
+            (*self.subscriber_list_state.get()).for_each(|index, port| {
                 let inner_result = self.sender.update_connection(
-                    h.index() as usize,
+                    index,
                     ReceiverDetails {
                         port_id: port.subscriber_id.value(),
                         buffer_size: port.buffer_size,

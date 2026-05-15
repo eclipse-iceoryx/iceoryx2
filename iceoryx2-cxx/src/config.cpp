@@ -146,6 +146,18 @@ void Global::set_root_path(const iox2::bb::Path& value) && {
     iox2_config_global_set_root_path(m_config, value.as_string().unchecked_access().c_str());
 }
 
+auto Global::creation_timeout() && -> iox2::bb::Duration {
+    uint64_t secs = 0;
+    uint32_t nsecs = 0;
+    iox2_config_global_creation_timeout(m_config, &secs, &nsecs);
+
+    return iox2::bb::Duration::from_secs(secs) + iox2::bb::Duration::from_nanos(nsecs);
+}
+
+void Global::set_creation_timeout(const iox2::bb::Duration& value) && {
+    iox2_config_global_set_creation_timeout(m_config, value.as_secs(), value.subsec_nanos());
+}
+
 auto Global::service() -> Service {
     return Service(m_config);
 }
@@ -429,18 +441,6 @@ void Service::set_dynamic_config_storage_suffix(const iox2::bb::FileName& value)
                                                                  value.as_string().unchecked_access().c_str());
 }
 
-auto Service::creation_timeout() && -> iox2::bb::Duration {
-    uint64_t secs = 0;
-    uint32_t nsecs = 0;
-    iox2_config_global_service_creation_timeout(m_config, &secs, &nsecs);
-
-    return iox2::bb::Duration::from_secs(secs) + iox2::bb::Duration::from_nanos(nsecs);
-}
-
-void Service::set_creation_timeout(const iox2::bb::Duration& value) && {
-    iox2_config_global_service_set_creation_timeout(m_config, value.as_secs(), value.subsec_nanos());
-}
-
 auto Service::connection_suffix() && -> const char* {
     return iox2_config_global_service_connection_suffix(m_config);
 }
@@ -490,6 +490,14 @@ auto Node::monitor_suffix() && -> const char* {
 
 void Node::set_monitor_suffix(const iox2::bb::FileName& value) && {
     iox2_config_global_node_set_monitor_suffix(m_config, value.as_string().unchecked_access().c_str());
+}
+
+auto Node::global_mgmt_suffix() && -> const char* {
+    return iox2_config_global_node_global_mgmt_suffix(m_config);
+}
+
+void Node::set_global_mgmt_suffix(const iox2::bb::FileName& value) && {
+    iox2_config_global_node_set_global_mgmt_suffix(m_config, value.as_string().unchecked_access().c_str());
 }
 
 auto Node::static_config_suffix() && -> const char* {

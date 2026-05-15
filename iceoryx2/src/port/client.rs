@@ -267,10 +267,10 @@ impl<Service: service::Service> ClientSharedState<Service> {
         self.response_receiver.start_update_connection_cycle();
 
         unsafe {
-            (*self.server_list_state.get()).for_each(|h, port| {
+            (*self.server_list_state.get()).for_each(|index, port| {
                 // establish response connection
                 let inner_result = self.response_receiver.update_connection(
-                    h.index() as usize,
+                    index,
                     SenderDetails {
                         port_id: port.server_id.value(),
                         max_number_of_segments: port.max_number_of_segments,
@@ -282,7 +282,7 @@ impl<Service: service::Service> ClientSharedState<Service> {
 
                 // establish request connection
                 let inner_result = self.request_sender.update_connection(
-                    h.index() as usize,
+                    index,
                     ReceiverDetails {
                         port_id: port.server_id.value(),
                         buffer_size: port.request_buffer_size,

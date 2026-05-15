@@ -141,9 +141,6 @@ pub struct Service {
     pub static_config_storage_suffix: FileName,
     /// The suffix of the dynamic config file
     pub dynamic_config_storage_suffix: FileName,
-    /// Defines the time of how long another process will wait until the service creation is
-    /// finalized
-    pub creation_timeout: Duration,
     /// The suffix of a one-to-one connection
     pub connection_suffix: FileName,
     /// The suffix of a one-to-one connection
@@ -164,7 +161,6 @@ impl Default for Service {
             data_segment_suffix: FileName::new(b".data").unwrap(),
             static_config_storage_suffix: FileName::new(b".service").unwrap(),
             dynamic_config_storage_suffix: FileName::new(b".dynamic").unwrap(),
-            creation_timeout: Duration::from_millis(500),
             connection_suffix: FileName::new(b".connection").unwrap(),
             event_connection_suffix: FileName::new(b".event").unwrap(),
             blackboard_mgmt_suffix: FileName::new(b".blackboard_mgmt").unwrap(),
@@ -188,6 +184,8 @@ pub struct Node {
     pub static_config_suffix: FileName,
     /// The suffix of the service tags.
     pub service_tag_suffix: FileName,
+    /// The suffix of the global management segment.
+    pub global_mgmt_suffix: FileName,
     /// When true, the [`NodeBuilder`](crate::node::NodeBuilder) checks for dead nodes and
     /// cleans up all their stale resources whenever a new [`Node`](crate::node::Node) is
     /// created.
@@ -203,6 +201,7 @@ impl Default for Node {
         Self {
             directory: Path::new(b"nodes").unwrap(),
             monitor_suffix: FileName::new(b".node_monitor").unwrap(),
+            global_mgmt_suffix: FileName::new(b".global_mgmt").unwrap(),
             static_config_suffix: FileName::new(b".details").unwrap(),
             service_tag_suffix: FileName::new(b".service_tag").unwrap(),
             cleanup_dead_nodes_on_creation: true,
@@ -224,6 +223,9 @@ pub struct Global {
     pub service: Service,
     /// [`Node`](crate::node::Node) settings
     pub node: Node,
+    /// Defines the time how long the process will wait until an entity, that shares inter-process
+    /// resources with others, is opened or created. This entity could be for instance a service
+    pub creation_timeout: Duration,
 }
 
 impl Default for Global {
@@ -233,6 +235,7 @@ impl Default for Global {
             prefix: FileName::new(b"iox2_").unwrap(),
             service: Service::default(),
             node: Node::default(),
+            creation_timeout: Duration::from_millis(500),
         }
     }
 }

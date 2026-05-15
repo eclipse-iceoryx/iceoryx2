@@ -18,13 +18,10 @@ use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
 use iceoryx2::config::Config;
-use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::node::{CleanupState, NodeState};
 use iceoryx2::prelude::*;
 use iceoryx2::service::Service;
 use iceoryx2::testing::*;
-use iceoryx2_bb_concurrency::atomic::AtomicU32;
-use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing::{assert_that, test_fail};
@@ -78,18 +75,12 @@ pub trait Test {
     }
 
     fn create_bad_node(&self) -> Node<Self::Service> {
-        static COUNTER: AtomicU32 = AtomicU32::new(0);
         let node_name = Self::generate_node_name(0, "toby or no toby");
-        let fake_node_id = ((u32::MAX - COUNTER.fetch_add(1, Ordering::Relaxed)) as u128) << 96;
-        let fake_node_id = unsafe { core::mem::transmute::<u128, UniqueNodeId>(fake_node_id) };
-
-        unsafe {
-            NodeBuilder::new()
-                .name(&node_name)
-                .config(self.config())
-                .__internal_create_with_custom_node_id::<Self::Service>(fake_node_id)
-                .unwrap()
-        }
+        NodeBuilder::new()
+            .name(&node_name)
+            .config(self.config())
+            .create()
+            .unwrap()
     }
 
     fn cleanup_dead_nodes(config: &Config) {
@@ -146,6 +137,12 @@ pub mod node_death {
 
     use super::*;
 
+    fn does_support_persistency<S: Test>() -> bool {
+        <S::Service as Service>::DynamicStorage::<
+                    iceoryx2::service::dynamic_config::DynamicConfig,
+                >::does_support_persistency()
+    }
+
     #[conformance_test]
     pub fn dead_node_is_marked_as_dead_and_can_be_cleaned_up<S: Test>() {
         let test = S::new();
@@ -176,7 +173,7 @@ pub mod node_death {
 
     #[conformance_test]
     pub fn dead_node_is_removed_from_pub_sub_service<S: Test>() {
-        test_requires!(<S::Service as Service>::DynamicStorage::does_support_persistency());
+        test_requires!(does_support_persistency::<S>());
 
         let test = S::new();
 
@@ -361,7 +358,7 @@ pub mod node_death {
 
     #[conformance_test]
     pub fn dead_node_is_removed_from_request_response_service<S: Test>() {
-        test_requires!(<S::Service as Service>::DynamicStorage::does_support_persistency());
+        test_requires!(does_support_persistency::<S>());
 
         let test = S::new();
 
@@ -867,7 +864,7 @@ pub mod node_death {
         total_number_of_nodes: usize,
         mut service_builder: F,
     ) {
-        test_requires!(<S::Service as Service>::DynamicStorage::does_support_persistency());
+        test_requires!(does_support_persistency::<S>());
 
         let bad_node = test.create_bad_node();
         let bad_service = service_builder(&bad_node);

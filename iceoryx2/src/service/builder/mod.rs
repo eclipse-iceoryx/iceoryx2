@@ -264,7 +264,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         let static_storage_config =
             static_config_storage_config::<ServiceType>(self.shared_node.config());
         let file_name_uuid = self.service_config.service_hash().0.into();
-        let creation_timeout = self.shared_node.config().global.service.creation_timeout;
+        let creation_timeout = self.shared_node.config().global.creation_timeout;
 
         match <ServiceType::StaticStorage as NamedConceptMgmt>::does_exist_cfg(
             &file_name_uuid,
@@ -338,13 +338,13 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         messaging_pattern_settings: &super::dynamic_config::MessagingPatternSettings,
         additional_size: usize,
         max_number_of_nodes: usize,
-    ) -> Result<ServiceType::DynamicStorage, DynamicStorageCreateError> {
+    ) -> Result<ServiceType::DynamicStorage<DynamicConfig>, DynamicStorageCreateError> {
         let msg = "Failed to create dynamic storage for service";
         let required_memory_size = DynamicConfig::memory_size(max_number_of_nodes);
-        match <<ServiceType::DynamicStorage as DynamicStorage<
+        match <<ServiceType::DynamicStorage<DynamicConfig> as DynamicStorage<
             DynamicConfig,
         >>::Builder<'_> as NamedConceptBuilder<
-            ServiceType::DynamicStorage,
+            ServiceType::DynamicStorage<DynamicConfig>,
         >>::new(&self.service_config.service_hash().0.into())
             .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
             .supplementary_size(additional_size + required_memory_size)
@@ -370,7 +370,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         messaging_pattern_settings: &super::dynamic_config::MessagingPatternSettings,
         additional_size: usize,
         max_number_of_nodes: usize,
-    ) -> Result<ServiceType::DynamicStorage, DynamicStorageCreateError> {
+    ) -> Result<ServiceType::DynamicStorage<DynamicConfig>, DynamicStorageCreateError> {
         let msg = "Failed to create dynamic storage for service";
         match self.create_dynamic_config_storage_resource(
             messaging_pattern_settings,
@@ -387,7 +387,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 // When a dynamic config still exists it means that the service is corrupted and
                 // can be safely cleaned up.
                 match unsafe {
-                    <ServiceType::DynamicStorage as NamedConceptMgmt>::remove_cfg(
+                    <ServiceType::DynamicStorage<DynamicConfig> as NamedConceptMgmt>::remove_cfg(
                         &self.service_config.service_hash().0.into(),
                         &dynamic_config_storage_config::<ServiceType>(self.shared_node.config()),
                     )
@@ -415,15 +415,15 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
 
     fn open_dynamic_config_storage(
         &self,
-    ) -> Result<ServiceType::DynamicStorage, OpenDynamicStorageFailure> {
+    ) -> Result<ServiceType::DynamicStorage<DynamicConfig>, OpenDynamicStorageFailure> {
         let msg = "Failed to open dynamic service information";
         let storage = fail!(from self, when
-            <<ServiceType::DynamicStorage as DynamicStorage<
+            <<ServiceType::DynamicStorage<DynamicConfig> as DynamicStorage<
                     DynamicConfig,
                 >>::Builder<'_> as NamedConceptBuilder<
-                    ServiceType::DynamicStorage,
+                    ServiceType::DynamicStorage<DynamicConfig>,
                 >>::new(&self.service_config.service_hash().0.into())
-                    .timeout(self.shared_node.config().global.service.creation_timeout)
+                    .timeout(self.shared_node.config().global.creation_timeout)
                     .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
                 .has_ownership(false)
                 .open(AccessMode::ReadWrite),

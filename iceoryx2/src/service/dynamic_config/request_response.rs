@@ -17,7 +17,7 @@ use iceoryx2_bb_lock_free::mpmc::{
     unique_index_set_enums::ReleaseMode,
 };
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_log::fatal_panic;
+use iceoryx2_log::{error, fatal_panic};
 
 use crate::{
     identifiers::{UniqueClientId, UniqueNodeId, UniquePortId, UniqueServerId},
@@ -137,46 +137,48 @@ impl DynamicConfig {
         mut port_cleanup_callback: PortCleanup,
     ) {
         unsafe {
-            self.servers
-                .get_state()
-                .for_each(|handle: ContainerHandle, registered_server| {
-                    if registered_server.node_id == *node_id
+            self.servers.recover(
+                node_id.owner_id(),
+                |registered_server| {
+                    // additional comparision, since the node_id.owner_id() might be not enough
+                    registered_server.node_id == *node_id
                         && port_cleanup_callback(UniquePortId::Server(registered_server.server_id))
                             == PortCleanupAction::RemovePort
-                    {
-                        self.release_server_handle(handle);
-                    }
-                    CallbackProgression::Continue
-                });
+                },
+                ReleaseMode::Default,
+            );
 
-            self.clients
-                .get_state()
-                .for_each(|handle: ContainerHandle, registered_client| {
-                    if registered_client.node_id == *node_id
+            self.clients.recover(
+                node_id.owner_id(),
+                |registered_client| {
+                    // additional comparision, since the node_id.owner_id() might be not enough
+                    registered_client.node_id == *node_id
                         && port_cleanup_callback(UniquePortId::Client(registered_client.client_id))
                             == PortCleanupAction::RemovePort
-                    {
-                        self.release_client_handle(handle);
-                    }
-                    CallbackProgression::Continue
-                });
+                },
+                ReleaseMode::Default,
+            );
         }
     }
 
     pub(crate) fn add_client_id(&self, details: ClientDetails) -> Option<ContainerHandle> {
-        unsafe { self.clients.add(details).ok() }
+        unsafe { self.clients.add(details, details.node_id.owner_id()).ok() }
     }
 
     pub(crate) fn release_client_handle(&self, handle: ContainerHandle) {
-        unsafe { self.clients.remove(handle, ReleaseMode::Default) };
+        if let Err(e) = unsafe { self.clients.remove(handle, ReleaseMode::Default) } {
+            error!(from self, "Unable to deregister client from service. This could indicate a corrupted system! [{e:?}]");
+        }
     }
 
     pub(crate) fn add_server_id(&self, details: ServerDetails) -> Option<ContainerHandle> {
-        unsafe { self.servers.add(details).ok() }
+        unsafe { self.servers.add(details, details.node_id.owner_id()).ok() }
     }
 
     pub(crate) fn release_server_handle(&self, handle: ContainerHandle) {
-        unsafe { self.servers.remove(handle, ReleaseMode::Default) };
+        if let Err(e) = unsafe { self.servers.remove(handle, ReleaseMode::Default) } {
+            error!(from self, "Unable to deregister server from service. This could indicate a corrupted system! [{e:?}]");
+        }
     }
 
     /// Iterates over all [`Server`](crate::port::server::Server)s and calls the
