@@ -318,14 +318,39 @@ impl<T: Copy + Debug> Container<T> {
 
         unsafe {
             let index = self.index_set.acquire(owner_id)?;
+
+            let element_generation_counter =
+                &*self.element_generation_counter_ptr.as_ptr().add(index as _);
+
+            let current_element_generation_counter =
+                element_generation_counter.load(Ordering::Acquire);
+
+            // Race against: `Self::remove()` and `Self::recover()` the index could
+            // have been returned to the `index_set` but the element generation count
+            // does not yet markt the element as empty.
+            //
+            // This could cause a data race in `Self::update_state()` when it is not
+            // marked as empty before the data is written. Otherwise the `update_state`
+            // might read it while it is written. When `update_state` returns before
+            // we reach the `fetch_add` of `element_generation_count` we return
+            // corrupted data.
+            if Self::contains_data(current_element_generation_counter) {
+                // MUST HAPPEN BEFORE copy_nonoverlapping
+                // if it fails, we lost the race and `Self::remove` or `Self::recover()`
+                // have set the element to empty.
+                let _dont_care = element_generation_counter.compare_exchange(
+                    current_element_generation_counter,
+                    current_element_generation_counter + 1,
+                    Ordering::AcqRel,
+                    Ordering::Acquire,
+                );
+            }
+
             core::ptr::copy_nonoverlapping(
                 &value,
                 (*self.data_ptr.as_ptr().add(index as _)).get().cast(),
                 1,
             );
-
-            let element_generation_counter =
-                &*self.element_generation_counter_ptr.as_ptr().add(index as _);
 
             //////////////////////////////////////
             // SYNC POINT all atomic operations with reading data values
@@ -366,18 +391,30 @@ impl<T: Copy + Debug> Container<T> {
             "The ContainerHandle used as handle was not created by this Container instance."
         );
 
-        unsafe {
+        let element_generation_counter = unsafe {
             &*self
                 .element_generation_counter_ptr
                 .as_ptr()
-                .add(handle.index as _)
-        }
-        .fetch_add(1, Ordering::AcqRel);
+                .add(handle.index)
+        };
+        let current_element_generation_counter = element_generation_counter.load(Ordering::Acquire);
 
         let release_state = match unsafe {
             self.index_set.release(handle.index, handle.owner_id, mode)
         } {
-            Ok(state) => state,
+            Ok(state) => {
+                // Race against: `Self::add()`
+                // * index is already released and could be acquired by `Self::add()`
+                // * `Self::add()` increments counter to % 2 == 1 when finished populating data
+                // * when this comes after without case, the element is set to empty
+                let _dont_care = element_generation_counter.compare_exchange(
+                    current_element_generation_counter,
+                    current_element_generation_counter + 1,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                );
+                state
+            }
             Err(_) => {
                 fail!(from self,
                         with ContainerRemoveError::ContainerHandleNotOwnedByContainer,
@@ -475,9 +512,11 @@ impl<T: Copy + Debug> Container<T> {
         let on_success = |_owner_id, index| {
             let v = current_element_generation_count.get();
 
-            // If setting the entry to empty failed then an other thread won the `Self::add()` race,
-            // acquired the next index and already repaired it.
-            let _ = unsafe { &*self.element_generation_counter_ptr.as_ptr().add(index) }
+            // Race against: `Self::add()`
+            // * index is already released and could be acquired by `Self::add()`
+            // * `Self::add()` increments counter to % 2 == 1 when finished populating data
+            // * when this comes after without case, the element is set to empty
+            let _dont_care = unsafe { &*self.element_generation_counter_ptr.as_ptr().add(index) }
                 .compare_exchange(v, v + 1, Ordering::Relaxed, Ordering::Relaxed);
         };
 

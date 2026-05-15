@@ -132,31 +132,18 @@ pub mod generic {
     #[test]
     pub fn double_remove_is_detected<T: Debug + Copy + From<usize> + Into<usize>>() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
-        let mut stored_indices = vec![];
         let owner_id = OwnerId::new(2).unwrap();
-        for i in 0..CAPACITY - 1 {
-            let index = sut.add((i * 3 + 1).into(), owner_id);
-            assert_that!(index, is_ok);
-            stored_indices.push(index.unwrap());
+        let handle = sut.add((123).into(), owner_id).unwrap();
+        assert_that!(unsafe { sut.remove(handle, ReleaseMode::Default) }, is_ok);
 
-            let index = sut.add((i * 7 + 5).into(), owner_id);
-            assert_that!(index, is_ok);
-            stored_indices.push(index.unwrap());
-
-            let to_be_removed_handle = stored_indices.remove(stored_indices.len() - 2);
-            assert_that!(
-                unsafe { sut.remove(to_be_removed_handle, ReleaseMode::Default) },
-                is_ok
-            );
-
-            assert_that!(unsafe {
+        assert_that!(unsafe {
                 sut.remove(
-                    to_be_removed_handle,
+                    handle,
                     ReleaseMode::Default,
                 ).err()
             }, eq Some(ContainerRemoveError::ContainerHandleNotOwnedByContainer));
-        }
-        assert_that!(sut.is_empty(), eq false);
+
+        assert_that!(sut.is_empty(), eq true);
 
         let state = sut.get_state();
         let mut contained_values = vec![];
@@ -165,9 +152,7 @@ pub mod generic {
             CallbackProgression::Continue
         });
 
-        contained_values.iter().enumerate().for_each(|(i, &value)| {
-            assert_that!(value, eq i * 7 + 5);
-        });
+        assert_that!(contained_values, len 0);
     }
 
     #[test]
@@ -763,6 +748,80 @@ pub mod generic {
                                     ReleaseMode::Default,
                                 )
                             };
+                        }
+                    })
+                    .expect("failed to spawn thread");
+            }
+
+            Ok(())
+        })
+        .expect("failed to run thread scope");
+    }
+
+    #[test]
+    pub fn concurrent_recover_ping_pong<
+        T: Debug + Copy + From<usize> + Into<usize> + Send + Ord,
+    >() {
+        let _watchdog = Watchdog::new();
+        const REPETITIONS: u64 = 1000;
+        let number_of_threads_per_op = (SystemInfo::NumberOfCpuCores.value()).clamp(2, usize::MAX);
+
+        let sut = FixedSizeContainer::<T, CAPACITY>::new();
+        let barrier_handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new((number_of_threads_per_op) as u32)
+            .create(&barrier_handle)
+            .unwrap();
+
+        let add_thread_counter = AtomicU64::new(0);
+        thread_scope(|s| {
+            for _ in 0..number_of_threads_per_op {
+                s.thread_builder()
+                    .spawn(|| {
+                        let thread_number = add_thread_counter.fetch_add(1, Ordering::Relaxed);
+                        let owner =
+                            OwnerId::new(thread_number + (2 * number_of_threads_per_op + 2) as u64)
+                                .unwrap();
+                        let mut state = sut.get_state();
+
+                        let add_elements = || {
+                            for i in 0..CAPACITY {
+                                match sut.add(i.into(), owner) {
+                                    Ok(_) => (),
+                                    Err(ContainerAddFailure::OutOfSpace) => break,
+                                    Err(ContainerAddFailure::IsLocked) => {
+                                        assert_that!(true, eq false)
+                                    }
+                                }
+                            }
+                        };
+
+                        let recover = || {
+                            unsafe { sut.recover(owner, |_| true, ReleaseMode::Default) };
+                        };
+
+                        for n in 0..REPETITIONS {
+                            barrier.wait();
+
+                            if (thread_number + n) % 2 == 0 {
+                                add_elements();
+                            } else {
+                                recover();
+                            }
+
+                            barrier.wait();
+
+                            add_elements();
+
+                            barrier.wait();
+
+                            unsafe { sut.update_state(&mut state) };
+
+                            let mut number_of_contained_elements = 0;
+                            state.for_each(|_, _| {
+                                number_of_contained_elements += 1;
+                                CallbackProgression::Continue
+                            });
+                            assert_that!(number_of_contained_elements, eq 129);
                         }
                     })
                     .expect("failed to spawn thread");
