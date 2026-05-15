@@ -127,6 +127,11 @@ impl UniqueProcessId {
     pub fn value(&self) -> u128 {
         self.0.value()
     }
+
+    /// Returns the underlying [`ProcessId`].
+    pub fn pid(&self) -> ProcessId {
+        self.0.pid()
+    }
 }
 
 unsafe impl Zeroable for UniqueProcessId {}

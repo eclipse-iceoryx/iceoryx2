@@ -147,7 +147,7 @@ pub use iceoryx2_bb_system_types::file_path::FilePath;
 
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_log::{fail, fatal_panic, trace, warn};
+use iceoryx2_log::{debug, fail, fatal_panic, trace, warn};
 use iceoryx2_pal_posix::posix::{self, Errno, MemZeroedStruct};
 
 use crate::{
@@ -906,10 +906,18 @@ impl ProcessMonitor {
             }
         };
 
+        let sync_file = |file: &mut File| {
+            if let Err(e) = file.flush() {
+                debug!(from self,
+                    "Failed to sync the file \"{}\". This could cause the detection of an outdated ProcessState. [{e:?}]", self.context_path);
+            }
+        };
+
         // first we need to open the context_file with AccessMode::Write only since it could
         // be in init mode. After the initialization we can open it with AccessMode::Read
         match Self::open_file(&self.context_path, AccessMode::Write) {
-            Ok(Some(context_file)) => {
+            Ok(Some(mut context_file)) => {
+                sync_file(&mut context_file);
                 if context_file.permission().unwrap() == INIT_PERMISSION {
                     return Ok(ProcessState::Starting);
                 }
@@ -924,7 +932,10 @@ impl ProcessMonitor {
             Err(e) => return Err(e.into()),
         }
 
-        if let Some(context_file) = Self::open_file(&self.context_path, AccessMode::Read)? {
+        let other_process_id = if let Some(mut context_file) =
+            Self::open_file(&self.context_path, AccessMode::Read)?
+        {
+            sync_file(&mut context_file);
             let other_process_id: u128 = match context_file.read_val() {
                 Ok(v) => v,
                 Err(e) => {
@@ -936,11 +947,16 @@ impl ProcessMonitor {
             if my_process_id.value() == other_process_id {
                 return Ok(ProcessState::Alive);
             }
+
+            unsafe { core::mem::transmute::<u128, UniqueProcessId>(other_process_id) }
         } else {
             return Ok(ProcessState::DoesNotExist);
-        }
+        };
 
-        if let Some(owner_lock_file) = Self::open_file(&self.owner_lock_path, AccessMode::Write)? {
+        if let Some(mut owner_lock_file) =
+            Self::open_file(&self.owner_lock_path, AccessMode::Write)?
+        {
+            sync_file(&mut owner_lock_file);
             let lock_state = fail!(from self,
                                     when Self::get_lock_state(&owner_lock_file),
                                     "{} since the lock state of the owner_lock file could not be acquired.", msg);
@@ -960,11 +976,21 @@ impl ProcessMonitor {
         // any file descriptor is closed to that file, even when other file descriptors to that same file
         // are still open.
         match Self::open_file(&self.state_path, AccessMode::Write)? {
-            Some(state_file) => {
+            Some(mut state_file) => {
+                sync_file(&mut state_file);
                 let lock_state = fail!(from self, when Self::get_lock_state(&state_file),
                                     "{} since the lock state of the state file could not be acquired.", msg);
                 match lock_state as _ {
-                    posix::F_WRLCK => Ok(ProcessState::Alive),
+                    posix::F_WRLCK => {
+                        // It is possible that the file system is not yet completely synced and the
+                        // file lock cannot be acquired despite the process is already dead.
+                        // Therefore, we check again manually.
+                        if Process::from_pid(other_process_id.pid()).is_alive() {
+                            Ok(ProcessState::Alive)
+                        } else {
+                            Ok(ProcessState::Dead)
+                        }
+                    }
                     _ => Ok(ProcessState::Dead),
                 }
             }
