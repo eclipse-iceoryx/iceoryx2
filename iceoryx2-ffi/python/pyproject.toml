@@ -53,7 +53,6 @@ target-dir = "../../target/ff/python"
 
 [tool.poetry]
 packages = [{include = "iceoryx2", from = "python-src"}]
-package-mode = false
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
