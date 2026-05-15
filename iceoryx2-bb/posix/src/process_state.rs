@@ -147,7 +147,7 @@ pub use iceoryx2_bb_system_types::file_path::FilePath;
 
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_log::{debug, fail, fatal_panic, trace, warn};
+use iceoryx2_log::{fail, fatal_panic, trace, warn};
 use iceoryx2_pal_posix::posix::{self, Errno, MemZeroedStruct};
 
 use crate::{
@@ -906,18 +906,10 @@ impl ProcessMonitor {
             }
         };
 
-        let sync_file = |file: &mut File| {
-            if let Err(e) = file.flush() {
-                debug!(from self,
-                    "Failed to sync the file \"{}\". This could cause the detection of an outdated ProcessState. [{e:?}]", self.context_path);
-            }
-        };
-
         // first we need to open the context_file with AccessMode::Write only since it could
         // be in init mode. After the initialization we can open it with AccessMode::Read
         match Self::open_file(&self.context_path, AccessMode::Write) {
-            Ok(Some(mut context_file)) => {
-                sync_file(&mut context_file);
+            Ok(Some(context_file)) => {
                 if context_file.permission().unwrap() == INIT_PERMISSION {
                     return Ok(ProcessState::Starting);
                 }
@@ -932,11 +924,10 @@ impl ProcessMonitor {
             Err(e) => return Err(e.into()),
         }
 
-        let other_process_id = if let Some(mut context_file) =
+        let other_process_id = if let Some(context_file) =
             Self::open_file(&self.context_path, AccessMode::Read)?
         {
-            sync_file(&mut context_file);
-            let other_process_id: u128 = match context_file.read_val() {
+            let other_process_id: UniqueProcessId = match context_file.read_val() {
                 Ok(v) => v,
                 Err(e) => {
                     fail!(from self, with ProcessMonitorStateError::FailedToAcquireUniqueProcessIdFromContextFile,
@@ -944,19 +935,16 @@ impl ProcessMonitor {
                 }
             };
 
-            if my_process_id.value() == other_process_id {
+            if my_process_id == other_process_id {
                 return Ok(ProcessState::Alive);
             }
 
-            unsafe { core::mem::transmute::<u128, UniqueProcessId>(other_process_id) }
+            other_process_id
         } else {
             return Ok(ProcessState::DoesNotExist);
         };
 
-        if let Some(mut owner_lock_file) =
-            Self::open_file(&self.owner_lock_path, AccessMode::Write)?
-        {
-            sync_file(&mut owner_lock_file);
+        if let Some(owner_lock_file) = Self::open_file(&self.owner_lock_path, AccessMode::Write)? {
             let lock_state = fail!(from self,
                                     when Self::get_lock_state(&owner_lock_file),
                                     "{} since the lock state of the owner_lock file could not be acquired.", msg);
@@ -976,8 +964,7 @@ impl ProcessMonitor {
         // any file descriptor is closed to that file, even when other file descriptors to that same file
         // are still open.
         match Self::open_file(&self.state_path, AccessMode::Write)? {
-            Some(mut state_file) => {
-                sync_file(&mut state_file);
+            Some(state_file) => {
                 let lock_state = fail!(from self, when Self::get_lock_state(&state_file),
                                     "{} since the lock state of the state file could not be acquired.", msg);
                 match lock_state as _ {
@@ -1143,6 +1130,14 @@ impl ProcessCleaner {
             }
         };
 
+        let other_process_id: UniqueProcessId = match context_file.read_val() {
+            Ok(v) => v,
+            Err(e) => {
+                fail!(from origin, with ProcessCleanerCreateError::FailedToAcquireUniqueProcessIdFromContextFile,
+                          "{msg} since the unique process id contained in the owner lock file could not be read. [{e:?}]");
+            }
+        };
+
         let owner_lock_file = match ProcessMonitor::open_file(&owner_lock_path, AccessMode::Write) {
             Ok(Some(file)) => file,
             Ok(None) => {
@@ -1176,7 +1171,8 @@ impl ProcessCleaner {
             with ProcessCleanerCreateError::FailedToAcquireLockState,
             "{} since the lock state could not be acquired.", msg);
 
-        if lock_state == posix::F_WRLCK as _ {
+        if lock_state == posix::F_WRLCK as _ && Process::from_pid(other_process_id.pid()).is_alive()
+        {
             fail!(from origin, with ProcessCleanerCreateError::ProcessIsStillAlive,
                 "{} since the corresponding process is still alive.", msg);
         }
