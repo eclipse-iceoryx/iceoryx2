@@ -30,7 +30,7 @@ use iceoryx2_bb_lock_free::spsc::safely_overflowing_index_queue::*;
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_log::{fail, fatal_panic};
+use iceoryx2_log::{fail, fatal_panic, warn};
 
 #[derive(Debug)]
 pub(crate) struct Management {
@@ -260,8 +260,8 @@ impl Drop for Duplex {
 
             let full_name = self.config.path_for(&self.name);
             if guard.remove(&full_name).is_none() {
-                fatal_panic!(from origin,
-                "{} since the entry was not existing anymore. This should never happen!", msg);
+                warn!(from origin,
+                "{} since the entry was not existing anymore. Someone else removed a communication channel that was owned by this object!", msg);
             }
         }
     }

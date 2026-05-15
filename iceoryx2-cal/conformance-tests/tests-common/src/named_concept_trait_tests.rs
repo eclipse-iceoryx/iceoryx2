@@ -20,6 +20,8 @@ use iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage as DynamicStorag
 use iceoryx2_cal::dynamic_storage::process_local::Storage as DynamicStorageProcessLocal;
 use iceoryx2_cal::event::process_local_socketpair::EventImpl as EventProcessLocal;
 use iceoryx2_cal::event::unix_datagram_socket::EventImpl as EventUnixDatagram;
+use iceoryx2_cal::monitoring::file_lock::FileLockMonitoring as MonitoringFileLock;
+use iceoryx2_cal::monitoring::process_local::ProcessLocalMonitoring as MonitoringProcessLocal;
 use iceoryx2_cal::resizable_shared_memory::dynamic::DynamicMemory as ResizableSharedMemoryDynamic;
 use iceoryx2_cal::shared_memory::file::Memory as SharedMemoryFile;
 use iceoryx2_cal::shared_memory::posix::Memory as SharedMemoryPosix;
@@ -76,6 +78,18 @@ instantiate_conformance_tests_with_module!(
     event_unix_datagram,
     iceoryx2_cal_conformance_tests::named_concept_trait,
     EventTest<super::EventUnixDatagram>
+);
+
+instantiate_conformance_tests_with_module!(
+    monitoring_file_lock,
+    iceoryx2_cal_conformance_tests::named_concept_trait,
+    MonitoringTest<super::MonitoringFileLock>
+);
+
+instantiate_conformance_tests_with_module!(
+    monitoring_process_local,
+    iceoryx2_cal_conformance_tests::named_concept_trait,
+    MonitoringTest<super::MonitoringProcessLocal>
 );
 
 instantiate_conformance_tests_with_module!(

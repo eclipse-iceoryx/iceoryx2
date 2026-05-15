@@ -21,6 +21,8 @@ use iceoryx2_cal::communication_channel::CommunicationChannel;
 use iceoryx2_cal::communication_channel::CommunicationChannelCreator;
 use iceoryx2_cal::event::Event;
 use iceoryx2_cal::event::ListenerBuilder;
+use iceoryx2_cal::monitoring::Monitoring;
+use iceoryx2_cal::monitoring::MonitoringBuilder;
 use iceoryx2_cal::resizable_shared_memory::ResizableSharedMemory;
 use iceoryx2_cal::resizable_shared_memory::ResizableSharedMemoryBuilder;
 use iceoryx2_cal::shared_memory::SharedMemory;
@@ -142,6 +144,7 @@ impl<T: SharedMemory<PoolAllocator> + 'static> NamedConceptTest for SharedMemory
         type AllocatorConfig = <PoolAllocator as ShmAllocator>::Configuration;
         let sut = <Self::Sut as SharedMemory<PoolAllocator>>::Builder::new(name)
             .config(config)
+            .size(1024)
             .create(&AllocatorConfig {
                 bucket_layout: Layout::new::<u64>(),
             })
@@ -168,6 +171,24 @@ impl<S: SharedMemory<PoolAllocator> + 'static, T: ResizableSharedMemory<PoolAllo
         let sut = <Self::Sut as ResizableSharedMemory<PoolAllocator, S>>::MemoryBuilder::new(name)
             .config(config)
             .create()
+            .unwrap();
+
+        Box::new(sut)
+    }
+}
+
+pub struct MonitoringTest<T: Monitoring + 'static>(PhantomData<T>);
+
+impl<T: Monitoring + 'static> NamedConceptTest for MonitoringTest<T> {
+    type Sut = T;
+
+    fn create(
+        name: &FileName,
+        config: &<Self::Sut as NamedConceptMgmt>::Configuration,
+    ) -> Box<dyn Any> {
+        let sut = <Self::Sut as Monitoring>::Builder::new(name)
+            .config(config)
+            .token()
             .unwrap();
 
         Box::new(sut)

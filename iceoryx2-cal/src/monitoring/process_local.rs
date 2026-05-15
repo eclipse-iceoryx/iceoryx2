@@ -19,7 +19,7 @@ use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
-use iceoryx2_log::{fail, fatal_panic};
+use iceoryx2_log::{fail, fatal_panic, warn};
 
 use crate::{
     monitoring::{MonitoringCreateCleanerError, MonitoringCreateTokenError, MonitoringStateError},
@@ -265,8 +265,8 @@ impl Drop for Token {
 
         let full_name = self.config.path_for(&self.name);
         if guard.remove(&full_name).is_none() {
-            fatal_panic!(from self,
-                "{} since the entry was not existing anymore. This should never happen!", msg);
+            warn!(from self,
+                "{} since the entry was not existing anymore. Someone else removed a token that was owned by this object!", msg);
         }
     }
 }
