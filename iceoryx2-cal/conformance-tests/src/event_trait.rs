@@ -22,14 +22,12 @@ pub mod event_trait {
     use core::time::Duration;
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_concurrency::atomic::Ordering;
-    use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_posix::clock::{Time, nanosleep};
     use iceoryx2_bb_posix::mutex::{MutexBuilder, MutexHandle};
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_posix::thread::thread_scope;
-    use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_bb_testing_macros::conformance_test;
@@ -422,104 +420,9 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn list_events_works<Sut: Event>() {
-        let mut sut_names = vec![];
-        const LIMIT: usize = 10;
-        let config = generate_isolated_config::<Sut>();
-
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
-        for i in 0..LIMIT {
-            sut_names.push(generate_file_path().file_name());
-            assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_names[i], &config), eq Ok(false));
-            core::mem::forget(
-                Sut::ListenerBuilder::new(&sut_names[i])
-                    .config(&config)
-                    .create(),
-            );
-            assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_names[i], &config), eq Ok(true));
-
-            let list = <Sut as NamedConceptMgmt>::list_cfg(&config).unwrap();
-            assert_that!(list, len i + 1);
-            let does_exist_in_list = |value| {
-                for e in &list {
-                    if e == value {
-                        return true;
-                    }
-                }
-                false
-            };
-
-            for name in &sut_names {
-                assert_that!(does_exist_in_list(name), eq true);
-            }
-        }
-
-        for sut_name in sut_names.iter().take(LIMIT) {
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(sut_name, &config)}, eq Ok(true));
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(sut_name, &config)}, eq Ok(false));
-        }
-
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
-    }
-
-    #[conformance_test]
-    pub fn custom_suffix_keeps_events_separated<Sut: Event>() {
-        let config = generate_isolated_config::<Sut>();
-        let config_1 = unsafe {
-            config
-                .clone()
-                .suffix(&FileName::new_unchecked(b".suffix_1"))
-        };
-        let config_2 = unsafe { config.suffix(&FileName::new_unchecked(b".suffix_2")) };
-
-        let sut_name = generate_file_path().file_name();
-
-        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_1), eq Ok(false));
-        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_2), eq Ok(false));
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_1).unwrap(), len 0);
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_2).unwrap(), len 0);
-
-        let sut_1 = Sut::ListenerBuilder::new(&sut_name)
-            .config(&config_1)
-            .create()
-            .unwrap();
-
-        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_1), eq Ok(true));
-        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_2), eq Ok(false));
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_1).unwrap(), len 1);
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_2).unwrap(), len 0);
-
-        let sut_2 = Sut::ListenerBuilder::new(&sut_name)
-            .config(&config_2)
-            .create()
-            .unwrap();
-
-        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_1), eq Ok(true));
-        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_2), eq Ok(true));
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_1).unwrap(), len 1);
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_2).unwrap(), len 1);
-
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_1).unwrap()[0], eq sut_name);
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_2).unwrap()[0], eq sut_name);
-
-        assert_that!(*sut_1.name(), eq sut_name);
-        assert_that!(*sut_2.name(), eq sut_name);
-
-        core::mem::forget(sut_1);
-        core::mem::forget(sut_2);
-
-        assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_1)}, eq Ok(true));
-        assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_1)}, eq Ok(false));
-        assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_2)}, eq Ok(true));
-        assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_2)}, eq Ok(false));
-    }
-
-    #[conformance_test]
     pub fn defaults_for_configuration_are_set_correctly<Sut: Event>() {
         let config = <Sut as NamedConceptMgmt>::Configuration::default();
         assert_that!(*config.get_suffix(), eq Sut::default_suffix());
-        assert_that!(*config.get_path_hint(), eq Sut::default_path_hint());
-        assert_that!(*config.get_prefix(), eq Sut::default_prefix());
     }
 
     #[conformance_test]

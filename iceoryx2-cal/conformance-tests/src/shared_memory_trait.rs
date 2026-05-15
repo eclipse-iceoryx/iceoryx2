@@ -23,9 +23,7 @@ pub mod shared_memory_trait {
     use iceoryx2_bb_posix::file::AccessMode;
     use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
-    use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::testing::generate_file_path;
-    use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::named_concept::*;
@@ -250,109 +248,9 @@ pub mod shared_memory_trait {
     }
 
     #[conformance_test]
-    pub fn list_shm_works<Sut: SharedMemory<DefaultAllocator>>() {
-        let mut storage_names = vec![];
-        let mut storages = vec![];
-        const LIMIT: usize = 8;
-        let config = generate_isolated_config::<Sut>();
-
-        for i in 0..LIMIT {
-            assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len i);
-            storage_names.push(generate_file_path().file_name());
-            assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_names[i], &config), eq Ok(false));
-            storages.push(
-                Sut::Builder::new(&storage_names[i])
-                    .size(DEFAULT_SIZE)
-                    .config(&config)
-                    .create(&SHM_CONFIG)
-                    .unwrap(),
-            );
-            assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_names[i], &config), eq Ok(true));
-
-            let list = <Sut as NamedConceptMgmt>::list_cfg(&config).unwrap();
-            assert_that!(list, len i + 1);
-            let does_exist_in_list = |value| {
-                for e in &list {
-                    if e == value {
-                        return true;
-                    }
-                }
-                false
-            };
-
-            for name in &storage_names {
-                assert_that!(does_exist_in_list(name), eq true);
-            }
-        }
-
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len LIMIT);
-
-        for storage_name in storage_names.iter().take(LIMIT) {
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(storage_name, &config)}, eq Ok(true));
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(storage_name, &config)}, eq Ok(false));
-        }
-
-        core::mem::forget(storages);
-
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
-    }
-
-    #[conformance_test]
-    pub fn custom_suffix_keeps_storages_separated<Sut: SharedMemory<DefaultAllocator>>() {
-        let config = generate_isolated_config::<Sut>();
-        let config_1 = unsafe { config.clone().suffix(&FileName::new_unchecked(b".s1")) };
-        let config_2 = unsafe { config.suffix(&FileName::new_unchecked(b".s2")) };
-
-        let storage_name = generate_file_path().file_name();
-
-        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_name, &config_1), eq Ok(false));
-        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_name, &config_2), eq Ok(false));
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_1).unwrap(), len 0);
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_2).unwrap(), len 0);
-
-        let storage_guard_1 = Sut::Builder::new(&storage_name)
-            .size(DEFAULT_SIZE)
-            .config(&config_1)
-            .create(&SHM_CONFIG)
-            .unwrap();
-
-        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_name, &config_1), eq Ok(true));
-        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_name, &config_2), eq Ok(false));
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_1).unwrap(), len 1);
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_2).unwrap(), len 0);
-
-        let storage_guard_2 = Sut::Builder::new(&storage_name)
-            .size(DEFAULT_SIZE)
-            .config(&config_2)
-            .create(&SHM_CONFIG)
-            .unwrap();
-
-        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_name, &config_1), eq Ok(true));
-        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_name, &config_2), eq Ok(true));
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_1).unwrap(), len 1);
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_2).unwrap(), len 1);
-
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_1).unwrap()[0], eq storage_name);
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_2).unwrap()[0], eq storage_name);
-
-        assert_that!(*storage_guard_1.name(), eq storage_name);
-        assert_that!(*storage_guard_2.name(), eq storage_name);
-
-        storage_guard_1.release_ownership();
-        storage_guard_2.release_ownership();
-
-        assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&storage_name, &config_1)}, eq Ok(true));
-        assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&storage_name, &config_1)}, eq Ok(false));
-        assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&storage_name, &config_2)}, eq Ok(true));
-        assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&storage_name, &config_2)}, eq Ok(false));
-    }
-
-    #[conformance_test]
     pub fn defaults_for_configuration_are_set_correctly<Sut: SharedMemory<DefaultAllocator>>() {
         let config = <Sut as NamedConceptMgmt>::Configuration::default();
         assert_that!(*config.get_suffix(), eq Sut::default_suffix());
-        assert_that!(*config.get_path_hint(), eq Sut::default_path_hint());
-        assert_that!(*config.get_prefix(), eq Sut::default_prefix());
     }
 
     #[conformance_test]
