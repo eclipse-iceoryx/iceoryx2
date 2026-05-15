@@ -52,6 +52,12 @@ rust_bindgen_library(
 rust_library(
     name = "iceoryx2-pal-posix",
     srcs = glob(["src/**/*.rs"]),
+    crate_features = select({
+        "//:cfg_feature_std": [
+            "std",
+        ],
+        "//conditions:default": [],
+    }),
     rustc_flags = select({
         "@platforms//os:linux":   ["--cfg=bazel_build", "--cfg=platform_binding=\"libc\""],
         "@platforms//os:android": ["--cfg=bazel_build", "--cfg=platform_binding=\"libc\""],
@@ -79,6 +85,7 @@ rust_library(
 rust_test_suite(
     name = "iceoryx2-pal-posix-tests",
     srcs = glob(["tests/**/*.rs"]),
+    crate_features = ["std"],
     deps = [
         ":iceoryx2-pal-posix",
     ],

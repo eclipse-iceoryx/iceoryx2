@@ -16,15 +16,16 @@
 pub use crate::ipc_capable::{Handle, IpcCapable};
 
 use core::fmt::Debug;
+use core::ptr::NonNull;
 
 use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_bb_system_types::path::*;
-use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_log::trace;
 use iceoryx2_log::{debug, fail, fatal_panic, warn};
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
@@ -408,7 +409,7 @@ unsafe impl Send for NamedSemaphore {}
 unsafe impl Sync for NamedSemaphore {}
 
 impl Abandonable for NamedSemaphore {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         if core::ptr::eq(this.handle, posix::SEM_FAILED) {
             return;
@@ -773,7 +774,7 @@ unsafe impl Send for UnnamedSemaphore<'_> {}
 unsafe impl Sync for UnnamedSemaphore<'_> {}
 
 impl Abandonable for UnnamedSemaphore<'_> {
-    unsafe fn abandon_in_place(_this: core::ptr::NonNull<Self>) {}
+    unsafe fn abandon_in_place(_this: NonNull<Self>) {}
 }
 
 impl Drop for UnnamedSemaphore<'_> {

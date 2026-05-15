@@ -15,6 +15,8 @@ use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_pal_concurrency_sync::atomic::AtomicUsize;
 use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 
+use core::ptr::NonNull;
+
 /// A minimalistic [`BumpAllocator`].
 pub struct BumpAllocator {
     start: *mut u8,
@@ -32,24 +34,19 @@ impl BumpAllocator {
 }
 
 impl BaseAllocator for BumpAllocator {
-    fn allocate(
-        &self,
-        layout: core::alloc::Layout,
-    ) -> Result<core::ptr::NonNull<[u8]>, AllocationError> {
+    fn allocate(&self, layout: core::alloc::Layout) -> Result<NonNull<[u8]>, AllocationError> {
         let mem = align(self.pos.load(Ordering::Relaxed), layout.align());
         self.pos.store(mem + layout.size(), Ordering::Relaxed);
 
         unsafe {
-            Ok(core::ptr::NonNull::new_unchecked(
-                core::ptr::slice_from_raw_parts_mut(
-                    self.start.add(mem - self.start as usize),
-                    layout.size(),
-                ),
-            ))
+            Ok(NonNull::new_unchecked(core::ptr::slice_from_raw_parts_mut(
+                self.start.add(mem - self.start as usize),
+                layout.size(),
+            )))
         }
     }
 
-    unsafe fn deallocate(&self, _ptr: core::ptr::NonNull<u8>, _layout: core::alloc::Layout) {
+    unsafe fn deallocate(&self, _ptr: NonNull<u8>, _layout: core::alloc::Layout) {
         self.pos.store(self.start as usize, Ordering::Relaxed);
     }
 }

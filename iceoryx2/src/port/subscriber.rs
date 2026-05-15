@@ -34,6 +34,7 @@
 use core::any::TypeId;
 use core::fmt::Debug;
 use core::marker::PhantomData;
+use core::ptr::NonNull;
 
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
@@ -41,11 +42,12 @@ use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
+use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_OPEN, ChannelId};
@@ -99,11 +101,9 @@ pub(crate) struct SubscriberSharedState<Service: service::Service> {
 }
 
 impl<Service: service::Service> Abandonable for SubscriberSharedState<Service> {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe {
-            Receiver::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.receiver))
-        };
+        unsafe { Receiver::abandon_in_place(NonNull::iox2_from_mut(&mut this.receiver)) };
     }
 }
 
@@ -147,10 +147,10 @@ impl<
     UserHeader: Debug + ZeroCopySend,
 > Abandonable for Subscriber<Service, Payload, UserHeader>
 {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe {
-            Service::ArcThreadSafetyPolicy::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
+            Service::ArcThreadSafetyPolicy::abandon_in_place(NonNull::iox2_from_mut(
                 &mut this.subscriber_shared_state,
             ))
         };

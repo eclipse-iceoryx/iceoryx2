@@ -55,12 +55,15 @@ use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
 use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
+use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::owning_pointer::GenericOwningPointer;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_log::{fail, fatal_panic};
+
+use core::ptr::NonNull;
 
 /// A key of a [`SlotMap`], [`RelocatableSlotMap`] or [`FixedSizeSlotMap`] that identifies a
 /// value.
@@ -134,10 +137,10 @@ pub struct MetaSlotMap<T, Ptr: GenericPointer> {
 }
 
 impl<T: Abandonable, Ptr: GenericPointer> Abandonable for MetaSlotMap<T, Ptr> {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         for element in this.data.iter_mut().flatten() {
-            unsafe { T::abandon_in_place(core::ptr::NonNull::iox2_from_mut(element)) };
+            unsafe { T::abandon_in_place(NonNull::iox2_from_mut(element)) };
         }
     }
 }

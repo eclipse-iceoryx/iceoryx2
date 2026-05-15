@@ -16,7 +16,9 @@ use std::sync::Mutex;
 #[cfg(not(feature = "std"))]
 use iceoryx2_pal_concurrency_sync::spin_lock::SpinLock as Mutex;
 
-use crate::abandonable::Abandonable;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+
+use core::ptr::NonNull;
 
 static CREATION_COUNTER: Mutex<usize> = Mutex::new(0);
 static DROP_COUNTER: Mutex<usize> = Mutex::new(0);
@@ -46,7 +48,7 @@ pub struct AbandonTacker {
 }
 
 impl Abandonable for AbandonTacker {
-    unsafe fn abandon_in_place(_this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(_this: NonNull<Self>) {
         *LEAK_COUNTER.lock().unwrap_or_else(|e| e.into_inner()) += 1;
     }
 }

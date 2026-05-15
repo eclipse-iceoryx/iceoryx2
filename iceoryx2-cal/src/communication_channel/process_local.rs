@@ -17,6 +17,7 @@ use crate::communication_channel::*;
 use crate::static_storage::file::NamedConceptConfiguration;
 
 use core::fmt::Debug;
+use core::ptr::NonNull;
 
 use alloc::collections::BTreeMap;
 use alloc::format;
@@ -241,7 +242,7 @@ pub struct Duplex {
 }
 
 impl Abandonable for Duplex {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         this.has_ownership = false;
         unsafe { core::ptr::drop_in_place(this) };

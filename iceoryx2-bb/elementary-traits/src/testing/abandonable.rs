@@ -10,16 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-/// TODO: #1613 - Temporary addition, remove when iceoryx2 MSRV >= 1.89
-pub trait NonNullFromRef<T> {
-    fn iox2_from_mut(f: &mut T) -> Self;
-}
-
-impl<T> NonNullFromRef<T> for core::ptr::NonNull<T> {
-    fn iox2_from_mut(f: &mut T) -> Self {
-        unsafe { core::ptr::NonNull::new_unchecked(f) }
-    }
-}
+use crate::non_null::NonNullCompat;
+use core::ptr::NonNull;
 
 /// **Only for testing purposes!**
 ///
@@ -32,7 +24,7 @@ impl<T> NonNullFromRef<T> for core::ptr::NonNull<T> {
 /// * ...
 pub trait Abandonable: Sized {
     fn abandon(mut self) {
-        unsafe { Self::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut self)) };
+        unsafe { Self::abandon_in_place(NonNull::iox2_from_mut(&mut self)) };
         core::mem::forget(self);
     }
 
@@ -47,5 +39,5 @@ pub trait Abandonable: Sized {
     /// * `this` cannot be used after this operation, you should most likely call
     ///   [`core::mem::forget()`] afterwards.
     ///
-    unsafe fn abandon_in_place(this: core::ptr::NonNull<Self>);
+    unsafe fn abandon_in_place(this: NonNull<Self>);
 }

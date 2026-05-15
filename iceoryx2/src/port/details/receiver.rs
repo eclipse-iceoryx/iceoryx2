@@ -11,15 +11,16 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::format;
+use core::ptr::NonNull;
 
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::slotmap::SlotMapKey;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
+use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
-use iceoryx2_bb_testing::abandonable::Abandonable;
-use iceoryx2_bb_testing::abandonable::NonNullFromRef;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::zero_copy_connection::*;
 use iceoryx2_log::fatal_panic;
@@ -56,18 +57,16 @@ pub(crate) struct Connection<Service: service::Service> {
 }
 
 impl<Service: service::Service> Abandonable for Connection<Service> {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
 
         unsafe {
             <Service::Connection as ZeroCopyConnection>::Receiver::abandon_in_place(
-                core::ptr::NonNull::iox2_from_mut(&mut this.receiver),
+                NonNull::iox2_from_mut(&mut this.receiver),
             )
         };
         unsafe {
-            DataSegmentView::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
-                &mut this.data_segment,
-            ))
+            DataSegmentView::abandon_in_place(NonNull::iox2_from_mut(&mut this.data_segment))
         };
     }
 }
@@ -151,13 +150,11 @@ pub(crate) struct Receiver<Service: service::Service> {
 }
 
 impl<Service: service::Service> Abandonable for Receiver<Service> {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
 
         unsafe {
-            SharedServiceState::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
-                &mut this.service_state,
-            ))
+            SharedServiceState::abandon_in_place(NonNull::iox2_from_mut(&mut this.service_state))
         };
     }
 }

@@ -41,7 +41,6 @@
 //! ```
 extern crate alloc;
 use alloc::sync::Arc;
-use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 
 use super::nodes;
 use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
@@ -54,8 +53,11 @@ use crate::service::service_name::ServiceName;
 use crate::service::{
     self, NoResource, ServiceState, SharedServiceState, dynamic_config, static_config,
 };
+use core::ptr::NonNull;
 use core::{fmt::Debug, marker::PhantomData};
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
@@ -96,13 +98,9 @@ impl<
     UserHeader: Debug + ZeroCopySend,
 > Abandonable for PortFactory<Service, Payload, UserHeader>
 {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe {
-            SharedServiceState::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
-                &mut this.service,
-            ))
-        };
+        unsafe { SharedServiceState::abandon_in_place(NonNull::iox2_from_mut(&mut this.service)) };
     }
 }
 

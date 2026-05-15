@@ -97,8 +97,8 @@ use core::fmt::Debug;
 use core::time::Duration;
 
 use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::file::AccessMode;
-use iceoryx2_bb_testing::abandonable::Abandonable;
 
 use crate::named_concept::*;
 use crate::shared_memory::{

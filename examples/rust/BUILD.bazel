@@ -17,6 +17,12 @@ load("@rules_rust//rust:defs.bzl", "rust_library")
 rust_library(
     name = "examples-common",
     srcs = glob(["_examples_common/**/*.rs"]),
+    crate_features = select({
+        "//:cfg_feature_std": [
+            "std",
+        ],
+        "//conditions:default": [],
+    }),
     deps = [
         "//iceoryx2:iceoryx2",
         "//iceoryx2-bb/container:iceoryx2-bb-container",

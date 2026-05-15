@@ -144,6 +144,7 @@ mod global_management_segment;
 pub mod node_name;
 
 use core::marker::PhantomData;
+use core::ptr::NonNull;
 use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 
@@ -161,6 +162,8 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
+use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
@@ -174,8 +177,6 @@ use iceoryx2_bb_posix::mutex::MutexType;
 use iceoryx2_bb_posix::process::Process;
 use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_bb_system_types::file_name::FileName;
-use iceoryx2_bb_testing::abandonable::Abandonable;
-use iceoryx2_bb_testing::abandonable::NonNullFromRef;
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
@@ -911,17 +912,17 @@ unsafe impl<Service: service::Service> Send for SharedNodeState<Service> {}
 unsafe impl<Service: service::Service> Sync for SharedNodeState<Service> {}
 
 impl<Service: service::Service> Abandonable for SharedNodeState<Service> {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe {
-            <Service::StaticStorage as Abandonable>::abandon_in_place(
-                core::ptr::NonNull::iox2_from_mut(&mut this.details_storage),
-            )
+            <Service::StaticStorage as Abandonable>::abandon_in_place(NonNull::iox2_from_mut(
+                &mut this.details_storage,
+            ))
         };
         if let Some(token) = this.monitoring_token.get_mut() {
             unsafe {
                 <<Service::Monitoring as Monitoring>::Token as Abandonable>::abandon_in_place(
-                    core::ptr::NonNull::iox2_from_mut(token),
+                    NonNull::iox2_from_mut(token),
                 )
             };
         }
@@ -950,10 +951,10 @@ pub(crate) struct SharedNode<Service: service::Service> {
 }
 
 impl<Service: service::Service> Abandonable for SharedNode<Service> {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         if let Some(state) = Arc::get_mut(&mut this.state) {
-            unsafe { SharedNodeState::abandon_in_place(core::ptr::NonNull::iox2_from_mut(state)) };
+            unsafe { SharedNodeState::abandon_in_place(NonNull::iox2_from_mut(state)) };
         } else {
             unsafe { core::ptr::drop_in_place(&mut this.state) };
         }
@@ -993,11 +994,9 @@ pub struct Node<Service: service::Service> {
 unsafe impl<Service: service::Service> Send for Node<Service> {}
 
 impl<Service: service::Service> Abandonable for Node<Service> {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe {
-            SharedNode::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.shared))
-        };
+        unsafe { SharedNode::abandon_in_place(NonNull::iox2_from_mut(&mut this.shared)) };
     }
 }
 

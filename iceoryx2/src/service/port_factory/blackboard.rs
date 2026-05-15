@@ -55,9 +55,11 @@ use crate::service::{self, ServiceState, SharedServiceState, dynamic_config, sta
 use core::fmt::Debug;
 use core::hash::Hash;
 use core::marker::PhantomData;
+use core::ptr::NonNull;
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 /// The factory for
@@ -78,13 +80,9 @@ impl<
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > Abandonable for PortFactory<Service, KeyType>
 {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe {
-            SharedServiceState::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
-                &mut this.service,
-            ))
-        };
+        unsafe { SharedServiceState::abandon_in_place(NonNull::iox2_from_mut(&mut this.service)) };
     }
 }
 

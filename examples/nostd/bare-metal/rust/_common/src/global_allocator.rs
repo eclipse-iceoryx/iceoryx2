@@ -16,6 +16,7 @@ use core::alloc::{GlobalAlloc, Layout};
 use core::ptr::{NonNull, from_ref, null_mut};
 
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
+use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_memory::bump_allocator::BaseAllocator;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 
@@ -47,7 +48,7 @@ impl IceoryxBumpAllocator {
         let start = unsafe { &_heap_start };
         let end = unsafe { &_heap_end };
         let size = from_ref(end).addr() - from_ref(start).addr();
-        let ptr = NonNull::from_ref(start);
+        let ptr = NonNull::iox2_from_ref(start);
         let allocator = BumpAllocator::new(ptr, size);
 
         unsafe { *self.inner.get() = Some(allocator) };

@@ -11,8 +11,10 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::rc::Rc;
+use core::ptr::NonNull;
 use core::{fmt::Debug, marker::PhantomData, ops::Deref};
-use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
+use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 
 use crate::arc_sync_policy::{ArcSyncPolicy, LockGuard};
 
@@ -45,11 +47,11 @@ impl<T: Send + Debug + Abandonable> Clone for SingleThreaded<T> {
 }
 
 impl<T: Send + Debug + Abandonable> Abandonable for SingleThreaded<T> {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
 
         if let Some(value) = Rc::get_mut(&mut this.data) {
-            unsafe { T::abandon_in_place(core::ptr::NonNull::iox2_from_mut(value)) };
+            unsafe { T::abandon_in_place(NonNull::iox2_from_mut(value)) };
         } else {
             unsafe { core::ptr::drop_in_place(&mut this.data) };
         }

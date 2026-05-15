@@ -23,6 +23,7 @@ pub mod event_trait {
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_container::semantic_string::*;
+    use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_posix::clock::{Time, nanosleep};
     use iceoryx2_bb_posix::mutex::{MutexBuilder, MutexHandle};
@@ -30,7 +31,7 @@ pub mod event_trait {
     use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::watchdog::Watchdog;
-    use iceoryx2_bb_testing::{abandonable::Abandonable, assert_that, test_requires};
+    use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::event::{TriggerId, *};
     use iceoryx2_cal::named_concept::*;

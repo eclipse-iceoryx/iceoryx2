@@ -125,6 +125,7 @@
 //! ```
 
 use core::mem::MaybeUninit;
+use core::ptr::NonNull;
 use core::{mem::size_of, time::Duration};
 
 use alloc::format;
@@ -134,8 +135,8 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_system_types::file_path::FilePath;
-use iceoryx2_bb_testing::abandonable::Abandonable;
 use iceoryx2_log::{fail, fatal_panic, trace};
 use iceoryx2_pal_posix::posix::{MemZeroedStruct, errno::Errno};
 
@@ -546,7 +547,7 @@ pub struct UnixDatagramSender {
 }
 
 impl Abandonable for UnixDatagramSender {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe { core::ptr::drop_in_place(&mut this.socket) };
     }
@@ -775,7 +776,7 @@ pub struct UnixDatagramReceiver {
 }
 
 impl Abandonable for UnixDatagramReceiver {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe { core::ptr::drop_in_place(&mut this.socket) };
     }

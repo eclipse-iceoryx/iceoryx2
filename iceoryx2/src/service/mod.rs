@@ -254,6 +254,7 @@ pub(crate) mod config_scheme;
 pub(crate) mod naming_scheme;
 
 use core::fmt::Debug;
+use core::ptr::NonNull;
 use core::time::Duration;
 
 use alloc::format;
@@ -261,8 +262,9 @@ use alloc::string::String as CoreString;
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
+use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::file::AccessMode;
-use iceoryx2_bb_testing::abandonable::{Abandonable, NonNullFromRef};
 
 use crate::config;
 use crate::constants::MAX_TYPE_NAME_LENGTH;
@@ -399,28 +401,16 @@ pub struct ServiceState<S: Service, R: ServiceResource> {
 }
 
 impl<S: Service, R: ServiceResource> Abandonable for ServiceState<S, R> {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
 
         unsafe {
-            S::DynamicStorage::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
-                &mut this.dynamic_storage,
-            ))
+            S::DynamicStorage::abandon_in_place(NonNull::iox2_from_mut(&mut this.dynamic_storage))
         };
+        unsafe { R::abandon_in_place(NonNull::iox2_from_mut(&mut this.additional_resource)) };
+        unsafe { SharedNode::<S>::abandon_in_place(NonNull::iox2_from_mut(&mut this.shared_node)) };
         unsafe {
-            R::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
-                &mut this.additional_resource,
-            ))
-        };
-        unsafe {
-            SharedNode::<S>::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
-                &mut this.shared_node,
-            ))
-        };
-        unsafe {
-            S::StaticStorage::abandon_in_place(core::ptr::NonNull::iox2_from_mut(
-                &mut this.static_storage,
-            ))
+            S::StaticStorage::abandon_in_place(NonNull::iox2_from_mut(&mut this.static_storage))
         };
     }
 }
@@ -439,10 +429,10 @@ impl<S: Service, R: ServiceResource> Clone for SharedServiceState<S, R> {
 }
 
 impl<S: Service, R: ServiceResource> Abandonable for SharedServiceState<S, R> {
-    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         if let Some(state) = Arc::get_mut(&mut this.state) {
-            unsafe { ServiceState::abandon_in_place(core::ptr::NonNull::iox2_from_mut(state)) };
+            unsafe { ServiceState::abandon_in_place(NonNull::iox2_from_mut(state)) };
         } else {
             unsafe { core::ptr::drop_in_place(&mut this.state) };
         }
@@ -885,7 +875,7 @@ impl ServiceResource for NoResource {
 }
 
 impl Abandonable for NoResource {
-    unsafe fn abandon_in_place(_this: core::ptr::NonNull<Self>) {}
+    unsafe fn abandon_in_place(_this: NonNull<Self>) {}
 }
 
 /// Represents a service. Used to create or open new services with the
