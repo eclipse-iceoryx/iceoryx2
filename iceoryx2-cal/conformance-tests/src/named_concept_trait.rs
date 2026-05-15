@@ -13,6 +13,7 @@
 extern crate alloc;
 
 use alloc::boxed::Box;
+use alloc::vec;
 use core::alloc::Layout;
 use core::any::Any;
 use core::marker::PhantomData;
