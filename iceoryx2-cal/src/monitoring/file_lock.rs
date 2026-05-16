@@ -213,10 +213,8 @@ impl MonitoringMonitor for Monitor {
 
         match self.monitor.state() {
             Ok(ProcessState::Alive) => Ok(State::Alive),
-            Ok(ProcessState::Dead) => Ok(State::Dead),
-            Ok(ProcessState::DoesNotExist)
-            | Ok(ProcessState::CleaningUp)
-            | Ok(ProcessState::Starting) => Ok(State::DoesNotExist),
+            Ok(ProcessState::Dead) | Ok(ProcessState::CleaningUp) => Ok(State::Dead),
+            Ok(ProcessState::DoesNotExist) | Ok(ProcessState::Starting) => Ok(State::DoesNotExist),
             Err(ProcessMonitorStateError::Interrupt)
             | Err(ProcessMonitorStateError::ProcessMonitorOpenError(
                 ProcessMonitorOpenError::Interrupt,
