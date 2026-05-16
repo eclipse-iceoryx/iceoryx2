@@ -107,21 +107,21 @@ pub trait PortFactory: Debug + Abandonable {
         callback: F,
     ) -> Result<(), NodeListFailure>;
 
-    /// Removes the stale system resources of all dead [`Node`]s connected to this service.
+    /// Removes the stale system resources of all dead [`Node`](crate::node::Node)s connected to this service.
     ///
-    /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions or it
-    /// is currently being cleaned up by another process then the [`Node`] is skipped.
+    /// If a [`Node`](crate::node::Node) cannot be cleaned up since the process has insufficient permissions or it
+    /// is currently being cleaned up by another process then the [`Node`](crate::node::Node) is skipped.
     fn try_cleanup_dead_nodes(&self) -> CleanupState {
         blocking_cleanup_dead_nodes_in_service(self, Duration::ZERO)
     }
 
-    /// Removes the stale system resources of all dead [`Node`]s connected to this service.
+    /// Removes the stale system resources of all dead [`Node`](crate::node::Node)s connected to this service.
     ///
-    /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions then the
-    /// [`Node`] is skipped. If it is currently being cleaned up by another process then the
+    /// If a [`Node`](crate::node::Node) cannot be cleaned up since the process has insufficient permissions then the
+    /// [`Node`](crate::node::Node) is skipped. If it is currently being cleaned up by another process then the
     /// cleaner will wait until the timeout as either passed or the cleaned was finished.
     ///
-    /// The timeout is applied to every individual dead [`Node`] the function needs to wait on.
+    /// The timeout is applied to every individual dead [`Node`](crate::node::Node) the function needs to wait on.
     fn blocking_cleanup_dead_nodes(&self, timeout: Duration) -> CleanupState {
         blocking_cleanup_dead_nodes_in_service(self, timeout)
     }

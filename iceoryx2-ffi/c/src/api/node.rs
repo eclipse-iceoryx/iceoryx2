@@ -596,7 +596,7 @@ pub unsafe extern "C" fn iox2_node_list(
 /// # Arguments
 ///
 /// * `service_type` - A [`iox2_service_type_e`]
-/// * `config_ptr` - A valid [`iox2_config_ptr`](crate::iox2_config_ptr)
+/// * `config_ptr` - A valid [`iox2_config_ptr`]
 /// * `cleanup_state` - A valid pointer to a [`iox2_cleanup_state_t`]
 ///
 /// # Safety
@@ -637,7 +637,7 @@ pub unsafe extern "C" fn iox2_node_try_cleanup_dead_nodes(
 ///
 /// * `service_type` - A [`iox2_service_type_e`]
 /// * `config_ptr` - A valid [`iox2_config_ptr`](crate::iox2_config_ptr)
-/// * `cleanup_state` - A valid pointer to a [`iox2_cleanup_state_t`]
+/// * `cleanup_state` - A valid pointer to a [`iox2_cleanup_state_t`](crate::iox2_cleanup_state_t)
 /// * `timeout_secs` - The timeout second part
 /// * `timeout_nsecs` - The timeout nanosecond part
 ///

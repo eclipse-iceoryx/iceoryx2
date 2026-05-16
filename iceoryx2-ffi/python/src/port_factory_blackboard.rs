@@ -186,10 +186,10 @@ impl PortFactoryBlackboard {
         PortFactoryReader::new(self.value.clone(), self.key_type_storage.clone())
     }
 
-    /// Removes the stale system resources of all dead [`Node`]s connected to this service.
+    /// Removes the stale system resources of all dead `Node`s connected to this service.
     ///
-    /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions or it
-    /// is currently being cleaned up by another process then the [`Node`] is skipped.
+    /// If a `Node` cannot be cleaned up since the process has insufficient permissions or it
+    /// is currently being cleaned up by another process then the `Node` is skipped.
     pub fn try_cleanup_dead_nodes(&self) -> CleanupState {
         match &*self.value.lock() {
             PortFactoryBlackboardType::Ipc(Some(v)) => CleanupState(v.try_cleanup_dead_nodes()),
@@ -200,13 +200,13 @@ impl PortFactoryBlackboard {
         }
     }
 
-    /// Removes the stale system resources of all dead [`Node`]s connected to this service.
+    /// Removes the stale system resources of all dead `Node`s connected to this service.
     ///
-    /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions then the
-    /// [`Node`] is skipped. If it is currently being cleaned up by another process then the
+    /// If a `Node` cannot be cleaned up since the process has insufficient permissions then the
+    /// `Node` is skipped. If it is currently being cleaned up by another process then the
     /// cleaner will wait until the timeout as either passed or the cleaned was finished.
     ///
-    /// The timeout is applied to every individual dead [`Node`] the function needs to wait on.
+    /// The timeout is applied to every individual dead `Node` the function needs to wait on.
     pub fn blocking_cleanup_dead_nodes(&self, timeout: &Duration) -> CleanupState {
         match &*self.value.lock() {
             PortFactoryBlackboardType::Ipc(Some(v)) => {
