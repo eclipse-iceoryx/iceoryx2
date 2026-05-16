@@ -16,6 +16,8 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 #[conformance_tests]
 pub mod publish_subscribe_discovery {
 
+    use alloc::string::ToString;
+    use alloc::vec;
     use core::fmt::Debug;
     use core::time::Duration;
 

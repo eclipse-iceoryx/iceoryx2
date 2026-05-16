@@ -17,6 +17,8 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 pub mod event_discovery {
 
     use alloc::format;
+    use alloc::string::ToString;
+    use alloc::vec;
     use core::fmt::Debug;
     use core::time::Duration;
 
