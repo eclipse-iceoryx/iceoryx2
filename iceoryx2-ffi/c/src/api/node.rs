@@ -12,6 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
+use crate::api::cleanup_state::iox2_cleanup_state_t;
 use crate::api::{
     AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, ServiceBuilderUnion,
     iox2_callback_context, iox2_callback_progression_e, iox2_config_ptr, iox2_node_name_ptr,
@@ -584,6 +585,92 @@ pub unsafe extern "C" fn iox2_node_list(
         Ok(_) => IOX2_OK,
         Err(e) => e.into_c_int(),
     }
+}
+
+/// Removes the stale system resources of all dead nodess. The dead nodess are also
+/// removed from all registered services.
+///
+/// If a node cannot be cleaned up since the process has insufficient permissions or it
+/// is currently being cleaned up by another process then the node is skipped.
+///
+/// # Arguments
+///
+/// * `service_type` - A [`iox2_service_type_e`]
+/// * `config_ptr` - A valid [`iox2_config_ptr`](crate::iox2_config_ptr)
+/// * `cleanup_state` - A valid pointer to a [`iox2_cleanup_state_t`]
+///
+/// # Safety
+///
+/// * The `config_ptr` must be valid and obtained by ether [`iox2_node_config`] or [`iox2_config_global_config`](crate::iox2_config_global_config)!
+/// * The `cleanup_state` must be a valid pointer.
+///
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_node_try_cleanup_dead_nodes(
+    service_type: iox2_service_type_e,
+    config_ptr: iox2_config_ptr,
+    cleanup_state: *mut iox2_cleanup_state_t,
+) {
+    debug_assert!(!config_ptr.is_null());
+    debug_assert!(!cleanup_state.is_null());
+
+    let config = unsafe { &*config_ptr };
+
+    let result = match service_type {
+        iox2_service_type_e::IPC => Node::<crate::IpcService>::try_cleanup_dead_nodes(config),
+        iox2_service_type_e::LOCAL => Node::<crate::LocalService>::try_cleanup_dead_nodes(config),
+    };
+
+    unsafe { (*cleanup_state).cleanups = result.cleanups };
+    unsafe { (*cleanup_state).failed_cleanups = result.failed_cleanups };
+}
+
+/// Removes the stale system resources of all dead nodes. The dead nodes are also
+/// removed from all registered services.
+///
+/// If a node cannot be cleaned up since the process has insufficient permissions then the
+/// node is skipped. If it is currently being cleaned up by another process then the
+/// cleaner will wait until the timeout as either passed or the cleaned was finished.
+///
+/// The timeout is applied to every individual dead node the function needs to wait on.
+///
+/// # Arguments
+///
+/// * `service_type` - A [`iox2_service_type_e`]
+/// * `config_ptr` - A valid [`iox2_config_ptr`](crate::iox2_config_ptr)
+/// * `cleanup_state` - A valid pointer to a [`iox2_cleanup_state_t`]
+/// * `timeout_secs` - The timeout second part
+/// * `timeout_nsecs` - The timeout nanosecond part
+///
+/// # Safety
+///
+/// * The `config_ptr` must be valid and obtained by ether [`iox2_node_config`] or [`iox2_config_global_config`](crate::iox2_config_global_config)!
+/// * The `cleanup_state` must be a valid pointer.
+///
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_node_blocking_cleanup_dead_nodes(
+    service_type: iox2_service_type_e,
+    config_ptr: iox2_config_ptr,
+    cleanup_state: *mut iox2_cleanup_state_t,
+    timeout_secs: u64,
+    timeout_nsecs: u32,
+) {
+    debug_assert!(!config_ptr.is_null());
+    debug_assert!(!cleanup_state.is_null());
+
+    let config = unsafe { &*config_ptr };
+    let timeout = Duration::from_secs(timeout_secs) + Duration::from_nanos(timeout_nsecs as u64);
+
+    let result = match service_type {
+        iox2_service_type_e::IPC => {
+            Node::<crate::IpcService>::blocking_cleanup_dead_nodes(config, timeout)
+        }
+        iox2_service_type_e::LOCAL => {
+            Node::<crate::LocalService>::blocking_cleanup_dead_nodes(config, timeout)
+        }
+    };
+
+    unsafe { (*cleanup_state).cleanups = result.cleanups };
+    unsafe { (*cleanup_state).failed_cleanups = result.failed_cleanups };
 }
 
 /// Instantiates a [`iox2_service_builder_h`] for a service with the provided name.

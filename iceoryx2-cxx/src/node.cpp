@@ -14,6 +14,7 @@
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/into.hpp"
 #include "iox2/internal/callback_context.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {
 template <ServiceType T>
@@ -96,6 +97,35 @@ auto Node<T>::list(ConfigView config, const iox2::bb::StaticFunction<CallbackPro
 
     return bb::err(bb::into<NodeListFailure>(ret_val));
 }
+
+template <ServiceType T>
+auto Node<T>::try_cleanup_dead_nodes(ConfigView config) -> CleanupState {
+    iox2_cleanup_state_t cleanup_state {};
+
+    iox2_node_try_cleanup_dead_nodes(iox2::bb::into<iox2_service_type_e>(T), config.m_ptr, &cleanup_state);
+
+    CleanupState ret_val {};
+    ret_val.cleanups = cleanup_state.cleanups;
+    ret_val.failed_cleanups = cleanup_state.failed_cleanups;
+    return ret_val;
+}
+
+template <ServiceType T>
+auto Node<T>::blocking_cleanup_dead_nodes(ConfigView config, iox2::bb::Duration timeout) -> CleanupState {
+    iox2_cleanup_state_t cleanup_state {};
+
+    iox2_node_blocking_cleanup_dead_nodes(iox2::bb::into<iox2_service_type_e>(T),
+                                          config.m_ptr,
+                                          &cleanup_state,
+                                          timeout.as_secs(),
+                                          timeout.subsec_nanos());
+
+    CleanupState ret_val {};
+    ret_val.cleanups = cleanup_state.cleanups;
+    ret_val.failed_cleanups = cleanup_state.failed_cleanups;
+    return ret_val;
+}
+
 
 template <ServiceType T>
 void Node<T>::drop() {

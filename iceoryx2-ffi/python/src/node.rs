@@ -186,4 +186,34 @@ impl Node {
             ),
         }
     }
+
+    #[staticmethod]
+    /// Removes the stale system resources of all dead `Node`s. The dead `Node`s are also
+    /// removed from all registered `Service`s.
+    ///
+    /// If a `Node` cannot be cleaned up since the process has insufficient permissions then the
+    /// `Node` is skipped. If it is currently being cleaned up by another process then the
+    /// cleaner will wait until the timeout as either passed or the cleaned was finished.
+    ///
+    /// The timeout is applied to every individual dead `Node` the function needs to wait on.
+    pub fn blocking_cleanup_dead_nodes(
+        service_type: &ServiceType,
+        config: &Config,
+        timeout: &Duration,
+    ) -> CleanupState {
+        match service_type {
+            ServiceType::Ipc => CleanupState(
+                iceoryx2::prelude::Node::<crate::IpcService>::blocking_cleanup_dead_nodes(
+                    &config.0.lock(),
+                    timeout.0,
+                ),
+            ),
+            ServiceType::Local => CleanupState(
+                iceoryx2::prelude::Node::<crate::LocalService>::blocking_cleanup_dead_nodes(
+                    &config.0.lock(),
+                    timeout.0,
+                ),
+            ),
+        }
+    }
 }

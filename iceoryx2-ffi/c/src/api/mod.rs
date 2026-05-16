@@ -24,6 +24,7 @@ mod attribute;
 mod attribute_set;
 mod attribute_specifier;
 mod attribute_verifier;
+mod cleanup_state;
 mod client;
 mod client_details;
 mod config;
