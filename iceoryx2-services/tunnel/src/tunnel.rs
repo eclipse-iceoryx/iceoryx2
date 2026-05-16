@@ -16,6 +16,7 @@ use alloc::collections::BTreeMap;
 use alloc::collections::BTreeSet;
 use alloc::format;
 use alloc::string::String;
+use alloc::vec::Vec;
 
 use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::node::{Node, NodeBuilder};
@@ -118,6 +119,7 @@ impl<S: Service, B: Backend<S>> Relays<S, B> {
 #[derive(Debug, Default)]
 pub struct Config {
     pub discovery_service: Option<String>,
+    pub services: Option<Vec<String>>,
 }
 
 #[derive(Debug)]
@@ -128,6 +130,7 @@ pub struct Tunnel<S: Service, B: for<'a> Backend<S> + Debug> {
     relays: Relays<S, B>,
     subscriber: Option<discovery::subscriber::DiscoverySubscriber<S>>,
     tracker: Option<discovery::tracker::DiscoveryTracker<S>>,
+    services_filter: Option<BTreeSet<String>>,
 }
 
 impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
@@ -188,6 +191,11 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
             }
         };
 
+        let services_filter = tunnel_config
+            .services
+            .as_ref()
+            .map(|names| names.iter().cloned().collect());
+
         Ok(Self {
             node,
             backend,
@@ -195,6 +203,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
             relays: Relays::new(),
             subscriber,
             tracker,
+            services_filter,
         })
     }
 
@@ -207,11 +216,12 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
 
     pub fn discover_over_iceoryx(&mut self) -> Result<(), DiscoveryError> {
         let tunneled_services = self.tunneled_services();
+        let services_filter = &self.services_filter;
         if let Some(subscriber) = &mut self.subscriber {
             fail!(
                 from self,
                 when subscriber.discover(|static_config| {
-                    on_discovery(static_config, &self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays)
+                    on_discovery(static_config, &self.node, &self.backend, &tunneled_services, services_filter.as_ref(), &mut self.ports, &mut self.relays)
                 }),
                 with DiscoveryError::DiscoveryOverService,
                 "Failed to discover services via subscriber to discovery service"
@@ -221,7 +231,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
             fail!(
                 from self,
                 when tracker.discover(|static_config| {
-                    on_discovery(static_config, &self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays)
+                    on_discovery(static_config, &self.node, &self.backend, &tunneled_services, services_filter.as_ref(), &mut self.ports, &mut self.relays)
                 }),
                 with DiscoveryError::DiscoveryOverTracker,
                 "Failed to discover services via discovery tracker"
@@ -233,10 +243,11 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
 
     pub fn discover_over_backend(&mut self) -> Result<(), DiscoveryError> {
         let tunneled_services = self.tunneled_services();
+        let services_filter = self.services_filter.as_ref();
         fail!(
             from self,
             when self.backend.discovery().discover(|static_config| {
-                on_discovery(static_config, &self.node, &self.backend, &tunneled_services, &mut self.ports, &mut self.relays)
+                on_discovery(static_config, &self.node, &self.backend, &tunneled_services, services_filter, &mut self.ports, &mut self.relays)
             }),
             with DiscoveryError::DiscoveryOverBackend,
             "Failed to discover services via Backend"
@@ -287,6 +298,7 @@ fn on_discovery<S: Service, B: Backend<S> + Debug>(
     node: &Node<S>,
     backend: &B,
     services: &BTreeSet<ServiceHash>,
+    services_filter: Option<&BTreeSet<String>>,
     ports: &mut Ports<S>,
     relays: &mut Relays<S, B>,
 ) -> Result<(), DiscoveryError> {
@@ -299,6 +311,18 @@ fn on_discovery<S: Service, B: Backend<S> + Debug>(
     if services.contains(static_config.service_hash()) {
         // Nothing to do.
         return Ok(());
+    }
+
+    if let Some(allowlist) = services_filter {
+        if !allowlist.contains(static_config.name().as_str()) {
+            info!(
+                from origin,
+                "Skipping {}({}): not in services allowlist",
+                static_config.messaging_pattern(),
+                static_config.name()
+            );
+            return Ok(());
+        }
     }
 
     info!(
