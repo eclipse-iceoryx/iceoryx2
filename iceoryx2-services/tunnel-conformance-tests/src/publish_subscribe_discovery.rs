@@ -61,6 +61,7 @@ pub mod publish_subscribe_discovery {
 
         let tunnel_config = TunnelConfig {
             discovery_service: Some("iox2://discovery/services/".into()),
+            ..Default::default()
         };
         let mut tunnel =
             Tunnel::<S, B>::create(&tunnel_config, &iceoryx_config, &B::Config::default()).unwrap();
@@ -163,5 +164,116 @@ pub mod publish_subscribe_discovery {
 
         assert_that!(tunnel_a.tunneled_services().len(), eq 1);
         assert_that!(tunnel_a.tunneled_services().contains(service_b.service_hash()), eq true);
+    }
+
+    #[conformance_test]
+    pub fn allowlist_filters_out_non_listed_services<
+        S: Service,
+        B: Backend<S> + Debug,
+        T: Testing,
+    >() {
+        // === SETUP ===
+        let iceoryx_config = generate_isolated_config();
+        let allowed_name = generate_service_name();
+        let blocked_name = generate_service_name();
+        let node = NodeBuilder::new()
+            .config(&iceoryx_config)
+            .create::<S>()
+            .unwrap();
+        let allowed_service = node
+            .service_builder(&allowed_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+        let blocked_service = node
+            .service_builder(&blocked_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+
+        let tunnel_config = TunnelConfig {
+            services: Some(vec![allowed_name.as_str().to_string()]),
+            ..Default::default()
+        };
+        let mut tunnel =
+            Tunnel::<S, B>::create(&tunnel_config, &iceoryx_config, &B::Config::default()).unwrap();
+
+        // === TEST ===
+        tunnel.discover_over_iceoryx().unwrap();
+
+        assert_that!(tunnel.tunneled_services().len(), eq 1);
+        assert_that!(tunnel.tunneled_services().contains(allowed_service.service_hash()), eq true);
+        assert_that!(tunnel.tunneled_services().contains(blocked_service.service_hash()), eq false);
+    }
+
+    #[conformance_test]
+    pub fn no_allowlist_tunnels_all_services<S: Service, B: Backend<S> + Debug, T: Testing>() {
+        // === SETUP ===
+        let iceoryx_config = generate_isolated_config();
+        let name_a = generate_service_name();
+        let name_b = generate_service_name();
+        let node = NodeBuilder::new()
+            .config(&iceoryx_config)
+            .create::<S>()
+            .unwrap();
+        let service_a = node
+            .service_builder(&name_a)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+        let service_b = node
+            .service_builder(&name_b)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+
+        let tunnel_config = TunnelConfig::default();
+        let mut tunnel =
+            Tunnel::<S, B>::create(&tunnel_config, &iceoryx_config, &B::Config::default()).unwrap();
+
+        // === TEST ===
+        tunnel.discover_over_iceoryx().unwrap();
+
+        assert_that!(tunnel.tunneled_services().len(), eq 2);
+        assert_that!(tunnel.tunneled_services().contains(service_a.service_hash()), eq true);
+        assert_that!(tunnel.tunneled_services().contains(service_b.service_hash()), eq true);
+    }
+
+    #[conformance_test]
+    pub fn empty_allowlist_tunnels_no_services<S: Service, B: Backend<S> + Debug, T: Testing>() {
+        // === SETUP ===
+        let iceoryx_config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new()
+            .config(&iceoryx_config)
+            .create::<S>()
+            .unwrap();
+        let _service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+
+        let tunnel_config = TunnelConfig {
+            services: Some(vec![]),
+            ..Default::default()
+        };
+        let mut tunnel =
+            Tunnel::<S, B>::create(&tunnel_config, &iceoryx_config, &B::Config::default()).unwrap();
+
+        // === TEST ===
+        tunnel.discover_over_iceoryx().unwrap();
+
+        assert_that!(tunnel.tunneled_services().len(), eq 0);
     }
 }
