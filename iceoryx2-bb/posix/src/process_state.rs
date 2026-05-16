@@ -908,7 +908,7 @@ impl ProcessMonitor {
 
         // first we need to open the context_file with AccessMode::Write only since it could
         // be in init mode. After the initialization we can open it with AccessMode::Read
-        match Self::open_file(&self.context_path, AccessMode::Write) {
+        match Self::open_file(self, &self.context_path, AccessMode::Write) {
             Ok(Some(context_file)) => {
                 if context_file.permission().unwrap() == INIT_PERMISSION {
                     return Ok(ProcessState::Starting);
@@ -925,7 +925,7 @@ impl ProcessMonitor {
         }
 
         let other_process_id = if let Some(context_file) =
-            Self::open_file(&self.context_path, AccessMode::Read)?
+            Self::open_file(self, &self.context_path, AccessMode::Read)?
         {
             let other_process_id: UniqueProcessId = match context_file.read_val() {
                 Ok(v) => v,
@@ -944,7 +944,9 @@ impl ProcessMonitor {
             return Ok(ProcessState::DoesNotExist);
         };
 
-        if let Some(owner_lock_file) = Self::open_file(&self.owner_lock_path, AccessMode::Write)? {
+        if let Some(owner_lock_file) =
+            Self::open_file(self, &self.owner_lock_path, AccessMode::Write)?
+        {
             let lock_state = fail!(from self,
                                     when Self::get_lock_state(&owner_lock_file),
                                     "{} since the lock state of the owner_lock file could not be acquired.", msg);
@@ -963,7 +965,7 @@ impl ProcessMonitor {
         // state file is closed. This is a weird case in some OSes that release a file lock as soon as
         // any file descriptor is closed to that file, even when other file descriptors to that same file
         // are still open.
-        match Self::open_file(&self.state_path, AccessMode::Write)? {
+        match Self::open_file(self, &self.state_path, AccessMode::Write)? {
             Some(state_file) => {
                 let lock_state = fail!(from self, when Self::get_lock_state(&state_file),
                                     "{} since the lock state of the state file could not be acquired.", msg);
@@ -1007,12 +1009,15 @@ impl ProcessMonitor {
         Ok(current_state.l_type as _)
     }
 
-    fn open_file(
+    fn open_file<T: Debug + ?Sized>(
+        origin: &T,
         path: &FilePath,
         access_mode: AccessMode,
     ) -> Result<Option<File>, ProcessMonitorOpenError> {
-        let origin = "ProcessMonitor::new()";
-        let msg = format!("Unable to open ProcessMonitor state file \"{path}\"");
+        let msg = format!(
+            "Unable to open ProcessMonitor state file \"{path}\" with access mode {:?}",
+            access_mode
+        );
 
         match FileBuilder::new(path).open_existing(access_mode) {
             Ok(f) => Ok(Some(f)),
@@ -1118,7 +1123,8 @@ impl ProcessCleaner {
             }
         };
 
-        let context_file = match ProcessMonitor::open_file(&context_path, AccessMode::Read) {
+        let context_file = match ProcessMonitor::open_file(origin, &context_path, AccessMode::Read)
+        {
             Ok(Some(file)) => file,
             Ok(None) => {
                 fail!(from origin, with ProcessCleanerCreateError::DoesNotExist,
@@ -1138,7 +1144,11 @@ impl ProcessCleaner {
             }
         };
 
-        let owner_lock_file = match ProcessMonitor::open_file(&owner_lock_path, AccessMode::Write) {
+        let owner_lock_file = match ProcessMonitor::open_file(
+            origin,
+            &owner_lock_path,
+            AccessMode::Write,
+        ) {
             Ok(Some(file)) => file,
             Ok(None) => {
                 fail!(from origin, with ProcessCleanerCreateError::ProcessIsBeingCleanedUpOrCrashedDuringCleanup,
@@ -1155,7 +1165,7 @@ impl ProcessCleaner {
         // state file is closed. This is a weird case in some OSes that release a file lock as soon as
         // any file descriptor is closed to that file, even when other file descriptors to that same file
         // are still open.
-        let state_file = match ProcessMonitor::open_file(path, AccessMode::Write) {
+        let state_file = match ProcessMonitor::open_file(origin, path, AccessMode::Write) {
             Ok(Some(file)) => file,
             Ok(None) => {
                 fail!(from origin, with ProcessCleanerCreateError::ProcessIsBeingCleanedUpOrCrashedDuringCleanup,
