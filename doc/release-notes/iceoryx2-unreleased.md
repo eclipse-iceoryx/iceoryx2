@@ -13,7 +13,7 @@
     conflicts when merging.
 -->
 
-* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
+* [#820](https://github.com/eclipse-iceoryx/iceoryx2/issues/820) Allow restricting the tunnel to a configurable allowlist of services via `Config::services` and the `--service`/`-s` flag on `iox2 tunnel zenoh`
 
 ### Bugfixes
 
