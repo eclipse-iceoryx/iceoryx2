@@ -40,6 +40,15 @@ pub struct Cli {
     pub discovery_service: Option<String>,
 
     #[clap(
+        long = "service",
+        short = 's',
+        value_name = "NAME",
+        action = clap::ArgAction::Append,
+        help = "Restrict tunneling to the listed service names. May be repeated. When omitted, all discovered services are tunneled."
+    )]
+    pub services: Vec<String>,
+
+    #[clap(
         long,
         value_name = "RATE",
         conflicts_with = "reactive",
