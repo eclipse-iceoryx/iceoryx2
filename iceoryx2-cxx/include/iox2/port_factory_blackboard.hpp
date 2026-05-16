@@ -17,6 +17,7 @@
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/static_function.hpp"
 #include "iox2/callback_progression.hpp"
+#include "iox2/cleanup_state.hpp"
 #include "iox2/dynamic_config_blackboard.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/callback_context.hpp"
@@ -74,6 +75,21 @@ class PortFactoryBlackboard {
     /// Iterates over all keys of the [`Service`] and calls for every key the
     /// provided callback.
     void list_keys(const iox2::bb::StaticFunction<CallbackProgression(const KeyType&)>& callback) const;
+
+    /// Removes the stale system resources of all dead [`Node`]s connected to this service.
+    ///
+    /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions or it
+    /// is currently being cleaned up by another process then the [`Node`] is skipped.
+    auto try_cleanup_dead_nodes() const -> CleanupState;
+
+    /// Removes the stale system resources of all dead [`Node`]s connected to this service.
+    ///
+    /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions then the
+    /// [`Node`] is skipped. If it is currently being cleaned up by another process then the
+    /// cleaner will wait until the timeout as either passed or the cleaned was finished.
+    ///
+    /// The timeout is applied to every individual dead [`Node`] the function needs to wait on.
+    auto blocking_cleanup_dead_nodes(iox2::bb::Duration timeout) const -> CleanupState;
 
   private:
     template <typename, ServiceType>
@@ -172,6 +188,32 @@ inline auto PortFactoryBlackboard<S, KeyType>::nodes(
     }
 
     return bb::err(bb::into<NodeListFailure>(ret_val));
+}
+
+template <ServiceType S, typename KeyType>
+inline auto PortFactoryBlackboard<S, KeyType>::try_cleanup_dead_nodes() const -> CleanupState {
+    iox2_cleanup_state_t cleanup_state {};
+
+    iox2_port_factory_blackboard_try_cleanup_dead_nodes(&m_handle, &cleanup_state);
+
+    CleanupState ret_val {};
+    ret_val.cleanups = cleanup_state.cleanups;
+    ret_val.failed_cleanups = cleanup_state.failed_cleanups;
+    return ret_val;
+}
+
+template <ServiceType T, typename KeyType>
+inline auto PortFactoryBlackboard<T, KeyType>::blocking_cleanup_dead_nodes(iox2::bb::Duration timeout) const
+    -> CleanupState {
+    iox2_cleanup_state_t cleanup_state {};
+
+    iox2_port_factory_blackboard_blocking_cleanup_dead_nodes(
+        &m_handle, &cleanup_state, timeout.as_secs(), timeout.subsec_nanos());
+
+    CleanupState ret_val {};
+    ret_val.cleanups = cleanup_state.cleanups;
+    ret_val.failed_cleanups = cleanup_state.failed_cleanups;
+    return ret_val;
 }
 
 template <ServiceType S, typename KeyType>

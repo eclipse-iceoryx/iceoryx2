@@ -126,7 +126,6 @@ auto Node<T>::blocking_cleanup_dead_nodes(ConfigView config, iox2::bb::Duration 
     return ret_val;
 }
 
-
 template <ServiceType T>
 void Node<T>::drop() {
     if (m_handle != nullptr) {
