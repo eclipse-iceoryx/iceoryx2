@@ -52,6 +52,9 @@
 * Expose `allocation_strategy` in the iceoryx2 config for `Publisher`,
   `Client`, and `Server` ports
   [#1358](https://github.com/eclipse-iceoryx/iceoryx2/issues/1358)
+* Allow restricting the tunnel to a configurable allowlist of services via
+  `Config::services` and the `--service`/`-s` flag on `iox2 tunnel zenoh`
+  [#820](https://github.com/eclipse-iceoryx/iceoryx2/issues/820)
 
 ### Bugfixes
 
