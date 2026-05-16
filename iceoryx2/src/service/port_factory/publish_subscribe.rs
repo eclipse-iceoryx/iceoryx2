@@ -172,7 +172,10 @@ impl<
             .service
             .cleanup_dead_nodes_on_open
         {
-            blocking_cleanup_dead_nodes_in_service(&new_self, shared_node);
+            blocking_cleanup_dead_nodes_in_service(
+                &new_self,
+                shared_node.config().global.creation_timeout,
+            );
         }
 
         new_self

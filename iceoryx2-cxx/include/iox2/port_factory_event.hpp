@@ -17,6 +17,7 @@
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/static_function.hpp"
 #include "iox2/callback_progression.hpp"
+#include "iox2/cleanup_state.hpp"
 #include "iox2/dynamic_config_event.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/node_failure_enums.hpp"
@@ -69,6 +70,21 @@ class PortFactoryEvent {
 
     /// Returns a [`PortFactoryNotifier`] to create a new [`Notifier`] port
     auto notifier_builder() const -> PortFactoryNotifier<S>;
+
+    /// Removes the stale system resources of all dead [`Node`]s connected to this service.
+    ///
+    /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions or it
+    /// is currently being cleaned up by another process then the [`Node`] is skipped.
+    auto try_cleanup_dead_nodes() const -> CleanupState;
+
+    /// Removes the stale system resources of all dead [`Node`]s connected to this service.
+    ///
+    /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions then the
+    /// [`Node`] is skipped. If it is currently being cleaned up by another process then the
+    /// cleaner will wait until the timeout as either passed or the cleaned was finished.
+    ///
+    /// The timeout is applied to every individual dead [`Node`] the function needs to wait on.
+    auto blocking_cleanup_dead_nodes(iox2::bb::Duration timeout) const -> CleanupState;
 
   private:
     template <ServiceType>

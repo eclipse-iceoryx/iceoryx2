@@ -111,6 +111,31 @@ auto PortFactoryEvent<S>::notifier_builder() const -> PortFactoryNotifier<S> {
     return PortFactoryNotifier<S> { iox2_port_factory_event_notifier_builder(&m_handle, nullptr) };
 }
 
+template <ServiceType S>
+auto PortFactoryEvent<S>::try_cleanup_dead_nodes() const -> CleanupState {
+    iox2_cleanup_state_t cleanup_state {};
+
+    iox2_port_factory_event_try_cleanup_dead_nodes(&m_handle, &cleanup_state);
+
+    CleanupState ret_val {};
+    ret_val.cleanups = cleanup_state.cleanups;
+    ret_val.failed_cleanups = cleanup_state.failed_cleanups;
+    return ret_val;
+}
+
+template <ServiceType T>
+auto PortFactoryEvent<T>::blocking_cleanup_dead_nodes(iox2::bb::Duration timeout) const -> CleanupState {
+    iox2_cleanup_state_t cleanup_state {};
+
+    iox2_port_factory_event_blocking_cleanup_dead_nodes(
+        &m_handle, &cleanup_state, timeout.as_secs(), timeout.subsec_nanos());
+
+    CleanupState ret_val {};
+    ret_val.cleanups = cleanup_state.cleanups;
+    ret_val.failed_cleanups = cleanup_state.failed_cleanups;
+    return ret_val;
+}
+
 template class PortFactoryEvent<ServiceType::Ipc>;
 template class PortFactoryEvent<ServiceType::Local>;
 } // namespace iox2
