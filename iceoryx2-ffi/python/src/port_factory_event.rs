@@ -15,6 +15,8 @@ use pyo3::prelude::*;
 
 use crate::{
     attribute_set::AttributeSet,
+    cleanup_state::CleanupState,
+    duration::Duration,
     error::NodeListFailure,
     node_state::{AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState},
     parc::Parc,
@@ -121,6 +123,33 @@ impl PortFactoryEvent {
                 })
                 .map_err(|e| NodeListFailure::new_err(format!("{e:?}")))?;
                 Ok(ret_val)
+            }
+        }
+    }
+
+    /// Removes the stale system resources of all dead [`Node`]s connected to this service.
+    ///
+    /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions or it
+    /// is currently being cleaned up by another process then the [`Node`] is skipped.
+    pub fn try_cleanup_dead_nodes(&self) -> CleanupState {
+        match &*self.0.lock() {
+            PortFactoryEventType::Ipc(v) => CleanupState(v.try_cleanup_dead_nodes()),
+            PortFactoryEventType::Local(v) => CleanupState(v.try_cleanup_dead_nodes()),
+        }
+    }
+
+    /// Removes the stale system resources of all dead [`Node`]s connected to this service.
+    ///
+    /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions then the
+    /// [`Node`] is skipped. If it is currently being cleaned up by another process then the
+    /// cleaner will wait until the timeout as either passed or the cleaned was finished.
+    ///
+    /// The timeout is applied to every individual dead [`Node`] the function needs to wait on.
+    pub fn blocking_cleanup_dead_nodes(&self, timeout: &Duration) -> CleanupState {
+        match &*self.0.lock() {
+            PortFactoryEventType::Ipc(v) => CleanupState(v.blocking_cleanup_dead_nodes(timeout.0)),
+            PortFactoryEventType::Local(v) => {
+                CleanupState(v.blocking_cleanup_dead_nodes(timeout.0))
             }
         }
     }
