@@ -15,6 +15,7 @@ use super::{
     iox2_node_list_callback, iox2_reader_details_ptr, iox2_service_name_ptr,
     iox2_writer_details_ptr,
 };
+use crate::api::cleanup_state::iox2_cleanup_state_t;
 use crate::api::{
     AssertNonNullHandle, HandleToType, IntoCInt, KeyFfi, PortFactoryReaderBuilderUnion,
     PortFactoryWriterBuilderUnion, iox2_port_factory_reader_builder_h,
@@ -24,6 +25,7 @@ use crate::api::{
 use crate::{IOX2_OK, iox2_node_list_impl};
 use core::ffi::{c_char, c_int, c_void};
 use core::mem::ManuallyDrop;
+use core::time::Duration;
 use iceoryx2::service::dynamic_config::blackboard::{ReaderDetails, WriterDetails};
 use iceoryx2::service::port_factory::blackboard::PortFactory;
 use iceoryx2_bb_elementary::{CallbackProgression, static_assert::*};
@@ -141,6 +143,103 @@ pub type iox2_list_writers_callback =
 // END types definition
 
 // BEGIN C API
+
+/// Removes the stale system resources of all dead nodes connected to this service.
+///
+/// If a node cannot be cleaned up since the process has insufficient permissions or it
+/// is currently being cleaned up by another process then the node is skipped.
+///
+/// # Arguments
+///
+/// * `service_type` - A [`iox2_service_type_e`]
+/// * `cleanup_state` - A valid pointer to a [`iox2_cleanup_state_t`]
+///
+/// # Safety
+///
+/// * The `handle` must be valid and obtained by [`iox2_service_builder_blackboard_open`](crate::iox2_service_builder_blackboard_open) or
+///   [`iox2_service_builder_blackboard_create`](crate::iox2_service_builder_blackboard_create)!
+/// * The `cleanup_state` must be a valid pointer.
+///
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_port_factory_blackboard_try_cleanup_dead_nodes(
+    port_factory_handle: iox2_port_factory_blackboard_h_ref,
+    cleanup_state: *mut iox2_cleanup_state_t,
+) {
+    use iceoryx2::service::port_factory::PortFactory;
+    debug_assert!(!cleanup_state.is_null());
+
+    port_factory_handle.assert_non_null();
+    let port_factory = unsafe { &mut *port_factory_handle.as_type() };
+
+    let result = match port_factory.service_type {
+        iox2_service_type_e::IPC => unsafe {
+            port_factory.value.as_ref().ipc.try_cleanup_dead_nodes()
+        },
+        iox2_service_type_e::LOCAL => unsafe {
+            port_factory.value.as_ref().local.try_cleanup_dead_nodes()
+        },
+    };
+
+    unsafe { (*cleanup_state).cleanups = result.cleanups };
+    unsafe { (*cleanup_state).failed_cleanups = result.failed_cleanups };
+}
+
+/// Removes the stale system resources of all dead nodes connected to this service.
+///
+/// If a node cannot be cleaned up since the process has insufficient permissions then the
+/// node is skipped. If it is currently being cleaned up by another process then the
+/// cleaner will wait until the timeout as either passed or the cleaned was finished.
+///
+/// The timeout is applied to every individual dead node the function needs to wait on.
+///
+/// # Arguments
+///
+/// * `service_type` - A [`iox2_service_type_e`]
+/// * `cleanup_state` - A valid pointer to a [`iox2_cleanup_state_t`]
+/// * `timeout_secs` - The timeout second part
+/// * `timeout_nsecs` - The timeout nanosecond part
+///
+/// # Safety
+///
+/// * The `handle` must be valid and obtained by [`iox2_service_builder_blackboard_open`](crate::iox2_service_builder_blackboard_open) or
+///   [`iox2_service_builder_blackboard_create`](crate::iox2_service_builder_blackboard_create)!
+/// * The `cleanup_state` must be a valid pointer.
+///
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_port_factory_blackboard_blocking_cleanup_dead_nodes(
+    port_factory_handle: iox2_port_factory_blackboard_h_ref,
+    cleanup_state: *mut iox2_cleanup_state_t,
+    timeout_secs: u64,
+    timeout_nsecs: u32,
+) {
+    use iceoryx2::service::port_factory::PortFactory;
+    debug_assert!(!cleanup_state.is_null());
+
+    let timeout = Duration::from_secs(timeout_secs) + Duration::from_nanos(timeout_nsecs as u64);
+
+    port_factory_handle.assert_non_null();
+    let port_factory = unsafe { &mut *port_factory_handle.as_type() };
+
+    let result = match port_factory.service_type {
+        iox2_service_type_e::IPC => unsafe {
+            port_factory
+                .value
+                .as_ref()
+                .ipc
+                .blocking_cleanup_dead_nodes(timeout)
+        },
+        iox2_service_type_e::LOCAL => unsafe {
+            port_factory
+                .value
+                .as_ref()
+                .local
+                .blocking_cleanup_dead_nodes(timeout)
+        },
+    };
+
+    unsafe { (*cleanup_state).cleanups = result.cleanups };
+    unsafe { (*cleanup_state).failed_cleanups = result.failed_cleanups };
+}
 
 /// Instantiates a [`iox2_port_factory_writer_builder_h`] to build a writer.
 ///
