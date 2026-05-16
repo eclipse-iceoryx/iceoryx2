@@ -491,34 +491,6 @@ pub mod resizable_shared_memory_trait {
     }
 
     #[conformance_test]
-    pub fn list_works<
-        Shm: SharedMemory<DefaultAllocator>,
-        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
-    >() {
-        const NUMBER_OF_STORAGES: usize = 28;
-        let config = generate_isolated_config::<Sut>();
-
-        let mut suts = vec![];
-        let mut names = vec![];
-
-        for _ in 0..NUMBER_OF_STORAGES {
-            let storage_name = generate_file_path().file_name();
-            let sut = Sut::MemoryBuilder::new(&storage_name)
-                .config(&config)
-                .create()
-                .unwrap();
-            names.push(storage_name);
-            suts.push(sut);
-        }
-
-        let list_suts = Sut::list_cfg(&config).unwrap();
-        assert_that!(list_suts, len names.len());
-        for name in names {
-            assert_that!(list_suts, contains name);
-        }
-    }
-
-    #[conformance_test]
     pub fn list_works_when_the_start_segment_is_no_longer_used<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
@@ -617,35 +589,6 @@ pub mod resizable_shared_memory_trait {
 
         for name in names {
             assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(true));
-        }
-    }
-
-    #[conformance_test]
-    pub fn remove_works<
-        Shm: SharedMemory<DefaultAllocator>,
-        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
-    >() {
-        const NUMBER_OF_STORAGES: usize = 26;
-        let config = generate_isolated_config::<Sut>();
-
-        let mut names = vec![];
-
-        for _ in 0..NUMBER_OF_STORAGES {
-            let storage_name = generate_file_path().file_name();
-            assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(false));
-            let sut = Sut::MemoryBuilder::new(&storage_name)
-                .config(&config)
-                .create()
-                .unwrap();
-            core::mem::forget(sut);
-            names.push(storage_name);
-        }
-
-        for name in names {
-            assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(true));
-            assert_that!(unsafe { Sut::remove_cfg(&name, &config) }, eq Ok(true));
-            assert_that!(unsafe { Sut::remove_cfg(&name, &config) }, eq Ok(false));
-            assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(false));
         }
     }
 

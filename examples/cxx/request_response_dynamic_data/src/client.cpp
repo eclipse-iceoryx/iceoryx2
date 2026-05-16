@@ -20,7 +20,7 @@ auto main() -> int {
     set_log_level_from_env_or(LogLevel::Info);
     auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
-    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").value())
+    auto service = node.service_builder(ServiceName::create("example//dynamic_request_response").value())
                        .request_response<bb::Slice<uint8_t>, bb::Slice<uint8_t>>()
                        .open_or_create()
                        .value();

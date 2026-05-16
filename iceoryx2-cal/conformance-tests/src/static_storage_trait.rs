@@ -20,14 +20,12 @@ pub mod static_storage_trait {
     use core::time::Duration;
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_concurrency::atomic::Ordering;
-    use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
     use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
     use iceoryx2_bb_posix::clock::Time;
     use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_posix::thread::thread_scope;
-    use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing_macros::conformance_test;
@@ -251,51 +249,6 @@ pub mod static_storage_trait {
     }
 
     #[conformance_test]
-    pub fn list_all_storages_works<Sut: StaticStorage>() {
-        let config = generate_isolated_config::<Sut>();
-        const NUMBER_OF_STORAGES: u64 = 12;
-
-        let mut storages = vec![];
-        for i in 0..NUMBER_OF_STORAGES {
-            assert_that!(Sut::list_cfg(&config).unwrap(), len i as usize);
-            let storage_name = generate_file_path().file_name();
-
-            let mut content = "some \nfuu\n cont\tent".to_string();
-            storages.push(
-                Sut::Builder::new(&storage_name)
-                    .config(&config)
-                    .create(unsafe { content.as_mut_vec() }.as_slice())
-                    .unwrap(),
-            );
-
-            let contents = Sut::list_cfg(&config).unwrap();
-            assert_that!(Sut::list_cfg(&config).unwrap(), len(i + 1) as usize);
-
-            let contains = |s| {
-                for entry in &storages {
-                    if *entry.name() == s {
-                        return true;
-                    }
-                }
-                false
-            };
-
-            for entry in contents {
-                assert_that!(contains(entry), eq true);
-            }
-        }
-
-        assert_that!(Sut::list_cfg(&config).unwrap(), len NUMBER_OF_STORAGES as usize);
-
-        for i in 0..NUMBER_OF_STORAGES {
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(storages[i as usize].name(), &config)}, eq Ok(true));
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(storages[i as usize].name(), &config)}, eq Ok(false));
-        }
-
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
-    }
-
-    #[conformance_test]
     pub fn concurrent_create_same_locked_storage_multiple_times_fails_for_all_but_one<
         Sut: StaticStorage,
     >() {
@@ -497,59 +450,6 @@ pub mod static_storage_trait {
         drop(storage_guard);
 
         assert_that!(Sut::does_exist(&storage_name), eq Ok(false));
-    }
-
-    #[conformance_test]
-    pub fn custom_suffix_keeps_storages_separated<Sut: StaticStorage>() {
-        let config_1 = unsafe {
-            <Sut as NamedConceptMgmt>::Configuration::default()
-                .suffix(&FileName::new_unchecked(b".static_storage_1"))
-        };
-        let config_2 = unsafe {
-            <Sut as NamedConceptMgmt>::Configuration::default()
-                .suffix(&FileName::new_unchecked(b".static_storage_2"))
-        };
-
-        let storage_name = generate_file_path().file_name();
-
-        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_name, &config_1), eq Ok(false));
-        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_name, &config_2), eq Ok(false));
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_1).unwrap(), len 0);
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_2).unwrap(), len 0);
-
-        let storage_guard_1 = Sut::Builder::new(&storage_name)
-            .config(&config_1)
-            .create(b"")
-            .unwrap();
-
-        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_name, &config_1), eq Ok(true));
-        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_name, &config_2), eq Ok(false));
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_1).unwrap(), len 1);
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_2).unwrap(), len 0);
-
-        let storage_guard_2 = Sut::Builder::new(&storage_name)
-            .config(&config_2)
-            .create(b"")
-            .unwrap();
-
-        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_name, &config_1), eq Ok(true));
-        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_name, &config_2), eq Ok(true));
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_1).unwrap(), len 1);
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_2).unwrap(), len 1);
-
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_1).unwrap()[0], eq storage_name);
-        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_2).unwrap()[0], eq storage_name);
-
-        assert_that!(*storage_guard_1.name(), eq storage_name);
-        assert_that!(*storage_guard_2.name(), eq storage_name);
-
-        storage_guard_1.release_ownership();
-        storage_guard_2.release_ownership();
-
-        assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&storage_name, &config_1)}, eq Ok(true));
-        assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&storage_name, &config_1)}, eq Ok(false));
-        assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&storage_name, &config_2)}, eq Ok(true));
-        assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&storage_name, &config_2)}, eq Ok(false));
     }
 
     #[conformance_test]

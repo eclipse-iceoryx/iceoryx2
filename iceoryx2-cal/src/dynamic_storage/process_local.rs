@@ -62,6 +62,7 @@ use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_log::warn;
 use iceoryx2_log::{fail, fatal_panic};
 
 pub use crate::dynamic_storage::*;
@@ -338,10 +339,11 @@ impl<T: Send + Sync + Debug + 'static> Drop for Storage<T> {
         if self.has_ownership() {
             match unsafe { Self::remove_cfg(&self.name, &self.config) } {
                 Ok(false) => {
-                    fatal_panic!(from self, "This should never happen! Unable to remove dynamic storage since it does not exist.");
+                    warn!(from self,
+                        "Unable to remove dynamic storage since it does not exist. Someone else removed the dynamic storage that is owned by this object.");
                 }
                 Err(e) => {
-                    fatal_panic!(from self, "This should never happen! Unable to remove dynamic storage ({:?}).", e);
+                    warn!(from self, "Unable to remove dynamic storage ({:?}).", e);
                 }
                 Ok(_) => (),
             }

@@ -27,5 +27,7 @@ auto NodeDetails::config() const -> const Config& {
     return m_config;
 }
 
-
+auto NodeDetails::executable() const -> const iox2::bb::FileName& {
+    return m_executable;
+}
 } // namespace iox2
