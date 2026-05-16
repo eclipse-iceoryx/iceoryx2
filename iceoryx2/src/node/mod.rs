@@ -187,6 +187,7 @@ use crate::identifiers::UniqueNodeId;
 use crate::node::global_management_segment::GlobalManagementSegment;
 use crate::node::node_name::NodeName;
 use crate::service::builder::{Builder, OpenDynamicStorageFailure};
+use crate::service::config_scheme::port_tag_config;
 use crate::service::config_scheme::{
     node_details_path, node_monitoring_config, service_tag_config,
 };
@@ -976,6 +977,30 @@ impl<Service: service::Service> SharedNode<Service> {
 
     pub(crate) fn name(&self) -> &NodeName {
         &self.state.details.name
+    }
+
+    pub(crate) fn create_port_tag(
+        &self,
+        origin: &str,
+        msg: &str,
+        port_id: u128,
+    ) -> Result<Service::StaticStorage, StaticStorageCreateError> {
+        let name = FileName::new(port_id.to_string().as_bytes())
+            .expect("A number is always a valid file name");
+
+        match <<Service::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
+            Service::StaticStorage,
+        >>::new(&name)
+        .config(&port_tag_config::<Service>(self.config(), self.id()))
+        .has_ownership(true)
+        .create(&[])
+        {
+            Ok(static_storage) => Ok(static_storage),
+            Err(e) => {
+                fail!(from origin, with e,
+                    "{msg} since the port tag could not be created. [{e:?}]");
+            }
+        }
     }
 }
 

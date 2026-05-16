@@ -183,6 +183,7 @@ pub(crate) struct PublisherSharedState<Service: service::Service> {
     subscriber_list_state: UnsafeCell<ContainerState<SubscriberDetails>>,
     history: Option<UnsafeCell<Queue<OffsetAndSize>>>,
     is_active: AtomicBool,
+    _port_tag: Service::StaticStorage,
 }
 
 impl<Service: service::Service> Abandonable for PublisherSharedState<Service> {
@@ -393,12 +394,19 @@ impl<
         let origin = "Publisher::new()";
         let port_id = UniquePublisherId::new();
         let config = &publisher_factory.config;
+        let service = &publisher_factory.factory.service;
+        // !MUST! be the first thing that is created when a new port is instantiated otherwise the
+        // port resources might leak if this process is killed in between.
+        let port_tag = service
+            .shared_node()
+            .create_port_tag(origin, msg, port_id.0.value())
+            .unwrap();
+
         let static_config = publisher_factory
             .factory
             .service
             .static_config()
             .publish_subscribe();
-        let service = &publisher_factory.factory.service;
         let subscriber_list = &service
             .dynamic_storage()
             .get()
@@ -461,6 +469,7 @@ impl<
 
         let publisher_shared_state =
             <Service as service::Service>::ArcThreadSafetyPolicy::new(PublisherSharedState {
+                _port_tag: port_tag,
                 is_active: AtomicBool::new(true),
                 sender: Sender {
                     data_segment,
