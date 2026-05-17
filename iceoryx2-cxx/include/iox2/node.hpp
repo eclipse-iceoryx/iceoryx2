@@ -18,6 +18,7 @@
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/static_function.hpp"
 #include "iox2/callback_progression.hpp"
+#include "iox2/cleanup_state.hpp"
 #include "iox2/config.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/node_name.hpp"
@@ -68,6 +69,23 @@ class Node {
 
     /// Returns the [`SignalHandlingMode`] with which the [`Node`] was created.
     auto signal_handling_mode() const -> SignalHandlingMode;
+
+    /// Removes the stale system resources of all dead [`Node`]s. The dead [`Node`]s are also
+    /// removed from all registered [`Service`](crate::service::Service)s.
+    ///
+    /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions or it
+    /// is currently being cleaned up by another process then the [`Node`] is skipped.
+    static auto try_cleanup_dead_nodes(ConfigView config) -> CleanupState;
+
+    /// Removes the stale system resources of all dead [`Node`]s. The dead [`Node`]s are also
+    /// removed from all registered [`Service`](crate::service::Service)s.
+    ///
+    /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions then the
+    /// [`Node`] is skipped. If it is currently being cleaned up by another process then the
+    /// cleaner will wait until the timeout as either passed or the cleaned was finished.
+    ///
+    /// The timeout is applied to every individual dead [`Node`] the function needs to wait on.
+    static auto blocking_cleanup_dead_nodes(ConfigView config, iox2::bb::Duration timeout) -> CleanupState;
 
   private:
     explicit Node(iox2_node_h handle);

@@ -25,6 +25,9 @@
   [#1263](https://github.com/eclipse-iceoryx/iceoryx2/issues/1263)
 * Add missing C++ APIs to access messaging pattern specific static config
   [#1353](https://github.com/eclipse-iceoryx/iceoryx2/issues/1353)
+* Expose `allocation_strategy` in the iceoryx2 config for `Publisher`,
+  `Client`, and `Server` ports
+  [#1358](https://github.com/eclipse-iceoryx/iceoryx2/issues/1358)
 * Implement `core::error::Error` for `bb::posix` error enums
   [#1362](https://github.com/eclipse-iceoryx/iceoryx2/issues/1362)
 * Add `thread_scope` as `std::thread::scope` counterpart
@@ -49,9 +52,9 @@
   [#1547](https://github.com/eclipse-iceoryx/iceoryx2/issues/1547)
 * Enhance degradation handler and add unable to deliver handler
   [#1573](https://github.com/eclipse-iceoryx/iceoryx2/issues/1573)
-* Expose `allocation_strategy` in the iceoryx2 config for `Publisher`,
-  `Client`, and `Server` ports
-  [#1358](https://github.com/eclipse-iceoryx/iceoryx2/issues/1358)
+* Add `{try|blocking}_cleanup_dead_nodes` in `Node` and `PortFactory` to trigger
+  explicit dead `Node` cleanup
+  [#1584](https://github.com/eclipse-iceoryx/iceoryx2/issues/1584)
 
 ### Bugfixes
 

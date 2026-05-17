@@ -17,6 +17,7 @@
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/static_function.hpp"
 #include "iox2/callback_progression.hpp"
+#include "iox2/cleanup_state.hpp"
 #include "iox2/dynamic_config_request_response.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
@@ -80,6 +81,21 @@ class PortFactoryRequestResponse {
     /// [`crate::port::server::Server`] port.
     auto server_builder() const
         -> PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>;
+
+    /// Removes the stale system resources of all dead [`Node`]s connected to this service.
+    ///
+    /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions or it
+    /// is currently being cleaned up by another process then the [`Node`] is skipped.
+    auto try_cleanup_dead_nodes() const -> CleanupState;
+
+    /// Removes the stale system resources of all dead [`Node`]s connected to this service.
+    ///
+    /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions then the
+    /// [`Node`] is skipped. If it is currently being cleaned up by another process then the
+    /// cleaner will wait until the timeout as either passed or the cleaned was finished.
+    ///
+    /// The timeout is applied to every individual dead [`Node`] the function needs to wait on.
+    auto blocking_cleanup_dead_nodes(iox2::bb::Duration timeout) const -> CleanupState;
 
   private:
     template <typename, typename, typename, typename, ServiceType>
@@ -213,6 +229,41 @@ PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponseP
     }
 
     return bb::err(bb::into<NodeListFailure>(ret_val));
+}
+
+template <ServiceType S,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+inline auto PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    try_cleanup_dead_nodes() const -> CleanupState {
+    iox2_cleanup_state_t cleanup_state {};
+
+    iox2_port_factory_request_response_try_cleanup_dead_nodes(&m_handle, &cleanup_state);
+
+    CleanupState ret_val {};
+    ret_val.cleanups = cleanup_state.cleanups;
+    ret_val.failed_cleanups = cleanup_state.failed_cleanups;
+    return ret_val;
+}
+
+template <ServiceType T,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+inline auto PortFactoryRequestResponse<T, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    blocking_cleanup_dead_nodes(iox2::bb::Duration timeout) const -> CleanupState {
+    iox2_cleanup_state_t cleanup_state {};
+
+    iox2_port_factory_request_response_blocking_cleanup_dead_nodes(
+        &m_handle, &cleanup_state, timeout.as_secs(), timeout.subsec_nanos());
+
+    CleanupState ret_val {};
+    ret_val.cleanups = cleanup_state.cleanups;
+    ret_val.failed_cleanups = cleanup_state.failed_cleanups;
+    return ret_val;
 }
 
 template <ServiceType Service,

@@ -12,6 +12,7 @@
 
 extern crate alloc;
 use core::fmt::Debug;
+use core::time::Duration;
 
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
@@ -19,7 +20,7 @@ use iceoryx2_log::{debug, warn};
 
 use crate::config::Config;
 use crate::identifiers::UniqueServiceId;
-use crate::node::{NodeListFailure, NodeState, NodeView, SharedNode};
+use crate::node::{CleanupState, NodeListFailure, NodeState, NodeView};
 use crate::service::service_hash::ServiceHash;
 
 use super::dynamic_config::DynamicConfig;
@@ -105,19 +106,45 @@ pub trait PortFactory: Debug + Abandonable {
         &self,
         callback: F,
     ) -> Result<(), NodeListFailure>;
+
+    /// Removes the stale system resources of all dead [`Node`](crate::node::Node)s connected to this service.
+    ///
+    /// If a [`Node`](crate::node::Node) cannot be cleaned up since the process has insufficient permissions or it
+    /// is currently being cleaned up by another process then the [`Node`](crate::node::Node) is skipped.
+    fn try_cleanup_dead_nodes(&self) -> CleanupState {
+        blocking_cleanup_dead_nodes_in_service(self, Duration::ZERO)
+    }
+
+    /// Removes the stale system resources of all dead [`Node`](crate::node::Node)s connected to this service.
+    ///
+    /// If a [`Node`](crate::node::Node) cannot be cleaned up since the process has insufficient permissions then the
+    /// [`Node`](crate::node::Node) is skipped. If it is currently being cleaned up by another process then the
+    /// cleaner will wait until the timeout as either passed or the cleaned was finished.
+    ///
+    /// The timeout is applied to every individual dead [`Node`](crate::node::Node) the function needs to wait on.
+    fn blocking_cleanup_dead_nodes(&self, timeout: Duration) -> CleanupState {
+        blocking_cleanup_dead_nodes_in_service(self, timeout)
+    }
 }
 
 pub(crate) fn blocking_cleanup_dead_nodes_in_service<T: PortFactory>(
     port_factory: &T,
-    shared_node: SharedNode<T::Service>,
-) {
+    timeout: Duration,
+) -> CleanupState {
+    let mut cleanup_state = CleanupState {
+        failed_cleanups: 0,
+        cleanups: 0,
+    };
+
     if let Err(e) =  port_factory.nodes(|node_state| {
         if let NodeState::Dead(node) = node_state {
             let node_id = *node.id();
             debug!(from port_factory, "Dead node ({:?}) detected", node_id);
-            let timeout = shared_node.config().global.creation_timeout;
             if let Err(e) = node.blocking_remove_stale_resources(timeout) {
+                cleanup_state.failed_cleanups += 1;
                 warn!(from port_factory, "Failed to remove dead node ({:?}) from service. Abandoned ports of the dead node might block the creation of new ports! [{e:?}]", node_id);
+            } else {
+                cleanup_state.cleanups += 1;
             }
         }
         CallbackProgression::Continue
@@ -125,6 +152,8 @@ pub(crate) fn blocking_cleanup_dead_nodes_in_service<T: PortFactory>(
         warn!(from port_factory,
             "Unable to iterate through service nodes to detect dead nodes. This might cause that abandoned ports of dead nodes block the creation of new ports! [{e:?}]");
     }
+
+    cleanup_state
 }
 
 pub(crate) fn nodes<

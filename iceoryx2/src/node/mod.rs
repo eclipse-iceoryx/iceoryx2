@@ -1112,9 +1112,21 @@ impl<Service: service::Service> Node<Service> {
     /// Removes the stale system resources of all dead [`Node`]s. The dead [`Node`]s are also
     /// removed from all registered [`Service`](crate::service::Service)s.
     ///
-    /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions then
-    /// the [`Node`] is skipped.
+    /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions or it
+    /// is currently being cleaned up by another process then the [`Node`] is skipped.
     pub fn try_cleanup_dead_nodes(config: &Config) -> CleanupState {
+        Self::blocking_cleanup_dead_nodes(config, Duration::ZERO)
+    }
+
+    /// Removes the stale system resources of all dead [`Node`]s. The dead [`Node`]s are also
+    /// removed from all registered [`Service`](crate::service::Service)s.
+    ///
+    /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions then the
+    /// [`Node`] is skipped. If it is currently being cleaned up by another process then the
+    /// cleaner will wait until the timeout as either passed or the cleaned was finished.
+    ///
+    /// The timeout is applied to every individual dead [`Node`] the function needs to wait on.
+    pub fn blocking_cleanup_dead_nodes(config: &Config, timeout: Duration) -> CleanupState {
         let mut cleanup_state = CleanupState {
             cleanups: 0,
             failed_cleanups: 0,
@@ -1128,7 +1140,7 @@ impl<Service: service::Service> Node<Service> {
             if let NodeState::Dead(dead_node) = node_state {
                 let node_id = *dead_node.id();
                 debug!(from origin, "Dead node ({:?}) detected", node_id);
-                match dead_node.try_remove_stale_resources() {
+                match dead_node.blocking_remove_stale_resources(timeout) {
                     Ok(_) => {
                         cleanup_state.cleanups += 1;
                         trace!(from origin, "The dead node ({:?}) was successfully removed.", node_id)
