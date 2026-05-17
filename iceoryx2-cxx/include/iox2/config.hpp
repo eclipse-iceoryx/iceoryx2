@@ -49,6 +49,10 @@ class Node {
     /// Set the suffix of the files where the node configuration is stored.
     void set_static_config_suffix(const iox2::bb::FileName& value) &&;
     /// The suffix of the service tags.
+    auto port_tag_suffix() && -> const char*;
+    /// Set the suffix of the service tags.
+    void set_port_tag_suffix(const iox2::bb::FileName& value) &&;
+    /// The suffix of the service tags.
     auto service_tag_suffix() && -> const char*;
     /// Set the suffix of the service tags.
     void set_service_tag_suffix(const iox2::bb::FileName& value) &&;

@@ -516,6 +516,14 @@ void Node::set_service_tag_suffix(const iox2::bb::FileName& value) && {
     iox2_config_global_node_set_service_tag_suffix(m_config, value.as_string().unchecked_access().c_str());
 }
 
+auto Node::port_tag_suffix() && -> const char* {
+    return iox2_config_global_node_port_tag_suffix(m_config);
+}
+
+void Node::set_port_tag_suffix(const iox2::bb::FileName& value) && {
+    iox2_config_global_node_set_port_tag_suffix(m_config, value.as_string().unchecked_access().c_str());
+}
+
 auto Node::cleanup_dead_nodes_on_creation() && -> bool {
     return iox2_config_global_node_cleanup_dead_nodes_on_creation(m_config);
 }

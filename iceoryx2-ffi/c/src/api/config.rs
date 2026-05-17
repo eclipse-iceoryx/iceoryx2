@@ -677,6 +677,56 @@ pub unsafe extern "C" fn iox2_config_global_node_set_static_config_suffix(
     }
 }
 
+/// Returns the suffix of the port tags.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_config_global_node_port_tag_suffix(
+    handle: iox2_config_h_ref,
+) -> *const c_char {
+    handle.assert_non_null();
+    unsafe {
+        let config = &*handle.as_type();
+        config
+            .value
+            .as_ref()
+            .value
+            .global
+            .node
+            .port_tag_suffix
+            .as_c_str()
+    }
+}
+
+/// Sets the suffix of the port tags.
+///
+/// Returns: [`iox2_semantic_string_error_e`](crate::api::iox2_semantic_string_error_e) when an
+/// invalid file name was provided
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+/// * `value` - A valid file name containing the suffix
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_config_global_node_set_port_tag_suffix(
+    handle: iox2_config_h_ref,
+    value: *const c_char,
+) -> c_int {
+    handle.assert_non_null();
+    unsafe {
+        let config = &mut *handle.as_type();
+        match FileName::from_c_str(value) {
+            Ok(n) => {
+                config.value.as_mut().value.global.node.port_tag_suffix = n;
+                IOX2_OK as _
+            }
+            Err(e) => e as c_int,
+        }
+    }
+}
+
 /// Returns the suffix of the service tags.
 ///
 /// # Safety

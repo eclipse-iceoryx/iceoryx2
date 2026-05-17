@@ -293,6 +293,14 @@ TEST(Config, global_node_service_tag_suffix) {
     ASSERT_THAT(config.global().node().service_tag_suffix(), StrEq(test_value.as_string().unchecked_access().c_str()));
 }
 
+TEST(Config, global_node_port_tag_suffix) {
+    const auto test_value = iox2::bb::FileName::create("i_am_the_mighty_fluffy_rocket_named_nala").value();
+    auto config = Config();
+
+    config.global().node().set_port_tag_suffix(test_value);
+    ASSERT_THAT(config.global().node().port_tag_suffix(), StrEq(test_value.as_string().unchecked_access().c_str()));
+}
+
 TEST(Config, global_node_cleanup_dead_nodes_on_creation) {
     auto config = Config();
 
