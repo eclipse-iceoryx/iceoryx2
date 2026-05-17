@@ -136,6 +136,7 @@ pub(crate) struct SharedServerState<Service: service::Service> {
     pub(crate) request_receiver: Receiver<Service>,
     client_list_state: UnsafeCell<ContainerState<ClientDetails>>,
     service_state: SharedServiceState<Service, NoResource>,
+    port_tag: Service::StaticStorage,
 }
 
 impl<Service: service::Service> Abandonable for SharedServerState<Service> {
@@ -146,6 +147,9 @@ impl<Service: service::Service> Abandonable for SharedServerState<Service> {
         unsafe { Receiver::abandon_in_place(NonNull::iox2_from_mut(&mut this.request_receiver)) };
         unsafe {
             SharedServiceState::abandon_in_place(NonNull::iox2_from_mut(&mut this.service_state))
+        };
+        unsafe {
+            Service::StaticStorage::abandon_in_place(NonNull::iox2_from_mut(&mut this.port_tag))
         };
     }
 }
@@ -322,6 +326,19 @@ impl<
         let origin = "Server::new()";
         let server_id = UniqueServerId::new();
         let service = &server_factory.factory.service;
+        // !MUST! be the first thing that is created when a new port is instantiated otherwise the
+        // port resources might leak if this process is killed in between.
+        let port_tag = match service
+            .shared_node()
+            .create_port_tag(origin, msg, server_id.0.value())
+        {
+            Ok(port_tag) => port_tag,
+            Err(e) => {
+                fail!(from origin, with ServerCreateError::UnableToCreatePortTag,
+                        "{msg} since the port tag, that is required for cleanup, could not be created. [{e:?}]");
+            }
+        };
+
         let static_config = server_factory.factory.static_config();
         let number_of_requests_per_client =
             unsafe { service.static_config().messaging_pattern.request_response() }
@@ -448,6 +465,7 @@ impl<
         };
 
         let shared_state = Service::ArcThreadSafetyPolicy::new(SharedServerState {
+            port_tag,
             config: server_factory.config,
             request_receiver,
             client_list_state: UnsafeCell::new(unsafe { client_list.get_state() }),

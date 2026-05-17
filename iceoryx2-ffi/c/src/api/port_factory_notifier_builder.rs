@@ -34,6 +34,7 @@ use core::mem::ManuallyDrop;
 pub enum iox2_notifier_create_error_e {
     EXCEEDS_MAX_SUPPORTED_NOTIFIERS = IOX2_OK as isize + 1,
     FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY,
+    UNABLE_TO_CREATE_PORT_TAG,
 }
 
 impl IntoCInt for NotifierCreateError {
@@ -44,6 +45,9 @@ impl IntoCInt for NotifierCreateError {
             }
             NotifierCreateError::FailedToDeployThreadsafetyPolicy => {
                 iox2_notifier_create_error_e::FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY
+            }
+            NotifierCreateError::UnableToCreatePortTag => {
+                iox2_notifier_create_error_e::UNABLE_TO_CREATE_PORT_TAG
             }
         }) as c_int
     }

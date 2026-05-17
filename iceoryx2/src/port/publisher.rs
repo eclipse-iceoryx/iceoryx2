@@ -160,6 +160,8 @@ pub enum PublisherCreateError {
     /// Caused by a failure when instantiating a [`ArcSyncPolicy`] defined in the
     /// [`Service`](crate::service::Service) as `ArcThreadSafetyPolicy`.
     FailedToDeployThreadsafetyPolicy,
+    /// The tracking port tag, required for cleanup, could not be created.
+    UnableToCreatePortTag,
 }
 
 impl core::fmt::Display for PublisherCreateError {
@@ -183,13 +185,16 @@ pub(crate) struct PublisherSharedState<Service: service::Service> {
     subscriber_list_state: UnsafeCell<ContainerState<SubscriberDetails>>,
     history: Option<UnsafeCell<Queue<OffsetAndSize>>>,
     is_active: AtomicBool,
-    _port_tag: Service::StaticStorage,
+    port_tag: Service::StaticStorage,
 }
 
 impl<Service: service::Service> Abandonable for PublisherSharedState<Service> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe { Sender::<Service>::abandon_in_place(NonNull::iox2_from_mut(&mut this.sender)) }
+        unsafe {
+            Service::StaticStorage::abandon_in_place(NonNull::iox2_from_mut(&mut this.port_tag))
+        }
     }
 }
 
@@ -397,10 +402,16 @@ impl<
         let service = &publisher_factory.factory.service;
         // !MUST! be the first thing that is created when a new port is instantiated otherwise the
         // port resources might leak if this process is killed in between.
-        let port_tag = service
+        let port_tag = match service
             .shared_node()
             .create_port_tag(origin, msg, port_id.0.value())
-            .unwrap();
+        {
+            Ok(port_tag) => port_tag,
+            Err(e) => {
+                fail!(from origin, with PublisherCreateError::UnableToCreatePortTag,
+                        "{msg} since the port tag, that is required for cleanup, could not be created. [{e:?}]");
+            }
+        };
 
         let static_config = publisher_factory
             .factory
@@ -469,7 +480,7 @@ impl<
 
         let publisher_shared_state =
             <Service as service::Service>::ArcThreadSafetyPolicy::new(PublisherSharedState {
-                _port_tag: port_tag,
+                port_tag,
                 is_active: AtomicBool::new(true),
                 sender: Sender {
                     data_segment,

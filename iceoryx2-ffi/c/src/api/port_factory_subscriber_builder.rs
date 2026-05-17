@@ -37,6 +37,7 @@ pub enum iox2_subscriber_create_error_e {
     EXCEEDS_MAX_SUPPORTED_SUBSCRIBERS = IOX2_OK as isize + 1,
     BUFFER_SIZE_EXCEEDS_MAX_SUPPORTED_BUFFER_SIZE_OF_SERVICE,
     FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY,
+    UNABLE_TO_CREATE_PORT_TAG,
 }
 
 impl IntoCInt for SubscriberCreateError {
@@ -50,6 +51,9 @@ impl IntoCInt for SubscriberCreateError {
             }
             SubscriberCreateError::FailedToDeployThreadsafetyPolicy => {
                 iox2_subscriber_create_error_e::FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY
+            }
+            SubscriberCreateError::UnableToCreatePortTag => {
+                iox2_subscriber_create_error_e::UNABLE_TO_CREATE_PORT_TAG
             }
         }) as c_int
     }

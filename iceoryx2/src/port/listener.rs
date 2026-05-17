@@ -95,6 +95,8 @@ pub enum ListenerCreateError {
     /// Caused by a failure when instantiating a [`ArcSyncPolicy`] defined in the
     /// [`Service`](crate::service::Service) as `ArcThreadSafetyPolicy`.
     FailedToDeployThreadsafetyPolicy,
+    /// The tracking port tag, required for cleanup, could not be created.
+    UnableToCreatePortTag,
 }
 
 impl core::fmt::Display for ListenerCreateError {
@@ -113,6 +115,7 @@ pub struct Listener<Service: service::Service> {
         Service::ArcThreadSafetyPolicy<<Service::Event as iceoryx2_cal::event::Event>::Listener>,
     service_state: SharedServiceState<Service, NoResource>,
     listener_id: UniqueListenerId,
+    port_tag: Service::StaticStorage,
 }
 
 unsafe impl<Service: service::Service> Send for Listener<Service> where
@@ -155,6 +158,9 @@ impl<Service: service::Service> Abandonable for Listener<Service> {
         unsafe {
             SharedServiceState::abandon_in_place(NonNull::iox2_from_mut(&mut this.service_state))
         };
+        unsafe {
+            Service::StaticStorage::abandon_in_place(NonNull::iox2_from_mut(&mut this.port_tag))
+        };
     }
 }
 
@@ -178,6 +184,20 @@ impl<Service: service::Service> Listener<Service> {
         let origin = "Listener::new()";
         let listener_id = UniqueListenerId::new();
 
+        // !MUST! be the first thing that is created when a new port is instantiated otherwise the
+        // port resources might leak if this process is killed in between.
+        let port_tag = match service.shared_node().create_port_tag(
+            origin,
+            msg,
+            listener_id.0.value(),
+        ) {
+            Ok(port_tag) => port_tag,
+            Err(e) => {
+                fail!(from origin, with ListenerCreateError::UnableToCreatePortTag,
+                        "{msg} since the port tag, that is required for cleanup, could not be created. [{e:?}]");
+            }
+        };
+
         let event_name = event_concept_name(&listener_id);
         let event_config = event_config::<Service>(service.shared_node().config());
 
@@ -197,6 +217,7 @@ impl<Service: service::Service> Listener<Service> {
         };
 
         let mut new_self = Self {
+            port_tag,
             service_state: service.clone(),
             dynamic_listener_handle: None,
             listener,

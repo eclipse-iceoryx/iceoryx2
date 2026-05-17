@@ -35,6 +35,7 @@ pub enum iox2_writer_create_error_e {
     EXCEEDS_MAX_SUPPORTED_WRITERS = IOX2_OK as isize + 1,
     INTERNAL_FAILURE,
     FAILED_TO_DEPLOY_THREADSAFETY_POLICY,
+    UNABLE_TO_CREATE_PORT_TAG,
 }
 
 impl IntoCInt for WriterCreateError {
@@ -46,6 +47,9 @@ impl IntoCInt for WriterCreateError {
             WriterCreateError::InternalFailure => iox2_writer_create_error_e::INTERNAL_FAILURE,
             WriterCreateError::FailedToDeployThreadsafetyPolicy => {
                 iox2_writer_create_error_e::FAILED_TO_DEPLOY_THREADSAFETY_POLICY
+            }
+            WriterCreateError::UnableToCreatePortTag => {
+                iox2_writer_create_error_e::UNABLE_TO_CREATE_PORT_TAG
             }
         }) as c_int
     }

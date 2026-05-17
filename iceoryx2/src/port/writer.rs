@@ -129,6 +129,8 @@ pub enum WriterCreateError {
     /// Caused by a failure when instantiating a [`ArcSyncPolicy`] defined in the
     /// [`Service`](crate::service::Service) as `ArcThreadSafetyPolicy`.
     FailedToDeployThreadsafetyPolicy,
+    /// The tracking port tag, required for cleanup, could not be created.
+    UnableToCreatePortTag,
 }
 
 impl core::fmt::Display for WriterCreateError {
@@ -147,6 +149,7 @@ pub struct Writer<
 > {
     shared_state: Service::ArcThreadSafetyPolicy<WriterSharedState<Service, KeyType>>,
     writer_id: UniqueWriterId,
+    port_tag: Service::StaticStorage,
 }
 
 impl<
@@ -161,6 +164,9 @@ impl<
                 &mut this.shared_state,
             ))
         };
+        unsafe {
+            Service::StaticStorage::abandon_in_place(NonNull::iox2_from_mut(&mut this.port_tag))
+        };
     }
 }
 
@@ -174,8 +180,20 @@ impl<
     ) -> Result<Self, WriterCreateError> {
         let origin = "Writer::new()";
         let msg = "Unable to create Writer port";
-
         let writer_id = UniqueWriterId::new();
+        // !MUST! be the first thing that is created when a new port is instantiated otherwise the
+        // port resources might leak if this process is killed in between.
+        let port_tag = match service
+            .shared_node()
+            .create_port_tag(origin, msg, writer_id.0.value())
+        {
+            Ok(port_tag) => port_tag,
+            Err(e) => {
+                fail!(from origin, with WriterCreateError::UnableToCreatePortTag,
+                        "{msg} since the port tag, that is required for cleanup, could not be created. [{e:?}]");
+            }
+        };
+
         let shared_state = Service::ArcThreadSafetyPolicy::new(WriterSharedState {
             service_state: service.clone(),
             dynamic_writer_handle: UnsafeCell::new(None),
@@ -193,6 +211,7 @@ impl<
         let new_self = Self {
             shared_state,
             writer_id,
+            port_tag,
         };
 
         core::sync::atomic::compiler_fence(Ordering::SeqCst);
