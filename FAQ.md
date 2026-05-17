@@ -29,6 +29,7 @@
     * [`iceoryx2-ffi-c` does not contain this feature](#iceoryx2-ffi-c-does-not-contain-this-feature)
     * [Service In Corrupted state](#service-in-corrupted-state)
     * [Unable To Connect Due To `IncompatibleTypes`](#unable-to-connect-due-to-incompatibletypes)
+    * [Failed To Create Port Due To `ExceedsMaxSuppported**`](#failed-to-create-port-due-to-exceedsmaxsupported)
 
 ## Tips And Tricks
 
@@ -598,3 +599,56 @@ the `ZeroCopySend` derive macro:
 #[type_name("MyType")]
 pub struct MyType {}
 ```
+
+### Failed To Create Port Due To `ExceedsMaxSuppported**`
+
+This error typically occurs when a previous process crashed, and a restarted
+process  attempts to create a new port before the system has fully identified
+the old process as dead.
+
+**The Fix:** The immediate workaround is to explicitly call
+`try_cleanup_dead_nodes()` on the service. If the returned `CleanupState`
+indicates that at least one node was cleaned up, retry the port creation.
+
+```rust
+let node = NodeBuilder::new().create::<ipc::Service>()?;
+
+let service = node
+    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    .publish_subscribe::<TransmissionData>()
+    .open_or_create()?;
+
+let publisher = loop {
+    match service.publisher_builder().create() {
+        Ok(publisher) => break publisher,
+        // Instead of aborting, attempt to clean up dead nodes in the system.
+        Err(PublisherCreateError::ExceedsMaxSupportedPublishers) => {
+            // Check the return value to confirm if a dead node was actually removed.
+            if !service.try_cleanup_dead_nodes().nodes_cleaned_up() {
+                // Optional: Add a small delay or limit retries here to avoid tight loops
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+        }
+        Err(e) => return Err(e.into()),
+    }
+};
+```
+
+**Important:** In a stable production environment, this scenario should rarely
+occur. It is most likely to happen during volatile development cycles where
+processes crash frequently under heavy system load.
+
+**Background:** This issue stems from the crashed process remaining in a
+"zombie" state because it hasn't been reaped by its parent. On Linux, refer to
+`man 2 waitpid`. The parent process must call `wait()` to release the resources
+associated with the child.
+
+If this doesn't happen:
+
+1. The Process ID (PID) remains discoverable in the system.
+2. Corresponding file locks remain active.
+3. iceoryx2 cannot detect the process as dead because the OS still reports the
+   PID as valid.
+
+Consequently, iceoryx2 assumes the maximum number of publishers/publishers are
+still active, triggering the `ExceedsMaxSupported**` error.
