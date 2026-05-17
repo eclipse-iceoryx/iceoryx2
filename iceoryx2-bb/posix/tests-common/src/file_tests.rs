@@ -177,7 +177,7 @@ pub fn simple_read_write_works() {
 
     let mut content = "oh look what is in the file \n in in that line \t fuuu".to_string();
     let result = file.write(unsafe { content.as_mut_vec() }.as_slice());
-    assert_that!(file.flush(), is_ok);
+    assert_that!(file.sync_all(), is_ok);
 
     assert_that!(result, is_ok);
     assert_that!(content, len result.ok().unwrap() as usize);
@@ -201,7 +201,7 @@ pub fn write_appends_content_to_file() {
         file.write(b"a horse with a blanket does not require shoes"),
         is_ok
     );
-    assert_that!(file.flush(), is_ok);
+    assert_that!(file.sync_all(), is_ok);
     assert_that!(file.seek(0), is_ok);
 
     let mut read_content = String::new();
@@ -216,7 +216,7 @@ pub fn multiple_read_calls_move_file_cursor() {
     let mut file = test.create_file(&test.file);
 
     assert_that!(file.write(b"hakuna matata"), is_ok);
-    assert_that!(file.flush(), is_ok);
+    assert_that!(file.sync_all(), is_ok);
     assert_that!(file.seek(0), is_ok);
 
     let mut buffer = [0u8; 1];
@@ -239,7 +239,7 @@ pub fn read_line_works() {
         file.write(b"whatever you do\nwherever you go\ndo not forget your towel!"),
         is_ok
     );
-    assert_that!(file.flush(), is_ok);
+    assert_that!(file.sync_all(), is_ok);
     assert_that!(file.seek(0), is_ok);
 
     let mut buffer = String::new();
@@ -479,7 +479,7 @@ pub fn simple_read_write_of_a_value_works() {
     let mut file = test.create_file(&test.file);
 
     file.write_val(&value_written).unwrap();
-    assert_that!(file.flush(), is_ok);
+    assert_that!(file.sync_all(), is_ok);
     assert_that!(file.seek(0), is_ok);
 
     let value_read = file.read_val::<TestValue>().unwrap();
@@ -501,7 +501,7 @@ pub fn simple_read_at_write_at_of_a_value_works() {
     file.write(&[255u8; OFFSET * 2]).unwrap();
 
     file.write_val_at(OFFSET as u64, &value_written).unwrap();
-    assert_that!(file.flush(), is_ok);
+    assert_that!(file.sync_all(), is_ok);
 
     let value_read = file.read_val_at::<TestValue>(OFFSET as u64).unwrap();
 
@@ -518,7 +518,7 @@ pub fn when_file_does_not_contain_the_required_bytes_read_val_fails() {
     let mut file = test.create_file(&test.file);
 
     file.write_val(&value_written).unwrap();
-    assert_that!(file.flush(), is_ok);
+    assert_that!(file.sync_all(), is_ok);
     assert_that!(file.seek(0), is_ok);
 
     assert_that!(file.read_val::<TestValue>().err(), eq Some(FileReadValError::FileSizeTooSmallToContainValue));
@@ -535,7 +535,7 @@ pub fn when_file_does_not_contain_the_required_bytes_read_val_at_fails() {
     let mut file = test.create_file(&test.file);
 
     file.write_val(&value_written).unwrap();
-    assert_that!(file.flush(), is_ok);
+    assert_that!(file.sync_all(), is_ok);
     assert_that!(file.seek(0), is_ok);
 
     assert_that!(file.read_val_at::<TestValue>(1).err(), eq Some(FileReadValError::FileSizeTooSmallToContainValue));
