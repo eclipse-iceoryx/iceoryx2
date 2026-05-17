@@ -266,7 +266,7 @@ impl<Service: service::Service> Receiver<Service> {
             if let Some(connection) = connection_storage.get_mut(key) {
                 let receiver = &connection.receiver;
                 let (connection_has_data, connection_has_borrows) =
-                    Self::all_receiver_channel_has_data_and_has_borrows(receiver);
+                    Self::receiver_channels_have_data_or_borrows(receiver);
 
                 let keep_connection = connection_has_data | connection_has_borrows;
                 if keep_connection {
@@ -274,7 +274,7 @@ impl<Service: service::Service> Receiver<Service> {
                         unsafe { &mut *to_be_removed_connections.get() };
                     if to_be_removed_connections.push(key).is_err() {
                         let msg_begin = "Expired connection buffer exceeded.";
-                        let msg_disconnet_with_data =
+                        let msg_disconnect_with_data =
                             "A sender disconnected with undelivered data that will be discarded.";
                         let msg_disconnet_with_borrows = "A sender disconnected with data that is still borrowed. This will lead to segmentation faults when the data is accessed later on.";
                         let msg_end =
@@ -294,14 +294,14 @@ impl<Service: service::Service> Receiver<Service> {
                         } else if connection_has_borrows {
                             // we did not find a connection that can safely be removed to create some space for the connection with borrows;
                             // removing a connection with borrows might lead to segfaults -> try to remove a connection without borrows
-                            let index_and_key_to_remove = Self::find_connection_without_data(
+                            let index_and_key_to_remove = Self::find_connection_without_borrows(
                                 connection_storage,
                                 to_be_removed_connections,
                             );
 
                             if let Some((index, key)) = index_and_key_to_remove {
                                 // we found a connection without borrows which can be removed from the container
-                                warn!(from self, "{} {} {}", msg_begin, msg_disconnet_with_data, msg_end);
+                                warn!(from self, "{} {} {}", msg_begin, msg_disconnect_with_data, msg_end);
                                 to_be_removed_connections.remove(index);
                                 connection_storage.remove(key);
                             }
@@ -311,7 +311,7 @@ impl<Service: service::Service> Receiver<Service> {
                             if connection_has_borrows {
                                 fatal_panic!(from self, "{} {} {}", msg_begin, msg_disconnet_with_borrows, msg_end);
                             } else {
-                                warn!(from self, "{} {} {}", msg_begin, msg_disconnet_with_data, msg_end);
+                                warn!(from self, "{} {} {}", msg_begin, msg_disconnect_with_data, msg_end);
                             }
                             connection_storage.remove(key);
                         }
@@ -334,14 +334,14 @@ impl<Service: service::Service> Receiver<Service> {
         )
     }
 
-    fn find_connection_without_data(
+    fn find_connection_without_borrows(
         connection_storage: &SlotMap<Connection<Service>>,
         connections: &PolymorphicVec<'static, SlotMapKey, HeapAllocator>,
     ) -> Option<(usize, SlotMapKey)> {
         Self::find_connection_with_condition(
             connection_storage,
             connections,
-            |has_data, _has_borrows| !has_data,
+            |_has_data, has_borrows| !has_borrows,
         )
     }
 
@@ -361,8 +361,7 @@ impl<Service: service::Service> Receiver<Service> {
             };
 
             let receiver = &connection.receiver;
-            let (has_data, has_borrows) =
-                Self::all_receiver_channel_has_data_and_has_borrows(receiver);
+            let (has_data, has_borrows) = Self::receiver_channels_have_data_or_borrows(receiver);
 
             if condition(has_data, has_borrows) {
                 index_and_key = Some((n, connection_key));
@@ -373,7 +372,7 @@ impl<Service: service::Service> Receiver<Service> {
         index_and_key
     }
 
-    fn all_receiver_channel_has_data_and_has_borrows(
+    fn receiver_channels_have_data_or_borrows(
         receiver: &<Service::Connection as ZeroCopyConnection>::Receiver,
     ) -> (bool, bool) {
         let mut has_data = false;
@@ -514,7 +513,7 @@ impl<Service: service::Service> Receiver<Service> {
                         let receiver = &connection.receiver;
                         // this point is only reached if there are no data in the connection
                         let (_has_data, has_borrows) =
-                            Self::all_receiver_channel_has_data_and_has_borrows(receiver);
+                            Self::receiver_channels_have_data_or_borrows(receiver);
                         has_borrows
                     } else {
                         false
