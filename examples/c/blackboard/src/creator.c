@@ -69,6 +69,7 @@ void drop_res(struct res* const value) { // NOLINT
 int main(void) {
     // Setup logging
     iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
+    int ret_val = 0;
 
     struct res example;
     init_res(&example);
@@ -76,16 +77,18 @@ int main(void) {
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
     iox2_node_h node_handle = NULL;
-    if (iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node_handle) != IOX2_OK) {
-        printf("Could not create node!\n");
+    ret_val = iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node_handle);
+    if (ret_val != IOX2_OK) {
+        printf("Could not create node! Error: %d\n", ret_val);
         goto end;
     }
 
     // create service name
     const char* service_name_value = "My/Funk/ServiceName";
     iox2_service_name_h service_name = NULL;
-    if (iox2_service_name_new(NULL, service_name_value, strlen(service_name_value), &service_name) != IOX2_OK) {
-        printf("Unable to create service name!\n");
+    ret_val = iox2_service_name_new(NULL, service_name_value, strlen(service_name_value), &service_name);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create service name! Error: %d\n", ret_val);
         goto end;
     }
 
@@ -96,13 +99,13 @@ int main(void) {
         iox2_service_builder_blackboard_creator(service_builder);
 
     // set key type
-    if (iox2_service_builder_blackboard_creator_set_key_type_details(&service_builder_blackboard,
-                                                                     IOX2_KEY_TYPE_NAME,
-                                                                     strlen(IOX2_KEY_TYPE_NAME),
-                                                                     sizeof(struct BlackboardKey),
-                                                                     alignof(struct BlackboardKey))
-        != IOX2_OK) {
-        printf("Unable to set key type details!\n");
+    ret_val = iox2_service_builder_blackboard_creator_set_key_type_details(&service_builder_blackboard,
+                                                                           IOX2_KEY_TYPE_NAME,
+                                                                           strlen(IOX2_KEY_TYPE_NAME),
+                                                                           sizeof(struct BlackboardKey),
+                                                                           alignof(struct BlackboardKey));
+    if (ret_val != IOX2_OK) {
+        printf("Unable to set key type details! Error: %d\n", ret_val);
         goto end;
     }
 
@@ -147,8 +150,9 @@ int main(void) {
 
     // create service
     iox2_port_factory_blackboard_h service = NULL;
-    if (iox2_service_builder_blackboard_create(service_builder_blackboard, NULL, &service) != IOX2_OK) {
-        printf("Unable to create service!\n");
+    ret_val = iox2_service_builder_blackboard_create(service_builder_blackboard, NULL, &service);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create service! Error: %d\n", ret_val);
         goto end;
     }
     printf("Blackboard created.\n");
@@ -156,36 +160,37 @@ int main(void) {
     // create writer and entry handles
     iox2_port_factory_writer_builder_h writer_builder = iox2_port_factory_blackboard_writer_builder(&service, NULL);
     iox2_writer_h writer = NULL;
-    if (iox2_port_factory_writer_builder_create(writer_builder, NULL, &writer) != IOX2_OK) {
-        printf("Unable to create writer!\n");
+    ret_val = iox2_port_factory_writer_builder_create(writer_builder, NULL, &writer);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create writer! Error: %d\n", ret_val);
         goto end;
     }
 
     iox2_entry_handle_mut_h entry_handle_mut_key_0 = NULL;
-    if (iox2_writer_entry(&writer,
-                          NULL,
-                          &entry_handle_mut_key_0,
-                          &key_0,
-                          value_type_name_int,
-                          strlen(value_type_name_int),
-                          sizeof(int32_t),
-                          alignof(int32_t))
-        != IOX2_OK) {
-        printf("Unable to create entry_handle_mut!\n");
+    ret_val = iox2_writer_entry(&writer,
+                                NULL,
+                                &entry_handle_mut_key_0,
+                                &key_0,
+                                value_type_name_int,
+                                strlen(value_type_name_int),
+                                sizeof(int32_t),
+                                alignof(int32_t));
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create entry_handle_mut! Error: %d\n", ret_val);
         goto end;
     }
 
     iox2_entry_handle_mut_h entry_handle_mut_key_1 = NULL;
-    if (iox2_writer_entry(&writer,
-                          NULL,
-                          &entry_handle_mut_key_1,
-                          &key_1,
-                          value_type_name_double,
-                          strlen(value_type_name_double),
-                          sizeof(double),
-                          alignof(double))
-        != IOX2_OK) {
-        printf("Unable to create entry_handle_mut!\n");
+    ret_val = iox2_writer_entry(&writer,
+                                NULL,
+                                &entry_handle_mut_key_1,
+                                &key_1,
+                                value_type_name_double,
+                                strlen(value_type_name_double),
+                                sizeof(double),
+                                alignof(double));
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create entry_handle_mut! Error: %d\n", ret_val);
         goto end;
     }
 

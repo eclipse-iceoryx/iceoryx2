@@ -19,20 +19,23 @@
 int main(void) {
     // Setup logging
     iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
+    int ret_val = 0;
 
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
     iox2_node_h node_handle = NULL;
-    if (iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node_handle) != IOX2_OK) {
-        printf("Could not create node!\n");
+    ret_val = iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node_handle);
+    if (ret_val != IOX2_OK) {
+        printf("Could not create node! Error: %d\n", ret_val);
         goto end;
     }
 
     // create service name
     const char* service_name_value = "MyEventName";
     iox2_service_name_h service_name = NULL;
-    if (iox2_service_name_new(NULL, service_name_value, strlen(service_name_value), &service_name) != IOX2_OK) {
-        printf("Unable to create service name!\n");
+    ret_val = iox2_service_name_new(NULL, service_name_value, strlen(service_name_value), &service_name);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create service name! Error: %d\n", ret_val);
         goto drop_node;
     }
 
@@ -41,16 +44,18 @@ int main(void) {
     iox2_service_builder_h service_builder = iox2_node_service_builder(&node_handle, NULL, service_name_ptr);
     iox2_service_builder_event_h service_builder_event = iox2_service_builder_event(service_builder);
     iox2_port_factory_event_h service = NULL;
-    if (iox2_service_builder_event_open_or_create(service_builder_event, NULL, &service) != IOX2_OK) {
-        printf("Unable to create service!\n");
+    ret_val = iox2_service_builder_event_open_or_create(service_builder_event, NULL, &service);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create service! Error: %d\n", ret_val);
         goto drop_service_name;
     }
 
     // create listener
     iox2_port_factory_listener_builder_h listener_builder = iox2_port_factory_event_listener_builder(&service, NULL);
     iox2_listener_h listener = NULL;
-    if (iox2_port_factory_listener_builder_create(listener_builder, NULL, &listener) != IOX2_OK) {
-        printf("Unable to create listener!\n");
+    ret_val = iox2_port_factory_listener_builder_create(listener_builder, NULL, &listener);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create listener! Error: %d\n", ret_val);
         goto drop_service;
     }
     iox2_event_id_t event_id;
@@ -59,8 +64,9 @@ int main(void) {
 
     while (iox2_node_wait(&node_handle, 0, 0) == IOX2_OK) {
         bool has_received_one = false;
-        if (iox2_listener_timed_wait_one(&listener, &event_id, &has_received_one, 1, 0) != IOX2_OK) {
-            printf("Unable to wait for notification!\n");
+        ret_val = iox2_listener_timed_wait_one(&listener, &event_id, &has_received_one, 1, 0);
+        if (ret_val != IOX2_OK) {
+            printf("Unable to wait for notification! Error: %d\n", ret_val);
             goto drop_listener;
         }
 

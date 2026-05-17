@@ -101,22 +101,24 @@ void drop_res(struct res* const value) { // NOLINT
 
 static void* background_thread(void* unused) {
     (void) unused;
+    int ret_val = 0;
 
     // Another node is created inside this thread to communicate with the main thread
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
     // Optionally, a name can be provided to the node which helps identifying them later during
     // debugging or introspection
     const char* node_name_value = "threadnode";
-    if (iox2_node_name_new(NULL, node_name_value, strlen(node_name_value), &example.thread_node_name)) {
-        printf("unable to create node name!\n");
+    ret_val = iox2_node_name_new(NULL, node_name_value, strlen(node_name_value), &example.thread_node_name);
+    if (ret_val != IOX2_OK) {
+        printf("unable to create node name! Error: %d\n", ret_val);
         return NULL;
     }
     iox2_node_name_ptr node_name_ptr = iox2_cast_node_name_ptr(example.thread_node_name);
     iox2_node_builder_set_name(&node_builder_handle, node_name_ptr);
 
-    if (iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_LOCAL, &example.thread_node)
-        != IOX2_OK) {
-        printf("Could not create node!\n");
+    ret_val = iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_LOCAL, &example.thread_node);
+    if (ret_val != IOX2_OK) {
+        printf("Could not create node! Error: %d\n", ret_val);
         return NULL;
     }
 
@@ -127,37 +129,39 @@ static void* background_thread(void* unused) {
 
     // set pub sub payload type
     const char* payload_type_name = "u64";
-    if (iox2_service_builder_pub_sub_set_payload_type_details(&service_builder_pub_sub,
-                                                              iox2_type_variant_e_FIXED_SIZE,
-                                                              payload_type_name,
-                                                              strlen(payload_type_name),
-                                                              sizeof(uint64_t),
-                                                              alignof(uint64_t))
-        != IOX2_OK) {
-        printf("Unable to set type details\n");
+    ret_val = iox2_service_builder_pub_sub_set_payload_type_details(&service_builder_pub_sub,
+                                                                    iox2_type_variant_e_FIXED_SIZE,
+                                                                    payload_type_name,
+                                                                    strlen(payload_type_name),
+                                                                    sizeof(uint64_t),
+                                                                    alignof(uint64_t));
+    if (ret_val != IOX2_OK) {
+        printf("Unable to set type details! Error: %d\n", ret_val);
         return NULL;
     }
 
     // create service
-    if (iox2_service_builder_pub_sub_open_or_create(service_builder_pub_sub, NULL, &example.thread_service)
-        != IOX2_OK) {
-        printf("Unable to create service!\n");
+    ret_val = iox2_service_builder_pub_sub_open_or_create(service_builder_pub_sub, NULL, &example.thread_service);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create service! Error: %d\n", ret_val);
         return NULL;
     }
 
     // create subscriber
     iox2_port_factory_subscriber_builder_h subscriber_builder =
         iox2_port_factory_pub_sub_subscriber_builder(&example.thread_service, NULL);
-    if (iox2_port_factory_subscriber_builder_create(subscriber_builder, NULL, &example.subscriber) != IOX2_OK) {
-        printf("Unable to create subscriber!\n");
+    ret_val = iox2_port_factory_subscriber_builder_create(subscriber_builder, NULL, &example.subscriber);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create subscriber! Error: %d\n", ret_val);
         return NULL;
     }
 
     while (iox2_node_wait(&example.thread_node, 1, 0) == IOX2_OK) {
         // receive sample
         iox2_sample_h sample = NULL;
-        if (iox2_subscriber_receive(&example.subscriber, NULL, &sample) != IOX2_OK) {
-            printf("Failed to receive sample\n");
+        ret_val = iox2_subscriber_receive(&example.subscriber, NULL, &sample);
+        if (ret_val != IOX2_OK) {
+            printf("Failed to receive sample! Error: %d\n", ret_val);
             return NULL;
         }
 
@@ -176,14 +180,16 @@ static void* background_thread(void* unused) {
 int main(void) {
     // Setup logging
     iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
+    int ret_val = 0;
 
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
     // Optionally, a name can be provided to the node which helps identifying them later during
     // debugging or introspection
     const char* node_name_value = "mainnode";
-    if (iox2_node_name_new(NULL, node_name_value, strlen(node_name_value), &example.node_name)) {
-        printf("unable to create node name!\n");
+    ret_val = iox2_node_name_new(NULL, node_name_value, strlen(node_name_value), &example.node_name);
+    if (ret_val != IOX2_OK) {
+        printf("unable to create node name! Error: %d\n", ret_val);
         goto end;
     }
     iox2_node_name_ptr node_name_ptr = iox2_cast_node_name_ptr(example.node_name);
@@ -193,15 +199,17 @@ int main(void) {
     // like shared memory or unix domain sockets but mechanisms like socketpairs and heap.
     //
     // Those services can communicate only within a single process.
-    if (iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_LOCAL, &example.node) != IOX2_OK) {
-        printf("Could not create node!\n");
+    ret_val = iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_LOCAL, &example.node);
+    if (ret_val != IOX2_OK) {
+        printf("Could not create node! Error: %d\n", ret_val);
         goto end;
     }
 
     // create service name
     const char* service_name_value = "Service-Variants-Example";
-    if (iox2_service_name_new(NULL, service_name_value, strlen(service_name_value), &example.service_name) != IOX2_OK) {
-        printf("Unable to create service name!\n");
+    ret_val = iox2_service_name_new(NULL, service_name_value, strlen(service_name_value), &example.service_name);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create service name! Error: %d\n", ret_val);
         goto end;
     }
 
@@ -212,33 +220,35 @@ int main(void) {
 
     // set pub sub payload type
     const char* payload_type_name = "u64";
-    if (iox2_service_builder_pub_sub_set_payload_type_details(&service_builder_pub_sub,
-                                                              iox2_type_variant_e_FIXED_SIZE,
-                                                              payload_type_name,
-                                                              strlen(payload_type_name),
-                                                              sizeof(uint64_t),
-                                                              alignof(uint64_t))
-        != IOX2_OK) {
-        printf("Unable to set type details\n");
+    ret_val = iox2_service_builder_pub_sub_set_payload_type_details(&service_builder_pub_sub,
+                                                                    iox2_type_variant_e_FIXED_SIZE,
+                                                                    payload_type_name,
+                                                                    strlen(payload_type_name),
+                                                                    sizeof(uint64_t),
+                                                                    alignof(uint64_t));
+    if (ret_val != IOX2_OK) {
+        printf("Unable to set type details! Error: %d\n", ret_val);
         goto end;
     }
 
     // create service
-    if (iox2_service_builder_pub_sub_open_or_create(service_builder_pub_sub, NULL, &example.service) != IOX2_OK) {
-        printf("Unable to create service!\n");
+    ret_val = iox2_service_builder_pub_sub_open_or_create(service_builder_pub_sub, NULL, &example.service);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create service! Error: %d\n", ret_val);
         goto end;
     }
 
     // create publisher
     iox2_port_factory_publisher_builder_h publisher_builder =
         iox2_port_factory_pub_sub_publisher_builder(&example.service, NULL);
-    if (iox2_port_factory_publisher_builder_create(publisher_builder, NULL, &example.publisher) != IOX2_OK) {
-        printf("Unable to create publisher!\n");
+    ret_val = iox2_port_factory_publisher_builder_create(publisher_builder, NULL, &example.publisher);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create publisher! Error: %d\n", ret_val);
         goto end;
     }
 
     if (pthread_create(&example.background_thread, NULL, background_thread, NULL) != 0) {
-        printf("unable to start background thread\n");
+        printf("Unable to start background thread!\n");
         goto end;
     }
     example.background_thread_started = true;
@@ -247,8 +257,9 @@ int main(void) {
     uint64_t counter = 0;
     while (iox2_node_wait(&example.node, 1, 0) == IOX2_OK) {
         printf("send: %llu\n", (unsigned long long) counter);
-        if (iox2_publisher_send_copy(&example.publisher, (void*) &counter, sizeof(counter), NULL) != IOX2_OK) {
-            printf("Failed to send sample\n");
+        ret_val = iox2_publisher_send_copy(&example.publisher, (void*) &counter, sizeof(counter), NULL);
+        if (ret_val != IOX2_OK) {
+            printf("Failed to send sample! Error: %d\n", ret_val);
             goto end;
         }
         counter += 1;

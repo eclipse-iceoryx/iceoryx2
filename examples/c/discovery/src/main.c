@@ -23,7 +23,8 @@ int main(void) {
     // Setup logging
     iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
 
-    if (iox2_service_list(iox2_service_type_e_IPC, iox2_config_global_config(), list_callback, NULL) != IOX2_OK) {
-        printf("Failed to list all services.");
+    int ret_val = iox2_service_list(iox2_service_type_e_IPC, iox2_config_global_config(), list_callback, NULL);
+    if (ret_val != IOX2_OK) {
+        printf("Failed to list all services! Error: %d\n", ret_val);
     }
 }

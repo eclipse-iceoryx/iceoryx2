@@ -27,6 +27,7 @@ int main(int argc, char** argv) {
 
     // Setup logging
     iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
+    int ret_val = 0;
 
     // create a new config based on the global config
     iox2_config_ptr config_ptr = iox2_config_global_config();
@@ -36,17 +37,19 @@ int main(int argc, char** argv) {
 
     // The domain name becomes the prefix for all resources.
     // Therefore, different domain names never share the same resources.
-    if (iox2_config_global_set_prefix(&config, argv[1]) != IOX2_OK) {
+    ret_val = iox2_config_global_set_prefix(&config, argv[1]);
+    if (ret_val != IOX2_OK) {
         iox2_config_drop(config);
-        printf("invalid domain name\"%s\"\n", argv[1]);
+        printf("Invalid domain name\"%s\"! Error: %d\n", argv[1], ret_val);
         exit(-1);
     }
 
     printf("\nServices running in domain \"%s\":\n", argv[1]);
 
     // use the custom config when listing the services
-    if (iox2_service_list(iox2_service_type_e_IPC, config_ptr, list_callback, NULL) != IOX2_OK) {
-        printf("Failed to list all services.");
+    ret_val = iox2_service_list(iox2_service_type_e_IPC, config_ptr, list_callback, NULL);
+    if (ret_val != IOX2_OK) {
+        printf("Failed to list all services! Error: %d\n", ret_val);
     }
 
     iox2_config_drop(config);

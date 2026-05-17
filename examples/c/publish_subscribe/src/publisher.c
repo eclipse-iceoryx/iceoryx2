@@ -25,20 +25,23 @@
 int main(void) {
     // Setup logging
     iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
+    int ret_val = 0;
 
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
     iox2_node_h node_handle = NULL;
-    if (iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node_handle) != IOX2_OK) {
-        printf("Could not create node!\n");
+    ret_val = iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node_handle);
+    if (ret_val != IOX2_OK) {
+        printf("Could not create node! Error: %d\n", ret_val);
         goto end;
     }
 
     // create service name
     const char* service_name_value = "My/Funk/ServiceName";
     iox2_service_name_h service_name = NULL;
-    if (iox2_service_name_new(NULL, service_name_value, strlen(service_name_value), &service_name) != IOX2_OK) {
-        printf("Unable to create service name!\n");
+    ret_val = iox2_service_name_new(NULL, service_name_value, strlen(service_name_value), &service_name);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create service name! Error: %d\n", ret_val);
         goto drop_node;
     }
 
@@ -49,21 +52,22 @@ int main(void) {
 
     // set pub sub payload type
     const char* payload_type_name = "16TransmissionData";
-    if (iox2_service_builder_pub_sub_set_payload_type_details(&service_builder_pub_sub,
-                                                              iox2_type_variant_e_FIXED_SIZE,
-                                                              payload_type_name,
-                                                              strlen(payload_type_name),
-                                                              sizeof(struct TransmissionData),
-                                                              alignof(struct TransmissionData))
-        != IOX2_OK) {
-        printf("Unable to set type details\n");
+    ret_val = iox2_service_builder_pub_sub_set_payload_type_details(&service_builder_pub_sub,
+                                                                    iox2_type_variant_e_FIXED_SIZE,
+                                                                    payload_type_name,
+                                                                    strlen(payload_type_name),
+                                                                    sizeof(struct TransmissionData),
+                                                                    alignof(struct TransmissionData));
+    if (ret_val != IOX2_OK) {
+        printf("Unable to set type details! Error: %d\n", ret_val);
         goto drop_service_name;
     }
 
     // create service
     iox2_port_factory_pub_sub_h service = NULL;
-    if (iox2_service_builder_pub_sub_open_or_create(service_builder_pub_sub, NULL, &service) != IOX2_OK) {
-        printf("Unable to create service!\n");
+    ret_val = iox2_service_builder_pub_sub_open_or_create(service_builder_pub_sub, NULL, &service);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create service! Error: %d\n", ret_val);
         goto drop_service_name;
     }
 
@@ -71,8 +75,9 @@ int main(void) {
     iox2_port_factory_publisher_builder_h publisher_builder =
         iox2_port_factory_pub_sub_publisher_builder(&service, NULL);
     iox2_publisher_h publisher = NULL;
-    if (iox2_port_factory_publisher_builder_create(publisher_builder, NULL, &publisher) != IOX2_OK) {
-        printf("Unable to create publisher!\n");
+    ret_val = iox2_port_factory_publisher_builder_create(publisher_builder, NULL, &publisher);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create publisher! Error: %d\n", ret_val);
         goto drop_service;
     }
 
@@ -82,8 +87,9 @@ int main(void) {
 
         // loan sample
         iox2_sample_mut_h sample = NULL;
-        if (iox2_publisher_loan_slice_uninit(&publisher, NULL, &sample, 1) != IOX2_OK) {
-            printf("Failed to loan sample\n");
+        ret_val = iox2_publisher_loan_slice_uninit(&publisher, NULL, &sample, 1);
+        if (ret_val != IOX2_OK) {
+            printf("Failed to loan sample! Error: %d\n", ret_val);
             goto drop_publisher;
         }
 
@@ -95,8 +101,9 @@ int main(void) {
         payload->funky = counter * 812.12; // NOLINT
 
         // send sample
-        if (iox2_sample_mut_send(sample, NULL) != IOX2_OK) {
-            printf("Failed to send sample\n");
+        ret_val = iox2_sample_mut_send(sample, NULL);
+        if (ret_val != IOX2_OK) {
+            printf("Failed to send sample! Error: %d\n", ret_val);
             goto drop_publisher;
         }
 

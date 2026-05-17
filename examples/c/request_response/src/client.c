@@ -25,20 +25,23 @@
 int main(void) { // NOLINT
     // Setup logging
     iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
+    int ret_val = 0;
 
     // Create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
     iox2_node_h node_handle = NULL;
-    if (iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node_handle) != IOX2_OK) {
-        printf("Could not create node!\n");
+    ret_val = iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node_handle);
+    if (ret_val != IOX2_OK) {
+        printf("Could not create node! Error: %d\n", ret_val);
         goto end;
     }
 
     // Create service name
     const char* service_name_value = "My/Funk/ServiceName";
     iox2_service_name_h service_name = NULL;
-    if (iox2_service_name_new(NULL, service_name_value, strlen(service_name_value), &service_name) != IOX2_OK) {
-        printf("Unable to create service name!\n");
+    ret_val = iox2_service_name_new(NULL, service_name_value, strlen(service_name_value), &service_name);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create service name! Error: %d\n", ret_val);
         goto drop_node;
     }
 
@@ -52,33 +55,33 @@ int main(void) { // NOLINT
     const char* request_type_name = "u64";
     const char* response_type_name = "TransmissionData";
 
-    if (iox2_service_builder_request_response_set_request_payload_type_details(&service_builder_request_response,
-                                                                               iox2_type_variant_e_FIXED_SIZE,
-                                                                               request_type_name,
-                                                                               strlen(request_type_name),
-                                                                               sizeof(uint64_t),
-                                                                               alignof(uint64_t))
-        != IOX2_OK) {
-        printf("Unable to set request type details\n");
+    ret_val = iox2_service_builder_request_response_set_request_payload_type_details(&service_builder_request_response,
+                                                                                     iox2_type_variant_e_FIXED_SIZE,
+                                                                                     request_type_name,
+                                                                                     strlen(request_type_name),
+                                                                                     sizeof(uint64_t),
+                                                                                     alignof(uint64_t));
+    if (ret_val != IOX2_OK) {
+        printf("Unable to set request type details! Error: %d\n", ret_val);
         goto drop_service_name;
     }
 
-    if (iox2_service_builder_request_response_set_response_payload_type_details(&service_builder_request_response,
-                                                                                iox2_type_variant_e_FIXED_SIZE,
-                                                                                response_type_name,
-                                                                                strlen(response_type_name),
-                                                                                sizeof(struct TransmissionData),
-                                                                                alignof(struct TransmissionData))
-        != IOX2_OK) {
-        printf("Unable to set response type details\n");
+    ret_val = iox2_service_builder_request_response_set_response_payload_type_details(&service_builder_request_response,
+                                                                                      iox2_type_variant_e_FIXED_SIZE,
+                                                                                      response_type_name,
+                                                                                      strlen(response_type_name),
+                                                                                      sizeof(struct TransmissionData),
+                                                                                      alignof(struct TransmissionData));
+    if (ret_val != IOX2_OK) {
+        printf("Unable to set response type details! Error: %d\n", ret_val);
         goto drop_service_name;
     }
 
     // Create service
     iox2_port_factory_request_response_h service = NULL;
-    if (iox2_service_builder_request_response_open_or_create(service_builder_request_response, NULL, &service)
-        != IOX2_OK) {
-        printf("Unable to create service!\n");
+    ret_val = iox2_service_builder_request_response_open_or_create(service_builder_request_response, NULL, &service);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create service! Error: %d\n", ret_val);
         goto drop_service_name;
     }
 
@@ -86,8 +89,9 @@ int main(void) { // NOLINT
     iox2_port_factory_client_builder_h client_builder =
         iox2_port_factory_request_response_client_builder(&service, NULL);
     iox2_client_h client = NULL;
-    if (iox2_port_factory_client_builder_create(client_builder, NULL, &client) != IOX2_OK) {
-        printf("Unable to create client!\n");
+    ret_val = iox2_port_factory_client_builder_create(client_builder, NULL, &client);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create client! Error: %d\n", ret_val);
         goto drop_service;
     }
 
@@ -98,8 +102,9 @@ int main(void) { // NOLINT
     // For the first request, we use the copy API
     printf("send request %d ...\n", (int32_t) request_counter);
     iox2_pending_response_h pending_response = NULL;
-    if (iox2_client_send_copy(&client, &request_counter, sizeof(uint64_t), 1, NULL, &pending_response) != IOX2_OK) {
-        printf("Failed to send initial request\n");
+    ret_val = iox2_client_send_copy(&client, &request_counter, sizeof(uint64_t), 1, NULL, &pending_response);
+    if (ret_val != IOX2_OK) {
+        printf("Failed to send initial request! Error: %d\n", ret_val);
         goto drop_client;
     }
 
@@ -111,8 +116,9 @@ int main(void) { // NOLINT
 
         while (true) {
             response = NULL;
-            if (iox2_pending_response_receive(&pending_response, NULL, &response) != IOX2_OK) {
-                printf("Failed to receive response\n");
+            ret_val = iox2_pending_response_receive(&pending_response, NULL, &response);
+            if (ret_val != IOX2_OK) {
+                printf("Failed to receive response! Error: %d\n", ret_val);
                 goto drop_client;
             }
 
@@ -140,8 +146,9 @@ int main(void) { // NOLINT
 
         // Loan request sample
         iox2_request_mut_h request = NULL;
-        if (iox2_client_loan_slice_uninit(&client, NULL, &request, 1) != IOX2_OK) {
-            printf("Failed to loan request\n");
+        ret_val = iox2_client_loan_slice_uninit(&client, NULL, &request, 1);
+        if (ret_val != IOX2_OK) {
+            printf("Failed to loan request! Error: %d\n", ret_val);
             goto drop_client;
         }
 
@@ -151,8 +158,9 @@ int main(void) { // NOLINT
         *payload = request_counter;
 
         // Send request
-        if (iox2_request_mut_send(request, NULL, &pending_response) != IOX2_OK) {
-            printf("Failed to send request\n");
+        ret_val = iox2_request_mut_send(request, NULL, &pending_response);
+        if (ret_val != IOX2_OK) {
+            printf("Failed to send request! Error: %d\n", ret_val);
             goto drop_client;
         }
     }
