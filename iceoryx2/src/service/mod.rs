@@ -259,6 +259,7 @@ use core::time::Duration;
 
 use alloc::format;
 use alloc::string::String as CoreString;
+use alloc::string::ToString;
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
