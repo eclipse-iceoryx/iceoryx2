@@ -18,6 +18,10 @@
 #include "iox2/bb/detail/attributes.hpp"
 #include "iox2/bb/detail/source_location.hpp"
 #include "iox2/legacy/detail/expected_helper.hpp"
+#include "iox2/legacy/logging.hpp"
+
+#include <type_traits>
+#include <typeinfo>
 
 namespace iox2 {
 namespace legacy {
@@ -371,6 +375,16 @@ class IOX2_NO_DISCARD expected final {
 
     ErrorType& error_checked(bb::detail::SourceLocation location) & noexcept;
     const ErrorType& error_checked(bb::detail::SourceLocation location) const& noexcept;
+
+    template <typename E = ErrorType>
+    std::enable_if_t<!(std::is_integral<E>::value || std::is_enum<E>::value), void>
+    log_error_unchecked() const noexcept;
+
+    template <typename E = ErrorType>
+    std::enable_if_t<std::is_integral<E>::value, void> log_error_unchecked() const noexcept;
+
+    template <typename E = ErrorType>
+    std::enable_if_t<std::is_enum<E>::value, void> log_error_unchecked() const noexcept;
 
   private:
     detail::expected_storage<ValueType, ErrorType> m_store;
