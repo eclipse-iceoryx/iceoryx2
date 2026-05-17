@@ -90,6 +90,18 @@ impl Node {
     }
 
     #[getter]
+    /// The suffix of the port tags.
+    pub fn port_tag_suffix(&self) -> FileName {
+        FileName(self.0.lock().global.node.port_tag_suffix)
+    }
+
+    #[setter]
+    /// Set the suffix of the port tags.
+    pub fn set_port_tag_suffix(&mut self, value: &FileName) {
+        self.0.lock().global.node.port_tag_suffix = value.0
+    }
+
+    #[getter]
     /// When true, the `NodeBuilder` checks for dead nodes and
     /// cleans up all their stale resources whenever a new [`Node`](Node) is
     /// created.

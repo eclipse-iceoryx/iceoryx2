@@ -21,6 +21,7 @@ use crate::type_detail::TypeDetail;
 use crate::type_storage::TypeStorage;
 use crate::unique_writer_id::UniqueWriterId;
 
+#[allow(clippy::large_enum_variant)] // allowed since they are the same port type based on a different service variant
 pub(crate) enum WriterType {
     Ipc(Option<iceoryx2::port::writer::Writer<crate::IpcService, CustomKeyMarker>>),
     Local(Option<iceoryx2::port::writer::Writer<crate::LocalService, CustomKeyMarker>>),

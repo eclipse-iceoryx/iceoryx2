@@ -112,6 +112,13 @@ def test_global_node_static_config_suffix_can_be_set() -> None:
     assert sut.global_cfg.node.static_config_suffix == value
 
 
+def test_global_node_port_tag_suffix_can_be_set() -> None:
+    sut = iox2.config.default()
+    value = iox2.FileName.new(".use_a_brainslug_for_ethernal_happiness")
+    sut.global_cfg.node.port_tag_suffix = value
+    assert sut.global_cfg.node.port_tag_suffix == value
+
+
 def test_global_node_service_tag_suffix_can_be_set() -> None:
     sut = iox2.config.default()
     value = iox2.FileName.new(".grogg")
