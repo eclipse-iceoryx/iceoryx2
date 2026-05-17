@@ -272,6 +272,12 @@ pub struct Notifier<Service: service::Service> {
     notifier_id: UniqueNotifierId,
     on_drop_notification: Option<EventId>,
     node_id: UniqueNodeId,
+    // IMPORTANT!
+    // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
+    // port exists and might require cleanup after a crash, the tag must be defined as last member of
+    // the struct.
+    // Otherwise the process might crash during cleanup, has already removed the tag but other resources
+    // are still existing. This would make a cleanup from another process impossible.
     port_tag: Service::StaticStorage,
 }
 

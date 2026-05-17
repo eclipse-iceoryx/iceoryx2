@@ -36,6 +36,13 @@ pub(crate) enum RemovePortFromAllConnectionsError {
     InternalError,
 }
 
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub(crate) enum RemoveStalePortResourcesError {
+    InsufficientPermissions,
+    VersionMismatch,
+    InternalError,
+}
+
 pub(crate) unsafe fn remove_data_segment_of_port<Service: service::Service>(
     port_id: u128,
     config: &config::Config,
@@ -178,4 +185,51 @@ pub(crate) unsafe fn remove_receiver_port_from_all_connections<Service: service:
     }
 
     ret_val
+}
+
+pub(crate) unsafe fn remove_stale_port_resources<Service: service::Service>(
+    port_id: u128,
+    config: &config::Config,
+) -> Result<(), RemoveStalePortResourcesError> {
+    let origin = format!(
+        "remove_stale_port_resources<{}>({}, {:?})",
+        core::any::type_name::<Service>(),
+        port_id,
+        config
+    );
+    let msg = "Failed to remove stale port resources";
+    match unsafe { remove_data_segment_of_port::<Service>(port_id, config) } {
+        Ok(()) => (),
+        Err(NamedConceptRemoveError::InsufficientPermissions) => {
+            fail!(from origin, with RemoveStalePortResourcesError::InsufficientPermissions,
+                "{msg} due to insufficient permissions to remove the ports data segment.");
+        }
+        Err(NamedConceptRemoveError::InternalError) => {
+            fail!(from origin, with RemoveStalePortResourcesError::InternalError,
+                "{msg} due to an internal error while removing the ports data segment.");
+        }
+    }
+
+    for result in [
+        unsafe { remove_sender_port_from_all_connections::<Service>(port_id, config) },
+        unsafe { remove_receiver_port_from_all_connections::<Service>(port_id, config) },
+    ] {
+        match result {
+            Ok(()) => (),
+            Err(RemovePortFromAllConnectionsError::InsufficientPermissions) => {
+                fail!(from origin, with RemoveStalePortResourcesError::InsufficientPermissions,
+            "{msg} due to insufficient permissions to remove the port from its connections.");
+            }
+            Err(RemovePortFromAllConnectionsError::VersionMismatch) => {
+                fail!(from origin, with RemoveStalePortResourcesError::VersionMismatch,
+            "{msg} since the port could not be removed from its connection since iceoryx2 version does not match.");
+            }
+            Err(RemovePortFromAllConnectionsError::InternalError) => {
+                fail!(from origin, with RemoveStalePortResourcesError::InternalError,
+            "{msg} due to an internal error while removing the port from its connection.");
+            }
+        }
+    }
+
+    Ok(())
 }

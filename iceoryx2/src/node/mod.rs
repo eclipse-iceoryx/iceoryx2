@@ -193,6 +193,8 @@ use crate::service::config_scheme::{
 };
 use crate::service::service_hash::ServiceHash;
 use crate::service::service_name::ServiceName;
+use crate::service::stale_resource_cleanup::RemoveStalePortResourcesError;
+use crate::service::stale_resource_cleanup::remove_stale_port_resources;
 use crate::service::{
     self, ServiceRemoveNodeError, remove_service_tag, remove_static_service_config,
 };
@@ -296,6 +298,12 @@ enum NodeReadStorageFailure {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum NodeReadServiceTagsFailure {
+    InsufficientPermissions,
+    InternalError,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+enum NodeReadPortTagsFailure {
     InsufficientPermissions,
     InternalError,
 }
@@ -661,12 +669,55 @@ impl<Service: service::Service> DeadNodeView<Service> {
 
         match Node::<Service>::service_tags(config, self.id(), remove_node_from_service) {
             Ok(()) => (),
-            Err(e) => {
+            Err(NodeReadServiceTagsFailure::InsufficientPermissions) => {
                 cleaner.abandon();
                 fail!(from self, with NodeCleanupFailure::InsufficientPermissions,
-                    "{} since the service tags could not be read ({:?}).", msg, e);
+                    "{} since the service tags could not be read due to insufficent permissions.", msg);
+            }
+            Err(NodeReadServiceTagsFailure::InternalError) => {
+                cleaner.abandon();
+                fail!(from self, with NodeCleanupFailure::InternalError,
+                    "{} since the service tags could not be read due to an internal error.", msg);
             }
         };
+
+        cleanup_failure?;
+
+        match Node::<Service>::port_tags(config, self.id(), |port_id| {
+            match unsafe { remove_stale_port_resources::<Service>(port_id, config) } {
+                Ok(()) => CallbackProgression::Continue,
+                Err(RemoveStalePortResourcesError::InsufficientPermissions) => {
+                    cleanup_failure = Err(NodeCleanupFailure::InsufficientPermissions);
+                    debug!(from self,
+                        "{} since the stale resources of the port {port_id} could not be removed due to insufficient permissions.", msg);
+                    CallbackProgression::Stop
+                }
+                Err(RemoveStalePortResourcesError::VersionMismatch) => {
+                    cleanup_failure = Err(NodeCleanupFailure::VersionMismatch);
+                    debug!(from self,
+                        "{} since the stale resources of the port {port_id} could not be removed since the iceoryx2 version does not match.", msg);
+                    CallbackProgression::Stop
+                }
+                Err(RemoveStalePortResourcesError::InternalError) => {
+                    cleanup_failure = Err(NodeCleanupFailure::InternalError);
+                    debug!(from self,
+                        "{} since the stale resources of the port {port_id} could not be removed due to an internal failure.", msg);
+                    CallbackProgression::Stop
+                }
+            }
+        }) {
+            Ok(()) => (),
+            Err(NodeReadPortTagsFailure::InsufficientPermissions) => {
+                cleaner.abandon();
+                fail!(from self, with NodeCleanupFailure::InsufficientPermissions,
+                    "{} since the port tags could not be read due to insufficent permissions.", msg);
+            }
+            Err(NodeReadPortTagsFailure::InternalError) => {
+                cleaner.abandon();
+                fail!(from self, with NodeCleanupFailure::InternalError,
+                    "{} since the port tags could not be read due to an internal error.", msg);
+            }
+        }
 
         cleanup_failure?;
 
@@ -1335,6 +1386,39 @@ impl<Service: service::Service> Node<Service> {
                 "{} since the contents of the node config storage is corrupted.", msg);
 
         Ok(Some(node_details))
+    }
+
+    fn port_tags<F: FnMut(u128) -> CallbackProgression>(
+        config: &Config,
+        node_id: &UniqueNodeId,
+        mut callback: F,
+    ) -> Result<(), NodeReadPortTagsFailure> {
+        let origin = "Node::service_tags()";
+        let msg = format!("Unable to acquire all port tags of the node {node_id:?}");
+        match <Service::StaticStorage as NamedConceptMgmt>::list_cfg(&port_tag_config::<Service>(
+            config, node_id,
+        )) {
+            Ok(tags) => {
+                for tag in &tags {
+                    if let Ok(v) = tag.to_string().parse::<u128>() {
+                        if callback(v) == CallbackProgression::Stop {
+                            break;
+                        }
+                    } else {
+                        continue;
+                    }
+                }
+                Ok(())
+            }
+            Err(NamedConceptListError::InsufficientPermissions) => {
+                fail!(from origin, with NodeReadPortTagsFailure::InsufficientPermissions,
+                    "{} due to insufficient permissions.", msg);
+            }
+            Err(NamedConceptListError::InternalError) => {
+                fail!(from origin, with NodeReadPortTagsFailure::InternalError,
+                    "{} due to an internal error.", msg);
+            }
+        }
     }
 
     fn service_tags<F: FnMut(&ServiceHash) -> CallbackProgression>(
