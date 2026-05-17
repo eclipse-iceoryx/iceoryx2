@@ -242,6 +242,7 @@ enum_gen! {
     Interrupt,
     FailedToAcquireUniqueProcessIdFromContextFile,
     FailedToAcquireUniqueProcessId,
+    InternalError,
     UnknownError(i32)
 
   mapping:
@@ -909,11 +910,18 @@ impl ProcessMonitor {
         // first we need to open the context_file with AccessMode::Write only since it could
         // be in init mode. After the initialization we can open it with AccessMode::Read
         match Self::open_file(self, &self.context_path, AccessMode::Write) {
-            Ok(Some(context_file)) => {
-                if context_file.permission().unwrap() == INIT_PERMISSION {
-                    return Ok(ProcessState::Starting);
+            Ok(Some(context_file)) => match context_file.permission() {
+                Ok(permission) => {
+                    if permission == INIT_PERMISSION {
+                        return Ok(ProcessState::Starting);
+                    }
                 }
-            }
+                Err(e) => {
+                    fail!(from self, with ProcessMonitorStateError::InternalError,
+                            "{msg} since the permissions of the context file \"{}\" could not be acquired. [{e:?}]",
+                            self.context_path);
+                }
+            },
             Ok(None) => {
                 return Ok(ProcessState::DoesNotExist);
             }
@@ -954,9 +962,19 @@ impl ProcessMonitor {
                 return Ok(ProcessState::CleaningUp);
             }
         } else {
-            if File::does_exist(&self.state_path).unwrap() {
-                return Err(ProcessMonitorStateError::CorruptedState);
+            match File::does_exist(&self.state_path) {
+                Ok(true) => {
+                    fail!(from self, with ProcessMonitorStateError::CorruptedState,
+                        "{msg} since the process state is corruped.");
+                }
+                Ok(false) => (),
+                Err(e) => {
+                    fail!(from self, with ProcessMonitorStateError::InternalError,
+                        "{msg} since it is not possible to check if the state file \"{}\" does exist. [{e:?}]",
+                        self.state_path);
+                }
             }
+
             return Ok(ProcessState::CleaningUp);
         }
 

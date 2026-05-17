@@ -601,7 +601,7 @@ impl File {
             };
 
             if config.sync_on_open {
-                if let Err(e) = new_self.flush() {
+                if let Err(e) = new_self.sync_all() {
                     debug!(from new_self,
                         "Unable to sync file before opening it. The file properties and content might be out-of-date. [{e:?}]");
                 }
@@ -924,7 +924,7 @@ impl File {
     }
 
     /// Syncs all file modification with the file system.
-    pub fn flush(&mut self) -> Result<(), FileSyncError> {
+    pub fn sync_all(&mut self) -> Result<(), FileSyncError> {
         if unsafe { posix::fsync(self.file_descriptor.native_handle()) } == 0 {
             return Ok(());
         }
