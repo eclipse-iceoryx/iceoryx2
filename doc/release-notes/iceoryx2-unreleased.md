@@ -147,6 +147,8 @@
   [#1578](https://github.com/eclipse-iceoryx/iceoryx2/issues/1578)
 * Fix various CLI quirks
   [#1595](https://github.com/eclipse-iceoryx/iceoryx2/issues/1595)
+* Fix segfault when connection is removed
+  [#1629](https://github.com/eclipse-iceoryx/iceoryx2/issues/1629)
 
 ### Refactoring
 
