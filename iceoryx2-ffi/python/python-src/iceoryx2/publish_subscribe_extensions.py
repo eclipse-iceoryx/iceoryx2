@@ -13,7 +13,13 @@
 """Strong type safe extensions for the publish-subscribe messaging pattern."""
 
 import ctypes
-from typing import Any, Type, TypeVar, get_args, get_origin
+from typing import Any, Type, TypeVar
+
+import sys
+if sys.version_info >= (3, 8):
+    from typing import get_args, get_origin
+else:
+    from typing_extensions import get_args, get_origin
 
 from ._iceoryx2 import *
 from .slice import Slice
@@ -44,7 +50,12 @@ def publish_subscribe(
     self: ServiceBuilder, t: Type[T]
 ) -> ServiceBuilderPublishSubscribe:
     """Returns the `ServiceBuilderPublishSusbcribe` to create a new publish-subscribe service. The payload ctype must be provided as argument."""
-    type_name = t.__name__
+    if hasattr(t, "__name__"):
+        type_name = getattr(t, "__name__")
+    else:
+        origin_type = get_origin(t)
+        assert origin_type is not None
+        type_name = getattr(origin_type, "__name__")
     type_size = 0
     type_align = 0
     type_variant = TypeVariant.FixedSize
