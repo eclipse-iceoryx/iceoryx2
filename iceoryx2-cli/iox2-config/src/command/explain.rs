@@ -120,6 +120,12 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                     description: "Suffix added to the static config of the node.",
                 },
                 Field {
+                    key: "global.node.port-tag-suffix",
+                    value_type: "string",
+                    default_value: format!("\"{}\"", config.global.node.port_tag_suffix),
+                    description: "Suffix added to the port tag of the node.",
+                },
+                Field {
                     key: "global.node.service-tag-suffix",
                     value_type: "string",
                     default_value: format!("\"{}\"", config.global.node.service_tag_suffix),
