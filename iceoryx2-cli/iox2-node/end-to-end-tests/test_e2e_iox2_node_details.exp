@@ -32,8 +32,8 @@ set id_subscriber $spawn_id
 # and use that ID for the detailed lookup
 expect_output_from $id_subscriber {Subscriber ready to receive data!}
 
-# List nodes to get the node id
-set list_output [exec cargo run --bin iox2-node -- list 2>@1]
+# List nodes to get the node id; only Alive nodes to prevent getting an ID of a dead node which is not yet cleaned up
+set list_output [exec cargo run --bin iox2-node -- list --state Alive 2>@1]
 
 if {[regexp {id: \("([a-f0-9]+)"\)} $list_output -> node_id]} {
     puts "Extracted node ID: $node_id"
