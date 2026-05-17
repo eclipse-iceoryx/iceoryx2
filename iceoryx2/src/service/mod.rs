@@ -268,9 +268,9 @@ use iceoryx2_bb_posix::file::AccessMode;
 
 use crate::config;
 use crate::constants::MAX_TYPE_NAME_LENGTH;
-use crate::identifiers::UniqueNodeId;
+use crate::identifiers::{UniqueNodeId, UniquePortId};
 use crate::node::{NodeListFailure, NodeState, SharedNode};
-use crate::service::config_scheme::dynamic_config_storage_config;
+use crate::service::config_scheme::{dynamic_config_storage_config, port_tag_config};
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::static_config::*;
 use config_scheme::service_tag_config;
@@ -314,6 +314,13 @@ pub enum ServiceRemoveNodeError {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ServiceRemoveTagError {
+    AlreadyRemoved,
+    InternalError,
+    InsufficientPermissions,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum PortRemoveTagError {
     AlreadyRemoved,
     InternalError,
     InsufficientPermissions,
@@ -783,6 +790,10 @@ pub mod internal {
                     UniquePortId::Writer(ref _id) => {}
                 };
 
+                if let Err(e) = remove_port_tag::<S>(node_id, &port_id, config) {
+                    debug!(from origin,  "Failed to remove the port tag for port {:?}. [{e:?}]", port_id);
+                    return PortCleanupAction::SkipPort;
+                }
                 trace!(from origin, "Remove port {:?} from service.", port_id);
                 PortCleanupAction::RemovePort
             };
@@ -1189,6 +1200,42 @@ pub(crate) fn remove_service_tag<S: Service>(
         Err(NamedConceptRemoveError::InsufficientPermissions) => {
             fail!(from origin, with ServiceRemoveTagError::InsufficientPermissions,
                 "Unable to remove the service's tag for the node due to insufficient permissions.");
+        }
+    }
+}
+
+pub(crate) fn remove_port_tag<S: Service>(
+    node_id: &UniqueNodeId,
+    port_id: &UniquePortId,
+    config: &config::Config,
+) -> Result<(), PortRemoveTagError> {
+    let origin = format!(
+        "remove_port_tag<{}>({:?}, port_id: {:?})",
+        core::any::type_name::<S>(),
+        node_id,
+        port_id
+    );
+    let name = FileName::new(port_id.value().to_string().as_bytes())
+        .expect("A number is always a valid file name.");
+
+    match unsafe {
+        <S::StaticStorage as NamedConceptMgmt>::remove_cfg(
+            &name,
+            &port_tag_config::<S>(config, node_id),
+        )
+    } {
+        Ok(true) => Ok(()),
+        Ok(false) => {
+            fail!(from origin, with PortRemoveTagError::AlreadyRemoved,
+                    "The port's tag for the node was already removed. This may indicate a corrupted system!");
+        }
+        Err(NamedConceptRemoveError::InternalError) => {
+            fail!(from origin, with PortRemoveTagError::InternalError,
+                "Unable to remove the port's tag for the node due to an internal error.");
+        }
+        Err(NamedConceptRemoveError::InsufficientPermissions) => {
+            fail!(from origin, with PortRemoveTagError::InsufficientPermissions,
+                "Unable to remove the port's tag for the node due to insufficient permissions.");
         }
     }
 }

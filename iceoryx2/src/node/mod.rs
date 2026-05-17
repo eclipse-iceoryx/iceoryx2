@@ -986,7 +986,7 @@ impl<Service: service::Service> SharedNode<Service> {
         port_id: u128,
     ) -> Result<Service::StaticStorage, StaticStorageCreateError> {
         let name = FileName::new(port_id.to_string().as_bytes())
-            .expect("A number is always a valid file name");
+            .expect("A number is always a valid file name.");
 
         match <<Service::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
             Service::StaticStorage,
