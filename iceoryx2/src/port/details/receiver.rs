@@ -476,53 +476,57 @@ impl<Service: service::Service> Receiver<Service> {
             let to_be_removed_connections = unsafe { &mut *to_be_removed_connections.get() };
 
             if !to_be_removed_connections.is_empty() {
-                let mut clean_connections = PolymorphicVec::new(
-                    HeapAllocator::global(),
-                    to_be_removed_connections.capacity(),
-                )
-                .expect("Heap allocator provides memory.");
                 let connection_storage = unsafe { &mut *self.connection_storage.get() };
 
-                for (n, connection_key) in to_be_removed_connections.iter().enumerate() {
-                    let connection = match connection_storage.get(*connection_key) {
-                        Some(connection) => connection,
-                        None => {
-                            unsafe { clean_connections.push_unchecked((n, *connection_key)) };
+                let mut indices_to_skip = 0;
+                // loop through all 'to_be_removed_connections' break the for-loop if a connection needs to be removed;
+                // then continue the for-loop but skip the previously looped indices
+                loop {
+                    let mut index_and_key = None;
+                    for (n, connection_key) in to_be_removed_connections
+                        .iter()
+                        .skip(indices_to_skip)
+                        .enumerate()
+                    {
+                        let connection = match connection_storage.get(*connection_key) {
+                            Some(connection) => connection,
+                            None => {
+                                index_and_key = Some((n, *connection_key));
+                                break;
+                            }
+                        };
+                        let receiver = &connection.receiver;
+
+                        if receiver.borrow_count(channel_id) == receiver.max_borrowed_samples() {
                             continue;
                         }
-                    };
 
-                    if connection.receiver.borrow_count(channel_id)
-                        == connection.receiver.max_borrowed_samples()
-                    {
+                        if let Some((details, absolute_address)) =
+                            self.receive_from_connection(connection, *connection_key, channel_id)?
+                        {
+                            ret_val = Some((details, absolute_address));
+                            break;
+                        } else {
+                            let (_has_data, has_borrows) =
+                                Self::receiver_channels_have_data_or_borrows(receiver);
+
+                            if !has_borrows {
+                                index_and_key = Some((n, *connection_key));
+                                break;
+                            }
+                        }
+                    }
+                    // there is a connection which has neither data nor borrows nor is it present in the 'connection_storage'
+                    if let Some((index, key)) = index_and_key {
+                        to_be_removed_connections.remove(index);
+                        connection_storage.remove(key);
+                        indices_to_skip = index;
+
                         continue;
                     }
 
-                    if let Some((details, absolute_address)) =
-                        self.receive_from_connection(connection, *connection_key, channel_id)?
-                    {
-                        ret_val = Some((details, absolute_address));
-                        break;
-                    } else {
-                        unsafe { clean_connections.push_unchecked((n, *connection_key)) };
-                    }
-                }
-
-                for &(index, key) in clean_connections.iter().rev() {
-                    let has_borrows = if let Some(connection) = connection_storage.get(key) {
-                        let receiver = &connection.receiver;
-                        // this point is only reached if there are no data in the connection
-                        let (_has_data, has_borrows) =
-                            Self::receiver_channels_have_data_or_borrows(receiver);
-                        has_borrows
-                    } else {
-                        false
-                    };
-
-                    if !has_borrows {
-                        to_be_removed_connections.remove(index);
-                        connection_storage.remove(key);
-                    }
+                    // at this point we either were able to receive a sample or iterated through all connections
+                    break;
                 }
             }
         }
