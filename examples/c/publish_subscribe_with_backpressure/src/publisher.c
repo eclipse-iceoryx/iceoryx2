@@ -29,16 +29,15 @@ struct callback_context_t {
     int fail_counter;
 };
 
-static iox2_unable_to_deliver_action_e unable_to_deliver_handler(iox2_unable_to_deliver_info_h_ref info,
-                                                                 iox2_callback_context ctx) {
+static iox2_backpressure_action_e backpressure_handler(iox2_backpressure_info_h_ref info, iox2_callback_context ctx) {
     iox2_buffer_16_align_4_t buf;
     printf("Discarded sample from publisher sender id 0x");
-    iox2_unable_to_deliver_info_sender_port_id(info, &buf);
+    iox2_backpressure_info_sender_port_id(info, &buf);
     for (int i = 0; i < 16; ++i) {
         printf("%02X", buf.data[i]);
     }
     printf(" to subscriber receiver id 0x");
-    iox2_unable_to_deliver_info_receiver_port_id(info, &buf);
+    iox2_backpressure_info_receiver_port_id(info, &buf);
     for (int i = 0; i < 16; ++i) {
         printf("%02X", buf.data[i]);
     }
@@ -48,7 +47,7 @@ static iox2_unable_to_deliver_action_e unable_to_deliver_handler(iox2_unable_to_
         (*callback_ctx).fail_counter += 1;
         printf("Fail counter: %i\n", (*callback_ctx).fail_counter);
     }
-    return iox2_unable_to_deliver_action_e_DISCARD_DATA_AND_FAIL;
+    return iox2_backpressure_action_e_DISCARD_DATA_AND_FAIL;
 }
 
 int main(void) {
@@ -106,11 +105,10 @@ int main(void) {
     iox2_port_factory_publisher_builder_h publisher_builder =
         iox2_port_factory_pub_sub_publisher_builder(&service, NULL);
 
-    // set unable to deliver handler
+    // set backpressure handler
     struct callback_context_t ctx;
     ctx.fail_counter = 0;
-    iox2_port_factory_publisher_builder_set_unable_to_deliver_handler(
-        &publisher_builder, unable_to_deliver_handler, &ctx);
+    iox2_port_factory_publisher_builder_set_backpressure_handler(&publisher_builder, backpressure_handler, &ctx);
 
     // create publisher
     iox2_publisher_h publisher = NULL;

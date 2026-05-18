@@ -18,11 +18,11 @@ use iceoryx2_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::{
+    backpressure_strategy::BackpressureStrategy,
     error::{ConnectionFailure, LoanError},
     parc::Parc,
     sample_mut_uninit::{SampleMutUninit, SampleMutUninitType},
     type_storage::TypeStorage,
-    unable_to_deliver_strategy::UnableToDeliverStrategy,
     unique_publisher_id::UniquePublisherId,
 };
 
@@ -76,11 +76,11 @@ impl Publisher {
     #[getter]
     /// Returns the strategy the `Publisher` follows when a `SampleMut` cannot be delivered
     /// since the `Subscriber`s buffer is full.
-    pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
+    pub fn backpressure_strategy(&self) -> BackpressureStrategy {
         match &*self.value.lock() {
-            PublisherType::Ipc(Some(v)) => v.unable_to_deliver_strategy().into(),
-            PublisherType::Local(Some(v)) => v.unable_to_deliver_strategy().into(),
-            _ => fatal_panic!(from "Publisher::unable_to_deliver_strategy()",
+            PublisherType::Ipc(Some(v)) => v.backpressure_strategy().into(),
+            PublisherType::Local(Some(v)) => v.backpressure_strategy().into(),
+            _ => fatal_panic!(from "Publisher::backpressure_strategy()",
                 "Accessing a deleted publisher."),
         }
     }

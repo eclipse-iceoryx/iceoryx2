@@ -26,7 +26,7 @@
 //! let server = request_response
 //!    .server_builder()
 //!    // defines behavior when client queue is full in a non-overflowing service
-//!    .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
+//!    .backpressure_strategy(BackpressureStrategy::DiscardData)
 //!    .create()?;
 //!
 //! # Ok(())
@@ -36,10 +36,10 @@
 use super::request_response::PortFactory;
 use crate::{
     port::{
-        DegradationAction, DegradationFn, DegradationHandler, UnableToDeliverFn,
-        UnableToDeliverHandler, server::Server,
+        BackpressureFn, BackpressureHandler, DegradationAction, DegradationFn, DegradationHandler,
+        server::Server,
     },
-    prelude::UnableToDeliverStrategy,
+    prelude::BackpressureStrategy,
     service,
 };
 use alloc::format;
@@ -51,7 +51,7 @@ use tiny_fn::tiny_fn;
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct LocalServerConfig {
-    pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
+    pub(crate) backpressure_strategy: BackpressureStrategy,
     pub(crate) initial_max_slice_len: usize,
     pub(crate) allocation_strategy: AllocationStrategy,
     pub(crate) max_loaned_responses_per_request: usize,
@@ -127,7 +127,7 @@ pub struct PortFactoryServer<
     pub(crate) config: LocalServerConfig,
     pub(crate) request_degradation_handler: DegradationHandler<'static>,
     pub(crate) response_degradation_handler: DegradationHandler<'static>,
-    pub(crate) unable_to_deliver_handler: Option<UnableToDeliverHandler<'static>>,
+    pub(crate) backpressure_handler: Option<BackpressureHandler<'static>>,
     pub(crate) preallocated_number_of_responses_override: PreallocatedResponseOverride<'static>,
 }
 
@@ -176,7 +176,7 @@ impl<
             config: self.config,
             request_degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
             response_degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
-            unable_to_deliver_handler: None,
+            backpressure_handler: None,
             preallocated_number_of_responses_override: PreallocatedResponseOverride::new(|v| v),
         }
     }
@@ -200,14 +200,14 @@ impl<
         Self {
             factory,
             config: LocalServerConfig {
-                unable_to_deliver_strategy: defs.server_unable_to_deliver_strategy,
+                backpressure_strategy: defs.server_backpressure_strategy,
                 initial_max_slice_len: 1,
                 allocation_strategy: defs.server_allocation_strategy,
                 max_loaned_responses_per_request: defs.server_max_loaned_responses_per_request,
             },
             request_degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
             response_degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
-            unable_to_deliver_handler: None,
+            backpressure_handler: None,
             preallocated_number_of_responses_override: PreallocatedResponseOverride::new(|v| v),
         }
     }
@@ -233,12 +233,12 @@ impl<
         self
     }
 
-    /// Sets the [`UnableToDeliverStrategy`] which defines how the [`Server`] shall behave
+    /// Sets the [`BackpressureStrategy`] which defines how the [`Server`] shall behave
     /// when a [`Client`](crate::port::client::Client) cannot receive a
     /// [`Response`](crate::response::Response) since
     /// its internal buffer is full.
-    pub fn unable_to_deliver_strategy(mut self, value: UnableToDeliverStrategy) -> Self {
-        self.config.unable_to_deliver_strategy = value;
+    pub fn backpressure_strategy(mut self, value: BackpressureStrategy) -> Self {
+        self.config.backpressure_strategy = value;
         self
     }
 
@@ -281,18 +281,15 @@ impl<
         self
     }
 
-    /// Sets the [`UnableToDeliverHandler`] of the [`Server`]. Whenever a
+    /// Sets the [`BackpressureHandler`] of the [`Server`]. Whenever a
     /// [`ResponseMut`](crate::response_mut::ResponseMut) cannot be sent to a
     /// [`crate::port::client::Client`], this handler is called and depending on
-    /// the returned [`UnableToDeliverAction`](crate::port::UnableToDeliverAction),
+    /// the returned [`BackpressureAction`](crate::port::BackpressureAction),
     /// measures will be taken.
     /// If no handler is set, the measures will be determined by the value set in
-    /// [`UnableToDeliverStrategy`].
-    pub fn set_unable_to_deliver_handler<F: UnableToDeliverFn + 'static>(
-        mut self,
-        handler: F,
-    ) -> Self {
-        self.unable_to_deliver_handler = Some(UnableToDeliverHandler::new(handler));
+    /// [`BackpressureStrategy`].
+    pub fn set_backpressure_handler<F: BackpressureFn + 'static>(mut self, handler: F) -> Self {
+        self.backpressure_handler = Some(BackpressureHandler::new(handler));
 
         self
     }

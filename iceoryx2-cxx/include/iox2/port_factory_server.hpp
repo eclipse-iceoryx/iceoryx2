@@ -13,6 +13,8 @@
 #ifndef IOX2_PORTFACTORY_SERVER_HPP
 #define IOX2_PORTFACTORY_SERVER_HPP
 
+#include "iox2/backpressure_handler.hpp"
+#include "iox2/backpressure_strategy.hpp"
 #include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
@@ -21,8 +23,6 @@
 #include "iox2/server.hpp"
 #include "iox2/server_error.hpp"
 #include "iox2/service_type.hpp"
-#include "iox2/unable_to_deliver_handler.hpp"
-#include "iox2/unable_to_deliver_strategy.hpp"
 
 namespace iox2 {
 /// Factory to create a new [`Server`] port/endpoint for
@@ -35,13 +35,13 @@ template <ServiceType Service,
           typename ResponseUserHeader>
 class PortFactoryServer {
   public:
-    /// Sets the [`UnableToDeliverStrategy`] which defines how the [`Server`] shall behave
+    /// Sets the [`BackpressureStrategy`] which defines how the [`Server`] shall behave
     /// when a [`Client`] cannot receive a [`Response`] since
     /// its internal buffer is full.
 #ifdef DOXYGEN_MACRO_FIX
-    auto unable_to_deliver_strategy(const UnableToDeliverStrategy value) -> decltype(auto);
+    auto backpressure_strategy(const BackpressureStrategy value) -> decltype(auto);
 #else
-    IOX2_BUILDER_OPTIONAL(UnableToDeliverStrategy, unable_to_deliver_strategy);
+    IOX2_BUILDER_OPTIONAL(BackpressureStrategy, backpressure_strategy);
 #endif
 
     /// Defines the maximum number of [`ResponseMut`] that the [`Server`] can
@@ -100,15 +100,15 @@ class PortFactoryServer {
     /// captures data
     auto set_response_degradation_handler(DegradationHandler* handler) && -> PortFactoryServer&&;
 
-    /// Sets the [`UnableToDeliverHandler`] of the [`Server`]. Whenever a [`ResponseMut`] cannot be sent to a
-    /// [`Client`], this handler is called and depending on the returned [`UnableToDeliverAction`], measures will be
+    /// Sets the [`BackpressureHandler`] of the [`Server`]. Whenever a [`ResponseMut`] cannot be sent to a
+    /// [`Client`], this handler is called and depending on the returned [`BackpressureAction`], measures will be
     /// taken.
     /// If no handler is set, the measures will be determined by the value set in
-    /// [`UnableToDeliverStrategy`].
+    /// [`BackpressureStrategy`].
     /// @attention The handler function needs to live as long as the generated server. If the [`Server`], including
     /// the send and receive functions, is accessed from multiple threads, the handler must be thread-safe if it
     /// captures data
-    auto set_unable_to_deliver_handler(UnableToDeliverHandler* handler) && -> PortFactoryServer&&;
+    auto set_backpressure_handler(BackpressureHandler* handler) && -> PortFactoryServer&&;
 
     /// Creates a new [`Server`] or returns a [`ServerCreateError`] on failure.
     auto
@@ -127,7 +127,7 @@ class PortFactoryServer {
     bb::Optional<OverridePreallocationCallback> m_override_preallocation_callback;
     bb::Optional<DegradationHandler* const> m_request_degradation_handler;
     bb::Optional<DegradationHandler* const> m_response_degradation_handler;
-    bb::Optional<UnableToDeliverHandler* const> m_unable_to_deliver_handler;
+    bb::Optional<BackpressureHandler* const> m_backpressure_handler;
 };
 
 template <ServiceType Service,
@@ -194,8 +194,8 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseUserHeader>
 inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
-    set_unable_to_deliver_handler(UnableToDeliverHandler* handler) && -> PortFactoryServer&& {
-    m_unable_to_deliver_handler.emplace(handler);
+    set_backpressure_handler(BackpressureHandler* handler) && -> PortFactoryServer&& {
+    m_backpressure_handler.emplace(handler);
     return std::move(*this);
 }
 
@@ -207,10 +207,9 @@ template <ServiceType Service,
 inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     create() && -> bb::Expected<Server<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
                                 ServerCreateError> {
-    if (m_unable_to_deliver_strategy.has_value()) {
-        iox2_port_factory_server_builder_unable_to_deliver_strategy(
-            &m_handle,
-            static_cast<iox2_unable_to_deliver_strategy_e>(iox2::bb::into<int>(m_unable_to_deliver_strategy.value())));
+    if (m_backpressure_strategy.has_value()) {
+        iox2_port_factory_server_builder_backpressure_strategy(
+            &m_handle, static_cast<iox2_backpressure_strategy_e>(iox2::bb::into<int>(m_backpressure_strategy.value())));
     }
     if (m_max_slice_len.has_value()) {
         iox2_port_factory_server_builder_set_initial_max_slice_len(&m_handle, m_max_slice_len.value());
@@ -246,11 +245,9 @@ inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, Respon
             static_cast<void*>(m_response_degradation_handler.value()));
     }
 
-    if (m_unable_to_deliver_handler.has_value()) {
-        iox2_port_factory_server_builder_set_unable_to_deliver_handler(
-            &m_handle,
-            detail::unable_to_deliver_handler_delegate,
-            static_cast<void*>(m_unable_to_deliver_handler.value()));
+    if (m_backpressure_handler.has_value()) {
+        iox2_port_factory_server_builder_set_backpressure_handler(
+            &m_handle, detail::backpressure_handler_delegate, static_cast<void*>(m_backpressure_handler.value()));
     }
 
     iox2_server_h server_handle {};

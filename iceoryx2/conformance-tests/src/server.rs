@@ -19,7 +19,7 @@ pub mod server {
     use core::time::Duration;
     use iceoryx2::port::update_connections::UpdateConnections;
 
-    use iceoryx2::port::{ReceiveError, SendError, UnableToDeliverAction};
+    use iceoryx2::port::{BackpressureAction, ReceiveError, SendError};
     use iceoryx2::prelude::*;
     use iceoryx2::service::port_factory::request_response::PortFactory;
     use iceoryx2::service::port_factory::server::PortFactoryServer;
@@ -355,7 +355,7 @@ pub mod server {
     }
 
     #[conformance_test]
-    pub fn unable_to_deliver_strategy_discard_discards_responses_when_client_buffer_is_full<
+    pub fn backpressure_strategy_discard_discards_responses_when_client_buffer_is_full<
         Sut: Service,
     >() {
         let service_name = generate_service_name();
@@ -370,7 +370,7 @@ pub mod server {
 
         let sut = service
             .server_builder()
-            .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
+            .backpressure_strategy(BackpressureStrategy::DiscardData)
             .create()
             .unwrap();
         let client = service.client_builder().create().unwrap();
@@ -390,9 +390,7 @@ pub mod server {
     }
 
     #[conformance_test]
-    pub fn unable_to_deliver_strategy_block_blocks_responses_when_client_buffer_is_full<
-        Sut: Service,
-    >() {
+    pub fn backpressure_strategy_block_blocks_responses_when_client_buffer_is_full<Sut: Service>() {
         let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
@@ -414,7 +412,7 @@ pub mod server {
             s.thread_builder().spawn(|| {
                 let sut = service
                     .server_builder()
-                    .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
+                    .backpressure_strategy(BackpressureStrategy::RetryUntilDelivered)
                     .create()
                     .unwrap();
                 barrier.wait();
@@ -446,7 +444,7 @@ pub mod server {
     }
 
     #[conformance_test]
-    pub fn unable_to_deliver_strategy_block_unblocks_when_pending_response_goes_out_of_scope<
+    pub fn backpressure_strategy_block_unblocks_when_pending_response_goes_out_of_scope<
         Sut: Service,
     >() {
         let _watchdog = Watchdog::new();
@@ -470,7 +468,7 @@ pub mod server {
             s.thread_builder().spawn(|| {
                 let sut = service
                     .server_builder()
-                    .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
+                    .backpressure_strategy(BackpressureStrategy::RetryUntilDelivered)
                     .create()
                     .unwrap();
                 barrier.wait();
@@ -499,7 +497,7 @@ pub mod server {
     const VALUE_FIRST_RESPONSE: u64 = 123;
     const VALUE_SECOND_RESPONSE: u64 = 456;
 
-    fn server_with_unable_to_deliver_handler<Sut, ServerBuilder>(
+    fn server_with_backpressure_handler<Sut, ServerBuilder>(
         save_overflow: bool,
         server_builder: ServerBuilder,
         expected_second_send_result: Result<(), SendError>,
@@ -564,21 +562,21 @@ pub mod server {
     }
 
     #[conformance_test]
-    pub fn server_with_unable_to_deliver_handler_does_not_block_with_safe_overflow<Sut: Service>() {
+    pub fn server_with_backpressure_handler_does_not_block_with_safe_overflow<Sut: Service>() {
         const SAFE_OVERFLOW: bool = true;
         const EXPECTED_SECOND_SEND_RESULT: Result<(), SendError> = Ok(());
         const EXPECTED_RECEIVE_VALUE: Option<u64> = Some(VALUE_SECOND_RESPONSE);
 
         let handler_call_count = Arc::new(AtomicU64::new(0));
 
-        server_with_unable_to_deliver_handler::<Sut, _>(
+        server_with_backpressure_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |server_port_factory| {
-                server_port_factory.set_unable_to_deliver_handler({
+                server_port_factory.set_backpressure_handler({
                     let handler_call_count = handler_call_count.clone();
                     move |_| {
                         handler_call_count.fetch_add(1, Ordering::Relaxed);
-                        UnableToDeliverAction::Retry
+                        BackpressureAction::Retry
                     }
                 })
             },
@@ -590,21 +588,21 @@ pub mod server {
     }
 
     #[conformance_test]
-    pub fn server_with_unable_to_deliver_handler_discards_response<Sut: Service>() {
+    pub fn server_with_backpressure_handler_discards_response<Sut: Service>() {
         const SAFE_OVERFLOW: bool = false;
         const EXPECTED_SECOND_SEND_RESULT: Result<(), SendError> = Ok(());
         const EXPECTED_RECEIVE_VALUE: Option<u64> = Some(VALUE_FIRST_RESPONSE);
 
         let handler_call_count = Arc::new(AtomicU64::new(0));
 
-        server_with_unable_to_deliver_handler::<Sut, _>(
+        server_with_backpressure_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |server_port_factory| {
-                server_port_factory.set_unable_to_deliver_handler({
+                server_port_factory.set_backpressure_handler({
                     let handler_call_count = handler_call_count.clone();
                     move |_| {
                         handler_call_count.fetch_add(1, Ordering::Relaxed);
-                        UnableToDeliverAction::DiscardData
+                        BackpressureAction::DiscardData
                     }
                 })
             },
@@ -616,7 +614,7 @@ pub mod server {
     }
 
     #[conformance_test]
-    pub fn server_with_unable_to_deliver_handler_retries_twice<Sut: Service>() {
+    pub fn server_with_backpressure_handler_retries_twice<Sut: Service>() {
         const SAFE_OVERFLOW: bool = false;
         const EXPECTED_SECOND_SEND_RESULT: Result<(), SendError> = Ok(());
         const EXPECTED_RECEIVE_VALUE: Option<u64> = Some(VALUE_FIRST_RESPONSE);
@@ -624,17 +622,17 @@ pub mod server {
         let handler_call_count = Arc::new(AtomicU64::new(0));
         const RETRY_COUNT: u64 = 2;
 
-        server_with_unable_to_deliver_handler::<Sut, _>(
+        server_with_backpressure_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |server_port_factory| {
-                server_port_factory.set_unable_to_deliver_handler({
+                server_port_factory.set_backpressure_handler({
                     let handler_call_count = handler_call_count.clone();
                     move |info| {
                         if info.retries == RETRY_COUNT {
-                            UnableToDeliverAction::DiscardData
+                            BackpressureAction::DiscardData
                         } else {
                             handler_call_count.fetch_add(1, Ordering::Relaxed);
-                            UnableToDeliverAction::Retry
+                            BackpressureAction::Retry
                         }
                     }
                 })
@@ -647,21 +645,21 @@ pub mod server {
     }
 
     #[conformance_test]
-    pub fn server_with_unable_to_deliver_handler_retries_until_timeout<Sut: Service>() {
+    pub fn server_with_backpressure_handler_retries_until_timeout<Sut: Service>() {
         const TIMEOUT: Duration = Duration::from_millis(25);
         const SAFE_OVERFLOW: bool = false;
         const EXPECTED_SECOND_SEND_RESULT: Result<(), SendError> = Ok(());
         const EXPECTED_RECEIVE_VALUE: Option<u64> = Some(VALUE_FIRST_RESPONSE);
 
-        let elapsed_blocking_time = server_with_unable_to_deliver_handler::<Sut, _>(
+        let elapsed_blocking_time = server_with_backpressure_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |server_port_factory| {
-                server_port_factory.set_unable_to_deliver_handler({
+                server_port_factory.set_backpressure_handler({
                     move |info| {
                         if info.elapsed_time > TIMEOUT {
-                            UnableToDeliverAction::DiscardData
+                            BackpressureAction::DiscardData
                         } else {
-                            UnableToDeliverAction::Retry
+                            BackpressureAction::Retry
                         }
                     }
                 })
@@ -674,21 +672,21 @@ pub mod server {
     }
 
     #[conformance_test]
-    pub fn server_with_unable_to_deliver_handler_discards_response_and_fails<Sut: Service>() {
+    pub fn server_with_backpressure_handler_discards_response_and_fails<Sut: Service>() {
         const SAFE_OVERFLOW: bool = false;
         const EXPECTED_SECOND_SEND_RESULT: Result<(), SendError> = Err(SendError::UnableToDeliver);
         const EXPECTED_RECEIVE_VALUE: Option<u64> = Some(VALUE_FIRST_RESPONSE);
 
         let handler_call_count = Arc::new(AtomicU64::new(0));
 
-        server_with_unable_to_deliver_handler::<Sut, _>(
+        server_with_backpressure_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |server_port_factory| {
-                server_port_factory.set_unable_to_deliver_handler({
+                server_port_factory.set_backpressure_handler({
                     let handler_call_count = handler_call_count.clone();
                     move |_| {
                         handler_call_count.fetch_add(1, Ordering::Relaxed);
-                        UnableToDeliverAction::DiscardDataAndFail
+                        BackpressureAction::DiscardDataAndFail
                     }
                 })
             },
@@ -700,7 +698,7 @@ pub mod server {
     }
 
     #[conformance_test]
-    pub fn server_with_unable_to_deliver_handler_follows_unable_to_deliver_strategy_with_discard_data<
+    pub fn server_with_backpressure_handler_follows_backpressure_strategy_with_discard_data<
         Sut: Service,
     >() {
         const SAFE_OVERFLOW: bool = false;
@@ -709,16 +707,16 @@ pub mod server {
 
         let handler_call_count = Arc::new(AtomicU64::new(0));
 
-        server_with_unable_to_deliver_handler::<Sut, _>(
+        server_with_backpressure_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |server_port_factory| {
                 server_port_factory
-                    .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
-                    .set_unable_to_deliver_handler({
+                    .backpressure_strategy(BackpressureStrategy::DiscardData)
+                    .set_backpressure_handler({
                         let handler_call_count = handler_call_count.clone();
                         move |_| {
                             handler_call_count.fetch_add(1, Ordering::Relaxed);
-                            UnableToDeliverAction::FollowUnableToDeliveryStrategy
+                            BackpressureAction::FollowBackpressureyStrategy
                         }
                     })
             },
@@ -730,7 +728,7 @@ pub mod server {
     }
 
     #[conformance_test]
-    pub fn server_with_unable_to_deliver_handler_follows_unable_to_deliver_strategy_with_retry_until_delivered<
+    pub fn server_with_backpressure_handler_follows_backpressure_strategy_with_retry_until_delivered<
         Sut: Service,
     >() {
         let _watchdog = Watchdog::new();
@@ -764,12 +762,12 @@ pub mod server {
 
                 let sut = service
                     .server_builder()
-                    .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
-                    .set_unable_to_deliver_handler({
+                    .backpressure_strategy(BackpressureStrategy::RetryUntilDelivered)
+                    .set_backpressure_handler({
                         let call_count = call_count.clone();
                         move |_| {
                             call_count.fetch_add(1, Ordering::Relaxed);
-                            UnableToDeliverAction::FollowUnableToDeliveryStrategy
+                            BackpressureAction::FollowBackpressureyStrategy
                         }
                     })
                     .create()

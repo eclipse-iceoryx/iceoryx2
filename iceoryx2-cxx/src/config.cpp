@@ -380,14 +380,13 @@ void PublishSubscribe::set_enable_safe_overflow(bool value) && {
     iox2_config_defaults_publish_subscribe_set_enable_safe_overflow(m_config, value);
 }
 
-auto PublishSubscribe::unable_to_deliver_strategy() && -> UnableToDeliverStrategy {
-    return iox2::bb::into<UnableToDeliverStrategy>(
-        iox2_config_defaults_publish_subscribe_unable_to_deliver_strategy(m_config));
+auto PublishSubscribe::backpressure_strategy() && -> BackpressureStrategy {
+    return iox2::bb::into<BackpressureStrategy>(iox2_config_defaults_publish_subscribe_backpressure_strategy(m_config));
 }
 
-void PublishSubscribe::set_unable_to_deliver_strategy(UnableToDeliverStrategy value) && {
-    iox2_config_defaults_publish_subscribe_set_unable_to_deliver_strategy(
-        m_config, static_cast<iox2_unable_to_deliver_strategy_e>(iox2::bb::into<int>(value)));
+void PublishSubscribe::set_backpressure_strategy(BackpressureStrategy value) && {
+    iox2_config_defaults_publish_subscribe_set_backpressure_strategy(
+        m_config, static_cast<iox2_backpressure_strategy_e>(iox2::bb::into<int>(value)));
 }
 
 auto PublishSubscribe::subscriber_expired_connection_buffer() && -> size_t {
@@ -630,24 +629,24 @@ void RequestResponse::set_server_max_loaned_responses_per_request(size_t value) 
     iox2_config_defaults_request_response_set_server_max_loaned_responses_per_request(m_config, value);
 }
 
-auto RequestResponse::client_unable_to_deliver_strategy() && -> UnableToDeliverStrategy {
-    return iox2::bb::into<UnableToDeliverStrategy>(
-        iox2_config_defaults_request_response_client_unable_to_deliver_strategy(m_config));
+auto RequestResponse::client_backpressure_strategy() && -> BackpressureStrategy {
+    return iox2::bb::into<BackpressureStrategy>(
+        iox2_config_defaults_request_response_client_backpressure_strategy(m_config));
 }
 
-void RequestResponse::set_client_unable_to_deliver_strategy(UnableToDeliverStrategy value) && {
-    iox2_config_defaults_request_response_set_client_unable_to_deliver_strategy(
-        m_config, static_cast<iox2_unable_to_deliver_strategy_e>(value));
+void RequestResponse::set_client_backpressure_strategy(BackpressureStrategy value) && {
+    iox2_config_defaults_request_response_set_client_backpressure_strategy(
+        m_config, static_cast<iox2_backpressure_strategy_e>(value));
 }
 
-auto RequestResponse::server_unable_to_deliver_strategy() && -> UnableToDeliverStrategy {
-    return iox2::bb::into<UnableToDeliverStrategy>(
-        iox2_config_defaults_request_response_server_unable_to_deliver_strategy(m_config));
+auto RequestResponse::server_backpressure_strategy() && -> BackpressureStrategy {
+    return iox2::bb::into<BackpressureStrategy>(
+        iox2_config_defaults_request_response_server_backpressure_strategy(m_config));
 }
 
-void RequestResponse::set_server_unable_to_deliver_strategy(UnableToDeliverStrategy value) && {
-    iox2_config_defaults_request_response_set_server_unable_to_deliver_strategy(
-        m_config, static_cast<iox2_unable_to_deliver_strategy_e>(value));
+void RequestResponse::set_server_backpressure_strategy(BackpressureStrategy value) && {
+    iox2_config_defaults_request_response_set_server_backpressure_strategy(
+        m_config, static_cast<iox2_backpressure_strategy_e>(value));
 }
 
 auto RequestResponse::client_expired_connection_buffer() && -> size_t {

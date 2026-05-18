@@ -12,7 +12,7 @@
 
 pub use crate::config::Config;
 pub use crate::node::{Node, NodeBuilder, NodeState, node_name::NodeName};
-pub use crate::port::{event_id::EventId, unable_to_deliver_strategy::UnableToDeliverStrategy};
+pub use crate::port::{backpressure_strategy::BackpressureStrategy, event_id::EventId};
 pub use crate::service::messaging_pattern::MessagingPattern;
 pub use crate::service::{
     Service, ServiceDetails, attribute::AttributeSet, attribute::AttributeSpecifier,

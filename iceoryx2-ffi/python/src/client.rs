@@ -15,11 +15,11 @@ use iceoryx2_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::{
+    backpressure_strategy::BackpressureStrategy,
     error::LoanError,
     parc::Parc,
     request_mut_uninit::{RequestMutUninit, RequestMutUninitType},
     type_storage::TypeStorage,
-    unable_to_deliver_strategy::UnableToDeliverStrategy,
     unique_client_id::UniqueClientId,
 };
 
@@ -102,12 +102,12 @@ impl Client {
     #[getter]
     /// Returns the strategy the `Client` follows when a `RequestMut` cannot be delivered
     /// if the `Server`s buffer is full.
-    pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
+    pub fn backpressure_strategy(&self) -> BackpressureStrategy {
         match &self.value {
-            ClientType::Ipc(Some(v)) => v.unable_to_deliver_strategy().into(),
-            ClientType::Local(Some(v)) => v.unable_to_deliver_strategy().into(),
+            ClientType::Ipc(Some(v)) => v.backpressure_strategy().into(),
+            ClientType::Local(Some(v)) => v.backpressure_strategy().into(),
             _ => {
-                fatal_panic!(from "Client::unable_to_deliver_strategy()",
+                fatal_panic!(from "Client::backpressure_strategy()",
                     "Accessing a released client.")
             }
         }

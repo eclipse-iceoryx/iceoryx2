@@ -23,7 +23,7 @@ class Payload(ctypes.Structure):
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_unable_to_deliver_strategy_can_be_configured(
+def test_backpressure_strategy_can_be_configured(
     service_type: iox2.ServiceType,
 ) -> None:
     config = iox2.testing.generate_isolated_config()
@@ -39,20 +39,17 @@ def test_unable_to_deliver_strategy_can_be_configured(
 
     sut_1 = (
         service.publisher_builder()
-        .unable_to_deliver_strategy(iox2.UnableToDeliverStrategy.RetryUntilDelivered)
+        .backpressure_strategy(iox2.BackpressureStrategy.RetryUntilDelivered)
         .create()
     )
     sut_2 = (
         service.publisher_builder()
-        .unable_to_deliver_strategy(iox2.UnableToDeliverStrategy.DiscardData)
+        .backpressure_strategy(iox2.BackpressureStrategy.DiscardData)
         .create()
     )
 
-    assert (
-        sut_1.unable_to_deliver_strategy
-        == iox2.UnableToDeliverStrategy.RetryUntilDelivered
-    )
-    assert sut_2.unable_to_deliver_strategy == iox2.UnableToDeliverStrategy.DiscardData
+    assert sut_1.backpressure_strategy == iox2.BackpressureStrategy.RetryUntilDelivered
+    assert sut_2.backpressure_strategy == iox2.BackpressureStrategy.DiscardData
 
 
 @pytest.mark.parametrize("service_type", service_types)

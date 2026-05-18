@@ -25,7 +25,7 @@
 //!
 //! let publisher = pubsub.publisher_builder()
 //!                     .max_loaned_samples(6)
-//!                     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
+//!                     .backpressure_strategy(BackpressureStrategy::DiscardData)
 //!                     .create()?;
 //!
 //! # Ok(())
@@ -56,10 +56,9 @@
 
 use crate::{
     port::{
-        DegradationAction, DegradationFn, DegradationHandler, UnableToDeliverFn,
-        UnableToDeliverHandler,
+        BackpressureFn, BackpressureHandler, DegradationAction, DegradationFn, DegradationHandler,
+        backpressure_strategy::BackpressureStrategy,
         publisher::{Publisher, PublisherCreateError},
-        unable_to_deliver_strategy::UnableToDeliverStrategy,
     },
     service,
 };
@@ -97,7 +96,7 @@ impl<'a> Debug for PreallocatedSamplesOverride<'a> {
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct LocalPublisherConfig {
     pub(crate) max_loaned_samples: usize,
-    pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
+    pub(crate) backpressure_strategy: BackpressureStrategy,
     pub(crate) initial_max_slice_len: usize,
     pub(crate) allocation_strategy: AllocationStrategy,
 }
@@ -114,7 +113,7 @@ pub struct PortFactoryPublisher<
 > {
     pub(crate) config: LocalPublisherConfig,
     pub(crate) degradation_handler: DegradationHandler<'static>,
-    pub(crate) unable_to_deliver_handler: Option<UnableToDeliverHandler<'static>>,
+    pub(crate) backpressure_handler: Option<BackpressureHandler<'static>>,
     pub(crate) preallocate_number_of_samples_override: PreallocatedSamplesOverride<'static>,
     pub(crate) factory: &'factory PortFactory<Service, Payload, UserHeader>,
 }
@@ -142,7 +141,7 @@ impl<
             config: self.config,
             factory: self.factory,
             degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
-            unable_to_deliver_handler: None,
+            backpressure_handler: None,
             preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),
         }
     }
@@ -168,10 +167,10 @@ impl<
                 allocation_strategy: defaults.publisher_allocation_strategy,
                 initial_max_slice_len: 1,
                 max_loaned_samples: defaults.publisher_max_loaned_samples,
-                unable_to_deliver_strategy: defaults.unable_to_deliver_strategy,
+                backpressure_strategy: defaults.backpressure_strategy,
             },
             degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
-            unable_to_deliver_handler: None,
+            backpressure_handler: None,
             preallocate_number_of_samples_override: PreallocatedSamplesOverride::new(|v| v),
             factory,
         }
@@ -206,9 +205,9 @@ impl<
         self
     }
 
-    /// Sets the [`UnableToDeliverStrategy`].
-    pub fn unable_to_deliver_strategy(mut self, value: UnableToDeliverStrategy) -> Self {
-        self.config.unable_to_deliver_strategy = value;
+    /// Sets the [`BackpressureStrategy`].
+    pub fn backpressure_strategy(mut self, value: BackpressureStrategy) -> Self {
+        self.config.backpressure_strategy = value;
         self
     }
 
@@ -221,18 +220,15 @@ impl<
         self
     }
 
-    /// Sets the [`UnableToDeliverHandler`] of the [`Publisher`]. Whenever a
+    /// Sets the [`BackpressureHandler`] of the [`Publisher`]. Whenever a
     /// [`SampleMut`](crate::sample_mut::SampleMut) cannot be sent to a
     /// [`crate::port::subscriber::Subscriber`], this handler is called and depending on the
-    /// returned [`UnableToDeliverAction`](crate::port::UnableToDeliverAction),
+    /// returned [`BackpressureAction`](crate::port::BackpressureAction),
     /// measures will be taken.
     /// If no handler is set, the measures will be determined by the value set in
-    /// [`UnableToDeliverStrategy`].
-    pub fn set_unable_to_deliver_handler<F: UnableToDeliverFn + 'static>(
-        mut self,
-        handler: F,
-    ) -> Self {
-        self.unable_to_deliver_handler = Some(UnableToDeliverHandler::new(handler));
+    /// [`BackpressureStrategy`].
+    pub fn set_backpressure_handler<F: BackpressureFn + 'static>(mut self, handler: F) -> Self {
+        self.backpressure_handler = Some(BackpressureHandler::new(handler));
 
         self
     }

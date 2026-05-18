@@ -21,7 +21,7 @@ pub mod client {
     use iceoryx2::port::update_connections::UpdateConnections;
 
     use iceoryx2::port::client::RequestSendError;
-    use iceoryx2::port::{LoanError, SendError, UnableToDeliverAction};
+    use iceoryx2::port::{BackpressureAction, LoanError, SendError};
     use iceoryx2::prelude::*;
     use iceoryx2::service::port_factory::client::PortFactoryClient;
     use iceoryx2::testing::*;
@@ -217,7 +217,7 @@ pub mod client {
     }
 
     #[conformance_test]
-    pub fn unable_to_deliver_strategy_block_blocks_when_server_buffer_is_full<Sut: Service>() {
+    pub fn backpressure_strategy_block_blocks_when_server_buffer_is_full<Sut: Service>() {
         let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
@@ -239,11 +239,11 @@ pub mod client {
             s.thread_builder().spawn(|| {
                 let sut = service
                     .client_builder()
-                    .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
+                    .backpressure_strategy(BackpressureStrategy::RetryUntilDelivered)
                     .create()
                     .unwrap();
 
-                assert_that!(sut.unable_to_deliver_strategy(), eq UnableToDeliverStrategy::RetryUntilDelivered);
+                assert_that!(sut.backpressure_strategy(), eq BackpressureStrategy::RetryUntilDelivered);
 
                 init_barrier.wait();
                 start_barrier.wait();
@@ -270,7 +270,7 @@ pub mod client {
     }
 
     #[conformance_test]
-    pub fn unable_to_deliver_strategy_block_unblocks_when_server_disconnects<Sut: Service>() {
+    pub fn backpressure_strategy_block_unblocks_when_server_disconnects<Sut: Service>() {
         let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
@@ -293,11 +293,11 @@ pub mod client {
             s.thread_builder().spawn(|| {
                 let sut = service
                     .client_builder()
-                    .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
+                    .backpressure_strategy(BackpressureStrategy::RetryUntilDelivered)
                     .create()
                     .unwrap();
 
-                assert_that!(sut.unable_to_deliver_strategy(), eq UnableToDeliverStrategy::RetryUntilDelivered);
+                assert_that!(sut.backpressure_strategy(), eq BackpressureStrategy::RetryUntilDelivered);
 
                 init_barrier.wait();
 
@@ -324,7 +324,7 @@ pub mod client {
     }
 
     #[conformance_test]
-    pub fn unable_to_deliver_strategy_discard_discards_request<Sut: Service>() {
+    pub fn backpressure_strategy_discard_discards_request<Sut: Service>() {
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
         let service = node
@@ -338,11 +338,11 @@ pub mod client {
 
         let sut = service
             .client_builder()
-            .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
+            .backpressure_strategy(BackpressureStrategy::DiscardData)
             .create()
             .unwrap();
 
-        assert_that!(sut.unable_to_deliver_strategy(), eq UnableToDeliverStrategy::DiscardData);
+        assert_that!(sut.backpressure_strategy(), eq BackpressureStrategy::DiscardData);
 
         let request = sut.send_copy(123);
         assert_that!(request, is_ok);
@@ -359,7 +359,7 @@ pub mod client {
     const VALUE_FIRST_REQUEST: u64 = 123;
     const VALUE_SECOND_REQUEST: u64 = 456;
 
-    fn client_with_unable_to_deliver_handler<Sut, ClientBuilder>(
+    fn client_with_backpressure_handler<Sut, ClientBuilder>(
         save_overflow: bool,
         client_builder: ClientBuilder,
         expected_second_send_result: Result<(), RequestSendError>,
@@ -449,7 +449,7 @@ pub mod client {
     }
 
     #[conformance_test]
-    pub fn client_with_unable_to_deliver_handler_does_not_block_with_safe_overflow<Sut: Service>() {
+    pub fn client_with_backpressure_handler_does_not_block_with_safe_overflow<Sut: Service>() {
         const SAFE_OVERFLOW: bool = true;
         const EXPECTED_SECOND_SEND_RESULT: Result<(), RequestSendError> = Ok(());
         const EXPECTED_RECEIVE_VALUE_SERVER_1: Option<u64> = Some(VALUE_SECOND_REQUEST);
@@ -457,14 +457,14 @@ pub mod client {
 
         let handler_call_count = Arc::new(AtomicU64::new(0));
 
-        client_with_unable_to_deliver_handler::<Sut, _>(
+        client_with_backpressure_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |client_port_factory| {
-                client_port_factory.set_unable_to_deliver_handler({
+                client_port_factory.set_backpressure_handler({
                     let handler_call_count = handler_call_count.clone();
                     move |_| {
                         handler_call_count.fetch_add(1, Ordering::Relaxed);
-                        UnableToDeliverAction::Retry
+                        BackpressureAction::Retry
                     }
                 })
             },
@@ -477,7 +477,7 @@ pub mod client {
     }
 
     #[conformance_test]
-    pub fn client_with_unable_to_deliver_handler_discards_request<Sut: Service>() {
+    pub fn client_with_backpressure_handler_discards_request<Sut: Service>() {
         const SAFE_OVERFLOW: bool = false;
         const EXPECTED_SECOND_SEND_RESULT: Result<(), RequestSendError> = Ok(());
         const EXPECTED_RECEIVE_VALUE_SERVER_1: Option<u64> = Some(VALUE_FIRST_REQUEST);
@@ -485,14 +485,14 @@ pub mod client {
 
         let handler_call_count = Arc::new(AtomicU64::new(0));
 
-        client_with_unable_to_deliver_handler::<Sut, _>(
+        client_with_backpressure_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |client_port_factory| {
-                client_port_factory.set_unable_to_deliver_handler({
+                client_port_factory.set_backpressure_handler({
                     let handler_call_count = handler_call_count.clone();
                     move |_| {
                         handler_call_count.fetch_add(1, Ordering::Relaxed);
-                        UnableToDeliverAction::DiscardData
+                        BackpressureAction::DiscardData
                     }
                 })
             },
@@ -505,7 +505,7 @@ pub mod client {
     }
 
     #[conformance_test]
-    pub fn client_with_unable_to_deliver_handler_retries_twice<Sut: Service>() {
+    pub fn client_with_backpressure_handler_retries_twice<Sut: Service>() {
         const SAFE_OVERFLOW: bool = false;
         const EXPECTED_SECOND_SEND_RESULT: Result<(), RequestSendError> = Ok(());
         const EXPECTED_RECEIVE_VALUE_SERVER_1: Option<u64> = Some(VALUE_FIRST_REQUEST);
@@ -514,17 +514,17 @@ pub mod client {
         let handler_call_count = Arc::new(AtomicU64::new(0));
         const RETRY_COUNT: u64 = 2;
 
-        client_with_unable_to_deliver_handler::<Sut, _>(
+        client_with_backpressure_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |client_port_factory| {
-                client_port_factory.set_unable_to_deliver_handler({
+                client_port_factory.set_backpressure_handler({
                     let handler_call_count = handler_call_count.clone();
                     move |info| {
                         if info.retries == RETRY_COUNT {
-                            UnableToDeliverAction::DiscardData
+                            BackpressureAction::DiscardData
                         } else {
                             handler_call_count.fetch_add(1, Ordering::Relaxed);
-                            UnableToDeliverAction::Retry
+                            BackpressureAction::Retry
                         }
                     }
                 })
@@ -538,22 +538,22 @@ pub mod client {
     }
 
     #[conformance_test]
-    pub fn client_with_unable_to_deliver_handler_retries_until_timeout<Sut: Service>() {
+    pub fn client_with_backpressure_handler_retries_until_timeout<Sut: Service>() {
         const TIMEOUT: Duration = Duration::from_millis(25);
         const SAFE_OVERFLOW: bool = false;
         const EXPECTED_SECOND_SEND_RESULT: Result<(), RequestSendError> = Ok(());
         const EXPECTED_RECEIVE_VALUE_SERVER_1: Option<u64> = Some(VALUE_FIRST_REQUEST);
         const EXPECTED_RECEIVE_VALUE_SERVER_2: Option<u64> = Some(VALUE_SECOND_REQUEST);
 
-        let elapsed_blocking_time = client_with_unable_to_deliver_handler::<Sut, _>(
+        let elapsed_blocking_time = client_with_backpressure_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |client_port_factory| {
-                client_port_factory.set_unable_to_deliver_handler({
+                client_port_factory.set_backpressure_handler({
                     move |info| {
                         if info.elapsed_time > TIMEOUT {
-                            UnableToDeliverAction::DiscardData
+                            BackpressureAction::DiscardData
                         } else {
-                            UnableToDeliverAction::Retry
+                            BackpressureAction::Retry
                         }
                     }
                 })
@@ -567,7 +567,7 @@ pub mod client {
     }
 
     #[conformance_test]
-    pub fn client_with_unable_to_deliver_handler_discards_request_and_fails<Sut: Service>() {
+    pub fn client_with_backpressure_handler_discards_request_and_fails<Sut: Service>() {
         const SAFE_OVERFLOW: bool = false;
         const EXPECTED_SECOND_SEND_RESULT: Result<(), RequestSendError> =
             Err(RequestSendError::SendError(SendError::UnableToDeliver));
@@ -576,14 +576,14 @@ pub mod client {
 
         let handler_call_count = Arc::new(AtomicU64::new(0));
 
-        client_with_unable_to_deliver_handler::<Sut, _>(
+        client_with_backpressure_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |client_port_factory| {
-                client_port_factory.set_unable_to_deliver_handler({
+                client_port_factory.set_backpressure_handler({
                     let handler_call_count = handler_call_count.clone();
                     move |_| {
                         handler_call_count.fetch_add(1, Ordering::Relaxed);
-                        UnableToDeliverAction::DiscardDataAndFail
+                        BackpressureAction::DiscardDataAndFail
                     }
                 })
             },
@@ -596,7 +596,7 @@ pub mod client {
     }
 
     #[conformance_test]
-    pub fn client_with_unable_to_deliver_handler_follows_unable_to_deliver_strategy_with_discard_data<
+    pub fn client_with_backpressure_handler_follows_backpressure_strategy_with_discard_data<
         Sut: Service,
     >() {
         const SAFE_OVERFLOW: bool = false;
@@ -606,16 +606,16 @@ pub mod client {
 
         let handler_call_count = Arc::new(AtomicU64::new(0));
 
-        client_with_unable_to_deliver_handler::<Sut, _>(
+        client_with_backpressure_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |client_port_factory| {
                 client_port_factory
-                    .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
-                    .set_unable_to_deliver_handler({
+                    .backpressure_strategy(BackpressureStrategy::DiscardData)
+                    .set_backpressure_handler({
                         let handler_call_count = handler_call_count.clone();
                         move |_| {
                             handler_call_count.fetch_add(1, Ordering::Relaxed);
-                            UnableToDeliverAction::FollowUnableToDeliveryStrategy
+                            BackpressureAction::FollowBackpressureyStrategy
                         }
                     })
             },
@@ -628,7 +628,7 @@ pub mod client {
     }
 
     #[conformance_test]
-    pub fn client_with_unable_to_deliver_handler_follows_unable_to_deliver_strategy_with_retry_until_delivered<
+    pub fn client_with_backpressure_handler_follows_backpressure_strategy_with_retry_until_delivered<
         Sut: Service,
     >() {
         let _watchdog = Watchdog::new();
@@ -664,12 +664,12 @@ pub mod client {
 
                 let sut = service
                     .client_builder()
-                    .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
-                    .set_unable_to_deliver_handler({
+                    .backpressure_strategy(BackpressureStrategy::RetryUntilDelivered)
+                    .set_backpressure_handler({
                         let call_count = call_count.clone();
                         move |_| {
                             call_count.fetch_add(1, Ordering::Relaxed);
-                            UnableToDeliverAction::FollowUnableToDeliveryStrategy
+                            BackpressureAction::FollowBackpressureyStrategy
                         }
                     })
                     .create()

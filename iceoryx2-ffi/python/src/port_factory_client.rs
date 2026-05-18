@@ -16,10 +16,10 @@ use pyo3::prelude::*;
 
 use crate::{
     allocation_strategy::AllocationStrategy,
+    backpressure_strategy::BackpressureStrategy,
     client::{Client, ClientType},
     parc::Parc,
     port_factory_request_response::PortFactoryRequestResponseType,
-    unable_to_deliver_strategy::UnableToDeliverStrategy,
 };
 
 type IpcPortFactoryClient<'a> = iceoryx2::service::port_factory::client::PortFactoryClient<
@@ -163,19 +163,19 @@ impl PortFactoryClient {
         }
     }
 
-    /// Sets the `UnableToDeliverStrategy` which defines how the `Client` shall behave
+    /// Sets the `BackpressureStrategy` which defines how the `Client` shall behave
     /// when a `Server` cannot receive a `RequestMut` since its internal buffer is full.
-    pub fn unable_to_deliver_strategy(&self, value: &UnableToDeliverStrategy) -> Self {
+    pub fn backpressure_strategy(&self, value: &BackpressureStrategy) -> Self {
         let _guard = self.factory.lock();
         match &self.value {
             PortFactoryClientType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                let this = this.unable_to_deliver_strategy(value.clone().into());
+                let this = this.backpressure_strategy(value.clone().into());
                 self.clone_ipc(this)
             }
             PortFactoryClientType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                let this = this.unable_to_deliver_strategy(value.clone().into());
+                let this = this.backpressure_strategy(value.clone().into());
                 self.clone_local(this)
             }
         }

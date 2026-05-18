@@ -41,8 +41,8 @@ pub mod service_request_response {
         request_overflow: bool,
         response_overflow: bool,
         enable_fire_and_forget: bool,
-        client_unable_to_deliver_strategy: UnableToDeliverStrategy,
-        server_unable_to_deliver_strategy: UnableToDeliverStrategy,
+        client_backpressure_strategy: BackpressureStrategy,
+        server_backpressure_strategy: BackpressureStrategy,
     }
 
     impl Default for Args {
@@ -58,8 +58,8 @@ pub mod service_request_response {
                 request_overflow: true,
                 response_overflow: true,
                 enable_fire_and_forget: false,
-                client_unable_to_deliver_strategy: UnableToDeliverStrategy::DiscardData,
-                server_unable_to_deliver_strategy: UnableToDeliverStrategy::DiscardData,
+                client_backpressure_strategy: BackpressureStrategy::DiscardData,
+                server_backpressure_strategy: BackpressureStrategy::DiscardData,
             }
         }
     }
@@ -105,7 +105,7 @@ pub mod service_request_response {
                 servers.push(
                     service
                         .server_builder()
-                        .unable_to_deliver_strategy(args.server_unable_to_deliver_strategy)
+                        .backpressure_strategy(args.server_backpressure_strategy)
                         .create()
                         .unwrap(),
                 );
@@ -116,7 +116,7 @@ pub mod service_request_response {
                 clients.push(
                     service
                         .client_builder()
-                        .unable_to_deliver_strategy(args.client_unable_to_deliver_strategy)
+                        .backpressure_strategy(args.client_backpressure_strategy)
                         .create()
                         .unwrap(),
                 );
@@ -196,7 +196,7 @@ pub mod service_request_response {
         let test_args = Args {
             response_buffer_size: 9,
             response_overflow: false,
-            server_unable_to_deliver_strategy: UnableToDeliverStrategy::DiscardData,
+            server_backpressure_strategy: BackpressureStrategy::DiscardData,
             ..Default::default()
         };
 

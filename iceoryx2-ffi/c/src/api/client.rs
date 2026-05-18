@@ -30,13 +30,13 @@ use super::HandleToType;
 use super::PayloadFfi;
 use super::PendingResponseUnion;
 use super::UserHeaderFfi;
+use super::iox2_backpressure_strategy_e;
 use super::iox2_pending_response_h;
 use super::iox2_pending_response_t;
 use super::iox2_request_mut_h;
 use super::iox2_request_mut_t;
 use super::iox2_request_send_error_e;
 use super::iox2_service_type_e;
-use super::iox2_unable_to_deliver_strategy_e;
 use super::iox2_unique_client_id_h;
 use super::iox2_unique_client_id_t;
 use core::ffi::c_int;
@@ -142,32 +142,24 @@ impl HandleToType for iox2_client_h_ref {
 ///
 /// * `handle` obtained by [`iox2_port_factory_client_builder_create`](crate::iox2_port_factory_client_builder_create)
 ///
-/// Returns [`iox2_unable_to_deliver_strategy_e`].
+/// Returns [`iox2_backpressure_strategy_e`].
 ///
 /// # Safety
 ///
 /// * `handle` is valid and non-null
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_client_unable_to_deliver_strategy(
+pub unsafe extern "C" fn iox2_client_backpressure_strategy(
     handle: iox2_client_h_ref,
-) -> iox2_unable_to_deliver_strategy_e {
+) -> iox2_backpressure_strategy_e {
     handle.assert_non_null();
     unsafe {
         let client = &mut *handle.as_type();
 
         match client.service_type {
-            iox2_service_type_e::IPC => client
-                .value
-                .as_mut()
-                .ipc
-                .unable_to_deliver_strategy()
-                .into(),
-            iox2_service_type_e::LOCAL => client
-                .value
-                .as_mut()
-                .local
-                .unable_to_deliver_strategy()
-                .into(),
+            iox2_service_type_e::IPC => client.value.as_mut().ipc.backpressure_strategy().into(),
+            iox2_service_type_e::LOCAL => {
+                client.value.as_mut().local.backpressure_strategy().into()
+            }
         }
     }
 }

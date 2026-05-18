@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::{api::AssertNonNullHandle, c_size_t, iox2_unable_to_deliver_strategy_e};
+use crate::{api::AssertNonNullHandle, c_size_t, iox2_backpressure_strategy_e};
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
 use core::time::Duration;
@@ -1788,13 +1788,13 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_enable_safe_
 /// [`iox2_publisher_h`](crate::api::iox2_publisher_h) when the
 /// [`iox2_subscriber_h`](crate::api::iox2_subscriber_h)s buffer is full.
 ///
-/// Returns [`iox2_unable_to_deliver_strategy_e`]
+/// Returns [`iox2_backpressure_strategy_e`]
 ///
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_unable_to_deliver_strategy(
+pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_backpressure_strategy(
     handle: iox2_config_h_ref,
 ) -> c_int {
     handle.assert_non_null();
@@ -1806,20 +1806,20 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_unable_to_delive
             .value
             .defaults
             .publish_subscribe
-            .unable_to_deliver_strategy
+            .backpressure_strategy
             .into_c_int()
     }
 }
 
-/// Define the unable to deliver strategy
+/// Define the backpressure strategy
 ///
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_unable_to_deliver_strategy(
+pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_backpressure_strategy(
     handle: iox2_config_h_ref,
-    value: iox2_unable_to_deliver_strategy_e,
+    value: iox2_backpressure_strategy_e,
 ) {
     handle.assert_non_null();
     unsafe {
@@ -1830,7 +1830,7 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_unable_to_de
             .value
             .defaults
             .publish_subscribe
-            .unable_to_deliver_strategy = value.into();
+            .backpressure_strategy = value.into();
     }
 }
 
@@ -1987,13 +1987,13 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_server_expire
 /// [`iox2_client_h`](crate::api::iox2_client_h) when the
 /// [`iox2_server_h`](crate::api::iox2_server_h)s request buffer is full.
 ///
-/// Returns [`iox2_unable_to_deliver_strategy_e`]
+/// Returns [`iox2_backpressure_strategy_e`]
 ///
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_config_defaults_request_response_client_unable_to_deliver_strategy(
+pub unsafe extern "C" fn iox2_config_defaults_request_response_client_backpressure_strategy(
     handle: iox2_config_h_ref,
 ) -> c_int {
     handle.assert_non_null();
@@ -2005,20 +2005,20 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_client_unable_to_
             .value
             .defaults
             .request_response
-            .client_unable_to_deliver_strategy
+            .client_backpressure_strategy
             .into_c_int()
     }
 }
 
-/// Defines the unable to deliver strategy for the [`iox2_client_h`](crate::api::iox2_client_h).
+/// Defines the backpressure strategy for the [`iox2_client_h`](crate::api::iox2_client_h).
 ///
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_config_defaults_request_response_set_client_unable_to_deliver_strategy(
+pub unsafe extern "C" fn iox2_config_defaults_request_response_set_client_backpressure_strategy(
     handle: iox2_config_h_ref,
-    value: iox2_unable_to_deliver_strategy_e,
+    value: iox2_backpressure_strategy_e,
 ) {
     handle.assert_non_null();
     unsafe {
@@ -2029,7 +2029,7 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_client_unable
             .value
             .defaults
             .request_response
-            .client_unable_to_deliver_strategy = value.into();
+            .client_backpressure_strategy = value.into();
     }
 }
 
@@ -2037,13 +2037,13 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_client_unable
 /// [`iox2_server_h`](crate::api::iox2_server_h) when the
 /// [`iox2_client_h`](crate::api::iox2_client_h)s response buffer is full.
 ///
-/// Returns [`iox2_unable_to_deliver_strategy_e`]
+/// Returns [`iox2_backpressure_strategy_e`]
 ///
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_config_defaults_request_response_server_unable_to_deliver_strategy(
+pub unsafe extern "C" fn iox2_config_defaults_request_response_server_backpressure_strategy(
     handle: iox2_config_h_ref,
 ) -> c_int {
     handle.assert_non_null();
@@ -2055,20 +2055,20 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_server_unable_to_
             .value
             .defaults
             .request_response
-            .server_unable_to_deliver_strategy
+            .server_backpressure_strategy
             .into_c_int()
     }
 }
 
-/// Defines the unable to deliver strategy for the [`iox2_server_h`](crate::api::iox2_server_h).
+/// Defines the backpressure strategy for the [`iox2_server_h`](crate::api::iox2_server_h).
 ///
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_config_defaults_request_response_set_server_unable_to_deliver_strategy(
+pub unsafe extern "C" fn iox2_config_defaults_request_response_set_server_backpressure_strategy(
     handle: iox2_config_h_ref,
-    value: iox2_unable_to_deliver_strategy_e,
+    value: iox2_backpressure_strategy_e,
 ) {
     handle.assert_non_null();
     unsafe {
@@ -2079,7 +2079,7 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_server_unable
             .value
             .defaults
             .request_response
-            .server_unable_to_deliver_strategy = value.into();
+            .server_backpressure_strategy = value.into();
     }
 }
 

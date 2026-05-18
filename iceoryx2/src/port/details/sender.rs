@@ -25,7 +25,7 @@ use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
-    ChannelId, ChannelState, UnableToDeliverToReceiverAction, ZeroCopyConnection,
+    BackpressureToReceiverAction, ChannelId, ChannelState, ZeroCopyConnection,
     ZeroCopyConnectionBuilder, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySendError,
     ZeroCopySender,
 };
@@ -33,10 +33,10 @@ use iceoryx2_log::{error, fail, fatal_panic, warn};
 
 use crate::node::SharedNode;
 use crate::port::{
-    DegradationAction, DegradationCause, DegradationHandler, DegradationInfo, LoanError, SendError,
-    UnableToDeliverHandler, UnableToDeliverInfo,
+    BackpressureHandler, BackpressureInfo, DegradationAction, DegradationCause, DegradationHandler,
+    DegradationInfo, LoanError, SendError,
 };
-use crate::prelude::UnableToDeliverStrategy;
+use crate::prelude::BackpressureStrategy;
 use crate::service::config_scheme::connection_config;
 use crate::service::static_config::message_type_details::{MessageTypeDetails, TypeVariant};
 use crate::service::{NoResource, SharedServiceState};
@@ -131,11 +131,11 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) number_of_samples: usize,
     pub(crate) max_number_of_segments: u8,
     pub(crate) degradation_handler: DegradationHandler<'static>,
-    pub(crate) unable_to_deliver_handler: Option<UnableToDeliverHandler<'static>>,
+    pub(crate) backpressure_handler: Option<BackpressureHandler<'static>>,
     pub(crate) service_state: SharedServiceState<Service, NoResource>,
     pub(crate) tagger: CyclicTagger,
     pub(crate) loan_counter: AtomicUsize,
-    pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
+    pub(crate) backpressure_strategy: BackpressureStrategy,
     pub(crate) message_type_details: MessageTypeDetails,
     pub(crate) number_of_channels: usize,
     pub(crate) initial_channel_state: ChannelState,
@@ -199,15 +199,13 @@ impl<Service: service::Service> Sender<Service> {
 
         let mut number_of_recipients = 0;
         if let Some(connection) = self.get(connection_id) {
-            let delivery_call_result = if let Some(handler) =
-                self.unable_to_deliver_handler.as_ref()
-            {
-                let unablet_to_deliver_action_for_strategy = match self.unable_to_deliver_strategy {
-                    UnableToDeliverStrategy::RetryUntilDelivered => {
-                        UnableToDeliverToReceiverAction::Retry
+            let delivery_call_result = if let Some(handler) = self.backpressure_handler.as_ref() {
+                let backpressure_action_for_strategy = match self.backpressure_strategy {
+                    BackpressureStrategy::RetryUntilDelivered => {
+                        BackpressureToReceiverAction::Retry
                     }
-                    UnableToDeliverStrategy::DiscardData => {
-                        UnableToDeliverToReceiverAction::DiscardPointerOffset
+                    BackpressureStrategy::DiscardData => {
+                        BackpressureToReceiverAction::DiscardPointerOffset
                     }
                 };
 
@@ -218,7 +216,7 @@ impl<Service: service::Service> Sender<Service> {
                     channel_id,
                     |retries, elapsed_time| {
                         handler
-                            .call(&UnableToDeliverInfo {
+                            .call(&BackpressureInfo {
                                 service_id: self
                                     .service_state
                                     .static_config()
@@ -231,11 +229,11 @@ impl<Service: service::Service> Sender<Service> {
                             })
                             .into()
                     },
-                    unablet_to_deliver_action_for_strategy,
+                    backpressure_action_for_strategy,
                 )
             } else {
-                match self.unable_to_deliver_strategy {
-                    UnableToDeliverStrategy::DiscardData => {
+                match self.backpressure_strategy {
+                    BackpressureStrategy::DiscardData => {
                         <Service::Connection as ZeroCopyConnection>::Sender::try_send(
                             &connection.sender,
                             offset,
@@ -243,14 +241,14 @@ impl<Service: service::Service> Sender<Service> {
                             channel_id,
                         )
                     }
-                    UnableToDeliverStrategy::RetryUntilDelivered => {
+                    BackpressureStrategy::RetryUntilDelivered => {
                         <Service::Connection as ZeroCopyConnection>::Sender::blocking_send(
                             &connection.sender,
                             offset,
                             sample_size,
                             channel_id,
-                            |_, _| UnableToDeliverToReceiverAction::FollowUnableToDeliveryStrategy,
-                            UnableToDeliverToReceiverAction::Retry,
+                            |_, _| BackpressureToReceiverAction::FollowBackpressureyStrategy,
+                            BackpressureToReceiverAction::Retry,
                         )
                     }
                 }

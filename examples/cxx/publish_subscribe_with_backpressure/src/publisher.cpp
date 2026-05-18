@@ -10,10 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/backpressure_action.hpp"
+#include "iox2/backpressure_handler.hpp"
 #include "iox2/bb/duration.hpp"
 #include "iox2/iceoryx2.hpp"
-#include "iox2/unable_to_deliver_action.hpp"
-#include "iox2/unable_to_deliver_handler.hpp"
 #include "transmission_data.hpp"
 
 #include <chrono>
@@ -40,7 +40,7 @@ auto main() -> int {
     auto counter = 0;
     auto delivery_incident_counter = 0;
 
-    UnableToDeliverHandler unable_to_deliver_handler = [&](const UnableToDeliverInfo& info) -> auto {
+    BackpressureHandler backpressure_handler = [&](const BackpressureInfo& info) -> auto {
         // only print the port IDs in the first iteration of the retry loop of each delivery incident
         if (info.retries() == 0) {
             delivery_incident_counter += 1;
@@ -72,10 +72,10 @@ auto main() -> int {
             // to whom no attempt was taken to deliver the sample, yet;
             // return with an error if the sample was not delivered to all receivers
             if (info.elapsed_time() < bb::Duration::from_millis(10)) {
-                return UnableToDeliverAction::Retry;
+                return BackpressureAction::Retry;
             } else {
                 std::cout << "    Retried for 10ms! Discarding sample and failing" << std::endl;
-                return UnableToDeliverAction::DiscardDataAndFail;
+                return BackpressureAction::DiscardDataAndFail;
             }
         }
         case 1: {
@@ -88,9 +88,9 @@ auto main() -> int {
             if (info.retries() < 10) {
                 std::cout << "    Sleeping 100ms and retry" << std::endl;
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                return UnableToDeliverAction::Retry;
+                return BackpressureAction::Retry;
             } else {
-                return UnableToDeliverAction::DiscardDataAndFail;
+                return BackpressureAction::DiscardDataAndFail;
             }
         }
         case 2: {
@@ -98,7 +98,7 @@ auto main() -> int {
             // continue to try delivering the sample to all other receiver to whom no
             // attempt was taken to deliver the sample, yet
             std::cout << "    Discarding sample silently" << std::endl;
-            return UnableToDeliverAction::DiscardData;
+            return BackpressureAction::DiscardData;
         }
         default: {
             // just discard the sample for the receiver involved in the incident and
@@ -106,13 +106,12 @@ auto main() -> int {
             // no attempt was taken to deliver the sample, yet;
             // return with an error if the sample was not delivered to all receivers
             std::cout << "    Discarding sample and failing" << std::endl;
-            return UnableToDeliverAction::DiscardDataAndFail;
+            return BackpressureAction::DiscardDataAndFail;
         }
         }
     };
 
-    auto publisher =
-        service.publisher_builder().set_unable_to_deliver_handler(&unable_to_deliver_handler).create().value();
+    auto publisher = service.publisher_builder().set_backpressure_handler(&backpressure_handler).create().value();
 
     while (node.wait(CYCLE_TIME).has_value()) {
         counter += 1;

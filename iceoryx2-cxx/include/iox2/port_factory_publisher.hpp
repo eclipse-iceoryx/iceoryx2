@@ -14,6 +14,8 @@
 #define IOX2_PORTFACTORY_PUBLISHER_HPP
 
 #include "iox2/allocation_strategy.hpp"
+#include "iox2/backpressure_handler.hpp"
+#include "iox2/backpressure_strategy.hpp"
 #include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
@@ -22,8 +24,6 @@
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/publisher.hpp"
 #include "iox2/service_type.hpp"
-#include "iox2/unable_to_deliver_handler.hpp"
-#include "iox2/unable_to_deliver_strategy.hpp"
 
 #include <cstdint>
 
@@ -33,11 +33,11 @@ namespace iox2 {
 template <ServiceType S, typename Payload, typename UserHeader>
 class PortFactoryPublisher {
   public:
-    /// Sets the [`UnableToDeliverStrategy`].
+    /// Sets the [`BackpressureStrategy`].
 #ifdef DOXYGEN_MACRO_FIX
-    auto unable_to_deliver_strategy(const UnableToDeliverStrategy value) -> decltype(auto);
+    auto backpressure_strategy(const BackpressureStrategy value) -> decltype(auto);
 #else
-    IOX2_BUILDER_OPTIONAL(UnableToDeliverStrategy, unable_to_deliver_strategy);
+    IOX2_BUILDER_OPTIONAL(BackpressureStrategy, backpressure_strategy);
 #endif
 
     /// Defines how many [`SampleMut`] the [`Publisher`] can loan with
@@ -89,14 +89,14 @@ class PortFactoryPublisher {
     /// data
     auto set_degradation_handler(DegradationHandler* handler) && -> PortFactoryPublisher&&;
 
-    /// Sets the [`UnableToDeliverHandler`] of the [`Publisher`]. Whenever a [`SampleMut`] cannot be sent to a
-    /// [`Subscriber`], this handler is called and depending on the returned [`UnableToDeliverAction`], measures will be
+    /// Sets the [`BackpressureHandler`] of the [`Publisher`]. Whenever a [`SampleMut`] cannot be sent to a
+    /// [`Subscriber`], this handler is called and depending on the returned [`BackpressureAction`], measures will be
     /// taken.
-    /// If no handler is set, the measures will be determined by the value set in [`UnableToDeliverStrategy`].
+    /// If no handler is set, the measures will be determined by the value set in [`BackpressureStrategy`].
     /// @attention The handler function needs to live as long as the generated publisher. If the [`Publisher`],
     /// including the send function, is accessed from multiple threads, the handler must be thread-safe if it captures
     /// data
-    auto set_unable_to_deliver_handler(UnableToDeliverHandler* handler) && -> PortFactoryPublisher&&;
+    auto set_backpressure_handler(BackpressureHandler* handler) && -> PortFactoryPublisher&&;
 
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
     auto create() && -> bb::Expected<Publisher<S, Payload, UserHeader>, PublisherCreateError>;
@@ -112,7 +112,7 @@ class PortFactoryPublisher {
     bb::Optional<AllocationStrategy> m_allocation_strategy;
     bb::Optional<OverridePreallocationCallback> m_override_preallocation_callback;
     bb::Optional<DegradationHandler* const> m_degradation_handler;
-    bb::Optional<UnableToDeliverHandler* const> m_unable_to_deliver_handler;
+    bb::Optional<BackpressureHandler* const> m_backpressure_handler;
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -151,19 +151,18 @@ inline auto PortFactoryPublisher<S, Payload, UserHeader>::set_degradation_handle
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto PortFactoryPublisher<S, Payload, UserHeader>::set_unable_to_deliver_handler(
-    UnableToDeliverHandler* handler) && -> PortFactoryPublisher&& {
-    m_unable_to_deliver_handler.emplace(handler);
+inline auto PortFactoryPublisher<S, Payload, UserHeader>::set_backpressure_handler(
+    BackpressureHandler* handler) && -> PortFactoryPublisher&& {
+    m_backpressure_handler.emplace(handler);
     return std::move(*this);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto PortFactoryPublisher<S, Payload, UserHeader>::create() && -> bb::Expected<Publisher<S, Payload, UserHeader>,
                                                                                       PublisherCreateError> {
-    if (m_unable_to_deliver_strategy.has_value()) {
-        iox2_port_factory_publisher_builder_unable_to_deliver_strategy(
-            &m_handle,
-            static_cast<iox2_unable_to_deliver_strategy_e>(bb::into<int>(m_unable_to_deliver_strategy.value())));
+    if (m_backpressure_strategy.has_value()) {
+        iox2_port_factory_publisher_builder_backpressure_strategy(
+            &m_handle, static_cast<iox2_backpressure_strategy_e>(bb::into<int>(m_backpressure_strategy.value())));
     }
     if (m_max_slice_len.has_value()) {
         iox2_port_factory_publisher_builder_set_initial_max_slice_len(&m_handle, m_max_slice_len.value());
@@ -183,11 +182,9 @@ inline auto PortFactoryPublisher<S, Payload, UserHeader>::create() && -> bb::Exp
             &m_handle, detail::degradation_handler_delegate, static_cast<void*>(m_degradation_handler.value()));
     }
 
-    if (m_unable_to_deliver_handler.has_value()) {
-        iox2_port_factory_publisher_builder_set_unable_to_deliver_handler(
-            &m_handle,
-            detail::unable_to_deliver_handler_delegate,
-            static_cast<void*>(m_unable_to_deliver_handler.value()));
+    if (m_backpressure_handler.has_value()) {
+        iox2_port_factory_publisher_builder_set_backpressure_handler(
+            &m_handle, detail::backpressure_handler_delegate, static_cast<void*>(m_backpressure_handler.value()));
     }
 
     if (m_override_preallocation_callback.has_value()) {

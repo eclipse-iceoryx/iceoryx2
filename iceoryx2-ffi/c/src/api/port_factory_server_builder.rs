@@ -19,10 +19,10 @@ use crate::api::ServerUnion;
 
 use super::{AssertNonNullHandle, HandleToType};
 use super::{
-    IntoCInt, PayloadFfi, UnsafeCallbackContextSendWorkaround, UserHeaderFfi, c_size_t,
-    degradation_info_cast, iox2_allocation_strategy_e, iox2_callback_context,
+    IntoCInt, PayloadFfi, UnsafeCallbackContextSendWorkaround, UserHeaderFfi,
+    backpressure_info_cast, c_size_t, degradation_info_cast, iox2_allocation_strategy_e,
+    iox2_backpressure_handler, iox2_backpressure_strategy_e, iox2_callback_context,
     iox2_degradation_handler, iox2_server_h, iox2_server_t, iox2_service_type_e,
-    iox2_unable_to_deliver_handler, iox2_unable_to_deliver_strategy_e, unable_to_deliver_info_cast,
 };
 use core::ffi::{c_char, c_int};
 use iceoryx2::service::port_factory::server::{PortFactoryServer, ServerCreateError};
@@ -413,13 +413,13 @@ pub unsafe extern "C" fn iox2_port_factory_server_builder_set_response_degradati
     }
 }
 
-/// Sets the unable to deliver handler for the server to be able to execute custom code if a response cannot be delivered
+/// Sets the backpressure handler for the server to be able to execute custom code if a response cannot be delivered
 ///
 /// # Arguments
 ///
 /// * `port_factory_handle` - Must be a valid [`iox2_port_factory_server_builder_h_ref`]
 ///   obtained by [`iox2_port_factory_request_response_server_builder`](crate::iox2_port_factory_request_response_server_builder).
-/// * `handler` is the [`iox2_unable_to_deliver_handler`](crate::iox2_unable_to_deliver_handler)
+/// * `handler` is the [`iox2_backpressure_handler`](crate::iox2_backpressure_handler)
 /// * `ctx` is an user defined [`iox2_callback_context`](crate::iox2_callback_context)
 ///
 /// # Safety
@@ -428,9 +428,9 @@ pub unsafe extern "C" fn iox2_port_factory_server_builder_set_response_degradati
 /// * `ctx` is stored for later use; if the server, including the send function,
 ///   is accessed from multiple threads, the `ctx` must be thread-safe
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_port_factory_server_builder_set_unable_to_deliver_handler(
+pub unsafe extern "C" fn iox2_port_factory_server_builder_set_backpressure_handler(
     port_factory_handle: iox2_port_factory_server_builder_h_ref,
-    handler: iox2_unable_to_deliver_handler,
+    handler: iox2_backpressure_handler,
     ctx: iox2_callback_context,
 ) {
     port_factory_handle.assert_non_null();
@@ -444,9 +444,9 @@ pub unsafe extern "C" fn iox2_port_factory_server_builder_set_unable_to_deliver_
                 let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
 
                 port_factory_struct.set(PortFactoryServerBuilderUnion::new_ipc(
-                    port_factory.set_unable_to_deliver_handler(move |info| {
+                    port_factory.set_backpressure_handler(move |info| {
                         let ctx = ctx;
-                        handler(unable_to_deliver_info_cast(info), ctx.ctx).into()
+                        handler(backpressure_info_cast(info), ctx.ctx).into()
                     }),
                 ));
             }
@@ -455,9 +455,9 @@ pub unsafe extern "C" fn iox2_port_factory_server_builder_set_unable_to_deliver_
                     ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
 
                 port_factory_struct.set(PortFactoryServerBuilderUnion::new_local(
-                    port_factory.set_unable_to_deliver_handler(move |info| {
+                    port_factory.set_backpressure_handler(move |info| {
                         let ctx = ctx;
-                        handler(unable_to_deliver_info_cast(info), ctx.ctx).into()
+                        handler(backpressure_info_cast(info), ctx.ctx).into()
                     }),
                 ));
             }
@@ -543,7 +543,7 @@ pub unsafe extern "C" fn iox2_port_factory_server_builder_set_max_loaned_respons
     }
 }
 
-/// Sets the unable to deliver strategy for the server
+/// Sets the backpressure strategy for the server
 ///
 /// # Arguments
 ///
@@ -555,9 +555,9 @@ pub unsafe extern "C" fn iox2_port_factory_server_builder_set_max_loaned_respons
 ///
 /// * `port_factory_handle` must be valid handles
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_port_factory_server_builder_unable_to_deliver_strategy(
+pub unsafe extern "C" fn iox2_port_factory_server_builder_backpressure_strategy(
     port_factory_handle: iox2_port_factory_server_builder_h_ref,
-    value: iox2_unable_to_deliver_strategy_e,
+    value: iox2_backpressure_strategy_e,
 ) {
     port_factory_handle.assert_non_null();
     unsafe {
@@ -567,14 +567,14 @@ pub unsafe extern "C" fn iox2_port_factory_server_builder_unable_to_deliver_stra
                 let builder = ManuallyDrop::take(&mut handle.value.as_mut().ipc);
 
                 handle.set(PortFactoryServerBuilderUnion::new_ipc(
-                    builder.unable_to_deliver_strategy(value.into()),
+                    builder.backpressure_strategy(value.into()),
                 ));
             }
             iox2_service_type_e::LOCAL => {
                 let builder = ManuallyDrop::take(&mut handle.value.as_mut().local);
 
                 handle.set(PortFactoryServerBuilderUnion::new_local(
-                    builder.unable_to_deliver_strategy(value.into()),
+                    builder.backpressure_strategy(value.into()),
                 ));
             }
         }

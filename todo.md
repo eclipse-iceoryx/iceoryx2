@@ -34,7 +34,7 @@
 * `CTRL+c` does not work in windows, all examples do not clean up
 * `Directory`, `Path`, `FileName`, `FilePath` cannot handle UTF-8 file names
     * `Directory` panics when a directory contains non-ascii (UTF-8) characters
-* Windows: `publisher::zero_copy::publisher_block_when_unable_to_deliver_blocks`
+* Windows: `publisher::zero_copy::publisher_block_when_backpressure_blocks`
   seems to sometimes deadlock
 
 ## Incomplete

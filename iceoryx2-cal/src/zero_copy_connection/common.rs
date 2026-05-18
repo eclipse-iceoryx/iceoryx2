@@ -734,13 +734,13 @@ pub mod details {
             }
         }
 
-        fn blocking_send<F: UnableToDeliverToReceiverFn>(
+        fn blocking_send<F: BackpressureToReceiverFn>(
             &self,
             ptr: PointerOffset,
             sample_size: usize,
             channel_id: ChannelId,
-            unable_to_deliver_to_receiver_handler: F,
-            unable_to_deliver_action_for_strategy: UnableToDeliverToReceiverAction,
+            backpressure_to_receiver_handler: F,
+            backpressure_action_for_strategy: BackpressureToReceiverAction,
         ) -> Result<Option<PointerOffset>, ZeroCopySendError> {
             let msg = "Unable to blocking send the offset";
             debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
@@ -770,22 +770,22 @@ pub mod details {
                         if retry_until_delivered {
                             WAIT_CONTINUE
                         } else {
-                            let wait_action = match unable_to_deliver_to_receiver_handler(
+                            let wait_action = match backpressure_to_receiver_handler(
                                 retry_counter,
                                 start.elapsed().unwrap_or(Duration::MAX),
                             ) {
-                                UnableToDeliverToReceiverAction::FollowUnableToDeliveryStrategy => {
-                                    match unable_to_deliver_action_for_strategy {
-                                        UnableToDeliverToReceiverAction::Retry => {
+                                BackpressureToReceiverAction::FollowBackpressureyStrategy => {
+                                    match backpressure_action_for_strategy {
+                                        BackpressureToReceiverAction::Retry => {
                                             retry_until_delivered = true;
                                             WAIT_CONTINUE
                                         }
                                         _ => WAIT_ABORT,
                                     }
                                 }
-                                UnableToDeliverToReceiverAction::Retry => WAIT_CONTINUE,
-                                UnableToDeliverToReceiverAction::DiscardPointerOffset => WAIT_ABORT,
-                                UnableToDeliverToReceiverAction::DiscardPointerOffsetAndFail => {
+                                BackpressureToReceiverAction::Retry => WAIT_CONTINUE,
+                                BackpressureToReceiverAction::DiscardPointerOffset => WAIT_ABORT,
+                                BackpressureToReceiverAction::DiscardPointerOffsetAndFail => {
                                     do_fail = true;
                                     WAIT_ABORT
                                 }

@@ -18,7 +18,7 @@ use alloc::boxed::Box;
 use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 
 use examples_common::TransmissionData;
-use iceoryx2::{port::UnableToDeliverAction, prelude::*};
+use iceoryx2::{port::BackpressureAction, prelude::*};
 
 const CYCLE_TIME: Duration = Duration::from_millis(500);
 
@@ -38,7 +38,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let publisher = service
         .publisher_builder()
-        .set_unable_to_deliver_handler({
+        .set_backpressure_handler({
             let counter = counter.clone();
             let delivery_incident_counter = alloc::sync::Arc::new(AtomicU64::new(0));
             move |info| {
@@ -68,10 +68,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                         // to whom no attempt was taken to deliver the sample, yet;
                         // return with an error if the sample was not delivered to all receivers
                         if info.elapsed_time < Duration::from_millis(10) {
-                            UnableToDeliverAction::Retry
+                            BackpressureAction::Retry
                         } else {
                             println!("    Retried for 10ms! Discarding sample and failing");
-                            UnableToDeliverAction::DiscardDataAndFail
+                            BackpressureAction::DiscardDataAndFail
                         }
                     }
                     1 => {
@@ -84,9 +84,9 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                         if info.retries < 10 {
                             println!("    Sleeping 100ms and retry");
                             std::thread::sleep(core::time::Duration::from_millis(100));
-                            UnableToDeliverAction::Retry
+                            BackpressureAction::Retry
                         } else {
-                            UnableToDeliverAction::DiscardDataAndFail
+                            BackpressureAction::DiscardDataAndFail
                         }
                     }
                     2 => {
@@ -94,7 +94,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                         // continue to try delivering the sample to all other receiver to whom no
                         // attempt was taken to deliver the sample, yet
                         println!("    Discarding sample silently");
-                        UnableToDeliverAction::DiscardData
+                        BackpressureAction::DiscardData
                     }
                     _ => {
                         // just discard the sample for the receiver involved in the incident and
@@ -102,7 +102,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                         // no attempt was taken to deliver the sample, yet;
                         // return with an error if the sample was not delivered to all receivers
                         println!("    Discarding sample and failing");
-                        UnableToDeliverAction::DiscardDataAndFail
+                        BackpressureAction::DiscardDataAndFail
                     }
                 }
             }

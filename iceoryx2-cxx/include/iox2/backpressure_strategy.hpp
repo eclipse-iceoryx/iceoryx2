@@ -10,15 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_UNABLE_TO_DELIVER_STRATEGY_HPP
-#define IOX2_UNABLE_TO_DELIVER_STRATEGY_HPP
+#ifndef IOX2_BACKPRESSURE_STRATEGY_HPP
+#define IOX2_BACKPRESSURE_STRATEGY_HPP
 
 #include <cstdint>
 
 namespace iox2 {
 /// Defines the strategy a sender shall pursue when the buffer of the receiver is full
 /// and the service does not overflow.
-enum class UnableToDeliverStrategy : uint8_t {
+enum class BackpressureStrategy : uint8_t {
     /// Retries until the receiver has consumed some
     /// data from the full buffer and there is space again
     RetryUntilDelivered,

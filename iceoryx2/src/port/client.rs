@@ -27,7 +27,7 @@
 //!
 //! let client = service.client_builder()
 //!    // defines behavior when server queue is full in a non-overflowing service
-//!    .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
+//!    .backpressure_strategy(BackpressureStrategy::DiscardData)
 //!    .create()?;
 //!
 //! let request = client.loan_uninit()?;
@@ -99,7 +99,7 @@ use crate::{
     identifiers::UniqueClientId,
     pending_response::PendingResponse,
     port::{details::data_segment::DataSegment, update_connections::UpdateConnections},
-    prelude::{PortFactory, UnableToDeliverStrategy},
+    prelude::{BackpressureStrategy, PortFactory},
     raw_sample::RawSampleMut,
     request_mut::RequestMut,
     request_mut_uninit::RequestMutUninit,
@@ -479,14 +479,14 @@ impl<
             receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
             enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
             degradation_handler: client_factory.request_degradation_handler,
-            unable_to_deliver_handler: client_factory.unable_to_deliver_handler,
+            backpressure_handler: client_factory.backpressure_handler,
             number_of_samples: number_of_requests,
             max_number_of_segments,
             service_state: service.clone(),
             tagger: CyclicTagger::new(),
             loan_counter: AtomicUsize::new(0),
             sender_max_borrowed_samples: static_config.max_loaned_requests,
-            unable_to_deliver_strategy: client_factory.config.unable_to_deliver_strategy,
+            backpressure_strategy: client_factory.config.backpressure_strategy,
             message_type_details: static_config.request_message_type_details,
             // all requests are sent via one channel, only the responses require different
             // channels to guarantee that one response does not fill the buffer of another
@@ -618,11 +618,11 @@ impl<
 
     /// Returns the strategy the [`Client`] follows when a [`RequestMut`] cannot be delivered
     /// if the [`Server`](crate::port::server::Server)s buffer is full.
-    pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
+    pub fn backpressure_strategy(&self) -> BackpressureStrategy {
         self.client_shared_state
             .lock()
             .request_sender
-            .unable_to_deliver_strategy
+            .backpressure_strategy
     }
 }
 

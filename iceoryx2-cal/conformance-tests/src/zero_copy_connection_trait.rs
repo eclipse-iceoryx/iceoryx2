@@ -36,15 +36,15 @@ pub mod zero_copy_connection_trait {
     use iceoryx2_cal::shm_allocator::{PointerOffset, SegmentId};
     use iceoryx2_cal::testing::generate_isolated_config;
     use iceoryx2_cal::zero_copy_connection::{
-        ChannelId, ChannelState, UnableToDeliverToReceiverAction, *,
+        BackpressureToReceiverAction, ChannelId, ChannelState, *,
     };
     use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
     const SAMPLE_SIZE: usize = 123;
     const NUMBER_OF_SAMPLES: usize = 2345;
 
-    fn follow_unable_to_deliver_stratety(_: u64, _: Duration) -> UnableToDeliverToReceiverAction {
-        UnableToDeliverToReceiverAction::FollowUnableToDeliveryStrategy
+    fn follow_backpressure_stratety(_: u64, _: Duration) -> BackpressureToReceiverAction {
+        BackpressureToReceiverAction::FollowBackpressureyStrategy
     }
 
     #[conformance_test]
@@ -849,8 +849,8 @@ pub mod zero_copy_connection_trait {
                     PointerOffset::new(sample_offset_1),
                     SAMPLE_SIZE,
                     id,
-                    follow_unable_to_deliver_stratety,
-                    UnableToDeliverToReceiverAction::Retry,
+                    follow_backpressure_stratety,
+                    BackpressureToReceiverAction::Retry,
                 ),
                 is_ok
             );
@@ -859,8 +859,8 @@ pub mod zero_copy_connection_trait {
                     PointerOffset::new(sample_offset_2),
                     SAMPLE_SIZE,
                     id,
-                    follow_unable_to_deliver_stratety,
-                    UnableToDeliverToReceiverAction::Retry,
+                    follow_backpressure_stratety,
+                    BackpressureToReceiverAction::Retry,
                 ),
                 is_ok
             );
@@ -871,11 +871,11 @@ pub mod zero_copy_connection_trait {
         .unwrap();
     }
 
-    fn blocking_send_returns_when_unable_to_deliver_handler_is_used<
+    fn blocking_send_returns_when_backpressure_handler_is_used<
         Sut: ZeroCopyConnection,
-        F: UnableToDeliverToReceiverFn,
+        F: BackpressureToReceiverFn,
     >(
-        unable_to_deliver_handler: F,
+        backpressure_handler: F,
         blocking_send_error: ZeroCopySendError,
     ) -> Duration {
         let id = ChannelId::new(0);
@@ -910,8 +910,8 @@ pub mod zero_copy_connection_trait {
                 PointerOffset::new(sample_offset_1),
                 SAMPLE_SIZE,
                 id,
-                |_, _| UnableToDeliverToReceiverAction::Retry,
-                UnableToDeliverToReceiverAction::Retry,
+                |_, _| BackpressureToReceiverAction::Retry,
+                BackpressureToReceiverAction::Retry,
             ),
             is_ok
         );
@@ -920,8 +920,8 @@ pub mod zero_copy_connection_trait {
                 PointerOffset::new(sample_offset_2),
                 SAMPLE_SIZE,
                 id,
-                unable_to_deliver_handler,
-                UnableToDeliverToReceiverAction::Retry,
+                backpressure_handler,
+                BackpressureToReceiverAction::Retry,
             ),
             eq(Err(blocking_send_error))
         );
@@ -937,15 +937,15 @@ pub mod zero_copy_connection_trait {
     }
 
     #[conformance_test]
-    pub fn blocking_send_returns_when_unable_to_deliver_handler_discards_pointer_offset<
+    pub fn blocking_send_returns_when_backpressure_handler_discards_pointer_offset<
         Sut: ZeroCopyConnection,
     >() {
         let call_count = AtomicU64::new(0);
 
-        blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
+        blocking_send_returns_when_backpressure_handler_is_used::<Sut, _>(
             |_, _| {
                 call_count.fetch_add(1, Ordering::Relaxed);
-                UnableToDeliverToReceiverAction::DiscardPointerOffset
+                BackpressureToReceiverAction::DiscardPointerOffset
             },
             ZeroCopySendError::ReceiveBufferFull,
         );
@@ -954,15 +954,15 @@ pub mod zero_copy_connection_trait {
     }
 
     #[conformance_test]
-    pub fn blocking_send_returns_when_unable_to_deliver_handler_aborts_delivery_and_fails<
+    pub fn blocking_send_returns_when_backpressure_handler_aborts_delivery_and_fails<
         Sut: ZeroCopyConnection,
     >() {
         let call_count = AtomicU64::new(0);
 
-        blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
+        blocking_send_returns_when_backpressure_handler_is_used::<Sut, _>(
             |_, _| {
                 call_count.fetch_add(1, Ordering::Relaxed);
-                UnableToDeliverToReceiverAction::DiscardPointerOffsetAndFail
+                BackpressureToReceiverAction::DiscardPointerOffsetAndFail
             },
             ZeroCopySendError::UnableToDeliver,
         );
@@ -971,19 +971,19 @@ pub mod zero_copy_connection_trait {
     }
 
     #[conformance_test]
-    pub fn blocking_send_returns_when_unable_to_deliver_handler_retries_twice<
+    pub fn blocking_send_returns_when_backpressure_handler_retries_twice<
         Sut: ZeroCopyConnection,
     >() {
         let call_count = AtomicU64::new(0);
         const RETRY_COUNT: u64 = 2;
 
-        blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
+        blocking_send_returns_when_backpressure_handler_is_used::<Sut, _>(
             |retries, _| {
                 if retries == RETRY_COUNT {
-                    UnableToDeliverToReceiverAction::DiscardPointerOffset
+                    BackpressureToReceiverAction::DiscardPointerOffset
                 } else {
                     call_count.fetch_add(1, Ordering::Relaxed);
-                    UnableToDeliverToReceiverAction::Retry
+                    BackpressureToReceiverAction::Retry
                 }
             },
             ZeroCopySendError::ReceiveBufferFull,
@@ -993,22 +993,21 @@ pub mod zero_copy_connection_trait {
     }
 
     #[conformance_test]
-    pub fn blocking_send_returns_when_unable_to_deliver_handler_retries_until_timeout<
+    pub fn blocking_send_returns_when_backpressure_handler_retries_until_timeout<
         Sut: ZeroCopyConnection,
     >() {
         const TIMEOUT: Duration = Duration::from_millis(25);
 
-        let elapsed_blocking_time =
-            blocking_send_returns_when_unable_to_deliver_handler_is_used::<Sut, _>(
-                |_, elapsed_time| {
-                    if elapsed_time > TIMEOUT {
-                        UnableToDeliverToReceiverAction::DiscardPointerOffset
-                    } else {
-                        UnableToDeliverToReceiverAction::Retry
-                    }
-                },
-                ZeroCopySendError::ReceiveBufferFull,
-            );
+        let elapsed_blocking_time = blocking_send_returns_when_backpressure_handler_is_used::<Sut, _>(
+            |_, elapsed_time| {
+                if elapsed_time > TIMEOUT {
+                    BackpressureToReceiverAction::DiscardPointerOffset
+                } else {
+                    BackpressureToReceiverAction::Retry
+                }
+            },
+            ZeroCopySendError::ReceiveBufferFull,
+        );
 
         assert_that!(elapsed_blocking_time,  time_at_least TIMEOUT);
     }
@@ -1054,8 +1053,8 @@ pub mod zero_copy_connection_trait {
                         PointerOffset::new(sample_offset_1),
                         SAMPLE_SIZE,
                         id,
-                        follow_unable_to_deliver_stratety,
-                        UnableToDeliverToReceiverAction::Retry,
+                        follow_backpressure_stratety,
+                        BackpressureToReceiverAction::Retry,
                     ),
                     is_ok
                 );
@@ -1064,8 +1063,8 @@ pub mod zero_copy_connection_trait {
                         PointerOffset::new(sample_offset_2),
                         SAMPLE_SIZE,
                         id,
-                        follow_unable_to_deliver_stratety,
-                        UnableToDeliverToReceiverAction::Retry,
+                        follow_backpressure_stratety,
+                        BackpressureToReceiverAction::Retry,
                     ).err(),
                      eq Some(ZeroCopySendError::NoConnectedReceiver)
                 );
@@ -1124,8 +1123,8 @@ pub mod zero_copy_connection_trait {
                         PointerOffset::new(sample_offset_1),
                         SAMPLE_SIZE,
                         id,
-                        follow_unable_to_deliver_stratety,
-                        UnableToDeliverToReceiverAction::Retry,
+                        follow_backpressure_stratety,
+                        BackpressureToReceiverAction::Retry,
                     ),
                     is_ok
                 );
@@ -1134,8 +1133,8 @@ pub mod zero_copy_connection_trait {
                         PointerOffset::new(sample_offset_2),
                         SAMPLE_SIZE,
                         id,
-                        follow_unable_to_deliver_stratety,
-                        UnableToDeliverToReceiverAction::Retry,
+                        follow_backpressure_stratety,
+                        BackpressureToReceiverAction::Retry,
                     ).err(),
                     eq Some(ZeroCopySendError::ChannelIsClosed)
                 );
@@ -1921,8 +1920,8 @@ pub mod zero_copy_connection_trait {
             PointerOffset::new(0),
             SAMPLE_SIZE,
             ChannelId::new(1),
-            follow_unable_to_deliver_stratety,
-            UnableToDeliverToReceiverAction::Retry,
+            follow_backpressure_stratety,
+            BackpressureToReceiverAction::Retry,
         );
     }
 

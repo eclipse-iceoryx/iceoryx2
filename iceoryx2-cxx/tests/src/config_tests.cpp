@@ -164,15 +164,14 @@ TEST(Config, defaults_publish_subscribe_enable_safe_overflow) {
     ASSERT_THAT(config.defaults().publish_subscribe().enable_safe_overflow(), Eq(false));
 }
 
-TEST(Config, defaults_publish_subscribe_unable_to_deliver_strategy) {
+TEST(Config, defaults_publish_subscribe_backpressure_strategy) {
     auto config = Config();
 
-    config.defaults().publish_subscribe().set_unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered);
-    ASSERT_THAT(config.defaults().publish_subscribe().unable_to_deliver_strategy(),
-                Eq(UnableToDeliverStrategy::RetryUntilDelivered));
-    config.defaults().publish_subscribe().set_unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData);
-    ASSERT_THAT(config.defaults().publish_subscribe().unable_to_deliver_strategy(),
-                Eq(UnableToDeliverStrategy::DiscardData));
+    config.defaults().publish_subscribe().set_backpressure_strategy(BackpressureStrategy::RetryUntilDelivered);
+    ASSERT_THAT(config.defaults().publish_subscribe().backpressure_strategy(),
+                Eq(BackpressureStrategy::RetryUntilDelivered));
+    config.defaults().publish_subscribe().set_backpressure_strategy(BackpressureStrategy::DiscardData);
+    ASSERT_THAT(config.defaults().publish_subscribe().backpressure_strategy(), Eq(BackpressureStrategy::DiscardData));
 }
 
 TEST(Config, defaults_publish_subscribe_subscriber_expired_connection_buffer) {
@@ -397,24 +396,22 @@ TEST(Config, defaults_request_response_server_max_loaned_responses_per_request) 
     ASSERT_THAT(config.defaults().request_response().server_max_loaned_responses_per_request(), Eq(test_value));
 }
 
-TEST(Config, defaults_request_response_unable_to_deliver_strategy) {
+TEST(Config, defaults_request_response_backpressure_strategy) {
     auto config = Config();
 
-    config.defaults().request_response().set_client_unable_to_deliver_strategy(
-        UnableToDeliverStrategy::RetryUntilDelivered);
-    ASSERT_THAT(config.defaults().request_response().client_unable_to_deliver_strategy(),
-                Eq(UnableToDeliverStrategy::RetryUntilDelivered));
-    config.defaults().request_response().set_client_unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData);
-    ASSERT_THAT(config.defaults().request_response().client_unable_to_deliver_strategy(),
-                Eq(UnableToDeliverStrategy::DiscardData));
+    config.defaults().request_response().set_client_backpressure_strategy(BackpressureStrategy::RetryUntilDelivered);
+    ASSERT_THAT(config.defaults().request_response().client_backpressure_strategy(),
+                Eq(BackpressureStrategy::RetryUntilDelivered));
+    config.defaults().request_response().set_client_backpressure_strategy(BackpressureStrategy::DiscardData);
+    ASSERT_THAT(config.defaults().request_response().client_backpressure_strategy(),
+                Eq(BackpressureStrategy::DiscardData));
 
-    config.defaults().request_response().set_server_unable_to_deliver_strategy(
-        UnableToDeliverStrategy::RetryUntilDelivered);
-    ASSERT_THAT(config.defaults().request_response().server_unable_to_deliver_strategy(),
-                Eq(UnableToDeliverStrategy::RetryUntilDelivered));
-    config.defaults().request_response().set_server_unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData);
-    ASSERT_THAT(config.defaults().request_response().server_unable_to_deliver_strategy(),
-                Eq(UnableToDeliverStrategy::DiscardData));
+    config.defaults().request_response().set_server_backpressure_strategy(BackpressureStrategy::RetryUntilDelivered);
+    ASSERT_THAT(config.defaults().request_response().server_backpressure_strategy(),
+                Eq(BackpressureStrategy::RetryUntilDelivered));
+    config.defaults().request_response().set_server_backpressure_strategy(BackpressureStrategy::DiscardData);
+    ASSERT_THAT(config.defaults().request_response().server_backpressure_strategy(),
+                Eq(BackpressureStrategy::DiscardData));
 }
 
 TEST(Config, defaults_request_response_client_expired_connection_buffer) {

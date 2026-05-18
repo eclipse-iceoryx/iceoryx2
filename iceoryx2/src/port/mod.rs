@@ -43,18 +43,18 @@ pub mod writer;
 
 /// Defines the strategy a sender shall pursue when the buffer of a
 /// receiver is full and the service does not overflow.
-pub mod unable_to_deliver_strategy;
+pub mod backpressure_strategy;
 
-pub use iceoryx2_cal::zero_copy_connection::UnableToDeliverToReceiverAction;
+pub use iceoryx2_cal::zero_copy_connection::BackpressureToReceiverAction;
 
 /// Defines the action that shall be take when data cannot be delivered. Is used as
-/// return value of the [`UnableToDeliverHandler`] and  [`UnableToDeliverFn`] to
+/// return value of the [`BackpressureHandler`] and  [`BackpressureFn`] to
 ///  define a custom behavior.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum UnableToDeliverAction {
+pub enum BackpressureAction {
     /// Use an action which is derived from the
-    /// [`UnableToDeliverStrategy`](crate::port::unable_to_deliver_strategy::UnableToDeliverStrategy)
-    FollowUnableToDeliveryStrategy,
+    /// [`BackpressureStrategy`](crate::port::backpressure_strategy::BackpressureStrategy)
+    FollowBackpressureyStrategy,
     /// Retry to send and invoke the handler again, if sending does not succeed
     Retry,
     /// Discard the data for the receiver which cause the incident and continue
@@ -66,25 +66,23 @@ pub enum UnableToDeliverAction {
     DiscardDataAndFail,
 }
 
-impl From<UnableToDeliverAction> for UnableToDeliverToReceiverAction {
-    fn from(value: UnableToDeliverAction) -> Self {
+impl From<BackpressureAction> for BackpressureToReceiverAction {
+    fn from(value: BackpressureAction) -> Self {
         match value {
-            UnableToDeliverAction::FollowUnableToDeliveryStrategy => {
-                UnableToDeliverToReceiverAction::FollowUnableToDeliveryStrategy
+            BackpressureAction::FollowBackpressureyStrategy => {
+                BackpressureToReceiverAction::FollowBackpressureyStrategy
             }
-            UnableToDeliverAction::Retry => UnableToDeliverToReceiverAction::Retry,
-            UnableToDeliverAction::DiscardData => {
-                UnableToDeliverToReceiverAction::DiscardPointerOffset
-            }
-            UnableToDeliverAction::DiscardDataAndFail => {
-                UnableToDeliverToReceiverAction::DiscardPointerOffsetAndFail
+            BackpressureAction::Retry => BackpressureToReceiverAction::Retry,
+            BackpressureAction::DiscardData => BackpressureToReceiverAction::DiscardPointerOffset,
+            BackpressureAction::DiscardDataAndFail => {
+                BackpressureToReceiverAction::DiscardPointerOffsetAndFail
             }
         }
     }
 }
 
-/// The unable to deliver context information passed to the [`UnableToDeliverHandler`]
-pub struct UnableToDeliverInfo {
+/// The backpressure context information passed to the [`BackpressureHandler`]
+pub struct BackpressureInfo {
     /// The service id, of the sender an receiver participants
     pub service_id: u128,
     /// The sender port id, which tries to send data
@@ -97,37 +95,37 @@ pub struct UnableToDeliverInfo {
     pub elapsed_time: Duration,
 }
 
-/// The unable to delivery handler invoked by a send function when data cannot be delivered
+/// The backpressurey handler invoked by a send function when data cannot be delivered
 /// to a receiver
 ///
 /// # Arguments
 ///
-/// * UnableToDeliverInfo: is a reference to [`UnableToDeliverInfo`] with additional information
+/// * BackpressureInfo: is a reference to [`BackpressureInfo`] with additional information
 ///   for the user to handle the incident
 ///
 /// # Returns
 ///
-/// The [`UnableToDeliverAction`] to be taken to mitigate the incident
-pub trait UnableToDeliverFn: Fn(&UnableToDeliverInfo) -> UnableToDeliverAction + Send {}
+/// The [`BackpressureAction`] to be taken to mitigate the incident
+pub trait BackpressureFn: Fn(&BackpressureInfo) -> BackpressureAction + Send {}
 
-impl<F: Fn(&UnableToDeliverInfo) -> UnableToDeliverAction + Send> UnableToDeliverFn for F {}
+impl<F: Fn(&BackpressureInfo) -> BackpressureAction + Send> BackpressureFn for F {}
 
 tiny_fn! {
     /// Defines a custom behavior whenever a port detects a degradation.
-    pub struct UnableToDeliverHandler = Fn(info: &UnableToDeliverInfo) -> UnableToDeliverAction;
+    pub struct BackpressureHandler = Fn(info: &BackpressureInfo) -> BackpressureAction;
 }
 
-unsafe impl Send for UnableToDeliverHandler<'_> {}
+unsafe impl Send for BackpressureHandler<'_> {}
 
-impl Debug for UnableToDeliverHandler<'_> {
+impl Debug for BackpressureHandler<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "")
     }
 }
 
-impl UnableToDeliverHandler<'_> {
-    /// A convenience function that takes a [`UnableToDeliverAction`] and returns a [`UnableToDeliverHandler`].
-    pub fn new_with(action: UnableToDeliverAction) -> Self {
+impl BackpressureHandler<'_> {
+    /// A convenience function that takes a [`BackpressureAction`] and returns a [`BackpressureHandler`].
+    pub fn new_with(action: BackpressureAction) -> Self {
         Self::new(move |_| action)
     }
 }

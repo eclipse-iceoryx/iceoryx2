@@ -10,13 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use crate::backpressure_strategy::BackpressureStrategy;
 use crate::duration::Duration;
 use crate::error::ConfigCreationError;
 use crate::file_name::FileName;
 use crate::file_path::FilePath;
 use crate::parc::Parc;
 use crate::path::Path;
-use crate::unable_to_deliver_strategy::UnableToDeliverStrategy;
 use pyo3::prelude::*;
 
 #[pyclass]
@@ -379,23 +379,23 @@ impl PublishSubscribe {
     #[getter]
     /// If safe overflow is deactivated it defines the deliver strategy of the
     /// `Publisher` when the `Subscriber`s buffer is full.
-    pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
+    pub fn backpressure_strategy(&self) -> BackpressureStrategy {
         self.0
             .lock()
             .defaults
             .publish_subscribe
-            .unable_to_deliver_strategy
+            .backpressure_strategy
             .into()
     }
 
     #[setter]
-    /// Define the unable to deliver strategy
-    pub fn set_unable_to_deliver_strategy(&self, value: &UnableToDeliverStrategy) {
+    /// Define the backpressure strategy
+    pub fn set_backpressure_strategy(&self, value: &BackpressureStrategy) {
         self.0
             .lock()
             .defaults
             .publish_subscribe
-            .unable_to_deliver_strategy = (value.clone()).into()
+            .backpressure_strategy = (value.clone()).into()
     }
 
     #[getter]
@@ -796,49 +796,49 @@ impl RequestResponse {
     }
 
     #[getter]
-    /// Defines the `UnableToDeliverStrategy` when a `Client`
+    /// Defines the `BackpressureStrategy` when a `Client`
     /// could not deliver the request to the `Server`.
-    pub fn client_unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
+    pub fn client_backpressure_strategy(&self) -> BackpressureStrategy {
         self.0
             .lock()
             .defaults
             .request_response
-            .client_unable_to_deliver_strategy
+            .client_backpressure_strategy
             .into()
     }
 
     #[setter]
-    /// Set the `UnableToDeliverStrategy` when a `Client`
+    /// Set the `BackpressureStrategy` when a `Client`
     /// could not deliver the request to the `Server`.
-    pub fn set_client_unable_to_deliver_strategy(&self, value: &UnableToDeliverStrategy) {
+    pub fn set_client_backpressure_strategy(&self, value: &BackpressureStrategy) {
         self.0
             .lock()
             .defaults
             .request_response
-            .client_unable_to_deliver_strategy = (value.clone()).into()
+            .client_backpressure_strategy = (value.clone()).into()
     }
 
     #[getter]
-    /// Defines the `UnableToDeliverStrategy` when a `Server`
+    /// Defines the `BackpressureStrategy` when a `Server`
     /// could not deliver the response to the `Client`.
-    pub fn server_unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
+    pub fn server_backpressure_strategy(&self) -> BackpressureStrategy {
         self.0
             .lock()
             .defaults
             .request_response
-            .server_unable_to_deliver_strategy
+            .server_backpressure_strategy
             .into()
     }
 
     #[setter]
-    /// Set the `UnableToDeliverStrategy` when a `Server`
+    /// Set the `BackpressureStrategy` when a `Server`
     /// could not deliver the response to the `Client`.
-    pub fn set_server_unable_to_deliver_strategy(&self, value: &UnableToDeliverStrategy) {
+    pub fn set_server_backpressure_strategy(&self, value: &BackpressureStrategy) {
         self.0
             .lock()
             .defaults
             .request_response
-            .server_unable_to_deliver_strategy = (value.clone()).into()
+            .server_backpressure_strategy = (value.clone()).into()
     }
 
     #[getter]

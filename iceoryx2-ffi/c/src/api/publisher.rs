@@ -14,7 +14,7 @@
 
 use crate::api::{
     AssertNonNullHandle, HandleToType, IOX2_OK, PayloadFfi, SampleMutUninitUnion, UserHeaderFfi,
-    iox2_service_type_e, iox2_unable_to_deliver_strategy_e, iox2_unique_publisher_id_h,
+    iox2_backpressure_strategy_e, iox2_service_type_e, iox2_unique_publisher_id_h,
     iox2_unique_publisher_id_t,
 };
 
@@ -296,31 +296,26 @@ pub unsafe extern "C" fn iox2_loan_error_string(error: iox2_loan_error_e) -> *co
 ///
 /// * `handle` obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create)
 ///
-/// Returns [`iox2_unable_to_deliver_strategy_e`].
+/// Returns [`iox2_backpressure_strategy_e`].
 ///
 /// # Safety
 ///
 /// * `publisher_handle` is valid and non-null
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_publisher_unable_to_deliver_strategy(
+pub unsafe extern "C" fn iox2_publisher_backpressure_strategy(
     publisher_handle: iox2_publisher_h_ref,
-) -> iox2_unable_to_deliver_strategy_e {
+) -> iox2_backpressure_strategy_e {
     publisher_handle.assert_non_null();
     unsafe {
         let publisher = &mut *publisher_handle.as_type();
 
         match publisher.service_type {
-            iox2_service_type_e::IPC => publisher
-                .value
-                .as_mut()
-                .ipc
-                .unable_to_deliver_strategy()
-                .into(),
+            iox2_service_type_e::IPC => publisher.value.as_mut().ipc.backpressure_strategy().into(),
             iox2_service_type_e::LOCAL => publisher
                 .value
                 .as_mut()
                 .local
-                .unable_to_deliver_strategy()
+                .backpressure_strategy()
                 .into(),
         }
     }

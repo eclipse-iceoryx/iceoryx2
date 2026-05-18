@@ -1063,7 +1063,7 @@ TYPED_TEST(ServiceRequestResponseTest, server_applies_initial_max_slice_length) 
     ASSERT_THAT(sut_server.initial_max_slice_len(), Eq(INITIAL_MAX_SLICE_LEN));
 }
 
-TYPED_TEST(ServiceRequestResponseTest, client_applies_unable_to_deliver_strategy) {
+TYPED_TEST(ServiceRequestResponseTest, client_applies_backpressure_strategy) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
     const auto service_name = iox2_testing::generate_service_name();
@@ -1071,15 +1071,13 @@ TYPED_TEST(ServiceRequestResponseTest, client_applies_unable_to_deliver_strategy
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
 
-    auto sut_client_1 = service.client_builder()
-                            .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
-                            .create()
-                            .value();
+    auto sut_client_1 =
+        service.client_builder().backpressure_strategy(BackpressureStrategy::RetryUntilDelivered).create().value();
     auto sut_client_2 =
-        service.client_builder().unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData).create().value();
+        service.client_builder().backpressure_strategy(BackpressureStrategy::DiscardData).create().value();
 
-    ASSERT_THAT(sut_client_1.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::RetryUntilDelivered));
-    ASSERT_THAT(sut_client_2.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::DiscardData));
+    ASSERT_THAT(sut_client_1.backpressure_strategy(), Eq(BackpressureStrategy::RetryUntilDelivered));
+    ASSERT_THAT(sut_client_2.backpressure_strategy(), Eq(BackpressureStrategy::DiscardData));
 }
 
 TYPED_TEST(ServiceRequestResponseTest, client_applies_initial_max_slice_length) {

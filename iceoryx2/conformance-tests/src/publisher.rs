@@ -526,7 +526,7 @@ pub mod publisher {
     }
 
     #[conformance_test]
-    pub fn unable_to_deliver_strategy_blocks_when_subscriber_buffer_is_full<Sut: Service>()
+    pub fn backpressure_strategy_blocks_when_subscriber_buffer_is_full<Sut: Service>()
     -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
         let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
@@ -549,9 +549,9 @@ pub mod publisher {
 
         let sut = service
             .publisher_builder()
-            .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
+            .backpressure_strategy(BackpressureStrategy::RetryUntilDelivered)
             .create()?;
-        assert_that!(sut.unable_to_deliver_strategy(), eq UnableToDeliverStrategy::RetryUntilDelivered);
+        assert_that!(sut.backpressure_strategy(), eq BackpressureStrategy::RetryUntilDelivered);
 
         let handle = BarrierHandle::new();
         let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
@@ -598,7 +598,7 @@ pub mod publisher {
     }
 
     #[conformance_test]
-    pub fn unable_to_deliver_strategy_block_unblock_when_subscriber_disconnects<Sut: Service>()
+    pub fn backpressure_strategy_block_unblock_when_subscriber_disconnects<Sut: Service>()
     -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
         let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
@@ -638,7 +638,7 @@ pub mod publisher {
 
                 let sut = service
                     .publisher_builder()
-                    .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
+                    .backpressure_strategy(BackpressureStrategy::RetryUntilDelivered)
                     .create()
                     .unwrap();
 

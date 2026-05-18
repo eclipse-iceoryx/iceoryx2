@@ -63,7 +63,7 @@ int main(void) {
         goto drop_service_name;
     }
 
-    // do not discard the oldest sample but leave it up to the 'unable to deliver strategy'
+    // do not discard the oldest sample but leave it up to the 'backpressure strategy'
     iox2_service_builder_pub_sub_set_enable_safe_overflow(&service_builder_pub_sub, false);
 
     // create service

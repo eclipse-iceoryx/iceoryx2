@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 The new format requires longer lines -->
+
 # iceoryx2 v?.?.?
 
 ## [v?.?.?](https://github.com/eclipse-iceoryx/iceoryx2/tree/v?.?.?)
@@ -11,7 +13,7 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
 
 ### Bugfixes
 
@@ -20,7 +22,7 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
 
 ### Refactoring
 
@@ -29,7 +31,7 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
 
 ### Workflow
 
@@ -38,7 +40,7 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
 
 ### New API features
 
@@ -47,7 +49,7 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
 
 ### API Breaking Changes
 
@@ -60,3 +62,5 @@
    // new
    let fuu = hypnotoad().all_glory_to_the_hypnotoad()
    ```
+
+<!-- markdownlint-enable MD013 -->

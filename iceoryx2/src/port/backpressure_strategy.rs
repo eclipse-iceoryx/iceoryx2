@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize, de::Visitor};
 /// Defines the strategy a sender shall pursue when the buffer of the receiver is full
 /// and the service does not overflow.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum UnableToDeliverStrategy {
+pub enum BackpressureStrategy {
     /// Retries until the receiver has consumed some
     /// data from the full buffer and there is space again
     RetryUntilDelivered,
@@ -23,7 +23,7 @@ pub enum UnableToDeliverStrategy {
     DiscardData,
 }
 
-impl Serialize for UnableToDeliverStrategy {
+impl Serialize for BackpressureStrategy {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -32,10 +32,10 @@ impl Serialize for UnableToDeliverStrategy {
     }
 }
 
-struct UnableToDeliverStrategyVisitor;
+struct BackpressureStrategyVisitor;
 
-impl Visitor<'_> for UnableToDeliverStrategyVisitor {
-    type Value = UnableToDeliverStrategy;
+impl Visitor<'_> for BackpressureStrategyVisitor {
+    type Value = BackpressureStrategy;
 
     fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         formatter.write_str("a string containing either 'RetryUntilDelivered' or 'DiscardData'")
@@ -46,20 +46,20 @@ impl Visitor<'_> for UnableToDeliverStrategyVisitor {
         E: serde::de::Error,
     {
         match v {
-            "DiscardData" => Ok(UnableToDeliverStrategy::DiscardData),
-            "RetryUntilDelivered" => Ok(UnableToDeliverStrategy::RetryUntilDelivered),
+            "DiscardData" => Ok(BackpressureStrategy::DiscardData),
+            "RetryUntilDelivered" => Ok(BackpressureStrategy::RetryUntilDelivered),
             v => Err(E::custom(alloc::format!(
-                "Invalid UnableToDeliverStrategy provided: \"{v:?}\"."
+                "Invalid BackpressureStrategy provided: \"{v:?}\"."
             ))),
         }
     }
 }
 
-impl<'de> Deserialize<'de> for UnableToDeliverStrategy {
+impl<'de> Deserialize<'de> for BackpressureStrategy {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        deserializer.deserialize_str(UnableToDeliverStrategyVisitor)
+        deserializer.deserialize_str(BackpressureStrategyVisitor)
     }
 }

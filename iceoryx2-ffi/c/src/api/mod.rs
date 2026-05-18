@@ -24,6 +24,7 @@ mod attribute;
 mod attribute_set;
 mod attribute_specifier;
 mod attribute_verifier;
+mod backpressure_handler;
 mod cleanup_state;
 mod client;
 mod client_details;
@@ -88,7 +89,6 @@ mod static_config_publish_subscribe;
 mod static_config_request_response;
 mod subscriber;
 mod subscriber_details;
-mod unable_to_deliver_handler;
 mod unique_client_id;
 mod unique_listener_id;
 mod unique_node_id;
@@ -110,6 +110,7 @@ pub use attribute::*;
 pub use attribute_set::*;
 pub use attribute_specifier::*;
 pub use attribute_verifier::*;
+pub use backpressure_handler::*;
 pub use cleanup_state::*;
 pub use client::*;
 pub use client_details::*;
@@ -173,7 +174,6 @@ pub use static_config_publish_subscribe::*;
 pub use static_config_request_response::*;
 pub use subscriber::*;
 pub use subscriber_details::*;
-pub use unable_to_deliver_handler::*;
 pub use unique_client_id::*;
 pub use unique_listener_id::*;
 pub use unique_node_id::*;
@@ -196,7 +196,7 @@ pub const IOX2_OK: c_int = 0;
 /// An alias to a `void *` which can be used to pass arbitrary data to the callback
 pub type iox2_callback_context = *mut c_void;
 
-// The degradation and unable to deliver handler require the handler to be Send;
+// The degradation and backpressure handler require the handler to be Send;
 // passing a `*mut c_void` is therefore not possible; since this is for the C bindings,
 // there are no other options and with C, it is up to the user to ensure thread-safety;
 // this workaround is used to pass a `*mut c_void` to a Rust closure
