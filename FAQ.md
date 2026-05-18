@@ -29,7 +29,7 @@
     * [`iceoryx2-ffi-c` does not contain this feature](#iceoryx2-ffi-c-does-not-contain-this-feature)
     * [Service In Corrupted state](#service-in-corrupted-state)
     * [Unable To Connect Due To `IncompatibleTypes`](#unable-to-connect-due-to-incompatibletypes)
-    * [Failed To Create Port Due To `ExceedsMaxSuppported**`](#failed-to-create-port-due-to-exceedsmaxsupported)
+    * [Failed To Create Port Due To `ExceedsMaxSupported**`](#failed-to-create-port-due-to-exceedsmaxsupported)
 
 ## Tips And Tricks
 
@@ -600,7 +600,7 @@ the `ZeroCopySend` derive macro:
 pub struct MyType {}
 ```
 
-### Failed To Create Port Due To `ExceedsMaxSuppported**`
+### Failed To Create Port Due To `ExceedsMaxSupported**`
 
 This error typically occurs when a previous process crashed, and a restarted
 process  attempts to create a new port before the system has fully identified
@@ -623,11 +623,7 @@ let publisher = loop {
         Ok(publisher) => break publisher,
         // Instead of aborting, attempt to clean up dead nodes in the system.
         Err(PublisherCreateError::ExceedsMaxSupportedPublishers) => {
-            // Check the return value to confirm if a dead node was actually removed.
-            if !service.try_cleanup_dead_nodes().nodes_cleaned_up() {
-                // Optional: Add a small delay or limit retries here to avoid tight loops
-                std::thread::sleep(std::time::Duration::from_millis(10));
-            }
+            service.blocking_cleanup_dead_nodes(std::time::Duration::from_millis(10))
         }
         Err(e) => return Err(e.into()),
     }
