@@ -1,5 +1,12 @@
 # How To Create An iceoryx2 Release
 
+1. Create new release branch via the GitHub web interface and name it
+   `release_X.Y.Z`
+2. `just prepare-release all versions --version X.Y.Z`
+3. `cargo build --workspace --all-targets` refresh cargo lock file
+4. `USE_BAZEL_VERSION=7.4.1 bazel build //...` refresh bazel lock file
+5. `peotry --project iceoryx2-ffi/python build-into-venv` refresh poetry lock file
+
 There are three scripts to perform the iceoryx2 release
 
 * internal/scripts/release/release_preparation.sh

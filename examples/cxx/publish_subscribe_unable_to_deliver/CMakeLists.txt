@@ -13,7 +13,7 @@
 cmake_minimum_required(VERSION 3.22)
 project(example_cxx_publish_subscribe_with_unable_to_deliver_handler LANGUAGES CXX)
 
-find_package(iceoryx2-cxx 0.8.999 REQUIRED)
+find_package(iceoryx2-cxx 0.9.0 REQUIRED)
 
 add_executable(example_cxx_publish_subscribe_unable_to_deliver_publisher src/publisher.cpp)
 target_link_libraries(example_cxx_publish_subscribe_unable_to_deliver_publisher iceoryx2-cxx::static-lib-cxx)
