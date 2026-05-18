@@ -309,7 +309,7 @@ impl<Service: service::Service> Receiver<Service> {
 
                         if to_be_removed_connections.push(key).is_err() {
                             if connection_has_borrows {
-                                fatal_panic!(from self, "{} {} {}", msg_begin, msg_disconnet_with_borrows, msg_end);
+                                fatal_panic!(from self, "This should never happen! {} {} {}", msg_begin, msg_disconnet_with_borrows, msg_end);
                             } else {
                                 warn!(from self, "{} {} {}", msg_begin, msg_disconnect_with_data, msg_end);
                             }

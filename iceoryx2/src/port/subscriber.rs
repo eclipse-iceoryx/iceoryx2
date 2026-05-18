@@ -210,12 +210,25 @@ impl<
             None => static_config.subscriber_max_buffer_size,
         };
 
-        let number_of_to_be_removed_connections = service
+        let subscriber_max_borrowed_samples = static_config.subscriber_max_borrowed_samples;
+        let subscriber_expired_connection_buffer = service
             .shared_node()
             .config()
             .defaults
             .publish_subscribe
             .subscriber_expired_connection_buffer;
+
+        let number_of_to_be_removed_connections = if subscriber_expired_connection_buffer
+            >= subscriber_max_borrowed_samples
+        {
+            subscriber_expired_connection_buffer
+        } else {
+            warn!(
+                "Subscriber max borrowed samples is larger than expired connection buffer! Set buffer capacity to value of max borrowed samples."
+            );
+            subscriber_max_borrowed_samples
+        };
+
         let number_of_active_connections = publisher_list.capacity();
         let number_of_connections =
             number_of_to_be_removed_connections + number_of_active_connections;
@@ -232,7 +245,7 @@ impl<
                 receiver_port_id: subscriber_id.value(),
                 service_state: service.clone(),
                 message_type_details: static_config.message_type_details,
-                receiver_max_borrowed_samples: static_config.subscriber_max_borrowed_samples,
+                receiver_max_borrowed_samples: subscriber_max_borrowed_samples,
                 enable_safe_overflow: static_config.enable_safe_overflow,
                 buffer_size,
                 tagger: CyclicTagger::new(),
