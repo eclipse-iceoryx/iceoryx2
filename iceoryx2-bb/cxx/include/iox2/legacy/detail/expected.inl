@@ -166,11 +166,38 @@ inline const ErrorType& expected<ValueType, ErrorType>::error(bb::detail::Source
 }
 
 template <typename ValueType, typename ErrorType>
+template <typename E>
+inline std::enable_if_t<!(std::is_integral<E>::value || std::is_enum<E>::value), void>
+expected<ValueType, ErrorType>::log_error_unchecked() const noexcept {
+}
+
+template <typename ValueType, typename ErrorType>
+template <typename E>
+inline std::enable_if_t<std::is_integral<E>::value, void>
+expected<ValueType, ErrorType>::log_error_unchecked() const noexcept {
+    IOX2_LOG(Error,
+             "About to access the value of the 'Expected' but it contains the error: " << m_store.error_unchecked());
+}
+
+template <typename ValueType, typename ErrorType>
+template <typename E>
+inline std::enable_if_t<std::is_enum<E>::value, void>
+expected<ValueType, ErrorType>::log_error_unchecked() const noexcept {
+    IOX2_LOG(Error,
+             "About to access the value of the 'Expected' but it contains the error: "
+                 << static_cast<std::underlying_type_t<E>>(m_store.error_unchecked()) << " [" << typeid(E).name()
+                 << " (mangled)]");
+}
+
+template <typename ValueType, typename ErrorType>
 template <typename U>
 inline const enable_if_non_void_t<U>&
 expected<ValueType, ErrorType>::value_checked(bb::detail::SourceLocation location) const& noexcept {
-    IOX2_ENFORCE_INTERNAL(
-        location, has_value(), "Expected::has_value()", "Trying to access the value but an error is stored!");
+    if (has_error()) {
+        log_error_unchecked();
+        IOX2_ENFORCE_INTERNAL(
+            location, has_value(), "Expected::has_value()", "Trying to access the value but an error is stored!");
+    }
     return m_store.value_unchecked();
 }
 

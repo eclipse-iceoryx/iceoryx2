@@ -44,6 +44,8 @@
 * Implement C++20 'source_location' based on compiler source location builtins
   and use it for better `Expected` and `Optional` messages on contract violations
   [#1496](https://github.com/eclipse-iceoryx/iceoryx2/issues/1496)
+* Print error value in 'Expected' if it is convertible into an integer type
+  [#1528](https://github.com/eclipse-iceoryx/iceoryx2/issues/1528)
 * Enable override of preallocated data chunks for sender ports
   [#1551](https://github.com/eclipse-iceoryx/iceoryx2/issues/1551)
 * Add `Zeroable` and `PlainOldDataWithoutPadding` derive macros that generate
@@ -147,6 +149,8 @@
   [#1578](https://github.com/eclipse-iceoryx/iceoryx2/issues/1578)
 * Fix various CLI quirks
   [#1595](https://github.com/eclipse-iceoryx/iceoryx2/issues/1595)
+* Fix segfault when connection is removed
+  [#1629](https://github.com/eclipse-iceoryx/iceoryx2/issues/1629)
 
 ### Refactoring
 

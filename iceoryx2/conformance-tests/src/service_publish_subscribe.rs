@@ -3249,6 +3249,42 @@ pub mod service_publish_subscribe {
     }
 
     #[conformance_test]
+    pub fn sample_is_still_acessible_when_publisher_was_disconnected<Sut: Service>() {
+        const NUMBER_OF_SAMPLES: usize = 4;
+        let service_name = generate_service_name();
+        let config = testing::generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<usize>()
+            .subscriber_max_buffer_size(NUMBER_OF_SAMPLES)
+            .subscriber_max_borrowed_samples(NUMBER_OF_SAMPLES)
+            .max_publishers(1)
+            .create()
+            .unwrap();
+
+        let publisher = sut.publisher_builder().create().unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+
+        let mut samples = Vec::new();
+        for i in 0..NUMBER_OF_SAMPLES {
+            assert_that!(publisher.send_copy(i), is_ok);
+
+            let result = subscriber.receive().unwrap();
+            assert_that!(result, is_some);
+            samples.push(result.unwrap());
+        }
+
+        drop(publisher);
+        let _ = subscriber.receive(); // 'receive' will internally call 'update_connections'
+
+        for (i, sample) in samples.iter().enumerate() {
+            assert_that!(**sample, eq i);
+        }
+    }
+
+    #[conformance_test]
     pub fn subscriber_disconnected_publisher_does_not_block_new_publishers<Sut: Service>() {
         set_log_level(LogLevel::Error);
         const NUMBER_OF_SAMPLES: usize = 4;
