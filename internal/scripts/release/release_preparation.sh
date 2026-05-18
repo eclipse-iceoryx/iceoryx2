@@ -39,56 +39,10 @@ print_default_user_exit_hint() {
     echo -e "Canceled script execution!"
 }
 
-print_article_hint() {
-    echo -e "${C_BOLD}Article Types${C_OFF}"
-    echo -e "1. Write release announcement blog article"
-    echo -e "2. Write LinkedIn post"
-    echo -e "3. Write reddit/hacker/programming-dev news post"
-    echo -e "4. Update the 'ROADMAP.md' document"
-    echo -e ""
-    echo -e "${C_BOLD}Article Template${C_OFF}"
-    echo -e "The link in new release announcement shall always be the link to the"
-    echo -e "release blog-article."
-    echo -e ""
-    echo -e "${C_BOLD}Blog Article - Add The Following Links${C_OFF}"
-    echo -e "[Add it at the bottom]"
-    echo -e ""
-    echo -e " * Discuss on Reddit"
-    echo -e " * Discuss on Hacker News"
-    echo -e " * Project on GitHub"
-    echo -e " * Project on crates.io"
-    echo -e ""
-    echo -e "${C_BOLD}Social Media Post - Add The Following Links${C_OFF}"
-    echo -e "[Add it at the top]"
-    echo -e " * Release Announcement: https://ekxide.io/blog/****************"
-    echo -e ""
-    echo -e "[Add it at the bottom]"
-    echo -e " * repo: https://github.com/eclipse-iceoryx/iceoryx2"
-    echo -e " * roadmap: https://github.com/eclipse-iceoryx/iceoryx2/blob/main/ROADMAP.md"
-    echo -e " * crates.io: https://crates.io/crates/iceoryx2"
-    echo -e " * docs.rs: https://docs.rs/iceoryx2/latest/iceoryx2"
-    echo -e ""
-    echo -e "${C_BOLD}Announcement (Major release only)${C_OFF}"
-    echo -e "1. Write blog-article with some technical details, highlights etc."
-    echo -e "2. Announce blog-article on"
-    echo -e "   * https://www.reddit.com/r/rust/"
-    echo -e "   * https://www.reddit.com/r/programming/"
-    echo -e "   * https://www.reddit.com/r/python/"
-    echo -e "   * https://www.linkedin.com/"
-    echo -e "   * https://news.ycombinator.com/"
-    echo -e "   * https://programming.dev/"
-    echo -e "   * https://techhub.social/"
-    echo -e "   * https://X.com/"
-    echo -e "3. If there are interesting things to explore, play around with, post it on"
-    echo -e "   * https://news.ycombinator.com/show"
-}
-
 print_manual_steps_hint() {
-    echo -e "* Test if QNX builds and runs with the current codebase"
-    echo -e "* Test if Yocto builds and runs with the current codebase"
-    echo -e "* check if the new features are marked as done, e.g. README, ROADMAP, etc."
-    echo -e "* grep for 'planned'"
-    echo -e "* verify to be on the right branch, e.g. 'main' or 'release-x.y'"
+    echo -e "Follow the release tutorial in: ./doc/how-to-create-an-iceoryx2-release.md"
+    echo -e " * All release articles are written."
+    echo -e " * All manual steps are completed."
 }
 
 print_sanity_checks() {
@@ -109,7 +63,7 @@ print_finalize_release_notes() {
 
 print_set_new_version_number() {
     echo -e "* change the version number to ${ICEORYX2_RELEASE_VERSION} in all relevant files"
-    echo -e "* the 'update_versions.sh' script can be utilized to automate the process"
+    echo -e "* the 'just prepare-release all versions --version ${ICEORYX2_RELEASE_VERSION}' script can be utilized to automate the process"
     echo -e "* the script changes the version in:"
     echo -e "  * all Cargo.toml"
     echo -e "  * all CMakeLists.txt"
@@ -122,7 +76,7 @@ print_set_new_version_number() {
 }
 
 print_do_crates_io_publishing_dry_run() {
-    echo -e "Do a 'cargo publish --dry-run'"
+    echo -e "Do a 'just publish sdk --dry-run'"
 }
 
 print_merge_all_changes_to_main_and_create_release_branch() {
@@ -136,9 +90,6 @@ print_merge_all_changes_to_main_and_create_release_branch() {
 
 print_howto() {
     STEP_COUNTER=0
-    print_step "Start Always With Writing The Articles"
-    print_article_hint
-
     print_step "Check Manual Steps"
     print_manual_steps_hint
 
@@ -236,9 +187,6 @@ echo -e "${C_BLUE}Hello walking water bag. I will assist you in the iceoryx2 rel
 
 STEP_COUNTER=0
 
-print_step "Did you wrote the articles? (Release announcement, social media post, etc.)"
-show_default_selector print_article_hint
-
 print_step "Check Manual Steps"
 print_manual_steps_hint
 show_default_selector
@@ -247,7 +195,7 @@ print_step "Sanity checks"
 echo -e "Shall I run the sanity checks for the crates.io release?"
 show_default_selector
 if [[ ${SELECTION} == "${YES}" ]]; then
-    internal/scripts/release/crates_io_publish_script.sh sanity-checks
+    just publish all --sanity-checks
 
     show_completion
 fi
@@ -303,7 +251,7 @@ print_step "Set New Version Number"
 echo -e "Shall the ${C_YELLOW}${ICEORYX2_RELEASE_VERSION}${C_OFF} release version be set in all files?"
 show_default_selector
 if [[ ${SELECTION} == ${YES} ]]; then
-    internal/scripts/update_versions.sh --iceoryx2 ${ICEORYX2_RELEASE_VERSION}
+    just prepare-release all versions --version ${ICEORYX2_RELEASE_VERSION}
 
     sed -i 's/PREVIOUS_RELEASE: '"${ICEORYX2_PREVIOUS_VERSION}"'/PREVIOUS_RELEASE: '"${ICEORYX2_RELEASE_VERSION}"'/g' \
         internal/VERSIONS
@@ -315,13 +263,37 @@ if [[ ${SELECTION} == ${YES} ]]; then
 
     git add .
 
-    echo -e "Did you build with cargo, bazel and also the python bindings to update the corresponding lock files?"
-    echo -e ""
-    echo -e "cargo:  cargo build --all-targets"
-    echo -e "bazel:  bazelisk build //..."
-    echo -e "python: maturin build --manifest-path=iceoryx2-ffi/python/Cargo.toml"
+    echo -e "Shall I run those build commands to update the lock files?"
+    echo -e "  cargo:  cargo build --all-targets"
+    echo -e "  bazel:  bazelisk build //..."
+    echo -e "  python: poetry --project iceoryx2-ffi/python build-into-venv"
     show_default_selector
+    if [[ ${SELECTION} == ${YES} ]]; then
+        echo -e ""
+        echo -e "${C_BLUE}#################################${C_OFF}"
+        echo -e "${C_BLUE}### Updating Cargo.Bazel.lock ###${C_OFF}"
+        echo -e "${C_BLUE}#################################${C_OFF}"
+        echo -e ""
+        bazelisk build //...
 
+        echo -e ""
+        echo -e "${C_BLUE}############################${C_OFF}"
+        echo -e "${C_BLUE}### Updating Python lock ###${C_OFF}"
+        echo -e "${C_BLUE}############################${C_OFF}"
+        echo -e ""
+        poetry --project iceoryx2-ffi/python build-into-venv
+ 
+        echo -e ""
+        echo -e "${C_BLUE}###########################${C_OFF}"
+        echo -e "${C_BLUE}### Updating Cargo.lock ###${C_OFF}"
+        echo -e "${C_BLUE}###########################${C_OFF}"
+        echo -e ""
+        cargo build --all-targets --workspace
+    fi
+
+    git add .
+
+    echo -e ""
     echo -e "Shall the changes be commited?"
     show_default_selector
     if [[ ${SELECTION} == ${YES} ]]; then
@@ -335,7 +307,7 @@ print_step "Do crates.io publishing dry-run"
 echo -e "Shall a publishing dry-run be performed?"
 show_default_selector
 if [[ ${SELECTION} == ${YES} ]]; then
-    internal/scripts/release/crates_io_publish_script.sh dry-run
+    just publish sdk --dry-run
 
     show_completion
 fi
