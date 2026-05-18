@@ -135,17 +135,17 @@ print_step "Sanity checks"
 echo -e "Shall I run the sanity checks?"
 show_default_selector
 if [[ ${SELECTION} == ${YES} ]]; then
-    internal/scripts/release/crates_io_publish_script.sh sanity-checks
+    just publish all --sanity-checks
 
     show_completion
 fi
 
 print_step "Publish to crates.io"
-internal/scripts/release/crates_io_publish_script.sh list-crates-to-publish
+just publish all --list
 echo -e "Shall I publish the listed crates to crates.io?"
 show_default_selector
 if [[ ${SELECTION} == ${YES} ]]; then
-    internal/scripts/release/crates_io_publish_script.sh publish
+    just publish all
 
     echo -e "Please check whether the release looks fine on 'docs.rs'."
     echo -e "(click through the documentation to check if everything was generated correctly)"
