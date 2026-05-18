@@ -162,6 +162,8 @@
   [#223](https://github.com/eclipse-iceoryx/iceoryx2/issues/223)
 * Remove rule suppression in clang-tidy
   [#280](https://github.com/eclipse-iceoryx/iceoryx2/issues/280)
+* Drop python requirement to 3.8
+  [#1215](https://github.com/eclipse-iceoryx/iceoryx2/issues/1215)
 * Move zenoh tunnel crates into `integrations` workspace
   [#1244](https://github.com/eclipse-iceoryx/iceoryx2/issues/1244)
 * Remove support for Bazel Workspaces
