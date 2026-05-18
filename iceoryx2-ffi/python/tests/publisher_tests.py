@@ -48,10 +48,7 @@ def test_backpressure_strategy_can_be_configured(
         .create()
     )
 
-    assert (
-        sut_1.backpressure_strategy
-        == iox2.BackpressureStrategy.RetryUntilDelivered
-    )
+    assert sut_1.backpressure_strategy == iox2.BackpressureStrategy.RetryUntilDelivered
     assert sut_2.backpressure_strategy == iox2.BackpressureStrategy.DiscardData
 
 

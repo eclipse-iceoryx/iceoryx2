@@ -223,9 +223,7 @@ def test_defaults_request_response_server_max_loaned_responses_per_request_can_b
     )
 
 
-def test_defaults_request_response_client_backpressure_strategy_can_be_set() -> (
-    None
-):
+def test_defaults_request_response_client_backpressure_strategy_can_be_set() -> None:
     sut = iox2.config.default()
     sut.defaults.request_response.client_backpressure_strategy = (
         iox2.BackpressureStrategy.RetryUntilDelivered
@@ -243,9 +241,7 @@ def test_defaults_request_response_client_backpressure_strategy_can_be_set() -> 
     )
 
 
-def test_defaults_request_response_server_backpressure_strategy_can_be_set() -> (
-    None
-):
+def test_defaults_request_response_server_backpressure_strategy_can_be_set() -> None:
     sut = iox2.config.default()
     sut.defaults.request_response.server_backpressure_strategy = (
         iox2.BackpressureStrategy.RetryUntilDelivered
