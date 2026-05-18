@@ -52,7 +52,7 @@
   the trait impl and enforce all invariants (`#[repr(C)]`, no padding, field
   bounds) at compile time
   [#1547](https://github.com/eclipse-iceoryx/iceoryx2/issues/1547)
-* Enhance degradation handler and add unable to deliver handler
+* Enhance degradation handler and add backpressure handler
   [#1573](https://github.com/eclipse-iceoryx/iceoryx2/issues/1573)
 * Add `{try|blocking}_cleanup_dead_nodes` in `Node` and `PortFactory` to trigger
   explicit dead `Node` cleanup
@@ -68,7 +68,7 @@
 * Enable all tests for 32 bit after `#1567` fixed the unaligned pointer access
   [#262](https://github.com/eclipse-iceoryx/iceoryx2/issues/262)
 * Publisher, Client, Server no longer deadlocks with
-  UnableToDeliveryStrategy::Block when the other side disconnects
+  BackpressureyStrategy::Block when the other side disconnects
   [#314](https://github.com/eclipse-iceoryx/iceoryx2/issues/314)
 * Update `set_log_level_X` docs and mention that iceoryx2 filters
   even for external frameworks
@@ -343,20 +343,20 @@
     use iceoryx2_services_tunnel::{Config, Tunnel};
     ```
 
-1. The `UnableToDeliveryStrategy` enum tags are renamed to from `Block` and
+1. The `BackpressureyStrategy` enum tags are renamed to from `Block` and
    `DiscardSample` to `RetryUntilDelivered` and `DiscardData`.
 
     ```rust
     // old
     service
         .publisher_builder()
-        .unable_to_deliver_strategy(UnableToDeliverStrategy::Block)
+        .backpressure_strategy(BackpressureStrategy::Block)
         .create()?;
 
     // new
     service
         .publisher_builder()
-        .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
+        .backpressure_strategy(BackpressureStrategy::RetryUntilDelivered)
         .create()?;
     ```
 

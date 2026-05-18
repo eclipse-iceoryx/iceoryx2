@@ -11,12 +11,12 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
 cmake_minimum_required(VERSION 3.22)
-project(example_c_publish_subscribe_with_unable_to_deliver_handler LANGUAGES C)
+project(example_cxx_publish_subscribe_with_backpressure_handler LANGUAGES CXX)
 
-find_package(iceoryx2-c 0.8.999 REQUIRED)
+find_package(iceoryx2-cxx 0.8.999 REQUIRED)
 
-add_executable(example_c_publish_subscribe_unable_to_deliver_publisher src/publisher.c)
-target_link_libraries(example_c_publish_subscribe_unable_to_deliver_publisher iceoryx2-c::static-lib)
+add_executable(example_cxx_publish_subscribe_with_backpressure_publisher src/publisher.cpp)
+target_link_libraries(example_cxx_publish_subscribe_with_backpressure_publisher iceoryx2-cxx::static-lib-cxx)
 
-add_executable(example_c_publish_subscribe_unable_to_deliver_subscriber src/subscriber.c)
-target_link_libraries(example_c_publish_subscribe_unable_to_deliver_subscriber iceoryx2-c::static-lib)
+add_executable(example_cxx_publish_subscribe_with_backpressure_subscriber src/subscriber.cpp)
+target_link_libraries(example_cxx_publish_subscribe_with_backpressure_subscriber iceoryx2-cxx::static-lib-cxx)

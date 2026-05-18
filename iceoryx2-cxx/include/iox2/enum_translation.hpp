@@ -46,8 +46,8 @@
 #include "iox2/signal_handling_mode.hpp"
 #include "iox2/subscriber_error.hpp"
 #include "iox2/type_variant.hpp"
-#include "iox2/unable_to_deliver_action.hpp"
-#include "iox2/unable_to_deliver_strategy.hpp"
+#include "iox2/backpressure_action.hpp"
+#include "iox2/backpressure_strategy.hpp"
 #include "iox2/waitset_enums.hpp"
 #include "iox2/writer_error.hpp"
 
@@ -1759,8 +1759,8 @@ constexpr auto from<int, iox2::SendError>(const int value) noexcept -> iox2::Sen
         return iox2::SendError::LoanErrorInternalFailure;
     case iox2_send_error_e_CONNECTION_ERROR:
         return iox2::SendError::ConnectionError;
-    case iox2_send_error_e_UNABLE_TO_DELIVER:
-        return iox2::SendError::UnableToDeliver;
+    case iox2_send_error_e_BACKPRESSURE:
+        return iox2::SendError::Backpressure;
     case iox2_send_error_e_INTERNAL_ERROR:
         return iox2::SendError::InternalError;
     }
@@ -1785,8 +1785,8 @@ constexpr auto from<iox2::SendError, iox2_send_error_e>(const iox2::SendError va
         return iox2_send_error_e_LOAN_ERROR_INTERNAL_FAILURE;
     case iox2::SendError::ConnectionError:
         return iox2_send_error_e_CONNECTION_ERROR;
-    case iox2::SendError::UnableToDeliver:
-        return iox2_send_error_e_UNABLE_TO_DELIVER;
+    case iox2::SendError::Backpressure:
+        return iox2_send_error_e_BACKPRESSURE;
     case iox2::SendError::InternalError:
         return iox2_send_error_e_INTERNAL_ERROR;
     }
@@ -1892,8 +1892,8 @@ constexpr auto from<int, iox2::RequestSendError>(const int value) noexcept -> io
         return iox2::RequestSendError::LoanErrorInternalFailure;
     case iox2_request_send_error_e_CONNECTION_ERROR:
         return iox2::RequestSendError::ConnectionError;
-    case iox2_request_send_error_e_UNABLE_TO_DELIVER:
-        return iox2::RequestSendError::UnableToDeliver;
+    case iox2_request_send_error_e_BACKPRESSURE:
+        return iox2::RequestSendError::Backpressure;
     case iox2_request_send_error_e_INTERNAL_ERROR:
         return iox2::RequestSendError::InternalError;
     }
@@ -1921,8 +1921,8 @@ constexpr auto from<iox2::RequestSendError, iox2_request_send_error_e>(const iox
         return iox2_request_send_error_e_LOAN_ERROR_INTERNAL_FAILURE;
     case iox2::RequestSendError::ConnectionError:
         return iox2_request_send_error_e_CONNECTION_ERROR;
-    case iox2::RequestSendError::UnableToDeliver:
-        return iox2_request_send_error_e_UNABLE_TO_DELIVER;
+    case iox2::RequestSendError::Backpressure:
+        return iox2_request_send_error_e_BACKPRESSURE;
     case iox2::RequestSendError::InternalError:
         return iox2_request_send_error_e_INTERNAL_ERROR;
     }
@@ -1997,25 +1997,25 @@ constexpr auto from<int, iox2::MessagingPattern>(const int value) noexcept -> io
 }
 
 template <>
-constexpr auto from<int, iox2::UnableToDeliverStrategy>(const int value) noexcept -> iox2::UnableToDeliverStrategy {
-    const auto variant = static_cast<iox2_unable_to_deliver_strategy_e>(value);
+constexpr auto from<int, iox2::BackpressureStrategy>(const int value) noexcept -> iox2::BackpressureStrategy {
+    const auto variant = static_cast<iox2_backpressure_strategy_e>(value);
     switch (variant) {
-    case iox2_unable_to_deliver_strategy_e_RETRY_UNTIL_DELIVERED:
-        return iox2::UnableToDeliverStrategy::RetryUntilDelivered;
-    case iox2_unable_to_deliver_strategy_e_DISCARD_DATA:
-        return iox2::UnableToDeliverStrategy::DiscardData;
+    case iox2_backpressure_strategy_e_RETRY_UNTIL_DELIVERED:
+        return iox2::BackpressureStrategy::RetryUntilDelivered;
+    case iox2_backpressure_strategy_e_DISCARD_DATA:
+        return iox2::BackpressureStrategy::DiscardData;
     }
 
     IOX2_UNREACHABLE();
 }
 
 template <>
-constexpr auto from<iox2::UnableToDeliverStrategy, int>(const iox2::UnableToDeliverStrategy value) noexcept -> int {
+constexpr auto from<iox2::BackpressureStrategy, int>(const iox2::BackpressureStrategy value) noexcept -> int {
     switch (value) {
-    case iox2::UnableToDeliverStrategy::RetryUntilDelivered:
-        return iox2_unable_to_deliver_strategy_e_RETRY_UNTIL_DELIVERED;
-    case iox2::UnableToDeliverStrategy::DiscardData:
-        return iox2_unable_to_deliver_strategy_e_DISCARD_DATA;
+    case iox2::BackpressureStrategy::RetryUntilDelivered:
+        return iox2_backpressure_strategy_e_RETRY_UNTIL_DELIVERED;
+    case iox2::BackpressureStrategy::DiscardData:
+        return iox2_backpressure_strategy_e_DISCARD_DATA;
     }
 
     IOX2_UNREACHABLE();
@@ -2410,17 +2410,17 @@ constexpr auto from<iox2::DegradationAction, iox2_degradation_action_e>(const io
 
 template <>
 constexpr auto
-from<iox2::UnableToDeliverAction, iox2_unable_to_deliver_action_e>(const iox2::UnableToDeliverAction value) noexcept
-    -> iox2_unable_to_deliver_action_e {
+from<iox2::BackpressureAction, iox2_backpressure_action_e>(const iox2::BackpressureAction value) noexcept
+    -> iox2_backpressure_action_e {
     switch (value) {
-    case iox2::UnableToDeliverAction::FollowUnableToDeliveryStrategy:
-        return iox2_unable_to_deliver_action_e_FOLLOW_UNABLE_TO_DELIVERY_STRATEGY;
-    case iox2::UnableToDeliverAction::Retry:
-        return iox2_unable_to_deliver_action_e_RETRY;
-    case iox2::UnableToDeliverAction::DiscardData:
-        return iox2_unable_to_deliver_action_e_DISCARD_DATA;
-    case iox2::UnableToDeliverAction::DiscardDataAndFail:
-        return iox2_unable_to_deliver_action_e_DISCARD_DATA_AND_FAIL;
+    case iox2::BackpressureAction::FollowBackpressureyStrategy:
+        return iox2_backpressure_action_e_FOLLOW_BACKPRESSUREY_STRATEGY;
+    case iox2::BackpressureAction::Retry:
+        return iox2_backpressure_action_e_RETRY;
+    case iox2::BackpressureAction::DiscardData:
+        return iox2_backpressure_action_e_DISCARD_DATA;
+    case iox2::BackpressureAction::DiscardDataAndFail:
+        return iox2_backpressure_action_e_DISCARD_DATA_AND_FAIL;
     }
 
     IOX2_UNREACHABLE();

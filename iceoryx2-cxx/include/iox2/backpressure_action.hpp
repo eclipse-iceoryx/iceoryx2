@@ -10,16 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_UNABLE_TO_DELIVER_ACTION_HPP
-#define IOX2_UNABLE_TO_DELIVER_ACTION_HPP
+#ifndef IOX2_BACKPRESSURE_ACTION_HPP
+#define IOX2_BACKPRESSURE_ACTION_HPP
 
 #include <cstdint>
 
 namespace iox2 {
 /// Defines the action that shall be take when data cannot be delivered.
-enum class UnableToDeliverAction : uint8_t {
-    /// Use an action which is derived from the `UnableToDeliverStrategy`
-    FollowUnableToDeliveryStrategy,
+enum class BackpressureAction : uint8_t {
+    /// Use an action which is derived from the `BackpressureStrategy`
+    FollowBackpressureyStrategy,
     /// Retry to send and invoke the handler again, if sending does not succeed
     Retry,
     /// Discard the data for the receiver which cause the incident and continue
@@ -32,4 +32,4 @@ enum class UnableToDeliverAction : uint8_t {
 };
 } // namespace iox2
 
-#endif // IOX2_UNABLE_TO_DELIVER_ACTION_HPP
+#endif // IOX2_BACKPRESSURE_ACTION_HPP

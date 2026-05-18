@@ -56,7 +56,7 @@ enum class SendError : uint8_t {
     /// A failure occurred while establishing a connection to the ports counterpart port.
     ConnectionError,
     /// The sample could not be delivered
-    UnableToDeliver,
+    Backpressure,
     /// An internal mechanisms failed and the data could not be delivered to all receivers.
     InternalError
 };
@@ -101,7 +101,7 @@ enum class RequestSendError : uint8_t {
     /// A failure occurred while establishing a connection to the ports counterpart port.
     ConnectionError,
     /// The request could not be delivered
-    UnableToDeliver,
+    Backpressure,
     /// An internal mechanisms failed and the data could not be delivered to all receivers.
     InternalError,
 };

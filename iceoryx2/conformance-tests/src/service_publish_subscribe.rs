@@ -22,7 +22,7 @@ pub mod service_publish_subscribe {
     use iceoryx2::port::publisher::PublisherCreateError;
     use iceoryx2::port::subscriber::SubscriberCreateError;
     use iceoryx2::port::update_connections::UpdateConnections;
-    use iceoryx2::port::{LoanError, SendError, UnableToDeliverAction};
+    use iceoryx2::port::{BackpressureAction, LoanError, SendError};
     use iceoryx2::prelude::{AllocationStrategy, *};
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
@@ -1540,7 +1540,7 @@ pub mod service_publish_subscribe {
 
         let publisher = sut
             .publisher_builder()
-            .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
+            .backpressure_strategy(BackpressureStrategy::DiscardData)
             .create()
             .unwrap();
         let subscriber = sut.subscriber_builder().create().unwrap();
@@ -1673,7 +1673,7 @@ pub mod service_publish_subscribe {
     const VALUE_FIRST_SAMPLE: usize = 1;
     const VALUE_SECOND_SAMPLE: usize = 2;
 
-    fn publisher_with_unable_to_deliver_handler<Sut, PublisherBuilder>(
+    fn publisher_with_backpressure_handler<Sut, PublisherBuilder>(
         save_overflow: bool,
         publisher_builder: PublisherBuilder,
         expected_second_send_result: Result<usize, SendError>,
@@ -1760,9 +1760,7 @@ pub mod service_publish_subscribe {
     }
 
     #[conformance_test]
-    pub fn publisher_with_unable_to_deliver_handler_does_not_block_with_safe_overflow<
-        Sut: Service,
-    >() {
+    pub fn publisher_with_backpressure_handler_does_not_block_with_safe_overflow<Sut: Service>() {
         const SAFE_OVERFLOW: bool = true;
         const EXPECTED_SECOND_SEND_RESULT: Result<usize, SendError> = Ok(2);
         const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_1: Option<usize> = Some(VALUE_SECOND_SAMPLE);
@@ -1770,14 +1768,14 @@ pub mod service_publish_subscribe {
 
         let handler_call_count = Arc::new(AtomicU64::new(0));
 
-        publisher_with_unable_to_deliver_handler::<Sut, _>(
+        publisher_with_backpressure_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |publisher_port_factory| {
-                publisher_port_factory.set_unable_to_deliver_handler({
+                publisher_port_factory.set_backpressure_handler({
                     let handler_call_count = handler_call_count.clone();
                     move |_| {
                         handler_call_count.fetch_add(1, Ordering::Relaxed);
-                        UnableToDeliverAction::Retry
+                        BackpressureAction::Retry
                     }
                 })
             },
@@ -1790,7 +1788,7 @@ pub mod service_publish_subscribe {
     }
 
     #[conformance_test]
-    pub fn publisher_with_unable_to_deliver_handler_discards_sample<Sut: Service>() {
+    pub fn publisher_with_backpressure_handler_discards_sample<Sut: Service>() {
         const SAFE_OVERFLOW: bool = false;
         const EXPECTED_SECOND_SEND_RESULT: Result<usize, SendError> = Ok(1);
         const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_1: Option<usize> = Some(VALUE_FIRST_SAMPLE);
@@ -1798,14 +1796,14 @@ pub mod service_publish_subscribe {
 
         let handler_call_count = Arc::new(AtomicU64::new(0));
 
-        publisher_with_unable_to_deliver_handler::<Sut, _>(
+        publisher_with_backpressure_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |publisher_port_factory| {
-                publisher_port_factory.set_unable_to_deliver_handler({
+                publisher_port_factory.set_backpressure_handler({
                     let handler_call_count = handler_call_count.clone();
                     move |_| {
                         handler_call_count.fetch_add(1, Ordering::Relaxed);
-                        UnableToDeliverAction::DiscardData
+                        BackpressureAction::DiscardData
                     }
                 })
             },
@@ -1818,7 +1816,7 @@ pub mod service_publish_subscribe {
     }
 
     #[conformance_test]
-    pub fn publisher_with_unable_to_deliver_handler_retries_twice<Sut: Service>() {
+    pub fn publisher_with_backpressure_handler_retries_twice<Sut: Service>() {
         const SAFE_OVERFLOW: bool = false;
         const EXPECTED_SECOND_SEND_RESULT: Result<usize, SendError> = Ok(1);
         const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_1: Option<usize> = Some(VALUE_FIRST_SAMPLE);
@@ -1827,17 +1825,17 @@ pub mod service_publish_subscribe {
         let handler_call_count = Arc::new(AtomicU64::new(0));
         const RETRY_COUNT: u64 = 2;
 
-        publisher_with_unable_to_deliver_handler::<Sut, _>(
+        publisher_with_backpressure_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |publisher_port_factory| {
-                publisher_port_factory.set_unable_to_deliver_handler({
+                publisher_port_factory.set_backpressure_handler({
                     let handler_call_count = handler_call_count.clone();
                     move |info| {
                         if info.retries == RETRY_COUNT {
-                            UnableToDeliverAction::DiscardData
+                            BackpressureAction::DiscardData
                         } else {
                             handler_call_count.fetch_add(1, Ordering::Relaxed);
-                            UnableToDeliverAction::Retry
+                            BackpressureAction::Retry
                         }
                     }
                 })
@@ -1851,22 +1849,22 @@ pub mod service_publish_subscribe {
     }
 
     #[conformance_test]
-    pub fn publisher_with_unable_to_deliver_handler_retries_until_timeout<Sut: Service>() {
+    pub fn publisher_with_backpressure_handler_retries_until_timeout<Sut: Service>() {
         const TIMEOUT: Duration = Duration::from_millis(25);
         const SAFE_OVERFLOW: bool = false;
         const EXPECTED_SECOND_SEND_RESULT: Result<usize, SendError> = Ok(1);
         const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_1: Option<usize> = Some(VALUE_FIRST_SAMPLE);
         const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_2: Option<usize> = Some(VALUE_SECOND_SAMPLE);
 
-        let elapsed_blocking_time = publisher_with_unable_to_deliver_handler::<Sut, _>(
+        let elapsed_blocking_time = publisher_with_backpressure_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |publisher_port_factory| {
-                publisher_port_factory.set_unable_to_deliver_handler({
+                publisher_port_factory.set_backpressure_handler({
                     move |info| {
                         if info.elapsed_time > TIMEOUT {
-                            UnableToDeliverAction::DiscardData
+                            BackpressureAction::DiscardData
                         } else {
-                            UnableToDeliverAction::Retry
+                            BackpressureAction::Retry
                         }
                     }
                 })
@@ -1880,23 +1878,22 @@ pub mod service_publish_subscribe {
     }
 
     #[conformance_test]
-    pub fn publisher_with_unable_to_deliver_handler_discards_ample_and_fails<Sut: Service>() {
+    pub fn publisher_with_backpressure_handler_discards_ample_and_fails<Sut: Service>() {
         const SAFE_OVERFLOW: bool = false;
-        const EXPECTED_SECOND_SEND_RESULT: Result<usize, SendError> =
-            Err(SendError::UnableToDeliver);
+        const EXPECTED_SECOND_SEND_RESULT: Result<usize, SendError> = Err(SendError::Backpressure);
         const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_1: Option<usize> = Some(VALUE_FIRST_SAMPLE);
         const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_2: Option<usize> = Some(VALUE_SECOND_SAMPLE);
 
         let handler_call_count = Arc::new(AtomicU64::new(0));
 
-        publisher_with_unable_to_deliver_handler::<Sut, _>(
+        publisher_with_backpressure_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |publisher_port_factory| {
-                publisher_port_factory.set_unable_to_deliver_handler({
+                publisher_port_factory.set_backpressure_handler({
                     let handler_call_count = handler_call_count.clone();
                     move |_| {
                         handler_call_count.fetch_add(1, Ordering::Relaxed);
-                        UnableToDeliverAction::DiscardDataAndFail
+                        BackpressureAction::DiscardDataAndFail
                     }
                 })
             },
@@ -1909,7 +1906,7 @@ pub mod service_publish_subscribe {
     }
 
     #[conformance_test]
-    pub fn publisher_with_unable_to_deliver_handler_follows_unable_to_deliver_strategy_with_discard_data<
+    pub fn publisher_with_backpressure_handler_follows_backpressure_strategy_with_discard_data<
         Sut: Service,
     >() {
         const SAFE_OVERFLOW: bool = false;
@@ -1919,16 +1916,16 @@ pub mod service_publish_subscribe {
 
         let handler_call_count = Arc::new(AtomicU64::new(0));
 
-        publisher_with_unable_to_deliver_handler::<Sut, _>(
+        publisher_with_backpressure_handler::<Sut, _>(
             SAFE_OVERFLOW,
             |publisher_port_factory| {
                 publisher_port_factory
-                    .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
-                    .set_unable_to_deliver_handler({
+                    .backpressure_strategy(BackpressureStrategy::DiscardData)
+                    .set_backpressure_handler({
                         let handler_call_count = handler_call_count.clone();
                         move |_| {
                             handler_call_count.fetch_add(1, Ordering::Relaxed);
-                            UnableToDeliverAction::FollowUnableToDeliveryStrategy
+                            BackpressureAction::FollowBackpressureyStrategy
                         }
                     })
             },
@@ -1941,7 +1938,7 @@ pub mod service_publish_subscribe {
     }
 
     #[conformance_test]
-    pub fn publisher_with_unable_to_deliver_handler_follows_unable_to_deliver_strategy_with_retry_until_delivered<
+    pub fn publisher_with_backpressure_handler_follows_backpressure_strategy_with_retry_until_delivered<
         Sut: Service,
     >() {
         let _watchdog = Watchdog::new();
@@ -1983,12 +1980,12 @@ pub mod service_publish_subscribe {
                 let sut_publisher = sut
                     .publisher_builder()
                     .max_loaned_samples(1)
-                    .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
-                    .set_unable_to_deliver_handler({
+                    .backpressure_strategy(BackpressureStrategy::RetryUntilDelivered)
+                    .set_backpressure_handler({
                         let handler_call_count = handler_call_count.clone();
                         move |_| {
                             handler_call_count.fetch_add(1, Ordering::Relaxed);
-                            UnableToDeliverAction::FollowUnableToDeliveryStrategy
+                            BackpressureAction::FollowBackpressureyStrategy
                         }
                     })
                     .create()

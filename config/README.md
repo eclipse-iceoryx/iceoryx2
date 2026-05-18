@@ -138,7 +138,7 @@ payload data segment
   samples a publisher can loan.
 * `defaults.publish-subscribe.enable-safe-overflow` - [`true`|`false`]: Default
   overflow behavior.
-* `defaults.publish-subscribe.unable-to-deliver-strategy` -
+* `defaults.publish-subscribe.backpressure-strategy` -
   [`RetryUntilDelivered`|`DiscardData`]: Default strategy for non-overflowing
   setups when delivery fails.
 * `defaults.publish-subscribe.subscriber-expired-connection-buffer` - [int]:
@@ -148,7 +148,7 @@ payload data segment
 
 ### Service: Request Response Messaging Pattern
 
-* `defaults.request-response.client-unable-to-deliver-strategy` -
+* `defaults.request-response.client-backpressure-strategy` -
   [`RetryUntilDelivered`|`DiscardData`]: Default strategy for non-overflowing setups
   when delivery fails.
 * `defaults.request-response.client-expired-connection-buffer` - [int]:
@@ -182,7 +182,7 @@ payload data segment
   Maximum number of responses a server can loan per request.
 * `defaults.request-response.max-servers` - [int]:
   The maximum amount of supported servers.
-* `defaults.request-response.server-unable-to-deliver-strategy` -
+* `defaults.request-response.server-backpressure-strategy` -
   [`RetryUntilDelivered`|`DiscardData`]: Default strategy for non-overflowing setups
   when delivery fails.
 * `defaults.request-response.server-expired-connection-buffer` - [int]:

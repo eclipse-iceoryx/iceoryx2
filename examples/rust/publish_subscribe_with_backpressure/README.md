@@ -35,19 +35,19 @@ The subscriber is printing the sample on the console whenever new data arrives.
 
 ## How to Run
 
-To observe the unable to deliver handler in action, open two separate terminals
+To observe the backpressure handler in action, open two separate terminals
 and execute the following commands:
 
 ### Terminal 1
 
 ```sh
-cargo run --example publish_subscribe_with_unable_to_deliver_handler_subscriber
+cargo run --example publish_subscribe_with_backpressure_handler_subscriber
 ```
 
 ### Terminal 2
 
 ```sh
-cargo run --example publish_subscribe_with_unable_to_deliver_handler_publisher
+cargo run --example publish_subscribe_with_backpressure_handler_publisher
 ```
 
 Feel free to run multiple instances of publisher or subscriber processes

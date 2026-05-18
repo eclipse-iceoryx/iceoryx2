@@ -16,7 +16,7 @@ use pyo3::prelude::*;
 #[derive(PartialEq, Clone, Debug)]
 /// Defines the strategy a sender shall pursue when the buffer of the receiver is full
 /// and the service does not overflow.
-pub enum UnableToDeliverStrategy {
+pub enum BackpressureStrategy {
     /// Retries until the receiver has consumed some
     /// data from the full buffer and there is space again
     RetryUntilDelivered,
@@ -25,33 +25,33 @@ pub enum UnableToDeliverStrategy {
 }
 
 #[pymethods]
-impl UnableToDeliverStrategy {
+impl BackpressureStrategy {
     pub fn __str__(&self) -> String {
         format!("{self:?}")
     }
 }
 
-impl From<iceoryx2::prelude::UnableToDeliverStrategy> for UnableToDeliverStrategy {
-    fn from(value: iceoryx2::prelude::UnableToDeliverStrategy) -> Self {
+impl From<iceoryx2::prelude::BackpressureStrategy> for BackpressureStrategy {
+    fn from(value: iceoryx2::prelude::BackpressureStrategy) -> Self {
         match value {
-            iceoryx2::prelude::UnableToDeliverStrategy::RetryUntilDelivered => {
-                UnableToDeliverStrategy::RetryUntilDelivered
+            iceoryx2::prelude::BackpressureStrategy::RetryUntilDelivered => {
+                BackpressureStrategy::RetryUntilDelivered
             }
-            iceoryx2::prelude::UnableToDeliverStrategy::DiscardData => {
-                UnableToDeliverStrategy::DiscardData
+            iceoryx2::prelude::BackpressureStrategy::DiscardData => {
+                BackpressureStrategy::DiscardData
             }
         }
     }
 }
 
-impl From<UnableToDeliverStrategy> for iceoryx2::prelude::UnableToDeliverStrategy {
-    fn from(value: UnableToDeliverStrategy) -> Self {
+impl From<BackpressureStrategy> for iceoryx2::prelude::BackpressureStrategy {
+    fn from(value: BackpressureStrategy) -> Self {
         match value {
-            UnableToDeliverStrategy::RetryUntilDelivered => {
-                iceoryx2::prelude::UnableToDeliverStrategy::RetryUntilDelivered
+            BackpressureStrategy::RetryUntilDelivered => {
+                iceoryx2::prelude::BackpressureStrategy::RetryUntilDelivered
             }
-            UnableToDeliverStrategy::DiscardData => {
-                iceoryx2::prelude::UnableToDeliverStrategy::DiscardData
+            BackpressureStrategy::DiscardData => {
+                iceoryx2::prelude::BackpressureStrategy::DiscardData
             }
         }
     }

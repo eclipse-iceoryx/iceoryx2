@@ -22,7 +22,7 @@
 //!     .open_or_create()?;
 //!
 //! let client = request_response.client_builder()
-//!                     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
+//!                     .backpressure_strategy(BackpressureStrategy::DiscardData)
 //!                     .create()?;
 //!
 //! # Ok(())
@@ -32,10 +32,10 @@
 use super::request_response::PortFactory;
 use crate::{
     port::{
-        DegradationAction, DegradationFn, DegradationHandler, UnableToDeliverFn,
-        UnableToDeliverHandler, client::Client,
+        BackpressureFn, BackpressureHandler, DegradationAction, DegradationFn, DegradationHandler,
+        client::Client,
     },
-    prelude::UnableToDeliverStrategy,
+    prelude::BackpressureStrategy,
     service,
 };
 use alloc::format;
@@ -96,7 +96,7 @@ impl<'a> Debug for PreallocatedRequestsOverride<'a> {
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct LocalClientConfig {
-    pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
+    pub(crate) backpressure_strategy: BackpressureStrategy,
     pub(crate) initial_max_slice_len: usize,
     pub(crate) allocation_strategy: AllocationStrategy,
 }
@@ -117,7 +117,7 @@ pub struct PortFactoryClient<
     pub(crate) preallocate_number_of_requests_override: PreallocatedRequestsOverride<'static>,
     pub(crate) request_degradation_handler: DegradationHandler<'static>,
     pub(crate) response_degradation_handler: DegradationHandler<'static>,
-    pub(crate) unable_to_deliver_handler: Option<UnableToDeliverHandler<'static>>,
+    pub(crate) backpressure_handler: Option<BackpressureHandler<'static>>,
     pub(crate) factory: &'factory PortFactory<
         Service,
         RequestPayload,
@@ -172,7 +172,7 @@ impl<
             factory: self.factory,
             request_degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
             response_degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
-            unable_to_deliver_handler: None,
+            backpressure_handler: None,
             preallocate_number_of_requests_override: PreallocatedRequestsOverride::new(|v| v),
         }
     }
@@ -195,14 +195,14 @@ impl<
 
         Self {
             config: LocalClientConfig {
-                unable_to_deliver_strategy: defs.client_unable_to_deliver_strategy,
+                backpressure_strategy: defs.client_backpressure_strategy,
                 initial_max_slice_len: 1,
                 allocation_strategy: defs.client_allocation_strategy,
             },
             preallocate_number_of_requests_override: PreallocatedRequestsOverride::new(|v| v),
             request_degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
             response_degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
-            unable_to_deliver_handler: None,
+            backpressure_handler: None,
             factory,
         }
     }
@@ -228,12 +228,12 @@ impl<
         self
     }
 
-    /// Sets the [`UnableToDeliverStrategy`] which defines how the [`Client`] shall behave
+    /// Sets the [`BackpressureStrategy`] which defines how the [`Client`] shall behave
     /// when a [`Server`](crate::port::server::Server) cannot receive a
     /// [`RequestMut`](crate::request_mut::RequestMut) since
     /// its internal buffer is full.
-    pub fn unable_to_deliver_strategy(mut self, value: UnableToDeliverStrategy) -> Self {
-        self.config.unable_to_deliver_strategy = value;
+    pub fn backpressure_strategy(mut self, value: BackpressureStrategy) -> Self {
+        self.config.backpressure_strategy = value;
         self
     }
 
@@ -263,18 +263,15 @@ impl<
         self
     }
 
-    /// Sets the [`UnableToDeliverHandler`] of the [`Client`]. Whenever a
+    /// Sets the [`BackpressureHandler`] of the [`Client`]. Whenever a
     /// [`RequestMut`](crate::response::Response) cannot be sent to a
     /// [`crate::port::server::Server`], this handler is called and depending on
-    /// the returned [`UnableToDeliverAction`](crate::port::UnableToDeliverAction),
+    /// the returned [`BackpressureAction`](crate::port::BackpressureAction),
     /// measures will be taken.
     /// If no handler is set, the measures will be determined by the value set in
-    /// [`UnableToDeliverStrategy`].
-    pub fn set_unable_to_deliver_handler<F: UnableToDeliverFn + 'static>(
-        mut self,
-        handler: F,
-    ) -> Self {
-        self.unable_to_deliver_handler = Some(UnableToDeliverHandler::new(handler));
+    /// [`BackpressureStrategy`].
+    pub fn set_backpressure_handler<F: BackpressureFn + 'static>(mut self, handler: F) -> Self {
+        self.backpressure_handler = Some(BackpressureHandler::new(handler));
 
         self
     }

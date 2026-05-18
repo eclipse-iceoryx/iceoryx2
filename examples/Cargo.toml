@@ -183,15 +183,15 @@ path = "rust/publish_subscribe_dynamic_data/publisher.rs"
 name = "publish_subscribe_dyn_subscriber"
 path = "rust/publish_subscribe_dynamic_data/subscriber.rs"
 
-# publish_subscribe_with_unable_to_deliver_handler
+# publish_subscribe_with_backpressure_handler
 
 [[example]]
-name = "publish_subscribe_unable_to_deliver_publisher"
-path = "rust/publish_subscribe_unable_to_deliver/publisher.rs"
+name = "publish_subscribe_with_backpressure_publisher"
+path = "rust/publish_subscribe_with_backpressure/publisher.rs"
 
 [[example]]
-name = "publish_subscribe_unable_to_deliver_subscriber"
-path = "rust/publish_subscribe_unable_to_deliver/subscriber.rs"
+name = "publish_subscribe_with_backpressure_subscriber"
+path = "rust/publish_subscribe_with_backpressure/subscriber.rs"
 
 # publish_subscribe_with_user_header
 

@@ -297,11 +297,11 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                     description: "Default overflow behavior.",
                 },
                 Field {
-                    key: "defaults.publish-subscribe.unable-to-deliver-strategy",
+                    key: "defaults.publish-subscribe.backpressure-strategy",
                     value_type: "`RetryUntilDelivered`|`DiscardData`",
                     default_value: format!(
                         "{:?}",
-                        config.defaults.publish_subscribe.unable_to_deliver_strategy
+                        config.defaults.publish_subscribe.backpressure_strategy
                     ),
                     description: "Default strategy for non-overflowing setups when delivery fails.",
                 },
@@ -496,26 +496,26 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                     description: "Maximum number of responses a server can loan per request.",
                 },
                 Field {
-                    key: "defaults.request-response.client-unable-to-deliver-strategy",
+                    key: "defaults.request-response.client-backpressure-strategy",
                     value_type: "`RetryUntilDelivered`|`DiscardData`",
                     default_value: format!(
                         "{:?}",
                         config
                             .defaults
                             .request_response
-                            .client_unable_to_deliver_strategy
+                            .client_backpressure_strategy
                     ),
                     description: "Default strategy for non-overflowing setups when delivery fails.",
                 },
                 Field {
-                    key: "defaults.request-response.server-unable-to-deliver-strategy",
+                    key: "defaults.request-response.server-backpressure-strategy",
                     value_type: "`RetryUntilDelivered`|`DiscardData`",
                     default_value: format!(
                         "{:?}",
                         config
                             .defaults
                             .request_response
-                            .server_unable_to_deliver_strategy
+                            .server_backpressure_strategy
                     ),
                     description: "Default strategy for non-overflowing setups when delivery fails.",
                 },

@@ -87,7 +87,7 @@ use serde::{Deserialize, Serialize};
 
 use iceoryx2_log::{debug, fail, fatal_panic, info, trace, warn};
 
-use crate::port::unable_to_deliver_strategy::UnableToDeliverStrategy;
+use crate::port::backpressure_strategy::BackpressureStrategy;
 use iceoryx2_cal::shm_allocator::AllocationStrategy;
 
 use iceoryx2_pal_configuration::ICEORYX2_ROOT_PATH;
@@ -317,7 +317,7 @@ pub struct PublishSubscribe {
     /// If safe overflow is deactivated it defines the deliver strategy of the
     /// [`Publisher`](crate::port::publisher::Publisher) when the [`Subscriber`](crate::port::subscriber::Subscriber)s
     /// buffer is full.
-    pub unable_to_deliver_strategy: UnableToDeliverStrategy,
+    pub backpressure_strategy: BackpressureStrategy,
     /// Defines the size of the internal [`Subscriber`](crate::port::subscriber::Subscriber)
     /// buffer that contains expired connections. An
     /// connection is expired when the [`Publisher`](crate::port::publisher::Publisher)
@@ -341,7 +341,7 @@ impl Default for PublishSubscribe {
             subscriber_max_borrowed_samples: 2,
             publisher_max_loaned_samples: 2,
             enable_safe_overflow: true,
-            unable_to_deliver_strategy: UnableToDeliverStrategy::RetryUntilDelivered,
+            backpressure_strategy: BackpressureStrategy::RetryUntilDelivered,
             subscriber_expired_connection_buffer: 128,
             publisher_allocation_strategy: AllocationStrategy::Static,
         }
@@ -427,12 +427,12 @@ pub struct RequestResonse {
     /// Defines how many [`ResponseMut`](crate::response_mut::ResponseMut) a [`Server`](crate::port::server::Server)
     /// can loan in parallel per [`ActiveRequest`](crate::active_request::ActiveRequest).
     pub server_max_loaned_responses_per_request: usize,
-    /// Defines the [`UnableToDeliverStrategy`] when a [`Client`](crate::port::client::Client)
+    /// Defines the [`BackpressureStrategy`] when a [`Client`](crate::port::client::Client)
     /// could not deliver the request to the [`Server`](crate::port::server::Server).
-    pub client_unable_to_deliver_strategy: UnableToDeliverStrategy,
-    /// Defines the [`UnableToDeliverStrategy`] when a [`Server`](crate::port::server::Server)
+    pub client_backpressure_strategy: BackpressureStrategy,
+    /// Defines the [`BackpressureStrategy`] when a [`Server`](crate::port::server::Server)
     /// could not deliver the response to the [`Client`](crate::port::client::Client).
-    pub server_unable_to_deliver_strategy: UnableToDeliverStrategy,
+    pub server_backpressure_strategy: BackpressureStrategy,
     /// Defines the size of the internal [`Client`](crate::port::client::Client)
     /// buffer that contains expired connections. A
     /// connection is expired when the [`Server`](crate::port::server::Server)
@@ -483,8 +483,8 @@ impl Default for RequestResonse {
             max_borrowed_responses_per_pending_response: 2,
             max_loaned_requests: 2,
             server_max_loaned_responses_per_request: 2,
-            client_unable_to_deliver_strategy: UnableToDeliverStrategy::RetryUntilDelivered,
-            server_unable_to_deliver_strategy: UnableToDeliverStrategy::RetryUntilDelivered,
+            client_backpressure_strategy: BackpressureStrategy::RetryUntilDelivered,
+            server_backpressure_strategy: BackpressureStrategy::RetryUntilDelivered,
             client_expired_connection_buffer: 128,
             server_expired_connection_buffer: 128,
             enable_fire_and_forget_requests: true,

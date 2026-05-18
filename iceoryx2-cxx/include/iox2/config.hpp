@@ -20,7 +20,7 @@
 #include "iox2/bb/path.hpp"
 #include "iox2/config_creation_error.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/unable_to_deliver_strategy.hpp"
+#include "iox2/backpressure_strategy.hpp"
 
 namespace iox2 {
 class Config;
@@ -188,9 +188,9 @@ class PublishSubscribe {
     void set_enable_safe_overflow(bool value) &&;
     /// If safe overflow is deactivated it defines the deliver strategy of the
     /// [`Publisher`] when the [`Subscriber`]s buffer is full.
-    auto unable_to_deliver_strategy() && -> UnableToDeliverStrategy;
-    /// Define the unable to deliver strategy
-    void set_unable_to_deliver_strategy(UnableToDeliverStrategy value) &&;
+    auto backpressure_strategy() && -> BackpressureStrategy;
+    /// Define the backpressure strategy
+    void set_backpressure_strategy(BackpressureStrategy value) &&;
     /// Defines the size of the internal [`Subscriber`]
     /// buffer that contains expired connections. An
     /// connection is expired when the [`Publisher`]
@@ -310,18 +310,18 @@ class RequestResponse {
     /// Set how many [`crate::response_mut::ResponseMut`] a [`crate::port::server::Server`] can loan in
     /// parallel per [`crate::active_request::ActiveRequest`].
     void set_server_max_loaned_responses_per_request(size_t value) &&;
-    /// Defines the [`UnableToDeliverStrategy`] when a [`Client`](crate::port::client::Client)
+    /// Defines the [`BackpressureStrategy`] when a [`Client`](crate::port::client::Client)
     /// could not deliver the request to the [`Server`](crate::port::server::Server).
-    auto client_unable_to_deliver_strategy() && -> UnableToDeliverStrategy;
-    /// Set the [`UnableToDeliverStrategy`] when a [`Client`](crate::port::client::Client)
+    auto client_backpressure_strategy() && -> BackpressureStrategy;
+    /// Set the [`BackpressureStrategy`] when a [`Client`](crate::port::client::Client)
     /// could not deliver the request to the [`Server`](crate::port::server::Server).
-    void set_client_unable_to_deliver_strategy(UnableToDeliverStrategy value) &&;
-    /// Defines the [`UnableToDeliverStrategy`] when a [`Server`](crate::port::server::Server)
+    void set_client_backpressure_strategy(BackpressureStrategy value) &&;
+    /// Defines the [`BackpressureStrategy`] when a [`Server`](crate::port::server::Server)
     /// could not deliver the response to the [`Client`](crate::port::client::Client).
-    auto server_unable_to_deliver_strategy() && -> UnableToDeliverStrategy;
-    /// Set the [`UnableToDeliverStrategy`] when a [`Server`](crate::port::server::Server)
+    auto server_backpressure_strategy() && -> BackpressureStrategy;
+    /// Set the [`BackpressureStrategy`] when a [`Server`](crate::port::server::Server)
     /// could not deliver the response to the [`Client`](crate::port::client::Client).
-    void set_server_unable_to_deliver_strategy(UnableToDeliverStrategy value) &&;
+    void set_server_backpressure_strategy(BackpressureStrategy value) &&;
     /// Defines the size of the internal [`Client`](crate::port::client::Client)
     /// buffer that contains expired connections. An
     /// connection is expired when the [`Server`](crate::port::server::Server)

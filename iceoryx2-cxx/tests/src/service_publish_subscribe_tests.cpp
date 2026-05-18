@@ -720,7 +720,7 @@ TYPED_TEST(ServicePublishSubscribeTest, open_fails_with_incompatible_subscriber_
     ASSERT_THAT(service_fail.error(), Eq(PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfSubscribers));
 }
 
-TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_unable_to_deliver_strategy) {
+TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_backpressure_strategy) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
     const auto service_name = iox2_testing::generate_service_name();
@@ -729,14 +729,14 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_unable_to_deliver_stra
     auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
 
     auto sut_pub_1 = service.publisher_builder()
-                         .unable_to_deliver_strategy(UnableToDeliverStrategy::RetryUntilDelivered)
+                         .backpressure_strategy(BackpressureStrategy::RetryUntilDelivered)
                          .create()
                          .value();
     auto sut_pub_2 =
-        service.publisher_builder().unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData).create().value();
+        service.publisher_builder().backpressure_strategy(BackpressureStrategy::DiscardData).create().value();
 
-    ASSERT_THAT(sut_pub_1.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::RetryUntilDelivered));
-    ASSERT_THAT(sut_pub_2.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::DiscardData));
+    ASSERT_THAT(sut_pub_1.backpressure_strategy(), Eq(BackpressureStrategy::RetryUntilDelivered));
+    ASSERT_THAT(sut_pub_2.backpressure_strategy(), Eq(BackpressureStrategy::DiscardData));
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_max_slice_len) {

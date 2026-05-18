@@ -14,9 +14,9 @@
 
 use crate::api::{
     AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, PayloadFfi, PublisherUnion,
-    UnsafeCallbackContextSendWorkaround, UserHeaderFfi, c_size_t, degradation_info_cast,
-    iox2_callback_context, iox2_degradation_handler, iox2_publisher_h, iox2_publisher_t,
-    iox2_service_type_e, iox2_unable_to_deliver_handler, unable_to_deliver_info_cast,
+    UnsafeCallbackContextSendWorkaround, UserHeaderFfi, backpressure_info_cast, c_size_t,
+    degradation_info_cast, iox2_backpressure_handler, iox2_callback_context,
+    iox2_degradation_handler, iox2_publisher_h, iox2_publisher_t, iox2_service_type_e,
 };
 
 use iceoryx2::port::publisher::PublisherCreateError;
@@ -59,36 +59,36 @@ impl From<iox2_allocation_strategy_e> for AllocationStrategy {
 
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub enum iox2_unable_to_deliver_strategy_e {
+pub enum iox2_backpressure_strategy_e {
     RETRY_UNTIL_DELIVERED,
     DISCARD_DATA,
 }
 
-impl From<iox2_unable_to_deliver_strategy_e> for UnableToDeliverStrategy {
-    fn from(value: iox2_unable_to_deliver_strategy_e) -> Self {
+impl From<iox2_backpressure_strategy_e> for BackpressureStrategy {
+    fn from(value: iox2_backpressure_strategy_e) -> Self {
         match value {
-            iox2_unable_to_deliver_strategy_e::RETRY_UNTIL_DELIVERED => {
-                UnableToDeliverStrategy::RetryUntilDelivered
+            iox2_backpressure_strategy_e::RETRY_UNTIL_DELIVERED => {
+                BackpressureStrategy::RetryUntilDelivered
             }
-            iox2_unable_to_deliver_strategy_e::DISCARD_DATA => UnableToDeliverStrategy::DiscardData,
+            iox2_backpressure_strategy_e::DISCARD_DATA => BackpressureStrategy::DiscardData,
         }
     }
 }
 
-impl From<UnableToDeliverStrategy> for iox2_unable_to_deliver_strategy_e {
-    fn from(value: UnableToDeliverStrategy) -> Self {
+impl From<BackpressureStrategy> for iox2_backpressure_strategy_e {
+    fn from(value: BackpressureStrategy) -> Self {
         match value {
-            UnableToDeliverStrategy::RetryUntilDelivered => {
-                iox2_unable_to_deliver_strategy_e::RETRY_UNTIL_DELIVERED
+            BackpressureStrategy::RetryUntilDelivered => {
+                iox2_backpressure_strategy_e::RETRY_UNTIL_DELIVERED
             }
-            UnableToDeliverStrategy::DiscardData => iox2_unable_to_deliver_strategy_e::DISCARD_DATA,
+            BackpressureStrategy::DiscardData => iox2_backpressure_strategy_e::DISCARD_DATA,
         }
     }
 }
 
-impl IntoCInt for UnableToDeliverStrategy {
+impl IntoCInt for BackpressureStrategy {
     fn into_c_int(self) -> c_int {
-        Into::<iox2_unable_to_deliver_strategy_e>::into(self) as c_int
+        Into::<iox2_backpressure_strategy_e>::into(self) as c_int
     }
 }
 
@@ -388,13 +388,13 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_degradation_han
     }
 }
 
-/// Sets the unable to deliver handler for the publisher to be able to execute custom code if a sample cannot be delivered
+/// Sets the backpressure handler for the publisher to be able to execute custom code if a sample cannot be delivered
 ///
 /// # Arguments
 ///
 /// * `port_factory_handle` - Must be a valid [`iox2_port_factory_publisher_builder_h_ref`]
 ///   obtained by [`iox2_port_factory_pub_sub_publisher_builder`](crate::iox2_port_factory_pub_sub_publisher_builder).
-/// * `handler` is the [`iox2_unable_to_deliver_handler`](crate::iox2_unable_to_deliver_handler)
+/// * `handler` is the [`iox2_backpressure_handler`](crate::iox2_backpressure_handler)
 /// * `ctx` is an user defined [`iox2_callback_context`](crate::iox2_callback_context)
 ///
 /// # Safety
@@ -403,9 +403,9 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_degradation_han
 /// * `ctx` is stored for later use; if the publisher, including the send function,
 ///   is accessed from multiple threads, the `ctx` must be thread-safe
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_unable_to_deliver_handler(
+pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_backpressure_handler(
     port_factory_handle: iox2_port_factory_publisher_builder_h_ref,
-    handler: iox2_unable_to_deliver_handler,
+    handler: iox2_backpressure_handler,
     ctx: iox2_callback_context,
 ) {
     port_factory_handle.assert_non_null();
@@ -419,9 +419,9 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_unable_to_deliv
                 let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
 
                 port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_ipc(
-                    port_factory.set_unable_to_deliver_handler(move |info| {
+                    port_factory.set_backpressure_handler(move |info| {
                         let ctx = ctx;
-                        handler(unable_to_deliver_info_cast(info), ctx.ctx).into()
+                        handler(backpressure_info_cast(info), ctx.ctx).into()
                     }),
                 ));
             }
@@ -430,9 +430,9 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_unable_to_deliv
                     ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
 
                 port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_local(
-                    port_factory.set_unable_to_deliver_handler(move |info| {
+                    port_factory.set_backpressure_handler(move |info| {
                         let ctx = ctx;
-                        handler(unable_to_deliver_info_cast(info), ctx.ctx).into()
+                        handler(backpressure_info_cast(info), ctx.ctx).into()
                     }),
                 ));
             }
@@ -520,7 +520,7 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_max_loaned_samp
 
 // TODO [#210] add all the other setter methods
 
-/// Sets the unable to deliver strategy for the publisher
+/// Sets the backpressure strategy for the publisher
 ///
 /// # Arguments
 ///
@@ -532,9 +532,9 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_max_loaned_samp
 ///
 /// * `port_factory_handle` must be valid handles
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_port_factory_publisher_builder_unable_to_deliver_strategy(
+pub unsafe extern "C" fn iox2_port_factory_publisher_builder_backpressure_strategy(
     port_factory_handle: iox2_port_factory_publisher_builder_h_ref,
-    value: iox2_unable_to_deliver_strategy_e,
+    value: iox2_backpressure_strategy_e,
 ) {
     port_factory_handle.assert_non_null();
     unsafe {
@@ -544,14 +544,14 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_unable_to_deliver_s
                 let builder = ManuallyDrop::take(&mut handle.value.as_mut().ipc);
 
                 handle.set(PortFactoryPublisherBuilderUnion::new_ipc(
-                    builder.unable_to_deliver_strategy(value.into()),
+                    builder.backpressure_strategy(value.into()),
                 ));
             }
             iox2_service_type_e::LOCAL => {
                 let builder = ManuallyDrop::take(&mut handle.value.as_mut().local);
 
                 handle.set(PortFactoryPublisherBuilderUnion::new_local(
-                    builder.unable_to_deliver_strategy(value.into()),
+                    builder.backpressure_strategy(value.into()),
                 ));
             }
         }

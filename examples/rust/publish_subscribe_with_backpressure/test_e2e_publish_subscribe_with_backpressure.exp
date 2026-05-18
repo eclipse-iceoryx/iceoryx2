@@ -22,16 +22,16 @@ source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
 set timeout 10
 
-spawn cargo run --example publish_subscribe_unable_to_deliver_publisher
+spawn cargo run --example publish_subscribe_with_backpressure_publisher
 set id_publisher $spawn_id
 
-spawn cargo run --example publish_subscribe_unable_to_deliver_subscriber
+spawn cargo run --example publish_subscribe_with_backpressure_subscriber
 set id_subscriber $spawn_id
 
 #### Test Assertion
 
 expect_output_from $id_publisher "Sending sample*"
 expect_output_from $id_subscriber "received: TransmissionData*"
-expect_output_from $id_publisher "Error: UnableToDeliver"
+expect_output_from $id_publisher "Error: Backpressure"
 
 show_test_passed

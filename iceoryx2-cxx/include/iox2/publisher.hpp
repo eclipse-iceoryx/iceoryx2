@@ -47,7 +47,7 @@ class Publisher {
 
     /// Returns the strategy the [`Publisher`] follows when a [`SampleMut`] cannot be delivered
     /// since the [`Subscriber`]s buffer is full.
-    auto unable_to_deliver_strategy() const -> UnableToDeliverStrategy;
+    auto backpressure_strategy() const -> BackpressureStrategy;
 
     /// Returns the maximum number of elements that can be loaned in a slice.
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
@@ -146,9 +146,9 @@ inline Publisher<S, Payload, UserHeader>::~Publisher() {
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto Publisher<S, Payload, UserHeader>::unable_to_deliver_strategy() const -> UnableToDeliverStrategy {
-    return iox2::bb::into<UnableToDeliverStrategy>(
-        static_cast<int>(iox2_publisher_unable_to_deliver_strategy(&m_handle)));
+inline auto Publisher<S, Payload, UserHeader>::backpressure_strategy() const -> BackpressureStrategy {
+    return iox2::bb::into<BackpressureStrategy>(
+        static_cast<int>(iox2_publisher_backpressure_strategy(&m_handle)));
 }
 
 

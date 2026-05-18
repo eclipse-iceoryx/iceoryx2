@@ -44,7 +44,7 @@ class Client {
 
     /// Returns the strategy the [`Client`] follows when a [`RequestMut`] cannot be delivered
     /// if the [`Server`]s buffer is full.
-    auto unable_to_deliver_strategy() const -> UnableToDeliverStrategy;
+    auto backpressure_strategy() const -> BackpressureStrategy;
 
     /// Returns the maximum number of elements that can be loaned in a slice.
     template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
@@ -158,9 +158,9 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseUserHeader>
 inline auto
-Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::unable_to_deliver_strategy()
-    const -> UnableToDeliverStrategy {
-    return iox2::bb::into<UnableToDeliverStrategy>(static_cast<int>(iox2_client_unable_to_deliver_strategy(&m_handle)));
+Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::backpressure_strategy()
+    const -> BackpressureStrategy {
+    return iox2::bb::into<BackpressureStrategy>(static_cast<int>(iox2_client_backpressure_strategy(&m_handle)));
 }
 
 template <ServiceType Service,

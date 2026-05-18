@@ -223,43 +223,43 @@ def test_defaults_request_response_server_max_loaned_responses_per_request_can_b
     )
 
 
-def test_defaults_request_response_client_unable_to_deliver_strategy_can_be_set() -> (
+def test_defaults_request_response_client_backpressure_strategy_can_be_set() -> (
     None
 ):
     sut = iox2.config.default()
-    sut.defaults.request_response.client_unable_to_deliver_strategy = (
-        iox2.UnableToDeliverStrategy.RetryUntilDelivered
+    sut.defaults.request_response.client_backpressure_strategy = (
+        iox2.BackpressureStrategy.RetryUntilDelivered
     )
     assert (
-        sut.defaults.request_response.client_unable_to_deliver_strategy
-        == iox2.UnableToDeliverStrategy.RetryUntilDelivered
+        sut.defaults.request_response.client_backpressure_strategy
+        == iox2.BackpressureStrategy.RetryUntilDelivered
     )
-    sut.defaults.request_response.client_unable_to_deliver_strategy = (
-        iox2.UnableToDeliverStrategy.DiscardData
+    sut.defaults.request_response.client_backpressure_strategy = (
+        iox2.BackpressureStrategy.DiscardData
     )
     assert (
-        sut.defaults.request_response.client_unable_to_deliver_strategy
-        == iox2.UnableToDeliverStrategy.DiscardData
+        sut.defaults.request_response.client_backpressure_strategy
+        == iox2.BackpressureStrategy.DiscardData
     )
 
 
-def test_defaults_request_response_server_unable_to_deliver_strategy_can_be_set() -> (
+def test_defaults_request_response_server_backpressure_strategy_can_be_set() -> (
     None
 ):
     sut = iox2.config.default()
-    sut.defaults.request_response.server_unable_to_deliver_strategy = (
-        iox2.UnableToDeliverStrategy.RetryUntilDelivered
+    sut.defaults.request_response.server_backpressure_strategy = (
+        iox2.BackpressureStrategy.RetryUntilDelivered
     )
     assert (
-        sut.defaults.request_response.server_unable_to_deliver_strategy
-        == iox2.UnableToDeliverStrategy.RetryUntilDelivered
+        sut.defaults.request_response.server_backpressure_strategy
+        == iox2.BackpressureStrategy.RetryUntilDelivered
     )
-    sut.defaults.request_response.server_unable_to_deliver_strategy = (
-        iox2.UnableToDeliverStrategy.DiscardData
+    sut.defaults.request_response.server_backpressure_strategy = (
+        iox2.BackpressureStrategy.DiscardData
     )
     assert (
-        sut.defaults.request_response.server_unable_to_deliver_strategy
-        == iox2.UnableToDeliverStrategy.DiscardData
+        sut.defaults.request_response.server_backpressure_strategy
+        == iox2.BackpressureStrategy.DiscardData
     )
 
 
@@ -413,21 +413,21 @@ def test_defaults_publish_subscribe_enable_safe_overflow_can_be_set() -> None:
     assert not sut.defaults.publish_subscribe.enable_safe_overflow
 
 
-def test_defaults_publish_subscribe_unable_to_deliver_strategy_can_be_set() -> None:
+def test_defaults_publish_subscribe_backpressure_strategy_can_be_set() -> None:
     sut = iox2.config.default()
-    sut.defaults.publish_subscribe.unable_to_deliver_strategy = (
-        iox2.UnableToDeliverStrategy.RetryUntilDelivered
+    sut.defaults.publish_subscribe.backpressure_strategy = (
+        iox2.BackpressureStrategy.RetryUntilDelivered
     )
     assert (
-        sut.defaults.publish_subscribe.unable_to_deliver_strategy
-        == iox2.UnableToDeliverStrategy.RetryUntilDelivered
+        sut.defaults.publish_subscribe.backpressure_strategy
+        == iox2.BackpressureStrategy.RetryUntilDelivered
     )
-    sut.defaults.publish_subscribe.unable_to_deliver_strategy = (
-        iox2.UnableToDeliverStrategy.DiscardData
+    sut.defaults.publish_subscribe.backpressure_strategy = (
+        iox2.BackpressureStrategy.DiscardData
     )
     assert (
-        sut.defaults.publish_subscribe.unable_to_deliver_strategy
-        == iox2.UnableToDeliverStrategy.DiscardData
+        sut.defaults.publish_subscribe.backpressure_strategy
+        == iox2.BackpressureStrategy.DiscardData
     )
 
 

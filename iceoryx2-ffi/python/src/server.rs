@@ -16,10 +16,10 @@ use pyo3::prelude::*;
 
 use crate::{
     active_request::{ActiveRequest, ActiveRequestType},
+    backpressure_strategy::BackpressureStrategy,
     error::{ConnectionFailure, ReceiveError},
     parc::Parc,
     type_storage::TypeStorage,
-    unable_to_deliver_strategy::UnableToDeliverStrategy,
     unique_server_id::UniqueServerId,
 };
 
@@ -160,12 +160,12 @@ impl Server {
     #[getter]
     /// Returns the strategy the `Server` follows when a `ResponseMut` cannot be delivered
     /// if the `Client`s buffer is full.
-    pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
+    pub fn backpressure_strategy(&self) -> BackpressureStrategy {
         match &self.value {
-            ServerType::Ipc(Some(v)) => v.unable_to_deliver_strategy().into(),
-            ServerType::Local(Some(v)) => v.unable_to_deliver_strategy().into(),
+            ServerType::Ipc(Some(v)) => v.backpressure_strategy().into(),
+            ServerType::Local(Some(v)) => v.backpressure_strategy().into(),
             _ => {
-                fatal_panic!(from "Server::unable_to_deliver_strategy()",
+                fatal_panic!(from "Server::backpressure_strategy()",
                     "Accessing a released client.")
             }
         }

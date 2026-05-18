@@ -220,7 +220,7 @@ impl<
     ///
     /// let publisher = pubsub.publisher_builder()
     ///                     .max_loaned_samples(6)
-    ///                     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
+    ///                     .backpressure_strategy(BackpressureStrategy::DiscardData)
     ///                     .create()?;
     ///
     /// # Ok(())

@@ -27,7 +27,7 @@
 //!
 //! let server = service.server_builder()
 //!    // defines behavior when client queue is full in a non-overflowing service
-//!    .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
+//!    .backpressure_strategy(BackpressureStrategy::DiscardData)
 //!    .create()?;
 //!
 //! while let Some(active_request) = server.receive()? {
@@ -74,7 +74,7 @@
 //! ```
 
 use crate::port::update_connections::UpdateConnections;
-use crate::prelude::UnableToDeliverStrategy;
+use crate::prelude::BackpressureStrategy;
 use crate::service::builder::CustomPayloadMarker;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::server::LocalServerConfig;
@@ -460,11 +460,11 @@ impl<
             number_of_samples: number_of_responses,
             max_number_of_segments,
             degradation_handler: server_factory.response_degradation_handler,
-            unable_to_deliver_handler: server_factory.unable_to_deliver_handler,
+            backpressure_handler: server_factory.backpressure_handler,
             service_state: service.clone(),
             tagger: CyclicTagger::new(),
             loan_counter: AtomicUsize::new(0),
-            unable_to_deliver_strategy: server_factory.config.unable_to_deliver_strategy,
+            backpressure_strategy: server_factory.config.backpressure_strategy,
             message_type_details: static_config.response_message_type_details,
             number_of_channels: number_of_requests_per_client,
             initial_channel_state: CHANNEL_STATE_CLOSED,
@@ -564,11 +564,11 @@ impl<
     /// Returns the strategy the [`Server`] follows when a
     /// [`ResponseMut`](crate::response_mut::ResponseMut) cannot be delivered
     /// if the [`Client`](crate::port::client::Client)s buffer is full.
-    pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
+    pub fn backpressure_strategy(&self) -> BackpressureStrategy {
         self.shared_state
             .lock()
             .response_sender
-            .unable_to_deliver_strategy
+            .backpressure_strategy
     }
 
     fn receive_impl(&self) -> Result<Option<(ChunkDetails, Chunk)>, ReceiveError> {

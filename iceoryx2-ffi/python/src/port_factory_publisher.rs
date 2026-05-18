@@ -15,12 +15,12 @@ use pyo3::prelude::*;
 
 use crate::{
     allocation_strategy::AllocationStrategy,
+    backpressure_strategy::BackpressureStrategy,
     error::PublisherCreateError,
     parc::Parc,
     port_factory_publish_subscribe::PortFactoryPublishSubscribeType,
     publisher::{Publisher, PublisherType},
     type_storage::TypeStorage,
-    unable_to_deliver_strategy::UnableToDeliverStrategy,
 };
 
 type IpcPortFactoryPublisher<'a> = iceoryx2::service::port_factory::publisher::PortFactoryPublisher<
@@ -156,18 +156,18 @@ impl PortFactoryPublisher {
         }
     }
 
-    /// Sets the `UnableToDeliverStrategy`.
-    pub fn unable_to_deliver_strategy(&self, value: &UnableToDeliverStrategy) -> Self {
+    /// Sets the `BackpressureStrategy`.
+    pub fn backpressure_strategy(&self, value: &BackpressureStrategy) -> Self {
         let _guard = self.factory.lock();
         match &self.value {
             PortFactoryPublisherType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                let this = this.unable_to_deliver_strategy(value.clone().into());
+                let this = this.backpressure_strategy(value.clone().into());
                 self.clone_ipc(this)
             }
             PortFactoryPublisherType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                let this = this.unable_to_deliver_strategy(value.clone().into());
+                let this = this.backpressure_strategy(value.clone().into());
                 self.clone_local(this)
             }
         }

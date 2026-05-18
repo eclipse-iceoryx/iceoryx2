@@ -28,7 +28,7 @@
 //!     // defines how many samples can be loaned in parallel
 //!     .max_loaned_samples(5)
 //!     // defines behavior when subscriber queue is full in an non-overflowing service
-//!     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
+//!     .backpressure_strategy(BackpressureStrategy::DiscardData)
 //!     .create()?;
 //!
 //! // loan some initialized memory and send it
@@ -73,7 +73,7 @@
 //!     // defines how many samples can be loaned in parallel
 //!     .max_loaned_samples(5)
 //!     // defines behavior when subscriber queue is full in an non-overflowing service
-//!     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardData)
+//!     .backpressure_strategy(BackpressureStrategy::DiscardData)
 //!     .create()?;
 //!
 //! // loan some initialized memory and send it
@@ -129,7 +129,7 @@ use iceoryx2_log::{fail, warn};
 
 use crate::port::details::sender::*;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
-use crate::prelude::UnableToDeliverStrategy;
+use crate::prelude::BackpressureStrategy;
 use crate::raw_sample::RawSampleMut;
 use crate::sample_mut::SampleMut;
 use crate::sample_mut_uninit::SampleMutUninit;
@@ -509,12 +509,12 @@ impl<
                     number_of_samples,
                     max_number_of_segments,
                     degradation_handler: publisher_factory.degradation_handler,
-                    unable_to_deliver_handler: publisher_factory.unable_to_deliver_handler,
+                    backpressure_handler: publisher_factory.backpressure_handler,
                     service_state: service.clone(),
                     tagger: CyclicTagger::new(),
                     loan_counter: AtomicUsize::new(0),
                     sender_max_borrowed_samples: config.max_loaned_samples,
-                    unable_to_deliver_strategy: config.unable_to_deliver_strategy,
+                    backpressure_strategy: config.backpressure_strategy,
                     message_type_details: static_config.message_type_details,
                     number_of_channels: 1,
                     initial_channel_state: CHANNEL_STATE_OPEN,
@@ -584,11 +584,11 @@ impl<
 
     /// Returns the strategy the [`Publisher`] follows when a [`SampleMut`] cannot be delivered
     /// since the [`Subscriber`](crate::port::subscriber::Subscriber)s buffer is full.
-    pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
+    pub fn backpressure_strategy(&self) -> BackpressureStrategy {
         self.publisher_shared_state
             .lock()
             .sender
-            .unable_to_deliver_strategy
+            .backpressure_strategy
     }
 }
 
