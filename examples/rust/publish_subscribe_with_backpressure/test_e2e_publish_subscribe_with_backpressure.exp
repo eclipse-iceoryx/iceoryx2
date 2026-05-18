@@ -32,6 +32,6 @@ set id_subscriber $spawn_id
 
 expect_output_from $id_publisher "Sending sample*"
 expect_output_from $id_subscriber "received: TransmissionData*"
-expect_output_from $id_publisher "Error: Backpressure"
+expect_output_from $id_publisher "Error: UnableToDeliver"
 
 show_test_passed
