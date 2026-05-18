@@ -13,352 +13,54 @@
     conflicts when merging.
 -->
 
-* [#1285](https://github.com/eclipse-iceoryx/iceoryx2/issues/1285) Allow `dyn` types as `WaitSet` attachments
-* [#1289](https://github.com/eclipse-iceoryx/iceoryx2/issues/1289) Propagate user headers in publish-subscribe samples in the reference tunnel implementation
-* [#1308](https://github.com/eclipse-iceoryx/iceoryx2/issues/1308) Add source `NodeId` to request and response header
-* [#1312](https://github.com/eclipse-iceoryx/iceoryx2/issues/1312) Introduce `RelocatableOption` and `RelocatableDuration` which are `ZeroCopySend`
-* [#1263](https://github.com/eclipse-iceoryx/iceoryx2/issues/1263) Enable users to pull in iceoryx2 as a Bazel module/dependency
-* [#1353](https://github.com/eclipse-iceoryx/iceoryx2/issues/1353) Add missing C++ APIs to access messaging pattern specific static config
-* [#1358](https://github.com/eclipse-iceoryx/iceoryx2/issues/1358) Expose `allocation_strategy` in the iceoryx2 config for `Publisher`, `Client`, and `Server` ports
-* [#1362](https://github.com/eclipse-iceoryx/iceoryx2/issues/1362) Implement `core::error::Error` for `bb::posix` error enums
-* [#1373](https://github.com/eclipse-iceoryx/iceoryx2/issues/1373) Add `thread_scope` as `std::thread::scope` counterpart
-* [#1376](https://github.com/eclipse-iceoryx/iceoryx2/issues/1376) Add minimal Python event-based communication example and end-to-end test
-* [#1383](https://github.com/eclipse-iceoryx/iceoryx2/issues/1383) Add `iox2 service hz` command with rolling-rate statistics and timeout support
-* [#1421](https://github.com/eclipse-iceoryx/iceoryx2/issues/1421) Release Python GIL (detach thread from python runtime) in blocking functions like `listener.blocking_wait_one()`
-* [#1481](https://github.com/eclipse-iceoryx/iceoryx2/issues/1481) Implement a byte-wise atomic wrapper to prevent UB
-* [#1496](https://github.com/eclipse-iceoryx/iceoryx2/issues/1496) Implement C++20 'source_location' based on compiler source location builtins and use it for better `Expected` and `Optional` messages on contract violations
-* [#1528](https://github.com/eclipse-iceoryx/iceoryx2/issues/1528) Print error value in 'Expected' if it is convertible into an integer type
-* [#1551](https://github.com/eclipse-iceoryx/iceoryx2/issues/1551) Enable override of preallocated data chunks for sender ports
-* [#1547](https://github.com/eclipse-iceoryx/iceoryx2/issues/1547) Add `Zeroable` and `PlainOldDataWithoutPadding` derive macros that generate the trait impl and enforce all invariants (`#[repr(C)]`, no padding, field bounds) at compile time
-* [#1573](https://github.com/eclipse-iceoryx/iceoryx2/issues/1573) Enhance degradation handler and add backpressure handler
-* [#1584](https://github.com/eclipse-iceoryx/iceoryx2/issues/1584) Add `{try|blocking}_cleanup_dead_nodes` in `Node` and `PortFactory` to trigger explicit dead `Node` cleanup
+* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
 
 ### Bugfixes
 
-* [#262](https://github.com/eclipse-iceoryx/iceoryx2/issues/262) Enable all tests for 32 bit after `#1567` fixed the unaligned pointer access
-* [#314](https://github.com/eclipse-iceoryx/iceoryx2/issues/314) Publisher, Client, Server no longer deadlocks with
-  BackpressureStrategy::Block when the other side disconnects
-* [#620](https://github.com/eclipse-iceoryx/iceoryx2/issues/620) Update `set_log_level_X` docs and mention that iceoryx2 filters
-  even for external frameworks
-* [#698](https://github.com/eclipse-iceoryx/iceoryx2/issues/698) Remove timed and blocking send from `UnixDatagramSender` blocking block; these calls do not work on all supported platforms and were only used in the tests; the try send methods are used instead
-* [#906](https://github.com/eclipse-iceoryx/iceoryx2/issues/906) Map the sender datasegment always as read-only
-* [#1312](https://github.com/eclipse-iceoryx/iceoryx2/issues/1312) Remove default implementation of `ZeroCopySend` from `Option` and `Duration`
-* [#1316](https://github.com/eclipse-iceoryx/iceoryx2/issues/1316) Bump wheel from 0.45.1 to 0.46.3 in /iceoryx2-ffi/python
-* [#1333](https://github.com/eclipse-iceoryx/iceoryx2/issues/1333) Fix Python type translation for integer types (32-bit)
-* [#1342](https://github.com/eclipse-iceoryx/iceoryx2/issues/1342) Fix GCC 9 build failure
-* [#1348](https://github.com/eclipse-iceoryx/iceoryx2/issues/1348) Bump cryptography from 45.0.7 to 46.0.5 in /iceoryx2-ffi/python
-* [#1356](https://github.com/eclipse-iceoryx/iceoryx2/issues/1356) Fix memory order in queue guards and index queue
-* [#1365](https://github.com/eclipse-iceoryx/iceoryx2/issues/1365) Bump shellexpand from 3.1.1 to 3.1.2 in Rust and Bazel
-* [#1369](https://github.com/eclipse-iceoryx/iceoryx2/issues/1369) Feature flags `tracing` and `log` were broken because `std` unconditionally enabled `console`; `console`, `log` and `tracing` are now exposed as top-level feature aliases in the `iceoryx2` crate
-* [#1370](https://github.com/eclipse-iceoryx/iceoryx2/issues/1370) Resources cannot always be cleaned up with `dev_permissions` feature flag  
-* [#1380](https://github.com/eclipse-iceoryx/iceoryx2/issues/1380) Add `update_connection` to Python bindings
-* [#1395](https://github.com/eclipse-iceoryx/iceoryx2/issues/1395) Add `Config::setup_global_config_from_file` to C++ bindings
-* [#1405](https://github.com/eclipse-iceoryx/iceoryx2/issues/1405) Fix pointer provenance in `RelocatablePtr`
-* [#1416](https://github.com/eclipse-iceoryx/iceoryx2/issues/1416) Bump keccak from 0.1.5 to 0.1.6 in Rust and Bazel
-* [#1431](https://github.com/eclipse-iceoryx/iceoryx2/issues/1431) Bump black formatter from 25.1.0 to 26.3.1 in /iceoryx2-ffi/python
-* [#1432](https://github.com/eclipse-iceoryx/iceoryx2/issues/1432) Output log entries with single write in console logger
-* [#1444](https://github.com/eclipse-iceoryx/iceoryx2/issues/1444) Bump lz4_flex from 0.11.3 to 0.11.6 in Rust and Bazel
-* [#1447](https://github.com/eclipse-iceoryx/iceoryx2/issues/1447) Fix libc dependency version
-* [#1455](https://github.com/eclipse-iceoryx/iceoryx2/issues/1455) Fix FreeBSD build
-* [#1463](https://github.com/eclipse-iceoryx/iceoryx2/issues/1463) Fix cleanup of resizable data segments
-* [#1471](https://github.com/eclipse-iceoryx/iceoryx2/issues/1471) Bump rustls-webpki from 0.103.8 to 0.103.10 in Rust and Bazel
-* [#1474](https://github.com/eclipse-iceoryx/iceoryx2/issues/1474) Fix deadlock in POSIX barrier in macOS
-* [#1477](https://github.com/eclipse-iceoryx/iceoryx2/issues/1463) Fix `SIGPIPE` in `local::Service` events triggered by the `socketpair`
-* [#1486](https://github.com/eclipse-iceoryx/iceoryx2/issues/1486) Bump requests from 2.32.5 to 2.33.0 in iceoryx2-ffi/python
-* [#1499](https://github.com/eclipse-iceoryx/iceoryx2/issues/1499) Bump cryptography from 46.0.5 to 46.0.6 in /iceoryx2-ffi/python
-* [#1518](https://github.com/eclipse-iceoryx/iceoryx2/issues/1518) Make `UniqueSystemId` unique accross docker containers and pid namespaces by introducing `gethostpid()` in the platform.
-* [#1515](https://github.com/eclipse-iceoryx/iceoryx2/issues/1515) Bump cryptography from 46.0.6 to 46.0.7 in /iceoryx2-ffi/python
-* [#1515](https://github.com/eclipse-iceoryx/iceoryx2/issues/1515) Bump pytest from 8.4.1 to 9.0.3 in /iceoryx2-ffi/python
-* [#1515](https://github.com/eclipse-iceoryx/iceoryx2/issues/1515) Bump rand from 0.8.5 to 0.8.6 in Rust and Bazel
-* [#1515](https://github.com/eclipse-iceoryx/iceoryx2/issues/1515) Bump rustls-webpki from 0.103.10 to 0.103.13 in Rust and Bazel
-* [#1560](https://github.com/eclipse-iceoryx/iceoryx2/issues/1560) Fix build error in `iceoryx2-pal-posix` with bindgen
-* [#1567](https://github.com/eclipse-iceoryx/iceoryx2/issues/1567) Fix alignment of the `variant` alternatives
-* [#1578](https://github.com/eclipse-iceoryx/iceoryx2/issues/1578) Fix connecting to service while dead node is cleaned up and still blocks a port entry
-* [#1595](https://github.com/eclipse-iceoryx/iceoryx2/issues/1595) Fix various CLI quirks
-* [#1629](https://github.com/eclipse-iceoryx/iceoryx2/issues/1629) Fix segfault when connection is removed
+<!--
+    NOTE: Add new entries sorted by issue number to minimize the possibility of
+    conflicts when merging.
+-->
+
+* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
 
 ### Refactoring
 
-* [#223](https://github.com/eclipse-iceoryx/iceoryx2/issues/223) Remove clippy workaround
-* [#280](https://github.com/eclipse-iceoryx/iceoryx2/issues/280) Remove rule suppression in clang-tidy
-* [#1215](https://github.com/eclipse-iceoryx/iceoryx2/issues/1215) Drop python requirement to 3.8
-* [#1244](https://github.com/eclipse-iceoryx/iceoryx2/issues/1244) Move zenoh tunnel crates into `integrations` workspace
-* [#1263](https://github.com/eclipse-iceoryx/iceoryx2/issues/1263) Remove support for Bazel Workspaces
-* [#1273](https://github.com/eclipse-iceoryx/iceoryx2/issues/1273) Adjust test names to naming convention
-* [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300) Move character output abstraction into their own crate
-* [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300) Move `iceoryx2-loggers` crate into building blocks as `iceoryx2-bb-loggers`
-* [#1321](https://github.com/eclipse-iceoryx/iceoryx2/issues/1321) Replace `lazy_static` dependency with `LazyLock` from `std` in `std` builds or a custom minimal spin-based implementation for `no_std` builds
-* [#1326](https://github.com/eclipse-iceoryx/iceoryx2/issues/1326) Remove `auto` option from Bazel feature flags and align defaults with CMake
-* [#1327](https://github.com/eclipse-iceoryx/iceoryx2/issues/1327) Remove `posix` feature and use `cfg` switch based on target instead
-* [#1331](https://github.com/eclipse-iceoryx/iceoryx2/issues/1331) `CleanupState` implements `ZeroCopySend`
-* [#1345](https://github.com/eclipse-iceoryx/iceoryx2/issues/1345) Ignore warnings from bindgen generated files with bazel build
-* [#1359](https://github.com/eclipse-iceoryx/iceoryx2/issues/1359) Set Rust minimum required version (MSRV) to version 1.85.0
-* [#1359](https://github.com/eclipse-iceoryx/iceoryx2/issues/1359) Upgrade Rust Edition to 2024
-* [#1388](https://github.com/eclipse-iceoryx/iceoryx2/issues/1388) Use `libc` constants in linux platform instead of hardcoded values
-* [#1492](https://github.com/eclipse-iceoryx/iceoryx2/issues/1492) Update `inventory` crate and remove `disallowed_types` suppression from tests
-* [#1508](https://github.com/eclipse-iceoryx/iceoryx2/issues/1508) Rename `ServiceId` into `ServiceHash`
-* [#1534](https://github.com/eclipse-iceoryx/iceoryx2/issues/1534) Rename `NodeId` into `UniqueNodeId`
-* [#1540](https://github.com/eclipse-iceoryx/iceoryx2/issues/1540) Move conformance test macros into `iceoryx2-bb-testing-macros` and rename `#[conformance_test_module]` to `#[conformance_tests]`
-* [#1552](https://github.com/eclipse-iceoryx/iceoryx2/issues/1552) Move tunnel crates into services architecture layer
-* [#1631](https://github.com/eclipse-iceoryx/iceoryx2/issues/1631) Ensure the expired connection buffer is at least as large as subscriber max borrowed samples
-  
+<!--
+    NOTE: Add new entries sorted by issue number to minimize the possibility of
+    conflicts when merging.
+-->
+
+* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
+
 ### Workflow
 
-* [#1244](https://github.com/eclipse-iceoryx/iceoryx2/issues/1244) Split workspace into separate `sdk` and `integrations` workspaces
-* [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300) Add custom test framework that supports `no_std` testing
-* [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300) Add `no_std` tests for `iceoryx2` and crates below it in the architecture
-* [#1300](https://github.com/eclipse-iceoryx/iceoryx2/issues/1300) Add CI check for `std` feature propagation
-* [#1355](https://github.com/eclipse-iceoryx/iceoryx2/issues/1355) Enable clippy for the whole workspace and all targets
-* [#1408](https://github.com/eclipse-iceoryx/iceoryx2/issues/1408) Add `just` scripts for some common maintenance tasks
+<!--
+    NOTE: Add new entries sorted by issue number to minimize the possibility of
+    conflicts when merging.
+-->
+
+* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
 
 ### New API features
 
-* [#1374](https://github.com/eclipse-iceoryx/iceoryx2/issues/1374) Removed `libc_platform` feature, platforms that support the crate `libc` will now automatically use it
+<!--
+    NOTE: Add new entries sorted by issue number to minimize the possibility of
+    conflicts when merging.
+-->
+
+* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
 
 ### API Breaking Changes
 
-1. Loggers have been moved into `iceoryx2-bb-loggers` thus manually linking
-   to them needs to be adjusted accordingly.
-
-    ```rust
-    // old
-    extern crate iceoryx2_loggers;
-
-    use iceoryx2_log::*;
-
-    set_log_level(LogLevel::Info);
-    info!("some log message")
-
-    // new
-    extern crate iceoryx2_bb_loggers;
-
-    use iceoryx2_log::*;
-
-    set_log_level(LogLevel::Info);
-    info!("some log message")
-    ```
-
-1. Building with `libc` is now default on platforms that support it
-
-    ```console
-    # old
-    cargo build --features iceoryx2/libc_platform
-
-    # new
-    cargo build
-    ```
-
-1. `ServiceId` was renamed to `ServiceHash`.
-
-    ```rust
-    // old
-    use iceoryx2::*;
-
-    let node = NodeBuilder::new().create::<ipc::Service>()?;
-
-    let service = node
-        .service_builder(&"My/Funk/ServiceName".try_into()?)
-        .publish_subscribe::<TransmissionData>()
-        .open_or_create()?;
-    service.service_id(); // now service_hash()
-
-    // new
-   use iceoryx2::*;
-
-    let node = NodeBuilder::new().create::<ipc::Service>()?;
-
-    let service = node
-        .service_builder(&"My/Funk/ServiceName".try_into()?)
-        .publish_subscribe::<TransmissionData>()
-        .open_or_create()?;
-    service.service_hash();
-    ```
-
-1. `NodeId` was renamed to `UniqueNodeId`.
-
-    ```rust
-    // old
-    use iceoryx2::*;
-
-    let node = NodeBuilder::new().create::<ipc::Service>()?;
-    let id: NodeId = node.id();
-
-    // new
-    use iceoryx2::*;
-
-    let node = NodeBuilder::new().create::<ipc::Service>()?;
-    let id: UniqueNodeId = node.id();
-    ```
-
-1. The `#[conformance_test_module]` macro has been renamed to
-   `#[conformance_tests]`
+1. Example
 
    ```rust
    // old
-    #[allow(clippy::module_inception)]
-    #[conformance_test_module]
-    pub mod my_module {
-        // ...
-    }
+   let fuu = hello().is_it_me_you_re_looking_for()
 
    // new
-   #[allow(clippy::module_inception)]
-   #[conformance_tests]
-   pub mod my_module {
-       // ...
-   }
-   ```
-
-1. The crates for the `iceoryx2` tunnel have been moved into
-   the `services` architecture layer and have been renamed
-   accordingly.
-
-    ```rust
-    // old
-    use iceoryx2_tunnel::{Config, Tunnel};
-
-    // new
-    use iceoryx2_services_tunnel::{Config, Tunnel};
-    ```
-
-1. The `BackpressureStrategy` enum tags are renamed to from `Block` and
-   `DiscardSample` to `RetryUntilDelivered` and `DiscardData`.
-
-    ```rust
-    // old
-    service
-        .publisher_builder()
-        .backpressure_strategy(BackpressureStrategy::Block)
-        .create()?;
-
-    // new
-    service
-        .publisher_builder()
-        .backpressure_strategy(BackpressureStrategy::RetryUntilDelivered)
-        .create()?;
-    ```
-
-1. The `DegradationCallback` was renamed to `DegradationHandler`, as well as its
-   setters and the parameter changed from port IDs to `DegradationCause` and
-   `DegradationInfo`
-
-    ```rust
-    /// old
-    pub_sub_service
-        .publisher_builder()
-        .set_degradation_callback(|sender_port_id, receiver_port_id| /* ... */)
-        .create()?
-    pub_sub_service
-        .subscriber_builder()
-        .set_degradation_callback(|sender_port_id, receiver_port_id| /* ... */)
-        .create()?
-
-    request_response_service
-        .client_builder()
-        .set_request_degradation_callback(|sender_port_id, receiver_port_id| /* ... */)
-        .set_response_degradation_callback(|sender_port_id, receiver_port_id| /* ... */)
-        .create()?
-    request_response_service
-        .server_builder()
-        .set_request_degradation_callback(|sender_port_id, receiver_port_id| /* ... */)
-        .set_response_degradation_callback(|sender_port_id, receiver_port_id| /* ... */)
-        .create()?
-
-    /// new
-    pub_sub_service
-        .publisher_builder()
-        .set_degradation_handler(|cause, info| /* ... */)
-        .create()?
-    pub_sub_service
-        .subscriber_builder()
-        .set_degradation_handler(|cause, info| /* ... */)
-        .create()?
-
-    request_response_service
-        .client_builder()
-        .set_request_degradation_handler(|cause, info| /* ... */)
-        .set_response_degradation_handler(/* ... */)
-        .create()?
-    request_response_service
-        .server_builder()
-        .set_request_degradation_handler(|cause, info|/* ... */)
-        .set_response_degradation_handler(|cause, info|/* ... */)
-        .create()?
-    ```
-
-1. The `DegradationAction::Fail` was renamed to `DegradationAction::DegradeAndFail`.
-
-    ```rust
-    // old
-    service
-        .publisher_builder()
-        .set_degradation_callback(|_, _| DegradationAction::Fail)
-        .create()?;
-
-    // new
-    service
-        .publisher_builder()
-        .set_degradation_handler(|_, _| DegradationAction::DegradeAndFail)
-        .create()?;
-    ```
-
-1. The `Node::remove_stale_resources` was renamed to
-   `Node::try_remove_stale_resources` and a
-   `Node::blocking_remove_stale_resources` was added
-
-    ```rust
-    // old
-    Node::<ipc::Service>::list(Config::global_config(), |node_state| {
-        if let NodeState::Dead(state) = node_state {
-            state.remove_stale_resources().expect("");
-        }
-        CallbackProgression::Continue
-    })?;
-
-    // new
-    Node::<ipc::Service>::list(Config::global_config(), |node_state| {
-        if let NodeState::Dead(state) = node_state {
-            state.try_remove_stale_resources().expect("");
-        }
-        CallbackProgression::Continue
-    })?;
-    ```
-
-1. Tunnel backend require their own CLI to integrate with `iceoryx2-cli`.
-   These must be installed separately.
-
-   ```console
-   # old
-   cargo install iceoryx2-cli
-   iox2 tunnel zenoh
-
-   # new
-   cargo install iceoryx2-cli
-   cargo install iceoryx2-integrations-zenoh-tunnel-cli
-   iox2 tunnel zenoh
-   ```
-
-   If no backends are installed, the `iox2 tunnel` command can be used to
-   find what is available:
-
-   ```console
-   $ iox2 tunnel
-   No tunnel backends found.
-   
-   Install a backend to get started, e.g.:
-     cargo install iceoryx2-integrations-zenoh-tunnel-cli
-   ```
-
-1. `Config::global.service.creation_timeout` renamed to `Config::global.node.creation_timeout`
-
-   ```rust
-   # old
-   let mut config = Config::default();
-   config.global.service.creation_timeout = Duration::from_secs(1);
-
-   # new
-   let mut config = Config::default();
-   config.global.node.creation_timeout = Duration::from_secs(1);
+   let fuu = hypnotoad().all_glory_to_the_hypnotoad()
    ```
 
 <!-- markdownlint-enable MD013 -->
