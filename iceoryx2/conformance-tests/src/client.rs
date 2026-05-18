@@ -570,7 +570,7 @@ pub mod client {
     pub fn client_with_backpressure_handler_discards_request_and_fails<Sut: Service>() {
         const SAFE_OVERFLOW: bool = false;
         const EXPECTED_SECOND_SEND_RESULT: Result<(), RequestSendError> =
-            Err(RequestSendError::SendError(SendError::Backpressure));
+            Err(RequestSendError::SendError(SendError::UnableToDeliver));
         const EXPECTED_RECEIVE_VALUE_SERVER_1: Option<u64> = Some(VALUE_FIRST_REQUEST);
         const EXPECTED_RECEIVE_VALUE_SERVER_2: Option<u64> = Some(VALUE_SECOND_REQUEST);
 

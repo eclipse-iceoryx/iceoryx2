@@ -77,7 +77,7 @@ impl core::error::Error for ZeroCopyCreationError {}
 pub enum ZeroCopySendError {
     ConnectionCorrupted,
     ReceiveBufferFull,
-    Backpressure, // NOTE: in order to distinguish between a try_send failure and a user induced send aborting, the Backpressure error is used
+    UnableToDeliver, // NOTE: in order to distinguish between a try_send failure and a user induced send aborting, the UnableToDeliver error is used
     UsedChunkListFull,
     NoConnectedReceiver,
     ChannelIsClosed,

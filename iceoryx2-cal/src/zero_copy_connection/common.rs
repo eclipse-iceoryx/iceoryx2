@@ -812,7 +812,7 @@ pub mod details {
                 }
 
                 if do_fail {
-                    fail!(from self, with ZeroCopySendError::Backpressure,
+                    fail!(from self, with ZeroCopySendError::UnableToDeliver,
                           "{msg} {ptr:?} via channel {channel_id:?} since the receive buffer is full.");
                 }
             }

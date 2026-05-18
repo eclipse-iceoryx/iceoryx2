@@ -964,7 +964,7 @@ pub mod zero_copy_connection_trait {
                 call_count.fetch_add(1, Ordering::Relaxed);
                 BackpressureToReceiverAction::DiscardPointerOffsetAndFail
             },
-            ZeroCopySendError::Backpressure,
+            ZeroCopySendError::UnableToDeliver,
         );
 
         assert_that!(call_count.load(Ordering::Relaxed), eq(1));

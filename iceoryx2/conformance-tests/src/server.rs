@@ -674,7 +674,7 @@ pub mod server {
     #[conformance_test]
     pub fn server_with_backpressure_handler_discards_response_and_fails<Sut: Service>() {
         const SAFE_OVERFLOW: bool = false;
-        const EXPECTED_SECOND_SEND_RESULT: Result<(), SendError> = Err(SendError::Backpressure);
+        const EXPECTED_SECOND_SEND_RESULT: Result<(), SendError> = Err(SendError::UnableToDeliver);
         const EXPECTED_RECEIVE_VALUE: Option<u64> = Some(VALUE_FIRST_RESPONSE);
 
         let handler_call_count = Arc::new(AtomicU64::new(0));

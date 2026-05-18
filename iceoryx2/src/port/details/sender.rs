@@ -255,9 +255,9 @@ impl<Service: service::Service> Sender<Service> {
             };
 
             match delivery_call_result {
-                Err(ZeroCopySendError::Backpressure) => {
+                Err(ZeroCopySendError::UnableToDeliver) => {
                     // can only happen with blocking send and the degradation handler triggered a failure
-                    fail!(from self, with SendError::Backpressure,
+                    fail!(from self, with SendError::UnableToDeliver,
                           "{msg} {:?} could not be delivered to receiver {:?}.",
                           offset, connection.receiver_port_id);
                 }
@@ -382,15 +382,15 @@ impl<Service: service::Service> Sender<Service> {
                 Err(error) => match error {
                     SendError::ConnectionCorrupted => {
                         // `ConnectionCorrupted` has the highest priority and will overwrite
-                        // an existing `Backpressure` error
+                        // an existing `UnableToDeliver` error
                         delivery_error = Some(error)
                     }
-                    SendError::Backpressure if delivery_error.is_none() => {
-                        // only store the `Backpressure` if there is no existing error
+                    SendError::UnableToDeliver if delivery_error.is_none() => {
+                        // only store the `UnableToDeliver` if there is no existing error
                         // to prevent overriding a higher priority `ConnectionCorrupted` error
                         delivery_error = Some(error)
                     }
-                    SendError::Backpressure => {
+                    SendError::UnableToDeliver => {
                         // there is already an error stored; nothing to do
                     }
                     e => {

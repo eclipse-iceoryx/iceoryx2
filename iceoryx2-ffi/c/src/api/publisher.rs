@@ -46,7 +46,7 @@ pub enum iox2_send_error_e {
     LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE,
     LOAN_ERROR_INTERNAL_FAILURE,
     CONNECTION_ERROR,
-    BACKPRESSURE,
+    UNABLE_TO_DELIVER,
     INTERNAL_ERROR,
 }
 
@@ -71,7 +71,7 @@ impl IntoCInt for SendError {
                 iox2_send_error_e::LOAN_ERROR_INTERNAL_FAILURE
             }
             SendError::ConnectionError(_) => iox2_send_error_e::CONNECTION_ERROR,
-            SendError::Backpressure => iox2_send_error_e::BACKPRESSURE,
+            SendError::UnableToDeliver => iox2_send_error_e::UNABLE_TO_DELIVER,
         }) as c_int
     }
 }

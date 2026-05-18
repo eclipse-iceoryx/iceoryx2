@@ -241,7 +241,7 @@ pub enum SendError {
     /// A failure occurred while establishing a connection to the ports counterpart port.
     ConnectionError(ConnectionFailure),
     /// The data could not be delivered to all receivers.
-    Backpressure,
+    UnableToDeliver,
     /// An internal mechanisms failed and the data could not be delivered to all receivers.
     InternalError,
 }

@@ -1880,7 +1880,8 @@ pub mod service_publish_subscribe {
     #[conformance_test]
     pub fn publisher_with_backpressure_handler_discards_ample_and_fails<Sut: Service>() {
         const SAFE_OVERFLOW: bool = false;
-        const EXPECTED_SECOND_SEND_RESULT: Result<usize, SendError> = Err(SendError::Backpressure);
+        const EXPECTED_SECOND_SEND_RESULT: Result<usize, SendError> =
+            Err(SendError::UnableToDeliver);
         const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_1: Option<usize> = Some(VALUE_FIRST_SAMPLE);
         const EXPECTED_RECEIVE_VALUE_SUBSCRIBER_2: Option<usize> = Some(VALUE_SECOND_SAMPLE);
 
