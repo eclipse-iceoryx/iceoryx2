@@ -60,14 +60,21 @@ release blog-article.
   * [iceoryx2 book](https://ekxide.github.io/iceoryx2-book/main/)
     * examples in "Getting Started" section
     * examples in "Tutorials" section
+* **!! Port reference system to new iceoryx2 version to catch last minute
+    bugs !!**
+* **!! Port mission control to new iceoryx2 version to catch last minute
+    bugs !!**
 
 ## 2: The Release
 
 There are three scripts to perform the iceoryx2 release
 
 1. `./internal/scripts/release/release_preparation.sh --new-version x.y.z`
-2. `./internal/scripts/release/release_tagging.sh`
-3. `./internal/scripts/release/release_publish.sh`
+2. Create pull request and merge the release branch to `main`
+3. `./internal/scripts/release/release_tagging.sh`
+4. `./internal/scripts/release/release_publish.sh`
+5. Verify that the release looks fine on `docs.rs` (click through the
+    documentation to check if everything was generated correctly)
 
 ### Details
 
@@ -85,32 +92,3 @@ on GitHub.
 The `release_publish.sh` script performs the actual publishing to crates.io.
 
 ## Technical Side
-
-1. Use generic release issue ([#77]) and create a new branch
-   `iox2-77-X.Y.Z-release`
-2. Create new release branch via the GitHub web interface and name it
-   `release_X.Y.Z`
-3. `just prepare-release all versions --version X.Y.Z`
-4. `cargo build --workspace --all-targets` refresh cargo lock file
-5. `USE_BAZEL_VERSION=7.4.1 bazel build //...` refresh bazel lock file
-6. `peotry --project iceoryx2-ffi/python build-into-venv` refresh poetry lock file
-7. `just publish sdk --dry-run --allow-dirty` perform dry run
-8. Copy `$GIT_ROOT$/doc/release-notes/iceoryx2-unreleased.md` to
-   `$GIT_ROOT$/doc/release-notes/iceoryx2-vX.Y.Z.md`.
-9. Fill out all version place holders (`?.?.?`) in newly created
-   `$GIT_ROOT$/doc/release-notes/iceoryx2-vX.Y.Z.md`, remove template example
-   entries and clean up.
-10. Override `$GIT_ROOT$/doc/release-notes/iceoryx2-unreleased.md` with
-   `$GIT_ROOT$/doc/release-notes/iceoryx2-release-template.md` and bring it in
-   the empty state again.
-11. **Merge all changes to `main`.**
-12. **!! Port reference system to new iceoryx2 version to catch last minute
-    bugs !!**
-13. **!! Port mission control to new iceoryx2 version to catch last minute
-    bugs !!**
-14. Set tag on GitHub and add the release document as notes to the tag
-    description. Add also a link to the file.
-15. `just publish sdk`
-16. `just publish integrations`
-17. Verify that the release looks fine on `docs.rs` (click through the
-    documentation to check if everything was generated correctly)
