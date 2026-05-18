@@ -17,21 +17,21 @@ release blog-article.
 ### Blog Article - Add The Following Links
 
 * Add it at the bottom
-  * Discuss on Reddit
-  * Discuss on Hacker News
-  * Project on GitHub
-  * Project on crates.io
+    * Discuss on Reddit
+    * Discuss on Hacker News
+    * Project on GitHub
+    * Project on crates.io
 
 ### Social Media Post - Add The Following Links
 
 * Add it at the top
-  * Release Announcement: <https://ekxide.io/blog/>
+    * Release Announcement: <https://ekxide.io/blog/>
 
 * Add it at the bottom
-  * repo: <https://github.com/eclipse-iceoryx/iceoryx2>
-  * roadmap: <https://github.com/eclipse-iceoryx/iceoryx2/blob/main/ROADMAP.md>
-  * crates.io: <https://crates.io/crates/iceoryx2>
-  * docs.rs: <https://docs.rs/iceoryx2/latest/iceoryx2>
+    * repo: <https://github.com/eclipse-iceoryx/iceoryx2>
+    * roadmap: <https://github.com/eclipse-iceoryx/iceoryx2/blob/main/ROADMAP.md>
+    * crates.io: <https://crates.io/crates/iceoryx2>
+    * docs.rs: <https://docs.rs/iceoryx2/latest/iceoryx2>
 
 ### Announcement (Major release only)
 
@@ -52,14 +52,15 @@ release blog-article.
 
 * Test if QNX builds and runs with the current codebase
 * Test if Yocto builds and runs with the current codebase
-* check if the new features are marked as done, e.g. `README.md`, `ROADMAP.md`, etc.
+* check if the new features are marked as done, e.g. `README.md`, `ROADMAP.md`,
+  etc.
 * grep for 'planned'
 * verify to be on the right branch, e.g. 'main' or 'release-x.y'
 * check the code examples in the documentation:
-  * `$GIT_ROOT$/README.MD`
-  * [iceoryx2 book](https://ekxide.github.io/iceoryx2-book/main/)
-    * examples in "Getting Started" section
-    * examples in "Tutorials" section
+    * `$GIT_ROOT$/README.MD`
+    * [iceoryx2 book](https://ekxide.github.io/iceoryx2-book/main/)
+        * examples in "Getting Started" section
+        * examples in "Tutorials" section
 * **!! Port reference system to new iceoryx2 version to catch last minute
     bugs !!**
 * **!! Port mission control to new iceoryx2 version to catch last minute
