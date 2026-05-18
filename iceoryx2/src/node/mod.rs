@@ -667,6 +667,7 @@ impl<Service: service::Service> DeadNodeView<Service> {
             CallbackProgression::Continue
         };
 
+        // the tags need to be removed at the end of the cleanup process; at first the service tags
         match Node::<Service>::service_tags(config, self.id(), remove_node_from_service) {
             Ok(()) => (),
             Err(NodeReadServiceTagsFailure::InsufficientPermissions) => {
@@ -683,6 +684,8 @@ impl<Service: service::Service> DeadNodeView<Service> {
 
         cleanup_failure?;
 
+        // remove the port tags last, after the ports have been removed from the service;
+        // now, everything not belonging to a service can be removed
         match Node::<Service>::port_tags(config, self.id(), |port_id| {
             match unsafe { remove_stale_port_resources::<Service>(port_id, config) } {
                 Ok(()) => CallbackProgression::Continue,
