@@ -44,7 +44,12 @@ def publish_subscribe(
     self: ServiceBuilder, t: Type[T]
 ) -> ServiceBuilderPublishSubscribe:
     """Returns the `ServiceBuilderPublishSusbcribe` to create a new publish-subscribe service. The payload ctype must be provided as argument."""
-    type_name = t.__name__
+    if hasattr(t, "__name__"):
+        type_name = getattr(t, "__name__")
+    else:
+        origin_type = get_origin(t)
+        assert origin_type is not None
+        type_name = getattr(origin_type, "__name__")
     type_size = 0
     type_align = 0
     type_variant = TypeVariant.FixedSize

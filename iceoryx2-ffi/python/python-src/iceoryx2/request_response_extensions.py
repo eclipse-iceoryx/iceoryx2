@@ -31,11 +31,21 @@ def request_response(
 
     The request/response payload ctype must be provided as argument.
     """
-    request_type_name = request.__name__
+    if hasattr(request, "__name__"):
+        request_type_name = getattr(request, "__name__")
+    else:
+        origin_type = get_origin(request)
+        assert origin_type is not None
+        request_type_name = getattr(origin_type, "__name__")
     request_type_size = 0
     request_type_align = 0
     request_type_variant = TypeVariant.FixedSize
-    response_type_name = response.__name__
+    if hasattr(response, "__name__"):
+        response_type_name = getattr(response, "__name__")
+    else:
+        origin_type = get_origin(response)
+        assert origin_type is not None
+        response_type_name = getattr(origin_type, "__name__")
     response_type_size = 0
     response_type_align = 0
     response_type_variant = TypeVariant.FixedSize

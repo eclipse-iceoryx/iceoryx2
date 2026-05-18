@@ -195,15 +195,14 @@ def test_node_listing_works(service_type: iox2.ServiceType) -> None:
 
     assert len(nodes) == 1
     for n in nodes:
-        match n:
-            case n.Alive():
-                assert n[0].id == node.id
-            case node.Dead():
-                assert False
-            case node.Inaccessible():
-                assert False
-            case node.Undefined():
-                assert False
+        if isinstance(n, n.Alive):
+            assert n[0].id == node.id
+        elif isinstance(n, node.Dead):
+            assert False
+        elif isinstance(n, node.Inaccessible):
+            assert False
+        elif isinstance(n, node.Undefined):
+            assert False
 
 
 @pytest.mark.parametrize("service_type", service_types)
