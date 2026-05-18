@@ -129,7 +129,7 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "benchmark-event"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "clap",
  "iceoryx2",
@@ -139,7 +139,7 @@ dependencies = [
 
 [[package]]
 name = "benchmark-publish-subscribe"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "clap",
  "iceoryx2",
@@ -150,7 +150,7 @@ dependencies = [
 
 [[package]]
 name = "benchmark-queue"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "clap",
  "iceoryx2-bb-lock-free",
@@ -160,7 +160,7 @@ dependencies = [
 
 [[package]]
 name = "benchmark-request-response"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "clap",
  "iceoryx2",
@@ -361,7 +361,7 @@ dependencies = [
 
 [[package]]
 name = "component-tests_rust"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-container",
@@ -507,7 +507,7 @@ checksum = "5692dd7b5a1978a5aeb0ce83b7655c58ca8efdcb79d21036ea249da95afec2c6"
 
 [[package]]
 name = "example"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "clap",
  "iceoryx2",
@@ -636,7 +636,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
@@ -661,7 +661,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-concurrency"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-concurrency-tests-common",
  "iceoryx2-bb-elementary-traits",
@@ -672,7 +672,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-concurrency-tests-common"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary-traits",
@@ -685,7 +685,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-concurrency-tests-nostd"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-concurrency-tests-common",
  "iceoryx2-bb-elementary-traits",
@@ -697,7 +697,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-container"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container-tests-common",
@@ -713,7 +713,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-container-tests-common"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
@@ -731,7 +731,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-container-tests-nostd"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-container-tests-common",
  "iceoryx2-bb-elementary-traits",
@@ -743,7 +743,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-derive-macros"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-derive-macros-tests-common",
  "iceoryx2-bb-elementary",
@@ -756,7 +756,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-derive-macros-tests-common"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
@@ -769,7 +769,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-derive-macros-tests-nostd"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-derive-macros-tests-common",
  "iceoryx2-bb-elementary-traits",
@@ -781,7 +781,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-elementary"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-elementary-tests-common",
  "iceoryx2-bb-elementary-traits",
@@ -793,7 +793,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-elementary-tests-common"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary",
@@ -805,7 +805,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-elementary-tests-nostd"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-elementary-tests-common",
  "iceoryx2-bb-elementary-traits",
@@ -817,11 +817,11 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-elementary-traits"
-version = "0.8.999"
+version = "0.9.0"
 
 [[package]]
 name = "iceoryx2-bb-linux"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
@@ -837,7 +837,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-linux-tests-common"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-linux",
@@ -850,7 +850,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-linux-tests-nostd"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-linux-tests-common",
@@ -861,7 +861,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-lock-free"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary",
@@ -875,7 +875,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-lock-free-tests-common"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary",
@@ -891,7 +891,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-lock-free-tests-nostd"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-lock-free-tests-common",
@@ -902,7 +902,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-loggers"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-print",
  "iceoryx2-log-types",
@@ -914,7 +914,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-memory"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary",
@@ -929,7 +929,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-memory-tests-common"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
@@ -942,7 +942,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-memory-tests-nostd"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
@@ -954,7 +954,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-posix"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "enum-iterator",
  "iceoryx2-bb-concurrency",
@@ -976,7 +976,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-posix-tests-common"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "enum-iterator",
  "iceoryx2-bb-concurrency",
@@ -996,7 +996,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-posix-tests-nostd"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
@@ -1010,14 +1010,14 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-print"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-pal-print",
 ]
 
 [[package]]
 name = "iceoryx2-bb-system-types"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
@@ -1034,7 +1034,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-system-types-tests-common"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-container",
  "iceoryx2-bb-loggers",
@@ -1045,7 +1045,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-system-types-tests-nostd"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
@@ -1057,7 +1057,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-testing"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-pal-concurrency-sync",
@@ -1070,7 +1070,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-testing-macros"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-testing",
  "iceoryx2-pal-print",
@@ -1081,7 +1081,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-threadsafe"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-container",
  "iceoryx2-bb-elementary",
@@ -1095,7 +1095,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-threadsafe-tests-common"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-loggers",
@@ -1108,7 +1108,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-threadsafe-tests-nostd"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
@@ -1120,7 +1120,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-trait-tests"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-testing",
@@ -1129,7 +1129,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-trait-tests-common"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-container",
  "iceoryx2-bb-elementary-traits",
@@ -1145,7 +1145,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-bb-trait-tests-nostd"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-container",
  "iceoryx2-bb-elementary",
@@ -1162,7 +1162,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-cal"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
@@ -1187,7 +1187,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-cal-conformance-tests"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
@@ -1209,7 +1209,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-cal-conformance-tests-common"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-lock-free",
@@ -1223,7 +1223,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-cal-conformance-tests-nostd"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary-traits",
@@ -1239,7 +1239,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-cal-tests-common"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-container",
  "iceoryx2-bb-elementary",
@@ -1255,7 +1255,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-cal-tests-nostd"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-loggers",
@@ -1267,7 +1267,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-cli"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "better-panic",
@@ -1300,7 +1300,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-conformance-tests"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-concurrency",
@@ -1319,7 +1319,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-conformance-tests-common"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-loggers",
@@ -1331,7 +1331,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-conformance-tests-nostd"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-concurrency",
@@ -1345,7 +1345,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-ffi-c"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "cbindgen",
  "generic-tests",
@@ -1369,7 +1369,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-ffi-macros"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
@@ -1380,7 +1380,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-ffi-python"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2",
  "iceoryx2-log",
@@ -1389,7 +1389,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-log"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-log-types",
  "iceoryx2-pal-concurrency-sync",
@@ -1397,11 +1397,11 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-log-types"
-version = "0.8.999"
+version = "0.9.0"
 
 [[package]]
 name = "iceoryx2-pal-concurrency-sync"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "generic-tests",
  "loom",
@@ -1409,11 +1409,11 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-pal-configuration"
-version = "0.8.999"
+version = "0.9.0"
 
 [[package]]
 name = "iceoryx2-pal-os-api"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "bindgen",
  "cc",
@@ -1423,7 +1423,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-pal-posix"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "bindgen",
  "cc",
@@ -1435,14 +1435,14 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-pal-print"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-pal-posix",
 ]
 
 [[package]]
 name = "iceoryx2-pal-testing"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-configuration",
@@ -1452,7 +1452,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-services-discovery"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "generic-tests",
  "iceoryx2",
@@ -1467,7 +1467,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-services-tunnel"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "generic-tests",
  "iceoryx2",
@@ -1482,7 +1482,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-services-tunnel-backend"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-posix",
@@ -1490,7 +1490,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-services-tunnel-conformance-tests"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-posix",
@@ -1503,7 +1503,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-services-tunnel-end-to-end-tests"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "clap",
  "iceoryx2",
@@ -1514,7 +1514,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-tests-common"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-concurrency",
@@ -1529,7 +1529,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-tests-nostd"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-memory",
@@ -1540,7 +1540,7 @@ dependencies = [
 
 [[package]]
 name = "iceoryx2-userland-record-and-replay"
-version = "0.8.999"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "iceoryx2",
