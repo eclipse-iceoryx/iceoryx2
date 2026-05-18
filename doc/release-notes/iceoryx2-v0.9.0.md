@@ -221,20 +221,41 @@
     use iceoryx2_services_tunnel::{Config, Tunnel};
     ```
 
-1. The `BackpressureStrategy` enum tags are renamed to from `Block` and
-   `DiscardSample` to `RetryUntilDelivered` and `DiscardData`.
+1. The `unable to deliver strategy` was renamed to `backpressure strategy`
+   and the enum tags from `Block` and `DiscardSample` to
+   `RetryUntilDelivered` and `DiscardData`.
 
     ```rust
     // old
     service
         .publisher_builder()
-        .backpressure_strategy(BackpressureStrategy::Block)
+        .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
+        .create()?;
+
+    service
+        .client_builder()
+        .client_unable_to_deliver_strategy(UnableToDeliverStrategy::Block)
+        .create()?;
+
+    service
+        .server_builder()
+        .server_unable_to_deliver_strategy(UnableToDeliverStrategy::Block)
         .create()?;
 
     // new
     service
         .publisher_builder()
-        .backpressure_strategy(BackpressureStrategy::RetryUntilDelivered)
+        .backpressure_strategy(BackpressureStrategy::DiscardSample)
+        .create()?;
+
+    service
+        .client_builder()
+        .client_backpressure_strategy(BackpressureStrategy::RetryUntilDelivered)
+        .create()?;
+
+    service
+        .server_builder()
+        .server_backpressure_strategy(BackpressureStrategy::RetryUntilDelivered)
         .create()?;
     ```
 
