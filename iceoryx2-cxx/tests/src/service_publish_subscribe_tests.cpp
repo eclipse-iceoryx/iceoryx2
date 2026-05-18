@@ -728,10 +728,8 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_backpressure_strategy)
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
 
-    auto sut_pub_1 = service.publisher_builder()
-                         .backpressure_strategy(BackpressureStrategy::RetryUntilDelivered)
-                         .create()
-                         .value();
+    auto sut_pub_1 =
+        service.publisher_builder().backpressure_strategy(BackpressureStrategy::RetryUntilDelivered).create().value();
     auto sut_pub_2 =
         service.publisher_builder().backpressure_strategy(BackpressureStrategy::DiscardData).create().value();
 

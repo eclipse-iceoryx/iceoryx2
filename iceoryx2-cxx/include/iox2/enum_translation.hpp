@@ -15,6 +15,8 @@
 
 #include "iox2/allocation_strategy.hpp"
 #include "iox2/attribute_error.hpp"
+#include "iox2/backpressure_action.hpp"
+#include "iox2/backpressure_strategy.hpp"
 #include "iox2/bb/detail/assertions.hpp"
 #include "iox2/bb/into.hpp"
 #include "iox2/bb/semantic_string.hpp"
@@ -46,8 +48,6 @@
 #include "iox2/signal_handling_mode.hpp"
 #include "iox2/subscriber_error.hpp"
 #include "iox2/type_variant.hpp"
-#include "iox2/backpressure_action.hpp"
-#include "iox2/backpressure_strategy.hpp"
 #include "iox2/waitset_enums.hpp"
 #include "iox2/writer_error.hpp"
 
@@ -2409,8 +2409,7 @@ constexpr auto from<iox2::DegradationAction, iox2_degradation_action_e>(const io
 }
 
 template <>
-constexpr auto
-from<iox2::BackpressureAction, iox2_backpressure_action_e>(const iox2::BackpressureAction value) noexcept
+constexpr auto from<iox2::BackpressureAction, iox2_backpressure_action_e>(const iox2::BackpressureAction value) noexcept
     -> iox2_backpressure_action_e {
     switch (value) {
     case iox2::BackpressureAction::FollowBackpressureyStrategy:

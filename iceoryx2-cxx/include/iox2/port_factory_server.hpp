@@ -13,6 +13,8 @@
 #ifndef IOX2_PORTFACTORY_SERVER_HPP
 #define IOX2_PORTFACTORY_SERVER_HPP
 
+#include "iox2/backpressure_handler.hpp"
+#include "iox2/backpressure_strategy.hpp"
 #include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
@@ -21,8 +23,6 @@
 #include "iox2/server.hpp"
 #include "iox2/server_error.hpp"
 #include "iox2/service_type.hpp"
-#include "iox2/backpressure_handler.hpp"
-#include "iox2/backpressure_strategy.hpp"
 
 namespace iox2 {
 /// Factory to create a new [`Server`] port/endpoint for
@@ -209,8 +209,7 @@ inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, Respon
                                 ServerCreateError> {
     if (m_backpressure_strategy.has_value()) {
         iox2_port_factory_server_builder_backpressure_strategy(
-            &m_handle,
-            static_cast<iox2_backpressure_strategy_e>(iox2::bb::into<int>(m_backpressure_strategy.value())));
+            &m_handle, static_cast<iox2_backpressure_strategy_e>(iox2::bb::into<int>(m_backpressure_strategy.value())));
     }
     if (m_max_slice_len.has_value()) {
         iox2_port_factory_server_builder_set_initial_max_slice_len(&m_handle, m_max_slice_len.value());
@@ -248,9 +247,7 @@ inline auto PortFactoryServer<Service, RequestPayload, RequestUserHeader, Respon
 
     if (m_backpressure_handler.has_value()) {
         iox2_port_factory_server_builder_set_backpressure_handler(
-            &m_handle,
-            detail::backpressure_handler_delegate,
-            static_cast<void*>(m_backpressure_handler.value()));
+            &m_handle, detail::backpressure_handler_delegate, static_cast<void*>(m_backpressure_handler.value()));
     }
 
     iox2_server_h server_handle {};

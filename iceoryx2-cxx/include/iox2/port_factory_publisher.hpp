@@ -14,6 +14,8 @@
 #define IOX2_PORTFACTORY_PUBLISHER_HPP
 
 #include "iox2/allocation_strategy.hpp"
+#include "iox2/backpressure_handler.hpp"
+#include "iox2/backpressure_strategy.hpp"
 #include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
@@ -22,8 +24,6 @@
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/publisher.hpp"
 #include "iox2/service_type.hpp"
-#include "iox2/backpressure_handler.hpp"
-#include "iox2/backpressure_strategy.hpp"
 
 #include <cstdint>
 
@@ -162,8 +162,7 @@ inline auto PortFactoryPublisher<S, Payload, UserHeader>::create() && -> bb::Exp
                                                                                       PublisherCreateError> {
     if (m_backpressure_strategy.has_value()) {
         iox2_port_factory_publisher_builder_backpressure_strategy(
-            &m_handle,
-            static_cast<iox2_backpressure_strategy_e>(bb::into<int>(m_backpressure_strategy.value())));
+            &m_handle, static_cast<iox2_backpressure_strategy_e>(bb::into<int>(m_backpressure_strategy.value())));
     }
     if (m_max_slice_len.has_value()) {
         iox2_port_factory_publisher_builder_set_initial_max_slice_len(&m_handle, m_max_slice_len.value());
@@ -185,9 +184,7 @@ inline auto PortFactoryPublisher<S, Payload, UserHeader>::create() && -> bb::Exp
 
     if (m_backpressure_handler.has_value()) {
         iox2_port_factory_publisher_builder_set_backpressure_handler(
-            &m_handle,
-            detail::backpressure_handler_delegate,
-            static_cast<void*>(m_backpressure_handler.value()));
+            &m_handle, detail::backpressure_handler_delegate, static_cast<void*>(m_backpressure_handler.value()));
     }
 
     if (m_override_preallocation_callback.has_value()) {

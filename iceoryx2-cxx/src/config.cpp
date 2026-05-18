@@ -381,8 +381,7 @@ void PublishSubscribe::set_enable_safe_overflow(bool value) && {
 }
 
 auto PublishSubscribe::backpressure_strategy() && -> BackpressureStrategy {
-    return iox2::bb::into<BackpressureStrategy>(
-        iox2_config_defaults_publish_subscribe_backpressure_strategy(m_config));
+    return iox2::bb::into<BackpressureStrategy>(iox2_config_defaults_publish_subscribe_backpressure_strategy(m_config));
 }
 
 void PublishSubscribe::set_backpressure_strategy(BackpressureStrategy value) && {

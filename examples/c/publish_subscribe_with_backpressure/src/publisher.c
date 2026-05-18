@@ -29,8 +29,7 @@ struct callback_context_t {
     int fail_counter;
 };
 
-static iox2_backpressure_action_e backpressure_handler(iox2_backpressure_info_h_ref info,
-                                                                 iox2_callback_context ctx) {
+static iox2_backpressure_action_e backpressure_handler(iox2_backpressure_info_h_ref info, iox2_callback_context ctx) {
     iox2_buffer_16_align_4_t buf;
     printf("Discarded sample from publisher sender id 0x");
     iox2_backpressure_info_sender_port_id(info, &buf);
@@ -109,8 +108,7 @@ int main(void) {
     // set backpressure handler
     struct callback_context_t ctx;
     ctx.fail_counter = 0;
-    iox2_port_factory_publisher_builder_set_backpressure_handler(
-        &publisher_builder, backpressure_handler, &ctx);
+    iox2_port_factory_publisher_builder_set_backpressure_handler(&publisher_builder, backpressure_handler, &ctx);
 
     // create publisher
     iox2_publisher_h publisher = NULL;

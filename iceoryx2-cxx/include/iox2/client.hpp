@@ -158,8 +158,8 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseUserHeader>
 inline auto
-Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::backpressure_strategy()
-    const -> BackpressureStrategy {
+Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::backpressure_strategy() const
+    -> BackpressureStrategy {
     return iox2::bb::into<BackpressureStrategy>(static_cast<int>(iox2_client_backpressure_strategy(&m_handle)));
 }
 

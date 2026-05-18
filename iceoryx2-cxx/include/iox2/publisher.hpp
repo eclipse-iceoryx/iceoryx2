@@ -147,8 +147,7 @@ inline Publisher<S, Payload, UserHeader>::~Publisher() {
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Publisher<S, Payload, UserHeader>::backpressure_strategy() const -> BackpressureStrategy {
-    return iox2::bb::into<BackpressureStrategy>(
-        static_cast<int>(iox2_publisher_backpressure_strategy(&m_handle)));
+    return iox2::bb::into<BackpressureStrategy>(static_cast<int>(iox2_publisher_backpressure_strategy(&m_handle)));
 }
 
 

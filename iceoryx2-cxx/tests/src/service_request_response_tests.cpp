@@ -1071,10 +1071,8 @@ TYPED_TEST(ServiceRequestResponseTest, client_applies_backpressure_strategy) {
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
     auto service = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
 
-    auto sut_client_1 = service.client_builder()
-                            .backpressure_strategy(BackpressureStrategy::RetryUntilDelivered)
-                            .create()
-                            .value();
+    auto sut_client_1 =
+        service.client_builder().backpressure_strategy(BackpressureStrategy::RetryUntilDelivered).create().value();
     auto sut_client_2 =
         service.client_builder().backpressure_strategy(BackpressureStrategy::DiscardData).create().value();
 

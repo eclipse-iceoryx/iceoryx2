@@ -10,10 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/bb/duration.hpp"
-#include "iox2/iceoryx2.hpp"
 #include "iox2/backpressure_action.hpp"
 #include "iox2/backpressure_handler.hpp"
+#include "iox2/bb/duration.hpp"
+#include "iox2/iceoryx2.hpp"
 #include "transmission_data.hpp"
 
 #include <chrono>
@@ -111,8 +111,7 @@ auto main() -> int {
         }
     };
 
-    auto publisher =
-        service.publisher_builder().set_backpressure_handler(&backpressure_handler).create().value();
+    auto publisher = service.publisher_builder().set_backpressure_handler(&backpressure_handler).create().value();
 
     while (node.wait(CYCLE_TIME).has_value()) {
         counter += 1;
