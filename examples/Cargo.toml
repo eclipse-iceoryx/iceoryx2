@@ -186,11 +186,11 @@ path = "rust/publish_subscribe_dynamic_data/subscriber.rs"
 # publish_subscribe_with_backpressure_handler
 
 [[example]]
-name = "publish_subscribe_with_backpressure_publisher"
+name = "publish_subscribe_backpressure_publisher"
 path = "rust/publish_subscribe_with_backpressure/publisher.rs"
 
 [[example]]
-name = "publish_subscribe_with_backpressure_subscriber"
+name = "publish_subscribe_backpressure_subscriber"
 path = "rust/publish_subscribe_with_backpressure/subscriber.rs"
 
 # publish_subscribe_with_user_header

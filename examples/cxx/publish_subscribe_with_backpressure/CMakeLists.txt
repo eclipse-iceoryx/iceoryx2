@@ -15,8 +15,8 @@ project(example_cxx_publish_subscribe_with_backpressure_handler LANGUAGES CXX)
 
 find_package(iceoryx2-cxx 0.8.999 REQUIRED)
 
-add_executable(example_cxx_publish_subscribe_with_backpressure_publisher src/publisher.cpp)
-target_link_libraries(example_cxx_publish_subscribe_with_backpressure_publisher iceoryx2-cxx::static-lib-cxx)
+add_executable(example_cxx_publish_subscribe_backpressure_publisher src/publisher.cpp)
+target_link_libraries(example_cxx_publish_subscribe_backpressure_publisher iceoryx2-cxx::static-lib-cxx)
 
-add_executable(example_cxx_publish_subscribe_with_backpressure_subscriber src/subscriber.cpp)
-target_link_libraries(example_cxx_publish_subscribe_with_backpressure_subscriber iceoryx2-cxx::static-lib-cxx)
+add_executable(example_cxx_publish_subscribe_backpressure_subscriber src/subscriber.cpp)
+target_link_libraries(example_cxx_publish_subscribe_backpressure_subscriber iceoryx2-cxx::static-lib-cxx)

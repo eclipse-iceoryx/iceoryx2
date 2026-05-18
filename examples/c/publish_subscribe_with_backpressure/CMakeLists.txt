@@ -15,8 +15,8 @@ project(example_c_publish_subscribe_with_backpressure_handler LANGUAGES C)
 
 find_package(iceoryx2-c 0.8.999 REQUIRED)
 
-add_executable(example_c_publish_subscribe_with_backpressure_publisher src/publisher.c)
-target_link_libraries(example_c_publish_subscribe_with_backpressure_publisher iceoryx2-c::static-lib)
+add_executable(example_c_publish_subscribe_backpressure_publisher src/publisher.c)
+target_link_libraries(example_c_publish_subscribe_backpressure_publisher iceoryx2-c::static-lib)
 
-add_executable(example_c_publish_subscribe_with_backpressure_subscriber src/subscriber.c)
-target_link_libraries(example_c_publish_subscribe_with_backpressure_subscriber iceoryx2-c::static-lib)
+add_executable(example_c_publish_subscribe_backpressure_subscriber src/subscriber.c)
+target_link_libraries(example_c_publish_subscribe_backpressure_subscriber iceoryx2-c::static-lib)
