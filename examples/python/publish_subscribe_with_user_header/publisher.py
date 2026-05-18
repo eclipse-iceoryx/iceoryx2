@@ -23,7 +23,7 @@ iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
 
 service = (
-    node.service_builder(iox2.ServiceName.new("My/Funk/ServiceName"))
+    node.service_builder(iox2.ServiceName.new("ServiceWithUserHeader"))
     .publish_subscribe(ctypes.c_uint64)
     .user_header(CustomHeader)
     .open_or_create()

@@ -33,6 +33,7 @@ use core::mem::ManuallyDrop;
 pub enum iox2_reader_create_error_e {
     EXCEEDS_MAX_SUPPORTED_READERS = IOX2_OK as isize + 1,
     FAILED_TO_DEPLOY_THREADSAFETY_POLICY,
+    UNABLE_TO_CREATE_PORT_TAG,
 }
 
 impl IntoCInt for ReaderCreateError {
@@ -43,6 +44,9 @@ impl IntoCInt for ReaderCreateError {
             }
             ReaderCreateError::FailedToDeployThreadsafetyPolicy => {
                 iox2_reader_create_error_e::FAILED_TO_DEPLOY_THREADSAFETY_POLICY
+            }
+            ReaderCreateError::UnableToCreatePortTag => {
+                iox2_reader_create_error_e::UNABLE_TO_CREATE_PORT_TAG
             }
         }) as c_int
     }

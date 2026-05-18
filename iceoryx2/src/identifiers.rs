@@ -129,6 +129,22 @@ pub enum UniquePortId {
     Writer(UniqueWriterId),
 }
 
+impl UniquePortId {
+    /// Returns the underlying value of the [`UniquePortId`]
+    pub fn value(&self) -> u128 {
+        match self {
+            UniquePortId::Publisher(v) => v.value(),
+            UniquePortId::Subscriber(v) => v.value(),
+            UniquePortId::Notifier(v) => v.value(),
+            UniquePortId::Listener(v) => v.value(),
+            UniquePortId::Client(v) => v.value(),
+            UniquePortId::Server(v) => v.value(),
+            UniquePortId::Reader(v) => v.value(),
+            UniquePortId::Writer(v) => v.value(),
+        }
+    }
+}
+
 /// The system-wide unique id of a [`Node`](crate::node::Node).
 #[repr(C)]
 #[derive(

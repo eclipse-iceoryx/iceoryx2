@@ -172,6 +172,13 @@ pub(crate) struct ClientSharedState<Service: service::Service> {
     server_list_state: UnsafeCell<ContainerState<ServerDetails>>,
     pub(crate) active_request_counter: AtomicUsize,
     pub(crate) available_channel_ids: UnsafeCell<Queue<ChannelId>>,
+    // IMPORTANT!
+    // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
+    // port exists and might require cleanup after a crash, the tag must be defined as last member of
+    // the struct.
+    // Otherwise the process might crash during cleanup, has already removed the tag but other resources
+    // are still existing. This would make a cleanup from another process impossible.
+    port_tag: Service::StaticStorage,
 }
 
 impl<Service: service::Service> Abandonable for ClientSharedState<Service> {
@@ -179,6 +186,9 @@ impl<Service: service::Service> Abandonable for ClientSharedState<Service> {
         let this = unsafe { this.as_mut() };
         unsafe { Sender::abandon_in_place(NonNull::iox2_from_mut(&mut this.request_sender)) };
         unsafe { Receiver::abandon_in_place(NonNull::iox2_from_mut(&mut this.response_receiver)) };
+        unsafe {
+            Service::StaticStorage::abandon_in_place(NonNull::iox2_from_mut(&mut this.port_tag))
+        };
     }
 }
 
@@ -382,6 +392,20 @@ impl<
         let origin = "Client::new()";
         let service = &client_factory.factory.service;
         let client_id = UniqueClientId::new();
+
+        // !MUST! be the first thing that is created when a new port is instantiated otherwise the
+        // port resources might leak if this process is killed in between.
+        let port_tag = match service
+            .shared_node()
+            .create_port_tag(origin, msg, client_id.0.value())
+        {
+            Ok(port_tag) => port_tag,
+            Err(e) => {
+                fail!(from origin, with ClientCreateError::UnableToCreatePortTag,
+                        "{msg} since the port tag, that is required for cleanup, could not be created. [{e:?}]");
+            }
+        };
+
         let static_config = client_factory.factory.static_config();
         let number_of_requests =
             unsafe { service.static_config().messaging_pattern.request_response() }
@@ -509,6 +533,7 @@ impl<
         };
 
         let client_shared_state = Service::ArcThreadSafetyPolicy::new(ClientSharedState {
+            port_tag,
             config: client_factory.config,
             client_handle: UnsafeCell::new(None),
             available_channel_ids: {

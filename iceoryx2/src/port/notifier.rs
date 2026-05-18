@@ -79,6 +79,8 @@ pub enum NotifierCreateError {
     /// Caused by a failure when instantiating a [`ArcSyncPolicy`] defined in the
     /// [`Service`](crate::service::Service) as `ArcThreadSafetyPolicy`.
     FailedToDeployThreadsafetyPolicy,
+    /// The tracking port tag, required for cleanup, could not be created.
+    UnableToCreatePortTag,
 }
 
 impl core::fmt::Display for NotifierCreateError {
@@ -270,6 +272,13 @@ pub struct Notifier<Service: service::Service> {
     notifier_id: UniqueNotifierId,
     on_drop_notification: Option<EventId>,
     node_id: UniqueNodeId,
+    // IMPORTANT!
+    // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
+    // port exists and might require cleanup after a crash, the tag must be defined as last member of
+    // the struct.
+    // Otherwise the process might crash during cleanup, has already removed the tag but other resources
+    // are still existing. This would make a cleanup from another process impossible.
+    port_tag: Service::StaticStorage,
 }
 
 unsafe impl<Service: service::Service> Send for Notifier<Service> where
@@ -290,6 +299,9 @@ impl<Service: service::Service> Abandonable for Notifier<Service> {
                 &mut this.listener_connections,
             ))
         };
+        unsafe {
+            Service::StaticStorage::abandon_in_place(NonNull::iox2_from_mut(&mut this.port_tag));
+        }
     }
 }
 
@@ -361,6 +373,20 @@ impl<Service: service::Service> Notifier<Service> {
         let origin = "Notifier::new()";
         let notifier_id = UniqueNotifierId::new();
 
+        // !MUST! be the first thing that is created when a new port is instantiated otherwise the
+        // port resources might leak if this process is killed in between.
+        let port_tag = match service.shared_node().create_port_tag(
+            origin,
+            msg,
+            notifier_id.0.value(),
+        ) {
+            Ok(port_tag) => port_tag,
+            Err(e) => {
+                fail!(from origin, with NotifierCreateError::UnableToCreatePortTag,
+                        "{msg} since the port tag, that is required for cleanup, could not be created. [{e:?}]");
+            }
+        };
+
         let listener_list = &service.dynamic_storage().get().event().listeners;
 
         let node_id = *service.shared_node().id();
@@ -380,6 +406,7 @@ impl<Service: service::Service> Notifier<Service> {
         };
 
         let mut new_self = Self {
+            port_tag,
             listener_connections,
             default_event_id,
             event_id_max_value: static_config.event_id_max_value,

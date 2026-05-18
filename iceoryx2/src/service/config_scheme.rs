@@ -107,6 +107,16 @@ pub(crate) fn node_details_config<Service: crate::service::Service>(
         .path_hint(&node_details_path(global_config, node_id))
 }
 
+pub(crate) fn port_tag_config<Service: crate::service::Service>(
+    global_config: &config::Config,
+    node_id: &UniqueNodeId,
+) -> <Service::StaticStorage as NamedConceptMgmt>::Configuration {
+    <<Service::StaticStorage as NamedConceptMgmt>::Configuration>::default()
+        .prefix(&global_config.global.prefix)
+        .suffix(&global_config.global.node.port_tag_suffix)
+        .path_hint(&node_details_path(global_config, node_id))
+}
+
 pub(crate) fn service_tag_config<Service: crate::service::Service>(
     global_config: &config::Config,
     node_id: &UniqueNodeId,

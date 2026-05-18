@@ -1307,6 +1307,8 @@ constexpr auto from<int, iox2::WriterCreateError>(const int value) noexcept -> i
         return iox2::WriterCreateError::InternalFailure;
     case iox2_writer_create_error_e_FAILED_TO_DEPLOY_THREADSAFETY_POLICY:
         return iox2::WriterCreateError::FailedToDeployThreadsafetyPolicy;
+    case iox2_writer_create_error_e_UNABLE_TO_CREATE_PORT_TAG:
+        return iox2::WriterCreateError::UnableToCreatePortTag;
     }
 
     IOX2_UNREACHABLE();
@@ -1322,6 +1324,8 @@ constexpr auto from<iox2::WriterCreateError, iox2_writer_create_error_e>(const i
         return iox2_writer_create_error_e_INTERNAL_FAILURE;
     case iox2::WriterCreateError::FailedToDeployThreadsafetyPolicy:
         return iox2_writer_create_error_e_FAILED_TO_DEPLOY_THREADSAFETY_POLICY;
+    case iox2::WriterCreateError::UnableToCreatePortTag:
+        return iox2_writer_create_error_e_UNABLE_TO_CREATE_PORT_TAG;
     }
 
     IOX2_UNREACHABLE();
@@ -1373,6 +1377,8 @@ constexpr auto from<int, iox2::ReaderCreateError>(const int value) noexcept -> i
         return iox2::ReaderCreateError::ExceedsMaxSupportedReaders;
     case iox2_reader_create_error_e_FAILED_TO_DEPLOY_THREADSAFETY_POLICY:
         return iox2::ReaderCreateError::FailedToDeployThreadsafetyPolicy;
+    case iox2_reader_create_error_e_UNABLE_TO_CREATE_PORT_TAG:
+        return iox2::ReaderCreateError::UnableToCreatePortTag;
     }
 
     IOX2_UNREACHABLE();
@@ -1386,6 +1392,8 @@ constexpr auto from<iox2::ReaderCreateError, iox2_reader_create_error_e>(const i
         return iox2_reader_create_error_e_EXCEEDS_MAX_SUPPORTED_READERS;
     case iox2::ReaderCreateError::FailedToDeployThreadsafetyPolicy:
         return iox2_reader_create_error_e_FAILED_TO_DEPLOY_THREADSAFETY_POLICY;
+    case iox2::ReaderCreateError::UnableToCreatePortTag:
+        return iox2_reader_create_error_e_UNABLE_TO_CREATE_PORT_TAG;
     }
 
     IOX2_UNREACHABLE();
@@ -1433,6 +1441,8 @@ constexpr auto from<int, iox2::ClientCreateError>(const int value) noexcept -> i
         return iox2::ClientCreateError::UnableToCreateDataSegment;
     case iox2_client_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY:
         return iox2::ClientCreateError::FailedToDeployThreadsafetyPolicy;
+    case iox2_client_create_error_e_UNABLE_TO_CREATE_PORT_TAG:
+        return iox2::ClientCreateError::UnableToCreatePortTag;
     }
 
     IOX2_UNREACHABLE();
@@ -1448,6 +1458,8 @@ constexpr auto from<iox2::ClientCreateError, iox2_client_create_error_e>(const i
         return iox2_client_create_error_e_UNABLE_TO_CREATE_DATA_SEGMENT;
     case iox2::ClientCreateError::FailedToDeployThreadsafetyPolicy:
         return iox2_client_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
+    case iox2::ClientCreateError::UnableToCreatePortTag:
+        return iox2_client_create_error_e_UNABLE_TO_CREATE_PORT_TAG;
     }
 
     IOX2_UNREACHABLE();
@@ -1468,6 +1480,8 @@ constexpr auto from<int, iox2::ServerCreateError>(const int value) noexcept -> i
         return iox2::ServerCreateError::UnableToCreateDataSegment;
     case iox2_server_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY:
         return iox2::ServerCreateError::FailedToDeployThreadsafetyPolicy;
+    case iox2_server_create_error_e_UNABLE_TO_CREATE_PORT_TAG:
+        return iox2::ServerCreateError::UnableToCreatePortTag;
     }
 
     IOX2_UNREACHABLE();
@@ -1483,6 +1497,8 @@ constexpr auto from<iox2::ServerCreateError, iox2_server_create_error_e>(const i
         return iox2_server_create_error_e_UNABLE_TO_CREATE_DATA_SEGMENT;
     case iox2::ServerCreateError::FailedToDeployThreadsafetyPolicy:
         return iox2_server_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
+    case iox2::ServerCreateError::UnableToCreatePortTag:
+        return iox2_server_create_error_e_UNABLE_TO_CREATE_PORT_TAG;
     }
 
     IOX2_UNREACHABLE();
@@ -1501,6 +1517,8 @@ constexpr auto from<int, iox2::NotifierCreateError>(const int value) noexcept ->
         return iox2::NotifierCreateError::ExceedsMaxSupportedNotifiers;
     case iox2_notifier_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY:
         return iox2::NotifierCreateError::FailedToDeployThreadsafetyPolicy;
+    case iox2_notifier_create_error_e_UNABLE_TO_CREATE_PORT_TAG:
+        return iox2::NotifierCreateError::UnableToCreatePortTag;
     }
 
     IOX2_UNREACHABLE();
@@ -1515,6 +1533,8 @@ from<iox2::NotifierCreateError, iox2_notifier_create_error_e>(const iox2::Notifi
         return iox2_notifier_create_error_e_EXCEEDS_MAX_SUPPORTED_NOTIFIERS;
     case iox2::NotifierCreateError::FailedToDeployThreadsafetyPolicy:
         return iox2_notifier_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
+    case iox2::NotifierCreateError::UnableToCreatePortTag:
+        return iox2_notifier_create_error_e_UNABLE_TO_CREATE_PORT_TAG;
     }
 
     IOX2_UNREACHABLE();
@@ -1536,6 +1556,8 @@ constexpr auto from<int, iox2::ListenerCreateError>(const int value) noexcept ->
         return iox2::ListenerCreateError::ResourceCreationFailed;
     case iox2_listener_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY:
         return iox2::ListenerCreateError::FailedToDeployThreadsafetyPolicy;
+    case iox2_listener_create_error_e_UNABLE_TO_CREATE_PORT_TAG:
+        return iox2::ListenerCreateError::UnableToCreatePortTag;
     }
 
     IOX2_UNREACHABLE();
@@ -1552,6 +1574,8 @@ from<iox2::ListenerCreateError, iox2_listener_create_error_e>(const iox2::Listen
         return iox2_listener_create_error_e_RESOURCE_CREATION_FAILED;
     case iox2::ListenerCreateError::FailedToDeployThreadsafetyPolicy:
         return iox2_listener_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
+    case iox2::ListenerCreateError::UnableToCreatePortTag:
+        return iox2_listener_create_error_e_UNABLE_TO_CREATE_PORT_TAG;
     }
 
     IOX2_UNREACHABLE();
@@ -1645,6 +1669,8 @@ constexpr auto from<int, iox2::PublisherCreateError>(const int value) noexcept -
         return iox2::PublisherCreateError::UnableToCreateDataSegment;
     case iox2_publisher_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY:
         return iox2::PublisherCreateError::FailedToDeployThreadsafetyPolicy;
+    case iox2_publisher_create_error_e_UNABLE_TO_CREATE_PORT_TAG:
+        return iox2::PublisherCreateError::UnableToCreatePortTag;
     }
 
     IOX2_UNREACHABLE();
@@ -1661,6 +1687,8 @@ from<iox2::PublisherCreateError, iox2_publisher_create_error_e>(const iox2::Publ
         return iox2_publisher_create_error_e_UNABLE_TO_CREATE_DATA_SEGMENT;
     case iox2::PublisherCreateError::FailedToDeployThreadsafetyPolicy:
         return iox2_publisher_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
+    case iox2::PublisherCreateError::UnableToCreatePortTag:
+        return iox2_publisher_create_error_e_UNABLE_TO_CREATE_PORT_TAG;
     }
 
     IOX2_UNREACHABLE();
@@ -1682,6 +1710,8 @@ constexpr auto from<int, iox2::SubscriberCreateError>(const int value) noexcept 
         return iox2::SubscriberCreateError::ExceedsMaxSupportedSubscribers;
     case iox2_subscriber_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY:
         return iox2::SubscriberCreateError::FailedToDeployThreadsafetyPolicy;
+    case iox2_subscriber_create_error_e_UNABLE_TO_CREATE_PORT_TAG:
+        return iox2::SubscriberCreateError::UnableToCreatePortTag;
     }
 
     IOX2_UNREACHABLE();
@@ -1698,6 +1728,8 @@ from<iox2::SubscriberCreateError, iox2_subscriber_create_error_e>(const iox2::Su
         return iox2_subscriber_create_error_e_EXCEEDS_MAX_SUPPORTED_SUBSCRIBERS;
     case iox2::SubscriberCreateError::FailedToDeployThreadsafetyPolicy:
         return iox2_subscriber_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
+    case iox2::SubscriberCreateError::UnableToCreatePortTag:
+        return iox2_subscriber_create_error_e_UNABLE_TO_CREATE_PORT_TAG;
     }
 
     IOX2_UNREACHABLE();

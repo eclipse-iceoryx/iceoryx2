@@ -184,6 +184,8 @@ pub struct Node {
     pub static_config_suffix: FileName,
     /// The suffix of the service tags.
     pub service_tag_suffix: FileName,
+    /// The suffix of the port tags.
+    pub port_tag_suffix: FileName,
     /// The suffix of the global management segment.
     pub global_mgmt_suffix: FileName,
     /// When true, the [`NodeBuilder`](crate::node::NodeBuilder) checks for dead nodes and
@@ -204,6 +206,7 @@ impl Default for Node {
             global_mgmt_suffix: FileName::new(b".global_mgmt").unwrap(),
             static_config_suffix: FileName::new(b".details").unwrap(),
             service_tag_suffix: FileName::new(b".service_tag").unwrap(),
+            port_tag_suffix: FileName::new(b".port_tag").unwrap(),
             cleanup_dead_nodes_on_creation: true,
             cleanup_dead_nodes_on_destruction: true,
         }

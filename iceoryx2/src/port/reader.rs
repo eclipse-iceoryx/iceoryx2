@@ -101,6 +101,13 @@ struct ReaderSharedState<
 > {
     service_state: SharedServiceState<Service, BlackboardResources<Service>>,
     _key: PhantomData<KeyType>,
+    // IMPORTANT!
+    // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
+    // port exists and might require cleanup after a crash, the tag must be defined as last member of
+    // the struct.
+    // Otherwise the process might crash during cleanup, has already removed the tag but other resources
+    // are still existing. This would make a cleanup from another process impossible.
+    port_tag: Service::StaticStorage,
 }
 
 unsafe impl<
@@ -120,6 +127,9 @@ impl<
         unsafe {
             SharedServiceState::abandon_in_place(NonNull::iox2_from_mut(&mut this.service_state))
         };
+        unsafe {
+            Service::StaticStorage::abandon_in_place(NonNull::iox2_from_mut(&mut this.port_tag))
+        };
     }
 }
 
@@ -135,6 +145,8 @@ pub enum ReaderCreateError {
     /// Caused by a failure when instantiating a [`ArcSyncPolicy`] defined in the
     /// [`Service`](crate::service::Service) as `ArcThreadSafetyPolicy`.
     FailedToDeployThreadsafetyPolicy,
+    /// The tracking port tag, required for cleanup, could not be created.
+    UnableToCreatePortTag,
 }
 
 impl core::fmt::Display for ReaderCreateError {
@@ -199,10 +211,23 @@ impl<
     ) -> Result<Self, ReaderCreateError> {
         let origin = "Reader::new()";
         let msg = "Unable to create Reader port";
-
         let reader_id = UniqueReaderId::new();
+        // !MUST! be the first thing that is created when a new port is instantiated otherwise the
+        // port resources might leak if this process is killed in between.
+        let port_tag = match service
+            .shared_node()
+            .create_port_tag(origin, msg, reader_id.0.value())
+        {
+            Ok(port_tag) => port_tag,
+            Err(e) => {
+                fail!(from origin, with ReaderCreateError::UnableToCreatePortTag,
+                        "{msg} since the port tag, that is required for cleanup, could not be created. [{e:?}]");
+            }
+        };
+
         let shared_state =
             <Service as service::Service>::ArcThreadSafetyPolicy::new(ReaderSharedState {
+                port_tag,
                 service_state: service.clone(),
                 _key: PhantomData,
             });

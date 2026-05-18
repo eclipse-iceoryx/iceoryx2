@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     let service = node
-        .service_builder(&"My/Funk/ServiceName".try_into()?)
+        .service_builder(&"ServiceWithSlowSubscriber".try_into()?)
         .publish_subscribe::<TransmissionData>()
         .enable_safe_overflow(false)
         .open_or_create()?;

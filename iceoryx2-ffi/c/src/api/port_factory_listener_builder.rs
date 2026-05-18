@@ -35,6 +35,7 @@ pub enum iox2_listener_create_error_e {
     EXCEEDS_MAX_SUPPORTED_LISTENERS = IOX2_OK as isize + 1,
     RESOURCE_CREATION_FAILED,
     FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY,
+    UNABLE_TO_CREATE_PORT_TAG,
 }
 
 impl IntoCInt for ListenerCreateError {
@@ -48,6 +49,9 @@ impl IntoCInt for ListenerCreateError {
             }
             ListenerCreateError::FailedToDeployThreadsafetyPolicy => {
                 iox2_listener_create_error_e::FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY
+            }
+            ListenerCreateError::UnableToCreatePortTag => {
+                iox2_listener_create_error_e::UNABLE_TO_CREATE_PORT_TAG
             }
         }) as c_int
     }

@@ -18,6 +18,7 @@ use crate::{
     unique_notifier_id::UniqueNotifierId,
 };
 
+#[allow(clippy::large_enum_variant)] // allowed since they are the same port type based on a different service variant
 pub(crate) enum NotifierType {
     Ipc(Option<iceoryx2::port::notifier::Notifier<crate::IpcService>>),
     Local(Option<iceoryx2::port::notifier::Notifier<crate::LocalService>>),

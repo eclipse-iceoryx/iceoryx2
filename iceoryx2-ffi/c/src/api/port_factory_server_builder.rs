@@ -37,6 +37,7 @@ pub enum iox2_server_create_error_e {
     EXCEEDS_MAX_SUPPORTED_SERVERS = IOX2_OK as isize + 1,
     UNABLE_TO_CREATE_DATA_SEGMENT,
     FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY,
+    UNABLE_TO_CREATE_PORT_TAG,
 }
 
 impl IntoCInt for ServerCreateError {
@@ -50,6 +51,9 @@ impl IntoCInt for ServerCreateError {
             }
             ServerCreateError::FailedToDeployThreadsafetyPolicy => {
                 iox2_server_create_error_e::FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY
+            }
+            ServerCreateError::UnableToCreatePortTag => {
+                iox2_server_create_error_e::UNABLE_TO_CREATE_PORT_TAG
             }
         }) as c_int
     }

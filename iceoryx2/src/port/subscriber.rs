@@ -84,6 +84,8 @@ pub enum SubscriberCreateError {
     /// Caused by a failure when instantiating a [`ArcSyncPolicy`] defined in the
     /// [`Service`](crate::service::Service) as `ArcThreadSafetyPolicy`.
     FailedToDeployThreadsafetyPolicy,
+    /// The tracking port tag, required for cleanup, could not be created.
+    UnableToCreatePortTag,
 }
 
 impl core::fmt::Display for SubscriberCreateError {
@@ -98,12 +100,22 @@ impl core::error::Error for SubscriberCreateError {}
 pub(crate) struct SubscriberSharedState<Service: service::Service> {
     pub(crate) receiver: Receiver<Service>,
     pub(crate) publisher_list_state: UnsafeCell<ContainerState<PublisherDetails>>,
+    // IMPORTANT!
+    // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
+    // port exists and might require cleanup after a crash, the tag must be defined as last member of
+    // the struct.
+    // Otherwise the process might crash during cleanup, has already removed the tag but other resources
+    // are still existing. This would make a cleanup from another process impossible.
+    port_tag: Service::StaticStorage,
 }
 
 impl<Service: service::Service> Abandonable for SubscriberSharedState<Service> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe { Receiver::abandon_in_place(NonNull::iox2_from_mut(&mut this.receiver)) };
+        unsafe {
+            Service::StaticStorage::abandon_in_place(NonNull::iox2_from_mut(&mut this.port_tag))
+        };
     }
 }
 
@@ -191,6 +203,19 @@ impl<
         let msg = "Failed to create Subscriber port";
         let origin = "Subscriber::new()";
         let subscriber_id = UniqueSubscriberId::new();
+        // !MUST! be the first thing that is created when a new port is instantiated otherwise the
+        // port resources might leak if this process is killed in between.
+        let port_tag = match service.shared_node().create_port_tag(
+            origin,
+            msg,
+            subscriber_id.0.value(),
+        ) {
+            Ok(port_tag) => port_tag,
+            Err(e) => {
+                fail!(from origin, with SubscriberCreateError::UnableToCreatePortTag,
+                        "{msg} since the port tag, that is required for cleanup, could not be created. [{e:?}]");
+            }
+        };
 
         let publisher_list = &service
             .dynamic_storage()
@@ -234,6 +259,7 @@ impl<
             number_of_to_be_removed_connections + number_of_active_connections;
 
         let subscriber_shared_state = Service::ArcThreadSafetyPolicy::new(SubscriberSharedState {
+            port_tag,
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
             receiver: Receiver {
                 connections: PolymorphicVec::from_fn(

@@ -69,6 +69,7 @@ void drop_res(struct res* const value) { // NOLINT
 int main(void) {
     // Setup logging
     iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
+    int ret_val = 0;
 
     struct res example;
     init_res(&example);
@@ -76,16 +77,18 @@ int main(void) {
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
     iox2_node_h node_handle = NULL;
-    if (iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node_handle) != IOX2_OK) {
-        printf("Could not create node!\n");
+    ret_val = iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node_handle);
+    if (ret_val != IOX2_OK) {
+        printf("Could not create node! Error: %d\n", ret_val);
         goto end;
     }
 
     // create service name
     const char* service_name_value = "My/Funk/ServiceName";
     iox2_service_name_h service_name = NULL;
-    if (iox2_service_name_new(NULL, service_name_value, strlen(service_name_value), &service_name) != IOX2_OK) {
-        printf("Unable to create service name!\n");
+    ret_val = iox2_service_name_new(NULL, service_name_value, strlen(service_name_value), &service_name);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create service name! Error: %d\n", ret_val);
         goto end;
     }
 
@@ -96,28 +99,30 @@ int main(void) {
         iox2_service_builder_blackboard_opener(service_builder);
 
     // set key type
-    if (iox2_service_builder_blackboard_opener_set_key_type_details(&service_builder_blackboard,
-                                                                    IOX2_KEY_TYPE_NAME,
-                                                                    strlen(IOX2_KEY_TYPE_NAME),
-                                                                    sizeof(struct BlackboardKey),
-                                                                    alignof(struct BlackboardKey))
-        != IOX2_OK) {
-        printf("Unable to set key type details!\n");
+    ret_val = iox2_service_builder_blackboard_opener_set_key_type_details(&service_builder_blackboard,
+                                                                          IOX2_KEY_TYPE_NAME,
+                                                                          strlen(IOX2_KEY_TYPE_NAME),
+                                                                          sizeof(struct BlackboardKey),
+                                                                          alignof(struct BlackboardKey));
+    if (ret_val != IOX2_OK) {
+        printf("Unable to set key type details! Error: %d\n", ret_val);
         goto end;
     }
 
     // open service
     iox2_port_factory_blackboard_h service = NULL;
-    if (iox2_service_builder_blackboard_open(service_builder_blackboard, NULL, &service) != IOX2_OK) {
-        printf("Unable to open service!\n");
+    ret_val = iox2_service_builder_blackboard_open(service_builder_blackboard, NULL, &service);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to open service! Error: %d\n", ret_val);
         goto end;
     }
 
     // create reader and entry handles
     iox2_port_factory_reader_builder_h reader_builder = iox2_port_factory_blackboard_reader_builder(&service, NULL);
     iox2_reader_h reader = NULL;
-    if (iox2_port_factory_reader_builder_create(reader_builder, NULL, &reader) != IOX2_OK) {
-        printf("Unable to create reader!\n");
+    ret_val = iox2_port_factory_reader_builder_create(reader_builder, NULL, &reader);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create reader! Error: %d\n", ret_val);
         goto end;
     }
 
@@ -128,16 +133,16 @@ int main(void) {
     // for cross-language communication, the name must be equivalent to the value type name used on the Rust side
     const char* value_type_name_int = "i32";
     iox2_entry_handle_h entry_handle_key_0 = NULL;
-    if (iox2_reader_entry(&reader,
-                          NULL,
-                          &entry_handle_key_0,
-                          &key_0,
-                          value_type_name_int,
-                          strlen(value_type_name_int),
-                          sizeof(int32_t),
-                          alignof(int32_t))
-        != IOX2_OK) {
-        printf("Unable to create entry_handle!\n");
+    ret_val = iox2_reader_entry(&reader,
+                                NULL,
+                                &entry_handle_key_0,
+                                &key_0,
+                                value_type_name_int,
+                                strlen(value_type_name_int),
+                                sizeof(int32_t),
+                                alignof(int32_t));
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create entry_handle! Error: %d\n", ret_val);
         goto end;
     }
 
@@ -148,16 +153,16 @@ int main(void) {
     // for cross-language communication, the name must be equivalent to the value type name used on the Rust side
     const char* value_type_name_double = "f64";
     iox2_entry_handle_h entry_handle_key_1 = NULL;
-    if (iox2_reader_entry(&reader,
-                          NULL,
-                          &entry_handle_key_1,
-                          &key_1,
-                          value_type_name_double,
-                          strlen(value_type_name_double),
-                          sizeof(double),
-                          alignof(double))
-        != IOX2_OK) {
-        printf("Unable to create entry_handle!\n");
+    ret_val = iox2_reader_entry(&reader,
+                                NULL,
+                                &entry_handle_key_1,
+                                &key_1,
+                                value_type_name_double,
+                                strlen(value_type_name_double),
+                                sizeof(double),
+                                alignof(double));
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create entry_handle! Error: %d\n", ret_val);
         goto end;
     }
 

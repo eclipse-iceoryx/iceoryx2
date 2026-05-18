@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     let service = node
-        .service_builder(&"My/Funk/ServiceName".try_into()?)
+        .service_builder(&"ServiceWithUserHeader".try_into()?)
         .publish_subscribe::<u64>()
         .user_header::<CustomHeader>()
         .open_or_create()?;

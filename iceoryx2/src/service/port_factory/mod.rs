@@ -20,7 +20,7 @@ use iceoryx2_log::{debug, warn};
 
 use crate::config::Config;
 use crate::identifiers::UniqueServiceId;
-use crate::node::{CleanupState, NodeListFailure, NodeState, NodeView};
+use crate::node::{CleanupState, NodeCleanupFailure, NodeListFailure, NodeState, NodeView};
 use crate::service::service_hash::ServiceHash;
 
 use super::dynamic_config::DynamicConfig;
@@ -140,13 +140,22 @@ pub(crate) fn blocking_cleanup_dead_nodes_in_service<T: PortFactory>(
         if let NodeState::Dead(node) = node_state {
             let node_id = *node.id();
             debug!(from port_factory, "Dead node ({:?}) detected", node_id);
-            if let Err(e) = node.blocking_remove_stale_resources(timeout) {
-                cleanup_state.failed_cleanups += 1;
-                warn!(from port_factory, "Failed to remove dead node ({:?}) from service. Abandoned ports of the dead node might block the creation of new ports! [{e:?}]", node_id);
-            } else {
-                cleanup_state.cleanups += 1;
+            match node.blocking_remove_stale_resources(timeout) {
+                Ok(()) => cleanup_state.cleanups +=1,
+                Err(NodeCleanupFailure::AnotherInstanceIsCleaningUpTheNode) => {
+                    cleanup_state.failed_cleanups += 1;
+                    warn!(from port_factory,
+                        "Stop waiting on another process to cleanup the dead node ({:?}) since the {timeout:?} expired. Abandoned ports of the dead node might block the creation of new ports! Try increasing the `global.node.creation_timeout` config parameter to mitigate this problem.",
+                        node_id);
+                }
+                Err(e) => {
+                    cleanup_state.failed_cleanups += 1;
+                    warn!(from port_factory,
+                        "Failed to remove dead node ({:?}) from service. Abandoned ports of the dead node might block the creation of new ports! [{e:?}]",
+                        node_id);
+                }
             }
-        }
+       }
         CallbackProgression::Continue
     }) {
         warn!(from port_factory,

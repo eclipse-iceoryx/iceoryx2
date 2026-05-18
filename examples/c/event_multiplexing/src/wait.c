@@ -40,8 +40,9 @@ static iox2_callback_progression_e on_event(iox2_waitset_attachment_id_h attachm
             // We need to collect all notifications since the WaitSet will wake us up as long as
             // there is something to read. If we skip this step completely we will end up in a
             // busy loop.
-            if (iox2_listener_try_wait_one(ctx->listener_1, &event_id, &has_received_event) != IOX2_OK) {
-                printf("failed to receive event on listener: %s\n", ctx->service_name_1);
+            int ret_val = iox2_listener_try_wait_one(ctx->listener_1, &event_id, &has_received_event);
+            if (ret_val != IOX2_OK) {
+                printf("failed to receive event on listener: %s! Error: %d\n", ctx->service_name_1, ret_val);
             }
 
             if (has_received_event) {
@@ -53,8 +54,9 @@ static iox2_callback_progression_e on_event(iox2_waitset_attachment_id_h attachm
     } else if (iox2_waitset_attachment_id_has_event_from(&attachment_id, ctx->guard_2)) {
         printf("Received trigger from \"%s\" ::", ctx->service_name_2);
         do {
-            if (iox2_listener_try_wait_one(ctx->listener_2, &event_id, &has_received_event) != IOX2_OK) {
-                printf("failed to receive event on listener: %s\n", ctx->service_name_2);
+            int ret_val = iox2_listener_try_wait_one(ctx->listener_2, &event_id, &has_received_event);
+            if (ret_val != IOX2_OK) {
+                printf("failed to receive event on listener: %s! Error: %d\n", ctx->service_name_2, ret_val);
             }
 
             if (has_received_event) {
@@ -77,25 +79,29 @@ int main(int argc, char** argv) {
 
     // Setup logging
     iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
+    int ret_val = 0;
 
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
     iox2_node_h node_handle = NULL;
-    if (iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node_handle) != IOX2_OK) {
-        printf("Could not create node!\n");
+    ret_val = iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node_handle);
+    if (ret_val != IOX2_OK) {
+        printf("Could not create node! Error: %d\n", ret_val);
         goto end;
     }
 
     // create service names
     iox2_service_name_h service_name_1 = NULL;
-    if (iox2_service_name_new(NULL, argv[1], strlen(argv[1]), &service_name_1) != IOX2_OK) {
-        printf("Unable to create service name!\n");
+    ret_val = iox2_service_name_new(NULL, argv[1], strlen(argv[1]), &service_name_1);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create service name! Error: %d\n", ret_val);
         goto drop_node;
     }
 
     iox2_service_name_h service_name_2 = NULL;
-    if (iox2_service_name_new(NULL, argv[2], strlen(argv[2]), &service_name_2) != IOX2_OK) {
-        printf("Unable to create service name!\n");
+    ret_val = iox2_service_name_new(NULL, argv[2], strlen(argv[2]), &service_name_2);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create service name! Error: %d\n", ret_val);
         goto drop_service_name_1;
     }
 
@@ -104,8 +110,9 @@ int main(int argc, char** argv) {
     iox2_service_builder_h service_builder_1 = iox2_node_service_builder(&node_handle, NULL, service_name_ptr_1);
     iox2_service_builder_event_h service_builder_event_1 = iox2_service_builder_event(service_builder_1);
     iox2_port_factory_event_h service_1 = NULL;
-    if (iox2_service_builder_event_open_or_create(service_builder_event_1, NULL, &service_1) != IOX2_OK) {
-        printf("Unable to create service!\n");
+    ret_val = iox2_service_builder_event_open_or_create(service_builder_event_1, NULL, &service_1);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create service! Error: %d\n", ret_val);
         goto drop_service_name_2;
     }
 
@@ -113,8 +120,9 @@ int main(int argc, char** argv) {
     iox2_service_builder_h service_builder_2 = iox2_node_service_builder(&node_handle, NULL, service_name_ptr_2);
     iox2_service_builder_event_h service_builder_event_2 = iox2_service_builder_event(service_builder_2);
     iox2_port_factory_event_h service_2 = NULL;
-    if (iox2_service_builder_event_open_or_create(service_builder_event_2, NULL, &service_2) != IOX2_OK) {
-        printf("Unable to create service!\n");
+    ret_val = iox2_service_builder_event_open_or_create(service_builder_event_2, NULL, &service_2);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create service! Error: %d\n", ret_val);
         goto drop_service_1;
     }
 
@@ -122,16 +130,18 @@ int main(int argc, char** argv) {
     iox2_port_factory_listener_builder_h listener_builder_1 =
         iox2_port_factory_event_listener_builder(&service_1, NULL);
     iox2_listener_h listener_1 = NULL;
-    if (iox2_port_factory_listener_builder_create(listener_builder_1, NULL, &listener_1) != IOX2_OK) {
-        printf("Unable to create listener!\n");
+    ret_val = iox2_port_factory_listener_builder_create(listener_builder_1, NULL, &listener_1);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create listener! Error: %d\n", ret_val);
         goto drop_service_2;
     }
 
     iox2_port_factory_listener_builder_h listener_builder_2 =
         iox2_port_factory_event_listener_builder(&service_2, NULL);
     iox2_listener_h listener_2 = NULL;
-    if (iox2_port_factory_listener_builder_create(listener_builder_2, NULL, &listener_2) != IOX2_OK) {
-        printf("Unable to create listener!\n");
+    ret_val = iox2_port_factory_listener_builder_create(listener_builder_2, NULL, &listener_2);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create listener! Error: %d\n", ret_val);
         goto drop_listener_1;
     }
 
@@ -139,23 +149,26 @@ int main(int argc, char** argv) {
     iox2_waitset_builder_h waitset_builder = NULL;
     iox2_waitset_builder_new(NULL, &waitset_builder);
     iox2_waitset_h waitset = NULL;
-    if (iox2_waitset_builder_create(waitset_builder, iox2_service_type_e_IPC, NULL, &waitset) != IOX2_OK) {
-        printf("Unable to create waitset\n");
+    ret_val = iox2_waitset_builder_create(waitset_builder, iox2_service_type_e_IPC, NULL, &waitset);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to create waitset! Error: %d\n", ret_val);
         goto drop_listener_2;
     }
 
     // attach listeners to waitset
     iox2_waitset_guard_h guard_1 = NULL;
-    if (iox2_waitset_attach_notification(&waitset, iox2_listener_get_file_descriptor(&listener_1), NULL, &guard_1)
-        != IOX2_OK) {
-        printf("Unable to attach listener 1\n");
+    ret_val =
+        iox2_waitset_attach_notification(&waitset, iox2_listener_get_file_descriptor(&listener_1), NULL, &guard_1);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to attach listener 1! Error: %d\n", ret_val);
         goto drop_waitset;
     }
 
     iox2_waitset_guard_h guard_2 = NULL;
-    if (iox2_waitset_attach_notification(&waitset, iox2_listener_get_file_descriptor(&listener_2), NULL, &guard_2)
-        != IOX2_OK) {
-        printf("Unable to attach listener 2\n");
+    ret_val =
+        iox2_waitset_attach_notification(&waitset, iox2_listener_get_file_descriptor(&listener_2), NULL, &guard_2);
+    if (ret_val != IOX2_OK) {
+        printf("Unable to attach listener 2! Error: %d\n", ret_val);
         goto drop_guard_1;
     }
 
@@ -171,8 +184,9 @@ int main(int argc, char** argv) {
     // loops until the user has pressed CTRL+c, the application has received a SIGTERM or SIGINT
     // signal or the user has called explicitly `iox2_waitset_stop` in the `on_event` function. We
     // didn't add this to the example so feel free to play around with it.
-    if (iox2_waitset_wait_and_process(&waitset, on_event, (void*) &context, &result) != IOX2_OK) {
-        printf("Failure in WaitSet::wait_and_process loop \n");
+    ret_val = iox2_waitset_wait_and_process(&waitset, on_event, (void*) &context, &result);
+    if (ret_val != IOX2_OK) {
+        printf("Failure in WaitSet::wait_and_process loop! Error: %d\n", ret_val);
     }
 
     //[unused-label] drop_guard_2:
