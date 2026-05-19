@@ -412,41 +412,42 @@ impl<S: ServiceType> Service<S> {
         mut on_removed: FRemovedService,
     ) -> Result<(), SpinError> {
         // Detect changes
-        let (added_ids, removed_services) = self.tracker.sync()?;
-        let changes_detected = !added_ids.is_empty() || !removed_services.is_empty();
+        let (added, removed) = self.tracker.sync()?;
+        let changes_detected = !added.is_empty() || !removed.is_empty();
 
         // Publish
-        for id in &added_ids {
-            if let Some(service) = self.tracker.get(id) {
+        for id in &added {
+            if let Some(service_details) = self.tracker.get(id) {
                 if !self.discovery_config.include_internal
-                    && ServiceName::has_iox2_prefix(service.static_details.name())
+                    && ServiceName::has_iox2_prefix(service_details.static_details.name())
                 {
                     continue;
                 }
                 if let Some(publisher) = &self.publisher {
                     let sample = publisher.loan_uninit()?;
-                    let sample =
-                        sample.write_payload(DiscoveryEvent::Added(service.static_details.clone()));
+                    let sample = sample.write_payload(DiscoveryEvent::Added(
+                        service_details.static_details.clone(),
+                    ));
                     sample.send()?;
                 }
-                on_added(service);
+                on_added(service_details);
             }
         }
 
-        for service in &removed_services {
+        for service_details in &removed {
             if !self.discovery_config.include_internal
-                && ServiceName::has_iox2_prefix(service.static_details.name())
+                && ServiceName::has_iox2_prefix(service_details.static_details.name())
             {
                 continue;
             }
             if let Some(publisher) = &self.publisher {
                 let sample = publisher.loan_uninit()?;
                 let sample = sample.write_payload(DiscoveryEvent::Removed(
-                    *service.static_details.service_hash(),
+                    *service_details.static_details.service_hash(),
                 ));
                 sample.send()?;
             }
-            on_removed(service);
+            on_removed(service_details);
         }
 
         // Notify

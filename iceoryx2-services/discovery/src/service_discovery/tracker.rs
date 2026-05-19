@@ -84,9 +84,8 @@ impl<S: Service> Tracker<S> {
     ///
     /// A tuple containing:
     /// * A vector of service IDs that were newly discovered, details are stored in the tracker and
-    ///   retrievable with `Tracker::get()`
-    /// * A vector of service details for services that are no longer available, these details are
-    ///   no longer stored in the tracker
+    ///   retrievable with `Tracker::get()`.
+    /// * A vector of of ServiceDetails detected as removed and no longer tracked by the tracker.
     pub fn sync(&mut self) -> Result<(Vec<ServiceHash>, Vec<ServiceDetails<S>>), SyncError> {
         let mut discovered_ids = BTreeSet::<ServiceHash>::new();
         let mut added_ids = Vec::<ServiceHash>::new();
@@ -121,9 +120,11 @@ impl<S: Service> Tracker<S> {
         Ok((added_ids, removed_services))
     }
 
-    /// Removes a service from the tracker without waiting for it to disappear from the
-    /// system listing. Intended for callers that have determined a service is logically
-    /// gone (e.g., they are the only remaining holder).
+    /// Removes a service from the tracker without waiting for it to
+    /// disappear from the system listing. Intended for callers that have
+    /// determined a service should logically considered removed
+    /// (e.g., the service is only held by the tunnel, which should not
+    /// contribute to the discovery state).
     pub fn forget(&mut self, id: &ServiceHash) -> Option<ServiceDetails<S>> {
         self.services.remove(id)
     }

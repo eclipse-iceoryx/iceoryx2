@@ -117,23 +117,24 @@ pub trait Discovery {
     ///
     /// # Parameters
     ///
-    /// * `static_config` - The [`iceoryx2::service::static_config::StaticConfig`]
-    ///   of the service to announce.
-    fn announce(&self, discovery: &DiscoveryEvent) -> Result<(), Self::AnnouncementError>;
+    /// * `discovery_event` - The [`iceoryx2_services_common::DiscoveryEvent`]
+    ///   to announce over the [`crate::traits::Backend`].
+    fn announce(&self, discovery_event: &DiscoveryEvent) -> Result<(), Self::AnnouncementError>;
 
-    /// Discovers available services and processes each one with the provided
-    /// `process_discovery` callback.
+    /// Discovers services available remotely and processes each one with the
+    /// provided callback.
     ///
     /// This method queries the backend's communication mechanism for all
-    /// accessible [`Service`](iceoryx2::service::Service)s, then invokes
-    /// `process_discovery` for each discovered [`iceoryx2::service::static_config::StaticConfig`].
+    /// available [`Service`](iceoryx2::service::Service)s, then invokes
+    /// `process_discovery` for [`iceoryx2_services_common::DiscoveryEvent`]s.
+    ///
     /// Discovery continues until all services are processed or an error occurs.
     ///
     /// # Parameters
     ///
-    /// * `process_discovery` - Callback provided by the caller to process the
-    ///   [`iceoryx2::service::static_config::StaticConfig`] of each discovered
-    ///   [`Service`](iceoryx2::service::Service).
+    /// * `process_discovery` - Callback provided by the caller to process
+    ///   [`iceoryx2_services_common::DiscoveryEvent`]s received over the
+    ///   [crate::traits::Backend].
     fn discover<E: Error, F: FnMut(&DiscoveryEvent) -> Result<(), E>>(
         &self,
         process_discovery: F,

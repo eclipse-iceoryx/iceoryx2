@@ -161,15 +161,18 @@ impl TrackedService {
         self.locally_offered || self.remotely_offered
     }
 
-    /// Sets the service as offered from `origin`.
-    fn set_offered(&mut self, origin: Origin) -> AddOutcome {
-        let flag = match origin {
+    /// Returns a mutable reference to the offered flag for `origin`.
+    fn offered_mut(&mut self, origin: Origin) -> &mut bool {
+        match origin {
             Origin::Local => &mut self.locally_offered,
             Origin::Remote => &mut self.remotely_offered,
-        };
-        let was = *flag;
-        *flag = true;
-        if was {
+        }
+    }
+
+    /// Sets the service as offered from `origin`.
+    fn set_offered(&mut self, origin: Origin) -> AddOutcome {
+        let offered = self.offered_mut(origin);
+        if core::mem::replace(offered, true) {
             AddOutcome::AlreadyOffering
         } else {
             AddOutcome::NewlyOffering
@@ -178,13 +181,8 @@ impl TrackedService {
 
     /// Sets the service as no longer offered from `origin`.
     fn set_not_offered(&mut self, origin: Origin) -> RemoveOutcome {
-        let flag = match origin {
-            Origin::Local => &mut self.locally_offered,
-            Origin::Remote => &mut self.remotely_offered,
-        };
-        let was = *flag;
-        *flag = false;
-        if was {
+        let offered = self.offered_mut(origin);
+        if core::mem::replace(offered, false) {
             RemoveOutcome::NoLongerOffering
         } else {
             RemoveOutcome::AlreadyNotOffering

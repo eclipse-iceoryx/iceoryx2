@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Contributors to the Eclipse Foundation
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -25,7 +25,7 @@ extern crate alloc;
 
 /// Communicates discovered changes to services in the system.
 #[derive(Clone, Debug, ZeroCopySend, serde::Serialize, serde::Deserialize)]
-// Largest variant dictates the size for use as Payload.
+// Largest variant dictates the size required for ZeroCopySend payload.
 #[allow(clippy::large_enum_variant)]
 #[repr(C)]
 pub enum DiscoveryEvent {

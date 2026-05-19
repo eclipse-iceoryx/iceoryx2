@@ -60,6 +60,8 @@ impl<S: Service> DiscoveryTracker<S> {
     pub fn sync(&self) -> Result<DiscoverySync, DiscoveryError> {
         let origin = "DiscoveryTracker::sync";
         let mut tracker = self.tracker.borrow_mut();
+
+        //
         let (added_ids, removed_services) = fail!(
             from origin,
             when tracker.sync(),
