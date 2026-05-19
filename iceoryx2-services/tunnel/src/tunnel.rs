@@ -387,6 +387,9 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     fn discover_over_tracker(&mut self) -> Result<(), DiscoveryError> {
         let origin = format!("Tunnel({})::discover_over_tracker", self.node.id());
 
+        // Allocation here is not ideal, especially for embedded, but
+        // side-stepping this adds complexity to the logic.
+        // Consider removal if it becomes an issue.
         let mut events: Vec<DiscoveryEvent> = Vec::new();
         {
             let tracker = self
@@ -394,50 +397,51 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
                 .as_ref()
                 .expect("Should never happen. Tracker created in constructor.");
 
-            let sync = fail!(
-                from origin,
-                when tracker.sync(),
-                with DiscoveryError::DiscoveryOverTracker,
-                "Failed to synchronize discovery tracker"
-            );
-
-            // A service is considered locally offered when at least one
-            // non-tunnel, non-dead node is currently registered for it.
-            // Inaccessible/Undefined nodes are counted to give them the
-            // benefit of the doubt.
-            let tunnel_node_id = *self.node.id();
-            let is_offered_by_other = |hash: &ServiceHash| -> bool {
+            // Helper to determine whether any node other than the tunnel
+            // is currently offering a particular service. Also true when
+            // no live offerer exists at all (empty node list, all-dead).
+            // Required to detect when services are logically added/removed
+            // from the tunnel's perspective.
+            let no_other_nodes_offering = |hash: &ServiceHash| -> bool {
                 tracker.get(hash, |service_details| {
                     service_details
                         .and_then(|d| d.dynamic_details.as_ref())
                         .map(|d| {
-                            d.nodes.iter().any(|node| match node {
-                                NodeState::Alive(view) => view.id() != &tunnel_node_id,
+                            !d.nodes.iter().any(|node| match node {
+                                NodeState::Alive(view) => view.id() != self.node.id(),
                                 NodeState::Inaccessible(id) | NodeState::Undefined(id) => {
-                                    id != &tunnel_node_id
+                                    id != self.node.id()
                                 }
                                 NodeState::Dead(_) => false,
                             })
                         })
-                        .unwrap_or(false)
+                        .unwrap_or(true)
                 })
             };
 
-            // Newly-listed services with at least one non-tunnel offerer.
-            for static_config in sync.added {
-                if is_offered_by_other(static_config.service_hash()) {
-                    events.push(DiscoveryEvent::Added(static_config));
-                }
-            }
+            // For a service to be processed as 'added' by the tunnel:
+            // * The tracker must detect the service as newly added
+            // * The newly added service must be held by a node other than
+            //   the tunnel
+            fail!(
+                from origin,
+                when tracker.sync(|event| {
+                    if let DiscoveryEvent::Added(static_config) = &event {
+                        if no_other_nodes_offering(static_config.service_hash()) {
+                            return;
+                        }
+                    }
+                    events.push(event);
+                }),
+                with DiscoveryError::DiscoveryOverTracker,
+                "Failed to synchronize discovery tracker"
+            );
 
-            // Services that disappeared from the registry entirely.
-            for hash in sync.removed {
-                events.push(DiscoveryEvent::Removed(hash));
-            }
-
-            // Currently-tracked services whose local offerer has gone away.
+            // For a service to be processed as 'removed' by the tunnel:
+            // * The service was previously locally offered
+            // * No node other than the tunnel is currently offering it
             for (hash, state) in &self.services {
-                if state.locally_offered && !is_offered_by_other(hash) {
+                if state.locally_offered && no_other_nodes_offering(hash) {
                     events.push(DiscoveryEvent::Removed(*hash));
                 }
             }

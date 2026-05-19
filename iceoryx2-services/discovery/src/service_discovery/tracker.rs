@@ -11,8 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::collections::BTreeMap;
-use alloc::collections::BTreeSet;
-use alloc::vec::Vec;
+use alloc::collections::btree_map::Entry;
 
 use iceoryx2::{
     config::Config,
@@ -47,6 +46,22 @@ impl From<ServiceListError> for SyncError {
     }
 }
 
+/// Event emitted by [`Tracker::sync`] for each detected service change.
+#[derive(Debug)]
+pub enum TrackerEvent<'a, S: Service> {
+    /// A service newly visible to the tracker.
+    Added(&'a ServiceDetails<S>),
+    /// A service no longer visible to the tracker.
+    Removed(&'a ServiceDetails<S>),
+}
+
+#[derive(Debug)]
+struct TrackedEntry<S: Service> {
+    details: ServiceDetails<S>,
+    /// Epoch in which this entry was last observed in the system listing.
+    seen: u64,
+}
+
 /// A tracker for monitoring services of a specific type.
 ///
 /// The `Tracker` keeps track of services in the system, allowing for discovery
@@ -58,96 +73,82 @@ impl From<ServiceListError> for SyncError {
 #[derive(Debug, Default)]
 pub struct Tracker<S: Service> {
     config: Config,
-    services: BTreeMap<ServiceHash, ServiceDetails<S>>,
+    services: BTreeMap<ServiceHash, TrackedEntry<S>>,
+    /// Monotonic counter incremented every [`Tracker::sync`].
+    /// Used to detect tracked services that become stale.
+    epoch: u64,
 }
 
 impl<S: Service> Tracker<S> {
-    /// Create a new Monitor instance.
+    /// Creates a new tracker.
     pub fn new(config: &Config) -> Self {
         Self {
             config: config.clone(),
             services: BTreeMap::new(),
+            epoch: 0,
         }
     }
 
-    /// Synchronizes the tracker with the current state of services in the system.
-    ///
-    /// This method queries the system for all services of type `S` and updates the tracker's
-    /// internal state. It identifies new services that have appeared since the last sync
-    /// and services that are no longer available.
-    ///
-    /// # Arguments
-    ///
-    /// * `config` - Configuration used to discover services
-    ///
-    /// # Returns
-    ///
-    /// A tuple containing:
-    /// * A vector of service IDs that were newly discovered, details are stored in the tracker and
-    ///   retrievable with `Tracker::get()`.
-    /// * A vector of of ServiceDetails detected as removed and no longer tracked by the tracker.
-    pub fn sync(&mut self) -> Result<(Vec<ServiceHash>, Vec<ServiceDetails<S>>), SyncError> {
-        let mut discovered_ids = BTreeSet::<ServiceHash>::new();
-        let mut added_ids = Vec::<ServiceHash>::new();
+    /// Synchronises the tracker with the current state of services in the
+    /// system.
+    pub fn sync<F>(&mut self, mut on_event: F) -> Result<(), SyncError>
+    where
+        F: for<'a> FnMut(TrackerEvent<'a, S>),
+    {
+        // Bump the epoch; entries refreshed this cycle will carry the new
+        // value, anything older is then known to have disappeared.
+        self.epoch = self.epoch.wrapping_add(1);
+        let epoch = self.epoch;
 
         S::list(&self.config, |service| {
             let id = *service.static_details.service_hash();
-            discovered_ids.insert(id);
 
-            if !self.services.contains_key(&id) {
-                added_ids.push(id);
+            match self.services.entry(id) {
+                Entry::Vacant(slot) => {
+                    let entry = slot.insert(TrackedEntry {
+                        details: service,
+                        seen: epoch,
+                    });
+                    on_event(TrackerEvent::Added(&entry.details));
+                }
+                Entry::Occupied(mut slot) => {
+                    let entry = slot.get_mut();
+                    entry.details = service;
+                    entry.seen = epoch;
+                }
             }
-            self.services.insert(id, service);
 
             CallbackProgression::Continue
         })?;
 
-        // Get the details of the services not discovered
-        let mut removed_services = Vec::new();
-        let undiscovered_ids: Vec<ServiceHash> = self
-            .services
-            .keys()
-            .filter(|&id| !discovered_ids.contains(id))
-            .cloned()
-            .collect();
-
-        for id in undiscovered_ids {
-            if let Some(service) = self.services.remove(&id) {
-                removed_services.push(service);
+        self.services.retain(|_, entry| {
+            if entry.seen == epoch {
+                true
+            } else {
+                on_event(TrackerEvent::Removed(&entry.details));
+                false
             }
-        }
+        });
 
-        Ok((added_ids, removed_services))
+        Ok(())
     }
 
     /// Removes a service from the tracker without waiting for it to
     /// disappear from the system listing. Intended for callers that have
-    /// determined a service should logically considered removed
+    /// determined a service should logically be considered removed
     /// (e.g., the service is only held by the tunnel, which should not
     /// contribute to the discovery state).
     pub fn forget(&mut self, id: &ServiceHash) -> Option<ServiceDetails<S>> {
-        self.services.remove(id)
+        self.services.remove(id).map(|e| e.details)
     }
 
-    /// Retrieves service details for a specific service ID if tracked.
-    ///
-    /// # Arguments
-    ///
-    /// * `id` - The service ID to look up
-    ///
-    /// # Returns
-    ///
-    /// An `Option` containing a reference to the service details if tracked, or `None` if not tracked
+    /// Retrieves service details for a specific tracked service.
     pub fn get(&self, id: &ServiceHash) -> Option<&ServiceDetails<S>> {
-        self.services.get(id)
+        self.services.get(id).map(|e| &e.details)
     }
 
-    /// Retrieves service details all the services that are being currently tracked.
-    ///
-    /// # Returns
-    ///
-    /// An `Vec` containing a reference to the service details all the services that are being tracked
-    pub fn get_all(&self) -> Vec<&ServiceDetails<S>> {
-        self.services.values().collect()
+    /// Iterates over all currently-tracked services.
+    pub fn iter(&self) -> impl Iterator<Item = &ServiceDetails<S>> + '_ {
+        self.services.values().map(|e| &e.details)
     }
 }

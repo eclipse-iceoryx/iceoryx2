@@ -16,10 +16,10 @@ use iceoryx2::config::Config;
 use iceoryx2::service::Service;
 use iceoryx2::service::ServiceDetails;
 use iceoryx2::service::service_hash::ServiceHash;
-use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2_bb_concurrency::cell::RefCell;
-use iceoryx2_log::{fail, fatal_panic};
-use iceoryx2_services_discovery::service_discovery::Tracker;
+use iceoryx2_log::fail;
+use iceoryx2_services_common::DiscoveryEvent;
+use iceoryx2_services_discovery::service_discovery::{Tracker, TrackerEvent};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
@@ -34,15 +34,6 @@ impl core::fmt::Display for DiscoveryError {
 
 impl core::error::Error for DiscoveryError {}
 
-/// Result of a single [`DiscoveryTracker::sync`] cycle.
-#[derive(Debug)]
-pub struct DiscoverySync {
-    /// Static configs of services newly visible in the local registry.
-    pub added: Vec<StaticConfig>,
-    /// Hashes of services that have disappeared from the local registry entirely.
-    pub removed: Vec<ServiceHash>,
-}
-
 #[derive(Debug)]
 pub struct DiscoveryTracker<S: Service> {
     tracker: RefCell<Tracker<S>>,
@@ -55,36 +46,37 @@ impl<S: Service> DiscoveryTracker<S> {
         }
     }
 
-    /// Synchronises against the local iceoryx registry and returns the services
-    /// that newly appeared or fully disappeared since the last sync.
-    pub fn sync(&self) -> Result<DiscoverySync, DiscoveryError> {
+    pub fn sync<F>(&self, mut process_discovery: F) -> Result<(), DiscoveryError>
+    where
+        F: FnMut(DiscoveryEvent),
+    {
         let origin = "DiscoveryTracker::sync";
-        let mut tracker = self.tracker.borrow_mut();
 
-        //
-        let (added_ids, removed_services) = fail!(
-            from origin,
-            when tracker.sync(),
-            with DiscoveryError::TrackerSynchronization,
-            "Failed to synchronize tracker"
-        );
+        let mut events: Vec<DiscoveryEvent> = Vec::new();
+        {
+            let mut tracker = self.tracker.borrow_mut();
+            fail!(
+                from origin,
+                when tracker.sync(|event| match event {
+                    TrackerEvent::Added(d) => {
+                        events.push(DiscoveryEvent::Added(d.static_details.clone()));
+                    }
+                    TrackerEvent::Removed(d) => {
+                        events.push(DiscoveryEvent::Removed(
+                            *d.static_details.service_hash(),
+                        ));
+                    }
+                }),
+                with DiscoveryError::TrackerSynchronization,
+                "Failed to synchronize tracker"
+            );
+        }
 
-        let added = added_ids
-            .into_iter()
-            .map(|id| match tracker.get(&id) {
-                Some(details) => details.static_details.clone(),
-                None => fatal_panic!(
-                    from origin,
-                    "This should never happen. Service discovered by tracker is not retrievable."
-                ),
-            })
-            .collect();
-        let removed = removed_services
-            .into_iter()
-            .map(|d| *d.static_details.service_hash())
-            .collect();
+        for event in events {
+            process_discovery(event);
+        }
 
-        Ok(DiscoverySync { added, removed })
+        Ok(())
     }
 
     /// Drops the cached snapshot for `hash`, allowing a subsequent [`sync`]

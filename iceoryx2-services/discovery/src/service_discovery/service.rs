@@ -10,7 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::service_discovery::{SyncError, Tracker};
+use alloc::vec::Vec;
+
 use iceoryx2::port::ReceiveError;
 use iceoryx2::prelude::AllocationStrategy;
 use iceoryx2::{
@@ -34,6 +35,8 @@ use iceoryx2::{
 };
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
 use iceoryx2_services_common::DiscoveryEvent;
+
+use crate::service_discovery::{SyncError, Tracker, TrackerEvent};
 
 const SERVICE_NAME: &str = "discovery/services/";
 
@@ -349,7 +352,7 @@ impl<S: ServiceType> Service<S> {
         let mut tracker = Tracker::<S>::new(iceoryx_config);
 
         if discovery_config.sync_on_initialization {
-            tracker.sync()?;
+            tracker.sync(|_| {})?;
         }
 
         let (request_response, server) = if discovery_config.enable_server {
@@ -411,53 +414,63 @@ impl<S: ServiceType> Service<S> {
         mut on_added: FAddedService,
         mut on_removed: FRemovedService,
     ) -> Result<(), SpinError> {
-        // Detect changes
-        let (added, removed) = self.tracker.sync()?;
-        let changes_detected = !added.is_empty() || !removed.is_empty();
+        let include_internal = self.discovery_config.include_internal;
+        let publisher = self.publisher.as_ref();
+        let mut changes_detected = false;
+        // Capture error from within callback.
+        let mut error: Option<SpinError> = None;
 
-        // Publish
-        for id in &added {
-            if let Some(service_details) = self.tracker.get(id) {
-                if !self.discovery_config.include_internal
-                    && ServiceName::has_iox2_prefix(service_details.static_details.name())
-                {
-                    continue;
-                }
-                if let Some(publisher) = &self.publisher {
-                    let sample = publisher.loan_uninit()?;
-                    let sample = sample.write_payload(DiscoveryEvent::Added(
-                        service_details.static_details.clone(),
-                    ));
-                    sample.send()?;
-                }
-                on_added(service_details);
-            }
-        }
-
-        for service_details in &removed {
-            if !self.discovery_config.include_internal
-                && ServiceName::has_iox2_prefix(service_details.static_details.name())
-            {
-                continue;
-            }
-            if let Some(publisher) = &self.publisher {
-                let sample = publisher.loan_uninit()?;
-                let sample = sample.write_payload(DiscoveryEvent::Removed(
-                    *service_details.static_details.service_hash(),
-                ));
+        let publish = |payload: DiscoveryEvent| -> Result<(), SpinError> {
+            if let Some(p) = publisher {
+                let sample = p.loan_uninit()?;
+                let sample = sample.write_payload(payload);
                 sample.send()?;
             }
-            on_removed(service_details);
+            Ok(())
+        };
+
+        self.tracker.sync(|event| {
+            if error.is_some() {
+                return;
+            }
+            changes_detected = true;
+
+            match event {
+                TrackerEvent::Added(d) => {
+                    if !include_internal && ServiceName::has_iox2_prefix(d.static_details.name()) {
+                        return;
+                    }
+                    if let Err(e) = publish(DiscoveryEvent::Added(d.static_details.clone())) {
+                        error = Some(e);
+                        return;
+                    }
+                    on_added(d);
+                }
+                TrackerEvent::Removed(d) => {
+                    if !include_internal && ServiceName::has_iox2_prefix(d.static_details.name()) {
+                        return;
+                    }
+                    if let Err(e) =
+                        publish(DiscoveryEvent::Removed(*d.static_details.service_hash()))
+                    {
+                        error = Some(e);
+                        return;
+                    }
+                    on_removed(d);
+                }
+            }
+        })?;
+
+        if let Some(e) = error {
+            return Err(e);
         }
 
-        // Notify
         if let Some(notifier) = &mut self.notifier {
             if changes_detected {
                 notifier.notify()?;
             }
         }
 
-        // Handle server requests
         self.handle_discovery_requests()?;
 
         Ok(())
@@ -478,18 +491,18 @@ impl<S: ServiceType> Service<S> {
     /// Returns a `ServerSpinError` if there was an error in Responsding,
     /// Loaning or recieving Requests.
     pub fn handle_discovery_requests(&mut self) -> Result<(), ServerSpinError> {
+        let include_internal = self.discovery_config.include_internal;
         if let Some(server) = &mut self.server {
             while let Some(active_request) = server.receive()? {
-                // Handle the request
-                let mut service_details = self.tracker.get_all();
-                if !self.discovery_config.include_internal {
-                    service_details.retain(|&service| {
-                        !ServiceName::has_iox2_prefix(service.static_details.name())
-                    });
-                }
-                let response = active_request.loan_slice_uninit(service_details.len())?;
-                let response =
-                    response.write_from_fn(|idx| (service_details[idx].static_details).clone());
+                let filtered: Vec<&ServiceDetails<S>> = self
+                    .tracker
+                    .iter()
+                    .filter(|sd| {
+                        include_internal || !ServiceName::has_iox2_prefix(sd.static_details.name())
+                    })
+                    .collect();
+                let response = active_request.loan_slice_uninit(filtered.len())?;
+                let response = response.write_from_fn(|idx| filtered[idx].static_details.clone());
                 response.send()?;
             }
         }
