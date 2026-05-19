@@ -338,7 +338,7 @@ impl Discovery {
                 match check_pending(hash, handler) {
                     Ok(Some(static_config)) => resolved.push(static_config),
                     Ok(None) => {}
-                    Err(()) => failed.push(*hash),
+                    Err(_) => failed.push(*hash),
                 }
             }
         }
@@ -365,27 +365,37 @@ impl Discovery {
     }
 }
 
+#[derive(Debug)]
+struct Disconnected;
+
 fn check_pending(
     hash: &ServiceHash,
     handler: &FifoChannelHandler<Reply>,
-) -> Result<Option<StaticConfig>, ()> {
+) -> Result<Option<StaticConfig>, Disconnected> {
     loop {
-        match handler.try_recv() {
-            Ok(Some(reply)) => match reply.result() {
-                Ok(sample) => {
-                    match serde_json::from_slice::<StaticConfig>(&sample.payload().to_bytes()) {
-                        Ok(static_config) => return Ok(Some(static_config)),
-                        Err(e) => warn!(
-                            "Skipping unparseable reply for service {}: {}",
-                            hash.as_str(),
-                            e
-                        ),
-                    }
-                }
-                Err(e) => warn!("Erroneous reply for service {}: {:?}", hash.as_str(), e),
-            },
-            Ok(None) => return Ok(None),
-            Err(_) => return Err(()),
+        let Some(reply) = handler.try_recv().map_err(|_| Disconnected)? else {
+            return Ok(None);
+        };
+
+        let sample = match reply.result() {
+            Ok(sample) => sample,
+            Err(e) => {
+                warn!(
+                    "Skipping erroneous reply for service {}: {:?}",
+                    hash.as_str(),
+                    e
+                );
+                continue;
+            }
+        };
+
+        match serde_json::from_slice::<StaticConfig>(&sample.payload().to_bytes()) {
+            Ok(static_config) => return Ok(Some(static_config)),
+            Err(e) => warn!(
+                "Skipping unparseable reply for service {}: {}",
+                hash.as_str(),
+                e
+            ),
         }
     }
 }
