@@ -73,8 +73,10 @@ There are three scripts to perform the iceoryx2 release
 1. `./internal/scripts/release/release_preparation.sh --new-version x.y.z`
 2. Create pull request and merge the release branch to `main`
 3. `./internal/scripts/release/release_tagging.sh`
-4. `./internal/scripts/release/release_publish.sh`
-5. Verify that the release looks fine on `docs.rs` (click through the
+4. Login to [crates.io](https://crates.io) and generate API token
+5. `export CARGO_REGISTRY_TOKEN ???`
+6. `./internal/scripts/release/release_publish.sh`
+7. Verify that the release looks fine on `docs.rs` (click through the
     documentation to check if everything was generated correctly)
 
 ### Details
