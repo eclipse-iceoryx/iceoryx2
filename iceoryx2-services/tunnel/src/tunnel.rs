@@ -26,7 +26,7 @@ use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2_log::{debug, fail, info, trace, warn};
-use iceoryx2_services_common::DiscoveryEvent;
+use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
 use iceoryx2_services_tunnel_backend::traits::{
     Backend, Discovery, EventRelay, PublishSubscribeRelay, RelayBuilder, RelayFactory,
 };
@@ -307,7 +307,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         fail!(
             from origin,
             when self.backend.discovery().discover(|event| -> Result<(), Infallible> {
-                events.push(event.clone());
+                events.push(event);
                 Ok(())
             }),
             with DiscoveryError::DiscoveryOverBackend,
@@ -367,7 +367,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         fail!(
             from origin,
             when subscriber.discover(|event| -> Result<(), Infallible> {
-                events.push(event.clone());
+                events.push(event);
                 Ok(())
             }),
             with DiscoveryError::DiscoveryOverService,
@@ -388,8 +388,9 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         let origin = format!("Tunnel({})::discover_over_tracker", self.node.id());
 
         // Allocation here is not ideal, especially for embedded, but
-        // side-stepping this adds complexity to the logic.
-        // Consider removal if it becomes an issue.
+        // side-stepping this adds complexity to the logic to satisfy borrowing
+        // or a bigger refactoring is needed.
+        // Consider refactoring if it becomes an issue.
         let mut events: Vec<DiscoveryEvent> = Vec::new();
         {
             let tracker = self
@@ -670,7 +671,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         );
         fail!(
             from origin,
-            when self.backend.discovery().announce(&DiscoveryEvent::Added(static_config.clone())),
+            when self.backend.discovery().announce(DiscoveryEventRef::Added(static_config)),
             with DiscoveryError::DiscoveryAnnouncement,
             "Failed to announce service over backend"
         );
@@ -688,7 +689,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         );
         fail!(
             from origin,
-            when self.backend.discovery().announce(&DiscoveryEvent::Removed(*static_config.service_hash())),
+            when self.backend.discovery().announce(DiscoveryEventRef::Removed(static_config.service_hash())),
             with DiscoveryError::DiscoveryAnnouncement,
             "Failed to announce service removal over backend"
         );

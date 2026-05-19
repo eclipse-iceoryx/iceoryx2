@@ -136,8 +136,6 @@ impl<S: Service> Tracker<S> {
     /// Removes a service from the tracker without waiting for it to
     /// disappear from the system listing. Intended for callers that have
     /// determined a service should logically be considered removed
-    /// (e.g., the service is only held by the tunnel, which should not
-    /// contribute to the discovery state).
     pub fn forget(&mut self, id: &ServiceHash) -> Option<ServiceDetails<S>> {
         self.services.remove(id).map(|e| e.details)
     }

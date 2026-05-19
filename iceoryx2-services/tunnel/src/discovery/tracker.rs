@@ -52,6 +52,10 @@ impl<S: Service> DiscoveryTracker<S> {
     {
         let origin = "DiscoveryTracker::sync";
 
+        // Allocation here is not ideal, especially for embedded, but
+        // side-stepping this adds complexity to the logic to satisfy borrowing
+        // or a bigger refactoring is needed.
+        // Consider refactoring if it becomes an issue.
         let mut events: Vec<DiscoveryEvent> = Vec::new();
         {
             let mut tracker = self.tracker.borrow_mut();

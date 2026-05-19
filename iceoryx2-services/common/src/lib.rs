@@ -24,6 +24,8 @@ use iceoryx2::{
 extern crate alloc;
 
 /// Communicates discovered changes to services in the system.
+///
+/// Owning variant. Can be used as shared memory payload.
 #[derive(Clone, Debug, ZeroCopySend, serde::Serialize, serde::Deserialize)]
 // Largest variant dictates the size required for ZeroCopySend payload.
 #[allow(clippy::large_enum_variant)]
@@ -38,4 +40,26 @@ pub enum DiscoveryEvent {
     ///
     /// Contains the hash identifying the removed service.
     Removed(ServiceHash),
+}
+
+/// Communicates discovered changes to services in the system.
+///
+/// Non-owning variant. Used to propagate through API layers without
+/// copy.
+#[derive(Debug)]
+pub enum DiscoveryEventRef<'a> {
+    /// A service has been added to the system.
+    Added(&'a StaticConfig),
+
+    /// A service has been removed from the system.
+    Removed(&'a ServiceHash),
+}
+
+impl<'a> From<&'a DiscoveryEvent> for DiscoveryEventRef<'a> {
+    fn from(event: &'a DiscoveryEvent) -> Self {
+        match event {
+            DiscoveryEvent::Added(sc) => DiscoveryEventRef::Added(sc),
+            DiscoveryEvent::Removed(h) => DiscoveryEventRef::Removed(h),
+        }
+    }
 }

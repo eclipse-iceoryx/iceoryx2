@@ -80,7 +80,7 @@ pub mod event_discovery {
         // Capture the full StaticConfig for the user-created service so we can inject Added
         // into the discovery service manually.
         let mut tracker = Tracker::<S>::new(&iceoryx_config);
-        tracker.sync().unwrap();
+        tracker.sync(|_| {}).unwrap();
         let static_config = tracker.get(&service_hash).unwrap().static_details.clone();
 
         // Create the tunnel.
@@ -606,7 +606,7 @@ pub mod event_discovery {
         let discovery_publisher = discovery_service.publisher_builder().create().unwrap();
 
         let mut tracker = Tracker::<S>::new(&iceoryx_config);
-        tracker.sync().unwrap();
+        tracker.sync(|_| {}).unwrap();
         let static_config = tracker.get(&service_hash).unwrap().static_details.clone();
 
         let tunnel_config = TunnelConfig {

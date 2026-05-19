@@ -15,7 +15,7 @@ use std::collections::BTreeMap;
 use iceoryx2::service::{service_hash::ServiceHash, static_config::StaticConfig};
 use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_log::{error, fail, warn};
-use iceoryx2_services_common::DiscoveryEvent;
+use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
 
 use zenoh::{
     Session, Wait,
@@ -121,14 +121,14 @@ impl iceoryx2_services_tunnel_backend::traits::Discovery for Discovery {
     type DiscoveryError = DiscoveryError;
     type AnnouncementError = AnnouncementError;
 
-    fn announce(&self, discovery_event: &DiscoveryEvent) -> Result<(), Self::AnnouncementError> {
-        match discovery_event {
-            DiscoveryEvent::Added(static_config) => self.announce_added(static_config),
-            DiscoveryEvent::Removed(service_hash) => self.announce_removed(service_hash),
+    fn announce(&self, event: DiscoveryEventRef<'_>) -> Result<(), Self::AnnouncementError> {
+        match event {
+            DiscoveryEventRef::Added(static_config) => self.announce_added(static_config),
+            DiscoveryEventRef::Removed(service_hash) => self.announce_removed(service_hash),
         }
     }
 
-    fn discover<E: core::error::Error, F: FnMut(&DiscoveryEvent) -> Result<(), E>>(
+    fn discover<E: core::error::Error, F: FnMut(DiscoveryEvent) -> Result<(), E>>(
         &self,
         mut process_discovery: F,
     ) -> Result<(), DiscoveryError> {
@@ -145,7 +145,7 @@ impl iceoryx2_services_tunnel_backend::traits::Discovery for Discovery {
 
             fail!(
                 from self,
-                when process_discovery(&DiscoveryEvent::Removed(*service_hash)),
+                when process_discovery(DiscoveryEvent::Removed(*service_hash)),
                 with DiscoveryError::DiscoveryProcessing,
                 "Failed to process Removed discovery event for {}", service_hash.as_str()
             );
@@ -160,7 +160,7 @@ impl iceoryx2_services_tunnel_backend::traits::Discovery for Discovery {
             let service_hash = *static_config.service_hash();
             fail!(
                 from self,
-                when process_discovery(&DiscoveryEvent::Added(static_config)),
+                when process_discovery(DiscoveryEvent::Added(static_config)),
                 with DiscoveryError::DiscoveryProcessing,
                 "Failed to process Added discovery event for {}", service_hash.as_str()
             );
