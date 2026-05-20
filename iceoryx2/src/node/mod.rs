@@ -628,9 +628,7 @@ impl<Service: service::Service> DeadNodeView<Service> {
                 Err(ServiceRemoveNodeError::ServiceInCorruptedState) => {
                     debug!(from self,
                         "{msg} since the service itself is corrupted. Trying to remove the corrupted remainders of the service.");
-                    match unsafe {
-                        remove_static_service_config::<Service>(config, &service_hash.0.into())
-                    } {
+                    match unsafe { remove_static_service_config::<Service>(config, service_hash) } {
                         Ok(v) => {
                             if let Err(e) =
                                 remove_service_tag::<Service>(self.id(), service_hash, config)

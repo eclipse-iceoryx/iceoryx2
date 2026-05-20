@@ -16,7 +16,28 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_log::fatal_panic;
 
-use crate::identifiers::UniqueListenerId;
+use crate::{
+    identifiers::{UniqueListenerId, UniqueServiceId},
+    service::service_hash::ServiceHash,
+};
+
+pub(crate) fn static_config_name(service_hash: &ServiceHash) -> FileName {
+    let msg =
+        "The system does not support the required file name length for the dynamic config name.";
+    let origin = "dynamic_config_name()";
+    fatal_panic!(from origin,
+                 when FileName::new(service_hash.as_str().as_bytes()),
+                 "{}", msg)
+}
+
+pub(crate) fn dynamic_config_name(service_id: UniqueServiceId) -> FileName {
+    let msg =
+        "The system does not support the required file name length for the dynamic config name.";
+    let origin = "dynamic_config_name()";
+    fatal_panic!(from origin,
+                 when FileName::new(service_id.0.value().to_string().as_bytes()),
+                 "{}", msg)
+}
 
 pub(crate) fn event_concept_name(listener_id: &UniqueListenerId) -> FileName {
     let msg = "The system does not support the required file name length for the listeners event concept name.";
@@ -55,9 +76,9 @@ pub(crate) fn data_segment_name(port_id_value: u128) -> FileName {
                  "{}", msg)
 }
 
-pub(crate) fn blackboard_name(service_hash: &str) -> FileName {
+pub(crate) fn blackboard_name(service_id: UniqueServiceId) -> FileName {
     let msg = "The system does not support the required file name length for the blackboard's management segment.";
     let origin = "blackboard_name()";
 
-    fatal_panic!(from origin, when FileName::new(service_hash.as_bytes()), "{}", msg)
+    fatal_panic!(from origin, when FileName::new(service_id.0.value().to_string().as_bytes()), "{}", msg)
 }

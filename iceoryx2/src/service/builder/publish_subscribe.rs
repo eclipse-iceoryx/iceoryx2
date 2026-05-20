@@ -653,7 +653,10 @@ impl<
                         .base
                         .create_node_service_tag(msg, PublishSubscribeOpenError::InternalFailure)?;
 
-                    let dynamic_config = match self.base.open_dynamic_config_storage() {
+                    let dynamic_config = match self
+                        .base
+                        .open_dynamic_config_storage(static_config.unique_service_id())
+                    {
                         Ok(v) => v,
                         Err(OpenDynamicStorageFailure::IsMarkedForDestruction) => {
                             fail!(from self, with PublishSubscribeOpenError::IsMarkedForDestruction,
