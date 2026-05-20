@@ -669,8 +669,7 @@ impl<
                             "{} since the configuration could not be serialized.", msg);
 
                 // create the payload data segment for the writer
-                let name =
-                    blackboard_name(self.builder.base.service_config.service_hash().as_str());
+                let name = blackboard_name(self.builder.base.service_config.unique_service_id());
                 let shm_config =
                     blackboard_data_config::<ServiceType>(self.builder.base.shared_node.config());
                 let mut payload_size = 0;
@@ -976,7 +975,11 @@ impl<
                         .base
                         .create_node_service_tag(msg, BlackboardOpenError::InternalFailure)?;
 
-                    let dynamic_config = match self.builder.base.open_dynamic_config_storage() {
+                    let dynamic_config = match self
+                        .builder
+                        .base
+                        .open_dynamic_config_storage(static_config.unique_service_id())
+                    {
                         Ok(v) => v,
                         Err(OpenDynamicStorageFailure::IsMarkedForDestruction) => {
                             fail!(from self, with BlackboardOpenError::IsMarkedForDestruction,
@@ -1012,8 +1015,7 @@ impl<
                     self.builder.base.service_config.messaging_pattern =
                         MessagingPattern::Blackboard(blackboard_static_config);
 
-                    let name =
-                        blackboard_name(self.builder.base.service_config.service_hash().as_str());
+                    let name = blackboard_name(static_config.unique_service_id());
                     let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt>(
                         self.builder.base.shared_node.config(),
                     );

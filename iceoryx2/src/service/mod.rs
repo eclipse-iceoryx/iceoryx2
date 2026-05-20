@@ -269,10 +269,13 @@ use iceoryx2_bb_posix::file::AccessMode;
 
 use crate::config;
 use crate::constants::MAX_TYPE_NAME_LENGTH;
+use crate::identifiers::UniqueServiceId;
 use crate::identifiers::{UniqueNodeId, UniquePortId};
 use crate::node::{NodeListFailure, NodeState, SharedNode};
 use crate::service::config_scheme::{dynamic_config_storage_config, port_tag_config};
 use crate::service::dynamic_config::DynamicConfig;
+use crate::service::naming_scheme::dynamic_config_name;
+use crate::service::naming_scheme::static_config_name;
 use crate::service::static_config::*;
 use config_scheme::service_tag_config;
 use iceoryx2_bb_container::semantic_string::SemanticString;
@@ -396,16 +399,14 @@ pub struct ServiceState<S: Service, R: ServiceResource> {
     // For this struct it is important to know that Rust drops fields of a struct in declaration
     // order - not in memory order!
 
-    // must be destructed first, to prevent services to open it
+    // must be destructed first, otherwise other processes might try connect to the service and
+    // find a half destructed service and identify it as corrupted
+    pub(crate) static_storage: S::StaticStorage,
+
     pub(crate) dynamic_storage: S::DynamicStorage<DynamicConfig>,
-    // must be destructed after the dynamic resources
     pub(crate) additional_resource: R,
     pub(crate) static_config: StaticConfig,
     pub(crate) shared_node: SharedNode<S>,
-    // must be destructed last, otherwise other processes might create a new service with the same
-    // name and their resources are then removed by another process while they are creating them
-    // which would end up in a completely corrupted service
-    pub(crate) static_storage: S::StaticStorage,
 }
 
 impl<S: Service, R: ServiceResource> Abandonable for ServiceState<S, R> {
@@ -545,7 +546,7 @@ pub mod internal {
     fn send_dead_node_signal<S: Service>(service_hash: &ServiceHash, config: &config::Config) {
         let origin = "send_dead_node_signal()";
 
-        let service_details = match __internal_details::<S>(config, &service_hash.0.into()) {
+        let service_details = match __internal_details::<S>(config, service_hash) {
             Ok(Some(service_details)) => service_details,
             Ok(None) => return,
             Err(e) => {
@@ -714,7 +715,23 @@ pub mod internal {
                 format!("Service::remove_node_from_service({node_id:?}, {service_hash:?})");
             let msg = "Unable to remove node from service";
 
-            let dynamic_config = match open_dynamic_config::<S>(config, service_hash) {
+            let static_config = match read_static_service_config::<S>(config, service_hash) {
+                Ok(Some(config)) => config,
+                Ok(None) => {
+                    warn!(from origin, "Trying to remove node {} from non-existing service {}",
+                        node_id, service_hash);
+                    return Ok(());
+                }
+                Err(e) => {
+                    fail!(from origin, with ServiceRemoveNodeError::InternalError,
+                        "{msg} since the static service config could not be read. [{e:?}]");
+                }
+            };
+
+            let dynamic_config = match open_dynamic_config::<S>(
+                config,
+                static_config.unique_service_id(),
+            ) {
                 Ok(Some(c)) => c,
                 Ok(None) => {
                     fail!(from origin,
@@ -809,9 +826,25 @@ pub mod internal {
             };
 
             if remove_service {
+                match unsafe {
+                    // IMPORTANT: The static service config must be removed first. If it cannot be
+                    // removed, the process may lack sufficient permissions and should not remove
+                    // any other resources.
+                    remove_static_service_config::<S>(config, service_hash)
+                } {
+                    Ok(_) => {
+                        trace!(from origin, "Remove unused service.");
+                    }
+                    Err(e) => {
+                        error!(from origin, "Unable to remove static config of unused service ({:?}).",
+                            e);
+                    }
+                }
+
                 // check if service was a blackboard service to remove its additional resources
-                let blackboard_name =
-                    crate::service::naming_scheme::blackboard_name(service_hash.as_str());
+                let blackboard_name = crate::service::naming_scheme::blackboard_name(
+                    static_config.unique_service_id(),
+                );
                 let blackboard_payload_config =
                     crate::service::config_scheme::blackboard_data_config::<S>(config);
                 let blackboard_payload = <S::BlackboardPayload as NamedConceptMgmt>::does_exist_cfg(
@@ -823,7 +856,7 @@ pub mod internal {
                 if let Ok(true) = blackboard_payload {
                     is_blackboard = true;
 
-                    let details = match __internal_details::<S>(config, &service_hash.0.into()) {
+                    let details = match __internal_details::<S>(config, service_hash) {
                         Ok(Some(d)) => d,
                         _ => {
                             fail!(from origin,
@@ -835,34 +868,19 @@ pub mod internal {
                         details.static_details.blackboard().type_details.type_name;
                 }
 
-                match unsafe {
-                    // IMPORTANT: The static service config must be removed first. If it cannot be
-                    // removed, the process may lack sufficient permissions and should not remove
-                    // any other resources.
-                    remove_static_service_config::<S>(config, &service_hash.0.into())
-                } {
-                    Ok(_) => {
-                        trace!(from origin, "Remove unused service.");
-
-                        // remove additional blackboard resources
-                        if is_blackboard {
-                            remove_additional_blackboard_resources::<S>(
-                                config,
-                                &blackboard_name,
-                                &blackboard_payload_config,
-                                &blackboard_mgmt_name,
-                                &origin,
-                                msg,
-                            );
-                        }
-
-                        dynamic_config.acquire_ownership()
-                    }
-                    Err(e) => {
-                        error!(from origin, "Unable to remove static config of unused service ({:?}).",
-                            e);
-                    }
+                // remove additional blackboard resources
+                if is_blackboard {
+                    remove_additional_blackboard_resources::<S>(
+                        config,
+                        &blackboard_name,
+                        &blackboard_payload_config,
+                        &blackboard_mgmt_name,
+                        &origin,
+                        msg,
+                    );
                 }
+
+                dynamic_config.acquire_ownership()
             } else if number_of_dead_node_notifications != 0 {
                 send_dead_node_signal::<S>(service_hash, config);
             }
@@ -1001,7 +1019,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
     ) -> Result<Option<ServiceDetails<Self>>, ServiceDetailsError> {
         let service_hash =
             ServiceHash::new::<Self::ServiceNameHasher>(service_name, messaging_pattern);
-        __internal_details::<Self>(config, &service_hash.0.into())
+        __internal_details::<Self>(config, &service_hash)
     }
 
     /// Returns a list of all services created under a given [`config::Config`].
@@ -1035,7 +1053,15 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
                 "{} due to a failure while collecting all active services for config: {:?}", msg, config);
 
         for uuid in &service_uuids {
-            if let Ok(Some(service_details)) = __internal_details::<Self>(config, uuid) {
+            let hash = match ServiceHash::from_bytes(uuid) {
+                Ok(hash) => hash,
+                Err(e) => {
+                    warn!(from origin,
+                        "{msg} since there static configs of service where the name ({uuid}) violates the naming rule. [{e:?}]");
+                    continue;
+                }
+            };
+            if let Ok(Some(service_details)) = __internal_details::<Self>(config, &hash) {
                 if callback(service_details) == CallbackProgression::Stop {
                     break;
                 }
@@ -1048,14 +1074,15 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
 
 pub(crate) unsafe fn remove_static_service_config<S: Service>(
     config: &config::Config,
-    uuid: &FileName,
+    service_hash: &ServiceHash,
 ) -> Result<bool, NamedConceptRemoveError> {
     let msg = "Unable to remove static service config";
     let origin = "Service::remove_static_service_config()";
+    let name = static_config_name(service_hash);
     let static_storage_config = config_scheme::static_config_storage_config::<S>(config);
 
     match unsafe {
-        <S::StaticStorage as NamedConceptMgmt>::remove_cfg(uuid, &static_storage_config)
+        <S::StaticStorage as NamedConceptMgmt>::remove_cfg(&name, &static_storage_config)
     } {
         Ok(v) => Ok(v),
         Err(e) => {
@@ -1067,53 +1094,20 @@ pub(crate) unsafe fn remove_static_service_config<S: Service>(
 #[doc(hidden)]
 pub fn __internal_details<S: Service>(
     config: &config::Config,
-    uuid: &FileName,
+    service_hash: &ServiceHash,
 ) -> Result<Option<ServiceDetails<S>>, ServiceDetailsError> {
     let msg = "Unable to acquire service details";
     let origin = "Service::details()";
-    let static_storage_config = config_scheme::static_config_storage_config::<S>(config);
-
-    let reader = match <<S::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
-        S::StaticStorage,
-    >>::new(uuid)
-    .config(&static_storage_config.clone())
-    .has_ownership(false)
-    .open(Duration::ZERO)
-    {
-        Ok(reader) => reader,
-        Err(StaticStorageOpenError::DoesNotExist)
-        | Err(StaticStorageOpenError::InitializationNotYetFinalized) => return Ok(None),
+    let service_config = match read_static_service_config::<S>(config, service_hash) {
+        Ok(Some(c)) => c,
+        Ok(None) => return Ok(None),
         Err(e) => {
-            fail!(from origin, with ServiceDetailsError::FailedToOpenStaticServiceInfo,
-                        "{} due to a failure while opening the static service info \"{}\" for reading ({:?})",
-                        msg, uuid, e);
+            fail!(from origin, with e,
+                "{msg} since the static service config could not be read. [{e:?}]");
         }
     };
 
-    let mut content = CoreString::from_utf8(vec![b' '; reader.len() as usize]).unwrap();
-    if let Err(e) = reader.read(unsafe { content.as_mut_vec().as_mut_slice() }) {
-        fail!(from origin, with ServiceDetailsError::FailedToReadStaticServiceInfo,
-                "{} since the static service info \"{}\" could not be read ({:?}).",
-                msg, uuid, e );
-    }
-
-    let service_config =
-        match S::ConfigSerializer::deserialize::<StaticConfig>(unsafe { content.as_mut_vec() }) {
-            Ok(service_config) => service_config,
-            Err(e) => {
-                fail!(from origin, with ServiceDetailsError::FailedToDeserializeStaticServiceInfo,
-                    "{} since the static service info \"{}\" could not be deserialized ({:?}).",
-                       msg, uuid, e );
-            }
-        };
-
-    if uuid.as_bytes() != service_config.service_hash().0.as_bytes() {
-        fail!(from origin, with ServiceDetailsError::ServiceInInconsistentState,
-                "{} since the service {:?} has an inconsistent hash of {} according to config {:?}",
-                msg, service_config, uuid, config);
-    }
-
-    let dynamic_config = open_dynamic_config::<S>(config, service_config.service_hash())?;
+    let dynamic_config = open_dynamic_config::<S>(config, service_config.unique_service_id())?;
     let dynamic_details = if let Some(d) = dynamic_config {
         let mut nodes = vec![];
         d.get().list_node_ids(|node_id| {
@@ -1123,7 +1117,7 @@ pub fn __internal_details<S: Service>(
                 | Err(NodeListFailure::InsufficientPermissions)
                 | Err(NodeListFailure::Interrupt) => (),
                 Err(NodeListFailure::InternalError) => {
-                    debug!(from origin, "Unable to acquire NodeState for service \"{:?}\"", uuid);
+                    debug!(from origin, "Unable to acquire NodeState for service \"{:?}\"", service_hash);
                 }
             };
             CallbackProgression::Continue
@@ -1139,22 +1133,74 @@ pub fn __internal_details<S: Service>(
     }))
 }
 
-fn open_dynamic_config<S: Service>(
+fn read_static_service_config<S: Service>(
     config: &config::Config,
     service_hash: &ServiceHash,
+) -> Result<Option<StaticConfig>, ServiceDetailsError> {
+    let msg = "Unable to acquire service details";
+    let origin = "Service::details()";
+    let static_storage_config = config_scheme::static_config_storage_config::<S>(config);
+    let name = static_config_name(service_hash);
+    let reader = match <<S::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
+        S::StaticStorage,
+    >>::new(&name)
+    .config(&static_storage_config.clone())
+    .has_ownership(false)
+    .open(Duration::ZERO)
+    {
+        Ok(reader) => reader,
+        Err(StaticStorageOpenError::DoesNotExist)
+        | Err(StaticStorageOpenError::InitializationNotYetFinalized) => return Ok(None),
+        Err(e) => {
+            fail!(from origin, with ServiceDetailsError::FailedToOpenStaticServiceInfo,
+                        "{} due to a failure while opening the static service info \"{}\" for reading ({:?})",
+                        msg, name, e);
+        }
+    };
+
+    let mut content = CoreString::from_utf8(vec![b' '; reader.len() as usize]).unwrap();
+    if let Err(e) = reader.read(unsafe { content.as_mut_vec().as_mut_slice() }) {
+        fail!(from origin, with ServiceDetailsError::FailedToReadStaticServiceInfo,
+                "{} since the static service info \"{}\" could not be read ({:?}).",
+                msg, name, e );
+    }
+
+    let service_config =
+        match S::ConfigSerializer::deserialize::<StaticConfig>(unsafe { content.as_mut_vec() }) {
+            Ok(service_config) => service_config,
+            Err(e) => {
+                fail!(from origin, with ServiceDetailsError::FailedToDeserializeStaticServiceInfo,
+                    "{} since the static service info \"{}\" could not be deserialized ({:?}).",
+                       msg, name, e );
+            }
+        };
+
+    if service_hash != service_config.service_hash() {
+        fail!(from origin, with ServiceDetailsError::ServiceInInconsistentState,
+                "{} since the service {:?} has an inconsistent hash of {} according to config {:?}",
+                msg, service_config, service_hash, config);
+    }
+
+    Ok(Some(service_config))
+}
+
+fn open_dynamic_config<S: Service>(
+    config: &config::Config,
+    service_id: UniqueServiceId,
 ) -> Result<Option<S::DynamicStorage<DynamicConfig>>, ServiceDetailsError> {
     let origin = format!(
         "Service::open_dynamic_details<{}>({:?})",
         core::any::type_name::<S>(),
-        service_hash
+        service_id
     );
     let msg = "Unable to open the services dynamic config";
+    let segment_name = dynamic_config_name(service_id);
     match
             <<S::DynamicStorage<DynamicConfig> as DynamicStorage<
                     DynamicConfig,
                 >>::Builder<'_> as NamedConceptBuilder<
                     S::DynamicStorage<DynamicConfig>,
-                >>::new(&service_hash.0.into())
+                >>::new(&segment_name)
                     .config(&dynamic_config_storage_config::<S>(config))
                 .has_ownership(false)
                 .open(AccessMode::ReadWrite) {

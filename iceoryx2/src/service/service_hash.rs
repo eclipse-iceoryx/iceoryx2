@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::string::ToString;
-
+use core::fmt::Display;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -32,6 +32,12 @@ const SERVICE_HASH_CAPACITY: usize = 64;
 #[repr(C)]
 pub struct ServiceHash(pub(crate) RestrictedFileName<SERVICE_HASH_CAPACITY>);
 
+impl Display for ServiceHash {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 impl ServiceHash {
     pub(crate) fn new<Hasher: Hash>(
         service_name: &ServiceName,
@@ -45,6 +51,11 @@ impl ServiceHash {
         Self(fatal_panic!(from "ServiceHash::new()",
                    when RestrictedFileName::new(&value),
                    "This should never happen! The Hasher used to create the ServiceHash created an illegal value ({value}, len = {}).", value.len()))
+    }
+
+    pub(crate) fn from_bytes(bytes: &[u8]) -> Result<Self, SemanticStringError> {
+        let content = RestrictedFileName::new(bytes)?;
+        Ok(Self(content))
     }
 
     /// Returns the maximum string length of a [`ServiceHash`]

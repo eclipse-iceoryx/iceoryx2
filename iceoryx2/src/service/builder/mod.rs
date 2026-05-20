@@ -44,17 +44,18 @@ use iceoryx2_cal::dynamic_storage::{DynamicStorage, DynamicStorageBuilder};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::named_concept::NamedConceptDoesExistError;
 use iceoryx2_cal::named_concept::NamedConceptMgmt;
-use iceoryx2_cal::named_concept::NamedConceptRemoveError;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::*;
 use iceoryx2_log::fail;
 use iceoryx2_log::fatal_panic;
-use iceoryx2_log::warn;
 
+use crate::identifiers::UniqueServiceId;
 use crate::node::SharedNode;
 use crate::service;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::dynamic_config::RegisterNodeResult;
+use crate::service::naming_scheme::dynamic_config_name;
+use crate::service::naming_scheme::static_config_name;
 use crate::service::static_config::*;
 
 use super::Service;
@@ -263,18 +264,18 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
         let static_storage_config =
             static_config_storage_config::<ServiceType>(self.shared_node.config());
-        let file_name_uuid = self.service_config.service_hash().0.into();
+        let name = static_config_name(self.service_config.service_hash());
         let creation_timeout = self.shared_node.config().global.creation_timeout;
 
         match <ServiceType::StaticStorage as NamedConceptMgmt>::does_exist_cfg(
-            &file_name_uuid,
+            &name,
             &static_storage_config,
         ) {
             Ok(false) => Ok(None),
             Ok(true) | Err(NamedConceptDoesExistError::UnderlyingResourcesBeingSetUp) => {
                 let storage = match <<ServiceType::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
                                        ServiceType::StaticStorage>>
-                                       ::new(&file_name_uuid)
+                                       ::new(&name)
                                         .has_ownership(false)
                                         .config(&static_storage_config)
                                         .open(creation_timeout) {
@@ -341,11 +342,12 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     ) -> Result<ServiceType::DynamicStorage<DynamicConfig>, DynamicStorageCreateError> {
         let msg = "Failed to create dynamic storage for service";
         let required_memory_size = DynamicConfig::memory_size(max_number_of_nodes);
+        let segment_name = dynamic_config_name(self.service_config.unique_service_id());
         match <<ServiceType::DynamicStorage<DynamicConfig> as DynamicStorage<
             DynamicConfig,
         >>::Builder<'_> as NamedConceptBuilder<
             ServiceType::DynamicStorage<DynamicConfig>,
-        >>::new(&self.service_config.service_hash().0.into())
+        >>::new(&segment_name)
             .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
             .supplementary_size(additional_size + required_memory_size)
             .has_ownership(false)
@@ -379,50 +381,28 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         ) {
             Ok(storage) => Ok(storage),
             Err(DynamicStorageCreateError::AlreadyExists) => {
-                warn!(from self, "Old dynamic config from previous instance discovered - trying to remove it.");
-                // Safe since a service removes the resources always in the order of:
-                //   1. dynamic config
-                //   2. additional resources
-                //   3. static config
-                // When a dynamic config still exists it means that the service is corrupted and
-                // can be safely cleaned up.
-                match unsafe {
-                    <ServiceType::DynamicStorage<DynamicConfig> as NamedConceptMgmt>::remove_cfg(
-                        &self.service_config.service_hash().0.into(),
-                        &dynamic_config_storage_config::<ServiceType>(self.shared_node.config()),
-                    )
-                } {
-                    Ok(_) => (),
-                    Err(NamedConceptRemoveError::InsufficientPermissions) => {
-                        fail!(from self, with DynamicStorageCreateError::InsufficientPermissions,
-                            "{msg} since the old instance still exists and cannot be removed due to a lack of permissions.");
-                    }
-                    Err(e) => {
-                        fail!(from self, with DynamicStorageCreateError::InternalError,
-                            "{msg} since the old instance still exists and cannot be removed ({e:?}).");
-                    }
-                }
-
-                self.create_dynamic_config_storage(
-                    messaging_pattern_settings,
-                    additional_size,
-                    max_number_of_nodes,
-                )
+                fail!(from self, with DynamicStorageCreateError::AlreadyExists,
+                    "{msg} since the dynamic config already exists. This should never happen!");
             }
-            Err(e) => Err(e),
+            Err(e) => {
+                fail!(from self, with e,
+                    "{msg} since the dynamic config could not be created. [{e:?}]");
+            }
         }
     }
 
     fn open_dynamic_config_storage(
         &self,
+        unique_service_id: UniqueServiceId,
     ) -> Result<ServiceType::DynamicStorage<DynamicConfig>, OpenDynamicStorageFailure> {
         let msg = "Failed to open dynamic service information";
+        let segment_name = dynamic_config_name(unique_service_id);
         let storage = fail!(from self, when
             <<ServiceType::DynamicStorage<DynamicConfig> as DynamicStorage<
                     DynamicConfig,
                 >>::Builder<'_> as NamedConceptBuilder<
                     ServiceType::DynamicStorage<DynamicConfig>,
-                >>::new(&self.service_config.service_hash().0.into())
+                >>::new(&segment_name)
                     .timeout(self.shared_node.config().global.creation_timeout)
                     .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
                 .has_ownership(false)
