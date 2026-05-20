@@ -17,9 +17,10 @@
 //! does only ensure that the memory copy does not cause undefined behavior, but does not care
 //! about data integrity.
 //!
-//!  * FixedSizeByteAtomic: compile-time fixed-size ByteAtomic that is self-contained and
-//!    shared-memory compatible.
-//!  * RelocatableByteAtomic: runtime fixed-size ByteAtomic that is shared-memory compatible.
+//!  * [`FixedSizeByteAtomic`](crate::byte_atomic::FixedSizeByteAtomic): compile-time fixed-size
+//!    ByteAtomic that is self-contained and shared-memory compatible.
+//!  * [`RelocatableByteAtomic`](crate::byte_atomic::RelocatableByteAtomic): runtime fixed-size
+//!    ByteAtomic that is shared-memory compatible.
 //!
 //! # User Examples
 //!
@@ -182,7 +183,7 @@ impl<T: AtomicCopy, const SIZE: usize> FixedSizeByteAtomic<T, SIZE> {
     /// Creates a new [`FixedSizeByteAtomic`] that contains the passed value. It fails when
     /// the size of the value and `SIZE` do not match.
     pub fn new(value: T) -> Result<Self, ByteAtomicError> {
-        // TODO: The following check and the SIZE parameter can be removed once size_of::<T>()
+        // TODO #1644: The following check and the SIZE parameter can be removed once size_of::<T>()
         // can be directly used in the struct definition. Consider then to remove the
         // RelocatableByteAtomic implementation as well; maybe add a placement_new() to the
         // FixedSizeByteAtomic.
