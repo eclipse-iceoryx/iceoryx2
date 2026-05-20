@@ -57,6 +57,7 @@
 //! ```
 
 extern crate alloc;
+use core::ptr::NonNull;
 
 pub use crate::mpmc::robust_unique_index_set::OwnerId;
 pub use iceoryx2_bb_elementary::CallbackProgression;
@@ -632,7 +633,11 @@ impl<T: Copy + Debug, const CAPACITY: usize> Default for FixedSizeContainerData<
 
 impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainerData<T, CAPACITY> {
     fn allocator(&mut self) -> BumpAllocator {
-        self.unique_index_set_data.allocator()
+        // SAFETY: Creating a pointer to an existing member is always not null
+        let data_ptr = unsafe {
+            NonNull::<u8>::new_unchecked(self.unique_index_set_data.cells.as_mut_ptr().cast())
+        };
+        BumpAllocator::new(data_ptr, core::mem::size_of::<Self>())
     }
 }
 

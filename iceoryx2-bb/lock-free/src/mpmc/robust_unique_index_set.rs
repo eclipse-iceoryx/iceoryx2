@@ -101,6 +101,8 @@
 //! ```
 
 use core::alloc::Layout;
+use core::ptr::NonNull;
+
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
@@ -537,7 +539,7 @@ impl RobustUniqueIndexSet {
 
 #[derive(Debug)]
 pub struct StaticRobustUniqueIndexSetData<const CAPACITY: usize> {
-    cells: [AtomicU64; CAPACITY],
+    pub(crate) cells: [AtomicU64; CAPACITY],
 }
 
 impl<const CAPACITY: usize> Default for StaticRobustUniqueIndexSetData<CAPACITY> {
@@ -550,7 +552,9 @@ impl<const CAPACITY: usize> Default for StaticRobustUniqueIndexSetData<CAPACITY>
 
 impl<const CAPACITY: usize> StaticRobustUniqueIndexSetData<CAPACITY> {
     pub fn allocator(&mut self) -> BumpAllocator {
-        BumpAllocator::new(self.cells.as_mut_ptr().cast())
+        // SAFETY: Creating a pointer to an existing member is always not null
+        let data_ptr = unsafe { NonNull::<u8>::new_unchecked(self.cells.as_mut_ptr().cast()) };
+        BumpAllocator::new(data_ptr, core::mem::size_of::<Self>())
     }
 }
 
