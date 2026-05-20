@@ -24,7 +24,7 @@ use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
-use iceoryx2_log::{fail, info, trace, warn};
+use iceoryx2_log::{debug, fail, info, trace, warn};
 use iceoryx2_services_tunnel_backend::traits::{
     Backend, Discovery, EventRelay, PublishSubscribeRelay, RelayBuilder, RelayFactory,
 };
@@ -315,7 +315,7 @@ fn on_discovery<S: Service, B: Backend<S> + Debug>(
 
     if let Some(allowlist) = services_filter {
         if !allowlist.contains(static_config.name().as_str()) {
-            info!(
+            debug!(
                 from origin,
                 "Skipping {}({}): not in services allowlist",
                 static_config.messaging_pattern(),
