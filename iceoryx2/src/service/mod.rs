@@ -314,7 +314,49 @@ pub enum ServiceRemoveNodeError {
     /// The [`Node`](crate::node::Node) has opened a [`Service`] that is in a
     /// corrupted state and therefore it cannot be remove from it.
     ServiceInCorruptedState,
+    /// The process does not have the permissions to remove the service after last node was removed
+    InsufficientPermissions,
 }
+
+impl core::fmt::Display for ServiceRemoveNodeError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ServiceRemoveNodeError::{self:?}")
+    }
+}
+
+impl core::error::Error for ServiceRemoveNodeError {}
+
+impl From<ServiceRemoveError> for ServiceRemoveNodeError {
+    fn from(value: ServiceRemoveError) -> Self {
+        match value {
+            ServiceRemoveError::InsufficientPermissions => {
+                ServiceRemoveNodeError::InsufficientPermissions
+            }
+            ServiceRemoveError::VersionMismatch => ServiceRemoveNodeError::VersionMismatch,
+            ServiceRemoveError::InternalError => ServiceRemoveNodeError::InternalError,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Error that can be reported when removing a [`Node`](crate::node::Node).
+pub enum ServiceRemoveError {
+    /// The iceoryx2 version that created the [`Node`](crate::node::Node) does
+    /// not match this iceoryx2 version.
+    VersionMismatch,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
+    InternalError,
+    /// The process does not have the permissions to remove the service
+    InsufficientPermissions,
+}
+
+impl core::fmt::Display for ServiceRemoveError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ServiceRemoveError::{self:?}")
+    }
+}
+
+impl core::error::Error for ServiceRemoveError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ServiceRemoveTagError {
@@ -706,6 +748,90 @@ pub mod internal {
     }
 
     pub trait ServiceInternal<S: Service> {
+        /// # Safety
+        ///
+        /// * No other process shall using the service currently.
+        ///
+        #[doc(hidden)]
+        unsafe fn __internal_remove_service(
+            service_hash: &ServiceHash,
+            unique_service_id: UniqueServiceId,
+            config: &config::Config,
+        ) -> Result<(), ServiceRemoveError> {
+            let origin = "Service::remove()";
+            let msg = "Unable to remove all service resources";
+
+            match unsafe {
+                // IMPORTANT: The static service config must be removed first. If it cannot be
+                // removed, the process may lack sufficient permissions and should not remove
+                // any other resources.
+                remove_static_service_config::<S>(config, service_hash)
+            } {
+                Ok(_) => {
+                    trace!(from origin, "Remove unused service.");
+                }
+                Err(NamedConceptRemoveError::InsufficientPermissions) => {
+                    fail!(from origin, with ServiceRemoveError::InsufficientPermissions,
+                        "{msg} for {service_hash} due to insufficient permissions.");
+                }
+                Err(NamedConceptRemoveError::InternalError) => {
+                    fail!(from origin, with ServiceRemoveError::InternalError,
+                        "{msg} for {service_hash} due to an internal error.");
+                }
+            }
+
+            // check if service was a blackboard service to remove its additional resources
+            let blackboard_name = crate::service::naming_scheme::blackboard_name(unique_service_id);
+            let blackboard_payload_config =
+                crate::service::config_scheme::blackboard_data_config::<S>(config);
+            let blackboard_payload = <S::BlackboardPayload as NamedConceptMgmt>::does_exist_cfg(
+                &blackboard_name,
+                &blackboard_payload_config,
+            );
+            if let Ok(true) = blackboard_payload {
+                match __internal_details::<S>(config, service_hash) {
+                    Ok(Some(details)) => {
+                        let blackboard_mgmt_name =
+                            details.static_details.blackboard().type_details.type_name;
+
+                        remove_additional_blackboard_resources::<S>(
+                            config,
+                            &blackboard_name,
+                            &blackboard_payload_config,
+                            &blackboard_mgmt_name,
+                            origin,
+                            msg,
+                        );
+                    }
+                    _ => {
+                        warn!(from origin,
+                            "{} for {service_hash} due to a failure while acquiring the service details", msg);
+                    }
+                };
+            }
+
+            let segment_name = dynamic_config_name(unique_service_id);
+            match unsafe {
+                <S::DynamicStorage<DynamicConfig> as NamedConceptMgmt>::remove_cfg(
+                    &segment_name,
+                    &dynamic_config_storage_config::<S>(config),
+                )
+            } {
+                Ok(_) => (),
+                Err(NamedConceptRemoveError::InsufficientPermissions) => {
+                    fail!(from origin, with ServiceRemoveError::InsufficientPermissions,
+                        "{msg} for {service_hash} since the dynamic config could not be removed due to insufficient permissions.");
+                }
+                Err(NamedConceptRemoveError::InternalError) => {
+                    fail!(from origin, with ServiceRemoveError::InsufficientPermissions,
+                        "{msg} for {service_hash} since the dynamic config could not be removed due to an internal error.");
+                }
+            }
+
+            Ok(())
+        }
+
+        #[doc(hidden)]
         fn __internal_remove_node_from_service(
             node_id: &UniqueNodeId,
             service_hash: &ServiceHash,
@@ -826,61 +952,13 @@ pub mod internal {
             };
 
             if remove_service {
-                match unsafe {
-                    // IMPORTANT: The static service config must be removed first. If it cannot be
-                    // removed, the process may lack sufficient permissions and should not remove
-                    // any other resources.
-                    remove_static_service_config::<S>(config, service_hash)
-                } {
-                    Ok(_) => {
-                        trace!(from origin, "Remove unused service.");
-                    }
-                    Err(e) => {
-                        error!(from origin, "Unable to remove static config of unused service ({:?}).",
-                            e);
-                    }
-                }
-
-                // check if service was a blackboard service to remove its additional resources
-                let blackboard_name = crate::service::naming_scheme::blackboard_name(
-                    static_config.unique_service_id(),
-                );
-                let blackboard_payload_config =
-                    crate::service::config_scheme::blackboard_data_config::<S>(config);
-                let blackboard_payload = <S::BlackboardPayload as NamedConceptMgmt>::does_exist_cfg(
-                    &blackboard_name,
-                    &blackboard_payload_config,
-                );
-                let mut is_blackboard = false;
-                let mut blackboard_mgmt_name = StaticString::<MAX_TYPE_NAME_LENGTH>::new();
-                if let Ok(true) = blackboard_payload {
-                    is_blackboard = true;
-
-                    let details = match __internal_details::<S>(config, service_hash) {
-                        Ok(Some(d)) => d,
-                        _ => {
-                            fail!(from origin,
-                                  with ServiceRemoveNodeError::ServiceInCorruptedState,
-                                  "{} due to a failure while acquiring the service details.", msg);
-                        }
-                    };
-                    blackboard_mgmt_name =
-                        details.static_details.blackboard().type_details.type_name;
-                }
-
-                // remove additional blackboard resources
-                if is_blackboard {
-                    remove_additional_blackboard_resources::<S>(
+                unsafe {
+                    Self::__internal_remove_service(
+                        service_hash,
+                        static_config.unique_service_id(),
                         config,
-                        &blackboard_name,
-                        &blackboard_payload_config,
-                        &blackboard_mgmt_name,
-                        &origin,
-                        msg,
-                    );
-                }
-
-                dynamic_config.acquire_ownership()
+                    )?
+                };
             } else if number_of_dead_node_notifications != 0 {
                 send_dead_node_signal::<S>(service_hash, config);
             }
