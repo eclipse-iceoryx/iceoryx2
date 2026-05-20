@@ -15,7 +15,7 @@ use core::{alloc::Layout, ptr::NonNull};
 
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
-use iceoryx2_cal::shm_allocator::{AllocationStrategy, ShmAllocator, bump_allocator::*};
+use iceoryx2_cal::shm_allocator::{AllocationStrategy, ShmAllocator, shm_bump_allocator::*};
 
 const MAX_SUPPORTED_ALIGNMENT: usize = 4096;
 const MEM_SIZE: usize = 16384 * 10;
