@@ -1148,6 +1148,68 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
 
         Ok(())
     }
+
+    /// Removes a [`Service`] forcefully created under a given [`config::Config`].
+    /// Removing a [`Service`] in use is undefined behavior!
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// use iceoryx2::config::Config;
+    ///
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// ipc::Service::remove("My/Funky/ServiceName".into(),
+    ///                      Config::global_config(),
+    ///                      MessagingPattern::PublishSubscribe)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Safety
+    ///
+    /// * No other process or thread shall currently use this service.
+    ///
+    unsafe fn remove(
+        service_name: &ServiceName,
+        config: &config::Config,
+        messaging_pattern: MessagingPattern,
+    ) -> Result<bool, ServiceRemoveError> {
+        let origin = "Service::remove()";
+        let msg = format!("Unable to remove all resources of the service \"{service_name}\"");
+        let service_hash =
+            ServiceHash::new::<Self::ServiceNameHasher>(service_name, messaging_pattern);
+        match read_static_service_config::<Self>(config, &service_hash) {
+            Ok(Some(static_config)) => {
+                unsafe {
+                    Self::__internal_remove_service(
+                        &service_hash,
+                        static_config.unique_service_id(),
+                        config,
+                    )?
+                };
+
+                Ok(true)
+            }
+            Ok(None) => Ok(false),
+            Err(e) => {
+                warn!(from origin,
+                    "{msg} since the static config could not be read. [{e:?}]");
+
+                match unsafe { remove_static_service_config::<Self>(config, &service_hash) } {
+                    Ok(v) => Ok(v),
+                    Err(NamedConceptRemoveError::InsufficientPermissions) => {
+                        fail!(from origin, with ServiceRemoveError::InsufficientPermissions,
+                            "{msg} due to insufficient permissions.");
+                    }
+                    Err(NamedConceptRemoveError::InternalError) => {
+                        fail!(from origin, with ServiceRemoveError::InternalError,
+                            "{msg} due to an internal error.");
+                    }
+                }
+            }
+        }
+    }
 }
 
 pub(crate) unsafe fn remove_static_service_config<S: Service>(
