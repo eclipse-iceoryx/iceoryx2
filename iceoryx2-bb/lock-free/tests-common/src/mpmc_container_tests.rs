@@ -164,10 +164,7 @@ pub mod generic {
         // TestType is the largest test type so it is safe to acquire this memory for every test
         // case - hack required since `T` cannot be used in const operations
         let memory = [0u8; Container::<TestType>::const_memory_size(129_usize)];
-        let allocator = BumpAllocator::new(
-            <NonNull<u8> as NonNullCompat<u8>>::iox2_from_ref(&memory[0]),
-            memory.len(),
-        );
+        let allocator = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
         let mut sut = unsafe { Container::<T>::new_uninit(CAPACITY) };
         unsafe { assert_that!(sut.init(&allocator), is_ok) };
 
