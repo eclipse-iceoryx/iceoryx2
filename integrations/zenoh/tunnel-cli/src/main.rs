@@ -37,6 +37,11 @@ fn main() -> anyhow::Result<()> {
 
     let tunnel_config = TunnelConfig {
         discovery_service: cli.discovery_service,
+        services: if cli.services.is_empty() {
+            None
+        } else {
+            Some(cli.services)
+        },
     };
     let iceoryx_config = iceoryx2::config::Config::default();
     let zenoh_config = match cli.zenoh_config {
