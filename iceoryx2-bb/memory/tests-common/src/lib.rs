@@ -15,7 +15,6 @@
 extern crate alloc;
 extern crate iceoryx2_bb_loggers;
 
-pub mod bump_allocator_tests;
 pub mod heap_allocator_tests;
 pub mod one_chunk_allocator_tests;
 pub mod pool_allocator_tests;
