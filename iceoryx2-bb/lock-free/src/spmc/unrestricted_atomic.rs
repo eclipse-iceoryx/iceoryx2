@@ -217,7 +217,7 @@ impl UnrestrictedAtomicMgmt {
             /////////////////////////
             // SYNC POINT - read, if the cell was updated in the meantime
             /////////////////////////
-            current_write_cell = self.write_cell.load(Ordering::SeqCst);
+            current_write_cell = self.write_cell.acquire_release_load();
 
             if old_write_cell == current_write_cell {
                 break;
