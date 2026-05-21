@@ -195,7 +195,7 @@ pub mod service_request_response_builder {
             .request_response::<i64, u64>()
             .open();
 
-        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleRequestType));
+        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleRequestOrResponseType));
 
         let sut_open = node
             .service_builder(&service_name)
@@ -203,7 +203,7 @@ pub mod service_request_response_builder {
             .request_user_header::<u64>()
             .open();
 
-        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleRequestType));
+        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleRequestOrResponseType));
     }
 
     #[conformance_test]
@@ -225,7 +225,7 @@ pub mod service_request_response_builder {
             .request_payload_alignment(Alignment::new(512).unwrap())
             .open();
 
-        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleRequestType));
+        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleRequestOrResponseType));
     }
 
     #[conformance_test]
@@ -269,7 +269,7 @@ pub mod service_request_response_builder {
             .request_response::<u64, i64>()
             .open();
 
-        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleResponseType));
+        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleRequestOrResponseType));
 
         let sut_open = node
             .service_builder(&service_name)
@@ -277,7 +277,7 @@ pub mod service_request_response_builder {
             .response_user_header::<u64>()
             .open();
 
-        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleResponseType));
+        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleRequestOrResponseType));
     }
 
     #[conformance_test]
@@ -299,7 +299,7 @@ pub mod service_request_response_builder {
             .response_payload_alignment(Alignment::new(512).unwrap())
             .open();
 
-        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleResponseType));
+        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleRequestOrResponseType));
     }
 
     #[conformance_test]
@@ -1188,7 +1188,7 @@ pub mod service_request_response_builder {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .open();
-        assert_that!(sut_open_fail.err(), eq Some(RequestResponseOpenError::IncompatibleRequestType));
+        assert_that!(sut_open_fail.err(), eq Some(RequestResponseOpenError::IncompatibleRequestOrResponseType));
 
         let sut_open = node
             .service_builder(&service_name)
@@ -1213,7 +1213,7 @@ pub mod service_request_response_builder {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .open();
-        assert_that!(sut_open_fail.err(), eq Some(RequestResponseOpenError::IncompatibleResponseType));
+        assert_that!(sut_open_fail.err(), eq Some(RequestResponseOpenError::IncompatibleRequestOrResponseType));
 
         let sut_open = node
             .service_builder(&service_name)
@@ -1238,13 +1238,13 @@ pub mod service_request_response_builder {
             .service_builder(&service_name)
             .request_response::<[u64], u64>()
             .open();
-        assert_that!(sut_open_fail.err(), eq Some(RequestResponseOpenError::IncompatibleResponseType));
+        assert_that!(sut_open_fail.err(), eq Some(RequestResponseOpenError::IncompatibleRequestOrResponseType));
 
         let sut_open_fail = node
             .service_builder(&service_name)
             .request_response::<u64, [u64]>()
             .open();
-        assert_that!(sut_open_fail.err(), eq Some(RequestResponseOpenError::IncompatibleRequestType));
+        assert_that!(sut_open_fail.err(), eq Some(RequestResponseOpenError::IncompatibleRequestOrResponseType));
 
         let sut_open = node
             .service_builder(&service_name)

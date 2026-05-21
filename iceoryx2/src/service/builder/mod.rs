@@ -74,6 +74,7 @@ enum ServiceState {
     InsufficientPermissions,
     HangsInCreation,
     Corrupted,
+    IncompatiblePayload,
 }
 
 #[repr(C)]
@@ -135,9 +136,9 @@ enum ServiceCreateError {
 impl From<ServiceState> for ServiceCreateError {
     fn from(value: ServiceState) -> Self {
         match value {
-            ServiceState::IncompatibleMessagingPattern | ServiceState::HangsInCreation => {
-                ServiceCreateError::AlreadyExists
-            }
+            ServiceState::IncompatibleMessagingPattern
+            | ServiceState::HangsInCreation
+            | ServiceState::IncompatiblePayload => ServiceCreateError::AlreadyExists,
             ServiceState::InsufficientPermissions => ServiceCreateError::InsufficientPermissions,
             ServiceState::Corrupted => ServiceCreateError::ServiceInCorruptedState,
         }

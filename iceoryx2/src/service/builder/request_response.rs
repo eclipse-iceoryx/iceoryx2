@@ -62,9 +62,7 @@ pub enum RequestResponseOpenError {
     /// by a process that crashed during [`Service`] creation.
     HangsInCreation,
     /// The [`Service`] has the wrong request payload type, request header type or type alignment.
-    IncompatibleRequestType,
-    /// The [`Service`] has the wrong response payload type, response header type or type alignment.
-    IncompatibleResponseType,
+    IncompatibleRequestOrResponseType,
     /// The [`AttributeVerifier`] required attributes that the [`Service`] does not satisfy.
     IncompatibleAttributes,
     /// The [`Service`] has the wrong messaging pattern.
@@ -95,27 +93,20 @@ impl core::fmt::Display for RequestResponseOpenError {
 
 impl core::error::Error for RequestResponseOpenError {}
 
-impl From<ServiceAvailabilityState> for RequestResponseOpenError {
-    fn from(value: ServiceAvailabilityState) -> Self {
+impl From<ServiceState> for RequestResponseOpenError {
+    fn from(value: ServiceState) -> Self {
         match value {
-            ServiceAvailabilityState::IncompatibleRequestType => {
-                RequestResponseOpenError::IncompatibleRequestType
+            ServiceState::IncompatiblePayload => {
+                RequestResponseOpenError::IncompatibleRequestOrResponseType
             }
-            ServiceAvailabilityState::IncompatibleResponseType => {
-                RequestResponseOpenError::IncompatibleResponseType
-            }
-            ServiceAvailabilityState::ServiceState(ServiceState::IncompatibleMessagingPattern) => {
+            ServiceState::IncompatibleMessagingPattern => {
                 RequestResponseOpenError::IncompatibleMessagingPattern
             }
-            ServiceAvailabilityState::ServiceState(ServiceState::InsufficientPermissions) => {
+            ServiceState::InsufficientPermissions => {
                 RequestResponseOpenError::InsufficientPermissions
             }
-            ServiceAvailabilityState::ServiceState(ServiceState::HangsInCreation) => {
-                RequestResponseOpenError::HangsInCreation
-            }
-            ServiceAvailabilityState::ServiceState(ServiceState::Corrupted) => {
-                RequestResponseOpenError::ServiceInCorruptedState
-            }
+            ServiceState::HangsInCreation => RequestResponseOpenError::HangsInCreation,
+            ServiceState::Corrupted => RequestResponseOpenError::ServiceInCorruptedState,
         }
     }
 }
@@ -146,23 +137,17 @@ impl core::fmt::Display for RequestResponseCreateError {
 
 impl core::error::Error for RequestResponseCreateError {}
 
-impl From<ServiceAvailabilityState> for RequestResponseCreateError {
-    fn from(value: ServiceAvailabilityState) -> Self {
+impl From<ServiceState> for RequestResponseCreateError {
+    fn from(value: ServiceState) -> Self {
         match value {
-            ServiceAvailabilityState::IncompatibleRequestType
-            | ServiceAvailabilityState::IncompatibleResponseType
-            | ServiceAvailabilityState::ServiceState(ServiceState::IncompatibleMessagingPattern) => {
+            ServiceState::IncompatiblePayload | ServiceState::IncompatibleMessagingPattern => {
                 RequestResponseCreateError::AlreadyExists
             }
-            ServiceAvailabilityState::ServiceState(ServiceState::InsufficientPermissions) => {
+            ServiceState::InsufficientPermissions => {
                 RequestResponseCreateError::InsufficientPermissions
             }
-            ServiceAvailabilityState::ServiceState(ServiceState::HangsInCreation) => {
-                RequestResponseCreateError::HangsInCreation
-            }
-            ServiceAvailabilityState::ServiceState(ServiceState::Corrupted) => {
-                RequestResponseCreateError::ServiceInCorruptedState
-            }
+            ServiceState::HangsInCreation => RequestResponseCreateError::HangsInCreation,
+            ServiceState::Corrupted => RequestResponseCreateError::ServiceInCorruptedState,
         }
     }
 }
@@ -180,8 +165,8 @@ pub enum RequestResponseOpenOrCreateError {
     SystemInFlux,
 }
 
-impl From<ServiceAvailabilityState> for RequestResponseOpenOrCreateError {
-    fn from(value: ServiceAvailabilityState) -> Self {
+impl From<ServiceState> for RequestResponseOpenOrCreateError {
+    fn from(value: ServiceState) -> Self {
         RequestResponseOpenOrCreateError::RequestResponseOpenError(value.into())
     }
 }
@@ -205,13 +190,6 @@ impl core::fmt::Display for RequestResponseOpenOrCreateError {
 }
 
 impl core::error::Error for RequestResponseOpenOrCreateError {}
-
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-enum ServiceAvailabilityState {
-    ServiceState(ServiceState),
-    IncompatibleRequestType,
-    IncompatibleResponseType,
-}
 
 /// Builder to create new [`MessagingPattern::RequestResponse`] based [`Service`]s
 ///
@@ -634,10 +612,8 @@ impl<
     fn is_service_available(
         &mut self,
         error_msg: &str,
-    ) -> Result<
-        Option<(static_config::StaticConfig, ServiceType::StaticStorage)>,
-        ServiceAvailabilityState,
-    > {
+    ) -> Result<Option<(static_config::StaticConfig, ServiceType::StaticStorage)>, ServiceState>
+    {
         match self.base.is_service_available(error_msg) {
             Ok(Some((config, storage))) => {
                 if !self
@@ -645,7 +621,7 @@ impl<
                     .request_message_type_details
                     .is_compatible_to(&config.request_response().request_message_type_details)
                 {
-                    fail!(from self, with ServiceAvailabilityState::IncompatibleRequestType,
+                    fail!(from self, with ServiceState::IncompatiblePayload,
                         "{} since the services uses the request type \"{:?}\" which is not compatible to the requested type \"{:?}\".",
                         error_msg, &config.request_response().request_message_type_details,
                         self.config_details().request_message_type_details);
@@ -656,7 +632,7 @@ impl<
                     .response_message_type_details
                     .is_compatible_to(&config.request_response().response_message_type_details)
                 {
-                    fail!(from self, with ServiceAvailabilityState::IncompatibleResponseType,
+                    fail!(from self, with ServiceState::IncompatiblePayload,
                         "{} since the services uses the response type \"{:?}\" which is not compatible to the requested type \"{:?}\".",
                         error_msg, &config.request_response().response_message_type_details,
                         self.config_details().response_message_type_details);
@@ -665,7 +641,7 @@ impl<
                 Ok(Some((config, storage)))
             }
             Ok(None) => Ok(None),
-            Err(e) => Err(ServiceAvailabilityState::ServiceState(e)),
+            Err(e) => Err(e),
         }
     }
 

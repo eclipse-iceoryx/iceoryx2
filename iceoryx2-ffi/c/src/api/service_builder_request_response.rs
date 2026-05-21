@@ -74,8 +74,8 @@ pub enum iox2_request_response_open_or_create_error_e {
     O_EXCEEDS_MAX_NUMBER_OF_NODES,
     #[CStr = "hangs in creation"]
     O_HANGS_IN_CREATION,
-    #[CStr = "incompatible request type"]
-    O_INCOMPATIBLE_REQUEST_TYPE,
+    #[CStr = "incompatible request or response type"]
+    O_INCOMPATIBLE_REQUEST_OR_RESPONSE_TYPE,
     #[CStr = "incompatible response type"]
     O_INCOMPATIBLE_RESPONSE_TYPE,
     #[CStr = "incompatible attributes"]
@@ -125,8 +125,7 @@ impl IntoCInt for RequestResponseOpenError {
             RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedResponsesPerPendingResponse => iox2_request_response_open_or_create_error_e::O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_BORROWED_RESPONSES_PER_PENDING_RESPONSE,
             RequestResponseOpenError::ExceedsMaxNumberOfNodes => iox2_request_response_open_or_create_error_e::O_EXCEEDS_MAX_NUMBER_OF_NODES,
             RequestResponseOpenError::HangsInCreation => iox2_request_response_open_or_create_error_e::O_HANGS_IN_CREATION,
-            RequestResponseOpenError::IncompatibleRequestType => iox2_request_response_open_or_create_error_e::O_INCOMPATIBLE_REQUEST_TYPE,
-            RequestResponseOpenError::IncompatibleResponseType => iox2_request_response_open_or_create_error_e::O_INCOMPATIBLE_RESPONSE_TYPE,
+            RequestResponseOpenError::IncompatibleRequestOrResponseType => iox2_request_response_open_or_create_error_e::O_INCOMPATIBLE_REQUEST_OR_RESPONSE_TYPE,
             RequestResponseOpenError::IncompatibleAttributes => iox2_request_response_open_or_create_error_e::O_INCOMPATIBLE_ATTRIBUTES,
             RequestResponseOpenError::IncompatibleMessagingPattern => iox2_request_response_open_or_create_error_e::O_INCOMPATIBLE_MESSAGING_PATTERN,
             RequestResponseOpenError::IncompatibleOverflowBehaviorForRequests => iox2_request_response_open_or_create_error_e::O_INCOMPATIBLE_OVERFLOW_BEHAVIOR_FOR_REQUESTS,

@@ -55,12 +55,6 @@ use super::{OpenDynamicStorageFailure, ServiceState};
 use self::attribute::{AttributeSpecifier, AttributeVerifier};
 use builder::RETRY_LIMIT;
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-enum ServiceAvailabilityState {
-    ServiceState(ServiceState),
-    IncompatibleKeys,
-}
-
 /// Errors that can occur when an existing [`MessagingPattern::Blackboard`] [`Service`] shall be opened.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BlackboardOpenError {
@@ -101,22 +95,16 @@ impl core::fmt::Display for BlackboardOpenError {
 
 impl core::error::Error for BlackboardOpenError {}
 
-impl From<ServiceAvailabilityState> for BlackboardOpenError {
-    fn from(value: ServiceAvailabilityState) -> Self {
+impl From<ServiceState> for BlackboardOpenError {
+    fn from(value: ServiceState) -> Self {
         match value {
-            ServiceAvailabilityState::IncompatibleKeys => BlackboardOpenError::IncompatibleKeys,
-            ServiceAvailabilityState::ServiceState(ServiceState::IncompatibleMessagingPattern) => {
+            ServiceState::IncompatiblePayload => BlackboardOpenError::IncompatibleKeys,
+            ServiceState::IncompatibleMessagingPattern => {
                 BlackboardOpenError::IncompatibleMessagingPattern
             }
-            ServiceAvailabilityState::ServiceState(ServiceState::InsufficientPermissions) => {
-                BlackboardOpenError::InsufficientPermissions
-            }
-            ServiceAvailabilityState::ServiceState(ServiceState::HangsInCreation) => {
-                BlackboardOpenError::HangsInCreation
-            }
-            ServiceAvailabilityState::ServiceState(ServiceState::Corrupted) => {
-                BlackboardOpenError::ServiceInCorruptedState
-            }
+            ServiceState::InsufficientPermissions => BlackboardOpenError::InsufficientPermissions,
+            ServiceState::HangsInCreation => BlackboardOpenError::HangsInCreation,
+            ServiceState::Corrupted => BlackboardOpenError::ServiceInCorruptedState,
         }
     }
 }
@@ -149,22 +137,15 @@ impl core::fmt::Display for BlackboardCreateError {
 
 impl core::error::Error for BlackboardCreateError {}
 
-impl From<ServiceAvailabilityState> for BlackboardCreateError {
-    fn from(value: ServiceAvailabilityState) -> Self {
+impl From<ServiceState> for BlackboardCreateError {
+    fn from(value: ServiceState) -> Self {
         match value {
-            ServiceAvailabilityState::IncompatibleKeys
-            | ServiceAvailabilityState::ServiceState(ServiceState::IncompatibleMessagingPattern) => {
+            ServiceState::IncompatiblePayload | ServiceState::IncompatibleMessagingPattern => {
                 BlackboardCreateError::AlreadyExists
             }
-            ServiceAvailabilityState::ServiceState(ServiceState::InsufficientPermissions) => {
-                BlackboardCreateError::InsufficientPermissions
-            }
-            ServiceAvailabilityState::ServiceState(ServiceState::HangsInCreation) => {
-                BlackboardCreateError::HangsInCreation
-            }
-            ServiceAvailabilityState::ServiceState(ServiceState::Corrupted) => {
-                BlackboardCreateError::ServiceInCorruptedState
-            }
+            ServiceState::InsufficientPermissions => BlackboardCreateError::InsufficientPermissions,
+            ServiceState::HangsInCreation => BlackboardCreateError::HangsInCreation,
+            ServiceState::Corrupted => BlackboardCreateError::ServiceInCorruptedState,
         }
     }
 }
@@ -425,11 +406,11 @@ impl<
     fn is_service_available(
         &mut self,
         error_msg: &str,
-    ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceAvailabilityState> {
+    ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
         match self.base.is_service_available(error_msg) {
             Ok(Some((config, storage))) => {
                 if !(self.config_details().type_details == config.blackboard().type_details) {
-                    fail!(from self, with ServiceAvailabilityState::IncompatibleKeys,
+                    fail!(from self, with ServiceState::IncompatiblePayload,
                         "{} since the service offers the type \"{:?}\" which is not compatible to the requested type \"{:?}\".",
                         error_msg, &config.blackboard().type_details , self.config_details().type_details);
                 }
@@ -437,7 +418,7 @@ impl<
                 Ok(Some((config, storage)))
             }
             Ok(None) => Ok(None),
-            Err(e) => Err(ServiceAvailabilityState::ServiceState(e)),
+            Err(e) => Err(e),
         }
     }
 

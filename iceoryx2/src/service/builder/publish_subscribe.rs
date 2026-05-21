@@ -91,24 +91,18 @@ impl core::fmt::Display for PublishSubscribeOpenError {
 
 impl core::error::Error for PublishSubscribeOpenError {}
 
-impl From<ServiceAvailabilityState> for PublishSubscribeOpenError {
-    fn from(value: ServiceAvailabilityState) -> Self {
+impl From<ServiceState> for PublishSubscribeOpenError {
+    fn from(value: ServiceState) -> Self {
         match value {
-            ServiceAvailabilityState::IncompatibleTypes => {
-                PublishSubscribeOpenError::IncompatibleTypes
-            }
-            ServiceAvailabilityState::ServiceState(ServiceState::IncompatibleMessagingPattern) => {
+            ServiceState::IncompatiblePayload => PublishSubscribeOpenError::IncompatibleTypes,
+            ServiceState::IncompatibleMessagingPattern => {
                 PublishSubscribeOpenError::IncompatibleMessagingPattern
             }
-            ServiceAvailabilityState::ServiceState(ServiceState::InsufficientPermissions) => {
+            ServiceState::InsufficientPermissions => {
                 PublishSubscribeOpenError::InsufficientPermissions
             }
-            ServiceAvailabilityState::ServiceState(ServiceState::HangsInCreation) => {
-                PublishSubscribeOpenError::HangsInCreation
-            }
-            ServiceAvailabilityState::ServiceState(ServiceState::Corrupted) => {
-                PublishSubscribeOpenError::ServiceInCorruptedState
-            }
+            ServiceState::HangsInCreation => PublishSubscribeOpenError::HangsInCreation,
+            ServiceState::Corrupted => PublishSubscribeOpenError::ServiceInCorruptedState,
         }
     }
 }
@@ -143,30 +137,19 @@ impl core::fmt::Display for PublishSubscribeCreateError {
 
 impl core::error::Error for PublishSubscribeCreateError {}
 
-impl From<ServiceAvailabilityState> for PublishSubscribeCreateError {
-    fn from(value: ServiceAvailabilityState) -> Self {
+impl From<ServiceState> for PublishSubscribeCreateError {
+    fn from(value: ServiceState) -> Self {
         match value {
-            ServiceAvailabilityState::IncompatibleTypes
-            | ServiceAvailabilityState::ServiceState(ServiceState::IncompatibleMessagingPattern) => {
+            ServiceState::IncompatiblePayload | ServiceState::IncompatibleMessagingPattern => {
                 PublishSubscribeCreateError::AlreadyExists
             }
-            ServiceAvailabilityState::ServiceState(ServiceState::InsufficientPermissions) => {
+            ServiceState::InsufficientPermissions => {
                 PublishSubscribeCreateError::InsufficientPermissions
             }
-            ServiceAvailabilityState::ServiceState(ServiceState::HangsInCreation) => {
-                PublishSubscribeCreateError::HangsInCreation
-            }
-            ServiceAvailabilityState::ServiceState(ServiceState::Corrupted) => {
-                PublishSubscribeCreateError::ServiceInCorruptedState
-            }
+            ServiceState::HangsInCreation => PublishSubscribeCreateError::HangsInCreation,
+            ServiceState::Corrupted => PublishSubscribeCreateError::ServiceInCorruptedState,
         }
     }
-}
-
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-enum ServiceAvailabilityState {
-    ServiceState(ServiceState),
-    IncompatibleTypes,
 }
 
 /// Errors that can occur when a [`MessagingPattern::PublishSubscribe`] [`Service`] shall be
@@ -182,8 +165,8 @@ pub enum PublishSubscribeOpenOrCreateError {
     SystemInFlux,
 }
 
-impl From<ServiceAvailabilityState> for PublishSubscribeOpenOrCreateError {
-    fn from(value: ServiceAvailabilityState) -> Self {
+impl From<ServiceState> for PublishSubscribeOpenOrCreateError {
+    fn from(value: ServiceState) -> Self {
         PublishSubscribeOpenOrCreateError::PublishSubscribeOpenError(value.into())
     }
 }
@@ -311,7 +294,7 @@ impl<
     fn is_service_available(
         &mut self,
         error_msg: &str,
-    ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceAvailabilityState> {
+    ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
         match self.base.is_service_available(error_msg) {
             Ok(Some((config, storage))) => {
                 if !self
@@ -319,7 +302,7 @@ impl<
                     .message_type_details
                     .is_compatible_to(&config.publish_subscribe().message_type_details)
                 {
-                    fail!(from self, with ServiceAvailabilityState::IncompatibleTypes,
+                    fail!(from self, with ServiceState::IncompatiblePayload,
                         "{} since the service offers the type \"{:?}\" which is not compatible to the requested type \"{:?}\".",
                         error_msg, &config.publish_subscribe().message_type_details , self.config_details().message_type_details);
                 }
@@ -327,7 +310,7 @@ impl<
                 Ok(Some((config, storage)))
             }
             Ok(None) => Ok(None),
-            Err(e) => Err(ServiceAvailabilityState::ServiceState(e)),
+            Err(e) => Err(e),
         }
     }
 

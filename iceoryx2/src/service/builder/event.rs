@@ -94,7 +94,7 @@ impl core::error::Error for EventOpenError {}
 impl From<ServiceState> for EventOpenError {
     fn from(value: ServiceState) -> Self {
         match value {
-            ServiceState::IncompatibleMessagingPattern => {
+            ServiceState::IncompatibleMessagingPattern | ServiceState::IncompatiblePayload => {
                 EventOpenError::IncompatibleMessagingPattern
             }
             ServiceState::InsufficientPermissions => EventOpenError::InsufficientPermissions,
