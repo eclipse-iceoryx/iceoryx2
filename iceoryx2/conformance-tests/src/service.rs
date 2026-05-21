@@ -43,7 +43,6 @@ pub mod service {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing_macros::conformance_test;
-    use iceoryx2_log::{LogLevel, set_log_level};
 
     pub trait SutFactory<Sut: Service>: Send + Sync {
         type Factory: PortFactory;
@@ -500,7 +499,6 @@ pub mod service {
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
-        set_log_level(LogLevel::Debug);
         let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
         const NUMBER_OF_CLOSE_THREADS: usize = 1;
         let number_of_open_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
