@@ -91,6 +91,10 @@ pub enum iox2_pub_sub_open_or_create_error_e {
     C_OLD_CONNECTION_STILL_ACTIVE,
     #[CStr = "hangs in creation"]
     C_HANGS_IN_CREATION,
+    #[CStr = "unable to create service tag"]
+    C_UNABLE_TO_CREATE_SERVICE_TAG,
+    #[CStr = "the underlying static service config could not be created"]
+    C_SERVICE_CONFIG_COULD_NOT_BE_CREATED,
     #[CStr = "same service is created and removed repeatedly"]
     SYSTEM_IN_FLUX,
 }
@@ -172,6 +176,12 @@ impl IntoCInt for PublishSubscribeCreateError {
             }
          PublishSubscribeCreateError::HangsInCreation => {
              iox2_pub_sub_open_or_create_error_e::C_HANGS_IN_CREATION
+         }
+         PublishSubscribeCreateError::UnableToCreateServiceTag => {
+             iox2_pub_sub_open_or_create_error_e::C_UNABLE_TO_CREATE_SERVICE_TAG
+         }
+         PublishSubscribeCreateError::ServiceConfigCouldNotBeCreated => {
+             iox2_pub_sub_open_or_create_error_e::C_SERVICE_CONFIG_COULD_NOT_BE_CREATED
          }
         }) as c_int
     }
