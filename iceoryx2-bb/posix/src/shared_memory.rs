@@ -219,7 +219,7 @@ impl SharedMemoryBuilder {
         .size();
 
         if actual_shm_size == 0 {
-            debug!("Attemption to open a shared memory with size of 0!");
+            debug!("Trying to open a shared memory with size zero.");
         }
 
         self.size = actual_shm_size as usize;
