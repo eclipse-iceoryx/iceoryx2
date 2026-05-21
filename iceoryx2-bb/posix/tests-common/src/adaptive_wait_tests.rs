@@ -137,7 +137,7 @@ pub fn timed_wait_does_not_wait_when_predicate_returns_error() {
 pub fn long_wait_behavior_waits_at_least_timeout() {
     const TIMEOUT: Duration = Duration::from_millis(50);
     let mut sut = AdaptiveWaitBuilder::new()
-        .behavior(AdaptiveWaitBehavior::LongWait(TIMEOUT))
+        .strategy(AdaptiveWaitStrategy::FixedTicks(TIMEOUT))
         .create()
         .unwrap();
 
