@@ -186,6 +186,8 @@ use iceoryx2_log::{debug, fail, fatal_panic, trace, warn};
 use crate::identifiers::UniqueNodeId;
 use crate::node::global_management_segment::GlobalManagementSegment;
 use crate::node::node_name::NodeName;
+use crate::prelude::MessagingPattern;
+use crate::service::ServiceRemoveError;
 use crate::service::builder::{Builder, OpenDynamicStorageFailure};
 use crate::service::config_scheme::port_tag_config;
 use crate::service::config_scheme::{
@@ -1207,6 +1209,22 @@ impl<Service: service::Service> Node<Service> {
                 cleanup_state
             }
         }
+    }
+
+    /// Removes a [`Service`](crate::service::Service) by force. This shall be used if the
+    /// resources could not be removed in a previous run and now it is no longer possible to
+    /// open the service.
+    ///
+    /// # Safety
+    ///
+    ///  * No other process shall use the service.
+    ///
+    pub unsafe fn force_remove_service(
+        &self,
+        name: &ServiceName,
+        messaging_pattern: MessagingPattern,
+    ) -> Result<bool, ServiceRemoveError> {
+        unsafe { Service::__internal_force_remove_service(name, self.config(), messaging_pattern) }
     }
 
     fn list_all_nodes(
