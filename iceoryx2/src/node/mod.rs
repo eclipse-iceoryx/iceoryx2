@@ -196,7 +196,6 @@ use crate::service::service_name::ServiceName;
 use crate::service::stale_resource_cleanup::RemoveStalePortResourcesError;
 use crate::service::stale_resource_cleanup::remove_service_tag;
 use crate::service::stale_resource_cleanup::remove_stale_port_resources;
-use crate::service::stale_resource_cleanup::remove_static_service_config;
 use crate::service::{self, ServiceRemoveNodeError};
 use crate::signal_handling_mode::SignalHandlingMode;
 use crate::{config::Config, service::config_scheme::node_details_config};
@@ -624,37 +623,6 @@ impl<Service: service::Service> DeadNodeView<Service> {
                     cleanup_failure = Err(NodeCleanupFailure::VersionMismatch);
                     debug!(from self,
                         "{msg} since the dead node was using a different iceoryx2 version.");
-                }
-                Err(ServiceRemoveNodeError::ServiceInCorruptedState) => {
-                    debug!(from self,
-                        "{msg} since the service itself is corrupted. Trying to remove the corrupted remainders of the service.");
-                    match unsafe { remove_static_service_config::<Service>(config, service_hash) } {
-                        Ok(v) => {
-                            if let Err(e) =
-                                remove_service_tag::<Service>(self.id(), service_hash, config)
-                            {
-                                debug!(from self,
-                                    "The service tag could not be removed from the dead node ({:?}).",
-                                    e);
-                            }
-
-                            if v {
-                                debug!(from self, "Successfully removed corrupted static service config.");
-                            } else {
-                                debug!(from self, "Corrupted static service config no longer exists, another instance might have cleaned it up.");
-                            }
-                        }
-                        Err(NamedConceptRemoveError::InsufficientPermissions) => {
-                            cleanup_failure = Err(NodeCleanupFailure::InsufficientPermissions);
-                            debug!(from self,
-                                "{msg} since the corrupted service remainders to could not be removed due to insufficient permissions.");
-                        }
-                        Err(e) => {
-                            cleanup_failure = Err(NodeCleanupFailure::InternalError);
-                            debug!(from self,
-                                "{msg} since the corrupted service remainders to could not be removed due to an internal error ({:?}).", e);
-                        }
-                    }
                 }
                 Err(e) => {
                     cleanup_failure = Err(NodeCleanupFailure::InternalError);

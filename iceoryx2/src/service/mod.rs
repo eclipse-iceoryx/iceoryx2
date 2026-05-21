@@ -323,9 +323,6 @@ pub enum ServiceRemoveNodeError {
     VersionMismatch,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalError,
-    /// The [`Node`](crate::node::Node) has opened a [`Service`] that is in a
-    /// corrupted state and therefore it cannot be remove from it.
-    ServiceInCorruptedState,
     /// The process does not have the permissions to remove the service after last node was removed
     InsufficientPermissions,
 }
@@ -792,9 +789,21 @@ pub mod internal {
             ) {
                 Ok(Some(c)) => c,
                 Ok(None) => {
-                    fail!(from origin,
-                          with ServiceRemoveNodeError::ServiceInCorruptedState,
-                          "{} since the dynamic service segment is missing - service seems to be in a corrupted state.", msg);
+                    warn!(from origin,
+                        "Found corrupted service {service_hash}. Trying to remove it completely");
+                    match unsafe {
+                        Self::__internal_remove_service(
+                            service_hash,
+                            static_config.unique_service_id(),
+                            config,
+                        )
+                    } {
+                        Ok(()) => return Ok(()),
+                        Err(e) => {
+                            fail!(from origin, with e.into(),
+                                    "{msg} since the corrupted service could not be removed. [{e:?}]");
+                        }
+                    }
                 }
                 Err(ServiceDetailsError::VersionMismatch) => {
                     fail!(from origin, with ServiceRemoveNodeError::VersionMismatch,
