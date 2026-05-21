@@ -91,6 +91,10 @@ pub enum iox2_blackboard_create_error_e {
     C_HANGS_IN_CREATION,
     #[CStr = "no entries provided"]
     C_NO_ENTRIES_PROVIDED,
+    #[CStr = "unable to create service tag"]
+    C_UNABLE_TO_CREATE_SERVICE_TAG,
+    #[CStr = "service config could not be created"]
+    C_SERVICE_CONFIG_COULD_NOT_BE_CREATED,
 }
 
 impl IntoCInt for BlackboardOpenError {
@@ -157,6 +161,12 @@ impl IntoCInt for BlackboardCreateError {
             }
             BlackboardCreateError::NoEntriesProvided => {
                 iox2_blackboard_create_error_e::C_NO_ENTRIES_PROVIDED
+            }
+            BlackboardCreateError::ServiceConfigCouldNotBeCreated => {
+                iox2_blackboard_create_error_e::C_SERVICE_CONFIG_COULD_NOT_BE_CREATED
+            }
+            BlackboardCreateError::UnableToCreateServiceTag => {
+                iox2_blackboard_create_error_e::C_UNABLE_TO_CREATE_SERVICE_TAG
             }
         }) as c_int
     }

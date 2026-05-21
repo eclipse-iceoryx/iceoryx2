@@ -300,7 +300,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState>,
         F1: FnMut(&mut StaticConfig) -> Result<(), ServiceCreateError>,
         F2: FnMut(&StaticConfig) -> DynamicConfigCreationArgs,
-        F3: FnMut() -> R,
+        F3: FnMut(&str, &str, &SharedNode<ServiceType>, &StaticConfig) -> Result<R, ServiceCreateError>,
     >(
         &mut self,
         msg: &str,
@@ -373,12 +373,14 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     service_tag.release_ownership();
                 }
 
+                let resource =
+                    create_service_resource(&origin, msg, &self.shared_node, &self.service_config)?;
                 Ok(service::ServiceState::new(
                     self.service_config.clone(),
                     self.shared_node.clone(),
                     dynamic_config,
                     unlocked_static_details,
-                    create_service_resource(),
+                    resource,
                 ))
             }
             Some(_) => {
