@@ -132,3 +132,17 @@ pub fn timed_wait_does_not_wait_when_predicate_returns_error() {
         AdaptiveTimedWaitWhileError::<i32>::PredicateFailure(5)
     );
 }
+
+#[test]
+pub fn long_wait_behavior_waits_at_least_timeout() {
+    const TIMEOUT: Duration = Duration::from_millis(50);
+    let mut sut = AdaptiveWaitBuilder::new()
+        .behavior(AdaptiveWaitBehavior::LongWait(TIMEOUT))
+        .create()
+        .unwrap();
+
+    let now = Time::now().unwrap();
+    assert_that!(sut.wait(), is_ok);
+    assert_that!(sut.yield_count(), eq 1);
+    assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
+}
