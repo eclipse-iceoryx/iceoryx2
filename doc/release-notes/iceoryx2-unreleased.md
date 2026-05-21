@@ -14,6 +14,7 @@
 -->
 
 * [#820](https://github.com/eclipse-iceoryx/iceoryx2/issues/820) Allow restricting the tunnel to a configurable allowlist of services via `Config::services` and the `--service`/`-s` flag on `iox2 tunnel zenoh`
+* [#1584](https://github.com/eclipse-iceoryx/iceoryx2/issues/1584) Introduce `Node::force_remove_service` to remove corrupted services manually.
 * [#1654](https://github.com/eclipse-iceoryx/iceoryx2/issues/1654) Introduce `AdaptiveWaitBehavior`
 * [#1664](https://github.com/eclipse-iceoryx/iceoryx2/issues/1664) Improved console logger
 
