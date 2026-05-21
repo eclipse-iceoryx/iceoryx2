@@ -14,6 +14,7 @@
 -->
 
 * [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
+* [#1654](https://github.com/eclipse-iceoryx/iceoryx2/issues/1654) Introduce `AdaptiveWaitBehavior`
 
 ### Bugfixes
 
