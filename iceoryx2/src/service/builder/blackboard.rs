@@ -40,7 +40,7 @@ use iceoryx2_log::{error, fatal_panic};
 
 use crate::constants::{MAX_BLACKBOARD_KEY_ALIGNMENT, MAX_BLACKBOARD_KEY_SIZE};
 use crate::service;
-use crate::service::builder::CustomKeyMarker;
+use crate::service::builder::{CustomKeyMarker, DynamicConfigCreationArgs};
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::blackboard::DynamicConfigSettings;
@@ -647,9 +647,15 @@ impl<
                 };
 
                 let dynamic_config = match self.builder.base.create_dynamic_config_storage(
-                    &MessagingPatternSettings::Blackboard(dynamic_config_setting),
-                    dynamic_config::blackboard::DynamicConfig::memory_size(&dynamic_config_setting),
-                    blackboard_config.max_nodes,
+                    DynamicConfigCreationArgs {
+                        messaging_pattern_settings: MessagingPatternSettings::Blackboard(
+                            dynamic_config_setting,
+                        ),
+                        additional_size: dynamic_config::blackboard::DynamicConfig::memory_size(
+                            &dynamic_config_setting,
+                        ),
+                        max_number_of_nodes: blackboard_config.max_nodes,
+                    },
                 ) {
                     Ok(dynamic_config) => dynamic_config,
                     Err(DynamicStorageCreateError::AlreadyExists) => {

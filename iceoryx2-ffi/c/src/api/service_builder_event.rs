@@ -83,6 +83,10 @@ pub enum iox2_event_open_or_create_error_e {
     C_HANGS_IN_CREATION,
     #[CStr = "insufficient permissions"]
     C_INSUFFICIENT_PERMISSIONS,
+    #[CStr = "unable to create service tag"]
+    C_UNABLE_TO_CREATE_SERVICE_TAG,
+    #[CStr = "service config could not be created"]
+    C_SERVICE_CONFIG_COULD_NOT_BE_CREATED,
     #[CStr = "old connection still active"]
     C_OLD_CONNECTION_STILL_ACTIVE,
     #[CStr = "same service is created and removed repeatedly"]
@@ -164,6 +168,12 @@ impl IntoCInt for EventCreateError {
             }
             EventCreateError::InsufficientPermissions => {
                 iox2_event_open_or_create_error_e::C_INSUFFICIENT_PERMISSIONS
+            }
+            EventCreateError::ServiceConfigCouldNotBeCreated => {
+                iox2_event_open_or_create_error_e::C_SERVICE_CONFIG_COULD_NOT_BE_CREATED
+            }
+            EventCreateError::UnableToCreateServiceTag => {
+                iox2_event_open_or_create_error_e::C_UNABLE_TO_CREATE_SERVICE_TAG
             }
         }) as c_int
     }

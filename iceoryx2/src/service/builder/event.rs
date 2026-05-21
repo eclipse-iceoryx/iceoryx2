@@ -20,10 +20,11 @@ use alloc::format;
 
 use iceoryx2_bb_container::relocatable_option::RelocatableOption;
 use iceoryx2_bb_posix::clock::Time;
-use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_log::{fail, fatal_panic};
 
-use crate::service::builder::OpenDynamicStorageFailure;
+use crate::service::builder::{
+    DynamicConfigCreationArgs, OpenDynamicStorageFailure, ServiceCreateError,
+};
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::port_factory::event;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
@@ -119,6 +120,34 @@ pub enum EventCreateError {
     HangsInCreation,
     /// The process has insufficient permissions to create the [`Service`].
     InsufficientPermissions,
+    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    UnableToCreateServiceTag,
+    /// The [`Service`]s config could not be created and written to the static service configuration.
+    ServiceConfigCouldNotBeCreated,
+}
+
+impl From<ServiceCreateError> for EventCreateError {
+    fn from(value: ServiceCreateError) -> Self {
+        match value {
+            ServiceCreateError::AlreadyExists => EventCreateError::AlreadyExists,
+            ServiceCreateError::InsufficientPermissions => {
+                EventCreateError::InsufficientPermissions
+            }
+            ServiceCreateError::InternalFailure => EventCreateError::InternalFailure,
+            ServiceCreateError::IsBeingCreatedByAnotherInstance => {
+                EventCreateError::IsBeingCreatedByAnotherInstance
+            }
+            ServiceCreateError::ServiceInCorruptedState => {
+                EventCreateError::ServiceInCorruptedState
+            }
+            ServiceCreateError::UnableToCreateServiceTag => {
+                EventCreateError::UnableToCreateServiceTag
+            }
+            ServiceCreateError::ServiceConfigCouldNotBeCreated => {
+                EventCreateError::ServiceConfigCouldNotBeCreated
+            }
+        }
+    }
 }
 
 impl core::fmt::Display for EventCreateError {
@@ -128,17 +157,6 @@ impl core::fmt::Display for EventCreateError {
 }
 
 impl core::error::Error for EventCreateError {}
-
-impl From<ServiceState> for EventCreateError {
-    fn from(value: ServiceState) -> Self {
-        match value {
-            ServiceState::IncompatibleMessagingPattern => EventCreateError::AlreadyExists,
-            ServiceState::InsufficientPermissions => EventCreateError::InsufficientPermissions,
-            ServiceState::HangsInCreation => EventCreateError::HangsInCreation,
-            ServiceState::Corrupted => EventCreateError::ServiceInCorruptedState,
-        }
-    }
-}
 
 /// Failures that can occur when a [`MessagingPattern::Event`] [`Service`] shall be opened or
 /// created.
@@ -476,97 +494,46 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         attributes: &AttributeSpecifier,
     ) -> Result<event::PortFactory<ServiceType>, EventCreateError> {
         self.adjust_attributes_to_meaningful_values();
-
+        let origin = format!("{self:?}");
         let msg = "Unable to create event service";
 
-        match self.base.is_service_available(msg)? {
-            None => {
-                let service_tag = self
-                    .base
-                    .create_node_service_tag(msg, EventCreateError::InternalFailure)?;
+        let prepare_static_config = |service_config: &mut StaticConfig| {
+            if let RelocatableOption::Some(ref mut deadline) = service_config.event_mut().deadline {
+                let now = fail!(from origin, when Time::now(),
+                            with ServiceCreateError::InternalFailure,
+                            "{} since the current system time could not be acquired.", msg);
 
-                if let RelocatableOption::Some(ref mut deadline) =
-                    self.base.service_config.event_mut().deadline
-                {
-                    let now = fail!(from self, when Time::now(),
-                                with EventCreateError::InternalFailure,
-                                "{} since the current system time could not be acquired.", msg);
-
-                    deadline.creation_time = now;
-                }
-
-                let static_config = match self.base.create_static_config_storage() {
-                    Ok(c) => c,
-                    Err(StaticStorageCreateError::AlreadyExists) => {
-                        fail!(from self, with EventCreateError::AlreadyExists,
-                           "{} since the service already exists.", msg);
-                    }
-                    Err(StaticStorageCreateError::Creation) => {
-                        fail!(from self, with EventCreateError::IsBeingCreatedByAnotherInstance,
-                            "{} since the service is being created by another instance.", msg);
-                    }
-                    Err(StaticStorageCreateError::InsufficientPermissions) => {
-                        fail!(from self, with EventCreateError::InsufficientPermissions,
-                            "{} since the static service information could not be created due to insufficient permissions.", msg);
-                    }
-                    Err(e) => {
-                        fail!(from self, with EventCreateError::InternalFailure,
-                            "{} since the static service information could not be created ({:?}).", msg, e);
-                    }
-                };
-
-                let event_config = self.base.service_config.event();
-
-                let dynamic_config_setting = DynamicConfigSettings {
-                    number_of_listeners: event_config.max_listeners,
-                    number_of_notifiers: event_config.max_notifiers,
-                };
-
-                let dynamic_config = match self.base.create_dynamic_config_storage(
-                    &MessagingPatternSettings::Event(dynamic_config_setting),
-                    dynamic_config::event::DynamicConfig::memory_size(&dynamic_config_setting),
-                    event_config.max_nodes,
-                ) {
-                    Ok(dynamic_config) => dynamic_config,
-                    Err(DynamicStorageCreateError::AlreadyExists) => {
-                        fail!(from self, with EventCreateError::ServiceInCorruptedState,
-                            "{} since there exist an old dynamic config from a previous instance of the service.", msg);
-                    }
-                    Err(e) => {
-                        fail!(from self, with EventCreateError::InternalFailure,
-                            "{} since the dynamic service segment could not be created ({:?}).", msg, e);
-                    }
-                };
-
-                self.base.service_config.attributes = attributes.0.clone();
-
-                let service_config = fail!(from self, when ServiceType::ConfigSerializer::serialize(&self.base.service_config),
-                                            with EventCreateError::ServiceInCorruptedState,
-                                            "{} since the configuration could not be serialized.", msg);
-
-                // only unlock the static details when the service is successfully created
-                let unlocked_static_details = fail!(from self, when static_config.unlock(service_config.as_slice()),
-                            with EventCreateError::ServiceInCorruptedState,
-                            "{} since the configuration could not be written to the static storage.", msg);
-
-                unlocked_static_details.release_ownership();
-                if let Some(service_tag) = service_tag {
-                    service_tag.release_ownership();
-                }
-
-                Ok(event::PortFactory::new(service::ServiceState::new(
-                    self.base.service_config.clone(),
-                    self.base.shared_node.clone(),
-                    dynamic_config,
-                    unlocked_static_details,
-                    NoResource,
-                )))
+                deadline.creation_time = now;
             }
-            Some(_) => {
-                fail!(from self, with EventCreateError::AlreadyExists,
-                    "{} since the service already exists.", msg);
+
+            Ok(())
+        };
+
+        let generate_dynamic_config = |service_config: &StaticConfig| {
+            let event_config = service_config.event();
+            let dynamic_config_setting = DynamicConfigSettings {
+                number_of_listeners: event_config.max_listeners,
+                number_of_notifiers: event_config.max_notifiers,
+            };
+
+            DynamicConfigCreationArgs {
+                messaging_pattern_settings: MessagingPatternSettings::Event(dynamic_config_setting),
+                additional_size: dynamic_config::event::DynamicConfig::memory_size(
+                    &dynamic_config_setting,
+                ),
+                max_number_of_nodes: event_config.max_nodes,
             }
-        }
+        };
+
+        let service_state = self.base.create(
+            msg,
+            attributes,
+            prepare_static_config,
+            generate_dynamic_config,
+            || NoResource,
+        )?;
+
+        Ok(event::PortFactory::new(service_state))
     }
 
     fn adjust_attributes_to_meaningful_values(&mut self) {

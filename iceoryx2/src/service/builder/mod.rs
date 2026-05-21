@@ -51,8 +51,10 @@ use iceoryx2_log::fatal_panic;
 
 use crate::identifiers::UniqueServiceId;
 use crate::node::SharedNode;
+use crate::prelude::AttributeSpecifier;
 use crate::service;
 use crate::service::dynamic_config::DynamicConfig;
+use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::RegisterNodeResult;
 use crate::service::naming_scheme::dynamic_config_name;
 use crate::service::naming_scheme::static_config_name;
@@ -117,6 +119,35 @@ pub struct Builder<S: Service> {
     name: ServiceName,
     shared_node: SharedNode<S>,
     _phantom_s: PhantomData<S>,
+}
+
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+enum ServiceCreateError {
+    InternalFailure,
+    AlreadyExists,
+    IsBeingCreatedByAnotherInstance,
+    InsufficientPermissions,
+    ServiceInCorruptedState,
+    UnableToCreateServiceTag,
+    ServiceConfigCouldNotBeCreated,
+}
+
+impl From<ServiceState> for ServiceCreateError {
+    fn from(value: ServiceState) -> Self {
+        match value {
+            ServiceState::IncompatibleMessagingPattern | ServiceState::HangsInCreation => {
+                ServiceCreateError::AlreadyExists
+            }
+            ServiceState::InsufficientPermissions => ServiceCreateError::InsufficientPermissions,
+            ServiceState::Corrupted => ServiceCreateError::ServiceInCorruptedState,
+        }
+    }
+}
+
+struct DynamicConfigCreationArgs {
+    messaging_pattern_settings: MessagingPatternSettings,
+    additional_size: usize,
+    max_number_of_nodes: usize,
 }
 
 impl<S: Service> Builder<S> {
@@ -258,6 +289,96 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         blackboard::Opener::new(self)
     }
 
+    fn create<
+        R: service::ServiceResource,
+        F1: FnMut(&mut StaticConfig) -> Result<(), ServiceCreateError>,
+        F2: FnMut(&StaticConfig) -> DynamicConfigCreationArgs,
+        F3: FnMut() -> R,
+    >(
+        &mut self,
+        msg: &str,
+        attributes: &AttributeSpecifier,
+        mut prepare_service_config: F1,
+        mut generate_dynamic_config: F2,
+        mut create_service_resource: F3,
+    ) -> Result<service::ServiceState<ServiceType, R>, ServiceCreateError> {
+        match self.is_service_available(msg)? {
+            None => {
+                let service_tag = fail!(from self,
+                    when self.create_node_service_tag(msg, ServiceCreateError::InternalFailure),
+                    with ServiceCreateError::UnableToCreateServiceTag,
+                    "{msg} since the service tag could not be created."
+                );
+
+                prepare_service_config(&mut self.service_config)?;
+
+                let static_config = match self.create_static_config_storage() {
+                    Ok(c) => c,
+                    Err(StaticStorageCreateError::AlreadyExists) => {
+                        fail!(from self, with ServiceCreateError::AlreadyExists,
+                           "{} since the service already exists.", msg);
+                    }
+                    Err(StaticStorageCreateError::Creation) => {
+                        fail!(from self, with ServiceCreateError::IsBeingCreatedByAnotherInstance,
+                            "{} since the service is being created by another instance.", msg);
+                    }
+                    Err(StaticStorageCreateError::InsufficientPermissions) => {
+                        fail!(from self, with ServiceCreateError::InsufficientPermissions,
+                            "{} since the static service information could not be created due to insufficient permissions.", msg);
+                    }
+                    Err(e) => {
+                        fail!(from self, with ServiceCreateError::InternalFailure,
+                            "{} since the static service information could not be created ({:?}).", msg, e);
+                    }
+                };
+
+                let dyn_conf_creation_args = generate_dynamic_config(&self.service_config);
+
+                let dynamic_config = match self
+                    .create_dynamic_config_storage(dyn_conf_creation_args)
+                {
+                    Ok(dynamic_config) => dynamic_config,
+                    Err(DynamicStorageCreateError::AlreadyExists) => {
+                        fail!(from self, with ServiceCreateError::ServiceInCorruptedState,
+                            "This should never happen! {} since the unique dynamic service management segment already exists.", msg);
+                    }
+                    Err(e) => {
+                        fail!(from self, with ServiceCreateError::InternalFailure,
+                            "{} since the dynamic service segment could not be created ({:?}).", msg, e);
+                    }
+                };
+
+                self.service_config.attributes = attributes.0.clone();
+
+                let service_config = fail!(from self, when ServiceType::ConfigSerializer::serialize(&self.service_config),
+                                            with ServiceCreateError::ServiceConfigCouldNotBeCreated,
+                                            "{} since the configuration could not be serialized.", msg);
+
+                // only unlock the static details when the service is successfully created
+                let unlocked_static_details = fail!(from self, when static_config.unlock(service_config.as_slice()),
+                            with ServiceCreateError::ServiceConfigCouldNotBeCreated,
+                            "{} since the configuration could not be written to the static storage.", msg);
+
+                unlocked_static_details.release_ownership();
+                if let Some(service_tag) = service_tag {
+                    service_tag.release_ownership();
+                }
+
+                Ok(service::ServiceState::new(
+                    self.service_config.clone(),
+                    self.shared_node.clone(),
+                    dynamic_config,
+                    unlocked_static_details,
+                    create_service_resource(),
+                ))
+            }
+            Some(_) => {
+                fail!(from self, with ServiceCreateError::AlreadyExists,
+                    "{} since the service already exists.", msg);
+            }
+        }
+    }
+
     fn is_service_available(
         &self,
         msg: &str,
@@ -336,12 +457,10 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
 
     fn create_dynamic_config_storage_resource(
         &self,
-        messaging_pattern_settings: &super::dynamic_config::MessagingPatternSettings,
-        additional_size: usize,
-        max_number_of_nodes: usize,
+        args: DynamicConfigCreationArgs,
     ) -> Result<ServiceType::DynamicStorage<DynamicConfig>, DynamicStorageCreateError> {
         let msg = "Failed to create dynamic storage for service";
-        let required_memory_size = DynamicConfig::memory_size(max_number_of_nodes);
+        let required_memory_size = DynamicConfig::memory_size(args.max_number_of_nodes);
         let segment_name = dynamic_config_name(self.service_config.unique_service_id());
         match <<ServiceType::DynamicStorage<DynamicConfig> as DynamicStorage<
             DynamicConfig,
@@ -349,10 +468,10 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
             ServiceType::DynamicStorage<DynamicConfig>,
         >>::new(&segment_name)
             .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
-            .supplementary_size(additional_size + required_memory_size)
+            .supplementary_size(args.additional_size + required_memory_size)
             .has_ownership(false)
             .initializer(Self::config_init_call)
-            .create(DynamicConfig::new_uninit(super::dynamic_config::MessagingPattern::new(messaging_pattern_settings), max_number_of_nodes) ) {
+            .create(DynamicConfig::new_uninit(super::dynamic_config::MessagingPattern::new(&args.messaging_pattern_settings), args.max_number_of_nodes) ) {
                 Ok(dynamic_storage) => {
                     let node_id = self.shared_node.id();
                     let node_handle = fatal_panic!(from self,
@@ -369,16 +488,10 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
 
     fn create_dynamic_config_storage(
         &self,
-        messaging_pattern_settings: &super::dynamic_config::MessagingPatternSettings,
-        additional_size: usize,
-        max_number_of_nodes: usize,
+        args: DynamicConfigCreationArgs,
     ) -> Result<ServiceType::DynamicStorage<DynamicConfig>, DynamicStorageCreateError> {
         let msg = "Failed to create dynamic storage for service";
-        match self.create_dynamic_config_storage_resource(
-            messaging_pattern_settings,
-            additional_size,
-            max_number_of_nodes,
-        ) {
+        match self.create_dynamic_config_storage_resource(args) {
             Ok(storage) => Ok(storage),
             Err(DynamicStorageCreateError::AlreadyExists) => {
                 fail!(from self, with DynamicStorageCreateError::AlreadyExists,

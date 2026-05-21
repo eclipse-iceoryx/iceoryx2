@@ -25,6 +25,7 @@ use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::StaticStorageLocked;
 use iceoryx2_log::{fail, fatal_panic, warn};
 
+use crate::service::builder::DynamicConfigCreationArgs;
 use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;
 use crate::service::header::publish_subscribe::Header;
 use crate::service::port_factory::publish_subscribe;
@@ -579,11 +580,16 @@ impl<
                 };
 
                 let dynamic_config = match self.base.create_dynamic_config_storage(
-                    &MessagingPatternSettings::PublishSubscribe(dynamic_config_setting),
-                    dynamic_config::publish_subscribe::DynamicConfig::memory_size(
-                        &dynamic_config_setting,
-                    ),
-                    pubsub_config.max_nodes,
+                    DynamicConfigCreationArgs {
+                        messaging_pattern_settings: MessagingPatternSettings::PublishSubscribe(
+                            dynamic_config_setting,
+                        ),
+                        additional_size:
+                            dynamic_config::publish_subscribe::DynamicConfig::memory_size(
+                                &dynamic_config_setting,
+                            ),
+                        max_number_of_nodes: pubsub_config.max_nodes,
+                    },
                 ) {
                     Ok(dynamic_config) => dynamic_config,
                     Err(DynamicStorageCreateError::AlreadyExists) => {

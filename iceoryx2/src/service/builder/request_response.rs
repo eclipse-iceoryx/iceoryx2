@@ -23,7 +23,7 @@ use iceoryx2_cal::static_storage::{StaticStorage, StaticStorageCreateError, Stat
 use iceoryx2_log::{fail, fatal_panic, warn};
 
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
-use crate::service::builder::OpenDynamicStorageFailure;
+use crate::service::builder::{DynamicConfigCreationArgs, OpenDynamicStorageFailure};
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::request_response::DynamicConfigSettings;
 use crate::service::port_factory::request_response;
@@ -725,11 +725,16 @@ impl<
                 };
 
                 let dynamic_config = match self.base.create_dynamic_config_storage(
-                    &MessagingPatternSettings::RequestResponse(dynamic_config_setting),
-                    dynamic_config::request_response::DynamicConfig::memory_size(
-                        &dynamic_config_setting,
-                    ),
-                    request_response_config.max_nodes,
+                    DynamicConfigCreationArgs {
+                        messaging_pattern_settings: MessagingPatternSettings::RequestResponse(
+                            dynamic_config_setting,
+                        ),
+                        additional_size:
+                            dynamic_config::request_response::DynamicConfig::memory_size(
+                                &dynamic_config_setting,
+                            ),
+                        max_number_of_nodes: request_response_config.max_nodes,
+                    },
                 ) {
                     Ok(dynamic_config) => dynamic_config,
                     Err(DynamicStorageCreateError::AlreadyExists) => {
