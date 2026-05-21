@@ -108,6 +108,10 @@ pub enum iox2_request_response_open_or_create_error_e {
     C_HANGS_IN_CREATION,
     #[CStr = "service in corrupted state"]
     C_SERVICE_IN_CORRUPTED_STATE,
+    #[CStr = "unable to create service tag"]
+    C_UNABLE_TO_CREATE_SERVICE_TAG,
+    #[CStr = "service config could not be created"]
+    C_SERVICE_CONFIG_COULD_NOT_BE_CREATED,
     #[CStr = "system in flux"]
     SYSTEM_IN_FLUX,
 }
@@ -159,6 +163,12 @@ impl IntoCInt for RequestResponseCreateError {
             }
             RequestResponseCreateError::ServiceInCorruptedState => {
                 iox2_request_response_open_or_create_error_e::C_SERVICE_IN_CORRUPTED_STATE
+            }
+            RequestResponseCreateError::ServiceConfigCouldNotBeCreated => {
+                iox2_request_response_open_or_create_error_e::C_SERVICE_CONFIG_COULD_NOT_BE_CREATED
+            }
+            RequestResponseCreateError::UnableToCreateServiceTag => {
+                iox2_request_response_open_or_create_error_e::C_UNABLE_TO_CREATE_SERVICE_TAG
             }
         }) as c_int
     }

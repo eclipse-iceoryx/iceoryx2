@@ -17,18 +17,20 @@ use alloc::format;
 
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::dynamic_storage::{DynamicStorageCreateError, DynamicStorageOpenError};
-use iceoryx2_cal::serialize::Serialize;
-use iceoryx2_cal::static_storage::{StaticStorage, StaticStorageCreateError, StaticStorageLocked};
+use iceoryx2_cal::dynamic_storage::DynamicStorageOpenError;
+use iceoryx2_cal::static_storage::StaticStorage;
 use iceoryx2_log::{fail, fatal_panic, warn};
 
+use crate::node::SharedNode;
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
 use crate::service::builder::{
     BuilderWithServiceType, DynamicConfigCreationArgs, OpenDynamicStorageFailure,
+    ServiceCreateError,
 };
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::request_response::DynamicConfigSettings;
 use crate::service::port_factory::request_response;
+use crate::service::static_config::StaticConfig;
 use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::{self, NoResource, header, static_config};
@@ -129,6 +131,10 @@ pub enum RequestResponseCreateError {
     HangsInCreation,
     /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
     ServiceInCorruptedState,
+    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    UnableToCreateServiceTag,
+    /// The [`Service`]s config could not be created and written to the static service configuration.
+    ServiceConfigCouldNotBeCreated,
 }
 
 impl core::fmt::Display for RequestResponseCreateError {
@@ -150,6 +156,30 @@ impl From<ServiceState> for RequestResponseCreateError {
             }
             ServiceState::HangsInCreation => RequestResponseCreateError::HangsInCreation,
             ServiceState::Corrupted => RequestResponseCreateError::ServiceInCorruptedState,
+        }
+    }
+}
+
+impl From<ServiceCreateError> for RequestResponseCreateError {
+    fn from(value: ServiceCreateError) -> Self {
+        match value {
+            ServiceCreateError::AlreadyExists => RequestResponseCreateError::AlreadyExists,
+            ServiceCreateError::InsufficientPermissions => {
+                RequestResponseCreateError::InsufficientPermissions
+            }
+            ServiceCreateError::InternalFailure => RequestResponseCreateError::InternalFailure,
+            ServiceCreateError::IsBeingCreatedByAnotherInstance => {
+                RequestResponseCreateError::IsBeingCreatedByAnotherInstance
+            }
+            ServiceCreateError::ServiceConfigCouldNotBeCreated => {
+                RequestResponseCreateError::ServiceConfigCouldNotBeCreated
+            }
+            ServiceCreateError::ServiceInCorruptedState => {
+                RequestResponseCreateError::ServiceInCorruptedState
+            }
+            ServiceCreateError::UnableToCreateServiceTag => {
+                RequestResponseCreateError::UnableToCreateServiceTag
+            }
         }
     }
 }
@@ -612,38 +642,38 @@ impl<
     }
 
     fn is_service_available(
-        &mut self,
+        origin: &str,
         error_msg: &str,
+        shared_node: &SharedNode<ServiceType>,
+        expected_service_config: &StaticConfig,
+        reqres_service_config: &static_config::request_response::StaticConfig,
     ) -> Result<Option<(static_config::StaticConfig, ServiceType::StaticStorage)>, ServiceState>
     {
-        let origin = format!("{self:?}");
         match BuilderWithServiceType::is_service_available(
-            &origin,
+            origin,
             error_msg,
-            &self.base.shared_node,
-            &self.base.service_config,
+            shared_node,
+            expected_service_config,
         ) {
             Ok(Some((config, storage))) => {
-                if !self
-                    .config_details()
+                if !reqres_service_config
                     .request_message_type_details
                     .is_compatible_to(&config.request_response().request_message_type_details)
                 {
-                    fail!(from self, with ServiceState::IncompatiblePayload,
+                    fail!(from origin, with ServiceState::IncompatiblePayload,
                         "{} since the services uses the request type \"{:?}\" which is not compatible to the requested type \"{:?}\".",
                         error_msg, &config.request_response().request_message_type_details,
-                        self.config_details().request_message_type_details);
+                        reqres_service_config.request_message_type_details);
                 }
 
-                if !self
-                    .config_details()
+                if !reqres_service_config
                     .response_message_type_details
                     .is_compatible_to(&config.request_response().response_message_type_details)
                 {
-                    fail!(from self, with ServiceState::IncompatiblePayload,
+                    fail!(from origin, with ServiceState::IncompatiblePayload,
                         "{} since the services uses the response type \"{:?}\" which is not compatible to the requested type \"{:?}\".",
                         error_msg, &config.request_response().response_message_type_details,
-                        self.config_details().response_message_type_details);
+                        reqres_service_config.response_message_type_details);
                 }
 
                 Ok(Some((config, storage)))
@@ -669,99 +699,43 @@ impl<
         let msg = "Unable to create request response service";
         self.adjust_configuration_to_meaningful_values();
 
-        match self.is_service_available(msg)? {
-            Some(_) => {
-                fail!(from self, with RequestResponseCreateError::AlreadyExists,
-                    "{} since the service already exists.",
-                    msg);
+        let generate_dynamic_config = |service_config: &StaticConfig| {
+            let reqres_config = service_config.request_response();
+            let dynamic_config_setting = DynamicConfigSettings {
+                number_of_clients: reqres_config.max_clients,
+                number_of_servers: reqres_config.max_servers,
+            };
+
+            DynamicConfigCreationArgs {
+                messaging_pattern_settings: MessagingPatternSettings::RequestResponse(
+                    dynamic_config_setting,
+                ),
+                additional_size: dynamic_config::request_response::DynamicConfig::memory_size(
+                    &dynamic_config_setting,
+                ),
+                max_number_of_nodes: reqres_config.max_nodes,
             }
-            None => {
-                let service_tag = self
-                    .base
-                    .create_node_service_tag(msg, RequestResponseCreateError::InternalFailure)?;
+        };
 
-                let static_config = match self.base.create_static_config_storage() {
-                    Ok(static_config) => static_config,
-                    Err(StaticStorageCreateError::AlreadyExists) => {
-                        fail!(from self, with RequestResponseCreateError::AlreadyExists,
-                            "{} since the service already exists.", msg);
-                    }
-                    Err(StaticStorageCreateError::Creation) => {
-                        fail!(from self, with RequestResponseCreateError::IsBeingCreatedByAnotherInstance,
-                            "{} since the service is being created by another instance.", msg);
-                    }
-                    Err(StaticStorageCreateError::InsufficientPermissions) => {
-                        fail!(from self, with RequestResponseCreateError::InsufficientPermissions,
-                            "{} since the static service information could not be created due to insufficient permissions.",
-                            msg);
-                    }
-                    Err(e) => {
-                        fail!(from self, with RequestResponseCreateError::InternalFailure,
-                            "{} since the static service information could not be created due to an internal failure ({:?}).",
-                            msg, e);
-                    }
-                };
+        let reqres_config = *self.config_details();
+        let service_state = self.base.create(
+            msg,
+            attributes,
+            |origin, msg, shared_node, expected_service_config| {
+                Self::is_service_available(
+                    origin,
+                    msg,
+                    shared_node,
+                    expected_service_config,
+                    &reqres_config,
+                )
+            },
+            |_| Ok(()),
+            generate_dynamic_config,
+            || NoResource,
+        )?;
 
-                let request_response_config = self.base.service_config.request_response();
-                let dynamic_config_setting = DynamicConfigSettings {
-                    number_of_servers: request_response_config.max_servers,
-                    number_of_clients: request_response_config.max_clients,
-                };
-
-                let dynamic_config = match self.base.create_dynamic_config_storage(
-                    DynamicConfigCreationArgs {
-                        messaging_pattern_settings: MessagingPatternSettings::RequestResponse(
-                            dynamic_config_setting,
-                        ),
-                        additional_size:
-                            dynamic_config::request_response::DynamicConfig::memory_size(
-                                &dynamic_config_setting,
-                            ),
-                        max_number_of_nodes: request_response_config.max_nodes,
-                    },
-                ) {
-                    Ok(dynamic_config) => dynamic_config,
-                    Err(DynamicStorageCreateError::AlreadyExists) => {
-                        fail!(from self, with RequestResponseCreateError::ServiceInCorruptedState,
-                            "{} since the dynamic config of a previous instance of the service still exists.",
-                            msg);
-                    }
-                    Err(e) => {
-                        fail!(from self, with RequestResponseCreateError::InternalFailure,
-                            "{} since the dynamic service segment could not be created ({:?}).",
-                            msg, e);
-                    }
-                };
-
-                self.base.service_config.attributes = attributes.0.clone();
-                let serialized_service_config = fail!(from self,
-                          when ServiceType::ConfigSerializer::serialize(&self.base.service_config),
-                          with RequestResponseCreateError::ServiceInCorruptedState,
-                          "{} since the configuration could not be serialized.",
-                          msg);
-
-                let unlocked_static_details = fail!(from self,
-                        when static_config.unlock(serialized_service_config.as_slice()),
-                        with RequestResponseCreateError::ServiceInCorruptedState,
-                        "{} since the configuration could not be written into the static storage.",
-                        msg);
-
-                unlocked_static_details.release_ownership();
-                if let Some(service_tag) = service_tag {
-                    service_tag.release_ownership();
-                }
-
-                Ok(request_response::PortFactory::new(
-                    service::ServiceState::new(
-                        self.base.service_config.clone(),
-                        self.base.shared_node.clone(),
-                        dynamic_config,
-                        unlocked_static_details,
-                        NoResource,
-                    ),
-                ))
-            }
-        }
+        Ok(request_response::PortFactory::new(service_state))
     }
 
     fn open_impl(
@@ -778,11 +752,18 @@ impl<
         RequestResponseOpenError,
     > {
         const OPEN_RETRY_LIMIT: usize = 5;
+        let origin = format!("{self:?}");
         let msg = "Unable to open request response service";
 
         let mut service_open_retry_count = 0;
         loop {
-            match self.is_service_available(msg)? {
+            match Self::is_service_available(
+                &origin,
+                msg,
+                &self.base.shared_node,
+                &self.base.service_config,
+                self.config_details(),
+            )? {
                 None => {
                     fail!(from self, with RequestResponseOpenError::DoesNotExist,
                         "{} since the service does not exist.",
@@ -819,7 +800,15 @@ impl<
                                 msg);
                         }
                         Err(e) => {
-                            if self.is_service_available(msg)?.is_none() {
+                            if Self::is_service_available(
+                                &origin,
+                                msg,
+                                &self.base.shared_node,
+                                &self.base.service_config,
+                                self.config_details(),
+                            )?
+                            .is_none()
+                            {
                                 fail!(from self, with RequestResponseOpenError::DoesNotExist,
                                     "{} since the service does not exist.", msg);
                             }
@@ -870,6 +859,7 @@ impl<
         >,
         RequestResponseOpenOrCreateError,
     > {
+        let origin = format!("{self:?}");
         let msg = "Unable to open or create request response service";
 
         let mut retry_count = 0;
@@ -882,7 +872,15 @@ impl<
             }
             retry_count += 1;
 
-            if self.is_service_available(msg)?.is_some() {
+            if Self::is_service_available(
+                &origin,
+                msg,
+                &self.base.shared_node,
+                &self.base.service_config,
+                self.config_details(),
+            )?
+            .is_some()
+            {
                 match self.open_impl(verifier) {
                     Ok(factory) => return Ok(factory),
                     Err(RequestResponseOpenError::DoesNotExist)
