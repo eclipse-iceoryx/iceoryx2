@@ -18,6 +18,7 @@ pub mod service {
     use alloc::{format, vec, vec::Vec};
     use core::marker::PhantomData;
     use core::time::Duration;
+    use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 
     use iceoryx2::node::NodeView;
     use iceoryx2::prelude::*;
@@ -45,7 +46,7 @@ pub mod service {
     use iceoryx2_bb_testing_macros::conformance_test;
 
     pub trait SutFactory<Sut: Service>: Send + Sync {
-        type Factory: PortFactory;
+        type Factory: PortFactory + Abandonable;
         type CreateError: core::fmt::Debug;
         type OpenError: core::fmt::Debug;
 
@@ -1242,5 +1243,34 @@ pub mod service {
             .unwrap();
 
         assert_that!(sut.service_hash(), eq sut2.service_hash());
+    }
+
+    #[conformance_test]
+    pub fn service_can_be_forcefully_removed_and_recreated_and_opened_again<
+        Sut: Service,
+        Factory: SutFactory<Sut>,
+    >() {
+        let test = Factory::new();
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let dead_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let dead_sut = test
+            .create(&dead_node, &service_name, &AttributeSpecifier::new())
+            .unwrap();
+        dead_sut.abandon();
+        dead_node.abandon();
+
+        assert_that!(
+            unsafe { node.force_remove_service(&service_name, Factory::messaging_pattern()) },
+            is_ok
+        );
+
+        let create_sut = test.create(&node, &service_name, &AttributeSpecifier::new());
+        assert_that!(create_sut, is_ok);
+
+        let open_sut = test.open(&node, &service_name, &AttributeVerifier::new());
+        assert_that!(open_sut, is_ok);
     }
 }
