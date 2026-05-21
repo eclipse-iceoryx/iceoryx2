@@ -54,19 +54,19 @@ pub enum EventOpenError {
     InternalFailure,
     /// The [`Service`]s deadline settings are not equal the the user given requirements.
     IncompatibleDeadline,
-    /// The event id that is emitted for a newly created [`Notifier`](crate::port::notifier::Notifier)
+    /// The event id that is emitted for a newly created [`Notifier`]
     /// does not fit the required event id.
     IncompatibleNotifierCreatedEvent,
-    /// The event id that is emitted if a [`Notifier`](crate::port::notifier::Notifier) is dropped
+    /// The event id that is emitted if a [`Notifier`] is dropped
     /// does not fit the required event id.
     IncompatibleNotifierDroppedEvent,
-    /// The event id that is emitted if a [`Notifier`](crate::port::notifier::Notifier) is
+    /// The event id that is emitted if a [`Notifier`] is
     /// identified as dead does not fit the required event id.
     IncompatibleNotifierDeadEvent,
     /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
     /// by a process that crashed during [`Service`] creation.
     HangsInCreation,
-    /// The [`Service`] supports less [`Notifier`](crate::port::notifier::Notifier)s than requested.
+    /// The [`Service`] supports less [`Notifier`]s than requested.
     DoesNotSupportRequestedAmountOfNotifiers,
     /// The [`Service`] supports less [`Listener`](crate::port::listener::Listener)s than requested.
     DoesNotSupportRequestedAmountOfListeners,
@@ -228,7 +228,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     }
 
     /// Enables the deadline property of the service. There must be a notification emitted by any
-    /// [`Notifier`](crate::port::notifier::Notifier) after at least the provided `deadline`.
+    /// [`Notifier`] after at least the provided `deadline`.
     pub fn deadline(mut self, deadline: Duration) -> Self {
         self.config_details().deadline = RelocatableOption::Some(Deadline {
             value: deadline.into(),
@@ -238,7 +238,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         self
     }
 
-    /// Disables the deadline property of the service. [`Notifier`](crate::port::notifier::Notifier)
+    /// Disables the deadline property of the service. [`Notifier`]
     /// can signal notifications at any rate.
     pub fn disable_deadline(mut self) -> Self {
         self.config_details().deadline = RelocatableOption::None;
@@ -283,7 +283,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     }
 
     /// If the [`Service`] is created it defines the event that shall be emitted by every newly
-    /// created [`Notifier`](crate::port::notifier::Notifier).
+    /// created [`Notifier`].
     pub fn notifier_created_event(mut self, value: EventId) -> Self {
         self.config_details().notifier_created_event = RelocatableOption::Some(value.as_value());
         self.verify_notifier_created_event = true;
@@ -291,7 +291,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     }
 
     /// If the [`Service`] is created it disables the event that shall be emitted by every newly
-    /// created [`Notifier`](crate::port::notifier::Notifier).
+    /// created [`Notifier`].
     pub fn disable_notifier_created_event(mut self) -> Self {
         self.config_details().notifier_created_event = RelocatableOption::None;
         self.verify_notifier_created_event = true;
@@ -299,7 +299,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     }
 
     /// If the [`Service`] is created it defines the event that shall be emitted by every
-    /// [`Notifier`](crate::port::notifier::Notifier) before it is dropped.
+    /// [`Notifier`] before it is dropped.
     pub fn notifier_dropped_event(mut self, value: EventId) -> Self {
         self.config_details().notifier_dropped_event = RelocatableOption::Some(value.as_value());
         self.verify_notifier_dropped_event = true;
@@ -307,7 +307,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     }
 
     /// If the [`Service`] is created it disables the event that shall be emitted by every
-    /// [`Notifier`](crate::port::notifier::Notifier) before it is dropped.
+    /// [`Notifier`] before it is dropped.
     pub fn disable_notifier_dropped_event(mut self) -> Self {
         self.config_details().notifier_dropped_event = RelocatableOption::None;
         self.verify_notifier_dropped_event = true;
@@ -315,7 +315,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     }
 
     /// If the [`Service`] is created it defines the event that shall be emitted when a
-    /// [`Notifier`](crate::port::notifier::Notifier) is identified as dead.
+    /// [`Notifier`] is identified as dead.
     pub fn notifier_dead_event(mut self, value: EventId) -> Self {
         self.config_details().notifier_dead_event = RelocatableOption::Some(value.as_value());
         self.verify_notifier_dead_event = true;
@@ -323,7 +323,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     }
 
     /// If the [`Service`] is created it disables the event that shall be emitted when a
-    /// [`Notifier`](crate::port::notifier::Notifier) is identified as dead.
+    /// [`Notifier`] is identified as dead.
     pub fn disable_notifier_dead_event(mut self) -> Self {
         self.config_details().notifier_dead_event = RelocatableOption::None;
         self.verify_notifier_dead_event = true;
