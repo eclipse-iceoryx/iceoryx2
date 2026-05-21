@@ -352,7 +352,7 @@ impl RobustUniqueIndexSet {
                 }
             }
 
-            if current_generation_count == self.generation_counter.load(Ordering::Relaxed) {
+            if current_generation_count == self.generation_counter.acquire_release_load() {
                 fail!(from self, with UniqueIndexSetAcquireFailure::OutOfIndices,
                     "{msg} since the RobustUniqueIndexSet is out of indices.");
             }

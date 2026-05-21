@@ -324,7 +324,7 @@ impl<T: Copy + Debug> Container<T> {
                 &*self.element_generation_counter_ptr.as_ptr().add(index as _);
 
             let current_element_generation_counter =
-                element_generation_counter.load(Ordering::Acquire);
+                element_generation_counter.acquire_release_load();
 
             // Race against: `Self::remove()` and `Self::recover()` the index could
             // have been returned to the `index_set` but the element generation count
@@ -496,7 +496,7 @@ impl<T: Copy + Debug> Container<T> {
                     };
 
                     let old_gen_count = current_gen_count;
-                    current_gen_count = element_generation_counter.load(Ordering::SeqCst);
+                    current_gen_count = element_generation_counter.acquire_release_load();
                     current_element_generation_count.set(current_gen_count);
 
                     if current_gen_count != old_gen_count {
@@ -593,7 +593,7 @@ impl<T: Copy + Debug> Container<T> {
                     // SYNC POINT with reading data values, required when something has changed while reading the memory
                     //////////////////////////////////////
                     current_element_generation_count =
-                        element_generation_counter.load(Ordering::SeqCst);
+                        element_generation_counter.acquire_release_load();
 
                     if old_element_generation_count == current_element_generation_count {
                         break;
