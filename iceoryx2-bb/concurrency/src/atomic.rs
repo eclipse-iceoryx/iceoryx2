@@ -93,17 +93,13 @@ macro_rules! Impl {
 
         impl $type_name {
             pub fn acquire_release_load(&self) -> $base_type {
-                let mut current = self.0.load(Ordering::Acquire);
-                loop {
-                    match self.0.compare_exchange(
-                        current,
-                        current,
-                        Ordering::AcqRel,
-                        Ordering::Acquire,
-                    ) {
-                        Ok(v) => return v,
-                        Err(v) => current = v,
-                    }
+                let current = self.0.load(Ordering::Acquire);
+                match self
+                    .0
+                    .compare_exchange(current, current, Ordering::AcqRel, Ordering::Acquire)
+                {
+                    Ok(v) => v,
+                    Err(v) => v,
                 }
             }
         }
