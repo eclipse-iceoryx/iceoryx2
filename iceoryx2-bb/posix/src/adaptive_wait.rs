@@ -49,13 +49,13 @@ use iceoryx2_log::fail;
 
 /// Defines the wait behavior of the [`AdaptiveWait`] object.
 #[derive(Debug, Default, Clone, Copy)]
-pub enum AdaptiveWaitBehavior {
+pub enum AdaptiveWaitStrategy {
     #[default]
     /// Very responsive and quick reaction by a busy waiting for the first thousands of operations.
     /// Cause higher CPU load. Good for high-responsive situations, bad for IO-operations.
-    Futex,
+    Adaptive,
     /// Lower load and the cost of the responsiveness.
-    LongWait(Duration),
+    FixedTicks(Duration),
 }
 
 /// The AdaptiveWaitBuilder is required to produce an [`AdaptiveWait`] object.
@@ -63,7 +63,7 @@ pub enum AdaptiveWaitBehavior {
 #[derive(Debug, Default)]
 pub struct AdaptiveWaitBuilder {
     clock_type: ClockType,
-    behavior: AdaptiveWaitBehavior,
+    strategy: AdaptiveWaitStrategy,
 }
 
 impl AdaptiveWaitBuilder {
@@ -71,8 +71,8 @@ impl AdaptiveWaitBuilder {
         Self::default()
     }
 
-    pub fn behavior(mut self, behavior: AdaptiveWaitBehavior) -> Self {
-        self.behavior = behavior;
+    pub fn strategy(mut self, strategy: AdaptiveWaitStrategy) -> Self {
+        self.strategy = strategy;
         self
     }
 
@@ -122,7 +122,7 @@ pub struct AdaptiveWait {
     yield_count: u64,
     clock_type: ClockType,
     start_time: Time,
-    behavior: AdaptiveWaitBehavior,
+    strategy: AdaptiveWaitStrategy,
 }
 
 impl AdaptiveWait {
@@ -132,7 +132,7 @@ impl AdaptiveWait {
             clock_type: config.clock_type,
             start_time: fail!(from config, when Time::now_with_clock(config.clock_type),
                             "Unable to create AdaptiveWait since the Time could not be acquired."),
-            behavior: config.behavior,
+            strategy: config.strategy,
         })
     }
 
@@ -142,8 +142,8 @@ impl AdaptiveWait {
         self.yield_count
     }
 
-    pub fn behavior(&self) -> AdaptiveWaitBehavior {
-        self.behavior
+    pub fn strategy(&self) -> AdaptiveWaitStrategy {
+        self.strategy
     }
 
     pub fn clock_type(&self) -> ClockType {
@@ -231,8 +231,8 @@ impl AdaptiveWait {
         let msg = "Failure while waiting";
         self.yield_count += 1;
 
-        match self.behavior {
-            AdaptiveWaitBehavior::Futex => {
+        match self.strategy {
+            AdaptiveWaitStrategy::Adaptive => {
                 if self.yield_count <= ADAPTIVE_WAIT_YIELD_REPETITIONS {
                     yield_now();
                 } else {
@@ -245,7 +245,7 @@ impl AdaptiveWait {
                         "{} due to a failure while sleeping.", msg);
                 }
             }
-            AdaptiveWaitBehavior::LongWait(waiting_time) => {
+            AdaptiveWaitStrategy::FixedTicks(waiting_time) => {
                 fail!(from self, when nanosleep_with_clock(waiting_time, self.clock_type),
                     "{} due to a failure while sleeping.", msg);
             }
