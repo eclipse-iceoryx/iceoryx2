@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::format;
+use alloc::string::ToString;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
