@@ -27,7 +27,8 @@ std = [
 ]
 
 [[test]]
-name = "tests"
+name = "iceoryx2-conformance-tests-tests"
+path = "tests/tests.rs"
 harness = false
 
 [dependencies]
