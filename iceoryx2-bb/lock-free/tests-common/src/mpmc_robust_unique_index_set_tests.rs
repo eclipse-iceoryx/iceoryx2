@@ -11,8 +11,10 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::vec;
+use core::ptr::NonNull;
 use iceoryx2_bb_concurrency::atomic::{AtomicUsize, Ordering};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::robust_unique_index_set::*;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::{
@@ -374,8 +376,11 @@ pub fn recover_of_locked_set_always_returns_locked() {
 
 #[test]
 pub fn acquire_and_release_works_with_relocatable_variant() {
-    let mut memory = [0u8; RobustUniqueIndexSet::const_memory_size(CAPACITY)];
-    let allocator = BumpAllocator::new(memory.as_mut_ptr());
+    let memory = [0u8; RobustUniqueIndexSet::const_memory_size(CAPACITY)];
+    let allocator = BumpAllocator::new(
+        NonNull::<u8>::iox2_from_ref(&memory[0]),
+        RobustUniqueIndexSet::const_memory_size(CAPACITY),
+    );
     let mut sut = unsafe { RobustUniqueIndexSet::new_uninit(CAPACITY) };
     unsafe { assert_that!(sut.init(&allocator), is_ok) };
 
@@ -472,8 +477,8 @@ pub fn concurrent_acquire_release() {
 #[should_panic]
 #[test]
 pub fn relocatable_variant_panics_when_initialized_twice() {
-    let mut memory = [0u8; RobustUniqueIndexSet::const_memory_size(CAPACITY)];
-    let allocator = BumpAllocator::new(memory.as_mut_ptr());
+    let memory = [0u8; RobustUniqueIndexSet::const_memory_size(CAPACITY)];
+    let allocator = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), CAPACITY);
     let mut sut = unsafe { RobustUniqueIndexSet::new_uninit(CAPACITY) };
     unsafe { assert_that!(sut.init(&allocator), is_ok) };
 

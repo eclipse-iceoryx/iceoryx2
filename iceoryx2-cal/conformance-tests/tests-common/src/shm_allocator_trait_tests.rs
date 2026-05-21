@@ -21,5 +21,5 @@ instantiate_conformance_tests_with_module!(
 instantiate_conformance_tests_with_module!(
     bump_allocator,
     iceoryx2_cal_conformance_tests::shm_allocator_trait,
-    iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator
+    iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator
 );

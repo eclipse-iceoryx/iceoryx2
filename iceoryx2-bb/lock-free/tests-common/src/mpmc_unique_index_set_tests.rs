@@ -11,7 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::vec;
+use core::ptr::NonNull;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::{
@@ -139,8 +141,12 @@ pub fn borrowed_indices_works() {
 
 #[test]
 pub fn acquire_and_release_works_with_uninitialized_memory() {
-    let mut memory = [0u8; UniqueIndexSet::const_memory_size(128)];
-    let allocator = BumpAllocator::new(memory.as_mut_ptr());
+    let memory = [0u8; UniqueIndexSet::const_memory_size(128)];
+    let allocator = BumpAllocator::new(
+        NonNull::<u8>::iox2_from_ref(&memory[0]),
+        core::mem::size_of_val(&memory),
+    );
+
     let mut sut = unsafe { UniqueIndexSet::new_uninit(CAPACITY) };
     unsafe { assert_that!(sut.init(&allocator), is_ok) };
 

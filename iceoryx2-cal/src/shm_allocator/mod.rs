@@ -10,9 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod bump_allocator;
 pub mod pointer_offset;
 pub mod pool_allocator;
+pub mod shm_bump_allocator;
 
 use core::{alloc::Layout, fmt::Debug, ptr::NonNull};
 

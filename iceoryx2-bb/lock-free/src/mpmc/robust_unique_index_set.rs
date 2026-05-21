@@ -30,14 +30,20 @@
 //! ```
 //! # extern crate iceoryx2_bb_loggers;
 //!
+//! use core::ptr::NonNull;
+//!
 //! use iceoryx2_bb_elementary::bump_allocator::*;
 //! use iceoryx2_bb_lock_free::mpmc::robust_unique_index_set::*;
 //! use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::*;
+//! use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 //! use iceoryx2_bb_elementary_traits::relocatable_container::*;
 //!
 //! const CAPACITY: usize = 128;
 //! let mut memory = [0u8; RobustUniqueIndexSet::const_memory_size(CAPACITY)];
-//! let allocator = BumpAllocator::new(memory.as_mut_ptr());
+//! let allocator = BumpAllocator::new(
+//!     NonNull::<u8>::iox2_from_ref(&memory[0]),
+//!     RobustUniqueIndexSet::const_memory_size(CAPACITY),
+//! );
 //!
 //! let mut index_set = unsafe { RobustUniqueIndexSet::new_uninit(CAPACITY) };
 //! unsafe { index_set.init(&allocator) }.expect("failed to allocate enough memory");
@@ -101,6 +107,8 @@
 //! ```
 
 use core::alloc::Layout;
+use core::ptr::NonNull;
+
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
@@ -537,7 +545,7 @@ impl RobustUniqueIndexSet {
 
 #[derive(Debug)]
 pub struct StaticRobustUniqueIndexSetData<const CAPACITY: usize> {
-    cells: [AtomicU64; CAPACITY],
+    pub(crate) cells: [AtomicU64; CAPACITY],
 }
 
 impl<const CAPACITY: usize> Default for StaticRobustUniqueIndexSetData<CAPACITY> {
@@ -550,7 +558,9 @@ impl<const CAPACITY: usize> Default for StaticRobustUniqueIndexSetData<CAPACITY>
 
 impl<const CAPACITY: usize> StaticRobustUniqueIndexSetData<CAPACITY> {
     pub fn allocator(&mut self) -> BumpAllocator {
-        BumpAllocator::new(self.cells.as_mut_ptr().cast())
+        // SAFETY: Creating a pointer to an existing member is always not null
+        let data_ptr = unsafe { NonNull::<u8>::new_unchecked(self.cells.as_mut_ptr().cast()) };
+        BumpAllocator::new(data_ptr, core::mem::size_of::<Self>())
     }
 }
 

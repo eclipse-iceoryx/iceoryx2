@@ -20,18 +20,17 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
 const SUT_CAPACITY: usize = 256;
+const BUFFER_SIZE: usize = core::mem::size_of::<u8>() * (SUT_CAPACITY * 3);
 
 struct Test {
-    raw_memory: UnsafeCell<Box<[u8; core::mem::size_of::<u8>() * (SUT_CAPACITY * 3)]>>,
+    raw_memory: UnsafeCell<Box<[u8; BUFFER_SIZE]>>,
     allocator: UnsafeCell<Option<Box<BumpAllocator>>>,
 }
 
 impl Test {
     fn new() -> Self {
         Self {
-            raw_memory: UnsafeCell::new(Box::new(
-                [0u8; core::mem::size_of::<u8>() * (SUT_CAPACITY * 3)],
-            )),
+            raw_memory: UnsafeCell::new(Box::new([0u8; BUFFER_SIZE])),
             allocator: UnsafeCell::new(None),
         }
     }
@@ -40,7 +39,9 @@ impl Test {
         unsafe {
             if (*self.allocator.get()).is_none() {
                 *self.allocator.get() = Some(Box::new(BumpAllocator::new(
-                    (*self.raw_memory.get()).as_mut_ptr(),
+                    core::ptr::NonNull::<u8>::new((*self.raw_memory.get()).as_mut_ptr().cast())
+                        .expect("Precondition failed: Pointer to memory is null"),
+                    BUFFER_SIZE,
                 )))
             }
         };
