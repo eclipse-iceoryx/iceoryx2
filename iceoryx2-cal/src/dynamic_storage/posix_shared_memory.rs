@@ -62,6 +62,7 @@ use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::directory::*;
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
+use iceoryx2_bb_posix::memory_mapping::MemoryMappingCreationError;
 use iceoryx2_bb_posix::shared_memory::*;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fail;
@@ -220,8 +221,11 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
                         msg, self.timeout);
                     }
                 }
-                Err(_) => {
-                    fail!(from self, with DynamicStorageOpenError::InternalError, "{} since the underlying shared memory could not be opened.", msg);
+                Err(SharedMemoryCreationError::MemoryMappingCreationError(
+                    MemoryMappingCreationError::MappingSizeIsZero,
+                )) => (),
+                Err(e) => {
+                    fail!(from self, with DynamicStorageOpenError::InternalError, "{} since the underlying shared memory could not be opened. Error: {:?}", msg, e);
                 }
             };
 
