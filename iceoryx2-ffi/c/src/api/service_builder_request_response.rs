@@ -90,6 +90,10 @@ pub enum iox2_request_response_open_or_create_error_e {
     O_INCOMPATIBLE_BEHAVIOR_FOR_FIRE_AND_FORGET_REQUESTS,
     #[CStr = "insufficient permissions"]
     O_INSUFFICIENT_PERMISSIONS,
+    #[CStr = "unable to create service tag"]
+    O_UNABLE_TO_CREATE_SERVICE_TAG,
+    #[CStr = "version mismatch"]
+    O_VERSION_MISMATCH,
     #[CStr = "internal failure"]
     O_INTERNAL_FAILURE,
     #[CStr = "is marked for destruction"]
@@ -139,6 +143,8 @@ impl IntoCInt for RequestResponseOpenError {
             RequestResponseOpenError::InternalFailure => iox2_request_response_open_or_create_error_e::O_INTERNAL_FAILURE,
             RequestResponseOpenError::IsMarkedForDestruction => iox2_request_response_open_or_create_error_e::O_IS_MARKED_FOR_DESTRUCTION,
             RequestResponseOpenError::ServiceInCorruptedState => iox2_request_response_open_or_create_error_e::O_SERVICE_IN_CORRUPTED_STATE,
+            RequestResponseOpenError::UnableToCreateServiceTag => iox2_request_response_open_or_create_error_e::O_UNABLE_TO_CREATE_SERVICE_TAG,
+            RequestResponseOpenError::VersionMismatch => iox2_request_response_open_or_create_error_e::O_VERSION_MISMATCH
         }) as c_int
     }
 }

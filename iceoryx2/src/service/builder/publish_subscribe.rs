@@ -295,7 +295,7 @@ impl<
             override_alignment: self.override_alignment,
             override_payload_type: self.override_payload_type,
             override_user_header_type: self.override_user_header_type,
-            verify: Verify::default(),
+            verify: self.verify,
             _data: PhantomData,
             _user_header: PhantomData,
         }
