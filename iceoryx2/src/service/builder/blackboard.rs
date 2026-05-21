@@ -41,6 +41,7 @@ use crate::constants::{MAX_BLACKBOARD_KEY_ALIGNMENT, MAX_BLACKBOARD_KEY_SIZE};
 use crate::service;
 use crate::service::builder::{
     BuilderWithServiceType, CustomKeyMarker, DynamicConfigCreationArgs, ServiceCreateError,
+    ServiceOpenError,
 };
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
 use crate::service::dynamic_config::MessagingPatternSettings;
@@ -86,6 +87,10 @@ pub enum BlackboardOpenError {
     ExceedsMaxNumberOfNodes,
     /// The [`Service`] supports less [`Node`](crate::node::Node)s than requested.
     DoesNotSupportRequestedAmountOfNodes,
+    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    UnableToCreateServiceTag,
+    /// The iceoryx2 service version does not match the one of the [`Service`].
+    VersionMismatch,
 }
 
 impl core::fmt::Display for BlackboardOpenError {
@@ -106,6 +111,34 @@ impl From<ServiceState> for BlackboardOpenError {
             ServiceState::InsufficientPermissions => BlackboardOpenError::InsufficientPermissions,
             ServiceState::HangsInCreation => BlackboardOpenError::HangsInCreation,
             ServiceState::Corrupted => BlackboardOpenError::ServiceInCorruptedState,
+        }
+    }
+}
+
+impl From<ServiceOpenError> for BlackboardOpenError {
+    fn from(value: ServiceOpenError) -> Self {
+        match value {
+            ServiceOpenError::DoesNotExist => BlackboardOpenError::DoesNotExist,
+            ServiceOpenError::ExceedsMaxNumberOfNodes => {
+                BlackboardOpenError::ExceedsMaxNumberOfNodes
+            }
+            ServiceOpenError::HangsInCreation => BlackboardOpenError::HangsInCreation,
+            ServiceOpenError::IncompatibleMessagingPattern => {
+                BlackboardOpenError::IncompatibleMessagingPattern
+            }
+            ServiceOpenError::IncompatiblePayload => BlackboardOpenError::IncompatibleKeys,
+            ServiceOpenError::InsufficientPermissions => {
+                BlackboardOpenError::InsufficientPermissions
+            }
+            ServiceOpenError::InternalFailure => BlackboardOpenError::InternalFailure,
+            ServiceOpenError::IsMarkedForDestruction => BlackboardOpenError::IsMarkedForDestruction,
+            ServiceOpenError::ServiceInCorruptedState => {
+                BlackboardOpenError::ServiceInCorruptedState
+            }
+            ServiceOpenError::UnableToCreateServiceTag => {
+                BlackboardOpenError::UnableToCreateServiceTag
+            }
+            ServiceOpenError::VersionMismatch => BlackboardOpenError::VersionMismatch,
         }
     }
 }
