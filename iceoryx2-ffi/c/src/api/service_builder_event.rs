@@ -57,6 +57,10 @@ pub enum iox2_event_open_or_create_error_e {
     O_INCOMPATIBLE_NOTIFIER_DEAD_EVENT,
     #[CStr = "internal failure"]
     O_INTERNAL_FAILURE,
+    #[CStr = "unable to create service tag"]
+    O_UNABLE_TO_CREATE_SERVICE_TAG,
+    #[CStr = "version mismatch"]
+    O_VERSION_MISMATCH,
     #[CStr = "hangs in creation"]
     O_HANGS_IN_CREATION,
     #[CStr = "does not support requested amount of notifiers"]
@@ -144,6 +148,12 @@ impl IntoCInt for EventOpenError {
             }
             EventOpenError::IncompatibleDeadline => {
                 iox2_event_open_or_create_error_e::O_INCOMPATIBLE_DEADLINE
+            }
+            EventOpenError::UnableToCreateServiceTag => {
+                iox2_event_open_or_create_error_e::O_UNABLE_TO_CREATE_SERVICE_TAG
+            }
+            EventOpenError::VersionMismatch => {
+                iox2_event_open_or_create_error_e::O_VERSION_MISMATCH
             }
         }) as c_int
     }

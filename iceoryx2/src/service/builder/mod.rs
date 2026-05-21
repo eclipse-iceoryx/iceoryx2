@@ -37,6 +37,8 @@ use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
+use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::dynamic_storage::DynamicStorageOpenError;
@@ -58,6 +60,7 @@ use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::RegisterNodeResult;
 use crate::service::naming_scheme::dynamic_config_name;
 use crate::service::naming_scheme::static_config_name;
+use crate::service::static_config;
 use crate::service::static_config::*;
 
 use super::Service;
@@ -141,6 +144,35 @@ impl From<ServiceState> for ServiceCreateError {
             | ServiceState::IncompatiblePayload => ServiceCreateError::AlreadyExists,
             ServiceState::InsufficientPermissions => ServiceCreateError::InsufficientPermissions,
             ServiceState::Corrupted => ServiceCreateError::ServiceInCorruptedState,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+enum ServiceOpenError {
+    InternalFailure,
+    DoesNotExist,
+    UnableToCreateServiceTag,
+    IsMarkedForDestruction,
+    ExceedsMaxNumberOfNodes,
+    ServiceInCorruptedState,
+    HangsInCreation,
+    IncompatibleMessagingPattern,
+    IncompatiblePayload,
+    InsufficientPermissions,
+    VersionMismatch,
+}
+
+impl From<ServiceState> for ServiceOpenError {
+    fn from(value: ServiceState) -> Self {
+        match value {
+            ServiceState::Corrupted => ServiceOpenError::ServiceInCorruptedState,
+            ServiceState::HangsInCreation => ServiceOpenError::HangsInCreation,
+            ServiceState::IncompatibleMessagingPattern => {
+                ServiceOpenError::IncompatibleMessagingPattern
+            }
+            ServiceState::IncompatiblePayload => ServiceOpenError::IncompatiblePayload,
+            ServiceState::InsufficientPermissions => ServiceOpenError::InsufficientPermissions,
         }
     }
 }
@@ -288,6 +320,146 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         self,
     ) -> blackboard::Opener<KeyType, ServiceType> {
         blackboard::Opener::new(self)
+    }
+
+    fn open<
+        ErrorType: From<ServiceOpenError> + From<ServiceState>,
+        R: service::ServiceResource,
+        FA: FnMut(
+            &str,
+            &str,
+            &SharedNode<ServiceType>,
+            &StaticConfig,
+        ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState>,
+        F1: FnMut(
+            &str,
+            &str,
+            &StaticConfig,
+            &StaticConfig,
+        ) -> Result<static_config::messaging_pattern::MessagingPattern, ErrorType>,
+        F2: FnMut(&str, &str, &SharedNode<ServiceType>, &StaticConfig) -> Result<R, ErrorType>,
+    >(
+        &mut self,
+        msg: &str,
+        mut is_service_available: FA,
+        mut verify_service_configuration: F1,
+        mut open_service_resource: F2,
+    ) -> Result<service::ServiceState<ServiceType, R>, ErrorType> {
+        let origin = format!("{self:?}");
+        let mut adaptive_wait = fail!(from origin,
+              when AdaptiveWaitBuilder::new().create(),
+              with ServiceOpenError::InternalFailure.into(),
+              "{msg} since the adaptive wait could not be created.");
+        let start = fail!(from origin
+            ,
+              when Time::now(),
+              with ServiceOpenError::InternalFailure.into(),
+              "{msg} since the current time could not be acquired.");
+        let creation_timeout = self.shared_node.config().global.creation_timeout;
+
+        loop {
+            match is_service_available(&origin, msg, &self.shared_node, &self.service_config)? {
+                None => {
+                    fail!(from self, with ServiceOpenError::DoesNotExist.into(),
+                        "{} since the service does not exist.", msg);
+                }
+                Some((existing_static_config, static_storage)) => {
+                    let event_static_config = verify_service_configuration(
+                        &origin,
+                        msg,
+                        &existing_static_config,
+                        &self.service_config,
+                    )?;
+
+                    let service_tag = self
+                        .create_node_service_tag(msg, ServiceOpenError::UnableToCreateServiceTag)?;
+
+                    let dynamic_config = match self
+                        .open_dynamic_config_storage(existing_static_config.unique_service_id())
+                    {
+                        Ok(v) => v,
+                        Err(OpenDynamicStorageFailure::IsMarkedForDestruction) => {
+                            fail!(from self, with ServiceOpenError::IsMarkedForDestruction.into(),
+                                "{} since the service is marked for destruction.", msg);
+                        }
+                        Err(OpenDynamicStorageFailure::ExceedsMaxNumberOfNodes) => {
+                            fail!(from self, with ServiceOpenError::ExceedsMaxNumberOfNodes.into(),
+                                "{} since it would exceed the maximum number of supported nodes.", msg);
+                        }
+                        Err(OpenDynamicStorageFailure::DynamicStorageOpenError(
+                            DynamicStorageOpenError::DoesNotExist,
+                        )) => {
+                            fail!(from self, with ServiceOpenError::IsMarkedForDestruction.into(),
+                                "{} since the dynamic segment of the service is missing.", msg);
+                        }
+                        Err(OpenDynamicStorageFailure::DynamicStorageOpenError(
+                            DynamicStorageOpenError::InitializationNotYetFinalized,
+                        )) => {
+                            if is_service_available(
+                                &origin,
+                                msg,
+                                &self.shared_node,
+                                &self.service_config,
+                            )?
+                            .is_none()
+                            {
+                                fail!(from self, with ServiceOpenError::DoesNotExist.into(),
+                                    "{} since the event does not exist.", msg);
+                            }
+
+                            let elapsed = fail!(from self,
+                                                when start.elapsed(),
+                                                with ServiceOpenError::InternalFailure.into(),
+                                                "{msg} since the elapsed time could not be acquired.");
+
+                            if elapsed >= creation_timeout {
+                                fail!(from self, with ServiceOpenError::ServiceInCorruptedState.into(),
+                                "{} since the dynamic service information could not be opened. This could indicate a corrupted system or a misconfigured system where services are created/removed with a high frequency.", msg);
+                            }
+
+                            fail!(from self,
+                                  when adaptive_wait.wait(),
+                                  with ServiceOpenError::InternalFailure.into(),
+                                  "{msg} since the adaptive wait failed.");
+
+                            continue;
+                        }
+                        Err(OpenDynamicStorageFailure::DynamicStorageOpenError(
+                            DynamicStorageOpenError::VersionMismatch,
+                        )) => {
+                            fail!(from self,
+                                with ServiceOpenError::VersionMismatch.into(),
+                                "{msg} since the service seems to be created with a different iceoryx2 version.");
+                        }
+                        Err(e) => {
+                            fail!(from self, with ServiceOpenError::InternalFailure.into(),
+                                "{msg} since the dynamic service information could not be opened. [{e:?}]");
+                        }
+                    };
+
+                    self.service_config.messaging_pattern = event_static_config;
+
+                    if let Some(service_tag) = service_tag {
+                        service_tag.release_ownership();
+                    }
+
+                    let resource = open_service_resource(
+                        &origin,
+                        msg,
+                        &self.shared_node,
+                        &self.service_config,
+                    )?;
+
+                    return Ok(service::ServiceState::new(
+                        existing_static_config,
+                        self.shared_node.clone(),
+                        dynamic_config,
+                        static_storage,
+                        resource,
+                    ));
+                }
+            }
+        }
     }
 
     fn create<
