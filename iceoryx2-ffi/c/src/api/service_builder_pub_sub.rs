@@ -69,6 +69,10 @@ pub enum iox2_pub_sub_open_or_create_error_e {
     O_INSUFFICIENT_PERMISSIONS,
     #[CStr = "service in corrupted state"]
     O_SERVICE_IN_CORRUPTED_STATE,
+    #[CStr = "unable to create service tag"]
+    O_UNABLE_TO_CREATE_SERVICE_TAG,
+    #[CStr = "version mismatch"]
+    O_VERSION_MISMATCH,
     #[CStr = "hangs in creation"]
     O_HANGS_IN_CREATION,
     #[CStr = "exceeds max number of nodes"]
@@ -150,6 +154,12 @@ impl IntoCInt for PublishSubscribeOpenError {
          }
          PublishSubscribeOpenError::IsMarkedForDestruction => {
              iox2_pub_sub_open_or_create_error_e::O_IS_MARKED_FOR_DESTRUCTION
+         }
+         PublishSubscribeOpenError::UnableToCreateServiceTag => {
+             iox2_pub_sub_open_or_create_error_e::O_UNABLE_TO_CREATE_SERVICE_TAG
+         }
+         PublishSubscribeOpenError::VersionMismatch => {
+             iox2_pub_sub_open_or_create_error_e::O_VERSION_MISMATCH
          }
         }) as c_int
     }
