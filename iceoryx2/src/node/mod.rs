@@ -194,10 +194,10 @@ use crate::service::config_scheme::{
 use crate::service::service_hash::ServiceHash;
 use crate::service::service_name::ServiceName;
 use crate::service::stale_resource_cleanup::RemoveStalePortResourcesError;
+use crate::service::stale_resource_cleanup::remove_service_tag;
 use crate::service::stale_resource_cleanup::remove_stale_port_resources;
-use crate::service::{
-    self, ServiceRemoveNodeError, remove_service_tag, remove_static_service_config,
-};
+use crate::service::stale_resource_cleanup::remove_static_service_config;
+use crate::service::{self, ServiceRemoveNodeError};
 use crate::signal_handling_mode::SignalHandlingMode;
 use crate::{config::Config, service::config_scheme::node_details_config};
 
