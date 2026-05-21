@@ -25,6 +25,14 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
+    unsafe {
+        ipc::Service::remove(
+            &"My/Funk/ServiceName".try_into()?,
+            node.config(),
+            MessagingPattern::PublishSubscribe,
+        )
+    };
+
     let service = node
         .service_builder(&"My/Funk/ServiceName".try_into()?)
         .publish_subscribe::<TransmissionData>()
