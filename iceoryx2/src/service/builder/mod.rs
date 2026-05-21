@@ -292,6 +292,12 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
 
     fn create<
         R: service::ServiceResource,
+        FA: FnMut(
+            &str,
+            &str,
+            &SharedNode<ServiceType>,
+            &StaticConfig,
+        ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState>,
         F1: FnMut(&mut StaticConfig) -> Result<(), ServiceCreateError>,
         F2: FnMut(&StaticConfig) -> DynamicConfigCreationArgs,
         F3: FnMut() -> R,
@@ -299,11 +305,13 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         &mut self,
         msg: &str,
         attributes: &AttributeSpecifier,
+        mut is_service_available: FA,
         mut prepare_service_config: F1,
         mut generate_dynamic_config: F2,
         mut create_service_resource: F3,
     ) -> Result<service::ServiceState<ServiceType, R>, ServiceCreateError> {
-        match self.is_service_available(msg)? {
+        let origin = format!("{self:?}");
+        match is_service_available(&origin, msg, &self.shared_node, &self.service_config)? {
             None => {
                 let service_tag = fail!(from self,
                     when self.create_node_service_tag(msg, ServiceCreateError::InternalFailure),
@@ -381,13 +389,15 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     }
 
     fn is_service_available(
-        &self,
+        origin: &str,
         msg: &str,
+        shared_node: &SharedNode<ServiceType>,
+        expected_service_config: &StaticConfig,
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
         let static_storage_config =
-            static_config_storage_config::<ServiceType>(self.shared_node.config());
-        let name = static_config_name(self.service_config.service_hash());
-        let creation_timeout = self.shared_node.config().global.creation_timeout;
+            static_config_storage_config::<ServiceType>(shared_node.config());
+        let name = static_config_name(expected_service_config.service_hash());
+        let creation_timeout = shared_node.config().global.creation_timeout;
 
         match <ServiceType::StaticStorage as NamedConceptMgmt>::does_exist_cfg(
             &name,
@@ -404,13 +414,13 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                         Ok(storage) => storage,
                         Err(StaticStorageOpenError::DoesNotExist) => return Ok(None),
                         Err(StaticStorageOpenError::InitializationNotYetFinalized) => {
-                            fail!(from self, with ServiceState::HangsInCreation,
+                            fail!(from origin, with ServiceState::HangsInCreation,
                                 "{} since the service hangs while being created, max timeout for service creation of {:?} exceeded.",
                                 msg, creation_timeout);
                         },
                         Err(e) =>
                         {
-                            fail!(from self, with ServiceState::InsufficientPermissions,
+                            fail!(from origin, with ServiceState::InsufficientPermissions,
                                     "{} since it is not possible to open the services underlying static details ({:?}). Is the service accessible?",
                                     msg, e);
                         }
@@ -422,30 +432,30 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     .read(unsafe { read_content.as_mut_vec() }.as_mut_slice())
                     .is_err()
                 {
-                    fail!(from self, with ServiceState::InsufficientPermissions,
+                    fail!(from origin, with ServiceState::InsufficientPermissions,
                             "{} since it is not possible to read the services underlying static details. Is the service accessible?", msg);
                 }
 
-                let service_config = fail!(from self, when ServiceType::ConfigSerializer::deserialize::<StaticConfig>(unsafe {
+                let service_config = fail!(from origin, when ServiceType::ConfigSerializer::deserialize::<StaticConfig>(unsafe {
                                             read_content.as_mut_vec() }),
                                      with ServiceState::Corrupted, "Unable to deserialize the service config. Is the service corrupted?");
 
-                if service_config.service_hash() != self.service_config.service_hash() {
-                    fail!(from self, with ServiceState::Corrupted,
+                if service_config.service_hash() != service_config.service_hash() {
+                    fail!(from origin, with ServiceState::Corrupted,
                         "{} a service with that name exist but different ServiceHash.", msg);
                 }
 
                 let msg = "Service exist but is not compatible";
-                if !service_config.has_same_messaging_pattern(&self.service_config) {
-                    fail!(from self, with ServiceState::IncompatibleMessagingPattern,
+                if !service_config.has_same_messaging_pattern(expected_service_config) {
+                    fail!(from origin, with ServiceState::IncompatibleMessagingPattern,
                         "{} since the messaging pattern \"{:?}\" does not fit the requested pattern \"{:?}\".",
-                        msg, service_config.messaging_pattern(), self.service_config.messaging_pattern());
+                        msg, service_config.messaging_pattern(), service_config.messaging_pattern());
                 }
 
                 Ok(Some((service_config, storage)))
             }
             Err(v) => {
-                fail!(from self, with ServiceState::Corrupted,
+                fail!(from origin, with ServiceState::Corrupted,
                     "{} since the service seems to be in a corrupted/inaccessible state ({:?}).", msg, v);
             }
         }

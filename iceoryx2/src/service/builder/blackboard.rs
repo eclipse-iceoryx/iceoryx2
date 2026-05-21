@@ -40,7 +40,7 @@ use iceoryx2_log::{error, fatal_panic};
 
 use crate::constants::{MAX_BLACKBOARD_KEY_ALIGNMENT, MAX_BLACKBOARD_KEY_SIZE};
 use crate::service;
-use crate::service::builder::{CustomKeyMarker, DynamicConfigCreationArgs};
+use crate::service::builder::{BuilderWithServiceType, CustomKeyMarker, DynamicConfigCreationArgs};
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::blackboard::DynamicConfigSettings;
@@ -407,7 +407,14 @@ impl<
         &mut self,
         error_msg: &str,
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
-        match self.base.is_service_available(error_msg) {
+        let origin = format!("{self:?}");
+
+        match BuilderWithServiceType::is_service_available(
+            &origin,
+            error_msg,
+            &self.base.shared_node,
+            &self.base.service_config,
+        ) {
             Ok(Some((config, storage))) => {
                 if !(self.config_details().type_details == config.blackboard().type_details) {
                     fail!(from self, with ServiceState::IncompatiblePayload,

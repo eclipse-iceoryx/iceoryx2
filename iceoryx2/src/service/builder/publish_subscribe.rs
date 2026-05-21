@@ -25,7 +25,7 @@ use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::StaticStorageLocked;
 use iceoryx2_log::{fail, fatal_panic, warn};
 
-use crate::service::builder::DynamicConfigCreationArgs;
+use crate::service::builder::{BuilderWithServiceType, DynamicConfigCreationArgs};
 use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;
 use crate::service::header::publish_subscribe::Header;
 use crate::service::port_factory::publish_subscribe;
@@ -295,7 +295,13 @@ impl<
         &mut self,
         error_msg: &str,
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
-        match self.base.is_service_available(error_msg) {
+        let origin = format!("{self:?}");
+        match BuilderWithServiceType::is_service_available(
+            &origin,
+            error_msg,
+            &self.base.shared_node,
+            &self.base.service_config,
+        ) {
             Ok(Some((config, storage))) => {
                 if !self
                     .config_details()

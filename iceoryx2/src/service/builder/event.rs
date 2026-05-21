@@ -23,7 +23,8 @@ use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_log::{fail, fatal_panic};
 
 use crate::service::builder::{
-    DynamicConfigCreationArgs, OpenDynamicStorageFailure, ServiceCreateError,
+    BuilderWithServiceType, DynamicConfigCreationArgs, OpenDynamicStorageFailure,
+    ServiceCreateError,
 };
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::port_factory::event;
@@ -362,6 +363,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         mut self,
         verifier: &AttributeVerifier,
     ) -> Result<event::PortFactory<ServiceType>, EventOpenOrCreateError> {
+        let origin = format!("{:?}", self);
         let msg = "Unable to open or create event service";
 
         let mut retry_count = 0;
@@ -374,7 +376,12 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             }
             retry_count += 1;
 
-            match self.base.is_service_available(msg)? {
+            match BuilderWithServiceType::is_service_available(
+                &origin,
+                msg,
+                &self.base.shared_node,
+                &self.base.service_config,
+            )? {
                 Some(_) => return Ok(self.open_with_attributes(verifier)?),
                 None => {
                     match self
@@ -403,11 +410,17 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         mut self,
         verifier: &AttributeVerifier,
     ) -> Result<event::PortFactory<ServiceType>, EventOpenError> {
+        let origin = format!("{self:?}");
         let msg = "Unable to open event service";
 
         let mut service_open_retry_count = 0;
         loop {
-            match self.base.is_service_available(msg)? {
+            match BuilderWithServiceType::is_service_available(
+                &origin,
+                msg,
+                &self.base.shared_node,
+                &self.base.service_config,
+            )? {
                 None => {
                     fail!(from self, with EventOpenError::DoesNotExist,
                         "{} since the event does not exist.", msg);
@@ -440,7 +453,14 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                                 "{} since the dynamic segment of the service is missing.", msg);
                         }
                         Err(e) => {
-                            if self.base.is_service_available(msg)?.is_none() {
+                            if BuilderWithServiceType::is_service_available(
+                                &origin,
+                                msg,
+                                &self.base.shared_node,
+                                &self.base.service_config,
+                            )?
+                            .is_none()
+                            {
                                 fail!(from self, with EventOpenError::DoesNotExist,
                                     "{} since the event does not exist.", msg);
                             }
@@ -528,6 +548,17 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         let service_state = self.base.create(
             msg,
             attributes,
+            |origin,
+             msg,
+             shared_node: &SharedNode<ServiceType>,
+             expected_service_config: &StaticConfig| {
+                BuilderWithServiceType::is_service_available(
+                    origin,
+                    msg,
+                    shared_node,
+                    expected_service_config,
+                )
+            },
             prepare_static_config,
             generate_dynamic_config,
             || NoResource,

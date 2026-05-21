@@ -23,7 +23,9 @@ use iceoryx2_cal::static_storage::{StaticStorage, StaticStorageCreateError, Stat
 use iceoryx2_log::{fail, fatal_panic, warn};
 
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
-use crate::service::builder::{DynamicConfigCreationArgs, OpenDynamicStorageFailure};
+use crate::service::builder::{
+    BuilderWithServiceType, DynamicConfigCreationArgs, OpenDynamicStorageFailure,
+};
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::request_response::DynamicConfigSettings;
 use crate::service::port_factory::request_response;
@@ -614,7 +616,13 @@ impl<
         error_msg: &str,
     ) -> Result<Option<(static_config::StaticConfig, ServiceType::StaticStorage)>, ServiceState>
     {
-        match self.base.is_service_available(error_msg) {
+        let origin = format!("{self:?}");
+        match BuilderWithServiceType::is_service_available(
+            &origin,
+            error_msg,
+            &self.base.shared_node,
+            &self.base.service_config,
+        ) {
             Ok(Some((config, storage))) => {
                 if !self
                     .config_details()
