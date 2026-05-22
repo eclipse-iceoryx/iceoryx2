@@ -24,6 +24,7 @@
 -->
 
 * [#1650](https://github.com/eclipse-iceoryx/iceoryx2/issues/1650) Fix 'NodeCreationFailure::InternalError' on concurrent node creation
+* [#1660](https://github.com/eclipse-iceoryx/iceoryx2/issues/1660) Rework process alive detection to avoid false negatives to enable communication across docker containers
 
 ### Refactoring
 
