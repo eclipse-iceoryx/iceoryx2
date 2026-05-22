@@ -903,8 +903,8 @@ impl RegisteredServices {
             entry.1 -= 1;
             if entry.1 == 0 {
                 let handle = entry.0;
-                cleanup_call(handle);
                 guard.remove(service_hash);
+                cleanup_call(handle);
             }
         } else {
             fatal_panic!(from "RegisteredServices::remove()",
