@@ -319,7 +319,7 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
 pub struct BuilderInternals {
     key: KeyMemory<MAX_BLACKBOARD_KEY_SIZE>,
     value_type_details: TypeDetail,
-    value_writer: Box<dyn FnMut(*mut u8)>,
+    value_writer: Box<dyn Fn(*mut u8)>,
     internal_value_size: usize,
     internal_value_alignment: usize,
     internal_value_cleanup_callback: Box<dyn FnMut()>,
@@ -341,7 +341,7 @@ impl BuilderInternals {
     pub fn new(
         key: KeyMemory<MAX_BLACKBOARD_KEY_SIZE>,
         value_type_details: TypeDetail,
-        value_writer: Box<dyn FnMut(*mut u8)>,
+        value_writer: Box<dyn Fn(*mut u8)>,
         value_size: usize,
         value_alignment: usize,
         value_cleanup_callback: Box<dyn FnMut()>,
@@ -420,7 +420,7 @@ struct Builder<
 > {
     base: builder::BuilderWithServiceType<ServiceType>,
     verify: Verify,
-    internals: Option<Vec<BuilderInternals>>,
+    internals: Vec<BuilderInternals>,
     override_key_type: Option<TypeDetail>,
     key_eq_func: Arc<dyn Fn(*const u8, *const u8) -> bool + Send + Sync>,
     _key: PhantomData<KeyType>,
@@ -453,7 +453,7 @@ impl<
         let mut new_self = Self {
             base,
             verify: Verify::default(),
-            internals: Some(Vec::<BuilderInternals>::new()),
+            internals: Vec::<BuilderInternals>::new(),
             override_key_type: None,
             key_eq_func: Arc::new(|lhs: *const u8, rhs: *const u8| {
                 KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(lhs, rhs)
@@ -473,8 +473,8 @@ impl<
         &self,
         error_msg: &str,
         expected_service_config: &StaticConfig,
-        blackboard_service_config: &static_config::blackboard::StaticConfig,
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
+        let blackboard_service_config = *self.config_details();
         match self
             .base
             .is_service_available(error_msg, expected_service_config)
@@ -604,10 +604,8 @@ impl<
             internal_value_alignment: core::mem::align_of::<UnrestrictedAtomic<ValueType>>(),
             internal_value_cleanup_callback: Box::new(|| {}),
         };
-        if let Some(v) = self.builder.internals.as_mut() {
-            v.push(internals);
-        }
 
+        self.builder.internals.push(internals);
         self
     }
 
@@ -654,14 +652,14 @@ impl<
     }
 
     fn create_blackboard_resources(
-        origin: &str,
+        &self,
         msg: &str,
         service_config: &StaticConfig,
-        blackboard_config: &static_config::blackboard::StaticConfig,
-        shared_node: &SharedNode<ServiceType>,
-        builder_internals: &mut [BuilderInternals],
-        key_eq_func: Arc<dyn Fn(*const u8, *const u8) -> bool + Send + Sync>,
     ) -> Result<BlackboardResources<ServiceType>, ServiceCreateError> {
+        let blackboard_config = *self.builder.config_details();
+        let key_eq_func = self.builder.key_eq_func.clone();
+        let builder_internals = self.builder.internals.as_slice();
+        let shared_node = &self.builder.base.shared_node;
         // create the payload data segment for the writer
         let name = blackboard_name(service_config.unique_service_id());
         let shm_config = blackboard_data_config::<ServiceType>(shared_node.config());
@@ -681,7 +679,7 @@ impl<
         {
             Ok(v) => v,
             Err(_) => {
-                fail!(from origin, with ServiceCreateError::ServiceInCorruptedState,
+                fail!(from self, with ServiceCreateError::ServiceInCorruptedState,
                     "{} since the blackboard payload data segment could not be created. This could indicate a corrupted system.",
                     msg);
             }
@@ -701,7 +699,7 @@ impl<
             >>::__internal_set_type_name_in_config(&mut mgmt_config, mgmt_name)
         };
 
-        let mgmt_storage = fail!(from origin, when
+        let mgmt_storage = fail!(from self, when
             <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage<Mgmt,
             >>::Builder::new(&name)
                 .config(&mgmt_config)
@@ -711,13 +709,13 @@ impl<
                     if unsafe {mgmt.map.init(allocator)}.is_err() || unsafe {mgmt.entries.init(allocator).is_err()} {
                         return false
                     }
-                    for entry in builder_internals.iter_mut() {
+                    for entry in builder_internals.iter() {
                         // write value passed to add() to payload_shm
                         let mem = match payload_shm.allocate(unsafe { Layout::from_size_align_unchecked(entry.internal_value_size, entry.internal_value_alignment) })
                         {
                             Ok(m) => m,
                             Err(_) => {
-                                error!(from origin, "Writing the value to the blackboard data segment failed.");
+                                error!(from self, "Writing the value to the blackboard data segment failed.");
                                 return false
                             }
                         };
@@ -725,13 +723,13 @@ impl<
                         // write offset to value in payload_shm to entries vector
                         let res = mgmt.entries.push(Entry{type_details: entry.value_type_details, offset: AtomicU64::new(mem.offset.offset() as u64)});
                         if res.is_err() {
-                            error!(from origin, "Writing the value offset to the blackboard management segment failed.");
+                            error!(from self, "Writing the value offset to the blackboard management segment failed.");
                             return false
                         }
                         // write offset index to map
                         let res = unsafe {mgmt.map.__internal_insert(entry.key, mgmt.entries.len() - 1, &*key_eq_func)};
                         if res.is_err() {
-                            error!(from origin, "Inserting the key-value pair into the blackboard management segment failed.");
+                            error!(from self, "Inserting the key-value pair into the blackboard management segment failed.");
                             return false
                         }
                     }
@@ -755,9 +753,7 @@ impl<
         let msg = "Unable to create blackboard service";
 
         self.adjust_configuration_to_meaningful_values();
-        let mut internals = self.builder.internals.take().unwrap_or_default();
-
-        if internals.is_empty() {
+        if self.builder.internals.is_empty() {
             fail!(from origin,  with BlackboardCreateError::NoEntriesProvided,
                 "{} without entries. At least one key-value pair is required.", msg);
         }
@@ -780,28 +776,16 @@ impl<
             }
         };
 
-        let blackboard_config = *self.builder.config_details();
-        let key_eq_func = self.builder.key_eq_func.clone();
         let service_state = self.builder.base.create(
             msg,
             attributes,
             |msg, expected_service_config| {
                 self.builder
-                    .is_service_available(msg, expected_service_config, &blackboard_config)
+                    .is_service_available(msg, expected_service_config)
             },
             |_| Ok(()),
             generate_dynamic_config,
-            |origin, msg, shared_node, service_config| {
-                Self::create_blackboard_resources(
-                    origin,
-                    msg,
-                    service_config,
-                    &blackboard_config,
-                    shared_node,
-                    internals.as_mut_slice(),
-                    key_eq_func.clone(),
-                )
-            },
+            |msg, service_config| self.create_blackboard_resources(msg, service_config),
         )?;
 
         Ok(blackboard::PortFactory::new(service_state))
@@ -876,9 +860,7 @@ impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
             value_cleanup,
         );
 
-        if let Some(v) = self.builder.internals.as_mut() {
-            v.push(internals);
-        }
+        self.builder.internals.push(internals);
         self
     }
 }
@@ -1041,7 +1023,7 @@ impl<
             msg,
             |msg, expected_service_config| {
                 self.builder
-                    .is_service_available(msg, expected_service_config, &blackboard_config)
+                    .is_service_available(msg, expected_service_config)
             },
             |origin,
              msg,

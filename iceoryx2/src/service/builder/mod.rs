@@ -456,7 +456,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState>,
         F1: FnMut(&mut StaticConfig) -> Result<(), ServiceCreateError>,
         F2: FnMut(&StaticConfig) -> DynamicConfigCreationArgs,
-        F3: FnMut(&str, &str, &SharedNode<ServiceType>, &StaticConfig) -> Result<R, ServiceCreateError>,
+        F3: FnMut(&str, &StaticConfig) -> Result<R, ServiceCreateError>,
     >(
         &self,
         msg: &str,
@@ -466,7 +466,6 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         mut generate_dynamic_config: F2,
         mut create_service_resource: F3,
     ) -> Result<service::ServiceState<ServiceType, R>, ServiceCreateError> {
-        let origin = format!("{self:?}");
         let mut service_config = self.service_config.clone();
         match is_service_available(msg, &self.service_config)? {
             None => {
@@ -502,8 +501,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     }
                 };
 
-                let resource =
-                    create_service_resource(&origin, msg, &self.shared_node, &service_config)?;
+                let resource = create_service_resource(msg, &service_config)?;
 
                 service_config.attributes = attributes.0.clone();
 
