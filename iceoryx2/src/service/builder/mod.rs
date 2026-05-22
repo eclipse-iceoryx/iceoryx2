@@ -51,6 +51,7 @@ use iceoryx2_cal::static_storage::*;
 use iceoryx2_log::fail;
 use iceoryx2_log::fatal_panic;
 
+use crate::config::IO_TICK_TIME;
 use crate::identifiers::UniqueServiceId;
 use crate::node::SharedNode;
 use crate::prelude::AttributeSpecifier;
@@ -328,7 +329,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     fn open_or_create<
         ErrorTypeOpen: Into<ServiceOpenError> + Copy,
         ErrorTypeCreate: Into<ServiceCreateError> + Copy,
-        ErrorTypeOpenOrCreate: From<ErrorTypeOpen> + From<ErrorTypeCreate>,
+        ErrorTypeOpenOrCreate: From<ErrorTypeOpen> + From<ErrorTypeCreate> + Debug,
         PortFactory,
         FOpen: FnMut(&AttributeVerifier) -> Result<PortFactory, ErrorTypeOpen>,
         FCreate: FnMut(&AttributeSpecifier) -> Result<PortFactory, ErrorTypeCreate>,
@@ -341,8 +342,9 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         mut open_call: FOpen,
         mut create_call: FCreate,
     ) -> Result<PortFactory, ErrorTypeOpenOrCreate> {
+        const ERROR_TRACKING_LIMIT: usize = 5;
         let mut adaptive_wait = fail!(from self,
-              when AdaptiveWaitBuilder::new().create(),
+              when AdaptiveWaitBuilder::new().strategy(iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitStrategy::FixedTicks(IO_TICK_TIME)).create(),
               with internal_error_type,
               "{msg} since the adaptive wait could not be created.");
         let start = fail!(from self,
@@ -352,43 +354,52 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         let creation_timeout = self.shared_node.config().global.creation_timeout;
         let attribute_specifier = AttributeSpecifier(attributes.required_attributes().clone());
 
+        let mut flux_counter = 0;
+        let mut last_errors = vec![];
         loop {
             let mut try_create_service = true;
             match open_call(attributes) {
                 Ok(service) => return Ok(service),
-                Err(e) => match e.into() {
-                    ServiceOpenError::DoesNotExist => (),
-                    ServiceOpenError::HangsInCreation
-                    | ServiceOpenError::IsMarkedForDestruction => {
-                        try_create_service = false;
+                Err(e) => {
+                    last_errors.insert(0, Into::<ErrorTypeOpenOrCreate>::into(e));
+                    match e.into() {
+                        ServiceOpenError::DoesNotExist => (),
+                        ServiceOpenError::HangsInCreation
+                        | ServiceOpenError::IsMarkedForDestruction => {
+                            try_create_service = false;
+                        }
+                        ServiceOpenError::InsufficientPermissions
+                        | ServiceOpenError::ServiceInCorruptedState
+                        | ServiceOpenError::ExceedsMaxNumberOfNodes
+                        | ServiceOpenError::InternalFailure
+                        | ServiceOpenError::IncompatibleMessagingPattern
+                        | ServiceOpenError::IncompatiblePayload
+                        | ServiceOpenError::UnableToCreateServiceTag
+                        | ServiceOpenError::VersionMismatch => {
+                            return Err(Into::<ErrorTypeOpenOrCreate>::into(e));
+                        }
                     }
-                    ServiceOpenError::InsufficientPermissions
-                    | ServiceOpenError::ServiceInCorruptedState
-                    | ServiceOpenError::ExceedsMaxNumberOfNodes
-                    | ServiceOpenError::InternalFailure
-                    | ServiceOpenError::IncompatibleMessagingPattern
-                    | ServiceOpenError::IncompatiblePayload
-                    | ServiceOpenError::UnableToCreateServiceTag
-                    | ServiceOpenError::VersionMismatch => {
-                        return Err(Into::<ErrorTypeOpenOrCreate>::into(e));
-                    }
-                },
+                }
             }
 
             if try_create_service {
+                flux_counter += 1;
                 match create_call(&attribute_specifier) {
                     Ok(service) => return Ok(service),
-                    Err(e) => match e.into() {
-                        ServiceCreateError::AlreadyExists
-                        | ServiceCreateError::IsBeingCreatedByAnotherInstance => (),
-                        ServiceCreateError::InsufficientPermissions
-                        | ServiceCreateError::InternalFailure
-                        | ServiceCreateError::ServiceInCorruptedState
-                        | ServiceCreateError::UnableToCreateServiceTag
-                        | ServiceCreateError::ServiceConfigCouldNotBeCreated => {
-                            return Err(Into::<ErrorTypeOpenOrCreate>::into(e));
+                    Err(e) => {
+                        last_errors.insert(0, Into::<ErrorTypeOpenOrCreate>::into(e));
+                        match e.into() {
+                            ServiceCreateError::AlreadyExists
+                            | ServiceCreateError::IsBeingCreatedByAnotherInstance => (),
+                            ServiceCreateError::InsufficientPermissions
+                            | ServiceCreateError::InternalFailure
+                            | ServiceCreateError::ServiceInCorruptedState
+                            | ServiceCreateError::UnableToCreateServiceTag
+                            | ServiceCreateError::ServiceConfigCouldNotBeCreated => {
+                                return Err(Into::<ErrorTypeOpenOrCreate>::into(e));
+                            }
                         }
-                    },
+                    }
                 }
             }
 
@@ -398,8 +409,17 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                                 "{msg} since the elapsed time could not be acquired.");
 
             if elapsed >= creation_timeout {
-                fail!(from self, with system_in_flux_error_type,
-                    "{msg} since the service is being created and removed repeatedly.");
+                if flux_counter > 1 {
+                    fail!(from self, with system_in_flux_error_type,
+                        "{msg} tried to open and create the service repeatedly ({flux_counter} times) but another instance seems to create and remove the service continuously. Last errors: [{last_errors:?}]");
+                } else {
+                    fail!(from self, with last_errors.pop().unwrap_or(internal_error_type),
+                        "{msg} since the service is being created and removed repeatedly.");
+                }
+            }
+
+            while last_errors.len() > ERROR_TRACKING_LIMIT {
+                last_errors.pop();
             }
 
             fail!(from self,
@@ -424,7 +444,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     ) -> Result<service::ServiceState<ServiceType, R>, ErrorType> {
         let origin = format!("{self:?}");
         let mut adaptive_wait = fail!(from origin,
-              when AdaptiveWaitBuilder::new().create(),
+              when AdaptiveWaitBuilder::new().strategy(iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitStrategy::FixedTicks(IO_TICK_TIME)).create(),
               with ServiceOpenError::InternalFailure.into(),
               "{msg} since the adaptive wait could not be created.");
         let start = fail!(from origin,
