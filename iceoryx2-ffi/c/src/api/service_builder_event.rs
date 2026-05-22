@@ -83,8 +83,6 @@ pub enum iox2_event_open_or_create_error_e {
     C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE,
     #[CStr = "already exists"]
     C_ALREADY_EXISTS,
-    #[CStr = "hangs in creation"]
-    C_HANGS_IN_CREATION,
     #[CStr = "insufficient permissions"]
     C_INSUFFICIENT_PERMISSIONS,
     #[CStr = "unable to create service tag"]
@@ -173,9 +171,6 @@ impl IntoCInt for EventCreateError {
                 iox2_event_open_or_create_error_e::C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE
             }
             EventCreateError::AlreadyExists => iox2_event_open_or_create_error_e::C_ALREADY_EXISTS,
-            EventCreateError::HangsInCreation => {
-                iox2_event_open_or_create_error_e::C_HANGS_IN_CREATION
-            }
             EventCreateError::InsufficientPermissions => {
                 iox2_event_open_or_create_error_e::C_INSUFFICIENT_PERMISSIONS
             }

@@ -207,7 +207,6 @@ pub mod service {
                 any_of([
                     EventCreateError::AlreadyExists,
                     EventCreateError::IsBeingCreatedByAnotherInstance,
-                    EventCreateError::HangsInCreation,
                     EventCreateError::ServiceInCorruptedState,
                 ])
             );

@@ -74,6 +74,7 @@ const RETRY_LIMIT: usize = 5;
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 enum ServiceState {
     IncompatibleMessagingPattern,
+    InternalFailure,
     InsufficientPermissions,
     HangsInCreation,
     Corrupted,
@@ -144,6 +145,7 @@ impl From<ServiceState> for ServiceCreateError {
             | ServiceState::IncompatiblePayload => ServiceCreateError::AlreadyExists,
             ServiceState::InsufficientPermissions => ServiceCreateError::InsufficientPermissions,
             ServiceState::Corrupted => ServiceCreateError::ServiceInCorruptedState,
+            ServiceState::InternalFailure => ServiceCreateError::InternalFailure,
         }
     }
 }
@@ -173,6 +175,7 @@ impl From<ServiceState> for ServiceOpenError {
             }
             ServiceState::IncompatiblePayload => ServiceOpenError::IncompatiblePayload,
             ServiceState::InsufficientPermissions => ServiceOpenError::InsufficientPermissions,
+            ServiceState::InternalFailure => ServiceOpenError::InternalFailure,
         }
     }
 }
@@ -628,9 +631,18 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
 
                 Ok(Some((service_config, storage)))
             }
-            Err(v) => {
+            Err(NamedConceptDoesExistError::InsufficientPermissions) => {
+                fail!(from origin, with ServiceState::InsufficientPermissions,
+                    "{} since the service cannot be accessed due to insufficient permissions.", msg);
+            }
+            Err(NamedConceptDoesExistError::UnderlyingResourcesCorrupted) => {
                 fail!(from origin, with ServiceState::Corrupted,
-                    "{} since the service seems to be in a corrupted/inaccessible state ({:?}).", msg, v);
+                    "{} since the the underlying static service config seems to be corrupted.",
+                    msg);
+            }
+            Err(NamedConceptDoesExistError::InternalError) => {
+                fail!(from origin, with ServiceState::InternalFailure,
+                    "{} since an internal error has occurred.", msg);
             }
         }
     }

@@ -106,6 +106,7 @@ impl From<ServiceState> for PublishSubscribeOpenError {
             }
             ServiceState::HangsInCreation => PublishSubscribeOpenError::HangsInCreation,
             ServiceState::Corrupted => PublishSubscribeOpenError::ServiceInCorruptedState,
+            ServiceState::InternalFailure => PublishSubscribeOpenError::InternalFailure,
         }
     }
 }
@@ -209,6 +210,7 @@ impl From<ServiceState> for PublishSubscribeCreateError {
             }
             ServiceState::HangsInCreation => PublishSubscribeCreateError::HangsInCreation,
             ServiceState::Corrupted => PublishSubscribeCreateError::ServiceInCorruptedState,
+            ServiceState::InternalFailure => PublishSubscribeCreateError::InternalFailure,
         }
     }
 }

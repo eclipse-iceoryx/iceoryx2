@@ -110,6 +110,7 @@ impl From<ServiceState> for BlackboardOpenError {
             ServiceState::InsufficientPermissions => BlackboardOpenError::InsufficientPermissions,
             ServiceState::HangsInCreation => BlackboardOpenError::HangsInCreation,
             ServiceState::Corrupted => BlackboardOpenError::ServiceInCorruptedState,
+            ServiceState::InternalFailure => BlackboardOpenError::InternalFailure,
         }
     }
 }
@@ -183,6 +184,7 @@ impl From<ServiceState> for BlackboardCreateError {
             ServiceState::InsufficientPermissions => BlackboardCreateError::InsufficientPermissions,
             ServiceState::HangsInCreation => BlackboardCreateError::HangsInCreation,
             ServiceState::Corrupted => BlackboardCreateError::ServiceInCorruptedState,
+            ServiceState::InternalFailure => BlackboardCreateError::InternalFailure,
         }
     }
 }

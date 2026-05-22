@@ -112,6 +112,7 @@ impl From<ServiceState> for RequestResponseOpenError {
             }
             ServiceState::HangsInCreation => RequestResponseOpenError::HangsInCreation,
             ServiceState::Corrupted => RequestResponseOpenError::ServiceInCorruptedState,
+            ServiceState::InternalFailure => RequestResponseOpenError::InternalFailure,
         }
     }
 }
@@ -189,6 +190,7 @@ impl From<ServiceState> for RequestResponseCreateError {
             }
             ServiceState::HangsInCreation => RequestResponseCreateError::HangsInCreation,
             ServiceState::Corrupted => RequestResponseCreateError::ServiceInCorruptedState,
+            ServiceState::InternalFailure => RequestResponseCreateError::InternalFailure,
         }
     }
 }
