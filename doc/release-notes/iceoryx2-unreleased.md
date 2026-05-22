@@ -23,7 +23,7 @@
     conflicts when merging.
 -->
 
-* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
+* [#1650](https://github.com/eclipse-iceoryx/iceoryx2/issues/1650) Fix 'NodeCreationFailure::InternalError' on concurrent node creation
 
 ### Refactoring
 
@@ -32,6 +32,7 @@
     conflicts when merging.
 -->
 
+* [#1651](https://github.com/eclipse-iceoryx/iceoryx2/issues/1651) Make the names of the test binaries relatable to the crates
 * [#996](https://github.com/eclipse-iceoryx/iceoryx2/issues/996) Move BumpAllocator from iceoryx2-bb-memory into iceoryx2-bb-elementary
 
 ### Workflow
