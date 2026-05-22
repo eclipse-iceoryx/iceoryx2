@@ -353,30 +353,43 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         let attribute_specifier = AttributeSpecifier(attributes.required_attributes().clone());
 
         loop {
+            let mut try_create_service = true;
             match open_call(attributes) {
                 Ok(service) => return Ok(service),
                 Err(e) => match e.into() {
-                    ServiceOpenError::DoesNotExist
-                    | ServiceOpenError::HangsInCreation
-                    | ServiceOpenError::InsufficientPermissions
-                    | ServiceOpenError::IsMarkedForDestruction
+                    ServiceOpenError::DoesNotExist => (),
+                    ServiceOpenError::HangsInCreation
+                    | ServiceOpenError::IsMarkedForDestruction => {
+                        try_create_service = false;
+                    }
+                    ServiceOpenError::InsufficientPermissions
                     | ServiceOpenError::ServiceInCorruptedState
                     | ServiceOpenError::ExceedsMaxNumberOfNodes
-                    | ServiceOpenError::InternalFailure => (),
-                    _ => return Err(Into::<ErrorTypeOpenOrCreate>::into(e)),
+                    | ServiceOpenError::InternalFailure
+                    | ServiceOpenError::IncompatibleMessagingPattern
+                    | ServiceOpenError::IncompatiblePayload
+                    | ServiceOpenError::UnableToCreateServiceTag
+                    | ServiceOpenError::VersionMismatch => {
+                        return Err(Into::<ErrorTypeOpenOrCreate>::into(e));
+                    }
                 },
             }
 
-            match create_call(&attribute_specifier) {
-                Ok(service) => return Ok(service),
-                Err(e) => match e.into() {
-                    ServiceCreateError::AlreadyExists
-                    | ServiceCreateError::InsufficientPermissions
-                    | ServiceCreateError::InternalFailure
-                    | ServiceCreateError::IsBeingCreatedByAnotherInstance
-                    | ServiceCreateError::ServiceInCorruptedState => (),
-                    _ => return Err(Into::<ErrorTypeOpenOrCreate>::into(e)),
-                },
+            if try_create_service {
+                match create_call(&attribute_specifier) {
+                    Ok(service) => return Ok(service),
+                    Err(e) => match e.into() {
+                        ServiceCreateError::AlreadyExists
+                        | ServiceCreateError::IsBeingCreatedByAnotherInstance => (),
+                        ServiceCreateError::InsufficientPermissions
+                        | ServiceCreateError::InternalFailure
+                        | ServiceCreateError::ServiceInCorruptedState
+                        | ServiceCreateError::UnableToCreateServiceTag
+                        | ServiceCreateError::ServiceConfigCouldNotBeCreated => {
+                            return Err(Into::<ErrorTypeOpenOrCreate>::into(e));
+                        }
+                    },
+                }
             }
 
             let elapsed = fail!(from self,
@@ -414,8 +427,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
               when AdaptiveWaitBuilder::new().create(),
               with ServiceOpenError::InternalFailure.into(),
               "{msg} since the adaptive wait could not be created.");
-        let start = fail!(from origin
-            ,
+        let start = fail!(from origin,
               when Time::now(),
               with ServiceOpenError::InternalFailure.into(),
               "{msg} since the current time could not be acquired.");
