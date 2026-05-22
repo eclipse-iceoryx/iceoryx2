@@ -408,8 +408,12 @@ pub mod service {
         const NUMBER_OF_ITERATIONS: usize = 25;
         let test = Factory::new();
 
+        let handle_start = BarrierHandle::new();
         let handle_enter = BarrierHandle::new();
         let handle_exit = BarrierHandle::new();
+        let barrier_start = BarrierBuilder::new(number_of_threads as _)
+            .create(&handle_start)
+            .unwrap();
         let barrier_enter = BarrierBuilder::new(number_of_threads as _)
             .create(&handle_enter)
             .unwrap();
@@ -421,6 +425,7 @@ pub mod service {
         thread_scope(|s| {
             for _ in 0..number_of_threads {
                 s.thread_builder().spawn(|| {
+                    barrier_start.wait();
                     let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
                     for _ in 0..NUMBER_OF_ITERATIONS {
                         let service_name = generate_service_name();
