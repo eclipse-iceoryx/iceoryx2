@@ -408,58 +408,70 @@ pub mod dynamic_storage_trait {
         }
     }
 
-    #[ignore] // TODO: iox2-671 enable this test when the concurrency issue is fixed.
+    #[cfg(not(any(target_os = "windows")))] // TODO: iox2-671 enable this test when the concurrency issue is fixed.
     #[conformance_test]
     pub fn initialization_blocks_other_openers<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         const TIMEOUT: Duration = Duration::from_millis(100);
+        const ITERATIONS: usize = 100;
 
-        let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-        let _watchdog = Watchdog::new();
-        let handle = BarrierHandle::new();
-        let barrier_1 = Arc::new(BarrierBuilder::new(2).create(&handle).unwrap());
-        let barrier_2 = barrier_1.clone();
+        for _ in 0..ITERATIONS {
+            let storage_name = generate_file_path().file_name();
+            let config = generate_isolated_config::<Sut>();
+            let _watchdog = Watchdog::new();
+            let handle = BarrierHandle::new();
+            let barrier_1 = Arc::new(BarrierBuilder::new(2).create(&handle).unwrap());
+            let barrier_2 = barrier_1.clone();
 
-        thread_scope(|s| {
-            let config_1 = config.clone();
-            s.thread_builder().spawn(move || {
-                barrier_1.wait();
-                let _sut = Sut::Builder::new(&storage_name)
-                    .config(&config_1)
-                    .supplementary_size(0)
-                    .has_ownership(false)
-                    .initializer(|value, _| {
-                        nanosleep(TIMEOUT).unwrap();
-                        value.value.store(789, Ordering::Relaxed);
-                        true
-                    })
-                    .create(TestData::new(123))
-                    .unwrap();
-            })?;
+            thread_scope(|s| {
+                let config_1 = config.clone();
+                s.thread_builder().spawn(move || {
+                    barrier_1.wait();
+                    let _sut = Sut::Builder::new(&storage_name)
+                        .config(&config_1)
+                        .supplementary_size(0)
+                        .has_ownership(false)
+                        .initializer(|value, _| {
+                            nanosleep(TIMEOUT).unwrap();
+                            value.value.store(789, Ordering::Relaxed);
+                            true
+                        })
+                        .create(TestData::new(123))
+                        .unwrap();
+                })?;
 
-            let config_2 = config.clone();
-            s.thread_builder().spawn(move || {
-                barrier_2.wait();
-                loop {
-                let sut2 = Sut::Builder::new(&storage_name).config(&config_2).open(AccessMode::ReadWrite);
-                if let Ok(res) = sut2 {
-                    assert_that!(res.get().value.load(Ordering::Relaxed), eq 789);
-                    break;
-                } else {
-                    let err = sut2.err().unwrap();
-                    assert_that!(err == DynamicStorageOpenError::DoesNotExist || err == DynamicStorageOpenError::InitializationNotYetFinalized, eq true);
-                }
-            }})?;
+                let config_2 = config.clone();
+                s.thread_builder().spawn(move || {
+                    barrier_2.wait();
+                    loop {
+                        let sut2 = Sut::Builder::new(&storage_name)
+                            .config(&config_2)
+                            .open(AccessMode::ReadWrite);
+                        if let Ok(res) = sut2 {
+                            assert_that!(res.get().value.load(Ordering::Relaxed), eq 789);
+                            break;
+                        } else {
+                            let err = sut2.err().unwrap();
+                            let has_expected_error = err == DynamicStorageOpenError::DoesNotExist
+                                || err == DynamicStorageOpenError::InitializationNotYetFinalized;
+                            if !has_expected_error {
+                                assert_that!(err, eq(DynamicStorageOpenError::DoesNotExist)); // just to get the error value
+                            }
+                            assert_that!(has_expected_error, eq true);
+                        }
+                    }
+                })?;
 
-            Ok(())
-        }).unwrap();
+                Ok(())
+            })
+            .unwrap();
 
-        if POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY {
-            assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
-            assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
+            if POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY {
+                assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
+                assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
+            }
         }
     }
 

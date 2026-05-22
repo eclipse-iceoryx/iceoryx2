@@ -80,7 +80,7 @@ use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_system_types::file_name::*;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_bb_system_types::path::*;
-use iceoryx2_log::{error, fail, fatal_panic, trace, warn};
+use iceoryx2_log::{debug, error, fail, fatal_panic, trace, warn};
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
@@ -217,6 +217,11 @@ impl SharedMemoryBuilder {
         let actual_shm_size = fail!(from self, when fd.metadata(),
                 "{} since a failure occurred while acquiring the file attributes.", msg)
         .size();
+
+        if actual_shm_size == 0 {
+            debug!("Trying to open a shared memory with size zero.");
+        }
+
         self.size = actual_shm_size as usize;
 
         let memory_mapping = Self::create_memory_mapping(fd, &self)?;

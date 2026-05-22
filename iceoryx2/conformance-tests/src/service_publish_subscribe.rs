@@ -45,7 +45,6 @@ pub mod service_publish_subscribe {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing_macros::conformance_test;
-    use iceoryx2_log::{LogLevel, set_log_level};
 
     #[derive(Debug, ZeroCopySend)]
     #[repr(C)]
@@ -3284,7 +3283,6 @@ pub mod service_publish_subscribe {
 
     #[conformance_test]
     pub fn subscriber_disconnected_publisher_does_not_block_new_publishers<Sut: Service>() {
-        set_log_level(LogLevel::Error);
         const NUMBER_OF_SAMPLES: usize = 4;
         let service_name = generate_service_name();
         let config = testing::generate_isolated_config();
@@ -3319,7 +3317,6 @@ pub mod service_publish_subscribe {
 
     #[conformance_test]
     pub fn subscriber_acquires_samples_of_disconnected_publisher_first<Sut: Service>() {
-        set_log_level(LogLevel::Error);
         let service_name = generate_service_name();
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -3350,7 +3347,6 @@ pub mod service_publish_subscribe {
 
     #[conformance_test]
     pub fn communication_with_custom_payload_works<Sut: Service>() {
-        set_log_level(LogLevel::Error);
         const NUMBER_OF_ELEMENTS: usize = 1;
         let service_name = generate_service_name();
         let config = testing::generate_isolated_config();
@@ -3386,7 +3382,6 @@ pub mod service_publish_subscribe {
 
     #[conformance_test]
     pub fn communication_with_custom_slice_payload_works<Sut: Service>() {
-        set_log_level(LogLevel::Error);
         const NUMBER_OF_ELEMENTS: usize = 7;
         let service_name = generate_service_name();
         let config = testing::generate_isolated_config();
