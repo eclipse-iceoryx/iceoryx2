@@ -316,6 +316,10 @@ template <>
 constexpr auto from<int, iox2::EventOpenOrCreateError>(const int value) noexcept -> iox2::EventOpenOrCreateError {
     const auto error = static_cast<iox2_event_open_or_create_error_e>(value);
     switch (error) {
+    case iox2_event_open_or_create_error_e_O_UNABLE_TO_CREATE_SERVICE_TAG:
+        return iox2::EventOpenOrCreateError::OpenUnableToCreateServiceTag;
+    case iox2_event_open_or_create_error_e_O_VERSION_MISMATCH:
+        return iox2::EventOpenOrCreateError::OpenVersionMismatch;
     case iox2_event_open_or_create_error_e_O_DOES_NOT_EXIST:
         return iox2::EventOpenOrCreateError::OpenDoesNotExist;
     case iox2_event_open_or_create_error_e_O_INSUFFICIENT_PERMISSIONS:
@@ -358,12 +362,15 @@ constexpr auto from<int, iox2::EventOpenOrCreateError>(const int value) noexcept
         return iox2::EventOpenOrCreateError::CreateIsBeingCreatedByAnotherInstance;
     case iox2_event_open_or_create_error_e_C_ALREADY_EXISTS:
         return iox2::EventOpenOrCreateError::CreateAlreadyExists;
-    case iox2_event_open_or_create_error_e_C_HANGS_IN_CREATION:
-        return iox2::EventOpenOrCreateError::CreateHangsInCreation;
     case iox2_event_open_or_create_error_e_C_INSUFFICIENT_PERMISSIONS:
         return iox2::EventOpenOrCreateError::CreateInsufficientPermissions;
     case iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE:
         return iox2::EventOpenOrCreateError::CreateOldConnectionsStillActive;
+    case iox2_event_open_or_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED:
+        return iox2::EventOpenOrCreateError::CreateServiceConfigCouldNotBeCreated;
+    case iox2_event_open_or_create_error_e_C_UNABLE_TO_CREATE_SERVICE_TAG:
+        return iox2::EventOpenOrCreateError::CreateUnableToCreateServiceTag;
+
     case iox2_event_open_or_create_error_e_SYSTEM_IN_FLUX:
         return iox2::EventOpenOrCreateError::SystemInFlux;
     }
@@ -410,10 +417,16 @@ from<iox2::EventOpenOrCreateError, iox2_event_open_or_create_error_e>(const iox2
         return iox2_event_open_or_create_error_e_O_INCOMPATIBLE_NOTIFIER_DROPPED_EVENT;
     case iox2::EventOpenOrCreateError::OpenIncompatibleNotifierDeadEvent:
         return iox2_event_open_or_create_error_e_O_INCOMPATIBLE_NOTIFIER_DEAD_EVENT;
+    case iox2::EventOpenOrCreateError::OpenVersionMismatch:
+        return iox2_event_open_or_create_error_e_O_VERSION_MISMATCH;
+    case iox2::EventOpenOrCreateError::OpenUnableToCreateServiceTag:
+        return iox2_event_open_or_create_error_e_O_UNABLE_TO_CREATE_SERVICE_TAG;
 
     case iox2::EventOpenOrCreateError::SystemInFlux:
         return iox2_event_open_or_create_error_e_SYSTEM_IN_FLUX;
 
+    case iox2::EventOpenOrCreateError::CreateUnableToCreateServiceTag:
+        return iox2_event_open_or_create_error_e_C_UNABLE_TO_CREATE_SERVICE_TAG;
     case iox2::EventOpenOrCreateError::CreateServiceInCorruptedState:
         return iox2_event_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE;
     case iox2::EventOpenOrCreateError::CreateInternalFailure:
@@ -422,12 +435,12 @@ from<iox2::EventOpenOrCreateError, iox2_event_open_or_create_error_e>(const iox2
         return iox2_event_open_or_create_error_e_C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE;
     case iox2::EventOpenOrCreateError::CreateAlreadyExists:
         return iox2_event_open_or_create_error_e_C_ALREADY_EXISTS;
-    case iox2::EventOpenOrCreateError::CreateHangsInCreation:
-        return iox2_event_open_or_create_error_e_C_HANGS_IN_CREATION;
     case iox2::EventOpenOrCreateError::CreateInsufficientPermissions:
         return iox2_event_open_or_create_error_e_C_INSUFFICIENT_PERMISSIONS;
     case iox2::EventOpenOrCreateError::CreateOldConnectionsStillActive:
         return iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE;
+    case iox2::EventOpenOrCreateError::CreateServiceConfigCouldNotBeCreated:
+        return iox2_event_open_or_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED;
     }
 
     IOX2_UNREACHABLE();
@@ -522,6 +535,10 @@ constexpr auto from<iox2::EventOpenError, iox2_event_open_or_create_error_e>(con
         return iox2_event_open_or_create_error_e_O_INCOMPATIBLE_NOTIFIER_DEAD_EVENT;
     case iox2::EventOpenError::IncompatibleDeadline:
         return iox2_event_open_or_create_error_e_O_INCOMPATIBLE_DEADLINE;
+    case iox2::EventOpenError::UnableToCreateServiceTag:
+        return iox2_event_open_or_create_error_e_O_UNABLE_TO_CREATE_SERVICE_TAG;
+    case iox2::EventOpenError::VersionMismatch:
+        return iox2_event_open_or_create_error_e_O_VERSION_MISMATCH;
     }
 
     IOX2_UNREACHABLE();
@@ -544,8 +561,6 @@ constexpr auto from<int, iox2::EventCreateError>(const int value) noexcept -> io
         return iox2::EventCreateError::IsBeingCreatedByAnotherInstance;
     case iox2_event_open_or_create_error_e_C_ALREADY_EXISTS:
         return iox2::EventCreateError::AlreadyExists;
-    case iox2_event_open_or_create_error_e_C_HANGS_IN_CREATION:
-        return iox2::EventCreateError::HangsInCreation;
     case iox2_event_open_or_create_error_e_C_INSUFFICIENT_PERMISSIONS:
         return iox2::EventCreateError::InsufficientPermissions;
     default:
@@ -562,8 +577,6 @@ from<iox2::EventCreateError, iox2_event_open_or_create_error_e>(const iox2::Even
     switch (value) {
     case iox2::EventCreateError::InsufficientPermissions:
         return iox2_event_open_or_create_error_e_C_INSUFFICIENT_PERMISSIONS;
-    case iox2::EventCreateError::HangsInCreation:
-        return iox2_event_open_or_create_error_e_C_HANGS_IN_CREATION;
     case iox2::EventCreateError::AlreadyExists:
         return iox2_event_open_or_create_error_e_C_ALREADY_EXISTS;
     case iox2::EventCreateError::IsBeingCreatedByAnotherInstance:
@@ -574,6 +587,10 @@ from<iox2::EventCreateError, iox2_event_open_or_create_error_e>(const iox2::Even
         return iox2_event_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE;
     case iox2::EventCreateError::OldConnectionsStillActive:
         return iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE;
+    case iox2::EventCreateError::UnableToCreateServiceTag:
+        return iox2_event_open_or_create_error_e_C_UNABLE_TO_CREATE_SERVICE_TAG;
+    case iox2::EventCreateError::ServiceConfigCouldNotBeCreated:
+        return iox2_event_open_or_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED;
     }
 
     IOX2_UNREACHABLE();

@@ -70,6 +70,10 @@ enum class EventOpenError : uint8_t {
     /// The event id that is emitted if a [`Notifier`](crate::port::notifier::Notifier) is
     /// identified as dead does not fit the required event id.
     IncompatibleNotifierDeadEvent,
+    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    UnableToCreateServiceTag,
+    /// The iceoryx2 service version does not match the one of the [`Service`].
+    VersionMismatch,
 };
 
 /// Failures that can occur when a new [`MessagingPattern::Event`] [`Service`] shall be created.
@@ -84,10 +88,6 @@ enum class EventCreateError : uint8_t {
     IsBeingCreatedByAnotherInstance,
     /// The [`Service`] already exists.
     AlreadyExists,
-    /// The [`Service`]s creation timeout has passed and it is still not
-    /// initialized. Can be caused
-    /// by a process that crashed during [`Service`] creation.
-    HangsInCreation,
     /// The process has insufficient permissions to create the [`Service`].
     InsufficientPermissions,
     /// The system has cleaned up the [`Service`] but there are still endpoints
@@ -97,6 +97,10 @@ enum class EventCreateError : uint8_t {
     /// [`Sample`] or
     /// [`SampleMut`] in use.
     OldConnectionsStillActive,
+    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    UnableToCreateServiceTag,
+    /// The [`Service`]s config could not be created and written to the static service configuration.
+    ServiceConfigCouldNotBeCreated,
 };
 
 /// Failures that can occur when a [`MessagingPattern::Event`] [`Service`] shall be opened or
@@ -154,6 +158,10 @@ enum class EventOpenOrCreateError : uint8_t {
     /// [`Service`] should be
     /// recreatable.
     OpenIsMarkedForDestruction,
+    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    OpenUnableToCreateServiceTag,
+    /// The iceoryx2 service version does not match the one of the [`Service`].
+    OpenVersionMismatch,
 
     /// Some underlying resources of the [`Service`] are either missing,
     /// corrupted or unaccessible.
@@ -165,10 +173,6 @@ enum class EventOpenOrCreateError : uint8_t {
     CreateIsBeingCreatedByAnotherInstance,
     /// The [`Service`] already exists.
     CreateAlreadyExists,
-    /// The [`Service`]s creation timeout has passed and it is still not
-    /// initialized. Can be caused
-    /// by a process that crashed during [`Service`] creation.
-    CreateHangsInCreation,
     /// The process has insufficient permissions to create the [`Service`].
     CreateInsufficientPermissions,
     /// The system has cleaned up the [`Service`] but there are still endpoints
@@ -181,6 +185,10 @@ enum class EventOpenOrCreateError : uint8_t {
     /// Can occur when another process creates and removes the same [`Service`] repeatedly with a
     /// high frequency.
     SystemInFlux,
+    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    CreateUnableToCreateServiceTag,
+    /// The [`Service`]s config could not be created and written to the static service configuration.
+    CreateServiceConfigCouldNotBeCreated,
 };
 
 } // namespace iox2
