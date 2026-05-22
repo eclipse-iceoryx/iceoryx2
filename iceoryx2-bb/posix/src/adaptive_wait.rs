@@ -47,16 +47,33 @@ use crate::scheduler::yield_now;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_log::fail;
 
+/// Defines the wait behavior of the [`AdaptiveWait`] object.
+#[derive(Debug, Default, Clone, Copy)]
+pub enum AdaptiveWaitStrategy {
+    #[default]
+    /// Very responsive and quick reaction by a busy waiting for the first thousands of operations.
+    /// Cause higher CPU load. Good for high-responsive situations, bad for IO-operations.
+    Adaptive,
+    /// Lower load and the cost of the responsiveness.
+    FixedTicks(Duration),
+}
+
 /// The AdaptiveWaitBuilder is required to produce an [`AdaptiveWait`] object.
 /// The default value for clock is defined in [`ClockType::default()`].
 #[derive(Debug, Default)]
 pub struct AdaptiveWaitBuilder {
     clock_type: ClockType,
+    strategy: AdaptiveWaitStrategy,
 }
 
 impl AdaptiveWaitBuilder {
     pub fn new() -> AdaptiveWaitBuilder {
         Self::default()
+    }
+
+    pub fn strategy(mut self, strategy: AdaptiveWaitStrategy) -> Self {
+        self.strategy = strategy;
+        self
     }
 
     pub fn clock_type(mut self, clock_type: ClockType) -> Self {
@@ -105,6 +122,7 @@ pub struct AdaptiveWait {
     yield_count: u64,
     clock_type: ClockType,
     start_time: Time,
+    strategy: AdaptiveWaitStrategy,
 }
 
 impl AdaptiveWait {
@@ -114,6 +132,7 @@ impl AdaptiveWait {
             clock_type: config.clock_type,
             start_time: fail!(from config, when Time::now_with_clock(config.clock_type),
                             "Unable to create AdaptiveWait since the Time could not be acquired."),
+            strategy: config.strategy,
         })
     }
 
@@ -121,6 +140,10 @@ impl AdaptiveWait {
     /// was invoked.
     pub fn yield_count(&self) -> u64 {
         self.yield_count
+    }
+
+    pub fn strategy(&self) -> AdaptiveWaitStrategy {
+        self.strategy
     }
 
     pub fn clock_type(&self) -> ClockType {
@@ -208,16 +231,24 @@ impl AdaptiveWait {
         let msg = "Failure while waiting";
         self.yield_count += 1;
 
-        if self.yield_count <= ADAPTIVE_WAIT_YIELD_REPETITIONS {
-            yield_now();
-        } else {
-            let waiting_time = if self.yield_count <= ADAPTIVE_WAIT_INITIAL_REPETITIONS {
-                ADAPTIVE_WAIT_INITIAL_WAITING_TIME
-            } else {
-                ADAPTIVE_WAIT_FINAL_WAITING_TIME
-            };
-            fail!(from self, when nanosleep_with_clock(waiting_time, self.clock_type),
-                "{} due to a failure while sleeping.", msg);
+        match self.strategy {
+            AdaptiveWaitStrategy::Adaptive => {
+                if self.yield_count <= ADAPTIVE_WAIT_YIELD_REPETITIONS {
+                    yield_now();
+                } else {
+                    let waiting_time = if self.yield_count <= ADAPTIVE_WAIT_INITIAL_REPETITIONS {
+                        ADAPTIVE_WAIT_INITIAL_WAITING_TIME
+                    } else {
+                        ADAPTIVE_WAIT_FINAL_WAITING_TIME
+                    };
+                    fail!(from self, when nanosleep_with_clock(waiting_time, self.clock_type),
+                        "{} due to a failure while sleeping.", msg);
+                }
+            }
+            AdaptiveWaitStrategy::FixedTicks(waiting_time) => {
+                fail!(from self, when nanosleep_with_clock(waiting_time, self.clock_type),
+                    "{} due to a failure while sleeping.", msg);
+            }
         }
 
         Ok(())
