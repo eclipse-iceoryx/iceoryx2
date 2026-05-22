@@ -19,7 +19,6 @@ pub use crate::port::event_id::EventId;
 use alloc::format;
 
 use iceoryx2_bb_container::relocatable_option::RelocatableOption;
-use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_log::{fail, fatal_panic};
 
@@ -127,6 +126,25 @@ impl From<ServiceOpenError> for EventOpenError {
     }
 }
 
+impl From<EventOpenError> for ServiceOpenError {
+    fn from(value: EventOpenError) -> Self {
+        match value {
+            EventOpenError::DoesNotExist => ServiceOpenError::DoesNotExist,
+            EventOpenError::ExceedsMaxNumberOfNodes => ServiceOpenError::ExceedsMaxNumberOfNodes,
+            EventOpenError::HangsInCreation => ServiceOpenError::HangsInCreation,
+            EventOpenError::IncompatibleMessagingPattern => {
+                ServiceOpenError::IncompatibleMessagingPattern
+            }
+            EventOpenError::InsufficientPermissions => ServiceOpenError::InsufficientPermissions,
+            EventOpenError::IsMarkedForDestruction => ServiceOpenError::IsMarkedForDestruction,
+            EventOpenError::ServiceInCorruptedState => ServiceOpenError::ServiceInCorruptedState,
+            EventOpenError::UnableToCreateServiceTag => ServiceOpenError::UnableToCreateServiceTag,
+            EventOpenError::VersionMismatch => ServiceOpenError::VersionMismatch,
+            _ => ServiceOpenError::InternalFailure,
+        }
+    }
+}
+
 /// Failures that can occur when a new [`MessagingPattern::Event`] [`Service`] shall be created.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EventCreateError {
@@ -166,6 +184,30 @@ impl From<ServiceCreateError> for EventCreateError {
             ServiceCreateError::ServiceConfigCouldNotBeCreated => {
                 EventCreateError::ServiceConfigCouldNotBeCreated
             }
+        }
+    }
+}
+
+impl From<EventCreateError> for ServiceCreateError {
+    fn from(value: EventCreateError) -> Self {
+        match value {
+            EventCreateError::AlreadyExists => ServiceCreateError::AlreadyExists,
+            EventCreateError::InsufficientPermissions => {
+                ServiceCreateError::InsufficientPermissions
+            }
+            EventCreateError::IsBeingCreatedByAnotherInstance => {
+                ServiceCreateError::IsBeingCreatedByAnotherInstance
+            }
+            EventCreateError::ServiceInCorruptedState => {
+                ServiceCreateError::ServiceInCorruptedState
+            }
+            EventCreateError::UnableToCreateServiceTag => {
+                ServiceCreateError::UnableToCreateServiceTag
+            }
+            EventCreateError::ServiceConfigCouldNotBeCreated => {
+                ServiceCreateError::ServiceConfigCouldNotBeCreated
+            }
+            _ => ServiceCreateError::InternalFailure,
         }
     }
 }
@@ -380,58 +422,16 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         mut self,
         attributes: &AttributeVerifier,
     ) -> Result<event::PortFactory<ServiceType>, EventOpenOrCreateError> {
-        let origin = format!("{:?}", self);
         let msg = "Unable to open or create event service";
-        let mut adaptive_wait = fail!(from origin,
-              when AdaptiveWaitBuilder::new().create(),
-              with EventOpenOrCreateError::EventOpenError(EventOpenError::InternalFailure),
-              "{msg} since the adaptive wait could not be created.");
-        let start = fail!(from origin,
-              when Time::now(),
-              with EventOpenOrCreateError::EventOpenError(EventOpenError::InternalFailure),
-              "{msg} since the current time could not be acquired.");
-        let creation_timeout = self.base.shared_node.config().global.creation_timeout;
-        let attribute_specifier = AttributeSpecifier(attributes.required_attributes().clone());
-
-        loop {
-            match self.open_impl(attributes) {
-                Ok(service) => return Ok(service),
-                Err(EventOpenError::DoesNotExist)
-                | Err(EventOpenError::HangsInCreation)
-                | Err(EventOpenError::InsufficientPermissions)
-                | Err(EventOpenError::IsMarkedForDestruction)
-                | Err(EventOpenError::ServiceInCorruptedState) => (),
-                Err(e) => {
-                    return Err(e.into());
-                }
-            };
-
-            match self.create_impl(&attribute_specifier) {
-                Ok(service) => return Ok(service),
-                Err(EventCreateError::AlreadyExists)
-                | Err(EventCreateError::InsufficientPermissions)
-                | Err(EventCreateError::IsBeingCreatedByAnotherInstance)
-                | Err(EventCreateError::ServiceInCorruptedState) => (),
-                Err(e) => {
-                    return Err(e.into());
-                }
-            }
-
-            let elapsed = fail!(from self,
-                                when start.elapsed(),
-                                with EventOpenOrCreateError::EventOpenError(EventOpenError::InternalFailure),
-                                "{msg} since the elapsed time could not be acquired.");
-
-            if elapsed >= creation_timeout {
-                fail!(from self, with EventOpenOrCreateError::SystemInFlux,
-                    "{msg} since the service is being created and removed repeatedly.");
-            }
-
-            fail!(from self,
-                  when adaptive_wait.wait(),
-                  with EventOpenOrCreateError::EventOpenError(EventOpenError::InternalFailure),
-                  "{msg} since the adaptive wait failed.");
-        }
+        self.adjust_attributes_to_meaningful_values();
+        self.base.open_or_create(
+            msg,
+            attributes,
+            EventOpenOrCreateError::EventOpenError(EventOpenError::InternalFailure),
+            EventOpenOrCreateError::SystemInFlux,
+            |attributes| self.open_impl(attributes),
+            |attributes| self.create_impl(attributes),
+        )
     }
 
     /// Opens an existing [`Service`].
@@ -441,14 +441,14 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
     /// requirements are not satisfied the open process will fail.
     pub fn open_with_attributes(
-        mut self,
+        self,
         required_attributes: &AttributeVerifier,
     ) -> Result<event::PortFactory<ServiceType>, EventOpenError> {
         self.open_impl(required_attributes)
     }
 
     fn open_impl(
-        &mut self,
+        &self,
         required_attributes: &AttributeVerifier,
     ) -> Result<event::PortFactory<ServiceType>, EventOpenError> {
         let msg = "Unable to open event service";
@@ -467,6 +467,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
 
     /// Creates a new [`Service`].
     pub fn create(mut self) -> Result<event::PortFactory<ServiceType>, EventCreateError> {
+        self.adjust_attributes_to_meaningful_values();
         self.create_impl(&AttributeSpecifier::new())
     }
 
@@ -475,14 +476,14 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         mut self,
         attributes: &AttributeSpecifier,
     ) -> Result<event::PortFactory<ServiceType>, EventCreateError> {
+        self.adjust_attributes_to_meaningful_values();
         self.create_impl(attributes)
     }
 
     fn create_impl(
-        &mut self,
+        &self,
         attributes: &AttributeSpecifier,
     ) -> Result<event::PortFactory<ServiceType>, EventCreateError> {
-        self.adjust_attributes_to_meaningful_values();
         let origin = format!("{self:?}");
         let msg = "Unable to create event service";
 

@@ -54,6 +54,7 @@ use iceoryx2_log::fatal_panic;
 use crate::identifiers::UniqueServiceId;
 use crate::node::SharedNode;
 use crate::prelude::AttributeSpecifier;
+use crate::prelude::AttributeVerifier;
 use crate::service;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::dynamic_config::MessagingPatternSettings;
@@ -322,6 +323,77 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         self,
     ) -> blackboard::Opener<KeyType, ServiceType> {
         blackboard::Opener::new(self)
+    }
+
+    fn open_or_create<
+        ErrorTypeOpen: Into<ServiceOpenError> + Copy,
+        ErrorTypeCreate: Into<ServiceCreateError> + Copy,
+        ErrorTypeOpenOrCreate: From<ErrorTypeOpen> + From<ErrorTypeCreate>,
+        PortFactory,
+        FOpen: FnMut(&AttributeVerifier) -> Result<PortFactory, ErrorTypeOpen>,
+        FCreate: FnMut(&AttributeSpecifier) -> Result<PortFactory, ErrorTypeCreate>,
+    >(
+        &self,
+        msg: &str,
+        attributes: &AttributeVerifier,
+        internal_error_type: ErrorTypeOpenOrCreate,
+        system_in_flux_error_type: ErrorTypeOpenOrCreate,
+        mut open_call: FOpen,
+        mut create_call: FCreate,
+    ) -> Result<PortFactory, ErrorTypeOpenOrCreate> {
+        let mut adaptive_wait = fail!(from self,
+              when AdaptiveWaitBuilder::new().create(),
+              with internal_error_type,
+              "{msg} since the adaptive wait could not be created.");
+        let start = fail!(from self,
+              when Time::now(),
+              with internal_error_type,
+              "{msg} since the current time could not be acquired.");
+        let creation_timeout = self.shared_node.config().global.creation_timeout;
+        let attribute_specifier = AttributeSpecifier(attributes.required_attributes().clone());
+
+        loop {
+            match open_call(attributes) {
+                Ok(service) => return Ok(service),
+                Err(e) => match e.into() {
+                    ServiceOpenError::DoesNotExist
+                    | ServiceOpenError::HangsInCreation
+                    | ServiceOpenError::InsufficientPermissions
+                    | ServiceOpenError::IsMarkedForDestruction
+                    | ServiceOpenError::ServiceInCorruptedState
+                    | ServiceOpenError::ExceedsMaxNumberOfNodes
+                    | ServiceOpenError::InternalFailure => (),
+                    _ => return Err(Into::<ErrorTypeOpenOrCreate>::into(e)),
+                },
+            }
+
+            match create_call(&attribute_specifier) {
+                Ok(service) => return Ok(service),
+                Err(e) => match e.into() {
+                    ServiceCreateError::AlreadyExists
+                    | ServiceCreateError::InsufficientPermissions
+                    | ServiceCreateError::InternalFailure
+                    | ServiceCreateError::IsBeingCreatedByAnotherInstance
+                    | ServiceCreateError::ServiceInCorruptedState => (),
+                    _ => return Err(Into::<ErrorTypeOpenOrCreate>::into(e)),
+                },
+            }
+
+            let elapsed = fail!(from self,
+                                when start.elapsed(),
+                                with internal_error_type,
+                                "{msg} since the elapsed time could not be acquired.");
+
+            if elapsed >= creation_timeout {
+                fail!(from self, with system_in_flux_error_type,
+                    "{msg} since the service is being created and removed repeatedly.");
+            }
+
+            fail!(from self,
+                  when adaptive_wait.wait(),
+                  with internal_error_type,
+                  "{msg} since the adaptive wait failed.");
+        }
     }
 
     fn open<
