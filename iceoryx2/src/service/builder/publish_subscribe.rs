@@ -348,13 +348,9 @@ impl<
     fn is_service_available(
         &self,
         error_msg: &str,
-        expected_service_config: &StaticConfig,
-        pubsub_service_config: &static_config::publish_subscribe::StaticConfig,
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
-        match self
-            .base
-            .is_service_available(error_msg, expected_service_config)
-        {
+        let pubsub_service_config = self.config_details();
+        match self.base.is_service_available(error_msg) {
             Ok(Some((config, storage))) => {
                 if !pubsub_service_config
                     .message_type_details
@@ -603,16 +599,13 @@ impl<
             }
         };
 
-        let pubsub_config = *self.config_details();
         let service_state = self.base.create(
             msg,
             attributes,
-            |msg, expected_service_config| {
-                self.is_service_available(msg, expected_service_config, &pubsub_config)
-            },
+            || self.is_service_available(msg),
             |_| Ok(()),
             generate_dynamic_config,
-            |_, _| Ok(NoResource),
+            |_| Ok(NoResource),
         )?;
 
         Ok(publish_subscribe::PortFactory::new(service_state))
@@ -627,13 +620,10 @@ impl<
     > {
         let msg = "Unable to open publish subscribe service";
         let verify = self.verify;
-        let pubsub_config = *self.config_details();
 
         let service_state = self.base.open(
             msg,
-            |msg, expected_service_config| {
-                self.is_service_available(msg, expected_service_config, &pubsub_config)
-            },
+            || self.is_service_available(msg),
             |origin,
              msg,
              existing_service_config,
@@ -673,11 +663,7 @@ impl<
             }
             retry_count += 1;
 
-            match self.is_service_available(
-                msg,
-                &self.base.service_config,
-                self.config_details(),
-            )? {
+            match self.is_service_available(msg)? {
                 Some(_) => match self.open_impl(verifier) {
                     Ok(factory) => return Ok(factory),
                     Err(PublishSubscribeOpenError::DoesNotExist)

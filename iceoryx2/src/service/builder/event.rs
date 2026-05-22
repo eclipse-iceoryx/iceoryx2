@@ -456,9 +456,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         let verify = self.verify;
         let service_state = self.base.open(
             msg,
-            |msg, expected_service_config| {
-                self.base.is_service_available(msg, expected_service_config)
-            },
+            || self.base.is_service_available(msg),
             |origin,
              msg,
              existing_service_config,
@@ -531,12 +529,10 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         let service_state = self.base.create(
             msg,
             attributes,
-            |msg, expected_service_config: &StaticConfig| {
-                self.base.is_service_available(msg, expected_service_config)
-            },
+            || self.base.is_service_available(msg),
             prepare_static_config,
             generate_dynamic_config,
-            |_, _| Ok(NoResource),
+            |_| Ok(NoResource),
         )?;
 
         Ok(event::PortFactory::new(service_state))

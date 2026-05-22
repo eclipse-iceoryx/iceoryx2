@@ -327,10 +327,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     fn open<
         ErrorType: From<ServiceOpenError> + From<ServiceState>,
         R: service::ServiceResource,
-        FA: FnMut(
-            &str,
-            &StaticConfig,
-        ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState>,
+        FA: FnMut() -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState>,
         F1: FnMut(&str, &str, &StaticConfig, &StaticConfig) -> Result<(), ErrorType>,
         F2: FnMut(&str, &str, &SharedNode<ServiceType>, &StaticConfig) -> Result<R, ErrorType>,
     >(
@@ -353,7 +350,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         let creation_timeout = self.shared_node.config().global.creation_timeout;
 
         loop {
-            match is_service_available(msg, &self.service_config) {
+            match is_service_available() {
                 Err(ServiceState::HangsInCreation) => {
                     let elapsed = fail!(from self,
                         when start.elapsed(),
@@ -450,13 +447,10 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
 
     fn create<
         R: service::ServiceResource,
-        FA: FnMut(
-            &str,
-            &StaticConfig,
-        ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState>,
+        FA: FnMut() -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState>,
         F1: FnMut(&mut StaticConfig) -> Result<(), ServiceCreateError>,
         F2: FnMut(&StaticConfig) -> DynamicConfigCreationArgs,
-        F3: FnMut(&str, &StaticConfig) -> Result<R, ServiceCreateError>,
+        F3: FnMut(&StaticConfig) -> Result<R, ServiceCreateError>,
     >(
         &self,
         msg: &str,
@@ -467,7 +461,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         mut create_service_resource: F3,
     ) -> Result<service::ServiceState<ServiceType, R>, ServiceCreateError> {
         let mut service_config = self.service_config.clone();
-        match is_service_available(msg, &self.service_config)? {
+        match is_service_available()? {
             None => {
                 let service_tag = fail!(from self,
                     when self.create_node_service_tag(msg, ServiceCreateError::InternalFailure),
@@ -501,7 +495,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     }
                 };
 
-                let resource = create_service_resource(msg, &service_config)?;
+                let resource = create_service_resource(&service_config)?;
 
                 service_config.attributes = attributes.0.clone();
 
@@ -569,8 +563,8 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     fn is_service_available(
         &self,
         msg: &str,
-        expected_service_config: &StaticConfig,
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
+        let expected_service_config = &self.service_config;
         let static_storage_config =
             static_config_storage_config::<ServiceType>(self.shared_node.config());
         let name = static_config_name(expected_service_config.service_hash());

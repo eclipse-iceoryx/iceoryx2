@@ -660,14 +660,11 @@ impl<
     fn is_service_available(
         &self,
         error_msg: &str,
-        expected_service_config: &StaticConfig,
-        reqres_service_config: &static_config::request_response::StaticConfig,
     ) -> Result<Option<(static_config::StaticConfig, ServiceType::StaticStorage)>, ServiceState>
     {
-        match self
-            .base
-            .is_service_available(error_msg, expected_service_config)
-        {
+        let reqres_service_config = self.config_details();
+
+        match self.base.is_service_available(error_msg) {
             Ok(Some((config, storage))) => {
                 if !reqres_service_config
                     .request_message_type_details
@@ -730,16 +727,13 @@ impl<
             }
         };
 
-        let reqres_config = *self.config_details();
         let service_state = self.base.create(
             msg,
             attributes,
-            |msg, expected_service_config| {
-                self.is_service_available(msg, expected_service_config, &reqres_config)
-            },
+            || self.is_service_available(msg),
             |_| Ok(()),
             generate_dynamic_config,
-            |_, _| Ok(NoResource),
+            |_| Ok(NoResource),
         )?;
 
         Ok(request_response::PortFactory::new(service_state))
@@ -760,13 +754,10 @@ impl<
     > {
         let msg = "Unable to open request response service";
         let verify = self.verify;
-        let reqres_config = *self.config_details();
 
         let service_state = self.base.open(
             msg,
-            |msg, expected_service_config| {
-                self.is_service_available(msg, expected_service_config, &reqres_config)
-            },
+            || self.is_service_available(msg),
             |origin,
              msg,
              existing_service_config,
@@ -812,10 +803,7 @@ impl<
             }
             retry_count += 1;
 
-            if self
-                .is_service_available(msg, &self.base.service_config, self.config_details())?
-                .is_some()
-            {
+            if self.is_service_available(msg)?.is_some() {
                 match self.open_impl(verifier) {
                     Ok(factory) => return Ok(factory),
                     Err(RequestResponseOpenError::DoesNotExist)

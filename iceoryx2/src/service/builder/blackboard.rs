@@ -472,13 +472,9 @@ impl<
     fn is_service_available(
         &self,
         error_msg: &str,
-        expected_service_config: &StaticConfig,
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
         let blackboard_service_config = *self.config_details();
-        match self
-            .base
-            .is_service_available(error_msg, expected_service_config)
-        {
+        match self.base.is_service_available(error_msg) {
             Ok(Some((config, storage))) => {
                 if !(blackboard_service_config.type_details == config.blackboard().type_details) {
                     fail!(from self, with ServiceState::IncompatiblePayload,
@@ -779,13 +775,10 @@ impl<
         let service_state = self.builder.base.create(
             msg,
             attributes,
-            |msg, expected_service_config| {
-                self.builder
-                    .is_service_available(msg, expected_service_config)
-            },
+            || self.builder.is_service_available(msg),
             |_| Ok(()),
             generate_dynamic_config,
-            |msg, service_config| self.create_blackboard_resources(msg, service_config),
+            |service_config| self.create_blackboard_resources(msg, service_config),
         )?;
 
         Ok(blackboard::PortFactory::new(service_state))
@@ -1021,10 +1014,7 @@ impl<
 
         let service_state = self.builder.base.open(
             msg,
-            |msg, expected_service_config| {
-                self.builder
-                    .is_service_available(msg, expected_service_config)
-            },
+            || self.builder.is_service_available(msg),
             |origin,
              msg,
              existing_service_config,
