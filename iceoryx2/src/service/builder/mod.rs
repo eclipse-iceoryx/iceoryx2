@@ -462,7 +462,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         F2: FnMut(&StaticConfig) -> DynamicConfigCreationArgs,
         F3: FnMut(&str, &str, &SharedNode<ServiceType>, &StaticConfig) -> Result<R, ServiceCreateError>,
     >(
-        &mut self,
+        &self,
         msg: &str,
         attributes: &AttributeSpecifier,
         mut is_service_available: FA,
@@ -471,6 +471,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         mut create_service_resource: F3,
     ) -> Result<service::ServiceState<ServiceType, R>, ServiceCreateError> {
         let origin = format!("{self:?}");
+        let mut service_config = self.service_config.clone();
         match is_service_available(&origin, msg, &self.shared_node, &self.service_config)? {
             None => {
                 let service_tag = fail!(from self,
@@ -479,9 +480,9 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     "{msg} since the service tag could not be created."
                 );
 
-                prepare_service_config(&mut self.service_config)?;
+                prepare_service_config(&mut service_config)?;
 
-                let dyn_conf_creation_args = generate_dynamic_config(&self.service_config);
+                let dyn_conf_creation_args = generate_dynamic_config(&service_config);
 
                 let dynamic_config = match self
                     .create_dynamic_config_storage(dyn_conf_creation_args)
@@ -506,11 +507,11 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 };
 
                 let resource =
-                    create_service_resource(&origin, msg, &self.shared_node, &self.service_config)?;
+                    create_service_resource(&origin, msg, &self.shared_node, &service_config)?;
 
-                self.service_config.attributes = attributes.0.clone();
+                service_config.attributes = attributes.0.clone();
 
-                let service_config = fail!(from self, when ServiceType::ConfigSerializer::serialize(&self.service_config),
+                let serialized_service_config = fail!(from self, when ServiceType::ConfigSerializer::serialize(&service_config),
                                             with ServiceCreateError::ServiceConfigCouldNotBeCreated,
                                             "{} since the configuration could not be serialized.", msg);
 
@@ -544,10 +545,10 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                         "{} since event the first NodeId could not be registered.", msg);
                 self.shared_node
                     .registered_services()
-                    .add(self.service_config.service_hash(), node_handle);
+                    .add(service_config.service_hash(), node_handle);
 
                 // only unlock the static details when the service is successfully created
-                let unlocked_static_details = fail!(from self, when static_config.unlock(service_config.as_slice()),
+                let unlocked_static_details = fail!(from self, when static_config.unlock(serialized_service_config.as_slice()),
                             with ServiceCreateError::ServiceConfigCouldNotBeCreated,
                             "{} since the configuration could not be written to the static storage.", msg);
 
@@ -557,7 +558,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 }
 
                 Ok(service::ServiceState::new(
-                    self.service_config.clone(),
+                    service_config,
                     self.shared_node.clone(),
                     dynamic_config,
                     unlocked_static_details,
