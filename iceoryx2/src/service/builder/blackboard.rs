@@ -40,8 +40,7 @@ use iceoryx2_log::{error, fatal_panic};
 use crate::constants::{MAX_BLACKBOARD_KEY_ALIGNMENT, MAX_BLACKBOARD_KEY_SIZE};
 use crate::service;
 use crate::service::builder::{
-    BuilderWithServiceType, CustomKeyMarker, DynamicConfigCreationArgs, ServiceCreateError,
-    ServiceOpenError,
+    CustomKeyMarker, DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError,
 };
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
 use crate::service::dynamic_config::MessagingPatternSettings;
@@ -421,7 +420,7 @@ struct Builder<
 > {
     base: builder::BuilderWithServiceType<ServiceType>,
     verify: Verify,
-    internals: Vec<BuilderInternals>,
+    internals: Option<Vec<BuilderInternals>>,
     override_key_type: Option<TypeDetail>,
     key_eq_func: Arc<dyn Fn(*const u8, *const u8) -> bool + Send + Sync>,
     _key: PhantomData<KeyType>,
@@ -454,7 +453,7 @@ impl<
         let mut new_self = Self {
             base,
             verify: Verify::default(),
-            internals: Vec::<BuilderInternals>::new(),
+            internals: Some(Vec::<BuilderInternals>::new()),
             override_key_type: None,
             key_eq_func: Arc::new(|lhs: *const u8, rhs: *const u8| {
                 KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::default_key_eq_comparison::<KeyType>(lhs, rhs)
@@ -471,21 +470,18 @@ impl<
 
     // triggers the underlying is_service_available method to check whether the service described in base is available.
     fn is_service_available(
-        origin: &str,
+        &self,
         error_msg: &str,
-        shared_node: &SharedNode<ServiceType>,
         expected_service_config: &StaticConfig,
         blackboard_service_config: &static_config::blackboard::StaticConfig,
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
-        match BuilderWithServiceType::is_service_available(
-            origin,
-            error_msg,
-            shared_node,
-            expected_service_config,
-        ) {
+        match self
+            .base
+            .is_service_available(error_msg, expected_service_config)
+        {
             Ok(Some((config, storage))) => {
                 if !(blackboard_service_config.type_details == config.blackboard().type_details) {
-                    fail!(from origin, with ServiceState::IncompatiblePayload,
+                    fail!(from self, with ServiceState::IncompatiblePayload,
                         "{} since the service offers the type \"{:?}\" which is not compatible to the requested type \"{:?}\".",
                         error_msg, &config.blackboard().type_details , blackboard_service_config.type_details);
                 }
@@ -608,7 +604,9 @@ impl<
             internal_value_alignment: core::mem::align_of::<UnrestrictedAtomic<ValueType>>(),
             internal_value_cleanup_callback: Box::new(|| {}),
         };
-        self.builder.internals.push(internals);
+        if let Some(v) = self.builder.internals.as_mut() {
+            v.push(internals);
+        }
 
         self
     }
@@ -757,8 +755,9 @@ impl<
         let msg = "Unable to create blackboard service";
 
         self.adjust_configuration_to_meaningful_values();
+        let mut internals = self.builder.internals.take().unwrap_or_default();
 
-        if self.builder.internals.is_empty() {
+        if internals.is_empty() {
             fail!(from origin,  with BlackboardCreateError::NoEntriesProvided,
                 "{} without entries. At least one key-value pair is required.", msg);
         }
@@ -782,17 +781,13 @@ impl<
         };
 
         let blackboard_config = *self.builder.config_details();
+        let key_eq_func = self.builder.key_eq_func.clone();
         let service_state = self.builder.base.create(
             msg,
             attributes,
-            |origin, msg, shared_node, expected_service_config| {
-                Builder::<KeyType, ServiceType>::is_service_available(
-                    origin,
-                    msg,
-                    shared_node,
-                    expected_service_config,
-                    &blackboard_config,
-                )
+            |msg, expected_service_config| {
+                self.builder
+                    .is_service_available(msg, expected_service_config, &blackboard_config)
             },
             |_| Ok(()),
             generate_dynamic_config,
@@ -803,8 +798,8 @@ impl<
                     service_config,
                     &blackboard_config,
                     shared_node,
-                    self.builder.internals.as_mut_slice(),
-                    self.builder.key_eq_func.clone(),
+                    internals.as_mut_slice(),
+                    key_eq_func.clone(),
                 )
             },
         )?;
@@ -881,7 +876,9 @@ impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
             value_cleanup,
         );
 
-        self.builder.internals.push(internals);
+        if let Some(v) = self.builder.internals.as_mut() {
+            v.push(internals);
+        }
         self
     }
 }
@@ -1042,14 +1039,9 @@ impl<
 
         let service_state = self.builder.base.open(
             msg,
-            |origin, msg, shared_node, expected_service_config| {
-                Builder::<KeyType, ServiceType>::is_service_available(
-                    origin,
-                    msg,
-                    shared_node,
-                    expected_service_config,
-                    &blackboard_config,
-                )
+            |msg, expected_service_config| {
+                self.builder
+                    .is_service_available(msg, expected_service_config, &blackboard_config)
             },
             |origin,
              msg,

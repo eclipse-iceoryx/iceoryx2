@@ -22,9 +22,7 @@ use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic, warn};
 
-use crate::service::builder::{
-    BuilderWithServiceType, DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError,
-};
+use crate::service::builder::{DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError};
 use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;
 use crate::service::header::publish_subscribe::Header;
 use crate::service::port_factory::publish_subscribe;
@@ -348,24 +346,21 @@ impl<
 
     // triggers the underlying is_service_available method to check whether the service described in base is available.
     fn is_service_available(
-        origin: &str,
+        &self,
         error_msg: &str,
-        shared_node: &SharedNode<ServiceType>,
         expected_service_config: &StaticConfig,
         pubsub_service_config: &static_config::publish_subscribe::StaticConfig,
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
-        match BuilderWithServiceType::is_service_available(
-            origin,
-            error_msg,
-            shared_node,
-            expected_service_config,
-        ) {
+        match self
+            .base
+            .is_service_available(error_msg, expected_service_config)
+        {
             Ok(Some((config, storage))) => {
                 if !pubsub_service_config
                     .message_type_details
                     .is_compatible_to(&config.publish_subscribe().message_type_details)
                 {
-                    fail!(from origin, with ServiceState::IncompatiblePayload,
+                    fail!(from self, with ServiceState::IncompatiblePayload,
                         "{} since the service offers the type \"{:?}\" which is not compatible to the requested type \"{:?}\".",
                         error_msg, &config.publish_subscribe().message_type_details , pubsub_service_config.message_type_details);
                 }
@@ -612,14 +607,8 @@ impl<
         let service_state = self.base.create(
             msg,
             attributes,
-            |origin, msg, shared_node, expected_service_config| {
-                Self::is_service_available(
-                    origin,
-                    msg,
-                    shared_node,
-                    expected_service_config,
-                    &pubsub_config,
-                )
+            |msg, expected_service_config| {
+                self.is_service_available(msg, expected_service_config, &pubsub_config)
             },
             |_| Ok(()),
             generate_dynamic_config,
@@ -642,14 +631,8 @@ impl<
 
         let service_state = self.base.open(
             msg,
-            |origin, msg, shared_node, expected_service_config| {
-                Self::is_service_available(
-                    origin,
-                    msg,
-                    shared_node,
-                    expected_service_config,
-                    &pubsub_config,
-                )
+            |msg, expected_service_config| {
+                self.is_service_available(msg, expected_service_config, &pubsub_config)
             },
             |origin,
              msg,
@@ -678,7 +661,6 @@ impl<
         publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeOpenOrCreateError,
     > {
-        let origin = format!("{self:?}");
         let msg = "Unable to open or create publish subscribe service";
 
         let mut retry_count = 0;
@@ -691,10 +673,8 @@ impl<
             }
             retry_count += 1;
 
-            match Self::is_service_available(
-                &origin,
+            match self.is_service_available(
                 msg,
-                &self.base.shared_node,
                 &self.base.service_config,
                 self.config_details(),
             )? {

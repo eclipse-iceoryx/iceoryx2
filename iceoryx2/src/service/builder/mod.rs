@@ -329,8 +329,6 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         R: service::ServiceResource,
         FA: FnMut(
             &str,
-            &str,
-            &SharedNode<ServiceType>,
             &StaticConfig,
         ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState>,
         F1: FnMut(&str, &str, &StaticConfig, &StaticConfig) -> Result<(), ErrorType>,
@@ -355,7 +353,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         let creation_timeout = self.shared_node.config().global.creation_timeout;
 
         loop {
-            match is_service_available(&origin, msg, &self.shared_node, &self.service_config) {
+            match is_service_available(msg, &self.service_config) {
                 Err(ServiceState::HangsInCreation) => {
                     let elapsed = fail!(from self,
                         when start.elapsed(),
@@ -454,8 +452,6 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         R: service::ServiceResource,
         FA: FnMut(
             &str,
-            &str,
-            &SharedNode<ServiceType>,
             &StaticConfig,
         ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState>,
         F1: FnMut(&mut StaticConfig) -> Result<(), ServiceCreateError>,
@@ -472,7 +468,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     ) -> Result<service::ServiceState<ServiceType, R>, ServiceCreateError> {
         let origin = format!("{self:?}");
         let mut service_config = self.service_config.clone();
-        match is_service_available(&origin, msg, &self.shared_node, &self.service_config)? {
+        match is_service_available(msg, &self.service_config)? {
             None => {
                 let service_tag = fail!(from self,
                     when self.create_node_service_tag(msg, ServiceCreateError::InternalFailure),
@@ -573,15 +569,14 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     }
 
     fn is_service_available(
-        origin: &str,
+        &self,
         msg: &str,
-        shared_node: &SharedNode<ServiceType>,
         expected_service_config: &StaticConfig,
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
         let static_storage_config =
-            static_config_storage_config::<ServiceType>(shared_node.config());
+            static_config_storage_config::<ServiceType>(self.shared_node.config());
         let name = static_config_name(expected_service_config.service_hash());
-        let creation_timeout = shared_node.config().global.creation_timeout;
+        let creation_timeout = self.shared_node.config().global.creation_timeout;
 
         match <ServiceType::StaticStorage as NamedConceptMgmt>::does_exist_cfg(
             &name,
@@ -598,19 +593,19 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                         Ok(storage) => storage,
                         Err(StaticStorageOpenError::DoesNotExist) => return Ok(None),
                         Err(StaticStorageOpenError::InitializationNotYetFinalized) => {
-                            fail!(from origin, with ServiceState::HangsInCreation,
+                            fail!(from self, with ServiceState::HangsInCreation,
                                 "{} since the service hangs while being created, max timeout for service creation of {:?} exceeded.",
                                 msg, creation_timeout);
                         },
                         Err(StaticStorageOpenError::Read) =>
                         {
-                            fail!(from origin, with ServiceState::InsufficientPermissions,
+                            fail!(from self, with ServiceState::InsufficientPermissions,
                                     "{} since it is not possible to read the services underlying static details. Is the service accessible?",
                                     msg);
                         }
                         Err(StaticStorageOpenError::InternalError) =>
                         {
-                            fail!(from origin, with ServiceState::InternalFailure,
+                            fail!(from self, with ServiceState::InternalFailure,
                                     "{} since it is not possible to open the services underlying static details due to an internal failure.",
                                     msg);
                         }
@@ -619,22 +614,22 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 let mut read_content =
                     String::from_utf8(vec![b' '; storage.len() as usize]).expect("");
                 if let Err(e) = storage.read(unsafe { read_content.as_mut_vec() }.as_mut_slice()) {
-                    fail!(from origin, with ServiceState::InsufficientPermissions,
+                    fail!(from self, with ServiceState::InsufficientPermissions,
                             "{} since it is not possible to read the services underlying static details. Is the service accessible? [{e:?}]", msg);
                 }
 
-                let service_config = fail!(from origin, when ServiceType::ConfigSerializer::deserialize::<StaticConfig>(unsafe {
+                let service_config = fail!(from self, when ServiceType::ConfigSerializer::deserialize::<StaticConfig>(unsafe {
                                             read_content.as_mut_vec() }),
                                      with ServiceState::Corrupted, "Unable to deserialize the service config. Is the service corrupted?");
 
                 if service_config.service_hash() != service_config.service_hash() {
-                    fail!(from origin, with ServiceState::Corrupted,
+                    fail!(from self, with ServiceState::Corrupted,
                         "{} a service with that name exist but different ServiceHash.", msg);
                 }
 
                 let msg = "Service exist but is not compatible";
                 if !service_config.has_same_messaging_pattern(expected_service_config) {
-                    fail!(from origin, with ServiceState::IncompatibleMessagingPattern,
+                    fail!(from self, with ServiceState::IncompatibleMessagingPattern,
                         "{} since the messaging pattern \"{:?}\" does not fit the requested pattern \"{:?}\".",
                         msg, service_config.messaging_pattern(), service_config.messaging_pattern());
                 }
@@ -642,20 +637,20 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 Ok(Some((service_config, storage)))
             }
             Err(NamedConceptDoesExistError::UnderlyingResourcesBeingSetUp) => {
-                fail!(from origin, with ServiceState::HangsInCreation,
+                fail!(from self, with ServiceState::HangsInCreation,
                     "{} since the service is currently being set up.", msg);
             }
             Err(NamedConceptDoesExistError::InsufficientPermissions) => {
-                fail!(from origin, with ServiceState::InsufficientPermissions,
+                fail!(from self, with ServiceState::InsufficientPermissions,
                     "{} since the service cannot be accessed due to insufficient permissions.", msg);
             }
             Err(NamedConceptDoesExistError::UnderlyingResourcesCorrupted) => {
-                fail!(from origin, with ServiceState::Corrupted,
+                fail!(from self, with ServiceState::Corrupted,
                     "{} since the the underlying static service config seems to be corrupted.",
                     msg);
             }
             Err(NamedConceptDoesExistError::InternalError) => {
-                fail!(from origin, with ServiceState::InternalFailure,
+                fail!(from self, with ServiceState::InternalFailure,
                     "{} since an internal error has occurred.", msg);
             }
         }

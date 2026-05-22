@@ -23,9 +23,7 @@ use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_log::{fail, fatal_panic};
 
-use crate::service::builder::{
-    BuilderWithServiceType, DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError,
-};
+use crate::service::builder::{DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError};
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::port_factory::event;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
@@ -458,13 +456,8 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         let verify = self.verify;
         let service_state = self.base.open(
             msg,
-            |origin, msg, shared_node, expected_service_config| {
-                BuilderWithServiceType::is_service_available(
-                    origin,
-                    msg,
-                    shared_node,
-                    expected_service_config,
-                )
+            |msg, expected_service_config| {
+                self.base.is_service_available(msg, expected_service_config)
             },
             |origin,
              msg,
@@ -538,16 +531,8 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         let service_state = self.base.create(
             msg,
             attributes,
-            |origin,
-             msg,
-             shared_node: &SharedNode<ServiceType>,
-             expected_service_config: &StaticConfig| {
-                BuilderWithServiceType::is_service_available(
-                    origin,
-                    msg,
-                    shared_node,
-                    expected_service_config,
-                )
+            |msg, expected_service_config: &StaticConfig| {
+                self.base.is_service_available(msg, expected_service_config)
             },
             prepare_static_config,
             generate_dynamic_config,

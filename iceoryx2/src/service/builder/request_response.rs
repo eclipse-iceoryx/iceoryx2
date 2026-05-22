@@ -19,11 +19,8 @@ use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic, warn};
 
-use crate::node::SharedNode;
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
-use crate::service::builder::{
-    BuilderWithServiceType, DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError,
-};
+use crate::service::builder::{DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError};
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::request_response::DynamicConfigSettings;
 use crate::service::port_factory::request_response;
@@ -661,25 +658,22 @@ impl<
     }
 
     fn is_service_available(
-        origin: &str,
+        &self,
         error_msg: &str,
-        shared_node: &SharedNode<ServiceType>,
         expected_service_config: &StaticConfig,
         reqres_service_config: &static_config::request_response::StaticConfig,
     ) -> Result<Option<(static_config::StaticConfig, ServiceType::StaticStorage)>, ServiceState>
     {
-        match BuilderWithServiceType::is_service_available(
-            origin,
-            error_msg,
-            shared_node,
-            expected_service_config,
-        ) {
+        match self
+            .base
+            .is_service_available(error_msg, expected_service_config)
+        {
             Ok(Some((config, storage))) => {
                 if !reqres_service_config
                     .request_message_type_details
                     .is_compatible_to(&config.request_response().request_message_type_details)
                 {
-                    fail!(from origin, with ServiceState::IncompatiblePayload,
+                    fail!(from self, with ServiceState::IncompatiblePayload,
                         "{} since the services uses the request type \"{:?}\" which is not compatible to the requested type \"{:?}\".",
                         error_msg, &config.request_response().request_message_type_details,
                         reqres_service_config.request_message_type_details);
@@ -689,7 +683,7 @@ impl<
                     .response_message_type_details
                     .is_compatible_to(&config.request_response().response_message_type_details)
                 {
-                    fail!(from origin, with ServiceState::IncompatiblePayload,
+                    fail!(from self, with ServiceState::IncompatiblePayload,
                         "{} since the services uses the response type \"{:?}\" which is not compatible to the requested type \"{:?}\".",
                         error_msg, &config.request_response().response_message_type_details,
                         reqres_service_config.response_message_type_details);
@@ -740,14 +734,8 @@ impl<
         let service_state = self.base.create(
             msg,
             attributes,
-            |origin, msg, shared_node, expected_service_config| {
-                Self::is_service_available(
-                    origin,
-                    msg,
-                    shared_node,
-                    expected_service_config,
-                    &reqres_config,
-                )
+            |msg, expected_service_config| {
+                self.is_service_available(msg, expected_service_config, &reqres_config)
             },
             |_| Ok(()),
             generate_dynamic_config,
@@ -776,14 +764,8 @@ impl<
 
         let service_state = self.base.open(
             msg,
-            |origin, msg, shared_node, expected_service_config| {
-                Self::is_service_available(
-                    origin,
-                    msg,
-                    shared_node,
-                    expected_service_config,
-                    &reqres_config,
-                )
+            |msg, expected_service_config| {
+                self.is_service_available(msg, expected_service_config, &reqres_config)
             },
             |origin,
              msg,
@@ -818,7 +800,6 @@ impl<
         >,
         RequestResponseOpenOrCreateError,
     > {
-        let origin = format!("{self:?}");
         let msg = "Unable to open or create request response service";
 
         let mut retry_count = 0;
@@ -831,14 +812,9 @@ impl<
             }
             retry_count += 1;
 
-            if Self::is_service_available(
-                &origin,
-                msg,
-                &self.base.shared_node,
-                &self.base.service_config,
-                self.config_details(),
-            )?
-            .is_some()
+            if self
+                .is_service_available(msg, &self.base.service_config, self.config_details())?
+                .is_some()
             {
                 match self.open_impl(verifier) {
                     Ok(factory) => return Ok(factory),
