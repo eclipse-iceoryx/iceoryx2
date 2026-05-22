@@ -23,20 +23,6 @@ use alloc::boxed::Box;
 use alloc::format;
 use alloc::vec::Vec;
 
-use iceoryx2_bb_concurrency::atomic::AtomicU64;
-use iceoryx2_bb_container::flatmap::RelocatableFlatMap;
-use iceoryx2_bb_container::queue::RelocatableContainer;
-use iceoryx2_bb_container::string::String;
-use iceoryx2_bb_container::vector::relocatable_vec::*;
-use iceoryx2_bb_derive_macros::ZeroCopySend;
-use iceoryx2_bb_elementary::static_assert::static_assert_eq;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
-use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_bb_posix::file::AccessMode;
-use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryBuilder};
-use iceoryx2_log::{error, fatal_panic};
-
 use crate::constants::{MAX_BLACKBOARD_KEY_ALIGNMENT, MAX_BLACKBOARD_KEY_SIZE};
 use crate::service;
 use crate::service::builder::{
@@ -50,6 +36,19 @@ use crate::service::port_factory::blackboard;
 use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
+use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_container::flatmap::RelocatableFlatMap;
+use iceoryx2_bb_container::queue::RelocatableContainer;
+use iceoryx2_bb_container::string::String;
+use iceoryx2_bb_container::vector::relocatable_vec::*;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary::static_assert::static_assert_eq;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
+use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_bb_posix::file::AccessMode;
+use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryBuilder};
+use iceoryx2_log::{error, fatal_panic};
 
 use super::ServiceState;
 
@@ -664,14 +663,14 @@ impl<
             payload_size += i.internal_value_size + i.internal_value_alignment - 1;
         }
         let payload_shm = match <<ServiceType::BlackboardPayload as SharedMemory<
-            iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator,
+            iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator,
         >>::Builder as NamedConceptBuilder<ServiceType::BlackboardPayload>>::new(
             &name
         )
         .config(&shm_config)
         .has_ownership(false)
         .size(payload_size)
-        .create(&iceoryx2_cal::shared_memory::bump_allocator::Config::default())
+        .create(&iceoryx2_cal::shared_memory::shm_bump_allocator::Config::default())
         {
             Ok(v) => v,
             Err(_) => {
@@ -986,7 +985,7 @@ impl<
 
         let shm_config = blackboard_data_config::<ServiceType>(shared_node.config());
         let payload_shm = match <<ServiceType::BlackboardPayload as SharedMemory<
-            iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator,
+            iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator,
         >>::Builder as NamedConceptBuilder<ServiceType::BlackboardPayload>>::new(
             &name
         )
