@@ -466,9 +466,8 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     }
 
     /// Creates a new [`Service`].
-    pub fn create(mut self) -> Result<event::PortFactory<ServiceType>, EventCreateError> {
-        self.adjust_attributes_to_meaningful_values();
-        self.create_impl(&AttributeSpecifier::new())
+    pub fn create(self) -> Result<event::PortFactory<ServiceType>, EventCreateError> {
+        self.create_with_attributes(&AttributeSpecifier::new())
     }
 
     /// Creates a new [`Service`] with a set of attributes.

@@ -36,7 +36,6 @@ use self::{
     attribute::{AttributeSpecifier, AttributeVerifier},
     message_type_details::{MessageTypeDetails, TypeDetail, TypeVariant},
 };
-use builder::RETRY_LIMIT;
 
 /// Errors that can occur when an existing [`MessagingPattern::PublishSubscribe`] [`Service`] shall be opened.
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -139,6 +138,36 @@ impl From<ServiceOpenError> for PublishSubscribeOpenError {
     }
 }
 
+impl From<PublishSubscribeOpenError> for ServiceOpenError {
+    fn from(value: PublishSubscribeOpenError) -> Self {
+        match value {
+            PublishSubscribeOpenError::DoesNotExist => ServiceOpenError::DoesNotExist,
+            PublishSubscribeOpenError::ExceedsMaxNumberOfNodes => {
+                ServiceOpenError::ExceedsMaxNumberOfNodes
+            }
+            PublishSubscribeOpenError::HangsInCreation => ServiceOpenError::HangsInCreation,
+            PublishSubscribeOpenError::IncompatibleMessagingPattern => {
+                ServiceOpenError::IncompatibleMessagingPattern
+            }
+            PublishSubscribeOpenError::IncompatibleTypes => ServiceOpenError::IncompatiblePayload,
+            PublishSubscribeOpenError::InsufficientPermissions => {
+                ServiceOpenError::InsufficientPermissions
+            }
+            PublishSubscribeOpenError::IsMarkedForDestruction => {
+                ServiceOpenError::IsMarkedForDestruction
+            }
+            PublishSubscribeOpenError::ServiceInCorruptedState => {
+                ServiceOpenError::ServiceInCorruptedState
+            }
+            PublishSubscribeOpenError::UnableToCreateServiceTag => {
+                ServiceOpenError::UnableToCreateServiceTag
+            }
+            PublishSubscribeOpenError::VersionMismatch => ServiceOpenError::VersionMismatch,
+            _ => ServiceOpenError::InternalFailure,
+        }
+    }
+}
+
 /// Errors that can occur when a new [`MessagingPattern::PublishSubscribe`] [`Service`] shall be created.
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum PublishSubscribeCreateError {
@@ -193,6 +222,30 @@ impl From<ServiceCreateError> for PublishSubscribeCreateError {
             ServiceCreateError::UnableToCreateServiceTag => {
                 PublishSubscribeCreateError::UnableToCreateServiceTag
             }
+        }
+    }
+}
+
+impl From<PublishSubscribeCreateError> for ServiceCreateError {
+    fn from(value: PublishSubscribeCreateError) -> Self {
+        match value {
+            PublishSubscribeCreateError::AlreadyExists => ServiceCreateError::AlreadyExists,
+            PublishSubscribeCreateError::InsufficientPermissions => {
+                ServiceCreateError::InsufficientPermissions
+            }
+            PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance => {
+                ServiceCreateError::IsBeingCreatedByAnotherInstance
+            }
+            PublishSubscribeCreateError::ServiceConfigCouldNotBeCreated => {
+                ServiceCreateError::ServiceConfigCouldNotBeCreated
+            }
+            PublishSubscribeCreateError::ServiceInCorruptedState => {
+                ServiceCreateError::ServiceInCorruptedState
+            }
+            PublishSubscribeCreateError::UnableToCreateServiceTag => {
+                ServiceCreateError::UnableToCreateServiceTag
+            }
+            _ => ServiceCreateError::InternalFailure,
         }
     }
 }
@@ -564,15 +617,13 @@ impl<
     }
 
     fn create_impl(
-        &mut self,
+        &self,
         attributes: &AttributeSpecifier,
     ) -> Result<
         publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeCreateError,
     > {
-        self.adjust_configuration_to_meaningful_values();
         let msg = "Unable to create publish subscribe service";
-
         if !self.config_details().enable_safe_overflow
             && (self.config_details().subscriber_max_buffer_size
                 < self.config_details().history_size)
@@ -612,7 +663,7 @@ impl<
     }
 
     fn open_impl(
-        &mut self,
+        &self,
         required_attributes: &AttributeVerifier,
     ) -> Result<
         publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
@@ -633,53 +684,23 @@ impl<
     }
 
     fn open_or_create_impl(
-        mut self,
-        verifier: &AttributeVerifier,
+        self,
+        attributes: &AttributeVerifier,
     ) -> Result<
         publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeOpenOrCreateError,
     > {
         let msg = "Unable to open or create publish subscribe service";
-
-        let mut retry_count = 0;
-        loop {
-            if RETRY_LIMIT < retry_count {
-                fail!(from self,
-                      with PublishSubscribeOpenOrCreateError::SystemInFlux,
-                      "{} since an instance is creating and removing the same service repeatedly.",
-                      msg);
-            }
-            retry_count += 1;
-
-            match self.is_service_available(msg)? {
-                Some(_) => match self.open_impl(verifier) {
-                    Ok(factory) => return Ok(factory),
-                    Err(PublishSubscribeOpenError::DoesNotExist)
-                    // If the service is currently being cleaned up then this process might identify
-                    // the service like this. Therefore, it makes sense to retry it multiple times until
-                    // the external cleanup process if finished.
-                    | Err(PublishSubscribeOpenError::ServiceInCorruptedState)
-                    | Err(PublishSubscribeOpenError::IsMarkedForDestruction) => continue,
-                    Err(e) => return Err(e.into()),
-                },
-                None => {
-                    match self
-                        .create_impl(&AttributeSpecifier(verifier.required_attributes().clone()))
-                    {
-                        Ok(factory) => return Ok(factory),
-                        Err(PublishSubscribeCreateError::AlreadyExists)
-                        // If the service is currently being cleaned up then this process might identify
-                        // the service like this. Therefore, it makes sense to retry it multiple times until
-                        // the external cleanup process if finished.
-                        | Err(PublishSubscribeCreateError::ServiceInCorruptedState)
-                        | Err(PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance) => {
-                            continue;
-                        }
-                        Err(e) => return Err(e.into()),
-                    }
-                }
-            }
-        }
+        self.base.open_or_create(
+            msg,
+            attributes,
+            PublishSubscribeOpenOrCreateError::PublishSubscribeOpenError(
+                PublishSubscribeOpenError::InternalFailure,
+            ),
+            PublishSubscribeOpenOrCreateError::SystemInFlux,
+            |attributes| self.open_impl(attributes),
+            |attributes| self.create_impl(attributes),
+        )
     }
 
     fn adjust_payload_alignment(&mut self) {
@@ -759,6 +780,7 @@ impl<Payload: Debug + ZeroCopySend, UserHeader: Debug + ZeroCopySend, ServiceTyp
         publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeOpenOrCreateError,
     > {
+        self.adjust_configuration_to_meaningful_values();
         self.prepare_config_details();
         self.open_or_create_impl(verifier)
     }
@@ -804,6 +826,7 @@ impl<Payload: Debug + ZeroCopySend, UserHeader: Debug + ZeroCopySend, ServiceTyp
         publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeCreateError,
     > {
+        self.adjust_configuration_to_meaningful_values();
         self.prepare_config_details();
         self.create_impl(attributes)
     }
