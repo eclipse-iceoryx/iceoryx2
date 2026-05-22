@@ -554,7 +554,7 @@ impl<
         existing_service_config: &StaticConfig,
         required_service_config: &StaticConfig,
         verifier: &AttributeVerifier,
-    ) -> Result<static_config::request_response::StaticConfig, RequestResponseOpenError> {
+    ) -> Result<(), RequestResponseOpenError> {
         let existing_attributes = existing_service_config.attributes();
         if let Err(incompatible_key) = verifier.verify_requirements(existing_attributes) {
             fail!(from origin, with RequestResponseOpenError::IncompatibleAttributes,
@@ -657,7 +657,7 @@ impl<
                 msg, existing_configuration.max_nodes, required_configuration.max_nodes);
         }
 
-        Ok(*existing_configuration)
+        Ok(())
     }
 
     fn is_service_available(
@@ -789,21 +789,14 @@ impl<
              msg,
              existing_service_config,
              required_service_config|
-             -> Result<
-                static_config::messaging_pattern::MessagingPattern,
-                RequestResponseOpenError,
-            > {
-                Ok(
-                    static_config::messaging_pattern::MessagingPattern::RequestResponse(
-                        Self::verify_service_configuration(
-                            origin,
-                            msg,
-                            verify,
-                            existing_service_config,
-                            required_service_config,
-                            required_attributes,
-                        )?,
-                    ),
+             -> Result<(), RequestResponseOpenError> {
+                Self::verify_service_configuration(
+                    origin,
+                    msg,
+                    verify,
+                    existing_service_config,
+                    required_service_config,
+                    required_attributes,
                 )
             },
             |_, _, _, _| Ok(NoResource),

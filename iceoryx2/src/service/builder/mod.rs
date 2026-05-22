@@ -60,7 +60,6 @@ use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::RegisterNodeResult;
 use crate::service::naming_scheme::dynamic_config_name;
 use crate::service::naming_scheme::static_config_name;
-use crate::service::static_config;
 use crate::service::static_config::*;
 
 use super::Service;
@@ -334,15 +333,10 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
             &SharedNode<ServiceType>,
             &StaticConfig,
         ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState>,
-        F1: FnMut(
-            &str,
-            &str,
-            &StaticConfig,
-            &StaticConfig,
-        ) -> Result<static_config::messaging_pattern::MessagingPattern, ErrorType>,
+        F1: FnMut(&str, &str, &StaticConfig, &StaticConfig) -> Result<(), ErrorType>,
         F2: FnMut(&str, &str, &SharedNode<ServiceType>, &StaticConfig) -> Result<R, ErrorType>,
     >(
-        &mut self,
+        &self,
         msg: &str,
         mut is_service_available: FA,
         mut verify_service_configuration: F1,
@@ -372,7 +366,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                             "{} since the service hangs in creation", msg);
                     } else {
                         if let Err(e) = adaptive_wait.wait() {
-                            fail!(from origin, 
+                            fail!(from origin,
                             with ServiceOpenError::InternalFailure.into(),
                             "{} since the adaptive wait failed. [{e:?}]", msg);
                         }
@@ -386,7 +380,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                         "{} since the service does not exist.", msg);
                 }
                 Ok(Some((existing_static_config, static_storage))) => {
-                    let service_static_config = verify_service_configuration(
+                    verify_service_configuration(
                         &origin,
                         msg,
                         &existing_static_config,
@@ -432,8 +426,6 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                                 "{msg} since the dynamic service information could not be opened. [{e:?}]");
                         }
                     };
-
-                    self.service_config.messaging_pattern = service_static_config;
 
                     if let Some(service_tag) = service_tag {
                         service_tag.release_ownership();

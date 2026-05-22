@@ -929,7 +929,7 @@ impl<
         existing_service_config: &StaticConfig,
         required_service_config: &StaticConfig,
         verifier: &AttributeVerifier,
-    ) -> Result<static_config::blackboard::StaticConfig, BlackboardOpenError> {
+    ) -> Result<(), BlackboardOpenError> {
         let existing_attributes = existing_service_config.attributes();
         if let Err(incompatible_key) = verifier.verify_requirements(existing_attributes) {
             fail!(from origin, with BlackboardOpenError::IncompatibleAttributes,
@@ -958,7 +958,7 @@ impl<
                                 msg, existing_settings.max_nodes, required_settings.max_nodes);
         }
 
-        Ok(*existing_settings)
+        Ok(())
     }
 
     /// Opens an existing [`Service`].
@@ -1033,57 +1033,49 @@ impl<
     }
 
     fn open_impl(
-        mut self,
+        self,
         required_attributes: &AttributeVerifier,
     ) -> Result<blackboard::PortFactory<ServiceType, KeyType>, BlackboardOpenError> {
         let msg = "Unable to open blackboard service";
         let verify = self.builder.verify;
         let blackboard_config = *self.builder.config_details();
 
-        let service_state =
-            self.builder.base.open(
-                msg,
-                |origin, msg, shared_node, expected_service_config| {
-                    Builder::<KeyType, ServiceType>::is_service_available(
-                        origin,
-                        msg,
-                        shared_node,
-                        expected_service_config,
-                        &blackboard_config,
-                    )
-                },
-                |origin,
-                 msg,
-                 existing_service_config,
-                 required_service_config|
-                 -> Result<
-                    static_config::messaging_pattern::MessagingPattern,
-                    BlackboardOpenError,
-                > {
-                    Ok(
-                        static_config::messaging_pattern::MessagingPattern::Blackboard(
-                            Self::verify_service_configuration(
-                                origin,
-                                msg,
-                                verify,
-                                existing_service_config,
-                                required_service_config,
-                                required_attributes,
-                            )?,
-                        ),
-                    )
-                },
-                |origin, msg, shared_node, service_config| {
-                    Self::open_blackboard_resources(
-                        origin,
-                        msg,
-                        service_config,
-                        shared_node,
-                        &blackboard_config,
-                        self.builder.key_eq_func.clone(),
-                    )
-                },
-            )?;
+        let service_state = self.builder.base.open(
+            msg,
+            |origin, msg, shared_node, expected_service_config| {
+                Builder::<KeyType, ServiceType>::is_service_available(
+                    origin,
+                    msg,
+                    shared_node,
+                    expected_service_config,
+                    &blackboard_config,
+                )
+            },
+            |origin,
+             msg,
+             existing_service_config,
+             required_service_config|
+             -> Result<(), BlackboardOpenError> {
+                Self::verify_service_configuration(
+                    origin,
+                    msg,
+                    verify,
+                    existing_service_config,
+                    required_service_config,
+                    required_attributes,
+                )
+            },
+            |origin, msg, shared_node, service_config| {
+                Self::open_blackboard_resources(
+                    origin,
+                    msg,
+                    service_config,
+                    shared_node,
+                    &blackboard_config,
+                    self.builder.key_eq_func.clone(),
+                )
+            },
+        )?;
 
         Ok(blackboard::PortFactory::new(service_state))
     }

@@ -466,17 +466,19 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     expected_service_config,
                 )
             },
-            |origin, msg, existing_service_config, required_service_config| -> Result<static_config::messaging_pattern::MessagingPattern, EventOpenError> {
-                Ok(static_config::messaging_pattern::MessagingPattern::Event(
-                    Self::verify_service_configuration(
-                        origin,
-                        msg,
-                        verify,
-                        existing_service_config,
-                        required_service_config,
-                        required_attributes,
-                    )?,
-                ))
+            |origin,
+             msg,
+             existing_service_config,
+             required_service_config|
+             -> Result<(), EventOpenError> {
+                Self::verify_service_configuration(
+                    origin,
+                    msg,
+                    verify,
+                    existing_service_config,
+                    required_service_config,
+                    required_attributes,
+                )
             },
             |_, _, _, _| Ok(NoResource),
         )?;
@@ -582,7 +584,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         existing_service_config: &StaticConfig,
         required_service_config: &StaticConfig,
         required_attributes: &AttributeVerifier,
-    ) -> Result<static_config::event::StaticConfig, EventOpenError> {
+    ) -> Result<(), EventOpenError> {
         let existing_attributes = existing_service_config.attributes();
         if let Err(incompatible_key) = required_attributes.verify_requirements(existing_attributes)
         {
@@ -661,6 +663,6 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 msg, existing_settings.deadline, required_settings.deadline);
         }
 
-        Ok(*existing_settings)
+        Ok(())
     }
 }
