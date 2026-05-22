@@ -471,7 +471,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     required_attributes,
                 )
             },
-            |_, _, _, _| Ok(NoResource),
+            |_| Ok(NoResource),
         )?;
 
         Ok(event::PortFactory::new(service_state))

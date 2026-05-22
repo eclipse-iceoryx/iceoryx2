@@ -638,7 +638,7 @@ impl<
                     required_attributes,
                 )
             },
-            |_, _, _, _| Ok(NoResource),
+            |_| Ok(NoResource),
         )?;
 
         Ok(publish_subscribe::PortFactory::new(service_state))

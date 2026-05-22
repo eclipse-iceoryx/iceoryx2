@@ -951,13 +951,13 @@ impl<
     }
 
     fn open_blackboard_resources(
-        origin: &str,
+        &self,
         msg: &str,
         service_config: &StaticConfig,
-        shared_node: &SharedNode<ServiceType>,
-        blackboard_config: &static_config::blackboard::StaticConfig,
-        key_eq_func: Arc<dyn Fn(*const u8, *const u8) -> bool + Send + Sync>,
     ) -> Result<BlackboardResources<ServiceType>, BlackboardOpenError> {
+        let shared_node = &self.builder.base.shared_node;
+        let blackboard_config = self.builder.config_details();
+        let key_eq_func = self.builder.key_eq_func.clone();
         let name = blackboard_name(service_config.unique_service_id());
         let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt>(shared_node.config());
         let mgmt_name = blackboard_config.type_details.type_name.as_str();
@@ -971,7 +971,7 @@ impl<
                 &mut mgmt_config, mgmt_name
             )
         };
-        let mgmt_storage = fail!(from origin, when
+        let mgmt_storage = fail!(from self, when
             <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage<Mgmt>
             >::Builder::new(&name)
                 .config(&mgmt_config)
@@ -991,7 +991,7 @@ impl<
         {
             Ok(v) => v,
             Err(_) => {
-                fail!(from origin, with BlackboardOpenError::ServiceInCorruptedState,
+                fail!(from self, with BlackboardOpenError::ServiceInCorruptedState,
                     "{} since the blackboard payload data segment could not be opened. This could indicate a corrupted system.",
                     msg);
             }
@@ -1010,7 +1010,6 @@ impl<
     ) -> Result<blackboard::PortFactory<ServiceType, KeyType>, BlackboardOpenError> {
         let msg = "Unable to open blackboard service";
         let verify = self.builder.verify;
-        let blackboard_config = *self.builder.config_details();
 
         let service_state = self.builder.base.open(
             msg,
@@ -1029,16 +1028,7 @@ impl<
                     required_attributes,
                 )
             },
-            |origin, msg, shared_node, service_config| {
-                Self::open_blackboard_resources(
-                    origin,
-                    msg,
-                    service_config,
-                    shared_node,
-                    &blackboard_config,
-                    self.builder.key_eq_func.clone(),
-                )
-            },
+            |service_config| self.open_blackboard_resources(msg, service_config),
         )?;
 
         Ok(blackboard::PortFactory::new(service_state))

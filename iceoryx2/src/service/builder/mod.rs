@@ -329,7 +329,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         R: service::ServiceResource,
         FA: FnMut() -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState>,
         F1: FnMut(&str, &str, &StaticConfig, &StaticConfig) -> Result<(), ErrorType>,
-        F2: FnMut(&str, &str, &SharedNode<ServiceType>, &StaticConfig) -> Result<R, ErrorType>,
+        F2: FnMut(&StaticConfig) -> Result<R, ErrorType>,
     >(
         &self,
         msg: &str,
@@ -426,12 +426,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                         service_tag.release_ownership();
                     }
 
-                    let resource = open_service_resource(
-                        &origin,
-                        msg,
-                        &self.shared_node,
-                        &existing_static_config,
-                    )?;
+                    let resource = open_service_resource(&existing_static_config)?;
 
                     return Ok(service::ServiceState::new(
                         existing_static_config,

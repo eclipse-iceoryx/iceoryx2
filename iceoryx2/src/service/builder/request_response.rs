@@ -772,7 +772,7 @@ impl<
                     required_attributes,
                 )
             },
-            |_, _, _, _| Ok(NoResource),
+            |_| Ok(NoResource),
         )?;
 
         Ok(request_response::PortFactory::new(service_state))
