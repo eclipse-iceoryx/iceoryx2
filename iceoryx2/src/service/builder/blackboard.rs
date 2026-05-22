@@ -52,10 +52,9 @@ use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
 
-use super::{OpenDynamicStorageFailure, ServiceState};
+use super::ServiceState;
 
 use self::attribute::{AttributeSpecifier, AttributeVerifier};
-use builder::RETRY_LIMIT;
 
 /// Errors that can occur when an existing [`MessagingPattern::Blackboard`] [`Service`] shall be opened.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -408,13 +407,18 @@ impl<ServiceType: service::Service> ServiceResource for BlackboardResources<Serv
     }
 }
 
+#[derive(Debug, Default, Clone, Copy)]
+struct Verify {
+    max_readers: bool,
+    max_nodes: bool,
+}
+
 struct Builder<
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
     ServiceType: service::Service,
 > {
     base: builder::BuilderWithServiceType<ServiceType>,
-    verify_max_readers: bool,
-    verify_max_nodes: bool,
+    verify: Verify,
     internals: Vec<BuilderInternals>,
     override_key_type: Option<TypeDetail>,
     key_eq_func: Arc<dyn Fn(*const u8, *const u8) -> bool + Send + Sync>,
@@ -432,8 +436,8 @@ impl<
             "Builder<{}, {}> {{ verify_max_readers: {}, verify_max_nodes: {}, internals: {:?} }}",
             core::any::type_name::<KeyType>(),
             core::any::type_name::<ServiceType>(),
-            self.verify_max_readers,
-            self.verify_max_nodes,
+            self.verify.max_readers,
+            self.verify.max_nodes,
             self.internals
         )
     }
@@ -447,8 +451,7 @@ impl<
     fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         let mut new_self = Self {
             base,
-            verify_max_readers: false,
-            verify_max_nodes: false,
+            verify: Verify::default(),
             internals: Vec::<BuilderInternals>::new(),
             override_key_type: None,
             key_eq_func: Arc::new(|lhs: *const u8, rhs: *const u8| {
@@ -527,7 +530,7 @@ impl<
     /// [`Reader`](crate::port::reader::Reader)s must be at least supported.
     fn max_readers(&mut self, value: usize) {
         self.config_details_mut().max_readers = value;
-        self.verify_max_readers = true;
+        self.verify.max_readers = true;
     }
 
     /// If the [`Service`] is created it defines how many [`Node`](crate::node::Node)s shall
@@ -535,7 +538,7 @@ impl<
     /// [`Node`](crate::node::Node)s must be at least supported.
     fn max_nodes(&mut self, value: usize) {
         self.config_details_mut().max_nodes = value;
-        self.verify_max_nodes = true;
+        self.verify.max_nodes = true;
     }
 }
 
@@ -918,40 +921,37 @@ impl<
     }
 
     fn verify_service_configuration(
-        &self,
-        existing_settings: &static_config::StaticConfig,
+        origin: &str,
+        msg: &str,
+        verify: Verify,
+        existing_service_config: &StaticConfig,
+        required_service_config: &StaticConfig,
         verifier: &AttributeVerifier,
     ) -> Result<static_config::blackboard::StaticConfig, BlackboardOpenError> {
-        let msg = "Unable to open blackboard service";
-
-        let existing_attributes = existing_settings.attributes();
+        let existing_attributes = existing_service_config.attributes();
         if let Err(incompatible_key) = verifier.verify_requirements(existing_attributes) {
-            fail!(from self, with BlackboardOpenError::IncompatibleAttributes,
+            fail!(from origin, with BlackboardOpenError::IncompatibleAttributes,
                 "{} due to incompatible service attribute key \"{}\". The following attributes {:?} are required but the service has the attributes {:?}.",
                 msg, incompatible_key, verifier, existing_attributes);
         }
 
-        let required_settings = self.builder.base.service_config.blackboard();
-        let existing_settings = match &existing_settings.messaging_pattern {
+        let required_settings = required_service_config.blackboard();
+        let existing_settings = match &existing_service_config.messaging_pattern {
             MessagingPattern::Blackboard(v) => v,
             p => {
-                fail!(from self, with BlackboardOpenError::IncompatibleMessagingPattern,
+                fail!(from origin, with BlackboardOpenError::IncompatibleMessagingPattern,
                 "{} since a service with the messaging pattern {:?} exists but MessagingPattern::Blackboard is required.", msg, p);
             }
         };
 
-        if self.builder.verify_max_readers
-            && existing_settings.max_readers < required_settings.max_readers
-        {
-            fail!(from self, with BlackboardOpenError::DoesNotSupportRequestedAmountOfReaders,
+        if verify.max_readers && existing_settings.max_readers < required_settings.max_readers {
+            fail!(from origin, with BlackboardOpenError::DoesNotSupportRequestedAmountOfReaders,
                                 "{} since the service supports only {} readers but a support of {} readers was requested.",
                                 msg, existing_settings.max_readers, required_settings.max_readers);
         }
 
-        if self.builder.verify_max_nodes
-            && existing_settings.max_nodes < required_settings.max_nodes
-        {
-            fail!(from self, with BlackboardOpenError::DoesNotSupportRequestedAmountOfNodes,
+        if verify.max_nodes && existing_settings.max_nodes < required_settings.max_nodes {
+            fail!(from origin, with BlackboardOpenError::DoesNotSupportRequestedAmountOfNodes,
                                 "{} since the service supports only {} nodes but {} are required.",
                                 msg, existing_settings.max_nodes, required_settings.max_nodes);
         }
@@ -976,150 +976,114 @@ impl<
         self.open_impl(verifier)
     }
 
+    fn open_blackboard_resources(
+        origin: &str,
+        msg: &str,
+        service_config: &StaticConfig,
+        shared_node: &SharedNode<ServiceType>,
+        blackboard_config: &static_config::blackboard::StaticConfig,
+        key_eq_func: Arc<dyn Fn(*const u8, *const u8) -> bool + Send + Sync>,
+    ) -> Result<BlackboardResources<ServiceType>, BlackboardOpenError> {
+        let name = blackboard_name(service_config.unique_service_id());
+        let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt>(shared_node.config());
+        let mgmt_name = blackboard_config.type_details.type_name.as_str();
+        // The name was set in create_impl to be able to remove the concept when a node
+        // dies. Safe since the same name is set in
+        // ServiceInternal::__internal_remove_node_from_service.
+        unsafe {
+            <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage<
+                Mgmt,
+            >>::__internal_set_type_name_in_config(
+                &mut mgmt_config, mgmt_name
+            )
+        };
+        let mgmt_storage = fail!(from origin, when
+            <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage<Mgmt>
+            >::Builder::new(&name)
+                .config(&mgmt_config)
+                .has_ownership(false)
+                .open(AccessMode::ReadWrite),
+            with BlackboardOpenError::ServiceInCorruptedState,
+            "{} since the blackboard management information could not be opened. This could indicate a corrupted system.", msg);
+
+        let shm_config = blackboard_data_config::<ServiceType>(shared_node.config());
+        let payload_shm = match <<ServiceType::BlackboardPayload as SharedMemory<
+            iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator,
+        >>::Builder as NamedConceptBuilder<ServiceType::BlackboardPayload>>::new(
+            &name
+        )
+        .config(&shm_config)
+        .open(AccessMode::ReadWrite)
+        {
+            Ok(v) => v,
+            Err(_) => {
+                fail!(from origin, with BlackboardOpenError::ServiceInCorruptedState,
+                    "{} since the blackboard payload data segment could not be opened. This could indicate a corrupted system.",
+                    msg);
+            }
+        };
+
+        Ok(BlackboardResources {
+            mgmt: mgmt_storage,
+            data: payload_shm,
+            key_eq_func,
+        })
+    }
+
     fn open_impl(
         mut self,
-        attributes: &AttributeVerifier,
+        required_attributes: &AttributeVerifier,
     ) -> Result<blackboard::PortFactory<ServiceType, KeyType>, BlackboardOpenError> {
-        let origin = format!("{self:?}");
         let msg = "Unable to open blackboard service";
+        let verify = self.builder.verify;
+        let blackboard_config = *self.builder.config_details();
 
-        let mut service_open_retry_count = 0;
-        loop {
-            match Builder::<KeyType, ServiceType>::is_service_available(
-                &origin,
+        let service_state =
+            self.builder.base.open(
                 msg,
-                &self.builder.base.shared_node,
-                &self.builder.base.service_config,
-                self.builder.config_details(),
-            )? {
-                None => {
-                    fail!(from self, with BlackboardOpenError::DoesNotExist, "{} since the service does not exist.", msg);
-                }
-                Some((static_config, static_storage)) => {
-                    let blackboard_static_config =
-                        self.verify_service_configuration(&static_config, attributes)?;
-
-                    let service_tag = self
-                        .builder
-                        .base
-                        .create_node_service_tag(msg, BlackboardOpenError::InternalFailure)?;
-
-                    let dynamic_config = match self
-                        .builder
-                        .base
-                        .open_dynamic_config_storage(static_config.unique_service_id())
-                    {
-                        Ok(v) => v,
-                        Err(OpenDynamicStorageFailure::IsMarkedForDestruction) => {
-                            fail!(from self, with BlackboardOpenError::IsMarkedForDestruction,
-                                "{} since the service is marked for destruction.", msg);
-                        }
-                        Err(OpenDynamicStorageFailure::ExceedsMaxNumberOfNodes) => {
-                            fail!(from self, with BlackboardOpenError::ExceedsMaxNumberOfNodes,
-                                "{} since it would exceed the maximum number of supported nodes.", msg);
-                        }
-                        Err(OpenDynamicStorageFailure::DynamicStorageOpenError(
-                            DynamicStorageOpenError::DoesNotExist,
-                        )) => {
-                            fail!(from self, with BlackboardOpenError::ServiceInCorruptedState,
-                                "{} since the dynamic segment of the service is missing.", msg);
-                        }
-                        Err(e) => {
-                            if Builder::<KeyType, ServiceType>::is_service_available(
-                                &origin,
-                                msg,
-                                &self.builder.base.shared_node,
-                                &self.builder.base.service_config,
-                                self.builder.config_details(),
-                            )?
-                            .is_none()
-                            {
-                                fail!(from self, with BlackboardOpenError::DoesNotExist, "{}, since the service does not exist.", msg);
-                            }
-
-                            service_open_retry_count += 1;
-
-                            if RETRY_LIMIT < service_open_retry_count {
-                                fail!(from self, with BlackboardOpenError::ServiceInCorruptedState,
-                                    "{} since the dynamic service information could not be opened ({:?}). This could indicate a corrupted system or a misconfigured system where services are created/removed with a high frequency.",
-                                    msg, e);
-                            }
-
-                            continue;
-                        }
-                    };
-
-                    self.builder.base.service_config.messaging_pattern =
-                        MessagingPattern::Blackboard(blackboard_static_config);
-
-                    let name = blackboard_name(static_config.unique_service_id());
-                    let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt>(
-                        self.builder.base.shared_node.config(),
-                    );
-                    let mgmt_name = self
-                        .builder
-                        .config_details()
-                        .type_details
-                        .type_name
-                        .as_str();
-                    // The name was set in create_impl to be able to remove the concept when a node
-                    // dies. Safe since the same name is set in
-                    // ServiceInternal::__internal_remove_node_from_service.
-                    unsafe {
-                        <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage<
-                            Mgmt,
-                        >>::__internal_set_type_name_in_config(
-                            &mut mgmt_config, mgmt_name
-                        )
-                    };
-                    let mgmt_storage = fail!(from self, when
-                        <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage<Mgmt>
-                        >::Builder::new(&name)
-                            .config(&mgmt_config)
-                            .has_ownership(false)
-                            .open(AccessMode::ReadWrite),
-                        with BlackboardOpenError::ServiceInCorruptedState,
-                        "{} since the blackboard management information could not be opened. This could indicate a corrupted system.", msg);
-
-                    let shm_config = blackboard_data_config::<ServiceType>(
-                        self.builder.base.shared_node.config(),
-                    );
-                    let payload_shm = match <<ServiceType::BlackboardPayload as SharedMemory<
-                        iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator,
-                    >>::Builder as NamedConceptBuilder<ServiceType::BlackboardPayload>>::new(
-                        &name
+                |origin, msg, shared_node, expected_service_config| {
+                    Builder::<KeyType, ServiceType>::is_service_available(
+                        origin,
+                        msg,
+                        shared_node,
+                        expected_service_config,
+                        &blackboard_config,
                     )
-                    .config(&shm_config)
-                    .open(AccessMode::ReadWrite)
-                    {
-                        Ok(v) => v,
-                        Err(_) => {
-                            fail!(from self, with BlackboardOpenError::ServiceInCorruptedState,
-                                "{} since the blackboard payload data segment could not be opened. This could indicate a corrupted system.",
-                                msg);
-                        }
-                    };
-
-                    if let Some(service_tag) = service_tag {
-                        service_tag.release_ownership();
-                    }
-
-                    return Ok(blackboard::PortFactory::<ServiceType, KeyType>::new(
-                        service::ServiceState::new(
-                            static_config,
-                            self.builder.base.shared_node.clone(),
-                            dynamic_config,
-                            static_storage,
-                            BlackboardResources {
-                                mgmt: mgmt_storage,
-                                data: payload_shm,
-                                key_eq_func: self.builder.key_eq_func,
-                            },
+                },
+                |origin,
+                 msg,
+                 existing_service_config,
+                 required_service_config|
+                 -> Result<
+                    static_config::messaging_pattern::MessagingPattern,
+                    BlackboardOpenError,
+                > {
+                    Ok(
+                        static_config::messaging_pattern::MessagingPattern::Blackboard(
+                            Self::verify_service_configuration(
+                                origin,
+                                msg,
+                                verify,
+                                existing_service_config,
+                                required_service_config,
+                                required_attributes,
+                            )?,
                         ),
-                    ));
-                }
-            }
-        }
+                    )
+                },
+                |origin, msg, shared_node, service_config| {
+                    Self::open_blackboard_resources(
+                        origin,
+                        msg,
+                        service_config,
+                        shared_node,
+                        &blackboard_config,
+                        self.builder.key_eq_func.clone(),
+                    )
+                },
+            )?;
+
+        Ok(blackboard::PortFactory::new(service_state))
     }
 }
 

@@ -364,7 +364,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                         "{} since the service does not exist.", msg);
                 }
                 Some((existing_static_config, static_storage)) => {
-                    let event_static_config = verify_service_configuration(
+                    let service_static_config = verify_service_configuration(
                         &origin,
                         msg,
                         &existing_static_config,
@@ -437,7 +437,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                         }
                     };
 
-                    self.service_config.messaging_pattern = event_static_config;
+                    self.service_config.messaging_pattern = service_static_config;
 
                     if let Some(service_tag) = service_tag {
                         service_tag.release_ownership();
@@ -447,7 +447,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                         &origin,
                         msg,
                         &self.shared_node,
-                        &self.service_config,
+                        &existing_static_config,
                     )?;
 
                     return Ok(service::ServiceState::new(

@@ -72,6 +72,10 @@ pub enum iox2_blackboard_open_error_e {
     O_EXCEEDS_MAX_NUMBER_OF_NODES,
     #[CStr = "does not support requested amount of nodes"]
     O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES,
+    #[CStr = "unable to create service tag"]
+    O_UNABLE_TO_CREATE_SERVICE_TAG,
+    #[CStr = "version mismatch"]
+    O_VERSION_MISMATCH,
 }
 
 #[repr(C)]
@@ -133,6 +137,12 @@ impl IntoCInt for BlackboardOpenError {
             }
             BlackboardOpenError::DoesNotSupportRequestedAmountOfNodes => {
                 iox2_blackboard_open_error_e::O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES
+            }
+            BlackboardOpenError::UnableToCreateServiceTag => {
+                iox2_blackboard_open_error_e::O_UNABLE_TO_CREATE_SERVICE_TAG
+            }
+            BlackboardOpenError::VersionMismatch => {
+                iox2_blackboard_open_error_e::O_VERSION_MISMATCH
             }
         }) as c_int
     }
