@@ -328,7 +328,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         ErrorType: From<ServiceOpenError> + From<ServiceState>,
         R: service::ServiceResource,
         FA: FnMut() -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState>,
-        F1: FnMut(&str, &str, &StaticConfig, &StaticConfig) -> Result<(), ErrorType>,
+        F1: FnMut(&StaticConfig) -> Result<(), ErrorType>,
         F2: FnMut(&StaticConfig) -> Result<R, ErrorType>,
     >(
         &self,
@@ -375,12 +375,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                         "{} since the service does not exist.", msg);
                 }
                 Ok(Some((existing_static_config, static_storage))) => {
-                    verify_service_configuration(
-                        &origin,
-                        msg,
-                        &existing_static_config,
-                        &self.service_config,
-                    )?;
+                    verify_service_configuration(&existing_static_config)?;
 
                     let service_tag = self
                         .create_node_service_tag(msg, ServiceOpenError::UnableToCreateServiceTag)?;

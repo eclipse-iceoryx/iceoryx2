@@ -453,23 +453,11 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     ) -> Result<event::PortFactory<ServiceType>, EventOpenError> {
         let msg = "Unable to open event service";
 
-        let verify = self.verify;
         let service_state = self.base.open(
             msg,
             || self.base.is_service_available(msg),
-            |origin,
-             msg,
-             existing_service_config,
-             required_service_config|
-             -> Result<(), EventOpenError> {
-                Self::verify_service_configuration(
-                    origin,
-                    msg,
-                    verify,
-                    existing_service_config,
-                    required_service_config,
-                    required_attributes,
-                )
+            |existing_service_config| -> Result<(), EventOpenError> {
+                self.verify_service_configuration(msg, existing_service_config, required_attributes)
             },
             |_| Ok(NoResource),
         )?;
@@ -559,17 +547,16 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     }
 
     fn verify_service_configuration(
-        origin: &str,
+        &self,
         msg: &str,
-        verify: Verify,
         existing_service_config: &StaticConfig,
-        required_service_config: &StaticConfig,
         required_attributes: &AttributeVerifier,
     ) -> Result<(), EventOpenError> {
+        let required_service_config = &self.base.service_config;
         let existing_attributes = existing_service_config.attributes();
         if let Err(incompatible_key) = required_attributes.verify_requirements(existing_attributes)
         {
-            fail!(from origin, with EventOpenError::IncompatibleAttributes,
+            fail!(from self, with EventOpenError::IncompatibleAttributes,
                 "{} due to incompatible service attribute key {}. The following attributes {:?} are required but the service has the attributes {:?}.",
                 msg, incompatible_key, required_attributes, existing_attributes);
         }
@@ -578,68 +565,70 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         let existing_settings = match &existing_service_config.messaging_pattern {
             MessagingPattern::Event(v) => v,
             p => {
-                fail!(from origin, with EventOpenError::IncompatibleMessagingPattern,
+                fail!(from self, with EventOpenError::IncompatibleMessagingPattern,
                 "{} since a service with the messaging pattern {:?} exists but MessagingPattern::Event is required.", msg, p);
             }
         };
 
-        if verify.max_notifiers && existing_settings.max_notifiers < required_settings.max_notifiers
+        if self.verify.max_notifiers
+            && existing_settings.max_notifiers < required_settings.max_notifiers
         {
-            fail!(from origin, with EventOpenError::DoesNotSupportRequestedAmountOfNotifiers,
+            fail!(from self, with EventOpenError::DoesNotSupportRequestedAmountOfNotifiers,
                 "{} since the event supports only {} notifiers but a support of {} notifiers was requested.",
                 msg, existing_settings.max_notifiers, required_settings.max_notifiers);
         }
 
-        if verify.max_listeners && existing_settings.max_listeners < required_settings.max_listeners
+        if self.verify.max_listeners
+            && existing_settings.max_listeners < required_settings.max_listeners
         {
-            fail!(from origin, with EventOpenError::DoesNotSupportRequestedAmountOfListeners,
+            fail!(from self, with EventOpenError::DoesNotSupportRequestedAmountOfListeners,
                 "{} since the event supports only {} listeners but a support of {} listeners was requested.",
                 msg, existing_settings.max_notifiers, required_settings.max_listeners);
         }
 
-        if verify.event_id_max_value
+        if self.verify.event_id_max_value
             && existing_settings.event_id_max_value < required_settings.event_id_max_value
         {
-            fail!(from origin, with EventOpenError::DoesNotSupportRequestedMaxEventId,
+            fail!(from self, with EventOpenError::DoesNotSupportRequestedMaxEventId,
                 "{} since the event supports only EventIds with a value of at most {} a support of {} was requested.",
                 msg, existing_settings.event_id_max_value, required_settings.event_id_max_value);
         }
 
-        if verify.max_nodes && existing_settings.max_nodes < required_settings.max_nodes {
-            fail!(from origin, with EventOpenError::DoesNotSupportRequestedAmountOfNodes,
+        if self.verify.max_nodes && existing_settings.max_nodes < required_settings.max_nodes {
+            fail!(from self, with EventOpenError::DoesNotSupportRequestedAmountOfNodes,
                 "{} since the event supports only {} nodes but {} are required.",
                 msg, existing_settings.max_nodes, required_settings.max_nodes);
         }
 
-        if verify.notifier_created_event
+        if self.verify.notifier_created_event
             && existing_settings.notifier_created_event != required_settings.notifier_created_event
         {
-            fail!(from origin, with EventOpenError::IncompatibleNotifierCreatedEvent,
+            fail!(from self, with EventOpenError::IncompatibleNotifierCreatedEvent,
                 "{} since the notifier_created_event id is {:?} but the value {:?} is required.",
                 msg, existing_settings.notifier_created_event, required_settings.notifier_created_event);
         }
 
-        if verify.notifier_dropped_event
+        if self.verify.notifier_dropped_event
             && existing_settings.notifier_dropped_event != required_settings.notifier_dropped_event
         {
-            fail!(from origin, with EventOpenError::IncompatibleNotifierDroppedEvent,
+            fail!(from self, with EventOpenError::IncompatibleNotifierDroppedEvent,
                 "{} since the notifier_dropped_event id is {:?} but the value {:?} is required.",
                 msg, existing_settings.notifier_dropped_event, required_settings.notifier_dropped_event);
         }
 
-        if verify.notifier_dead_event
+        if self.verify.notifier_dead_event
             && existing_settings.notifier_dead_event != required_settings.notifier_dead_event
         {
-            fail!(from origin, with EventOpenError::IncompatibleNotifierDeadEvent,
+            fail!(from self, with EventOpenError::IncompatibleNotifierDeadEvent,
                 "{} since the notifier_dead_event id is {:?} but the value {:?} is required.",
                 msg, existing_settings.notifier_dead_event, required_settings.notifier_dead_event);
         }
 
-        if verify.deadline
+        if self.verify.deadline
             && existing_settings.deadline.map(|v| v.value)
                 != required_settings.deadline.map(|v| v.value)
         {
-            fail!(from origin, with EventOpenError::IncompatibleDeadline,
+            fail!(from self, with EventOpenError::IncompatibleDeadline,
                 "{} since the deadline is {:?} but a deadline of {:?} is required.",
                 msg, existing_settings.deadline, required_settings.deadline);
         }

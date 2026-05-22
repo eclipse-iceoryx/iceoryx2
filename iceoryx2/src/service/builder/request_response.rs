@@ -545,111 +545,113 @@ impl<
     }
 
     fn verify_service_configuration(
-        origin: &str,
+        &self,
         msg: &str,
-        verify: Verify,
         existing_service_config: &StaticConfig,
-        required_service_config: &StaticConfig,
-        verifier: &AttributeVerifier,
+        required_attributes: &AttributeVerifier,
     ) -> Result<(), RequestResponseOpenError> {
+        let required_service_config = &self.base.service_config;
         let existing_attributes = existing_service_config.attributes();
-        if let Err(incompatible_key) = verifier.verify_requirements(existing_attributes) {
-            fail!(from origin, with RequestResponseOpenError::IncompatibleAttributes,
+        if let Err(incompatible_key) = required_attributes.verify_requirements(existing_attributes)
+        {
+            fail!(from self, with RequestResponseOpenError::IncompatibleAttributes,
                 "{} due to incompatible service attribute key \"{}\". The following attributes {:?} are required but the service has the attributes {:?}.",
-                msg, incompatible_key, verifier, existing_attributes);
+                msg, incompatible_key, required_attributes, existing_attributes);
         }
 
         let required_configuration = required_service_config.request_response();
         let existing_configuration = match &existing_service_config.messaging_pattern {
             MessagingPattern::RequestResponse(v) => v,
             p => {
-                fail!(from origin, with RequestResponseOpenError::IncompatibleMessagingPattern,
+                fail!(from self, with RequestResponseOpenError::IncompatibleMessagingPattern,
                     "{} since a service with the messaging pattern {:?} exists but MessagingPattern::RequestResponse is required.",
                     msg, p);
             }
         };
 
-        if verify.enable_safe_overflow_for_requests
+        if self.verify.enable_safe_overflow_for_requests
             && existing_configuration.enable_safe_overflow_for_requests
                 != required_configuration.enable_safe_overflow_for_requests
         {
-            fail!(from origin, with RequestResponseOpenError::IncompatibleOverflowBehaviorForRequests,
+            fail!(from self, with RequestResponseOpenError::IncompatibleOverflowBehaviorForRequests,
                 "{} since the service has an incompatible safe overflow behavior for requests.",
                 msg);
         }
 
-        if verify.enable_safe_overflow_for_responses
+        if self.verify.enable_safe_overflow_for_responses
             && existing_configuration.enable_safe_overflow_for_responses
                 != required_configuration.enable_safe_overflow_for_responses
         {
-            fail!(from origin, with RequestResponseOpenError::IncompatibleOverflowBehaviorForResponses,
+            fail!(from self, with RequestResponseOpenError::IncompatibleOverflowBehaviorForResponses,
                 "{} since the service has an incompatible safe overflow behavior for responses.",
                 msg);
         }
 
-        if verify.enable_fire_and_forget_requests
+        if self.verify.enable_fire_and_forget_requests
             && existing_configuration.enable_fire_and_forget_requests
                 != required_configuration.enable_fire_and_forget_requests
         {
-            fail!(from origin, with RequestResponseOpenError::IncompatibleBehaviorForFireAndForgetRequests,
+            fail!(from self, with RequestResponseOpenError::IncompatibleBehaviorForFireAndForgetRequests,
                 "{} since the service has an incompatible behavior for fire and forget requests.",
                 msg);
         }
 
-        if verify.max_active_requests_per_client
+        if self.verify.max_active_requests_per_client
             && existing_configuration.max_active_requests_per_client
                 < required_configuration.max_active_requests_per_client
         {
-            fail!(from origin, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfActiveRequestsPerClient,
+            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfActiveRequestsPerClient,
                 "{} since the service supports only {} active requests per client but {} are required.",
                 msg, existing_configuration.max_active_requests_per_client, required_configuration.max_active_requests_per_client);
         }
 
-        if verify.max_loaned_requests
+        if self.verify.max_loaned_requests
             && existing_configuration.max_loaned_requests
                 < required_configuration.max_loaned_requests
         {
-            fail!(from origin, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfClientRequestLoans,
+            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfClientRequestLoans,
                 "{} since the service supports only {} loaned requests per client but {} are required.",
                 msg, existing_configuration.max_loaned_requests, required_configuration.max_loaned_requests);
         }
 
-        if verify.max_borrowed_responses_per_pending_response
+        if self.verify.max_borrowed_responses_per_pending_response
             && existing_configuration.max_borrowed_responses_per_pending_response
                 < required_configuration.max_borrowed_responses_per_pending_response
         {
-            fail!(from origin, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedResponsesPerPendingResponse,
+            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedResponsesPerPendingResponse,
                 "{} since the service supports only {} borrowed responses per pending response but {} are required.",
                 msg, existing_configuration.max_borrowed_responses_per_pending_response, required_configuration.max_borrowed_responses_per_pending_response);
         }
 
-        if verify.max_response_buffer_size
+        if self.verify.max_response_buffer_size
             && existing_configuration.max_response_buffer_size
                 < required_configuration.max_response_buffer_size
         {
-            fail!(from origin, with RequestResponseOpenError::DoesNotSupportRequestedResponseBufferSize,
+            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedResponseBufferSize,
                 "{} since the service supports a maximum response buffer size of {} but a size of {} is required.",
                 msg, existing_configuration.max_response_buffer_size, required_configuration.max_response_buffer_size);
         }
 
-        if verify.max_servers
+        if self.verify.max_servers
             && existing_configuration.max_servers < required_configuration.max_servers
         {
-            fail!(from origin, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfServers,
+            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfServers,
                 "{} since the service supports at most {} servers but {} are required.",
                 msg, existing_configuration.max_servers, required_configuration.max_servers);
         }
 
-        if verify.max_clients
+        if self.verify.max_clients
             && existing_configuration.max_clients < required_configuration.max_clients
         {
-            fail!(from origin, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfClients,
+            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfClients,
                 "{} since the service supports at most {} clients but {} are required.",
                 msg, existing_configuration.max_clients, required_configuration.max_clients);
         }
 
-        if verify.max_nodes && existing_configuration.max_nodes < required_configuration.max_nodes {
-            fail!(from origin, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfNodes,
+        if self.verify.max_nodes
+            && existing_configuration.max_nodes < required_configuration.max_nodes
+        {
+            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfNodes,
                 "{} since the service supports at most {} nodes but {} are required.",
                 msg, existing_configuration.max_nodes, required_configuration.max_nodes);
         }
@@ -753,24 +755,12 @@ impl<
         RequestResponseOpenError,
     > {
         let msg = "Unable to open request response service";
-        let verify = self.verify;
 
         let service_state = self.base.open(
             msg,
             || self.is_service_available(msg),
-            |origin,
-             msg,
-             existing_service_config,
-             required_service_config|
-             -> Result<(), RequestResponseOpenError> {
-                Self::verify_service_configuration(
-                    origin,
-                    msg,
-                    verify,
-                    existing_service_config,
-                    required_service_config,
-                    required_attributes,
-                )
+            |existing_service_config| -> Result<(), RequestResponseOpenError> {
+                self.verify_service_configuration(msg, existing_service_config, required_attributes)
             },
             |_| Ok(NoResource),
         )?;

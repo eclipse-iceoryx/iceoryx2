@@ -481,81 +481,81 @@ impl<
     }
 
     fn verify_service_configuration(
-        origin: &str,
+        &self,
         msg: &str,
-        verify: Verify,
         existing_service_config: &StaticConfig,
-        required_service_config: &StaticConfig,
-        verifier: &AttributeVerifier,
+        required_attributes: &AttributeVerifier,
     ) -> Result<(), PublishSubscribeOpenError> {
+        let required_service_config = &self.base.service_config;
         let existing_attributes = existing_service_config.attributes();
-        if let Err(incompatible_key) = verifier.verify_requirements(existing_attributes) {
-            fail!(from origin, with PublishSubscribeOpenError::IncompatibleAttributes,
+        if let Err(incompatible_key) = required_attributes.verify_requirements(existing_attributes)
+        {
+            fail!(from self, with PublishSubscribeOpenError::IncompatibleAttributes,
                 "{} due to incompatible service attribute key \"{}\". The following attributes {:?} are required but the service has the attributes {:?}.",
-                msg, incompatible_key, verifier, existing_attributes);
+                msg, incompatible_key, required_attributes, existing_attributes);
         }
 
         let required_settings = required_service_config.publish_subscribe();
         let existing_settings = match &existing_service_config.messaging_pattern {
             MessagingPattern::PublishSubscribe(v) => v,
             p => {
-                fail!(from origin, with PublishSubscribeOpenError::IncompatibleMessagingPattern,
+                fail!(from self, with PublishSubscribeOpenError::IncompatibleMessagingPattern,
                 "{} since a service with the messaging pattern {:?} exists but MessagingPattern::PublishSubscribe is required.", msg, p);
             }
         };
 
-        if verify.number_of_publishers
+        if self.verify.number_of_publishers
             && existing_settings.max_publishers < required_settings.max_publishers
         {
-            fail!(from origin, with PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfPublishers,
+            fail!(from self, with PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfPublishers,
                                 "{} since the service supports only {} publishers but a support of {} publishers was requested.",
                                 msg, existing_settings.max_publishers, required_settings.max_publishers);
         }
 
-        if verify.number_of_subscribers
+        if self.verify.number_of_subscribers
             && existing_settings.max_subscribers < required_settings.max_subscribers
         {
-            fail!(from origin, with PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfSubscribers,
+            fail!(from self, with PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfSubscribers,
                                 "{} since the service supports only {} subscribers but a support of {} subscribers was requested.",
                                 msg, existing_settings.max_subscribers, required_settings.max_subscribers);
         }
 
-        if verify.subscriber_max_buffer_size
+        if self.verify.subscriber_max_buffer_size
             && existing_settings.subscriber_max_buffer_size
                 < required_settings.subscriber_max_buffer_size
         {
-            fail!(from origin, with PublishSubscribeOpenError::DoesNotSupportRequestedMinBufferSize,
+            fail!(from self, with PublishSubscribeOpenError::DoesNotSupportRequestedMinBufferSize,
                                 "{} since the service supports only a subscriber buffer size of {} but a buffer size of {} was requested.",
                                 msg, existing_settings.subscriber_max_buffer_size, required_settings.subscriber_max_buffer_size);
         }
 
-        if verify.publisher_history_size
+        if self.verify.publisher_history_size
             && existing_settings.history_size < required_settings.history_size
         {
-            fail!(from origin, with PublishSubscribeOpenError::DoesNotSupportRequestedMinHistorySize,
+            fail!(from self, with PublishSubscribeOpenError::DoesNotSupportRequestedMinHistorySize,
                                 "{} since the service supports only a history size of {} but a history size of {} was requested.",
                                 msg, existing_settings.history_size, required_settings.history_size);
         }
 
-        if verify.subscriber_max_borrowed_samples
+        if self.verify.subscriber_max_borrowed_samples
             && existing_settings.subscriber_max_borrowed_samples
                 < required_settings.subscriber_max_borrowed_samples
         {
-            fail!(from origin, with PublishSubscribeOpenError::DoesNotSupportRequestedMinSubscriberBorrowedSamples,
+            fail!(from self, with PublishSubscribeOpenError::DoesNotSupportRequestedMinSubscriberBorrowedSamples,
                                 "{} since the service supports only {} borrowed subscriber samples but a {} borrowed subscriber samples were requested.",
                                 msg, existing_settings.subscriber_max_borrowed_samples, required_settings.subscriber_max_borrowed_samples);
         }
 
-        if verify.enable_safe_overflow
+        if self.verify.enable_safe_overflow
             && existing_settings.enable_safe_overflow != required_settings.enable_safe_overflow
         {
-            fail!(from origin, with PublishSubscribeOpenError::IncompatibleOverflowBehavior,
+            fail!(from self, with PublishSubscribeOpenError::IncompatibleOverflowBehavior,
                                 "{} since the service has an incompatible safe overflow behavior.",
                                 msg);
         }
 
-        if verify.max_nodes && existing_settings.max_nodes < required_settings.max_nodes {
-            fail!(from origin, with PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfNodes,
+        if self.verify.max_nodes && existing_settings.max_nodes < required_settings.max_nodes {
+            fail!(from self, with PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfNodes,
                                 "{} since the service supports only {} nodes but {} are required.",
                                 msg, existing_settings.max_nodes, required_settings.max_nodes);
         }
@@ -619,24 +619,12 @@ impl<
         PublishSubscribeOpenError,
     > {
         let msg = "Unable to open publish subscribe service";
-        let verify = self.verify;
 
         let service_state = self.base.open(
             msg,
             || self.is_service_available(msg),
-            |origin,
-             msg,
-             existing_service_config,
-             required_service_config|
-             -> Result<(), PublishSubscribeOpenError> {
-                Self::verify_service_configuration(
-                    origin,
-                    msg,
-                    verify,
-                    existing_service_config,
-                    required_service_config,
-                    required_attributes,
-                )
+            |existing_service_config| -> Result<(), PublishSubscribeOpenError> {
+                self.verify_service_configuration(msg, existing_service_config, required_attributes)
             },
             |_| Ok(NoResource),
         )?;

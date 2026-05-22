@@ -895,37 +895,41 @@ impl<
     }
 
     fn verify_service_configuration(
-        origin: &str,
+        &self,
         msg: &str,
-        verify: Verify,
         existing_service_config: &StaticConfig,
-        required_service_config: &StaticConfig,
-        verifier: &AttributeVerifier,
+        required_attributes: &AttributeVerifier,
     ) -> Result<(), BlackboardOpenError> {
+        let required_service_config = &self.builder.base.service_config;
         let existing_attributes = existing_service_config.attributes();
-        if let Err(incompatible_key) = verifier.verify_requirements(existing_attributes) {
-            fail!(from origin, with BlackboardOpenError::IncompatibleAttributes,
+        if let Err(incompatible_key) = required_attributes.verify_requirements(existing_attributes)
+        {
+            fail!(from self, with BlackboardOpenError::IncompatibleAttributes,
                 "{} due to incompatible service attribute key \"{}\". The following attributes {:?} are required but the service has the attributes {:?}.",
-                msg, incompatible_key, verifier, existing_attributes);
+                msg, incompatible_key, required_attributes, existing_attributes);
         }
 
         let required_settings = required_service_config.blackboard();
         let existing_settings = match &existing_service_config.messaging_pattern {
             MessagingPattern::Blackboard(v) => v,
             p => {
-                fail!(from origin, with BlackboardOpenError::IncompatibleMessagingPattern,
+                fail!(from self, with BlackboardOpenError::IncompatibleMessagingPattern,
                 "{} since a service with the messaging pattern {:?} exists but MessagingPattern::Blackboard is required.", msg, p);
             }
         };
 
-        if verify.max_readers && existing_settings.max_readers < required_settings.max_readers {
-            fail!(from origin, with BlackboardOpenError::DoesNotSupportRequestedAmountOfReaders,
+        if self.builder.verify.max_readers
+            && existing_settings.max_readers < required_settings.max_readers
+        {
+            fail!(from self, with BlackboardOpenError::DoesNotSupportRequestedAmountOfReaders,
                                 "{} since the service supports only {} readers but a support of {} readers was requested.",
                                 msg, existing_settings.max_readers, required_settings.max_readers);
         }
 
-        if verify.max_nodes && existing_settings.max_nodes < required_settings.max_nodes {
-            fail!(from origin, with BlackboardOpenError::DoesNotSupportRequestedAmountOfNodes,
+        if self.builder.verify.max_nodes
+            && existing_settings.max_nodes < required_settings.max_nodes
+        {
+            fail!(from self, with BlackboardOpenError::DoesNotSupportRequestedAmountOfNodes,
                                 "{} since the service supports only {} nodes but {} are required.",
                                 msg, existing_settings.max_nodes, required_settings.max_nodes);
         }
@@ -1009,24 +1013,12 @@ impl<
         required_attributes: &AttributeVerifier,
     ) -> Result<blackboard::PortFactory<ServiceType, KeyType>, BlackboardOpenError> {
         let msg = "Unable to open blackboard service";
-        let verify = self.builder.verify;
 
         let service_state = self.builder.base.open(
             msg,
             || self.builder.is_service_available(msg),
-            |origin,
-             msg,
-             existing_service_config,
-             required_service_config|
-             -> Result<(), BlackboardOpenError> {
-                Self::verify_service_configuration(
-                    origin,
-                    msg,
-                    verify,
-                    existing_service_config,
-                    required_service_config,
-                    required_attributes,
-                )
+            |existing_service_config| -> Result<(), BlackboardOpenError> {
+                self.verify_service_configuration(msg, existing_service_config, required_attributes)
             },
             |service_config| self.open_blackboard_resources(msg, service_config),
         )?;
