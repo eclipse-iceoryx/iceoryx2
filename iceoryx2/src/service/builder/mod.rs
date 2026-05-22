@@ -70,8 +70,6 @@ use super::config_scheme::service_tag_config;
 use super::config_scheme::static_config_storage_config;
 use super::service_name::ServiceName;
 
-const RETRY_LIMIT: usize = 5;
-
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 enum ServiceState {
     IncompatibleMessagingPattern,

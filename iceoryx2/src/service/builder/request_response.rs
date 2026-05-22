@@ -31,7 +31,7 @@ use crate::service::{NoResource, header, static_config};
 use crate::service::{Service, builder, dynamic_config};
 
 use super::message_type_details::{MessageTypeDetails, TypeVariant};
-use super::{CustomHeaderMarker, CustomPayloadMarker, RETRY_LIMIT, ServiceState};
+use super::{CustomHeaderMarker, CustomPayloadMarker, ServiceState};
 
 /// Errors that can occur when an existing [`MessagingPattern::RequestResponse`] [`Service`] shall
 /// be opened.
@@ -146,6 +146,39 @@ impl From<ServiceOpenError> for RequestResponseOpenError {
     }
 }
 
+impl From<RequestResponseOpenError> for ServiceOpenError {
+    fn from(value: RequestResponseOpenError) -> Self {
+        match value {
+            RequestResponseOpenError::DoesNotExist => ServiceOpenError::DoesNotExist,
+            RequestResponseOpenError::ExceedsMaxNumberOfNodes => {
+                ServiceOpenError::ExceedsMaxNumberOfNodes
+            }
+            RequestResponseOpenError::HangsInCreation => ServiceOpenError::HangsInCreation,
+            RequestResponseOpenError::IncompatibleMessagingPattern => {
+                ServiceOpenError::IncompatibleMessagingPattern
+            }
+            RequestResponseOpenError::IncompatibleRequestOrResponseType => {
+                ServiceOpenError::IncompatiblePayload
+            }
+            RequestResponseOpenError::InsufficientPermissions => {
+                ServiceOpenError::InsufficientPermissions
+            }
+            RequestResponseOpenError::IsMarkedForDestruction => {
+                ServiceOpenError::IsMarkedForDestruction
+            }
+
+            RequestResponseOpenError::ServiceInCorruptedState => {
+                ServiceOpenError::ServiceInCorruptedState
+            }
+            RequestResponseOpenError::UnableToCreateServiceTag => {
+                ServiceOpenError::UnableToCreateServiceTag
+            }
+            RequestResponseOpenError::VersionMismatch => ServiceOpenError::VersionMismatch,
+            _ => ServiceOpenError::InternalFailure,
+        }
+    }
+}
+
 /// Errors that can occur when a new [`MessagingPattern::RequestResponse`] [`Service`] shall be created.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RequestResponseCreateError {
@@ -212,6 +245,30 @@ impl From<ServiceCreateError> for RequestResponseCreateError {
             ServiceCreateError::UnableToCreateServiceTag => {
                 RequestResponseCreateError::UnableToCreateServiceTag
             }
+        }
+    }
+}
+
+impl From<RequestResponseCreateError> for ServiceCreateError {
+    fn from(value: RequestResponseCreateError) -> Self {
+        match value {
+            RequestResponseCreateError::AlreadyExists => ServiceCreateError::AlreadyExists,
+            RequestResponseCreateError::InsufficientPermissions => {
+                ServiceCreateError::InsufficientPermissions
+            }
+            RequestResponseCreateError::IsBeingCreatedByAnotherInstance => {
+                ServiceCreateError::IsBeingCreatedByAnotherInstance
+            }
+            RequestResponseCreateError::ServiceConfigCouldNotBeCreated => {
+                ServiceCreateError::ServiceConfigCouldNotBeCreated
+            }
+            RequestResponseCreateError::ServiceInCorruptedState => {
+                ServiceCreateError::ServiceInCorruptedState
+            }
+            RequestResponseCreateError::UnableToCreateServiceTag => {
+                ServiceCreateError::UnableToCreateServiceTag
+            }
+            _ => ServiceCreateError::InternalFailure,
         }
     }
 }
@@ -696,7 +753,7 @@ impl<
     }
 
     fn create_impl(
-        &mut self,
+        &self,
         attributes: &AttributeSpecifier,
     ) -> Result<
         request_response::PortFactory<
@@ -709,7 +766,6 @@ impl<
         RequestResponseCreateError,
     > {
         let msg = "Unable to create request response service";
-        self.adjust_configuration_to_meaningful_values();
 
         let generate_dynamic_config = |service_config: &StaticConfig| {
             let reqres_config = service_config.request_response();
@@ -742,7 +798,7 @@ impl<
     }
 
     fn open_impl(
-        &mut self,
+        &self,
         required_attributes: &AttributeVerifier,
     ) -> Result<
         request_response::PortFactory<
@@ -770,7 +826,7 @@ impl<
 
     fn open_or_create_impl(
         mut self,
-        verifier: &AttributeVerifier,
+        attributes: &AttributeVerifier,
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
@@ -782,44 +838,17 @@ impl<
         RequestResponseOpenOrCreateError,
     > {
         let msg = "Unable to open or create request response service";
-
-        let mut retry_count = 0;
-        loop {
-            if RETRY_LIMIT < retry_count {
-                fail!(from self,
-                      with RequestResponseOpenOrCreateError::SystemInFlux,
-                      "{} since an instance is creating and removing the same service repeatedly.",
-                      msg);
-            }
-            retry_count += 1;
-
-            if self.is_service_available(msg)?.is_some() {
-                match self.open_impl(verifier) {
-                    Ok(factory) => return Ok(factory),
-                    Err(RequestResponseOpenError::DoesNotExist)
-                    // If the service is currently being cleaned up then this process might identify
-                    // the service like this. Therefore, it makes sense to retry it multiple times until
-                    // the external cleanup process if finished.
-                    | Err(RequestResponseOpenError::ServiceInCorruptedState)
-                    | Err(RequestResponseOpenError::IsMarkedForDestruction) => continue,
-                    Err(e) => return Err(e.into()),
-                }
-            } else {
-                match self.create_impl(&AttributeSpecifier(verifier.required_attributes().clone()))
-                {
-                    Ok(factory) => return Ok(factory),
-                    Err(RequestResponseCreateError::AlreadyExists)
-                    // If the service is currently being cleaned up then this process might identify
-                    // the service like this. Therefore, it makes sense to retry it multiple times until
-                    // the external cleanup process if finished.
-                    | Err(RequestResponseCreateError::ServiceInCorruptedState)
-                    | Err(RequestResponseCreateError::IsBeingCreatedByAnotherInstance) => {
-                        continue;
-                    }
-                    Err(e) => return Err(e.into()),
-                }
-            }
-        }
+        self.adjust_configuration_to_meaningful_values();
+        self.base.open_or_create(
+            msg,
+            attributes,
+            RequestResponseOpenOrCreateError::RequestResponseOpenError(
+                RequestResponseOpenError::InternalFailure,
+            ),
+            RequestResponseOpenOrCreateError::SystemInFlux,
+            |attributes| self.open_impl(attributes),
+            |attributes| self.create_impl(attributes),
+        )
     }
 
     fn prepare_message_type(&mut self) {
@@ -1002,6 +1031,7 @@ impl<
         >,
         RequestResponseCreateError,
     > {
+        self.adjust_configuration_to_meaningful_values();
         self.prepare_message_type_details();
         self.create_impl(attributes)
     }
