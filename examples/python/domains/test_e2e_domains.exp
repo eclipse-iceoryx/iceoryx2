@@ -29,7 +29,7 @@ spawn python examples/python/domains/subscriber.py fuu bar
 set id_subscriber $spawn_id
 
 expect_output_from $id_publisher "*fuu*bar*Send sample*"
-expect_output_from $id_subscriber "received: c_ulong(3)"
+expect_output_from $id_subscriber "received: TransmissionData { x: 3, y: 9, funky: 2436.36 }"
 
 spawn python examples/python/domains/discovery.py fuu
 

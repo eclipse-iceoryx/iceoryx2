@@ -1103,7 +1103,11 @@ impl<Service: service::Service> Node<Service> {
             Ok(node_list) => {
                 for node_name in node_list {
                     let node_id = core::str::from_utf8(node_name.as_bytes()).unwrap();
-                    let node_id = UniqueNodeId(node_id.parse::<u128>().unwrap().into());
+                    let node_id = match node_id.parse::<u128>() {
+                        Ok(v) => UniqueNodeId(v.into()),
+                        // not bad, just find a file that is not a node
+                        Err(_) => continue,
+                    };
 
                     match NodeState::new(&node_id, config) {
                         Ok(Some(node_state)) => {

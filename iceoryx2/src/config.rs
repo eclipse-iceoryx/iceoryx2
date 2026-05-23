@@ -237,7 +237,10 @@ impl Default for Global {
     fn default() -> Self {
         Self {
             root_path: Path::new(ICEORYX2_ROOT_PATH).unwrap(),
+            #[cfg(feature = "std")]
             prefix: FileName::new(b"iox2_").unwrap(),
+            #[cfg(not(feature = "std"))]
+            prefix: FileName::new(b"iox2_no_std").unwrap(),
             service: Service::default(),
             node: Node::default(),
             creation_timeout: Duration::from_secs(1),
