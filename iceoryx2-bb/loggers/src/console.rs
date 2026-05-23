@@ -57,8 +57,8 @@ pub struct Config {
 pub struct Logger {
     counter: AtomicU64,
     config: Config,
-    pid: UnsafeCell<i32>,
-    tid: UnsafeCell<i32>,
+    pid: UnsafeCell<posix::pid_t>,
+    tid: UnsafeCell<posix::pthread_t>,
     executable: UnsafeCell<String>,
     state: AtomicU8,
 }
@@ -110,6 +110,12 @@ fn is_terminal() -> bool {
     stderr().is_terminal()
 }
 
+struct ProcessDetails {
+    process_id: posix::pid_t,
+    thread_id: posix::tid_t,
+    executable: &'static str,
+}
+
 impl Logger {
     pub const fn new() -> Self {
         Self::from_config(Config {
@@ -130,7 +136,7 @@ impl Logger {
         }
     }
 
-    fn process_details(&self) -> (i32, &str) {
+    fn process_details(&self) -> ProcessDetails {
         loop {
             match self.state.compare_exchange(
                 STATE_UNINITIALIZED,
@@ -143,6 +149,7 @@ impl Logger {
             ) {
                 Ok(_) => {
                     let pid = unsafe { posix::getpid() };
+                    let tid = unsafe { posix::pthread_self() };
                     let mut buffer = [0u8; 1024];
                     let path_len = unsafe {
                         posix::proc_pidpath(pid, buffer.as_mut_ptr().cast(), buffer.len())
@@ -161,6 +168,7 @@ impl Logger {
                         .to_string();
 
                     *unsafe { &mut *self.pid.get() } = pid;
+                    *unsafe { &mut *self.tid.get() } = tid;
                     *unsafe { &mut *self.executable.get() } = executable;
 
                     ///////////////////////////////////
@@ -169,9 +177,11 @@ impl Logger {
                     self.state.store(STATE_INITIALIZED, Ordering::Release);
                 }
                 Err(STATE_INITIALIZED) => {
-                    return (unsafe { *self.pid.get() }, unsafe {
-                        &*self.executable.get()
-                    });
+                    return ProcessDetails {
+                        process_id: unsafe { *self.pid.get() },
+                        thread_id: unsafe { *self.tid.get() },
+                        executable: unsafe { &*self.executable.get() },
+                    };
                 }
                 Err(_) => {}
             }
@@ -258,9 +268,12 @@ impl Logger {
         const LIGHT_GREEN: &str = "\x1b[0;92m";
 
         let process = if self.config.show_process_details {
-            let (pid, exec) = self.process_details();
+            let details = self.process_details();
             alloc::format!(
-                "{BOLD_GREY}[{GREY}pid={LIGHT_GREEN}{pid}{GREY}, exec={LIGHT_GREEN}{exec}{BOLD_GREY}]"
+                "{BOLD_GREY}[{GREY}pid={LIGHT_GREEN}{}{GREY}, tid={LIGHT_GREEN}{}{GREY}, exec={LIGHT_GREEN}{}{BOLD_GREY}]",
+                details.process_id,
+                details.thread_id,
+                details.executable
             )
         } else {
             String::new()

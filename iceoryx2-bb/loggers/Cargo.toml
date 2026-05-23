@@ -38,7 +38,6 @@ iceoryx2-log-types = { workspace = true }
 iceoryx2-bb-print = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 iceoryx2-pal-configuration = { workspace = true }
-iceoryx2-pal-configuration = { workspace = true }
 
 log = { workspace = true, optional = true }
 tracing = { workspace = true, optional = true }
