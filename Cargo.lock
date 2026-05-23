@@ -909,6 +909,7 @@ dependencies = [
  "iceoryx2-bb-print",
  "iceoryx2-log-types",
  "iceoryx2-pal-concurrency-sync",
+ "iceoryx2-pal-configuration",
  "iceoryx2-pal-posix",
  "log",
  "tracing",

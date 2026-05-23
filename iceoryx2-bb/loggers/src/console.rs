@@ -20,10 +20,18 @@ use iceoryx2_bb_print::cerrln;
 use iceoryx2_bb_print::stderr;
 use iceoryx2_log_types::Log;
 use iceoryx2_log_types::LogLevel;
+use iceoryx2_pal_concurrency_sync::atomic::AtomicU8;
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
 use iceoryx2_pal_concurrency_sync::atomic::Ordering;
+use iceoryx2_pal_concurrency_sync::cell::UnsafeCell;
+use iceoryx2_pal_posix::posix;
+
+const STATE_UNINITIALIZED: u8 = 0;
+const STATE_LOCKED: u8 = 1;
+const STATE_INITIALIZED: u8 = 2;
 
 #[derive(Default)]
+#[allow(dead_code)]
 pub enum ConsoleLogOrder {
     Time,
     #[default]
@@ -31,52 +39,31 @@ pub enum ConsoleLogOrder {
 }
 
 #[derive(Default)]
+#[allow(dead_code)]
 pub enum OriginMode {
     None,
-    Simple,
     #[default]
+    Simple,
     Full,
 }
 
 #[derive(Default)]
-pub struct Builder {
-    ordering_mode: ConsoleLogOrder,
-    show_process_details: bool,
-    origin_mode: OriginMode,
-}
-
-impl Builder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn show_process_details(mut self, value: bool) -> Self {
-        self.show_process_details = value;
-        self
-    }
-
-    pub fn ordering_mode(mut self, value: ConsoleLogOrder) -> Self {
-        self.ordering_mode = value;
-        self
-    }
-
-    pub fn origin_mode(mut self, value: OriginMode) -> Self {
-        self.origin_mode = value;
-        self
-    }
-
-    pub fn create(self) -> Logger {
-        Logger {
-            counter: AtomicU64::new(0),
-            config: self,
-        }
-    }
+pub struct Config {
+    pub ordering_mode: ConsoleLogOrder,
+    pub show_process_details: bool,
+    pub origin_mode: OriginMode,
 }
 
 pub struct Logger {
     counter: AtomicU64,
-    config: Builder,
+    config: Config,
+    pid: UnsafeCell<i32>,
+    executable: UnsafeCell<String>,
+    state: AtomicU8,
 }
+
+unsafe impl Send for Logger {}
+unsafe impl Sync for Logger {}
 
 impl Default for Logger {
     fn default() -> Self {
@@ -124,13 +111,68 @@ fn is_terminal() -> bool {
 
 impl Logger {
     pub const fn new() -> Self {
+        Self::from_config(Config {
+            ordering_mode: ConsoleLogOrder::Counter,
+            show_process_details: true,
+            origin_mode: OriginMode::Simple,
+        })
+    }
+
+    const fn from_config(config: Config) -> Self {
         Self {
             counter: AtomicU64::new(0),
-            config: Builder {
-                ordering_mode: ConsoleLogOrder::Counter,
-                show_process_details: true,
-                origin_mode: OriginMode::Full,
-            },
+            config,
+            pid: UnsafeCell::new(0),
+            executable: UnsafeCell::new(String::new()),
+            state: AtomicU8::new(STATE_UNINITIALIZED),
+        }
+    }
+
+    fn process_details(&self) -> (i32, &str) {
+        loop {
+            match self.state.compare_exchange(
+                STATE_UNINITIALIZED,
+                STATE_LOCKED,
+                Ordering::Relaxed,
+                ///////////////////////////////////
+                // SYNC POINT: self.pid, self.executable read
+                ///////////////////////////////////
+                Ordering::Acquire,
+            ) {
+                Ok(_) => {
+                    let pid = unsafe { posix::getpid() };
+                    let mut buffer = [0u8; 1024];
+                    let path_len = unsafe {
+                        posix::proc_pidpath(pid, buffer.as_mut_ptr().cast(), buffer.len())
+                    };
+
+                    let mut executable = if path_len < 0 {
+                        "unknown".to_string()
+                    } else {
+                        String::from_utf8_lossy(&buffer[..(path_len as usize)]).to_string()
+                    };
+
+                    executable = executable
+                        .rsplit(iceoryx2_pal_configuration::PATH_SEPARATOR as char)
+                        .next()
+                        .unwrap_or_default()
+                        .to_string();
+
+                    *unsafe { &mut *self.pid.get() } = pid;
+                    *unsafe { &mut *self.executable.get() } = executable;
+
+                    ///////////////////////////////////
+                    // SYNC POINT: self.pid, self.executable write
+                    ///////////////////////////////////
+                    self.state.store(STATE_INITIALIZED, Ordering::Release);
+                }
+                Err(STATE_INITIALIZED) => {
+                    return (unsafe { *self.pid.get() }, unsafe {
+                        &*self.executable.get()
+                    });
+                }
+                Err(_) => {}
+            }
         }
     }
 
@@ -209,15 +251,28 @@ impl Logger {
                 .to_string(),
         };
 
+        const BOLD_GREY: &str = "\x1b[1;90m";
+        const GREY: &str = "\x1b[0;90m";
+        const LIGHT_GREEN: &str = "\x1b[0;92m";
+
+        let process = if self.config.show_process_details {
+            let (pid, exec) = self.process_details();
+            alloc::format!(
+                "{BOLD_GREY}[{GREY}pid={LIGHT_GREEN}{pid}{GREY}, exec={LIGHT_GREEN}{exec}{BOLD_GREY}]"
+            )
+        } else {
+            String::new()
+        };
+
         if origin.is_empty() {
             alloc::format!(
-                "{prefix}{} {}{message}{line_end}",
+                "{prefix}{} {process} {}{message}{line_end}",
                 Logger::log_level_string(log_level),
                 Logger::message_color(log_level),
             )
         } else {
             alloc::format!(
-                "{prefix}{} {}{origin}{line_end}\n| {}{message}{line_end}",
+                "{prefix}{} {process} {}{origin}{line_end}\n| {}{message}{line_end}",
                 Logger::log_level_string(log_level),
                 Logger::origin_color(log_level),
                 Logger::message_color(log_level),
