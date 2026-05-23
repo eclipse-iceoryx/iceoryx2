@@ -143,7 +143,7 @@ annotated test functions are registered for execution.
 my-crate/
 ├── src/
 └── tests/
-    └── main.rs
+    └── tests.rs
 ```
 
 ```rust
@@ -161,7 +161,8 @@ my-crate-tests-common = { workspace = true, features = ["std"] }
 iceoryx2-bb-testing = { workspace = true, features = ["std"] }
 
 [[test]]
-name = "tests"
+name = "my-crate-tests"
+path = "tests/tests.rs"
 harness = false
 ```
 
@@ -191,7 +192,7 @@ cargo nextest run --package my-crate
 For every crate that defines tests for `no_std` targets, an additional binary
 crate is created with the naming convention: `${crate-name}-tests-nostd`.
 
-Again, a single `main.rs` file is required to set up the test harness and
+Again, a single `tests.rs` file is required to set up the test harness and
 link to the common test library so that all annotated test functions
 are registered for execution.
 
@@ -201,7 +202,7 @@ here:
 ```console
 my-crate-tests-nostd/
 └── src/
-    └── main.rs
+    └── tests.rs
 ```
 
 ```rust

@@ -261,7 +261,6 @@ enum_gen! {
     Interrupt,
     FailedToAcquireLockState,
     FailedToAcquireUniqueProcessId,
-    FailedToAcquireUniqueProcessIdFromContextFile,
     UnableToOpenContextFile,
     UnableToOpenStateFile,
     UnableToOpenOwnerLockFile,
@@ -932,9 +931,7 @@ impl ProcessMonitor {
             Err(e) => return Err(e.into()),
         }
 
-        let other_process_id = if let Some(context_file) =
-            Self::open_file(self, &self.context_path, AccessMode::Read)?
-        {
+        if let Some(context_file) = Self::open_file(self, &self.context_path, AccessMode::Read)? {
             let other_process_id: UniqueProcessId = match context_file.read_val() {
                 Ok(v) => v,
                 Err(e) => {
@@ -988,16 +985,7 @@ impl ProcessMonitor {
                 let lock_state = fail!(from self, when Self::get_lock_state(&state_file),
                                     "{} since the lock state of the state file could not be acquired.", msg);
                 match lock_state as _ {
-                    posix::F_WRLCK => {
-                        // It is possible that the file system is not yet completely synced and the
-                        // file lock cannot be acquired despite the process is already dead.
-                        // Therefore, we check again manually.
-                        if Process::from_pid(other_process_id.pid()).is_alive() {
-                            Ok(ProcessState::Alive)
-                        } else {
-                            Ok(ProcessState::Dead)
-                        }
-                    }
+                    posix::F_WRLCK => Ok(ProcessState::Alive),
                     _ => Ok(ProcessState::Dead),
                 }
             }
@@ -1154,14 +1142,6 @@ impl ProcessCleaner {
             }
         };
 
-        let other_process_id: UniqueProcessId = match context_file.read_val() {
-            Ok(v) => v,
-            Err(e) => {
-                fail!(from origin, with ProcessCleanerCreateError::FailedToAcquireUniqueProcessIdFromContextFile,
-                          "{msg} since the unique process id contained in the owner lock file could not be read. [{e:?}]");
-            }
-        };
-
         let owner_lock_file = match ProcessMonitor::open_file(
             origin,
             &owner_lock_path,
@@ -1199,8 +1179,7 @@ impl ProcessCleaner {
             with ProcessCleanerCreateError::FailedToAcquireLockState,
             "{} since the lock state could not be acquired.", msg);
 
-        if lock_state == posix::F_WRLCK as _ && Process::from_pid(other_process_id.pid()).is_alive()
-        {
+        if lock_state == posix::F_WRLCK as _ {
             fail!(from origin, with ProcessCleanerCreateError::ProcessIsStillAlive,
                 "{} since the corresponding process is still alive.", msg);
         }

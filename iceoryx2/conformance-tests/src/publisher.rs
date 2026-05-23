@@ -768,7 +768,6 @@ pub mod publisher {
     #[should_panic]
     #[cfg(debug_assertions)]
     pub fn custom_fixed_size_payload_panics_when_loaning_more_than_one_element<Sut: Service>() {
-        set_log_level(LogLevel::Error);
         let service_name = generate_service_name();
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
