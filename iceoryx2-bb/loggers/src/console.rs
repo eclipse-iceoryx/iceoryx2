@@ -112,7 +112,7 @@ fn is_terminal() -> bool {
 
 struct ProcessDetails {
     process_id: posix::pid_t,
-    thread_id: posix::tid_t,
+    thread_id: posix::pthread_t,
     executable: &'static str,
 }
 
