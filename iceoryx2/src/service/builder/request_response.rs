@@ -37,6 +37,8 @@ use super::{CustomHeaderMarker, CustomPayloadMarker, ServiceState};
 /// be opened.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RequestResponseOpenError {
+    /// An interrupt signal was received.
+    Interrupt,
     /// Service could not be openen since it does not exist
     DoesNotExist,
     /// The [`Service`] has a lower maximum amount of loaned
@@ -98,6 +100,7 @@ impl core::error::Error for RequestResponseOpenError {}
 impl From<ServiceState> for RequestResponseOpenError {
     fn from(value: ServiceState) -> Self {
         match value {
+            ServiceState::Interrupt => RequestResponseOpenError::Interrupt,
             ServiceState::IncompatiblePayload => {
                 RequestResponseOpenError::IncompatibleRequestOrResponseType
             }
@@ -142,6 +145,7 @@ impl From<ServiceOpenError> for RequestResponseOpenError {
                 RequestResponseOpenError::UnableToCreateServiceTag
             }
             ServiceOpenError::VersionMismatch => RequestResponseOpenError::VersionMismatch,
+            ServiceOpenError::Interrupt => RequestResponseOpenError::Interrupt,
         }
     }
 }
@@ -182,6 +186,8 @@ impl From<RequestResponseOpenError> for ServiceOpenError {
 /// Errors that can occur when a new [`MessagingPattern::RequestResponse`] [`Service`] shall be created.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RequestResponseCreateError {
+    /// An interrupt signal was received.
+    Interrupt,
     /// The [`Service`] already exists.
     AlreadyExists,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
@@ -212,6 +218,7 @@ impl core::error::Error for RequestResponseCreateError {}
 impl From<ServiceState> for RequestResponseCreateError {
     fn from(value: ServiceState) -> Self {
         match value {
+            ServiceState::Interrupt => RequestResponseCreateError::Interrupt,
             ServiceState::IncompatiblePayload | ServiceState::IncompatibleMessagingPattern => {
                 RequestResponseCreateError::AlreadyExists
             }
@@ -245,6 +252,7 @@ impl From<ServiceCreateError> for RequestResponseCreateError {
             ServiceCreateError::UnableToCreateServiceTag => {
                 RequestResponseCreateError::UnableToCreateServiceTag
             }
+            ServiceCreateError::Interrupt => RequestResponseCreateError::Interrupt,
         }
     }
 }

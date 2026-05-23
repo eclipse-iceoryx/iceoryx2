@@ -40,6 +40,8 @@ use self::{
 /// Errors that can occur when an existing [`MessagingPattern::PublishSubscribe`] [`Service`] shall be opened.
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum PublishSubscribeOpenError {
+    /// An interrupt signal was received.
+    Interrupt,
     /// Service could not be openen since it does not exist
     DoesNotExist,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
@@ -101,6 +103,7 @@ impl From<ServiceState> for PublishSubscribeOpenError {
             ServiceState::InsufficientPermissions => {
                 PublishSubscribeOpenError::InsufficientPermissions
             }
+            ServiceState::Interrupt => PublishSubscribeOpenError::Interrupt,
             ServiceState::HangsInCreation => PublishSubscribeOpenError::HangsInCreation,
             ServiceState::Corrupted => PublishSubscribeOpenError::ServiceInCorruptedState,
             ServiceState::InternalFailure => PublishSubscribeOpenError::InternalFailure,
@@ -134,6 +137,7 @@ impl From<ServiceOpenError> for PublishSubscribeOpenError {
                 PublishSubscribeOpenError::UnableToCreateServiceTag
             }
             ServiceOpenError::VersionMismatch => PublishSubscribeOpenError::VersionMismatch,
+            ServiceOpenError::Interrupt => PublishSubscribeOpenError::Interrupt,
         }
     }
 }
@@ -171,6 +175,8 @@ impl From<PublishSubscribeOpenError> for ServiceOpenError {
 /// Errors that can occur when a new [`MessagingPattern::PublishSubscribe`] [`Service`] shall be created.
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum PublishSubscribeCreateError {
+    /// An interrupt signal was received.
+    Interrupt,
     /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
     ServiceInCorruptedState,
     /// Invalid [`Service`] configuration provided. The
@@ -222,6 +228,7 @@ impl From<ServiceCreateError> for PublishSubscribeCreateError {
             ServiceCreateError::UnableToCreateServiceTag => {
                 PublishSubscribeCreateError::UnableToCreateServiceTag
             }
+            ServiceCreateError::Interrupt => PublishSubscribeCreateError::Interrupt,
         }
     }
 }
@@ -262,6 +269,7 @@ impl From<ServiceState> for PublishSubscribeCreateError {
             ServiceState::HangsInCreation => PublishSubscribeCreateError::HangsInCreation,
             ServiceState::Corrupted => PublishSubscribeCreateError::ServiceInCorruptedState,
             ServiceState::InternalFailure => PublishSubscribeCreateError::InternalFailure,
+            ServiceState::Interrupt => PublishSubscribeCreateError::Interrupt,
         }
     }
 }

@@ -46,6 +46,7 @@ use super::naming_scheme::extract_sender_port_id_from_connection;
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum RemovePortFromAllConnectionsError {
     InsufficientPermissions,
+    Interrupt,
     VersionMismatch,
     InternalError,
 }
@@ -53,12 +54,14 @@ pub enum RemovePortFromAllConnectionsError {
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum RemoveStalePortResourcesError {
     InsufficientPermissions,
+    Interrupt,
     VersionMismatch,
     InternalError,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PortRemoveTagError {
+    Interrupt,
     AlreadyRemoved,
     InternalError,
     InsufficientPermissions,
@@ -66,6 +69,7 @@ pub enum PortRemoveTagError {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ServiceRemoveTagError {
+    Interrupt,
     AlreadyRemoved,
     InternalError,
     InsufficientPermissions,
@@ -187,6 +191,7 @@ pub fn remove_service_tag<S: Service>(
     service_hash: &ServiceHash,
     config: &config::Config,
 ) -> Result<(), ServiceRemoveTagError> {
+    let msg = "Unable to remove the service's tag for the node";
     let origin = format!(
         "remove_service_tag<{}>({:?}, service_hash: {:?})",
         core::any::type_name::<S>(),
@@ -207,11 +212,15 @@ pub fn remove_service_tag<S: Service>(
         }
         Err(NamedConceptRemoveError::InternalError) => {
             fail!(from origin, with ServiceRemoveTagError::InternalError,
-                "Unable to remove the service's tag for the node due to an internal error.");
+                "{msg} due to an internal error.");
         }
         Err(NamedConceptRemoveError::InsufficientPermissions) => {
             fail!(from origin, with ServiceRemoveTagError::InsufficientPermissions,
-                "Unable to remove the service's tag for the node due to insufficient permissions.");
+                "{msg} due to insufficient permissions.");
+        }
+        Err(NamedConceptRemoveError::Interrupt) => {
+            fail!(from origin, with ServiceRemoveTagError::Interrupt,
+                "{msg} since an interrupt signal was raised.");
         }
     }
 }
@@ -221,6 +230,7 @@ pub fn remove_port_tag<S: Service>(
     port_id: &UniquePortId,
     config: &config::Config,
 ) -> Result<(), PortRemoveTagError> {
+    let msg = "Unable to remove the port's tag for the node";
     let origin = format!(
         "remove_port_tag<{}>({:?}, port_id: {:?})",
         core::any::type_name::<S>(),
@@ -243,11 +253,15 @@ pub fn remove_port_tag<S: Service>(
         }
         Err(NamedConceptRemoveError::InternalError) => {
             fail!(from origin, with PortRemoveTagError::InternalError,
-                "Unable to remove the port's tag for the node due to an internal error.");
+                "{msg} due to an internal error.");
         }
         Err(NamedConceptRemoveError::InsufficientPermissions) => {
             fail!(from origin, with PortRemoveTagError::InsufficientPermissions,
-                "Unable to remove the port's tag for the node due to insufficient permissions.");
+                "{msg} due to insufficient permissions.");
+        }
+        Err(NamedConceptRemoveError::Interrupt) => {
+            fail!(from origin, with PortRemoveTagError::Interrupt,
+                "{msg} since an interrupt signal was raised.");
         }
     }
 }
@@ -370,6 +384,10 @@ pub unsafe fn remove_stale_port_resources<Service: service::Service>(
             fail!(from origin, with RemoveStalePortResourcesError::InternalError,
                 "{msg} due to an internal error while removing the ports data segment.");
         }
+        Err(NamedConceptRemoveError::Interrupt) => {
+            fail!(from origin, with RemoveStalePortResourcesError::Interrupt,
+                "{msg} since an interrupt signal was raised.");
+        }
     }
 
     for result in [
@@ -380,15 +398,19 @@ pub unsafe fn remove_stale_port_resources<Service: service::Service>(
             Ok(()) => (),
             Err(RemovePortFromAllConnectionsError::InsufficientPermissions) => {
                 fail!(from origin, with RemoveStalePortResourcesError::InsufficientPermissions,
-            "{msg} due to insufficient permissions to remove the port from its connections.");
+                    "{msg} due to insufficient permissions to remove the port from its connections.");
             }
             Err(RemovePortFromAllConnectionsError::VersionMismatch) => {
                 fail!(from origin, with RemoveStalePortResourcesError::VersionMismatch,
-            "{msg} since the port could not be removed from its connection since iceoryx2 version does not match.");
+                    "{msg} since the port could not be removed from its connection since iceoryx2 version does not match.");
             }
             Err(RemovePortFromAllConnectionsError::InternalError) => {
                 fail!(from origin, with RemoveStalePortResourcesError::InternalError,
-            "{msg} due to an internal error while removing the port from its connection.");
+                    "{msg} due to an internal error while removing the port from its connection.");
+            }
+            Err(RemovePortFromAllConnectionsError::Interrupt) => {
+                fail!(from origin, with RemoveStalePortResourcesError::InternalError,
+                    "{msg} since an interrupt signal was raised.");
             }
         }
     }
@@ -439,6 +461,11 @@ fn handle_port_remove_error(
                 with RemovePortFromAllConnectionsError::InternalError,
                 "{} due to insufficient permissions to remove the connection ({:?}).",
                 msg, connection);
+        }
+        Err(ZeroCopyPortRemoveError::Interrupt) => {
+            fail!(from origin,
+                with RemovePortFromAllConnectionsError::Interrupt,
+                "{} since an interrupt signal was raised while removing the connection {:?}.", msg, connection);
         }
     }
 }

@@ -33,6 +33,7 @@ pub enum StaticStorageCreateError {
     Creation,
     Write,
     InsufficientPermissions,
+    Interrupt,
     InternalError,
 }
 
@@ -49,6 +50,8 @@ pub enum StaticStorageOpenError {
     DoesNotExist,
     Read,
     InitializationNotYetFinalized,
+    Interrupt,
+    InsufficientPermissions,
     InternalError,
 }
 
@@ -63,7 +66,8 @@ impl core::error::Error for StaticStorageOpenError {}
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum StaticStorageReadError {
     BufferTooSmall,
-    ReadError,
+    InternalError,
+    Interrupt,
     StaticStorageWasModified,
     CreationNotComplete,
 }
@@ -80,6 +84,7 @@ impl core::error::Error for StaticStorageReadError {}
 pub enum StaticStorageUnlockError {
     InsufficientPermissions,
     NoSpaceLeft,
+    Interrupt,
     InternalError,
 }
 

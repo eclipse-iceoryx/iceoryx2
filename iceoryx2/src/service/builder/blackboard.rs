@@ -57,6 +57,8 @@ use self::attribute::{AttributeSpecifier, AttributeVerifier};
 /// Errors that can occur when an existing [`MessagingPattern::Blackboard`] [`Service`] shall be opened.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BlackboardOpenError {
+    /// An interrupt signal was received.
+    Interrupt,
     /// The [`Service`] could not be opened since it does not exist
     DoesNotExist,
     /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
@@ -101,6 +103,7 @@ impl core::error::Error for BlackboardOpenError {}
 impl From<ServiceState> for BlackboardOpenError {
     fn from(value: ServiceState) -> Self {
         match value {
+            ServiceState::Interrupt => BlackboardOpenError::Interrupt,
             ServiceState::IncompatiblePayload => BlackboardOpenError::IncompatibleKeys,
             ServiceState::IncompatibleMessagingPattern => {
                 BlackboardOpenError::IncompatibleMessagingPattern
@@ -116,6 +119,7 @@ impl From<ServiceState> for BlackboardOpenError {
 impl From<ServiceOpenError> for BlackboardOpenError {
     fn from(value: ServiceOpenError) -> Self {
         match value {
+            ServiceOpenError::Interrupt => BlackboardOpenError::Interrupt,
             ServiceOpenError::DoesNotExist => BlackboardOpenError::DoesNotExist,
             ServiceOpenError::ExceedsMaxNumberOfNodes => {
                 BlackboardOpenError::ExceedsMaxNumberOfNodes
@@ -144,6 +148,8 @@ impl From<ServiceOpenError> for BlackboardOpenError {
 /// Errors that can occur when a new [`MessagingPattern::Blackboard`] [`Service`] shall be created.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BlackboardCreateError {
+    /// An interrupt signal was received.
+    Interrupt,
     /// The [`Service`] already exists.
     AlreadyExists,
     /// Multiple processes are trying to create the same [`Service`].
@@ -176,6 +182,7 @@ impl core::error::Error for BlackboardCreateError {}
 impl From<ServiceState> for BlackboardCreateError {
     fn from(value: ServiceState) -> Self {
         match value {
+            ServiceState::Interrupt => BlackboardCreateError::Interrupt,
             ServiceState::IncompatiblePayload | ServiceState::IncompatibleMessagingPattern => {
                 BlackboardCreateError::AlreadyExists
             }
@@ -190,6 +197,7 @@ impl From<ServiceState> for BlackboardCreateError {
 impl From<ServiceCreateError> for BlackboardCreateError {
     fn from(value: ServiceCreateError) -> Self {
         match value {
+            ServiceCreateError::Interrupt => BlackboardCreateError::Interrupt,
             ServiceCreateError::AlreadyExists => BlackboardCreateError::AlreadyExists,
             ServiceCreateError::InsufficientPermissions => {
                 BlackboardCreateError::InsufficientPermissions

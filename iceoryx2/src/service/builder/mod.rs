@@ -75,6 +75,7 @@ use super::service_name::ServiceName;
 enum ServiceState {
     IncompatibleMessagingPattern,
     InternalFailure,
+    Interrupt,
     InsufficientPermissions,
     HangsInCreation,
     Corrupted,
@@ -135,6 +136,7 @@ enum ServiceCreateError {
     ServiceInCorruptedState,
     UnableToCreateServiceTag,
     ServiceConfigCouldNotBeCreated,
+    Interrupt,
 }
 
 impl From<ServiceState> for ServiceCreateError {
@@ -146,6 +148,7 @@ impl From<ServiceState> for ServiceCreateError {
             ServiceState::InsufficientPermissions => ServiceCreateError::InsufficientPermissions,
             ServiceState::Corrupted => ServiceCreateError::ServiceInCorruptedState,
             ServiceState::InternalFailure => ServiceCreateError::InternalFailure,
+            ServiceState::Interrupt => ServiceCreateError::Interrupt,
         }
     }
 }
@@ -159,6 +162,7 @@ enum ServiceOpenError {
     ExceedsMaxNumberOfNodes,
     ServiceInCorruptedState,
     HangsInCreation,
+    Interrupt,
     IncompatibleMessagingPattern,
     IncompatiblePayload,
     InsufficientPermissions,
@@ -176,6 +180,7 @@ impl From<ServiceState> for ServiceOpenError {
             ServiceState::IncompatiblePayload => ServiceOpenError::IncompatiblePayload,
             ServiceState::InsufficientPermissions => ServiceOpenError::InsufficientPermissions,
             ServiceState::InternalFailure => ServiceOpenError::InternalFailure,
+            ServiceState::Interrupt => ServiceOpenError::Interrupt,
         }
     }
 }
@@ -374,6 +379,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                         | ServiceOpenError::IncompatibleMessagingPattern
                         | ServiceOpenError::IncompatiblePayload
                         | ServiceOpenError::UnableToCreateServiceTag
+                        | ServiceOpenError::Interrupt
                         | ServiceOpenError::VersionMismatch => {
                             return Err(Into::<ErrorTypeOpenOrCreate>::into(e));
                         }
@@ -394,6 +400,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                             | ServiceCreateError::InternalFailure
                             | ServiceCreateError::ServiceInCorruptedState
                             | ServiceCreateError::UnableToCreateServiceTag
+                            | ServiceCreateError::Interrupt
                             | ServiceCreateError::ServiceConfigCouldNotBeCreated => {
                                 return Err(Into::<ErrorTypeOpenOrCreate>::into(e));
                             }
@@ -598,6 +605,10 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
 
                 let static_config = match self.create_static_config_storage() {
                     Ok(c) => c,
+                    Err(StaticStorageCreateError::Interrupt) => {
+                        fail!(from self, with ServiceCreateError::Interrupt,
+                            "{} since an interrupt signal was received.", msg);
+                    }
                     Err(StaticStorageCreateError::AlreadyExists) => {
                         fail!(from self, with ServiceCreateError::AlreadyExists,
                            "{} since the service already exists.", msg);
@@ -677,6 +688,14 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                                         .open(creation_timeout) {
                         Ok(storage) => storage,
                         Err(StaticStorageOpenError::DoesNotExist) => return Ok(None),
+                        Err(StaticStorageOpenError::InsufficientPermissions) => {
+                            fail!(from self, with ServiceState::InsufficientPermissions,
+                                "{} due to insufficient permissions.", msg);
+                        }
+                        Err(StaticStorageOpenError::Interrupt) => {
+                            fail!(from self, with ServiceState::Interrupt,
+                                "{} since an interrupt signal was received.", msg);
+                        }
                         Err(StaticStorageOpenError::InitializationNotYetFinalized) => {
                             fail!(from self, with ServiceState::HangsInCreation,
                                 "{} since the service hangs while being created, max timeout for service creation of {:?} exceeded.",
@@ -733,6 +752,10 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 fail!(from self, with ServiceState::Corrupted,
                     "{} since the the underlying static service config seems to be corrupted.",
                     msg);
+            }
+            Err(NamedConceptDoesExistError::Interrupt) => {
+                fail!(from self, with ServiceState::Interrupt,
+                    "{} since an interrupt signal was received.", msg);
             }
             Err(NamedConceptDoesExistError::InternalError) => {
                 fail!(from self, with ServiceState::InternalFailure,

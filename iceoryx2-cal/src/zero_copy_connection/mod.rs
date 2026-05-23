@@ -35,6 +35,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 pub enum ZeroCopyPortRemoveError {
     InternalError,
     VersionMismatch,
+    Interrupt,
     InsufficientPermissions,
     DoesNotExist,
 }

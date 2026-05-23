@@ -18,6 +18,8 @@
 namespace iox2 {
 /// Errors that can occur when an existing [`MessagingPattern::Blackboard`] [`Service`] shall be opened.
 enum class BlackboardOpenError : uint8_t {
+    /// An interrupt signal was raised.
+    Interrupt,
     /// The [`Service`] could not be opened since it does not exist.
     DoesNotExist,
     /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
@@ -53,6 +55,8 @@ enum class BlackboardOpenError : uint8_t {
 
 /// Errors that can occur when a new [`MessagingPattern::Blackboard`] [`Service`] shall be created.
 enum class BlackboardCreateError : uint8_t {
+    /// An interrupt signal was raised.
+    Interrupt,
     /// The [`Service`] already exists.
     AlreadyExists,
     /// Multiple processes are trying to create the same [`Service`].

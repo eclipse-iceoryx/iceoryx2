@@ -1094,6 +1094,10 @@ pub mod details {
                                        fail!(from origin, with ZeroCopyPortRemoveError::InsufficientPermissions,
                                            "{msg} since the underlying dynamic storage has a different iceoryx2 version.");
                                    }
+                                   Err(NamedConceptRemoveError::Interrupt) => {
+                                       fail!(from origin, with ZeroCopyPortRemoveError::Interrupt,
+                                           "{msg} since an interrupt signal was raised.");
+                                   }
                                    Err(NamedConceptRemoveError::InternalError) => {
                                        fail!(from origin, with ZeroCopyPortRemoveError::InternalError,
                                            "{msg} due to an internal error.");

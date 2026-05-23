@@ -37,6 +37,8 @@ use super::ServiceState;
 /// Failures that can occur when an existing [`MessagingPattern::Event`] [`Service`] shall be opened.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EventOpenError {
+    /// An interrupt signal was received.
+    Interrupt,
     /// The [`Service`] does not exist.
     DoesNotExist,
     /// The process has not enough permissions to open the [`Service`]
@@ -96,6 +98,7 @@ impl core::error::Error for EventOpenError {}
 impl From<ServiceState> for EventOpenError {
     fn from(value: ServiceState) -> Self {
         match value {
+            ServiceState::Interrupt => EventOpenError::Interrupt,
             ServiceState::IncompatibleMessagingPattern | ServiceState::IncompatiblePayload => {
                 EventOpenError::IncompatibleMessagingPattern
             }
@@ -110,6 +113,7 @@ impl From<ServiceState> for EventOpenError {
 impl From<ServiceOpenError> for EventOpenError {
     fn from(value: ServiceOpenError) -> Self {
         match value {
+            ServiceOpenError::Interrupt => EventOpenError::Interrupt,
             ServiceOpenError::DoesNotExist => EventOpenError::DoesNotExist,
             ServiceOpenError::ExceedsMaxNumberOfNodes => EventOpenError::ExceedsMaxNumberOfNodes,
             ServiceOpenError::HangsInCreation => EventOpenError::HangsInCreation,
@@ -149,6 +153,8 @@ impl From<EventOpenError> for ServiceOpenError {
 /// Failures that can occur when a new [`MessagingPattern::Event`] [`Service`] shall be created.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EventCreateError {
+    /// An interrupt signal was received.
+    Interrupt,
     /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
     ServiceInCorruptedState,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
@@ -168,6 +174,7 @@ pub enum EventCreateError {
 impl From<ServiceCreateError> for EventCreateError {
     fn from(value: ServiceCreateError) -> Self {
         match value {
+            ServiceCreateError::Interrupt => EventCreateError::Interrupt,
             ServiceCreateError::AlreadyExists => EventCreateError::AlreadyExists,
             ServiceCreateError::InsufficientPermissions => {
                 EventCreateError::InsufficientPermissions

@@ -318,6 +318,8 @@ use self::service_name::ServiceName;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Error that can be reported when removing a [`Node`](crate::node::Node).
 pub enum ServiceRemoveNodeError {
+    /// An interrupt signal was received.
+    Interrupt,
     /// The iceoryx2 version that created the [`Node`](crate::node::Node) does
     /// not match this iceoryx2 version.
     VersionMismatch,
@@ -338,6 +340,7 @@ impl core::error::Error for ServiceRemoveNodeError {}
 impl From<ServiceRemoveError> for ServiceRemoveNodeError {
     fn from(value: ServiceRemoveError) -> Self {
         match value {
+            ServiceRemoveError::Interrupt => ServiceRemoveNodeError::Interrupt,
             ServiceRemoveError::InsufficientPermissions => {
                 ServiceRemoveNodeError::InsufficientPermissions
             }
@@ -350,6 +353,8 @@ impl From<ServiceRemoveError> for ServiceRemoveNodeError {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Error that can be reported when removing a [`Node`](crate::node::Node).
 pub enum ServiceRemoveError {
+    /// An interrupt signal was received
+    Interrupt,
     /// The iceoryx2 version that created the [`Node`](crate::node::Node) does
     /// not match this iceoryx2 version.
     VersionMismatch,
@@ -668,6 +673,10 @@ pub mod internal {
                             fail!(from origin, with ServiceRemoveError::InsufficientPermissions,
                                 "{msg} due to insufficient permissions.");
                         }
+                        Err(NamedConceptRemoveError::Interrupt) => {
+                            fail!(from origin, with ServiceRemoveError::Interrupt,
+                                "{msg} since an interrupt signal was received.");
+                        }
                         Err(NamedConceptRemoveError::InternalError) => {
                             fail!(from origin, with ServiceRemoveError::InternalError,
                                 "{msg} due to an internal error.");
@@ -706,6 +715,10 @@ pub mod internal {
                 Err(NamedConceptRemoveError::InternalError) => {
                     fail!(from origin, with ServiceRemoveError::InternalError,
                         "{msg} for {service_hash} due to an internal error.");
+                }
+                Err(NamedConceptRemoveError::Interrupt) => {
+                    fail!(from origin, with ServiceRemoveError::Interrupt,
+                        "{msg} for {service_hash} since an interrupt signal was received.");
                 }
             }
 
@@ -750,6 +763,10 @@ pub mod internal {
                 Err(NamedConceptRemoveError::InsufficientPermissions) => {
                     fail!(from origin, with ServiceRemoveError::InsufficientPermissions,
                         "{msg} for {service_hash} since the dynamic config could not be removed due to insufficient permissions.");
+                }
+                Err(NamedConceptRemoveError::Interrupt) => {
+                    fail!(from origin, with ServiceRemoveError::Interrupt,
+                        "{msg} for {service_hash} since an interrupt signal was received.");
                 }
                 Err(NamedConceptRemoveError::InternalError) => {
                     fail!(from origin, with ServiceRemoveError::InsufficientPermissions,

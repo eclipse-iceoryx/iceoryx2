@@ -26,6 +26,7 @@ use iceoryx2_log::{fail, fatal_panic};
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum NamedConceptDoesExistError {
     InsufficientPermissions,
+    Interrupt,
     UnderlyingResourcesBeingSetUp,
     UnderlyingResourcesCorrupted,
     InternalError,
@@ -42,6 +43,7 @@ impl core::error::Error for NamedConceptDoesExistError {}
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum NamedConceptRemoveError {
     InsufficientPermissions,
+    Interrupt,
     InternalError,
 }
 

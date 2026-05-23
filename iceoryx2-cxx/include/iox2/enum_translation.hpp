@@ -316,6 +316,8 @@ template <>
 constexpr auto from<int, iox2::EventOpenOrCreateError>(const int value) noexcept -> iox2::EventOpenOrCreateError {
     const auto error = static_cast<iox2_event_open_or_create_error_e>(value);
     switch (error) {
+    case iox2_event_open_or_create_error_e_O_INTERRUPT:
+        return iox2::EventOpenOrCreateError::OpenInterrupt;
     case iox2_event_open_or_create_error_e_O_UNABLE_TO_CREATE_SERVICE_TAG:
         return iox2::EventOpenOrCreateError::OpenUnableToCreateServiceTag;
     case iox2_event_open_or_create_error_e_O_VERSION_MISMATCH:
@@ -355,6 +357,8 @@ constexpr auto from<int, iox2::EventOpenOrCreateError>(const int value) noexcept
     case iox2_event_open_or_create_error_e_O_INCOMPATIBLE_NOTIFIER_DEAD_EVENT:
         return iox2::EventOpenOrCreateError::OpenIncompatibleNotifierDeadEvent;
 
+    case iox2_event_open_or_create_error_e_C_INTERRUPT:
+        return iox2::EventOpenOrCreateError::CreateInterrupt;
     case iox2_event_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE:
         return iox2::EventOpenOrCreateError::CreateServiceInCorruptedState;
     case iox2_event_open_or_create_error_e_C_INTERNAL_FAILURE:
@@ -386,6 +390,8 @@ from<iox2::EventOpenOrCreateError, iox2_event_open_or_create_error_e>(const iox2
     switch (value) {
     case iox2::EventOpenOrCreateError::OpenDoesNotExist:
         return iox2_event_open_or_create_error_e_O_DOES_NOT_EXIST;
+    case iox2::EventOpenOrCreateError::OpenInterrupt:
+        return iox2_event_open_or_create_error_e_O_INTERRUPT;
     case iox2::EventOpenOrCreateError::OpenInsufficientPermissions:
         return iox2_event_open_or_create_error_e_O_INSUFFICIENT_PERMISSIONS;
     case iox2::EventOpenOrCreateError::OpenServiceInCorruptedState:
@@ -426,6 +432,8 @@ from<iox2::EventOpenOrCreateError, iox2_event_open_or_create_error_e>(const iox2
     case iox2::EventOpenOrCreateError::SystemInFlux:
         return iox2_event_open_or_create_error_e_SYSTEM_IN_FLUX;
 
+    case iox2::EventOpenOrCreateError::CreateInterrupt:
+        return iox2_event_open_or_create_error_e_C_INTERRUPT;
     case iox2::EventOpenOrCreateError::CreateUnableToCreateServiceTag:
         return iox2_event_open_or_create_error_e_C_UNABLE_TO_CREATE_SERVICE_TAG;
     case iox2::EventOpenOrCreateError::CreateServiceInCorruptedState:
@@ -457,6 +465,8 @@ template <>
 constexpr auto from<int, iox2::EventOpenError>(const int value) noexcept -> iox2::EventOpenError {
     const auto error = static_cast<iox2_event_open_or_create_error_e>(value);
     switch (error) {
+    case iox2_event_open_or_create_error_e_O_INTERRUPT:
+        return iox2::EventOpenError::Interrupt;
     case iox2_event_open_or_create_error_e_O_DOES_NOT_EXIST:
         return iox2::EventOpenError::DoesNotExist;
     case iox2_event_open_or_create_error_e_O_INSUFFICIENT_PERMISSIONS:
@@ -512,6 +522,8 @@ constexpr auto from<int, iox2::EventOpenError>(const int value) noexcept -> iox2
         IOX2_UNREACHABLE();
     case iox2_event_open_or_create_error_e_C_UNABLE_TO_CREATE_SERVICE_TAG:
         IOX2_UNREACHABLE();
+    case iox2_event_open_or_create_error_e_C_INTERRUPT:
+        IOX2_UNREACHABLE();
     case iox2_event_open_or_create_error_e_SYSTEM_IN_FLUX:
         IOX2_UNREACHABLE();
         // NOLINTEND(bugprone-branch-clone)
@@ -523,6 +535,8 @@ template <>
 constexpr auto from<iox2::EventOpenError, iox2_event_open_or_create_error_e>(const iox2::EventOpenError value) noexcept
     -> iox2_event_open_or_create_error_e {
     switch (value) {
+    case iox2::EventOpenError::Interrupt:
+        return iox2_event_open_or_create_error_e_O_INTERRUPT;
     case iox2::EventOpenError::DoesNotExist:
         return iox2_event_open_or_create_error_e_O_DOES_NOT_EXIST;
     case iox2::EventOpenError::InsufficientPermissions:
@@ -575,6 +589,8 @@ template <>
 constexpr auto from<int, iox2::EventCreateError>(const int value) noexcept -> iox2::EventCreateError {
     const auto error = static_cast<iox2_event_open_or_create_error_e>(value);
     switch (error) {
+    case iox2_event_open_or_create_error_e_C_INTERRUPT:
+        return iox2::EventCreateError::Interrupt;
     case iox2_event_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE:
         return iox2::EventCreateError::ServiceInCorruptedState;
     case iox2_event_open_or_create_error_e_C_INTERNAL_FAILURE:
@@ -632,6 +648,8 @@ constexpr auto from<int, iox2::EventCreateError>(const int value) noexcept -> io
         IOX2_UNREACHABLE();
     case iox2_event_open_or_create_error_e_O_VERSION_MISMATCH:
         IOX2_UNREACHABLE();
+    case iox2_event_open_or_create_error_e_O_INTERRUPT:
+        IOX2_UNREACHABLE();
         // NOLINTEND(bugprone-branch-clone)
     }
     IOX2_UNREACHABLE();
@@ -642,6 +660,8 @@ constexpr auto
 from<iox2::EventCreateError, iox2_event_open_or_create_error_e>(const iox2::EventCreateError value) noexcept
     -> iox2_event_open_or_create_error_e {
     switch (value) {
+    case iox2::EventCreateError::Interrupt:
+        return iox2_event_open_or_create_error_e_C_INTERRUPT;
     case iox2::EventCreateError::InsufficientPermissions:
         return iox2_event_open_or_create_error_e_C_INSUFFICIENT_PERMISSIONS;
     case iox2::EventCreateError::AlreadyExists:
@@ -675,6 +695,8 @@ constexpr auto from<int, iox2::PublishSubscribeOpenOrCreateError>(const int valu
     switch (error) {
     case iox2_pub_sub_open_or_create_error_e_O_DOES_NOT_EXIST:
         return iox2::PublishSubscribeOpenOrCreateError::OpenDoesNotExist;
+    case iox2_pub_sub_open_or_create_error_e_O_INTERRUPT:
+        return iox2::PublishSubscribeOpenOrCreateError::OpenInterrupt;
     case iox2_pub_sub_open_or_create_error_e_O_INTERNAL_FAILURE:
         return iox2::PublishSubscribeOpenOrCreateError::OpenInternalFailure;
     case iox2_pub_sub_open_or_create_error_e_O_INCOMPATIBLE_TYPES:
@@ -712,6 +734,8 @@ constexpr auto from<int, iox2::PublishSubscribeOpenOrCreateError>(const int valu
     case iox2_pub_sub_open_or_create_error_e_O_VERSION_MISMATCH:
         return iox2::PublishSubscribeOpenOrCreateError::OpenVersionMismatch;
 
+    case iox2_pub_sub_open_or_create_error_e_C_INTERRUPT:
+        return iox2::PublishSubscribeOpenOrCreateError::CreateInterrupt;
     case iox2_pub_sub_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE:
         return iox2::PublishSubscribeOpenOrCreateError::CreateServiceInCorruptedState;
     case iox2_pub_sub_open_or_create_error_e_C_SUBSCRIBER_BUFFER_MUST_BE_LARGER_THAN_HISTORY_SIZE:
@@ -742,6 +766,8 @@ template <>
 constexpr auto from<int, iox2::PublishSubscribeOpenError>(const int value) noexcept -> iox2::PublishSubscribeOpenError {
     const auto error = static_cast<iox2_pub_sub_open_or_create_error_e>(value);
     switch (error) {
+    case iox2_pub_sub_open_or_create_error_e_O_INTERRUPT:
+        return iox2::PublishSubscribeOpenError::Interrupt;
     case iox2_pub_sub_open_or_create_error_e_O_DOES_NOT_EXIST:
         return iox2::PublishSubscribeOpenError::DoesNotExist;
     case iox2_pub_sub_open_or_create_error_e_O_INTERNAL_FAILURE:
@@ -800,6 +826,8 @@ constexpr auto from<int, iox2::PublishSubscribeOpenError>(const int value) noexc
         IOX2_UNREACHABLE();
     case iox2_pub_sub_open_or_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED:
         IOX2_UNREACHABLE();
+    case iox2_pub_sub_open_or_create_error_e_C_INTERRUPT:
+        IOX2_UNREACHABLE();
     case iox2_pub_sub_open_or_create_error_e_SYSTEM_IN_FLUX:
         IOX2_UNREACHABLE();
         // NOLINTEND(bugprone-branch-clone)
@@ -811,6 +839,8 @@ template <>
 constexpr auto from<iox2::PublishSubscribeOpenError, iox2_pub_sub_open_or_create_error_e>(
     const iox2::PublishSubscribeOpenError value) noexcept -> iox2_pub_sub_open_or_create_error_e {
     switch (value) {
+    case iox2::PublishSubscribeOpenError::Interrupt:
+        return iox2_pub_sub_open_or_create_error_e_O_INTERRUPT;
     case iox2::PublishSubscribeOpenError::DoesNotExist:
         return iox2_pub_sub_open_or_create_error_e_O_DOES_NOT_EXIST;
     case iox2::PublishSubscribeOpenError::InternalFailure:
@@ -865,6 +895,8 @@ constexpr auto from<int, iox2::PublishSubscribeCreateError>(const int value) noe
     -> iox2::PublishSubscribeCreateError {
     const auto error = static_cast<iox2_pub_sub_open_or_create_error_e>(value);
     switch (error) {
+    case iox2_pub_sub_open_or_create_error_e_C_INTERRUPT:
+        return iox2::PublishSubscribeCreateError::Interrupt;
     case iox2_pub_sub_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE:
         return iox2::PublishSubscribeCreateError::ServiceInCorruptedState;
     case iox2_pub_sub_open_or_create_error_e_C_SUBSCRIBER_BUFFER_MUST_BE_LARGER_THAN_HISTORY_SIZE:
@@ -925,6 +957,8 @@ constexpr auto from<int, iox2::PublishSubscribeCreateError>(const int value) noe
         IOX2_UNREACHABLE();
     case iox2_pub_sub_open_or_create_error_e_O_VERSION_MISMATCH:
         IOX2_UNREACHABLE();
+    case iox2_pub_sub_open_or_create_error_e_O_INTERRUPT:
+        IOX2_UNREACHABLE();
         // NOLINTEND(bugprone-branch-clone)
     }
     IOX2_UNREACHABLE();
@@ -934,6 +968,8 @@ template <>
 constexpr auto from<iox2::PublishSubscribeCreateError, iox2_pub_sub_open_or_create_error_e>(
     const iox2::PublishSubscribeCreateError value) noexcept -> iox2_pub_sub_open_or_create_error_e {
     switch (value) {
+    case iox2::PublishSubscribeCreateError::Interrupt:
+        return iox2_pub_sub_open_or_create_error_e_C_INTERRUPT;
     case iox2::PublishSubscribeCreateError::ServiceInCorruptedState:
         return iox2_pub_sub_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE;
     case iox2::PublishSubscribeCreateError::SubscriberBufferMustBeLargerThanHistorySize:
@@ -967,6 +1003,8 @@ template <>
 constexpr auto from<iox2::PublishSubscribeOpenOrCreateError, iox2_pub_sub_open_or_create_error_e>(
     const iox2::PublishSubscribeOpenOrCreateError value) noexcept -> iox2_pub_sub_open_or_create_error_e {
     switch (value) {
+    case iox2::PublishSubscribeOpenOrCreateError::OpenInterrupt:
+        return iox2_pub_sub_open_or_create_error_e_O_INTERRUPT;
     case iox2::PublishSubscribeOpenOrCreateError::OpenDoesNotExist:
         return iox2_pub_sub_open_or_create_error_e_O_DOES_NOT_EXIST;
     case iox2::PublishSubscribeOpenOrCreateError::OpenInternalFailure:
@@ -1009,6 +1047,8 @@ constexpr auto from<iox2::PublishSubscribeOpenOrCreateError, iox2_pub_sub_open_o
     case iox2::PublishSubscribeOpenOrCreateError::SystemInFlux:
         return iox2_pub_sub_open_or_create_error_e_SYSTEM_IN_FLUX;
 
+    case iox2::PublishSubscribeOpenOrCreateError::CreateInterrupt:
+        return iox2_pub_sub_open_or_create_error_e_C_INTERRUPT;
     case iox2::PublishSubscribeOpenOrCreateError::CreateServiceInCorruptedState:
         return iox2_pub_sub_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE;
     case iox2::PublishSubscribeOpenOrCreateError::CreateSubscriberBufferMustBeLargerThanHistorySize:
@@ -1044,6 +1084,8 @@ constexpr auto from<int, iox2::RequestResponseCreateError>(const int value) noex
     -> iox2::RequestResponseCreateError {
     const auto error = static_cast<iox2_request_response_open_or_create_error_e>(value);
     switch (error) {
+    case iox2_request_response_open_or_create_error_e_C_INTERRUPT:
+        return iox2::RequestResponseCreateError::Interrupt;
     case iox2_request_response_open_or_create_error_e_C_ALREADY_EXISTS:
         return iox2::RequestResponseCreateError::AlreadyExists;
     case iox2_request_response_open_or_create_error_e_C_INTERNAL_FAILURE:
@@ -1104,6 +1146,8 @@ constexpr auto from<int, iox2::RequestResponseCreateError>(const int value) noex
         IOX2_UNREACHABLE();
     case iox2_request_response_open_or_create_error_e_O_UNABLE_TO_CREATE_SERVICE_TAG:
         IOX2_UNREACHABLE();
+    case iox2_request_response_open_or_create_error_e_O_INTERRUPT:
+        IOX2_UNREACHABLE();
     case iox2_request_response_open_or_create_error_e_O_VERSION_MISMATCH:
         IOX2_UNREACHABLE();
     case iox2_request_response_open_or_create_error_e_SYSTEM_IN_FLUX:
@@ -1118,6 +1162,8 @@ template <>
 constexpr auto from<iox2::RequestResponseCreateError, iox2_request_response_open_or_create_error_e>(
     const iox2::RequestResponseCreateError value) noexcept -> iox2_request_response_open_or_create_error_e {
     switch (value) {
+    case iox2::RequestResponseCreateError::Interrupt:
+        return iox2_request_response_open_or_create_error_e_C_INTERRUPT;
     case iox2::RequestResponseCreateError::AlreadyExists:
         return iox2_request_response_open_or_create_error_e_C_ALREADY_EXISTS;
     case iox2::RequestResponseCreateError::InternalFailure:
@@ -1150,6 +1196,8 @@ template <>
 constexpr auto from<int, iox2::RequestResponseOpenError>(const int value) noexcept -> iox2::RequestResponseOpenError {
     const auto error = static_cast<iox2_request_response_open_or_create_error_e>(value);
     switch (error) {
+    case iox2_request_response_open_or_create_error_e_O_INTERRUPT:
+        return iox2::RequestResponseOpenError::Interrupt;
     case iox2_request_response_open_or_create_error_e_O_DOES_NOT_EXIST:
         return iox2::RequestResponseOpenError::DoesNotExist;
     case iox2_request_response_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_CLIENT_REQUEST_LOANS:
@@ -1214,6 +1262,8 @@ constexpr auto from<int, iox2::RequestResponseOpenError>(const int value) noexce
         IOX2_UNREACHABLE();
     case iox2_request_response_open_or_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED:
         IOX2_UNREACHABLE();
+    case iox2_request_response_open_or_create_error_e_C_INTERRUPT:
+        IOX2_UNREACHABLE();
         // NOLINTEND(bugprone-branch-clone)
     }
     IOX2_UNREACHABLE();
@@ -1223,6 +1273,8 @@ template <>
 constexpr auto from<iox2::RequestResponseOpenError, iox2_request_response_open_or_create_error_e>(
     const iox2::RequestResponseOpenError value) noexcept -> iox2_request_response_open_or_create_error_e {
     switch (value) {
+    case iox2::RequestResponseOpenError::Interrupt:
+        return iox2_request_response_open_or_create_error_e_O_INTERRUPT;
     case iox2::RequestResponseOpenError::DoesNotExist:
         return iox2_request_response_open_or_create_error_e_O_DOES_NOT_EXIST;
     case iox2::RequestResponseOpenError::DoesNotSupportRequestedAmountOfClientRequestLoans:
@@ -1284,6 +1336,8 @@ constexpr auto from<int, iox2::RequestResponseOpenOrCreateError>(const int value
     -> iox2::RequestResponseOpenOrCreateError {
     const auto error = static_cast<iox2_request_response_open_or_create_error_e>(value);
     switch (error) {
+    case iox2_request_response_open_or_create_error_e_O_INTERRUPT:
+        return iox2::RequestResponseOpenOrCreateError::OpenInterrupt;
     case iox2_request_response_open_or_create_error_e_O_DOES_NOT_EXIST:
         return iox2::RequestResponseOpenOrCreateError::OpenDoesNotExist;
     case iox2_request_response_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_CLIENT_REQUEST_LOANS:
@@ -1330,6 +1384,8 @@ constexpr auto from<int, iox2::RequestResponseOpenOrCreateError>(const int value
     case iox2_request_response_open_or_create_error_e_O_VERSION_MISMATCH:
         return iox2::RequestResponseOpenOrCreateError::OpenVersionMismatch;
 
+    case iox2_request_response_open_or_create_error_e_C_INTERRUPT:
+        return iox2::RequestResponseOpenOrCreateError::CreateInterrupt;
     case iox2_request_response_open_or_create_error_e_C_ALREADY_EXISTS:
         return iox2::RequestResponseOpenOrCreateError::CreateAlreadyExists;
     case iox2_request_response_open_or_create_error_e_C_INTERNAL_FAILURE:
@@ -1358,6 +1414,8 @@ template <>
 constexpr auto from<iox2::RequestResponseOpenOrCreateError, iox2_request_response_open_or_create_error_e>(
     const iox2::RequestResponseOpenOrCreateError value) noexcept -> iox2_request_response_open_or_create_error_e {
     switch (value) {
+    case iox2::RequestResponseOpenOrCreateError::OpenInterrupt:
+        return iox2_request_response_open_or_create_error_e_O_INTERRUPT;
     case iox2::RequestResponseOpenOrCreateError::OpenDoesNotExist:
         return iox2_request_response_open_or_create_error_e_O_DOES_NOT_EXIST;
     case iox2::RequestResponseOpenOrCreateError::OpenDoesNotSupportRequestedAmountOfClientRequestLoans:
@@ -1403,6 +1461,8 @@ constexpr auto from<iox2::RequestResponseOpenOrCreateError, iox2_request_respons
     case iox2::RequestResponseOpenOrCreateError::OpenVersionMismatch:
         return iox2_request_response_open_or_create_error_e_O_VERSION_MISMATCH;
 
+    case iox2::RequestResponseOpenOrCreateError::CreateInterrupt:
+        return iox2_request_response_open_or_create_error_e_C_INTERRUPT;
     case iox2::RequestResponseOpenOrCreateError::CreateAlreadyExists:
         return iox2_request_response_open_or_create_error_e_C_ALREADY_EXISTS;
     case iox2::RequestResponseOpenOrCreateError::CreateInternalFailure:
@@ -1440,6 +1500,8 @@ template <>
 constexpr auto from<int, iox2::BlackboardCreateError>(const int value) noexcept -> iox2::BlackboardCreateError {
     const auto error = static_cast<iox2_blackboard_create_error_e>(value);
     switch (error) {
+    case iox2_blackboard_create_error_e_C_INTERRUPT:
+        return iox2::BlackboardCreateError::Interrupt;
     case iox2_blackboard_create_error_e_C_ALREADY_EXISTS:
         return iox2::BlackboardCreateError::AlreadyExists;
     case iox2_blackboard_create_error_e_C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE:
@@ -1468,6 +1530,8 @@ constexpr auto
 from<iox2::BlackboardCreateError, iox2_blackboard_create_error_e>(const iox2::BlackboardCreateError value) noexcept
     -> iox2_blackboard_create_error_e {
     switch (value) {
+    case iox2::BlackboardCreateError::Interrupt:
+        return iox2_blackboard_create_error_e_C_INTERRUPT;
     case iox2::BlackboardCreateError::AlreadyExists:
         return iox2_blackboard_create_error_e_C_ALREADY_EXISTS;
     case iox2::BlackboardCreateError::IsBeingCreatedByAnotherInstance:
@@ -1501,6 +1565,8 @@ template <>
 constexpr auto from<int, iox2::BlackboardOpenError>(const int value) noexcept -> iox2::BlackboardOpenError {
     const auto error = static_cast<iox2_blackboard_open_error_e>(value);
     switch (error) {
+    case iox2_blackboard_open_error_e_O_INTERRUPT:
+        return iox2::BlackboardOpenError::Interrupt;
     case iox2_blackboard_open_error_e_O_DOES_NOT_EXIST:
         return iox2::BlackboardOpenError::DoesNotExist;
     case iox2_blackboard_open_error_e_O_SERVICE_IN_CORRUPTED_STATE:
@@ -1539,6 +1605,8 @@ constexpr auto
 from<iox2::BlackboardOpenError, iox2_blackboard_open_error_e>(const iox2::BlackboardOpenError value) noexcept
     -> iox2_blackboard_open_error_e {
     switch (value) {
+    case iox2::BlackboardOpenError::Interrupt:
+        return iox2_blackboard_open_error_e_O_INTERRUPT;
     case iox2::BlackboardOpenError::DoesNotExist:
         return iox2_blackboard_open_error_e_O_DOES_NOT_EXIST;
     case iox2::BlackboardOpenError::ServiceInCorruptedState:

@@ -75,6 +75,8 @@ pub enum iox2_event_open_or_create_error_e {
     O_EXCEEDS_MAX_NUMBER_OF_NODES,
     #[CStr = "is marked for destruction"]
     O_IS_MARKED_FOR_DESTRUCTION,
+    #[CStr = "interrupt"]
+    O_INTERRUPT,
     #[CStr = "service in corrupted state"]
     C_SERVICE_IN_CORRUPTED_STATE,
     #[CStr = "internal failure"]
@@ -91,6 +93,8 @@ pub enum iox2_event_open_or_create_error_e {
     C_SERVICE_CONFIG_COULD_NOT_BE_CREATED,
     #[CStr = "old connection still active"]
     C_OLD_CONNECTION_STILL_ACTIVE,
+    #[CStr = "interrupt"]
+    C_INTERRUPT,
     #[CStr = "same service is created and removed repeatedly"]
     SYSTEM_IN_FLUX,
 }
@@ -98,6 +102,7 @@ pub enum iox2_event_open_or_create_error_e {
 impl IntoCInt for EventOpenError {
     fn into_c_int(self) -> c_int {
         (match self {
+            EventOpenError::Interrupt => iox2_event_open_or_create_error_e::C_INTERRUPT,
             EventOpenError::DoesNotExist => iox2_event_open_or_create_error_e::O_DOES_NOT_EXIST,
             EventOpenError::InsufficientPermissions => {
                 iox2_event_open_or_create_error_e::O_INSUFFICIENT_PERMISSIONS
@@ -160,6 +165,7 @@ impl IntoCInt for EventOpenError {
 impl IntoCInt for EventCreateError {
     fn into_c_int(self) -> c_int {
         (match self {
+            EventCreateError::Interrupt => iox2_event_open_or_create_error_e::C_INTERRUPT,
             EventCreateError::ServiceInCorruptedState => {
                 iox2_event_open_or_create_error_e::C_SERVICE_IN_CORRUPTED_STATE
             }

@@ -19,6 +19,8 @@ namespace iox2 {
 /// Errors that can occur when an existing [`MessagingPattern::RequestResponse`] [`Service`] shall
 /// be opened.
 enum class RequestResponseOpenError : uint8_t {
+    /// An interrupt signal was raised.
+    Interrupt,
     /// Service could not be openen since it does not exist
     DoesNotExist,
     /// The [`Service`] has a lower maximum amount of loaned
@@ -73,6 +75,8 @@ enum class RequestResponseOpenError : uint8_t {
 
 /// Errors that can occur when a new [`MessagingPattern::RequestResponse`] [`Service`] shall be created.
 enum class RequestResponseCreateError : uint8_t {
+    /// An interrupt signal was raised.
+    Interrupt,
     /// The [`Service`] already exists.
     AlreadyExists,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
@@ -95,6 +99,8 @@ enum class RequestResponseCreateError : uint8_t {
 /// Errors that can occur when a [`MessagingPattern::RequestResponse`] [`Service`] shall be
 /// created or opened.
 enum class RequestResponseOpenOrCreateError : uint8_t {
+    /// An interrupt signal was raised.
+    OpenInterrupt,
     /// Service could not be openen since it does not exist
     OpenDoesNotExist,
     /// The [`Service`] has a lower maximum amount of loaned
@@ -146,6 +152,8 @@ enum class RequestResponseOpenOrCreateError : uint8_t {
     /// The iceoryx2 service version does not match the one of the [`Service`].
     OpenVersionMismatch,
 
+    /// An interrupt signal was raised.
+    CreateInterrupt,
     /// The [`Service`] already exists.
     CreateAlreadyExists,
     /// Errors that indicate either an implementation issue or a wrongly configured system.

@@ -293,7 +293,9 @@ impl core::error::Error for NodeCleanupFailure {}
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum NodeReadStorageFailure {
     ReadError,
+    InsufficientPermissions,
     Corrupted,
+    Interrupt,
     InternalError,
 }
 
@@ -675,6 +677,12 @@ impl<Service: service::Service> DeadNodeView<Service> {
                         "{} since the stale resources of the port {port_id} could not be removed due to an internal failure.", msg);
                     CallbackProgression::Stop
                 }
+                Err(RemoveStalePortResourcesError::Interrupt) => {
+                    cleanup_failure = Err(NodeCleanupFailure::Interrupt);
+                    debug!(from self,
+                        "{} since the stale resources of the port {port_id} could not be removed due to an interrupt signal.", msg);
+                    CallbackProgression::Stop
+                }
             }
         }) {
             Ok(()) => (),
@@ -775,8 +783,12 @@ fn remove_detail_storages<Service: service::Service>(
                     "{} {} due to insufficient permissions.", msg, entry);
             }
             Err(NamedConceptRemoveError::InternalError) => {
-                fail!(from origin, with NodeCleanupFailure::InsufficientPermissions,
+                fail!(from origin, with NodeCleanupFailure::InternalError,
                     "{} {} due to an internal failure.", msg, entry);
+            }
+            Err(NamedConceptRemoveError::Interrupt) => {
+                fail!(from origin, with NodeCleanupFailure::Interrupt,
+                    "{} {} since an interrupt signal was raised.", msg, entry);
             }
         }
     }
@@ -1312,33 +1324,37 @@ impl<Service: service::Service> Node<Service> {
         node_id: &UniqueNodeId,
     ) -> Result<Option<Service::StaticStorage>, NodeReadStorageFailure> {
         let details_config = node_details_config::<Service>(config, node_id);
-        let result = <Service::StaticStorage as StaticStorage>::Builder::new(
+        let msg = "Unable to open node config storage";
+        let origin = format!("open_node_storage({config:?}, {node_id:?})");
+
+        match <Service::StaticStorage as StaticStorage>::Builder::new(
             &FileName::new(b"node").unwrap(),
         )
         .config(&details_config)
         .has_ownership(false)
-        .open(Duration::ZERO);
-
-        if let Ok(result) = result {
-            return Ok(Some(result));
-        }
-
-        let msg = "Unable to open node config storage";
-        let origin = format!("open_node_storage({config:?}, {node_id:?})");
-
-        match result.err().unwrap() {
-            StaticStorageOpenError::DoesNotExist => Ok(None),
-            StaticStorageOpenError::Read => {
+        .open(Duration::ZERO)
+        {
+            Ok(result) => Ok(Some(result)),
+            Err(StaticStorageOpenError::DoesNotExist) => Ok(None),
+            Err(StaticStorageOpenError::Read) => {
                 fail!(from origin, with NodeReadStorageFailure::ReadError,
-                    "{} since the node config storage could not be read.", msg);
+                        "{} since the node config storage could not be read.", msg);
             }
-            StaticStorageOpenError::InitializationNotYetFinalized => {
+            Err(StaticStorageOpenError::InitializationNotYetFinalized) => {
                 fail!(from origin, with NodeReadStorageFailure::Corrupted,
-                    "{} since the node config storage seems to be uninitialized but the state should always be present.", msg);
+                        "{} since the node config storage seems to be uninitialized but the state should always be present.", msg);
             }
-            StaticStorageOpenError::InternalError => {
+            Err(StaticStorageOpenError::InternalError) => {
                 fail!(from origin, with NodeReadStorageFailure::InternalError,
-                    "{} due to an internal failure while opening the node config storage.", msg);
+                        "{} due to an internal failure while opening the node config storage.", msg);
+            }
+            Err(StaticStorageOpenError::Interrupt) => {
+                fail!(from origin, with NodeReadStorageFailure::Interrupt,
+                    "{} since an interrupt signal was raised.", msg);
+            }
+            Err(StaticStorageOpenError::InsufficientPermissions) => {
+                fail!(from origin, with NodeReadStorageFailure::InsufficientPermissions,
+                    "{} due to insufficient permissions.", msg);
             }
         }
     }

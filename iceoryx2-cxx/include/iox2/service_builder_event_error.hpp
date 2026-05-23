@@ -18,6 +18,8 @@
 namespace iox2 {
 /// Failures that can occur when an existing [`MessagingPattern::Event`] [`Service`] shall be opened.
 enum class EventOpenError : uint8_t {
+    /// An interrupt signal was raised.
+    Interrupt,
     /// The [`Service`] does not exist.
     DoesNotExist,
     /// The process has not enough permissions to open the [`Service`]
@@ -78,6 +80,8 @@ enum class EventOpenError : uint8_t {
 
 /// Failures that can occur when a new [`MessagingPattern::Event`] [`Service`] shall be created.
 enum class EventCreateError : uint8_t {
+    /// An interrupt signal was raised.
+    Interrupt,
     /// Some underlying resources of the [`Service`] are either missing,
     /// corrupted or unaccessible.
     ServiceInCorruptedState,
@@ -106,6 +110,8 @@ enum class EventCreateError : uint8_t {
 /// Failures that can occur when a [`MessagingPattern::Event`] [`Service`] shall be opened or
 /// created.
 enum class EventOpenOrCreateError : uint8_t {
+    /// An interrupt signal was raised.
+    OpenInterrupt,
     /// The [`Service`] does not exist.
     OpenDoesNotExist,
     /// The process has not enough permissions to open the [`Service`]
@@ -163,6 +169,8 @@ enum class EventOpenOrCreateError : uint8_t {
     /// The iceoryx2 service version does not match the one of the [`Service`].
     OpenVersionMismatch,
 
+    /// An interrupt signal was raised.
+    CreateInterrupt,
     /// Some underlying resources of the [`Service`] are either missing,
     /// corrupted or unaccessible.
     CreateServiceInCorruptedState,
