@@ -58,6 +58,7 @@ pub struct Logger {
     counter: AtomicU64,
     config: Config,
     pid: UnsafeCell<i32>,
+    tid: UnsafeCell<i32>,
     executable: UnsafeCell<String>,
     state: AtomicU8,
 }
@@ -123,6 +124,7 @@ impl Logger {
             counter: AtomicU64::new(0),
             config,
             pid: UnsafeCell::new(0),
+            tid: UnsafeCell::new(0),
             executable: UnsafeCell::new(String::new()),
             state: AtomicU8::new(STATE_UNINITIALIZED),
         }
