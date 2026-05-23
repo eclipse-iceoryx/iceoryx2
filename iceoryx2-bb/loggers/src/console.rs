@@ -23,15 +23,59 @@ use iceoryx2_log_types::LogLevel;
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
 use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 
-#[allow(dead_code)]
-enum ConsoleLogOrder {
+#[derive(Default)]
+pub enum ConsoleLogOrder {
     Time,
+    #[default]
     Counter,
+}
+
+#[derive(Default)]
+pub enum OriginMode {
+    None,
+    Simple,
+    #[default]
+    Full,
+}
+
+#[derive(Default)]
+pub struct Builder {
+    ordering_mode: ConsoleLogOrder,
+    show_process_details: bool,
+    origin_mode: OriginMode,
+}
+
+impl Builder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn show_process_details(mut self, value: bool) -> Self {
+        self.show_process_details = value;
+        self
+    }
+
+    pub fn ordering_mode(mut self, value: ConsoleLogOrder) -> Self {
+        self.ordering_mode = value;
+        self
+    }
+
+    pub fn origin_mode(mut self, value: OriginMode) -> Self {
+        self.origin_mode = value;
+        self
+    }
+
+    pub fn create(self) -> Logger {
+        Logger {
+            counter: AtomicU64::new(0),
+            config: self,
+        }
+    }
 }
 
 pub struct Logger {
     counter: AtomicU64,
-    ordering_mode: ConsoleLogOrder,
+    config: Builder,
 }
 
 impl Default for Logger {
@@ -82,7 +126,11 @@ impl Logger {
     pub const fn new() -> Self {
         Self {
             counter: AtomicU64::new(0),
-            ordering_mode: ConsoleLogOrder::Counter,
+            config: Builder {
+                ordering_mode: ConsoleLogOrder::Counter,
+                show_process_details: true,
+                origin_mode: OriginMode::Full,
+            },
         }
     }
 
@@ -142,8 +190,24 @@ impl Logger {
         }
     }
 
-    fn format_entry(log_level: LogLevel, prefix: &str, origin: &str, message: &str) -> String {
+    fn format_entry(
+        &self,
+        log_level: LogLevel,
+        prefix: &str,
+        origin: &str,
+        message: &str,
+    ) -> String {
         let line_end = if is_terminal() { "\x1b[0m" } else { " " };
+
+        let origin = match self.config.origin_mode {
+            OriginMode::None => String::new(),
+            OriginMode::Full => origin.to_string(),
+            OriginMode::Simple => origin
+                .split_whitespace()
+                .next()
+                .unwrap_or_default()
+                .to_string(),
+        };
 
         if origin.is_empty() {
             alloc::format!(
@@ -174,7 +238,7 @@ impl Log for Logger {
         let origin_str = origin.to_string();
         let msg_str = formatted_message.to_string();
 
-        let prefix = match self.ordering_mode {
+        let prefix = match self.config.ordering_mode {
             ConsoleLogOrder::Time => {
                 let time = duration_since_epoch();
                 alloc::format!(
@@ -191,7 +255,7 @@ impl Log for Logger {
 
         cerrln!(
             "{}",
-            Self::format_entry(log_level, &prefix, &origin_str, &msg_str)
+            self.format_entry(log_level, &prefix, &origin_str, &msg_str)
         );
     }
 }
