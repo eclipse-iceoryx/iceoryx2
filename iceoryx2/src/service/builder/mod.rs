@@ -30,6 +30,7 @@ use core::fmt::Debug;
 use core::hash::Hash;
 use core::marker::PhantomData;
 
+use alloc::format;
 use alloc::string::String;
 use alloc::vec;
 
