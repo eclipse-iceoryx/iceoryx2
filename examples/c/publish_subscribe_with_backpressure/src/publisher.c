@@ -65,7 +65,7 @@ int main(void) {
     }
 
     // create service name
-    const char* service_name_value = "My/Funk/ServiceName";
+    const char* service_name_value = "ServiceWithSlowSubscriber";
     iox2_service_name_h service_name = NULL;
     ret_val = iox2_service_name_new(NULL, service_name_value, strlen(service_name_value), &service_name);
     if (ret_val != IOX2_OK) {
