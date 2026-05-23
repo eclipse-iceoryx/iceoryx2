@@ -197,7 +197,6 @@ pub mod service_blackboard {
 
     #[conformance_test]
     pub fn open_succeeds_when_service_does_exist<Sut: Service>() {
-        set_log_level(LogLevel::Debug);
         let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();

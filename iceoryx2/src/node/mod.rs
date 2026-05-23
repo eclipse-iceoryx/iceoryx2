@@ -1105,7 +1105,7 @@ impl<Service: service::Service> Node<Service> {
                     let node_id = core::str::from_utf8(node_name.as_bytes()).unwrap();
                     let node_id = match node_id.parse::<u128>() {
                         Ok(v) => UniqueNodeId(v.into()),
-                        // not bad, just find a file that is not a node
+                        // not bad, just found a file that is not a node
                         Err(_) => continue,
                     };
 

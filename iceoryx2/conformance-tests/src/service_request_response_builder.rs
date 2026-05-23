@@ -32,7 +32,6 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn open_existing_service_works<Sut: Service>() {
-        set_log_level(LogLevel::Debug);
         let service_name = generate_service_name();
         let config = generate_isolated_config();
 
