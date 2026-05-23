@@ -238,7 +238,7 @@ impl Default for Global {
             prefix: FileName::new(b"iox2_").unwrap(),
             service: Service::default(),
             node: Node::default(),
-            creation_timeout: Duration::from_millis(500),
+            creation_timeout: Duration::from_secs(10),
         }
     }
 }
