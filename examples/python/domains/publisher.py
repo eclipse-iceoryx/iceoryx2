@@ -12,7 +12,6 @@
 
 """Publisher example."""
 
-import ctypes
 import sys
 
 import iceoryx2 as iox2
