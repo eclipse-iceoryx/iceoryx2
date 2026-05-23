@@ -57,8 +57,6 @@ pub struct Config {
 pub struct Logger {
     counter: AtomicU64,
     config: Config,
-    pid: UnsafeCell<posix::pid_t>,
-    tid: UnsafeCell<posix::pthread_t>,
     executable: UnsafeCell<String>,
     state: AtomicU8,
 }
@@ -129,8 +127,6 @@ impl Logger {
         Self {
             counter: AtomicU64::new(0),
             config,
-            pid: UnsafeCell::new(0),
-            tid: UnsafeCell::new(0),
             executable: UnsafeCell::new(String::new()),
             state: AtomicU8::new(STATE_UNINITIALIZED),
         }
@@ -149,7 +145,6 @@ impl Logger {
             ) {
                 Ok(_) => {
                     let pid = unsafe { posix::getpid() };
-                    let tid = unsafe { posix::pthread_self() };
                     let mut buffer = [0u8; 1024];
                     let path_len = unsafe {
                         posix::proc_pidpath(pid, buffer.as_mut_ptr().cast(), buffer.len())
@@ -167,8 +162,6 @@ impl Logger {
                         .unwrap_or_default()
                         .to_string();
 
-                    *unsafe { &mut *self.pid.get() } = pid;
-                    *unsafe { &mut *self.tid.get() } = tid;
                     *unsafe { &mut *self.executable.get() } = executable;
 
                     ///////////////////////////////////
@@ -178,8 +171,8 @@ impl Logger {
                 }
                 Err(STATE_INITIALIZED) => {
                     return ProcessDetails {
-                        process_id: unsafe { *self.pid.get() },
-                        thread_id: unsafe { *self.tid.get() },
+                        process_id: unsafe { posix::getpid() },
+                        thread_id: unsafe { posix::pthread_self() },
                         executable: unsafe { &*self.executable.get() },
                     };
                 }
@@ -270,7 +263,7 @@ impl Logger {
         let process = if self.config.show_process_details {
             let details = self.process_details();
             alloc::format!(
-                "{BOLD_GREY}[{GREY}pid={LIGHT_GREEN}{}{GREY}, tid={LIGHT_GREEN}{}{GREY}, exec={LIGHT_GREEN}{}{BOLD_GREY}]",
+                "{BOLD_GREY}[{GREY}pid={LIGHT_GREEN}{}{GREY}, tid={LIGHT_GREEN}{:?}{GREY}, exec={LIGHT_GREEN}{}{BOLD_GREY}]",
                 details.process_id,
                 details.thread_id,
                 details.executable
