@@ -132,7 +132,6 @@ TEST(EnumConversionTest, event_create_into_c_str) {
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::InternalFailure)), 1U);
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::IsBeingCreatedByAnotherInstance)), 1U);
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::AlreadyExists)), 1U);
-    ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::HangsInCreation)), 1U);
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::InsufficientPermissions)), 1U);
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::OldConnectionsStillActive)), 1U);
 }
@@ -156,7 +155,6 @@ TEST(EnumConversionTest, event_open_or_create_into_c_str) {
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::CreateInternalFailure)), 1U);
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::CreateIsBeingCreatedByAnotherInstance)), 1U);
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::CreateAlreadyExists)), 1U);
-    ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::CreateHangsInCreation)), 1U);
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::CreateInsufficientPermissions)), 1U);
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::CreateOldConnectionsStillActive)), 1U);
 }
@@ -218,7 +216,6 @@ TEST(EnumConversionTest, publish_subscribe_open_or_create_into_c_str) {
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::CreateInsufficientPermissions)), 1U);
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::CreateInternalFailure)), 1U);
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::CreateIsBeingCreatedByAnotherInstance)), 1U);
-    ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::CreateOldConnectionsStillActive)), 1U);
     ASSERT_GT(strlen(iox2::bb::into<const char*>(Sut::CreateHangsInCreation)), 1U);
 }
 

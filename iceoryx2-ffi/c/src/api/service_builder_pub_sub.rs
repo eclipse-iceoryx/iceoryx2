@@ -91,8 +91,6 @@ pub enum iox2_pub_sub_open_or_create_error_e {
     C_INTERNAL_FAILURE,
     #[CStr = "is being created by another instance"]
     C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE,
-    #[CStr = "old connection still active"]
-    C_OLD_CONNECTION_STILL_ACTIVE,
     #[CStr = "hangs in creation"]
     C_HANGS_IN_CREATION,
     #[CStr = "unable to create service tag"]

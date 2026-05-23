@@ -76,8 +76,6 @@ pub enum iox2_request_response_open_or_create_error_e {
     O_HANGS_IN_CREATION,
     #[CStr = "incompatible request or response type"]
     O_INCOMPATIBLE_REQUEST_OR_RESPONSE_TYPE,
-    #[CStr = "incompatible response type"]
-    O_INCOMPATIBLE_RESPONSE_TYPE,
     #[CStr = "incompatible attributes"]
     O_INCOMPATIBLE_ATTRIBUTES,
     #[CStr = "incompatible messaging pattern"]
