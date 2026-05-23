@@ -16,6 +16,7 @@ import ctypes
 import sys
 
 import iceoryx2 as iox2
+from transmission_data import TransmissionData
 
 cycle_time = iox2.Duration.from_secs(1)
 iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
@@ -40,7 +41,7 @@ node = (
 # from here on it is the publish_subscribe publisher example
 service = (
     node.service_builder(iox2.ServiceName.new(service_name))
-    .publish_subscribe(ctypes.c_uint64)
+    .publish_subscribe(TransmissionData)
     .open_or_create()
 )
 
@@ -51,7 +52,11 @@ try:
     while True:
         COUNTER += 1
         node.wait(cycle_time)
-        publisher.send_copy(ctypes.c_uint64(COUNTER))
+        sample = publisher.loan_uninit()
+        sample = sample.write_payload(
+            TransmissionData(x=COUNTER, y=COUNTER * 3, funky=COUNTER * 812.12)
+        )
+        sample.send()
         print(
             '[domain: "',
             domain,
