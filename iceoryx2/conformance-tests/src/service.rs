@@ -536,8 +536,8 @@ pub mod service {
                         .unwrap();
 
                     barrier_enter.wait();
-                    drop(sut);
                     barrier_exit.wait();
+                    drop(sut);
                 }
             })?;
 
