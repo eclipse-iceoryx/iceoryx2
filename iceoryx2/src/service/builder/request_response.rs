@@ -81,7 +81,7 @@ pub enum RequestResponseOpenError {
     IsMarkedForDestruction,
     /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
     ServiceInCorruptedState,
-    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    /// The [`Node`](crate::node::Node) service tag could not be created. Required to track resources of dead nodes when cleaning them up.
     UnableToCreateServiceTag,
     /// The iceoryx2 service version does not match the one of the [`Service`].
     VersionMismatch,
@@ -195,7 +195,7 @@ pub enum RequestResponseCreateError {
     HangsInCreation,
     /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
     ServiceInCorruptedState,
-    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    /// The [`Node`](crate::node::Node) service tag could not be created. Required to track resources of dead nodes when cleaning them up.
     UnableToCreateServiceTag,
     /// The [`Service`]s config could not be created and written to the static service configuration.
     ServiceConfigCouldNotBeCreated,

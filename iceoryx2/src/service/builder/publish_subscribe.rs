@@ -77,7 +77,7 @@ pub enum PublishSubscribeOpenError {
     /// When the call creation call is repeated with a little delay the [`Service`] should be
     /// recreatable.
     IsMarkedForDestruction,
-    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    /// The [`Node`](crate::node::Node) service tag could not be created. Required to track resources of dead nodes when cleaning them up.
     UnableToCreateServiceTag,
     /// The iceoryx2 service version does not match the one of the [`Service`].
     VersionMismatch,
@@ -188,7 +188,7 @@ pub enum PublishSubscribeCreateError {
     /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
     /// by a process that crashed during [`Service`] creation.
     HangsInCreation,
-    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    /// The [`Node`](crate::node::Node) service tag could not be created. Required to track resources of dead nodes when cleaning them up.
     UnableToCreateServiceTag,
     /// The [`Service`]s config could not be created and written to the static service configuration.
     ServiceConfigCouldNotBeCreated,

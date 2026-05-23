@@ -84,7 +84,7 @@ pub enum BlackboardOpenError {
     ExceedsMaxNumberOfNodes,
     /// The [`Service`] supports less [`Node`](crate::node::Node)s than requested.
     DoesNotSupportRequestedAmountOfNodes,
-    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    /// The [`Node`](crate::node::Node) service tag could not be created. Required to track resources of dead nodes when cleaning them up.
     UnableToCreateServiceTag,
     /// The iceoryx2 service version does not match the one of the [`Service`].
     VersionMismatch,
@@ -159,7 +159,7 @@ pub enum BlackboardCreateError {
     HangsInCreation,
     /// No key-value pairs have been provided. At least one is required.
     NoEntriesProvided,
-    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    /// The [`Node`](crate::node::Node) service tag could not be created. Required to track resources of dead nodes when cleaning them up.
     UnableToCreateServiceTag,
     /// The [`Service`]s config could not be created and written to the static service configuration.
     ServiceConfigCouldNotBeCreated,
