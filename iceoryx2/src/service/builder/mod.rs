@@ -461,6 +461,9 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                         for node in dynamic_details.nodes {
                             let node_id = *node.node_id();
                             if let NodeState::Dead(node) = node {
+                                warn!(from origin,
+                                    "Detected dead node {} in service {}. Trying to cleanup stale resources.",
+                                    node_id, self.service_config.service_hash());
                                 if let Err(e) = node
                                     .blocking_remove_stale_resources(config.global.creation_timeout)
                                 {
