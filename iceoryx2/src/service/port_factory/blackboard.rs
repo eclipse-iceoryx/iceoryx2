@@ -48,7 +48,6 @@ use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
 use crate::service::builder::CustomKeyMarker;
 use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
-use crate::service::port_factory::blocking_cleanup_dead_nodes_in_service;
 use crate::service::service_hash::ServiceHash;
 use crate::service::service_name::ServiceName;
 use crate::service::{self, ServiceState, SharedServiceState, dynamic_config, static_config};
@@ -137,27 +136,12 @@ impl<
 > PortFactory<Service, KeyType>
 {
     pub(crate) fn new(service: ServiceState<Service, BlackboardResources<Service>>) -> Self {
-        let shared_node = service.shared_node.clone();
-        let new_self = Self {
+        Self {
             service: SharedServiceState {
                 state: Arc::new(service),
             },
             _key: PhantomData,
-        };
-
-        if shared_node
-            .config()
-            .global
-            .service
-            .cleanup_dead_nodes_on_open
-        {
-            blocking_cleanup_dead_nodes_in_service(
-                &new_self,
-                shared_node.config().global.creation_timeout,
-            );
         }
-
-        new_self
     }
 
     /// Returns a [`PortFactoryWriter`] to create a new [`crate::port::writer::Writer`] port.

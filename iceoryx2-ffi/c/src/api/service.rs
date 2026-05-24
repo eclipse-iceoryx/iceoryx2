@@ -94,6 +94,8 @@ pub enum iox2_service_details_error_e {
     VERSION_MISMATCH,
     INTERNAL_ERROR,
     FAILED_TO_ACQUIRE_NODE_STATE,
+    INTERRUPT,
+    INSUFFICIENT_PERMISSIONS,
 }
 
 impl IntoCInt for ServiceDetailsError {
@@ -101,6 +103,10 @@ impl IntoCInt for ServiceDetailsError {
         (match self {
             ServiceDetailsError::FailedToOpenStaticServiceInfo => {
                 iox2_service_details_error_e::FAILED_TO_OPEN_STATIC_SERVICE_INFO
+            }
+            ServiceDetailsError::Interrupt => iox2_service_details_error_e::INTERRUPT,
+            ServiceDetailsError::InsufficientPermissions => {
+                iox2_service_details_error_e::INSUFFICIENT_PERMISSIONS
             }
             ServiceDetailsError::FailedToReadStaticServiceInfo => {
                 iox2_service_details_error_e::FAILED_TO_READ_STATIC_SERVICE_INFO

@@ -47,7 +47,6 @@ use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
 use crate::identifiers::UniqueServiceId;
 use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
-use crate::service::port_factory::blocking_cleanup_dead_nodes_in_service;
 use crate::service::service_hash::ServiceHash;
 use crate::service::service_name::ServiceName;
 use crate::service::{
@@ -157,28 +156,13 @@ impl<
 > PortFactory<Service, Payload, UserHeader>
 {
     pub(crate) fn new(service: ServiceState<Service, NoResource>) -> Self {
-        let shared_node = service.shared_node.clone();
-        let new_self = Self {
+        Self {
             service: SharedServiceState {
                 state: Arc::new(service),
             },
             _payload: PhantomData,
             _user_header: PhantomData,
-        };
-
-        if shared_node
-            .config()
-            .global
-            .service
-            .cleanup_dead_nodes_on_open
-        {
-            blocking_cleanup_dead_nodes_in_service(
-                &new_self,
-                shared_node.config().global.creation_timeout,
-            );
         }
-
-        new_self
     }
 
     /// Returns a [`PortFactorySubscriber`] to create a new

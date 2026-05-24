@@ -51,13 +51,16 @@ use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::*;
 use iceoryx2_log::fail;
 use iceoryx2_log::fatal_panic;
+use iceoryx2_log::warn;
 
 use crate::config::IO_TICK_TIME;
 use crate::identifiers::UniqueServiceId;
+use crate::node::NodeState;
 use crate::node::SharedNode;
 use crate::prelude::AttributeSpecifier;
 use crate::prelude::AttributeVerifier;
 use crate::service;
+use crate::service::__internal_details;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::RegisterNodeResult;
@@ -449,6 +452,34 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         mut open_service_resource: F2,
     ) -> Result<service::ServiceState<ServiceType, R>, ErrorType> {
         let origin = format!("{self:?}");
+        let config = self.shared_node.config();
+
+        if config.global.service.cleanup_dead_nodes_on_open {
+            match __internal_details::<ServiceType>(config, self.service_config.service_hash()) {
+                Ok(Some(service)) => {
+                    if let Some(dynamic_details) = service.dynamic_details {
+                        for node in dynamic_details.nodes {
+                            let node_id = *node.node_id();
+                            if let NodeState::Dead(node) = node {
+                                if let Err(e) = node
+                                    .blocking_remove_stale_resources(config.global.creation_timeout)
+                                {
+                                    warn!(from origin,
+                                        "Detected dead node ({}) in service {} but failed to cleanup the resources. This might cause problems when stale port resources block the creation of new ones. [{e:?}]", node_id, self.service_config.service_hash())
+                                }
+                            }
+                        }
+                    }
+                }
+                Ok(None) => (),
+                Err(e) => {
+                    warn!(from origin,
+                        "Failed to check if the service {} contains dead nodes. [{e:?}]",
+                        self.service_config.service_hash())
+                }
+            };
+        }
+
         let mut adaptive_wait = fail!(from origin,
               when AdaptiveWaitBuilder::new().strategy(iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitStrategy::FixedTicks(IO_TICK_TIME)).create(),
               with ServiceOpenError::InternalFailure.into(),

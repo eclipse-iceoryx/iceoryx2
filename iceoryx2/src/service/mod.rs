@@ -376,6 +376,10 @@ impl core::error::Error for ServiceRemoveError {}
 /// Failure that can be reported when the [`ServiceDetails`] are acquired with [`Service::details()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ServiceDetailsError {
+    /// An interrupt signal was raised.
+    Interrupt,
+    /// The process does not have the permissions to acquire the service details
+    InsufficientPermissions,
     /// The underlying static [`Service`] information could not be opened.
     FailedToOpenStaticServiceInfo,
     /// The underlying static [`Service`] information could not be read.
@@ -1171,18 +1175,38 @@ fn read_static_service_config<S: Service>(
         Ok(reader) => reader,
         Err(StaticStorageOpenError::DoesNotExist)
         | Err(StaticStorageOpenError::InitializationNotYetFinalized) => return Ok(None),
+        Err(StaticStorageOpenError::Interrupt) => {
+            fail!(from origin,
+                  with ServiceDetailsError::Interrupt,
+                  "{} since an interrupt signal was raised while opening the static service info \"{}\" for reading.",
+                  msg, name);
+        }
+        Err(StaticStorageOpenError::InsufficientPermissions) => {
+            fail!(from origin,
+                with ServiceDetailsError::InsufficientPermissions,
+                "{} since the process does not have the permission to acquire the service details.", msg);
+        }
         Err(e) => {
-            fail!(from origin, with ServiceDetailsError::FailedToOpenStaticServiceInfo,
-                        "{} due to a failure while opening the static service info \"{}\" for reading ({:?})",
-                        msg, name, e);
+            fail!(from origin,
+                  with ServiceDetailsError::FailedToOpenStaticServiceInfo,
+                  "{} due to a failure while opening the static service info \"{}\" for reading ({:?})",
+                  msg, name, e);
         }
     };
 
     let mut content = CoreString::from_utf8(vec![b' '; reader.len() as usize]).unwrap();
-    if let Err(e) = reader.read(unsafe { content.as_mut_vec().as_mut_slice() }) {
-        fail!(from origin, with ServiceDetailsError::FailedToReadStaticServiceInfo,
-                "{} since the static service info \"{}\" could not be read ({:?}).",
-                msg, name, e );
+    match reader.read(unsafe { content.as_mut_vec().as_mut_slice() }) {
+        Ok(_) => (),
+        Err(StaticStorageReadError::Interrupt) => {
+            fail!(from origin, with ServiceDetailsError::Interrupt,
+                    "{} since an interrupt signal was raised while reading the static service info \"{}\".",
+                    msg, name);
+        }
+        Err(e) => {
+            fail!(from origin, with ServiceDetailsError::FailedToReadStaticServiceInfo,
+                    "{} since the static service info \"{}\" could not be read ({:?}).",
+                    msg, name, e );
+        }
     }
 
     let service_config =
