@@ -17,6 +17,10 @@
 
 namespace iox2 {
 enum class ServiceDetailsError : uint8_t {
+    /// An interrupt signal was raised.
+    Interrupt,
+    /// The process does not have the permissions to acquire the service details
+    InsufficientPermissions,
     /// The underlying static [`Service`] information could not be opened.
     FailedToOpenStaticServiceInfo,
     /// The underlying static [`Service`] information could not be read.

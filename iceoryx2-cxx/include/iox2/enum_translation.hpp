@@ -263,6 +263,10 @@ template <>
 constexpr auto from<int, iox2::ServiceDetailsError>(const int value) noexcept -> iox2::ServiceDetailsError {
     const auto error = static_cast<iox2_service_details_error_e>(value);
     switch (error) {
+    case iox2_service_details_error_e_INTERRUPT:
+        return iox2::ServiceDetailsError::Interrupt;
+    case iox2_service_details_error_e_INSUFFICIENT_PERMISSIONS:
+        return iox2::ServiceDetailsError::InsufficientPermissions;
     case iox2_service_details_error_e_FAILED_TO_OPEN_STATIC_SERVICE_INFO:
         return iox2::ServiceDetailsError::FailedToOpenStaticServiceInfo;
     case iox2_service_details_error_e_FAILED_TO_READ_STATIC_SERVICE_INFO:
@@ -287,6 +291,10 @@ constexpr auto
 from<iox2::ServiceDetailsError, iox2_service_details_error_e>(const iox2::ServiceDetailsError value) noexcept
     -> iox2_service_details_error_e {
     switch (value) {
+    case iox2::ServiceDetailsError::Interrupt:
+        return iox2_service_details_error_e_INTERRUPT;
+    case iox2::ServiceDetailsError::InsufficientPermissions:
+        return iox2_service_details_error_e_INSUFFICIENT_PERMISSIONS;
     case iox2::ServiceDetailsError::FailedToOpenStaticServiceInfo:
         return iox2_service_details_error_e_FAILED_TO_OPEN_STATIC_SERVICE_INFO;
     case iox2::ServiceDetailsError::FailedToReadStaticServiceInfo:
