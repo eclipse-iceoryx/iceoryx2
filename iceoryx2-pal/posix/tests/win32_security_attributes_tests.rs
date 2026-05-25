@@ -19,10 +19,9 @@ mod win32_security_attributes {
         },
         *,
     };
-    use windows_sys::Win32::Foundation::INVALID_HANDLE_VALUE;
 
     fn roundtrip(orig_mode: posix::mode_t) {
-        let attr = from_mode_to_security_attributes(INVALID_HANDLE_VALUE, orig_mode);
+        let attr = from_mode_to_security_attributes(orig_mode);
         let mode = from_security_attributes_to_mode(&attr);
 
         assert_eq!(orig_mode, mode);
