@@ -561,6 +561,7 @@ pub mod internal {
         let mut config = config.clone();
         config.global.node.cleanup_dead_nodes_on_creation = false;
         config.global.node.cleanup_dead_nodes_on_destruction = false;
+        config.global.service.cleanup_dead_nodes_on_open = false;
 
         let node = match NodeBuilder::new().config(&config).create::<S>() {
             Ok(node) => node,

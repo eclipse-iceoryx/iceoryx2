@@ -26,6 +26,7 @@
 * [#1660](https://github.com/eclipse-iceoryx/iceoryx2/issues/1660) Rework process alive detection to avoid false negatives to enable communication across docker containers
 * [#1670](https://github.com/eclipse-iceoryx/iceoryx2/issues/1670) Fix SIGBUS on cleanup with write-only shared memory with root
 * [#1675](https://github.com/eclipse-iceoryx/iceoryx2/issues/1675) Make 'NamedConcept::remove_cfg()' always fail when removal fails
+* [#1681](https://github.com/eclipse-iceoryx/iceoryx2/issues/1681) Deactivate 'cleanup_dead_nodes_on_open' for 'send_dead_node_signal'
 
 ### Refactoring
 
