@@ -25,3 +25,7 @@ pub unsafe fn stat(path: *const c_char, buf: *mut stat_t) -> int {
 pub unsafe fn umask(mask: mode_t) -> mode_t {
     unimplemented!("umask")
 }
+
+pub unsafe fn chmod(path: *const c_char, mode: mode_t) -> int {
+    unimplemented!("chmod")
+}

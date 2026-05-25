@@ -737,6 +737,10 @@ impl<
                             "{} since the dynamic config of a previous instance of the service still exists.",
                             msg);
                     }
+                    Err(DynamicStorageCreateError::InsufficientPermissions) => {
+                        fail!(from self, with RequestResponseCreateError::InsufficientPermissions,
+                              "{} since the dynamic config of a previous instance of the service cannot be removed.", msg);
+                    }
                     Err(e) => {
                         fail!(from self, with RequestResponseCreateError::InternalFailure,
                             "{} since the dynamic service segment could not be created ({:?}).",

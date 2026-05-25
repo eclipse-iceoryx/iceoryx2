@@ -981,13 +981,21 @@ impl File {
     /// Deletes a file. Returns true if the file existed and was removed and false if the
     /// file did not exist.
     pub fn remove(path: &FilePath) -> Result<bool, FileRemoveError> {
+        let origin = "File::remove()";
         let msg = "Unable to remove file";
+
+        if unsafe { posix::chmod(path.as_c_str(), Permission::ALL.as_mode()) } != 0 {
+            debug!(from origin,
+                "Failed to adjust permissions of file \"{}\" as preparation for removal. [{:?}]",
+                path, Errno::get());
+        }
+
         if unsafe { posix::remove(path.as_c_str()) } >= 0 {
-            trace!(from "File::remove", "\"{}\"", path);
+            trace!(from origin, "\"{}\"", path);
             return Ok(true);
         }
 
-        handle_errno!(FileRemoveError, from "File::remove",
+        handle_errno!(FileRemoveError, from origin,
             success Errno::ENOENT => false,
             Errno::EACCES => (InsufficientPermissions, "{} \"{}\" due to insufficient permissions.", msg, path),
             Errno::EPERM => (InsufficientPermissions, "{} \"{}\" due to insufficient permissions.", msg, path),

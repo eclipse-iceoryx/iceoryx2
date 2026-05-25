@@ -29,7 +29,7 @@ use alloc::vec::Vec;
 use iceoryx2_bb_concurrency::atomic::AtomicU64;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
-use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
+use iceoryx2_bb_posix::adaptive_wait::{AdaptiveWaitBuilder, AdaptiveWaitStrategy};
 use iceoryx2_bb_posix::directory::*;
 use iceoryx2_bb_posix::file::File;
 use iceoryx2_bb_posix::file::FileAccessError;
@@ -47,7 +47,6 @@ use iceoryx2_bb_posix::memory_mapping::MemoryMappingBuilder;
 use iceoryx2_bb_posix::shared_memory::*;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fail;
-use iceoryx2_log::warn;
 
 use crate::static_storage::file::NamedConceptConfiguration;
 use crate::static_storage::file::NamedConceptRemoveError;
@@ -183,7 +182,10 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
         let msg = "Failed to open file::DynamicStorage";
 
         let full_path = self.config.path_for(&self.storage_name);
-        let mut wait_for_read_write_access = fail!(from self, when AdaptiveWaitBuilder::new().create(),
+        let mut wait_for_read_write_access = fail!(from self,
+                                    when AdaptiveWaitBuilder::new()
+                                            .strategy(AdaptiveWaitStrategy::FixedTicks(Duration::from_millis(1)))
+                                            .create(),
                                     with DynamicStorageOpenError::InternalError,
                                     "{} since the AdaptiveWait could not be initialized.", msg);
 
@@ -577,30 +579,15 @@ impl<T: Send + Sync + Debug> NamedConceptMgmt for Storage<T> {
         let msg = "Unable to remove dynamic_storage::file::Storage";
         let origin = "dynamic_storage::file::Storage::remove_cfg()";
 
-        match Builder::<T>::new(name).config(cfg).open(AccessMode::Read) {
-            Ok(s) => {
-                s.acquire_ownership();
-                Ok(true)
-            }
-            Err(DynamicStorageOpenError::DoesNotExist) => Ok(false),
-            Err(e) => {
-                if e != DynamicStorageOpenError::InitializationNotYetFinalized {
-                    warn!(from origin,
-                    "Removing DynamicStorage in broken state ({:?}) will not call drop of the underlying data type {:?}.",
-                    e, core::any::type_name::<T>());
-                }
-
-                match File::remove(&full_path) {
-                    Ok(v) => Ok(v),
-                    Err(FileRemoveError::InsufficientPermissions) => {
-                        fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
+        match File::remove(&full_path) {
+            Ok(v) => Ok(v),
+            Err(FileRemoveError::InsufficientPermissions) => {
+                fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
                                      "{} \"{}\" due to insufficient permissions.", msg, name);
-                    }
-                    Err(v) => {
-                        fail!(from origin, with NamedConceptRemoveError::InternalError,
+            }
+            Err(v) => {
+                fail!(from origin, with NamedConceptRemoveError::InternalError,
                                     "{} \"{}\" due to an internal failure ({:?}).", msg, name, v);
-                    }
-                }
             }
         }
     }

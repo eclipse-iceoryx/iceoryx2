@@ -58,7 +58,7 @@ pub use crate::named_concept::*;
 pub use crate::static_storage::*;
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
-use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
+use iceoryx2_bb_posix::adaptive_wait::{AdaptiveWaitBuilder, AdaptiveWaitStrategy};
 use iceoryx2_bb_posix::{
     directory::*, file::*, file_descriptor::FileDescriptorManagement, file_type::FileType,
 };
@@ -223,35 +223,16 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
 
         let file_path = config.path_for(storage_name);
 
-        let mut file = match FileBuilder::new(&file_path).open_existing(AccessMode::Read) {
-            Ok(f) => f,
-            Err(FileOpenError::FileDoesNotExist) => return Ok(false),
-            Err(v) => {
-                fail!(from origin, with NamedConceptRemoveError::InternalError,
-                    "{} since the file could not be opened for permission adjustment ({:?}).", msg, v);
-            }
-        };
-
-        let set_permission_result = file.set_permission(Permission::ALL);
-
         match File::remove(&file_path) {
             Ok(v) => Ok(v),
-            Err(e) => {
-                if let Err(e) = set_permission_result {
-                    warn!(from origin,
-                          "Unable to adjust the files permission as preparation to remove the file ({e:?}).");
-                }
-                match e {
-                    FileRemoveError::InsufficientPermissions
-                    | FileRemoveError::PartOfReadOnlyFileSystem => {
-                        fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
+            Err(FileRemoveError::InsufficientPermissions)
+            | Err(FileRemoveError::PartOfReadOnlyFileSystem) => {
+                fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
                                 "{} due to insufficient permissions.", msg);
-                    }
-                    _ => {
-                        fail!(from origin, with NamedConceptRemoveError::InternalError,
+            }
+            Err(e) => {
+                fail!(from origin, with NamedConceptRemoveError::InternalError,
                                 "{} due to unknown failure ({:?}).", msg, e);
-                    }
-                }
             }
         }
     }
@@ -468,7 +449,9 @@ impl crate::static_storage::StaticStorageBuilder<Storage> for Builder {
             "{} due to a failure while opening the file.", msg);
 
         let mut wait_for_read_access = fail!(from self,
-            when AdaptiveWaitBuilder::new().create(),
+            when AdaptiveWaitBuilder::new()
+                    .strategy(AdaptiveWaitStrategy::FixedTicks(Duration::from_millis(1)))
+                    .create(),
             with StaticStorageOpenError::InternalError,
             "{} since the AdaptiveWait could not be initialized.", msg);
 

@@ -656,6 +656,10 @@ impl<
                         fail!(from self, with BlackboardCreateError::ServiceInCorruptedState,
                             "{} since the dynamic config of a previous instance of the service still exists.", msg);
                     }
+                    Err(DynamicStorageCreateError::InsufficientPermissions) => {
+                        fail!(from self, with BlackboardCreateError::InsufficientPermissions,
+                              "{} since the dynamic config of a previous instance of the service cannot be removed.", msg);
+                    }
                     Err(e) => {
                         fail!(from self, with BlackboardCreateError::InternalFailure,
                             "{} since the dynamic service segment could not be created ({:?}).", msg, e);

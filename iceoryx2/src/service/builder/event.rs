@@ -529,6 +529,10 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                         fail!(from self, with EventCreateError::ServiceInCorruptedState,
                             "{} since there exist an old dynamic config from a previous instance of the service.", msg);
                     }
+                    Err(DynamicStorageCreateError::InsufficientPermissions) => {
+                        fail!(from self, with EventCreateError::InsufficientPermissions,
+                              "{} since the dynamic config of a previous instance of the service cannot be removed.", msg);
+                    }
                     Err(e) => {
                         fail!(from self, with EventCreateError::InternalFailure,
                             "{} since the dynamic service segment could not be created ({:?}).", msg, e);

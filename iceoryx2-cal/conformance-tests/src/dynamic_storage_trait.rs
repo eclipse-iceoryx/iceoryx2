@@ -29,7 +29,6 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 use iceoryx2_cal::dynamic_storage::*;
 use iceoryx2_cal::named_concept::*;
 use iceoryx2_cal::testing::*;
-use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
 #[derive(Debug)]
 pub struct TestData {
@@ -418,6 +417,8 @@ pub mod dynamic_storage_trait {
         const ITERATIONS: usize = 100;
 
         for _ in 0..ITERATIONS {
+            use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
+
             let storage_name = generate_file_path().file_name();
             let config = generate_isolated_config::<Sut>();
             let _watchdog = Watchdog::new();
@@ -645,29 +646,6 @@ pub mod dynamic_storage_trait {
 
         assert_that!(state.number_of_living_instances(), eq 1);
         assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
-    }
-
-    #[conformance_test]
-    pub fn explicit_remove_of_persistent_storage_calls_drop<
-        Sut: DynamicStorage<TestData>,
-        WrongTypeSut: DynamicStorage<u64>,
-    >() {
-        let state = LifetimeTracker::start_tracking();
-
-        let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-
-        let sut = Sut::Builder::new(&storage_name)
-            .config(&config)
-            .create(TestData::new_with_lifetime_tracking(123))
-            .unwrap();
-        sut.release_ownership();
-        // it leaks a memory mapping here but this we want explicitly to test remove also
-        // for platforms that do not support persistent dynamic storage
-        core::mem::forget(sut);
-
-        assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
-        assert_that!(state.number_of_living_instances(), eq 0);
     }
 
     #[conformance_test]
