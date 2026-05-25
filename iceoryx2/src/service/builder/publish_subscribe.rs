@@ -167,7 +167,18 @@ impl From<PublishSubscribeOpenError> for ServiceOpenError {
                 ServiceOpenError::UnableToCreateServiceTag
             }
             PublishSubscribeOpenError::VersionMismatch => ServiceOpenError::VersionMismatch,
-            _ => ServiceOpenError::InternalFailure,
+            PublishSubscribeOpenError::Interrupt => ServiceOpenError::Interrupt,
+            PublishSubscribeOpenError::InternalFailure
+            | PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfNodes
+            | PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfPublishers
+            | PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfSubscribers
+            | PublishSubscribeOpenError::DoesNotSupportRequestedMinBufferSize
+            | PublishSubscribeOpenError::DoesNotSupportRequestedMinHistorySize
+            | PublishSubscribeOpenError::DoesNotSupportRequestedMinSubscriberBorrowedSamples
+            | PublishSubscribeOpenError::IncompatibleAttributes
+            | PublishSubscribeOpenError::IncompatibleOverflowBehavior => {
+                ServiceOpenError::InternalFailure
+            }
         }
     }
 }
@@ -252,7 +263,12 @@ impl From<PublishSubscribeCreateError> for ServiceCreateError {
             PublishSubscribeCreateError::UnableToCreateServiceTag => {
                 ServiceCreateError::UnableToCreateServiceTag
             }
-            _ => ServiceCreateError::InternalFailure,
+            PublishSubscribeCreateError::Interrupt => ServiceCreateError::Interrupt,
+            PublishSubscribeCreateError::InternalFailure
+            | PublishSubscribeCreateError::HangsInCreation
+            | PublishSubscribeCreateError::SubscriberBufferMustBeLargerThanHistorySize => {
+                ServiceCreateError::InternalFailure
+            }
         }
     }
 }

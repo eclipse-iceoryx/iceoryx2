@@ -34,11 +34,15 @@ use alloc::format;
 use alloc::string::String;
 use alloc::vec;
 
+use iceoryx2_bb_container::vector::StaticVec;
+use iceoryx2_bb_container::vector::Vector;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
+use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitError;
+use iceoryx2_bb_posix::clock::NanosleepError;
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
@@ -335,8 +339,8 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
 
     fn open_or_create<
         ErrorTypeOpen: Into<ServiceOpenError> + Copy,
-        ErrorTypeCreate: Into<ServiceCreateError> + Copy,
-        ErrorTypeOpenOrCreate: From<ErrorTypeOpen> + From<ErrorTypeCreate> + Debug,
+        ErrorTypeCreate: Into<ServiceCreateError> + From<ServiceCreateError> + Copy,
+        ErrorTypeOpenOrCreate: From<ErrorTypeOpen> + From<ErrorTypeCreate> + Debug + Copy + Clone,
         PortFactory,
         FOpen: FnMut(&AttributeVerifier) -> Result<PortFactory, ErrorTypeOpen>,
         FCreate: FnMut(&AttributeSpecifier) -> Result<PortFactory, ErrorTypeCreate>,
@@ -362,13 +366,27 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         let attribute_specifier = AttributeSpecifier(attributes.required_attributes().clone());
 
         let mut flux_counter = 0;
-        let mut last_errors = vec![];
+        let mut last_errors = StaticVec::<ErrorTypeOpenOrCreate, ERROR_TRACKING_LIMIT>::new();
+        let mut insert = |value: ErrorTypeOpenOrCreate| {
+            while last_errors.insert(0, value).is_err() {
+                last_errors.pop();
+            }
+        };
+
+        // this loop tries to open, or create the service. the basic logic is
+        // * first try to open it
+        // * if it does not exist, hangs in creation or is marked for destruction, try to create it
+        // * whenever a creation fails, we increment the flux counter
+        //
+        // If the flux_counter is greater than 1 we know that we had some ping-pongs between open
+        // and it did not exist and create where it no longer existed. This defines a system in
+        // flux where the service is repeatedly created and destroyed.
         loop {
             let mut try_create_service = true;
             match open_call(attributes) {
                 Ok(service) => return Ok(service),
                 Err(e) => {
-                    last_errors.insert(0, Into::<ErrorTypeOpenOrCreate>::into(e));
+                    insert(Into::<ErrorTypeOpenOrCreate>::into(e));
                     match e.into() {
                         ServiceOpenError::DoesNotExist => (),
                         ServiceOpenError::HangsInCreation
@@ -395,7 +413,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 match create_call(&attribute_specifier) {
                     Ok(service) => return Ok(service),
                     Err(e) => {
-                        last_errors.insert(0, Into::<ErrorTypeOpenOrCreate>::into(e));
+                        insert(Into::<ErrorTypeOpenOrCreate>::into(e));
                         match e.into() {
                             ServiceCreateError::AlreadyExists
                             | ServiceCreateError::IsBeingCreatedByAnotherInstance => (),
@@ -427,14 +445,20 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 }
             }
 
-            while last_errors.len() > ERROR_TRACKING_LIMIT {
-                last_errors.pop();
+            match adaptive_wait.wait() {
+                Ok(_) => (),
+                Err(AdaptiveWaitError::NanosleepError(NanosleepError::InterruptedBySignal(
+                    signal,
+                ))) => {
+                    fail!(from self, with
+                       Into::<ErrorTypeOpenOrCreate>::into(Into::<ErrorTypeCreate>::into(ServiceCreateError::Interrupt)),
+                        "{msg} since the adaptive wait was interrupted by the signal {signal:?}.");
+                }
+                Err(e) => {
+                    fail!(from self, with internal_error_type,
+                        "{msg} since the adaptive wait failed. [{e:?}]");
+                }
             }
-
-            fail!(from self,
-                  when adaptive_wait.wait(),
-                  with internal_error_type,
-                  "{msg} since the adaptive wait failed.");
         }
     }
 

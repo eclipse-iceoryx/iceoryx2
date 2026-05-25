@@ -629,10 +629,20 @@ impl<Service: service::Service> DeadNodeView<Service> {
                     debug!(from self,
                         "{msg} since the dead node was using a different iceoryx2 version.");
                 }
-                Err(e) => {
+                Err(ServiceRemoveNodeError::Interrupt) => {
+                    cleanup_failure = Err(NodeCleanupFailure::Interrupt);
+                    debug!(from self,
+                        "{msg} since an interrupt signal was raised while removing the node from the service.");
+                }
+                Err(ServiceRemoveNodeError::InsufficientPermissions) => {
+                    cleanup_failure = Err(NodeCleanupFailure::InsufficientPermissions);
+                    debug!(from self,
+                        "{msg} since an interrupt signal was raised while removing the node from the service.");
+                }
+                Err(ServiceRemoveNodeError::InternalError) => {
                     cleanup_failure = Err(NodeCleanupFailure::InternalError);
                     debug!(from self,
-                        "{msg} due to an internal error while removing the node from the service ({:?}).", e);
+                        "{msg} since an internal failure occurred while removing the node from the service.");
                 }
             }
             CallbackProgression::Continue
