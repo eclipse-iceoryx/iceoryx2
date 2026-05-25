@@ -29,6 +29,7 @@
 * [#1670](https://github.com/eclipse-iceoryx/iceoryx2/issues/1670) Fix SIGBUS on cleanup with write-only shared memory with root
 * [#1673](https://github.com/eclipse-iceoryx/iceoryx2/issues/1673) thread-stack-size is the same as process-stack-size on all platforms.
 * [#1675](https://github.com/eclipse-iceoryx/iceoryx2/issues/1675) explicit remove in `NamedConcept::remove_cfg`.
+* [#1681](https://github.com/eclipse-iceoryx/iceoryx2/issues/1681) Deactivate 'cleanup_dead_nodes_on_open' for 'send_dead_node_signal'
 
 ### Refactoring
 
