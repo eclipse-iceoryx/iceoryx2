@@ -72,7 +72,7 @@ pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) 
         OPEN_EXISTING
     };
 
-    let security_attributes = from_mode_to_security_attributes(INVALID_HANDLE_VALUE, mode);
+    let security_attributes = from_mode_to_security_attributes(mode);
     unsafe {
         let (handle, _) = win32call! {CreateFileA(
             pathname as *const u8,
@@ -365,7 +365,7 @@ pub unsafe fn fchmod(fd: int, mode: mode_t) -> int {
         }
     };
 
-    let security_attributes = from_mode_to_security_attributes(handle, mode);
+    let security_attributes = from_mode_to_security_attributes(mode);
     unsafe {
         let (has_file_security_set, _) = win32call!(SetFileSecurityA(
             file_path.as_ptr(),
@@ -373,7 +373,6 @@ pub unsafe fn fchmod(fd: int, mode: mode_t) -> int {
             security_attributes.lpSecurityDescriptor
         ));
         if has_file_security_set == FALSE {
-            Errno::set(Errno::EPERM);
             return -1;
         }
 
