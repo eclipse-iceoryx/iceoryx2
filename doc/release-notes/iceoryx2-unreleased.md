@@ -30,6 +30,7 @@
 * [#1673](https://github.com/eclipse-iceoryx/iceoryx2/issues/1673) thread-stack-size is the same as process-stack-size on all platforms.
 * [#1675](https://github.com/eclipse-iceoryx/iceoryx2/issues/1675) explicit remove in `NamedConcept::remove_cfg`.
 * [#1681](https://github.com/eclipse-iceoryx/iceoryx2/issues/1681) Deactivate 'cleanup_dead_nodes_on_open' for 'send_dead_node_signal'
+* [#1682](https://github.com/eclipse-iceoryx/iceoryx2/issues/1682) Use 'AdaptiveWait' with 'FixedTicks' when the filesystem is accessed
 
 ### Refactoring
 

@@ -166,7 +166,7 @@ use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
-use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
+use iceoryx2_bb_posix::adaptive_wait::{AdaptiveWaitBuilder, AdaptiveWaitStrategy};
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::clock::{NanosleepError, nanosleep};
 use iceoryx2_bb_posix::mutex::Handle;
@@ -541,7 +541,9 @@ impl<Service: service::Service> DeadNodeView<Service> {
     ) -> Result<(), NodeCleanupFailure> {
         let msg = "Unable to block until the stale resources of the dead node are removed";
         let mut adaptive_wait = fail!(from self,
-                                        when AdaptiveWaitBuilder::new().create(),
+                                        when AdaptiveWaitBuilder::new()
+                                                .strategy(AdaptiveWaitStrategy::FixedTicks(Duration::from_millis(1)))
+                                                .create(),
                                         with NodeCleanupFailure::InternalError,
                                        "{msg} since the adaptive wait builder could not be initiated.");
         let start = fail!(from self,
