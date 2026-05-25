@@ -24,7 +24,7 @@ use crate::{
 pub(crate) fn static_config_name(service_hash: &ServiceHash) -> FileName {
     let msg =
         "The system does not support the required file name length for the dynamic config name.";
-    let origin = "dynamic_config_name()";
+    let origin = "static_config_name()";
     fatal_panic!(from origin,
                  when FileName::new(service_hash.as_str().as_bytes()),
                  "{}", msg)
