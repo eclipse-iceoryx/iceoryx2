@@ -985,27 +985,19 @@ impl File {
         let origin = "File::remove()";
         let msg = "Unable to remove file";
 
-        if unsafe { posix::chmod(path.as_c_str(), Permission::ALL.as_mode()) } == 0 {
-            if unsafe { posix::remove(path.as_c_str()) } >= 0 {
-                trace!(from "File::remove", "\"{}\"", path);
-                return Ok(true);
-            }
+        if unsafe { posix::chmod(path.as_c_str(), Permission::ALL.as_mode()) } != 0 {
+            debug!(from origin,
+                "Failed to adjust permissions of file \"{}\" as preparation for removal. [{:?}]",
+                path, Errno::get());
+        }
 
-            handle_errno!(FileRemoveError, from origin,
-                success Errno::ENOENT => false,
-                Errno::EACCES => (InsufficientPermissions, "{} \"{}\" due to insufficient permissions.", msg, path),
-                Errno::EPERM => (InsufficientPermissions, "{} \"{}\" due to insufficient permissions.", msg, path),
-                Errno::EBUSY => (CurrentlyInUse, "{} \"{}\" since it is currently in use.", msg, path),
-                Errno::ELOOP => (LoopInSymbolicLinks, "{} \"{}\" since a loop exists in the symbolic links.", msg, path),
-                Errno::ENAMETOOLONG => (MaxSupportedPathLengthExceeded, "{} \"{}\" since it is longer than the maximum path name length.", msg, path),
-                Errno::EROFS => (PartOfReadOnlyFileSystem, "{} \"{}\" since it is part of a read-only filesystem.", msg, path),
-                v => (UnknownError(v as i32), "{} \"{}\" since an unkown error occurred ({}).", msg, path, v)
-            );
+        if unsafe { posix::remove(path.as_c_str()) } >= 0 {
+            trace!(from origin, "\"{}\"", path);
+            return Ok(true);
         }
 
         handle_errno!(FileRemoveError, from origin,
             success Errno::ENOENT => false,
-            Errno::EINTR => (Interrupt, "{} \"{}\" since an interrupt signal was raised.", msg, path),
             Errno::EACCES => (InsufficientPermissions, "{} \"{}\" due to insufficient permissions.", msg, path),
             Errno::EPERM => (InsufficientPermissions, "{} \"{}\" due to insufficient permissions.", msg, path),
             Errno::EBUSY => (CurrentlyInUse, "{} \"{}\" since it is currently in use.", msg, path),
