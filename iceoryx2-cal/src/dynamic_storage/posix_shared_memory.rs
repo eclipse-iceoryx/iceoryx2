@@ -237,6 +237,19 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
                                     "{} since the adaptive wait call failed.", msg);
         };
 
+        let permissions = match shm.permission() {
+            Ok(p) => p,
+            Err(e) => {
+                fail!(from self, with DynamicStorageOpenError::InternalError, "{} since a failure occurred while acquiring the file permissions. Error: {:?}", msg, e);
+            }
+        };
+        // NOTE: although the shm is opened for reading, root can still open a write-only shm;
+        // when this happens, the subsequent read will cause a SIGBUS
+        if !permissions.has(Permission::OWNER_READ) {
+            fail!(from self, with DynamicStorageOpenError::InitializationNotYetFinalized,
+                  "{} since it is not readable.",msg);
+        }
+
         let init_state = shm.base_address().as_ptr() as *const Data<T>;
 
         loop {
