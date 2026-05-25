@@ -255,6 +255,11 @@ macro_rules! assert_that {
             }
         }
     };
+    (shall_never_be_reached) => {
+        {
+            assert_that![shall_never_be_reached_msg];
+        }
+    };
     [color_start] => {
         {
             if $crate::is_terminal() {
@@ -272,6 +277,13 @@ macro_rules! assert_that {
                 ""
             }
         }
+    };
+    [shall_never_be_reached_msg] => {
+        core::panic!(
+            "assertion failed: {}a branch was reached that should be unreachable{}",
+                     assert_that![color_start],
+                     assert_that![color_end]
+        );
     };
     [message_any_of $lhs:expr, $rhs:expr] => {
         core::panic!(

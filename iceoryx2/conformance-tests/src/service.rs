@@ -64,6 +64,7 @@ pub mod service {
             attributes: &AttributeVerifier,
         ) -> Result<Self::Factory, Self::OpenError>;
         fn messaging_pattern() -> MessagingPattern;
+        fn set_max_number_of_nodes(&mut self, value: usize);
 
         fn assert_create_error(error: Self::CreateError);
         fn assert_open_error(error: Self::OpenError);
@@ -71,6 +72,7 @@ pub mod service {
     }
 
     pub struct PubSubTests<Sut: Service> {
+        pub number_of_nodes: usize,
         _data: PhantomData<Sut>,
     }
 
@@ -78,6 +80,7 @@ pub mod service {
     unsafe impl<Sut: Service> Sync for PubSubTests<Sut> {}
 
     pub struct EventTests<Sut: Service> {
+        pub number_of_nodes: usize,
         _data: PhantomData<Sut>,
     }
 
@@ -85,6 +88,7 @@ pub mod service {
     unsafe impl<Sut: Service> Sync for EventTests<Sut> {}
 
     pub struct RequestResponseTests<Sut: Service> {
+        pub number_of_nodes: usize,
         _data: PhantomData<Sut>,
     }
 
@@ -92,6 +96,7 @@ pub mod service {
     unsafe impl<Sut: Service> Sync for RequestResponseTests<Sut> {}
 
     pub struct BlackboardTests<Sut: Service> {
+        pub number_of_nodes: usize,
         _data: PhantomData<Sut>,
     }
 
@@ -104,7 +109,14 @@ pub mod service {
         type OpenError = PublishSubscribeOpenError;
 
         fn new() -> Self {
-            Self { _data: PhantomData }
+            Self {
+                number_of_nodes: (SystemInfo::NumberOfCpuCores.value()).clamp(128, 1024),
+                _data: PhantomData,
+            }
+        }
+
+        fn set_max_number_of_nodes(&mut self, value: usize) {
+            self.number_of_nodes = value;
         }
 
         fn open(
@@ -124,10 +136,9 @@ pub mod service {
             service_name: &ServiceName,
             attributes: &AttributeSpecifier,
         ) -> Result<Self::Factory, Self::CreateError> {
-            let number_of_nodes = (SystemInfo::NumberOfCpuCores.value()).clamp(128, 1024);
             node.service_builder(service_name)
                 .publish_subscribe::<u64>()
-                .max_nodes(number_of_nodes)
+                .max_nodes(self.number_of_nodes)
                 .create_with_attributes(attributes)
         }
 
@@ -170,7 +181,10 @@ pub mod service {
         type OpenError = EventOpenError;
 
         fn new() -> Self {
-            Self { _data: PhantomData }
+            Self {
+                number_of_nodes: (SystemInfo::NumberOfCpuCores.value()).clamp(128, 1024),
+                _data: PhantomData,
+            }
         }
 
         fn open(
@@ -184,16 +198,19 @@ pub mod service {
                 .open_with_attributes(attributes)
         }
 
+        fn set_max_number_of_nodes(&mut self, value: usize) {
+            self.number_of_nodes = value;
+        }
+
         fn create(
             &self,
             node: &Node<Sut>,
             service_name: &ServiceName,
             attributes: &AttributeSpecifier,
         ) -> Result<Self::Factory, Self::CreateError> {
-            let number_of_nodes = (SystemInfo::NumberOfCpuCores.value()).clamp(128, 1024);
             node.service_builder(service_name)
                 .event()
-                .max_nodes(number_of_nodes)
+                .max_nodes(self.number_of_nodes)
                 .create_with_attributes(attributes)
         }
 
@@ -235,7 +252,10 @@ pub mod service {
         type OpenError = RequestResponseOpenError;
 
         fn new() -> Self {
-            Self { _data: PhantomData }
+            Self {
+                number_of_nodes: (SystemInfo::NumberOfCpuCores.value()).clamp(128, 1024),
+                _data: PhantomData,
+            }
         }
 
         fn open(
@@ -255,11 +275,14 @@ pub mod service {
             service_name: &ServiceName,
             attributes: &AttributeSpecifier,
         ) -> Result<Self::Factory, Self::CreateError> {
-            let number_of_nodes = (SystemInfo::NumberOfCpuCores.value()).clamp(128, 1024);
             node.service_builder(service_name)
                 .request_response::<u64, u64>()
-                .max_nodes(number_of_nodes)
+                .max_nodes(self.number_of_nodes)
                 .create_with_attributes(attributes)
+        }
+
+        fn set_max_number_of_nodes(&mut self, value: usize) {
+            self.number_of_nodes = value;
         }
 
         fn assert_attribute_error(error: Self::OpenError) {
@@ -301,7 +324,10 @@ pub mod service {
         type OpenError = BlackboardOpenError;
 
         fn new() -> Self {
-            Self { _data: PhantomData }
+            Self {
+                number_of_nodes: (SystemInfo::NumberOfCpuCores.value()).clamp(128, 1024),
+                _data: PhantomData,
+            }
         }
 
         fn open(
@@ -321,12 +347,15 @@ pub mod service {
             service_name: &ServiceName,
             attributes: &AttributeSpecifier,
         ) -> Result<Self::Factory, Self::CreateError> {
-            let number_of_nodes = (SystemInfo::NumberOfCpuCores.value()).clamp(128, 1024);
             node.service_builder(service_name)
                 .blackboard_creator::<u64>()
-                .max_nodes(number_of_nodes)
+                .max_nodes(self.number_of_nodes)
                 .add::<u32>(0, 0)
                 .create_with_attributes(attributes)
+        }
+
+        fn set_max_number_of_nodes(&mut self, value: usize) {
+            self.number_of_nodes = value;
         }
 
         fn assert_attribute_error(error: Self::OpenError) {
@@ -1271,5 +1300,111 @@ pub mod service {
 
         let open_sut = test.open(&node, &service_name, &AttributeVerifier::new());
         assert_that!(open_sut, is_ok);
+    }
+
+    #[conformance_test]
+    pub fn dead_nodes_are_cleaned_up_when_cleanup_on_open_is_active<
+        Sut: Service,
+        Factory: SutFactory<Sut>,
+    >() {
+        let test = Factory::new();
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+        config.global.node.cleanup_dead_nodes_on_destruction = false;
+        config.global.service.cleanup_dead_nodes_on_open = true;
+
+        let dead_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node_ids = vec![*node_1.id(), *node_2.id()];
+
+        let dead_service = test
+            .create(&dead_node, &service_name, &AttributeSpecifier::new())
+            .unwrap();
+        let _service_1 = test
+            .open(&node_1, &service_name, &AttributeVerifier::new())
+            .unwrap();
+
+        dead_service.abandon();
+        dead_node.abandon();
+
+        let service_2 = test
+            .open(&node_2, &service_name, &AttributeVerifier::new())
+            .unwrap();
+
+        let mut counter = 0;
+        service_2
+            .nodes(|node_state| {
+                counter += 1;
+                if let NodeState::Alive(node_state) = node_state {
+                    assert_that!(node_ids, contains * node_state.id());
+                } else {
+                    assert_that!(shall_never_be_reached);
+                }
+                CallbackProgression::Continue
+            })
+            .unwrap();
+
+        assert_that!(counter, eq 2);
+    }
+
+    #[conformance_test]
+    pub fn dead_nodes_are_cleaned_up_before_opening_the_service<
+        Sut: Service,
+        Factory: SutFactory<Sut>,
+    >() {
+        let mut test = Factory::new();
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+        config.global.node.cleanup_dead_nodes_on_destruction = false;
+        config.global.service.cleanup_dead_nodes_on_open = true;
+        test.set_max_number_of_nodes(2);
+
+        let dead_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let dead_service = test
+            .create(&dead_node, &service_name, &AttributeSpecifier::new())
+            .unwrap();
+        let _service_1 = test
+            .open(&node_1, &service_name, &AttributeVerifier::new())
+            .unwrap();
+
+        dead_service.abandon();
+        dead_node.abandon();
+
+        let service_2 = test.open(&node_2, &service_name, &AttributeVerifier::new());
+        assert_that!(service_2, is_ok);
+    }
+
+    #[conformance_test]
+    pub fn no_cleanup_when_on_open_cleanup_is_disabled<Sut: Service, Factory: SutFactory<Sut>>() {
+        let mut test = Factory::new();
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+        config.global.node.cleanup_dead_nodes_on_destruction = false;
+        config.global.service.cleanup_dead_nodes_on_open = false;
+        test.set_max_number_of_nodes(2);
+
+        let dead_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let dead_service = test
+            .create(&dead_node, &service_name, &AttributeSpecifier::new())
+            .unwrap();
+        let _service_1 = test
+            .open(&node_1, &service_name, &AttributeVerifier::new())
+            .unwrap();
+
+        dead_service.abandon();
+        dead_node.abandon();
+
+        let service_2 = test.open(&node_2, &service_name, &AttributeVerifier::new());
+        assert_that!(service_2, is_err);
     }
 }
