@@ -29,7 +29,7 @@ use alloc::vec::Vec;
 use iceoryx2_bb_concurrency::atomic::AtomicU64;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
-use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
+use iceoryx2_bb_posix::adaptive_wait::{AdaptiveWaitBuilder, AdaptiveWaitStrategy};
 use iceoryx2_bb_posix::directory::*;
 use iceoryx2_bb_posix::file::File;
 use iceoryx2_bb_posix::file::FileAccessError;
@@ -182,7 +182,10 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
         let msg = "Failed to open file::DynamicStorage";
 
         let full_path = self.config.path_for(&self.storage_name);
-        let mut wait_for_read_write_access = fail!(from self, when AdaptiveWaitBuilder::new().create(),
+        let mut wait_for_read_write_access = fail!(from self,
+                                    when AdaptiveWaitBuilder::new()
+                                            .strategy(AdaptiveWaitStrategy::FixedTicks(Duration::from_millis(1)))
+                                            .create(),
                                     with DynamicStorageOpenError::InternalError,
                                     "{} since the AdaptiveWait could not be initialized.", msg);
 
