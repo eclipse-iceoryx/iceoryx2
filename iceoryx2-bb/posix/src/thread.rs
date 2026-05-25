@@ -136,6 +136,7 @@ use iceoryx2_pal_posix::posix::CPU_SETSIZE;
 use iceoryx2_pal_posix::posix::{MemZeroedStruct, errno::Errno};
 use iceoryx2_pal_posix::*;
 
+use crate::system_configuration::ProcessResourceLimit;
 use crate::{
     config::MAX_THREAD_NAME_LENGTH,
     scheduler::Scheduler,
@@ -275,7 +276,7 @@ pub struct ThreadBuilder {
     inherit_scheduling_attributes: bool,
     scheduler: Scheduler,
     priority: u8,
-    stack_size: Option<u64>,
+    stack_size: u64,
     affinity: [bool; posix::CPU_SETSIZE],
     has_custom_affinity: bool,
     has_invalid_affinity: bool,
@@ -292,7 +293,7 @@ impl Default for ThreadBuilder {
             affinity: [true; posix::CPU_SETSIZE],
             has_custom_affinity: false,
             has_invalid_affinity: false,
-            stack_size: None,
+            stack_size: ProcessResourceLimit::MaxStackSize.soft_limit(),
             name: ThreadName::new(),
         }
     }
@@ -383,7 +384,7 @@ impl ThreadBuilder {
     /// With defining this value a thread with guarded stack is created. See
     /// [`ThreadGuardedStackBuilder`].
     pub fn stack_size(mut self, value: u64) -> ThreadGuardedStackBuilder {
-        self.stack_size = Some(value);
+        self.stack_size = value;
         ThreadGuardedStackBuilder { config: self }
     }
 
@@ -479,23 +480,21 @@ impl ThreadBuilder {
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg,v)
         );
 
-        if let Some(&stack_size) = self.stack_size.as_ref() {
-            let msg = "Failed to set the threads stack size";
-            let min_stack_size = Limit::MinStackSizeOfThread.value();
+        let msg = "Failed to set the threads stack size";
+        let min_stack_size = Limit::MinStackSizeOfThread.value();
 
-            if stack_size < min_stack_size {
-                fail!(from self, with ThreadSpawnError::StackSizeTooSmall,
+        if self.stack_size < min_stack_size {
+            fail!(from self, with ThreadSpawnError::StackSizeTooSmall,
                     "{} since the stack size is smaller than the minimum required stack size of {}.", msg, min_stack_size);
-            }
-
-            handle_errno!(ThreadSpawnError, from self,
-                errno_source unsafe { posix::pthread_attr_setstacksize(attributes.get_mut(), stack_size as usize)
-                                                .into() },
-                continue_on_success,
-                success Errno::ESUCCES => (),
-                v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg,v)
-            );
         }
+
+        handle_errno!(ThreadSpawnError, from self,
+            errno_source unsafe { posix::pthread_attr_setstacksize(attributes.get_mut(), self.stack_size as usize)
+                                            .into() },
+            continue_on_success,
+            success Errno::ESUCCES => (),
+            v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg,v)
+        );
 
         let mut cpuset = posix::cpu_set_t::new_zeroed();
         for i in 0..core::cmp::min(posix::CPU_SETSIZE, SystemInfo::NumberOfCpuCores.value()) {
@@ -611,7 +610,7 @@ impl ThreadGuardedStackBuilder {
 
     /// See: [`ThreadBuilder::stack_size()`]
     pub fn stack_size(mut self, value: u64) -> Self {
-        self.config.stack_size = Some(value);
+        self.config.stack_size = value;
         self
     }
 
@@ -931,6 +930,20 @@ impl ScopedThreadBuilder<'_> {
     /// Sets the [`Scheduler`] used by the thread.
     pub fn scheduler(mut self, value: Scheduler) -> Self {
         self.thread_builder = self.thread_builder.scheduler(value);
+        self
+    }
+
+    /// Defines the stack size of the thread. It must be greater or equal the minimum thread stack
+    /// size required by the system. One can acquire the minimum required thread stack size with:
+    /// ```
+    /// # extern crate iceoryx2_bb_loggers;
+    ///
+    /// use iceoryx2_bb_posix::system_configuration::*;
+    ///
+    /// let min_stack_size = Limit::MinStackSizeOfThread.value();
+    /// ```
+    pub fn stack_size(mut self, value: u64) -> Self {
+        self.thread_builder = self.thread_builder.stack_size(value).config;
         self
     }
 
