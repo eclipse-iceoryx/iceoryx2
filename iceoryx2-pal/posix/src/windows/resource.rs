@@ -14,10 +14,28 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
-use crate::posix::types::*;
+use windows_sys::Win32::System::Threading::GetCurrentThreadStackLimits;
+
+use crate::{
+    posix::{RLIMIT_STACK, types::*},
+    win32call,
+};
 
 pub unsafe fn getrlimit(resource: int, rlim: *mut rlimit) -> int {
-    0
+    match resource as u64 {
+        RLIMIT_STACK => {
+            let mut low = 0;
+            let mut high = 0;
+            unsafe {
+                win32call! {GetCurrentThreadStackLimits(&mut low, &mut high)}
+            };
+            let stack_size = high - low;
+            unsafe { (*rlim).rlim_cur = stack_size as _ };
+            unsafe { (*rlim).rlim_max = stack_size as _ };
+            0
+        }
+        _ => 0,
+    }
 }
 
 pub unsafe fn setrlimit(resource: int, rlim: *const rlimit) -> int {
