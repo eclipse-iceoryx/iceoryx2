@@ -69,12 +69,18 @@ pub enum iox2_pub_sub_open_or_create_error_e {
     O_INSUFFICIENT_PERMISSIONS,
     #[CStr = "service in corrupted state"]
     O_SERVICE_IN_CORRUPTED_STATE,
+    #[CStr = "unable to create service tag"]
+    O_UNABLE_TO_CREATE_SERVICE_TAG,
+    #[CStr = "version mismatch"]
+    O_VERSION_MISMATCH,
     #[CStr = "hangs in creation"]
     O_HANGS_IN_CREATION,
     #[CStr = "exceeds max number of nodes"]
     O_EXCEEDS_MAX_NUMBER_OF_NODES,
     #[CStr = "is marked for destruction"]
     O_IS_MARKED_FOR_DESTRUCTION,
+    #[CStr = "interrupt"]
+    O_INTERRUPT,
     #[CStr = "service in corrupted state"]
     C_SERVICE_IN_CORRUPTED_STATE,
     #[CStr = "subscriber buffer must be larger than history size"]
@@ -87,10 +93,14 @@ pub enum iox2_pub_sub_open_or_create_error_e {
     C_INTERNAL_FAILURE,
     #[CStr = "is being created by another instance"]
     C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE,
-    #[CStr = "old connection still active"]
-    C_OLD_CONNECTION_STILL_ACTIVE,
     #[CStr = "hangs in creation"]
     C_HANGS_IN_CREATION,
+    #[CStr = "unable to create service tag"]
+    C_UNABLE_TO_CREATE_SERVICE_TAG,
+    #[CStr = "the underlying static service config could not be created"]
+    C_SERVICE_CONFIG_COULD_NOT_BE_CREATED,
+    #[CStr = "interrupt"]
+    C_INTERRUPT,
     #[CStr = "same service is created and removed repeatedly"]
     SYSTEM_IN_FLUX,
 }
@@ -98,6 +108,7 @@ pub enum iox2_pub_sub_open_or_create_error_e {
 impl IntoCInt for PublishSubscribeOpenError {
     fn into_c_int(self) -> c_int {
         (match self {
+            PublishSubscribeOpenError::Interrupt => iox2_pub_sub_open_or_create_error_e::O_INTERRUPT,
             PublishSubscribeOpenError::DoesNotExist => iox2_pub_sub_open_or_create_error_e::O_DOES_NOT_EXIST,
          PublishSubscribeOpenError::InternalFailure => {
              iox2_pub_sub_open_or_create_error_e::O_INTERNAL_FAILURE
@@ -147,6 +158,12 @@ impl IntoCInt for PublishSubscribeOpenError {
          PublishSubscribeOpenError::IsMarkedForDestruction => {
              iox2_pub_sub_open_or_create_error_e::O_IS_MARKED_FOR_DESTRUCTION
          }
+         PublishSubscribeOpenError::UnableToCreateServiceTag => {
+             iox2_pub_sub_open_or_create_error_e::O_UNABLE_TO_CREATE_SERVICE_TAG
+         }
+         PublishSubscribeOpenError::VersionMismatch => {
+             iox2_pub_sub_open_or_create_error_e::O_VERSION_MISMATCH
+         }
         }) as c_int
     }
 }
@@ -154,6 +171,7 @@ impl IntoCInt for PublishSubscribeOpenError {
 impl IntoCInt for PublishSubscribeCreateError {
     fn into_c_int(self) -> c_int {
         (match self {
+            PublishSubscribeCreateError::Interrupt => iox2_pub_sub_open_or_create_error_e::C_INTERRUPT,
             PublishSubscribeCreateError::ServiceInCorruptedState => {
                 iox2_pub_sub_open_or_create_error_e::C_SERVICE_IN_CORRUPTED_STATE
             }
@@ -172,6 +190,12 @@ impl IntoCInt for PublishSubscribeCreateError {
             }
          PublishSubscribeCreateError::HangsInCreation => {
              iox2_pub_sub_open_or_create_error_e::C_HANGS_IN_CREATION
+         }
+         PublishSubscribeCreateError::UnableToCreateServiceTag => {
+             iox2_pub_sub_open_or_create_error_e::C_UNABLE_TO_CREATE_SERVICE_TAG
+         }
+         PublishSubscribeCreateError::ServiceConfigCouldNotBeCreated => {
+             iox2_pub_sub_open_or_create_error_e::C_SERVICE_CONFIG_COULD_NOT_BE_CREATED
          }
         }) as c_int
     }

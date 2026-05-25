@@ -23,7 +23,7 @@ auto main() -> int {
     set_log_level_from_env_or(LogLevel::Info);
     auto node = NodeBuilder().create<ServiceType::Ipc>().value();
 
-    auto subscriber = CustomSubscriber::create(node, ServiceName::create("My/Funk/ServiceName").value());
+    auto subscriber = CustomSubscriber::create(node, ServiceName::create("EventBasedCommService").value());
 
     auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();
 

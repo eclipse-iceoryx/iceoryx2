@@ -1295,7 +1295,6 @@ dependencies = [
  "iceoryx2-bb-posix",
  "iceoryx2-bb-print",
  "iceoryx2-bb-system-types",
- "iceoryx2-bb-testing",
  "iceoryx2-cal",
  "iceoryx2-log",
  "iceoryx2-pal-configuration",
@@ -1320,7 +1319,6 @@ dependencies = [
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
- "iceoryx2-bb-testing",
  "iceoryx2-log",
  "serde",
 ]
@@ -1340,7 +1338,9 @@ dependencies = [
 name = "iceoryx2-bb-elementary"
 version = "0.9.0"
 dependencies = [
+ "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-log",
  "iceoryx2-pal-concurrency-sync",
 ]
 
@@ -1405,7 +1405,6 @@ dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-print",
  "iceoryx2-bb-system-types",
- "iceoryx2-bb-testing",
  "iceoryx2-log",
  "iceoryx2-pal-configuration",
  "iceoryx2-pal-posix",
@@ -1472,7 +1471,6 @@ dependencies = [
  "iceoryx2-bb-memory",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
- "iceoryx2-bb-testing",
  "iceoryx2-log",
  "postcard",
  "serde",

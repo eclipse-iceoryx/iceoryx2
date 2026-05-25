@@ -12,10 +12,10 @@
 
 """Subscriber example."""
 
-import ctypes
 import sys
 
 import iceoryx2 as iox2
+from transmission_data import TransmissionData
 
 cycle_time = iox2.Duration.from_secs(1)
 iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
@@ -40,7 +40,7 @@ node = (
 # from here on it is the publish_subscribe publisher example
 service = (
     node.service_builder(iox2.ServiceName.new(service_name))
-    .publish_subscribe(ctypes.c_uint64)
+    .publish_subscribe(TransmissionData)
     .open_or_create()
 )
 

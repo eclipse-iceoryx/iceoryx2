@@ -582,49 +582,6 @@ pub mod dynamic_storage_trait {
     }
 
     #[conformance_test]
-    pub fn by_default_when_storage_is_removed_it_calls_drop<
-        Sut: DynamicStorage<TestData>,
-        WrongTypeSut: DynamicStorage<u64>,
-    >() {
-        let state = LifetimeTracker::start_tracking();
-
-        let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-
-        let sut = Sut::Builder::new(&storage_name)
-            .config(&config)
-            .create(TestData::new_with_lifetime_tracking(123))
-            .unwrap();
-
-        assert_that!(sut.has_ownership(), eq true);
-        drop(sut);
-
-        assert_that!(state.number_of_living_instances(), eq 0);
-    }
-
-    #[conformance_test]
-    pub fn when_drop_on_destruction_is_disabled_remove_does_not_call_drop<
-        Sut: DynamicStorage<TestData>,
-        WrongTypeSut: DynamicStorage<u64>,
-    >() {
-        let state = LifetimeTracker::start_tracking();
-
-        let storage_name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-
-        let sut = Sut::Builder::new(&storage_name)
-            .config(&config)
-            .call_drop_on_destruction(false)
-            .create(TestData::new_with_lifetime_tracking(123))
-            .unwrap();
-
-        assert_that!(sut.has_ownership(), eq true);
-        drop(sut);
-
-        assert_that!(state.number_of_living_instances(), eq 1);
-    }
-
-    #[conformance_test]
     pub fn when_storage_is_persistent_it_does_not_call_drop<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
@@ -648,7 +605,7 @@ pub mod dynamic_storage_trait {
     }
 
     #[conformance_test]
-    pub fn explicit_remove_of_persistent_storage_calls_drop<
+    pub fn explicit_remove_of_persistent_storage_does_not_call_drop<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -667,34 +624,7 @@ pub mod dynamic_storage_trait {
         core::mem::forget(sut);
 
         assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
-        assert_that!(state.number_of_living_instances(), eq 0);
-    }
-
-    #[conformance_test]
-    pub fn remove_storage_with_unfinished_initialization_does_call_drop<
-        Sut: DynamicStorage<TestData> + 'static,
-        WrongTypeSut: DynamicStorage<u64>,
-    >() {
-        let state = LifetimeTracker::start_tracking();
-        let config = generate_isolated_config::<Sut>();
-
-        if core::any::TypeId::of::<Sut>()
-            // skip process local test since the process locality ensures that an initializer
-            // never dies
-            != core::any::TypeId::of::<iceoryx2_cal::dynamic_storage::process_local::Storage<TestData>>(
-            )
-        {
-            let storage_name = generate_file_path().file_name();
-
-            let _ = Sut::Builder::new(&storage_name)
-                .has_ownership(false)
-                .config(&config)
-                .initializer(|_, _| false)
-                .create(TestData::new_with_lifetime_tracking(0));
-
-            assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(false));
-            assert_that!(state.number_of_living_instances(), eq 0);
-        }
+        assert_that!(state.number_of_living_instances(), eq 1);
     }
 
     #[conformance_test]

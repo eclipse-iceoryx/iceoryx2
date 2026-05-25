@@ -74,10 +74,8 @@ pub enum iox2_request_response_open_or_create_error_e {
     O_EXCEEDS_MAX_NUMBER_OF_NODES,
     #[CStr = "hangs in creation"]
     O_HANGS_IN_CREATION,
-    #[CStr = "incompatible request type"]
-    O_INCOMPATIBLE_REQUEST_TYPE,
-    #[CStr = "incompatible response type"]
-    O_INCOMPATIBLE_RESPONSE_TYPE,
+    #[CStr = "incompatible request or response type"]
+    O_INCOMPATIBLE_REQUEST_OR_RESPONSE_TYPE,
     #[CStr = "incompatible attributes"]
     O_INCOMPATIBLE_ATTRIBUTES,
     #[CStr = "incompatible messaging pattern"]
@@ -90,12 +88,18 @@ pub enum iox2_request_response_open_or_create_error_e {
     O_INCOMPATIBLE_BEHAVIOR_FOR_FIRE_AND_FORGET_REQUESTS,
     #[CStr = "insufficient permissions"]
     O_INSUFFICIENT_PERMISSIONS,
+    #[CStr = "unable to create service tag"]
+    O_UNABLE_TO_CREATE_SERVICE_TAG,
+    #[CStr = "version mismatch"]
+    O_VERSION_MISMATCH,
     #[CStr = "internal failure"]
     O_INTERNAL_FAILURE,
     #[CStr = "is marked for destruction"]
     O_IS_MARKED_FOR_DESTRUCTION,
     #[CStr = "service in corrupted state"]
     O_SERVICE_IN_CORRUPTED_STATE,
+    #[CStr = "interrupt"]
+    O_INTERRUPT,
     #[CStr = "already exists"]
     C_ALREADY_EXISTS,
     #[CStr = "internal failure"]
@@ -108,6 +112,12 @@ pub enum iox2_request_response_open_or_create_error_e {
     C_HANGS_IN_CREATION,
     #[CStr = "service in corrupted state"]
     C_SERVICE_IN_CORRUPTED_STATE,
+    #[CStr = "unable to create service tag"]
+    C_UNABLE_TO_CREATE_SERVICE_TAG,
+    #[CStr = "service config could not be created"]
+    C_SERVICE_CONFIG_COULD_NOT_BE_CREATED,
+    #[CStr = "interrupt"]
+    C_INTERRUPT,
     #[CStr = "system in flux"]
     SYSTEM_IN_FLUX,
 }
@@ -115,6 +125,7 @@ pub enum iox2_request_response_open_or_create_error_e {
 impl IntoCInt for RequestResponseOpenError {
     fn into_c_int(self) -> c_int {
         (match self {
+            RequestResponseOpenError::Interrupt => iox2_request_response_open_or_create_error_e::O_INTERRUPT,
             RequestResponseOpenError::DoesNotExist => iox2_request_response_open_or_create_error_e::O_DOES_NOT_EXIST,
             RequestResponseOpenError::DoesNotSupportRequestedAmountOfClientRequestLoans => iox2_request_response_open_or_create_error_e::O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_CLIENT_REQUEST_LOANS,
             RequestResponseOpenError::DoesNotSupportRequestedAmountOfActiveRequestsPerClient => iox2_request_response_open_or_create_error_e::O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_ACTIVE_REQUESTS_PER_CLIENT,
@@ -125,8 +136,7 @@ impl IntoCInt for RequestResponseOpenError {
             RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedResponsesPerPendingResponse => iox2_request_response_open_or_create_error_e::O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_BORROWED_RESPONSES_PER_PENDING_RESPONSE,
             RequestResponseOpenError::ExceedsMaxNumberOfNodes => iox2_request_response_open_or_create_error_e::O_EXCEEDS_MAX_NUMBER_OF_NODES,
             RequestResponseOpenError::HangsInCreation => iox2_request_response_open_or_create_error_e::O_HANGS_IN_CREATION,
-            RequestResponseOpenError::IncompatibleRequestType => iox2_request_response_open_or_create_error_e::O_INCOMPATIBLE_REQUEST_TYPE,
-            RequestResponseOpenError::IncompatibleResponseType => iox2_request_response_open_or_create_error_e::O_INCOMPATIBLE_RESPONSE_TYPE,
+            RequestResponseOpenError::IncompatibleRequestOrResponseType => iox2_request_response_open_or_create_error_e::O_INCOMPATIBLE_REQUEST_OR_RESPONSE_TYPE,
             RequestResponseOpenError::IncompatibleAttributes => iox2_request_response_open_or_create_error_e::O_INCOMPATIBLE_ATTRIBUTES,
             RequestResponseOpenError::IncompatibleMessagingPattern => iox2_request_response_open_or_create_error_e::O_INCOMPATIBLE_MESSAGING_PATTERN,
             RequestResponseOpenError::IncompatibleOverflowBehaviorForRequests => iox2_request_response_open_or_create_error_e::O_INCOMPATIBLE_OVERFLOW_BEHAVIOR_FOR_REQUESTS,
@@ -136,6 +146,8 @@ impl IntoCInt for RequestResponseOpenError {
             RequestResponseOpenError::InternalFailure => iox2_request_response_open_or_create_error_e::O_INTERNAL_FAILURE,
             RequestResponseOpenError::IsMarkedForDestruction => iox2_request_response_open_or_create_error_e::O_IS_MARKED_FOR_DESTRUCTION,
             RequestResponseOpenError::ServiceInCorruptedState => iox2_request_response_open_or_create_error_e::O_SERVICE_IN_CORRUPTED_STATE,
+            RequestResponseOpenError::UnableToCreateServiceTag => iox2_request_response_open_or_create_error_e::O_UNABLE_TO_CREATE_SERVICE_TAG,
+            RequestResponseOpenError::VersionMismatch => iox2_request_response_open_or_create_error_e::O_VERSION_MISMATCH
         }) as c_int
     }
 }
@@ -143,6 +155,9 @@ impl IntoCInt for RequestResponseOpenError {
 impl IntoCInt for RequestResponseCreateError {
     fn into_c_int(self) -> c_int {
         (match self {
+            RequestResponseCreateError::Interrupt => {
+                iox2_request_response_open_or_create_error_e::C_INTERRUPT
+            }
             RequestResponseCreateError::AlreadyExists => {
                 iox2_request_response_open_or_create_error_e::C_ALREADY_EXISTS
             }
@@ -160,6 +175,12 @@ impl IntoCInt for RequestResponseCreateError {
             }
             RequestResponseCreateError::ServiceInCorruptedState => {
                 iox2_request_response_open_or_create_error_e::C_SERVICE_IN_CORRUPTED_STATE
+            }
+            RequestResponseCreateError::ServiceConfigCouldNotBeCreated => {
+                iox2_request_response_open_or_create_error_e::C_SERVICE_CONFIG_COULD_NOT_BE_CREATED
+            }
+            RequestResponseCreateError::UnableToCreateServiceTag => {
+                iox2_request_response_open_or_create_error_e::C_UNABLE_TO_CREATE_SERVICE_TAG
             }
         }) as c_int
     }

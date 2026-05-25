@@ -72,6 +72,12 @@ pub enum iox2_blackboard_open_error_e {
     O_EXCEEDS_MAX_NUMBER_OF_NODES,
     #[CStr = "does not support requested amount of nodes"]
     O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES,
+    #[CStr = "unable to create service tag"]
+    O_UNABLE_TO_CREATE_SERVICE_TAG,
+    #[CStr = "version mismatch"]
+    O_VERSION_MISMATCH,
+    #[CStr = "interrupt"]
+    O_INTERRUPT,
 }
 
 #[repr(C)]
@@ -91,11 +97,18 @@ pub enum iox2_blackboard_create_error_e {
     C_HANGS_IN_CREATION,
     #[CStr = "no entries provided"]
     C_NO_ENTRIES_PROVIDED,
+    #[CStr = "unable to create service tag"]
+    C_UNABLE_TO_CREATE_SERVICE_TAG,
+    #[CStr = "service config could not be created"]
+    C_SERVICE_CONFIG_COULD_NOT_BE_CREATED,
+    #[CStr = "interrupt"]
+    C_INTERRUPT,
 }
 
 impl IntoCInt for BlackboardOpenError {
     fn into_c_int(self) -> c_int {
         (match self {
+            BlackboardOpenError::Interrupt => iox2_blackboard_open_error_e::O_INTERRUPT,
             BlackboardOpenError::DoesNotExist => iox2_blackboard_open_error_e::O_DOES_NOT_EXIST,
             BlackboardOpenError::ServiceInCorruptedState => {
                 iox2_blackboard_open_error_e::O_SERVICE_IN_CORRUPTED_STATE
@@ -130,6 +143,12 @@ impl IntoCInt for BlackboardOpenError {
             BlackboardOpenError::DoesNotSupportRequestedAmountOfNodes => {
                 iox2_blackboard_open_error_e::O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES
             }
+            BlackboardOpenError::UnableToCreateServiceTag => {
+                iox2_blackboard_open_error_e::O_UNABLE_TO_CREATE_SERVICE_TAG
+            }
+            BlackboardOpenError::VersionMismatch => {
+                iox2_blackboard_open_error_e::O_VERSION_MISMATCH
+            }
         }) as c_int
     }
 }
@@ -137,6 +156,7 @@ impl IntoCInt for BlackboardOpenError {
 impl IntoCInt for BlackboardCreateError {
     fn into_c_int(self) -> c_int {
         (match self {
+            BlackboardCreateError::Interrupt => iox2_blackboard_create_error_e::C_INTERRUPT,
             BlackboardCreateError::AlreadyExists => {
                 iox2_blackboard_create_error_e::C_ALREADY_EXISTS
             }
@@ -157,6 +177,12 @@ impl IntoCInt for BlackboardCreateError {
             }
             BlackboardCreateError::NoEntriesProvided => {
                 iox2_blackboard_create_error_e::C_NO_ENTRIES_PROVIDED
+            }
+            BlackboardCreateError::ServiceConfigCouldNotBeCreated => {
+                iox2_blackboard_create_error_e::C_SERVICE_CONFIG_COULD_NOT_BE_CREATED
+            }
+            BlackboardCreateError::UnableToCreateServiceTag => {
+                iox2_blackboard_create_error_e::C_UNABLE_TO_CREATE_SERVICE_TAG
             }
         }) as c_int
     }

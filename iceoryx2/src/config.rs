@@ -95,6 +95,8 @@ use iceoryx2_pal_configuration::ICEORYX2_ROOT_PATH;
 const DEFAULT_CONFIG_FILE_NAME: &[u8] = b"iceoryx2.toml";
 const RELATIVE_LOCAL_CONFIG_PATH: &[u8] = b"config";
 const RELATIVE_CONFIG_FILE_PATH: &[u8] = b"iceoryx2";
+// tick time that is used for IO operations
+pub(crate) const IO_TICK_TIME: Duration = Duration::from_millis(25);
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 enum ConfigIterationFailure {
@@ -235,10 +237,13 @@ impl Default for Global {
     fn default() -> Self {
         Self {
             root_path: Path::new(ICEORYX2_ROOT_PATH).unwrap(),
+            #[cfg(feature = "std")]
             prefix: FileName::new(b"iox2_").unwrap(),
+            #[cfg(not(feature = "std"))]
+            prefix: FileName::new(b"iox2_no_std").unwrap(),
             service: Service::default(),
             node: Node::default(),
-            creation_timeout: Duration::from_millis(500),
+            creation_timeout: Duration::from_secs(1),
         }
     }
 }

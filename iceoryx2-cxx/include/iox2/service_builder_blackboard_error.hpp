@@ -18,6 +18,8 @@
 namespace iox2 {
 /// Errors that can occur when an existing [`MessagingPattern::Blackboard`] [`Service`] shall be opened.
 enum class BlackboardOpenError : uint8_t {
+    /// An interrupt signal was raised.
+    Interrupt,
     /// The [`Service`] could not be opened since it does not exist.
     DoesNotExist,
     /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
@@ -45,10 +47,16 @@ enum class BlackboardOpenError : uint8_t {
     ExceedsMaxNumberOfNodes,
     /// The [`Service`] supports less [`Node`](crate::node::Node)s than requested.
     DoesNotSupportRequestedAmountOfNodes,
+    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    UnableToCreateServiceTag,
+    /// The iceoryx2 service version does not match the one of the [`Service`].
+    VersionMismatch,
 };
 
 /// Errors that can occur when a new [`MessagingPattern::Blackboard`] [`Service`] shall be created.
 enum class BlackboardCreateError : uint8_t {
+    /// An interrupt signal was raised.
+    Interrupt,
     /// The [`Service`] already exists.
     AlreadyExists,
     /// Multiple processes are trying to create the same [`Service`].
@@ -64,6 +72,10 @@ enum class BlackboardCreateError : uint8_t {
     HangsInCreation,
     /// No key-value pairs have been provided. At least one is required.
     NoEntriesProvided,
+    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    UnableToCreateServiceTag,
+    /// The [`Service`]s config could not be created and written to the static service configuration.
+    ServiceConfigCouldNotBeCreated,
 };
 } // namespace iox2
 

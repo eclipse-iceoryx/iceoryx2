@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
 
     let node = NodeBuilder::new().create::<ipc::Service>()?;
-    let publisher = CustomPublisher::new(&node, &"My/Funk/ServiceName".try_into()?)?;
+    let publisher = CustomPublisher::new(&node, &"EventBasedCommService".try_into()?)?;
 
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
 

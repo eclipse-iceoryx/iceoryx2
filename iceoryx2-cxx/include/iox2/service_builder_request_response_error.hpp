@@ -19,6 +19,8 @@ namespace iox2 {
 /// Errors that can occur when an existing [`MessagingPattern::RequestResponse`] [`Service`] shall
 /// be opened.
 enum class RequestResponseOpenError : uint8_t {
+    /// An interrupt signal was raised.
+    Interrupt,
     /// Service could not be openen since it does not exist
     DoesNotExist,
     /// The [`Service`] has a lower maximum amount of loaned
@@ -42,10 +44,9 @@ enum class RequestResponseOpenError : uint8_t {
     /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
     /// by a process that crashed during [`Service`] creation.
     HangsInCreation,
-    /// The [`Service`] has the wrong request payload type, request header type or type alignment.
-    IncompatibleRequestType,
-    /// The [`Service`] has the wrong response payload type, response header type or type alignment.
-    IncompatibleResponseType,
+    /// The [`Service`] has the wrong request or response payload type, request or response header
+    /// type or type alignment.
+    IncompatibleRequestOrResponseType,
     /// The [`AttributeVerifier`] required attributes that the [`Service`] does not satisfy.
     IncompatibleAttributes,
     /// The [`Service`] has the wrong messaging pattern.
@@ -66,10 +67,16 @@ enum class RequestResponseOpenError : uint8_t {
     IsMarkedForDestruction,
     /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
     ServiceInCorruptedState,
+    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    UnableToCreateServiceTag,
+    /// The iceoryx2 service version does not match the one of the [`Service`].
+    VersionMismatch,
 };
 
 /// Errors that can occur when a new [`MessagingPattern::RequestResponse`] [`Service`] shall be created.
 enum class RequestResponseCreateError : uint8_t {
+    /// An interrupt signal was raised.
+    Interrupt,
     /// The [`Service`] already exists.
     AlreadyExists,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
@@ -83,11 +90,17 @@ enum class RequestResponseCreateError : uint8_t {
     HangsInCreation,
     /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
     ServiceInCorruptedState,
+    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    UnableToCreateServiceTag,
+    /// The [`Service`]s config could not be created and written to the static service configuration.
+    ServiceConfigCouldNotBeCreated,
 };
 
 /// Errors that can occur when a [`MessagingPattern::RequestResponse`] [`Service`] shall be
 /// created or opened.
 enum class RequestResponseOpenOrCreateError : uint8_t {
+    /// An interrupt signal was raised.
+    OpenInterrupt,
     /// Service could not be openen since it does not exist
     OpenDoesNotExist,
     /// The [`Service`] has a lower maximum amount of loaned
@@ -111,10 +124,9 @@ enum class RequestResponseOpenOrCreateError : uint8_t {
     /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
     /// by a process that crashed during [`Service`] creation.
     OpenHangsInCreation,
-    /// The [`Service`] has the wrong request payload type, request header type or type alignment.
-    OpenIncompatibleRequestType,
-    /// The [`Service`] has the wrong response payload type, response header type or type alignment.
-    OpenIncompatibleResponseType,
+    /// The [`Service`] has the wrong request or response payload type, request or response header
+    /// type or type alignment.
+    OpenIncompatibleRequestOrResponseType,
     /// The [`AttributeVerifier`] required attributes that the [`Service`] does not satisfy.
     OpenIncompatibleAttributes,
     /// The [`Service`] has the wrong messaging pattern.
@@ -135,7 +147,13 @@ enum class RequestResponseOpenOrCreateError : uint8_t {
     OpenIsMarkedForDestruction,
     /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
     OpenServiceInCorruptedState,
+    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    OpenUnableToCreateServiceTag,
+    /// The iceoryx2 service version does not match the one of the [`Service`].
+    OpenVersionMismatch,
 
+    /// An interrupt signal was raised.
+    CreateInterrupt,
     /// The [`Service`] already exists.
     CreateAlreadyExists,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
@@ -149,6 +167,10 @@ enum class RequestResponseOpenOrCreateError : uint8_t {
     CreateHangsInCreation,
     /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
     CreateServiceInCorruptedState,
+    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    CreateUnableToCreateServiceTag,
+    /// The [`Service`]s config could not be created and written to the static service configuration.
+    CreateServiceConfigCouldNotBeCreated,
 
     /// Can occur when another process creates and removes the same [`Service`] repeatedly with a
     /// high frequency.

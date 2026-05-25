@@ -17,28 +17,28 @@ use alloc::format;
 
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::dynamic_storage::{DynamicStorageCreateError, DynamicStorageOpenError};
-use iceoryx2_cal::serialize::Serialize;
-use iceoryx2_cal::static_storage::{StaticStorage, StaticStorageCreateError, StaticStorageLocked};
 use iceoryx2_log::{fail, fatal_panic, warn};
 
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
-use crate::service::builder::OpenDynamicStorageFailure;
+use crate::service::builder::{DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError};
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::request_response::DynamicConfigSettings;
 use crate::service::port_factory::request_response;
+use crate::service::static_config::StaticConfig;
 use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
-use crate::service::{self, NoResource, header, static_config};
+use crate::service::{NoResource, header, static_config};
 use crate::service::{Service, builder, dynamic_config};
 
 use super::message_type_details::{MessageTypeDetails, TypeVariant};
-use super::{CustomHeaderMarker, CustomPayloadMarker, RETRY_LIMIT, ServiceState};
+use super::{CustomHeaderMarker, CustomPayloadMarker, ServiceState};
 
 /// Errors that can occur when an existing [`MessagingPattern::RequestResponse`] [`Service`] shall
 /// be opened.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RequestResponseOpenError {
+    /// An interrupt signal was received.
+    Interrupt,
     /// Service could not be openen since it does not exist
     DoesNotExist,
     /// The [`Service`] has a lower maximum amount of loaned
@@ -62,9 +62,7 @@ pub enum RequestResponseOpenError {
     /// by a process that crashed during [`Service`] creation.
     HangsInCreation,
     /// The [`Service`] has the wrong request payload type, request header type or type alignment.
-    IncompatibleRequestType,
-    /// The [`Service`] has the wrong response payload type, response header type or type alignment.
-    IncompatibleResponseType,
+    IncompatibleRequestOrResponseType,
     /// The [`AttributeVerifier`] required attributes that the [`Service`] does not satisfy.
     IncompatibleAttributes,
     /// The [`Service`] has the wrong messaging pattern.
@@ -85,6 +83,10 @@ pub enum RequestResponseOpenError {
     IsMarkedForDestruction,
     /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
     ServiceInCorruptedState,
+    /// The [`Node`](crate::node::Node) service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    UnableToCreateServiceTag,
+    /// The iceoryx2 service version does not match the one of the [`Service`].
+    VersionMismatch,
 }
 
 impl core::fmt::Display for RequestResponseOpenError {
@@ -95,27 +97,88 @@ impl core::fmt::Display for RequestResponseOpenError {
 
 impl core::error::Error for RequestResponseOpenError {}
 
-impl From<ServiceAvailabilityState> for RequestResponseOpenError {
-    fn from(value: ServiceAvailabilityState) -> Self {
+impl From<ServiceState> for RequestResponseOpenError {
+    fn from(value: ServiceState) -> Self {
         match value {
-            ServiceAvailabilityState::IncompatibleRequestType => {
-                RequestResponseOpenError::IncompatibleRequestType
+            ServiceState::Interrupt => RequestResponseOpenError::Interrupt,
+            ServiceState::IncompatiblePayload => {
+                RequestResponseOpenError::IncompatibleRequestOrResponseType
             }
-            ServiceAvailabilityState::IncompatibleResponseType => {
-                RequestResponseOpenError::IncompatibleResponseType
-            }
-            ServiceAvailabilityState::ServiceState(ServiceState::IncompatibleMessagingPattern) => {
+            ServiceState::IncompatibleMessagingPattern => {
                 RequestResponseOpenError::IncompatibleMessagingPattern
             }
-            ServiceAvailabilityState::ServiceState(ServiceState::InsufficientPermissions) => {
+            ServiceState::InsufficientPermissions => {
                 RequestResponseOpenError::InsufficientPermissions
             }
-            ServiceAvailabilityState::ServiceState(ServiceState::HangsInCreation) => {
-                RequestResponseOpenError::HangsInCreation
+            ServiceState::HangsInCreation => RequestResponseOpenError::HangsInCreation,
+            ServiceState::Corrupted => RequestResponseOpenError::ServiceInCorruptedState,
+            ServiceState::InternalFailure => RequestResponseOpenError::InternalFailure,
+        }
+    }
+}
+
+impl From<ServiceOpenError> for RequestResponseOpenError {
+    fn from(value: ServiceOpenError) -> Self {
+        match value {
+            ServiceOpenError::DoesNotExist => RequestResponseOpenError::DoesNotExist,
+            ServiceOpenError::ExceedsMaxNumberOfNodes => {
+                RequestResponseOpenError::ExceedsMaxNumberOfNodes
             }
-            ServiceAvailabilityState::ServiceState(ServiceState::Corrupted) => {
+            ServiceOpenError::HangsInCreation => RequestResponseOpenError::HangsInCreation,
+            ServiceOpenError::IncompatibleMessagingPattern => {
+                RequestResponseOpenError::IncompatibleMessagingPattern
+            }
+            ServiceOpenError::IncompatiblePayload => {
+                RequestResponseOpenError::IncompatibleRequestOrResponseType
+            }
+            ServiceOpenError::InsufficientPermissions => {
+                RequestResponseOpenError::InsufficientPermissions
+            }
+            ServiceOpenError::InternalFailure => RequestResponseOpenError::InternalFailure,
+            ServiceOpenError::IsMarkedForDestruction => {
+                RequestResponseOpenError::IsMarkedForDestruction
+            }
+            ServiceOpenError::ServiceInCorruptedState => {
                 RequestResponseOpenError::ServiceInCorruptedState
             }
+            ServiceOpenError::UnableToCreateServiceTag => {
+                RequestResponseOpenError::UnableToCreateServiceTag
+            }
+            ServiceOpenError::VersionMismatch => RequestResponseOpenError::VersionMismatch,
+            ServiceOpenError::Interrupt => RequestResponseOpenError::Interrupt,
+        }
+    }
+}
+
+impl From<RequestResponseOpenError> for ServiceOpenError {
+    fn from(value: RequestResponseOpenError) -> Self {
+        match value {
+            RequestResponseOpenError::DoesNotExist => ServiceOpenError::DoesNotExist,
+            RequestResponseOpenError::ExceedsMaxNumberOfNodes => {
+                ServiceOpenError::ExceedsMaxNumberOfNodes
+            }
+            RequestResponseOpenError::HangsInCreation => ServiceOpenError::HangsInCreation,
+            RequestResponseOpenError::IncompatibleMessagingPattern => {
+                ServiceOpenError::IncompatibleMessagingPattern
+            }
+            RequestResponseOpenError::IncompatibleRequestOrResponseType => {
+                ServiceOpenError::IncompatiblePayload
+            }
+            RequestResponseOpenError::InsufficientPermissions => {
+                ServiceOpenError::InsufficientPermissions
+            }
+            RequestResponseOpenError::IsMarkedForDestruction => {
+                ServiceOpenError::IsMarkedForDestruction
+            }
+
+            RequestResponseOpenError::ServiceInCorruptedState => {
+                ServiceOpenError::ServiceInCorruptedState
+            }
+            RequestResponseOpenError::UnableToCreateServiceTag => {
+                ServiceOpenError::UnableToCreateServiceTag
+            }
+            RequestResponseOpenError::VersionMismatch => ServiceOpenError::VersionMismatch,
+            _ => ServiceOpenError::InternalFailure,
         }
     }
 }
@@ -123,6 +186,8 @@ impl From<ServiceAvailabilityState> for RequestResponseOpenError {
 /// Errors that can occur when a new [`MessagingPattern::RequestResponse`] [`Service`] shall be created.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RequestResponseCreateError {
+    /// An interrupt signal was received.
+    Interrupt,
     /// The [`Service`] already exists.
     AlreadyExists,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
@@ -136,6 +201,10 @@ pub enum RequestResponseCreateError {
     HangsInCreation,
     /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
     ServiceInCorruptedState,
+    /// The [`Node`](crate::node::Node) service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    UnableToCreateServiceTag,
+    /// The [`Service`]s config could not be created and written to the static service configuration.
+    ServiceConfigCouldNotBeCreated,
 }
 
 impl core::fmt::Display for RequestResponseCreateError {
@@ -146,23 +215,68 @@ impl core::fmt::Display for RequestResponseCreateError {
 
 impl core::error::Error for RequestResponseCreateError {}
 
-impl From<ServiceAvailabilityState> for RequestResponseCreateError {
-    fn from(value: ServiceAvailabilityState) -> Self {
+impl From<ServiceState> for RequestResponseCreateError {
+    fn from(value: ServiceState) -> Self {
         match value {
-            ServiceAvailabilityState::IncompatibleRequestType
-            | ServiceAvailabilityState::IncompatibleResponseType
-            | ServiceAvailabilityState::ServiceState(ServiceState::IncompatibleMessagingPattern) => {
+            ServiceState::Interrupt => RequestResponseCreateError::Interrupt,
+            ServiceState::IncompatiblePayload | ServiceState::IncompatibleMessagingPattern => {
                 RequestResponseCreateError::AlreadyExists
             }
-            ServiceAvailabilityState::ServiceState(ServiceState::InsufficientPermissions) => {
+            ServiceState::InsufficientPermissions => {
                 RequestResponseCreateError::InsufficientPermissions
             }
-            ServiceAvailabilityState::ServiceState(ServiceState::HangsInCreation) => {
-                RequestResponseCreateError::HangsInCreation
+            ServiceState::HangsInCreation => RequestResponseCreateError::HangsInCreation,
+            ServiceState::Corrupted => RequestResponseCreateError::ServiceInCorruptedState,
+            ServiceState::InternalFailure => RequestResponseCreateError::InternalFailure,
+        }
+    }
+}
+
+impl From<ServiceCreateError> for RequestResponseCreateError {
+    fn from(value: ServiceCreateError) -> Self {
+        match value {
+            ServiceCreateError::AlreadyExists => RequestResponseCreateError::AlreadyExists,
+            ServiceCreateError::InsufficientPermissions => {
+                RequestResponseCreateError::InsufficientPermissions
             }
-            ServiceAvailabilityState::ServiceState(ServiceState::Corrupted) => {
+            ServiceCreateError::InternalFailure => RequestResponseCreateError::InternalFailure,
+            ServiceCreateError::IsBeingCreatedByAnotherInstance => {
+                RequestResponseCreateError::IsBeingCreatedByAnotherInstance
+            }
+            ServiceCreateError::ServiceConfigCouldNotBeCreated => {
+                RequestResponseCreateError::ServiceConfigCouldNotBeCreated
+            }
+            ServiceCreateError::ServiceInCorruptedState => {
                 RequestResponseCreateError::ServiceInCorruptedState
             }
+            ServiceCreateError::UnableToCreateServiceTag => {
+                RequestResponseCreateError::UnableToCreateServiceTag
+            }
+            ServiceCreateError::Interrupt => RequestResponseCreateError::Interrupt,
+        }
+    }
+}
+
+impl From<RequestResponseCreateError> for ServiceCreateError {
+    fn from(value: RequestResponseCreateError) -> Self {
+        match value {
+            RequestResponseCreateError::AlreadyExists => ServiceCreateError::AlreadyExists,
+            RequestResponseCreateError::InsufficientPermissions => {
+                ServiceCreateError::InsufficientPermissions
+            }
+            RequestResponseCreateError::IsBeingCreatedByAnotherInstance => {
+                ServiceCreateError::IsBeingCreatedByAnotherInstance
+            }
+            RequestResponseCreateError::ServiceConfigCouldNotBeCreated => {
+                ServiceCreateError::ServiceConfigCouldNotBeCreated
+            }
+            RequestResponseCreateError::ServiceInCorruptedState => {
+                ServiceCreateError::ServiceInCorruptedState
+            }
+            RequestResponseCreateError::UnableToCreateServiceTag => {
+                ServiceCreateError::UnableToCreateServiceTag
+            }
+            _ => ServiceCreateError::InternalFailure,
         }
     }
 }
@@ -180,8 +294,8 @@ pub enum RequestResponseOpenOrCreateError {
     SystemInFlux,
 }
 
-impl From<ServiceAvailabilityState> for RequestResponseOpenOrCreateError {
-    fn from(value: ServiceAvailabilityState) -> Self {
+impl From<ServiceState> for RequestResponseOpenOrCreateError {
+    fn from(value: ServiceState) -> Self {
         RequestResponseOpenOrCreateError::RequestResponseOpenError(value.into())
     }
 }
@@ -206,11 +320,18 @@ impl core::fmt::Display for RequestResponseOpenOrCreateError {
 
 impl core::error::Error for RequestResponseOpenOrCreateError {}
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-enum ServiceAvailabilityState {
-    ServiceState(ServiceState),
-    IncompatibleRequestType,
-    IncompatibleResponseType,
+#[derive(Debug, Default, Clone, Copy)]
+struct Verify {
+    enable_safe_overflow_for_requests: bool,
+    enable_safe_overflow_for_responses: bool,
+    max_active_requests_per_client: bool,
+    max_loaned_requests: bool,
+    max_response_buffer_size: bool,
+    max_servers: bool,
+    max_clients: bool,
+    max_nodes: bool,
+    max_borrowed_responses_per_pending_response: bool,
+    enable_fire_and_forget_requests: bool,
 }
 
 /// Builder to create new [`MessagingPattern::RequestResponse`] based [`Service`]s
@@ -233,16 +354,7 @@ pub struct Builder<
     override_response_payload_type: Option<TypeDetail>,
     override_request_header_type: Option<TypeDetail>,
     override_response_header_type: Option<TypeDetail>,
-    verify_enable_safe_overflow_for_requests: bool,
-    verify_enable_safe_overflow_for_responses: bool,
-    verify_max_active_requests_per_client: bool,
-    verify_max_loaned_requests: bool,
-    verify_max_response_buffer_size: bool,
-    verify_max_servers: bool,
-    verify_max_clients: bool,
-    verify_max_nodes: bool,
-    verify_max_borrowed_responses_per_pending_response: bool,
-    verify_enable_fire_and_forget_requests: bool,
+    verify: Verify,
 
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
@@ -267,18 +379,7 @@ impl<
             override_response_payload_type: self.override_response_payload_type,
             override_request_header_type: self.override_request_header_type,
             override_response_header_type: self.override_response_header_type,
-            verify_enable_safe_overflow_for_requests: self.verify_enable_safe_overflow_for_requests,
-            verify_enable_safe_overflow_for_responses: self
-                .verify_enable_safe_overflow_for_responses,
-            verify_max_active_requests_per_client: self.verify_max_active_requests_per_client,
-            verify_max_loaned_requests: self.verify_max_loaned_requests,
-            verify_max_response_buffer_size: self.verify_max_response_buffer_size,
-            verify_max_servers: self.verify_max_servers,
-            verify_max_clients: self.verify_max_clients,
-            verify_max_nodes: self.verify_max_nodes,
-            verify_max_borrowed_responses_per_pending_response: self
-                .verify_max_borrowed_responses_per_pending_response,
-            verify_enable_fire_and_forget_requests: self.verify_enable_fire_and_forget_requests,
+            verify: self.verify,
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,
@@ -304,16 +405,7 @@ impl<
             override_request_payload_type: None,
             override_response_header_type: None,
             override_response_payload_type: None,
-            verify_enable_safe_overflow_for_requests: false,
-            verify_enable_safe_overflow_for_responses: false,
-            verify_max_loaned_requests: false,
-            verify_max_active_requests_per_client: false,
-            verify_max_response_buffer_size: false,
-            verify_max_servers: false,
-            verify_max_clients: false,
-            verify_max_nodes: false,
-            verify_max_borrowed_responses_per_pending_response: false,
-            verify_enable_fire_and_forget_requests: false,
+            verify: Verify::default(),
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,
@@ -386,7 +478,7 @@ impl<
     /// behavior.
     pub fn enable_safe_overflow_for_requests(mut self, value: bool) -> Self {
         self.config_details_mut().enable_safe_overflow_for_requests = value;
-        self.verify_enable_safe_overflow_for_requests = true;
+        self.verify.enable_safe_overflow_for_requests = true;
         self
     }
 
@@ -395,7 +487,7 @@ impl<
     /// behavior.
     pub fn enable_safe_overflow_for_responses(mut self, value: bool) -> Self {
         self.config_details_mut().enable_safe_overflow_for_responses = value;
-        self.verify_enable_safe_overflow_for_responses = true;
+        self.verify.enable_safe_overflow_for_responses = true;
         self
     }
 
@@ -404,7 +496,7 @@ impl<
     /// and forget requests behavior.
     pub fn enable_fire_and_forget_requests(mut self, value: bool) -> Self {
         self.config_details_mut().enable_fire_and_forget_requests = value;
-        self.verify_enable_fire_and_forget_requests = true;
+        self.verify.enable_fire_and_forget_requests = true;
         self
     }
 
@@ -413,14 +505,14 @@ impl<
     /// from a [`Client`](crate::port::client::Client)
     pub fn max_active_requests_per_client(mut self, value: usize) -> Self {
         self.config_details_mut().max_active_requests_per_client = value;
-        self.verify_max_active_requests_per_client = true;
+        self.verify.max_active_requests_per_client = true;
         self
     }
 
     /// Defines how many requests the [`Client`](crate::port::client::Client) can loan in parallel.
     pub fn max_loaned_requests(mut self, value: usize) -> Self {
         self.config_details_mut().max_loaned_requests = value;
-        self.verify_max_loaned_requests = true;
+        self.verify.max_loaned_requests = true;
         self
     }
 
@@ -429,7 +521,7 @@ impl<
     /// [`Service`] is opened it defines the minimum required.
     pub fn max_response_buffer_size(mut self, value: usize) -> Self {
         self.config_details_mut().max_response_buffer_size = value;
-        self.verify_max_response_buffer_size = true;
+        self.verify.max_response_buffer_size = true;
         self
     }
 
@@ -438,7 +530,7 @@ impl<
     /// [`crate::port::server::Server`]s must be at least supported.
     pub fn max_servers(mut self, value: usize) -> Self {
         self.config_details_mut().max_servers = value;
-        self.verify_max_servers = true;
+        self.verify.max_servers = true;
         self
     }
 
@@ -447,7 +539,7 @@ impl<
     /// [`crate::port::client::Client`]s must be at least supported.
     pub fn max_clients(mut self, value: usize) -> Self {
         self.config_details_mut().max_clients = value;
-        self.verify_max_clients = true;
+        self.verify.max_clients = true;
         self
     }
 
@@ -456,7 +548,7 @@ impl<
     /// [`Node`](crate::node::Node)s must be at least supported.
     pub fn max_nodes(mut self, value: usize) -> Self {
         self.config_details_mut().max_nodes = value;
-        self.verify_max_nodes = true;
+        self.verify.max_nodes = true;
         self
     }
 
@@ -466,7 +558,7 @@ impl<
     pub fn max_borrowed_responses_per_pending_response(mut self, value: usize) -> Self {
         self.config_details_mut()
             .max_borrowed_responses_per_pending_response = value;
-        self.verify_max_borrowed_responses_per_pending_response = true;
+        self.verify.max_borrowed_responses_per_pending_response = true;
         self
     }
 
@@ -519,20 +611,21 @@ impl<
 
     fn verify_service_configuration(
         &self,
-        existing_settings: &static_config::StaticConfig,
-        verifier: &AttributeVerifier,
-    ) -> Result<static_config::request_response::StaticConfig, RequestResponseOpenError> {
-        let msg = "Unable to open request response service";
-
-        let existing_attributes = existing_settings.attributes();
-        if let Err(incompatible_key) = verifier.verify_requirements(existing_attributes) {
+        msg: &str,
+        existing_service_config: &StaticConfig,
+        required_attributes: &AttributeVerifier,
+    ) -> Result<(), RequestResponseOpenError> {
+        let required_service_config = &self.base.service_config;
+        let existing_attributes = existing_service_config.attributes();
+        if let Err(incompatible_key) = required_attributes.verify_requirements(existing_attributes)
+        {
             fail!(from self, with RequestResponseOpenError::IncompatibleAttributes,
                 "{} due to incompatible service attribute key \"{}\". The following attributes {:?} are required but the service has the attributes {:?}.",
-                msg, incompatible_key, verifier, existing_attributes);
+                msg, incompatible_key, required_attributes, existing_attributes);
         }
 
-        let required_configuration = self.base.service_config.request_response();
-        let existing_configuration = match &existing_settings.messaging_pattern {
+        let required_configuration = required_service_config.request_response();
+        let existing_configuration = match &existing_service_config.messaging_pattern {
             MessagingPattern::RequestResponse(v) => v,
             p => {
                 fail!(from self, with RequestResponseOpenError::IncompatibleMessagingPattern,
@@ -541,7 +634,7 @@ impl<
             }
         };
 
-        if self.verify_enable_safe_overflow_for_requests
+        if self.verify.enable_safe_overflow_for_requests
             && existing_configuration.enable_safe_overflow_for_requests
                 != required_configuration.enable_safe_overflow_for_requests
         {
@@ -550,7 +643,7 @@ impl<
                 msg);
         }
 
-        if self.verify_enable_safe_overflow_for_responses
+        if self.verify.enable_safe_overflow_for_responses
             && existing_configuration.enable_safe_overflow_for_responses
                 != required_configuration.enable_safe_overflow_for_responses
         {
@@ -559,7 +652,7 @@ impl<
                 msg);
         }
 
-        if self.verify_enable_fire_and_forget_requests
+        if self.verify.enable_fire_and_forget_requests
             && existing_configuration.enable_fire_and_forget_requests
                 != required_configuration.enable_fire_and_forget_requests
         {
@@ -568,7 +661,7 @@ impl<
                 msg);
         }
 
-        if self.verify_max_active_requests_per_client
+        if self.verify.max_active_requests_per_client
             && existing_configuration.max_active_requests_per_client
                 < required_configuration.max_active_requests_per_client
         {
@@ -577,7 +670,7 @@ impl<
                 msg, existing_configuration.max_active_requests_per_client, required_configuration.max_active_requests_per_client);
         }
 
-        if self.verify_max_loaned_requests
+        if self.verify.max_loaned_requests
             && existing_configuration.max_loaned_requests
                 < required_configuration.max_loaned_requests
         {
@@ -586,7 +679,7 @@ impl<
                 msg, existing_configuration.max_loaned_requests, required_configuration.max_loaned_requests);
         }
 
-        if self.verify_max_borrowed_responses_per_pending_response
+        if self.verify.max_borrowed_responses_per_pending_response
             && existing_configuration.max_borrowed_responses_per_pending_response
                 < required_configuration.max_borrowed_responses_per_pending_response
         {
@@ -595,7 +688,7 @@ impl<
                 msg, existing_configuration.max_borrowed_responses_per_pending_response, required_configuration.max_borrowed_responses_per_pending_response);
         }
 
-        if self.verify_max_response_buffer_size
+        if self.verify.max_response_buffer_size
             && existing_configuration.max_response_buffer_size
                 < required_configuration.max_response_buffer_size
         {
@@ -604,7 +697,7 @@ impl<
                 msg, existing_configuration.max_response_buffer_size, required_configuration.max_response_buffer_size);
         }
 
-        if self.verify_max_servers
+        if self.verify.max_servers
             && existing_configuration.max_servers < required_configuration.max_servers
         {
             fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfServers,
@@ -612,7 +705,7 @@ impl<
                 msg, existing_configuration.max_servers, required_configuration.max_servers);
         }
 
-        if self.verify_max_clients
+        if self.verify.max_clients
             && existing_configuration.max_clients < required_configuration.max_clients
         {
             fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfClients,
@@ -620,7 +713,7 @@ impl<
                 msg, existing_configuration.max_clients, required_configuration.max_clients);
         }
 
-        if self.verify_max_nodes
+        if self.verify.max_nodes
             && existing_configuration.max_nodes < required_configuration.max_nodes
         {
             fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfNodes,
@@ -628,49 +721,47 @@ impl<
                 msg, existing_configuration.max_nodes, required_configuration.max_nodes);
         }
 
-        Ok(*existing_configuration)
+        Ok(())
     }
 
     fn is_service_available(
-        &mut self,
+        &self,
         error_msg: &str,
-    ) -> Result<
-        Option<(static_config::StaticConfig, ServiceType::StaticStorage)>,
-        ServiceAvailabilityState,
-    > {
+    ) -> Result<Option<(static_config::StaticConfig, ServiceType::StaticStorage)>, ServiceState>
+    {
+        let reqres_service_config = self.config_details();
+
         match self.base.is_service_available(error_msg) {
             Ok(Some((config, storage))) => {
-                if !self
-                    .config_details()
+                if !reqres_service_config
                     .request_message_type_details
                     .is_compatible_to(&config.request_response().request_message_type_details)
                 {
-                    fail!(from self, with ServiceAvailabilityState::IncompatibleRequestType,
+                    fail!(from self, with ServiceState::IncompatiblePayload,
                         "{} since the services uses the request type \"{:?}\" which is not compatible to the requested type \"{:?}\".",
                         error_msg, &config.request_response().request_message_type_details,
-                        self.config_details().request_message_type_details);
+                        reqres_service_config.request_message_type_details);
                 }
 
-                if !self
-                    .config_details()
+                if !reqres_service_config
                     .response_message_type_details
                     .is_compatible_to(&config.request_response().response_message_type_details)
                 {
-                    fail!(from self, with ServiceAvailabilityState::IncompatibleResponseType,
+                    fail!(from self, with ServiceState::IncompatiblePayload,
                         "{} since the services uses the response type \"{:?}\" which is not compatible to the requested type \"{:?}\".",
                         error_msg, &config.request_response().response_message_type_details,
-                        self.config_details().response_message_type_details);
+                        reqres_service_config.response_message_type_details);
                 }
 
                 Ok(Some((config, storage)))
             }
             Ok(None) => Ok(None),
-            Err(e) => Err(ServiceAvailabilityState::ServiceState(e)),
+            Err(e) => Err(e),
         }
     }
 
     fn create_impl(
-        &mut self,
+        &self,
         attributes: &AttributeSpecifier,
     ) -> Result<
         request_response::PortFactory<
@@ -683,101 +774,40 @@ impl<
         RequestResponseCreateError,
     > {
         let msg = "Unable to create request response service";
-        self.adjust_configuration_to_meaningful_values();
 
-        match self.is_service_available(msg)? {
-            Some(_) => {
-                fail!(from self, with RequestResponseCreateError::AlreadyExists,
-                    "{} since the service already exists.",
-                    msg);
+        let generate_dynamic_config = |service_config: &StaticConfig| {
+            let reqres_config = service_config.request_response();
+            let dynamic_config_setting = DynamicConfigSettings {
+                number_of_clients: reqres_config.max_clients,
+                number_of_servers: reqres_config.max_servers,
+            };
+
+            DynamicConfigCreationArgs {
+                messaging_pattern_settings: MessagingPatternSettings::RequestResponse(
+                    dynamic_config_setting,
+                ),
+                additional_size: dynamic_config::request_response::DynamicConfig::memory_size(
+                    &dynamic_config_setting,
+                ),
+                max_number_of_nodes: reqres_config.max_nodes,
             }
-            None => {
-                let service_tag = self
-                    .base
-                    .create_node_service_tag(msg, RequestResponseCreateError::InternalFailure)?;
+        };
 
-                let static_config = match self.base.create_static_config_storage() {
-                    Ok(static_config) => static_config,
-                    Err(StaticStorageCreateError::AlreadyExists) => {
-                        fail!(from self, with RequestResponseCreateError::AlreadyExists,
-                            "{} since the service already exists.", msg);
-                    }
-                    Err(StaticStorageCreateError::Creation) => {
-                        fail!(from self, with RequestResponseCreateError::IsBeingCreatedByAnotherInstance,
-                            "{} since the service is being created by another instance.", msg);
-                    }
-                    Err(StaticStorageCreateError::InsufficientPermissions) => {
-                        fail!(from self, with RequestResponseCreateError::InsufficientPermissions,
-                            "{} since the static service information could not be created due to insufficient permissions.",
-                            msg);
-                    }
-                    Err(e) => {
-                        fail!(from self, with RequestResponseCreateError::InternalFailure,
-                            "{} since the static service information could not be created due to an internal failure ({:?}).",
-                            msg, e);
-                    }
-                };
+        let service_state = self.base.create(
+            msg,
+            attributes,
+            || self.is_service_available(msg),
+            |_| Ok(()),
+            generate_dynamic_config,
+            |_| Ok(NoResource),
+        )?;
 
-                let request_response_config = self.base.service_config.request_response();
-                let dynamic_config_setting = DynamicConfigSettings {
-                    number_of_servers: request_response_config.max_servers,
-                    number_of_clients: request_response_config.max_clients,
-                };
-
-                let dynamic_config = match self.base.create_dynamic_config_storage(
-                    &MessagingPatternSettings::RequestResponse(dynamic_config_setting),
-                    dynamic_config::request_response::DynamicConfig::memory_size(
-                        &dynamic_config_setting,
-                    ),
-                    request_response_config.max_nodes,
-                ) {
-                    Ok(dynamic_config) => dynamic_config,
-                    Err(DynamicStorageCreateError::AlreadyExists) => {
-                        fail!(from self, with RequestResponseCreateError::ServiceInCorruptedState,
-                            "{} since the dynamic config of a previous instance of the service still exists.",
-                            msg);
-                    }
-                    Err(e) => {
-                        fail!(from self, with RequestResponseCreateError::InternalFailure,
-                            "{} since the dynamic service segment could not be created ({:?}).",
-                            msg, e);
-                    }
-                };
-
-                self.base.service_config.attributes = attributes.0.clone();
-                let serialized_service_config = fail!(from self,
-                          when ServiceType::ConfigSerializer::serialize(&self.base.service_config),
-                          with RequestResponseCreateError::ServiceInCorruptedState,
-                          "{} since the configuration could not be serialized.",
-                          msg);
-
-                let unlocked_static_details = fail!(from self,
-                        when static_config.unlock(serialized_service_config.as_slice()),
-                        with RequestResponseCreateError::ServiceInCorruptedState,
-                        "{} since the configuration could not be written into the static storage.",
-                        msg);
-
-                unlocked_static_details.release_ownership();
-                if let Some(service_tag) = service_tag {
-                    service_tag.release_ownership();
-                }
-
-                Ok(request_response::PortFactory::new(
-                    service::ServiceState::new(
-                        self.base.service_config.clone(),
-                        self.base.shared_node.clone(),
-                        dynamic_config,
-                        unlocked_static_details,
-                        NoResource,
-                    ),
-                ))
-            }
-        }
+        Ok(request_response::PortFactory::new(service_state))
     }
 
     fn open_impl(
-        &mut self,
-        attributes: &AttributeVerifier,
+        &self,
+        required_attributes: &AttributeVerifier,
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
@@ -788,86 +818,23 @@ impl<
         >,
         RequestResponseOpenError,
     > {
-        const OPEN_RETRY_LIMIT: usize = 5;
         let msg = "Unable to open request response service";
 
-        let mut service_open_retry_count = 0;
-        loop {
-            match self.is_service_available(msg)? {
-                None => {
-                    fail!(from self, with RequestResponseOpenError::DoesNotExist,
-                        "{} since the service does not exist.",
-                        msg);
-                }
-                Some((static_config, static_storage)) => {
-                    let request_response_static_config =
-                        self.verify_service_configuration(&static_config, attributes)?;
+        let service_state = self.base.open(
+            msg,
+            || self.is_service_available(msg),
+            |existing_service_config| -> Result<(), RequestResponseOpenError> {
+                self.verify_service_configuration(msg, existing_service_config, required_attributes)
+            },
+            |_| Ok(NoResource),
+        )?;
 
-                    let service_tag = self
-                        .base
-                        .create_node_service_tag(msg, RequestResponseOpenError::InternalFailure)?;
-
-                    let dynamic_config = match self.base.open_dynamic_config_storage() {
-                        Ok(v) => v,
-                        Err(OpenDynamicStorageFailure::IsMarkedForDestruction) => {
-                            fail!(from self, with RequestResponseOpenError::IsMarkedForDestruction,
-                                "{} since the service is marked for destruction.",
-                                msg);
-                        }
-                        Err(OpenDynamicStorageFailure::ExceedsMaxNumberOfNodes) => {
-                            fail!(from self, with RequestResponseOpenError::ExceedsMaxNumberOfNodes,
-                                "{} since it would exceed the maximum number of supported nodes.",
-                                msg);
-                        }
-                        Err(OpenDynamicStorageFailure::DynamicStorageOpenError(
-                            DynamicStorageOpenError::DoesNotExist,
-                        )) => {
-                            fail!(from self, with RequestResponseOpenError::ServiceInCorruptedState,
-                                "{} since the dynamic segment of the service is missing.",
-                                msg);
-                        }
-                        Err(e) => {
-                            if self.is_service_available(msg)?.is_none() {
-                                fail!(from self, with RequestResponseOpenError::DoesNotExist,
-                                    "{} since the service does not exist.", msg);
-                            }
-
-                            service_open_retry_count += 1;
-
-                            if OPEN_RETRY_LIMIT < service_open_retry_count {
-                                fail!(from self, with RequestResponseOpenError::ServiceInCorruptedState,
-                                    "{} since the dynamic service information could not be opened ({:?}).",
-                                    msg, e);
-                            }
-
-                            continue;
-                        }
-                    };
-
-                    self.base.service_config.messaging_pattern =
-                        MessagingPattern::RequestResponse(request_response_static_config);
-
-                    if let Some(service_tag) = service_tag {
-                        service_tag.release_ownership();
-                    }
-
-                    return Ok(request_response::PortFactory::new(
-                        service::ServiceState::new(
-                            static_config,
-                            self.base.shared_node.clone(),
-                            dynamic_config,
-                            static_storage,
-                            NoResource,
-                        ),
-                    ));
-                }
-            }
-        }
+        Ok(request_response::PortFactory::new(service_state))
     }
 
     fn open_or_create_impl(
         mut self,
-        verifier: &AttributeVerifier,
+        attributes: &AttributeVerifier,
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
@@ -879,44 +846,17 @@ impl<
         RequestResponseOpenOrCreateError,
     > {
         let msg = "Unable to open or create request response service";
-
-        let mut retry_count = 0;
-        loop {
-            if RETRY_LIMIT < retry_count {
-                fail!(from self,
-                      with RequestResponseOpenOrCreateError::SystemInFlux,
-                      "{} since an instance is creating and removing the same service repeatedly.",
-                      msg);
-            }
-            retry_count += 1;
-
-            if self.is_service_available(msg)?.is_some() {
-                match self.open_impl(verifier) {
-                    Ok(factory) => return Ok(factory),
-                    Err(RequestResponseOpenError::DoesNotExist)
-                    // If the service is currently being cleaned up then this process might identify
-                    // the service like this. Therefore, it makes sense to retry it multiple times until
-                    // the external cleanup process if finished.
-                    | Err(RequestResponseOpenError::ServiceInCorruptedState)
-                    | Err(RequestResponseOpenError::IsMarkedForDestruction) => continue,
-                    Err(e) => return Err(e.into()),
-                }
-            } else {
-                match self.create_impl(&AttributeSpecifier(verifier.required_attributes().clone()))
-                {
-                    Ok(factory) => return Ok(factory),
-                    Err(RequestResponseCreateError::AlreadyExists)
-                    // If the service is currently being cleaned up then this process might identify
-                    // the service like this. Therefore, it makes sense to retry it multiple times until
-                    // the external cleanup process if finished.
-                    | Err(RequestResponseCreateError::ServiceInCorruptedState)
-                    | Err(RequestResponseCreateError::IsBeingCreatedByAnotherInstance) => {
-                        continue;
-                    }
-                    Err(e) => return Err(e.into()),
-                }
-            }
-        }
+        self.adjust_configuration_to_meaningful_values();
+        self.base.open_or_create(
+            msg,
+            attributes,
+            RequestResponseOpenOrCreateError::RequestResponseOpenError(
+                RequestResponseOpenError::InternalFailure,
+            ),
+            RequestResponseOpenOrCreateError::SystemInFlux,
+            |attributes| self.open_impl(attributes),
+            |attributes| self.create_impl(attributes),
+        )
     }
 
     fn prepare_message_type(&mut self) {
@@ -1099,6 +1039,7 @@ impl<
         >,
         RequestResponseCreateError,
     > {
+        self.adjust_configuration_to_meaningful_values();
         self.prepare_message_type_details();
         self.create_impl(attributes)
     }

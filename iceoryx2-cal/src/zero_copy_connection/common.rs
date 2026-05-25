@@ -407,7 +407,6 @@ pub mod details {
         .config(&self.config.dynamic_storage_config)
         .timeout(self.timeout)
         .supplementary_size(supplementary_size)
-        .call_drop_on_destruction(false)
         .initializer(|data, allocator| {
             unsafe { data.init(allocator, self.submission_queue_size(), self.completion_queue_size())};
             for channel in data.channels.iter() {
@@ -1093,6 +1092,10 @@ pub mod details {
                                    Err(NamedConceptRemoveError::InsufficientPermissions) => {
                                        fail!(from origin, with ZeroCopyPortRemoveError::InsufficientPermissions,
                                            "{msg} since the underlying dynamic storage has a different iceoryx2 version.");
+                                   }
+                                   Err(NamedConceptRemoveError::Interrupt) => {
+                                       fail!(from origin, with ZeroCopyPortRemoveError::Interrupt,
+                                           "{msg} since an interrupt signal was raised.");
                                    }
                                    Err(NamedConceptRemoveError::InternalError) => {
                                        fail!(from origin, with ZeroCopyPortRemoveError::InternalError,

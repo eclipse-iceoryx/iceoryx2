@@ -186,6 +186,8 @@ use iceoryx2_log::{debug, fail, fatal_panic, trace, warn};
 use crate::identifiers::UniqueNodeId;
 use crate::node::global_management_segment::GlobalManagementSegment;
 use crate::node::node_name::NodeName;
+use crate::prelude::MessagingPattern;
+use crate::service::ServiceRemoveError;
 use crate::service::builder::{Builder, OpenDynamicStorageFailure};
 use crate::service::config_scheme::port_tag_config;
 use crate::service::config_scheme::{
@@ -194,10 +196,9 @@ use crate::service::config_scheme::{
 use crate::service::service_hash::ServiceHash;
 use crate::service::service_name::ServiceName;
 use crate::service::stale_resource_cleanup::RemoveStalePortResourcesError;
+use crate::service::stale_resource_cleanup::remove_service_tag;
 use crate::service::stale_resource_cleanup::remove_stale_port_resources;
-use crate::service::{
-    self, ServiceRemoveNodeError, remove_service_tag, remove_static_service_config,
-};
+use crate::service::{self, ServiceRemoveNodeError};
 use crate::signal_handling_mode::SignalHandlingMode;
 use crate::{config::Config, service::config_scheme::node_details_config};
 
@@ -292,7 +293,9 @@ impl core::error::Error for NodeCleanupFailure {}
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum NodeReadStorageFailure {
     ReadError,
+    InsufficientPermissions,
     Corrupted,
+    Interrupt,
     InternalError,
 }
 
@@ -625,39 +628,6 @@ impl<Service: service::Service> DeadNodeView<Service> {
                     debug!(from self,
                         "{msg} since the dead node was using a different iceoryx2 version.");
                 }
-                Err(ServiceRemoveNodeError::ServiceInCorruptedState) => {
-                    debug!(from self,
-                        "{msg} since the service itself is corrupted. Trying to remove the corrupted remainders of the service.");
-                    match unsafe {
-                        remove_static_service_config::<Service>(config, &service_hash.0.into())
-                    } {
-                        Ok(v) => {
-                            if let Err(e) =
-                                remove_service_tag::<Service>(self.id(), service_hash, config)
-                            {
-                                debug!(from self,
-                                    "The service tag could not be removed from the dead node ({:?}).",
-                                    e);
-                            }
-
-                            if v {
-                                debug!(from self, "Successfully removed corrupted static service config.");
-                            } else {
-                                debug!(from self, "Corrupted static service config no longer exists, another instance might have cleaned it up.");
-                            }
-                        }
-                        Err(NamedConceptRemoveError::InsufficientPermissions) => {
-                            cleanup_failure = Err(NodeCleanupFailure::InsufficientPermissions);
-                            debug!(from self,
-                                "{msg} since the corrupted service remainders to could not be removed due to insufficient permissions.");
-                        }
-                        Err(e) => {
-                            cleanup_failure = Err(NodeCleanupFailure::InternalError);
-                            debug!(from self,
-                                "{msg} since the corrupted service remainders to could not be removed due to an internal error ({:?}).", e);
-                        }
-                    }
-                }
                 Err(e) => {
                     cleanup_failure = Err(NodeCleanupFailure::InternalError);
                     debug!(from self,
@@ -705,6 +675,12 @@ impl<Service: service::Service> DeadNodeView<Service> {
                     cleanup_failure = Err(NodeCleanupFailure::InternalError);
                     debug!(from self,
                         "{} since the stale resources of the port {port_id} could not be removed due to an internal failure.", msg);
+                    CallbackProgression::Stop
+                }
+                Err(RemoveStalePortResourcesError::Interrupt) => {
+                    cleanup_failure = Err(NodeCleanupFailure::Interrupt);
+                    debug!(from self,
+                        "{} since the stale resources of the port {port_id} could not be removed due to an interrupt signal.", msg);
                     CallbackProgression::Stop
                 }
             }
@@ -807,8 +783,12 @@ fn remove_detail_storages<Service: service::Service>(
                     "{} {} due to insufficient permissions.", msg, entry);
             }
             Err(NamedConceptRemoveError::InternalError) => {
-                fail!(from origin, with NodeCleanupFailure::InsufficientPermissions,
+                fail!(from origin, with NodeCleanupFailure::InternalError,
                     "{} {} due to an internal failure.", msg, entry);
+            }
+            Err(NamedConceptRemoveError::Interrupt) => {
+                fail!(from origin, with NodeCleanupFailure::Interrupt,
+                    "{} {} since an interrupt signal was raised.", msg, entry);
             }
         }
     }
@@ -935,8 +915,8 @@ impl RegisteredServices {
             entry.1 -= 1;
             if entry.1 == 0 {
                 let handle = entry.0;
-                cleanup_call(handle);
                 guard.remove(service_hash);
+                cleanup_call(handle);
             }
         } else {
             fatal_panic!(from "RegisteredServices::remove()",
@@ -1123,7 +1103,11 @@ impl<Service: service::Service> Node<Service> {
             Ok(node_list) => {
                 for node_name in node_list {
                     let node_id = core::str::from_utf8(node_name.as_bytes()).unwrap();
-                    let node_id = UniqueNodeId(node_id.parse::<u128>().unwrap().into());
+                    let node_id = match node_id.parse::<u128>() {
+                        Ok(v) => UniqueNodeId(v.into()),
+                        // not bad, just found a file that is not a node
+                        Err(_) => continue,
+                    };
 
                     match NodeState::new(&node_id, config) {
                         Ok(Some(node_state)) => {
@@ -1243,6 +1227,22 @@ impl<Service: service::Service> Node<Service> {
         }
     }
 
+    /// Removes a [`Service`](crate::service::Service) by force. This shall be used if the
+    /// resources could not be removed in a previous run and now it is no longer possible to
+    /// open the service.
+    ///
+    /// # Safety
+    ///
+    ///  * No other process shall use the service.
+    ///
+    pub unsafe fn force_remove_service(
+        &self,
+        name: &ServiceName,
+        messaging_pattern: MessagingPattern,
+    ) -> Result<bool, ServiceRemoveError> {
+        unsafe { Service::__internal_force_remove_service(name, self.config(), messaging_pattern) }
+    }
+
     fn list_all_nodes(
         config: &<Service::Monitoring as NamedConceptMgmt>::Configuration,
     ) -> Result<Vec<FileName>, NodeListFailure> {
@@ -1328,33 +1328,37 @@ impl<Service: service::Service> Node<Service> {
         node_id: &UniqueNodeId,
     ) -> Result<Option<Service::StaticStorage>, NodeReadStorageFailure> {
         let details_config = node_details_config::<Service>(config, node_id);
-        let result = <Service::StaticStorage as StaticStorage>::Builder::new(
+        let msg = "Unable to open node config storage";
+        let origin = format!("open_node_storage({config:?}, {node_id:?})");
+
+        match <Service::StaticStorage as StaticStorage>::Builder::new(
             &FileName::new(b"node").unwrap(),
         )
         .config(&details_config)
         .has_ownership(false)
-        .open(Duration::ZERO);
-
-        if let Ok(result) = result {
-            return Ok(Some(result));
-        }
-
-        let msg = "Unable to open node config storage";
-        let origin = format!("open_node_storage({config:?}, {node_id:?})");
-
-        match result.err().unwrap() {
-            StaticStorageOpenError::DoesNotExist => Ok(None),
-            StaticStorageOpenError::Read => {
+        .open(Duration::ZERO)
+        {
+            Ok(result) => Ok(Some(result)),
+            Err(StaticStorageOpenError::DoesNotExist) => Ok(None),
+            Err(StaticStorageOpenError::Read) => {
                 fail!(from origin, with NodeReadStorageFailure::ReadError,
-                    "{} since the node config storage could not be read.", msg);
+                        "{} since the node config storage could not be read.", msg);
             }
-            StaticStorageOpenError::InitializationNotYetFinalized => {
+            Err(StaticStorageOpenError::InitializationNotYetFinalized) => {
                 fail!(from origin, with NodeReadStorageFailure::Corrupted,
-                    "{} since the node config storage seems to be uninitialized but the state should always be present.", msg);
+                        "{} since the node config storage seems to be uninitialized but the state should always be present.", msg);
             }
-            StaticStorageOpenError::InternalError => {
+            Err(StaticStorageOpenError::InternalError) => {
                 fail!(from origin, with NodeReadStorageFailure::InternalError,
-                    "{} due to an internal failure while opening the node config storage.", msg);
+                        "{} due to an internal failure while opening the node config storage.", msg);
+            }
+            Err(StaticStorageOpenError::Interrupt) => {
+                fail!(from origin, with NodeReadStorageFailure::Interrupt,
+                    "{} since an interrupt signal was raised.", msg);
+            }
+            Err(StaticStorageOpenError::InsufficientPermissions) => {
+                fail!(from origin, with NodeReadStorageFailure::InsufficientPermissions,
+                    "{} due to insufficient permissions.", msg);
             }
         }
     }

@@ -30,7 +30,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
-    let subscriber = CustomSubscriber::new(&node, &"My/Funk/ServiceName".try_into()?)?;
+    let subscriber = CustomSubscriber::new(&node, &"EventBasedCommService".try_into()?)?;
 
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
 

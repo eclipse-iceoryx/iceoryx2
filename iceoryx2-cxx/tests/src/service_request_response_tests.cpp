@@ -222,11 +222,11 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_wrong_paylo
 
     auto sut1 = node.service_builder(service_name).template request_response<double, uint64_t>().open();
     ASSERT_FALSE(sut1.has_value());
-    ASSERT_THAT(sut1.error(), Eq(RequestResponseOpenError::IncompatibleRequestType));
+    ASSERT_THAT(sut1.error(), Eq(RequestResponseOpenError::IncompatibleRequestOrResponseType));
 
     auto sut2 = node.service_builder(service_name).template request_response<uint64_t, double>().open();
     ASSERT_FALSE(sut2.has_value());
-    ASSERT_THAT(sut2.error(), Eq(RequestResponseOpenError::IncompatibleResponseType));
+    ASSERT_THAT(sut2.error(), Eq(RequestResponseOpenError::IncompatibleRequestOrResponseType));
 }
 
 TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_wrong_user_header_type_fails) {
@@ -248,7 +248,7 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_wrong_user_
                     .template response_user_header<uint64_t>()
                     .open();
     ASSERT_FALSE(sut1.has_value());
-    ASSERT_THAT(sut1.error(), Eq(RequestResponseOpenError::IncompatibleRequestType));
+    ASSERT_THAT(sut1.error(), Eq(RequestResponseOpenError::IncompatibleRequestOrResponseType));
 
     auto sut2 = node.service_builder(service_name)
                     .template request_response<uint64_t, uint64_t>()
@@ -256,7 +256,7 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_wrong_user_
                     .template response_user_header<double>()
                     .open();
     ASSERT_FALSE(sut2.has_value());
-    ASSERT_THAT(sut2.error(), Eq(RequestResponseOpenError::IncompatibleResponseType));
+    ASSERT_THAT(sut2.error(), Eq(RequestResponseOpenError::IncompatibleRequestOrResponseType));
 }
 
 TYPED_TEST(ServiceRequestResponseTest, open_or_create_existing_service_with_wrong_payload_type_fails) {
@@ -270,11 +270,11 @@ TYPED_TEST(ServiceRequestResponseTest, open_or_create_existing_service_with_wron
 
     auto sut1 = node.service_builder(service_name).template request_response<double, uint64_t>().open_or_create();
     ASSERT_FALSE(sut1.has_value());
-    ASSERT_THAT(sut1.error(), Eq(RequestResponseOpenOrCreateError::OpenIncompatibleRequestType));
+    ASSERT_THAT(sut1.error(), Eq(RequestResponseOpenOrCreateError::OpenIncompatibleRequestOrResponseType));
 
     auto sut2 = node.service_builder(service_name).template request_response<uint64_t, double>().open_or_create();
     ASSERT_FALSE(sut2.has_value());
-    ASSERT_THAT(sut2.error(), Eq(RequestResponseOpenOrCreateError::OpenIncompatibleResponseType));
+    ASSERT_THAT(sut2.error(), Eq(RequestResponseOpenOrCreateError::OpenIncompatibleRequestOrResponseType));
 }
 
 TYPED_TEST(ServiceRequestResponseTest, send_copy_and_receive_works) {
@@ -1509,10 +1509,10 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_without_payload_
 
     auto sut_open_req = node.service_builder(service_name_req).template request_response<Payload, uint64_t>().open();
     ASSERT_FALSE(sut_open_req.has_value());
-    EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
+    EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestOrResponseType);
     auto sut_open_res = node.service_builder(service_name_res).template request_response<uint64_t, Payload>().open();
     ASSERT_FALSE(sut_open_res.has_value());
-    EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
+    EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleRequestOrResponseType);
 }
 
 TYPED_TEST(ServiceRequestResponseTest,
@@ -1525,10 +1525,10 @@ TYPED_TEST(ServiceRequestResponseTest,
 
     auto sut_open_req = node.service_builder(service_name).template request_response<other::Payload, Payload>().open();
     ASSERT_FALSE(sut_open_req.has_value());
-    EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
+    EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestOrResponseType);
     auto sut_open_res = node.service_builder(service_name).template request_response<Payload, other::Payload>().open();
     ASSERT_FALSE(sut_open_res.has_value());
-    EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
+    EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleRequestOrResponseType);
 }
 
 TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_same_payload_type_name_but_different_size_fails) {
@@ -1542,12 +1542,12 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_same_payloa
                             .template request_response<PayloadWithSameTypeNameButDifferentSize, Payload>()
                             .open();
     ASSERT_FALSE(sut_open_req.has_value());
-    EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
+    EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestOrResponseType);
     auto sut_open_res = node.service_builder(service_name)
                             .template request_response<Payload, PayloadWithSameTypeNameButDifferentSize>()
                             .open();
     ASSERT_FALSE(sut_open_res.has_value());
-    EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
+    EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleRequestOrResponseType);
 }
 
 TYPED_TEST(ServiceRequestResponseTest,
@@ -1562,12 +1562,12 @@ TYPED_TEST(ServiceRequestResponseTest,
                             .template request_response<PayloadWithSameTypeNameButDifferentAlignment, Payload>()
                             .open();
     ASSERT_FALSE(sut_open_req.has_value());
-    EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
+    EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestOrResponseType);
     auto sut_open_res = node.service_builder(service_name)
                             .template request_response<Payload, PayloadWithSameTypeNameButDifferentAlignment>()
                             .open();
     ASSERT_FALSE(sut_open_res.has_value());
-    EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
+    EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleRequestOrResponseType);
 }
 
 TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_set_user_header_type_name_works) {
@@ -1635,13 +1635,13 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_without_user_hea
                             .template request_user_header<CustomHeader>()
                             .open();
     ASSERT_FALSE(sut_open_req.has_value());
-    EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
+    EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestOrResponseType);
     auto sut_open_res = node.service_builder(service_name_res)
                             .template request_response<uint8_t, uint8_t>()
                             .template response_user_header<CustomHeader>()
                             .open();
     ASSERT_FALSE(sut_open_res.has_value());
-    EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
+    EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleRequestOrResponseType);
 }
 
 TYPED_TEST(ServiceRequestResponseTest,
@@ -1663,7 +1663,7 @@ TYPED_TEST(ServiceRequestResponseTest,
                             .template response_user_header<CustomHeader>()
                             .open();
     ASSERT_FALSE(sut_open_req.has_value());
-    EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
+    EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestOrResponseType);
 
     auto sut_open_res = node.service_builder(service_name)
                             .template request_response<uint8_t, uint8_t>()
@@ -1671,7 +1671,7 @@ TYPED_TEST(ServiceRequestResponseTest,
                             .template response_user_header<other::CustomHeader>()
                             .open();
     ASSERT_FALSE(sut_open_res.has_value());
-    EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
+    EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleRequestOrResponseType);
 }
 
 TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_same_header_type_but_different_size_fails) {
@@ -1692,7 +1692,7 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_same_header
                             .template response_user_header<CustomHeader>()
                             .open();
     ASSERT_FALSE(sut_open_req.has_value());
-    EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
+    EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestOrResponseType);
 
     auto sut_open_res = node.service_builder(service_name)
                             .template request_response<uint8_t, uint8_t>()
@@ -1700,7 +1700,7 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_same_header
                             .template response_user_header<CustomHeaderWithSameTypeNameButDifferentSize>()
                             .open();
     ASSERT_FALSE(sut_open_res.has_value());
-    EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
+    EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleRequestOrResponseType);
 }
 
 TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_same_header_type_but_different_alignment_fails) {
@@ -1721,7 +1721,7 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_same_header
                             .template response_user_header<CustomHeader>()
                             .open();
     ASSERT_FALSE(sut_open_req.has_value());
-    EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestType);
+    EXPECT_EQ(sut_open_req.error(), RequestResponseOpenError::IncompatibleRequestOrResponseType);
 
     auto sut_open_res = node.service_builder(service_name)
                             .template request_response<uint8_t, uint8_t>()
@@ -1729,7 +1729,7 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_same_header
                             .template response_user_header<CustomHeaderWithSameTypeNameButDifferentAlignment>()
                             .open();
     ASSERT_FALSE(sut_open_res.has_value());
-    EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
+    EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleRequestOrResponseType);
 }
 
 TYPED_TEST(ServiceRequestResponseTest,

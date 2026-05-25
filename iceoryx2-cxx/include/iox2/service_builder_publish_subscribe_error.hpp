@@ -19,6 +19,8 @@
 namespace iox2 {
 /// Errors that can occur when an existing [`MessagingPattern::PublishSubscribe`] [`Service`] shall be opened.
 enum class PublishSubscribeOpenError : uint8_t {
+    /// An interrupt signal was raised.
+    Interrupt,
     /// Service could not be openen since it does not exist
     DoesNotExist,
     /// Errors that indicate either an implementation issue or a wrongly
@@ -67,10 +69,16 @@ enum class PublishSubscribeOpenError : uint8_t {
     /// [`Service`] should be
     /// recreatable.
     IsMarkedForDestruction,
+    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    UnableToCreateServiceTag,
+    /// The iceoryx2 service version does not match the one of the [`Service`].
+    VersionMismatch,
 };
 
 /// Errors that can occur when a new [`MessagingPattern::PublishSubscribe`] [`Service`] shall be created.
 enum class PublishSubscribeCreateError : uint8_t {
+    /// An interrupt signal was raised.
+    Interrupt,
     /// Some underlying resources of the [`Service`] are either missing,
     /// corrupted or unaccessible.
     ServiceInCorruptedState,
@@ -92,11 +100,17 @@ enum class PublishSubscribeCreateError : uint8_t {
     /// initialized. Can be caused
     /// by a process that crashed during [`Service`] creation.
     HangsInCreation,
+    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    UnableToCreateServiceTag,
+    /// The [`Service`]s config could not be created and written to the static service configuration.
+    ServiceConfigCouldNotBeCreated,
 };
 
 /// Errors that can occur when a [`MessagingPattern::PublishSubscribe`] [`Service`] shall be
 /// created or opened.
 enum class PublishSubscribeOpenOrCreateError : uint8_t {
+    /// An interrupt signal was raised.
+    OpenInterrupt,
     /// Service could not be openen since it does not exist
     OpenDoesNotExist,
     /// Errors that indicate either an implementation issue or a wrongly
@@ -145,7 +159,13 @@ enum class PublishSubscribeOpenOrCreateError : uint8_t {
     /// [`Service`] should be
     /// recreatable.
     OpenIsMarkedForDestruction,
+    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    OpenUnableToCreateServiceTag,
+    /// The iceoryx2 service version does not match the one of the [`Service`].
+    OpenVersionMismatch,
 
+    /// An interrupt signal was raised.
+    CreateInterrupt,
     /// Some underlying resources of the [`Service`] are either missing,
     /// corrupted or unaccessible.
     CreateServiceInCorruptedState,
@@ -163,17 +183,14 @@ enum class PublishSubscribeOpenOrCreateError : uint8_t {
     CreateInternalFailure,
     /// Multiple processes are trying to create the same [`Service`].
     CreateIsBeingCreatedByAnotherInstance,
-    /// The system has cleaned up the [`Service`] but there are still endpoints
-    /// like
-    /// [`Publisher`] or
-    /// [`Subscriber`] alive or
-    /// [`Sample`] or
-    /// [`SampleMut`] in use.
-    CreateOldConnectionsStillActive,
     /// The [`Service`]s creation timeout has passed and it is still not
     /// initialized. Can be caused
     /// by a process that crashed during [`Service`] creation.
     CreateHangsInCreation,
+    /// The [`Node`] service tag could not be created. Required to track resources of dead nodes when cleaning them up.
+    CreateUnableToCreateServiceTag,
+    /// The [`Service`]s config could not be created and written to the static service configuration.
+    CreateServiceConfigCouldNotBeCreated,
     /// Can occur when another process creates and removes the same [`Service`] repeatedly with a
     /// high frequency.
     SystemInFlux,

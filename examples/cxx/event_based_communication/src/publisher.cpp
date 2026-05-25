@@ -22,7 +22,7 @@ constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 auto main() -> int {
     set_log_level_from_env_or(LogLevel::Info);
     auto node = NodeBuilder().create<ServiceType::Ipc>().value();
-    auto publisher = CustomPublisher::create(node, ServiceName::create("My/Funk/ServiceName").value());
+    auto publisher = CustomPublisher::create(node, ServiceName::create("EventBasedCommService").value());
 
     auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().value();
     // Whenever our publisher receives an event we get notified.
