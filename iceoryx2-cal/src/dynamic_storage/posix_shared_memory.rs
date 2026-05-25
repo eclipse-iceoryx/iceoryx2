@@ -67,7 +67,6 @@ use iceoryx2_bb_posix::memory_mapping::MemoryMappingCreationError;
 use iceoryx2_bb_posix::shared_memory::*;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fail;
-use iceoryx2_log::warn;
 
 use crate::static_storage::file::NamedConceptConfiguration;
 use crate::static_storage::file::NamedConceptRemoveError;
@@ -518,35 +517,17 @@ impl<T: Send + Sync + Debug> NamedConceptMgmt for Storage<T> {
         let msg = "Unable to remove dynamic_storage::posix_shared_memory";
         let origin = "dynamic_storage::posix_shared_memory::Storage::remove_cfg()";
 
-        match Builder::<T>::new(name)
-            .config(cfg)
-            .open(AccessMode::ReadWrite)
-        {
-            Ok(s) => {
-                s.acquire_ownership();
-                Ok(true)
-            }
-            Err(DynamicStorageOpenError::DoesNotExist) => Ok(false),
-            Err(e) => {
-                if e != DynamicStorageOpenError::InitializationNotYetFinalized {
-                    warn!(from origin,
-                    "Removing DynamicStorage in broken state ({:?}) will not call drop of the underlying data type {:?}.",
-                    e, core::any::type_name::<T>());
-                }
-
-                match iceoryx2_bb_posix::shared_memory::SharedMemory::remove(&full_name) {
-                    Ok(v) => Ok(v),
-                    Err(
-                        iceoryx2_bb_posix::shared_memory::SharedMemoryRemoveError::InsufficientPermissions,
-                    ) => {
-                        fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
+        match iceoryx2_bb_posix::shared_memory::SharedMemory::remove(&full_name) {
+            Ok(v) => Ok(v),
+            Err(
+                iceoryx2_bb_posix::shared_memory::SharedMemoryRemoveError::InsufficientPermissions,
+            ) => {
+                fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
                                      "{} \"{}\" due to insufficient permissions.", msg, name);
-                    }
-                    Err(v) => {
-                        fail!(from origin, with NamedConceptRemoveError::InternalError,
+            }
+            Err(v) => {
+                fail!(from origin, with NamedConceptRemoveError::InternalError,
                                     "{} \"{}\" due to an internal failure ({:?}).", msg, name, v);
-                    }
-                }
             }
         }
     }

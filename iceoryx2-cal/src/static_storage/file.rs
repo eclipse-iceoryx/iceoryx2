@@ -223,35 +223,16 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
 
         let file_path = config.path_for(storage_name);
 
-        let mut file = match FileBuilder::new(&file_path).open_existing(AccessMode::Read) {
-            Ok(f) => f,
-            Err(FileOpenError::FileDoesNotExist) => return Ok(false),
-            Err(v) => {
-                fail!(from origin, with NamedConceptRemoveError::InternalError,
-                    "{} since the file could not be opened for permission adjustment ({:?}).", msg, v);
-            }
-        };
-
-        let set_permission_result = file.set_permission(Permission::ALL);
-
         match File::remove(&file_path) {
             Ok(v) => Ok(v),
-            Err(e) => {
-                if let Err(e) = set_permission_result {
-                    warn!(from origin,
-                          "Unable to adjust the files permission as preparation to remove the file ({e:?}).");
-                }
-                match e {
-                    FileRemoveError::InsufficientPermissions
-                    | FileRemoveError::PartOfReadOnlyFileSystem => {
-                        fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
+            Err(FileRemoveError::InsufficientPermissions)
+            | Err(FileRemoveError::PartOfReadOnlyFileSystem) => {
+                fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
                                 "{} due to insufficient permissions.", msg);
-                    }
-                    _ => {
-                        fail!(from origin, with NamedConceptRemoveError::InternalError,
+            }
+            Err(e) => {
+                fail!(from origin, with NamedConceptRemoveError::InternalError,
                                 "{} due to unknown failure ({:?}).", msg, e);
-                    }
-                }
             }
         }
     }
