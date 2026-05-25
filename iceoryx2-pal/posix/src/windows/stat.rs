@@ -64,3 +64,20 @@ pub unsafe fn stat(path: *const c_char, buf: *mut stat_t) -> int {
 pub unsafe fn umask(mask: mode_t) -> mode_t {
     mode_t::MAX
 }
+
+pub unsafe fn chmod(path: *const c_char, mode: mode_t) -> int {
+    let security_attributes = from_mode_to_security_attributes(handle, mode);
+    unsafe {
+        let (has_file_security_set, _) = win32call!(SetFileSecurityA(
+            path,
+            DACL_SECURITY_INFORMATION,
+            security_attributes.lpSecurityDescriptor
+        ));
+        if has_file_security_set == FALSE {
+            Errno::set(Errno::EPERM);
+            return -1;
+        }
+
+        0
+    }
+}
