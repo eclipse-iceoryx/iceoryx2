@@ -29,17 +29,17 @@ pub(crate) mod internal {
     /// Stores an OS handle to some resource that is also inter-process capable, like a unnamed
     /// semaphore or mutex handle.
     #[repr(C)]
-    pub struct HandleStorage<T: Send + Sync> {
+    pub struct HandleStorage<T> {
         handle: UnsafeCell<T>,
         is_inter_process_capable: AtomicBool,
         is_initialized: AtomicBool,
     }
 
-    unsafe impl<T: Send + Sync> ZeroCopySend for HandleStorage<T> {}
-    unsafe impl<T: Send + Sync> Send for HandleStorage<T> {}
-    unsafe impl<T: Send + Sync> Sync for HandleStorage<T> {}
+    unsafe impl<T> ZeroCopySend for HandleStorage<T> {}
+    unsafe impl<T> Send for HandleStorage<T> {}
+    unsafe impl<T> Sync for HandleStorage<T> {}
 
-    impl<T: Send + Sync> Debug for HandleStorage<T> {
+    impl<T> Debug for HandleStorage<T> {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
             write!(
                 f,
@@ -51,13 +51,13 @@ pub(crate) mod internal {
         }
     }
 
-    impl<T: Send + Sync> Drop for HandleStorage<T> {
+    impl<T> Drop for HandleStorage<T> {
         fn drop(&mut self) {
             self.is_initialized.store(false, Ordering::Relaxed);
         }
     }
 
-    impl<T: Send + Sync> HandleStorage<T> {
+    impl<T> HandleStorage<T> {
         /// Creates a new HandleStorage with a predefined handle that must be not initialized.
         pub fn new(handle: T) -> Self {
             Self {
