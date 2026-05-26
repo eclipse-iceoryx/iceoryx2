@@ -12,8 +12,12 @@
 
 pub mod semaphore;
 
-use crate::event::event_state::EventState;
-use iceoryx2_bb_system_types::file_path::FilePath;
+use crate::event::{NamedConcept, NamedConceptBuilder};
+use crate::event::{NamedConceptMgmt, event_state::EventState};
+use core::fmt::Debug;
+use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_bb_system_types::file_name::FileName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TriggerCreateError {}
@@ -59,19 +63,35 @@ impl core::fmt::Display for TriggerNotifyError {
 
 impl core::error::Error for TriggerNotifyError {}
 
-pub trait TriggerWaiter<E: EventState>: Sized {
-    fn create(file_path: &FilePath) -> Result<Self, TriggerCreateError>;
+pub trait TriggerWaiter<E: EventState>: NamedConcept + Debug + Abandonable + Send {
     fn wait(&self) -> Result<(), TriggerWaitError>;
     fn state(&self) -> &E;
 }
 
-pub trait TriggerHandle<E: EventState>: Sized {
-    fn open(file_path: &FilePath) -> Result<Self, TriggerOpenError>;
+pub trait TriggerHandle<E: EventState>: NamedConcept + Debug + Abandonable + Send {
     fn notify(&self) -> Result<(), TriggerNotifyError>;
     fn state(&self) -> &E;
 }
 
-pub trait Trigger<E: EventState> {
+pub trait TriggerWaiterBuilder<E: EventState, T: Trigger<E>>:
+    NamedConceptBuilder<T> + Debug
+{
+    fn open(self) -> Result<T::Handle, TriggerOpenError>;
+}
+
+pub trait TriggerHandleBuilder<E: EventState, T: Trigger<E>>:
+    NamedConceptBuilder<T> + Debug
+{
+    fn create(self) -> Result<T::Waiter, TriggerCreateError>;
+}
+
+pub trait Trigger<E: EventState>: Sized + NamedConceptMgmt + Debug {
     type Waiter: TriggerWaiter<E>;
+    type WaiterBuiler;
     type Handle: TriggerHandle<E>;
+    type HandleBuilder;
+
+    fn default_suffix() -> FileName {
+        unsafe { FileName::new_unchecked(b".trigger") }
+    }
 }
