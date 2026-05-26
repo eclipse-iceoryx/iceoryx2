@@ -208,6 +208,7 @@ _release-verify-no-stale-version old:
     if grep -rF \
         --exclude-dir=.env \
         --exclude-dir=.git \
+        --exclude-dir=.poetry \
         --exclude-dir=landing-page \
         --exclude-dir=plots \
         --exclude-dir=release-notes \
