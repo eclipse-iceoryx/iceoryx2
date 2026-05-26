@@ -17,6 +17,7 @@ std = [
   "iceoryx2-cal/std",
   "iceoryx2-bb-concurrency/std",
   "iceoryx2-bb-container/std",
+  "iceoryx2-bb-derive-macros/std",
   "iceoryx2-bb-loggers/std",
   "iceoryx2-bb-memory/std",
   "iceoryx2-bb-posix/std",

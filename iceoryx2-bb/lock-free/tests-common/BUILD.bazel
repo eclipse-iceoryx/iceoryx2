@@ -42,5 +42,6 @@ rust_library(
     ],
     proc_macro_deps = [
         "//iceoryx2-bb/testing-macros:iceoryx2-bb-testing-macros",
+        "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
     ],
 )

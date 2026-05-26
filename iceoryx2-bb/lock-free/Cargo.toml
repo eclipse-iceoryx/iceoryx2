@@ -18,6 +18,7 @@ default = []
 
 std = [
   "iceoryx2-log/std",
+  "iceoryx2-bb-derive-macros/std",
   "iceoryx2-bb-concurrency/std",
   "iceoryx2-bb-elementary/std"
 ]
