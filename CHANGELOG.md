@@ -1,6 +1,7 @@
 # Changelog
 
 * [unreleased](doc/release-notes/iceoryx2-unreleased.md)
+* [v0.9.1](doc/release-notes/iceoryx2-v0.9.1.md)
 * [v0.9.0](doc/release-notes/iceoryx2-v0.9.0.md)
 * [v0.8.1](doc/release-notes/iceoryx2-v0.8.1.md)
 * [v0.8.0](doc/release-notes/iceoryx2-v0.8.0.md)
