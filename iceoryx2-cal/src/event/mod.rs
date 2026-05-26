@@ -11,12 +11,14 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pub mod common;
+pub mod event_state;
 pub mod id_tracker;
 pub mod process_local_socketpair;
 pub mod recommended;
 pub mod sem_bitset_posix_shared_memory;
 pub mod sem_bitset_process_local;
 pub mod signal_mechanism;
+pub mod trigger;
 pub mod unix_datagram_socket;
 
 use core::{fmt::Debug, time::Duration};

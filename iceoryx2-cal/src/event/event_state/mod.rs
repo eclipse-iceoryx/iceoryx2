@@ -1,0 +1,50 @@
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache Software License 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+// which is available at https://opensource.org/licenses/MIT.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+use core::fmt::Debug;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+
+pub struct EventId(u64);
+
+impl EventId {
+    pub const fn new(value: u64) -> Self {
+        Self(value)
+    }
+
+    pub const fn as_value(&self) -> u64 {
+        self.0
+    }
+}
+
+pub struct Event {
+    pub event_id: EventId,
+    pub count: u64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EventStateActivateError {
+    IdOutOfBounds,
+}
+
+impl core::fmt::Display for EventStateActivateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "EventStateActivateError::{self:?}")
+    }
+}
+
+impl core::error::Error for EventStateActivateError {}
+
+pub trait EventState: Sized + Send + Sync + Debug + ZeroCopySend {
+    fn activate(&self, event_id: EventId) -> Result<(), EventStateActivateError>;
+    fn drain<F: FnMut(Event)>(&self, callback: F) -> u64;
+    fn try_drain_one(&self) -> Option<EventId>;
+}
