@@ -209,7 +209,25 @@ impl<T: Send + Sync + Debug + ZeroCopySend> Builder<'_, T> {
         let mut elapsed_time = Duration::ZERO;
         let shm = loop {
             match SharedMemoryBuilder::new(&full_name).open_existing(access_mode) {
-                Ok(v) => break v,
+                Ok(v) => {
+                    let permissions = match v.permission() {
+                        Ok(p) => p,
+                        Err(e) => {
+                            fail!(from self, with DynamicStorageOpenError::InternalError, "{} since a failure occurred while acquiring the file permissions. Error: {:?}", msg, e);
+                        }
+                    };
+                    // NOTE: although the shm is opened for reading, root can still open a write-only shm;
+                    // when this happens, the subsequent read will cause a SIGBUS
+                    if permissions.has(Permission::OWNER_READ) {
+                        break v;
+                    }
+
+                    if elapsed_time >= self.timeout {
+                        fail!(from self, with DynamicStorageOpenError::InitializationNotYetFinalized,
+                                  "{} since it is not readable - (it is not initialized after {:?}).",
+                                  msg, self.timeout);
+                    }
+                }
                 Err(SharedMemoryCreationError::DoesNotExist) => {
                     fail!(from self, with DynamicStorageOpenError::DoesNotExist,
                     "{} since a shared memory with that name does not exists.", msg);
@@ -233,19 +251,6 @@ impl<T: Send + Sync + Debug + ZeroCopySend> Builder<'_, T> {
                                     with DynamicStorageOpenError::InternalError,
                                     "{} since the adaptive wait call failed.", msg);
         };
-
-        let permissions = match shm.permission() {
-            Ok(p) => p,
-            Err(e) => {
-                fail!(from self, with DynamicStorageOpenError::InternalError, "{} since a failure occurred while acquiring the file permissions. Error: {:?}", msg, e);
-            }
-        };
-        // NOTE: although the shm is opened for reading, root can still open a write-only shm;
-        // when this happens, the subsequent read will cause a SIGBUS
-        if !permissions.has(Permission::OWNER_READ) {
-            fail!(from self, with DynamicStorageOpenError::InitializationNotYetFinalized,
-                  "{} since it is not readable.",msg);
-        }
 
         let init_state = shm.base_address().as_ptr() as *const Data<T>;
 
