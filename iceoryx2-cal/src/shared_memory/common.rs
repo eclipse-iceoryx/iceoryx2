@@ -16,6 +16,7 @@ use core::ptr::NonNull;
 use core::{alloc::Layout, fmt::Debug};
 
 use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
@@ -33,6 +34,7 @@ use crate::static_storage::file::{
 pub mod details {
     use alloc::vec::Vec;
 
+    use iceoryx2_bb_derive_macros::ZeroCopySend;
     use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use pool_allocator::PoolAllocator;
@@ -345,7 +347,7 @@ pub mod details {
         }
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, ZeroCopySend)]
     #[repr(C)]
     pub struct AllocatorDetails<Allocator: ShmAllocator> {
         allocator_id: u8,

@@ -34,6 +34,9 @@ rust_library(
         "//iceoryx2-log/log:iceoryx2-log",
         "//iceoryx2-bb/concurrency:iceoryx2-bb-concurrency",
     ],
+    proc_macro_deps = [
+        "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
+    ],
 )
 
 rust_test(

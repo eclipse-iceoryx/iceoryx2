@@ -50,21 +50,22 @@
 //! ```
 
 pub use core::alloc::Layout;
-pub use iceoryx2_bb_elementary_traits::allocator::*;
-
-use iceoryx2_bb_concurrency::atomic::Ordering;
-
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::align;
+pub use iceoryx2_bb_elementary_traits::allocator::*;
 use iceoryx2_bb_elementary_traits::relocatable_container::*;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::ReleaseMode;
 use iceoryx2_log::fail;
 use iceoryx2_log::fatal_panic;
 
-#[derive(Debug)]
+#[derive(Debug, ZeroCopySend)]
+#[repr(C)]
 pub struct PoolAllocator {
     buckets: UniqueIndexSet,
     bucket_size: usize,

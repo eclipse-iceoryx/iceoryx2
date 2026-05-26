@@ -13,6 +13,7 @@
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
 pub(crate) mod internal {
     use core::fmt::Debug;
@@ -27,12 +28,14 @@ pub(crate) mod internal {
 
     /// Stores an OS handle to some resource that is also inter-process capable, like a unnamed
     /// semaphore or mutex handle.
+    #[repr(C)]
     pub struct HandleStorage<T> {
         handle: UnsafeCell<T>,
         is_inter_process_capable: AtomicBool,
         is_initialized: AtomicBool,
     }
 
+    unsafe impl<T> ZeroCopySend for HandleStorage<T> {}
     unsafe impl<T> Send for HandleStorage<T> {}
     unsafe impl<T> Sync for HandleStorage<T> {}
 

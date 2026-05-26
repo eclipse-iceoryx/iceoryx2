@@ -20,6 +20,7 @@ pub mod generic {
     use alloc::vec::Vec;
     use core::fmt::Debug;
     use core::ptr::NonNull;
+    use iceoryx2_bb_derive_macros::ZeroCopySend;
     use iceoryx2_bb_lock_free::mpmc::robust_unique_index_set::OwnerId;
     use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::{ReleaseMode, ReleaseState};
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -29,6 +30,7 @@ pub mod generic {
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
     use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
     use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+    use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
     use iceoryx2_bb_lock_free::mpmc::container::ContainerAddFailure;
     use iceoryx2_bb_lock_free::mpmc::container::*;
     use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle, Handle};
@@ -37,7 +39,8 @@ pub mod generic {
     use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_testing::assert_that;
 
-    #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Eq, Ord)]
+    #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Eq, Ord, ZeroCopySend)]
+    #[repr(C)]
     pub struct TestType {
         some_numbers: [usize; 32],
     }
@@ -70,7 +73,9 @@ pub mod generic {
     const CAPACITY: usize = 129;
 
     #[test]
-    pub fn add_elements_until_full_works<T: Debug + Copy + From<usize> + Into<usize>>() {
+    pub fn add_elements_until_full_works<
+        T: Debug + Copy + From<usize> + Into<usize> + ZeroCopySend,
+    >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         assert_that!(sut.capacity(), eq CAPACITY);
         let owner_id = OwnerId::new(2).unwrap();
@@ -95,7 +100,9 @@ pub mod generic {
     }
 
     #[test]
-    pub fn add_and_remove_elements_works<T: Debug + Copy + From<usize> + Into<usize>>() {
+    pub fn add_and_remove_elements_works<
+        T: Debug + Copy + From<usize> + Into<usize> + ZeroCopySend,
+    >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         assert_that!(sut.is_empty(), eq true);
         let mut stored_indices = vec![];
@@ -132,7 +139,7 @@ pub mod generic {
     }
 
     #[test]
-    pub fn double_remove_is_detected<T: Debug + Copy + From<usize> + Into<usize>>() {
+    pub fn double_remove_is_detected<T: Debug + Copy + From<usize> + Into<usize> + ZeroCopySend>() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let owner_id = OwnerId::new(2).unwrap();
         let handle = sut.add((123).into(), owner_id).unwrap();
@@ -159,7 +166,7 @@ pub mod generic {
 
     #[test]
     pub fn add_and_remove_elements_works_with_uninitialized_memory<
-        T: Debug + Copy + From<usize> + Into<usize>,
+        T: Debug + Copy + From<usize> + Into<usize> + ZeroCopySend,
     >() {
         // TestType is the largest test type so it is safe to acquire this memory for every test
         // case - hack required since `T` cannot be used in const operations
@@ -201,7 +208,9 @@ pub mod generic {
     }
 
     #[test]
-    pub fn add_and_unsafe_remove_with_handle_works<T: Debug + Copy + From<usize> + Into<usize>>() {
+    pub fn add_and_unsafe_remove_with_handle_works<
+        T: Debug + Copy + From<usize> + Into<usize> + ZeroCopySend,
+    >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut stored_handles: Vec<ContainerHandle> = vec![];
 
@@ -237,7 +246,9 @@ pub mod generic {
     }
 
     #[test]
-    pub fn state_of_empty_container_is_empty<T: Debug + Copy + From<usize> + Into<usize>>() {
+    pub fn state_of_empty_container_is_empty<
+        T: Debug + Copy + From<usize> + Into<usize> + ZeroCopySend,
+    >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut counter = 0;
 
@@ -258,7 +269,7 @@ pub mod generic {
 
     #[test]
     pub fn state_not_updated_when_contents_do_not_change<
-        T: Debug + Copy + From<usize> + Into<usize>,
+        T: Debug + Copy + From<usize> + Into<usize> + ZeroCopySend,
     >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let owner_id = OwnerId::new(4).unwrap();
@@ -289,7 +300,9 @@ pub mod generic {
     }
 
     #[test]
-    pub fn state_updated_when_contents_are_removed<T: Debug + Copy + From<usize> + Into<usize>>() {
+    pub fn state_updated_when_contents_are_removed<
+        T: Debug + Copy + From<usize> + Into<usize> + ZeroCopySend,
+    >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut stored_indices: Vec<ContainerHandle> = vec![];
         let owner_id = OwnerId::new(12903).unwrap();
@@ -317,7 +330,9 @@ pub mod generic {
     }
 
     #[test]
-    pub fn state_updated_when_contents_are_changed<T: Debug + Copy + From<usize> + Into<usize>>() {
+    pub fn state_updated_when_contents_are_changed<
+        T: Debug + Copy + From<usize> + Into<usize> + ZeroCopySend,
+    >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut stored_indices: Vec<ContainerHandle> = vec![];
         let owner_id = OwnerId::new(12903).unwrap();
@@ -354,7 +369,7 @@ pub mod generic {
 
     #[test]
     pub fn state_updated_works_for_new_and_removed_elements<
-        T: Debug + Copy + From<usize> + Into<usize>,
+        T: Debug + Copy + From<usize> + Into<usize> + ZeroCopySend,
     >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut state = sut.get_state();
@@ -405,7 +420,7 @@ pub mod generic {
 
     #[test]
     pub fn state_updated_works_when_same_element_is_added_and_removed<
-        T: Debug + Copy + From<usize> + Into<usize>,
+        T: Debug + Copy + From<usize> + Into<usize> + ZeroCopySend,
     >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut state = sut.get_state();
@@ -417,7 +432,9 @@ pub mod generic {
     }
 
     #[test]
-    pub fn concurrent_add_release_for_each<T: Debug + Copy + From<usize> + Into<usize> + Send>() {
+    pub fn concurrent_add_release_for_each<
+        T: Debug + Copy + From<usize> + Into<usize> + Send + ZeroCopySend,
+    >() {
         const REPETITIONS: i64 = 1000;
         let number_of_threads_per_op =
             (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
@@ -519,7 +536,9 @@ pub mod generic {
     }
 
     #[test]
-    pub fn recover_cleans_up_dead_entries<T: Debug + Copy + From<usize> + Into<usize>>() {
+    pub fn recover_cleans_up_dead_entries<
+        T: Debug + Copy + From<usize> + Into<usize> + ZeroCopySend,
+    >() {
         let sut = FixedSizeContainer::<T, { CAPACITY * 2 }>::new();
         let mut stored_handles: Vec<ContainerHandle> = vec![];
 
@@ -552,7 +571,7 @@ pub mod generic {
 
     #[test]
     pub fn recover_cleans_up_nothing_when_owner_id_is_not_present<
-        T: Debug + Copy + From<usize> + Into<usize>,
+        T: Debug + Copy + From<usize> + Into<usize> + ZeroCopySend,
     >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut stored_handles: Vec<ContainerHandle> = vec![];
@@ -581,7 +600,7 @@ pub mod generic {
 
     #[test]
     pub fn recover_cleans_up_nothing_when_predicate_returns_false<
-        T: Debug + Copy + From<usize> + Into<usize>,
+        T: Debug + Copy + From<usize> + Into<usize> + ZeroCopySend,
     >() {
         let sut = FixedSizeContainer::<T, { CAPACITY * 2 }>::new();
         let mut stored_handles: Vec<ContainerHandle> = vec![];
@@ -615,7 +634,7 @@ pub mod generic {
 
     #[test]
     pub fn recover_locks_container_with_release_mode_lock_if_last_index<
-        T: Debug + Copy + From<usize> + Into<usize>,
+        T: Debug + Copy + From<usize> + Into<usize> + ZeroCopySend,
     >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut stored_handles: Vec<ContainerHandle> = vec![];
@@ -642,7 +661,7 @@ pub mod generic {
 
     #[test]
     pub fn recover_provides_content_in_predicate_argument<
-        T: Debug + Copy + From<usize> + Into<usize>,
+        T: Debug + Copy + From<usize> + Into<usize> + ZeroCopySend,
     >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut stored_handles: Vec<ContainerHandle> = vec![];
@@ -679,7 +698,9 @@ pub mod generic {
     }
 
     #[test]
-    pub fn update_state_updates_after_recover<T: Debug + Copy + From<usize> + Into<usize>>() {
+    pub fn update_state_updates_after_recover<
+        T: Debug + Copy + From<usize> + Into<usize> + ZeroCopySend,
+    >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut stored_handles: Vec<ContainerHandle> = vec![];
 
@@ -705,7 +726,9 @@ pub mod generic {
     }
 
     #[test]
-    pub fn concurrent_add_and_recover<T: Debug + Copy + From<usize> + Into<usize> + Send + Ord>() {
+    pub fn concurrent_add_and_recover<
+        T: Debug + Copy + From<usize> + Into<usize> + Send + Ord + ZeroCopySend,
+    >() {
         let _watchdog = Watchdog::new();
         const REPETITIONS: i64 = 1000;
         let number_of_threads_per_op = (SystemInfo::NumberOfCpuCores.value()).clamp(2, usize::MAX);
@@ -762,7 +785,7 @@ pub mod generic {
 
     #[test]
     pub fn concurrent_recover_ping_pong<
-        T: Debug + Copy + From<usize> + Into<usize> + Send + Ord,
+        T: Debug + Copy + From<usize> + Into<usize> + Send + Ord + ZeroCopySend,
     >() {
         let _watchdog = Watchdog::new();
         const REPETITIONS: u64 = 1000;

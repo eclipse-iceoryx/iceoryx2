@@ -17,6 +17,7 @@ std = [
   "iceoryx2-cal/std",
   "iceoryx2-bb-concurrency/std",
   "iceoryx2-bb-container/std",
+  "iceoryx2-bb-derive-macros/std",
   "iceoryx2-bb-loggers/std",
   "iceoryx2-bb-memory/std",
   "iceoryx2-bb-posix/std",
@@ -36,6 +37,7 @@ harness = false
 iceoryx2-cal = { workspace = true }
 iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
+iceoryx2-bb-derive-macros = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-loggers = { workspace = true }
 iceoryx2-bb-memory = { workspace = true }

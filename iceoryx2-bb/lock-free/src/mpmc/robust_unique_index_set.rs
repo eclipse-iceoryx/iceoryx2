@@ -111,11 +111,13 @@ use core::ptr::NonNull;
 
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::relocatable_ptr::{PointerTrait, RelocatablePointer};
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic};
 
 use crate::mpmc::unique_index_set_enums::{
@@ -167,6 +169,8 @@ pub struct RobustUniqueIndexSet {
     is_memory_initialized: AtomicBool,
     generation_counter: AtomicU64,
 }
+
+unsafe impl ZeroCopySend for RobustUniqueIndexSet {}
 
 impl RelocatableContainer for RobustUniqueIndexSet {
     unsafe fn new_uninit(capacity: usize) -> Self {
@@ -543,7 +547,8 @@ impl RobustUniqueIndexSet {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, ZeroCopySend)]
+#[repr(C)]
 pub struct StaticRobustUniqueIndexSetData<const CAPACITY: usize> {
     pub(crate) cells: [AtomicU64; CAPACITY],
 }

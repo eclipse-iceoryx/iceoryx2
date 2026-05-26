@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::time::Duration;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::creation_mode::CreationMode;
 use iceoryx2_bb_posix::file::AccessMode;
@@ -26,8 +27,10 @@ use iceoryx2_cal::testing::*;
 const TIMEOUT: Duration = Duration::from_millis(100);
 
 #[derive(Debug)]
+#[repr(C)]
 struct TestData {}
 
+unsafe impl ZeroCopySend for TestData {}
 unsafe impl Send for TestData {}
 unsafe impl Sync for TestData {}
 

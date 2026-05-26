@@ -12,6 +12,8 @@
 
 use core::{fmt::Debug, time::Duration};
 
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+
 use super::{ListenerCreateError, ListenerWaitError, NotifierNotifyError};
 
 pub mod semaphore;
@@ -19,7 +21,7 @@ pub mod semaphore;
 /// The [`SignalMechanism`] is a building block for [`crate::event::Event`]
 /// concept. Its task is to
 /// wake up another process/thread with a signal.
-pub trait SignalMechanism: Send + Sync + Debug {
+pub trait SignalMechanism: Send + Sync + Debug + ZeroCopySend {
     /// Creates a [`SignalMechanism`]. It cannot be used until
     /// [`SignalMechanism::init()`] was called.
     fn new() -> Self;

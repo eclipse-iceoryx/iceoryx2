@@ -63,16 +63,19 @@
 //! }
 //! ```
 
+use core::marker::PhantomData;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
 use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 
-use core::marker::PhantomData;
-
 /// A building block to generate global unique ids
 #[derive(Debug, Eq, Hash, PartialEq)]
+#[repr(C)]
 pub struct UniqueId {
     value: u64,
 }
+
+unsafe impl ZeroCopySend for UniqueId {}
 
 impl Default for UniqueId {
     fn default() -> Self {

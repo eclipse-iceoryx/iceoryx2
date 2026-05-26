@@ -13,8 +13,10 @@
 use core::alloc::Layout;
 use core::ptr::NonNull;
 
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::{
@@ -41,7 +43,7 @@ use crate::{
 
 /// Defines the data segment type of a zero copy capable sender port.
 #[repr(C)]
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, ZeroCopySend)]
 pub enum DataSegmentType {
     /// The data segment can be resized if no more memory is available.
     Dynamic,

@@ -26,15 +26,16 @@
 //! # Ok(())
 //! # }
 //! ```
-use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
-use iceoryx2_bb_lock_free::mpmc::{container::*, unique_index_set_enums::ReleaseMode};
-use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_log::{error, fatal_panic};
-
 use crate::{
     identifiers::{UniqueNodeId, UniquePortId, UniquePublisherId, UniqueSubscriberId},
     port::details::data_segment::DataSegmentType,
 };
+use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_lock_free::mpmc::{container::*, unique_index_set_enums::ReleaseMode};
+use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_log::{error, fatal_panic};
 
 use super::PortCleanupAction;
 
@@ -48,7 +49,7 @@ pub(crate) struct DynamicConfigSettings {
 /// Contains the communication settings of the connected
 /// [`Publisher`](crate::port::publisher::Publisher).
 #[repr(C)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, ZeroCopySend)]
 pub struct PublisherDetails {
     /// The [`UniquePublisherId`] of the [`Publisher`](crate::port::publisher::Publisher).
     pub publisher_id: UniquePublisherId,
@@ -72,7 +73,7 @@ pub struct PublisherDetails {
 /// Contains the communication settings of the connected
 /// [`Subscriber`](crate::port::subscriber::Subscriber).
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, ZeroCopySend)]
 pub struct SubscriberDetails {
     /// The [`UniqueSubscriberId`] of the [`Subscriber`](crate::port::subscriber::Subscriber).
     pub subscriber_id: UniqueSubscriberId,
@@ -87,7 +88,7 @@ pub struct SubscriberDetails {
 /// [`crate::service::messaging_pattern::MessagingPattern::PublishSubscribe`]
 /// based service. Contains dynamic parameters like the connected endpoints etc..
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, ZeroCopySend)]
 pub struct DynamicConfig {
     pub(crate) subscribers: Container<SubscriberDetails>,
     pub(crate) publishers: Container<PublisherDetails>,

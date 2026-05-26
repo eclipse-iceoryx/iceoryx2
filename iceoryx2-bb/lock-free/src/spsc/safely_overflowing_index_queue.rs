@@ -120,6 +120,8 @@ pub type RelocatableSafelyOverflowingIndexQueue =
     details::SafelyOverflowingIndexQueue<RelocatablePointer<UnsafeCell<u64>>>;
 
 pub mod details {
+    use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+
     use super::*;
 
     /// A threadsafe lock-free safely overflowing index queue with a capacity which can be set up at runtime,
@@ -137,6 +139,10 @@ pub mod details {
         read_position: AtomicU64,
     }
 
+    unsafe impl<PointerType: PointerTrait<UnsafeCell<u64>> + ZeroCopySend> ZeroCopySend
+        for SafelyOverflowingIndexQueue<PointerType>
+    {
+    }
     unsafe impl<PointerType: PointerTrait<UnsafeCell<u64>>> Sync
         for SafelyOverflowingIndexQueue<PointerType>
     {

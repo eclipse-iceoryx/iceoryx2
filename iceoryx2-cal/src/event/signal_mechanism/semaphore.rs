@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::{
     mutex::{Handle, IpcCapable},
     semaphore::{
@@ -23,7 +25,8 @@ use crate::event::{ListenerCreateError, ListenerWaitError, NotifierNotifyError};
 
 use super::SignalMechanism;
 
-#[derive(Debug)]
+#[derive(Debug, ZeroCopySend)]
+#[repr(C)]
 pub struct Semaphore {
     handle: UnnamedSemaphoreHandle,
 }

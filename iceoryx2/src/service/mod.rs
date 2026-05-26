@@ -264,6 +264,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::file::AccessMode;
 
 use crate::config;
@@ -962,11 +963,13 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
 
     /// Defines the construct used to store the data that can be changed at runtime but
     /// persist after a process crashed.
-    type PersistentDynamicStorage<T: Debug + Send + Sync + 'static>: DynamicStorage<T>;
+    type PersistentDynamicStorage<T: Debug + Send + Sync + ZeroCopySend + 'static>: DynamicStorage<
+        T,
+    >;
 
     /// Defines the construct used to store the [`Service`]s dynamic configuration. This
     /// contains for instance all endpoints and other dynamic details.
-    type DynamicStorage<T: Debug + Send + Sync + 'static>: DynamicStorage<T>;
+    type DynamicStorage<T: Debug + Send + Sync + ZeroCopySend + 'static>: DynamicStorage<T>;
 
     /// The memory used to store the payload.
     type SharedMemory: SharedMemoryForPoolAllocator;
@@ -995,7 +998,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
     type ArcThreadSafetyPolicy<T: Send + Debug + Abandonable>: ArcSyncPolicy<T>;
 
     /// Defines the construct used to store the management data of the blackboard service.
-    type BlackboardMgmt<T: Send + Sync + Debug + 'static>: DynamicStorage<T>;
+    type BlackboardMgmt<T: Send + Sync + Debug + ZeroCopySend + 'static>: DynamicStorage<T>;
 
     /// Defines the construct used to store the payload data of the blackboard service.
     type BlackboardPayload: SharedMemory<BumpAllocator>;

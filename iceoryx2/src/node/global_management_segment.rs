@@ -13,6 +13,8 @@
 use crate::{config::Config, service::Service};
 use iceoryx2_bb_concurrency::atomic::AtomicU32;
 use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::dynamic_storage::*;
 use iceoryx2_cal::named_concept::*;
@@ -20,7 +22,8 @@ use iceoryx2_log::fail;
 
 const GLOBAL_MGMT_NAME: FileName = unsafe { FileName::new_unchecked_const(b"node") };
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, ZeroCopySend)]
+#[repr(C)]
 struct State {
     node_counter: AtomicU32,
 }

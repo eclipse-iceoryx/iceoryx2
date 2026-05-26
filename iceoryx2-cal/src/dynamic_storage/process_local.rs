@@ -17,12 +17,12 @@
 //!
 //! ```
 //! # extern crate iceoryx2_bb_loggers;
+//! use iceoryx2_bb_concurrency::atomic::{AtomicI64, Ordering};
 //! use iceoryx2_bb_posix::access_mode::AccessMode;
 //! use iceoryx2_bb_system_types::file_name::FileName;
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
 //! use iceoryx2_cal::dynamic_storage::process_local::*;
 //! use iceoryx2_cal::named_concept::*;
-//! use core::sync::atomic::{AtomicI64, Ordering};
 //!
 //! let additional_size: usize = 1024;
 //! let storage_name = FileName::new(b"myDynStorage").unwrap();
@@ -85,7 +85,7 @@ struct StorageDetails<T> {
 }
 
 #[derive(PartialEq, Eq, Debug)]
-pub struct Configuration<T: Send + Sync + Debug> {
+pub struct Configuration<T: Send + Sync + Debug + ZeroCopySend> {
     suffix: FileName,
     prefix: FileName,
     path_hint: Path,
@@ -93,7 +93,7 @@ pub struct Configuration<T: Send + Sync + Debug> {
     type_name: String,
 }
 
-impl<T: Send + Sync + Debug> Clone for Configuration<T> {
+impl<T: Send + Sync + Debug + ZeroCopySend> Clone for Configuration<T> {
     fn clone(&self) -> Self {
         Self {
             suffix: self.suffix,
@@ -105,7 +105,7 @@ impl<T: Send + Sync + Debug> Clone for Configuration<T> {
     }
 }
 
-impl<T: Send + Sync + Debug> Default for Configuration<T> {
+impl<T: Send + Sync + Debug + ZeroCopySend> Default for Configuration<T> {
     fn default() -> Self {
         Self {
             suffix: Storage::<()>::default_suffix(),
@@ -117,13 +117,13 @@ impl<T: Send + Sync + Debug> Default for Configuration<T> {
     }
 }
 
-impl<T: Send + Sync + Debug> DynamicStorageConfiguration for Configuration<T> {
+impl<T: Send + Sync + Debug + ZeroCopySend> DynamicStorageConfiguration for Configuration<T> {
     fn type_name(&self) -> &str {
         &self.type_name
     }
 }
 
-impl<T: Send + Sync + Debug> NamedConceptConfiguration for Configuration<T> {
+impl<T: Send + Sync + Debug + ZeroCopySend> NamedConceptConfiguration for Configuration<T> {
     fn prefix(mut self, value: &FileName) -> Self {
         self.prefix = *value;
         self
@@ -203,20 +203,20 @@ static PROCESS_LOCAL_STORAGE: LazyLock<Mutex<'static, 'static, BTreeMap<FilePath
     });
 
 #[derive(Debug)]
-pub struct Storage<T: Send + Sync + Debug + 'static> {
+pub struct Storage<T: Send + Sync + Debug + 'static + ZeroCopySend> {
     name: FileName,
     data: Arc<StorageDetails<T>>,
     has_ownership: AtomicBool,
     config: Configuration<T>,
 }
 
-impl<T: Send + Sync + Debug + 'static> NamedConcept for Storage<T> {
+impl<T: Send + Sync + Debug + 'static + ZeroCopySend> NamedConcept for Storage<T> {
     fn name(&self) -> &FileName {
         &self.name
     }
 }
 
-impl<T: Send + Sync + Debug + 'static> NamedConceptMgmt for Storage<T> {
+impl<T: Send + Sync + Debug + 'static + ZeroCopySend> NamedConceptMgmt for Storage<T> {
     type Configuration = Configuration<T>;
 
     fn does_exist_cfg(
@@ -282,7 +282,7 @@ impl<T: Send + Sync + Debug + 'static> NamedConceptMgmt for Storage<T> {
     }
 }
 
-impl<T: Send + Sync + Debug + 'static> DynamicStorage<T> for Storage<T> {
+impl<T: Send + Sync + Debug + 'static + ZeroCopySend> DynamicStorage<T> for Storage<T> {
     type Builder<'builder> = Builder<'builder, T>;
 
     fn does_support_persistency() -> bool {
@@ -313,7 +313,7 @@ impl<T: Send + Sync + Debug + 'static> DynamicStorage<T> for Storage<T> {
     }
 }
 
-impl<T: Send + Sync + Debug + 'static> Abandonable for Storage<T> {
+impl<T: Send + Sync + Debug + 'static + ZeroCopySend> Abandonable for Storage<T> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         this.has_ownership.store(false, Ordering::Relaxed);
@@ -321,7 +321,7 @@ impl<T: Send + Sync + Debug + 'static> Abandonable for Storage<T> {
     }
 }
 
-impl<T: Send + Sync + Debug + 'static> Drop for Storage<T> {
+impl<T: Send + Sync + Debug + 'static + ZeroCopySend> Drop for Storage<T> {
     fn drop(&mut self) {
         if self.has_ownership() {
             match unsafe { Self::remove_cfg(&self.name, &self.config) } {
@@ -339,7 +339,7 @@ impl<T: Send + Sync + Debug + 'static> Drop for Storage<T> {
 }
 
 #[derive(Debug)]
-pub struct Builder<'builder, T: Send + Sync + Debug> {
+pub struct Builder<'builder, T: Send + Sync + Debug + ZeroCopySend> {
     name: FileName,
     supplementary_size: usize,
     has_ownership: bool,
@@ -348,7 +348,9 @@ pub struct Builder<'builder, T: Send + Sync + Debug> {
     _phantom_data: PhantomData<T>,
 }
 
-impl<T: Send + Sync + Debug + 'static> NamedConceptBuilder<Storage<T>> for Builder<'_, T> {
+impl<T: Send + Sync + Debug + 'static + ZeroCopySend> NamedConceptBuilder<Storage<T>>
+    for Builder<'_, T>
+{
     fn new(storage_name: &FileName) -> Self {
         Self {
             name: *storage_name,
@@ -366,7 +368,7 @@ impl<T: Send + Sync + Debug + 'static> NamedConceptBuilder<Storage<T>> for Build
     }
 }
 
-impl<T: Send + Sync + Debug + 'static> Builder<'_, T> {
+impl<T: Send + Sync + Debug + 'static + ZeroCopySend> Builder<'_, T> {
     fn open_impl(
         &self,
         guard: &mut MutexGuard<'static, BTreeMap<FilePath, StorageEntry>>,
@@ -453,8 +455,8 @@ impl<T: Send + Sync + Debug + 'static> Builder<'_, T> {
     }
 }
 
-impl<'builder, T: Send + Sync + Debug + 'static> DynamicStorageBuilder<'builder, T, Storage<T>>
-    for Builder<'builder, T>
+impl<'builder, T: Send + Sync + Debug + 'static + ZeroCopySend>
+    DynamicStorageBuilder<'builder, T, Storage<T>> for Builder<'builder, T>
 {
     fn has_ownership(mut self, value: bool) -> Self {
         self.has_ownership = value;
