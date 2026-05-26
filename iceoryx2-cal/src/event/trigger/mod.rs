@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub mod semaphore;
+
 use crate::event::event_state::EventState;
 use iceoryx2_bb_system_types::file_path::FilePath;
 
