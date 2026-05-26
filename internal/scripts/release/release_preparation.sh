@@ -270,6 +270,13 @@ if [[ ${SELECTION} == ${YES} ]]; then
     show_default_selector
     if [[ ${SELECTION} == ${YES} ]]; then
         echo -e ""
+        echo -e "${C_BLUE}###########################${C_OFF}"
+        echo -e "${C_BLUE}### Updating Cargo.lock ###${C_OFF}"
+        echo -e "${C_BLUE}###########################${C_OFF}"
+        echo -e ""
+        cargo build --all-targets --workspace
+
+        echo -e ""
         echo -e "${C_BLUE}#################################${C_OFF}"
         echo -e "${C_BLUE}### Updating Cargo.Bazel.lock ###${C_OFF}"
         echo -e "${C_BLUE}#################################${C_OFF}"
@@ -282,13 +289,6 @@ if [[ ${SELECTION} == ${YES} ]]; then
         echo -e "${C_BLUE}############################${C_OFF}"
         echo -e ""
         poetry --project iceoryx2-ffi/python build-into-venv
- 
-        echo -e ""
-        echo -e "${C_BLUE}###########################${C_OFF}"
-        echo -e "${C_BLUE}### Updating Cargo.lock ###${C_OFF}"
-        echo -e "${C_BLUE}###########################${C_OFF}"
-        echo -e ""
-        cargo build --all-targets --workspace
     fi
 
     git add .
