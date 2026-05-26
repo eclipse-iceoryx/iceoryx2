@@ -17,12 +17,12 @@
 //! ```
 //! # extern crate iceoryx2_bb_loggers;
 //!
+//! use iceoryx2_bb_concurrency::atomic::{AtomicI64, Ordering};
 //! use iceoryx2_bb_posix::access_mode::AccessMode;
 //! use iceoryx2_bb_system_types::file_name::FileName;
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
 //! use iceoryx2_cal::dynamic_storage::posix_shared_memory::*;
 //! use iceoryx2_cal::named_concept::*;
-//! use core::sync::atomic::{AtomicI64, Ordering};
 //!
 //! let additional_size: usize = 1024;
 //! let storage_name = FileName::new(b"myStorageName").unwrap();
