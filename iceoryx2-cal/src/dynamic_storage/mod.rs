@@ -58,7 +58,9 @@
 use core::{fmt::Debug, time::Duration};
 
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_bb_elementary_traits::{
+    testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
+};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::*;
@@ -126,7 +128,7 @@ enum_gen! {
 }
 
 /// Builder for the [`DynamicStorage`]. T is not allowed to implement the [`Drop`] trait.
-pub trait DynamicStorageBuilder<'builder, T: Send + Sync, D: DynamicStorage<T>>:
+pub trait DynamicStorageBuilder<'builder, T: Send + Sync + ZeroCopySend, D: DynamicStorage<T>>:
     Debug + Sized + NamedConceptBuilder<D>
 {
     /// Defines if a newly created [`DynamicStorage`] owns the underlying resources. The default
@@ -167,7 +169,7 @@ pub trait DynamicStorageBuilder<'builder, T: Send + Sync, D: DynamicStorage<T>>:
 
 /// Is being built by the [`DynamicStorageBuilder`]. The [`DynamicStorage`] trait shall provide
 /// inter-process access to a modifyable piece of memory identified by some name.
-pub trait DynamicStorage<T: Send + Sync>:
+pub trait DynamicStorage<T: Send + Sync + ZeroCopySend>:
     Sized + Debug + NamedConceptMgmt + NamedConcept + Send + Sync + Abandonable
 {
     type Builder<'builder>: DynamicStorageBuilder<'builder, T, Self>;

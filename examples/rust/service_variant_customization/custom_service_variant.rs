@@ -12,6 +12,7 @@
 
 use std::fmt::Debug;
 
+use iceoryx2::prelude::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 
 #[derive(Debug, Clone)]
@@ -20,10 +21,10 @@ pub struct CustomServiceVariant {}
 impl iceoryx2::service::Service for CustomServiceVariant {
     type StaticStorage = iceoryx2_cal::static_storage::recommended::Ipc;
     type ConfigSerializer = iceoryx2_cal::serialize::recommended::Recommended;
-    type PersistentDynamicStorage<T: Debug + Send + Sync + 'static> =
+    type PersistentDynamicStorage<T: Debug + Send + Sync + ZeroCopySend + 'static> =
         iceoryx2_cal::dynamic_storage::recommended::PersistentIpc<T>;
     // use a dynamic storage based on a file
-    type DynamicStorage<T: Debug + Send + Sync + 'static> =
+    type DynamicStorage<T: Debug + Send + Sync + ZeroCopySend + 'static> =
         iceoryx2_cal::dynamic_storage::file::Storage<T>;
     type ServiceNameHasher = iceoryx2_cal::hash::recommended::Recommended;
     // instead of using POSIX shared memory, we use a file
@@ -47,7 +48,7 @@ impl iceoryx2::service::Service for CustomServiceVariant {
     type ArcThreadSafetyPolicy<T: Send + Debug + Abandonable> =
         iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded<T>;
     // the blackboard mgmt segment is replaced with a file based version
-    type BlackboardMgmt<KeyType: Send + Sync + Debug + 'static> =
+    type BlackboardMgmt<KeyType: Send + Sync + Debug + ZeroCopySend + 'static> =
         iceoryx2_cal::dynamic_storage::file::Storage<KeyType>;
     // the blackboard payload is replaced with a file based version
     type BlackboardPayload = iceoryx2_cal::shared_memory::file::Memory<

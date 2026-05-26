@@ -30,7 +30,9 @@ pub mod details {
     use core::fmt::Debug;
 
     use iceoryx2_bb_elementary::math::unaligned_mem_size;
-    use iceoryx2_bb_elementary_traits::owning_pointer::OwningPointer;
+    use iceoryx2_bb_elementary_traits::{
+        owning_pointer::OwningPointer, zero_copy_send::ZeroCopySend,
+    };
 
     use super::*;
 
@@ -42,6 +44,10 @@ pub mod details {
         is_memory_initialized: AtomicBool,
     }
 
+    unsafe impl<PointerType: PointerTrait<AtomicBool> + ZeroCopySend> ZeroCopySend
+        for UsedChunkList<PointerType>
+    {
+    }
     unsafe impl<PointerType: PointerTrait<AtomicBool>> Send for UsedChunkList<PointerType> {}
     unsafe impl<PointerType: PointerTrait<AtomicBool>> Sync for UsedChunkList<PointerType> {}
 

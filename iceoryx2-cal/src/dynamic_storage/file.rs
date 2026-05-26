@@ -64,7 +64,7 @@ const FINAL_PERMISSIONS: Permission = Permission::ALL;
 
 /// The builder of [`Storage`].
 #[derive(Debug)]
-pub struct Builder<'builder, T: Send + Sync + Debug> {
+pub struct Builder<'builder, T: Send + Sync + Debug + ZeroCopySend> {
     storage_name: FileName,
     supplementary_size: usize,
     has_ownership: bool,
@@ -75,7 +75,7 @@ pub struct Builder<'builder, T: Send + Sync + Debug> {
 }
 
 #[derive(Debug)]
-pub struct Configuration<T: Send + Sync + Debug> {
+pub struct Configuration<T: Send + Sync + Debug + ZeroCopySend> {
     suffix: FileName,
     prefix: FileName,
     path: Path,
@@ -83,7 +83,7 @@ pub struct Configuration<T: Send + Sync + Debug> {
     type_name: String,
 }
 
-impl<T: Send + Sync + Debug> Clone for Configuration<T> {
+impl<T: Send + Sync + Debug + ZeroCopySend> Clone for Configuration<T> {
     fn clone(&self) -> Self {
         Self {
             suffix: self.suffix,
@@ -96,13 +96,13 @@ impl<T: Send + Sync + Debug> Clone for Configuration<T> {
 }
 
 #[repr(C)]
-struct Data<T: Send + Sync + Debug> {
+struct Data<T: Send + Sync + Debug + ZeroCopySend> {
     version: AtomicU64,
     call_drop_on_destruction: bool,
     data: T,
 }
 
-impl<T: Send + Sync + Debug> Default for Configuration<T> {
+impl<T: Send + Sync + Debug + ZeroCopySend> Default for Configuration<T> {
     fn default() -> Self {
         Self {
             path: Storage::<()>::default_path_hint(),
@@ -114,13 +114,13 @@ impl<T: Send + Sync + Debug> Default for Configuration<T> {
     }
 }
 
-impl<T: Send + Sync + Debug> DynamicStorageConfiguration for Configuration<T> {
+impl<T: Send + Sync + Debug + ZeroCopySend> DynamicStorageConfiguration for Configuration<T> {
     fn type_name(&self) -> &str {
         &self.type_name
     }
 }
 
-impl<T: Send + Sync + Debug> NamedConceptConfiguration for Configuration<T> {
+impl<T: Send + Sync + Debug + ZeroCopySend> NamedConceptConfiguration for Configuration<T> {
     fn prefix(mut self, value: &FileName) -> Self {
         self.prefix = *value;
         self
@@ -157,7 +157,7 @@ impl<T: Send + Sync + Debug> NamedConceptConfiguration for Configuration<T> {
     }
 }
 
-impl<T: Send + Sync + Debug> NamedConceptBuilder<Storage<T>> for Builder<'_, T> {
+impl<T: Send + Sync + Debug + ZeroCopySend> NamedConceptBuilder<Storage<T>> for Builder<'_, T> {
     fn new(storage_name: &FileName) -> Self {
         Self {
             has_ownership: true,
@@ -176,7 +176,7 @@ impl<T: Send + Sync + Debug> NamedConceptBuilder<Storage<T>> for Builder<'_, T> 
     }
 }
 
-impl<T: Send + Sync + Debug> Builder<'_, T> {
+impl<T: Send + Sync + Debug + ZeroCopySend> Builder<'_, T> {
     fn open_impl(&self, access_mode: AccessMode) -> Result<Storage<T>, DynamicStorageOpenError> {
         let msg = "Failed to open file::DynamicStorage";
 
@@ -402,7 +402,7 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
     }
 }
 
-impl<'builder, T: Send + Sync + Debug> DynamicStorageBuilder<'builder, T, Storage<T>>
+impl<'builder, T: Send + Sync + Debug + ZeroCopySend> DynamicStorageBuilder<'builder, T, Storage<T>>
     for Builder<'builder, T>
 {
     fn has_ownership(mut self, value: bool) -> Self {
@@ -460,17 +460,17 @@ impl<'builder, T: Send + Sync + Debug> DynamicStorageBuilder<'builder, T, Storag
 /// Implements [`DynamicStorage`] based on a [`File`]. It is built by
 /// [`Builder`].
 #[derive(Debug)]
-pub struct Storage<T: Debug + Send + Sync> {
+pub struct Storage<T: Debug + Send + Sync + ZeroCopySend> {
     file: File,
     memory_mapping: MemoryMapping,
     name: FileName,
     _data: PhantomData<T>,
 }
 
-unsafe impl<T: Debug + Send + Sync> Send for Storage<T> {}
-unsafe impl<T: Debug + Send + Sync> Sync for Storage<T> {}
+unsafe impl<T: Debug + Send + Sync + ZeroCopySend> Send for Storage<T> {}
+unsafe impl<T: Debug + Send + Sync + ZeroCopySend> Sync for Storage<T> {}
 
-impl<T: Debug + Send + Sync> Abandonable for Storage<T> {
+impl<T: Debug + Send + Sync + ZeroCopySend> Abandonable for Storage<T> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe { File::abandon_in_place(NonNull::iox2_from_mut(&mut this.file)) };
@@ -480,7 +480,7 @@ impl<T: Debug + Send + Sync> Abandonable for Storage<T> {
     }
 }
 
-impl<T: Debug + Send + Sync> Drop for Storage<T> {
+impl<T: Debug + Send + Sync + ZeroCopySend> Drop for Storage<T> {
     fn drop(&mut self) {
         if self.file.has_ownership() {
             let data = unsafe { &mut (*(self.memory_mapping.base_address_mut() as *mut Data<T>)) };
@@ -492,13 +492,13 @@ impl<T: Debug + Send + Sync> Drop for Storage<T> {
     }
 }
 
-impl<T: Send + Sync + Debug> NamedConcept for Storage<T> {
+impl<T: Send + Sync + Debug + ZeroCopySend> NamedConcept for Storage<T> {
     fn name(&self) -> &FileName {
         &self.name
     }
 }
 
-impl<T: Send + Sync + Debug> NamedConceptMgmt for Storage<T> {
+impl<T: Send + Sync + Debug + ZeroCopySend> NamedConceptMgmt for Storage<T> {
     type Configuration = Configuration<T>;
 
     fn does_exist_cfg(
@@ -601,7 +601,7 @@ impl<T: Send + Sync + Debug> NamedConceptMgmt for Storage<T> {
     }
 }
 
-impl<T: Send + Sync + Debug> DynamicStorage<T> for Storage<T> {
+impl<T: Send + Sync + Debug + ZeroCopySend> DynamicStorage<T> for Storage<T> {
     type Builder<'builder> = Builder<'builder, T>;
 
     fn does_support_persistency() -> bool {

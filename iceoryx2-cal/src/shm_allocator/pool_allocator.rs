@@ -16,7 +16,9 @@ use crate::shm_allocator::{ShmAllocator, ShmAllocatorConfig};
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
 
 use super::{
@@ -39,7 +41,8 @@ impl Default for Config {
 
 impl ShmAllocatorConfig for Config {}
 
-#[derive(Debug)]
+#[derive(Debug, ZeroCopySend)]
+#[repr(C)]
 pub struct PoolAllocator {
     allocator: iceoryx2_bb_memory::pool_allocator::PoolAllocator,
     // is even with absolut base address relocatable since every process acquire and return

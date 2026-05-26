@@ -49,16 +49,20 @@ use core::{fmt::Display, ptr::NonNull};
 use crate::math::align;
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
 
 pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
 
 #[derive(Debug)]
+#[repr(C)]
 pub struct BumpAllocator {
     pub(crate) start: usize,
     addr_next_free_memory: AtomicUsize,
     full_memory_size: usize,
 }
+
+unsafe impl ZeroCopySend for BumpAllocator {}
 
 impl Display for BumpAllocator {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {

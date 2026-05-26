@@ -107,6 +107,8 @@ pub type RelocatableIndexQueue = details::IndexQueue<RelocatablePointer<UnsafeCe
 
 pub mod details {
 
+    use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+
     use super::*;
 
     /// A threadsafe lock-free index queue with a capacity which can be set up at runtime, when the
@@ -123,6 +125,10 @@ pub mod details {
         data_ptr: PointerType,
     }
 
+    unsafe impl<PointerType: PointerTrait<UnsafeCell<u64>> + ZeroCopySend> ZeroCopySend
+        for IndexQueue<PointerType>
+    {
+    }
     unsafe impl<PointerType: PointerTrait<UnsafeCell<u64>>> Sync for IndexQueue<PointerType> {}
     unsafe impl<PointerType: PointerTrait<UnsafeCell<u64>>> Send for IndexQueue<PointerType> {}
 

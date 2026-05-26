@@ -11,7 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_container::queue::RelocatableContainer;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::{
     container::{Container, ContainerHandle},
     unique_index_set_enums::ReleaseMode,
@@ -29,7 +31,7 @@ use super::PortCleanupAction;
 /// Contains the communication settings of the connected
 /// [`Server`](crate::port::server::Server).
 #[repr(C)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, ZeroCopySend)]
 pub struct ServerDetails {
     /// The [`UniqueServerId`] of the [`Server`](crate::port::server::Server).
     pub server_id: UniqueServerId,
@@ -55,7 +57,7 @@ pub struct ServerDetails {
 /// Contains the communication settings of the connected
 /// [`Client`](crate::port::client::Client).
 #[repr(C)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, ZeroCopySend)]
 pub struct ClientDetails {
     /// The [`UniqueClientId`] of the [`Client`](crate::port::client::Client).
     pub client_id: UniqueClientId,
@@ -79,7 +81,7 @@ pub struct ClientDetails {
 }
 
 #[repr(C)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, ZeroCopySend)]
 pub(crate) struct DynamicConfigSettings {
     pub number_of_servers: usize,
     pub number_of_clients: usize,
@@ -89,7 +91,7 @@ pub(crate) struct DynamicConfigSettings {
 /// [`crate::service::messaging_pattern::MessagingPattern::RequestResponse`]
 /// based service. Contains dynamic parameters like the connected endpoints etc..
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, ZeroCopySend)]
 pub struct DynamicConfig {
     pub(crate) servers: Container<ServerDetails>,
     pub(crate) clients: Container<ClientDetails>,

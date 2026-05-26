@@ -16,6 +16,7 @@ use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::AtomicI64;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::allocator::*;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
 use iceoryx2_bb_posix::clock::{Time, nanosleep};
 use iceoryx2_bb_posix::ipc_capable::Handle;
@@ -32,12 +33,15 @@ use iceoryx2_cal::testing::*;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
 #[derive(Debug)]
+#[repr(C)]
 pub struct TestData {
     value: AtomicI64,
     supplementary_ptr: *mut u8,
     supplementary_len: usize,
     _lifetime_tracker: Option<LifetimeTracker>,
 }
+
+unsafe impl ZeroCopySend for TestData {}
 
 impl TestData {
     fn new(value: i64) -> Self {

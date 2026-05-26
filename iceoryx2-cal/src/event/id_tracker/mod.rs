@@ -14,14 +14,16 @@ pub mod bit_set;
 
 use core::fmt::Debug;
 
-use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+use iceoryx2_bb_elementary_traits::{
+    relocatable_container::RelocatableContainer, zero_copy_send::ZeroCopySend,
+};
 
 use super::{NotifierNotifyError, TriggerId};
 
 /// The [`IdTracker`] is a building block for [`crate::event::Event`]
 /// concept. Its task is to track the origin of the signal that was sent
 /// via the [`crate::event::signal_mechanism::SignalMechanism`].
-pub trait IdTracker: RelocatableContainer + Send + Sync + Debug {
+pub trait IdTracker: RelocatableContainer + Send + Sync + Debug + ZeroCopySend {
     /// Returns the max value of a [`TriggerId`] that can be tracked with the
     /// [`IdTracker`].
     fn trigger_id_max(&self) -> TriggerId;

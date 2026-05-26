@@ -61,6 +61,8 @@ pub type RelocatableBitSet = details::BitSet<RelocatablePointer<details::BitsetE
 #[doc(hidden)]
 pub mod details {
 
+    use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+
     use super::*;
 
     pub type BitsetElement = AtomicU8;
@@ -90,6 +92,10 @@ pub mod details {
         is_memory_initialized: AtomicBool,
     }
 
+    unsafe impl<PointerType: PointerTrait<BitsetElement> + ZeroCopySend> ZeroCopySend
+        for BitSet<PointerType>
+    {
+    }
     unsafe impl<PointerType: PointerTrait<BitsetElement>> Send for BitSet<PointerType> {}
     unsafe impl<PointerType: PointerTrait<BitsetElement>> Sync for BitSet<PointerType> {}
 

@@ -83,6 +83,7 @@ use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
 use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic};
 
 /// States the reason why an element could not be added to the [`Container`]
@@ -197,6 +198,7 @@ pub struct Container<T: Copy + Debug> {
     index_set: RobustUniqueIndexSet,
 }
 
+unsafe impl<T: Copy + Debug + ZeroCopySend> ZeroCopySend for Container<T> {}
 unsafe impl<T: Copy + Debug> Send for Container<T> {}
 unsafe impl<T: Copy + Debug> Sync for Container<T> {}
 
@@ -621,6 +623,11 @@ pub struct FixedSizeContainerData<T: Copy + Debug, const CAPACITY: usize> {
     data: [UnsafeCell<MaybeUninit<T>>; CAPACITY],
 }
 
+unsafe impl<T: Copy + Debug + ZeroCopySend, const CAPACITY: usize> ZeroCopySend
+    for FixedSizeContainerData<T, CAPACITY>
+{
+}
+
 impl<T: Copy + Debug, const CAPACITY: usize> Default for FixedSizeContainerData<T, CAPACITY> {
     fn default() -> Self {
         Self {
@@ -651,6 +658,11 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainerData<T, CAPACITY>
 pub struct FixedSizeContainer<T: Copy + Debug, const CAPACITY: usize> {
     container: Container<T>,
     data: FixedSizeContainerData<T, CAPACITY>,
+}
+
+unsafe impl<T: Copy + Debug + ZeroCopySend, const CAPACITY: usize> ZeroCopySend
+    for FixedSizeContainer<T, CAPACITY>
+{
 }
 
 impl<T: Copy + Debug, const CAPACITY: usize> Default for FixedSizeContainer<T, CAPACITY> {

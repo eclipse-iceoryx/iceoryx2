@@ -11,6 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::shm_allocator::*;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
 
 #[derive(Default, Clone, Copy, Debug)]
@@ -18,7 +20,8 @@ pub struct Config {}
 
 impl ShmAllocatorConfig for Config {}
 
-#[derive(Debug)]
+#[derive(Debug, ZeroCopySend)]
+#[repr(C)]
 pub struct BumpAllocator {
     allocator: iceoryx2_bb_memory::bump_allocator::BumpAllocator,
     base_address: usize,

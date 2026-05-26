@@ -99,11 +99,13 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::fence;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic};
 
 use crate::mpmc::unique_index_set_enums::ReleaseMode;
@@ -215,7 +217,7 @@ impl Drop for UniqueIndex<'_> {
 /// }
 /// ```
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, ZeroCopySend)]
 pub struct UniqueIndexSet {
     data_ptr: RelocatablePointer<UnsafeCell<u32>>,
     capacity: u32,

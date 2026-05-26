@@ -35,6 +35,7 @@
 use core::fmt::Debug;
 
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
 use iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator;
 use iceoryx2_cal::*;
@@ -46,9 +47,10 @@ pub struct Service {}
 impl crate::service::Service for Service {
     type StaticStorage = static_storage::recommended::Local;
     type ConfigSerializer = serialize::recommended::Recommended;
-    type PersistentDynamicStorage<T: Debug + Send + Sync + 'static> =
+    type PersistentDynamicStorage<T: Debug + Send + Sync + ZeroCopySend + 'static> =
         dynamic_storage::recommended::PersistentLocal<T>;
-    type DynamicStorage<T: Debug + Send + Sync + 'static> = dynamic_storage::recommended::Local<T>;
+    type DynamicStorage<T: Debug + Send + Sync + ZeroCopySend + 'static> =
+        dynamic_storage::recommended::Local<T>;
     type ServiceNameHasher = hash::recommended::Recommended;
     type SharedMemory = shared_memory::recommended::Local<PoolAllocator>;
     type ResizableSharedMemory = resizable_shared_memory::recommended::Local<PoolAllocator>;
@@ -58,7 +60,7 @@ impl crate::service::Service for Service {
     type Reactor = reactor::recommended::Local;
     type ArcThreadSafetyPolicy<T: Send + Debug + Abandonable> =
         arc_sync_policy::single_threaded::SingleThreaded<T>;
-    type BlackboardMgmt<KeyType: Send + Sync + Debug + 'static> =
+    type BlackboardMgmt<KeyType: Send + Sync + Debug + ZeroCopySend + 'static> =
         dynamic_storage::recommended::Local<KeyType>;
     type BlackboardPayload = shared_memory::recommended::Local<BumpAllocator>;
 }

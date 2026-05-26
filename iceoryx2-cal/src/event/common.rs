@@ -19,8 +19,10 @@ pub mod details {
 
     use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize};
+    use iceoryx2_bb_derive_macros::ZeroCopySend;
     use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
     use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+    use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_posix::file::AccessMode;
     use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
@@ -42,7 +44,7 @@ pub mod details {
 
     const TRIGGER_ID_DEFAULT_MAX: TriggerId = TriggerId::new(u16::MAX as _);
 
-    #[derive(Debug)]
+    #[derive(Debug, ZeroCopySend)]
     #[repr(C)]
     pub struct Management<Tracker: IdTracker, WaitMechanism: SignalMechanism> {
         id_tracker: Tracker,

@@ -19,9 +19,11 @@ pub use crate::communication_channel::*;
 use alloc::format;
 use alloc::vec::Vec;
 use core::ptr::NonNull;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 
 use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::relocatable_container::*;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::spsc::safely_overflowing_index_queue::*;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_log::fail;
@@ -254,7 +256,8 @@ impl CommunicationChannelConnector<u64, Channel> for Connector {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, ZeroCopySend)]
+#[repr(C)]
 pub(crate) struct Management {
     index_queue: RelocatableSafelyOverflowingIndexQueue,
     enable_safe_overflow: bool,

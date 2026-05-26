@@ -27,6 +27,7 @@ iceoryx2-bb-lock-free = { workspace = true }
 iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
+iceoryx2-bb-derive-macros = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 
 [dev-dependencies]

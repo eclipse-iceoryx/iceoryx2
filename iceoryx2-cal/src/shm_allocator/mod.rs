@@ -18,7 +18,7 @@ use core::{alloc::Layout, fmt::Debug, ptr::NonNull};
 
 use iceoryx2_bb_elementary::enum_gen;
 pub use iceoryx2_bb_elementary_traits::allocator::AllocationError;
-use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
+use iceoryx2_bb_elementary_traits::{allocator::BaseAllocator, zero_copy_send::ZeroCopySend};
 pub use pointer_offset::*;
 use serde::{Deserialize, Serialize};
 
@@ -81,7 +81,7 @@ pub struct SharedMemorySetupHint<Config: ShmAllocatorConfig> {
 /// Every allocator implementation must be relocatable. The allocator itself must be stored either
 /// in the same shared memory segment or in a separate shared memory segment of a different type
 /// but accessible by all participating processes.
-pub trait ShmAllocator: Debug + Send + Sync + 'static {
+pub trait ShmAllocator: Debug + Send + Sync + 'static + ZeroCopySend {
     type Configuration: ShmAllocatorConfig;
     /// Suggest a new payload size by considering the current allocation state in combination with
     /// a provided [`AllocationStrategy`] and a `layout` that shall be allocatable.

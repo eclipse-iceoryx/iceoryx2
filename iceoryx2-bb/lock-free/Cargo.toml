@@ -27,6 +27,7 @@ iceoryx2-log = { workspace = true }
 iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
+iceoryx2-bb-derive-macros = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-lock-free-tests-common = { workspace = true, features = ["std"] }

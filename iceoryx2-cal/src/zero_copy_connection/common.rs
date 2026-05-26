@@ -138,7 +138,8 @@ pub mod details {
         }
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, ZeroCopySend)]
+    #[repr(C)]
     struct SegmentDetails {
         used_chunk_list: RelocatableUsedChunkList,
         sample_size: AtomicUsize,
@@ -161,7 +162,7 @@ pub mod details {
         }
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, ZeroCopySend)]
     #[repr(C)]
     struct Channel {
         state: AtomicU64,
@@ -201,7 +202,7 @@ pub mod details {
         }
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, ZeroCopySend)]
     #[repr(C)]
     pub struct SharedManagementData {
         channels: RelocatableVec<Channel>,

@@ -32,7 +32,9 @@ pub mod blackboard;
 
 use core::fmt::Display;
 use iceoryx2_bb_container::queue::RelocatableContainer;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::{
     container::{Container, ContainerAddFailure, ContainerHandle, ContainerRemoveError},
     unique_index_set_enums::{ReleaseMode, ReleaseState},
@@ -67,7 +69,8 @@ pub(crate) enum MessagingPatternSettings {
     Blackboard(blackboard::DynamicConfigSettings),
 }
 
-#[derive(Debug)]
+#[derive(Debug, ZeroCopySend)]
+#[repr(C)]
 pub(crate) enum MessagingPattern {
     RequestResponse(request_response::DynamicConfig),
     PublishSubscribe(publish_subscribe::DynamicConfig),
@@ -95,7 +98,8 @@ impl MessagingPattern {
 }
 
 #[doc(hidden)]
-#[derive(Debug)]
+#[derive(Debug, ZeroCopySend)]
+#[repr(C)]
 pub struct DynamicConfig {
     messaging_pattern: MessagingPattern,
     nodes: Container<UniqueNodeId>,

@@ -68,7 +68,9 @@ use core::{fmt::Debug, marker::PhantomData, ptr::NonNull};
 
 pub use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
 
-use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
+use iceoryx2_bb_elementary_traits::{
+    generic_pointer::GenericPointer, zero_copy_send::ZeroCopySend,
+};
 use iceoryx2_pal_concurrency_sync::atomic::{AtomicIsize, Ordering};
 
 #[derive(Debug)]
@@ -93,6 +95,8 @@ pub struct RelocatablePointer<T> {
     distance: AtomicIsize,
     _phantom: PhantomData<T>,
 }
+
+unsafe impl<T: ZeroCopySend> ZeroCopySend for RelocatablePointer<T> {}
 
 impl<T> RelocatablePointer<T> {
     /// Creates a new [`RelocatablePointer`]. The distance is the relative distance to the memory

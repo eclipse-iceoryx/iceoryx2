@@ -28,7 +28,9 @@
 //! ```
 
 use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::{container::*, unique_index_set_enums::ReleaseMode};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_log::{error, fatal_panic};
@@ -38,7 +40,7 @@ use crate::identifiers::{UniqueListenerId, UniqueNodeId, UniqueNotifierId, Uniqu
 use super::PortCleanupAction;
 
 #[repr(C)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, ZeroCopySend)]
 pub(crate) struct DynamicConfigSettings {
     pub number_of_listeners: usize,
     pub number_of_notifiers: usize,
@@ -47,7 +49,7 @@ pub(crate) struct DynamicConfigSettings {
 /// The dynamic configuration of an [`crate::service::messaging_pattern::MessagingPattern::Event`]
 /// based service. Contains dynamic parameters like the connected endpoints etc..
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, ZeroCopySend)]
 pub struct DynamicConfig {
     pub(crate) listeners: Container<ListenerDetails>,
     pub(crate) notifiers: Container<NotifierDetails>,
@@ -57,7 +59,7 @@ pub struct DynamicConfig {
 /// Contains the communication settings of the connected
 /// [`Listener`](crate::port::listener::Listener).
 #[repr(C)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, ZeroCopySend)]
 pub struct ListenerDetails {
     /// The [`UniqueListenerId`] of the [`Listener`](crate::port::listener::Listener).
     pub listener_id: UniqueListenerId,
@@ -69,7 +71,7 @@ pub struct ListenerDetails {
 /// Contains the communication settings of the connected
 /// [`Notifier`](crate::port::notifier::Notifier).
 #[repr(C)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, ZeroCopySend)]
 pub struct NotifierDetails {
     /// The [`UniqueNotifierId`] of the [`Notifier`](crate::port::notifier::Notifier).
     pub notifier_id: UniqueNotifierId,
