@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub mod bit_set;
+
 use core::fmt::Debug;
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
@@ -48,6 +50,7 @@ impl core::fmt::Display for EventStateActivateError {
 impl core::error::Error for EventStateActivateError {}
 
 pub trait EventState: Sized + Send + Sync + Debug + ZeroCopySend + RelocatableContainer {
+    fn max_event_id(&self) -> EventId;
     fn activate(&self, event_id: EventId) -> Result<(), EventStateActivateError>;
     fn drain<F: FnMut(EventActivation)>(&self, callback: F) -> u64;
 }
