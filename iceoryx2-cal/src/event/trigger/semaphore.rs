@@ -13,6 +13,7 @@
 use core::fmt::Debug;
 use core::marker::PhantomData;
 
+use crate::dynamic_storage::DynamicStorageBuilder;
 use crate::event::event_state::{EventActivation, EventId};
 use crate::event::trigger::{Trigger, TriggerNotifyError, TriggerWaitError};
 use crate::{
@@ -32,6 +33,7 @@ use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::{
     testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
 };
+use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fail;
@@ -178,6 +180,17 @@ impl<
             _data_1: PhantomData,
             _data_2: PhantomData,
         }
+    }
+}
+
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+> Configuration<E, Mgmt, Storage>
+{
+    fn as_storage_config(&self) -> &Storage::Configuration {
+        &self.value
     }
 }
 
@@ -435,11 +448,11 @@ pub struct WaiterBuilder<
     H: internal::HandlerImpl<E, Mgmt, Storage>,
     W: internal::WaiterImpl<E, Mgmt, Storage>,
 > {
-    _data_1: PhantomData<E>,
-    _data_2: PhantomData<Mgmt>,
-    _data_3: PhantomData<Storage>,
-    _data_4: H,
-    _data_5: W,
+    name: FileName,
+    config: Configuration<E, Mgmt, Storage>,
+    timeout: Duration,
+    _data_1: PhantomData<H>,
+    _data_2: PhantomData<W>,
 }
 
 impl<
@@ -452,14 +465,21 @@ impl<
     for WaiterBuilder<E, Mgmt, Storage, H, W>
 {
     fn new(name: &FileName) -> Self {
-        todo!()
+        Self {
+            name: *name,
+            timeout: Duration::ZERO,
+            config: Configuration::default(),
+            _data_1: PhantomData,
+            _data_2: PhantomData,
+        }
     }
 
     fn config(
-        self,
+        mut self,
         config: &<TriggerImpl<E, Mgmt, Storage, H, W> as NamedConceptMgmt>::Configuration,
     ) -> Self {
-        todo!()
+        self.config = config.clone();
+        self
     }
 }
 
@@ -472,8 +492,9 @@ impl<
 > TriggerWaiterBuilder<E, TriggerImpl<E, Mgmt, Storage, H, W>>
     for WaiterBuilder<E, Mgmt, Storage, H, W>
 {
-    fn timeout(self, timeout: std::time::Duration) -> Self {
-        todo!()
+    fn timeout(mut self, timeout: Duration) -> Self {
+        self.timeout = timeout;
+        self
     }
 
     fn open(
@@ -482,7 +503,20 @@ impl<
         <TriggerImpl<E, Mgmt, Storage, H, W> as super::Trigger<E>>::Handle,
         super::TriggerOpenError,
     > {
-        todo!()
+        let storage = Storage::Builder::new(&self.name)
+            .config(self.config.as_storage_config())
+            .has_ownership(true)
+            .open(AccessMode::ReadWrite)
+            .unwrap();
+
+        let handle = H::open(&self.config, &storage.get().handle);
+
+        Ok(Handle {
+            storage,
+            handle,
+            _data_1: PhantomData,
+            _data_2: PhantomData,
+        })
     }
 }
 
@@ -494,11 +528,11 @@ pub struct HandleBuilder<
     H: internal::HandlerImpl<E, Mgmt, Storage>,
     W: internal::WaiterImpl<E, Mgmt, Storage>,
 > {
-    _data_1: PhantomData<E>,
-    _data_2: PhantomData<Mgmt>,
-    _data_3: PhantomData<Storage>,
-    _data_4: PhantomData<H>,
-    _data_5: PhantomData<W>,
+    name: FileName,
+    event_id_max: EventId,
+    config: Configuration<E, Mgmt, Storage>,
+    _data_1: PhantomData<H>,
+    _data_2: PhantomData<W>,
 }
 
 impl<
@@ -511,14 +545,21 @@ impl<
     for HandleBuilder<E, Mgmt, Storage, H, W>
 {
     fn new(name: &FileName) -> Self {
-        todo!()
+        Self {
+            name: *name,
+            event_id_max: EventId::new(8),
+            config: Configuration::default(),
+            _data_1: PhantomData,
+            _data_2: PhantomData,
+        }
     }
 
     fn config(
-        self,
+        mut self,
         config: &<TriggerImpl<E, Mgmt, Storage, H, W> as NamedConceptMgmt>::Configuration,
     ) -> Self {
-        todo!()
+        self.config = config.clone();
+        self
     }
 }
 
@@ -531,8 +572,9 @@ impl<
 > TriggerHandleBuilder<E, TriggerImpl<E, Mgmt, Storage, H, W>>
     for HandleBuilder<E, Mgmt, Storage, H, W>
 {
-    fn event_id_max(self, id: EventId) -> Self {
-        todo!()
+    fn event_id_max(mut self, id: EventId) -> Self {
+        self.event_id_max = id;
+        self
     }
 
     fn create(
@@ -541,6 +583,34 @@ impl<
         <TriggerImpl<E, Mgmt, Storage, H, W> as super::Trigger<E>>::Waiter,
         super::TriggerCreateError,
     > {
-        todo!()
+        let state_size = E::memory_size((self.event_id_max.as_value() + 1) as usize);
+        let mut waiter = None;
+        let storage = Storage::Builder::new(&self.name)
+            .config(self.config.as_storage_config())
+            .has_ownership(true)
+            .supplementary_size(state_size)
+            .initializer(|value, allocator| {
+                unsafe { value.event.init(allocator).unwrap() };
+                waiter = Some(W::create(&self.config, unsafe {
+                    core::mem::transmute(&mut value.handle)
+                }));
+
+                true
+            })
+            .create(State {
+                event: unsafe { E::new_uninit((self.event_id_max.as_value() + 1) as usize) },
+                handle: unsafe { MaybeUninit::uninit().assume_init() },
+                event_id_max: self.event_id_max,
+            })
+            .unwrap();
+
+        Ok(Waiter {
+            storage,
+            waiter: waiter.unwrap(),
+            _data_1: PhantomData,
+            _data_2: PhantomData,
+        })
     }
 }
+
+/////////// semaphore impl
