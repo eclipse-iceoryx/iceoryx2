@@ -34,11 +34,15 @@ use alloc::format;
 use alloc::string::String;
 use alloc::vec;
 
+use iceoryx2_bb_container::vector::StaticVec;
+use iceoryx2_bb_container::vector::Vector;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
+use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitError;
+use iceoryx2_bb_posix::clock::NanosleepError;
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
@@ -51,13 +55,16 @@ use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::*;
 use iceoryx2_log::fail;
 use iceoryx2_log::fatal_panic;
+use iceoryx2_log::warn;
 
 use crate::config::IO_TICK_TIME;
 use crate::identifiers::UniqueServiceId;
+use crate::node::NodeState;
 use crate::node::SharedNode;
 use crate::prelude::AttributeSpecifier;
 use crate::prelude::AttributeVerifier;
 use crate::service;
+use crate::service::__internal_details;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::RegisterNodeResult;
@@ -332,8 +339,8 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
 
     fn open_or_create<
         ErrorTypeOpen: Into<ServiceOpenError> + Copy,
-        ErrorTypeCreate: Into<ServiceCreateError> + Copy,
-        ErrorTypeOpenOrCreate: From<ErrorTypeOpen> + From<ErrorTypeCreate> + Debug,
+        ErrorTypeCreate: Into<ServiceCreateError> + From<ServiceCreateError> + Copy,
+        ErrorTypeOpenOrCreate: From<ErrorTypeOpen> + From<ErrorTypeCreate> + Debug + Copy + Clone,
         PortFactory,
         FOpen: FnMut(&AttributeVerifier) -> Result<PortFactory, ErrorTypeOpen>,
         FCreate: FnMut(&AttributeSpecifier) -> Result<PortFactory, ErrorTypeCreate>,
@@ -359,13 +366,27 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         let attribute_specifier = AttributeSpecifier(attributes.required_attributes().clone());
 
         let mut flux_counter = 0;
-        let mut last_errors = vec![];
+        let mut last_errors = StaticVec::<ErrorTypeOpenOrCreate, ERROR_TRACKING_LIMIT>::new();
+        let mut insert = |value: ErrorTypeOpenOrCreate| {
+            while last_errors.insert(0, value).is_err() {
+                last_errors.pop();
+            }
+        };
+
+        // this loop tries to open, or create the service. the basic logic is
+        // * first try to open it
+        // * if it does not exist, hangs in creation or is marked for destruction, try to create it
+        // * whenever a creation fails, we increment the flux counter
+        //
+        // If the flux_counter is greater than 1 we know that we had some ping-pongs between open
+        // and it did not exist and create where it no longer existed. This defines a system in
+        // flux where the service is repeatedly created and destroyed.
         loop {
             let mut try_create_service = true;
             match open_call(attributes) {
                 Ok(service) => return Ok(service),
                 Err(e) => {
-                    last_errors.insert(0, Into::<ErrorTypeOpenOrCreate>::into(e));
+                    insert(Into::<ErrorTypeOpenOrCreate>::into(e));
                     match e.into() {
                         ServiceOpenError::DoesNotExist => (),
                         ServiceOpenError::HangsInCreation
@@ -392,7 +413,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 match create_call(&attribute_specifier) {
                     Ok(service) => return Ok(service),
                     Err(e) => {
-                        last_errors.insert(0, Into::<ErrorTypeOpenOrCreate>::into(e));
+                        insert(Into::<ErrorTypeOpenOrCreate>::into(e));
                         match e.into() {
                             ServiceCreateError::AlreadyExists
                             | ServiceCreateError::IsBeingCreatedByAnotherInstance => (),
@@ -424,14 +445,20 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 }
             }
 
-            while last_errors.len() > ERROR_TRACKING_LIMIT {
-                last_errors.pop();
+            match adaptive_wait.wait() {
+                Ok(_) => (),
+                Err(AdaptiveWaitError::NanosleepError(NanosleepError::InterruptedBySignal(
+                    signal,
+                ))) => {
+                    fail!(from self, with
+                       Into::<ErrorTypeOpenOrCreate>::into(Into::<ErrorTypeCreate>::into(ServiceCreateError::Interrupt)),
+                        "{msg} since the adaptive wait was interrupted by the signal {signal:?}.");
+                }
+                Err(e) => {
+                    fail!(from self, with internal_error_type,
+                        "{msg} since the adaptive wait failed. [{e:?}]");
+                }
             }
-
-            fail!(from self,
-                  when adaptive_wait.wait(),
-                  with internal_error_type,
-                  "{msg} since the adaptive wait failed.");
         }
     }
 
@@ -449,6 +476,37 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         mut open_service_resource: F2,
     ) -> Result<service::ServiceState<ServiceType, R>, ErrorType> {
         let origin = format!("{self:?}");
+        let config = self.shared_node.config();
+
+        if config.global.service.cleanup_dead_nodes_on_open {
+            match __internal_details::<ServiceType>(config, self.service_config.service_hash()) {
+                Ok(Some(service)) => {
+                    if let Some(dynamic_details) = service.dynamic_details {
+                        for node in dynamic_details.nodes {
+                            let node_id = *node.node_id();
+                            if let NodeState::Dead(node) = node {
+                                warn!(from origin,
+                                    "Detected dead node {} in service {}. Trying to cleanup stale resources.",
+                                    node_id, self.service_config.service_hash());
+                                if let Err(e) = node
+                                    .blocking_remove_stale_resources(config.global.creation_timeout)
+                                {
+                                    warn!(from origin,
+                                        "Detected dead node ({}) in service {} but failed to cleanup the resources. This might cause problems when stale port resources block the creation of new ones. [{e:?}]", node_id, self.service_config.service_hash())
+                                }
+                            }
+                        }
+                    }
+                }
+                Ok(None) => (),
+                Err(e) => {
+                    warn!(from origin,
+                        "Failed to check if the service {} contains dead nodes. [{e:?}]",
+                        self.service_config.service_hash())
+                }
+            };
+        }
+
         let mut adaptive_wait = fail!(from origin,
               when AdaptiveWaitBuilder::new().strategy(iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitStrategy::FixedTicks(IO_TICK_TIME)).create(),
               with ServiceOpenError::InternalFailure.into(),

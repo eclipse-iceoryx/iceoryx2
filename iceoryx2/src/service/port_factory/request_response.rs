@@ -47,8 +47,7 @@ use crate::{
     prelude::AttributeSet,
     service::{
         self, NoResource, ServiceState, SharedServiceState, dynamic_config,
-        port_factory::blocking_cleanup_dead_nodes_in_service, service_hash::ServiceHash,
-        service_name::ServiceName, static_config,
+        service_hash::ServiceHash, service_name::ServiceName, static_config,
     },
 };
 use alloc::sync::Arc;
@@ -192,8 +191,7 @@ impl<
 > PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     pub(crate) fn new(service: ServiceState<Service, NoResource>) -> Self {
-        let shared_node = service.shared_node.clone();
-        let new_self = Self {
+        Self {
             service: SharedServiceState {
                 state: Arc::new(service),
             },
@@ -201,21 +199,7 @@ impl<
             _request_header: PhantomData,
             _response_payload: PhantomData,
             _response_header: PhantomData,
-        };
-
-        if shared_node
-            .config()
-            .global
-            .service
-            .cleanup_dead_nodes_on_open
-        {
-            blocking_cleanup_dead_nodes_in_service(
-                &new_self,
-                shared_node.config().global.creation_timeout,
-            );
         }
-
-        new_self
     }
 
     /// Returns a [`PortFactoryClient`] to create a new

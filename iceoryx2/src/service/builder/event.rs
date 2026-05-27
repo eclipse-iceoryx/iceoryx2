@@ -145,7 +145,17 @@ impl From<EventOpenError> for ServiceOpenError {
             EventOpenError::ServiceInCorruptedState => ServiceOpenError::ServiceInCorruptedState,
             EventOpenError::UnableToCreateServiceTag => ServiceOpenError::UnableToCreateServiceTag,
             EventOpenError::VersionMismatch => ServiceOpenError::VersionMismatch,
-            _ => ServiceOpenError::InternalFailure,
+            EventOpenError::Interrupt => ServiceOpenError::Interrupt,
+            EventOpenError::DoesNotSupportRequestedAmountOfListeners
+            | EventOpenError::InternalFailure
+            | EventOpenError::DoesNotSupportRequestedAmountOfNodes
+            | EventOpenError::DoesNotSupportRequestedAmountOfNotifiers
+            | EventOpenError::DoesNotSupportRequestedMaxEventId
+            | EventOpenError::IncompatibleAttributes
+            | EventOpenError::IncompatibleDeadline
+            | EventOpenError::IncompatibleNotifierCreatedEvent
+            | EventOpenError::IncompatibleNotifierDeadEvent
+            | EventOpenError::IncompatibleNotifierDroppedEvent => ServiceOpenError::InternalFailure,
         }
     }
 }
@@ -215,7 +225,8 @@ impl From<EventCreateError> for ServiceCreateError {
             EventCreateError::ServiceConfigCouldNotBeCreated => {
                 ServiceCreateError::ServiceConfigCouldNotBeCreated
             }
-            _ => ServiceCreateError::InternalFailure,
+            EventCreateError::Interrupt => ServiceCreateError::Interrupt,
+            EventCreateError::InternalFailure => ServiceCreateError::InternalFailure,
         }
     }
 }

@@ -22,8 +22,6 @@ BUILD_END_TO_END_TESTS=true
 RUN_END_TO_END_TESTS=true
 PYTHON_END_TO_END_TESTS=true
 
-export IOX2_LOG_LEVEL=info
-
 while (( "$#" )); do
     case "$1" in
         no-build)

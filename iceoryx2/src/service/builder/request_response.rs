@@ -178,7 +178,19 @@ impl From<RequestResponseOpenError> for ServiceOpenError {
                 ServiceOpenError::UnableToCreateServiceTag
             }
             RequestResponseOpenError::VersionMismatch => ServiceOpenError::VersionMismatch,
-            _ => ServiceOpenError::InternalFailure,
+            RequestResponseOpenError::Interrupt => ServiceOpenError::Interrupt,
+            RequestResponseOpenError::InternalFailure
+            | RequestResponseOpenError::DoesNotSupportRequestedAmountOfActiveRequestsPerClient
+            | RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedResponsesPerPendingResponse
+            | RequestResponseOpenError::DoesNotSupportRequestedAmountOfClientRequestLoans
+            | RequestResponseOpenError::DoesNotSupportRequestedAmountOfClients
+            | RequestResponseOpenError::DoesNotSupportRequestedAmountOfNodes
+            | RequestResponseOpenError::DoesNotSupportRequestedAmountOfServers
+            | RequestResponseOpenError::DoesNotSupportRequestedResponseBufferSize
+            | RequestResponseOpenError::IncompatibleAttributes
+            | RequestResponseOpenError::IncompatibleBehaviorForFireAndForgetRequests
+            | RequestResponseOpenError::IncompatibleOverflowBehaviorForRequests
+            | RequestResponseOpenError::IncompatibleOverflowBehaviorForResponses => ServiceOpenError::InternalFailure,
         }
     }
 }

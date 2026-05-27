@@ -240,7 +240,7 @@ impl Default for Global {
             #[cfg(feature = "std")]
             prefix: FileName::new(b"iox2_").unwrap(),
             #[cfg(not(feature = "std"))]
-            prefix: FileName::new(b"iox2_no_std").unwrap(),
+            prefix: FileName::new(b"iox2_no_std_").unwrap(),
             service: Service::default(),
             node: Node::default(),
             creation_timeout: Duration::from_secs(1),
