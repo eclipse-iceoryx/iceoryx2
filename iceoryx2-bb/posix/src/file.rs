@@ -985,12 +985,6 @@ impl File {
         let origin = "File::remove()";
         let msg = "Unable to remove file";
 
-        if unsafe { posix::chmod(path.as_c_str(), Permission::ALL.as_mode()) } != 0 {
-            debug!(from origin,
-                "Failed to adjust permissions of file \"{}\" as preparation for removal. [{:?}]",
-                path, Errno::get());
-        }
-
         if unsafe { posix::remove(path.as_c_str()) } >= 0 {
             trace!(from origin, "\"{}\"", path);
             return Ok(true);

@@ -24,6 +24,8 @@ use crate::win32call;
 use super::win32_handle_translator::HandleTranslator;
 
 pub unsafe fn remove(pathname: *const c_char) -> int {
+    crate::posix::chmod(pathname, 0o777);
+
     let (has_deleted, _) = unsafe {
         win32call! { DeleteFileA(pathname as *const u8), ignore ERROR_FILE_NOT_FOUND, ERROR_ACCESS_DENIED }
     };
