@@ -50,5 +50,4 @@ impl core::error::Error for EventStateActivateError {}
 pub trait EventState: Sized + Send + Sync + Debug + ZeroCopySend + RelocatableContainer {
     fn activate(&self, event_id: EventId) -> Result<(), EventStateActivateError>;
     fn drain<F: FnMut(EventActivation)>(&self, callback: F) -> u64;
-    fn try_drain_one(&self) -> Option<EventId>;
 }

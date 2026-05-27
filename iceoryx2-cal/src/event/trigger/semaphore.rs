@@ -28,12 +28,18 @@ use crate::{
 use core::mem::MaybeUninit;
 use core::ptr::NonNull;
 use core::time::Duration;
+use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::{
     testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
 };
 use iceoryx2_bb_posix::file::AccessMode;
+use iceoryx2_bb_posix::mutex::IpcCapable;
+use iceoryx2_bb_posix::semaphore::{
+    SemaphoreInterface, UnnamedSemaphore, UnnamedSemaphoreBuilder, UnnamedSemaphoreHandle,
+};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fail;
@@ -119,6 +125,7 @@ pub struct State<E: EventState, Mgmt: ZeroCopySend + Send + Sync + Debug> {
     event: E,
     handle: Mgmt,
     event_id_max: EventId,
+    notification_count: AtomicU64,
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -189,8 +196,10 @@ impl<
     Storage: DynamicStorage<State<E, Mgmt>>,
 > Configuration<E, Mgmt, Storage>
 {
-    fn as_storage_config(&self) -> &Storage::Configuration {
-        &self.value
+    fn to_storage_config(&self) -> Storage::Configuration {
+        let mut suffix = *self.get_suffix();
+        suffix.push_bytes(b"_mgmt").unwrap();
+        self.value.clone().suffix(&suffix)
     }
 }
 
@@ -504,7 +513,7 @@ impl<
         super::TriggerOpenError,
     > {
         let storage = Storage::Builder::new(&self.name)
-            .config(self.config.as_storage_config())
+            .config(&self.config.to_storage_config())
             .has_ownership(true)
             .open(AccessMode::ReadWrite)
             .unwrap();
@@ -586,7 +595,7 @@ impl<
         let state_size = E::memory_size((self.event_id_max.as_value() + 1) as usize);
         let mut waiter = None;
         let storage = Storage::Builder::new(&self.name)
-            .config(self.config.as_storage_config())
+            .config(&self.config.to_storage_config())
             .has_ownership(true)
             .supplementary_size(state_size)
             .initializer(|value, allocator| {
@@ -601,6 +610,7 @@ impl<
                 event: unsafe { E::new_uninit((self.event_id_max.as_value() + 1) as usize) },
                 handle: unsafe { MaybeUninit::uninit().assume_init() },
                 event_id_max: self.event_id_max,
+                notification_count: AtomicU64::new(0),
             })
             .unwrap();
 
@@ -614,3 +624,125 @@ impl<
 }
 
 /////////// semaphore impl
+
+#[derive(Debug, ZeroCopySend)]
+#[repr(C)]
+struct SemaphoreMgmt {
+    handle: UnnamedSemaphoreHandle,
+}
+
+#[derive(Debug)]
+struct SemaphoreHandle<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> {
+    semaphore: UnnamedSemaphore<'static>,
+    _data_1: PhantomData<E>,
+    _data_2: PhantomData<Storage>,
+}
+
+unsafe impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> Send
+    for SemaphoreHandle<E, Storage>
+{
+}
+unsafe impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> Sync
+    for SemaphoreHandle<E, Storage>
+{
+}
+
+impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> Abandonable
+    for SemaphoreHandle<E, Storage>
+{
+    unsafe fn abandon_in_place(_this: NonNull<Self>) {}
+}
+
+impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
+    internal::HandlerImpl<E, SemaphoreMgmt, Storage> for SemaphoreHandle<E, Storage>
+{
+    fn open(_config: &Configuration<E, SemaphoreMgmt, Storage>, mgmt: &SemaphoreMgmt) -> Self {
+        Self {
+            semaphore: unsafe {
+                UnnamedSemaphore::from_ipc_handle(core::mem::transmute(&mgmt.handle))
+            },
+            _data_1: PhantomData,
+            _data_2: PhantomData,
+        }
+    }
+
+    fn notify(&self) -> Result<(), TriggerNotifyError> {
+        self.semaphore.post().unwrap();
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+struct SemaphoreWaiter<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> {
+    semaphore_mgmt: *mut SemaphoreMgmt,
+    semaphore: UnnamedSemaphore<'static>,
+    _data_1: PhantomData<E>,
+    _data_2: PhantomData<Storage>,
+}
+
+unsafe impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> Send
+    for SemaphoreWaiter<E, Storage>
+{
+}
+unsafe impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> Sync
+    for SemaphoreWaiter<E, Storage>
+{
+}
+
+impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> Abandonable
+    for SemaphoreWaiter<E, Storage>
+{
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe { core::ptr::drop_in_place(this.semaphore_mgmt) };
+    }
+}
+
+impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> Drop
+    for SemaphoreWaiter<E, Storage>
+{
+    fn drop(&mut self) {
+        unsafe { core::ptr::drop_in_place(self.semaphore_mgmt) };
+    }
+}
+
+impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
+    internal::WaiterImpl<E, SemaphoreMgmt, Storage> for SemaphoreWaiter<E, Storage>
+{
+    fn create(
+        _config: &Configuration<E, SemaphoreMgmt, Storage>,
+        mgmt: &mut MaybeUninit<SemaphoreMgmt>,
+    ) -> Self {
+        use iceoryx2_bb_posix::ipc_capable::Handle;
+
+        mgmt.write(SemaphoreMgmt {
+            handle: UnnamedSemaphoreHandle::new(),
+        });
+
+        Self {
+            semaphore_mgmt: mgmt.as_mut_ptr(),
+            semaphore: UnnamedSemaphoreBuilder::new()
+                .initial_value(0)
+                .is_interprocess_capable(true)
+                .create(&unsafe { &*mgmt.as_ptr() }.handle)
+                .unwrap(),
+            _data_1: PhantomData,
+            _data_2: PhantomData,
+        }
+    }
+
+    fn try_wait(&self) -> Result<(), TriggerWaitError> {
+        self.semaphore.try_wait().unwrap();
+        Ok(())
+    }
+
+    fn timed_wait(&self, timeout: Duration) -> Result<(), TriggerWaitError> {
+        self.semaphore.timed_wait(timeout).unwrap();
+        Ok(())
+    }
+
+    fn blocking_wait(&self) -> Result<(), TriggerWaitError> {
+        self.semaphore.blocking_wait().unwrap();
+        Ok(())
+    }
+}
