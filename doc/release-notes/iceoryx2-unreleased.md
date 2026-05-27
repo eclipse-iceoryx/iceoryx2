@@ -15,7 +15,6 @@
 
 * [#820](https://github.com/eclipse-iceoryx/iceoryx2/issues/820) Allow restricting the tunnel to a configurable allowlist of services via `Config::services` and the `--service`/`-s` flag on `iox2 tunnel zenoh`
 * [#1584](https://github.com/eclipse-iceoryx/iceoryx2/issues/1584) Introduce `Node::force_remove_service` to remove corrupted services manually.
-* [#1654](https://github.com/eclipse-iceoryx/iceoryx2/issues/1654) Introduce `AdaptiveWaitBehavior`
 
 ### Bugfixes
 
@@ -24,13 +23,7 @@
     conflicts when merging.
 -->
 
-* [#1650](https://github.com/eclipse-iceoryx/iceoryx2/issues/1650) Fix 'NodeCreationFailure::InternalError' on concurrent node creation
-* [#1660](https://github.com/eclipse-iceoryx/iceoryx2/issues/1660) Rework process alive detection to avoid false negatives to enable communication across docker containers
-* [#1670](https://github.com/eclipse-iceoryx/iceoryx2/issues/1670) Fix SIGBUS on cleanup with write-only shared memory with root
-* [#1673](https://github.com/eclipse-iceoryx/iceoryx2/issues/1673) thread-stack-size is the same as process-stack-size on all platforms.
-* [#1675](https://github.com/eclipse-iceoryx/iceoryx2/issues/1675) explicit remove in `NamedConcept::remove_cfg`.
-* [#1681](https://github.com/eclipse-iceoryx/iceoryx2/issues/1681) Deactivate 'cleanup_dead_nodes_on_open' for 'send_dead_node_signal'
-* [#1682](https://github.com/eclipse-iceoryx/iceoryx2/issues/1682) Use 'AdaptiveWait' with 'FixedTicks' when the filesystem is accessed
+* [#1673](https://github.com/eclipse-iceoryx/iceoryx2/issues/1673) Thread-stack-size is the same as process-stack-size on all platforms.
 
 ### Refactoring
 
@@ -39,7 +32,6 @@
     conflicts when merging.
 -->
 
-* [#1651](https://github.com/eclipse-iceoryx/iceoryx2/issues/1651) Make the names of the test binaries relatable to the crates
 * [#996](https://github.com/eclipse-iceoryx/iceoryx2/issues/996) Move BumpAllocator from iceoryx2-bb-memory into iceoryx2-bb-elementary
 
 ### Workflow
