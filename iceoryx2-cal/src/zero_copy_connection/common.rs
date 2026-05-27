@@ -409,6 +409,16 @@ pub mod details {
         .timeout(self.timeout)
         .supplementary_size(supplementary_size)
         .initializer(|data, allocator| {
+            data.write(
+                SharedManagementData::new(
+                                        self.enable_safe_overflow,
+                                        self.max_borrowed_samples_per_channel,
+                                        self.number_of_samples_per_segment,
+                                        self.number_of_segments,
+                                        self.number_of_channels
+                                    )
+            );
+            let data = unsafe{ data.assume_init_mut() };
             unsafe { data.init(allocator, self.submission_queue_size(), self.completion_queue_size())};
             for channel in data.channels.iter() {
                 channel.state.store(self.initial_channel_state.0, Ordering::Relaxed);
@@ -416,15 +426,7 @@ pub mod details {
 
             true
         })
-        .open_or_create(
-            SharedManagementData::new(
-                                    self.enable_safe_overflow,
-                                    self.max_borrowed_samples_per_channel,
-                                    self.number_of_samples_per_segment,
-                                    self.number_of_segments,
-                                    self.number_of_channels
-                                )
-            );
+        .open_or_create();
 
             let storage = match storage {
                 Ok(storage) => storage,
