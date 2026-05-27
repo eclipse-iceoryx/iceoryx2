@@ -174,6 +174,7 @@ pub mod details {
         fn initialize(
             &self,
             allocator_config: &Allocator::Configuration,
+            allocator_mgmt_size: usize,
             details: &mut MaybeUninit<AllocatorDetails<Allocator>>,
             init_allocator: &mut BumpAllocator,
         ) -> bool {
@@ -188,7 +189,6 @@ pub mod details {
                 }
             };
 
-            let allocator_mgmt_size = Allocator::management_size(self.size, allocator_config);
             details.write(AllocatorDetails {
                 allocator_id: Allocator::unique_id(),
                 allocator: MaybeUninit::uninit(),
@@ -251,7 +251,12 @@ pub mod details {
                 .supplementary_size(self.size + allocator_mgmt_size)
                 .has_ownership(self.has_ownership)
                 .initializer(|details, init_allocator| -> bool {
-                    self.initialize(allocator_config, details, init_allocator)
+                    self.initialize(
+                        allocator_config,
+                        allocator_mgmt_size,
+                        details,
+                        init_allocator,
+                    )
                 })
                 .create()
             {

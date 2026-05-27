@@ -611,18 +611,20 @@ pub mod details {
     > ListenerBuilder<Tracker, WaitMechanism, Storage>
     {
         fn init(
-            &self,
             mgmt: &mut MaybeUninit<Management<Tracker, WaitMechanism>>,
             allocator: &mut BumpAllocator,
+            id_tarcker_capacity: usize,
         ) -> bool {
+            let origin = "init()";
+
             mgmt.write(Management {
-                id_tracker: unsafe { Tracker::new_uninit(self.trigger_id_max.as_value() + 1) },
+                id_tracker: unsafe { Tracker::new_uninit(id_tarcker_capacity) },
                 signal_mechanism: WaitMechanism::new(),
                 reference_counter: AtomicUsize::new(1),
                 has_listener: AtomicBool::new(true),
             });
-            let origin = "init()";
             let mgmt = unsafe { mgmt.assume_init_mut() };
+
             if unsafe { mgmt.id_tracker.init(allocator).is_err() } {
                 debug!(from origin, "Unable to initialize IdTracker.");
                 return false;
@@ -660,7 +662,9 @@ pub mod details {
             match Storage::Builder::new(&self.name)
                 .config(&self.config.convert())
                 .supplementary_size(Tracker::memory_size(id_tracker_capacity))
-                .initializer(|mgmt, allocator| -> bool { self.init(mgmt, allocator) })
+                .initializer(|mgmt, allocator| -> bool {
+                    Self::init(mgmt, allocator, id_tracker_capacity)
+                })
                 .has_ownership(false)
                 .create()
             {

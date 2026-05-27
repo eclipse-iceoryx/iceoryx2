@@ -30,7 +30,12 @@
 //!                 .supplementary_size(additional_size)
 //!                 // we always have to use a thread-safe object since multiple processes can
 //!                 // access this concurrently
-//!                 .create(AtomicI64::new(0)).unwrap();
+//!                 .initializer(|value, _| {
+//!                     value.write(AtomicI64::new(0));
+//!                     true
+//!                 })
+//!                 .create()
+//!                 .unwrap();
 //! owner.get().store(123, Ordering::Relaxed);
 //!
 //! // usually a different process

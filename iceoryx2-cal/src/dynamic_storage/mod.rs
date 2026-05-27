@@ -39,7 +39,12 @@
 //! fn process_one<Storage: DynamicStorage<AtomicU64>>() {
 //!     let storage_name = FileName::new(b"myStorageName").unwrap();
 //!     let mut storage = Storage::Builder::new(&storage_name)
-//!                         .create(AtomicU64::new(873)).unwrap();
+//!                         .initializer(|value, _| {
+//!                             value.write(AtomicU64::new(873));
+//!                             true
+//!                         })
+//!                         .create()
+//!                         .unwrap();
 //!
 //!     println!("Created storage {}", storage.name());
 //!     storage.get().store(991, Ordering::Relaxed);
@@ -55,7 +60,6 @@
 //! }
 //! ```
 
-// TODO: adapt documentation, add missing tests
 use core::{fmt::Debug, mem::MaybeUninit, time::Duration};
 
 use iceoryx2_bb_elementary::enum_gen;

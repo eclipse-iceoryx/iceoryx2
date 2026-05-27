@@ -28,7 +28,12 @@
 //! let storage_name = FileName::new(b"myDynStorage").unwrap();
 //! let storage = Builder::new(&storage_name)
 //!                 .supplementary_size(additional_size)
-//!                 .create(AtomicI64::new(444)).unwrap();
+//!                 .initializer(|value, _| {
+//!                     value.write(AtomicI64::new(444));
+//!                     true
+//!                 })
+//!                 .create()
+//!                 .unwrap();
 //!
 //! // at some other place in the local process, can be another thread
 //! let reader = Builder::<AtomicI64>::new(&storage_name)

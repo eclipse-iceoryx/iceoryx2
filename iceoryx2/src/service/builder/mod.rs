@@ -825,7 +825,6 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     }
 
     fn config_init_call(
-        &self,
         config: &mut MaybeUninit<DynamicConfig>,
         allocator: &mut BumpAllocator,
         args: &DynamicConfigCreationArgs,
@@ -852,7 +851,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
             .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
             .supplementary_size(args.additional_size + required_memory_size)
             .has_ownership(false)
-            .initializer(|config, allocator| -> bool {self.config_init_call(config, allocator, &args)})
+            .initializer(|config, allocator| -> bool {Self::config_init_call(config, allocator, &args)})
             .create() {
                 Ok(dynamic_storage) => {
                    Ok(dynamic_storage)

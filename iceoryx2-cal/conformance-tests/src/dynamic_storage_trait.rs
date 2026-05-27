@@ -413,13 +413,12 @@ pub mod dynamic_storage_trait {
             .config(&config)
             .supplementary_size(134)
             .initializer(|value, allocator| {
-                value.write(TestData::new(123));
+                value.write(TestData::new(8912));
                 let value = unsafe { value.assume_init_mut() };
 
                 let layout = Layout::from_size_align(134, 1).unwrap();
                 let mem = allocator.allocate(layout).unwrap();
 
-                value.value.store(8912, Ordering::Relaxed);
                 value.supplementary_ptr = mem.as_ptr() as *mut u8;
                 value.supplementary_len = mem.len();
 
@@ -487,10 +486,8 @@ pub mod dynamic_storage_trait {
                         .supplementary_size(0)
                         .has_ownership(false)
                         .initializer(|value, _| {
-                            value.write(TestData::new(123));
-                            let value = unsafe { value.assume_init_mut() };
                             nanosleep(TIMEOUT).unwrap();
-                            value.value.store(789, Ordering::Relaxed);
+                            value.write(TestData::new(789));
                             true
                         })
                         .create()
