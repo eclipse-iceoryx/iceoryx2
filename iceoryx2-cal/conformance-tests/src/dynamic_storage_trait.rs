@@ -578,7 +578,6 @@ pub mod dynamic_storage_trait {
         .unwrap();
     }
 
-    // TODO: test when initializer is not set
     #[conformance_test]
     pub fn create_fails_when_initialization_fails<
         Sut: DynamicStorage<TestData>,
@@ -623,6 +622,7 @@ pub mod dynamic_storage_trait {
         assert_that!(Sut::does_exist_cfg(&sut_name, &config), eq Ok(false));
         let sut_1 = Sut::Builder::new(&sut_name)
             .config(&config)
+            .initializer(|_, _| true)
             .open_or_create();
         assert_that!(sut_1, is_ok);
         assert_that!(Sut::does_exist_cfg(&sut_name, &config), eq Ok(true));
@@ -704,6 +704,7 @@ pub mod dynamic_storage_trait {
             .path_hint(config.get_path_hint());
         let sut = WrongTypeSut::Builder::new(&storage_name)
             .config(&wrong_type_config)
+            .initializer(|_, _| true)
             .create();
         assert_that!(sut, is_ok);
         assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(false));
@@ -732,6 +733,7 @@ pub mod dynamic_storage_trait {
             testdata_storages.push(
                 Sut::Builder::new(&storage_name)
                     .config(&config)
+                    .initializer(|_, _| true)
                     .create()
                     .unwrap(),
             );
@@ -740,6 +742,7 @@ pub mod dynamic_storage_trait {
             u64_storages.push(
                 WrongTypeSut::Builder::new(&storage_name)
                     .config(&wrong_type_config)
+                    .initializer(|_, _| true)
                     .create()
                     .unwrap(),
             );
@@ -752,6 +755,7 @@ pub mod dynamic_storage_trait {
             u64_storages.push(
                 WrongTypeSut::Builder::new(&storage_name)
                     .config(&wrong_type_config)
+                    .initializer(|_, _| true)
                     .create()
                     .unwrap(),
             );
@@ -787,6 +791,7 @@ pub mod dynamic_storage_trait {
 
         let _sut = Sut::Builder::new(&storage_name)
             .config(&config)
+            .initializer(|_, _| true)
             .create()
             .unwrap();
         let sut = WrongTypeSut::Builder::new(&storage_name)
@@ -808,6 +813,7 @@ pub mod dynamic_storage_trait {
             .path_hint(config.get_path_hint());
         let _sut = Sut::Builder::new(&storage_name)
             .config(&config)
+            .initializer(|_, _| true)
             .create()
             .unwrap();
         assert_that!(unsafe { WrongTypeSut::remove_cfg(&storage_name, &wrong_type_config) }, eq Ok(false));
@@ -843,5 +849,25 @@ pub mod dynamic_storage_trait {
             .unwrap();
 
         assert_that!(sut.get().value.load(Ordering::Relaxed), eq 919);
+    }
+
+    #[conformance_test]
+    pub fn create_fails_when_initializer_is_not_set<
+        Sut: DynamicStorage<TestData>,
+        WrongTypeSut: DynamicStorage<u64>,
+    >() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::Builder::new(&storage_name).config(&config).create();
+
+        assert_that!(sut, is_err);
+        assert_that!(
+            sut.err().unwrap(), eq
+            DynamicStorageCreateError::InitializationFailed
+        );
+
+        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_name, &config), eq Ok(false));
+        assert_that!(unsafe { <Sut as NamedConceptMgmt>::remove_cfg(&storage_name, &config) }, eq Ok(false));
     }
 }

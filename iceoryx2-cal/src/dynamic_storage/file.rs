@@ -164,7 +164,7 @@ impl<T: Send + Sync + Debug + ZeroCopySend> NamedConceptBuilder<Storage<T>> for 
             supplementary_size: 0,
             config: Configuration::default(),
             timeout: Duration::ZERO,
-            initializer: Initializer::new(|_, _| true),
+            initializer: Initializer::new(|_, _| false),
             _phantom_data: PhantomData,
         }
     }

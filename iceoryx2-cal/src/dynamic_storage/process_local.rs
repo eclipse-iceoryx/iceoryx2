@@ -357,7 +357,7 @@ impl<T: Send + Sync + Debug + 'static + ZeroCopySend> NamedConceptBuilder<Storag
             has_ownership: true,
             supplementary_size: 0,
             config: Configuration::default(),
-            initializer: Initializer::new(|_, _| true),
+            initializer: Initializer::new(|_, _| false),
             _phantom_data: PhantomData,
         }
     }

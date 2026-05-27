@@ -17,6 +17,7 @@
 use core::alloc::Layout;
 use core::hash::Hash;
 use core::marker::PhantomData;
+use core::mem::MaybeUninit;
 use core::ptr::NonNull;
 
 use alloc::boxed::Box;
@@ -708,7 +709,13 @@ impl<
                 .config(&mgmt_config)
                 .has_ownership(false)
                 .supplementary_size(RelocatableFlatMap::<KeyMemory<MAX_BLACKBOARD_KEY_SIZE>, usize>::const_memory_size(capacity)+RelocatableVec::<Entry>::const_memory_size(capacity))
-                .initializer(|mgmt: &mut Mgmt, allocator: &mut BumpAllocator| {
+                .initializer(|mgmt: &mut MaybeUninit<Mgmt>, allocator: &mut BumpAllocator| {
+                    mgmt.write(Mgmt {
+                        map: unsafe { RelocatableFlatMap::<KeyMemory<MAX_BLACKBOARD_KEY_SIZE>, usize>::new_uninit(capacity) },
+                        entries: unsafe { RelocatableVec::<Entry>::new_uninit(capacity) },
+                    });
+                    let mgmt = unsafe { mgmt.assume_init_mut() };
+
                     if unsafe {mgmt.map.init(allocator)}.is_err() || unsafe {mgmt.entries.init(allocator).is_err()} {
                         return false
                     }
@@ -737,7 +744,7 @@ impl<
                         }
                     }
                     true})
-                .create(Mgmt{ map: unsafe { RelocatableFlatMap::<KeyMemory<MAX_BLACKBOARD_KEY_SIZE>, usize>::new_uninit(capacity) }, entries: unsafe {RelocatableVec::<Entry>::new_uninit(capacity)}}),
+                .create(),
                     with ServiceCreateError::ServiceInCorruptedState, "{} since the blackboard management segment could not be created. This could indicate a corrupted system.",
                     msg);
 
