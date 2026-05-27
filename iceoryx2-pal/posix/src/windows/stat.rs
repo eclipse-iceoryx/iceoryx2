@@ -15,11 +15,12 @@
 #![allow(unused_variables)]
 
 use windows_sys::Win32::{
-    Foundation::ERROR_FILE_NOT_FOUND,
+    Foundation::{ERROR_FILE_NOT_FOUND, FALSE},
+    Security::{DACL_SECURITY_INFORMATION, SetFileSecurityA},
     Storage::FileSystem::{FILE_ATTRIBUTE_DIRECTORY, GetFileAttributesA, INVALID_FILE_ATTRIBUTES},
 };
 
-use crate::posix::*;
+use crate::posix::{win32_security_attributes::from_mode_to_security_attributes, *};
 
 use crate::win32call;
 
@@ -63,4 +64,20 @@ pub unsafe fn stat(path: *const c_char, buf: *mut stat_t) -> int {
 
 pub unsafe fn umask(mask: mode_t) -> mode_t {
     mode_t::MAX
+}
+
+pub unsafe fn chmod(path: *const c_char, mode: mode_t) -> int {
+    let security_attributes = from_mode_to_security_attributes(mode);
+    unsafe {
+        let (has_file_security_set, _) = win32call!(SetFileSecurityA(
+            path.cast(),
+            DACL_SECURITY_INFORMATION,
+            security_attributes.lpSecurityDescriptor
+        ));
+        if has_file_security_set == FALSE {
+            return -1;
+        }
+
+        0
+    }
 }

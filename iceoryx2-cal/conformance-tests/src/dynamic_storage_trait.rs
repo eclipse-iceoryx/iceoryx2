@@ -30,7 +30,6 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 use iceoryx2_cal::dynamic_storage::*;
 use iceoryx2_cal::named_concept::*;
 use iceoryx2_cal::testing::*;
-use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
 #[derive(Debug)]
 #[repr(C)]
@@ -422,6 +421,8 @@ pub mod dynamic_storage_trait {
         const ITERATIONS: usize = 100;
 
         for _ in 0..ITERATIONS {
+            use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
+
             let storage_name = generate_file_path().file_name();
             let config = generate_isolated_config::<Sut>();
             let _watchdog = Watchdog::new();

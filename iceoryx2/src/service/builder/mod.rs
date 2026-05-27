@@ -368,8 +368,9 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         let mut flux_counter = 0;
         let mut last_errors = StaticVec::<ErrorTypeOpenOrCreate, ERROR_TRACKING_LIMIT>::new();
         let mut insert = |value: ErrorTypeOpenOrCreate| {
-            while last_errors.insert(0, value).is_err() {
+            if last_errors.insert(0, value).is_err() {
                 last_errors.pop();
+                let _ = last_errors.insert(0, value);
             }
         };
 

@@ -185,7 +185,7 @@ fn get_owner_sid(handle: HANDLE) -> [u8; SID_LENGTH] {
     sid
 }
 
-pub fn from_mode_to_security_attributes(handle: HANDLE, mode: mode_t) -> SECURITY_ATTRIBUTES {
+pub fn from_mode_to_security_attributes(mode: mode_t) -> SECURITY_ATTRIBUTES {
     let mut attr = SECURITY_ATTRIBUTES {
         nLength: core::mem::size_of::<SECURITY_ATTRIBUTES>() as u32,
         lpSecurityDescriptor: core::ptr::null_mut::<void>(),
