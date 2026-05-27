@@ -97,7 +97,6 @@ impl<T: Send + Sync + Debug + ZeroCopySend> Clone for Configuration<T> {
 #[repr(C)]
 struct Data<T: Send + Sync + Debug + ZeroCopySend> {
     version: AtomicU64,
-    call_drop_on_destruction: bool,
     data: T,
 }
 
@@ -482,11 +481,9 @@ impl<T: Debug + Send + Sync + ZeroCopySend> Abandonable for Storage<T> {
 impl<T: Debug + Send + Sync + ZeroCopySend> Drop for Storage<T> {
     fn drop(&mut self) {
         if self.file.has_ownership() {
-            let data = unsafe { &mut (*(self.memory_mapping.base_address_mut() as *mut Data<T>)) };
-            if data.call_drop_on_destruction {
-                let user_type = &mut data.data;
-                unsafe { core::ptr::drop_in_place(user_type) };
-            }
+            let user_type =
+                unsafe { &mut (*(self.memory_mapping.base_address_mut() as *mut Data<T>)).data };
+            unsafe { core::ptr::drop_in_place(user_type) };
         }
     }
 }
