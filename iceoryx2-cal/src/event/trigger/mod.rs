@@ -12,9 +12,11 @@
 
 pub mod semaphore;
 
+use crate::event::event_state::{EventActivation, EventId, EventStateActivateError};
 use crate::event::{NamedConcept, NamedConceptBuilder};
 use crate::event::{NamedConceptMgmt, event_state::EventState};
 use core::fmt::Debug;
+use core::time::Duration;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -63,25 +65,43 @@ impl core::fmt::Display for TriggerNotifyError {
 
 impl core::error::Error for TriggerNotifyError {}
 
+impl From<EventStateActivateError> for TriggerNotifyError {
+    fn from(value: EventStateActivateError) -> Self {
+        todo!()
+    }
+}
+
 pub trait TriggerWaiter<E: EventState>: NamedConcept + Debug + Abandonable + Send {
-    fn wait(&self) -> Result<(), TriggerWaitError>;
-    fn state(&self) -> &E;
+    const IS_FILE_DESCRIPTOR_BASED: bool = false;
+
+    fn try_wait<F: FnMut(EventActivation)>(&self, callback: F) -> Result<u64, TriggerWaitError>;
+    fn timed_wait<F: FnMut(EventActivation)>(
+        &self,
+        callback: F,
+        timeout: Duration,
+    ) -> Result<u64, TriggerWaitError>;
+    fn blocking_wait<F: FnMut(EventActivation)>(
+        &self,
+        callback: F,
+    ) -> Result<u64, TriggerWaitError>;
 }
 
 pub trait TriggerHandle<E: EventState>: NamedConcept + Debug + Abandonable + Send {
-    fn notify(&self) -> Result<(), TriggerNotifyError>;
-    fn state(&self) -> &E;
+    fn event_id_max(&self) -> EventId;
+    fn notify(&self, event_id: EventId) -> Result<(), TriggerNotifyError>;
 }
 
 pub trait TriggerWaiterBuilder<E: EventState, T: Trigger<E>>:
     NamedConceptBuilder<T> + Debug
 {
+    fn timeout(self, timeout: Duration) -> Self;
     fn open(self) -> Result<T::Handle, TriggerOpenError>;
 }
 
 pub trait TriggerHandleBuilder<E: EventState, T: Trigger<E>>:
     NamedConceptBuilder<T> + Debug
 {
+    fn event_id_max(self, id: EventId) -> Self;
     fn create(self) -> Result<T::Waiter, TriggerCreateError>;
 }
 

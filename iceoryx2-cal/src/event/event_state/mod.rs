@@ -11,8 +11,11 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::fmt::Debug;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
+#[derive(ZeroCopySend, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[repr(C)]
 pub struct EventId(u64);
 
 impl EventId {
@@ -25,7 +28,7 @@ impl EventId {
     }
 }
 
-pub struct Event {
+pub struct EventActivation {
     pub event_id: EventId,
     pub count: u64,
 }
@@ -45,6 +48,6 @@ impl core::error::Error for EventStateActivateError {}
 
 pub trait EventState: Sized + Send + Sync + Debug + ZeroCopySend {
     fn activate(&self, event_id: EventId) -> Result<(), EventStateActivateError>;
-    fn drain<F: FnMut(Event)>(&self, callback: F) -> u64;
+    fn drain<F: FnMut(EventActivation)>(&self, callback: F) -> u64;
     fn try_drain_one(&self) -> Option<EventId>;
 }

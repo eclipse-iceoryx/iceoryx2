@@ -13,6 +13,7 @@
 use core::fmt::Debug;
 use core::marker::PhantomData;
 
+use crate::event::event_state::{EventActivation, EventId};
 use crate::event::trigger::{Trigger, TriggerNotifyError, TriggerWaitError};
 use crate::{
     dynamic_storage::DynamicStorage,
@@ -24,34 +25,89 @@ use crate::{
     named_concept::NamedConceptConfiguration,
 };
 use core::mem::MaybeUninit;
+use core::ptr::NonNull;
+use core::time::Duration;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::{
     testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
 };
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_log::fail;
 
-mod internal {
+pub(crate) mod internal {
     use super::*;
 
-    trait WaiterImpl<
+    pub trait WaiterImpl<
         E: EventState,
         Mgmt: ZeroCopySend + Send + Sync + Debug,
         Storage: DynamicStorage<State<E, Mgmt>>,
-    >
+    >: Send + Sync + Debug + Abandonable
     {
         fn create(config: &Configuration<E, Mgmt, Storage>, mgmt: &mut MaybeUninit<Mgmt>) -> Self;
-        fn wait(&self) -> Result<(), TriggerWaitError>;
+        fn try_wait(&self) -> Result<(), TriggerWaitError>;
+        fn timed_wait(&self, timeout: Duration) -> Result<(), TriggerWaitError>;
+        fn blocking_wait(&self) -> Result<(), TriggerWaitError>;
     }
 
-    trait HandlerImpl<
+    pub trait HandlerImpl<
         E: EventState,
         Mgmt: ZeroCopySend + Send + Sync + Debug,
         Storage: DynamicStorage<State<E, Mgmt>>,
-    >
+    >: Send + Sync + Debug + Abandonable
     {
         fn open(config: &Configuration<E, Mgmt, Storage>, mgmt: &Mgmt) -> Self;
         fn notify(&self) -> Result<(), TriggerNotifyError>;
+    }
+
+    #[derive(Debug)]
+    pub(crate) struct Stub {}
+
+    unsafe impl Send for Stub {}
+    unsafe impl Sync for Stub {}
+    impl Abandonable for Stub {
+        unsafe fn abandon_in_place(_this: NonNull<Self>) {
+            unimplemented!()
+        }
+    }
+    impl<
+        E: EventState,
+        Mgmt: ZeroCopySend + Send + Sync + Debug,
+        Storage: DynamicStorage<State<E, Mgmt>>,
+    > WaiterImpl<E, Mgmt, Storage> for Stub
+    {
+        fn create(
+            _config: &Configuration<E, Mgmt, Storage>,
+            _mgmt: &mut MaybeUninit<Mgmt>,
+        ) -> Self {
+            unimplemented!()
+        }
+
+        fn try_wait(&self) -> Result<(), TriggerWaitError> {
+            unimplemented!()
+        }
+
+        fn timed_wait(&self, _timeout: Duration) -> Result<(), TriggerWaitError> {
+            unimplemented!()
+        }
+
+        fn blocking_wait(&self) -> Result<(), TriggerWaitError> {
+            unimplemented!()
+        }
+    }
+    impl<
+        E: EventState,
+        Mgmt: ZeroCopySend + Send + Sync + Debug,
+        Storage: DynamicStorage<State<E, Mgmt>>,
+    > HandlerImpl<E, Mgmt, Storage> for Stub
+    {
+        fn notify(&self) -> Result<(), TriggerNotifyError> {
+            unimplemented!()
+        }
+        fn open(_config: &Configuration<E, Mgmt, Storage>, _mgmt: &Mgmt) -> Self {
+            unimplemented!()
+        }
     }
 }
 
@@ -60,6 +116,7 @@ mod internal {
 pub struct State<E: EventState, Mgmt: ZeroCopySend + Send + Sync + Debug> {
     event: E,
     handle: Mgmt,
+    event_id_max: EventId,
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -69,8 +126,8 @@ pub struct Configuration<
     Storage: DynamicStorage<State<E, Mgmt>>,
 > {
     value: Storage::Configuration,
-    _data1: PhantomData<E>,
-    _data2: PhantomData<Mgmt>,
+    _data_1: PhantomData<E>,
+    _data_2: PhantomData<Mgmt>,
 }
 
 impl<
@@ -82,8 +139,8 @@ impl<
     fn clone(&self) -> Self {
         Self {
             value: self.value.clone(),
-            _data1: PhantomData,
-            _data2: PhantomData,
+            _data_1: PhantomData,
+            _data_2: PhantomData,
         }
     }
 }
@@ -97,11 +154,29 @@ impl<
     fn default() -> Self {
         Self {
             value: Storage::Configuration::default()
-                .path_hint(&TriggerImpl::<E, Mgmt, Storage>::default_path_hint())
-                .suffix(&TriggerImpl::<E, Mgmt, Storage>::default_suffix())
-                .prefix(&TriggerImpl::<E, Mgmt, Storage>::default_prefix()),
-            _data1: PhantomData,
-            _data2: PhantomData,
+                .path_hint(&TriggerImpl::<
+                    E,
+                    Mgmt,
+                    Storage,
+                    internal::Stub,
+                    internal::Stub,
+                >::default_path_hint())
+                .suffix(&TriggerImpl::<
+                    E,
+                    Mgmt,
+                    Storage,
+                    internal::Stub,
+                    internal::Stub,
+                >::default_suffix())
+                .prefix(&TriggerImpl::<
+                    E,
+                    Mgmt,
+                    Storage,
+                    internal::Stub,
+                    internal::Stub,
+                >::default_prefix()),
+            _data_1: PhantomData,
+            _data_2: PhantomData,
         }
     }
 }
@@ -145,17 +220,23 @@ pub struct TriggerImpl<
     E: EventState,
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
+    H: internal::HandlerImpl<E, Mgmt, Storage>,
+    W: internal::WaiterImpl<E, Mgmt, Storage>,
 > {
     _data_1: PhantomData<E>,
     _data_2: PhantomData<Mgmt>,
     _data_3: PhantomData<Storage>,
+    _data_4: PhantomData<H>,
+    _data_5: PhantomData<W>,
 }
 
 impl<
     E: EventState,
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
-> NamedConceptMgmt for TriggerImpl<E, Mgmt, Storage>
+    H: internal::HandlerImpl<E, Mgmt, Storage>,
+    W: internal::WaiterImpl<E, Mgmt, Storage>,
+> NamedConceptMgmt for TriggerImpl<E, Mgmt, Storage, H, W>
 {
     type Configuration = Configuration<E, Mgmt, Storage>;
 
@@ -190,12 +271,14 @@ impl<
     E: EventState,
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
-> super::Trigger<E> for TriggerImpl<E, Mgmt, Storage>
+    H: internal::HandlerImpl<E, Mgmt, Storage>,
+    W: internal::WaiterImpl<E, Mgmt, Storage>,
+> super::Trigger<E> for TriggerImpl<E, Mgmt, Storage, H, W>
 {
-    type Handle = Handle<E, Mgmt, Storage>;
-    type HandleBuilder = HandleBuilder<E, Mgmt, Storage>;
-    type Waiter = Waiter<E, Mgmt, Storage>;
-    type WaiterBuiler = WaiterBuilder<E, Mgmt, Storage>;
+    type Handle = Handle<E, Mgmt, Storage, H>;
+    type HandleBuilder = HandleBuilder<E, Mgmt, Storage, H, W>;
+    type Waiter = Waiter<E, Mgmt, Storage, W>;
+    type WaiterBuiler = WaiterBuilder<E, Mgmt, Storage, H, W>;
 }
 
 #[derive(Debug)]
@@ -203,20 +286,25 @@ pub struct Handle<
     E: EventState,
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
+    H: internal::HandlerImpl<E, Mgmt, Storage>,
 > {
+    storage: Storage,
+    handle: H,
     _data_1: PhantomData<E>,
     _data_2: PhantomData<Mgmt>,
-    _data_3: PhantomData<Storage>,
 }
 
 impl<
     E: EventState,
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
-> Abandonable for Handle<E, Mgmt, Storage>
+    H: internal::HandlerImpl<E, Mgmt, Storage>,
+> Abandonable for Handle<E, Mgmt, Storage, H>
 {
-    unsafe fn abandon_in_place(this: std::ptr::NonNull<Self>) {
-        todo!()
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe { H::abandon_in_place(NonNull::iox2_from_mut(&mut this.handle)) };
+        unsafe { Storage::abandon_in_place(NonNull::iox2_from_mut(&mut this.storage)) };
     }
 }
 
@@ -224,10 +312,11 @@ impl<
     E: EventState,
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
-> NamedConcept for Handle<E, Mgmt, Storage>
+    H: internal::HandlerImpl<E, Mgmt, Storage>,
+> NamedConcept for Handle<E, Mgmt, Storage, H>
 {
     fn name(&self) -> &FileName {
-        todo!()
+        self.storage.name()
     }
 }
 
@@ -235,14 +324,22 @@ impl<
     E: EventState,
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
-> TriggerHandle<E> for Handle<E, Mgmt, Storage>
+    H: internal::HandlerImpl<E, Mgmt, Storage>,
+> TriggerHandle<E> for Handle<E, Mgmt, Storage, H>
 {
-    fn notify(&self) -> Result<(), super::TriggerNotifyError> {
-        todo!()
+    fn event_id_max(&self) -> EventId {
+        self.storage.get().event_id_max
     }
 
-    fn state(&self) -> &E {
-        todo!()
+    fn notify(&self, event_id: EventId) -> Result<(), super::TriggerNotifyError> {
+        let msg = "Unable to notify";
+        fail!(from self,
+              when self.storage.get().event.activate(event_id),
+              "{msg} with {event_id:?} since the activation failed.");
+        fail!(from self,
+              when self.handle.notify(),
+              "{msg} with {event_id:?} since the notification could not be sent.");
+        Ok(())
     }
 }
 
@@ -251,20 +348,25 @@ pub struct Waiter<
     E: EventState,
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
+    W: internal::WaiterImpl<E, Mgmt, Storage>,
 > {
+    storage: Storage,
+    waiter: W,
     _data_1: PhantomData<E>,
     _data_2: PhantomData<Mgmt>,
-    _data_3: PhantomData<Storage>,
 }
 
 impl<
     E: EventState,
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
-> Abandonable for Waiter<E, Mgmt, Storage>
+    W: internal::WaiterImpl<E, Mgmt, Storage>,
+> Abandonable for Waiter<E, Mgmt, Storage, W>
 {
-    unsafe fn abandon_in_place(this: std::ptr::NonNull<Self>) {
-        todo!()
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe { W::abandon_in_place(NonNull::iox2_from_mut(&mut this.waiter)) };
+        unsafe { Storage::abandon_in_place(NonNull::iox2_from_mut(&mut this.storage)) };
     }
 }
 
@@ -272,10 +374,11 @@ impl<
     E: EventState,
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
-> NamedConcept for Waiter<E, Mgmt, Storage>
+    W: internal::WaiterImpl<E, Mgmt, Storage>,
+> NamedConcept for Waiter<E, Mgmt, Storage, W>
 {
     fn name(&self) -> &FileName {
-        todo!()
+        self.storage.name()
     }
 }
 
@@ -283,14 +386,44 @@ impl<
     E: EventState,
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
-> TriggerWaiter<E> for Waiter<E, Mgmt, Storage>
+    W: internal::WaiterImpl<E, Mgmt, Storage>,
+> TriggerWaiter<E> for Waiter<E, Mgmt, Storage, W>
 {
-    fn state(&self) -> &E {
-        todo!()
+    fn try_wait<F: FnMut(EventActivation)>(&self, callback: F) -> Result<u64, TriggerWaitError> {
+        let msg = "Failed to try wait and acquire all event notifications";
+        fail!(from self,
+              when self.waiter.try_wait(),
+              "{msg} since the underlying waiting call failed.");
+
+        let number_of_events = self.storage.get().event.drain(callback);
+        Ok(number_of_events)
     }
 
-    fn wait(&self) -> Result<(), super::TriggerWaitError> {
-        todo!()
+    fn timed_wait<F: FnMut(EventActivation)>(
+        &self,
+        callback: F,
+        timeout: Duration,
+    ) -> Result<u64, TriggerWaitError> {
+        let msg = "Failed to wait with timeout and acquire all event notifications";
+        fail!(from self,
+              when self.waiter.timed_wait(timeout),
+              "{msg} since the underlying waiting call failed.");
+
+        let number_of_events = self.storage.get().event.drain(callback);
+        Ok(number_of_events)
+    }
+
+    fn blocking_wait<F: FnMut(EventActivation)>(
+        &self,
+        callback: F,
+    ) -> Result<u64, TriggerWaitError> {
+        let msg = "Failed to wait with timeout and acquire all event notifications";
+        fail!(from self,
+              when self.waiter.blocking_wait(),
+              "{msg} since the underlying waiting call failed.");
+
+        let number_of_events = self.storage.get().event.drain(callback);
+        Ok(number_of_events)
     }
 }
 
@@ -299,17 +432,24 @@ pub struct WaiterBuilder<
     E: EventState,
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
+    H: internal::HandlerImpl<E, Mgmt, Storage>,
+    W: internal::WaiterImpl<E, Mgmt, Storage>,
 > {
     _data_1: PhantomData<E>,
     _data_2: PhantomData<Mgmt>,
     _data_3: PhantomData<Storage>,
+    _data_4: H,
+    _data_5: W,
 }
 
 impl<
     E: EventState,
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
-> NamedConceptBuilder<TriggerImpl<E, Mgmt, Storage>> for WaiterBuilder<E, Mgmt, Storage>
+    H: internal::HandlerImpl<E, Mgmt, Storage>,
+    W: internal::WaiterImpl<E, Mgmt, Storage>,
+> NamedConceptBuilder<TriggerImpl<E, Mgmt, Storage, H, W>>
+    for WaiterBuilder<E, Mgmt, Storage, H, W>
 {
     fn new(name: &FileName) -> Self {
         todo!()
@@ -317,7 +457,7 @@ impl<
 
     fn config(
         self,
-        config: &<TriggerImpl<E, Mgmt, Storage> as NamedConceptMgmt>::Configuration,
+        config: &<TriggerImpl<E, Mgmt, Storage, H, W> as NamedConceptMgmt>::Configuration,
     ) -> Self {
         todo!()
     }
@@ -327,12 +467,21 @@ impl<
     E: EventState,
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
-> TriggerWaiterBuilder<E, TriggerImpl<E, Mgmt, Storage>> for WaiterBuilder<E, Mgmt, Storage>
+    H: internal::HandlerImpl<E, Mgmt, Storage>,
+    W: internal::WaiterImpl<E, Mgmt, Storage>,
+> TriggerWaiterBuilder<E, TriggerImpl<E, Mgmt, Storage, H, W>>
+    for WaiterBuilder<E, Mgmt, Storage, H, W>
 {
+    fn timeout(self, timeout: std::time::Duration) -> Self {
+        todo!()
+    }
+
     fn open(
         self,
-    ) -> Result<<TriggerImpl<E, Mgmt, Storage> as super::Trigger<E>>::Handle, super::TriggerOpenError>
-    {
+    ) -> Result<
+        <TriggerImpl<E, Mgmt, Storage, H, W> as super::Trigger<E>>::Handle,
+        super::TriggerOpenError,
+    > {
         todo!()
     }
 }
@@ -342,17 +491,24 @@ pub struct HandleBuilder<
     E: EventState,
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
+    H: internal::HandlerImpl<E, Mgmt, Storage>,
+    W: internal::WaiterImpl<E, Mgmt, Storage>,
 > {
     _data_1: PhantomData<E>,
     _data_2: PhantomData<Mgmt>,
     _data_3: PhantomData<Storage>,
+    _data_4: PhantomData<H>,
+    _data_5: PhantomData<W>,
 }
 
 impl<
     E: EventState,
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
-> NamedConceptBuilder<TriggerImpl<E, Mgmt, Storage>> for HandleBuilder<E, Mgmt, Storage>
+    H: internal::HandlerImpl<E, Mgmt, Storage>,
+    W: internal::WaiterImpl<E, Mgmt, Storage>,
+> NamedConceptBuilder<TriggerImpl<E, Mgmt, Storage, H, W>>
+    for HandleBuilder<E, Mgmt, Storage, H, W>
 {
     fn new(name: &FileName) -> Self {
         todo!()
@@ -360,7 +516,7 @@ impl<
 
     fn config(
         self,
-        config: &<TriggerImpl<E, Mgmt, Storage> as NamedConceptMgmt>::Configuration,
+        config: &<TriggerImpl<E, Mgmt, Storage, H, W> as NamedConceptMgmt>::Configuration,
     ) -> Self {
         todo!()
     }
@@ -370,12 +526,19 @@ impl<
     E: EventState,
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
-> TriggerHandleBuilder<E, TriggerImpl<E, Mgmt, Storage>> for HandleBuilder<E, Mgmt, Storage>
+    H: internal::HandlerImpl<E, Mgmt, Storage>,
+    W: internal::WaiterImpl<E, Mgmt, Storage>,
+> TriggerHandleBuilder<E, TriggerImpl<E, Mgmt, Storage, H, W>>
+    for HandleBuilder<E, Mgmt, Storage, H, W>
 {
+    fn event_id_max(self, id: EventId) -> Self {
+        todo!()
+    }
+
     fn create(
         self,
     ) -> Result<
-        <TriggerImpl<E, Mgmt, Storage> as super::Trigger<E>>::Waiter,
+        <TriggerImpl<E, Mgmt, Storage, H, W> as super::Trigger<E>>::Waiter,
         super::TriggerCreateError,
     > {
         todo!()
