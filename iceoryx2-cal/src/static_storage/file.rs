@@ -53,13 +53,12 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::ptr::NonNull;
 use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
-use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitStrategy;
 
 pub use crate::named_concept::*;
 pub use crate::static_storage::*;
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
-use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
+use iceoryx2_bb_posix::adaptive_wait::{AdaptiveWaitBuilder, AdaptiveWaitStrategy};
 use iceoryx2_bb_posix::{
     directory::*, file::*, file_descriptor::FileDescriptorManagement, file_type::FileType,
 };
@@ -552,7 +551,9 @@ impl crate::static_storage::StaticStorageBuilder<Storage> for Builder {
         };
 
         let mut wait_for_read_access = fail!(from self,
-            when AdaptiveWaitBuilder::new().strategy(AdaptiveWaitStrategy::FixedTicks(Duration::from_millis(1))).create(),
+            when AdaptiveWaitBuilder::new()
+                    .strategy(AdaptiveWaitStrategy::FixedTicks(Duration::from_millis(1)))
+                    .create(),
             with StaticStorageOpenError::InternalError,
             "{} since the AdaptiveWait could not be initialized.", msg);
 

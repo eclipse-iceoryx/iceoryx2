@@ -27,17 +27,17 @@ SDK_CRATES_TO_PUBLISH := `echo \
     iceoryx2-log                        \
     iceoryx2-bb-print                   \
     iceoryx2-bb-elementary-traits       \
-    iceoryx2-bb-concurrency             \
     iceoryx2-bb-loggers                 \
+    iceoryx2-bb-testing                 \
+    iceoryx2-bb-concurrency             \
+    iceoryx2-bb-testing-macros          \
     iceoryx2-bb-elementary              \
     iceoryx2-bb-derive-macros           \
-    iceoryx2-bb-testing                 \
     iceoryx2-bb-container               \
     iceoryx2-bb-system-types            \
     iceoryx2-bb-posix                   \
     iceoryx2-bb-linux                   \
     iceoryx2-bb-lock-free               \
-    iceoryx2-bb-testing-macros          \
     iceoryx2-bb-threadsafe              \
     iceoryx2-bb-memory                  \
     iceoryx2-cal                        \

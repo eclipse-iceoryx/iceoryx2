@@ -48,7 +48,7 @@ print_preparations_hint() {
 }
 
 print_sanity_checks() {
-    echo -e "The sanity-checks from the 'crates_io_publish_script.sh' are run"
+    echo -e "The sanity-checks from the 'just publish all --sanity-checks' are run"
 }
 
 print_release_branch() {
@@ -62,10 +62,10 @@ print_release_tag() {
 }
 
 print_publish_release() {
-    echo -e "* Push release branch"
-    echo -e "  ${C_YELLOW}git push -u origin release_${NEW_MAJOR}.${NEW_MINOR}${C_OFF}"
+    echo -e "* Push release branch if one was created"
+    echo -e "  ${C_YELLOW}git push -u upstream release_${NEW_MAJOR}.${NEW_MINOR}${C_OFF}"
     echo -e "* Push tag"
-    echo -e "  ${C_YELLOW}git push origin tag v${NEW_VERSION}${C_OFF}"
+    echo -e "  ${C_YELLOW}git push upstream tag v${NEW_VERSION}${C_OFF}"
 
     echo -e "* Create release on github"
     echo -e "  * Go to https://github.com/eclipse-iceoryx/iceoryx2/releases/tag/v${NEW_VERSION}${C_OFF}"
@@ -75,13 +75,13 @@ print_publish_release() {
 
     echo -e "* Set iceoryx2 dev version on 'main'"
     echo -e "  * In case of a .0 release, update the version on main to x.y.999 with y being the next feature release minus 1"
-    echo -e "    ${C_YELLOW}internal/scripts/update_versions.sh --iceoryx2 ${NEW_MAJOR}.${NEW_MINOR}.999${C_OFF}"
+    echo -e "    ${C_YELLOW}just prepare-release all versions --version ${NEW_MAJOR}.${NEW_MINOR}.999${C_OFF}"
 
     echo -e "* Backport changelog to 'main'"
     echo -e "  * In case of a release from a branch, backport the changelog to main and remove the entries from the patch release from 'iceoryx2-unreleased.md'"
     echo -e "  * Set the PREVIOUS_VERSION in 'internal/VERSIONS' on main to the latest patch release"
 
-    echo -e "* For the publishing, the '\$GIT_ROOT$/internal/scripts/release/release_publish.sh' script can be used!"
+    echo -e "* For the publishing, the 'just publish all' script can be used from the git root!"
 }
 
 print_howto() {
@@ -166,13 +166,14 @@ print_step "Sanity checks"
 echo -e "Shall I run the sanity checks for the crates.io release?"
 show_default_selector
 if [[ ${SELECTION} == ${YES} ]]; then
-    internal/scripts/release/crates_io_publish_script.sh sanity-checks
+    just publish all --sanity-checks
 
     show_completion
 fi
 
 print_step "Release branch"
 echo -e "Shall I create ${C_YELLOW}release_${NEW_MAJOR}.${NEW_MINOR}${C_OFF} branch?"
+echo -e "${C_YELLOW}Note:${C_OFF} Only relevant if you are starting from ${C_YELLOW}main${C_OFF}. Skip if you are already on a release branch."
 echo -e "${C_YELLOW}Please verify to be on the right commit on the right branch!${C_OFF}"
 show_default_selector
 if [[ ${SELECTION} == ${YES} ]]; then
@@ -182,11 +183,11 @@ if [[ ${SELECTION} == ${YES} ]]; then
 fi
 
 print_step "Create tag"
-echo -e "Shall I create git tag ${C_YELLOW}v${NEW_VERSION}${C_OFF}?"
+echo -e "Shall I create git tag ${C_YELLOW}v${NEW_VERSION}${C_OFF} on the following branch?"
+git branch --show-current
 echo -e "${C_YELLOW}Please verify to be on the right commit on the right branch!${C_OFF}"
 show_default_selector
 if [[ ${SELECTION} == ${YES} ]]; then
-    git checkout release_${NEW_MAJOR}.${NEW_MINOR}
     git tag v${NEW_VERSION}
 
     show_completion
