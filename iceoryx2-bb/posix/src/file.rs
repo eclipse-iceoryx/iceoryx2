@@ -73,7 +73,6 @@ pub use crate::{access_mode::AccessMode, permission::*};
 enum_gen! { FileRemoveError
   entry:
     InsufficientPermissions,
-    Interrupt,
     CurrentlyInUse,
     LoopInSymbolicLinks,
     MaxSupportedPathLengthExceeded,
