@@ -422,7 +422,7 @@ impl<T: Send + Sync + Debug + 'static + ZeroCopySend> Builder<'_, T> {
         let origin = format!("{self:?}");
         if !self
             .initializer
-            .call(&mut MaybeUninit::uninit(), &mut allocator)
+            .call(unsafe { &mut *value }, &mut allocator)
         {
             fail!(from origin, with DynamicStorageCreateError::InitializationFailed,
                 "{} since the initialization of the underlying construct failed.", msg);

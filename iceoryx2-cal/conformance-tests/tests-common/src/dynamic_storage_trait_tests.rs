@@ -23,12 +23,12 @@ instantiate_conformance_tests_with_module!(
     super::PosixStorage<u64>
 );
 
-// instantiate_conformance_tests_with_module!(
-//     process_local,
-//     iceoryx2_cal_conformance_tests::dynamic_storage_trait,
-//     super::LocalStorage<super::TestData>,
-//     super::LocalStorage<u64>
-// );
+instantiate_conformance_tests_with_module!(
+    process_local,
+    iceoryx2_cal_conformance_tests::dynamic_storage_trait,
+    super::LocalStorage<super::TestData>,
+    super::LocalStorage<u64>
+);
 
 #[cfg(not(target_os = "windows"))]
 use iceoryx2_cal::dynamic_storage::file::Storage as FileStorage;
