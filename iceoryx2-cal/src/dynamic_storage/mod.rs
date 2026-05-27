@@ -55,6 +55,7 @@
 //! }
 //! ```
 
+// TODO: adapt documentation, add missing tests
 use core::{fmt::Debug, mem::MaybeUninit, time::Duration};
 
 use iceoryx2_bb_elementary::enum_gen;

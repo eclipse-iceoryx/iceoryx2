@@ -98,7 +98,7 @@ impl<T: Send + Sync + Debug + ZeroCopySend> Clone for Configuration<T> {
 #[repr(C)]
 struct Data<T: Send + Sync + Debug + ZeroCopySend> {
     version: AtomicU64,
-    data: T,
+    data: MaybeUninit<T>,
 }
 
 impl<T: Send + Sync + Debug + ZeroCopySend> Default for Configuration<T> {
@@ -359,6 +359,8 @@ impl<T: Send + Sync + Debug + ZeroCopySend> Builder<'_, T> {
         let version_ptr = unsafe { core::ptr::addr_of_mut!((*value).version) };
         unsafe { version_ptr.write(AtomicU64::new(0)) };
 
+        unsafe { core::ptr::addr_of_mut!((*value).data).write(MaybeUninit::uninit()) };
+
         let supplementary_start = (storage.memory_mapping.base_address() as usize
             + core::mem::size_of::<Data<T>>()) as *mut u8;
         let supplementary_len = storage.memory_mapping.size() - core::mem::size_of::<Data<T>>();
@@ -371,7 +373,7 @@ impl<T: Send + Sync + Debug + ZeroCopySend> Builder<'_, T> {
         let origin = format!("{self:?}");
         if !self
             .initializer
-            .call(&mut MaybeUninit::uninit(), &mut allocator)
+            .call(unsafe { &mut (*value).data }, &mut allocator)
         {
             storage.file.acquire_ownership();
             fail!(from origin, with DynamicStorageCreateError::InitializationFailed,
@@ -589,7 +591,11 @@ impl<T: Send + Sync + Debug + ZeroCopySend> DynamicStorage<T> for Storage<T> {
     }
 
     fn get(&self) -> &T {
-        unsafe { &(*(self.memory_mapping.base_address() as *const Data<T>)).data }
+        unsafe {
+            (*(self.memory_mapping.base_address() as *const Data<T>))
+                .data
+                .assume_init_ref()
+        }
     }
 
     fn has_ownership(&self) -> bool {

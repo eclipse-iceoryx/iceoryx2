@@ -82,7 +82,11 @@ pub mod dynamic_storage_trait {
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)
-            .create(TestData::new(123))
+            .initializer(|value, _| {
+                value.write(TestData::new(123));
+                true
+            })
+            .create()
             .unwrap();
 
         assert_that!(*sut.name(), eq storage_name);
@@ -129,7 +133,11 @@ pub mod dynamic_storage_trait {
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)
-            .create(TestData::new(123));
+            .initializer(|value, _| {
+                value.write(TestData::new(123));
+                true
+            })
+            .create();
         drop(sut);
 
         let sut = Sut::Builder::new(&storage_name)
@@ -150,10 +158,18 @@ pub mod dynamic_storage_trait {
 
         let _sut1 = Sut::Builder::new(&storage_name)
             .config(&config)
-            .create(TestData::new(123));
+            .initializer(|value, _| {
+                value.write(TestData::new(123));
+                true
+            })
+            .create();
         let sut2 = Sut::Builder::new(&storage_name)
             .config(&config)
-            .create(TestData::new(123));
+            .initializer(|value, _| {
+                value.write(TestData::new(123));
+                true
+            })
+            .create();
 
         assert_that!(sut2, is_err);
         assert_that!(
@@ -174,7 +190,11 @@ pub mod dynamic_storage_trait {
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)
-            .create(TestData::new(123))
+            .initializer(|value, _| {
+                value.write(TestData::new(123));
+                true
+            })
+            .create()
             .unwrap();
 
         let sut2 = Sut::Builder::new(&storage_name)
@@ -196,7 +216,12 @@ pub mod dynamic_storage_trait {
         assert_that!(sut3.err().unwrap(), eq DynamicStorageOpenError::DoesNotExist);
         drop(sut2);
 
-        let sut = Sut::Builder::new(&storage_name).create(TestData::new(123));
+        let sut = Sut::Builder::new(&storage_name)
+            .initializer(|value, _| {
+                value.write(TestData::new(123));
+                true
+            })
+            .create();
         assert_that!(sut, is_ok);
     }
 
@@ -211,7 +236,11 @@ pub mod dynamic_storage_trait {
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)
-            .create(TestData::new(789))
+            .initializer(|value, _| {
+                value.write(TestData::new(789));
+                true
+            })
+            .create()
             .unwrap();
 
         let mut sut_vec = vec![];
@@ -250,7 +279,11 @@ pub mod dynamic_storage_trait {
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)
-            .create(TestData::new(9887))
+            .initializer(|value, _| {
+                value.write(TestData::new(9887));
+                true
+            })
+            .create()
             .unwrap();
 
         assert_that!(sut.has_ownership(), eq true);
@@ -284,7 +317,11 @@ pub mod dynamic_storage_trait {
         let sut = Sut::Builder::new(&storage_name)
             .has_ownership(false)
             .config(&config)
-            .create(TestData::new(9887))
+            .initializer(|value, _| {
+                value.write(TestData::new(9887));
+                true
+            })
+            .create()
             .unwrap();
 
         assert_that!(sut.has_ownership(), eq false);
@@ -319,7 +356,11 @@ pub mod dynamic_storage_trait {
         let sut = Sut::Builder::new(&storage_name)
             .has_ownership(false)
             .config(&config)
-            .create(TestData::new(9887))
+            .initializer(|value, _| {
+                value.write(TestData::new(9887));
+                true
+            })
+            .create()
             .unwrap();
 
         sut.acquire_ownership();
@@ -338,7 +379,11 @@ pub mod dynamic_storage_trait {
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)
-            .create(TestData::new(123))
+            .initializer(|value, _| {
+                value.write(TestData::new(123));
+                true
+            })
+            .create()
             .unwrap();
 
         let sut2 = Sut::Builder::new(&storage_name)
@@ -368,6 +413,9 @@ pub mod dynamic_storage_trait {
             .config(&config)
             .supplementary_size(134)
             .initializer(|value, allocator| {
+                value.write(TestData::new(123));
+                let value = unsafe { value.assume_init_mut() };
+
                 let layout = Layout::from_size_align(134, 1).unwrap();
                 let mem = allocator.allocate(layout).unwrap();
 
@@ -385,7 +433,7 @@ pub mod dynamic_storage_trait {
                 }
                 true
             })
-            .create(TestData::new(123))
+            .create()
             .unwrap();
 
         assert_that!(sut.get().value.load(Ordering::Relaxed), eq 8912);
@@ -439,11 +487,13 @@ pub mod dynamic_storage_trait {
                         .supplementary_size(0)
                         .has_ownership(false)
                         .initializer(|value, _| {
+                            value.write(TestData::new(123));
+                            let value = unsafe { value.assume_init_mut() };
                             nanosleep(TIMEOUT).unwrap();
                             value.value.store(789, Ordering::Relaxed);
                             true
                         })
-                        .create(TestData::new(123))
+                        .create()
                         .unwrap();
                 })?;
 
@@ -506,7 +556,7 @@ pub mod dynamic_storage_trait {
                         nanosleep(TIMEOUT * 2).unwrap();
                         true
                     })
-                    .create(TestData::new(123))
+                    .create()
                     .unwrap();
             })?;
 
@@ -528,6 +578,7 @@ pub mod dynamic_storage_trait {
         .unwrap();
     }
 
+    // TODO: test when initializer is not set
     #[conformance_test]
     pub fn create_fails_when_initialization_fails<
         Sut: DynamicStorage<TestData>,
@@ -540,7 +591,7 @@ pub mod dynamic_storage_trait {
             .supplementary_size(134)
             .initializer(|_, _| false)
             .config(&config)
-            .create(TestData::new(123));
+            .create();
 
         assert_that!(sut, is_err);
         assert_that!(
@@ -572,13 +623,13 @@ pub mod dynamic_storage_trait {
         assert_that!(Sut::does_exist_cfg(&sut_name, &config), eq Ok(false));
         let sut_1 = Sut::Builder::new(&sut_name)
             .config(&config)
-            .open_or_create(TestData::new(123));
+            .open_or_create();
         assert_that!(sut_1, is_ok);
         assert_that!(Sut::does_exist_cfg(&sut_name, &config), eq Ok(true));
 
         let sut_2 = Sut::Builder::new(&sut_name)
             .config(&config)
-            .open_or_create(TestData::new(123));
+            .open_or_create();
         assert_that!(sut_2, is_ok);
 
         drop(sut_2);
@@ -600,7 +651,11 @@ pub mod dynamic_storage_trait {
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)
-            .create(TestData::new_with_lifetime_tracking(123))
+            .initializer(|value, _| {
+                value.write(TestData::new_with_lifetime_tracking(123));
+                true
+            })
+            .create()
             .unwrap();
         sut.release_ownership();
         drop(sut);
@@ -621,7 +676,11 @@ pub mod dynamic_storage_trait {
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)
-            .create(TestData::new_with_lifetime_tracking(123))
+            .initializer(|value, _| {
+                value.write(TestData::new_with_lifetime_tracking(123));
+                true
+            })
+            .create()
             .unwrap();
         sut.release_ownership();
         // it leaks a memory mapping here but this we want explicitly to test remove also
@@ -645,7 +704,7 @@ pub mod dynamic_storage_trait {
             .path_hint(config.get_path_hint());
         let sut = WrongTypeSut::Builder::new(&storage_name)
             .config(&wrong_type_config)
-            .create(123);
+            .create();
         assert_that!(sut, is_ok);
         assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(false));
     }
@@ -673,7 +732,7 @@ pub mod dynamic_storage_trait {
             testdata_storages.push(
                 Sut::Builder::new(&storage_name)
                     .config(&config)
-                    .create(TestData::new(123))
+                    .create()
                     .unwrap(),
             );
             testdata_storages_names.push(storage_name);
@@ -681,7 +740,7 @@ pub mod dynamic_storage_trait {
             u64_storages.push(
                 WrongTypeSut::Builder::new(&storage_name)
                     .config(&wrong_type_config)
-                    .create(34)
+                    .create()
                     .unwrap(),
             );
 
@@ -693,7 +752,7 @@ pub mod dynamic_storage_trait {
             u64_storages.push(
                 WrongTypeSut::Builder::new(&storage_name)
                     .config(&wrong_type_config)
-                    .create(21)
+                    .create()
                     .unwrap(),
             );
             u64_storages_names.push(storage_name);
@@ -728,7 +787,7 @@ pub mod dynamic_storage_trait {
 
         let _sut = Sut::Builder::new(&storage_name)
             .config(&config)
-            .create(TestData::new(1234))
+            .create()
             .unwrap();
         let sut = WrongTypeSut::Builder::new(&storage_name)
             .config(&wrong_type_config)
@@ -749,7 +808,7 @@ pub mod dynamic_storage_trait {
             .path_hint(config.get_path_hint());
         let _sut = Sut::Builder::new(&storage_name)
             .config(&config)
-            .create(TestData::new(1234))
+            .create()
             .unwrap();
         assert_that!(unsafe { WrongTypeSut::remove_cfg(&storage_name, &wrong_type_config) }, eq Ok(false));
     }
@@ -766,7 +825,11 @@ pub mod dynamic_storage_trait {
 
         let sut = Sut::Builder::new(&storage_name)
             .config(&config)
-            .create(TestData::new(919))
+            .initializer(|value, _| {
+                value.write(TestData::new(919));
+                true
+            })
+            .create()
             .unwrap();
 
         Sut::abandon(sut);
