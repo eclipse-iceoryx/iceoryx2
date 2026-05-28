@@ -28,7 +28,6 @@ use iceoryx2_log::{debug, error, fail, trace};
 use crate::config;
 use crate::constants::MAX_TYPE_NAME_LENGTH;
 use crate::identifiers::UniqueNodeId;
-use crate::identifiers::UniquePortId;
 use crate::service;
 use crate::service::Service;
 use crate::service::config_scheme::port_tag_config;
@@ -227,7 +226,7 @@ pub fn remove_service_tag<S: Service>(
 
 pub fn remove_port_tag<S: Service>(
     node_id: &UniqueNodeId,
-    port_id: &UniquePortId,
+    port_id: u128,
     config: &config::Config,
 ) -> Result<(), PortRemoveTagError> {
     let msg = "Unable to remove the port's tag for the node";
@@ -237,7 +236,7 @@ pub fn remove_port_tag<S: Service>(
         node_id,
         port_id
     );
-    let name = FileName::new(port_id.value().to_string().as_bytes())
+    let name = FileName::new(port_id.to_string().as_bytes())
         .expect("A number is always a valid file name.");
 
     match unsafe {
@@ -364,6 +363,7 @@ pub unsafe fn remove_receiver_port_from_all_connections<Service: service::Servic
 }
 
 pub unsafe fn remove_stale_port_resources<Service: service::Service>(
+    node_id: UniqueNodeId,
     port_id: u128,
     config: &config::Config,
 ) -> Result<(), RemoveStalePortResourcesError> {
@@ -412,6 +412,22 @@ pub unsafe fn remove_stale_port_resources<Service: service::Service>(
                 fail!(from origin, with RemoveStalePortResourcesError::InternalError,
                     "{msg} since an interrupt signal was raised.");
             }
+        }
+    }
+
+    match remove_port_tag::<Service>(&node_id, port_id, config) {
+        Ok(()) | Err(PortRemoveTagError::AlreadyRemoved) => (),
+        Err(PortRemoveTagError::InsufficientPermissions) => {
+            fail!(from origin, with RemoveStalePortResourcesError::InsufficientPermissions,
+                  "{} since the port tag {port_id} could not be removed due to insufficient permissions.", msg);
+        }
+        Err(PortRemoveTagError::Interrupt) => {
+            fail!(from origin, with RemoveStalePortResourcesError::Interrupt,
+                  "{} since the port tag {port_id} could not be removed since an interrupt signal was raised.", msg);
+        }
+        Err(PortRemoveTagError::InternalError) => {
+            fail!(from origin, with RemoveStalePortResourcesError::InternalError,
+                  "{} since the port tag {port_id} could not be removed due to an internal error.", msg);
         }
     }
 

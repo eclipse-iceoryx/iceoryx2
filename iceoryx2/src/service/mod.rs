@@ -568,6 +568,8 @@ impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
 
 #[doc(hidden)]
 pub mod internal {
+    use crate::service::stale_resource_cleanup::ServiceRemoveTagError;
+
     use super::*;
     fn send_dead_node_signal<S: Service>(service_hash: &ServiceHash, config: &config::Config) {
         let origin = "send_dead_node_signal()";
@@ -898,7 +900,7 @@ pub mod internal {
                     UniquePortId::Writer(ref _id) => {}
                 };
 
-                if let Err(e) = remove_port_tag::<S>(node_id, &port_id, config) {
+                if let Err(e) = remove_port_tag::<S>(node_id, port_id.value(), config) {
                     debug!(from origin,  "Failed to remove the port tag for port {:?}. [{e:?}]", port_id);
                     return PortCleanupAction::SkipPort;
                 }
@@ -927,7 +929,21 @@ pub mod internal {
                 send_dead_node_signal::<S>(service_hash, config);
             }
 
-            Ok(())
+            match remove_service_tag::<S>(node_id, service_hash, config) {
+                Ok(()) | Err(ServiceRemoveTagError::AlreadyRemoved) => Ok(()),
+                Err(ServiceRemoveTagError::InsufficientPermissions) => {
+                    fail!(from origin, with ServiceRemoveNodeError::InsufficientPermissions,
+                        "{msg} since the service tag could not be removed due to insufficient permissions.");
+                }
+                Err(ServiceRemoveTagError::Interrupt) => {
+                    fail!(from origin, with ServiceRemoveNodeError::Interrupt,
+                        "{msg} since the service tag could not be removed since an interrupt signal was raised.");
+                }
+                Err(ServiceRemoveTagError::InternalError) => {
+                    fail!(from origin, with ServiceRemoveNodeError::InternalError,
+                        "{msg} since the service tag could not be removed due to an internal error.");
+                }
+            }
         }
     }
 }
