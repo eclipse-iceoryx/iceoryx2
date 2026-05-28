@@ -122,7 +122,10 @@ impl Drop for InternalValueStorage {
                 self.value_type_details.0.size(),
                 self.value_type_details.0.alignment(),
             );
-            std::alloc::dealloc(self.value_buffer, value_layout);
+
+            if !self.value_buffer.is_null() {
+                std::alloc::dealloc(self.value_buffer, value_layout);
+            }
         }
     }
 }
