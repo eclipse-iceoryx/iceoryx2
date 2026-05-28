@@ -11,7 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::{
-    dynamic_storage::{DynamicStorage, DynamicStorageBuilder},
+    dynamic_storage::{
+        DynamicStorage, DynamicStorageBuilder, DynamicStorageCreateError, DynamicStorageOpenError,
+    },
     event::{
         Event, EventId, Listener, ListenerBuilder, ListenerCreateError, ListenerWaitError,
         NamedConcept, NamedConceptBuilder, NamedConceptMgmt, Notifier, NotifierBuilder,
@@ -31,7 +33,7 @@ use iceoryx2_bb_elementary_traits::{
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_log::fail;
+use iceoryx2_log::{debug, fail};
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct Configuration<
@@ -402,15 +404,35 @@ impl<
     fn open(
         self,
     ) -> Result<<EventImpl<E, Mgmt, Storage, H, W> as Event<E>>::Notifier, NotifierOpenError> {
-        let storage = Storage::Builder::new(&self.name)
+        let msg = "Failed to open notifier";
+        let storage = match Storage::Builder::new(&self.name)
             .config(&self.config.to_storage_config())
             .has_ownership(false)
+            .timeout(self.timeout)
             .open(AccessMode::ReadWrite)
-            .unwrap();
+        {
+            Ok(storage) => storage,
+            Err(DynamicStorageOpenError::DoesNotExist) => {
+                fail!(from self, with NotifierOpenError::DoesNotExist,
+                    "{msg} since the corresponding listener does not exist.");
+            }
+            Err(DynamicStorageOpenError::InitializationNotYetFinalized) => {
+                fail!(from self, with NotifierOpenError::InitializationNotYetFinalized,
+                    "{msg} since the initialization of the listener is not yet finalized.");
+            }
+            Err(DynamicStorageOpenError::VersionMismatch) => {
+                fail!(from self, with NotifierOpenError::VersionMismatch,
+                    "{msg} since the iceoryx2 version of the listener does not match.");
+            }
+            Err(DynamicStorageOpenError::InternalError) => {
+                fail!(from self, with NotifierOpenError::InternalFailure,
+                    "{msg} due to an internal failure.");
+            }
+        };
 
         let handle = H::open(&self.config.to_trigger_config(), unsafe {
             storage.get().handle.assume_init_ref()
-        });
+        })?;
 
         Ok(Handle {
             storage,
@@ -480,9 +502,10 @@ impl<
         self,
     ) -> Result<<EventImpl<E, Mgmt, Storage, H, W> as Event<E>>::Listener, ListenerCreateError>
     {
+        let msg = "Failed to create listener";
         let state_size = E::memory_size((self.event_id_max.as_value() + 1) as usize);
         let mut waiter = None;
-        let storage = Storage::Builder::new(&self.name)
+        let storage = match Storage::Builder::new(&self.name)
             .config(&self.config.to_storage_config())
             .has_ownership(true)
             .supplementary_size(state_size)
@@ -495,15 +518,39 @@ impl<
                 });
 
                 unsafe { value.assume_init_mut().event.init(allocator).unwrap() };
-                waiter = Some(W::create(
+                match W::create(
                     &self.config.to_trigger_config(),
                     &mut unsafe { value.assume_init_mut() }.handle,
-                ));
+                ) {
+                    Ok(w) => waiter = Some(w),
+                    Err(e) => {
+                        debug!(from self, "{msg} since the underlying mechanism could not be initialized. [{e:?}]");
+                        return false;
+                    }
+                };
 
                 true
             })
             .create()
-            .unwrap();
+        {
+            Ok(storage) => storage,
+            Err(DynamicStorageCreateError::AlreadyExists) => {
+                fail!(from self, with ListenerCreateError::AlreadyExists,
+                    "{msg} since it already exists.");
+            }
+            Err(DynamicStorageCreateError::InsufficientPermissions) => {
+                fail!(from self, with ListenerCreateError::InsufficientPermissions,
+                    "{msg} due to insufficient permissions.");
+            }
+            Err(DynamicStorageCreateError::InitializationFailed) => {
+                fail!(from self, with ListenerCreateError::InternalFailure,
+                    "{msg} since the initialization of the underyling waiter failed.");
+            }
+            Err(DynamicStorageCreateError::InternalError) => {
+                fail!(from self, with ListenerCreateError::InternalFailure,
+                    "{msg} due to an internal error.");
+            }
+        };
 
         Ok(Waiter {
             storage,

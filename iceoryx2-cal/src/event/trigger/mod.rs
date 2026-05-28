@@ -10,7 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::event::{EventId, ListenerWaitError, NotifierNotifyError};
+use crate::event::{
+    EventId, ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
+};
 use crate::{dynamic_storage::DynamicStorage, event::event_state::EventState};
 use core::fmt::Debug;
 use core::mem::MaybeUninit;
@@ -46,7 +48,10 @@ pub trait WaiterInterface<
     Storage: DynamicStorage<State<E, Mgmt>>,
 >: Send + Sync + Debug + Abandonable
 {
-    fn create(config: &Configuration, mgmt: &mut MaybeUninit<Mgmt>) -> Self;
+    fn create(
+        config: &Configuration,
+        mgmt: &mut MaybeUninit<Mgmt>,
+    ) -> Result<Self, ListenerCreateError>;
     fn try_wait(&self) -> Result<(), ListenerWaitError>;
     fn timed_wait(&self, timeout: Duration) -> Result<(), ListenerWaitError>;
     fn blocking_wait(&self) -> Result<(), ListenerWaitError>;
@@ -58,6 +63,6 @@ pub trait HandlerInterface<
     Storage: DynamicStorage<State<E, Mgmt>>,
 >: Send + Sync + Debug + Abandonable
 {
-    fn open(config: &Configuration, mgmt: &Mgmt) -> Self;
+    fn open(config: &Configuration, mgmt: &Mgmt) -> Result<Self, NotifierOpenError>;
     fn notify(&self) -> Result<(), NotifierNotifyError>;
 }

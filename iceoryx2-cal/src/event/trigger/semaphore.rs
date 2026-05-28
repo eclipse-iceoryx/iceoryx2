@@ -18,16 +18,21 @@ use iceoryx2_bb_elementary_traits::{
 };
 use iceoryx2_bb_lock_free::mpmc::bit_set::RelocatableBitSet;
 use iceoryx2_bb_posix::{
-    mutex::IpcCapable,
+    adaptive_wait::AdaptiveWaitError,
+    clock::NanosleepError,
+    mutex::{Handle, IpcCapable},
     semaphore::{
-        SemaphoreInterface, UnnamedSemaphore, UnnamedSemaphoreBuilder, UnnamedSemaphoreHandle,
+        SemaphoreInterface, SemaphorePostError, SemaphoreTimedWaitError, SemaphoreWaitError,
+        UnnamedSemaphore, UnnamedSemaphoreBuilder, UnnamedSemaphoreCreationError,
+        UnnamedSemaphoreHandle,
     },
 };
+use iceoryx2_log::fail;
 
 use crate::{
     dynamic_storage::{self, DynamicStorage},
     event::{
-        ListenerWaitError, NotifierNotifyError,
+        ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
         common::EventImpl,
         event_state::EventState,
         trigger::{HandlerInterface, State, WaiterInterface},
@@ -65,8 +70,20 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> Abandonabl
 impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
     HandlerInterface<E, SemaphoreMgmt, Storage> for SemaphoreHandle<E, Storage>
 {
-    fn open(_config: &Configuration, mgmt: &SemaphoreMgmt) -> Self {
-        Self {
+    fn open(_config: &Configuration, mgmt: &SemaphoreMgmt) -> Result<Self, NotifierOpenError> {
+        let origin = "SemaphoreHandle::open()";
+        let msg = "Unable to open unnamed semaphore handle";
+        if !mgmt.handle.is_initialized() {
+            fail!(from origin, with NotifierOpenError::InitializationNotYetFinalized,
+                "{msg} since the handle is not yet initialized.");
+        }
+
+        if !mgmt.handle.is_inter_process_capable() {
+            fail!(from origin, with NotifierOpenError::InternalFailure,
+                "{msg} since the provided handle is not inter-process capable.");
+        }
+
+        Ok(Self {
             semaphore: unsafe {
                 UnnamedSemaphore::from_ipc_handle(core::mem::transmute::<
                     &UnnamedSemaphoreHandle,
@@ -75,12 +92,26 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
             },
             _data_1: PhantomData,
             _data_2: PhantomData,
-        }
+        })
     }
 
     fn notify(&self) -> Result<(), NotifierNotifyError> {
-        self.semaphore.post().unwrap();
-        Ok(())
+        let msg = "Failed to deliver notification";
+        match self.semaphore.post() {
+            Ok(()) => Ok(()),
+            Err(SemaphorePostError::Overflow) => {
+                fail!(from self, with NotifierNotifyError::InternalFailure,
+                    "{msg} since it would cause an overflow in the underlying semaphore.");
+            }
+            Err(SemaphorePostError::InvalidSemaphoreHandle) => {
+                fail!(from self, with NotifierNotifyError::Disconnected,
+                    "{msg} since the other side closed the connection.");
+            }
+            Err(SemaphorePostError::UnknownError(v)) => {
+                fail!(from self, with NotifierNotifyError::InternalFailure,
+                    "{msg} due to an unknown failure ({v}).");
+            }
+        }
     }
 }
 
@@ -121,38 +152,89 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> Drop
 impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
     WaiterInterface<E, SemaphoreMgmt, Storage> for SemaphoreWaiter<E, Storage>
 {
-    fn create(_config: &Configuration, mgmt: &mut MaybeUninit<SemaphoreMgmt>) -> Self {
+    fn create(
+        _config: &Configuration,
+        mgmt: &mut MaybeUninit<SemaphoreMgmt>,
+    ) -> Result<Self, ListenerCreateError> {
         use iceoryx2_bb_posix::ipc_capable::Handle;
+
+        let origin = "SemaphoreWaiter::create()";
+        let msg = "Unable to create unnamed semaphore handle";
 
         mgmt.write(SemaphoreMgmt {
             handle: UnnamedSemaphoreHandle::new(),
         });
 
-        Self {
+        let semaphore = match UnnamedSemaphoreBuilder::new()
+            .initial_value(0)
+            .is_interprocess_capable(true)
+            .create(&unsafe { &*mgmt.as_ptr() }.handle)
+        {
+            Ok(semaphore) => semaphore,
+            Err(UnnamedSemaphoreCreationError::InsufficientPermissions) => {
+                fail!(from origin, with ListenerCreateError::InsufficientPermissions,
+                    "{msg} due to insufficient permissions.");
+            }
+            Err(e) => {
+                fail!(from origin, with ListenerCreateError::InternalFailure,
+                    "{msg} due to an internal error. [{e:?}]");
+            }
+        };
+
+        Ok(Self {
             semaphore_mgmt: mgmt.as_mut_ptr(),
-            semaphore: UnnamedSemaphoreBuilder::new()
-                .initial_value(0)
-                .is_interprocess_capable(true)
-                .create(&unsafe { &*mgmt.as_ptr() }.handle)
-                .unwrap(),
+            semaphore,
             _data_1: PhantomData,
             _data_2: PhantomData,
-        }
+        })
     }
 
     fn try_wait(&self) -> Result<(), ListenerWaitError> {
-        self.semaphore.try_wait().unwrap();
-        Ok(())
+        let msg = "Failed to try wait on the unnamed semaphore";
+        match self.semaphore.try_wait() {
+            Ok(_) => Ok(()),
+            Err(SemaphoreWaitError::Interrupt) => {
+                fail!(from self, with ListenerWaitError::InterruptSignal,
+                    "{msg} since an interrupt signal was raised.");
+            }
+            Err(e) => {
+                fail!(from self, with ListenerWaitError::InternalFailure,
+                    "{msg} due to an internal failure. [{e:?}]");
+            }
+        }
     }
 
     fn timed_wait(&self, timeout: Duration) -> Result<(), ListenerWaitError> {
-        self.semaphore.timed_wait(timeout).unwrap();
-        Ok(())
+        let msg = "Failed to wait with timeout on the unnamed semaphore";
+        match self.semaphore.timed_wait(timeout) {
+            Ok(_) => Ok(()),
+            Err(SemaphoreTimedWaitError::SemaphoreWaitError(SemaphoreWaitError::Interrupt))
+            | Err(SemaphoreTimedWaitError::AdaptiveWaitError(AdaptiveWaitError::NanosleepError(
+                NanosleepError::InterruptedBySignal(_),
+            ))) => {
+                fail!(from self, with ListenerWaitError::InterruptSignal,
+                    "{msg} since an interrupt signal was raised.");
+            }
+            Err(e) => {
+                fail!(from self, with ListenerWaitError::InternalFailure,
+                    "{msg} due to an internal failure. [{e:?}]");
+            }
+        }
     }
 
     fn blocking_wait(&self) -> Result<(), ListenerWaitError> {
-        self.semaphore.blocking_wait().unwrap();
-        Ok(())
+        let msg = "Failed to blocking wait on the unnamed semaphore";
+        match self.semaphore.blocking_wait() {
+            Ok(()) => Ok(()),
+            Err(SemaphoreWaitError::Interrupt) => {
+                fail!(from self, with ListenerWaitError::InterruptSignal,
+                    "{msg} since an interrupt signal was raised.");
+            }
+            Err(e) => {
+                fail!(from self, with ListenerWaitError::InternalFailure,
+                    "{msg} due to an internal error. [{e:?}]");
+            }
+        }
     }
 }
 

@@ -72,6 +72,7 @@ enum_gen! { UnnamedSemaphoreCreationError
 enum_gen! { SemaphorePostError
   entry:
     Overflow,
+    InvalidSemaphoreHandle,
     UnknownError(i32)
 }
 
@@ -145,7 +146,7 @@ pub trait SemaphoreInterface: internal::SemaphoreHandle + Debug {
 
         let msg = "Unable to post semaphore";
         handle_errno!(SemaphorePostError, from self,
-            fatal Errno::EINVAL => ("This should never happen! {} since an invalid handle was provided.", msg),
+            Errno::EINVAL => (InvalidSemaphoreHandle, "{} since an invalid handle was provided.", msg),
             Errno::EOVERFLOW => (Overflow, "{} since the operation would cause an overflow.", msg),
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
         );

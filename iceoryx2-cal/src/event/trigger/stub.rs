@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::event::{
-    ListenerWaitError, NotifierNotifyError,
+    ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
     trigger::{Configuration, HandlerInterface},
 };
 use crate::{
@@ -45,7 +45,10 @@ impl<
     Storage: DynamicStorage<State<E, Mgmt>>,
 > WaiterInterface<E, Mgmt, Storage> for Stub
 {
-    fn create(_config: &Configuration, _mgmt: &mut MaybeUninit<Mgmt>) -> Self {
+    fn create(
+        _config: &Configuration,
+        _mgmt: &mut MaybeUninit<Mgmt>,
+    ) -> Result<Self, ListenerCreateError> {
         unimplemented!()
     }
 
@@ -70,7 +73,7 @@ impl<
     fn notify(&self) -> Result<(), NotifierNotifyError> {
         unimplemented!()
     }
-    fn open(_config: &Configuration, _mgmt: &Mgmt) -> Self {
+    fn open(_config: &Configuration, _mgmt: &Mgmt) -> Result<Self, NotifierOpenError> {
         unimplemented!()
     }
 }

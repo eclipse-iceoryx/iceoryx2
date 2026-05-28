@@ -72,98 +72,102 @@ pub mod event_trait {
         assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq false);
     }
 
-    // #[conformance_test]
-    // pub fn cannot_be_created_twice<Sut: Event<RelocatableBitSet>>() {
-    //     let name = generate_file_path().file_name();
-    //     let config = generate_isolated_config::<Sut>();
+    #[conformance_test]
+    pub fn cannot_be_created_twice<Sut: Event<RelocatableBitSet>>() {
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
 
-    //     let _sut = Sut::ListenerBuilder::new(&name)
-    //         .config(&config)
-    //         .create()
-    //         .unwrap();
-    //     let sut = Sut::ListenerBuilder::new(&name).config(&config).create();
+        let _sut = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
+        let sut = Sut::ListenerBuilder::new(&name).config(&config).create();
 
-    //     assert_that!(sut, is_err);
-    //     assert_that!(sut.err().unwrap(), eq ListenerCreateError::AlreadyExists);
-    // }
+        assert_that!(sut, is_err);
+        assert_that!(sut.err().unwrap(), eq ListenerCreateError::AlreadyExists);
+    }
 
-    //    #[conformance_test]
-    //    pub fn cannot_open_non_existing<Sut: Event>() {
-    //        let name = generate_file_path().file_name();
-    //        let config = generate_isolated_config::<Sut>();
-    //
-    //        let sut = Sut::NotifierBuilder::new(&name).config(&config).open();
-    //
-    //        assert_that!(sut, is_err);
-    //        assert_that!(sut.err().unwrap(), eq NotifierCreateError::DoesNotExist);
-    //    }
-    //
-    //    #[conformance_test]
-    //    pub fn notify_with_same_id_does_not_lead_to_non_blocking_timed_wait<Sut: Event>() {
-    //        let _watchdog = Watchdog::new();
-    //        const REPETITIONS: u64 = 8;
-    //        let name = generate_file_path().file_name();
-    //        let config = generate_isolated_config::<Sut>();
-    //
-    //        let sut_listener = Sut::ListenerBuilder::new(&name)
-    //            .config(&config)
-    //            .create()
-    //            .unwrap();
-    //        let sut_notifier = Sut::NotifierBuilder::new(&name)
-    //            .config(&config)
-    //            .open()
-    //            .unwrap();
-    //
-    //        let trigger_id = TriggerId::new(0);
-    //
-    //        for _ in 0..REPETITIONS {
-    //            sut_notifier.notify(trigger_id).unwrap();
-    //        }
-    //
-    //        assert_that!(sut_listener.try_wait_one().unwrap(), is_some);
-    //
-    //        let now = Time::now().unwrap();
-    //        let result = sut_listener.timed_wait_one(TIMEOUT).unwrap();
-    //
-    //        if result.is_some() {
-    //            assert_that!(result, eq Some(trigger_id));
-    //        } else {
-    //            assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT );
-    //        }
-    //    }
-    //
-    //    fn sending_notification_works<
-    //        Sut: Event,
-    //        F: Fn(&Sut::Listener) -> Result<Option<TriggerId>, ListenerWaitError>,
-    //    >(
-    //        wait_call: F,
-    //    ) {
-    //        let _watchdog = Watchdog::new();
-    //        const REPETITIONS: usize = 8;
-    //        let name = generate_file_path().file_name();
-    //        let config = generate_isolated_config::<Sut>();
-    //
-    //        let sut_listener = Sut::ListenerBuilder::new(&name)
-    //            .config(&config)
-    //            .create()
-    //            .unwrap();
-    //        let sut_notifier = Sut::NotifierBuilder::new(&name)
-    //            .config(&config)
-    //            .open()
-    //            .unwrap();
-    //
-    //        for i in 0..REPETITIONS {
-    //            sut_notifier.notify(TriggerId::new(i)).unwrap();
-    //            let result = wait_call(&sut_listener).unwrap();
-    //            assert_that!(result.unwrap(), eq TriggerId::new(i));
-    //        }
-    //    }
-    //
-    //    #[conformance_test]
-    //    pub fn sending_notification_and_try_wait_works<Sut: Event>() {
-    //        sending_notification_works::<Sut, _>(|sut| sut.try_wait_one());
-    //    }
-    //
+    #[conformance_test]
+    pub fn cannot_open_non_existing<Sut: Event<RelocatableBitSet>>() {
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::NotifierBuilder::new(&name).config(&config).open();
+
+        assert_that!(sut, is_err);
+        assert_that!(sut.err().unwrap(), eq NotifierOpenError::DoesNotExist);
+    }
+
+    #[conformance_test]
+    pub fn notify_with_same_id_does_not_lead_to_non_blocking_timed_wait<
+        Sut: Event<RelocatableBitSet>,
+    >() {
+        let _watchdog = Watchdog::new();
+        const REPETITIONS: u64 = 8;
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name)
+            .config(&config)
+            .open()
+            .unwrap();
+
+        let trigger_id = EventId::new(0);
+
+        for _ in 0..REPETITIONS {
+            sut_notifier.notify(trigger_id).unwrap();
+        }
+
+        assert_that!(sut_listener.try_wait(|_| {}).unwrap(), ge 1);
+
+        let now = Time::now().unwrap();
+        let result = sut_listener.timed_wait(|_| {}, TIMEOUT).unwrap();
+
+        if result > 0 {
+            assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT );
+        }
+    }
+
+    fn sending_notification_works<
+        Sut: Event<RelocatableBitSet>,
+        F: Fn(&Sut::Listener) -> Result<Option<EventId>, ListenerWaitError>,
+    >(
+        wait_call: F,
+    ) {
+        let _watchdog = Watchdog::new();
+        const REPETITIONS: usize = 8;
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name)
+            .config(&config)
+            .open()
+            .unwrap();
+
+        for i in 0..REPETITIONS {
+            sut_notifier.notify(EventId::new(i as u64)).unwrap();
+            let result = wait_call(&sut_listener).unwrap();
+            assert_that!(result.unwrap(), eq EventId::new(i as u64));
+        }
+    }
+
+    #[conformance_test]
+    pub fn sending_notification_and_try_wait_works<Sut: Event<RelocatableBitSet>>() {
+        sending_notification_works::<Sut, _>(|sut| {
+            let mut event_id = None;
+            sut.try_wait(|id| event_id = Some(id.event_id))?;
+            Ok(event_id)
+        });
+    }
+
     //    #[conformance_test]
     //    pub fn sending_notification_and_timed_wait_works<Sut: Event>() {
     //        sending_notification_works::<Sut, _>(|sut| sut.timed_wait_one(TIMEOUT));
