@@ -13,26 +13,26 @@
 use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
 instantiate_conformance_tests_with_module!(
-    process_local_socket_pair,
+    semaphore_shared_memory_bitset,
     iceoryx2_cal_conformance_tests::event_trait,
-    iceoryx2_cal::event::process_local_socketpair::EventImpl
+    iceoryx2_cal::event::trigger::semaphore::SemaphoreShmBitSet
 );
 
-instantiate_conformance_tests_with_module!(
-    unix_datagram,
-    iceoryx2_cal_conformance_tests::event_trait,
-    iceoryx2_cal::event::unix_datagram_socket::EventImpl
-);
-
-instantiate_conformance_tests_with_module!(
-    sem_bitset_process_local,
-    iceoryx2_cal_conformance_tests::event_trait,
-    iceoryx2_cal::event::sem_bitset_process_local::Event
-);
-
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
-instantiate_conformance_tests_with_module!(
-    sem_bitset_posix_shared_memory,
-    iceoryx2_cal_conformance_tests::event_trait,
-    iceoryx2_cal::event::sem_bitset_posix_shared_memory::Event
-);
+//instantiate_conformance_tests_with_module!(
+//    unix_datagram,
+//    iceoryx2_cal_conformance_tests::event_trait,
+//    iceoryx2_cal::event::unix_datagram_socket::EventImpl
+//);
+//
+//instantiate_conformance_tests_with_module!(
+//    sem_bitset_process_local,
+//    iceoryx2_cal_conformance_tests::event_trait,
+//    iceoryx2_cal::event::sem_bitset_process_local::Event
+//);
+//
+//#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+//instantiate_conformance_tests_with_module!(
+//    sem_bitset_posix_shared_memory,
+//    iceoryx2_cal_conformance_tests::event_trait,
+//    iceoryx2_cal::event::sem_bitset_posix_shared_memory::Event
+//);

@@ -23,6 +23,7 @@ pub mod event_trait {
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+    use iceoryx2_bb_lock_free::mpmc::bit_set::RelocatableBitSet;
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_posix::clock::{Time, nanosleep};
     use iceoryx2_bb_posix::mutex::{MutexBuilder, MutexHandle};
@@ -31,14 +32,14 @@ pub mod event_trait {
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_bb_testing_macros::conformance_test;
-    use iceoryx2_cal::event::{TriggerId, *};
+    use iceoryx2_cal::event::{EventId, *};
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::testing::*;
 
     const TIMEOUT: Duration = Duration::from_millis(25);
 
     #[conformance_test]
-    pub fn create_works<Sut: Event>() {
+    pub fn create_works<Sut: Event<RelocatableBitSet>>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -55,657 +56,657 @@ pub mod event_trait {
         assert_that!(*sut_notifier.name(), eq name);
     }
 
-    #[conformance_test]
-    pub fn listener_cleans_up_when_out_of_scope<Sut: Event>() {
-        let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-
-        assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq false);
-        let sut_listener = Sut::ListenerBuilder::new(&name)
-            .config(&config)
-            .create()
-            .unwrap();
-        assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq true);
-
-        drop(sut_listener);
-        assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq false);
-    }
-
-    #[conformance_test]
-    pub fn cannot_be_created_twice<Sut: Event>() {
-        let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-
-        let _sut = Sut::ListenerBuilder::new(&name)
-            .config(&config)
-            .create()
-            .unwrap();
-        let sut = Sut::ListenerBuilder::new(&name).config(&config).create();
-
-        assert_that!(sut, is_err);
-        assert_that!(sut.err().unwrap(), eq ListenerCreateError::AlreadyExists);
-    }
-
-    #[conformance_test]
-    pub fn cannot_open_non_existing<Sut: Event>() {
-        let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-
-        let sut = Sut::NotifierBuilder::new(&name).config(&config).open();
-
-        assert_that!(sut, is_err);
-        assert_that!(sut.err().unwrap(), eq NotifierCreateError::DoesNotExist);
-    }
-
-    #[conformance_test]
-    pub fn notify_with_same_id_does_not_lead_to_non_blocking_timed_wait<Sut: Event>() {
-        let _watchdog = Watchdog::new();
-        const REPETITIONS: u64 = 8;
-        let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-
-        let sut_listener = Sut::ListenerBuilder::new(&name)
-            .config(&config)
-            .create()
-            .unwrap();
-        let sut_notifier = Sut::NotifierBuilder::new(&name)
-            .config(&config)
-            .open()
-            .unwrap();
-
-        let trigger_id = TriggerId::new(0);
-
-        for _ in 0..REPETITIONS {
-            sut_notifier.notify(trigger_id).unwrap();
-        }
-
-        assert_that!(sut_listener.try_wait_one().unwrap(), is_some);
-
-        let now = Time::now().unwrap();
-        let result = sut_listener.timed_wait_one(TIMEOUT).unwrap();
-
-        if result.is_some() {
-            assert_that!(result, eq Some(trigger_id));
-        } else {
-            assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT );
-        }
-    }
-
-    fn sending_notification_works<
-        Sut: Event,
-        F: Fn(&Sut::Listener) -> Result<Option<TriggerId>, ListenerWaitError>,
-    >(
-        wait_call: F,
-    ) {
-        let _watchdog = Watchdog::new();
-        const REPETITIONS: usize = 8;
-        let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-
-        let sut_listener = Sut::ListenerBuilder::new(&name)
-            .config(&config)
-            .create()
-            .unwrap();
-        let sut_notifier = Sut::NotifierBuilder::new(&name)
-            .config(&config)
-            .open()
-            .unwrap();
-
-        for i in 0..REPETITIONS {
-            sut_notifier.notify(TriggerId::new(i)).unwrap();
-            let result = wait_call(&sut_listener).unwrap();
-            assert_that!(result.unwrap(), eq TriggerId::new(i));
-        }
-    }
-
-    #[conformance_test]
-    pub fn sending_notification_and_try_wait_works<Sut: Event>() {
-        sending_notification_works::<Sut, _>(|sut| sut.try_wait_one());
-    }
-
-    #[conformance_test]
-    pub fn sending_notification_and_timed_wait_works<Sut: Event>() {
-        sending_notification_works::<Sut, _>(|sut| sut.timed_wait_one(TIMEOUT));
-    }
-
-    #[conformance_test]
-    pub fn sending_notification_and_blocking_wait_works<Sut: Event>() {
-        sending_notification_works::<Sut, _>(|sut| sut.blocking_wait_one());
-    }
-
-    fn sending_multiple_notifications_before_wait_works<
-        Sut: Event,
-        F: Fn(&Sut::Listener) -> Result<Option<TriggerId>, ListenerWaitError>,
-    >(
-        wait_call: F,
-    ) {
-        const REPETITIONS: usize = 8;
-        let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-
-        let sut_listener = Sut::ListenerBuilder::new(&name)
-            .config(&config)
-            .create()
-            .unwrap();
-        let sut_notifier = Sut::NotifierBuilder::new(&name)
-            .config(&config)
-            .open()
-            .unwrap();
-
-        for i in 0..REPETITIONS {
-            sut_notifier.notify(TriggerId::new(i)).unwrap();
-        }
-
-        let mut ids = BTreeSet::new();
-        for _ in 0..REPETITIONS {
-            let result = wait_call(&sut_listener).unwrap();
-            assert_that!(result, is_some);
-            let result = result.unwrap();
-            assert_that!(result.as_value(), lt REPETITIONS);
-            assert_that!(ids.insert(result), eq true);
-        }
-    }
-
-    #[conformance_test]
-    pub fn sending_multiple_notifications_before_try_wait_works<Sut: Event>() {
-        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| sut.try_wait_one());
-    }
-
-    #[conformance_test]
-    pub fn sending_multiple_notifications_before_timed_wait_works<Sut: Event>() {
-        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| {
-            sut.timed_wait_one(TIMEOUT)
-        });
-    }
-
-    #[conformance_test]
-    pub fn sending_multiple_notifications_before_blocking_wait_works<Sut: Event>() {
-        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| sut.blocking_wait_one());
-    }
-
-    fn sending_multiple_notifications_from_multiple_sources_before_wait_works<
-        Sut: Event,
-        F: Fn(&Sut::Listener) -> Result<Option<TriggerId>, ListenerWaitError>,
-    >(
-        wait_call: F,
-    ) {
-        const REPETITIONS: usize = 2;
-        const SOURCES: usize = 4;
-        let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-        let mut sources = vec![];
-
-        let sut_listener = Sut::ListenerBuilder::new(&name)
-            .config(&config)
-            .create()
-            .unwrap();
-        for _ in 0..SOURCES {
-            sources.push(
-                Sut::NotifierBuilder::new(&name)
-                    .config(&config)
-                    .open()
-                    .unwrap(),
-            );
-        }
-
-        let mut event_ids = vec![];
-        for i in 0..REPETITIONS {
-            for (n, notifier) in sources.iter().enumerate() {
-                let event_id = n * (SOURCES + REPETITIONS + 1) + i;
-                assert_that!(notifier.notify(TriggerId::new(event_id)), is_ok);
-                event_ids.push(event_id);
-            }
-        }
-
-        for _ in 0..REPETITIONS {
-            for _ in 0..SOURCES {
-                let result = wait_call(&sut_listener).unwrap();
-                assert_that!(result, is_some);
-                assert_that!(event_ids, contains result.unwrap().as_value());
-            }
-        }
-    }
-
-    #[conformance_test]
-    pub fn sending_multiple_notifications_from_multiple_sources_before_try_wait_works<
-        Sut: Event,
-    >() {
-        sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
-            sut.try_wait_one()
-        });
-    }
-
-    #[conformance_test]
-    pub fn sending_multiple_notifications_from_multiple_sources_before_timed_wait_works<
-        Sut: Event,
-    >() {
-        sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
-            sut.timed_wait_one(TIMEOUT)
-        });
-    }
-
-    #[conformance_test]
-    pub fn sending_multiple_notifications_from_multiple_sources_before_blocking_wait_works<
-        Sut: Event,
-    >() {
-        sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
-            sut.blocking_wait_one()
-        });
-    }
-
-    #[conformance_test]
-    pub fn try_wait_does_not_block<Sut: Event>() {
-        let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-
-        let sut_listener = Sut::ListenerBuilder::new(&name)
-            .config(&config)
-            .create()
-            .unwrap();
-        let _sut_notifier = Sut::NotifierBuilder::new(&name)
-            .config(&config)
-            .open()
-            .unwrap();
-
-        let result = sut_listener.try_wait_one().unwrap();
-        assert_that!(result, is_none);
-    }
-
-    #[conformance_test]
-    pub fn timed_wait_does_block_for_at_least_timeout<Sut: Event>() {
-        let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-
-        let sut_listener = Sut::ListenerBuilder::new(&name)
-            .config(&config)
-            .create()
-            .unwrap();
-        let _sut_notifier = Sut::NotifierBuilder::new(&name)
-            .config(&config)
-            .open()
-            .unwrap();
-
-        let start = Time::now().unwrap();
-        let result = sut_listener.timed_wait_one(TIMEOUT).unwrap();
-        assert_that!(result, is_none);
-        assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
-    }
-
-    #[conformance_test]
-    pub fn blocking_wait_blocks_until_notification_arrives<Sut: Event>() {
-        let _watchdog = Watchdog::new();
-        let name = generate_file_path().file_name();
-        let handle = MutexHandle::new();
-        let config = MutexBuilder::new()
-            .create(generate_isolated_config::<Sut>(), &handle)
-            .unwrap();
-
-        let counter = AtomicU64::new(0);
-        let counter_old = AtomicU64::new(0);
-        let handle = BarrierHandle::new();
-        let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
-
-        thread_scope(|s| {
-            s.thread_builder().spawn(|| {
-                let sut_listener = Sut::ListenerBuilder::new(&name)
-                    .config(&config.lock().unwrap())
-                    .create()
-                    .unwrap();
-                barrier.wait();
-                let result = sut_listener.blocking_wait_one().unwrap();
-                counter.store(1, Ordering::SeqCst);
-                assert_that!(result, is_some);
-                assert_that!(result.unwrap(), eq TriggerId::new(89));
-            })?;
-
-            barrier.wait();
-            let sut_notifier = Sut::NotifierBuilder::new(&name)
-                .config(&config.lock().unwrap())
-                .open()
-                .unwrap();
-            nanosleep(TIMEOUT).unwrap();
-            counter_old.store(counter.load(Ordering::SeqCst), Ordering::SeqCst);
-            sut_notifier.notify(TriggerId::new(89)).unwrap();
-
-            Ok(())
-        })
-        .unwrap();
-        assert_that!(counter_old.load(Ordering::SeqCst), eq 0);
-        assert_that!(counter.load(Ordering::SeqCst), eq 1);
-    }
-
-    /// windows sporadically instantly wakes up in a timed receive operation
-    #[cfg(not(target_os = "windows"))]
-    #[conformance_test]
-    pub fn timed_wait_blocks_until_notification_arrives<Sut: Event>() {
-        let _watchdog = Watchdog::new();
-        let name = generate_file_path().file_name();
-        let handle = MutexHandle::new();
-        let config = MutexBuilder::new()
-            .create(generate_isolated_config::<Sut>(), &handle)
-            .unwrap();
-
-        let counter = AtomicU64::new(0);
-        let counter_old = AtomicU64::new(0);
-        let handle = BarrierHandle::new();
-        let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
-
-        thread_scope(|s| {
-            s.thread_builder().spawn(|| {
-                let sut_listener = Sut::ListenerBuilder::new(&name)
-                    .config(&config.lock().unwrap())
-                    .create()
-                    .unwrap();
-                barrier.wait();
-                let result = sut_listener.timed_wait_one(TIMEOUT * 1000).unwrap();
-                counter.store(1, Ordering::SeqCst);
-                assert_that!(result, is_some);
-                assert_that!(result.unwrap(), eq TriggerId::new(82));
-            })?;
-
-            barrier.wait();
-            let sut_notifier = Sut::NotifierBuilder::new(&name)
-                .config(&config.lock().unwrap())
-                .open()
-                .unwrap();
-            nanosleep(TIMEOUT).unwrap();
-            counter_old.store(counter.load(Ordering::SeqCst), Ordering::SeqCst);
-            sut_notifier.notify(TriggerId::new(82)).unwrap();
-
-            Ok(())
-        })
-        .unwrap();
-        assert_that!(counter_old.load(Ordering::SeqCst), eq 0);
-        assert_that!(counter.load(Ordering::SeqCst), eq 1);
-    }
-
-    #[conformance_test]
-    pub fn defaults_for_configuration_are_set_correctly<Sut: Event>() {
-        let config = <Sut as NamedConceptMgmt>::Configuration::default();
-        assert_that!(*config.get_suffix(), eq Sut::default_suffix());
-    }
-
-    #[conformance_test]
-    pub fn setting_trigger_id_limit_works<Sut: Event>() {
-        test_requires!(Sut::has_trigger_id_limit());
-
-        const TRIGGER_ID_MAX: TriggerId = TriggerId::new(1234);
-        let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-
-        let _sut_listener = Sut::ListenerBuilder::new(&name)
-            .trigger_id_max(TRIGGER_ID_MAX)
-            .config(&config)
-            .create()
-            .unwrap();
-        let sut_notifier = Sut::NotifierBuilder::new(&name)
-            .config(&config)
-            .open()
-            .unwrap();
-
-        if Sut::has_trigger_id_limit() {
-            assert_that!(sut_notifier.trigger_id_max(), eq TRIGGER_ID_MAX);
-        } else {
-            assert_that!(sut_notifier.trigger_id_max(), eq TriggerId::new(usize::MAX));
-        }
-    }
-
-    #[conformance_test]
-    pub fn triggering_up_to_trigger_id_max_works<Sut: Event>() {
-        test_requires!(Sut::has_trigger_id_limit());
-
-        const TRIGGER_ID_MAX: TriggerId = TriggerId::new(1024);
-        let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-
-        let sut_listener = Sut::ListenerBuilder::new(&name)
-            .trigger_id_max(TRIGGER_ID_MAX)
-            .config(&config)
-            .create()
-            .unwrap();
-        let sut_notifier = Sut::NotifierBuilder::new(&name)
-            .config(&config)
-            .open()
-            .unwrap();
-
-        for i in 0..TRIGGER_ID_MAX.as_value() {
-            assert_that!(sut_notifier.notify(TriggerId::new(i)), is_ok);
-        }
-
-        let result = sut_notifier.notify(TriggerId::new(TRIGGER_ID_MAX.as_value() + 1));
-        assert_that!(result, is_err);
-        assert_that!(
-            result.err().unwrap(), eq
-            NotifierNotifyError::TriggerIdOutOfBounds
-        );
-
-        let mut ids = BTreeSet::new();
-        for _ in 0..TRIGGER_ID_MAX.as_value() {
-            let event_id = sut_listener.try_wait_one().unwrap().unwrap();
-
-            assert_that!(event_id, lt TRIGGER_ID_MAX);
-            assert_that!(ids.insert(event_id), eq true);
-        }
-
-        let event_id = sut_listener.try_wait_one().unwrap();
-        assert_that!(event_id, is_none);
-    }
-
-    fn wait_all_collects_all_triggers<Sut: Event, F: FnMut(&mut Vec<TriggerId>, &Sut::Listener)>(
-        mut wait_call: F,
-    ) {
-        let _watchdog = Watchdog::new();
-        const REPETITIONS: usize = 8;
-        let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-
-        let sut_listener = Sut::ListenerBuilder::new(&name)
-            .trigger_id_max(TriggerId::new(REPETITIONS))
-            .config(&config)
-            .create()
-            .unwrap();
-        let sut_notifier = Sut::NotifierBuilder::new(&name)
-            .config(&config)
-            .open()
-            .unwrap();
-
-        for i in 1..=REPETITIONS {
-            for n in 0..i {
-                sut_notifier.notify(TriggerId::new(n as _)).unwrap();
-            }
-
-            let mut vec_of_ids = vec![];
-            wait_call(&mut vec_of_ids, &sut_listener);
-
-            assert_that!(vec_of_ids, len { i });
-            for n in 0..i {
-                assert_that!(vec_of_ids, contains TriggerId::new(n));
-            }
-        }
-    }
-
-    #[conformance_test]
-    pub fn try_wait_all_collects_all_triggers<Sut: Event>() {
-        wait_all_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
-            sut.try_wait_all(|id| v.push(id)).unwrap();
-        });
-    }
-
-    #[conformance_test]
-    pub fn timed_wait_all_collects_all_triggers<Sut: Event>() {
-        wait_all_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
-            sut.timed_wait_all(|id| v.push(id), TIMEOUT * 1000).unwrap();
-        });
-    }
-
-    #[conformance_test]
-    pub fn blocking_wait_all_collects_all_triggers<Sut: Event>() {
-        wait_all_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
-            sut.blocking_wait_all(|id| v.push(id)).unwrap();
-        });
-    }
-
-    #[conformance_test]
-    pub fn try_wait_all_does_not_block<Sut: Event>() {
-        let _watchdog = Watchdog::new();
-        let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-
-        let sut_listener = Sut::ListenerBuilder::new(&name)
-            .config(&config)
-            .create()
-            .unwrap();
-
-        let mut callback_called = false;
-        sut_listener
-            .try_wait_all(|_| callback_called = true)
-            .unwrap();
-        assert_that!(callback_called, eq false);
-    }
-
-    #[conformance_test]
-    pub fn timed_wait_all_does_block_for_at_least_timeout<Sut: Event>() {
-        let _watchdog = Watchdog::new();
-        let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-
-        let sut_listener = Sut::ListenerBuilder::new(&name)
-            .config(&config)
-            .create()
-            .unwrap();
-
-        let mut callback_called = false;
-        let now = Time::now().unwrap();
-        sut_listener
-            .timed_wait_all(|_| callback_called = true, TIMEOUT)
-            .unwrap();
-        assert_that!(callback_called, eq false);
-        assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
-    }
-
-    fn wait_all_wakes_up_on_notify<
-        Sut: Event,
-        F: FnMut(&mut Vec<TriggerId>, &Sut::Listener) + Send,
-    >(
-        wait_call: F,
-    ) {
-        let mut wait_call = wait_call;
-        let _watchdog = Watchdog::new();
-        let name = generate_file_path().file_name();
-        let barrier_handle = BarrierHandle::new();
-        let barrier = BarrierBuilder::new(2).create(&barrier_handle).unwrap();
-        let counter = AtomicU64::new(0);
-        let id = TriggerId::new(5);
-        let mutex_handle = MutexHandle::new();
-        let config = MutexBuilder::new()
-            .create(generate_isolated_config::<Sut>(), &mutex_handle)
-            .unwrap();
-
-        thread_scope(|s| {
-            s.thread_builder().spawn(|| {
-                let sut_listener = Sut::ListenerBuilder::new(&name)
-                    .config(&config.lock().unwrap())
-                    .create()
-                    .unwrap();
-                barrier.wait();
-
-                let mut id_vec = vec![];
-                wait_call(&mut id_vec, &sut_listener);
-                counter.fetch_add(1, Ordering::Relaxed);
-
-                assert_that!(id_vec, len 1);
-                assert_that!(id_vec[0], eq id);
-            })?;
-
-            barrier.wait();
-            let sut_notifier = Sut::NotifierBuilder::new(&name)
-                .config(&config.lock().unwrap())
-                .open()
-                .unwrap();
-            nanosleep(TIMEOUT).unwrap();
-            assert_that!(counter.load(Ordering::Relaxed), eq 0);
-            sut_notifier.notify(id).unwrap();
-
-            Ok(())
-        })
-        .unwrap();
-        assert_that!(counter.load(Ordering::Relaxed), eq 1);
-    }
-
-    #[conformance_test]
-    pub fn timed_wait_all_wakes_up_on_notify<Sut: Event>() {
-        wait_all_wakes_up_on_notify::<Sut, _>(|v, sut: &Sut::Listener| {
-            sut.timed_wait_all(|id| v.push(id), TIMEOUT * 1000).unwrap();
-        });
-    }
-
-    #[conformance_test]
-    pub fn blocking_wait_all_wakes_up_on_notify<Sut: Event>() {
-        wait_all_wakes_up_on_notify::<Sut, _>(|v, sut: &Sut::Listener| {
-            sut.blocking_wait_all(|id| v.push(id)).unwrap();
-        });
-    }
-
-    #[conformance_test]
-    pub fn out_of_scope_listener_shall_not_corrupt_notifier<Sut: Event>() {
-        let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-
-        let sut_listener = Sut::ListenerBuilder::new(&name)
-            .config(&config)
-            .create()
-            .unwrap();
-        let sut_notifier = Sut::NotifierBuilder::new(&name)
-            .config(&config)
-            .open()
-            .unwrap();
-
-        drop(sut_listener);
-
-        let result = sut_notifier.notify(TriggerId::new(0));
-
-        // either present a disconnect error when available or continue sending without counterpart, for
-        // instance when the event is network socket based
-        if result.is_err() {
-            assert_that!(result.err().unwrap(), eq NotifierNotifyError::Disconnected);
-        }
-    }
-
-    #[conformance_test]
-    pub fn abandoning_listener_keeps_event<Sut: Event>() {
-        let _watchdog = Watchdog::new();
-        let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-
-        let sut_listener = Sut::ListenerBuilder::new(&name)
-            .config(&config)
-            .create()
-            .unwrap();
-
-        Sut::Listener::abandon(sut_listener);
-
-        assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(true));
-        assert_that!(unsafe { Sut::remove_cfg(&name, &config).unwrap() }, eq true);
-    }
-
-    #[conformance_test]
-    pub fn abandoning_notifier_keeps_event<Sut: Event>() {
-        let _watchdog = Watchdog::new();
-        let name = generate_file_path().file_name();
-        let config = generate_isolated_config::<Sut>();
-
-        let _sut_listener = Sut::ListenerBuilder::new(&name)
-            .config(&config)
-            .create()
-            .unwrap();
-
-        let sut_notifier = Sut::NotifierBuilder::new(&name)
-            .config(&config)
-            .open()
-            .unwrap();
-
-        sut_notifier.abandon();
-
-        assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(true));
-    }
+    //    #[conformance_test]
+    //    pub fn listener_cleans_up_when_out_of_scope<Sut: Event>() {
+    //        let name = generate_file_path().file_name();
+    //        let config = generate_isolated_config::<Sut>();
+    //
+    //        assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq false);
+    //        let sut_listener = Sut::ListenerBuilder::new(&name)
+    //            .config(&config)
+    //            .create()
+    //            .unwrap();
+    //        assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq true);
+    //
+    //        drop(sut_listener);
+    //        assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq false);
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn cannot_be_created_twice<Sut: Event>() {
+    //        let name = generate_file_path().file_name();
+    //        let config = generate_isolated_config::<Sut>();
+    //
+    //        let _sut = Sut::ListenerBuilder::new(&name)
+    //            .config(&config)
+    //            .create()
+    //            .unwrap();
+    //        let sut = Sut::ListenerBuilder::new(&name).config(&config).create();
+    //
+    //        assert_that!(sut, is_err);
+    //        assert_that!(sut.err().unwrap(), eq ListenerCreateError::AlreadyExists);
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn cannot_open_non_existing<Sut: Event>() {
+    //        let name = generate_file_path().file_name();
+    //        let config = generate_isolated_config::<Sut>();
+    //
+    //        let sut = Sut::NotifierBuilder::new(&name).config(&config).open();
+    //
+    //        assert_that!(sut, is_err);
+    //        assert_that!(sut.err().unwrap(), eq NotifierCreateError::DoesNotExist);
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn notify_with_same_id_does_not_lead_to_non_blocking_timed_wait<Sut: Event>() {
+    //        let _watchdog = Watchdog::new();
+    //        const REPETITIONS: u64 = 8;
+    //        let name = generate_file_path().file_name();
+    //        let config = generate_isolated_config::<Sut>();
+    //
+    //        let sut_listener = Sut::ListenerBuilder::new(&name)
+    //            .config(&config)
+    //            .create()
+    //            .unwrap();
+    //        let sut_notifier = Sut::NotifierBuilder::new(&name)
+    //            .config(&config)
+    //            .open()
+    //            .unwrap();
+    //
+    //        let trigger_id = TriggerId::new(0);
+    //
+    //        for _ in 0..REPETITIONS {
+    //            sut_notifier.notify(trigger_id).unwrap();
+    //        }
+    //
+    //        assert_that!(sut_listener.try_wait_one().unwrap(), is_some);
+    //
+    //        let now = Time::now().unwrap();
+    //        let result = sut_listener.timed_wait_one(TIMEOUT).unwrap();
+    //
+    //        if result.is_some() {
+    //            assert_that!(result, eq Some(trigger_id));
+    //        } else {
+    //            assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT );
+    //        }
+    //    }
+    //
+    //    fn sending_notification_works<
+    //        Sut: Event,
+    //        F: Fn(&Sut::Listener) -> Result<Option<TriggerId>, ListenerWaitError>,
+    //    >(
+    //        wait_call: F,
+    //    ) {
+    //        let _watchdog = Watchdog::new();
+    //        const REPETITIONS: usize = 8;
+    //        let name = generate_file_path().file_name();
+    //        let config = generate_isolated_config::<Sut>();
+    //
+    //        let sut_listener = Sut::ListenerBuilder::new(&name)
+    //            .config(&config)
+    //            .create()
+    //            .unwrap();
+    //        let sut_notifier = Sut::NotifierBuilder::new(&name)
+    //            .config(&config)
+    //            .open()
+    //            .unwrap();
+    //
+    //        for i in 0..REPETITIONS {
+    //            sut_notifier.notify(TriggerId::new(i)).unwrap();
+    //            let result = wait_call(&sut_listener).unwrap();
+    //            assert_that!(result.unwrap(), eq TriggerId::new(i));
+    //        }
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn sending_notification_and_try_wait_works<Sut: Event>() {
+    //        sending_notification_works::<Sut, _>(|sut| sut.try_wait_one());
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn sending_notification_and_timed_wait_works<Sut: Event>() {
+    //        sending_notification_works::<Sut, _>(|sut| sut.timed_wait_one(TIMEOUT));
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn sending_notification_and_blocking_wait_works<Sut: Event>() {
+    //        sending_notification_works::<Sut, _>(|sut| sut.blocking_wait_one());
+    //    }
+    //
+    //    fn sending_multiple_notifications_before_wait_works<
+    //        Sut: Event,
+    //        F: Fn(&Sut::Listener) -> Result<Option<TriggerId>, ListenerWaitError>,
+    //    >(
+    //        wait_call: F,
+    //    ) {
+    //        const REPETITIONS: usize = 8;
+    //        let name = generate_file_path().file_name();
+    //        let config = generate_isolated_config::<Sut>();
+    //
+    //        let sut_listener = Sut::ListenerBuilder::new(&name)
+    //            .config(&config)
+    //            .create()
+    //            .unwrap();
+    //        let sut_notifier = Sut::NotifierBuilder::new(&name)
+    //            .config(&config)
+    //            .open()
+    //            .unwrap();
+    //
+    //        for i in 0..REPETITIONS {
+    //            sut_notifier.notify(TriggerId::new(i)).unwrap();
+    //        }
+    //
+    //        let mut ids = BTreeSet::new();
+    //        for _ in 0..REPETITIONS {
+    //            let result = wait_call(&sut_listener).unwrap();
+    //            assert_that!(result, is_some);
+    //            let result = result.unwrap();
+    //            assert_that!(result.as_value(), lt REPETITIONS);
+    //            assert_that!(ids.insert(result), eq true);
+    //        }
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn sending_multiple_notifications_before_try_wait_works<Sut: Event>() {
+    //        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| sut.try_wait_one());
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn sending_multiple_notifications_before_timed_wait_works<Sut: Event>() {
+    //        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| {
+    //            sut.timed_wait_one(TIMEOUT)
+    //        });
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn sending_multiple_notifications_before_blocking_wait_works<Sut: Event>() {
+    //        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| sut.blocking_wait_one());
+    //    }
+    //
+    //    fn sending_multiple_notifications_from_multiple_sources_before_wait_works<
+    //        Sut: Event,
+    //        F: Fn(&Sut::Listener) -> Result<Option<TriggerId>, ListenerWaitError>,
+    //    >(
+    //        wait_call: F,
+    //    ) {
+    //        const REPETITIONS: usize = 2;
+    //        const SOURCES: usize = 4;
+    //        let name = generate_file_path().file_name();
+    //        let config = generate_isolated_config::<Sut>();
+    //        let mut sources = vec![];
+    //
+    //        let sut_listener = Sut::ListenerBuilder::new(&name)
+    //            .config(&config)
+    //            .create()
+    //            .unwrap();
+    //        for _ in 0..SOURCES {
+    //            sources.push(
+    //                Sut::NotifierBuilder::new(&name)
+    //                    .config(&config)
+    //                    .open()
+    //                    .unwrap(),
+    //            );
+    //        }
+    //
+    //        let mut event_ids = vec![];
+    //        for i in 0..REPETITIONS {
+    //            for (n, notifier) in sources.iter().enumerate() {
+    //                let event_id = n * (SOURCES + REPETITIONS + 1) + i;
+    //                assert_that!(notifier.notify(TriggerId::new(event_id)), is_ok);
+    //                event_ids.push(event_id);
+    //            }
+    //        }
+    //
+    //        for _ in 0..REPETITIONS {
+    //            for _ in 0..SOURCES {
+    //                let result = wait_call(&sut_listener).unwrap();
+    //                assert_that!(result, is_some);
+    //                assert_that!(event_ids, contains result.unwrap().as_value());
+    //            }
+    //        }
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn sending_multiple_notifications_from_multiple_sources_before_try_wait_works<
+    //        Sut: Event,
+    //    >() {
+    //        sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
+    //            sut.try_wait_one()
+    //        });
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn sending_multiple_notifications_from_multiple_sources_before_timed_wait_works<
+    //        Sut: Event,
+    //    >() {
+    //        sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
+    //            sut.timed_wait_one(TIMEOUT)
+    //        });
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn sending_multiple_notifications_from_multiple_sources_before_blocking_wait_works<
+    //        Sut: Event,
+    //    >() {
+    //        sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
+    //            sut.blocking_wait_one()
+    //        });
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn try_wait_does_not_block<Sut: Event>() {
+    //        let name = generate_file_path().file_name();
+    //        let config = generate_isolated_config::<Sut>();
+    //
+    //        let sut_listener = Sut::ListenerBuilder::new(&name)
+    //            .config(&config)
+    //            .create()
+    //            .unwrap();
+    //        let _sut_notifier = Sut::NotifierBuilder::new(&name)
+    //            .config(&config)
+    //            .open()
+    //            .unwrap();
+    //
+    //        let result = sut_listener.try_wait_one().unwrap();
+    //        assert_that!(result, is_none);
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn timed_wait_does_block_for_at_least_timeout<Sut: Event>() {
+    //        let name = generate_file_path().file_name();
+    //        let config = generate_isolated_config::<Sut>();
+    //
+    //        let sut_listener = Sut::ListenerBuilder::new(&name)
+    //            .config(&config)
+    //            .create()
+    //            .unwrap();
+    //        let _sut_notifier = Sut::NotifierBuilder::new(&name)
+    //            .config(&config)
+    //            .open()
+    //            .unwrap();
+    //
+    //        let start = Time::now().unwrap();
+    //        let result = sut_listener.timed_wait_one(TIMEOUT).unwrap();
+    //        assert_that!(result, is_none);
+    //        assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn blocking_wait_blocks_until_notification_arrives<Sut: Event>() {
+    //        let _watchdog = Watchdog::new();
+    //        let name = generate_file_path().file_name();
+    //        let handle = MutexHandle::new();
+    //        let config = MutexBuilder::new()
+    //            .create(generate_isolated_config::<Sut>(), &handle)
+    //            .unwrap();
+    //
+    //        let counter = AtomicU64::new(0);
+    //        let counter_old = AtomicU64::new(0);
+    //        let handle = BarrierHandle::new();
+    //        let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
+    //
+    //        thread_scope(|s| {
+    //            s.thread_builder().spawn(|| {
+    //                let sut_listener = Sut::ListenerBuilder::new(&name)
+    //                    .config(&config.lock().unwrap())
+    //                    .create()
+    //                    .unwrap();
+    //                barrier.wait();
+    //                let result = sut_listener.blocking_wait_one().unwrap();
+    //                counter.store(1, Ordering::SeqCst);
+    //                assert_that!(result, is_some);
+    //                assert_that!(result.unwrap(), eq TriggerId::new(89));
+    //            })?;
+    //
+    //            barrier.wait();
+    //            let sut_notifier = Sut::NotifierBuilder::new(&name)
+    //                .config(&config.lock().unwrap())
+    //                .open()
+    //                .unwrap();
+    //            nanosleep(TIMEOUT).unwrap();
+    //            counter_old.store(counter.load(Ordering::SeqCst), Ordering::SeqCst);
+    //            sut_notifier.notify(TriggerId::new(89)).unwrap();
+    //
+    //            Ok(())
+    //        })
+    //        .unwrap();
+    //        assert_that!(counter_old.load(Ordering::SeqCst), eq 0);
+    //        assert_that!(counter.load(Ordering::SeqCst), eq 1);
+    //    }
+    //
+    //    /// windows sporadically instantly wakes up in a timed receive operation
+    //    #[cfg(not(target_os = "windows"))]
+    //    #[conformance_test]
+    //    pub fn timed_wait_blocks_until_notification_arrives<Sut: Event>() {
+    //        let _watchdog = Watchdog::new();
+    //        let name = generate_file_path().file_name();
+    //        let handle = MutexHandle::new();
+    //        let config = MutexBuilder::new()
+    //            .create(generate_isolated_config::<Sut>(), &handle)
+    //            .unwrap();
+    //
+    //        let counter = AtomicU64::new(0);
+    //        let counter_old = AtomicU64::new(0);
+    //        let handle = BarrierHandle::new();
+    //        let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
+    //
+    //        thread_scope(|s| {
+    //            s.thread_builder().spawn(|| {
+    //                let sut_listener = Sut::ListenerBuilder::new(&name)
+    //                    .config(&config.lock().unwrap())
+    //                    .create()
+    //                    .unwrap();
+    //                barrier.wait();
+    //                let result = sut_listener.timed_wait_one(TIMEOUT * 1000).unwrap();
+    //                counter.store(1, Ordering::SeqCst);
+    //                assert_that!(result, is_some);
+    //                assert_that!(result.unwrap(), eq TriggerId::new(82));
+    //            })?;
+    //
+    //            barrier.wait();
+    //            let sut_notifier = Sut::NotifierBuilder::new(&name)
+    //                .config(&config.lock().unwrap())
+    //                .open()
+    //                .unwrap();
+    //            nanosleep(TIMEOUT).unwrap();
+    //            counter_old.store(counter.load(Ordering::SeqCst), Ordering::SeqCst);
+    //            sut_notifier.notify(TriggerId::new(82)).unwrap();
+    //
+    //            Ok(())
+    //        })
+    //        .unwrap();
+    //        assert_that!(counter_old.load(Ordering::SeqCst), eq 0);
+    //        assert_that!(counter.load(Ordering::SeqCst), eq 1);
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn defaults_for_configuration_are_set_correctly<Sut: Event>() {
+    //        let config = <Sut as NamedConceptMgmt>::Configuration::default();
+    //        assert_that!(*config.get_suffix(), eq Sut::default_suffix());
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn setting_trigger_id_limit_works<Sut: Event>() {
+    //        test_requires!(Sut::has_trigger_id_limit());
+    //
+    //        const TRIGGER_ID_MAX: TriggerId = TriggerId::new(1234);
+    //        let name = generate_file_path().file_name();
+    //        let config = generate_isolated_config::<Sut>();
+    //
+    //        let _sut_listener = Sut::ListenerBuilder::new(&name)
+    //            .trigger_id_max(TRIGGER_ID_MAX)
+    //            .config(&config)
+    //            .create()
+    //            .unwrap();
+    //        let sut_notifier = Sut::NotifierBuilder::new(&name)
+    //            .config(&config)
+    //            .open()
+    //            .unwrap();
+    //
+    //        if Sut::has_trigger_id_limit() {
+    //            assert_that!(sut_notifier.trigger_id_max(), eq TRIGGER_ID_MAX);
+    //        } else {
+    //            assert_that!(sut_notifier.trigger_id_max(), eq TriggerId::new(usize::MAX));
+    //        }
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn triggering_up_to_trigger_id_max_works<Sut: Event>() {
+    //        test_requires!(Sut::has_trigger_id_limit());
+    //
+    //        const TRIGGER_ID_MAX: TriggerId = TriggerId::new(1024);
+    //        let name = generate_file_path().file_name();
+    //        let config = generate_isolated_config::<Sut>();
+    //
+    //        let sut_listener = Sut::ListenerBuilder::new(&name)
+    //            .trigger_id_max(TRIGGER_ID_MAX)
+    //            .config(&config)
+    //            .create()
+    //            .unwrap();
+    //        let sut_notifier = Sut::NotifierBuilder::new(&name)
+    //            .config(&config)
+    //            .open()
+    //            .unwrap();
+    //
+    //        for i in 0..TRIGGER_ID_MAX.as_value() {
+    //            assert_that!(sut_notifier.notify(TriggerId::new(i)), is_ok);
+    //        }
+    //
+    //        let result = sut_notifier.notify(TriggerId::new(TRIGGER_ID_MAX.as_value() + 1));
+    //        assert_that!(result, is_err);
+    //        assert_that!(
+    //            result.err().unwrap(), eq
+    //            NotifierNotifyError::TriggerIdOutOfBounds
+    //        );
+    //
+    //        let mut ids = BTreeSet::new();
+    //        for _ in 0..TRIGGER_ID_MAX.as_value() {
+    //            let event_id = sut_listener.try_wait_one().unwrap().unwrap();
+    //
+    //            assert_that!(event_id, lt TRIGGER_ID_MAX);
+    //            assert_that!(ids.insert(event_id), eq true);
+    //        }
+    //
+    //        let event_id = sut_listener.try_wait_one().unwrap();
+    //        assert_that!(event_id, is_none);
+    //    }
+    //
+    //    fn wait_all_collects_all_triggers<Sut: Event, F: FnMut(&mut Vec<TriggerId>, &Sut::Listener)>(
+    //        mut wait_call: F,
+    //    ) {
+    //        let _watchdog = Watchdog::new();
+    //        const REPETITIONS: usize = 8;
+    //        let name = generate_file_path().file_name();
+    //        let config = generate_isolated_config::<Sut>();
+    //
+    //        let sut_listener = Sut::ListenerBuilder::new(&name)
+    //            .trigger_id_max(TriggerId::new(REPETITIONS))
+    //            .config(&config)
+    //            .create()
+    //            .unwrap();
+    //        let sut_notifier = Sut::NotifierBuilder::new(&name)
+    //            .config(&config)
+    //            .open()
+    //            .unwrap();
+    //
+    //        for i in 1..=REPETITIONS {
+    //            for n in 0..i {
+    //                sut_notifier.notify(TriggerId::new(n as _)).unwrap();
+    //            }
+    //
+    //            let mut vec_of_ids = vec![];
+    //            wait_call(&mut vec_of_ids, &sut_listener);
+    //
+    //            assert_that!(vec_of_ids, len { i });
+    //            for n in 0..i {
+    //                assert_that!(vec_of_ids, contains TriggerId::new(n));
+    //            }
+    //        }
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn try_wait_all_collects_all_triggers<Sut: Event>() {
+    //        wait_all_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
+    //            sut.try_wait_all(|id| v.push(id)).unwrap();
+    //        });
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn timed_wait_all_collects_all_triggers<Sut: Event>() {
+    //        wait_all_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
+    //            sut.timed_wait_all(|id| v.push(id), TIMEOUT * 1000).unwrap();
+    //        });
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn blocking_wait_all_collects_all_triggers<Sut: Event>() {
+    //        wait_all_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
+    //            sut.blocking_wait_all(|id| v.push(id)).unwrap();
+    //        });
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn try_wait_all_does_not_block<Sut: Event>() {
+    //        let _watchdog = Watchdog::new();
+    //        let name = generate_file_path().file_name();
+    //        let config = generate_isolated_config::<Sut>();
+    //
+    //        let sut_listener = Sut::ListenerBuilder::new(&name)
+    //            .config(&config)
+    //            .create()
+    //            .unwrap();
+    //
+    //        let mut callback_called = false;
+    //        sut_listener
+    //            .try_wait_all(|_| callback_called = true)
+    //            .unwrap();
+    //        assert_that!(callback_called, eq false);
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn timed_wait_all_does_block_for_at_least_timeout<Sut: Event>() {
+    //        let _watchdog = Watchdog::new();
+    //        let name = generate_file_path().file_name();
+    //        let config = generate_isolated_config::<Sut>();
+    //
+    //        let sut_listener = Sut::ListenerBuilder::new(&name)
+    //            .config(&config)
+    //            .create()
+    //            .unwrap();
+    //
+    //        let mut callback_called = false;
+    //        let now = Time::now().unwrap();
+    //        sut_listener
+    //            .timed_wait_all(|_| callback_called = true, TIMEOUT)
+    //            .unwrap();
+    //        assert_that!(callback_called, eq false);
+    //        assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
+    //    }
+    //
+    //    fn wait_all_wakes_up_on_notify<
+    //        Sut: Event,
+    //        F: FnMut(&mut Vec<TriggerId>, &Sut::Listener) + Send,
+    //    >(
+    //        wait_call: F,
+    //    ) {
+    //        let mut wait_call = wait_call;
+    //        let _watchdog = Watchdog::new();
+    //        let name = generate_file_path().file_name();
+    //        let barrier_handle = BarrierHandle::new();
+    //        let barrier = BarrierBuilder::new(2).create(&barrier_handle).unwrap();
+    //        let counter = AtomicU64::new(0);
+    //        let id = TriggerId::new(5);
+    //        let mutex_handle = MutexHandle::new();
+    //        let config = MutexBuilder::new()
+    //            .create(generate_isolated_config::<Sut>(), &mutex_handle)
+    //            .unwrap();
+    //
+    //        thread_scope(|s| {
+    //            s.thread_builder().spawn(|| {
+    //                let sut_listener = Sut::ListenerBuilder::new(&name)
+    //                    .config(&config.lock().unwrap())
+    //                    .create()
+    //                    .unwrap();
+    //                barrier.wait();
+    //
+    //                let mut id_vec = vec![];
+    //                wait_call(&mut id_vec, &sut_listener);
+    //                counter.fetch_add(1, Ordering::Relaxed);
+    //
+    //                assert_that!(id_vec, len 1);
+    //                assert_that!(id_vec[0], eq id);
+    //            })?;
+    //
+    //            barrier.wait();
+    //            let sut_notifier = Sut::NotifierBuilder::new(&name)
+    //                .config(&config.lock().unwrap())
+    //                .open()
+    //                .unwrap();
+    //            nanosleep(TIMEOUT).unwrap();
+    //            assert_that!(counter.load(Ordering::Relaxed), eq 0);
+    //            sut_notifier.notify(id).unwrap();
+    //
+    //            Ok(())
+    //        })
+    //        .unwrap();
+    //        assert_that!(counter.load(Ordering::Relaxed), eq 1);
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn timed_wait_all_wakes_up_on_notify<Sut: Event>() {
+    //        wait_all_wakes_up_on_notify::<Sut, _>(|v, sut: &Sut::Listener| {
+    //            sut.timed_wait_all(|id| v.push(id), TIMEOUT * 1000).unwrap();
+    //        });
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn blocking_wait_all_wakes_up_on_notify<Sut: Event>() {
+    //        wait_all_wakes_up_on_notify::<Sut, _>(|v, sut: &Sut::Listener| {
+    //            sut.blocking_wait_all(|id| v.push(id)).unwrap();
+    //        });
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn out_of_scope_listener_shall_not_corrupt_notifier<Sut: Event>() {
+    //        let name = generate_file_path().file_name();
+    //        let config = generate_isolated_config::<Sut>();
+    //
+    //        let sut_listener = Sut::ListenerBuilder::new(&name)
+    //            .config(&config)
+    //            .create()
+    //            .unwrap();
+    //        let sut_notifier = Sut::NotifierBuilder::new(&name)
+    //            .config(&config)
+    //            .open()
+    //            .unwrap();
+    //
+    //        drop(sut_listener);
+    //
+    //        let result = sut_notifier.notify(TriggerId::new(0));
+    //
+    //        // either present a disconnect error when available or continue sending without counterpart, for
+    //        // instance when the event is network socket based
+    //        if result.is_err() {
+    //            assert_that!(result.err().unwrap(), eq NotifierNotifyError::Disconnected);
+    //        }
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn abandoning_listener_keeps_event<Sut: Event>() {
+    //        let _watchdog = Watchdog::new();
+    //        let name = generate_file_path().file_name();
+    //        let config = generate_isolated_config::<Sut>();
+    //
+    //        let sut_listener = Sut::ListenerBuilder::new(&name)
+    //            .config(&config)
+    //            .create()
+    //            .unwrap();
+    //
+    //        Sut::Listener::abandon(sut_listener);
+    //
+    //        assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(true));
+    //        assert_that!(unsafe { Sut::remove_cfg(&name, &config).unwrap() }, eq true);
+    //    }
+    //
+    //    #[conformance_test]
+    //    pub fn abandoning_notifier_keeps_event<Sut: Event>() {
+    //        let _watchdog = Watchdog::new();
+    //        let name = generate_file_path().file_name();
+    //        let config = generate_isolated_config::<Sut>();
+    //
+    //        let _sut_listener = Sut::ListenerBuilder::new(&name)
+    //            .config(&config)
+    //            .create()
+    //            .unwrap();
+    //
+    //        let sut_notifier = Sut::NotifierBuilder::new(&name)
+    //            .config(&config)
+    //            .open()
+    //            .unwrap();
+    //
+    //        sut_notifier.abandon();
+    //
+    //        assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(true));
+    //    }
 }

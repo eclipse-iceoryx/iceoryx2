@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Contributors to the Eclipse Foundation
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,682 +10,506 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[doc(hidden)]
-pub mod details {
-    use core::ptr::NonNull;
-    use core::{fmt::Debug, marker::PhantomData, mem::MaybeUninit, time::Duration};
+use crate::{
+    dynamic_storage::{DynamicStorage, DynamicStorageBuilder},
+    event::{
+        Event, EventId, Listener, ListenerBuilder, ListenerCreateError, ListenerWaitError,
+        NamedConcept, NamedConceptBuilder, NamedConceptMgmt, Notifier, NotifierBuilder,
+        NotifierOpenError,
+        event_state::{EventActivation, EventState},
+        trigger::{HandlerInterface, State, WaiterInterface, stub::Stub},
+    },
+    named_concept::NamedConceptConfiguration,
+};
+use core::fmt::Debug;
+use core::{marker::PhantomData, mem::MaybeUninit, ptr::NonNull, time::Duration};
+use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_elementary_traits::{
+    non_null::NonNullCompat, testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
+};
+use iceoryx2_bb_posix::file::AccessMode;
+use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_log::fail;
 
-    use alloc::vec::Vec;
+#[derive(PartialEq, Eq, Debug)]
+pub struct Configuration<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+> {
+    value: Storage::Configuration,
+    _data_1: PhantomData<E>,
+    _data_2: PhantomData<Mgmt>,
+}
 
-    use iceoryx2_bb_concurrency::atomic::Ordering;
-    use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize};
-    use iceoryx2_bb_derive_macros::ZeroCopySend;
-    use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
-    use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-    use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-    use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-    use iceoryx2_bb_posix::file::AccessMode;
-    use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
-    use iceoryx2_log::{debug, fail};
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+> Clone for Configuration<E, Mgmt, Storage>
+{
+    fn clone(&self) -> Self {
+        Self {
+            value: self.value.clone(),
+            _data_1: PhantomData,
+            _data_2: PhantomData,
+        }
+    }
+}
 
-    use crate::{
-        dynamic_storage::{
-            DynamicStorage, DynamicStorageBuilder, DynamicStorageCreateError,
-            DynamicStorageOpenError,
-        },
-        event::{
-            Event, ListenerCreateError, NotifierCreateError, NotifierNotifyError, TriggerId,
-            id_tracker::IdTracker, signal_mechanism::SignalMechanism,
-        },
-        named_concept::{
-            NamedConcept, NamedConceptBuilder, NamedConceptConfiguration, NamedConceptMgmt,
-        },
-    };
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+> Default for Configuration<E, Mgmt, Storage>
+{
+    fn default() -> Self {
+        Self {
+            value: Storage::Configuration::default()
+                .path_hint(&EventImpl::<E, Mgmt, Storage, Stub, Stub>::default_path_hint())
+                .suffix(&EventImpl::<E, Mgmt, Storage, Stub, Stub>::default_suffix())
+                .prefix(&EventImpl::<E, Mgmt, Storage, Stub, Stub>::default_prefix()),
+            _data_1: PhantomData,
+            _data_2: PhantomData,
+        }
+    }
+}
 
-    const TRIGGER_ID_DEFAULT_MAX: TriggerId = TriggerId::new(u16::MAX as _);
-
-    #[derive(Debug, ZeroCopySend)]
-    #[repr(C)]
-    pub struct Management<Tracker: IdTracker, WaitMechanism: SignalMechanism> {
-        id_tracker: Tracker,
-        signal_mechanism: WaitMechanism,
-        reference_counter: AtomicUsize,
-        has_listener: AtomicBool,
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+> Configuration<E, Mgmt, Storage>
+{
+    fn to_storage_config(&self) -> Storage::Configuration {
+        let mut suffix = *self.get_suffix();
+        suffix.push_bytes(b"_mgmt").unwrap();
+        self.value.clone().suffix(&suffix)
     }
 
-    #[derive(PartialEq, Eq)]
-    pub struct Configuration<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > {
-        suffix: FileName,
-        prefix: FileName,
-        path: Path,
-        _tracker: PhantomData<Tracker>,
-        _wait_mechanism: PhantomData<WaitMechanism>,
-        _storage: PhantomData<Storage>,
+    fn to_trigger_config(&self) -> super::trigger::Configuration {
+        super::trigger::Configuration {
+            suffix: *self.get_suffix(),
+            prefix: *self.get_prefix(),
+            path_hint: *self.get_path_hint(),
+        }
+    }
+}
+
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+> NamedConceptConfiguration for Configuration<E, Mgmt, Storage>
+{
+    fn prefix(mut self, value: &FileName) -> Self {
+        self.value = self.value.prefix(value);
+        self
     }
 
-    impl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > Default for Configuration<Tracker, WaitMechanism, Storage>
+    fn get_prefix(&self) -> &FileName {
+        self.value.get_prefix()
+    }
+
+    fn suffix(mut self, value: &FileName) -> Self {
+        self.value = self.value.suffix(value);
+        self
+    }
+
+    fn get_suffix(&self) -> &FileName {
+        self.value.get_suffix()
+    }
+
+    fn path_hint(mut self, value: &Path) -> Self {
+        self.value = self.value.path_hint(value);
+        self
+    }
+
+    fn get_path_hint(&self) -> &Path {
+        self.value.get_path_hint()
+    }
+}
+
+#[derive(Debug)]
+pub struct EventImpl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    H: HandlerInterface<E, Mgmt, Storage>,
+    W: WaiterInterface<E, Mgmt, Storage>,
+> {
+    _data_1: PhantomData<E>,
+    _data_2: PhantomData<Mgmt>,
+    _data_3: PhantomData<Storage>,
+    _data_4: PhantomData<H>,
+    _data_5: PhantomData<W>,
+}
+
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    H: HandlerInterface<E, Mgmt, Storage>,
+    W: WaiterInterface<E, Mgmt, Storage>,
+> NamedConceptMgmt for EventImpl<E, Mgmt, Storage, H, W>
+{
+    type Configuration = Configuration<E, Mgmt, Storage>;
+
+    fn does_exist_cfg(
+        name: &FileName,
+        cfg: &Self::Configuration,
+    ) -> Result<bool, crate::named_concept::NamedConceptDoesExistError> {
+        Storage::does_exist_cfg(name, &cfg.value)
+    }
+
+    fn list_cfg(
+        cfg: &Self::Configuration,
+    ) -> Result<Vec<FileName>, crate::named_concept::NamedConceptListError> {
+        Storage::list_cfg(&cfg.value)
+    }
+
+    unsafe fn remove_cfg(
+        name: &FileName,
+        cfg: &Self::Configuration,
+    ) -> Result<bool, crate::named_concept::NamedConceptRemoveError> {
+        unsafe { Storage::remove_cfg(name, &cfg.value) }
+    }
+
+    fn remove_path_hint(
+        value: &Path,
+    ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
+        Storage::remove_path_hint(value)
+    }
+}
+
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    H: HandlerInterface<E, Mgmt, Storage>,
+    W: WaiterInterface<E, Mgmt, Storage>,
+> Event<E> for EventImpl<E, Mgmt, Storage, H, W>
+{
+    type Listener = Waiter<E, Mgmt, Storage, W>;
+    type ListenerBuilder = WaiterBuilder<E, Mgmt, Storage, H, W>;
+    type Notifier = Handle<E, Mgmt, Storage, H>;
+    type NotifierBuilder = HandleBuilder<E, Mgmt, Storage, H, W>;
+}
+
+#[derive(Debug)]
+pub struct Handle<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    H: HandlerInterface<E, Mgmt, Storage>,
+> {
+    storage: Storage,
+    handle: H,
+    _data_1: PhantomData<E>,
+    _data_2: PhantomData<Mgmt>,
+}
+
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    H: HandlerInterface<E, Mgmt, Storage>,
+> Abandonable for Handle<E, Mgmt, Storage, H>
+{
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe { H::abandon_in_place(NonNull::iox2_from_mut(&mut this.handle)) };
+        unsafe { Storage::abandon_in_place(NonNull::iox2_from_mut(&mut this.storage)) };
+    }
+}
+
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    H: HandlerInterface<E, Mgmt, Storage>,
+> NamedConcept for Handle<E, Mgmt, Storage, H>
+{
+    fn name(&self) -> &FileName {
+        self.storage.name()
+    }
+}
+
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    H: HandlerInterface<E, Mgmt, Storage>,
+> Notifier<E> for Handle<E, Mgmt, Storage, H>
+{
+    fn event_id_max(&self) -> EventId {
+        self.storage.get().event_id_max
+    }
+
+    fn notify(&self, event_id: EventId) -> Result<(), super::NotifierNotifyError> {
+        let msg = "Unable to notify";
+        fail!(from self,
+              when self.storage.get().event.activate(event_id),
+              "{msg} with {event_id:?} since the activation failed.");
+        fail!(from self,
+              when self.handle.notify(),
+              "{msg} with {event_id:?} since the notification could not be sent.");
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct Waiter<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    W: WaiterInterface<E, Mgmt, Storage>,
+> {
+    storage: Storage,
+    waiter: W,
+    _data_1: PhantomData<E>,
+    _data_2: PhantomData<Mgmt>,
+}
+
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    W: WaiterInterface<E, Mgmt, Storage>,
+> Abandonable for Waiter<E, Mgmt, Storage, W>
+{
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe { W::abandon_in_place(NonNull::iox2_from_mut(&mut this.waiter)) };
+        unsafe { Storage::abandon_in_place(NonNull::iox2_from_mut(&mut this.storage)) };
+    }
+}
+
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    W: WaiterInterface<E, Mgmt, Storage>,
+> NamedConcept for Waiter<E, Mgmt, Storage, W>
+{
+    fn name(&self) -> &FileName {
+        self.storage.name()
+    }
+}
+
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    W: WaiterInterface<E, Mgmt, Storage>,
+> Listener<E> for Waiter<E, Mgmt, Storage, W>
+{
+    fn try_wait<F: FnMut(EventActivation)>(&self, callback: F) -> Result<u64, ListenerWaitError> {
+        let msg = "Failed to try wait and acquire all event notifications";
+        fail!(from self,
+              when self.waiter.try_wait(),
+              "{msg} since the underlying waiting call failed.");
+
+        let number_of_events = self.storage.get().event.drain(callback);
+        Ok(number_of_events)
+    }
+
+    fn timed_wait<F: FnMut(EventActivation)>(
+        &self,
+        callback: F,
+        timeout: Duration,
+    ) -> Result<u64, ListenerWaitError> {
+        let msg = "Failed to wait with timeout and acquire all event notifications";
+        fail!(from self,
+              when self.waiter.timed_wait(timeout),
+              "{msg} since the underlying waiting call failed.");
+
+        let number_of_events = self.storage.get().event.drain(callback);
+        Ok(number_of_events)
+    }
+
+    fn blocking_wait<F: FnMut(EventActivation)>(
+        &self,
+        callback: F,
+    ) -> Result<u64, ListenerWaitError> {
+        let msg = "Failed to wait with timeout and acquire all event notifications";
+        fail!(from self,
+              when self.waiter.blocking_wait(),
+              "{msg} since the underlying waiting call failed.");
+
+        let number_of_events = self.storage.get().event.drain(callback);
+        Ok(number_of_events)
+    }
+}
+
+#[derive(Debug)]
+pub struct HandleBuilder<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    H: HandlerInterface<E, Mgmt, Storage>,
+    W: WaiterInterface<E, Mgmt, Storage>,
+> {
+    name: FileName,
+    config: Configuration<E, Mgmt, Storage>,
+    timeout: Duration,
+    _data_1: PhantomData<H>,
+    _data_2: PhantomData<W>,
+}
+
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    H: HandlerInterface<E, Mgmt, Storage>,
+    W: WaiterInterface<E, Mgmt, Storage>,
+> NamedConceptBuilder<EventImpl<E, Mgmt, Storage, H, W>> for HandleBuilder<E, Mgmt, Storage, H, W>
+{
+    fn new(name: &FileName) -> Self {
+        Self {
+            name: *name,
+            timeout: Duration::ZERO,
+            config: Configuration::default(),
+            _data_1: PhantomData,
+            _data_2: PhantomData,
+        }
+    }
+
+    fn config(
+        mut self,
+        config: &<EventImpl<E, Mgmt, Storage, H, W> as NamedConceptMgmt>::Configuration,
+    ) -> Self {
+        self.config = config.clone();
+        self
+    }
+}
+
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    H: HandlerInterface<E, Mgmt, Storage>,
+    W: WaiterInterface<E, Mgmt, Storage>,
+> NotifierBuilder<E, EventImpl<E, Mgmt, Storage, H, W>> for HandleBuilder<E, Mgmt, Storage, H, W>
+{
+    fn timeout(mut self, timeout: Duration) -> Self {
+        self.timeout = timeout;
+        self
+    }
+
+    fn open(
+        self,
+    ) -> Result<<EventImpl<E, Mgmt, Storage, H, W> as Event<E>>::Notifier, NotifierOpenError> {
+        let storage = Storage::Builder::new(&self.name)
+            .config(&self.config.to_storage_config())
+            .has_ownership(true)
+            .open(AccessMode::ReadWrite)
+            .unwrap();
+
+        let handle = H::open(&self.config.to_trigger_config(), unsafe {
+            storage.get().handle.assume_init_ref()
+        });
+
+        Ok(Handle {
+            storage,
+            handle,
+            _data_1: PhantomData,
+            _data_2: PhantomData,
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct WaiterBuilder<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    H: HandlerInterface<E, Mgmt, Storage>,
+    W: WaiterInterface<E, Mgmt, Storage>,
+> {
+    name: FileName,
+    event_id_max: EventId,
+    config: Configuration<E, Mgmt, Storage>,
+    _data_1: PhantomData<H>,
+    _data_2: PhantomData<W>,
+}
+
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    H: HandlerInterface<E, Mgmt, Storage>,
+    W: WaiterInterface<E, Mgmt, Storage>,
+> NamedConceptBuilder<EventImpl<E, Mgmt, Storage, H, W>> for WaiterBuilder<E, Mgmt, Storage, H, W>
+{
+    fn new(name: &FileName) -> Self {
+        Self {
+            name: *name,
+            event_id_max: EventId::new(8),
+            config: Configuration::default(),
+            _data_1: PhantomData,
+            _data_2: PhantomData,
+        }
+    }
+
+    fn config(
+        mut self,
+        config: &<EventImpl<E, Mgmt, Storage, H, W> as NamedConceptMgmt>::Configuration,
+    ) -> Self {
+        self.config = config.clone();
+        self
+    }
+}
+
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    H: HandlerInterface<E, Mgmt, Storage>,
+    W: WaiterInterface<E, Mgmt, Storage>,
+> ListenerBuilder<E, EventImpl<E, Mgmt, Storage, H, W>> for WaiterBuilder<E, Mgmt, Storage, H, W>
+{
+    fn event_id_max(mut self, id: EventId) -> Self {
+        self.event_id_max = id;
+        self
+    }
+
+    fn create(
+        self,
+    ) -> Result<<EventImpl<E, Mgmt, Storage, H, W> as Event<E>>::Listener, ListenerCreateError>
     {
-        fn default() -> Self {
-            Self {
-                path: EventImpl::<Tracker, WaitMechanism, Storage>::default_path_hint(),
-                suffix: EventImpl::<Tracker, WaitMechanism, Storage>::default_suffix(),
-                prefix: EventImpl::<Tracker, WaitMechanism, Storage>::default_prefix(),
-                _tracker: PhantomData,
-                _wait_mechanism: PhantomData,
-                _storage: PhantomData,
-            }
-        }
-    }
+        let state_size = E::memory_size((self.event_id_max.as_value() + 1) as usize);
+        let mut waiter = None;
+        let storage = Storage::Builder::new(&self.name)
+            .config(&self.config.to_storage_config())
+            .has_ownership(true)
+            .supplementary_size(state_size)
+            .initializer(|value, allocator| {
+                value.write(State {
+                    event: unsafe { E::new_uninit((self.event_id_max.as_value() + 1) as usize) },
+                    handle: MaybeUninit::uninit(),
+                    event_id_max: self.event_id_max,
+                    notification_count: AtomicU64::new(0),
+                });
 
-    impl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > Configuration<Tracker, WaitMechanism, Storage>
-    {
-        fn convert(&self) -> <Storage as NamedConceptMgmt>::Configuration {
-            <Storage as NamedConceptMgmt>::Configuration::default()
-                .prefix(&self.prefix)
-                .suffix(&self.suffix)
-                .path_hint(&self.path)
-        }
-    }
+                unsafe { value.assume_init_mut().event.init(allocator).unwrap() };
+                waiter = Some(W::create(
+                    &self.config.to_trigger_config(),
+                    &mut unsafe { value.assume_init_mut() }.handle,
+                ));
 
-    impl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > Debug for Configuration<Tracker, WaitMechanism, Storage>
-    {
-        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-            write!(
-                f,
-                "Configuration<{}, {}, {}> {{ suffix: {}, prefix: {}, path: {} }}",
-                core::any::type_name::<Tracker>(),
-                core::any::type_name::<WaitMechanism>(),
-                core::any::type_name::<Storage>(),
-                self.suffix,
-                self.prefix,
-                self.path
-            )
-        }
-    }
-
-    impl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > Clone for Configuration<Tracker, WaitMechanism, Storage>
-    {
-        fn clone(&self) -> Self {
-            Self {
-                suffix: self.suffix,
-                prefix: self.prefix,
-                path: self.path,
-                _tracker: PhantomData,
-                _wait_mechanism: PhantomData,
-                _storage: PhantomData,
-            }
-        }
-    }
-
-    impl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > NamedConceptConfiguration for Configuration<Tracker, WaitMechanism, Storage>
-    {
-        fn prefix(mut self, value: &FileName) -> Self {
-            self.prefix = *value;
-            self
-        }
-
-        fn get_prefix(&self) -> &FileName {
-            &self.prefix
-        }
-
-        fn suffix(mut self, value: &FileName) -> Self {
-            self.suffix = *value;
-            self
-        }
-
-        fn path_hint(mut self, value: &Path) -> Self {
-            self.path = *value;
-            self
-        }
-
-        fn get_suffix(&self) -> &FileName {
-            &self.suffix
-        }
-
-        fn get_path_hint(&self) -> &Path {
-            &self.path
-        }
-    }
-
-    #[derive(Debug)]
-    pub struct EventImpl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > {
-        _tracker: PhantomData<Tracker>,
-        _wait_mechanism: PhantomData<WaitMechanism>,
-        _storage: PhantomData<Storage>,
-    }
-
-    impl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > NamedConceptMgmt for EventImpl<Tracker, WaitMechanism, Storage>
-    {
-        type Configuration = Configuration<Tracker, WaitMechanism, Storage>;
-
-        fn does_exist_cfg(
-            name: &FileName,
-            cfg: &Self::Configuration,
-        ) -> Result<bool, crate::static_storage::file::NamedConceptDoesExistError> {
-            Ok(fail!(from "Event::does_exist_cfg()",
-                    when Storage::does_exist_cfg(name, &cfg.convert()),
-                    "Failed to check if Event \"{}\" exists.",
-                    name))
-        }
-
-        fn list_cfg(
-            cfg: &Self::Configuration,
-        ) -> Result<Vec<FileName>, crate::static_storage::file::NamedConceptListError> {
-            Ok(fail!(from "Event::list_cfg()",
-                    when Storage::list_cfg(&cfg.convert()),
-                    "Failed to list all Events."))
-        }
-
-        unsafe fn remove_cfg(
-            name: &FileName,
-            cfg: &Self::Configuration,
-        ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
-            Ok(fail!(from "Event::remove_cfg()",
-                    when unsafe {Storage::remove_cfg(name, &cfg.convert())},
-                    "Failed to remove Event \"{}\".", name))
-        }
-
-        fn remove_path_hint(
-            _value: &Path,
-        ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
-            Ok(())
-        }
-    }
-
-    impl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > Event for EventImpl<Tracker, WaitMechanism, Storage>
-    {
-        type Notifier = Notifier<Tracker, WaitMechanism, Storage>;
-        type NotifierBuilder = NotifierBuilder<Tracker, WaitMechanism, Storage>;
-        type Listener = Listener<Tracker, WaitMechanism, Storage>;
-        type ListenerBuilder = ListenerBuilder<Tracker, WaitMechanism, Storage>;
-
-        fn has_trigger_id_limit() -> bool {
-            true
-        }
-    }
-
-    #[derive(Debug)]
-    pub struct Notifier<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > {
-        storage: Storage,
-        _tracker: PhantomData<Tracker>,
-        _wait_mechanism: PhantomData<WaitMechanism>,
-    }
-
-    impl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > Abandonable for Notifier<Tracker, WaitMechanism, Storage>
-    {
-        unsafe fn abandon_in_place(mut this: NonNull<Self>) {
-            let this = unsafe { this.as_mut() };
-            unsafe { Storage::abandon_in_place(NonNull::iox2_from_mut(&mut this.storage)) };
-        }
-    }
-
-    impl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > Drop for Notifier<Tracker, WaitMechanism, Storage>
-    {
-        fn drop(&mut self) {
-            if self
-                .storage
-                .get()
-                .reference_counter
-                .fetch_sub(1, Ordering::Relaxed)
-                == 1
-            {
-                self.storage.acquire_ownership();
-            }
-        }
-    }
-
-    impl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > NamedConcept for Notifier<Tracker, WaitMechanism, Storage>
-    {
-        fn name(&self) -> &FileName {
-            self.storage.name()
-        }
-    }
-
-    impl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > crate::event::Notifier for Notifier<Tracker, WaitMechanism, Storage>
-    {
-        fn trigger_id_max(&self) -> TriggerId {
-            self.storage.get().id_tracker.trigger_id_max()
-        }
-
-        fn notify(&self, id: crate::event::TriggerId) -> Result<(), NotifierNotifyError> {
-            let msg = "Failed to notify listener";
-            if !self.storage.get().has_listener.load(Ordering::Relaxed) {
-                fail!(from self, with NotifierNotifyError::Disconnected,
-                    "{} since the listener is no longer connected.", msg);
-            }
-
-            if self.storage.get().id_tracker.trigger_id_max() < id {
-                fail!(from self, with NotifierNotifyError::TriggerIdOutOfBounds,
-                    "{} since the TriggerId {:?} is greater than the max supported TriggerId {:?}.",
-                    msg, id, self.storage.get().id_tracker.trigger_id_max());
-            }
-
-            unsafe { self.storage.get().id_tracker.add(id)? };
-            unsafe { self.storage.get().signal_mechanism.notify()? };
-            Ok(())
-        }
-    }
-
-    #[derive(Debug)]
-    pub struct NotifierBuilder<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > {
-        name: FileName,
-        config: Configuration<Tracker, WaitMechanism, Storage>,
-        creation_timeout: Duration,
-    }
-
-    impl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > NamedConceptBuilder<EventImpl<Tracker, WaitMechanism, Storage>>
-        for NotifierBuilder<Tracker, WaitMechanism, Storage>
-    {
-        fn new(name: &FileName) -> Self {
-            Self {
-                name: *name,
-                creation_timeout: Duration::ZERO,
-                config: Configuration::default(),
-            }
-        }
-
-        fn config(
-            mut self,
-            config: &<EventImpl<Tracker, WaitMechanism, Storage> as NamedConceptMgmt>::Configuration,
-        ) -> Self {
-            self.config = config.clone();
-            self
-        }
-    }
-
-    impl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > crate::event::NotifierBuilder<EventImpl<Tracker, WaitMechanism, Storage>>
-        for NotifierBuilder<Tracker, WaitMechanism, Storage>
-    {
-        fn timeout(mut self, timeout: Duration) -> Self {
-            self.creation_timeout = timeout;
-            self
-        }
-
-        fn open(
-            self,
-        ) -> Result<
-            <EventImpl<Tracker, WaitMechanism, Storage> as crate::event::Event>::Notifier,
-            crate::event::NotifierCreateError,
-        > {
-            let msg = "Failed to open Notifier";
-
-            match Storage::Builder::new(&self.name)
-                .config(&self.config.convert())
-                .timeout(self.creation_timeout)
-                .open(AccessMode::ReadWrite)
-            {
-                Ok(storage) => {
-                    let mut ref_count = storage.get().reference_counter.load(Ordering::Relaxed);
-
-                    loop {
-                        if !storage.get().has_listener.load(Ordering::Relaxed) || ref_count == 0 {
-                            fail!(from self, with NotifierCreateError::DoesNotExist,
-                            "{} since it has no listener and will no longer exist.", msg);
-                        }
-
-                        match storage.get().reference_counter.compare_exchange(
-                            ref_count,
-                            ref_count + 1,
-                            Ordering::Relaxed,
-                            Ordering::Relaxed,
-                        ) {
-                            Ok(_) => break,
-                            Err(v) => ref_count = v,
-                        };
-                    }
-
-                    Ok(Notifier {
-                        storage,
-                        _tracker: PhantomData,
-                        _wait_mechanism: PhantomData,
-                    })
-                }
-                Err(DynamicStorageOpenError::DoesNotExist) => {
-                    fail!(from self, with NotifierCreateError::DoesNotExist,
-                        "{} since it does not exist.", msg);
-                }
-                Err(DynamicStorageOpenError::VersionMismatch) => {
-                    fail!(from self, with NotifierCreateError::VersionMismatch,
-                        "{} since the version of the existing construct does not match.", msg);
-                }
-                Err(DynamicStorageOpenError::InitializationNotYetFinalized) => {
-                    fail!(from self, with NotifierCreateError::InitializationNotYetFinalized,
-                        "{} since the initialization is after a timeout of {:?} still not finalized..",
-                        msg, self.creation_timeout);
-                }
-                Err(e) => {
-                    fail!(from self, with NotifierCreateError::InternalFailure,
-                        "{} due to an internal failure ({:?}).", msg, e);
-                }
-            }
-        }
-    }
-
-    #[derive(Debug)]
-    pub struct Listener<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > {
-        storage: Storage,
-        _tracker: PhantomData<Tracker>,
-        _wait_mechanism: PhantomData<WaitMechanism>,
-    }
-
-    impl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > Abandonable for Listener<Tracker, WaitMechanism, Storage>
-    {
-        unsafe fn abandon_in_place(mut this: NonNull<Self>) {
-            let this = unsafe { this.as_mut() };
-            unsafe { Storage::abandon_in_place(NonNull::iox2_from_mut(&mut this.storage)) };
-        }
-    }
-
-    impl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > Drop for Listener<Tracker, WaitMechanism, Storage>
-    {
-        fn drop(&mut self) {
-            self.storage
-                .get()
-                .has_listener
-                .store(false, Ordering::Relaxed);
-
-            if self
-                .storage
-                .get()
-                .reference_counter
-                .fetch_sub(1, Ordering::Relaxed)
-                == 1
-            {
-                self.storage.acquire_ownership();
-            }
-        }
-    }
-
-    impl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > NamedConcept for Listener<Tracker, WaitMechanism, Storage>
-    {
-        fn name(&self) -> &FileName {
-            self.storage.name()
-        }
-    }
-
-    impl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > crate::event::Listener for Listener<Tracker, WaitMechanism, Storage>
-    {
-        fn try_wait_one(
-            &self,
-        ) -> Result<Option<crate::event::TriggerId>, crate::event::ListenerWaitError> {
-            // collect all notifications until no more are available, otherwise it is possible
-            // that blocking_wait and timed_wait are becoming non-blocking when the same id is
-            // triggered multiple times in combination with a bitset id_tracker since the bit is
-            // set only once but the signal is triggered whenever the user sets the bit.
-            //
-            // of course one could check if the id_tracker has already set the bit, but this is
-            // not possible on every implemenation. a bitset can check it a mpmc::queue maybe not.
-            while unsafe { self.storage.get().signal_mechanism.try_wait()? } {}
-            Ok(unsafe { self.storage.get().id_tracker.acquire() })
-        }
-
-        fn timed_wait_one(
-            &self,
-            timeout: Duration,
-        ) -> Result<Option<crate::event::TriggerId>, crate::event::ListenerWaitError> {
-            if let Some(id) = self.try_wait_one()? {
-                return Ok(Some(id));
-            }
-
-            Ok(unsafe {
-                self.storage
-                    .get()
-                    .signal_mechanism
-                    .timed_wait(timeout)?
-                    .then_some(self.storage.get().id_tracker.acquire())
-                    .flatten()
+                true
             })
-        }
+            .create()
+            .unwrap();
 
-        fn blocking_wait_one(
-            &self,
-        ) -> Result<Option<crate::event::TriggerId>, crate::event::ListenerWaitError> {
-            if let Some(id) = self.try_wait_one()? {
-                return Ok(Some(id));
-            }
-
-            unsafe { self.storage.get().signal_mechanism.blocking_wait()? };
-            Ok(unsafe { self.storage.get().id_tracker.acquire() })
-        }
-
-        fn try_wait_all<F: FnMut(TriggerId)>(
-            &self,
-            callback: F,
-        ) -> Result<(), crate::event::ListenerWaitError> {
-            // We have to collect all signals first since we collect
-            // all trigger notifications afterwards. It is also important that
-            // the signals are collected first so that timed or blocking wait
-            // do not miss signal notifications despite a signal was already
-            // delivered.
-            // But this may lead to spurious wakeups.
-            while unsafe { self.storage.get().signal_mechanism.try_wait()? } {}
-            unsafe { self.storage.get().id_tracker.acquire_all(callback) };
-            Ok(())
-        }
-
-        fn timed_wait_all<F: FnMut(TriggerId)>(
-            &self,
-            callback: F,
-            timeout: Duration,
-        ) -> Result<(), crate::event::ListenerWaitError> {
-            unsafe { self.storage.get().signal_mechanism.timed_wait(timeout)? };
-            self.try_wait_all(callback)
-        }
-
-        fn blocking_wait_all<F: FnMut(TriggerId)>(
-            &self,
-            callback: F,
-        ) -> Result<(), crate::event::ListenerWaitError> {
-            unsafe { self.storage.get().signal_mechanism.blocking_wait()? };
-            self.try_wait_all(callback)
-        }
-    }
-
-    #[derive(Debug)]
-    pub struct ListenerBuilder<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > {
-        name: FileName,
-        config: Configuration<Tracker, WaitMechanism, Storage>,
-        trigger_id_max: TriggerId,
-    }
-
-    impl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > NamedConceptBuilder<EventImpl<Tracker, WaitMechanism, Storage>>
-        for ListenerBuilder<Tracker, WaitMechanism, Storage>
-    {
-        fn new(name: &FileName) -> Self {
-            Self {
-                name: *name,
-                config: Configuration::default(),
-                trigger_id_max: TRIGGER_ID_DEFAULT_MAX,
-            }
-        }
-
-        fn config(
-            mut self,
-            config: &<EventImpl<Tracker, WaitMechanism, Storage> as NamedConceptMgmt>::Configuration,
-        ) -> Self {
-            self.config = config.clone();
-            self
-        }
-    }
-
-    impl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > ListenerBuilder<Tracker, WaitMechanism, Storage>
-    {
-        fn init(
-            mgmt: &mut MaybeUninit<Management<Tracker, WaitMechanism>>,
-            allocator: &mut BumpAllocator,
-            id_tarcker_capacity: usize,
-        ) -> bool {
-            let origin = "init()";
-
-            mgmt.write(Management {
-                id_tracker: unsafe { Tracker::new_uninit(id_tarcker_capacity) },
-                signal_mechanism: WaitMechanism::new(),
-                reference_counter: AtomicUsize::new(1),
-                has_listener: AtomicBool::new(true),
-            });
-            let mgmt = unsafe { mgmt.assume_init_mut() };
-
-            if unsafe { mgmt.id_tracker.init(allocator).is_err() } {
-                debug!(from origin, "Unable to initialize IdTracker.");
-                return false;
-            }
-            if unsafe { mgmt.signal_mechanism.init().is_err() } {
-                debug!(from origin, "Unable to initialize SignalMechanism.");
-                return false;
-            }
-
-            true
-        }
-    }
-
-    impl<
-        Tracker: IdTracker,
-        WaitMechanism: SignalMechanism,
-        Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
-    > crate::event::ListenerBuilder<EventImpl<Tracker, WaitMechanism, Storage>>
-        for ListenerBuilder<Tracker, WaitMechanism, Storage>
-    {
-        fn trigger_id_max(mut self, id: crate::event::TriggerId) -> Self {
-            self.trigger_id_max = id;
-            self
-        }
-
-        fn create(
-            self,
-        ) -> Result<
-            <EventImpl<Tracker, WaitMechanism, Storage> as crate::event::Event>::Listener,
-            ListenerCreateError,
-        > {
-            let msg = "Failed to create Listener";
-            let id_tracker_capacity = self.trigger_id_max.as_value() + 1;
-
-            match Storage::Builder::new(&self.name)
-                .config(&self.config.convert())
-                .supplementary_size(Tracker::memory_size(id_tracker_capacity))
-                .initializer(|mgmt, allocator| -> bool {
-                    Self::init(mgmt, allocator, id_tracker_capacity)
-                })
-                .has_ownership(false)
-                .create()
-            {
-                Ok(storage) => Ok(Listener {
-                    storage,
-                    _tracker: PhantomData,
-                    _wait_mechanism: PhantomData,
-                }),
-                Err(DynamicStorageCreateError::AlreadyExists) => {
-                    fail!(from self, with ListenerCreateError::AlreadyExists,
-                        "{} since it already exists.", msg);
-                }
-                Err(DynamicStorageCreateError::InsufficientPermissions) => {
-                    fail!(from self, with ListenerCreateError::InsufficientPermissions,
-                        "{} due to insufficient permissions.", msg);
-                }
-                Err(e) => {
-                    fail!(from self, with ListenerCreateError::InternalFailure,
-                        "{} due to an internal failure ({:?}).", msg, e);
-                }
-            }
-        }
+        Ok(Waiter {
+            storage,
+            waiter: waiter.unwrap(),
+            _data_1: PhantomData,
+            _data_2: PhantomData,
+        })
     }
 }

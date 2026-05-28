@@ -10,112 +10,54 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod semaphore;
-
-use crate::event::event_state::{EventActivation, EventId, EventStateActivateError};
-use crate::event::{NamedConcept, NamedConceptBuilder};
-use crate::event::{NamedConceptMgmt, event_state::EventState};
+use crate::event::{EventId, ListenerWaitError, NotifierNotifyError};
+use crate::{dynamic_storage::DynamicStorage, event::event_state::EventState};
 use core::fmt::Debug;
+use core::mem::MaybeUninit;
 use core::time::Duration;
-use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_system_types::path::Path;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TriggerCreateError {}
+pub mod semaphore;
+pub mod stub;
 
-impl core::fmt::Display for TriggerCreateError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "TriggerCreateError::{self:?}")
-    }
+pub struct Configuration {
+    pub suffix: FileName,
+    pub prefix: FileName,
+    pub path_hint: Path,
 }
 
-impl core::error::Error for TriggerCreateError {}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TriggerOpenError {}
-
-impl core::fmt::Display for TriggerOpenError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "TriggerOpenError::{self:?}")
-    }
+#[derive(ZeroCopySend, Debug)]
+#[repr(C)]
+pub struct State<E: EventState, Mgmt: ZeroCopySend + Send + Sync + Debug> {
+    pub event: E,
+    pub handle: MaybeUninit<Mgmt>,
+    pub event_id_max: EventId,
+    pub notification_count: AtomicU64,
 }
 
-impl core::error::Error for TriggerOpenError {}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TriggerWaitError {}
-
-impl core::fmt::Display for TriggerWaitError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "TriggerWaitError::{self:?}")
-    }
-}
-
-impl core::error::Error for TriggerWaitError {}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TriggerNotifyError {
-    EventIdOutOfBounds,
-}
-
-impl core::fmt::Display for TriggerNotifyError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "TriggerNotifyError::{self:?}")
-    }
-}
-
-impl core::error::Error for TriggerNotifyError {}
-
-impl From<EventStateActivateError> for TriggerNotifyError {
-    fn from(value: EventStateActivateError) -> Self {
-        match value {
-            EventStateActivateError::EventIdOutOfBounds => TriggerNotifyError::EventIdOutOfBounds,
-        }
-    }
-}
-
-pub trait TriggerWaiter<E: EventState>: NamedConcept + Debug + Abandonable + Send {
-    const IS_FILE_DESCRIPTOR_BASED: bool = false;
-
-    fn try_wait<F: FnMut(EventActivation)>(&self, callback: F) -> Result<u64, TriggerWaitError>;
-    fn timed_wait<F: FnMut(EventActivation)>(
-        &self,
-        callback: F,
-        timeout: Duration,
-    ) -> Result<u64, TriggerWaitError>;
-    fn blocking_wait<F: FnMut(EventActivation)>(
-        &self,
-        callback: F,
-    ) -> Result<u64, TriggerWaitError>;
-}
-
-pub trait TriggerHandle<E: EventState>: NamedConcept + Debug + Abandonable + Send {
-    fn event_id_max(&self) -> EventId;
-    fn notify(&self, event_id: EventId) -> Result<(), TriggerNotifyError>;
-}
-
-pub trait TriggerWaiterBuilder<E: EventState, T: Trigger<E>>:
-    NamedConceptBuilder<T> + Debug
+pub trait WaiterInterface<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+>: Send + Sync + Debug + Abandonable
 {
-    fn timeout(self, timeout: Duration) -> Self;
-    fn open(self) -> Result<T::Handle, TriggerOpenError>;
+    fn create(config: &Configuration, mgmt: &mut MaybeUninit<Mgmt>) -> Self;
+    fn try_wait(&self) -> Result<(), ListenerWaitError>;
+    fn timed_wait(&self, timeout: Duration) -> Result<(), ListenerWaitError>;
+    fn blocking_wait(&self) -> Result<(), ListenerWaitError>;
 }
 
-pub trait TriggerHandleBuilder<E: EventState, T: Trigger<E>>:
-    NamedConceptBuilder<T> + Debug
+pub trait HandlerInterface<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+>: Send + Sync + Debug + Abandonable
 {
-    fn event_id_max(self, id: EventId) -> Self;
-    fn create(self) -> Result<T::Waiter, TriggerCreateError>;
-}
-
-pub trait Trigger<E: EventState>: Sized + NamedConceptMgmt + Debug {
-    type Waiter: TriggerWaiter<E>;
-    type WaiterBuiler;
-    type Handle: TriggerHandle<E>;
-    type HandleBuilder;
-
-    fn default_suffix() -> FileName {
-        unsafe { FileName::new_unchecked(b".trigger") }
-    }
+    fn open(config: &Configuration, mgmt: &Mgmt) -> Self;
+    fn notify(&self) -> Result<(), NotifierNotifyError>;
 }

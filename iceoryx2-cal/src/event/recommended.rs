@@ -12,8 +12,8 @@
 
 /// Provides the recommended inter-process [`Event`](crate::event::Event) concept implementation
 /// for the target.
-pub type Ipc = crate::event::unix_datagram_socket::EventImpl;
+pub type Ipc = crate::event::trigger::semaphore::SemaphoreShmBitSet;
 
 /// Provides the recommended process-local [`Event`](crate::event::Event) concept implementation
 /// for the target.
-pub type Local = crate::event::process_local_socketpair::EventImpl;
+pub type Local = crate::event::trigger::semaphore::SemaphoreShmBitSet;

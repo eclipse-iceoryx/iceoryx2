@@ -14,22 +14,9 @@ pub mod bit_set;
 
 use core::fmt::Debug;
 use iceoryx2_bb_container::queue::RelocatableContainer;
-use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
-#[derive(ZeroCopySend, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-#[repr(C)]
-pub struct EventId(u64);
-
-impl EventId {
-    pub const fn new(value: u64) -> Self {
-        Self(value)
-    }
-
-    pub const fn as_value(&self) -> u64 {
-        self.0
-    }
-}
+use crate::event::EventId;
 
 pub struct EventActivation {
     pub event_id: EventId,
