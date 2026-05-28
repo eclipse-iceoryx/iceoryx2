@@ -40,6 +40,7 @@ use iceoryx2_bb_container::vector::Vector;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitError;
@@ -55,10 +56,10 @@ use iceoryx2_cal::named_concept::NamedConceptMgmt;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::*;
 use iceoryx2_log::fail;
-use iceoryx2_log::fatal_panic;
 use iceoryx2_log::warn;
 
 use crate::config::IO_TICK_TIME;
+use crate::identifiers::UniqueNodeId;
 use crate::identifiers::UniqueServiceId;
 use crate::node::NodeState;
 use crate::node::SharedNode;
@@ -519,23 +520,30 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
               "{msg} since the current time could not be acquired.");
         let creation_timeout = self.shared_node.config().global.creation_timeout;
 
+        let mut wait = || -> Result<(), ErrorType> {
+            let elapsed = fail!(from self,
+                                when start.elapsed(),
+                                with ServiceOpenError::InternalFailure.into(),
+                                "{} since the elapsed time could not be acquired.", msg);
+            if elapsed > creation_timeout {
+                fail!(from origin,
+                      with ServiceOpenError::HangsInCreation.into(),
+                      "{} since the service hangs in creation", msg);
+            } else {
+                if let Err(e) = adaptive_wait.wait() {
+                    fail!(from origin,
+                          with ServiceOpenError::InternalFailure.into(),
+                          "{} since the adaptive wait failed. [{e:?}]", msg);
+                }
+            }
+
+            Ok(())
+        };
+
         loop {
             match is_service_available() {
                 Err(ServiceState::HangsInCreation) => {
-                    let elapsed = fail!(from self,
-                        when start.elapsed(),
-                        with ServiceOpenError::InternalFailure.into(),
-                        "{} since the elapsed time could not be acquired.", msg);
-                    if elapsed > creation_timeout {
-                        fail!(from origin, with ServiceOpenError::HangsInCreation.into(),
-                            "{} since the service hangs in creation", msg);
-                    } else {
-                        if let Err(e) = adaptive_wait.wait() {
-                            fail!(from origin,
-                            with ServiceOpenError::InternalFailure.into(),
-                            "{} since the adaptive wait failed. [{e:?}]", msg);
-                        }
-                    }
+                    wait()?;
                 }
                 Err(e) => {
                     return Err(e.into());
@@ -564,15 +572,15 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                         }
                         Err(OpenDynamicStorageFailure::DynamicStorageOpenError(
                             DynamicStorageOpenError::DoesNotExist,
-                        )) => {
-                            fail!(from self, with ServiceOpenError::IsMarkedForDestruction.into(),
-                                "{} since the dynamic segment of the service is missing.", msg);
-                        }
-                        Err(OpenDynamicStorageFailure::DynamicStorageOpenError(
+                        ))
+                        | Err(OpenDynamicStorageFailure::DynamicStorageOpenError(
                             DynamicStorageOpenError::InitializationNotYetFinalized,
                         )) => {
-                            fail!(from self, with ServiceOpenError::ServiceInCorruptedState.into(),
-                                "This should never happen! {} since the corresponding dynamic config is not yet finalized.", msg);
+                            // since the dynamic config is created after the static config, the
+                            // initialization is not yet finalized when it does not exist or is itself
+                            // not yet initialized
+                            wait()?;
+                            continue;
                         }
                         Err(OpenDynamicStorageFailure::DynamicStorageOpenError(
                             DynamicStorageOpenError::VersionMismatch,
@@ -631,32 +639,6 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
 
                 prepare_service_config(&mut service_config)?;
 
-                let dyn_conf_creation_args = generate_dynamic_config(&service_config);
-
-                let dynamic_config = match self
-                    .create_dynamic_config_storage(dyn_conf_creation_args)
-                {
-                    Ok(dynamic_config) => dynamic_config,
-                    Err(DynamicStorageCreateError::AlreadyExists) => {
-                        fail!(from self, with ServiceCreateError::ServiceInCorruptedState,
-                            "This should never happen! {} since the unique dynamic service management segment already exists.", msg);
-                    }
-                    Err(DynamicStorageCreateError::InsufficientPermissions) => {
-                        fail!(from self, with ServiceCreateError::InsufficientPermissions,
-                            "{msg} since the dynamic service config could not be created due to insufficient permissions.");
-                    }
-                    Err(DynamicStorageCreateError::InitializationFailed) => {
-                        fail!(from self, with ServiceCreateError::InternalFailure,
-                            "{msg} since the dynamic service config initialization failed.");
-                    }
-                    Err(DynamicStorageCreateError::InternalError) => {
-                        fail!(from self, with ServiceCreateError::InternalFailure,
-                            "{} since the dynamic service segment could not be created due to an internal failure.", msg);
-                    }
-                };
-
-                let resource = create_service_resource(&service_config)?;
-
                 service_config.attributes = attributes.0.clone();
 
                 let serialized_service_config = fail!(from self, when ServiceType::ConfigSerializer::serialize(&service_config),
@@ -691,13 +673,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     }
                 };
 
-                let node_id = self.shared_node.id();
-                let node_handle = fatal_panic!(from self,
-                        when dynamic_config.get().register_node_id(*node_id),
-                        "{} since event the first NodeId could not be registered.", msg);
-                self.shared_node
-                    .registered_services()
-                    .add(service_config.service_hash(), node_handle);
+                let resource = create_service_resource(&service_config)?;
 
                 // only unlock the static details when the service is successfully created
                 let unlocked_static_details = fail!(from self, when static_config.unlock(serialized_service_config.as_slice()),
@@ -708,6 +684,34 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 if let Some(service_tag) = service_tag {
                     service_tag.release_ownership();
                 }
+
+                let dyn_conf_creation_args = generate_dynamic_config(&service_config);
+
+                let (node_handle, dynamic_config) = match self
+                    .create_dynamic_config_storage(dyn_conf_creation_args, *self.shared_node.id())
+                {
+                    Ok(dynamic_config) => dynamic_config,
+                    Err(DynamicStorageCreateError::AlreadyExists) => {
+                        fail!(from self, with ServiceCreateError::ServiceInCorruptedState,
+                            "This should never happen! {} since the unique dynamic service management segment already exists.", msg);
+                    }
+                    Err(DynamicStorageCreateError::InsufficientPermissions) => {
+                        fail!(from self, with ServiceCreateError::InsufficientPermissions,
+                            "{msg} since the dynamic service config could not be created due to insufficient permissions.");
+                    }
+                    Err(DynamicStorageCreateError::InitializationFailed) => {
+                        fail!(from self, with ServiceCreateError::InternalFailure,
+                            "{msg} since the dynamic service config initialization failed.");
+                    }
+                    Err(DynamicStorageCreateError::InternalError) => {
+                        fail!(from self, with ServiceCreateError::InternalFailure,
+                            "{} since the dynamic service segment could not be created due to an internal failure.", msg);
+                    }
+                };
+
+                self.shared_node
+                    .registered_services()
+                    .add(service_config.service_hash(), node_handle);
 
                 Ok(service::ServiceState::new(
                     service_config,
@@ -840,9 +844,14 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     fn create_dynamic_config_storage_resource(
         &self,
         args: DynamicConfigCreationArgs,
-    ) -> Result<ServiceType::DynamicStorage<DynamicConfig>, DynamicStorageCreateError> {
+        node_id: UniqueNodeId,
+    ) -> Result<
+        (ContainerHandle, ServiceType::DynamicStorage<DynamicConfig>),
+        DynamicStorageCreateError,
+    > {
         let required_memory_size = DynamicConfig::memory_size(args.max_number_of_nodes);
         let segment_name = dynamic_config_name(self.service_config.unique_service_id());
+        let mut handle = None;
         match <<ServiceType::DynamicStorage<DynamicConfig> as DynamicStorage<
             DynamicConfig,
         >>::Builder<'_> as NamedConceptBuilder<
@@ -851,10 +860,14 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
             .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
             .supplementary_size(args.additional_size + required_memory_size)
             .has_ownership(false)
-            .initializer(|config, allocator| -> bool {Self::config_init_call(config, allocator, &args)})
+            .initializer(|config, allocator| -> bool {
+                Self::config_init_call(config, allocator, &args);
+                handle = Some(unsafe {config.assume_init_ref()}.register_node_id(node_id).unwrap());
+                true
+            })
             .create() {
                 Ok(dynamic_storage) => {
-                   Ok(dynamic_storage)
+                    Ok((handle.unwrap(), dynamic_storage))
                 },
                 Err(e) => {
                     fail!(from self, with e, "Failed to create dynamic storage for service.");
@@ -865,10 +878,14 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     fn create_dynamic_config_storage(
         &self,
         args: DynamicConfigCreationArgs,
-    ) -> Result<ServiceType::DynamicStorage<DynamicConfig>, DynamicStorageCreateError> {
+        node_id: UniqueNodeId,
+    ) -> Result<
+        (ContainerHandle, ServiceType::DynamicStorage<DynamicConfig>),
+        DynamicStorageCreateError,
+    > {
         let msg = "Failed to create dynamic storage for service";
-        match self.create_dynamic_config_storage_resource(args) {
-            Ok(storage) => Ok(storage),
+        match self.create_dynamic_config_storage_resource(args, node_id) {
+            Ok((node_handle, storage)) => Ok((node_handle, storage)),
             Err(DynamicStorageCreateError::AlreadyExists) => {
                 fail!(from self, with DynamicStorageCreateError::AlreadyExists,
                     "{msg} since the dynamic config already exists. This should never happen!");
