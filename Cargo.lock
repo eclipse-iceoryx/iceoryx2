@@ -1562,6 +1562,7 @@ name = "iceoryx2-services-tunnel-testing"
 version = "0.9.999"
 dependencies = [
  "iceoryx2",
+ "iceoryx2-bb-concurrency",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",

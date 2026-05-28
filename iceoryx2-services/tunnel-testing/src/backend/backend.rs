@@ -24,14 +24,8 @@ use crate::backend::{
     session::{self, Session},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Config;
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 #[derive(Debug)]
 pub enum CreationError {

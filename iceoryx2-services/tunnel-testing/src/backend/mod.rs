@@ -13,6 +13,7 @@
 mod session;
 mod settings;
 
+#[allow(clippy::module_inception)]
 mod backend;
 pub use backend::*;
 

@@ -17,13 +17,13 @@
 use alloc::collections::{BTreeMap, BTreeSet, VecDeque};
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use core::cell::RefCell;
 
 use serde::{Deserialize, Serialize};
 
 use iceoryx2::prelude::SemanticStringError;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::static_config::StaticConfig;
+use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_bb_elementary::math::ToB64;
 use iceoryx2_bb_posix::creation_mode::CreationMode;
 use iceoryx2_bb_posix::directory::{
@@ -213,10 +213,10 @@ impl Session {
         sweep_stale_sessions(&sessions_dir, &sessions_dir_path);
 
         // Create directory for this session and its service files
-        let mut session_dir_path = sessions_dir_path.clone();
+        let mut session_dir_path = sessions_dir_path;
         add_to_path(&mut session_dir_path, id.as_bytes()).map_err(CreationError::Path)?;
 
-        let mut services_dir_path = session_dir_path.clone();
+        let mut services_dir_path = session_dir_path;
         add_to_path(&mut services_dir_path, SERVICES_DIR_NAME).map_err(CreationError::Path)?;
         match Directory::create(&services_dir_path, Permission::OWNER_ALL) {
             Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => {}
@@ -451,14 +451,14 @@ impl Session {
             if entry.name().as_bytes() == self.id.as_bytes() {
                 continue;
             }
-            let mut session_dir_path = self.sessions_dir_path.clone();
+            let mut session_dir_path = self.sessions_dir_path;
             if add_to_path(&mut session_dir_path, entry.name().as_bytes()).is_err() {
                 continue;
             }
 
             match classify_session(&session_dir_path) {
                 SessionState::Alive => {
-                    let mut services_path = session_dir_path.clone();
+                    let mut services_path = session_dir_path;
                     if add_to_path(&mut services_path, SERVICES_DIR_NAME).is_err() {
                         continue;
                     }
@@ -607,7 +607,7 @@ fn sweep_stale_sessions(sessions_dir: &Directory, sessions_dir_path: &Path) {
         Err(_) => return,
     };
     for entry in entries {
-        let mut session_dir_path = sessions_dir_path.clone();
+        let mut session_dir_path = *sessions_dir_path;
         if add_to_path(&mut session_dir_path, entry.name().as_bytes()).is_err() {
             continue;
         }

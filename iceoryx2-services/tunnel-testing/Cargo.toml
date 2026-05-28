@@ -16,6 +16,7 @@ workspace = true
 [features]
 default = []
 std = [
+  "iceoryx2-bb-concurrency/std",
   "iceoryx2-bb-elementary/std",
   "iceoryx2-bb-posix/std",
   "iceoryx2-bb-system-types/std",
@@ -28,6 +29,7 @@ std = [
 iceoryx2-services-common = { workspace = true }
 iceoryx2-services-tunnel-backend = { workspace = true }
 iceoryx2 = { workspace = true }
+iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
