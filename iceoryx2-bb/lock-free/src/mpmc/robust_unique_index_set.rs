@@ -343,21 +343,18 @@ impl RobustUniqueIndexSet {
                     Err(_) => continue,
                 }
             }
-            let old_generation_count = current_generation_count;
 
-            current_generation_count = self.generation_counter.load(Ordering::Acquire);
-            if let Err(v) = self.generation_counter.compare_exchange(
+            match self.generation_counter.compare_exchange(
                 current_generation_count,
                 current_generation_count,
                 Ordering::AcqRel,
-                Ordering::Acquire,
+                Ordering::SeqCst,
             ) {
-                current_generation_count = v;
-            }
-
-            if current_generation_count == old_generation_count {
-                fail!(from self, with UniqueIndexSetAcquireFailure::OutOfIndices,
-                    "{msg} since the RobustUniqueIndexSet is out of indices.");
+                Ok(_) => {
+                    fail!(from self, with UniqueIndexSetAcquireFailure::OutOfIndices,
+                        "{msg} since the RobustUniqueIndexSet is out of indices.");
+                }
+                Err(v) => current_generation_count = v,
             }
         }
     }

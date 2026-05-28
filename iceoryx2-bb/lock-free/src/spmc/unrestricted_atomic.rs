@@ -217,18 +217,14 @@ impl UnrestrictedAtomicMgmt {
             /////////////////////////
             // SYNC POINT - read, if the cell was updated in the meantime
             /////////////////////////
-            current_write_cell = self.write_cell.load(Ordering::Acquire);
-            if let Err(v) = self.write_cell.compare_exchange(
-                current_write_cell,
-                current_write_cell,
+            match self.write_cell.compare_exchange(
+                old_write_cell,
+                old_write_cell,
                 Ordering::AcqRel,
                 Ordering::SeqCst,
             ) {
-                current_write_cell = v;
-            }
-
-            if old_write_cell == current_write_cell {
-                break;
+                Ok(_) => break,
+                Err(v) => current_write_cell = v,
             }
         }
     }
