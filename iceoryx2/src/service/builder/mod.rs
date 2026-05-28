@@ -55,6 +55,7 @@ use iceoryx2_cal::named_concept::NamedConceptDoesExistError;
 use iceoryx2_cal::named_concept::NamedConceptMgmt;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::*;
+use iceoryx2_log::debug;
 use iceoryx2_log::fail;
 use iceoryx2_log::warn;
 
@@ -862,12 +863,18 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
             .has_ownership(false)
             .initializer(|config, allocator| -> bool {
                 Self::config_init_call(config, allocator, &args);
-                handle = Some(unsafe {config.assume_init_ref()}.register_node_id(node_id).unwrap());
-                true
+                match unsafe {config.assume_init_ref()}.register_node_id(node_id) {
+                    Ok(h) => { handle = Some(h); true },
+                    Err(e) => {
+                        debug!(from self,
+                            "This should never happen! Failed to register initializer node in freshly created dynamic config. [{e:?}]");
+                        false
+                    }
+                }
             })
             .create() {
                 Ok(dynamic_storage) => {
-                    Ok((handle.unwrap(), dynamic_storage))
+                    Ok((handle.expect("Handle is registered when initialization was successful."), dynamic_storage))
                 },
                 Err(e) => {
                     fail!(from self, with e, "Failed to create dynamic storage for service.");
