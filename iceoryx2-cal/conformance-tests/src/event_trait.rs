@@ -32,6 +32,7 @@ pub mod event_trait {
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_bb_testing_macros::conformance_test;
+    use iceoryx2_cal::event::event_state::{EventActivation, EventState};
     use iceoryx2_cal::event::{EventId, *};
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::testing::*;
@@ -168,66 +169,84 @@ pub mod event_trait {
         });
     }
 
-    //    #[conformance_test]
-    //    pub fn sending_notification_and_timed_wait_works<Sut: Event>() {
-    //        sending_notification_works::<Sut, _>(|sut| sut.timed_wait_one(TIMEOUT));
-    //    }
-    //
-    //    #[conformance_test]
-    //    pub fn sending_notification_and_blocking_wait_works<Sut: Event>() {
-    //        sending_notification_works::<Sut, _>(|sut| sut.blocking_wait_one());
-    //    }
-    //
-    //    fn sending_multiple_notifications_before_wait_works<
-    //        Sut: Event,
-    //        F: Fn(&Sut::Listener) -> Result<Option<TriggerId>, ListenerWaitError>,
-    //    >(
-    //        wait_call: F,
-    //    ) {
-    //        const REPETITIONS: usize = 8;
-    //        let name = generate_file_path().file_name();
-    //        let config = generate_isolated_config::<Sut>();
-    //
-    //        let sut_listener = Sut::ListenerBuilder::new(&name)
-    //            .config(&config)
-    //            .create()
-    //            .unwrap();
-    //        let sut_notifier = Sut::NotifierBuilder::new(&name)
-    //            .config(&config)
-    //            .open()
-    //            .unwrap();
-    //
-    //        for i in 0..REPETITIONS {
-    //            sut_notifier.notify(TriggerId::new(i)).unwrap();
-    //        }
-    //
-    //        let mut ids = BTreeSet::new();
-    //        for _ in 0..REPETITIONS {
-    //            let result = wait_call(&sut_listener).unwrap();
-    //            assert_that!(result, is_some);
-    //            let result = result.unwrap();
-    //            assert_that!(result.as_value(), lt REPETITIONS);
-    //            assert_that!(ids.insert(result), eq true);
-    //        }
-    //    }
-    //
-    //    #[conformance_test]
-    //    pub fn sending_multiple_notifications_before_try_wait_works<Sut: Event>() {
-    //        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| sut.try_wait_one());
-    //    }
-    //
-    //    #[conformance_test]
-    //    pub fn sending_multiple_notifications_before_timed_wait_works<Sut: Event>() {
-    //        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| {
-    //            sut.timed_wait_one(TIMEOUT)
-    //        });
-    //    }
-    //
-    //    #[conformance_test]
-    //    pub fn sending_multiple_notifications_before_blocking_wait_works<Sut: Event>() {
-    //        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| sut.blocking_wait_one());
-    //    }
-    //
+    #[conformance_test]
+    pub fn sending_notification_and_timed_wait_works<Sut: Event<RelocatableBitSet>>() {
+        sending_notification_works::<Sut, _>(|sut| {
+            let mut event_id = None;
+            sut.timed_wait(|id| event_id = Some(id.event_id), TIMEOUT)?;
+            Ok(event_id)
+        });
+    }
+
+    #[conformance_test]
+    pub fn sending_notification_and_blocking_wait_works<Sut: Event<RelocatableBitSet>>() {
+        sending_notification_works::<Sut, _>(|sut| {
+            let mut event_id = None;
+            sut.blocking_wait(|id| event_id = Some(id.event_id))?;
+            Ok(event_id)
+        });
+    }
+
+    fn sending_multiple_notifications_before_wait_works<
+        Sut: Event<RelocatableBitSet>,
+        F: Fn(&Sut::Listener) -> Result<Vec<EventActivation>, ListenerWaitError>,
+    >(
+        wait_call: F,
+    ) {
+        const REPETITIONS: u64 = 8;
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name)
+            .config(&config)
+            .open()
+            .unwrap();
+
+        for i in 0..REPETITIONS {
+            sut_notifier.notify(EventId::new(i)).unwrap();
+        }
+
+        let mut ids = BTreeSet::new();
+        let events = wait_call(&sut_listener).unwrap();
+        for event in events {
+            assert_that!(event.count, eq 1);
+            assert_that!(ids.insert(event.event_id), eq true);
+        }
+    }
+
+    #[conformance_test]
+    pub fn sending_multiple_notifications_before_try_wait_works<Sut: Event<RelocatableBitSet>>() {
+        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| {
+            let mut event_ids = vec![];
+            sut.try_wait(|id| event_ids.push(id))?;
+            Ok(event_ids)
+        });
+    }
+
+    #[conformance_test]
+    pub fn sending_multiple_notifications_before_timed_wait_works<Sut: Event<RelocatableBitSet>>() {
+        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| {
+            let mut event_ids = vec![];
+            sut.timed_wait(|id| event_ids.push(id), TIMEOUT)?;
+            Ok(event_ids)
+        });
+    }
+
+    #[conformance_test]
+    pub fn sending_multiple_notifications_before_blocking_wait_works<
+        Sut: Event<RelocatableBitSet>,
+    >() {
+        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| {
+            let mut event_ids = vec![];
+            sut.blocking_wait(|id| event_ids.push(id))?;
+            Ok(event_ids)
+        });
+    }
+
     //    fn sending_multiple_notifications_from_multiple_sources_before_wait_works<
     //        Sut: Event,
     //        F: Fn(&Sut::Listener) -> Result<Option<TriggerId>, ListenerWaitError>,
