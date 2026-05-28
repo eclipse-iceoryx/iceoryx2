@@ -598,24 +598,17 @@ impl<T: Copy + Debug> Container<T> {
                         );
                     }
 
-                    let old_element_generation_count = current_element_generation_count;
-
                     //////////////////////////////////////
                     // SYNC POINT with reading data values, required when something has changed while reading the memory
                     //////////////////////////////////////
-                    current_element_generation_count =
-                        element_generation_counter.load(Ordering::Acquire);
-                    if let Err(v) = element_generation_counter.compare_exchange(
+                    match element_generation_counter.compare_exchange(
                         current_element_generation_count,
                         current_element_generation_count,
                         Ordering::AcqRel,
                         Ordering::SeqCst,
                     ) {
-                        current_element_generation_count = v;
-                    }
-
-                    if old_element_generation_count == current_element_generation_count {
-                        break;
+                        Ok(_) => break,
+                        Err(v) => current_element_generation_count = v,
                     }
                 }
             }
