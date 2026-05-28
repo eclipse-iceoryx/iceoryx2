@@ -45,7 +45,7 @@
     conflicts when merging.
 -->
 
-* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
+* [#1610](https://github.com/eclipse-iceoryx/iceoryx2/issues/1610) Add `no_std` tests for tunnel
 
 ### New API features
 
