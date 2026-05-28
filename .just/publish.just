@@ -44,6 +44,7 @@ SDK_CRATES_TO_PUBLISH := `echo \
     iceoryx2-cal-conformance-tests      \
     iceoryx2                            \
     iceoryx2-conformance-tests          \
+    iceoryx2-services-common            \
     iceoryx2-services-discovery         \
     iceoryx2-services-tunnel-backend    \
     iceoryx2-services-tunnel            \
@@ -106,6 +107,7 @@ INTEGRATIONS_CRATES_TO_IGNORE := `echo \
     iceoryx2-bb-testing-macros              \
     iceoryx2-cli                            \
     iceoryx2-log                            \
+    iceoryx2-services-common                \
     iceoryx2-services-tunnel                \
     iceoryx2-services-tunnel-backend        \
     iceoryx2-services-tunnel-conformance-tests`

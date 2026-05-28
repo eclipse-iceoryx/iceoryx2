@@ -37,7 +37,7 @@ expect_output_from $id_publisher "Send sample"
 
 #### Test Assertion
 
-expect_output_from $id_iox2_tunnel "Discovered PublishSubscribe"
+expect_output_from $id_iox2_tunnel "Opening mirror"
 expect_output_from $id_iox2_tunnel "Propagated PublishSubscribe"
 
 show_test_passed

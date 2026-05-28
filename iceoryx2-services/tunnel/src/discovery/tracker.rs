@@ -10,19 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::{
-    config::Config,
-    service::{Service, static_config::StaticConfig},
-};
+use alloc::vec::Vec;
+
+use iceoryx2::config::Config;
+use iceoryx2::service::Service;
+use iceoryx2::service::ServiceDetails;
+use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_bb_concurrency::cell::RefCell;
-use iceoryx2_log::{fail, fatal_panic};
-use iceoryx2_services_discovery::service_discovery::Tracker;
-use iceoryx2_services_tunnel_backend::traits::Discovery;
+use iceoryx2_log::fail;
+use iceoryx2_services_common::DiscoveryEvent;
+use iceoryx2_services_discovery::service_discovery::{Tracker, TrackerEvent};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
     TrackerSynchronization,
-    DiscoveryProcessing,
 }
 
 impl core::fmt::Display for DiscoveryError {
@@ -33,70 +34,70 @@ impl core::fmt::Display for DiscoveryError {
 
 impl core::error::Error for DiscoveryError {}
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum AnnouncementError {}
-
-impl core::fmt::Display for AnnouncementError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "AnnouncementError::{self:?}")
-    }
-}
-
-impl core::error::Error for AnnouncementError {}
-
 #[derive(Debug)]
-pub struct DiscoveryTracker<S: Service>(RefCell<Tracker<S>>);
+pub struct DiscoveryTracker<S: Service> {
+    tracker: RefCell<Tracker<S>>,
+}
 
 impl<S: Service> DiscoveryTracker<S> {
     pub fn create(iceoryx_config: &Config) -> Self {
-        let tracker = Tracker::new(iceoryx_config);
-        DiscoveryTracker(RefCell::new(tracker))
-    }
-}
-
-impl<S: Service> Discovery for DiscoveryTracker<S> {
-    type DiscoveryError = DiscoveryError;
-    type AnnouncementError = AnnouncementError;
-
-    fn announce(
-        &self,
-        _static_config: &iceoryx2::service::static_config::StaticConfig,
-    ) -> Result<(), Self::AnnouncementError> {
-        // NOOP - iceoryx2 handles discovery internally
-        Ok(())
+        DiscoveryTracker {
+            tracker: RefCell::new(Tracker::new(iceoryx_config)),
+        }
     }
 
-    fn discover<E: core::error::Error, F: FnMut(&StaticConfig) -> Result<(), E>>(
-        &self,
-        mut process_discovery: F,
-    ) -> Result<(), Self::DiscoveryError> {
-        let tracker = &mut self.0.borrow_mut();
-        let (added, _removed) = fail!(
-            from self,
-            when tracker.sync(),
-            with DiscoveryError::TrackerSynchronization,
-            "Failed to synchronize tracker"
-        );
+    pub fn sync<F>(&self, mut process_discovery: F) -> Result<(), DiscoveryError>
+    where
+        F: FnMut(DiscoveryEvent),
+    {
+        let origin = "DiscoveryTracker::sync";
 
-        for id in added {
-            match &tracker.get(&id) {
-                Some(service_details) => {
-                    fail!(
-                        from self,
-                        when process_discovery(&service_details.static_details),
-                        with DiscoveryError::DiscoveryProcessing,
-                        "Failed to process discovery event"
-                    );
-                }
-                None => {
-                    fatal_panic!(
-                        from "DiscoveryTracker::discover",
-                        "This should never happen. Service discovered by tracker is not retrievable."
-                    )
-                }
-            }
+        // Allocation here is not ideal, especially for embedded, but
+        // side-stepping this adds complexity to the logic to satisfy borrowing
+        // or a bigger refactoring is needed.
+        // Consider refactoring if it becomes an issue.
+        let mut events: Vec<DiscoveryEvent> = Vec::new();
+        {
+            let mut tracker = self.tracker.borrow_mut();
+            fail!(
+                from origin,
+                when tracker.sync(|event| match event {
+                    TrackerEvent::Added(d) => {
+                        events.push(DiscoveryEvent::Added(d.static_details.clone()));
+                    }
+                    TrackerEvent::Removed(d) => {
+                        events.push(DiscoveryEvent::Removed(
+                            *d.static_details.service_hash(),
+                        ));
+                    }
+                }),
+                with DiscoveryError::TrackerSynchronization,
+                "Failed to synchronize tracker"
+            );
+        }
+
+        for event in events {
+            process_discovery(event);
         }
 
         Ok(())
+    }
+
+    /// Drops the cached snapshot for `hash`, allowing a subsequent [`sync`]
+    /// to re-emit `added` if the service is still present in the registry.
+    /// Used by the tunnel after tearing down its ports and relay so a same-hash
+    /// service that is recreated by a user is observed as a fresh addition.
+    ///
+    /// [`sync`]: Self::sync
+    pub fn forget(&self, hash: &ServiceHash) {
+        let mut tracker = self.tracker.borrow_mut();
+        tracker.forget(hash);
+    }
+
+    /// Invokes `f` with the cached snapshot for `hash`, or `None` if the
+    /// service is not currently tracked.
+    pub fn get<R>(&self, hash: &ServiceHash, f: impl FnOnce(Option<&ServiceDetails<S>>) -> R) -> R {
+        let tracker = self.tracker.borrow();
+        f(tracker.get(hash))
     }
 }

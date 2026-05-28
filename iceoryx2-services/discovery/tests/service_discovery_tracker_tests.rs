@@ -14,47 +14,25 @@
 mod service_discovery_tracker {
 
     use iceoryx2::prelude::*;
+    use iceoryx2::service::service_hash::ServiceHash;
     use iceoryx2::testing::*;
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_services_discovery::service_discovery::Tracker;
+    use iceoryx2_services_discovery::service_discovery::{Tracker, TrackerEvent};
 
-    #[test]
-    fn syncs_added_publish_subscribe_services<S: Service>() {
-        const NUMBER_OF_SERVICES_ADDED: usize = 8;
-
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
-
-        let mut sut = Tracker::<S>::new(&config);
-
-        // add a bunch of services
-        let mut services = vec![];
-        for _ in 0..NUMBER_OF_SERVICES_ADDED {
-            let service_name = generate_service_name();
-            let service = node
-                .service_builder(&service_name)
-                .publish_subscribe::<u64>()
-                .create()
-                .unwrap();
-            services.push(service);
-        }
-
-        // verify added services are detected
-        let (added, _) = sut.sync().expect("failed to sync tracker");
-
-        assert_that!(added.len(), eq NUMBER_OF_SERVICES_ADDED);
-        for service in &services {
-            assert_that!(added, contains * service.service_hash());
-        }
-
-        // verify added services are not detected again in subsequent sync
-        let (added, removed) = sut.sync().expect("failed to sync tracker");
-        assert_that!(added.len(), eq 0);
-        assert_that!(removed.len(), eq 0);
+    fn collect_sync<S: Service>(tracker: &mut Tracker<S>) -> (Vec<ServiceHash>, Vec<ServiceHash>) {
+        let mut added: Vec<ServiceHash> = vec![];
+        let mut removed: Vec<ServiceHash> = vec![];
+        tracker
+            .sync(|event| match event {
+                TrackerEvent::Added(d) => added.push(*d.static_details.service_hash()),
+                TrackerEvent::Removed(d) => removed.push(*d.static_details.service_hash()),
+            })
+            .expect("failed to sync tracker");
+        (added, removed)
     }
 
     #[test]
-    fn syncs_removed_publish_subscribe_services<S: Service>() {
+    fn syncs_added_and_removed_publish_subscribe_services<S: Service>() {
         const NUMBER_OF_SERVICES_ADDED: usize = 8;
         const NUMBER_OF_SERVICES_REMOVED: usize = 3;
 
@@ -63,7 +41,7 @@ mod service_discovery_tracker {
 
         let mut sut = Tracker::<S>::new(&config);
 
-        // add a bunch of services
+        // Add a bunch of services.
         let mut services = vec![];
         for _ in 0..NUMBER_OF_SERVICES_ADDED {
             let service_name = generate_service_name();
@@ -75,26 +53,64 @@ mod service_discovery_tracker {
             services.push(service);
         }
 
-        let (added, _) = sut.sync().expect("failed to sync tracker");
+        // Initial sync reports every service as added; nothing removed.
+        let (added, removed) = collect_sync(&mut sut);
         assert_that!(added.len(), eq NUMBER_OF_SERVICES_ADDED);
+        assert_that!(removed.len(), eq 0);
+        for service in &services {
+            assert_that!(added, contains * service.service_hash());
+        }
 
-        // remove some services by dropping them
-        let mut removed_hashs = vec![];
+        // A follow-up sync with no system changes reports nothing.
+        let (added, removed) = collect_sync(&mut sut);
+        assert_that!(added.len(), eq 0);
+        assert_that!(removed.len(), eq 0);
+
+        // Drop a subset; the next sync reports them as removed.
+        let mut dropped_hashes = vec![];
         for _ in 0..NUMBER_OF_SERVICES_REMOVED {
-            let removed = services.pop().unwrap();
-            removed_hashs.push(*removed.service_hash());
-            drop(removed);
+            let service = services.pop().unwrap();
+            dropped_hashes.push(*service.service_hash());
+            drop(service);
         }
-
-        // verify the dropped services are detected as removed
-        let (_, removed) = sut.sync().expect("failed to sync tracker");
+        let (added, removed) = collect_sync(&mut sut);
+        assert_that!(added.len(), eq 0);
         assert_that!(removed.len(), eq NUMBER_OF_SERVICES_REMOVED);
-        for service in removed {
-            assert_that!(
-                removed_hashs,
-                contains * service.static_details.service_hash()
-            );
+        for hash in &removed {
+            assert_that!(dropped_hashes, contains * hash);
         }
+    }
+
+    #[test]
+    fn forgetting_a_service_causes_it_to_reappear_as_added<S: Service>() {
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+
+        let mut sut = Tracker::<S>::new(&config);
+
+        let service = node
+            .service_builder(&generate_service_name())
+            .publish_subscribe::<u64>()
+            .create()
+            .unwrap();
+        let hash = *service.service_hash();
+
+        // Initial sync picks up the service.
+        let (added, removed) = collect_sync(&mut sut);
+        assert_that!(added, contains hash);
+        assert_that!(removed.len(), eq 0);
+
+        // Follow-up sync with no system changes does not re-fire Added.
+        let (added, removed) = collect_sync(&mut sut);
+        assert_that!(added.len(), eq 0);
+        assert_that!(removed.len(), eq 0);
+
+        // Forget drops the cached entry; the service is still present in the
+        // system so the next sync sees it as fresh.
+        sut.forget(&hash);
+        let (added, removed) = collect_sync(&mut sut);
+        assert_that!(added, contains hash);
+        assert_that!(removed.len(), eq 0);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

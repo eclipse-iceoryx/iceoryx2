@@ -37,7 +37,7 @@ expect_output_from $id_notifier "Trigger event"
 
 #### Test Assertion
 
-expect_output_from $id_iox2_tunnel "Discovered Event"
+expect_output_from $id_iox2_tunnel "Opening mirror"
 expect_output_from $id_iox2_tunnel "Propagated Event"
 
 show_test_passed

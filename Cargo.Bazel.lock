@@ -1,5 +1,5 @@
 {
-  "checksum": "dcfd451a2f6af9e25447fab6dedabfb7feebd345964d5e4f75d5c313059f17bb",
+  "checksum": "114634ad2f91451a9aa8bc64f6bea05d64d2d1e7c33c90ccc226c25480ba0da7",
   "crates": {
     "addr2line 0.25.1": {
       "name": "addr2line",
@@ -6426,6 +6426,56 @@
           "common": [
             "default",
             "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2024",
+        "version": "0.9.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-services-common 0.9.999": {
+      "name": "iceoryx2-services-common",
+      "version": "0.9.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_services_common",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_services_common",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "deps": {
+          "common": [
+            {
+              "id": "serde 1.0.228",
+              "target": "serde"
+            }
           ],
           "selects": {}
         },
@@ -16259,6 +16309,7 @@
     "iceoryx2-pal-posix 0.9.999": "iceoryx2-pal/posix",
     "iceoryx2-pal-print 0.9.999": "iceoryx2-pal/print",
     "iceoryx2-pal-testing 0.9.999": "iceoryx2-pal/testing",
+    "iceoryx2-services-common 0.9.999": "iceoryx2-services/common",
     "iceoryx2-services-discovery 0.9.999": "iceoryx2-services/discovery",
     "iceoryx2-services-tunnel 0.9.999": "iceoryx2-services/tunnel",
     "iceoryx2-services-tunnel-backend 0.9.999": "iceoryx2-services/tunnel-backend",
