@@ -123,7 +123,7 @@ pub(crate) mod internal {
 #[repr(C)]
 pub struct State<E: EventState, Mgmt: ZeroCopySend + Send + Sync + Debug> {
     event: E,
-    handle: Mgmt,
+    handle: MaybeUninit<Mgmt>,
     event_id_max: EventId,
     notification_count: AtomicU64,
 }
@@ -518,7 +518,9 @@ impl<
             .open(AccessMode::ReadWrite)
             .unwrap();
 
-        let handle = H::open(&self.config, &storage.get().handle);
+        let handle = H::open(&self.config, unsafe {
+            storage.get().handle.assume_init_ref()
+        });
 
         Ok(Handle {
             storage,
@@ -599,19 +601,21 @@ impl<
             .has_ownership(true)
             .supplementary_size(state_size)
             .initializer(|value, allocator| {
-                unsafe { value.event.init(allocator).unwrap() };
+                value.write(State {
+                    event: unsafe { E::new_uninit((self.event_id_max.as_value() + 1) as usize) },
+                    handle: MaybeUninit::uninit(),
+                    event_id_max: self.event_id_max,
+                    notification_count: AtomicU64::new(0),
+                });
+
+                unsafe { value.assume_init_mut().event.init(allocator).unwrap() };
                 waiter = Some(W::create(&self.config, unsafe {
-                    core::mem::transmute(&mut value.handle)
+                    core::mem::transmute(&mut value.assume_init_mut().handle)
                 }));
 
                 true
             })
-            .create(State {
-                event: unsafe { E::new_uninit((self.event_id_max.as_value() + 1) as usize) },
-                handle: unsafe { MaybeUninit::uninit().assume_init() },
-                event_id_max: self.event_id_max,
-                notification_count: AtomicU64::new(0),
-            })
+            .create()
             .unwrap();
 
         Ok(Waiter {

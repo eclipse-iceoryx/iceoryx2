@@ -23,7 +23,7 @@ impl EventState for RelocatableBitSet {
     fn activate(&self, event_id: EventId) -> Result<(), EventStateActivateError> {
         if self.max_event_id() < event_id {
             fail!(from self, with EventStateActivateError::IdOutOfBounds,
-                "Unable to activate {event_id:?} since it is out of bounds (max = {:?}).", self.max_event_id())
+                "Unable to activate {event_id:?} since it is out of bounds (max = {:?}).", self.max_event_id());
         }
         self.set(event_id.as_value() as usize);
 
