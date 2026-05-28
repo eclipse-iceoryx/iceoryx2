@@ -161,20 +161,20 @@ impl<
         name: &FileName,
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::named_concept::NamedConceptDoesExistError> {
-        Storage::does_exist_cfg(name, &cfg.value)
+        Storage::does_exist_cfg(name, &cfg.to_storage_config())
     }
 
     fn list_cfg(
         cfg: &Self::Configuration,
     ) -> Result<Vec<FileName>, crate::named_concept::NamedConceptListError> {
-        Storage::list_cfg(&cfg.value)
+        Storage::list_cfg(&cfg.to_storage_config())
     }
 
     unsafe fn remove_cfg(
         name: &FileName,
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::named_concept::NamedConceptRemoveError> {
-        unsafe { Storage::remove_cfg(name, &cfg.value) }
+        unsafe { Storage::remove_cfg(name, &cfg.to_storage_config()) }
     }
 
     fn remove_path_hint(
@@ -404,7 +404,7 @@ impl<
     ) -> Result<<EventImpl<E, Mgmt, Storage, H, W> as Event<E>>::Notifier, NotifierOpenError> {
         let storage = Storage::Builder::new(&self.name)
             .config(&self.config.to_storage_config())
-            .has_ownership(true)
+            .has_ownership(false)
             .open(AccessMode::ReadWrite)
             .unwrap();
 

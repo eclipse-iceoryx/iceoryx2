@@ -56,37 +56,37 @@ pub mod event_trait {
         assert_that!(*sut_notifier.name(), eq name);
     }
 
-    //    #[conformance_test]
-    //    pub fn listener_cleans_up_when_out_of_scope<Sut: Event>() {
-    //        let name = generate_file_path().file_name();
-    //        let config = generate_isolated_config::<Sut>();
-    //
-    //        assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq false);
-    //        let sut_listener = Sut::ListenerBuilder::new(&name)
-    //            .config(&config)
-    //            .create()
-    //            .unwrap();
-    //        assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq true);
-    //
-    //        drop(sut_listener);
-    //        assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq false);
-    //    }
-    //
-    //    #[conformance_test]
-    //    pub fn cannot_be_created_twice<Sut: Event>() {
-    //        let name = generate_file_path().file_name();
-    //        let config = generate_isolated_config::<Sut>();
-    //
-    //        let _sut = Sut::ListenerBuilder::new(&name)
-    //            .config(&config)
-    //            .create()
-    //            .unwrap();
-    //        let sut = Sut::ListenerBuilder::new(&name).config(&config).create();
-    //
-    //        assert_that!(sut, is_err);
-    //        assert_that!(sut.err().unwrap(), eq ListenerCreateError::AlreadyExists);
-    //    }
-    //
+    #[conformance_test]
+    pub fn listener_cleans_up_when_out_of_scope<Sut: Event<RelocatableBitSet>>() {
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq false);
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
+        assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq true);
+
+        drop(sut_listener);
+        assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq false);
+    }
+
+    // #[conformance_test]
+    // pub fn cannot_be_created_twice<Sut: Event<RelocatableBitSet>>() {
+    //     let name = generate_file_path().file_name();
+    //     let config = generate_isolated_config::<Sut>();
+
+    //     let _sut = Sut::ListenerBuilder::new(&name)
+    //         .config(&config)
+    //         .create()
+    //         .unwrap();
+    //     let sut = Sut::ListenerBuilder::new(&name).config(&config).create();
+
+    //     assert_that!(sut, is_err);
+    //     assert_that!(sut.err().unwrap(), eq ListenerCreateError::AlreadyExists);
+    // }
+
     //    #[conformance_test]
     //    pub fn cannot_open_non_existing<Sut: Event>() {
     //        let name = generate_file_path().file_name();
