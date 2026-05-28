@@ -495,10 +495,9 @@ impl<T: Copy + Debug> Container<T> {
                     };
 
                     let old_gen_count = current_gen_count;
-                    current_gen_count = element_generation_counter.load(Ordering::Acquire);
                     if let Err(v) = element_generation_counter.compare_exchange(
-                        current_gen_count,
-                        current_gen_count,
+                        old_gen_count,
+                        old_gen_count,
                         Ordering::AcqRel,
                         Ordering::Acquire,
                     ) {
