@@ -38,7 +38,7 @@ pub struct EventActivation {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EventStateActivateError {
-    IdOutOfBounds,
+    EventIdOutOfBounds,
 }
 
 impl core::fmt::Display for EventStateActivateError {

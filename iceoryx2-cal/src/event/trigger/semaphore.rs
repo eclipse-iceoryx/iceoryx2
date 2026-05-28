@@ -13,7 +13,7 @@
 use core::fmt::Debug;
 use core::marker::PhantomData;
 
-use crate::dynamic_storage::DynamicStorageBuilder;
+use crate::dynamic_storage::{self, DynamicStorageBuilder};
 use crate::event::event_state::{EventActivation, EventId};
 use crate::event::trigger::{Trigger, TriggerNotifyError, TriggerWaitError};
 use crate::{
@@ -35,6 +35,7 @@ use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::{
     testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
 };
+use iceoryx2_bb_lock_free::mpmc::bit_set::RelocatableBitSet;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_posix::mutex::IpcCapable;
 use iceoryx2_bb_posix::semaphore::{
@@ -609,9 +610,10 @@ impl<
                 });
 
                 unsafe { value.assume_init_mut().event.init(allocator).unwrap() };
-                waiter = Some(W::create(&self.config, unsafe {
-                    core::mem::transmute(&mut value.assume_init_mut().handle)
-                }));
+                waiter = Some(W::create(
+                    &self.config,
+                    &mut unsafe { value.assume_init_mut() }.handle,
+                ));
 
                 true
             })
@@ -631,12 +633,12 @@ impl<
 
 #[derive(Debug, ZeroCopySend)]
 #[repr(C)]
-struct SemaphoreMgmt {
+pub struct SemaphoreMgmt {
     handle: UnnamedSemaphoreHandle,
 }
 
 #[derive(Debug)]
-struct SemaphoreHandle<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> {
+pub struct SemaphoreHandle<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> {
     semaphore: UnnamedSemaphore<'static>,
     _data_1: PhantomData<E>,
     _data_2: PhantomData<Storage>,
@@ -663,7 +665,10 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
     fn open(_config: &Configuration<E, SemaphoreMgmt, Storage>, mgmt: &SemaphoreMgmt) -> Self {
         Self {
             semaphore: unsafe {
-                UnnamedSemaphore::from_ipc_handle(core::mem::transmute(&mgmt.handle))
+                UnnamedSemaphore::from_ipc_handle(core::mem::transmute::<
+                    &UnnamedSemaphoreHandle,
+                    &'static UnnamedSemaphoreHandle,
+                >(&mgmt.handle))
             },
             _data_1: PhantomData,
             _data_2: PhantomData,
@@ -677,7 +682,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
 }
 
 #[derive(Debug)]
-struct SemaphoreWaiter<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> {
+pub struct SemaphoreWaiter<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> {
     semaphore_mgmt: *mut SemaphoreMgmt,
     semaphore: UnnamedSemaphore<'static>,
     _data_1: PhantomData<E>,
@@ -750,3 +755,12 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
         Ok(())
     }
 }
+
+#[allow(type_alias_bounds)] // they are not enforced, but we keep them to communicate the contract
+pub type GenericSemaphoreTrigger<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> =
+    TriggerImpl<E, SemaphoreMgmt, Storage, SemaphoreHandle<E, Storage>, SemaphoreWaiter<E, Storage>>;
+
+pub type SemaphoreShmBitSet = GenericSemaphoreTrigger<
+    RelocatableBitSet,
+    dynamic_storage::posix_shared_memory::Storage<State<RelocatableBitSet, SemaphoreMgmt>>,
+>;

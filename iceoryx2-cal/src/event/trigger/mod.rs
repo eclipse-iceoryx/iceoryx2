@@ -55,7 +55,9 @@ impl core::fmt::Display for TriggerWaitError {
 impl core::error::Error for TriggerWaitError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TriggerNotifyError {}
+pub enum TriggerNotifyError {
+    EventIdOutOfBounds,
+}
 
 impl core::fmt::Display for TriggerNotifyError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -67,7 +69,9 @@ impl core::error::Error for TriggerNotifyError {}
 
 impl From<EventStateActivateError> for TriggerNotifyError {
     fn from(value: EventStateActivateError) -> Self {
-        todo!()
+        match value {
+            EventStateActivateError::EventIdOutOfBounds => TriggerNotifyError::EventIdOutOfBounds,
+        }
     }
 }
 
