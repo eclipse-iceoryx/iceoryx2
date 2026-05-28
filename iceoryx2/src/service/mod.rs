@@ -795,12 +795,29 @@ pub mod internal {
                 format!("Service::remove_node_from_service({node_id:?}, {service_hash:?})");
             let msg = "Unable to remove node from service";
 
+            let remove_service_tag = || match remove_service_tag::<S>(node_id, service_hash, config)
+            {
+                Ok(()) | Err(ServiceRemoveTagError::AlreadyRemoved) => Ok(()),
+                Err(ServiceRemoveTagError::InsufficientPermissions) => {
+                    fail!(from origin, with ServiceRemoveNodeError::InsufficientPermissions,
+                        "{msg} since the service tag could not be removed due to insufficient permissions.");
+                }
+                Err(ServiceRemoveTagError::Interrupt) => {
+                    fail!(from origin, with ServiceRemoveNodeError::Interrupt,
+                        "{msg} since the service tag could not be removed since an interrupt signal was raised.");
+                }
+                Err(ServiceRemoveTagError::InternalError) => {
+                    fail!(from origin, with ServiceRemoveNodeError::InternalError,
+                        "{msg} since the service tag could not be removed due to an internal error.");
+                }
+            };
+
             let static_config = match read_static_service_config::<S>(config, service_hash) {
                 Ok(Some(config)) => config,
                 Ok(None) => {
                     warn!(from origin, "Trying to remove node {} from non-existing service {}",
                         node_id, service_hash);
-                    return Ok(());
+                    return remove_service_tag();
                 }
                 Err(e) => {
                     fail!(from origin, with ServiceRemoveNodeError::InternalError,
@@ -823,7 +840,9 @@ pub mod internal {
                             config,
                         )
                     } {
-                        Ok(()) => return Ok(()),
+                        Ok(()) => {
+                            return remove_service_tag();
+                        }
                         Err(e) => {
                             fail!(from origin, with e.into(),
                                     "{msg} since the corrupted service could not be removed. [{e:?}]");
@@ -929,21 +948,7 @@ pub mod internal {
                 send_dead_node_signal::<S>(service_hash, config);
             }
 
-            match remove_service_tag::<S>(node_id, service_hash, config) {
-                Ok(()) | Err(ServiceRemoveTagError::AlreadyRemoved) => Ok(()),
-                Err(ServiceRemoveTagError::InsufficientPermissions) => {
-                    fail!(from origin, with ServiceRemoveNodeError::InsufficientPermissions,
-                        "{msg} since the service tag could not be removed due to insufficient permissions.");
-                }
-                Err(ServiceRemoveTagError::Interrupt) => {
-                    fail!(from origin, with ServiceRemoveNodeError::Interrupt,
-                        "{msg} since the service tag could not be removed since an interrupt signal was raised.");
-                }
-                Err(ServiceRemoveTagError::InternalError) => {
-                    fail!(from origin, with ServiceRemoveNodeError::InternalError,
-                        "{msg} since the service tag could not be removed due to an internal error.");
-                }
-            }
+            remove_service_tag()
         }
     }
 }
