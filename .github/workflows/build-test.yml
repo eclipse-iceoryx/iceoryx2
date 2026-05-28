@@ -439,15 +439,29 @@ jobs:
       - name: Set up Bazel
         uses: bazel-contrib/setup-bazel@43d7d5ceab59a307da44fc7585faa2a2fff4f88d # version: 0.16.0
 
-      - name: Run bazel build
+      - name: Run Bazel build
         env:
           USE_BAZEL_VERSION: ${{matrix.bazel-version}}
-        run: bazel build //...
+        run: bazel build //... --verbose_failures
 
-      - name: Run bazel test
+      - name: Run Bazel test
         env:
           USE_BAZEL_VERSION: ${{matrix.bazel-version}}
-        run: bazel test //...
+        run: bazel test //... --verbose_failures
+
+      - name: Run Bazel query
+        env:
+          USE_BAZEL_VERSION: ${{matrix.bazel-version}}
+        run: bazel query 'deps(//examples/rust/publish_subscribe:publisher)' --output package
+
+      - name: Build example workspace
+        env:
+          USE_BAZEL_VERSION: ${{matrix.bazel-version}}
+        run: |
+          bazel clean
+          cd examples/bazel
+          bazel build //... --verbose_failures
+
 
   cxx-vocabulary-types:
     needs: [preflight-check]
