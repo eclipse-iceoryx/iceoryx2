@@ -180,13 +180,18 @@ impl CommunicationChannelCreator<u64, Channel> for Creator {
             .supplementary_size(SafelyOverflowingIndexQueue::const_memory_size(
                 self.buffer_size,
             ))
-            .initializer(|mgmt, allocator| unsafe { mgmt.index_queue.init(allocator).is_ok() })
-            .create(Management {
-                enable_safe_overflow: self.enable_safe_overflow,
-                index_queue: unsafe {
-                    RelocatableSafelyOverflowingIndexQueue::new_uninit(self.buffer_size)
-                },
-            }) {
+            .initializer(|mgmt, allocator| unsafe {
+                mgmt.write(Management {
+                    index_queue: RelocatableSafelyOverflowingIndexQueue::new_uninit(
+                        self.buffer_size,
+                    ),
+                    enable_safe_overflow: self.enable_safe_overflow,
+                });
+
+                mgmt.assume_init_mut().index_queue.init(allocator).is_ok()
+            })
+            .create()
+        {
             Ok(s) => s,
             Err(DynamicStorageCreateError::AlreadyExists) => {
                 fail!(from self, with CommunicationChannelCreateError::AlreadyExists,

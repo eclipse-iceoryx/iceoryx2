@@ -39,7 +39,12 @@
 //! fn process_one<Storage: DynamicStorage<AtomicU64>>() {
 //!     let storage_name = FileName::new(b"myStorageName").unwrap();
 //!     let mut storage = Storage::Builder::new(&storage_name)
-//!                         .create(AtomicU64::new(873)).unwrap();
+//!                         .initializer(|value, _| {
+//!                             value.write(AtomicU64::new(873));
+//!                             true
+//!                         })
+//!                         .create()
+//!                         .unwrap();
 //!
 //!     println!("Created storage {}", storage.name());
 //!     storage.get().store(991, Ordering::Relaxed);
@@ -55,7 +60,7 @@
 //! }
 //! ```
 
-use core::{fmt::Debug, time::Duration};
+use core::{fmt::Debug, mem::MaybeUninit, time::Duration};
 
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::{
@@ -70,7 +75,7 @@ use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConcep
 
 tiny_fn! {
     /// The callback called to initialize the data inside the [`DynamicStorage`]
-    pub struct Initializer<T> = FnMut(value: &mut T, allocator: &mut BumpAllocator) -> bool;
+    pub struct Initializer<T> = FnMut(value: &mut MaybeUninit<T>, allocator: &mut BumpAllocator) -> bool;
 }
 
 impl<T> Debug for Initializer<'_, T> {
@@ -150,13 +155,15 @@ pub trait DynamicStorageBuilder<'builder, T: Send + Sync + ZeroCopySend, D: Dyna
     /// with a mutable reference to the new value and a mutable reference to a bump allocator
     /// which provides access to the supplementary memory. If the initialization failed it
     /// shall return false, otherwise true.
-    fn initializer<F: FnMut(&mut T, &mut BumpAllocator) -> bool + 'builder>(self, value: F)
-    -> Self;
+    fn initializer<F: FnMut(&mut MaybeUninit<T>, &mut BumpAllocator) -> bool + 'builder>(
+        self,
+        value: F,
+    ) -> Self;
 
     /// Creates a new [`DynamicStorage`]. The returned object has the ownership of the
     /// [`DynamicStorage`] and when it goes out of scope the underlying resources shall be
     /// removed without corrupting already opened [`DynamicStorage`]s.
-    fn create(self, initial_value: T) -> Result<D, DynamicStorageCreateError>;
+    fn create(self) -> Result<D, DynamicStorageCreateError>;
 
     /// Opens a [`DynamicStorage`]. The implementation must ensure that a [`DynamicStorage`]
     /// which is in the midst of creation cannot be opened. If the [`DynamicStorage`] does not
@@ -164,7 +171,7 @@ pub trait DynamicStorageBuilder<'builder, T: Send + Sync + ZeroCopySend, D: Dyna
     fn open(self, access_mode: AccessMode) -> Result<D, DynamicStorageOpenError>;
 
     /// Opens the [`DynamicStorage`] if it exists, otherwise it creates it.
-    fn open_or_create(self, initial_value: T) -> Result<D, DynamicStorageOpenOrCreateError>;
+    fn open_or_create(self) -> Result<D, DynamicStorageOpenOrCreateError>;
 }
 
 /// Is being built by the [`DynamicStorageBuilder`]. The [`DynamicStorage`] trait shall provide

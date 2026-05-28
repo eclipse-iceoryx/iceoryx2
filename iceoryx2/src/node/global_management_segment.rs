@@ -45,7 +45,8 @@ impl<S: Service> GlobalManagementSegment<S> {
         .has_ownership(false)
         .config(&config)
         .timeout(global_config.global.creation_timeout)
-        .open_or_create(State::default())
+        .initializer(|_, _| true)
+        .open_or_create()
         {
             Ok(storage) => storage,
             Err(e) => {

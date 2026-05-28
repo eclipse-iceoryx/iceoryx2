@@ -29,6 +29,7 @@ pub mod blackboard;
 use core::fmt::Debug;
 use core::hash::Hash;
 use core::marker::PhantomData;
+use core::mem::MaybeUninit;
 
 use alloc::format;
 use alloc::string::String;
@@ -823,8 +824,16 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         }
     }
 
-    fn config_init_call(config: &mut DynamicConfig, allocator: &mut BumpAllocator) -> bool {
-        unsafe { config.init(allocator) };
+    fn config_init_call(
+        config: &mut MaybeUninit<DynamicConfig>,
+        allocator: &mut BumpAllocator,
+        args: &DynamicConfigCreationArgs,
+    ) -> bool {
+        config.write(DynamicConfig::new_uninit(
+            super::dynamic_config::MessagingPattern::new(&args.messaging_pattern_settings),
+            args.max_number_of_nodes,
+        ));
+        unsafe { config.assume_init_mut().init(allocator) };
         true
     }
 
@@ -842,8 +851,8 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
             .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
             .supplementary_size(args.additional_size + required_memory_size)
             .has_ownership(false)
-            .initializer(Self::config_init_call)
-            .create(DynamicConfig::new_uninit(super::dynamic_config::MessagingPattern::new(&args.messaging_pattern_settings), args.max_number_of_nodes) ) {
+            .initializer(|config, allocator| -> bool {Self::config_init_call(config, allocator, &args)})
+            .create() {
                 Ok(dynamic_storage) => {
                    Ok(dynamic_storage)
                 },

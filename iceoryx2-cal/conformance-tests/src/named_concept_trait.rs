@@ -71,7 +71,8 @@ impl<T: DynamicStorage<u64>> NamedConceptTest for DynamicStorageTest<T> {
         let sut = <Self::Sut as DynamicStorage<u64>>::Builder::new(name)
             .config(config)
             .has_ownership(true)
-            .create(123)?;
+            .initializer(|_, _| true)
+            .create()?;
 
         Ok(Box::new(sut))
     }

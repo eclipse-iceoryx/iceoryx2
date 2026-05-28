@@ -17,6 +17,7 @@ pub use core::ops::Deref;
 
 use core::fmt::Debug;
 use core::marker::PhantomData;
+use core::mem::MaybeUninit;
 use core::ptr::NonNull;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 
@@ -97,8 +98,7 @@ impl<T: Send + Sync + Debug + ZeroCopySend> Clone for Configuration<T> {
 #[repr(C)]
 struct Data<T: Send + Sync + Debug + ZeroCopySend> {
     version: AtomicU64,
-    call_drop_on_destruction: bool,
-    data: T,
+    data: MaybeUninit<T>,
 }
 
 impl<T: Send + Sync + Debug + ZeroCopySend> Default for Configuration<T> {
@@ -164,7 +164,7 @@ impl<T: Send + Sync + Debug + ZeroCopySend> NamedConceptBuilder<Storage<T>> for 
             supplementary_size: 0,
             config: Configuration::default(),
             timeout: Duration::ZERO,
-            initializer: Initializer::new(|_, _| true),
+            initializer: Initializer::new(|_, _| false),
             _phantom_data: PhantomData,
         }
     }
@@ -356,14 +356,13 @@ impl<T: Send + Sync + Debug + ZeroCopySend> Builder<'_, T> {
     fn init_impl(
         &mut self,
         mut storage: Storage<T>,
-        initial_value: T,
     ) -> Result<Storage<T>, DynamicStorageCreateError> {
         let msg = "Failed to init dynamic_storage::file::DynamicStorage";
         let value = storage.memory_mapping.base_address_mut() as *mut Data<T>;
         let version_ptr = unsafe { core::ptr::addr_of_mut!((*value).version) };
         unsafe { version_ptr.write(AtomicU64::new(0)) };
 
-        unsafe { core::ptr::addr_of_mut!((*value).data).write(initial_value) };
+        unsafe { core::ptr::addr_of_mut!((*value).data).write(MaybeUninit::uninit()) };
 
         let supplementary_start = (storage.memory_mapping.base_address() as usize
             + core::mem::size_of::<Data<T>>()) as *mut u8;
@@ -412,7 +411,7 @@ impl<'builder, T: Send + Sync + Debug + ZeroCopySend> DynamicStorageBuilder<'bui
         self
     }
 
-    fn initializer<F: FnMut(&mut T, &mut BumpAllocator) -> bool + 'builder>(
+    fn initializer<F: FnMut(&mut MaybeUninit<T>, &mut BumpAllocator) -> bool + 'builder>(
         mut self,
         value: F,
     ) -> Self {
@@ -430,25 +429,22 @@ impl<'builder, T: Send + Sync + Debug + ZeroCopySend> DynamicStorageBuilder<'bui
         self
     }
 
-    fn create(mut self, initial_value: T) -> Result<Storage<T>, DynamicStorageCreateError> {
+    fn create(mut self) -> Result<Storage<T>, DynamicStorageCreateError> {
         let shm = self.create_impl()?;
-        self.init_impl(shm, initial_value)
+        self.init_impl(shm)
     }
 
     fn open(self, access_mode: AccessMode) -> Result<Storage<T>, DynamicStorageOpenError> {
         self.open_impl(access_mode)
     }
 
-    fn open_or_create(
-        mut self,
-        initial_value: T,
-    ) -> Result<Storage<T>, DynamicStorageOpenOrCreateError> {
+    fn open_or_create(mut self) -> Result<Storage<T>, DynamicStorageOpenOrCreateError> {
         loop {
             match self.open_impl(AccessMode::ReadWrite) {
                 Ok(storage) => return Ok(storage),
                 Err(DynamicStorageOpenError::DoesNotExist) => match self.create_impl() {
                     Ok(shm) => {
-                        return Ok(self.init_impl(shm, initial_value)?);
+                        return Ok(self.init_impl(shm)?);
                     }
                     Err(DynamicStorageCreateError::AlreadyExists) => continue,
                     Err(e) => return Err(e.into()),
@@ -485,11 +481,9 @@ impl<T: Debug + Send + Sync + ZeroCopySend> Abandonable for Storage<T> {
 impl<T: Debug + Send + Sync + ZeroCopySend> Drop for Storage<T> {
     fn drop(&mut self) {
         if self.file.has_ownership() {
-            let data = unsafe { &mut (*(self.memory_mapping.base_address_mut() as *mut Data<T>)) };
-            if data.call_drop_on_destruction {
-                let user_type = &mut data.data;
-                unsafe { core::ptr::drop_in_place(user_type) };
-            }
+            let user_type =
+                unsafe { &mut (*(self.memory_mapping.base_address_mut() as *mut Data<T>)).data };
+            unsafe { core::ptr::drop_in_place(user_type) };
         }
     }
 }
@@ -600,7 +594,11 @@ impl<T: Send + Sync + Debug + ZeroCopySend> DynamicStorage<T> for Storage<T> {
     }
 
     fn get(&self) -> &T {
-        unsafe { &(*(self.memory_mapping.base_address() as *const Data<T>)).data }
+        unsafe {
+            (*(self.memory_mapping.base_address() as *const Data<T>))
+                .data
+                .assume_init_ref()
+        }
     }
 
     fn has_ownership(&self) -> bool {

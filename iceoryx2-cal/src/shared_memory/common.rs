@@ -174,7 +174,8 @@ pub mod details {
         fn initialize(
             &self,
             allocator_config: &Allocator::Configuration,
-            details: &mut AllocatorDetails<Allocator>,
+            allocator_mgmt_size: usize,
+            details: &mut MaybeUninit<AllocatorDetails<Allocator>>,
             init_allocator: &mut BumpAllocator,
         ) -> bool {
             let msg = "Unable to initialize shared memory";
@@ -187,6 +188,15 @@ pub mod details {
                     return false;
                 }
             };
+
+            details.write(AllocatorDetails {
+                allocator_id: Allocator::unique_id(),
+                allocator: MaybeUninit::uninit(),
+                mgmt_size: allocator_mgmt_size,
+                payload_size: self.size,
+                payload_start_offset: 0,
+            });
+            let details = unsafe { details.assume_init_mut() };
 
             details.payload_start_offset = (memory.as_ptr() as *const u8) as usize
                 - (details as *const AllocatorDetails<Allocator>) as usize;
@@ -241,15 +251,15 @@ pub mod details {
                 .supplementary_size(self.size + allocator_mgmt_size)
                 .has_ownership(self.has_ownership)
                 .initializer(|details, init_allocator| -> bool {
-                    self.initialize(allocator_config, details, init_allocator)
+                    self.initialize(
+                        allocator_config,
+                        allocator_mgmt_size,
+                        details,
+                        init_allocator,
+                    )
                 })
-                .create(AllocatorDetails {
-                    allocator_id: Allocator::unique_id(),
-                    allocator: MaybeUninit::uninit(),
-                    mgmt_size: allocator_mgmt_size,
-                    payload_size: self.size,
-                    payload_start_offset: 0,
-                }) {
+                .create()
+            {
                 Ok(s) => s,
                 Err(DynamicStorageCreateError::AlreadyExists) => {
                     fail!(from self, with SharedMemoryCreateError::AlreadyExists,
