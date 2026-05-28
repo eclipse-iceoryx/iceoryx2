@@ -443,17 +443,14 @@ pub struct ServiceDetails<S: Service> {
 /// Represents the [`Service`]s state.
 #[derive(Debug)]
 pub struct ServiceState<S: Service, R: ServiceResource> {
-    // For this struct it is important to know that Rust drops fields of a struct in declaration
-    // order - not in memory order!
-
-    // must be destructed first, otherwise other processes might try connect to the service and
-    // find a half destructed service and identify it as corrupted
-    pub(crate) static_storage: S::StaticStorage,
-
     pub(crate) dynamic_storage: S::DynamicStorage<DynamicConfig>,
     pub(crate) additional_resource: R,
     pub(crate) static_config: StaticConfig,
     pub(crate) shared_node: SharedNode<S>,
+
+    // IMPORTANT: The static service config must be removed last since it contains the details about all
+    // other resources that also have to be removed. If this is removed earlier, those resources are leaked.
+    pub(crate) static_storage: S::StaticStorage,
 }
 
 impl<S: Service, R: ServiceResource> Abandonable for ServiceState<S, R> {
@@ -707,29 +704,6 @@ pub mod internal {
             let origin = "Service::remove()";
             let msg = "Unable to remove all service resources";
 
-            match unsafe {
-                // IMPORTANT: The static service config must be removed first. If it cannot be
-                // removed, the process may lack sufficient permissions and should not remove
-                // any other resources.
-                remove_static_service_config::<S>(config, service_hash)
-            } {
-                Ok(_) => {
-                    trace!(from origin, "Remove unused service.");
-                }
-                Err(NamedConceptRemoveError::InsufficientPermissions) => {
-                    fail!(from origin, with ServiceRemoveError::InsufficientPermissions,
-                        "{msg} for {service_hash} due to insufficient permissions.");
-                }
-                Err(NamedConceptRemoveError::InternalError) => {
-                    fail!(from origin, with ServiceRemoveError::InternalError,
-                        "{msg} for {service_hash} due to an internal error.");
-                }
-                Err(NamedConceptRemoveError::Interrupt) => {
-                    fail!(from origin, with ServiceRemoveError::Interrupt,
-                        "{msg} for {service_hash} since an interrupt signal was received.");
-                }
-            }
-
             // check if service was a blackboard service to remove its additional resources
             let blackboard_name = crate::service::naming_scheme::blackboard_name(unique_service_id);
             let blackboard_payload_config =
@@ -779,6 +753,28 @@ pub mod internal {
                 Err(NamedConceptRemoveError::InternalError) => {
                     fail!(from origin, with ServiceRemoveError::InsufficientPermissions,
                         "{msg} for {service_hash} since the dynamic config could not be removed due to an internal error.");
+                }
+            }
+
+            match unsafe {
+                // IMPORTANT: The static service config must be removed last since it contains the details about all
+                // other resources that also have to be removed. If this is removed earlier, those resources are leaked.
+                remove_static_service_config::<S>(config, service_hash)
+            } {
+                Ok(_) => {
+                    trace!(from origin, "Remove unused service.");
+                }
+                Err(NamedConceptRemoveError::InsufficientPermissions) => {
+                    fail!(from origin, with ServiceRemoveError::InsufficientPermissions,
+                        "{msg} for {service_hash} due to insufficient permissions.");
+                }
+                Err(NamedConceptRemoveError::InternalError) => {
+                    fail!(from origin, with ServiceRemoveError::InternalError,
+                        "{msg} for {service_hash} due to an internal error.");
+                }
+                Err(NamedConceptRemoveError::Interrupt) => {
+                    fail!(from origin, with ServiceRemoveError::Interrupt,
+                        "{msg} for {service_hash} since an interrupt signal was received.");
                 }
             }
 
