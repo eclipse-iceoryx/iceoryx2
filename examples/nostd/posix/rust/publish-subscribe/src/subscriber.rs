@@ -27,7 +27,10 @@ const CYCLE_TIME: Duration = Duration::from_secs(1);
 
 #[unsafe(no_mangle)]
 extern "C" fn main() -> i32 {
-    let node = match NodeBuilder::new().create::<ipc::Service>() {
+    let node = match NodeBuilder::new()
+        .config(Config::default())
+        .create::<ipc::Service>()
+    {
         Ok(node) => node,
         Err(e) => {
             coutln!("Failed to create node: {:?}", e);
