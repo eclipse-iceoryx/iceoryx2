@@ -189,6 +189,10 @@ impl ServiceBuilderBlackboardCreator {
             Layout::from_size_align_unchecked(value_details.0.size(), value_details.0.alignment())
         };
         let value_buffer = unsafe { std::alloc::alloc(value_layout) };
+        if value_buffer.is_null() {
+            panic!("out-of-memory in blackboard add operation");
+        }
+
         unsafe { copy_nonoverlapping(value as *const u8, value_buffer, value_details.0.size()) };
         match &mut *self.value.lock() {
             ServiceBuilderBlackboardCreatorType::Ipc(v) => {
