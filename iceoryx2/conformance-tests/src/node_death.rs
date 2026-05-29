@@ -12,6 +12,7 @@
 
 extern crate alloc;
 
+use core::marker::PhantomData;
 use core::time::Duration;
 
 use alloc::string::ToString;
@@ -20,7 +21,6 @@ use alloc::vec::Vec;
 use iceoryx2::config::Config;
 use iceoryx2::node::{CleanupState, NodeState};
 use iceoryx2::prelude::*;
-use iceoryx2::service::Service;
 use iceoryx2::testing::*;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -29,22 +29,48 @@ use iceoryx2_bb_testing_macros::conformance_test;
 use iceoryx2_bb_testing_macros::conformance_tests;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
-pub trait Test {
-    type Service: Service;
+pub struct Test<Service: iceoryx2::service::Service> {
+    config: Config,
+    _watchdog: Watchdog,
+    _data: PhantomData<Service>,
+}
 
-    fn new() -> Self;
+impl<Service: iceoryx2::service::Service> Drop for Test<Service> {
+    fn drop(&mut self) {
+        Self::cleanup_dead_nodes(&self.config);
+    }
+}
 
-    fn config(&self) -> &Config;
+impl<Service: iceoryx2::service::Service> Test<Service> {
+    fn new() -> Self {
+        let _watchdog = Watchdog::new();
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+        config.global.node.cleanup_dead_nodes_on_destruction = false;
+        config.global.service.cleanup_dead_nodes_on_open = false;
 
-    fn config_mut(&mut self) -> &mut Config;
+        Self {
+            config,
+            _watchdog,
+            _data: PhantomData,
+        }
+    }
 
-    fn leak_contents<T: Abandonable>(mut contents: Vec<T>) {
+    fn config(&self) -> &Config {
+        &self.config
+    }
+
+    fn config_mut(&mut self) -> &mut Config {
+        &mut self.config
+    }
+
+    fn abandon_contents<T: Abandonable>(&self, mut contents: Vec<T>) {
         while let Some(element) = contents.pop() {
             T::abandon(element);
         }
     }
 
-    fn leak<T: Abandonable>(thing: T) {
+    fn abandon<T: Abandonable>(&self, thing: T) {
         T::abandon(thing);
     }
 
@@ -52,10 +78,10 @@ pub trait Test {
         NodeName::new(&(prefix.to_string() + &i.to_string())).unwrap()
     }
 
-    fn create_good_node(&self) -> Node<Self::Service> {
+    fn create_good_node(&self) -> Node<Service> {
         NodeBuilder::new()
             .config(self.config())
-            .create::<Self::Service>()
+            .create::<Service>()
             .unwrap()
     }
 
@@ -63,9 +89,9 @@ pub trait Test {
         self.list_nodes().len()
     }
 
-    fn list_nodes(&self) -> Vec<NodeState<Self::Service>> {
+    fn list_nodes(&self) -> Vec<NodeState<Service>> {
         let mut node_list = vec![];
-        Node::<Self::Service>::list(self.config(), |node_state| {
+        Node::<Service>::list(self.config(), |node_state| {
             node_list.push(node_state);
             CallbackProgression::Continue
         })
@@ -74,7 +100,7 @@ pub trait Test {
         node_list
     }
 
-    fn create_bad_node(&self) -> Node<Self::Service> {
+    fn create_bad_node(&self) -> Node<Service> {
         let node_name = Self::generate_node_name(0, "toby or no toby");
         NodeBuilder::new()
             .name(&node_name)
@@ -84,7 +110,7 @@ pub trait Test {
     }
 
     fn cleanup_dead_nodes(config: &Config) {
-        Node::<Self::Service>::list(config, |node_state| {
+        Node::<Service>::list(config, |node_state| {
             if let NodeState::Dead(state) = node_state {
                 state
                     .blocking_remove_stale_resources(Duration::MAX)
@@ -97,39 +123,6 @@ pub trait Test {
     }
 }
 
-pub struct ZeroCopy {
-    config: Config,
-    _watchdog: Watchdog,
-}
-
-impl Drop for ZeroCopy {
-    fn drop(&mut self) {
-        Self::cleanup_dead_nodes(&self.config);
-    }
-}
-
-impl Test for ZeroCopy {
-    type Service = iceoryx2::service::ipc::Service;
-
-    fn new() -> Self {
-        let _watchdog = Watchdog::new();
-        let mut config = generate_isolated_config();
-        config.global.node.cleanup_dead_nodes_on_creation = false;
-        config.global.node.cleanup_dead_nodes_on_destruction = false;
-        config.global.service.cleanup_dead_nodes_on_open = false;
-
-        Self { config, _watchdog }
-    }
-
-    fn config(&self) -> &Config {
-        &self.config
-    }
-
-    fn config_mut(&mut self) -> &mut Config {
-        &mut self.config
-    }
-}
-
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod node_death {
@@ -137,22 +130,22 @@ pub mod node_death {
 
     use super::*;
 
-    fn does_support_persistency<S: Test>() -> bool {
-        <S::Service as Service>::DynamicStorage::<
+    fn does_support_persistency<S: iceoryx2::service::Service>() -> bool {
+        <S as Service>::DynamicStorage::<
                     iceoryx2::service::dynamic_config::DynamicConfig,
                 >::does_support_persistency()
     }
 
     #[conformance_test]
-    pub fn dead_node_is_marked_as_dead_and_can_be_cleaned_up<S: Test>() {
-        let test = S::new();
+    pub fn dead_node_is_marked_as_dead_and_can_be_cleaned_up<S: iceoryx2::service::Service>() {
+        let test = Test::<S>::new();
 
         const NUMBER_OF_DEAD_NODES_LIMIT: usize = 5;
 
         for i in 1..NUMBER_OF_DEAD_NODES_LIMIT {
             for _ in 0..i {
                 let sut = test.create_bad_node();
-                S::leak(sut);
+                test.abandon(sut);
             }
 
             let mut node_list = test.list_nodes();
@@ -172,10 +165,10 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn dead_node_is_removed_from_pub_sub_service<S: Test>() {
+    pub fn dead_node_is_removed_from_pub_sub_service<S: iceoryx2::service::Service>() {
         test_requires!(does_support_persistency::<S>());
 
-        let test = S::new();
+        let test = Test::<S>::new();
 
         const NUMBER_OF_BAD_NODES: usize = 3;
         const NUMBER_OF_GOOD_NODES: usize = 4;
@@ -232,12 +225,12 @@ pub mod node_death {
             }
         }
 
-        S::leak_contents(bad_nodes);
-        S::leak_contents(bad_services);
-        S::leak_contents(bad_publishers);
-        S::leak_contents(bad_subscribers);
+        test.abandon_contents(bad_nodes);
+        test.abandon_contents(bad_services);
+        test.abandon_contents(bad_publishers);
+        test.abandon_contents(bad_subscribers);
 
-        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
+        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
 
         for service in &good_services {
             assert_that!(service.dynamic_config().number_of_publishers(), eq NUMBER_OF_PUBLISHERS - NUMBER_OF_BAD_NODES);
@@ -246,8 +239,8 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn dead_node_is_removed_from_event_service<S: Test>() {
-        let test = S::new();
+    pub fn dead_node_is_removed_from_event_service<S: iceoryx2::service::Service>() {
+        let test = Test::<S>::new();
 
         const NUMBER_OF_BAD_NODES: usize = 3;
         const NUMBER_OF_GOOD_NODES: usize = 4;
@@ -303,12 +296,12 @@ pub mod node_death {
             }
         }
 
-        S::leak_contents(bad_nodes);
-        S::leak_contents(bad_notifiers);
-        S::leak_contents(bad_listeners);
-        S::leak_contents(bad_services);
+        test.abandon_contents(bad_nodes);
+        test.abandon_contents(bad_notifiers);
+        test.abandon_contents(bad_listeners);
+        test.abandon_contents(bad_services);
 
-        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
+        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
 
         for service in &good_services {
             assert_that!(service.dynamic_config().number_of_notifiers(), eq NUMBER_OF_NOTIFIERS - NUMBER_OF_BAD_NODES);
@@ -317,8 +310,10 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn notifier_of_dead_node_emits_death_event_when_configured<S: Test>() {
-        let test = S::new();
+    pub fn notifier_of_dead_node_emits_death_event_when_configured<
+        S: iceoryx2::service::Service,
+    >() {
+        let test = Test::<S>::new();
 
         let service_name = generate_service_name();
         let notifier_dead_event = EventId::new(8);
@@ -339,11 +334,11 @@ pub mod node_death {
         let service = node.service_builder(&service_name).event().open().unwrap();
         let listener = service.listener_builder().create().unwrap();
 
-        S::leak(dead_node);
-        S::leak(dead_notifier);
-        S::leak(dead_service);
+        test.abandon(dead_node);
+        test.abandon(dead_notifier);
+        test.abandon(dead_service);
 
-        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         let mut received_events = 0;
         listener
@@ -357,10 +352,10 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn dead_node_is_removed_from_request_response_service<S: Test>() {
+    pub fn dead_node_is_removed_from_request_response_service<S: iceoryx2::service::Service>() {
         test_requires!(does_support_persistency::<S>());
 
-        let test = S::new();
+        let test = Test::<S>::new();
 
         const NUMBER_OF_BAD_NODES: usize = 2;
         const NUMBER_OF_GOOD_NODES: usize = 3;
@@ -415,12 +410,12 @@ pub mod node_death {
             }
         }
 
-        S::leak_contents(bad_nodes);
-        S::leak_contents(bad_services);
-        S::leak_contents(bad_servers);
-        S::leak_contents(bad_clients);
+        test.abandon_contents(bad_nodes);
+        test.abandon_contents(bad_services);
+        test.abandon_contents(bad_servers);
+        test.abandon_contents(bad_clients);
 
-        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
+        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
 
         for service in &good_services {
             assert_that!(service.dynamic_config().number_of_clients(), eq NUMBER_OF_CLIENTS - NUMBER_OF_BAD_NODES);
@@ -429,8 +424,8 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn dead_node_is_removed_from_blackboard_service<S: Test>() {
-        let test = S::new();
+    pub fn dead_node_is_removed_from_blackboard_service<S: iceoryx2::service::Service>() {
+        let test = Test::<S>::new();
 
         const NUMBER_OF_BAD_NODES: usize = 3;
         const NUMBER_OF_GOOD_NODES: usize = 4;
@@ -485,11 +480,11 @@ pub mod node_death {
             }
         }
 
-        S::leak_contents(bad_nodes);
-        S::leak_contents(bad_services);
-        S::leak_contents(bad_readers);
+        test.abandon_contents(bad_nodes);
+        test.abandon_contents(bad_services);
+        test.abandon_contents(bad_readers);
 
-        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
+        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
 
         for service in &good_services {
             assert_that!(service.dynamic_config().number_of_readers(), eq NUMBER_OF_READERS - NUMBER_OF_BAD_NODES);
@@ -497,8 +492,10 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn opened_blackboard_can_be_accessed_after_creator_node_crash<S: Test>() {
-        let test = S::new();
+    pub fn opened_blackboard_can_be_accessed_after_creator_node_crash<
+        S: iceoryx2::service::Service,
+    >() {
+        let test = Test::<S>::new();
         let service_name = generate_service_name();
 
         let bad_node = test.create_bad_node();
@@ -512,7 +509,7 @@ pub mod node_death {
 
         let good_node = NodeBuilder::new()
             .config(test.config())
-            .create::<S::Service>()
+            .create::<S>()
             .unwrap();
         let good_service = good_node
             .service_builder(&service_name)
@@ -521,11 +518,11 @@ pub mod node_death {
             .unwrap();
         let reader = good_service.reader_builder().create().unwrap();
 
-        S::leak(bad_node);
-        S::leak(bad_writer);
-        S::leak(bad_service);
+        test.abandon(bad_node);
+        test.abandon(bad_writer);
+        test.abandon(bad_service);
 
-        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(good_service.dynamic_config().number_of_readers(), eq 1);
         assert_that!(good_service.dynamic_config().number_of_writers(), eq 0);
@@ -541,8 +538,8 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn event_service_is_removed_when_last_node_dies<S: Test>() {
-        let test = S::new();
+    pub fn event_service_is_removed_when_last_node_dies<S: iceoryx2::service::Service>() {
+        let test = Test::<S>::new();
         let service_name = generate_service_name();
 
         let bad_node = test.create_bad_node();
@@ -551,21 +548,21 @@ pub mod node_death {
             .event()
             .open_or_create()
             .unwrap();
-        S::leak(bad_node);
-        S::leak(bad_service);
+        test.abandon(bad_node);
+        test.abandon(bad_service);
 
         assert_that!(
-            S::Service::list(test.config(), |service_details| {
+            S::list(test.config(), |service_details| {
                 assert_that!(*service_details.static_details.name(), eq service_name);
                 CallbackProgression::Continue
             }),
             is_ok
         );
 
-        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
-            S::Service::list(test.config(), |_| {
+            S::list(test.config(), |_| {
                 test_fail!("after the cleanup there shall be no more services");
             }),
             is_ok
@@ -573,8 +570,8 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn pubsub_service_is_removed_when_last_node_dies<S: Test>() {
-        let test = S::new();
+    pub fn pubsub_service_is_removed_when_last_node_dies<S: iceoryx2::service::Service>() {
+        let test = Test::<S>::new();
         let service_name = generate_service_name();
 
         let bad_node = test.create_bad_node();
@@ -583,21 +580,21 @@ pub mod node_death {
             .publish_subscribe::<u64>()
             .open_or_create()
             .unwrap();
-        S::leak(bad_node);
-        S::leak(bad_service);
+        test.abandon(bad_node);
+        test.abandon(bad_service);
 
         assert_that!(
-            S::Service::list(test.config(), |service_details| {
+            S::list(test.config(), |service_details| {
                 assert_that!(*service_details.static_details.name(), eq service_name);
                 CallbackProgression::Continue
             }),
             is_ok
         );
 
-        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
-            S::Service::list(test.config(), |_| {
+            S::list(test.config(), |_| {
                 test_fail!("after the cleanup there shall be no more services");
             }),
             is_ok
@@ -605,8 +602,10 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn request_response_service_is_removed_when_last_node_dies<S: Test>() {
-        let test = S::new();
+    pub fn request_response_service_is_removed_when_last_node_dies<
+        S: iceoryx2::service::Service,
+    >() {
+        let test = Test::<S>::new();
         let service_name = generate_service_name();
 
         let bad_node = test.create_bad_node();
@@ -615,21 +614,21 @@ pub mod node_death {
             .request_response::<u64, u64>()
             .open_or_create()
             .unwrap();
-        S::leak(bad_node);
-        S::leak(bad_service);
+        test.abandon(bad_node);
+        test.abandon(bad_service);
 
         assert_that!(
-            S::Service::list(test.config(), |service_details| {
+            S::list(test.config(), |service_details| {
                 assert_that!(*service_details.static_details.name(), eq service_name);
                 CallbackProgression::Continue
             }),
             is_ok
         );
 
-        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
-            S::Service::list(test.config(), |_| {
+            S::list(test.config(), |_| {
                 test_fail!("after the cleanup there shall be no more services");
             }),
             is_ok
@@ -637,8 +636,8 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn blackboard_service_is_removed_when_last_node_dies<S: Test>() {
-        let test = S::new();
+    pub fn blackboard_service_is_removed_when_last_node_dies<S: iceoryx2::service::Service>() {
+        let test = Test::<S>::new();
         let service_name = generate_service_name();
 
         let bad_node = test.create_bad_node();
@@ -648,21 +647,21 @@ pub mod node_death {
             .add_with_default::<u64>(0)
             .create()
             .unwrap();
-        S::leak(bad_node);
-        S::leak(bad_service);
+        test.abandon(bad_node);
+        test.abandon(bad_service);
 
         assert_that!(
-            S::Service::list(test.config(), |service_details| {
+            S::list(test.config(), |service_details| {
                 assert_that!(*service_details.static_details.name(), eq service_name);
                 CallbackProgression::Continue
             }),
             is_ok
         );
 
-        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
-            S::Service::list(test.config(), |_| {
+            S::list(test.config(), |_| {
                 test_fail!("after the cleanup there shall be no more services");
             }),
             is_ok
@@ -670,8 +669,8 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn writer_and_reader_resources_are_removed_after_crash<S: Test>() {
-        let test = S::new();
+    pub fn writer_and_reader_resources_are_removed_after_crash<S: iceoryx2::service::Service>() {
+        let test = Test::<S>::new();
         let service_name = generate_service_name();
 
         let good_node = test.create_good_node();
@@ -692,12 +691,12 @@ pub mod node_death {
         let bad_writer = bad_service.writer_builder().create().unwrap();
         let bad_reader = bad_service.reader_builder().create().unwrap();
 
-        S::leak(bad_node);
-        S::leak(bad_writer);
-        S::leak(bad_reader);
-        S::leak(bad_service);
+        test.abandon(bad_node);
+        test.abandon(bad_writer);
+        test.abandon(bad_reader);
+        test.abandon(bad_service);
 
-        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         let writer = good_service.writer_builder().create();
         assert_that!(writer, is_ok);
@@ -708,8 +707,10 @@ pub mod node_death {
     // test disabled on Windows as the state files cannot be removed after simulated node death
     #[cfg(not(target_os = "windows"))]
     #[conformance_test]
-    pub fn blackboard_resources_are_removed_when_key_has_user_defined_name<S: Test>() {
-        let test = S::new();
+    pub fn blackboard_resources_are_removed_when_key_has_user_defined_name<
+        S: iceoryx2::service::Service,
+    >() {
+        let test = Test::<S>::new();
         let service_name = generate_service_name();
 
         #[repr(C)]
@@ -724,21 +725,21 @@ pub mod node_death {
             .add_with_default::<u64>(SpecialKey(0))
             .create()
             .unwrap();
-        S::leak(bad_node);
-        S::leak(bad_service);
+        test.abandon(bad_node);
+        test.abandon(bad_service);
 
         assert_that!(
-            S::Service::list(test.config(), |service_details| {
+            S::list(test.config(), |service_details| {
                 assert_that!(*service_details.static_details.name(), eq service_name);
                 CallbackProgression::Continue
             }),
             is_ok
         );
 
-        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
-            S::Service::list(test.config(), |_| {
+            S::list(test.config(), |_| {
                 test_fail!("after the cleanup there shall be no more services");
             }),
             is_ok
@@ -756,8 +757,8 @@ pub mod node_death {
     // test disabled on Windows as the state files cannot be removed after simulated node death
     #[cfg(not(target_os = "windows"))]
     #[conformance_test]
-    pub fn blackboard_resources_are_removed_when_last_node_dies<S: Test>() {
-        let test = S::new();
+    pub fn blackboard_resources_are_removed_when_last_node_dies<S: iceoryx2::service::Service>() {
+        let test = Test::<S>::new();
         let service_name = generate_service_name();
 
         let bad_node = test.create_bad_node();
@@ -767,21 +768,21 @@ pub mod node_death {
             .add_with_default::<u64>(0)
             .create()
             .unwrap();
-        S::leak(bad_node);
-        S::leak(bad_service);
+        test.abandon(bad_node);
+        test.abandon(bad_service);
 
         assert_that!(
-            S::Service::list(test.config(), |service_details| {
+            S::list(test.config(), |service_details| {
                 assert_that!(*service_details.static_details.name(), eq service_name);
                 CallbackProgression::Continue
             }),
             is_ok
         );
 
-        assert_that!(Node::<S::Service>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
-            S::Service::list(test.config(), |_| {
+            S::list(test.config(), |_| {
                 test_fail!("after the cleanup there shall be no more services");
             }),
             is_ok
@@ -797,11 +798,11 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn node_cleanup_option_works_on_node_creation<S: Test>() {
-        let test = S::new();
+    pub fn node_cleanup_option_works_on_node_creation<S: iceoryx2::service::Service>() {
+        let test = Test::<S>::new();
 
         let bad_node = test.create_bad_node();
-        S::leak(bad_node);
+        test.abandon(bad_node);
 
         assert_that!(test.number_of_nodes(), eq 1);
 
@@ -811,10 +812,7 @@ pub mod node_death {
 
         let mut config = test.config().clone();
         config.global.node.cleanup_dead_nodes_on_creation = true;
-        let node_with_cleanup = NodeBuilder::new()
-            .config(&config)
-            .create::<S::Service>()
-            .unwrap();
+        let node_with_cleanup = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
         assert_that!(test.number_of_nodes(), eq 2);
 
@@ -825,8 +823,8 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn node_cleanup_option_works_on_node_destruction<S: Test>() {
-        let mut test = S::new();
+    pub fn node_cleanup_option_works_on_node_destruction<S: iceoryx2::service::Service>() {
+        let mut test = Test::<S>::new();
         test.config_mut()
             .global
             .node
@@ -836,13 +834,10 @@ pub mod node_death {
 
         let mut config = test.config().clone();
         config.global.node.cleanup_dead_nodes_on_destruction = false;
-        let node_without_cleanup = NodeBuilder::new()
-            .config(&config)
-            .create::<S::Service>()
-            .unwrap();
+        let node_without_cleanup = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
         let bad_node = test.create_bad_node();
-        S::leak(bad_node);
+        test.abandon(bad_node);
 
         assert_that!(test.number_of_nodes(), eq 3);
 
@@ -856,11 +851,11 @@ pub mod node_death {
     }
 
     pub fn node_cleanup_on_service_connection_works<
-        S: Test,
+        S: iceoryx2::service::Service,
         T: Abandonable,
-        F: FnMut(&Node<S::Service>) -> T,
+        F: FnMut(&Node<S>) -> T,
     >(
-        test: S,
+        test: Test<S>,
         total_number_of_nodes: usize,
         mut service_builder: F,
     ) {
@@ -868,20 +863,22 @@ pub mod node_death {
 
         let bad_node = test.create_bad_node();
         let bad_service = service_builder(&bad_node);
-        S::leak(bad_node);
-        S::leak(bad_service);
+        test.abandon(bad_node);
+        test.abandon(bad_service);
 
         let sut = test.create_good_node();
         let _service = service_builder(&sut);
 
         let number_of_nodes = test.number_of_nodes();
-        S::cleanup_dead_nodes(test.config());
+        Test::<S>::cleanup_dead_nodes(test.config());
         assert_that!(number_of_nodes, eq total_number_of_nodes);
     }
 
     #[conformance_test]
-    pub fn publish_subscribe_node_cleanup_on_open_works_when_enabled<S: Test>() {
-        let mut test = S::new();
+    pub fn publish_subscribe_node_cleanup_on_open_works_when_enabled<
+        S: iceoryx2::service::Service,
+    >() {
+        let mut test = Test::<S>::new();
         test.config_mut().global.service.cleanup_dead_nodes_on_open = true;
         const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 1;
         let service_name = generate_service_name();
@@ -899,8 +896,10 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn publish_subscribe_no_node_cleanup_on_open_when_disabled<S: Test>() {
-        let test = S::new();
+    pub fn publish_subscribe_no_node_cleanup_on_open_when_disabled<
+        S: iceoryx2::service::Service,
+    >() {
+        let test = Test::<S>::new();
         const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 2;
         let service_name = generate_service_name();
 
@@ -917,8 +916,10 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn request_response_node_cleanup_on_open_works_when_enabled<S: Test>() {
-        let mut test = S::new();
+    pub fn request_response_node_cleanup_on_open_works_when_enabled<
+        S: iceoryx2::service::Service,
+    >() {
+        let mut test = Test::<S>::new();
         test.config_mut().global.service.cleanup_dead_nodes_on_open = true;
         const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 1;
         let service_name = generate_service_name();
@@ -936,8 +937,8 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn request_response_no_node_cleanup_on_open_when_disabled<S: Test>() {
-        let test = S::new();
+    pub fn request_response_no_node_cleanup_on_open_when_disabled<S: iceoryx2::service::Service>() {
+        let test = Test::<S>::new();
         const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 2;
         let service_name = generate_service_name();
 
@@ -954,8 +955,8 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn event_node_cleanup_on_open_works_when_enabled<S: Test>() {
-        let mut test = S::new();
+    pub fn event_node_cleanup_on_open_works_when_enabled<S: iceoryx2::service::Service>() {
+        let mut test = Test::<S>::new();
         test.config_mut().global.service.cleanup_dead_nodes_on_open = true;
         const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 1;
         let service_name = generate_service_name();
@@ -973,8 +974,8 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn event_no_node_cleanup_on_open_when_disabled<S: Test>() {
-        let test = S::new();
+    pub fn event_no_node_cleanup_on_open_when_disabled<S: iceoryx2::service::Service>() {
+        let test = Test::<S>::new();
         const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 2;
         let service_name = generate_service_name();
 
@@ -991,8 +992,8 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn blackboard_node_cleanup_on_open_works_when_enabled<S: Test>() {
-        let mut test = S::new();
+    pub fn blackboard_node_cleanup_on_open_works_when_enabled<S: iceoryx2::service::Service>() {
+        let mut test = Test::<S>::new();
         test.config_mut().global.service.cleanup_dead_nodes_on_open = true;
         const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 2;
         let service_name = generate_service_name();
@@ -1018,8 +1019,8 @@ pub mod node_death {
     }
 
     #[conformance_test]
-    pub fn blackboard_no_node_cleanup_on_open_when_disabled<S: Test>() {
-        let test = S::new();
+    pub fn blackboard_no_node_cleanup_on_open_when_disabled<S: iceoryx2::service::Service>() {
+        let test = Test::<S>::new();
         const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 3;
         let service_name = generate_service_name();
 
