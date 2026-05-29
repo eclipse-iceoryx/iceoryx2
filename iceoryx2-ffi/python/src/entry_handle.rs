@@ -48,6 +48,9 @@ impl EntryHandle {
             unsafe { core::alloc::Layout::from_size_align_unchecked(value_size, value_alignment) };
         // The corresponding dealloc is implemented in InternalValueStorage::drop().
         let value_buffer = unsafe { std::alloc::alloc(layout) };
+        if value_buffer.is_null() {
+            panic!("out-of-memory in set value ptr operation");
+        }
         self.value_ptr = Parc::new(InternalValueStorage {
             value_buffer,
             value_type_details: self.value_type_details.clone(),
@@ -122,7 +125,10 @@ impl Drop for InternalValueStorage {
                 self.value_type_details.0.size(),
                 self.value_type_details.0.alignment(),
             );
-            std::alloc::dealloc(self.value_buffer, value_layout);
+
+            if !self.value_buffer.is_null() {
+                std::alloc::dealloc(self.value_buffer, value_layout);
+            }
         }
     }
 }

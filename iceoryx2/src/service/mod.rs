@@ -443,17 +443,14 @@ pub struct ServiceDetails<S: Service> {
 /// Represents the [`Service`]s state.
 #[derive(Debug)]
 pub struct ServiceState<S: Service, R: ServiceResource> {
-    // For this struct it is important to know that Rust drops fields of a struct in declaration
-    // order - not in memory order!
-
-    // must be destructed first, otherwise other processes might try connect to the service and
-    // find a half destructed service and identify it as corrupted
-    pub(crate) static_storage: S::StaticStorage,
-
     pub(crate) dynamic_storage: S::DynamicStorage<DynamicConfig>,
     pub(crate) additional_resource: R,
     pub(crate) static_config: StaticConfig,
     pub(crate) shared_node: SharedNode<S>,
+
+    // IMPORTANT: The static service config must be removed last since it contains the details about all
+    // other resources that also have to be removed. If this is removed earlier, those resources are leaked.
+    pub(crate) static_storage: S::StaticStorage,
 }
 
 impl<S: Service, R: ServiceResource> Abandonable for ServiceState<S, R> {
@@ -568,6 +565,8 @@ impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
 
 #[doc(hidden)]
 pub mod internal {
+    use crate::service::stale_resource_cleanup::ServiceRemoveTagError;
+
     use super::*;
     fn send_dead_node_signal<S: Service>(service_hash: &ServiceHash, config: &config::Config) {
         let origin = "send_dead_node_signal()";
@@ -705,29 +704,6 @@ pub mod internal {
             let origin = "Service::remove()";
             let msg = "Unable to remove all service resources";
 
-            match unsafe {
-                // IMPORTANT: The static service config must be removed first. If it cannot be
-                // removed, the process may lack sufficient permissions and should not remove
-                // any other resources.
-                remove_static_service_config::<S>(config, service_hash)
-            } {
-                Ok(_) => {
-                    trace!(from origin, "Remove unused service.");
-                }
-                Err(NamedConceptRemoveError::InsufficientPermissions) => {
-                    fail!(from origin, with ServiceRemoveError::InsufficientPermissions,
-                        "{msg} for {service_hash} due to insufficient permissions.");
-                }
-                Err(NamedConceptRemoveError::InternalError) => {
-                    fail!(from origin, with ServiceRemoveError::InternalError,
-                        "{msg} for {service_hash} due to an internal error.");
-                }
-                Err(NamedConceptRemoveError::Interrupt) => {
-                    fail!(from origin, with ServiceRemoveError::Interrupt,
-                        "{msg} for {service_hash} since an interrupt signal was received.");
-                }
-            }
-
             // check if service was a blackboard service to remove its additional resources
             let blackboard_name = crate::service::naming_scheme::blackboard_name(unique_service_id);
             let blackboard_payload_config =
@@ -780,6 +756,28 @@ pub mod internal {
                 }
             }
 
+            match unsafe {
+                // IMPORTANT: The static service config must be removed last since it contains the details about all
+                // other resources that also have to be removed. If this is removed earlier, those resources are leaked.
+                remove_static_service_config::<S>(config, service_hash)
+            } {
+                Ok(_) => {
+                    trace!(from origin, "Remove unused service.");
+                }
+                Err(NamedConceptRemoveError::InsufficientPermissions) => {
+                    fail!(from origin, with ServiceRemoveError::InsufficientPermissions,
+                        "{msg} for {service_hash} due to insufficient permissions.");
+                }
+                Err(NamedConceptRemoveError::InternalError) => {
+                    fail!(from origin, with ServiceRemoveError::InternalError,
+                        "{msg} for {service_hash} due to an internal error.");
+                }
+                Err(NamedConceptRemoveError::Interrupt) => {
+                    fail!(from origin, with ServiceRemoveError::Interrupt,
+                        "{msg} for {service_hash} since an interrupt signal was received.");
+                }
+            }
+
             Ok(())
         }
 
@@ -793,12 +791,29 @@ pub mod internal {
                 format!("Service::remove_node_from_service({node_id:?}, {service_hash:?})");
             let msg = "Unable to remove node from service";
 
+            let remove_service_tag = || match remove_service_tag::<S>(node_id, service_hash, config)
+            {
+                Ok(()) | Err(ServiceRemoveTagError::AlreadyRemoved) => Ok(()),
+                Err(ServiceRemoveTagError::InsufficientPermissions) => {
+                    fail!(from origin, with ServiceRemoveNodeError::InsufficientPermissions,
+                        "{msg} since the service tag could not be removed due to insufficient permissions.");
+                }
+                Err(ServiceRemoveTagError::Interrupt) => {
+                    fail!(from origin, with ServiceRemoveNodeError::Interrupt,
+                        "{msg} since the service tag could not be removed since an interrupt signal was raised.");
+                }
+                Err(ServiceRemoveTagError::InternalError) => {
+                    fail!(from origin, with ServiceRemoveNodeError::InternalError,
+                        "{msg} since the service tag could not be removed due to an internal error.");
+                }
+            };
+
             let static_config = match read_static_service_config::<S>(config, service_hash) {
                 Ok(Some(config)) => config,
                 Ok(None) => {
                     warn!(from origin, "Trying to remove node {} from non-existing service {}",
                         node_id, service_hash);
-                    return Ok(());
+                    return remove_service_tag();
                 }
                 Err(e) => {
                     fail!(from origin, with ServiceRemoveNodeError::InternalError,
@@ -821,7 +836,9 @@ pub mod internal {
                             config,
                         )
                     } {
-                        Ok(()) => return Ok(()),
+                        Ok(()) => {
+                            return remove_service_tag();
+                        }
                         Err(e) => {
                             fail!(from origin, with e.into(),
                                     "{msg} since the corrupted service could not be removed. [{e:?}]");
@@ -898,7 +915,7 @@ pub mod internal {
                     UniquePortId::Writer(ref _id) => {}
                 };
 
-                if let Err(e) = remove_port_tag::<S>(node_id, &port_id, config) {
+                if let Err(e) = remove_port_tag::<S>(node_id, port_id.value(), config) {
                     debug!(from origin,  "Failed to remove the port tag for port {:?}. [{e:?}]", port_id);
                     return PortCleanupAction::SkipPort;
                 }
@@ -927,7 +944,7 @@ pub mod internal {
                 send_dead_node_signal::<S>(service_hash, config);
             }
 
-            Ok(())
+            remove_service_tag()
         }
     }
 }

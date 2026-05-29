@@ -293,7 +293,10 @@ impl Default for ThreadBuilder {
             affinity: [true; posix::CPU_SETSIZE],
             has_custom_affinity: false,
             has_invalid_affinity: false,
-            stack_size: ProcessResourceLimit::MaxStackSize.soft_limit(),
+            stack_size: ProcessResourceLimit::MaxStackSize
+                .soft_limit()
+                // by default it is 8mb on every platform
+                .max(1024 * 1024 * 8),
             name: ThreadName::new(),
         }
     }

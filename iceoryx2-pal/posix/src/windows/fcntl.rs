@@ -14,6 +14,8 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
+use std::time::Duration;
+
 use windows_sys::Win32::{
     Foundation::{
         ERROR_ACCESS_DENIED, ERROR_FILE_EXISTS, ERROR_FILE_NOT_FOUND, ERROR_FILE_TOO_LARGE,
@@ -365,17 +367,27 @@ pub unsafe fn fchmod(fd: int, mode: mode_t) -> int {
         }
     };
 
+    let max_retries = 8;
+    let mut attempt = 0;
     let security_attributes = from_mode_to_security_attributes(mode);
-    unsafe {
-        let (has_file_security_set, _) = win32call!(SetFileSecurityA(
-            file_path.as_ptr(),
-            DACL_SECURITY_INFORMATION,
-            security_attributes.lpSecurityDescriptor
-        ));
-        if has_file_security_set == FALSE {
-            return -1;
-        }
+    loop {
+        attempt += 1;
+        unsafe {
+            let (has_file_security_set, last_error) = win32call!(SetFileSecurityA(
+                file_path.as_ptr(),
+                DACL_SECURITY_INFORMATION,
+                security_attributes.lpSecurityDescriptor
+            ));
+            if last_error == ERROR_ACCESS_DENIED && attempt < max_retries {
+                std::thread::sleep(Duration::from_millis(1 << attempt));
+                continue;
+            }
 
-        0
+            if has_file_security_set == FALSE {
+                return -1;
+            }
+
+            return 0;
+        }
     }
 }

@@ -196,7 +196,6 @@ use crate::service::config_scheme::{
 use crate::service::service_hash::ServiceHash;
 use crate::service::service_name::ServiceName;
 use crate::service::stale_resource_cleanup::RemoveStalePortResourcesError;
-use crate::service::stale_resource_cleanup::remove_service_tag;
 use crate::service::stale_resource_cleanup::remove_stale_port_resources;
 use crate::service::{self, ServiceRemoveNodeError};
 use crate::signal_handling_mode::SignalHandlingMode;
@@ -619,13 +618,7 @@ impl<Service: service::Service> DeadNodeView<Service> {
         let mut cleanup_failure = Ok(());
         let remove_node_from_service = |service_hash: &ServiceHash| {
             match Service::__internal_remove_node_from_service(self.id(), service_hash, config) {
-                Ok(()) => {
-                    if let Err(e) = remove_service_tag::<Service>(self.id(), service_hash, config) {
-                        debug!(from self,
-                                    "The service tag could not be removed from the dead node ({:?}).",
-                                    e);
-                    }
-                }
+                Ok(()) => (),
                 Err(ServiceRemoveNodeError::VersionMismatch) => {
                     cleanup_failure = Err(NodeCleanupFailure::VersionMismatch);
                     debug!(from self,
@@ -670,7 +663,7 @@ impl<Service: service::Service> DeadNodeView<Service> {
         // remove the port tags last, after the ports have been removed from the service;
         // now, everything not belonging to a service can be removed
         match Node::<Service>::port_tags(config, self.id(), |port_id| {
-            match unsafe { remove_stale_port_resources::<Service>(port_id, config) } {
+            match unsafe { remove_stale_port_resources::<Service>(*self.id(), port_id, config) } {
                 Ok(()) => CallbackProgression::Continue,
                 Err(RemoveStalePortResourcesError::InsufficientPermissions) => {
                     cleanup_failure = Err(NodeCleanupFailure::InsufficientPermissions);

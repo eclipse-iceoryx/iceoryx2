@@ -990,6 +990,8 @@ pub mod service {
         assert_that!(service_counter, eq 1);
     }
 
+    #[cfg(not(target_os = "windows"))]
+    // disabled since the windows defender interfers and causes ERROR_ACCESS_DENIED failures on the platform when it locks file for scanning
     #[conformance_test]
     pub fn concurrent_service_creation_and_listing_works<Sut: Service, Factory: SutFactory<Sut>>() {
         let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
@@ -1002,6 +1004,7 @@ pub mod service {
             .unwrap();
 
         let config = generate_isolated_config();
+
         thread_scope(|s| {
             for _ in 0..number_of_creators {
                 s.thread_builder().spawn(|| {
