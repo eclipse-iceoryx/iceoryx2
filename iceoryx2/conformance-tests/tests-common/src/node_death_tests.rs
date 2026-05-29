@@ -18,3 +18,21 @@ instantiate_conformance_tests_with_module!(
     iceoryx2_conformance_tests::node_death,
     super::service::ipc::Service
 );
+
+instantiate_conformance_tests_with_module!(
+    ipc_threadsafe,
+    iceoryx2_conformance_tests::node_death,
+    super::service::ipc_threadsafe::Service
+);
+
+instantiate_conformance_tests_with_module!(
+    local,
+    iceoryx2_conformance_tests::node_death,
+    super::service::local::Service
+);
+
+instantiate_conformance_tests_with_module!(
+    local_threadsafe,
+    iceoryx2_conformance_tests::node_death,
+    super::service::local_threadsafe::Service
+);
