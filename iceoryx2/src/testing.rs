@@ -16,7 +16,15 @@ use iceoryx2_bb_elementary::math::ToB64;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_posix::{config::TEST_DIRECTORY, testing::*};
 use iceoryx2_bb_system_types::file_name::*;
+use iceoryx2_cal::event::NamedConceptMgmt;
+use iceoryx2_cal::named_concept::NamedConceptDoesExistError;
+use iceoryx2_cal::static_storage::StaticStorageCreateError;
 
+use crate::identifiers::UniqueNodeId;
+use crate::node::{Node, NodeListFailure, NodeState};
+use crate::prelude::MessagingPattern;
+use crate::service::config_scheme::{port_tag_config, service_tag_config};
+use crate::service::service_hash::ServiceHash;
 use crate::{
     config::Config,
     prelude::{NodeName, ServiceName},
@@ -81,4 +89,59 @@ pub fn type_detail_set_name(v: &mut TypeDetail, value: TypeName) {
 
 pub fn type_detail_set_variant(v: &mut TypeDetail, value: TypeVariant) {
     v.variant = value;
+}
+
+pub fn create_service_tag<S: crate::service::Service>(
+    node: &Node<S>,
+    service_hash: &ServiceHash,
+) -> Result<Option<S::StaticStorage>, StaticStorageCreateError> {
+    node.shared
+        .create_service_tag("Testing", "Failed to create test service tag", service_hash)
+}
+
+pub fn does_service_tag_exist<S: crate::service::Service>(
+    service_hash: &ServiceHash,
+    config: &Config,
+    node_id: &UniqueNodeId,
+) -> Result<bool, NamedConceptDoesExistError> {
+    <S::StaticStorage as NamedConceptMgmt>::does_exist_cfg(
+        &service_hash.0.into(),
+        &service_tag_config::<S>(config, node_id),
+    )
+}
+
+pub fn create_port_tag<S: crate::service::Service>(
+    node: &Node<S>,
+    port_id: u128,
+) -> Result<S::StaticStorage, StaticStorageCreateError> {
+    node.shared
+        .create_port_tag("Testing", "Failed to create test port tag", port_id)
+}
+
+pub fn does_port_tag_exist<S: crate::service::Service>(
+    port_id: u128,
+    config: &Config,
+    node_id: &UniqueNodeId,
+) -> Result<bool, NamedConceptDoesExistError> {
+    let name = FileName::new(port_id.to_string().as_bytes())
+        .expect("A number is always a valid file name.");
+
+    <S::StaticStorage as NamedConceptMgmt>::does_exist_cfg(
+        &name,
+        &port_tag_config::<S>(config, node_id),
+    )
+}
+
+pub fn get_node_state<S: crate::service::Service>(
+    node_id: &UniqueNodeId,
+    config: &Config,
+) -> Result<Option<NodeState<S>>, NodeListFailure> {
+    NodeState::new(node_id, config)
+}
+
+pub fn generate_service_hash<S: crate::service::Service>(
+    service_name: &ServiceName,
+    messaging_pattern: MessagingPattern,
+) -> ServiceHash {
+    ServiceHash::new::<S::ServiceNameHasher>(service_name, messaging_pattern)
 }

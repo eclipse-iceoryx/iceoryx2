@@ -127,6 +127,8 @@ impl<Service: iceoryx2::service::Service> Test<Service> {
 #[conformance_tests]
 pub mod node_death {
     use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+    use iceoryx2_cal::static_storage::StaticStorage;
 
     use super::*;
 
@@ -1042,5 +1044,80 @@ pub mod node_death {
                     .unwrap()
             },
         );
+    }
+
+    #[conformance_test]
+    pub fn dead_node_is_removed_when_stale_service_tags_are_present<
+        S: iceoryx2::service::Service,
+    >() {
+        const MAX_NUMBER_OF_TAGS: usize = 10;
+
+        let test = Test::<S>::new();
+
+        for number_of_service_tags in 1..=MAX_NUMBER_OF_TAGS {
+            let sut = test.create_bad_node();
+            let config = sut.config().clone();
+            let node_id = *sut.id();
+
+            let mut service_tags = vec![];
+
+            for _ in 0..number_of_service_tags {
+                let service_name = generate_service_name();
+                let service_hash =
+                    generate_service_hash::<S>(&service_name, MessagingPattern::PublishSubscribe);
+                create_service_tag(&sut, &service_hash)
+                    .unwrap()
+                    .unwrap()
+                    .release_ownership();
+                service_tags.push((service_hash, config.clone(), node_id));
+            }
+
+            sut.abandon();
+
+            let cleanup_results = Node::<S>::try_cleanup_dead_nodes(&config);
+            assert_that!(cleanup_results.cleanups, eq 1);
+            assert_that!(cleanup_results.failed_cleanups, eq 0);
+
+            let node_state = get_node_state::<S>(&node_id, &config).unwrap();
+            assert_that!(node_state, is_none);
+
+            for tag in service_tags {
+                assert_that!(does_service_tag_exist::<S>(&tag.0, &tag.1, &tag.2).unwrap(), eq false);
+            }
+        }
+    }
+
+    #[conformance_test]
+    pub fn dead_node_is_removed_when_stale_port_tags_are_present<S: iceoryx2::service::Service>() {
+        const MAX_NUMBER_OF_TAGS: usize = 1;
+
+        let test = Test::<S>::new();
+
+        for number_of_service_tags in 1..=MAX_NUMBER_OF_TAGS {
+            let sut = test.create_bad_node();
+            let config = sut.config().clone();
+            let node_id = *sut.id();
+
+            let mut port_tags = vec![];
+
+            for _ in 0..number_of_service_tags {
+                let port_id = UniqueSystemId::new().unwrap().value();
+                create_port_tag(&sut, port_id).unwrap().release_ownership();
+                port_tags.push((port_id, config.clone(), node_id));
+            }
+
+            sut.abandon();
+
+            let cleanup_results = Node::<S>::try_cleanup_dead_nodes(&config);
+            assert_that!(cleanup_results.cleanups, eq 1);
+            assert_that!(cleanup_results.failed_cleanups, eq 0);
+
+            let node_state = get_node_state::<S>(&node_id, &config).unwrap();
+            assert_that!(node_state, is_none);
+
+            for tag in port_tags {
+                assert_that!(does_port_tag_exist::<S>(tag.0, &tag.1, &tag.2).unwrap(), eq false);
+            }
+        }
     }
 }

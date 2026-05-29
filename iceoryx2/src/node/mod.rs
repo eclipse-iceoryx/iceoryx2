@@ -1041,7 +1041,7 @@ impl<Service: service::Service> SharedNode<Service> {
         }
     }
 
-    pub(crate) fn create_service_tag<T: Debug>(
+    pub(crate) fn create_service_tag<T: Debug + ?Sized>(
         &self,
         origin: &T,
         msg: &str,
@@ -1073,7 +1073,7 @@ impl<Service: service::Service> SharedNode<Service> {
 /// Can be created via the [`NodeBuilder`].
 #[derive(Debug)]
 pub struct Node<Service: service::Service> {
-    shared: SharedNode<Service>,
+    pub(crate) shared: SharedNode<Service>,
 }
 
 unsafe impl<Service: service::Service> Send for Node<Service> {}
