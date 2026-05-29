@@ -531,10 +531,20 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                       with ServiceOpenError::HangsInCreation.into(),
                       "{} since the service hangs in creation", msg);
             } else {
-                if let Err(e) = adaptive_wait.wait() {
-                    fail!(from origin,
-                          with ServiceOpenError::InternalFailure.into(),
-                          "{} since the adaptive wait failed. [{e:?}]", msg);
+                match adaptive_wait.wait() {
+                    Ok(_) => (),
+                    Err(AdaptiveWaitError::NanosleepError(
+                        NanosleepError::InterruptedBySignal(_),
+                    )) => {
+                        fail!(from origin,
+                              with ServiceOpenError::Interrupt.into(),
+                              "{} since the adaptive wait was interrupted by a signal.", msg);
+                    }
+                    Err(e) => {
+                        fail!(from origin,
+                              with ServiceOpenError::InternalFailure.into(),
+                              "{} since the adaptive wait failed. [{e:?}]", msg);
+                    }
                 }
             }
 
