@@ -16,8 +16,8 @@
 
 use windows_sys::Win32::{
     Foundation::{
-        CloseHandle, DUPLICATE_SAME_ACCESS, DuplicateHandle, ERROR_FILE_NOT_FOUND,
-        ERROR_NO_MORE_FILES, FALSE, HANDLE, INVALID_HANDLE_VALUE, TRUE,
+        CloseHandle, DUPLICATE_SAME_ACCESS, DuplicateHandle, ERROR_ACCESS_DENIED,
+        ERROR_FILE_NOT_FOUND, ERROR_NO_MORE_FILES, FALSE, HANDLE, INVALID_HANDLE_VALUE, TRUE,
     },
     Networking::WinSock::{
         INVALID_SOCKET, SOCKET_ERROR, WSADuplicateSocketA, WSAPROTOCOL_INFOA, WSASocketA,
@@ -430,7 +430,7 @@ pub unsafe fn fsync(fd: int) -> int {
     match HandleTranslator::get_instance().get(fd) {
         Some(FdHandleEntry::File(handle)) => {
             unsafe {
-                win32call! {FlushFileBuffers(handle.handle)}
+                win32call! {FlushFileBuffers(handle.handle), ignore ERROR_ACCESS_DENIED}
             };
             0
         }

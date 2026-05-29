@@ -1002,6 +1002,7 @@ pub mod service {
             .unwrap();
 
         let config = generate_isolated_config();
+
         thread_scope(|s| {
             for _ in 0..number_of_creators {
                 s.thread_builder().spawn(|| {
