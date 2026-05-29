@@ -363,7 +363,7 @@ pub unsafe fn remove_receiver_port_from_all_connections<Service: service::Servic
 }
 
 pub unsafe fn remove_stale_port_resources<Service: service::Service>(
-    node_id: UniqueNodeId,
+    node_id: &UniqueNodeId,
     port_id: u128,
     config: &config::Config,
 ) -> Result<(), RemoveStalePortResourcesError> {
@@ -415,19 +415,19 @@ pub unsafe fn remove_stale_port_resources<Service: service::Service>(
         }
     }
 
-    match remove_port_tag::<Service>(&node_id, port_id, config) {
+    match remove_port_tag::<Service>(node_id, port_id, config) {
         Ok(()) | Err(PortRemoveTagError::AlreadyRemoved) => (),
         Err(PortRemoveTagError::InsufficientPermissions) => {
             fail!(from origin, with RemoveStalePortResourcesError::InsufficientPermissions,
-                  "{} since the port tag {port_id} could not be removed due to insufficient permissions.", msg);
+                  "{msg} since the port tag could not be removed due to insufficient permissions.");
         }
         Err(PortRemoveTagError::Interrupt) => {
             fail!(from origin, with RemoveStalePortResourcesError::Interrupt,
-                  "{} since the port tag {port_id} could not be removed since an interrupt signal was raised.", msg);
+                  "{msg} since an interrupt signal was received while removing the port tag.");
         }
         Err(PortRemoveTagError::InternalError) => {
             fail!(from origin, with RemoveStalePortResourcesError::InternalError,
-                  "{} since the port tag {port_id} could not be removed due to an internal error.", msg);
+                  "{msg} since an internal error occurred while removing the port tag.");
         }
     }
 

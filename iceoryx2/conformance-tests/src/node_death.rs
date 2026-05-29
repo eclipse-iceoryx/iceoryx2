@@ -1053,10 +1053,10 @@ pub mod node_death {
         const MAX_NUMBER_OF_TAGS: usize = 10;
 
         let test = Test::<S>::new();
+        let config = test.config().clone();
 
         for number_of_service_tags in 1..=MAX_NUMBER_OF_TAGS {
             let sut = test.create_bad_node();
-            let config = sut.config().clone();
             let node_id = *sut.id();
 
             let mut service_tags = vec![];
@@ -1092,10 +1092,10 @@ pub mod node_death {
         const MAX_NUMBER_OF_TAGS: usize = 1;
 
         let test = Test::<S>::new();
+        let config = test.config().clone();
 
         for number_of_service_tags in 1..=MAX_NUMBER_OF_TAGS {
             let sut = test.create_bad_node();
-            let config = sut.config().clone();
             let node_id = *sut.id();
 
             let mut port_tags = vec![];
@@ -1114,6 +1114,62 @@ pub mod node_death {
 
             let node_state = get_node_state::<S>(&node_id, &config).unwrap();
             assert_that!(node_state, is_none);
+
+            for tag in port_tags {
+                assert_that!(does_port_tag_exist::<S>(tag.0, &tag.1, &tag.2).unwrap(), eq false);
+            }
+        }
+    }
+
+    #[conformance_test]
+    pub fn many_dead_nodes_with_many_stale_tags_are_cleaned_up<S: iceoryx2::service::Service>() {
+        const NUMBER_OF_NODES: usize = 4;
+        const MAX_NUMBER_OF_TAGS: usize = 4;
+
+        let test = Test::<S>::new();
+        let config = test.config().clone();
+
+        for number_of_tags in 1..=MAX_NUMBER_OF_TAGS {
+            let mut port_tags = vec![];
+            let mut service_tags = vec![];
+            let mut node_ids = vec![];
+            for _ in 0..NUMBER_OF_NODES {
+                let sut = test.create_bad_node();
+                let node_id = *sut.id();
+                node_ids.push(node_id);
+
+                for _ in 0..number_of_tags {
+                    let service_name = generate_service_name();
+                    let service_hash = generate_service_hash::<S>(
+                        &service_name,
+                        MessagingPattern::PublishSubscribe,
+                    );
+                    create_service_tag(&sut, &service_hash)
+                        .unwrap()
+                        .unwrap()
+                        .release_ownership();
+                    service_tags.push((service_hash, config.clone(), node_id));
+
+                    let port_id = UniqueSystemId::new().unwrap().value();
+                    create_port_tag(&sut, port_id).unwrap().release_ownership();
+                    port_tags.push((port_id, config.clone(), node_id));
+                }
+
+                sut.abandon();
+            }
+
+            let cleanup_results = Node::<S>::try_cleanup_dead_nodes(&config);
+            assert_that!(cleanup_results.cleanups, eq NUMBER_OF_NODES as u64);
+            assert_that!(cleanup_results.failed_cleanups, eq 0);
+
+            for node_id in node_ids {
+                let node_state = get_node_state::<S>(&node_id, &config).unwrap();
+                assert_that!(node_state, is_none);
+            }
+
+            for tag in service_tags {
+                assert_that!(does_service_tag_exist::<S>(&tag.0, &tag.1, &tag.2).unwrap(), eq false);
+            }
 
             for tag in port_tags {
                 assert_that!(does_port_tag_exist::<S>(tag.0, &tag.1, &tag.2).unwrap(), eq false);

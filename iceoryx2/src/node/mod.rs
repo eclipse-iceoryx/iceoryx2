@@ -664,7 +664,7 @@ impl<Service: service::Service> DeadNodeView<Service> {
         // remove the port tags last, after the ports have been removed from the service;
         // now, everything not belonging to a service can be removed
         match Node::<Service>::port_tags(config, self.id(), |port_id| {
-            match unsafe { remove_stale_port_resources::<Service>(*self.id(), port_id, config) } {
+            match unsafe { remove_stale_port_resources::<Service>(self.id(), port_id, config) } {
                 Ok(()) => CallbackProgression::Continue,
                 Err(RemoveStalePortResourcesError::InsufficientPermissions) => {
                     cleanup_failure = Err(NodeCleanupFailure::InsufficientPermissions);
