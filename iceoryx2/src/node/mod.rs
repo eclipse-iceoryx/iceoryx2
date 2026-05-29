@@ -143,6 +143,7 @@ mod global_management_segment;
 /// The name for a node.
 pub mod node_name;
 
+use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
 use core::time::Duration;
@@ -1036,6 +1037,28 @@ impl<Service: service::Service> SharedNode<Service> {
             Err(e) => {
                 fail!(from origin, with e,
                     "{msg} since the port tag could not be created. [{e:?}]");
+            }
+        }
+    }
+
+    pub(crate) fn create_service_tag<T: Debug>(
+        &self,
+        origin: &T,
+        msg: &str,
+        service_hash: &ServiceHash,
+    ) -> Result<Option<Service::StaticStorage>, StaticStorageCreateError> {
+        match <<Service::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
+            Service::StaticStorage,
+        >>::new(&service_hash.0.into())
+        .config(&service_tag_config::<Service>(self.config(), self.id()))
+        .has_ownership(true)
+        .create(&[])
+        {
+            Ok(static_storage) => Ok(Some(static_storage)),
+            Err(StaticStorageCreateError::AlreadyExists) => Ok(None),
+            Err(e) => {
+                fail!(from origin, with e,
+                    "{msg} since the service tag could not be created. [{e:?}]");
             }
         }
     }

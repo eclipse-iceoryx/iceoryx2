@@ -77,7 +77,6 @@ use crate::service::static_config::*;
 
 use super::Service;
 use super::config_scheme::dynamic_config_storage_config;
-use super::config_scheme::service_tag_config;
 use super::config_scheme::static_config_storage_config;
 use super::service_name::ServiceName;
 
@@ -566,8 +565,25 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 Ok(Some((existing_static_config, static_storage))) => {
                     verify_service_configuration(&existing_static_config)?;
 
-                    let service_tag = self
-                        .create_node_service_tag(msg, ServiceOpenError::UnableToCreateServiceTag)?;
+                    let service_tag = match self.shared_node.create_service_tag(
+                        self,
+                        msg,
+                        self.service_config.service_hash(),
+                    ) {
+                        Ok(t) => t,
+                        Err(StaticStorageCreateError::InsufficientPermissions) => {
+                            fail!(from self, with ServiceOpenError::InsufficientPermissions.into(),
+                                "{msg} due to insufficient permissions to create the nodes service tag.");
+                        }
+                        Err(StaticStorageCreateError::Interrupt) => {
+                            fail!(from self, with ServiceOpenError::Interrupt.into(),
+                                "{msg} since an interrupt signal was raised while created the nodes service tag.");
+                        }
+                        Err(e) => {
+                            fail!(from self, with ServiceOpenError::InternalFailure.into(),
+                                "{msg} since the service tag could not be created due to an unknown failure. [{e:?}]");
+                        }
+                    };
 
                     let dynamic_config = match self
                         .open_dynamic_config_storage(existing_static_config.unique_service_id())
@@ -609,7 +625,6 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     if let Some(service_tag) = service_tag {
                         service_tag.release_ownership();
                     }
-
                     let resource = open_service_resource(&existing_static_config)?;
 
                     return Ok(service::ServiceState::new(
@@ -642,11 +657,25 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         let mut service_config = self.service_config.clone();
         match is_service_available()? {
             None => {
-                let service_tag = fail!(from self,
-                    when self.create_node_service_tag(msg, ServiceCreateError::InternalFailure),
-                    with ServiceCreateError::UnableToCreateServiceTag,
-                    "{msg} since the service tag could not be created."
-                );
+                let service_tag = match self.shared_node.create_service_tag(
+                    self,
+                    msg,
+                    self.service_config.service_hash(),
+                ) {
+                    Ok(tag) => tag,
+                    Err(StaticStorageCreateError::InsufficientPermissions) => {
+                        fail!(from self, with ServiceCreateError::InsufficientPermissions,
+                            "{msg} since the service tag could not be created due to insufficient permissions.");
+                    }
+                    Err(StaticStorageCreateError::Interrupt) => {
+                        fail!(from self, with ServiceCreateError::Interrupt,
+                            "{msg} since an interrupt signal was raised while creating the service tag.");
+                    }
+                    Err(e) => {
+                        fail!(from self, with ServiceCreateError::UnableToCreateServiceTag,
+                            "{msg} since the service tag could not be created due to an internal error. [{e:?}]");
+                    }
+                };
 
                 prepare_service_config(&mut service_config)?;
 
@@ -951,30 +980,6 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         )?;
 
         Ok(storage)
-    }
-
-    fn create_node_service_tag<ErrorType>(
-        &self,
-        error_msg: &str,
-        error_value: ErrorType,
-    ) -> Result<Option<ServiceType::StaticStorage>, ErrorType> {
-        match <<ServiceType::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
-            ServiceType::StaticStorage,
-        >>::new(&self.service_config.service_hash().0.into())
-        .config(&service_tag_config::<ServiceType>(
-            self.shared_node.config(),
-            self.shared_node.id(),
-        ))
-        .has_ownership(true)
-        .create(&[])
-        {
-            Ok(static_storage) => Ok(Some(static_storage)),
-            Err(StaticStorageCreateError::AlreadyExists) => Ok(None),
-            Err(e) => {
-                fail!(from self, with error_value,
-                    "{} since the nodes service tag could not be created ({:?}).", error_msg, e);
-            }
-        }
     }
 
     fn create_static_config_storage(
