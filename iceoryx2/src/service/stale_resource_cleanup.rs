@@ -28,12 +28,15 @@ use iceoryx2_log::{debug, error, fail, trace};
 use crate::config;
 use crate::constants::MAX_TYPE_NAME_LENGTH;
 use crate::identifiers::UniqueNodeId;
+use crate::identifiers::UniqueServiceId;
 use crate::service;
 use crate::service::Service;
+use crate::service::config_scheme;
 use crate::service::config_scheme::port_tag_config;
 use crate::service::config_scheme::service_tag_config;
 use crate::service::config_scheme::static_config_storage_config;
 use crate::service::config_scheme::{data_segment_config, resizable_data_segment_config};
+use crate::service::naming_scheme;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::naming_scheme::static_config_name;
 use crate::service::service_hash::ServiceHash;
@@ -137,16 +140,18 @@ pub fn remove_sender_and_receiver_connections_and_data_segment<S: Service>(
 
 pub fn remove_additional_blackboard_resources<S: Service>(
     config: &config::Config,
-    blackboard_name: &FileName,
-    blackboard_payload_config: &<S::BlackboardPayload as NamedConceptMgmt>::Configuration,
+    service_id: UniqueServiceId,
     blackboard_mgmt_name: &StaticString<MAX_TYPE_NAME_LENGTH>,
     origin: &str,
     msg: &str,
 ) {
+    let blackboard_name = naming_scheme::blackboard_name(service_id);
+    let blackboard_payload_config = config_scheme::blackboard_data_config::<S>(config);
+
     match unsafe {
         <S::BlackboardPayload as NamedConceptMgmt>::remove_cfg(
-            blackboard_name,
-            blackboard_payload_config,
+            &blackboard_name,
+            &blackboard_payload_config,
         )
     } {
         Ok(true) => {
@@ -172,7 +177,7 @@ pub fn remove_additional_blackboard_resources<S: Service>(
     };
     match unsafe {
         <S::BlackboardMgmt<u64> as NamedConceptMgmt>::remove_cfg(
-            blackboard_name,
+            &blackboard_name,
             &blackboard_mgmt_config,
         )
     } {

@@ -720,8 +720,7 @@ pub mod internal {
 
                         remove_additional_blackboard_resources::<S>(
                             config,
-                            &blackboard_name,
-                            &blackboard_payload_config,
+                            unique_service_id,
                             &blackboard_mgmt_name,
                             origin,
                             msg,
