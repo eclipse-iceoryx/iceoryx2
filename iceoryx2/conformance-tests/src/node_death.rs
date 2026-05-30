@@ -12,107 +12,23 @@
 
 extern crate alloc;
 
-use core::marker::PhantomData;
-use core::time::Duration;
+use iceoryx2_testing::Test;
 
 use alloc::vec;
-use alloc::vec::Vec;
-use iceoryx2::config::Config;
 use iceoryx2::node::{CleanupState, NodeState};
 use iceoryx2::prelude::*;
 use iceoryx2::testing::*;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-use iceoryx2_bb_testing::watchdog::Watchdog;
+use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_testing::{assert_that, test_fail, test_requires};
 use iceoryx2_bb_testing_macros::conformance_test;
 use iceoryx2_bb_testing_macros::conformance_tests;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
-
-pub struct Test<Service: iceoryx2::service::Service> {
-    config: Config,
-    _watchdog: Watchdog,
-    _data: PhantomData<Service>,
-}
-
-impl<Service: iceoryx2::service::Service> Drop for Test<Service> {
-    fn drop(&mut self) {
-        Self::cleanup_dead_nodes(&self.config);
-        unsafe { remove_global_mgmt_segment::<Service>(&self.config).unwrap() };
-    }
-}
-
-impl<Service: iceoryx2::service::Service> Test<Service> {
-    fn new() -> Self {
-        let _watchdog = Watchdog::new();
-        let mut config = generate_isolated_config();
-        config.global.node.cleanup_dead_nodes_on_creation = false;
-        config.global.node.cleanup_dead_nodes_on_destruction = false;
-        config.global.service.cleanup_dead_nodes_on_open = false;
-
-        Self {
-            config,
-            _watchdog,
-            _data: PhantomData,
-        }
-    }
-
-    fn config(&self) -> &Config {
-        &self.config
-    }
-
-    fn config_mut(&mut self) -> &mut Config {
-        &mut self.config
-    }
-
-    fn abandon_contents<T: Abandonable>(&self, mut contents: Vec<T>) {
-        while let Some(element) = contents.pop() {
-            T::abandon(element);
-        }
-    }
-
-    fn create_node(&self) -> Node<Service> {
-        NodeBuilder::new()
-            .config(self.config())
-            .create::<Service>()
-            .unwrap()
-    }
-
-    fn number_of_nodes(&self) -> usize {
-        self.list_nodes().len()
-    }
-
-    fn list_nodes(&self) -> Vec<NodeState<Service>> {
-        let mut node_list = vec![];
-        Node::<Service>::list(self.config(), |node_state| {
-            node_list.push(node_state);
-            CallbackProgression::Continue
-        })
-        .unwrap();
-
-        node_list
-    }
-
-    fn cleanup_dead_nodes(config: &Config) {
-        Node::<Service>::list(config, |node_state| {
-            if let NodeState::Dead(state) = node_state {
-                state
-                    .blocking_remove_stale_resources(Duration::MAX)
-                    .unwrap();
-            }
-
-            CallbackProgression::Continue
-        })
-        .unwrap();
-    }
-}
+use iceoryx2_cal::static_storage::StaticStorage;
 
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod node_death {
-    use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-    use iceoryx2_cal::static_storage::StaticStorage;
-
     use super::*;
 
     fn does_support_persistency<S: iceoryx2::service::Service>() -> bool {

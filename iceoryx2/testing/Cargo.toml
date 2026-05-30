@@ -1,0 +1,38 @@
+[package]
+name = "iceoryx2-testing"
+description = "iceoryx2: Testing Library"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+readme = "../../README.md"
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[features]
+default = ["std", "console"]
+std = [
+  "iceoryx2-cal/std",
+  "iceoryx2-bb-loggers/std",
+  "iceoryx2-bb-testing/std",
+  "iceoryx2/std",
+]
+# Logger backend selection - choose at most one; defaults to console
+console = ["iceoryx2-bb-loggers/console"]
+log = ["iceoryx2-bb-loggers/log"]
+tracing = ["iceoryx2-bb-loggers/tracing"]
+
+# The permissions of all resources will be set to read, write, execute for everyone.
+# This shall not be used in production and is meant to be enabled in a docker environment
+# with inconsistent user configuration.
+dev_permissions = ["iceoryx2-cal/dev_permissions"]
+
+[dependencies]
+iceoryx2 = { workspace = true }
+iceoryx2-log = { workspace = true }
+iceoryx2-bb-loggers = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-elementary-traits = { workspace = true }
+iceoryx2-cal = { workspace = true }
