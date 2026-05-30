@@ -18,15 +18,13 @@ pub mod pending_response {
     use iceoryx2::port::client::Client;
     use iceoryx2::port::server::Server;
     use iceoryx2::service::port_factory::request_response::PortFactory;
-    use iceoryx2::testing::*;
-    use iceoryx2::{
-        node::{Node, NodeBuilder},
-        service::Service,
-    };
+    use iceoryx2::{node::Node, service::Service};
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
+    use iceoryx2_testing::*;
 
     struct TestFixture<Sut: Service> {
+        context: Test<Sut>,
         _node: Node<Sut>,
         _service: PortFactory<Sut, u64, u64, u64, ()>,
         client: Client<Sut, u64, u64, u64, ()>,
@@ -36,9 +34,9 @@ pub mod pending_response {
 
     impl<Sut: Service> TestFixture<Sut> {
         fn new() -> Self {
-            let config = generate_isolated_config();
+            let context = Test::new();
             let service_name = generate_service_name();
-            let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+            let node = context.create_node();
             let service = node
                 .service_builder(&service_name)
                 .request_response::<u64, u64>()
@@ -50,6 +48,7 @@ pub mod pending_response {
             let client = service.client_builder().create().unwrap();
 
             Self {
+                context,
                 _node: node,
                 client,
                 server_1: service.server_builder().create().unwrap(),
@@ -78,9 +77,10 @@ pub mod pending_response {
 
     #[conformance_test]
     pub fn is_not_connected_when_there_are_no_servers<Sut: Service>() {
-        let config = generate_isolated_config();
+        let test = TestFixture::<Sut>::new();
+
         let service_name = generate_service_name();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node = test.context.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()

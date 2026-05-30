@@ -25,6 +25,9 @@ pub struct Test<Service: iceoryx2::service::Service> {
     _data: PhantomData<Service>,
 }
 
+unsafe impl<S: iceoryx2::service::Service> Send for Test<S> {}
+unsafe impl<S: iceoryx2::service::Service> Sync for Test<S> {}
+
 impl<Service: iceoryx2::service::Service> Drop for Test<Service> {
     fn drop(&mut self) {
         Self::cleanup_dead_nodes(&self.config);
@@ -40,7 +43,10 @@ impl<Service: iceoryx2::service::Service> Default for Test<Service> {
 
 impl<Service: iceoryx2::service::Service> Test<Service> {
     pub fn new() -> Self {
-        let _watchdog = Watchdog::new();
+        Self::new_with_custom_watchdog(Watchdog::new())
+    }
+
+    pub fn new_with_custom_watchdog(watchdog: Watchdog) -> Self {
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
         config.global.node.cleanup_dead_nodes_on_destruction = false;
@@ -48,7 +54,15 @@ impl<Service: iceoryx2::service::Service> Test<Service> {
 
         Self {
             config,
-            _watchdog,
+            _watchdog: watchdog,
+            _data: PhantomData,
+        }
+    }
+
+    pub fn new_with_custom_config(config: Config) -> Self {
+        Self {
+            config,
+            _watchdog: Watchdog::new(),
             _data: PhantomData,
         }
     }

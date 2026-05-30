@@ -18,10 +18,10 @@ pub mod listener {
     use alloc::collections::BTreeSet;
     use alloc::{format, vec};
 
-    use iceoryx2::testing::*;
-    use iceoryx2::{node::NodeBuilder, port::listener::ListenerCreateError, service::Service};
+    use iceoryx2::{port::listener::ListenerCreateError, service::Service};
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
+    use iceoryx2_testing::*;
 
     #[conformance_test]
     pub fn create_error_display_works<S: Service>() {
@@ -33,9 +33,9 @@ pub mod listener {
 
     #[conformance_test]
     pub fn id_is_unique<Sut: Service>() {
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node = test.create_node();
         const MAX_LISTENERS: usize = 8;
 
         let sut = node

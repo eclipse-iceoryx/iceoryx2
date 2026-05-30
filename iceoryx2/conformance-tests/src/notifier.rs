@@ -18,7 +18,6 @@ pub mod notifier {
     use alloc::collections::BTreeSet;
     use alloc::{format, vec};
 
-    use iceoryx2::testing::*;
     use iceoryx2::{
         node::NodeBuilder,
         port::notifier::{NotifierCreateError, NotifierNotifyError},
@@ -26,6 +25,7 @@ pub mod notifier {
     };
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
+    use iceoryx2_testing::*;
 
     #[conformance_test]
     pub fn create_error_display_works<S: Service>() {
@@ -41,9 +41,12 @@ pub mod notifier {
 
     #[conformance_test]
     pub fn id_is_unique<Sut: Service>() {
-        let config = generate_isolated_config();
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node = NodeBuilder::new()
+            .config(test.config())
+            .create::<Sut>()
+            .unwrap();
         const MAX_LISTENERS: usize = 8;
 
         let sut = node

@@ -27,7 +27,6 @@ pub mod node {
     };
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
-    use iceoryx2::testing::*;
     use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
     use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
@@ -35,6 +34,7 @@ pub mod node {
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_fail};
     use iceoryx2_bb_testing_macros::conformance_test;
+    use iceoryx2_testing::*;
 
     #[derive(Debug, Eq, PartialEq)]
     struct Details {
@@ -92,18 +92,21 @@ pub mod node {
 
     #[conformance_test]
     pub fn node_without_name_can_be_created<S: Service>() {
-        let config = generate_isolated_config();
-        let sut = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let test = Test::<S>::new();
+        let sut = NodeBuilder::new()
+            .config(test.config())
+            .create::<S>()
+            .unwrap();
 
         assert_that!(*sut.name(), eq NodeName::new("").unwrap());
     }
 
     #[conformance_test]
     pub fn node_with_name_can_be_created<S: Service>() {
-        let config = generate_isolated_config();
+        let test = Test::<S>::new();
         let node_name = NodeName::new("photons taste like chicken").unwrap();
         let sut = NodeBuilder::new()
-            .config(&config)
+            .config(test.config())
             .name(&node_name)
             .create::<S>()
             .unwrap();
@@ -114,14 +117,14 @@ pub mod node {
     #[conformance_test]
     pub fn multiple_nodes_with_the_same_name_can_be_created<S: Service>() {
         const NUMBER_OF_NODES: usize = 16;
-        let config = generate_isolated_config();
+        let test = Test::<S>::new();
         let node_name = NodeName::new("but what does an electron taste like?").unwrap();
 
         let mut nodes = vec![];
         for _ in 0..NUMBER_OF_NODES {
             nodes.push(
                 NodeBuilder::new()
-                    .config(&config)
+                    .config(test.config())
                     .name(&node_name)
                     .create::<S>()
                     .unwrap(),
@@ -143,14 +146,14 @@ pub mod node {
     #[conformance_test]
     pub fn nodes_can_be_listed<S: Service>() {
         const NUMBER_OF_NODES: usize = 16;
-        let config = generate_isolated_config();
+        let test = Test::<S>::new();
 
         let mut nodes = vec![];
         let mut node_details = VecDeque::new();
         for i in 0..NUMBER_OF_NODES {
             let node_name = generate_node_name(i, "give me a bit");
             let node = NodeBuilder::new()
-                .config(&config)
+                .config(test.config())
                 .name(&node_name)
                 .create::<S>()
                 .unwrap();
@@ -158,20 +161,20 @@ pub mod node {
             nodes.push(node);
         }
 
-        assert_node_presence::<S>(&node_details, &config);
+        assert_node_presence::<S>(&node_details, test.config());
     }
 
     #[conformance_test]
     pub fn when_node_goes_out_of_scope_it_cleans_up<S: Service>() {
         const NUMBER_OF_NODES: usize = 16;
-        let config = generate_isolated_config();
+        let test = Test::<S>::new();
 
         let mut nodes = vec![];
         let mut node_details = VecDeque::new();
         for i in 0..NUMBER_OF_NODES {
             let node_name = generate_node_name(i, "gravity should be illegal");
             let node = NodeBuilder::new()
-                .config(&config)
+                .config(test.config())
                 .name(&node_name)
                 .create::<S>()
                 .unwrap();
@@ -182,14 +185,14 @@ pub mod node {
         for _ in 0..NUMBER_OF_NODES {
             nodes.pop();
             node_details.pop_back();
-            assert_node_presence::<S>(&node_details, &config);
+            assert_node_presence::<S>(&node_details, test.config());
         }
     }
 
     #[conformance_test]
     pub fn id_is_unique<S: Service>() {
         const NUMBER_OF_NODES: usize = 16;
-        let config = generate_isolated_config();
+        let test = Test::<S>::new();
 
         let mut nodes = vec![];
         let mut node_ids = BTreeSet::new();
@@ -200,7 +203,7 @@ pub mod node {
             );
             nodes.push(
                 NodeBuilder::new()
-                    .config(&config)
+                    .config(test.config())
                     .name(&node_name)
                     .create::<S>()
                     .unwrap(),
@@ -212,16 +215,16 @@ pub mod node {
     #[conformance_test]
     pub fn nodes_with_disjunct_config_are_separated<S: Service>() {
         const NUMBER_OF_NODES: usize = 16;
+        let test = Test::<S>::new();
 
         let mut nodes_1 = VecDeque::new();
         let mut node_details_1 = VecDeque::new();
         let mut nodes_2 = VecDeque::new();
         let mut node_details_2 = VecDeque::new();
 
-        let config = generate_isolated_config();
-        let mut config_1 = config.clone();
+        let mut config_1 = test.config().clone();
         config_1.global.node.directory = Path::new(b"node2").unwrap();
-        let mut config_2 = config.clone();
+        let mut config_2 = test.config().clone();
         config_2.global.node.directory = Path::new(b"bud_spencer").unwrap();
 
         for i in 0..NUMBER_OF_NODES {
@@ -285,23 +288,22 @@ pub mod node {
 
     #[conformance_test]
     pub fn concurrent_node_creation_and_listing_works<S: Service>() {
-        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
+        let test = Test::<S>::new_with_custom_watchdog(Watchdog::new_with_timeout(
+            Duration::from_secs(120),
+        ));
         let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         const NUMBER_OF_ITERATIONS: usize = 100;
         let handle = BarrierHandle::new();
         let barrier = BarrierBuilder::new(number_of_creators as _)
             .create(&handle)
             .unwrap();
-        let mut config = generate_isolated_config();
-        config.global.node.cleanup_dead_nodes_on_creation = false;
-        config.global.node.cleanup_dead_nodes_on_destruction = false;
 
         thread_scope(|s| {
             for _ in 0..number_of_creators {
                 s.thread_builder().spawn(|| {
                     barrier.wait();
                     for _ in 0..NUMBER_OF_ITERATIONS {
-                        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+                        let node = test.create_node();
 
                         let mut found_self = false;
                         let result = Node::<S>::list(node.config(), |node_state| {
@@ -342,9 +344,15 @@ pub mod node {
 
     #[conformance_test]
     pub fn node_listing_stops_when_callback_progression_signals_stop<S: Service>() {
-        let config = generate_isolated_config();
-        let node_1 = NodeBuilder::new().config(&config).create::<S>().unwrap();
-        let _node_2 = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let test = Test::<S>::new();
+        let node_1 = NodeBuilder::new()
+            .config(test.config())
+            .create::<S>()
+            .unwrap();
+        let _node_2 = NodeBuilder::new()
+            .config(test.config())
+            .create::<S>()
+            .unwrap();
 
         let mut node_counter = 0;
         let result = Node::<S>::list(node_1.config(), |_| {
@@ -358,8 +366,11 @@ pub mod node {
 
     #[conformance_test]
     pub fn i_am_not_dead<S: Service>() {
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let test = Test::<S>::new();
+        let node = NodeBuilder::new()
+            .config(test.config())
+            .create::<S>()
+            .unwrap();
 
         let mut nodes = vec![];
         let result = Node::<S>::list(node.config(), |node_state| {
@@ -379,16 +390,16 @@ pub mod node {
 
     #[conformance_test]
     pub fn signal_handling_mechanism_can_be_configured<S: Service>() {
-        let config = generate_isolated_config();
+        let test = Test::<S>::new();
         let node_1 = NodeBuilder::new()
             .signal_handling_mode(SignalHandlingMode::Disabled)
-            .config(&config)
+            .config(test.config())
             .create::<S>()
             .unwrap();
 
         let node_2 = NodeBuilder::new()
             .signal_handling_mode(SignalHandlingMode::HandleTerminationRequests)
-            .config(&config)
+            .config(test.config())
             .create::<S>()
             .unwrap();
 
@@ -398,8 +409,11 @@ pub mod node {
 
     #[conformance_test]
     pub fn by_default_termination_signals_are_handled<S: Service>() {
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let test = Test::<S>::new();
+        let node = NodeBuilder::new()
+            .config(test.config())
+            .create::<S>()
+            .unwrap();
 
         assert_that!(node.signal_handling_mode(), eq SignalHandlingMode::HandleTerminationRequests);
     }
