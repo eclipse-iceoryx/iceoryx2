@@ -10,12 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub use iceoryx2::testing::*;
+#![cfg_attr(not(any(test, feature = "std")), no_std)]
 
-use std::marker::PhantomData;
-use std::time::Duration;
+extern crate alloc;
 
+use alloc::vec::Vec;
+use core::marker::PhantomData;
+use core::time::Duration;
 use iceoryx2::prelude::*;
+pub use iceoryx2::testing::*;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_testing::watchdog::Watchdog;
 
@@ -93,7 +96,7 @@ impl<Service: iceoryx2::service::Service> Test<Service> {
     }
 
     pub fn list_nodes(&self) -> Vec<NodeState<Service>> {
-        let mut node_list = vec![];
+        let mut node_list = Vec::new();
         Node::<Service>::list(self.config(), |node_state| {
             node_list.push(node_state);
             CallbackProgression::Continue
