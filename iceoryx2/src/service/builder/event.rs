@@ -540,6 +540,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             prepare_static_config,
             generate_dynamic_config,
             |_| Ok(NoResource),
+            |_| {},
         )?;
 
         Ok(event::PortFactory::new(service_state))

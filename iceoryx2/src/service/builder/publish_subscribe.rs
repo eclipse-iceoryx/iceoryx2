@@ -681,6 +681,7 @@ impl<
             |_| Ok(()),
             generate_dynamic_config,
             |_| Ok(NoResource),
+            |_| {},
         )?;
 
         Ok(publish_subscribe::PortFactory::new(service_state))

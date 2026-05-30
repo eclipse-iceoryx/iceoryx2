@@ -639,12 +639,14 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         }
     }
 
+    #[allow(clippy::too_many_arguments)] // not public API, generic function to consolidate extremely complex service create algorithm in one place
     fn create<
         R: service::ServiceResource,
         FA: FnMut() -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState>,
         F1: FnMut(&mut StaticConfig) -> Result<(), ServiceCreateError>,
         F2: FnMut(&StaticConfig) -> DynamicConfigCreationArgs,
         F3: FnMut(&StaticConfig) -> Result<R, ServiceCreateError>,
+        F4: FnMut(&R),
     >(
         &self,
         msg: &str,
@@ -653,6 +655,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         mut prepare_service_config: F1,
         mut generate_dynamic_config: F2,
         mut create_service_resource: F3,
+        mut release_service_resource_ownership: F4,
     ) -> Result<service::ServiceState<ServiceType, R>, ServiceCreateError> {
         let mut service_config = self.service_config.clone();
         match is_service_available()? {
@@ -752,6 +755,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     service_tag.release_ownership();
                 }
                 dynamic_config.release_ownership();
+                release_service_resource_ownership(&resource);
 
                 let dyn_conf_creation_args = generate_dynamic_config(&service_config);
 
