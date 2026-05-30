@@ -15,7 +15,6 @@ extern crate alloc;
 use core::marker::PhantomData;
 use core::time::Duration;
 
-use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
 use iceoryx2::config::Config;
@@ -38,6 +37,7 @@ pub struct Test<Service: iceoryx2::service::Service> {
 impl<Service: iceoryx2::service::Service> Drop for Test<Service> {
     fn drop(&mut self) {
         Self::cleanup_dead_nodes(&self.config);
+        unsafe { remove_global_mgmt_segment::<Service>(&self.config).unwrap() };
     }
 }
 
@@ -70,15 +70,7 @@ impl<Service: iceoryx2::service::Service> Test<Service> {
         }
     }
 
-    fn abandon<T: Abandonable>(&self, thing: T) {
-        T::abandon(thing);
-    }
-
-    fn generate_node_name(i: usize, prefix: &str) -> NodeName {
-        NodeName::new(&(prefix.to_string() + &i.to_string())).unwrap()
-    }
-
-    fn create_good_node(&self) -> Node<Service> {
+    fn create_node(&self) -> Node<Service> {
         NodeBuilder::new()
             .config(self.config())
             .create::<Service>()
@@ -98,15 +90,6 @@ impl<Service: iceoryx2::service::Service> Test<Service> {
         .unwrap();
 
         node_list
-    }
-
-    fn create_bad_node(&self) -> Node<Service> {
-        let node_name = Self::generate_node_name(0, "toby or no toby");
-        NodeBuilder::new()
-            .name(&node_name)
-            .config(self.config())
-            .create()
-            .unwrap()
     }
 
     fn cleanup_dead_nodes(config: &Config) {
@@ -146,8 +129,8 @@ pub mod node_death {
 
         for i in 1..NUMBER_OF_DEAD_NODES_LIMIT {
             for _ in 0..i {
-                let sut = test.create_bad_node();
-                test.abandon(sut);
+                let sut = test.create_node();
+                sut.abandon();
             }
 
             let mut node_list = test.list_nodes();
@@ -182,11 +165,11 @@ pub mod node_death {
         let mut good_nodes = vec![];
 
         for _ in 0..NUMBER_OF_BAD_NODES {
-            bad_nodes.push(test.create_bad_node());
+            bad_nodes.push(test.create_node());
         }
 
         for _ in 0..NUMBER_OF_GOOD_NODES {
-            good_nodes.push(test.create_good_node());
+            good_nodes.push(test.create_node());
         }
 
         let mut bad_services = vec![];
@@ -254,11 +237,11 @@ pub mod node_death {
         let mut good_nodes = vec![];
 
         for _ in 0..NUMBER_OF_BAD_NODES {
-            bad_nodes.push(test.create_bad_node());
+            bad_nodes.push(test.create_node());
         }
 
         for _ in 0..NUMBER_OF_GOOD_NODES {
-            good_nodes.push(test.create_good_node());
+            good_nodes.push(test.create_node());
         }
 
         let mut bad_services = vec![];
@@ -320,8 +303,8 @@ pub mod node_death {
         let service_name = generate_service_name();
         let notifier_dead_event = EventId::new(8);
 
-        let dead_node = test.create_bad_node();
-        let node = test.create_good_node();
+        let dead_node = test.create_node();
+        let node = test.create_node();
 
         let dead_service = dead_node
             .service_builder(&service_name)
@@ -336,9 +319,9 @@ pub mod node_death {
         let service = node.service_builder(&service_name).event().open().unwrap();
         let listener = service.listener_builder().create().unwrap();
 
-        test.abandon(dead_node);
-        test.abandon(dead_notifier);
-        test.abandon(dead_service);
+        dead_node.abandon();
+        dead_notifier.abandon();
+        dead_service.abandon();
 
         assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
@@ -375,11 +358,11 @@ pub mod node_death {
         let mut good_nodes = vec![];
 
         for _ in 0..NUMBER_OF_BAD_NODES {
-            bad_nodes.push(test.create_bad_node());
+            bad_nodes.push(test.create_node());
         }
 
         for _ in 0..NUMBER_OF_GOOD_NODES {
-            good_nodes.push(test.create_good_node());
+            good_nodes.push(test.create_node());
         }
 
         for _ in 0..NUMBER_OF_SERVICES {
@@ -442,11 +425,11 @@ pub mod node_death {
         let mut good_readers = vec![];
 
         for _ in 0..NUMBER_OF_BAD_NODES {
-            bad_nodes.push(test.create_bad_node());
+            bad_nodes.push(test.create_node());
         }
 
         for _ in 0..NUMBER_OF_GOOD_NODES {
-            good_nodes.push(test.create_good_node());
+            good_nodes.push(test.create_node());
         }
 
         for _ in 0..NUMBER_OF_SERVICES {
@@ -500,7 +483,7 @@ pub mod node_death {
         let test = Test::<S>::new();
         let service_name = generate_service_name();
 
-        let bad_node = test.create_bad_node();
+        let bad_node = test.create_node();
         let bad_service = bad_node
             .service_builder(&service_name)
             .blackboard_creator::<u64>()
@@ -520,9 +503,9 @@ pub mod node_death {
             .unwrap();
         let reader = good_service.reader_builder().create().unwrap();
 
-        test.abandon(bad_node);
-        test.abandon(bad_writer);
-        test.abandon(bad_service);
+        bad_node.abandon();
+        bad_writer.abandon();
+        bad_service.abandon();
 
         assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
@@ -544,14 +527,14 @@ pub mod node_death {
         let test = Test::<S>::new();
         let service_name = generate_service_name();
 
-        let bad_node = test.create_bad_node();
+        let bad_node = test.create_node();
         let bad_service = bad_node
             .service_builder(&service_name)
             .event()
             .open_or_create()
             .unwrap();
-        test.abandon(bad_node);
-        test.abandon(bad_service);
+        bad_node.abandon();
+        bad_service.abandon();
 
         assert_that!(
             S::list(test.config(), |service_details| {
@@ -576,14 +559,14 @@ pub mod node_death {
         let test = Test::<S>::new();
         let service_name = generate_service_name();
 
-        let bad_node = test.create_bad_node();
+        let bad_node = test.create_node();
         let bad_service = bad_node
             .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .open_or_create()
             .unwrap();
-        test.abandon(bad_node);
-        test.abandon(bad_service);
+        bad_node.abandon();
+        bad_service.abandon();
 
         assert_that!(
             S::list(test.config(), |service_details| {
@@ -610,14 +593,14 @@ pub mod node_death {
         let test = Test::<S>::new();
         let service_name = generate_service_name();
 
-        let bad_node = test.create_bad_node();
+        let bad_node = test.create_node();
         let bad_service = bad_node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .open_or_create()
             .unwrap();
-        test.abandon(bad_node);
-        test.abandon(bad_service);
+        bad_node.abandon();
+        bad_service.abandon();
 
         assert_that!(
             S::list(test.config(), |service_details| {
@@ -642,15 +625,15 @@ pub mod node_death {
         let test = Test::<S>::new();
         let service_name = generate_service_name();
 
-        let bad_node = test.create_bad_node();
+        let bad_node = test.create_node();
         let bad_service = bad_node
             .service_builder(&service_name)
             .blackboard_creator::<u64>()
             .add_with_default::<u64>(0)
             .create()
             .unwrap();
-        test.abandon(bad_node);
-        test.abandon(bad_service);
+        bad_node.abandon();
+        bad_service.abandon();
 
         assert_that!(
             S::list(test.config(), |service_details| {
@@ -675,7 +658,7 @@ pub mod node_death {
         let test = Test::<S>::new();
         let service_name = generate_service_name();
 
-        let good_node = test.create_good_node();
+        let good_node = test.create_node();
         let good_service = good_node
             .service_builder(&service_name)
             .blackboard_creator::<u64>()
@@ -684,7 +667,7 @@ pub mod node_death {
             .create()
             .unwrap();
 
-        let bad_node = test.create_bad_node();
+        let bad_node = test.create_node();
         let bad_service = bad_node
             .service_builder(&service_name)
             .blackboard_opener::<u64>()
@@ -693,10 +676,10 @@ pub mod node_death {
         let bad_writer = bad_service.writer_builder().create().unwrap();
         let bad_reader = bad_service.reader_builder().create().unwrap();
 
-        test.abandon(bad_node);
-        test.abandon(bad_writer);
-        test.abandon(bad_reader);
-        test.abandon(bad_service);
+        bad_node.abandon();
+        bad_writer.abandon();
+        bad_reader.abandon();
+        bad_service.abandon();
 
         assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
@@ -720,15 +703,15 @@ pub mod node_death {
         #[type_name("SoSpecial")]
         struct SpecialKey(u64);
 
-        let bad_node = test.create_bad_node();
+        let bad_node = test.create_node();
         let bad_service = bad_node
             .service_builder(&service_name)
             .blackboard_creator::<SpecialKey>()
             .add_with_default::<u64>(SpecialKey(0))
             .create()
             .unwrap();
-        test.abandon(bad_node);
-        test.abandon(bad_service);
+        bad_node.abandon();
+        bad_service.abandon();
 
         assert_that!(
             S::list(test.config(), |service_details| {
@@ -747,7 +730,7 @@ pub mod node_death {
             is_ok
         );
 
-        let node = test.create_good_node();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .blackboard_creator::<SpecialKey>()
@@ -763,15 +746,15 @@ pub mod node_death {
         let test = Test::<S>::new();
         let service_name = generate_service_name();
 
-        let bad_node = test.create_bad_node();
+        let bad_node = test.create_node();
         let bad_service = bad_node
             .service_builder(&service_name)
             .blackboard_creator::<u64>()
             .add_with_default::<u64>(0)
             .create()
             .unwrap();
-        test.abandon(bad_node);
-        test.abandon(bad_service);
+        bad_node.abandon();
+        bad_service.abandon();
 
         assert_that!(
             S::list(test.config(), |service_details| {
@@ -790,7 +773,7 @@ pub mod node_death {
             is_ok
         );
 
-        let node = test.create_good_node();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .blackboard_creator::<u64>()
@@ -803,12 +786,12 @@ pub mod node_death {
     pub fn node_cleanup_option_works_on_node_creation<S: iceoryx2::service::Service>() {
         let test = Test::<S>::new();
 
-        let bad_node = test.create_bad_node();
-        test.abandon(bad_node);
+        let bad_node = test.create_node();
+        bad_node.abandon();
 
         assert_that!(test.number_of_nodes(), eq 1);
 
-        let node_without_cleanup = test.create_good_node();
+        let node_without_cleanup = test.create_node();
 
         assert_that!(test.number_of_nodes(), eq 2);
 
@@ -832,14 +815,14 @@ pub mod node_death {
             .node
             .cleanup_dead_nodes_on_destruction = true;
 
-        let node_with_cleanup = test.create_good_node();
+        let node_with_cleanup = test.create_node();
 
         let mut config = test.config().clone();
         config.global.node.cleanup_dead_nodes_on_destruction = false;
         let node_without_cleanup = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
-        let bad_node = test.create_bad_node();
-        test.abandon(bad_node);
+        let bad_node = test.create_node();
+        bad_node.abandon();
 
         assert_that!(test.number_of_nodes(), eq 3);
 
@@ -863,12 +846,12 @@ pub mod node_death {
     ) {
         test_requires!(does_support_persistency::<S>());
 
-        let bad_node = test.create_bad_node();
+        let bad_node = test.create_node();
         let bad_service = service_builder(&bad_node);
-        test.abandon(bad_node);
-        test.abandon(bad_service);
+        bad_node.abandon();
+        bad_service.abandon();
 
-        let sut = test.create_good_node();
+        let sut = test.create_node();
         let _service = service_builder(&sut);
 
         let number_of_nodes = test.number_of_nodes();
@@ -1000,7 +983,7 @@ pub mod node_death {
         const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 2;
         let service_name = generate_service_name();
 
-        let sut = test.create_bad_node();
+        let sut = test.create_node();
         let _service = sut
             .service_builder(&service_name)
             .blackboard_creator::<u64>()
@@ -1026,7 +1009,7 @@ pub mod node_death {
         const NUMBER_OF_CONNECTED_NODES_AFTER_CONNECTION: usize = 3;
         let service_name = generate_service_name();
 
-        let sut = test.create_bad_node();
+        let sut = test.create_node();
         let _service = sut
             .service_builder(&service_name)
             .blackboard_creator::<u64>()
@@ -1056,7 +1039,7 @@ pub mod node_death {
         let config = test.config().clone();
 
         for number_of_service_tags in 1..=MAX_NUMBER_OF_TAGS {
-            let sut = test.create_bad_node();
+            let sut = test.create_node();
             let node_id = *sut.id();
 
             let mut service_tags = vec![];
@@ -1095,7 +1078,7 @@ pub mod node_death {
         let config = test.config().clone();
 
         for number_of_service_tags in 1..=MAX_NUMBER_OF_TAGS {
-            let sut = test.create_bad_node();
+            let sut = test.create_node();
             let node_id = *sut.id();
 
             let mut port_tags = vec![];
@@ -1114,6 +1097,7 @@ pub mod node_death {
 
             let node_state = get_node_state::<S>(&node_id, &config).unwrap();
             assert_that!(node_state, is_none);
+            assert_that!(test.number_of_nodes(), eq 0);
 
             for tag in port_tags {
                 assert_that!(does_port_tag_exist::<S>(tag.0, &tag.1, &tag.2).unwrap(), eq false);
@@ -1134,7 +1118,7 @@ pub mod node_death {
             let mut service_tags = vec![];
             let mut node_ids = vec![];
             for _ in 0..NUMBER_OF_NODES {
-                let sut = test.create_bad_node();
+                let sut = test.create_node();
                 let node_id = *sut.id();
                 node_ids.push(node_id);
 
@@ -1161,11 +1145,87 @@ pub mod node_death {
             let cleanup_results = Node::<S>::try_cleanup_dead_nodes(&config);
             assert_that!(cleanup_results.cleanups, eq NUMBER_OF_NODES as u64);
             assert_that!(cleanup_results.failed_cleanups, eq 0);
+            assert_that!(test.number_of_nodes(), eq 0);
 
             for node_id in node_ids {
                 let node_state = get_node_state::<S>(&node_id, &config).unwrap();
                 assert_that!(node_state, is_none);
             }
+
+            for tag in service_tags {
+                assert_that!(does_service_tag_exist::<S>(&tag.0, &tag.1, &tag.2).unwrap(), eq false);
+            }
+
+            for tag in port_tags {
+                assert_that!(does_port_tag_exist::<S>(tag.0, &tag.1, &tag.2).unwrap(), eq false);
+            }
+        }
+    }
+
+    #[conformance_test]
+    pub fn dead_node_is_removed_from_service_when_stale_tags_are_present<
+        S: iceoryx2::service::Service,
+    >() {
+        const MAX_NUMBER_OF_TAGS: usize = 10;
+
+        let test = Test::<S>::new();
+        let config = test.config().clone();
+
+        for number_of_service_tags in 1..=MAX_NUMBER_OF_TAGS {
+            let bad_node = test.create_node();
+            let good_node = test.create_node();
+            let service_name = generate_service_name();
+            let bad_service = bad_node
+                .service_builder(&service_name)
+                .event()
+                .create()
+                .unwrap();
+            let good_service = good_node
+                .service_builder(&service_name)
+                .event()
+                .open()
+                .unwrap();
+            let node_id = *bad_node.id();
+
+            let mut service_tags = vec![];
+            let mut port_tags = vec![];
+
+            for _ in 0..number_of_service_tags {
+                let service_name = generate_service_name();
+                let service_hash =
+                    generate_service_hash::<S>(&service_name, MessagingPattern::PublishSubscribe);
+                create_service_tag(&bad_node, &service_hash)
+                    .unwrap()
+                    .unwrap()
+                    .release_ownership();
+                service_tags.push((service_hash, config.clone(), node_id));
+
+                let port_id = UniqueSystemId::new().unwrap().value();
+                create_port_tag(&bad_node, port_id)
+                    .unwrap()
+                    .release_ownership();
+                port_tags.push((port_id, config.clone(), node_id));
+            }
+
+            bad_service.abandon();
+            bad_node.abandon();
+
+            let cleanup_results = good_service.try_cleanup_dead_nodes();
+            assert_that!(cleanup_results.cleanups, eq 1);
+            assert_that!(cleanup_results.failed_cleanups, eq 0);
+
+            let node_state = get_node_state::<S>(&node_id, &config).unwrap();
+            assert_that!(node_state, is_none);
+
+            let mut counter = 0;
+            good_service
+                .nodes(|node_state| {
+                    counter += 1;
+                    assert_that!(node_state.node_id(), eq good_node.id());
+                    CallbackProgression::Continue
+                })
+                .unwrap();
+            assert_that!(counter, eq 1);
 
             for tag in service_tags {
                 assert_that!(does_service_tag_exist::<S>(&tag.0, &tag.1, &tag.2).unwrap(), eq false);

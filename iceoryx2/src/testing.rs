@@ -17,10 +17,11 @@ use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_posix::{config::TEST_DIRECTORY, testing::*};
 use iceoryx2_bb_system_types::file_name::*;
 use iceoryx2_cal::event::NamedConceptMgmt;
-use iceoryx2_cal::named_concept::NamedConceptDoesExistError;
+use iceoryx2_cal::named_concept::{NamedConceptDoesExistError, NamedConceptRemoveError};
 use iceoryx2_cal::static_storage::StaticStorageCreateError;
 
 use crate::identifiers::UniqueNodeId;
+use crate::node::global_management_segment::GlobalManagementSegment;
 use crate::node::{Node, NodeListFailure, NodeState};
 use crate::prelude::MessagingPattern;
 use crate::service::config_scheme::{port_tag_config, service_tag_config};
@@ -144,4 +145,15 @@ pub fn generate_service_hash<S: crate::service::Service>(
     messaging_pattern: MessagingPattern,
 ) -> ServiceHash {
     ServiceHash::new::<S::ServiceNameHasher>(service_name, messaging_pattern)
+}
+
+/// # Safety
+///
+/// * It must be ensured that !NO! other process is running currently using the
+///   same iceoryx2 domain.
+///
+pub unsafe fn remove_global_mgmt_segment<S: crate::service::Service>(
+    config: &Config,
+) -> Result<bool, NamedConceptRemoveError> {
+    unsafe { GlobalManagementSegment::<S>::remove(config) }
 }

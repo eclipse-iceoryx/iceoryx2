@@ -139,7 +139,7 @@
 //! # }
 //! ```
 
-mod global_management_segment;
+pub(crate) mod global_management_segment;
 /// The name for a node.
 pub mod node_name;
 
