@@ -50,6 +50,7 @@ pub mod service {
         type OpenError: core::fmt::Debug;
 
         fn new() -> Self;
+        fn new_with_custom_watchdog(watchdog: Watchdog) -> Self;
         fn create(
             &self,
             node: &Node<Sut>,
@@ -64,6 +65,8 @@ pub mod service {
         ) -> Result<Self::Factory, Self::OpenError>;
         fn messaging_pattern() -> MessagingPattern;
         fn set_max_number_of_nodes(&mut self, value: usize);
+        fn context(&self) -> &Test<Sut>;
+        fn context_mut(&mut self) -> &mut Test<Sut>;
 
         fn assert_create_error(error: Self::CreateError);
         fn assert_open_error(error: Self::OpenError);
@@ -71,6 +74,7 @@ pub mod service {
     }
 
     pub struct PubSubTests<Sut: Service> {
+        pub context: Test<Sut>,
         pub number_of_nodes: usize,
         _data: PhantomData<Sut>,
     }
@@ -79,6 +83,7 @@ pub mod service {
     unsafe impl<Sut: Service> Sync for PubSubTests<Sut> {}
 
     pub struct EventTests<Sut: Service> {
+        pub context: Test<Sut>,
         pub number_of_nodes: usize,
         _data: PhantomData<Sut>,
     }
@@ -87,6 +92,7 @@ pub mod service {
     unsafe impl<Sut: Service> Sync for EventTests<Sut> {}
 
     pub struct RequestResponseTests<Sut: Service> {
+        pub context: Test<Sut>,
         pub number_of_nodes: usize,
         _data: PhantomData<Sut>,
     }
@@ -95,6 +101,7 @@ pub mod service {
     unsafe impl<Sut: Service> Sync for RequestResponseTests<Sut> {}
 
     pub struct BlackboardTests<Sut: Service> {
+        pub context: Test<Sut>,
         pub number_of_nodes: usize,
         _data: PhantomData<Sut>,
     }
@@ -108,10 +115,23 @@ pub mod service {
         type OpenError = PublishSubscribeOpenError;
 
         fn new() -> Self {
+            Self::new_with_custom_watchdog(Watchdog::new())
+        }
+
+        fn new_with_custom_watchdog(watchdog: Watchdog) -> Self {
             Self {
+                context: Test::new_with_custom_watchdog(watchdog),
                 number_of_nodes: (SystemInfo::NumberOfCpuCores.value()).clamp(128, 1024),
                 _data: PhantomData,
             }
+        }
+
+        fn context(&self) -> &Test<Sut> {
+            &self.context
+        }
+
+        fn context_mut(&mut self) -> &mut Test<Sut> {
+            &mut self.context
         }
 
         fn set_max_number_of_nodes(&mut self, value: usize) {
@@ -180,7 +200,12 @@ pub mod service {
         type OpenError = EventOpenError;
 
         fn new() -> Self {
+            Self::new_with_custom_watchdog(Watchdog::new())
+        }
+
+        fn new_with_custom_watchdog(watchdog: Watchdog) -> Self {
             Self {
+                context: Test::new_with_custom_watchdog(watchdog),
                 number_of_nodes: (SystemInfo::NumberOfCpuCores.value()).clamp(128, 1024),
                 _data: PhantomData,
             }
@@ -195,6 +220,14 @@ pub mod service {
             node.service_builder(service_name)
                 .event()
                 .open_with_attributes(attributes)
+        }
+
+        fn context(&self) -> &Test<Sut> {
+            &self.context
+        }
+
+        fn context_mut(&mut self) -> &mut Test<Sut> {
+            &mut self.context
         }
 
         fn set_max_number_of_nodes(&mut self, value: usize) {
@@ -251,7 +284,12 @@ pub mod service {
         type OpenError = RequestResponseOpenError;
 
         fn new() -> Self {
+            Self::new_with_custom_watchdog(Watchdog::new())
+        }
+
+        fn new_with_custom_watchdog(watchdog: Watchdog) -> Self {
             Self {
+                context: Test::new_with_custom_watchdog(watchdog),
                 number_of_nodes: (SystemInfo::NumberOfCpuCores.value()).clamp(128, 1024),
                 _data: PhantomData,
             }
@@ -278,6 +316,14 @@ pub mod service {
                 .request_response::<u64, u64>()
                 .max_nodes(self.number_of_nodes)
                 .create_with_attributes(attributes)
+        }
+
+        fn context(&self) -> &Test<Sut> {
+            &self.context
+        }
+
+        fn context_mut(&mut self) -> &mut Test<Sut> {
+            &mut self.context
         }
 
         fn set_max_number_of_nodes(&mut self, value: usize) {
@@ -323,7 +369,12 @@ pub mod service {
         type OpenError = BlackboardOpenError;
 
         fn new() -> Self {
+            Self::new_with_custom_watchdog(Watchdog::new())
+        }
+
+        fn new_with_custom_watchdog(watchdog: Watchdog) -> Self {
             Self {
+                context: Test::new_with_custom_watchdog(watchdog),
                 number_of_nodes: (SystemInfo::NumberOfCpuCores.value()).clamp(128, 1024),
                 _data: PhantomData,
             }
@@ -351,6 +402,14 @@ pub mod service {
                 .max_nodes(self.number_of_nodes)
                 .add::<u32>(0, 0)
                 .create_with_attributes(attributes)
+        }
+
+        fn context(&self) -> &Test<Sut> {
+            &self.context
+        }
+
+        fn context_mut(&mut self) -> &mut Test<Sut> {
+            &mut self.context
         }
 
         fn set_max_number_of_nodes(&mut self, value: usize) {
@@ -394,9 +453,9 @@ pub mod service {
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
+        let test = Factory::new();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node_1 = test.context().create_node();
         let sut_pub_sub = node_1
             .service_builder(&service_name)
             .publish_subscribe::<u64>()
@@ -404,7 +463,7 @@ pub mod service {
         assert_that!(sut_pub_sub, is_ok);
         let sut_pub_sub = sut_pub_sub.unwrap();
 
-        let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node_2 = test.context().create_node();
         let sut_event = node_2.service_builder(&service_name).event().create();
         assert_that!(sut_event, is_ok);
         let sut_event = sut_event.unwrap();
@@ -431,10 +490,9 @@ pub mod service {
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
-        let _watch_dog = Watchdog::new();
+        let test = Factory::new();
         let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         const NUMBER_OF_ITERATIONS: usize = 25;
-        let test = Factory::new();
 
         let handle_start = BarrierHandle::new();
         let handle_enter = BarrierHandle::new();
@@ -449,12 +507,11 @@ pub mod service {
             .create(&handle_exit)
             .unwrap();
 
-        let config = generate_isolated_config();
         thread_scope(|s| {
             for _ in 0..number_of_threads {
                 s.thread_builder().spawn(|| {
                     barrier_start.wait();
-                    let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+                    let node = test.context().create_node();
                     for _ in 0..NUMBER_OF_ITERATIONS {
                         let service_name = generate_service_name();
                         barrier_enter.wait();
@@ -478,10 +535,9 @@ pub mod service {
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
-        let _watch_dog = Watchdog::new();
+        let test = Factory::new();
         let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         const NUMBER_OF_ITERATIONS: usize = 25;
-        let test = Factory::new();
 
         let success_counter = AtomicU64::new(0);
         let handle_enter = BarrierHandle::new();
@@ -494,11 +550,10 @@ pub mod service {
             .unwrap();
         let service_name = generate_service_name();
 
-        let config = generate_isolated_config();
         thread_scope(|s| {
             for _ in 0..number_of_threads {
                 s.thread_builder().spawn(|| {
-                    let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+                    let node = test.context().create_node();
                     for _ in 0..NUMBER_OF_ITERATIONS {
                         barrier_enter.wait();
 
@@ -532,11 +587,11 @@ pub mod service {
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
-        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
+        let test =
+            Factory::new_with_custom_watchdog(Watchdog::new_with_timeout(Duration::from_secs(120)));
         const NUMBER_OF_CLOSE_THREADS: usize = 1;
         let number_of_open_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         let number_of_threads = NUMBER_OF_CLOSE_THREADS + number_of_open_threads;
-        let test = Factory::new();
 
         let handle_enter = BarrierHandle::new();
         let handle_exit = BarrierHandle::new();
@@ -553,10 +608,9 @@ pub mod service {
             .collect();
         let service_names = &service_names;
 
-        let config = generate_isolated_config();
         thread_scope(|s| {
             s.thread_builder().spawn(|| {
-                let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+                let node = test.context().create_node();
                 for service_name in service_names {
                     let sut = test
                         .create(&node, service_name, &AttributeSpecifier::new())
@@ -570,7 +624,7 @@ pub mod service {
 
             for _ in 0..number_of_open_threads {
                 s.thread_builder().spawn(|| {
-                    let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+                    let node = test.context().create_node();
                     for service_name in service_names {
                         barrier_enter.wait();
                         let sut = test.open(&node, service_name, &AttributeVerifier::new());
@@ -615,9 +669,8 @@ pub mod service {
                 &"lick on the toad".try_into().unwrap(),
             )
             .unwrap();
-        let config = generate_isolated_config();
-        let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node_1 = test.context().create_node();
+        let node_2 = test.context().create_node();
         let sut_create = test
             .create(&node_1, &service_name, &defined_attributes)
             .unwrap();
@@ -635,9 +688,8 @@ pub mod service {
     pub fn opener_succeeds_when_attributes_do_match<Sut: Service, Factory: SutFactory<Sut>>() {
         let test = Factory::new();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node_1 = test.context().create_node();
+        let node_2 = test.context().create_node();
         let defined_attributes = AttributeSpecifier::new()
             .define(
                 &"1. Hello".try_into().unwrap(),
@@ -698,9 +750,8 @@ pub mod service {
     >() {
         let test = Factory::new();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node_1 = test.context().create_node();
+        let node_2 = test.context().create_node();
         let defined_attributes = AttributeSpecifier::new()
             .define(
                 &"1. Hello".try_into().unwrap(),
@@ -738,9 +789,8 @@ pub mod service {
     >() {
         let test = Factory::new();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node_1 = test.context().create_node();
+        let node_2 = test.context().create_node();
         let defined_attributes = AttributeSpecifier::new()
             .define(
                 &"1. Hello".try_into().unwrap(),
@@ -778,9 +828,8 @@ pub mod service {
     >() {
         let test = Factory::new();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node_1 = test.context().create_node();
+        let node_2 = test.context().create_node();
         let defined_attributes = AttributeSpecifier::new()
             .define(
                 &"1. Hello".try_into().unwrap(),
@@ -828,9 +877,8 @@ pub mod service {
     >() {
         let test = Factory::new();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node_1 = test.context().create_node();
+        let node_2 = test.context().create_node();
         let defined_attributes = AttributeSpecifier::new()
             .define(
                 &"1. Hello".try_into().unwrap(),
@@ -865,9 +913,8 @@ pub mod service {
     >() {
         let test = Factory::new();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node_1 = test.context().create_node();
+        let node_2 = test.context().create_node();
         let defined_attributes = AttributeSpecifier::new()
             .define(
                 &"1. Hello".try_into().unwrap(),
@@ -932,13 +979,12 @@ pub mod service {
         const NUMBER_OF_SERVICES: usize = 16;
         let test = Factory::new();
 
-        let config = generate_isolated_config();
         let mut services = vec![];
         let mut service_hashs = vec![];
         let mut nodes = vec![];
         for _ in 0..NUMBER_OF_SERVICES {
             let service_name = generate_service_name();
-            let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+            let node = test.context().create_node();
             let sut = test
                 .create(&node, &service_name, &AttributeSpecifier::new())
                 .unwrap();
@@ -949,7 +995,7 @@ pub mod service {
         }
 
         let mut listed_services = vec![];
-        let result = Sut::list(&config, |service| {
+        let result = Sut::list(test.context().config(), |service| {
             listed_services.push(*service.static_details.service_hash());
             CallbackProgression::Continue
         });
@@ -967,8 +1013,7 @@ pub mod service {
     >() {
         const NUMBER_OF_SERVICES: usize = 16;
         let test = Factory::new();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node = test.context().create_node();
 
         let mut services = vec![];
         for _ in 0..NUMBER_OF_SERVICES {
@@ -981,7 +1026,7 @@ pub mod service {
         }
 
         let mut service_counter = 0;
-        let result = Sut::list(&config, |_service| {
+        let result = Sut::list(test.context().config(), |_service| {
             service_counter += 1;
             CallbackProgression::Stop
         });
@@ -993,8 +1038,8 @@ pub mod service {
     // disabled since the windows defender interfers and causes ERROR_ACCESS_DENIED failures on the platform when it locks file for scanning
     #[conformance_test]
     pub fn concurrent_service_creation_and_listing_works<Sut: Service, Factory: SutFactory<Sut>>() {
-        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
-        let test = Factory::new();
+        let test =
+            Factory::new_with_custom_watchdog(Watchdog::new_with_timeout(Duration::from_secs(120)));
         let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         const NUMBER_OF_ITERATIONS: usize = 40;
         let handle = BarrierHandle::new();
@@ -1002,12 +1047,10 @@ pub mod service {
             .create(&handle)
             .unwrap();
 
-        let config = generate_isolated_config();
-
         thread_scope(|s| {
             for _ in 0..number_of_creators {
                 s.thread_builder().spawn(|| {
-                    let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+                    let node = test.context().create_node();
                     barrier.wait();
 
                     for _ in 0..NUMBER_OF_ITERATIONS {
@@ -1017,7 +1060,7 @@ pub mod service {
                             .unwrap();
 
                         let mut found_me = false;
-                        let result = Sut::list(&config, |s| {
+                        let result = Sut::list(test.context().config(), |s| {
                             if sut.service_hash() == s.static_details.service_hash() {
                                 found_me = true;
                             }
@@ -1040,8 +1083,8 @@ pub mod service {
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
-        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
-        let test = Factory::new();
+        let test =
+            Factory::new_with_custom_watchdog(Watchdog::new_with_timeout(Duration::from_secs(120)));
         let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         const NUMBER_OF_ITERATIONS: usize = 30;
         let handle = BarrierHandle::new();
@@ -1049,8 +1092,7 @@ pub mod service {
             .create(&handle)
             .unwrap();
 
-        let config = generate_isolated_config();
-        let main_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let main_node = test.context().create_node();
         let service_name = generate_service_name();
         let attributes = AttributeVerifier::new();
         let _service = test.create(&main_node, &service_name, &AttributeSpecifier::new());
@@ -1061,7 +1103,7 @@ pub mod service {
                     barrier.wait();
 
                     for _ in 0..NUMBER_OF_ITERATIONS {
-                        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+                        let node = test.context().create_node();
                         let service = test.open(&node, &service_name, &attributes).unwrap();
 
                         let mut found_me = false;
@@ -1105,8 +1147,8 @@ pub mod service {
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
-        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
-        let test = Factory::new();
+        let test =
+            Factory::new_with_custom_watchdog(Watchdog::new_with_timeout(Duration::from_secs(120)));
         let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         const NUMBER_OF_ITERATIONS: usize = 30;
         let handle = BarrierHandle::new();
@@ -1114,8 +1156,7 @@ pub mod service {
             .create(&handle)
             .unwrap();
 
-        let config = generate_isolated_config();
-        let main_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let main_node = test.context().create_node();
         let service_name = generate_service_name();
         let attributes = AttributeVerifier::new();
         let _service = test.create(&main_node, &service_name, &AttributeSpecifier::new());
@@ -1126,13 +1167,16 @@ pub mod service {
                     barrier.wait();
 
                     for _ in 0..NUMBER_OF_ITERATIONS {
-                        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+                        let node = test.context().create_node();
                         let _service = test.open(&node, &service_name, &attributes).unwrap();
 
-                        let service_details =
-                            Sut::details(&service_name, &config, Factory::messaging_pattern())
-                                .unwrap()
-                                .unwrap();
+                        let service_details = Sut::details(
+                            &service_name,
+                            test.context().config(),
+                            Factory::messaging_pattern(),
+                        )
+                        .unwrap()
+                        .unwrap();
 
                         assert_that!(service_details.dynamic_details, is_some);
                         let dynamic_details = service_details.dynamic_details.unwrap();
@@ -1175,8 +1219,7 @@ pub mod service {
         let test = Factory::new();
         const NUMBER_OF_NODES: usize = 5;
 
-        let config = generate_isolated_config();
-        let main_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let main_node = test.context().create_node();
         let service_name = generate_service_name();
         let attributes = AttributeVerifier::new();
         let main_service = test
@@ -1206,7 +1249,7 @@ pub mod service {
         };
 
         for _ in 0..NUMBER_OF_NODES {
-            let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+            let node = test.context().create_node();
             let service = test.open(&node, &service_name, &attributes).unwrap();
 
             let registered_node_ids = get_registered_node_ids(&service);
@@ -1240,8 +1283,7 @@ pub mod service {
         let service_name = generate_service_name();
         const REPETITIONS: usize = 128;
 
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node = test.context().create_node();
         let sut = test.create(&node, &service_name, &AttributeSpecifier::new());
         assert_that!(sut, is_ok);
 
@@ -1262,8 +1304,7 @@ pub mod service {
     >() {
         let test = Factory::new();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node = test.context().create_node();
 
         let sut = test
             .create(&node, &service_name, &AttributeSpecifier::new())
@@ -1282,9 +1323,8 @@ pub mod service {
     >() {
         let test = Factory::new();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let dead_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let dead_node = test.context().create_node();
+        let node = test.context().create_node();
 
         let dead_sut = test
             .create(&dead_node, &service_name, &AttributeSpecifier::new())
@@ -1309,16 +1349,17 @@ pub mod service {
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
-        let test = Factory::new();
+        let mut test = Factory::new();
         let service_name = generate_service_name();
-        let mut config = generate_isolated_config();
-        config.global.node.cleanup_dead_nodes_on_creation = false;
-        config.global.node.cleanup_dead_nodes_on_destruction = false;
-        config.global.service.cleanup_dead_nodes_on_open = true;
+        test.context_mut()
+            .config_mut()
+            .global
+            .service
+            .cleanup_dead_nodes_on_open = true;
 
-        let dead_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let dead_node = test.context().create_node();
+        let node_1 = test.context().create_node();
+        let node_2 = test.context().create_node();
         let node_ids = vec![*node_1.id(), *node_2.id()];
 
         let dead_service = test
@@ -1358,15 +1399,16 @@ pub mod service {
     >() {
         let mut test = Factory::new();
         let service_name = generate_service_name();
-        let mut config = generate_isolated_config();
-        config.global.node.cleanup_dead_nodes_on_creation = false;
-        config.global.node.cleanup_dead_nodes_on_destruction = false;
-        config.global.service.cleanup_dead_nodes_on_open = true;
+        test.context_mut()
+            .config_mut()
+            .global
+            .service
+            .cleanup_dead_nodes_on_open = true;
         test.set_max_number_of_nodes(2);
 
-        let dead_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let dead_node = test.context().create_node();
+        let node_1 = test.context().create_node();
+        let node_2 = test.context().create_node();
 
         let dead_service = test
             .create(&dead_node, &service_name, &AttributeSpecifier::new())
@@ -1386,15 +1428,11 @@ pub mod service {
     pub fn no_cleanup_when_on_open_cleanup_is_disabled<Sut: Service, Factory: SutFactory<Sut>>() {
         let mut test = Factory::new();
         let service_name = generate_service_name();
-        let mut config = generate_isolated_config();
-        config.global.node.cleanup_dead_nodes_on_creation = false;
-        config.global.node.cleanup_dead_nodes_on_destruction = false;
-        config.global.service.cleanup_dead_nodes_on_open = false;
         test.set_max_number_of_nodes(2);
 
-        let dead_node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let dead_node = test.context().create_node();
+        let node_1 = test.context().create_node();
+        let node_2 = test.context().create_node();
 
         let dead_service = test
             .create(&dead_node, &service_name, &AttributeSpecifier::new())
