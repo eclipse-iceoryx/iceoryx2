@@ -36,28 +36,30 @@ pub mod server {
 
     const TIMEOUT: Duration = Duration::from_millis(50);
 
-    fn create_node<Sut: Service>() -> Node<Sut> {
-        let config = generate_isolated_config();
-        NodeBuilder::new().config(&config).create::<Sut>().unwrap()
+    trait TestServiceExt<Sut: Service> {
+        fn create_node_and_service(&self) -> (Node<Sut>, PortFactory<Sut, u64, (), u64, ()>);
     }
 
-    fn create_node_and_service<Sut: Service>() -> (Node<Sut>, PortFactory<Sut, u64, (), u64, ()>) {
-        let service_name = generate_service_name();
-        let node = create_node::<Sut>();
-        let service = node
-            .service_builder(&service_name)
-            .request_response::<u64, u64>()
-            .enable_fire_and_forget_requests(false)
-            .create()
-            .unwrap();
+    impl<Sut: Service> TestServiceExt<Sut> for Test<Sut> {
+        fn create_node_and_service(&self) -> (Node<Sut>, PortFactory<Sut, u64, (), u64, ()>) {
+            let service_name = generate_service_name();
+            let node = self.create_node();
+            let service = node
+                .service_builder(&service_name)
+                .request_response::<u64, u64>()
+                .enable_fire_and_forget_requests(false)
+                .create()
+                .unwrap();
 
-        (node, service)
+            (node, service)
+        }
     }
 
     #[conformance_test]
     pub fn disconnected_server_does_not_block_new_servers<Sut: Service>() {
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -76,7 +78,8 @@ pub mod server {
 
     #[conformance_test]
     pub fn receiving_requests_works_with_server_created_first<Sut: Service>() {
-        let (_node, service) = create_node_and_service::<Sut>();
+        let test = Test::<Sut>::new();
+        let (_node, service) = test.create_node_and_service();
         let sut = service.server_builder().create().unwrap();
         let client = service.client_builder().create().unwrap();
 
@@ -90,7 +93,8 @@ pub mod server {
 
     #[conformance_test]
     pub fn receiving_requests_works_with_client_created_first<Sut: Service>() {
-        let (_node, service) = create_node_and_service::<Sut>();
+        let test = Test::<Sut>::new();
+        let (_node, service) = test.create_node_and_service();
         let client = service.client_builder().create().unwrap();
         let sut = service.server_builder().create().unwrap();
 
@@ -104,7 +108,8 @@ pub mod server {
 
     #[conformance_test]
     pub fn requests_of_a_disconnected_client_are_not_received<Sut: Service>() {
-        let (_node, service) = create_node_and_service::<Sut>();
+        let test = Test::<Sut>::new();
+        let (_node, service) = test.create_node_and_service();
         let client = service.client_builder().create().unwrap();
         let sut = service.server_builder().create().unwrap();
 
@@ -120,7 +125,8 @@ pub mod server {
 
     #[conformance_test]
     pub fn requests_are_not_delivered_to_late_joiners<Sut: Service>() {
-        let (_node, service) = create_node_and_service::<Sut>();
+        let test = Test::<Sut>::new();
+        let (_node, service) = test.create_node_and_service();
         let client = service.client_builder().create().unwrap();
 
         assert_that!(client.send_copy(5678), is_ok);
@@ -136,8 +142,9 @@ pub mod server {
         max_active_requests: usize,
         max_clients: usize,
     ) {
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -174,7 +181,8 @@ pub mod server {
 
     #[conformance_test]
     pub fn max_loaned_responses_per_requests_is_adjusted_to_sane_values<Sut: Service>() {
-        let (_node, service) = create_node_and_service::<Sut>();
+        let test = Test::<Sut>::new();
+        let (_node, service) = test.create_node_and_service();
 
         let sut = service
             .server_builder()
@@ -194,8 +202,9 @@ pub mod server {
     #[conformance_test]
     pub fn can_loan_at_most_max_responses_per_requests<Sut: Service>() {
         const MAX_LOANS: usize = 5;
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -224,7 +233,8 @@ pub mod server {
     #[conformance_test]
     pub fn override_preallocated_responses_to_one_works<Sut: Service>() {
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -249,7 +259,8 @@ pub mod server {
 
     pub fn override_preallocated_responses_to_zero_rounds_up_to_one<Sut: Service>() {
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -275,7 +286,8 @@ pub mod server {
     pub fn override_preallocated_responses_many_works<Sut: Service>() {
         const MAX_NUMBER_OF_RESPONSES: usize = 10;
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
 
         for n in 1..MAX_NUMBER_OF_RESPONSES {
             let service = node
@@ -358,8 +370,9 @@ pub mod server {
     pub fn backpressure_strategy_discard_discards_responses_when_client_buffer_is_full<
         Sut: Service,
     >() {
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -391,9 +404,9 @@ pub mod server {
 
     #[conformance_test]
     pub fn backpressure_strategy_block_blocks_responses_when_client_buffer_is_full<Sut: Service>() {
-        let _watchdog = Watchdog::new();
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -447,9 +460,9 @@ pub mod server {
     pub fn backpressure_strategy_block_unblocks_when_pending_response_goes_out_of_scope<
         Sut: Service,
     >() {
-        let _watchdog = Watchdog::new();
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -509,10 +522,9 @@ pub mod server {
             PortFactoryServer<'_, Sut, u64, (), u64, ()>,
         ) -> PortFactoryServer<'_, Sut, u64, (), u64, ()>,
     {
-        let _watchdog = Watchdog::new();
-
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -731,7 +743,7 @@ pub mod server {
     pub fn server_with_backpressure_handler_follows_backpressure_strategy_with_retry_until_delivered<
         Sut: Service,
     >() {
-        let _watchdog = Watchdog::new();
+        let test = Test::<Sut>::new();
 
         thread_scope(|s| {
             const TIMEOUT: Duration = Duration::from_millis(25);
@@ -746,7 +758,7 @@ pub mod server {
             let finish_barrier = BarrierBuilder::new(2).create(&finish_handle).unwrap();
 
             let service_name = generate_service_name();
-            let node = create_node::<Sut>();
+            let node = test.create_node();
             let service = node
                 .service_builder(&service_name)
                 .request_response::<u64, u64>()
@@ -820,8 +832,9 @@ pub mod server {
         const ITERATIONS: usize = 20;
         const MAX_CLIENTS: usize = 4;
         const RESPONSE_BUFFER_SIZE: usize = 7;
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -864,8 +877,9 @@ pub mod server {
     pub fn updates_connections_after_reconnect<Sut: Service>() {
         const ITERATIONS: usize = 20;
         const MAX_CLIENTS: usize = 4;
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -894,8 +908,9 @@ pub mod server {
     ) {
         const ITERATIONS: usize = 5;
 
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -990,8 +1005,9 @@ pub mod server {
     ) {
         const ITERATIONS: usize = 5;
 
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -1181,8 +1197,9 @@ pub mod server {
         const MAX_LOANED_RESPONSES: usize = 6;
         const ITERATIONS: usize = 5;
 
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()

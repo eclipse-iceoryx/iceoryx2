@@ -33,8 +33,6 @@ pub mod service {
     use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2::service::port_factory::{blackboard, event, publish_subscribe, request_response};
     use iceoryx2::service::{ServiceDetailsError, ServiceListError};
-    use iceoryx2::testing::generate_service_name;
-    use iceoryx2::testing::*;
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
@@ -44,6 +42,7 @@ pub mod service {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing_macros::conformance_test;
+    use iceoryx2_testing::*;
 
     pub trait SutFactory<Sut: Service>: Send + Sync {
         type Factory: PortFactory + Abandonable;
