@@ -679,6 +679,33 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
 
                 prepare_service_config(&mut service_config)?;
 
+                let dyn_conf_creation_args = generate_dynamic_config(&service_config);
+
+                let dynamic_config = match self
+                    .create_dynamic_config_storage(dyn_conf_creation_args)
+                {
+                    Ok(dynamic_config) => dynamic_config,
+                    Err(DynamicStorageCreateError::AlreadyExists) => {
+                        fail!(from self, with ServiceCreateError::ServiceInCorruptedState,
+                            "This should never happen! {} since the unique dynamic service management segment already exists.", msg);
+                    }
+                    Err(DynamicStorageCreateError::InsufficientPermissions) => {
+                        fail!(from self, with ServiceCreateError::InsufficientPermissions,
+                            "{msg} since the dynamic service config could not be created due to insufficient permissions.");
+                    }
+                    Err(DynamicStorageCreateError::InitializationFailed) => {
+                        fail!(from self, with ServiceCreateError::InternalFailure,
+                            "{msg} since the dynamic service config initialization failed.");
+                    }
+                    Err(DynamicStorageCreateError::InternalError) => {
+                        fail!(from self, with ServiceCreateError::InternalFailure,
+                            "{} since the dynamic service segment could not be created due to an internal failure.", msg);
+                    }
+                };
+                dynamic_config.acquire_ownership();
+
+                let resource = create_service_resource(&service_config)?;
+
                 service_config.attributes = attributes.0.clone();
 
                 let serialized_service_config = fail!(from self, when ServiceType::ConfigSerializer::serialize(&service_config),
@@ -724,6 +751,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 if let Some(service_tag) = service_tag {
                     service_tag.release_ownership();
                 }
+                dynamic_config.release_ownership();
 
                 let dyn_conf_creation_args = generate_dynamic_config(&service_config);
 
