@@ -17,7 +17,6 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 pub mod service_request_response_builder {
     use alloc::vec;
 
-    use iceoryx2::node::NodeBuilder;
     use iceoryx2::prelude::*;
     use iceoryx2::service::attribute::*;
     use iceoryx2::service::builder::request_response::{
@@ -26,16 +25,16 @@ pub mod service_request_response_builder {
     use iceoryx2::service::port_factory::client::ClientCreateError;
     use iceoryx2::service::port_factory::server::ServerCreateError;
     use iceoryx2::service::static_config::message_type_details::TypeVariant;
-    use iceoryx2::testing::*;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
+    use iceoryx2_testing::*;
 
     #[conformance_test]
     pub fn open_existing_service_works<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
 
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -53,10 +52,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn open_non_existing_service_fails<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut_open = node
             .service_builder(&service_name)
@@ -68,10 +66,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn creating_existing_service_fails<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let _sut = node
             .service_builder(&service_name)
@@ -89,10 +86,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn open_or_create_works_with_existing_and_non_existing_services<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut_create = node
             .service_builder(&service_name)
@@ -111,13 +107,12 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn when_created_service_goes_out_of_scope_the_service_is_removed<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         assert_that!(
-            Sut::does_exist(&service_name, &config, MessagingPattern::RequestResponse), eq Ok(false));
+            Sut::does_exist(&service_name, test.config(), MessagingPattern::RequestResponse), eq Ok(false));
 
         let sut = node
             .service_builder(&service_name)
@@ -125,23 +120,22 @@ pub mod service_request_response_builder {
             .create();
 
         assert_that!(
-            Sut::does_exist(&service_name, &config, MessagingPattern::RequestResponse), eq Ok(true));
+            Sut::does_exist(&service_name, test.config(), MessagingPattern::RequestResponse), eq Ok(true));
 
         drop(sut);
 
         assert_that!(
-            Sut::does_exist(&service_name, &config, MessagingPattern::RequestResponse), eq Ok(false));
+            Sut::does_exist(&service_name, test.config(), MessagingPattern::RequestResponse), eq Ok(false));
     }
 
     #[conformance_test]
     pub fn when_last_opened_service_goes_out_of_scope_the_service_is_removed<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         assert_that!(
-            Sut::does_exist(&service_name, &config, MessagingPattern::RequestResponse), eq Ok(false));
+            Sut::does_exist(&service_name, test.config(), MessagingPattern::RequestResponse), eq Ok(false));
 
         let sut = node
             .service_builder(&service_name)
@@ -159,30 +153,30 @@ pub mod service_request_response_builder {
             .open();
 
         assert_that!(
-            Sut::does_exist(&service_name, &config, MessagingPattern::RequestResponse), eq Ok(true));
+            Sut::does_exist(&service_name, test.config(), MessagingPattern::RequestResponse), eq Ok(true));
 
         drop(sut);
 
         assert_that!(
-            Sut::does_exist(&service_name, &config, MessagingPattern::RequestResponse), eq Ok(true));
+            Sut::does_exist(&service_name, test.config(), MessagingPattern::RequestResponse), eq Ok(true));
 
         drop(sut_open_1);
 
         assert_that!(
-            Sut::does_exist(&service_name, &config, MessagingPattern::RequestResponse), eq Ok(true));
+            Sut::does_exist(&service_name, test.config(), MessagingPattern::RequestResponse), eq Ok(true));
 
         drop(sut_open_2);
 
         assert_that!(
-            Sut::does_exist(&service_name, &config, MessagingPattern::RequestResponse), eq Ok(false));
+            Sut::does_exist(&service_name, test.config(), MessagingPattern::RequestResponse), eq Ok(false));
     }
 
     #[conformance_test]
     pub fn opening_service_with_mismatching_request_type_fails<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
 
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -208,10 +202,10 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn opening_service_with_incompatible_request_type_alignment_fails<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
 
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -230,10 +224,10 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn opening_service_with_compatible_request_type_alignment_works<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
 
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -253,10 +247,10 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn opening_service_with_mismatching_response_type_fails<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
 
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -282,10 +276,10 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn opening_service_with_incompatible_response_type_alignment_fails<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
 
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -304,10 +298,10 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn opening_service_with_compatible_response_type_alignment_works<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
 
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -327,12 +321,12 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn opening_service_with_attributes_and_acquiring_attributes_works<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
         let attribute_key: AttributeKey = "wanna try this head".try_into().unwrap();
         let attribute_value: AttributeValue = "no its a brainslug".try_into().unwrap();
 
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let _sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -360,14 +354,14 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn opening_service_with_incompatible_attributes_fails<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
         let attribute_key: AttributeKey = "there is a muffin".try_into().unwrap();
         let attribute_value: AttributeValue = "with molten chocolate".try_into().unwrap();
         let attribute_incompatible_key: AttributeKey = "its delicious".try_into().unwrap();
         let attribute_incompatible_value: AttributeValue = "I wanna eat it".try_into().unwrap();
 
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let _sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -403,13 +397,13 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn opening_service_with_compatible_attributes_works<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
         let attribute_key: AttributeKey = "kermit the brave knight".try_into().unwrap();
         let attribute_value: AttributeValue =
             "rides on hypnotoad into the sunset".try_into().unwrap();
 
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let _sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -445,9 +439,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn recreate_after_drop_works<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -465,9 +459,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn open_fails_when_service_does_not_satisfy_request_overflow_requirement<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -485,9 +479,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn open_fails_when_service_does_not_satisfy_response_overflow_requirement<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -505,9 +499,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn open_verifies_fire_and_forget_requests_setting_correctly<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -532,9 +526,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn open_verifies_max_borrowed_responses_per_pending_response_correctly<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -559,9 +553,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn open_verifies_max_active_requests_correctly<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -586,9 +580,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn open_verifies_max_response_buffer_size_correctly<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -613,9 +607,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn open_verifies_max_amount_of_servers_correctly<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -640,9 +634,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn open_verifies_max_amount_of_clients_correctly<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -667,9 +661,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn open_verifies_max_amount_of_nodes_correctly<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -694,9 +688,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn open_verifies_max_loaned_requests_correctly<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -721,9 +715,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn service_builder_adjusts_config_to_sane_values<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut_create = node
             .service_builder(&service_name)
@@ -750,9 +744,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn service_builder_parameters_override_default_config<Sut: Service>() {
+        let mut test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let mut config = generate_isolated_config();
-        let rpc_config = &mut config.defaults.request_response;
+        let rpc_config = &mut test.config_mut().defaults.request_response;
         rpc_config.enable_safe_overflow_for_requests = true;
         rpc_config.enable_safe_overflow_for_responses = true;
         rpc_config.enable_fire_and_forget_requests = true;
@@ -764,7 +758,7 @@ pub mod service_request_response_builder {
         rpc_config.max_nodes = 100;
         rpc_config.max_loaned_requests = 100;
 
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node = test.create_node();
 
         let sut_create = node
             .service_builder(&service_name)
@@ -797,9 +791,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn service_builder_uses_config_when_user_sets_nothing<Sut: Service>() {
+        let mut test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let mut config = generate_isolated_config();
-        let rpc_config = &mut config.defaults.request_response;
+        let rpc_config = &mut test.config_mut().defaults.request_response;
         rpc_config.enable_safe_overflow_for_requests = true;
         rpc_config.enable_safe_overflow_for_responses = true;
         rpc_config.max_active_requests_per_client = 11;
@@ -811,7 +805,7 @@ pub mod service_request_response_builder {
         rpc_config.max_loaned_requests = 21;
         rpc_config.enable_fire_and_forget_requests = true;
 
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node = test.create_node();
 
         let sut_create = node
             .service_builder(&service_name)
@@ -834,9 +828,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn opened_service_reads_config_correctly<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let _sut_create = node
             .service_builder(&service_name)
@@ -875,8 +869,8 @@ pub mod service_request_response_builder {
     #[conformance_test]
     pub fn list_finds_created_services<Sut: Service>() {
         const NUMBER_OF_SERVICES: usize = 12;
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let mut services = vec![];
         let mut service_names = vec![];
 
@@ -892,10 +886,10 @@ pub mod service_request_response_builder {
         }
 
         for name in &service_names {
-            assert_that!(Sut::does_exist(name, &config, MessagingPattern::RequestResponse).unwrap(), eq true);
+            assert_that!(Sut::does_exist(name, test.config(), MessagingPattern::RequestResponse).unwrap(), eq true);
         }
 
-        Sut::list(&config, |service| {
+        Sut::list(test.config(), |service| {
             assert_that!(service_names, contains * service.static_details.name());
             service_names.retain(|v| v != service.static_details.name());
             CallbackProgression::Continue
@@ -907,12 +901,12 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn service_cannot_be_opened_by_more_nodes_than_specified<Sut: Service>() {
-        let config = generate_isolated_config();
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
 
-        let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let node_3 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node_1 = test.create_node();
+        let node_2 = test.create_node();
+        let node_3 = test.create_node();
 
         let sut_1 = node_1
             .service_builder(&service_name)
@@ -943,9 +937,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn server_port_of_dropped_service_blocks_new_service_creation<Sut: Service>() {
-        let config = generate_isolated_config();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
             .service_builder(&service_name)
@@ -971,9 +965,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn client_port_of_dropped_service_blocks_new_service_creation<Sut: Service>() {
-        let config = generate_isolated_config();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
             .service_builder(&service_name)
@@ -999,9 +993,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn active_request_response_connection_blocks_new_service_creation<Sut: Service>() {
-        let config = generate_isolated_config();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
             .service_builder(&service_name)
@@ -1035,9 +1029,9 @@ pub mod service_request_response_builder {
     #[conformance_test]
     pub fn service_cannot_be_opened_by_more_clients_than_specified<Sut: Service>() {
         const MAX_CLIENTS: usize = 8;
-        let config = generate_isolated_config();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         for max_clients in 1..MAX_CLIENTS {
             let sut = node
@@ -1063,9 +1057,9 @@ pub mod service_request_response_builder {
     #[conformance_test]
     pub fn service_cannot_be_opened_by_more_servers_than_specified<Sut: Service>() {
         const MAX_SERVERS: usize = 8;
-        let config = generate_isolated_config();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         for max_servers in 1..MAX_SERVERS {
             let sut = node
@@ -1095,9 +1089,9 @@ pub mod service_request_response_builder {
         type ResponsePayload = u8;
         type ResponseHeader = u16;
 
-        let config = generate_isolated_config();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
             .service_builder(&service_name)
@@ -1140,9 +1134,9 @@ pub mod service_request_response_builder {
     pub fn custom_request_alignment_cannot_be_smaller_than_type_alignment<Sut: Service>() {
         type RequestPayload = u64;
 
-        let config = generate_isolated_config();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
             .service_builder(&service_name)
@@ -1158,9 +1152,9 @@ pub mod service_request_response_builder {
     pub fn custom_response_alignment_cannot_be_smaller_than_type_alignment<Sut: Service>() {
         type ResponsePayload = u64;
 
-        let config = generate_isolated_config();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
             .service_builder(&service_name)
@@ -1174,9 +1168,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn create_service_with_request_slice_type_works<Sut: Service>() {
-        let config = generate_isolated_config();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut_create = node
             .service_builder(&service_name)
@@ -1199,9 +1193,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn create_service_with_response_slice_type_works<Sut: Service>() {
-        let config = generate_isolated_config();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut_create = node
             .service_builder(&service_name)
@@ -1224,9 +1218,9 @@ pub mod service_request_response_builder {
 
     #[conformance_test]
     pub fn create_service_with_request_and_response_slice_type_works<Sut: Service>() {
-        let config = generate_isolated_config();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
         let service_name = generate_service_name();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut_create = node
             .service_builder(&service_name)
