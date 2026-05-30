@@ -1247,12 +1247,14 @@ pub mod server {
     #[conformance_test]
     pub fn server_allocation_strategy_default_is_taken_from_config<Sut: Service>()
     -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        let mut test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let mut config = generate_isolated_config();
-        config.defaults.request_response.server_allocation_strategy =
-            AllocationStrategy::PowerOfTwo;
+        test.config_mut()
+            .defaults
+            .request_response
+            .server_allocation_strategy = AllocationStrategy::PowerOfTwo;
 
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, [u64]>()

@@ -138,6 +138,7 @@ pub mod node {
 
     #[conformance_test]
     pub fn without_custom_config_global_config_is_used<S: Service>() {
+        let _test = Test::<S>::new_with_custom_config(Config::global_config().clone());
         let sut = NodeBuilder::new().create::<S>().unwrap();
 
         assert_that!(*sut.config(), eq * Config::global_config());
