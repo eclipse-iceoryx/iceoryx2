@@ -548,6 +548,8 @@ pub mod node_death {
             .add_with_default::<u64>(0)
             .create()
             .unwrap();
+        let service_id = bad_service.unique_service_id();
+        let static_config = *bad_service.static_config();
         bad_node.abandon();
         bad_service.abandon();
 
@@ -567,6 +569,8 @@ pub mod node_death {
             }),
             is_ok
         );
+
+        assert_that!(do_blackboard_resources_exist::<S>(test.config(), service_id, &static_config), eq false);
     }
 
     #[conformance_test]
@@ -626,6 +630,8 @@ pub mod node_death {
             .add_with_default::<u64>(SpecialKey(0))
             .create()
             .unwrap();
+        let service_id = bad_service.unique_service_id();
+        let static_config = *bad_service.static_config();
         bad_node.abandon();
         bad_service.abandon();
 
@@ -653,6 +659,8 @@ pub mod node_death {
             .add_with_default::<u64>(SpecialKey(0))
             .create();
         assert_that!(service, is_ok);
+
+        assert_that!(do_blackboard_resources_exist::<S>(test.config(), service_id, &static_config), eq false);
     }
 
     // test disabled on Windows as the state files cannot be removed after simulated node death

@@ -16,21 +16,24 @@ use iceoryx2_bb_elementary::math::ToB64;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_posix::{config::TEST_DIRECTORY, testing::*};
 use iceoryx2_bb_system_types::file_name::*;
+use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::NamedConceptMgmt;
 use iceoryx2_cal::named_concept::{NamedConceptDoesExistError, NamedConceptRemoveError};
 use iceoryx2_cal::static_storage::StaticStorageCreateError;
 
-use crate::identifiers::UniqueNodeId;
+use crate::identifiers::{UniqueNodeId, UniqueServiceId};
 use crate::node::global_management_segment::GlobalManagementSegment;
 use crate::node::{Node, NodeListFailure, NodeState};
 use crate::prelude::MessagingPattern;
 use crate::service::config_scheme::{port_tag_config, service_tag_config};
 use crate::service::service_hash::ServiceHash;
+use crate::service::static_config;
 use crate::{
     config::Config,
     prelude::{NodeName, ServiceName},
     service::static_config::message_type_details::{TypeDetail, TypeName, TypeVariant},
 };
+use iceoryx2_bb_container::string::String;
 
 pub fn generate_service_name() -> ServiceName {
     ServiceName::new(&format!("tests_{}", UniqueSystemId::new().unwrap().value())).unwrap()
@@ -156,4 +159,38 @@ pub unsafe fn remove_global_mgmt_segment<S: crate::service::Service>(
     config: &Config,
 ) -> Result<bool, NamedConceptRemoveError> {
     unsafe { GlobalManagementSegment::<S>::remove(config) }
+}
+
+pub fn do_blackboard_resources_exist<S: crate::service::Service>(
+    config: &Config,
+    service_id: UniqueServiceId,
+    static_config: &static_config::blackboard::StaticConfig,
+) -> bool {
+    let blackboard_name = crate::service::naming_scheme::blackboard_name(service_id);
+    let blackboard_payload_config =
+        crate::service::config_scheme::blackboard_data_config::<S>(config);
+    if <S::BlackboardPayload as NamedConceptMgmt>::does_exist_cfg(
+        &blackboard_name,
+        &blackboard_payload_config,
+    )
+    .unwrap()
+    {
+        return true;
+    }
+
+    let mut blackboard_mgmt_config =
+        crate::service::config_scheme::blackboard_mgmt_config::<S, u64>(config);
+    // Safe since the same type name is set when creating the BlackboardMgmt in
+    // Creator::create_impl so we can safely remove the concept.
+    unsafe {
+        <S::BlackboardMgmt<u64> as DynamicStorage<u64>>::__internal_set_type_name_in_config(
+            &mut blackboard_mgmt_config,
+            static_config.type_details.type_name.as_str(),
+        )
+    };
+    <S::BlackboardMgmt<u64> as NamedConceptMgmt>::does_exist_cfg(
+        &blackboard_name,
+        &blackboard_mgmt_config,
+    )
+    .unwrap()
 }
