@@ -715,7 +715,8 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     }
                 };
 
-                // only unlock the static details when the service is successfully created
+                // the static config is the first thing that must be created, this signals to everyone, that
+                // this process is currently setting up the service
                 let unlocked_static_details = fail!(from self, when static_config.unlock(serialized_service_config.as_slice()),
                             with ServiceCreateError::ServiceConfigCouldNotBeCreated,
                             "{} since the configuration could not be written to the static storage.", msg);

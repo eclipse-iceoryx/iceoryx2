@@ -18,7 +18,7 @@ pub mod subscriber {
     use alloc::collections::BTreeSet;
     use alloc::{format, vec};
     use iceoryx2::port::ReceiveError;
-    use iceoryx2::{port::subscriber::SubscriberCreateError, service::Service, testing};
+    use iceoryx2::{port::subscriber::SubscriberCreateError, service::Service};
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_testing::*;
@@ -78,7 +78,7 @@ pub mod subscriber {
         let node = test.create_node();
         let service_name = generate_service_name();
         let mut type_detail = TypeDetail::new::<u8>(TypeVariant::FixedSize);
-        testing::type_detail_set_size(&mut type_detail, TYPE_SIZE_OVERRIDE);
+        type_detail_set_size(&mut type_detail, TYPE_SIZE_OVERRIDE);
 
         let service = unsafe {
             node.service_builder(&service_name)

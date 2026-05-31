@@ -17,6 +17,7 @@ std = [
   "iceoryx2-cal/std",
   "iceoryx2-bb-loggers/std",
   "iceoryx2-bb-testing/std",
+  "iceoryx2-log/std",
   "iceoryx2/std",
 ]
 # Logger backend selection - choose at most one; defaults to console
