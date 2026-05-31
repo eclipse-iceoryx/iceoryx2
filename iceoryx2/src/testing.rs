@@ -25,7 +25,11 @@ use crate::identifiers::{UniqueNodeId, UniqueServiceId};
 use crate::node::global_management_segment::GlobalManagementSegment;
 use crate::node::{Node, NodeListFailure, NodeState};
 use crate::prelude::MessagingPattern;
-use crate::service::config_scheme::{port_tag_config, service_tag_config};
+use crate::service::config_scheme::{
+    dynamic_config_storage_config, port_tag_config, service_tag_config,
+};
+use crate::service::dynamic_config::DynamicConfig;
+use crate::service::naming_scheme::dynamic_config_name;
 use crate::service::service_hash::ServiceHash;
 use crate::service::static_config;
 use crate::{
@@ -193,4 +197,17 @@ pub fn do_blackboard_resources_exist<S: crate::service::Service>(
         &blackboard_mgmt_config,
     )
     .unwrap()
+}
+
+pub unsafe fn remove_dynamic_config<S: crate::service::Service>(
+    config: &Config,
+    service_id: UniqueServiceId,
+) {
+    let segment_name = dynamic_config_name(service_id);
+    let dyn_conf = dynamic_config_storage_config::<S>(config);
+
+    unsafe {
+        <S::DynamicStorage<DynamicConfig> as NamedConceptMgmt>::remove_cfg(&segment_name, &dyn_conf)
+            .unwrap()
+    };
 }

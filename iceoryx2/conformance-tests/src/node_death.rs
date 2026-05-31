@@ -29,6 +29,8 @@ use iceoryx2_cal::static_storage::StaticStorage;
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod node_death {
+    use std::fmt::Debug;
+
     use super::*;
 
     fn does_support_persistency<S: iceoryx2::service::Service>() -> bool {
@@ -1159,5 +1161,75 @@ pub mod node_death {
                 assert_that!(does_port_tag_exist::<S>(tag.0, &tag.1, &tag.2).unwrap(), eq false);
             }
         }
+    }
+
+    pub fn service_without_dynamic_config_is_removed<
+        S: iceoryx2::service::Service,
+        T: PortFactory + Debug,
+        E: Debug,
+        F: FnMut(&Node<S>, &ServiceName) -> Result<T, E>,
+    >(
+        mut create_service: F,
+    ) {
+        let test = Test::<S>::new();
+        let bad_node = test.create_node();
+        let service_name = generate_service_name();
+        let bad_service = create_service(&bad_node, &service_name).unwrap();
+        let service_id = bad_service.unique_service_id();
+
+        bad_service.abandon();
+        bad_node.abandon();
+
+        unsafe { remove_dynamic_config::<S>(test.config(), service_id) };
+
+        let cleanup_result = Node::<S>::try_cleanup_dead_nodes(test.config());
+        assert_that!(cleanup_result.cleanups, eq 1);
+        assert_that!(cleanup_result.failed_cleanups, eq 0);
+
+        assert_that!(S::does_exist(&service_name, test.config(), MessagingPattern::Event).unwrap(), eq false);
+
+        let good_node = test.create_node();
+        let good_service = create_service(&good_node, &service_name);
+
+        assert_that!(good_service, is_ok);
+    }
+
+    #[conformance_test]
+    pub fn event_service_without_dynamic_config_is_removed<S: iceoryx2::service::Service>() {
+        service_without_dynamic_config_is_removed(|node: &Node<S>, service_name| {
+            node.service_builder(service_name).event().create()
+        });
+    }
+
+    #[conformance_test]
+    pub fn publish_subscribe_service_without_dynamic_config_is_removed<
+        S: iceoryx2::service::Service,
+    >() {
+        service_without_dynamic_config_is_removed(|node: &Node<S>, service_name| {
+            node.service_builder(service_name)
+                .publish_subscribe::<u64>()
+                .create()
+        });
+    }
+
+    #[conformance_test]
+    pub fn request_response_service_without_dynamic_config_is_removed<
+        S: iceoryx2::service::Service,
+    >() {
+        service_without_dynamic_config_is_removed(|node: &Node<S>, service_name| {
+            node.service_builder(service_name)
+                .request_response::<u64, u64>()
+                .create()
+        });
+    }
+
+    #[conformance_test]
+    pub fn blackboard_service_without_dynamic_config_is_removed<S: iceoryx2::service::Service>() {
+        service_without_dynamic_config_is_removed(|node: &Node<S>, service_name| {
+            node.service_builder(service_name)
+                .blackboard_creator::<u64>()
+                .add(123, 456)
+                .create()
+        });
     }
 }
