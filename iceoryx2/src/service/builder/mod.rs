@@ -660,6 +660,13 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         let mut service_config = self.service_config.clone();
         match is_service_available()? {
             None => {
+                prepare_service_config(&mut service_config)?;
+                service_config.attributes = attributes.0.clone();
+
+                let serialized_service_config = fail!(from self, when ServiceType::ConfigSerializer::serialize(&service_config),
+                                            with ServiceCreateError::ServiceConfigCouldNotBeCreated,
+                                            "{} since the configuration could not be serialized.", msg);
+
                 let service_tag = match self.shared_node.create_service_tag(
                     self,
                     msg,
@@ -679,41 +686,6 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                             "{msg} since the service tag could not be created due to an internal error. [{e:?}]");
                     }
                 };
-
-                prepare_service_config(&mut service_config)?;
-
-                let dyn_conf_creation_args = generate_dynamic_config(&service_config);
-
-                let dynamic_config = match self
-                    .create_dynamic_config_storage(dyn_conf_creation_args)
-                {
-                    Ok(dynamic_config) => dynamic_config,
-                    Err(DynamicStorageCreateError::AlreadyExists) => {
-                        fail!(from self, with ServiceCreateError::ServiceInCorruptedState,
-                            "This should never happen! {} since the unique dynamic service management segment already exists.", msg);
-                    }
-                    Err(DynamicStorageCreateError::InsufficientPermissions) => {
-                        fail!(from self, with ServiceCreateError::InsufficientPermissions,
-                            "{msg} since the dynamic service config could not be created due to insufficient permissions.");
-                    }
-                    Err(DynamicStorageCreateError::InitializationFailed) => {
-                        fail!(from self, with ServiceCreateError::InternalFailure,
-                            "{msg} since the dynamic service config initialization failed.");
-                    }
-                    Err(DynamicStorageCreateError::InternalError) => {
-                        fail!(from self, with ServiceCreateError::InternalFailure,
-                            "{} since the dynamic service segment could not be created due to an internal failure.", msg);
-                    }
-                };
-                dynamic_config.acquire_ownership();
-
-                let resource = create_service_resource(&service_config)?;
-
-                service_config.attributes = attributes.0.clone();
-
-                let serialized_service_config = fail!(from self, when ServiceType::ConfigSerializer::serialize(&service_config),
-                                            with ServiceCreateError::ServiceConfigCouldNotBeCreated,
-                                            "{} since the configuration could not be serialized.", msg);
 
                 let static_config = match self.create_static_config_storage() {
                     Ok(c) => c,
@@ -743,19 +715,14 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     }
                 };
 
-                let resource = create_service_resource(&service_config)?;
-
                 // only unlock the static details when the service is successfully created
                 let unlocked_static_details = fail!(from self, when static_config.unlock(serialized_service_config.as_slice()),
                             with ServiceCreateError::ServiceConfigCouldNotBeCreated,
                             "{} since the configuration could not be written to the static storage.", msg);
 
-                unlocked_static_details.release_ownership();
-                if let Some(service_tag) = service_tag {
-                    service_tag.release_ownership();
-                }
-                dynamic_config.release_ownership();
-                release_service_resource_ownership(&resource);
+                // resources must be created before dynamic config, since the dynamic config controls who
+                // is able to connect. As long as it is not created, others will wait for the initialization.
+                let resource = create_service_resource(&service_config)?;
 
                 let dyn_conf_creation_args = generate_dynamic_config(&service_config);
 
@@ -784,6 +751,13 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 self.shared_node
                     .registered_services()
                     .add(service_config.service_hash(), node_handle);
+
+                unlocked_static_details.release_ownership();
+                if let Some(service_tag) = service_tag {
+                    service_tag.release_ownership();
+                }
+                dynamic_config.release_ownership();
+                release_service_resource_ownership(&resource);
 
                 Ok(service::ServiceState::new(
                     service_config,
