@@ -1,5 +1,5 @@
 {
-  "checksum": "114634ad2f91451a9aa8bc64f6bea05d64d2d1e7c33c90ccc226c25480ba0da7",
+  "checksum": "ddec96f53f2482726dc16b7403a314b62a266579d345e10348244a452c7e17fa",
   "crates": {
     "addr2line 0.25.1": {
       "name": "addr2line",
@@ -6710,6 +6710,48 @@
               "id": "clap 4.6.1",
               "target": "clap"
             }
+          ],
+          "selects": {}
+        },
+        "edition": "2024",
+        "version": "0.9.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-testing 0.9.999": {
+      "name": "iceoryx2-testing",
+      "version": "0.9.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_testing",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_testing",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "console",
+            "default",
+            "std"
           ],
           "selects": {}
         },
@@ -16315,6 +16357,7 @@
     "iceoryx2-services-tunnel-backend 0.9.999": "iceoryx2-services/tunnel-backend",
     "iceoryx2-services-tunnel-conformance-tests 0.9.999": "iceoryx2-services/tunnel-conformance-tests",
     "iceoryx2-services-tunnel-end-to-end-tests 0.9.999": "iceoryx2-services/tunnel-end-to-end-tests",
+    "iceoryx2-testing 0.9.999": "iceoryx2/testing",
     "iceoryx2-tests-common 0.9.999": "iceoryx2/tests-common",
     "iceoryx2-tests-nostd 0.9.999": "iceoryx2/tests-nostd",
     "iceoryx2-userland-record-and-replay 0.9.999": "iceoryx2-userland/record-and-replay"

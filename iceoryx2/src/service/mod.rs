@@ -720,8 +720,7 @@ pub mod internal {
 
                         remove_additional_blackboard_resources::<S>(
                             config,
-                            &blackboard_name,
-                            &blackboard_payload_config,
+                            unique_service_id,
                             &blackboard_mgmt_name,
                             origin,
                             msg,
@@ -757,8 +756,7 @@ pub mod internal {
             }
 
             match unsafe {
-                // IMPORTANT: The static service config must be removed last since it contains the details about all
-                // other resources that also have to be removed. If this is removed earlier, those resources are leaked.
+                // IMPORTANT: The static service config must be removed last.
                 remove_static_service_config::<S>(config, service_hash)
             } {
                 Ok(_) => {

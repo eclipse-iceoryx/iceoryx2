@@ -10,11 +10,29 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2::service;
 use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
-use iceoryx2_conformance_tests::node_death::ZeroCopy;
 
 instantiate_conformance_tests_with_module!(
     ipc,
     iceoryx2_conformance_tests::node_death,
-    super::ZeroCopy
+    super::service::ipc::Service
+);
+
+instantiate_conformance_tests_with_module!(
+    ipc_threadsafe,
+    iceoryx2_conformance_tests::node_death,
+    super::service::ipc_threadsafe::Service
+);
+
+instantiate_conformance_tests_with_module!(
+    local,
+    iceoryx2_conformance_tests::node_death,
+    super::service::local::Service
+);
+
+instantiate_conformance_tests_with_module!(
+    local_threadsafe,
+    iceoryx2_conformance_tests::node_death,
+    super::service::local_threadsafe::Service
 );

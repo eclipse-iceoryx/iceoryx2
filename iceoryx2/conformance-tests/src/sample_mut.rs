@@ -23,14 +23,14 @@ pub mod sample_mut {
     use iceoryx2::service::Service;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
-    use iceoryx2::testing::generate_service_name;
-    use iceoryx2::testing::*;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
+    use iceoryx2_testing::*;
 
     const MAX_LOANED_SAMPLES: usize = 5;
 
     struct TestContext<Sut: Service> {
+        context: Test<Sut>,
         node: Node<Sut>,
         service_name: ServiceName,
         service: PortFactory<Sut, u64, ()>,
@@ -39,8 +39,13 @@ pub mod sample_mut {
     }
 
     impl<Sut: Service> TestContext<Sut> {
-        fn new(config: &Config) -> Self {
-            let node = NodeBuilder::new().config(config).create::<Sut>().unwrap();
+        fn new() -> Self {
+            Self::new_with_custom_config(generate_isolated_config())
+        }
+
+        fn new_with_custom_config(config: Config) -> Self {
+            let context = Test::new_with_custom_config(config);
+            let node = context.create_node();
             let service_name = generate_service_name();
             let service = node
                 .service_builder(&service_name)
@@ -58,6 +63,7 @@ pub mod sample_mut {
             let subscriber = service.subscriber_builder().create().unwrap();
 
             Self {
+                context,
                 node,
                 service_name,
                 service,
@@ -69,8 +75,7 @@ pub mod sample_mut {
 
     #[conformance_test]
     pub fn when_going_out_of_scope_it_is_released<Sut: Service>() {
-        let config = generate_isolated_config();
-        let test_context = TestContext::<Sut>::new(&config);
+        let test_context = TestContext::<Sut>::new();
 
         let mut sample_vec = vec![];
 
@@ -93,8 +98,7 @@ pub mod sample_mut {
 
     #[conformance_test]
     pub fn header_tracks_correct_origin<Sut: Service>() {
-        let config = generate_isolated_config();
-        let test_context = TestContext::<Sut>::new(&config);
+        let test_context = TestContext::<Sut>::new();
         let sample = test_context.publisher.loan().unwrap();
         assert_that!(sample.header().publisher_id(), eq test_context.publisher.id());
     }
@@ -103,8 +107,7 @@ pub mod sample_mut {
     pub fn write_payload_works<Sut: Service>() {
         const PAYLOAD_1: u64 = 891283689123555;
         const PAYLOAD_2: u64 = 71820;
-        let config = generate_isolated_config();
-        let test_context = TestContext::<Sut>::new(&config);
+        let test_context = TestContext::<Sut>::new();
         let sample = test_context.publisher.loan_uninit().unwrap();
         let mut sample = sample.write_payload(PAYLOAD_1);
 
@@ -120,8 +123,7 @@ pub mod sample_mut {
     #[conformance_test]
     pub fn assume_init_works<Sut: Service>() {
         const PAYLOAD: u64 = 7182055123;
-        let config = generate_isolated_config();
-        let test_context = TestContext::<Sut>::new(&config);
+        let test_context = TestContext::<Sut>::new();
         let mut sample = test_context.publisher.loan_uninit().unwrap();
         let _ = *sample.payload_mut().write(PAYLOAD);
         let mut sample = unsafe { sample.assume_init() };
@@ -133,8 +135,7 @@ pub mod sample_mut {
     #[conformance_test]
     pub fn send_works<Sut: Service>() {
         const PAYLOAD: u64 = 3215357;
-        let config = generate_isolated_config();
-        let test_context = TestContext::<Sut>::new(&config);
+        let test_context = TestContext::<Sut>::new();
         let sample = test_context.publisher.loan_uninit().unwrap();
         let sample = sample.write_payload(PAYLOAD);
 
@@ -146,14 +147,14 @@ pub mod sample_mut {
 
     #[conformance_test]
     pub fn sample_of_dropped_service_does_block_new_service_creation<Sut: Service>() {
-        let config = generate_isolated_config();
-        let test_context = TestContext::<Sut>::new(&config);
+        let test_context = TestContext::<Sut>::new();
         let service_name = test_context.service_name;
         let _sample = test_context.publisher.loan_uninit().unwrap();
 
+        let config = test_context.context.config().clone();
         drop(test_context);
 
-        let test_context = TestContext::<Sut>::new(&config);
+        let test_context = TestContext::<Sut>::new_with_custom_config(config);
         let result = test_context
             .node
             .service_builder(&service_name)
@@ -165,8 +166,7 @@ pub mod sample_mut {
 
     #[conformance_test]
     pub fn sample_of_dropped_publisher_does_not_block_new_publishers<Sut: Service>() {
-        let config = generate_isolated_config();
-        let test_context = TestContext::<Sut>::new(&config);
+        let test_context = TestContext::<Sut>::new();
         let service = test_context.service;
         let publisher = test_context.publisher;
         let _sample = publisher.loan_uninit().unwrap();

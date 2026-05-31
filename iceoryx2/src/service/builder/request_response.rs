@@ -812,6 +812,7 @@ impl<
             |_| Ok(()),
             generate_dynamic_config,
             |_| Ok(NoResource),
+            |_| {},
         )?;
 
         Ok(request_response::PortFactory::new(service_state))

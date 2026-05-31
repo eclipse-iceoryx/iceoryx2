@@ -677,7 +677,7 @@ impl<
             &name
         )
         .config(&shm_config)
-        .has_ownership(false)
+        .has_ownership(true)
         .size(payload_size)
         .create(&iceoryx2_cal::shared_memory::shm_bump_allocator::Config::default())
         {
@@ -707,7 +707,7 @@ impl<
             <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage<Mgmt,
             >>::Builder::new(&name)
                 .config(&mgmt_config)
-                .has_ownership(false)
+                .has_ownership(true)
                 .supplementary_size(RelocatableFlatMap::<KeyMemory<MAX_BLACKBOARD_KEY_SIZE>, usize>::const_memory_size(capacity)+RelocatableVec::<Entry>::const_memory_size(capacity))
                 .initializer(|mgmt: &mut MaybeUninit<Mgmt>, allocator: &mut BumpAllocator| {
                     mgmt.write(Mgmt {
@@ -793,6 +793,10 @@ impl<
             |_| Ok(()),
             generate_dynamic_config,
             |service_config| self.create_blackboard_resources(msg, service_config),
+            |resource| {
+                resource.data.release_ownership();
+                resource.mgmt.release_ownership();
+            },
         )?;
 
         Ok(blackboard::PortFactory::new(service_state))

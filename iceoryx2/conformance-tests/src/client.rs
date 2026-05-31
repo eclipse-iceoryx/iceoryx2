@@ -24,7 +24,6 @@ pub mod client {
     use iceoryx2::port::{BackpressureAction, LoanError, SendError};
     use iceoryx2::prelude::*;
     use iceoryx2::service::port_factory::client::PortFactoryClient;
-    use iceoryx2::testing::*;
     use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, Ordering};
     use iceoryx2_bb_posix::barrier::BarrierBuilder;
     use iceoryx2_bb_posix::barrier::BarrierHandle;
@@ -35,18 +34,15 @@ pub mod client {
     use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing_macros::conformance_test;
+    use iceoryx2_testing::*;
 
     const TIMEOUT: Duration = Duration::from_millis(50);
 
-    fn create_node<Sut: Service>() -> Node<Sut> {
-        let config = generate_isolated_config();
-        NodeBuilder::new().config(&config).create::<Sut>().unwrap()
-    }
-
     #[conformance_test]
     pub fn disconnected_client_does_not_block_new_clients<Sut: Service>() {
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -65,8 +61,9 @@ pub mod client {
 
     #[conformance_test]
     pub fn send_request_via_disconnected_client_works<Sut: Service>() {
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -85,8 +82,10 @@ pub mod client {
     pub fn can_loan_at_most_max_supported_amount_of_requests<Sut: Service>() {
         const MAX_LOANED_REQUESTS: usize = 29;
         const ITERATIONS: usize = 3;
+
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -116,8 +115,9 @@ pub mod client {
         const MAX_PENDING_RESPONSES: usize = 7;
         const ITERATIONS: usize = 3;
 
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -147,8 +147,9 @@ pub mod client {
 
     #[conformance_test]
     pub fn override_preallocated_requests_to_one_works<Sut: Service>() {
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -168,8 +169,9 @@ pub mod client {
 
     #[conformance_test]
     pub fn override_preallocated_requests_to_zero_rounds_up_to_one<Sut: Service>() {
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -190,8 +192,9 @@ pub mod client {
     #[conformance_test]
     pub fn override_preallocated_requests_to_many_works<Sut: Service>() {
         const MAX_NUMBER_OF_REQUESTS: usize = 10;
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
 
         for n in 1..MAX_NUMBER_OF_REQUESTS {
             let service = node
@@ -218,9 +221,9 @@ pub mod client {
 
     #[conformance_test]
     pub fn backpressure_strategy_block_blocks_when_server_buffer_is_full<Sut: Service>() {
-        let _watchdog = Watchdog::new();
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -271,9 +274,9 @@ pub mod client {
 
     #[conformance_test]
     pub fn backpressure_strategy_block_unblocks_when_server_disconnects<Sut: Service>() {
-        let _watchdog = Watchdog::new();
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -325,8 +328,9 @@ pub mod client {
 
     #[conformance_test]
     pub fn backpressure_strategy_discard_discards_request<Sut: Service>() {
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -372,10 +376,10 @@ pub mod client {
             PortFactoryClient<'_, Sut, u64, (), u64, ()>,
         ) -> PortFactoryClient<'_, Sut, u64, (), u64, ()>,
     {
-        let _watchdog = Watchdog::new();
+        let test = Test::<Sut>::new();
 
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -631,7 +635,7 @@ pub mod client {
     pub fn client_with_backpressure_handler_follows_backpressure_strategy_with_retry_until_delivered<
         Sut: Service,
     >() {
-        let _watchdog = Watchdog::new();
+        let test = Test::<Sut>::new();
 
         thread_scope(|s| {
             const TIMEOUT: Duration = Duration::from_millis(25);
@@ -646,7 +650,7 @@ pub mod client {
             let finish_barrier = BarrierBuilder::new(2).create(&finish_handle).unwrap();
 
             let service_name = generate_service_name();
-            let node = create_node::<Sut>();
+            let node = test.create_node();
             let service = node
                 .service_builder(&service_name)
                 .request_response::<u64, u64>()
@@ -727,8 +731,9 @@ pub mod client {
 
     #[conformance_test]
     pub fn loan_request_is_initialized_with_default_value<Sut: Service>() {
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<LifetimeTracker, u64>()
@@ -744,8 +749,9 @@ pub mod client {
 
     #[conformance_test]
     pub fn drop_is_not_called_for_underlying_type_of_requests<Sut: Service>() {
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<LifetimeTracker, u64>()
@@ -763,8 +769,9 @@ pub mod client {
 
     #[conformance_test]
     pub fn loan_uninit_request_is_not_initialized<Sut: Service>() {
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<LifetimeTracker, u64>()
@@ -783,8 +790,9 @@ pub mod client {
 
     #[conformance_test]
     pub fn sending_requests_reduces_loan_counter<Sut: Service>() {
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
 
         let service = node
             .service_builder(&service_name)
@@ -808,8 +816,9 @@ pub mod client {
 
     #[conformance_test]
     pub fn dropping_requests_reduces_loan_counter<Sut: Service>() {
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
 
         let service = node
             .service_builder(&service_name)
@@ -850,8 +859,9 @@ pub mod client {
     #[conformance_test]
     pub fn loaned_requests_has_default_constructed_request_header<Sut: Service>() {
         type UserHeader = CustomUserHeader<89123, 98123891>;
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
 
         let service = node
             .service_builder(&service_name)
@@ -869,8 +879,9 @@ pub mod client {
     #[conformance_test]
     pub fn uninitialized_loaned_requests_has_default_constructed_request_header<Sut: Service>() {
         type UserHeader = CustomUserHeader<789123, 798123891>;
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
 
         let service = node
             .service_builder(&service_name)
@@ -888,8 +899,9 @@ pub mod client {
     #[conformance_test]
     pub fn loaned_slice_requests_has_default_constructed_request_header<Sut: Service>() {
         type UserHeader = CustomUserHeader<9889123, 4598123891>;
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
 
         let service = node
             .service_builder(&service_name)
@@ -909,8 +921,9 @@ pub mod client {
         Sut: Service,
     >() {
         type UserHeader = CustomUserHeader<5557832, 2341>;
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
 
         let service = node
             .service_builder(&service_name)
@@ -929,8 +942,9 @@ pub mod client {
     pub fn request_is_correctly_aligned<Sut: Service>() {
         const MAX_LOAN: usize = 9;
         const ALIGNMENT: usize = 512;
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -955,8 +969,9 @@ pub mod client {
     pub fn send_request_fails_when_already_active_requests_is_at_max<Sut: Service>() {
         const MAX_ACTIVE_REQUESTS: usize = 9;
         const ITERATIONS: usize = 5;
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -987,8 +1002,9 @@ pub mod client {
     ) {
         const ITERATIONS: usize = 5;
 
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -1119,8 +1135,9 @@ pub mod client {
     ) {
         const ITERATIONS: usize = 5;
 
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -1241,8 +1258,9 @@ pub mod client {
         const MAX_ACTIVE_REQUESTS: usize = 4;
         const ITERATIONS: usize = 20;
         const MAX_SERVER: usize = 4;
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -1276,8 +1294,9 @@ pub mod client {
     pub fn updates_connections_after_reconnect<Sut: Service>() {
         const RECONNECTIONS: usize = 20;
         const MAX_SERVERS: usize = 4;
+        let test = Test::<Sut>::new();
         let service_name = generate_service_name();
-        let node = create_node::<Sut>();
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<usize, u64>()
@@ -1310,12 +1329,15 @@ pub mod client {
     #[conformance_test]
     pub fn client_allocation_strategy_default_is_taken_from_config<Sut: Service>()
     -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
-        let service_name = generate_service_name();
-        let mut config = generate_isolated_config();
-        config.defaults.request_response.client_allocation_strategy =
-            AllocationStrategy::PowerOfTwo;
+        let mut test = Test::<Sut>::new();
+        test.config_mut()
+            .defaults
+            .request_response
+            .client_allocation_strategy = AllocationStrategy::PowerOfTwo;
 
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service_name = generate_service_name();
+
+        let node = test.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<[u64], u64>()

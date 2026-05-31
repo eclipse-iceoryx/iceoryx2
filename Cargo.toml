@@ -56,6 +56,7 @@ members = [
     "iceoryx2-cal/conformance-tests/tests-nostd",
 
     "iceoryx2",
+    "iceoryx2/testing",
     "iceoryx2/tests-common",
     "iceoryx2/tests-nostd",
     "iceoryx2/conformance-tests",
@@ -136,6 +137,7 @@ iceoryx2-pal-testing = { version = "0.9.999", path = "iceoryx2-pal/testing/" }
 iceoryx2-cal = { version = "0.9.999", path = "iceoryx2-cal" }
 iceoryx2-cal-conformance-tests = { version = "0.9.999", path = "iceoryx2-cal/conformance-tests"}
 iceoryx2 = { version = "0.9.999", path = "iceoryx2/", default-features = false }
+iceoryx2-testing = { version = "0.9.999", path = "iceoryx2/testing", default-features = false }
 iceoryx2-conformance-tests = { version = "0.9.999", path = "iceoryx2/conformance-tests"}
 iceoryx2-cli = { version = "0.9.999", path = "iceoryx2-cli/"}
 iceoryx2-ffi-c = { version = "0.9.999", path = "iceoryx2-ffi/c" }

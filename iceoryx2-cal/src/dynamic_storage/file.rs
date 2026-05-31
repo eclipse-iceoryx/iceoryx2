@@ -586,7 +586,7 @@ impl<T: Send + Sync + Debug + ZeroCopySend> DynamicStorage<T> for Storage<T> {
     type Builder<'builder> = Builder<'builder, T>;
 
     fn does_support_persistency() -> bool {
-        SharedMemory::does_support_persistency()
+        true
     }
 
     fn acquire_ownership(&self) {

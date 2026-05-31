@@ -139,10 +139,11 @@
 //! # }
 //! ```
 
-mod global_management_segment;
+pub(crate) mod global_management_segment;
 /// The name for a node.
 pub mod node_name;
 
+use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
 use core::time::Duration;
@@ -663,7 +664,7 @@ impl<Service: service::Service> DeadNodeView<Service> {
         // remove the port tags last, after the ports have been removed from the service;
         // now, everything not belonging to a service can be removed
         match Node::<Service>::port_tags(config, self.id(), |port_id| {
-            match unsafe { remove_stale_port_resources::<Service>(*self.id(), port_id, config) } {
+            match unsafe { remove_stale_port_resources::<Service>(self.id(), port_id, config) } {
                 Ok(()) => CallbackProgression::Continue,
                 Err(RemoveStalePortResourcesError::InsufficientPermissions) => {
                     cleanup_failure = Err(NodeCleanupFailure::InsufficientPermissions);
@@ -1039,6 +1040,28 @@ impl<Service: service::Service> SharedNode<Service> {
             }
         }
     }
+
+    pub(crate) fn create_service_tag<T: Debug + ?Sized>(
+        &self,
+        origin: &T,
+        msg: &str,
+        service_hash: &ServiceHash,
+    ) -> Result<Option<Service::StaticStorage>, StaticStorageCreateError> {
+        match <<Service::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
+            Service::StaticStorage,
+        >>::new(&service_hash.0.into())
+        .config(&service_tag_config::<Service>(self.config(), self.id()))
+        .has_ownership(true)
+        .create(&[])
+        {
+            Ok(static_storage) => Ok(Some(static_storage)),
+            Err(StaticStorageCreateError::AlreadyExists) => Ok(None),
+            Err(e) => {
+                fail!(from origin, with e,
+                    "{msg} since the service tag could not be created. [{e:?}]");
+            }
+        }
+    }
 }
 
 /// The [`Node`] is the entry point to the whole iceoryx2 infrastructure and owns all entities.
@@ -1050,7 +1073,7 @@ impl<Service: service::Service> SharedNode<Service> {
 /// Can be created via the [`NodeBuilder`].
 #[derive(Debug)]
 pub struct Node<Service: service::Service> {
-    shared: SharedNode<Service>,
+    pub(crate) shared: SharedNode<Service>,
 }
 
 unsafe impl<Service: service::Service> Send for Node<Service> {}

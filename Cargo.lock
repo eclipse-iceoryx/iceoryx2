@@ -1323,6 +1323,7 @@ dependencies = [
  "iceoryx2-conformance-tests-common",
  "iceoryx2-log",
  "iceoryx2-pal-print",
+ "iceoryx2-testing",
 ]
 
 [[package]]
@@ -1529,6 +1530,18 @@ dependencies = [
  "iceoryx2",
  "iceoryx2-bb-container",
  "iceoryx2-bb-posix",
+ "iceoryx2-log",
+]
+
+[[package]]
+name = "iceoryx2-testing"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-testing",
+ "iceoryx2-cal",
  "iceoryx2-log",
 ]
 

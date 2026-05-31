@@ -43,6 +43,7 @@ SDK_CRATES_TO_PUBLISH := `echo \
     iceoryx2-cal                        \
     iceoryx2-cal-conformance-tests      \
     iceoryx2                            \
+    iceoryx2-testing                    \
     iceoryx2-conformance-tests          \
     iceoryx2-services-common            \
     iceoryx2-services-discovery         \

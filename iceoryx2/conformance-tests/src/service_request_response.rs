@@ -18,16 +18,15 @@ pub mod service_request_response {
     use alloc::collections::BTreeSet;
     use alloc::{vec, vec::Vec};
 
-    use iceoryx2::node::NodeBuilder;
     use iceoryx2::port::LoanError;
     use iceoryx2::port::client::Client;
     use iceoryx2::port::server::Server;
     use iceoryx2::prelude::{PortFactory, *};
     use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-    use iceoryx2::testing;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
+    use iceoryx2_testing::*;
 
     #[derive(Clone, Copy)]
     struct Args {
@@ -65,6 +64,7 @@ pub mod service_request_response {
     }
 
     struct TestFixture<Sut: Service> {
+        _context: Test<Sut>,
         node: Node<Sut>,
         service: iceoryx2::service::port_factory::request_response::PortFactory<
             Sut,
@@ -79,9 +79,9 @@ pub mod service_request_response {
 
     impl<Sut: Service> TestFixture<Sut> {
         fn new(args: Args) -> Self {
-            let config = testing::generate_isolated_config();
-            let service_name = testing::generate_service_name();
-            let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+            let context = Test::new();
+            let service_name = generate_service_name();
+            let node = context.create_node();
             let service = node
                 .service_builder(&service_name)
                 .request_response::<usize, usize>()
@@ -123,6 +123,7 @@ pub mod service_request_response {
             }
 
             Self {
+                _context: context,
                 node,
                 service,
                 clients,
@@ -657,11 +658,11 @@ pub mod service_request_response {
         const MAX_CLIENTS: usize = 4;
         const MAX_SERVERS: usize = 4;
         const MAX_ACTIVE_REQUESTS: usize = 2;
+        let test = Test::<Sut>::new();
 
-        let service_name = testing::generate_service_name();
-        let config = testing::generate_isolated_config();
+        let service_name = generate_service_name();
 
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node = test.create_node();
 
         for max_clients in 1..MAX_CLIENTS {
             for max_servers in 1..MAX_SERVERS {
@@ -702,10 +703,10 @@ pub mod service_request_response {
 
     #[conformance_test]
     pub fn dropping_service_keeps_established_communication<Sut: Service>() {
-        let service_name = testing::generate_service_name();
-        let config = testing::generate_isolated_config();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
 
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -723,10 +724,10 @@ pub mod service_request_response {
 
     #[conformance_test]
     pub fn dropping_service_keeps_established_communication_for_active_requests<Sut: Service>() {
-        let service_name = testing::generate_service_name();
-        let config = testing::generate_isolated_config();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
 
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -823,9 +824,9 @@ pub mod service_request_response {
         const RESPONSE_PAYLOAD: u16 = 17821;
         const REQUEST_HEADER: u32 = 89213998;
         const RESPONSE_HEADER: u64 = 467440737095516161;
-        let service_name = testing::generate_service_name();
-        let config = testing::generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
 
         let service = node
             .service_builder(&service_name)
@@ -988,12 +989,12 @@ pub mod service_request_response {
     #[conformance_test]
     pub fn sending_requests_with_custom_payload_works<Sut: Service>() {
         const NUMBER_OF_ELEMENTS: usize = 1;
-        let service_name = testing::generate_service_name();
-        let config = testing::generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
         let mut type_details = TypeDetail::new::<u8>(TypeVariant::FixedSize);
-        testing::type_detail_set_size(&mut type_details, 1024);
-        testing::type_detail_set_alignment(&mut type_details, 1024);
+        type_detail_set_size(&mut type_details, 1024);
+        type_detail_set_alignment(&mut type_details, 1024);
 
         let service_1 = unsafe {
             node.service_builder(&service_name)
@@ -1041,12 +1042,12 @@ pub mod service_request_response {
     #[conformance_test]
     pub fn sending_response_with_custom_payload_works<Sut: Service>() {
         const NUMBER_OF_ELEMENTS: usize = 1;
-        let service_name = testing::generate_service_name();
-        let config = testing::generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
         let mut type_details = TypeDetail::new::<u8>(TypeVariant::FixedSize);
-        testing::type_detail_set_size(&mut type_details, 512);
-        testing::type_detail_set_alignment(&mut type_details, 256);
+        type_detail_set_size(&mut type_details, 512);
+        type_detail_set_alignment(&mut type_details, 256);
 
         let service_1 = unsafe {
             node.service_builder(&service_name)
@@ -1101,12 +1102,12 @@ pub mod service_request_response {
 
     #[conformance_test]
     pub fn sending_requests_with_custom_header_works<Sut: Service>() {
-        let service_name = testing::generate_service_name();
-        let config = testing::generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
         let mut type_details = TypeDetail::new::<u8>(TypeVariant::FixedSize);
-        testing::type_detail_set_size(&mut type_details, 2048);
-        testing::type_detail_set_alignment(&mut type_details, 8);
+        type_detail_set_size(&mut type_details, 2048);
+        type_detail_set_alignment(&mut type_details, 8);
 
         let service_1 = unsafe {
             node.service_builder(&service_name)
@@ -1146,12 +1147,12 @@ pub mod service_request_response {
 
     #[conformance_test]
     pub fn sending_response_with_custom_header_works<Sut: Service>() {
-        let service_name = testing::generate_service_name();
-        let config = testing::generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
         let mut type_details = TypeDetail::new::<u8>(TypeVariant::FixedSize);
-        testing::type_detail_set_size(&mut type_details, 4096);
-        testing::type_detail_set_alignment(&mut type_details, 32);
+        type_detail_set_size(&mut type_details, 4096);
+        type_detail_set_alignment(&mut type_details, 32);
 
         let service_1 = unsafe {
             node.service_builder(&service_name)
@@ -1196,9 +1197,9 @@ pub mod service_request_response {
     #[conformance_test]
     pub fn send_increasing_requests_with_static_allocation_strategy_fails<Sut: Service>() {
         const SLICE_SIZE: usize = 1024;
-        let service_name = testing::generate_service_name();
-        let config = testing::generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
 
         let service = node
             .service_builder(&service_name)
@@ -1226,9 +1227,9 @@ pub mod service_request_response {
     #[conformance_test]
     pub fn send_increasing_responses_with_static_allocation_strategy_fails<Sut: Service>() {
         const SLICE_SIZE: usize = 1024;
-        let service_name = testing::generate_service_name();
-        let config = testing::generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
 
         let service = node
             .service_builder(&service_name)
@@ -1260,9 +1261,9 @@ pub mod service_request_response {
         allocation_strategy: AllocationStrategy,
     ) {
         const ITERATIONS: usize = 128;
-        let service_name = testing::generate_service_name();
-        let config = testing::generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
 
         let service = node
             .service_builder(&service_name)
@@ -1309,9 +1310,9 @@ pub mod service_request_response {
         allocation_strategy: AllocationStrategy,
     ) {
         const ITERATIONS: usize = 128;
-        let service_name = testing::generate_service_name();
-        let config = testing::generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
 
         let service = node
             .service_builder(&service_name)
@@ -1362,9 +1363,9 @@ pub mod service_request_response {
     #[conformance_test]
     pub fn listing_all_clients_works<S: Service>() {
         const NUMBER_OF_CLIENTS: usize = 17;
-        let service_name = testing::generate_service_name();
-        let config = testing::generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
 
         let sut = node
             .service_builder(&service_name)
@@ -1394,9 +1395,9 @@ pub mod service_request_response {
     #[conformance_test]
     pub fn listing_all_clients_stops_on_request<S: Service>() {
         const NUMBER_OF_CLIENTS: usize = 13;
-        let service_name = testing::generate_service_name();
-        let config = testing::generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
 
         let sut = node
             .service_builder(&service_name)
@@ -1423,9 +1424,9 @@ pub mod service_request_response {
     #[conformance_test]
     pub fn listing_all_servers_works<S: Service>() {
         const NUMBER_OF_SERVERS: usize = 17;
-        let service_name = testing::generate_service_name();
-        let config = testing::generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
 
         let sut = node
             .service_builder(&service_name)
@@ -1455,9 +1456,9 @@ pub mod service_request_response {
     #[conformance_test]
     pub fn listing_all_servers_stops_on_request<S: Service>() {
         const NUMBER_OF_SERVERS: usize = 13;
-        let service_name = testing::generate_service_name();
-        let config = testing::generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
 
         let sut = node
             .service_builder(&service_name)
@@ -1486,9 +1487,9 @@ pub mod service_request_response {
         S: Service,
     >() {
         const SLICE_MAX_LEN: usize = 1;
-        let service_name = testing::generate_service_name();
-        let config = testing::generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
 
         let service = node
             .service_builder(&service_name)
@@ -1536,9 +1537,9 @@ pub mod service_request_response {
         S: Service,
     >() {
         const SLICE_MAX_LEN: usize = 1;
-        let service_name = testing::generate_service_name();
-        let config = testing::generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
 
         let service = node
             .service_builder(&service_name)
@@ -1579,9 +1580,9 @@ pub mod service_request_response {
 
     #[conformance_test]
     pub fn client_can_set_disconnect_hint<S: Service>() {
-        let service_name = testing::generate_service_name();
-        let config = testing::generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
 
         let service = node
             .service_builder(&service_name)

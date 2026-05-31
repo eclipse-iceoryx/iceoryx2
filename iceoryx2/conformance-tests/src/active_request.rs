@@ -18,16 +18,13 @@ pub mod active_request {
     use iceoryx2::port::client::Client;
     use iceoryx2::port::server::Server;
     use iceoryx2::service::port_factory::request_response::PortFactory;
-    use iceoryx2::testing::*;
-    use iceoryx2::{
-        node::{Node, NodeBuilder},
-        prelude::ZeroCopySend,
-        service::Service,
-    };
+    use iceoryx2::{node::Node, prelude::ZeroCopySend, service::Service};
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
+    use iceoryx2_testing::*;
 
     struct TestFixture<Sut: Service> {
+        context: Test<Sut>,
         _node: Node<Sut>,
         service: PortFactory<Sut, u64, u64, u64, ()>,
         client: Client<Sut, u64, u64, u64, ()>,
@@ -36,9 +33,9 @@ pub mod active_request {
 
     impl<Sut: Service> TestFixture<Sut> {
         fn new() -> Self {
-            let config = generate_isolated_config();
+            let context = Test::new();
             let service_name = generate_service_name();
-            let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+            let node = context.create_node();
             let service = node
                 .service_builder(&service_name)
                 .request_response::<u64, u64>()
@@ -51,6 +48,7 @@ pub mod active_request {
             let server = service.server_builder().create().unwrap();
 
             Self {
+                context,
                 _node: node,
                 service,
                 client,
@@ -194,9 +192,10 @@ pub mod active_request {
     #[conformance_test]
     pub fn loaned_response_has_default_constructed_header<Sut: Service>() {
         type UserHeader = CustomUserHeader<44491, 55592>;
-        let config = generate_isolated_config();
+
+        let test = TestFixture::<Sut>::new();
         let service_name = generate_service_name();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node = test.context.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -217,9 +216,10 @@ pub mod active_request {
     #[conformance_test]
     pub fn loaned_uninitialized_response_has_default_constructed_header<Sut: Service>() {
         type UserHeader = CustomUserHeader<1144491, 1155592>;
-        let config = generate_isolated_config();
+
+        let test = TestFixture::<Sut>::new();
         let service_name = generate_service_name();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node = test.context.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
@@ -240,9 +240,10 @@ pub mod active_request {
     #[conformance_test]
     pub fn loaned_slice_response_has_default_constructed_header<Sut: Service>() {
         type UserHeader = CustomUserHeader<474491, 575592>;
-        let config = generate_isolated_config();
+
+        let test = TestFixture::<Sut>::new();
         let service_name = generate_service_name();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node = test.context.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, [u64]>()
@@ -263,9 +264,10 @@ pub mod active_request {
     #[conformance_test]
     pub fn loaned_uninitialized_slice_response_has_default_constructed_header<Sut: Service>() {
         type UserHeader = CustomUserHeader<47774491, 57577592>;
-        let config = generate_isolated_config();
+
+        let test = TestFixture::<Sut>::new();
         let service_name = generate_service_name();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node = test.context.create_node();
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, [u64]>()

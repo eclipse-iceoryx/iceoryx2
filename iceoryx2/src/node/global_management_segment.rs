@@ -58,6 +58,28 @@ impl<S: Service> GlobalManagementSegment<S> {
         Ok(Self { storage })
     }
 
+    /// # Safety
+    ///
+    /// * It must be ensured that !NO! other process is running currently using the
+    ///   same iceoryx2 domain.
+    ///
+    pub(crate) unsafe fn remove(global_config: &Config) -> Result<bool, NamedConceptRemoveError> {
+        let origin = "GlobalManagementSegment::remove()";
+        let msg = "Unable to remove the global management segment";
+        let config = Self::dynamic_storage_config(global_config);
+        match unsafe {
+            <S::PersistentDynamicStorage<State> as NamedConceptMgmt>::remove_cfg(
+                &GLOBAL_MGMT_NAME,
+                &config,
+            )
+        } {
+            Ok(v) => Ok(v),
+            Err(e) => {
+                fail!(from origin, with e, "{msg} due to {e:?}.");
+            }
+        }
+    }
+
     pub fn increment_node_counter(&self) -> u32 {
         self.storage
             .get()
