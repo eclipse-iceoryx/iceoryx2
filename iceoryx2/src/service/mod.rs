@@ -704,32 +704,6 @@ pub mod internal {
             let origin = "Service::remove()";
             let msg = "Unable to remove all service resources";
 
-            // IMPORTANT: acquire the internal details before we remove them
-            let internal_details = __internal_details::<S>(config, service_hash);
-
-            match unsafe {
-                // IMPORTANT: The static service config must be removed first. If it cannot be
-                // removed, the process may lack sufficient permissions and should not remove
-                // any other resources.
-                remove_static_service_config::<S>(config, service_hash)
-            } {
-                Ok(_) => {
-                    trace!(from origin, "Remove unused service.");
-                }
-                Err(NamedConceptRemoveError::InsufficientPermissions) => {
-                    fail!(from origin, with ServiceRemoveError::InsufficientPermissions,
-                        "{msg} for {service_hash} due to insufficient permissions.");
-                }
-                Err(NamedConceptRemoveError::InternalError) => {
-                    fail!(from origin, with ServiceRemoveError::InternalError,
-                        "{msg} for {service_hash} due to an internal error.");
-                }
-                Err(NamedConceptRemoveError::Interrupt) => {
-                    fail!(from origin, with ServiceRemoveError::Interrupt,
-                        "{msg} for {service_hash} since an interrupt signal was received.");
-                }
-            }
-
             // check if service was a blackboard service to remove its additional resources
             let blackboard_name = crate::service::naming_scheme::blackboard_name(unique_service_id);
             let blackboard_payload_config =
@@ -739,7 +713,7 @@ pub mod internal {
                 &blackboard_payload_config,
             );
             if let Ok(true) = blackboard_payload {
-                match internal_details {
+                match __internal_details::<S>(config, service_hash) {
                     Ok(Some(details)) => {
                         let blackboard_mgmt_name =
                             details.static_details.blackboard().type_details.type_name;
@@ -782,8 +756,7 @@ pub mod internal {
             }
 
             match unsafe {
-                // IMPORTANT: The static service config must be removed last since it contains the details about all
-                // other resources that also have to be removed. If this is removed earlier, those resources are leaked.
+                // IMPORTANT: The static service config must be removed last.
                 remove_static_service_config::<S>(config, service_hash)
             } {
                 Ok(_) => {

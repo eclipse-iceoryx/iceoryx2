@@ -15,6 +15,7 @@ extern crate alloc;
 use iceoryx2_testing::Test;
 
 use alloc::vec;
+use core::fmt::Debug;
 use iceoryx2::node::{CleanupState, NodeState};
 use iceoryx2::prelude::*;
 use iceoryx2::testing::*;
@@ -29,7 +30,6 @@ use iceoryx2_cal::static_storage::StaticStorage;
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod node_death {
-    use std::fmt::Debug;
 
     use super::*;
 
