@@ -1163,18 +1163,17 @@ pub mod node_death {
         }
     }
 
-    pub fn service_without_dynamic_config_is_removed<
+    pub fn service_without_dynamic_config_is_removed_on_node_cleanup<
         S: iceoryx2::service::Service,
-        T: PortFactory + Debug,
-        E: Debug,
-        F: FnMut(&Node<S>, &ServiceName) -> Result<T, E>,
+        T: PortFactory,
+        F: FnMut(&Node<S>, &ServiceName) -> (T, MessagingPattern),
     >(
         mut create_service: F,
     ) {
         let test = Test::<S>::new();
         let bad_node = test.create_node();
         let service_name = generate_service_name();
-        let bad_service = create_service(&bad_node, &service_name).unwrap();
+        let (bad_service, messaging_pattern) = create_service(&bad_node, &service_name);
         let service_id = bad_service.unique_service_id();
 
         bad_service.abandon();
@@ -1186,50 +1185,181 @@ pub mod node_death {
         assert_that!(cleanup_result.cleanups, eq 1);
         assert_that!(cleanup_result.failed_cleanups, eq 0);
 
-        assert_that!(S::does_exist(&service_name, test.config(), MessagingPattern::Event).unwrap(), eq false);
+        assert_that!(S::does_exist(&service_name, test.config(), messaging_pattern).unwrap(), eq false);
 
         let good_node = test.create_node();
         let good_service = create_service(&good_node, &service_name);
-
-        assert_that!(good_service, is_ok);
+        let mut counter = 0;
+        good_service
+            .0
+            .nodes(|node_state| {
+                counter += 1;
+                assert_that!(node_state.node_id(), eq good_node.id());
+                CallbackProgression::Continue
+            })
+            .unwrap();
+        assert_that!(counter, eq 1);
     }
 
     #[conformance_test]
-    pub fn event_service_without_dynamic_config_is_removed<S: iceoryx2::service::Service>() {
-        service_without_dynamic_config_is_removed(|node: &Node<S>, service_name| {
-            node.service_builder(service_name).event().create()
-        });
-    }
-
-    #[conformance_test]
-    pub fn publish_subscribe_service_without_dynamic_config_is_removed<
+    pub fn event_service_without_dynamic_config_is_removed_on_node_cleanup<
         S: iceoryx2::service::Service,
     >() {
-        service_without_dynamic_config_is_removed(|node: &Node<S>, service_name| {
-            node.service_builder(service_name)
-                .publish_subscribe::<u64>()
-                .create()
-        });
+        service_without_dynamic_config_is_removed_on_node_cleanup(
+            |node: &Node<S>, service_name| {
+                (
+                    node.service_builder(service_name).event().create().unwrap(),
+                    MessagingPattern::Event,
+                )
+            },
+        );
     }
 
     #[conformance_test]
-    pub fn request_response_service_without_dynamic_config_is_removed<
+    pub fn publish_subscribe_service_without_dynamic_config_is_removed_on_node_cleanup<
         S: iceoryx2::service::Service,
     >() {
-        service_without_dynamic_config_is_removed(|node: &Node<S>, service_name| {
-            node.service_builder(service_name)
-                .request_response::<u64, u64>()
-                .create()
+        service_without_dynamic_config_is_removed_on_node_cleanup(
+            |node: &Node<S>, service_name| {
+                (
+                    node.service_builder(service_name)
+                        .publish_subscribe::<u64>()
+                        .create()
+                        .unwrap(),
+                    MessagingPattern::PublishSubscribe,
+                )
+            },
+        );
+    }
+
+    #[conformance_test]
+    pub fn request_response_service_without_dynamic_config_is_removed_on_node_cleanup<
+        S: iceoryx2::service::Service,
+    >() {
+        service_without_dynamic_config_is_removed_on_node_cleanup(
+            |node: &Node<S>, service_name| {
+                (
+                    node.service_builder(service_name)
+                        .request_response::<u64, u64>()
+                        .create()
+                        .unwrap(),
+                    MessagingPattern::RequestResponse,
+                )
+            },
+        );
+    }
+
+    #[conformance_test]
+    pub fn blackboard_service_without_dynamic_config_is_removed_on_node_cleanup<
+        S: iceoryx2::service::Service,
+    >() {
+        service_without_dynamic_config_is_removed_on_node_cleanup(
+            |node: &Node<S>, service_name| {
+                (
+                    node.service_builder(service_name)
+                        .blackboard_creator::<u64>()
+                        .add(123, 456)
+                        .create()
+                        .unwrap(),
+                    MessagingPattern::Blackboard,
+                )
+            },
+        );
+    }
+
+    fn service_without_dynamic_config_can_be_removed<
+        S: iceoryx2::service::Service,
+        T: PortFactory,
+        F: FnMut(&Node<S>, &ServiceName) -> (T, MessagingPattern),
+    >(
+        mut create_service: F,
+    ) {
+        let test = Test::<S>::new();
+
+        let bad_node = test.create_node();
+        let service_name = generate_service_name();
+        let (bad_service, messaging_pattern) = create_service(&bad_node, &service_name);
+        let service_id = bad_service.unique_service_id();
+
+        bad_service.abandon();
+        bad_node.abandon();
+
+        unsafe { remove_dynamic_config::<S>(test.config(), service_id) };
+
+        let good_node = test.create_node();
+        let result = unsafe {
+            good_node
+                .force_remove_service(&service_name, messaging_pattern)
+                .unwrap()
+        };
+        assert_that!(result, eq true);
+
+        let good_service = create_service(&good_node, &service_name);
+        let mut counter = 0;
+        good_service
+            .0
+            .nodes(|node_state| {
+                counter += 1;
+                assert_that!(node_state.node_id(), eq good_node.id());
+                CallbackProgression::Continue
+            })
+            .unwrap();
+        assert_that!(counter, eq 1);
+    }
+
+    #[conformance_test]
+    pub fn event_service_without_dynamic_config_can_be_removed<S: iceoryx2::service::Service>() {
+        service_without_dynamic_config_can_be_removed(|node: &Node<S>, service_name| {
+            (
+                node.service_builder(service_name).event().create().unwrap(),
+                MessagingPattern::Event,
+            )
         });
     }
 
     #[conformance_test]
-    pub fn blackboard_service_without_dynamic_config_is_removed<S: iceoryx2::service::Service>() {
-        service_without_dynamic_config_is_removed(|node: &Node<S>, service_name| {
-            node.service_builder(service_name)
-                .blackboard_creator::<u64>()
-                .add(123, 456)
-                .create()
+    pub fn publish_subscribe_service_without_dynamic_config_can_be_removed<
+        S: iceoryx2::service::Service,
+    >() {
+        service_without_dynamic_config_can_be_removed(|node: &Node<S>, service_name| {
+            (
+                node.service_builder(service_name)
+                    .publish_subscribe::<u64>()
+                    .create()
+                    .unwrap(),
+                MessagingPattern::PublishSubscribe,
+            )
+        });
+    }
+
+    #[conformance_test]
+    pub fn request_response_service_without_dynamic_config_can_be_removed<
+        S: iceoryx2::service::Service,
+    >() {
+        service_without_dynamic_config_can_be_removed(|node: &Node<S>, service_name| {
+            (
+                node.service_builder(service_name)
+                    .request_response::<u64, u64>()
+                    .create()
+                    .unwrap(),
+                MessagingPattern::RequestResponse,
+            )
+        });
+    }
+
+    #[conformance_test]
+    pub fn blackboard_service_without_dynamic_config_can_be_removed<
+        S: iceoryx2::service::Service,
+    >() {
+        service_without_dynamic_config_can_be_removed(|node: &Node<S>, service_name| {
+            (
+                node.service_builder(service_name)
+                    .blackboard_creator::<u64>()
+                    .add(123, 456)
+                    .create()
+                    .unwrap(),
+                MessagingPattern::Blackboard,
+            )
         });
     }
 }
