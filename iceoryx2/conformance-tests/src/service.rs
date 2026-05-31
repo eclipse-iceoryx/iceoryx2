@@ -490,7 +490,8 @@ pub mod service {
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
-        let test = Factory::new();
+        let test =
+            Factory::new_with_custom_watchdog(Watchdog::new_with_timeout(Duration::from_secs(60)));
         let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         const NUMBER_OF_ITERATIONS: usize = 25;
 
