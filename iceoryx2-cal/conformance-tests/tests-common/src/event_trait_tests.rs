@@ -18,12 +18,12 @@ instantiate_conformance_tests_with_module!(
     iceoryx2_cal::event::trigger::semaphore::SemaphoreShmBitSet
 );
 
-//instantiate_conformance_tests_with_module!(
-//    unix_datagram,
-//    iceoryx2_cal_conformance_tests::event_trait,
-//    iceoryx2_cal::event::unix_datagram_socket::EventImpl
-//);
-//
+instantiate_conformance_tests_with_module!(
+    unix_datagram_shared_memory_bitset,
+    iceoryx2_cal_conformance_tests::event_trait,
+    iceoryx2_cal::event::trigger::unix_datagram_socket::UnixDatagramShmBitSet
+);
+
 //instantiate_conformance_tests_with_module!(
 //    sem_bitset_process_local,
 //    iceoryx2_cal_conformance_tests::event_trait,

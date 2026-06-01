@@ -75,7 +75,8 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> HandlerInterface<E, (
                     "{msg} due to insufficient permissions.");
             }
             Err(UnixDatagramSendError::NotConnected)
-            | Err(UnixDatagramSendError::ConnectionReset) => {
+            | Err(UnixDatagramSendError::ConnectionReset)
+            | Err(UnixDatagramSendError::ConnectionRefused) => {
                 fail!(from self,
                     with NotifierNotifyError::Disconnected,
                     "{msg} since the other side is disconnected.");
