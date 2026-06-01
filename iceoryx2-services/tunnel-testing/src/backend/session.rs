@@ -30,7 +30,8 @@ use iceoryx2_bb_posix::directory::{
     Directory, DirectoryAccessError, DirectoryCreateError, DirectoryOpenError,
 };
 use iceoryx2_bb_posix::file::{
-    AccessMode, File, FileBuilder, FileCreationError, FileRemoveError, FileWriteError, Permission,
+    AccessMode, File, FileAccessError, FileBuilder, FileCreationError, FileRemoveError,
+    FileWriteError, Permission,
 };
 use iceoryx2_bb_posix::memory_mapping::SemanticString;
 use iceoryx2_bb_posix::process_state::{
@@ -72,6 +73,7 @@ impl core::error::Error for CreationError {}
 pub enum AnnounceError {
     Path(SemanticStringError),
     Encode,
+    FileExists(FileAccessError),
     FileCreate(FileCreationError),
     FileWrite(FileWriteError),
     FileRemove(FileRemoveError),
@@ -266,18 +268,26 @@ impl Session {
 
     /// Make a service offered by this session discoverable to peers.
     pub fn announce_added(&self, static_config: &StaticConfig) -> Result<(), AnnounceError> {
-        let bytes = postcard::to_allocvec(static_config).map_err(|_| AnnounceError::Encode)?;
         let path = file_path_in_directory(
             static_config.service_hash().as_str().as_bytes(),
             &self.services_dir_path,
         )
         .map_err(AnnounceError::Path)?;
+
+        if File::does_exist(&path).map_err(AnnounceError::FileExists)? {
+            // Already announced
+            return Ok(());
+        }
+
         let mut file = FileBuilder::new(&path)
-            .creation_mode(CreationMode::PurgeAndCreate)
+            .creation_mode(CreationMode::CreateExclusive)
             .permission(Permission::OWNER_ALL)
             .create()
             .map_err(AnnounceError::FileCreate)?;
+
+        let bytes = postcard::to_allocvec(static_config).map_err(|_| AnnounceError::Encode)?;
         file.write(&bytes).map_err(AnnounceError::FileWrite)?;
+
         Ok(())
     }
 
@@ -285,7 +295,9 @@ impl Session {
     pub fn announce_removed(&self, hash: &ServiceHash) -> Result<(), AnnounceError> {
         let path = file_path_in_directory(hash.as_str().as_bytes(), &self.services_dir_path)
             .map_err(AnnounceError::Path)?;
+
         File::remove(&path).map_err(AnnounceError::FileRemove)?;
+
         Ok(())
     }
 
