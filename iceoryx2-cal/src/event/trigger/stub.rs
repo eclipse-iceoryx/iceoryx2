@@ -65,6 +65,10 @@ impl<
     fn blocking_wait(&self) -> Result<(), ListenerWaitError> {
         unimplemented!()
     }
+
+    fn empty_buffer(&self) -> Result<(), ListenerWaitError> {
+        unimplemented!()
+    }
 }
 impl<
     E: EventState,
@@ -75,6 +79,7 @@ impl<
     fn notify(&self) -> Result<(), NotifierNotifyError> {
         unimplemented!()
     }
+
     fn open(
         _name: &FileName,
         _config: &Configuration,

@@ -42,7 +42,7 @@ impl EventId {
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum NotifierNotifyError {
     Interrupt,
-    FailedToDeliverSignal,
+    BufferIsFull,
     EventIdOutOfBounds,
     InsufficientPermissions,
     Disconnected,
@@ -136,6 +136,7 @@ pub trait Notifier<E: EventState>: NamedConcept + Debug + Abandonable + Send {
 
 pub trait NotifierBuilder<E: EventState, T: Event<E>>: NamedConceptBuilder<T> + Debug {
     fn timeout(self, timeout: Duration) -> Self;
+    fn fail_when_buffer_is_full(self, value: bool) -> Self;
     fn open(self) -> Result<T::Notifier, NotifierOpenError>;
 }
 

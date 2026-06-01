@@ -93,11 +93,16 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
     fn notify(&self) -> Result<(), NotifierNotifyError> {
         let msg = "Unable to send notification";
         match self.sender.try_send(&[0u8]) {
+            Ok(1) => Ok(()),
             Ok(0) => {
-                fail!(from self, with NotifierNotifyError::FailedToDeliverSignal,
+                fail!(from self, with NotifierNotifyError::BufferIsFull,
                     "{msg} since data could not be sent through the socket.");
             }
-            Ok(_) => Ok(()),
+            Ok(n) => {
+                fail!(from self,
+                    with NotifierNotifyError::InternalFailure,
+                    "{msg} expected to send 1 byte but it seems that actual {n} bytes were transmitted.");
+            }
             Err(StreamingSocketPairSendError::Interrupt) => {
                 fail!(from self,
                     with NotifierNotifyError::Interrupt,
@@ -154,11 +159,11 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>> Abandonab
 }
 
 impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
-    SocketPairWaiter<E, Storage>
+    WaiterInterface<E, SocketPairMgmt, Storage> for SocketPairWaiter<E, Storage>
 {
     fn empty_buffer(&self) -> Result<(), ListenerWaitError> {
+        let msg = "Unable to empty notification buffer";
         loop {
-            let msg = "Unable to empty notification buffer";
             let mut buffer = [0u8; RECEIVE_BUFFER_SIZE];
             match self.receiver.try_receive(&mut buffer) {
                 Ok(RECEIVE_BUFFER_SIZE) => continue,
@@ -174,11 +179,6 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
             }
         }
     }
-}
-
-impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
-    WaiterInterface<E, SocketPairMgmt, Storage> for SocketPairWaiter<E, Storage>
-{
     fn create(
         _name: &FileName,
         _config: &super::Configuration,

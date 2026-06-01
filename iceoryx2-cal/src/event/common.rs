@@ -17,7 +17,7 @@ use crate::{
     event::{
         Event, EventId, Listener, ListenerBuilder, ListenerCreateError, ListenerWaitError,
         NamedConcept, NamedConceptBuilder, NamedConceptMgmt, Notifier, NotifierBuilder,
-        NotifierOpenError,
+        NotifierNotifyError, NotifierOpenError,
         event_state::{EventActivation, EventState},
         trigger::{HandlerInterface, State, WaiterInterface, stub::Stub},
     },
@@ -25,7 +25,7 @@ use crate::{
 };
 use core::fmt::Debug;
 use core::{marker::PhantomData, mem::MaybeUninit, ptr::NonNull, time::Duration};
-use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary_traits::{
     non_null::NonNullCompat, testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
@@ -209,6 +209,7 @@ pub struct Handle<
 > {
     handle: H,
     storage: Storage,
+    fail_when_buffer_is_full: bool,
     _data_1: PhantomData<E>,
     _data_2: PhantomData<Mgmt>,
 }
@@ -252,12 +253,28 @@ impl<
 
     fn notify(&self, event_id: EventId) -> Result<(), super::NotifierNotifyError> {
         let msg = "Unable to notify";
+        let mgmt = self.storage.get();
         fail!(from self,
-              when self.storage.get().event.activate(event_id),
+              when mgmt.event.activate(event_id),
               "{msg} with {event_id:?} since the activation failed.");
-        fail!(from self,
-              when self.handle.notify(),
-              "{msg} with {event_id:?} since the notification could not be sent.");
+
+        if mgmt.notification_count.load(Ordering::Relaxed) == 0 {
+            match self.handle.notify() {
+                Ok(()) => (),
+                Err(NotifierNotifyError::BufferIsFull) => {
+                    if self.fail_when_buffer_is_full {
+                        fail!(from self, with NotifierNotifyError::BufferIsFull,
+                            "{msg} with {event_id:?} since the buffer is full.");
+                    }
+                }
+                Err(e) => {
+                    fail!(from self, with e,
+                        "{msg} with {event_id:?} due to {e:?}.");
+                }
+            }
+
+            mgmt.notification_count.fetch_add(1, Ordering::Release);
+        }
         Ok(())
     }
 }
@@ -308,41 +325,69 @@ impl<
     W: WaiterInterface<E, Mgmt, Storage>,
 > Listener<E> for Waiter<E, Mgmt, Storage, W>
 {
-    fn try_wait<F: FnMut(EventActivation)>(&self, callback: F) -> Result<u64, ListenerWaitError> {
-        let msg = "Failed to try wait and acquire all event notifications";
-        fail!(from self,
-              when self.waiter.try_wait(),
-              "{msg} since the underlying waiting call failed.");
+    fn try_wait<F: FnMut(EventActivation)>(
+        &self,
+        mut callback: F,
+    ) -> Result<u64, ListenerWaitError> {
+        let mgmt = self.storage.get();
 
-        let number_of_events = self.storage.get().event.drain(callback);
-        Ok(number_of_events)
+        if mgmt.notification_count.swap(0, Ordering::Acquire) == 0 {
+            Ok(0)
+        } else {
+            let number_of_events = self.storage.get().event.drain(&mut callback);
+            Ok(number_of_events)
+        }
     }
 
     fn timed_wait<F: FnMut(EventActivation)>(
         &self,
-        callback: F,
+        mut callback: F,
         timeout: Duration,
     ) -> Result<u64, ListenerWaitError> {
         let msg = "Failed to wait with timeout and acquire all event notifications";
-        fail!(from self,
+        let mgmt = self.storage.get();
+
+        if mgmt.notification_count.swap(0, Ordering::Acquire) == 0 {
+            fail!(from self,
               when self.waiter.timed_wait(timeout),
               "{msg} since the underlying waiting call failed.");
-
-        let number_of_events = self.storage.get().event.drain(callback);
-        Ok(number_of_events)
+            self.try_wait(callback)
+        } else {
+            let number_of_events = self.storage.get().event.drain(&mut callback);
+            if number_of_events == 0 {
+                fail!(from self,
+                  when self.waiter.timed_wait(timeout),
+                  "{msg} since the underlying waiting call failed.");
+                self.try_wait(callback)
+            } else {
+                Ok(number_of_events)
+            }
+        }
     }
 
     fn blocking_wait<F: FnMut(EventActivation)>(
         &self,
-        callback: F,
+        mut callback: F,
     ) -> Result<u64, ListenerWaitError> {
         let msg = "Failed to wait with timeout and acquire all event notifications";
-        fail!(from self,
+        let mgmt = self.storage.get();
+
+        if mgmt.notification_count.swap(0, Ordering::Acquire) == 0 {
+            fail!(from self,
               when self.waiter.blocking_wait(),
               "{msg} since the underlying waiting call failed.");
-
-        let number_of_events = self.storage.get().event.drain(callback);
-        Ok(number_of_events)
+            self.try_wait(callback)
+        } else {
+            let number_of_events = self.storage.get().event.drain(&mut callback);
+            if number_of_events == 0 {
+                fail!(from self,
+                  when self.waiter.blocking_wait(),
+                  "{msg} since the underlying waiting call failed.");
+                self.try_wait(callback)
+            } else {
+                Ok(number_of_events)
+            }
+        }
     }
 }
 
@@ -356,6 +401,7 @@ pub struct HandleBuilder<
 > {
     name: FileName,
     config: Configuration<E, Mgmt, Storage>,
+    fail_when_buffer_is_full: bool,
     timeout: Duration,
     _data_1: PhantomData<H>,
     _data_2: PhantomData<W>,
@@ -373,6 +419,7 @@ impl<
         Self {
             name: *name,
             timeout: Duration::ZERO,
+            fail_when_buffer_is_full: false,
             config: Configuration::default(),
             _data_1: PhantomData,
             _data_2: PhantomData,
@@ -398,6 +445,11 @@ impl<
 {
     fn timeout(mut self, timeout: Duration) -> Self {
         self.timeout = timeout;
+        self
+    }
+
+    fn fail_when_buffer_is_full(mut self, value: bool) -> Self {
+        self.fail_when_buffer_is_full = value;
         self
     }
 
@@ -437,6 +489,7 @@ impl<
         Ok(Handle {
             storage,
             handle,
+            fail_when_buffer_is_full: self.fail_when_buffer_is_full,
             _data_1: PhantomData,
             _data_2: PhantomData,
         })

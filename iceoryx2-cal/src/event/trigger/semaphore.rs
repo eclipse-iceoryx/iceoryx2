@@ -104,7 +104,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
         match self.semaphore.post() {
             Ok(()) => Ok(()),
             Err(SemaphorePostError::Overflow) => {
-                fail!(from self, with NotifierNotifyError::InternalFailure,
+                fail!(from self, with NotifierNotifyError::BufferIsFull,
                     "{msg} since it would cause an overflow in the underlying semaphore.");
             }
             Err(SemaphorePostError::InvalidSemaphoreHandle) => {
@@ -156,6 +156,24 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> Drop
 impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
     WaiterInterface<E, SemaphoreMgmt, Storage> for SemaphoreWaiter<E, Storage>
 {
+    fn empty_buffer(&self) -> Result<(), ListenerWaitError> {
+        let msg = "Unable to empty notification buffer";
+        loop {
+            match self.semaphore.try_wait() {
+                Ok(true) => continue,
+                Ok(false) => return Ok(()),
+                Err(SemaphoreWaitError::Interrupt) => {
+                    fail!(from self, with ListenerWaitError::InterruptSignal,
+                           "{msg} since an interrupt signal was raised.");
+                }
+                Err(e) => {
+                    fail!(from self, with ListenerWaitError::InternalFailure,
+                           "{msg} due to an internal failure. [{e:?}]");
+                }
+            }
+        }
+    }
+
     fn create(
         _name: &FileName,
         _config: &Configuration,
@@ -197,7 +215,8 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
     fn try_wait(&self) -> Result<(), ListenerWaitError> {
         let msg = "Failed to try wait on the unnamed semaphore";
         match self.semaphore.try_wait() {
-            Ok(_) => Ok(()),
+            Ok(true) => self.empty_buffer(),
+            Ok(false) => Ok(()),
             Err(SemaphoreWaitError::Interrupt) => {
                 fail!(from self, with ListenerWaitError::InterruptSignal,
                     "{msg} since an interrupt signal was raised.");
@@ -212,7 +231,8 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
     fn timed_wait(&self, timeout: Duration) -> Result<(), ListenerWaitError> {
         let msg = "Failed to wait with timeout on the unnamed semaphore";
         match self.semaphore.timed_wait(timeout) {
-            Ok(_) => Ok(()),
+            Ok(true) => self.empty_buffer(),
+            Ok(false) => Ok(()),
             Err(SemaphoreTimedWaitError::SemaphoreWaitError(SemaphoreWaitError::Interrupt))
             | Err(SemaphoreTimedWaitError::AdaptiveWaitError(AdaptiveWaitError::NanosleepError(
                 NanosleepError::InterruptedBySignal(_),
@@ -230,7 +250,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
     fn blocking_wait(&self) -> Result<(), ListenerWaitError> {
         let msg = "Failed to blocking wait on the unnamed semaphore";
         match self.semaphore.blocking_wait() {
-            Ok(()) => Ok(()),
+            Ok(()) => self.empty_buffer(),
             Err(SemaphoreWaitError::Interrupt) => {
                 fail!(from self, with ListenerWaitError::InterruptSignal,
                     "{msg} since an interrupt signal was raised.");

@@ -79,6 +79,7 @@ pub trait WaiterInterface<
     fn try_wait(&self) -> Result<(), ListenerWaitError>;
     fn timed_wait(&self, timeout: Duration) -> Result<(), ListenerWaitError>;
     fn blocking_wait(&self) -> Result<(), ListenerWaitError>;
+    fn empty_buffer(&self) -> Result<(), ListenerWaitError>;
 }
 
 pub trait HandlerInterface<

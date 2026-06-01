@@ -60,7 +60,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> HandlerInterface<E, (
         match self.sender.try_send(&[0u8]) {
             Ok(true) => Ok(()),
             Ok(false) => {
-                fail!(from self, with NotifierNotifyError::FailedToDeliverSignal,
+                fail!(from self, with NotifierNotifyError::BufferIsFull,
                     "{msg} since data could not be sent through the socket.");
             }
             Err(UnixDatagramSendError::Interrupt) => {
@@ -142,10 +142,12 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> Abandonable
     }
 }
 
-impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> UnixDatagramWaiter<E, Storage> {
+impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, (), Storage>
+    for UnixDatagramWaiter<E, Storage>
+{
     fn empty_buffer(&self) -> Result<(), ListenerWaitError> {
+        let msg = "Unable to empty notification buffer";
         loop {
-            let msg = "Unable to empty notification buffer";
             let mut buffer = [0u8; RECEIVE_BUFFER_SIZE as usize];
             match self.receiver.try_receive(&mut buffer) {
                 Ok(RECEIVE_BUFFER_SIZE) => continue,
@@ -163,11 +165,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> UnixDatagramWaiter<E,
             }
         }
     }
-}
 
-impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, (), Storage>
-    for UnixDatagramWaiter<E, Storage>
-{
     fn create(
         name: &FileName,
         config: &super::Configuration,

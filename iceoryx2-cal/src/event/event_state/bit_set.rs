@@ -30,7 +30,7 @@ impl EventState for RelocatableBitSet {
         Ok(())
     }
 
-    fn drain<F: FnMut(EventActivation)>(&self, mut callback: F) -> u64 {
+    fn drain<F: FnMut(EventActivation)>(&self, callback: &mut F) -> u64 {
         let mut counter = 0;
         self.reset_all(|bit_index| {
             counter += 1;

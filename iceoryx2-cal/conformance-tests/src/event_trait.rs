@@ -725,6 +725,7 @@ pub mod event_trait {
             .unwrap();
         let sut_notifier = Sut::NotifierBuilder::new(&name)
             .config(&config)
+            .fail_when_buffer_is_full(true)
             .open()
             .unwrap();
 
