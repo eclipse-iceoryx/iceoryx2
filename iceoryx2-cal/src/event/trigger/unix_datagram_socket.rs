@@ -58,7 +58,11 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> HandlerInterface<E, (
     fn notify(&self) -> Result<(), NotifierNotifyError> {
         let msg = "Unable to send notification";
         match self.sender.try_send(&[0u8]) {
-            Ok(_) => Ok(()),
+            Ok(true) => Ok(()),
+            Ok(false) => {
+                fail!(from self, with NotifierNotifyError::FailedToDeliverSignal,
+                    "{msg} since data could not be sent through the socket.");
+            }
             Err(UnixDatagramSendError::Interrupt) => {
                 fail!(from self,
                     with NotifierNotifyError::Interrupt,

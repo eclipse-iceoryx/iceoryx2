@@ -35,7 +35,7 @@ impl EventState for RelocatableBitSet {
         self.reset_all(|bit_index| {
             counter += 1;
             callback(EventActivation {
-                event_id: EventId::new(bit_index as u64),
+                id: EventId::new(bit_index as u64),
                 count: 1,
             });
         });

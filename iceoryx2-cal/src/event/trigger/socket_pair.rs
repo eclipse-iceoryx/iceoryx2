@@ -93,6 +93,10 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
     fn notify(&self) -> Result<(), NotifierNotifyError> {
         let msg = "Unable to send notification";
         match self.sender.try_send(&[0u8]) {
+            Ok(0) => {
+                fail!(from self, with NotifierNotifyError::FailedToDeliverSignal,
+                    "{msg} since data could not be sent through the socket.");
+            }
             Ok(_) => Ok(()),
             Err(StreamingSocketPairSendError::Interrupt) => {
                 fail!(from self,

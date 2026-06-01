@@ -164,7 +164,7 @@ pub mod event_trait {
     pub fn sending_notification_and_try_wait_works<Sut: Event<RelocatableBitSet>>() {
         sending_notification_works::<Sut, _>(|sut| {
             let mut event_id = None;
-            sut.try_wait(|id| event_id = Some(id.event_id))?;
+            sut.try_wait(|id| event_id = Some(id.id))?;
             Ok(event_id)
         });
     }
@@ -173,7 +173,7 @@ pub mod event_trait {
     pub fn sending_notification_and_timed_wait_works<Sut: Event<RelocatableBitSet>>() {
         sending_notification_works::<Sut, _>(|sut| {
             let mut event_id = None;
-            sut.timed_wait(|id| event_id = Some(id.event_id), TIMEOUT)?;
+            sut.timed_wait(|id| event_id = Some(id.id), TIMEOUT)?;
             Ok(event_id)
         });
     }
@@ -182,7 +182,7 @@ pub mod event_trait {
     pub fn sending_notification_and_blocking_wait_works<Sut: Event<RelocatableBitSet>>() {
         sending_notification_works::<Sut, _>(|sut| {
             let mut event_id = None;
-            sut.blocking_wait(|id| event_id = Some(id.event_id))?;
+            sut.blocking_wait(|id| event_id = Some(id.id))?;
             Ok(event_id)
         });
     }
@@ -214,7 +214,7 @@ pub mod event_trait {
         let events = wait_call(&sut_listener).unwrap();
         for event in events {
             assert_that!(event.count, eq 1);
-            assert_that!(ids.insert(event.event_id), eq true);
+            assert_that!(ids.insert(event.id), eq true);
         }
     }
 
@@ -285,7 +285,7 @@ pub mod event_trait {
 
         let events = wait_call(&sut_listener).unwrap();
         for event in &events {
-            assert_that!(event_ids, contains event.event_id.as_value());
+            assert_that!(event_ids, contains event.id.as_value());
         }
         assert_that!(events, len event_counter as usize);
     }
@@ -386,7 +386,7 @@ pub mod event_trait {
                 let result = sut_listener
                     .blocking_wait(|event| {
                         call_counter += 1;
-                        assert_that!(event.event_id, eq EventId::new(4))
+                        assert_that!(event.id, eq EventId::new(4))
                     })
                     .unwrap();
                 counter.store(1, Ordering::SeqCst);
@@ -438,7 +438,7 @@ pub mod event_trait {
                     .timed_wait(
                         |event| {
                             call_counter += 1;
-                            assert_that!(event.event_id.as_value(), eq 2);
+                            assert_that!(event.id.as_value(), eq 2);
                         },
                         TIMEOUT * 1000,
                     )
@@ -519,8 +519,8 @@ pub mod event_trait {
         let mut ids = BTreeSet::new();
         let result = sut_listener
             .try_wait(|event| {
-                assert_that!(event.event_id, lt EVENT_ID_MAX);
-                assert_that!(ids.insert(event.event_id), eq true);
+                assert_that!(event.id, lt EVENT_ID_MAX);
+                assert_that!(ids.insert(event.id), eq true);
             })
             .unwrap();
         assert_that!(result, eq EVENT_ID_MAX.as_value());
@@ -568,22 +568,21 @@ pub mod event_trait {
     #[conformance_test]
     pub fn try_wait_all_collects_all_triggers<Sut: Event<RelocatableBitSet>>() {
         wait_all_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
-            sut.try_wait(|id| v.push(id.event_id)).unwrap();
+            sut.try_wait(|id| v.push(id.id)).unwrap();
         });
     }
 
     #[conformance_test]
     pub fn timed_wait_all_collects_all_triggers<Sut: Event<RelocatableBitSet>>() {
         wait_all_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
-            sut.timed_wait(|id| v.push(id.event_id), TIMEOUT * 1000)
-                .unwrap();
+            sut.timed_wait(|id| v.push(id.id), TIMEOUT * 1000).unwrap();
         });
     }
 
     #[conformance_test]
     pub fn blocking_wait_all_collects_all_triggers<Sut: Event<RelocatableBitSet>>() {
         wait_all_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
-            sut.blocking_wait(|id| v.push(id.event_id)).unwrap();
+            sut.blocking_wait(|id| v.push(id.id)).unwrap();
         });
     }
 
@@ -639,15 +638,14 @@ pub mod event_trait {
     #[conformance_test]
     pub fn timed_wait_wakes_up_on_notify<Sut: Event<RelocatableBitSet>>() {
         wait_wakes_up_on_notify::<Sut, _>(|v, sut: &Sut::Listener| {
-            sut.timed_wait(|id| v.push(id.event_id), TIMEOUT * 1000)
-                .unwrap();
+            sut.timed_wait(|id| v.push(id.id), TIMEOUT * 1000).unwrap();
         });
     }
 
     #[conformance_test]
     pub fn blocking_wait_wakes_up_on_notify<Sut: Event<RelocatableBitSet>>() {
         wait_wakes_up_on_notify::<Sut, _>(|v, sut: &Sut::Listener| {
-            sut.blocking_wait(|id| v.push(id.event_id)).unwrap();
+            sut.blocking_wait(|id| v.push(id.id)).unwrap();
         });
     }
 
@@ -712,5 +710,31 @@ pub mod event_trait {
         sut_notifier.abandon();
 
         assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(true));
+    }
+
+    #[conformance_test]
+    pub fn sending_notification_many_times_never_leads_to_error<Sut: Event<RelocatableBitSet>>() {
+        let _watchdog = Watchdog::new();
+        const REPETITIONS: usize = 4096 * 128;
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name)
+            .config(&config)
+            .open()
+            .unwrap();
+
+        for _ in 0..REPETITIONS {
+            assert_that!(sut_notifier.notify(EventId::new(3)), is_ok);
+        }
+
+        let result = sut_listener
+            .try_wait(|event| assert_that!(event.id, eq EventId::new(3)))
+            .unwrap();
+        assert_that!(result, le 1);
     }
 }
