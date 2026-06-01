@@ -21,7 +21,6 @@ std = [
   "iceoryx2/std",
   "iceoryx2-bb-container/std",
   "iceoryx2-bb-concurrency/std",
-  "iceoryx2-bb-posix/std",
 ]
 
 [dependencies]
@@ -32,9 +31,3 @@ iceoryx2-bb-concurrency = { workspace = true }
 iceoryx2-services-common = { workspace = true }
 iceoryx2-services-discovery = { workspace = true }
 iceoryx2-services-tunnel-backend = { workspace = true }
-
-[dev-dependencies]
-iceoryx2-bb-testing = { workspace = true }
-iceoryx2-bb-posix = { workspace = true }
-
-generic-tests = { workspace = true }

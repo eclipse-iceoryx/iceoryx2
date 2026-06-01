@@ -11,7 +11,7 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [features]
-default = ["std"]
+default = []
 
 std = [
   "iceoryx2-bb-posix/std",
@@ -24,6 +24,10 @@ std = [
   "iceoryx2/std",
 ]
 
+[[test]]
+name = "tests"
+harness = false
+
 [dependencies]
 iceoryx2 = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
@@ -33,3 +37,6 @@ iceoryx2-services-common = { workspace = true }
 iceoryx2-services-discovery = { workspace = true }
 iceoryx2-services-tunnel = { workspace = true }
 iceoryx2-services-tunnel-backend = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-services-tunnel-conformance-tests-common = { workspace = true, features = ["std"] }

@@ -25,6 +25,7 @@ pub mod event_propagation {
     use iceoryx2::testing::generate_service_name;
     use iceoryx2_bb_posix::clock::nanosleep;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::test_fail;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_services_tunnel::Config as TunnelConfig;
     use iceoryx2_services_tunnel::Tunnel;
@@ -366,5 +367,129 @@ pub mod event_propagation {
         assert_that!(num_notifications_a, eq 1);
         assert_that!(num_notifications_b, eq 1);
         assert_that!(num_notifications_c, eq 1);
+    }
+
+    #[conformance_test]
+    pub fn events_are_routed_to_their_own_service<S: Service, B: Backend<S> + Debug, T: Testing>() {
+        const TIMEOUT: Duration = Duration::from_millis(250);
+        const MAX_ATTEMPTS: usize = 25;
+
+        // === SETUP ===
+        let service_name_1 = generate_service_name();
+        let service_name_2 = generate_service_name();
+
+        // --- Host A: two services, one notifier each ---
+        let backend_config_a = B::Config::default();
+        let iceoryx_config_a = generate_isolated_config();
+        let tunnel_config_a = TunnelConfig::default();
+        let mut tunnel_a =
+            Tunnel::<S, B>::create(&tunnel_config_a, &iceoryx_config_a, &backend_config_a).unwrap();
+
+        let node_a = NodeBuilder::new()
+            .config(&iceoryx_config_a)
+            .create::<S>()
+            .unwrap();
+
+        let service_a1 = node_a
+            .service_builder(&service_name_1)
+            .event()
+            .open_or_create()
+            .unwrap();
+        let notifier_a1 = service_a1.notifier_builder().create().unwrap();
+
+        let service_a2 = node_a
+            .service_builder(&service_name_2)
+            .event()
+            .open_or_create()
+            .unwrap();
+        let notifier_a2 = service_a2.notifier_builder().create().unwrap();
+
+        tunnel_a.discover_over_iceoryx().unwrap();
+        assert_that!(tunnel_a.tunneled_services().len(), eq 2);
+        assert_that!(tunnel_a.tunneled_services().contains(service_a1.service_hash()), eq true);
+        assert_that!(tunnel_a.tunneled_services().contains(service_a2.service_hash()), eq true);
+
+        // --- Host B ---
+        let iceoryx_config_b = generate_isolated_config();
+        let backend_config_b = B::Config::default();
+        let tunnel_config_b = TunnelConfig::default();
+        let mut tunnel_b =
+            Tunnel::<S, B>::create(&tunnel_config_b, &iceoryx_config_b, &backend_config_b).unwrap();
+
+        // Wait for tunnel on host B to discover both services on host A
+        T::retry(
+            || {
+                tunnel_b.discover_over_backend().unwrap();
+                if tunnel_b.tunneled_services().len() == 2 {
+                    return Ok(());
+                }
+                Err("Both services not yet discovered")
+            },
+            TIMEOUT,
+            Some(MAX_ATTEMPTS),
+        )
+        .unwrap_or_else(|e| panic!("Failed to discover remote services:\n{}", e));
+
+        T::sync(service_a1.service_hash().as_str().to_string(), TIMEOUT);
+        T::sync(service_a2.service_hash().as_str().to_string(), TIMEOUT);
+
+        // Listeners on host B
+        let node_b = NodeBuilder::new()
+            .config(&iceoryx_config_b)
+            .create::<S>()
+            .unwrap();
+        let service_b1 = node_b
+            .service_builder(&service_name_1)
+            .event()
+            .open_or_create()
+            .unwrap();
+        let listener_b1 = service_b1.listener_builder().create().unwrap();
+
+        let service_b2 = node_b
+            .service_builder(&service_name_2)
+            .event()
+            .open_or_create()
+            .unwrap();
+        let listener_b2 = service_b2.listener_builder().create().unwrap();
+
+        // === TEST ===
+        // Distinct event ids sent on each service.
+        let event_id_for_service_1 = EventId::new(101);
+        let event_id_for_service_2 = EventId::new(202);
+
+        notifier_a1
+            .notify_with_custom_event_id(event_id_for_service_1)
+            .unwrap();
+        notifier_a2
+            .notify_with_custom_event_id(event_id_for_service_2)
+            .unwrap();
+
+        tunnel_a.propagate().unwrap();
+        tunnel_b.propagate().unwrap();
+
+        // Each listener must receive the event id sent on the corresponding service.
+        for (label, listener, expected_id) in [
+            ("service_1", &listener_b1, event_id_for_service_1),
+            ("service_2", &listener_b2, event_id_for_service_2),
+        ] {
+            T::retry(
+                || match listener.try_wait_one().unwrap() {
+                    Some(received_id) => {
+                        if received_id != expected_id {
+                            test_fail!("{}: received event id from a different service", label);
+                        }
+                        Ok(())
+                    }
+                    None => {
+                        tunnel_a.propagate().unwrap();
+                        tunnel_b.propagate().unwrap();
+                        Err("not yet received")
+                    }
+                },
+                TIMEOUT,
+                Some(MAX_ATTEMPTS),
+            )
+            .unwrap_or_else(|e| panic!("{} failed: {}", label, e));
+        }
     }
 }

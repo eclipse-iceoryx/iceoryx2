@@ -313,6 +313,7 @@ filegroup(
         "//iceoryx2-services/common:all_srcs",
         "//iceoryx2-services/discovery:all_srcs",
         "//iceoryx2-services/tunnel:all_srcs",
+        "//iceoryx2-services/tunnel-testing:all_srcs",
         "//iceoryx2-services/tunnel-backend:all_srcs",
         "//iceoryx2-services/tunnel-conformance-tests:all_srcs",
         "//iceoryx2-services/tunnel-end-to-end-tests:all_srcs",
