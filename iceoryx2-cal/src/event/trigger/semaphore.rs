@@ -137,7 +137,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> Abandonabl
 {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        //unsafe { core::ptr::drop_in_place(this.semaphore_mgmt) };
+        unsafe { core::ptr::drop_in_place(this.semaphore_mgmt) };
     }
 }
 
@@ -145,7 +145,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> Drop
     for SemaphoreWaiter<E, Storage>
 {
     fn drop(&mut self) {
-        //unsafe { core::ptr::drop_in_place(self.semaphore_mgmt) };
+        unsafe { core::ptr::drop_in_place(self.semaphore_mgmt) };
     }
 }
 

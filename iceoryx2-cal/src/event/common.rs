@@ -207,8 +207,8 @@ pub struct Handle<
     Storage: DynamicStorage<State<E, Mgmt>>,
     H: HandlerInterface<E, Mgmt, Storage>,
 > {
-    storage: Storage,
     handle: H,
+    storage: Storage,
     _data_1: PhantomData<E>,
     _data_2: PhantomData<Mgmt>,
 }
@@ -269,8 +269,8 @@ pub struct Waiter<
     Storage: DynamicStorage<State<E, Mgmt>>,
     W: WaiterInterface<E, Mgmt, Storage>,
 > {
-    storage: Storage,
     waiter: W,
+    storage: Storage,
     _data_1: PhantomData<E>,
     _data_2: PhantomData<Mgmt>,
 }
