@@ -40,7 +40,7 @@ use iceoryx2_bb_posix::process_state::{
 use iceoryx2_bb_posix::unique_system_id::{UniqueSystemId, UniqueSystemIdCreationError};
 use iceoryx2_bb_posix::unix_datagram_socket::{
     UnixDatagramReceiver, UnixDatagramReceiverBuilder, UnixDatagramReceiverCreationError,
-    UnixDatagramSender, UnixDatagramSenderBuilder,
+    UnixDatagramSendError, UnixDatagramSender, UnixDatagramSenderBuilder,
 };
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
@@ -90,6 +90,7 @@ impl core::error::Error for AnnounceError {}
 #[derive(Debug)]
 pub enum SendError {
     Encode,
+    TooLarge(usize),
 }
 
 impl core::fmt::Display for SendError {
@@ -399,13 +400,25 @@ impl Session {
             from: self.id.clone(),
             kind,
         };
+
         let mut buf = self.send_buffer.borrow_mut();
-        let bytes = postcard::to_slice(&envelope, &mut buf).map_err(|_| SendError::Encode)?;
+        let bytes = match postcard::to_slice(&envelope, &mut buf) {
+            Ok(bytes) => bytes,
+            Err(postcard::Error::SerializeBufferFull) => {
+                let size = postcard::to_allocvec(&envelope)
+                    .map(|v| v.len())
+                    .unwrap_or(0);
+                return Err(SendError::TooLarge(size));
+            }
+            Err(_) => return Err(SendError::Encode),
+        };
+
         for peer in self.discovered_peers.borrow().values() {
-            // `try_send` is non-blocking; ignore EAGAIN/ECONNREFUSED
-            // (peer slow or just exited).
-            let _ = peer.sender.try_send(bytes);
+            if let Err(UnixDatagramSendError::MessageTooLarge) = peer.sender.try_send(bytes) {
+                return Err(SendError::TooLarge(bytes.len()));
+            }
         }
+
         Ok(())
     }
 
