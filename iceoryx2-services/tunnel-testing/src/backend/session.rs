@@ -171,7 +171,7 @@ pub struct Session {
     recv_buffer: RefCell<Vec<u8>>,
     /// Datagram serialize buffer.
     send_buffer: RefCell<Vec<u8>>,
-    /// Unix soscket abstraction for payloads
+    /// Unix socket abstraction for payloads
     receiver: UnixDatagramReceiver,
     _guard: ProcessGuard,
     _cleanup: SessionCleanup,
