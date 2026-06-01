@@ -28,6 +28,7 @@ use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fatal_panic;
 
 pub mod semaphore;
+pub mod socket_pair;
 pub mod stub;
 pub mod unix_datagram_socket;
 

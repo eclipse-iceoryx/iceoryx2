@@ -94,6 +94,7 @@ impl core::error::Error for ListenerWaitError {}
 pub enum ListenerCreateError {
     AlreadyExists,
     InsufficientPermissions,
+    Interrupt,
     InternalFailure,
 }
 

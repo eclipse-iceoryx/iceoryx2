@@ -164,7 +164,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
         use iceoryx2_bb_posix::ipc_capable::Handle;
 
         let origin = "SemaphoreWaiter::create()";
-        let msg = "Unable to create unnamed semaphore handle";
+        let msg = "Unable to create unnamed semaphore trigger";
 
         mgmt.write(SemaphoreMgmt {
             handle: UnnamedSemaphoreHandle::new(),

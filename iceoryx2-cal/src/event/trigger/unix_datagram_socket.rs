@@ -57,13 +57,8 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> HandlerInterface<E, (
 {
     fn notify(&self) -> Result<(), NotifierNotifyError> {
         let msg = "Unable to send notification";
-        match self.sender.try_send(b" ") {
-            Ok(true) => Ok(()),
-            Ok(false) => {
-                fail!(from self,
-                      with NotifierNotifyError::InternalFailure,
-                      "{msg} since the buffer of the other side is full.");
-            }
+        match self.sender.try_send(&[0u8]) {
+            Ok(_) => Ok(()),
             Err(UnixDatagramSendError::Interrupt) => {
                 fail!(from self,
                     with NotifierNotifyError::Interrupt,
@@ -175,7 +170,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
         _mgmt: &mut core::mem::MaybeUninit<()>,
     ) -> Result<Self, ListenerCreateError> {
         let origin = "UnixDatagramWaiter::create()";
-        let msg = "Unable to create unix datagram socket";
+        let msg = "Unable to create unix datagram socket trigger";
         let full_path = config.path_for(name);
         let receiver = match UnixDatagramReceiverBuilder::new(&full_path)
             .creation_mode(CreationMode::CreateExclusive)
