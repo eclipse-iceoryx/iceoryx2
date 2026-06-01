@@ -274,11 +274,11 @@ pub type GenericSocketPairTrigger<E: EventState> = EventImpl<
     E,
     SocketPairMgmt,
     dynamic_storage::process_local::Storage<State<RelocatableBitSet, SocketPairMgmt>>,
-    SocketPairWaiter<
+    SocketPairHandle<
         E,
         dynamic_storage::process_local::Storage<State<RelocatableBitSet, SocketPairMgmt>>,
     >,
-    SocketPairHandle<
+    SocketPairWaiter<
         E,
         dynamic_storage::process_local::Storage<State<RelocatableBitSet, SocketPairMgmt>>,
     >,
