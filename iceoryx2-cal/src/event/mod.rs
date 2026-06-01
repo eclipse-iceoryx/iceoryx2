@@ -44,6 +44,7 @@ pub enum NotifierNotifyError {
     Interrupt,
     FailedToDeliverSignal,
     EventIdOutOfBounds,
+    InsufficientPermissions,
     Disconnected,
     InternalFailure,
 }

@@ -430,7 +430,7 @@ impl<
             }
         };
 
-        let handle = H::open(&self.config.to_trigger_config(), unsafe {
+        let handle = H::open(&self.name, &self.config.to_trigger_config(), unsafe {
             storage.get().handle.assume_init_ref()
         })?;
 
@@ -519,6 +519,7 @@ impl<
 
                 unsafe { value.assume_init_mut().event.init(allocator).unwrap() };
                 match W::create(
+                    &self.name,
                     &self.config.to_trigger_config(),
                     &mut unsafe { value.assume_init_mut() }.handle,
                 ) {

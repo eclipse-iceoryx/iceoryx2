@@ -27,6 +27,7 @@ use core::{mem::MaybeUninit, time::Duration};
 use iceoryx2_bb_elementary_traits::{
     testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
 };
+use iceoryx2_bb_system_types::file_name::FileName;
 
 #[derive(Debug)]
 pub(crate) struct Stub {}
@@ -46,6 +47,7 @@ impl<
 > WaiterInterface<E, Mgmt, Storage> for Stub
 {
     fn create(
+        _name: &FileName,
         _config: &Configuration,
         _mgmt: &mut MaybeUninit<Mgmt>,
     ) -> Result<Self, ListenerCreateError> {
@@ -73,7 +75,11 @@ impl<
     fn notify(&self) -> Result<(), NotifierNotifyError> {
         unimplemented!()
     }
-    fn open(_config: &Configuration, _mgmt: &Mgmt) -> Result<Self, NotifierOpenError> {
+    fn open(
+        _name: &FileName,
+        _config: &Configuration,
+        _mgmt: &Mgmt,
+    ) -> Result<Self, NotifierOpenError> {
         unimplemented!()
     }
 }

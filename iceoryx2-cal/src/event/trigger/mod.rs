@@ -18,19 +18,41 @@ use core::fmt::Debug;
 use core::mem::MaybeUninit;
 use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_log::fatal_panic;
 
 pub mod semaphore;
 pub mod stub;
+pub mod unix_datagram_socket;
 
+#[derive(Debug)]
 pub struct Configuration {
     pub suffix: FileName,
     pub prefix: FileName,
     pub path_hint: Path,
+}
+
+impl Configuration {
+    pub fn path_for(&self, value: &FileName) -> FilePath {
+        let mut path = self.path_hint;
+        fatal_panic!(from self, when path.add_path_entry(&self.prefix.into()),
+                    "The path hint \"{}\" in combination with the prefix \"{}\" exceed the maximum supported path length of {} of the operating system.",
+                    path, value, Path::max_len());
+        fatal_panic!(from self, when path.push_bytes(value.as_string()),
+                    "The path hint \"{}\" in combination with the file name \"{}\" exceed the maximum supported path length of {} of the operating system.",
+                    path, value, Path::max_len());
+        fatal_panic!(from self, when path.push_bytes(self.suffix.as_bytes()),
+                    "The path hint \"{}\" in combination with the file name \"{}\" and the suffix \"{}\" exceed the maximum supported path length of {} of the operating system.",
+                    path, value, self.suffix, Path::max_len());
+
+        unsafe { FilePath::new_unchecked(path.as_bytes()) }
+    }
 }
 
 #[derive(ZeroCopySend, Debug)]
@@ -49,6 +71,7 @@ pub trait WaiterInterface<
 >: Send + Sync + Debug + Abandonable
 {
     fn create(
+        name: &FileName,
         config: &Configuration,
         mgmt: &mut MaybeUninit<Mgmt>,
     ) -> Result<Self, ListenerCreateError>;
@@ -63,6 +86,10 @@ pub trait HandlerInterface<
     Storage: DynamicStorage<State<E, Mgmt>>,
 >: Send + Sync + Debug + Abandonable
 {
-    fn open(config: &Configuration, mgmt: &Mgmt) -> Result<Self, NotifierOpenError>;
+    fn open(
+        name: &FileName,
+        config: &Configuration,
+        mgmt: &Mgmt,
+    ) -> Result<Self, NotifierOpenError>;
     fn notify(&self) -> Result<(), NotifierNotifyError>;
 }

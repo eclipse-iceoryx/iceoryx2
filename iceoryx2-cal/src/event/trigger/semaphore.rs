@@ -11,6 +11,15 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use super::Configuration;
+use crate::{
+    dynamic_storage::{self, DynamicStorage},
+    event::{
+        ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
+        common::EventImpl,
+        event_state::EventState,
+        trigger::{HandlerInterface, State, WaiterInterface},
+    },
+};
 use core::{marker::PhantomData, mem::MaybeUninit, ptr::NonNull, time::Duration};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::{
@@ -27,17 +36,8 @@ use iceoryx2_bb_posix::{
         UnnamedSemaphoreHandle,
     },
 };
+use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_log::fail;
-
-use crate::{
-    dynamic_storage::{self, DynamicStorage},
-    event::{
-        ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
-        common::EventImpl,
-        event_state::EventState,
-        trigger::{HandlerInterface, State, WaiterInterface},
-    },
-};
 
 #[derive(Debug, ZeroCopySend)]
 #[repr(C)]
@@ -70,7 +70,11 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> Abandonabl
 impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
     HandlerInterface<E, SemaphoreMgmt, Storage> for SemaphoreHandle<E, Storage>
 {
-    fn open(_config: &Configuration, mgmt: &SemaphoreMgmt) -> Result<Self, NotifierOpenError> {
+    fn open(
+        _name: &FileName,
+        _config: &Configuration,
+        mgmt: &SemaphoreMgmt,
+    ) -> Result<Self, NotifierOpenError> {
         let origin = "SemaphoreHandle::open()";
         let msg = "Unable to open unnamed semaphore handle";
         if !mgmt.handle.is_initialized() {
@@ -153,6 +157,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
     WaiterInterface<E, SemaphoreMgmt, Storage> for SemaphoreWaiter<E, Storage>
 {
     fn create(
+        _name: &FileName,
         _config: &Configuration,
         mgmt: &mut MaybeUninit<SemaphoreMgmt>,
     ) -> Result<Self, ListenerCreateError> {
