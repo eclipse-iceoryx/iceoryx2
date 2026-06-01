@@ -214,18 +214,17 @@ impl Session {
         // Sweep dirs left behind by aborted prior runs before adding our own.
         sweep_stale_sessions(&sessions_dir, &sessions_dir_path);
 
-        // Create directory for this session and its service files
+        // Create the directory for this session.
         let mut session_dir_path = sessions_dir_path;
         add_to_path(&mut session_dir_path, id.as_bytes()).map_err(CreationError::Path)?;
-
-        let mut services_dir_path = session_dir_path;
-        add_to_path(&mut services_dir_path, SERVICES_DIR_NAME).map_err(CreationError::Path)?;
-        match Directory::create(&services_dir_path, Permission::OWNER_ALL) {
+        match Directory::create(&session_dir_path, Permission::OWNER_ALL) {
             Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => {}
             Err(e) => return Err(CreationError::DirectoryCreation(e)),
         }
 
-        // Create liveliness lockfile
+        // Create the lockfile to indicate liveliness.
+        // Must be created first to ensure other sessions do not detect this
+        // session as dead.
         let lockfile_path = file_path_in_directory(LOCKFILE_NAME, &session_dir_path)
             .map_err(CreationError::Path)?;
 
@@ -233,6 +232,14 @@ impl Session {
             .guard_permissions(Permission::OWNER_ALL)
             .create(&lockfile_path)
             .map_err(CreationError::ProcessGuard)?;
+
+        // Create the directory holding this session's service files.
+        let mut services_dir_path = session_dir_path;
+        add_to_path(&mut services_dir_path, SERVICES_DIR_NAME).map_err(CreationError::Path)?;
+        match Directory::create(&services_dir_path, Permission::OWNER_ALL) {
+            Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => {}
+            Err(e) => return Err(CreationError::DirectoryCreation(e)),
+        }
 
         // Create a UDS receiver
         let sock_path =
@@ -601,13 +608,14 @@ fn classify_session(session_dir_path: &Path) -> SessionState {
     };
     let monitor = match ProcessMonitor::new(&lockfile_path) {
         Ok(m) => m,
-        Err(_) => return SessionState::Stale,
+        Err(_) => return SessionState::Indeterminate,
     };
     match monitor.state() {
         Ok(ProcessState::Alive) | Ok(ProcessState::Starting) => SessionState::Alive,
-        Ok(ProcessState::Dead) | Ok(ProcessState::CleaningUp) | Ok(ProcessState::DoesNotExist) => {
-            SessionState::Stale
-        }
+        Ok(ProcessState::Dead) | Ok(ProcessState::CleaningUp) => SessionState::Stale,
+        // If the directory exists without the lockfile, the session is being
+        // initialized.
+        Ok(ProcessState::DoesNotExist) => SessionState::Indeterminate,
         Err(_) => SessionState::Indeterminate,
     }
 }
