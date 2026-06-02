@@ -25,7 +25,9 @@ use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::{
     testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
 };
-use iceoryx2_bb_lock_free::mpmc::bit_set::RelocatableBitSet;
+use iceoryx2_bb_lock_free::mpmc::{
+    bit_set::RelocatableBitSet, counting_bit_set::RelocatableCountingBitSet,
+};
 use iceoryx2_bb_posix::{
     adaptive_wait::AdaptiveWaitError,
     clock::NanosleepError,
@@ -270,4 +272,9 @@ pub type GenericSemaphoreTrigger<E: EventState, Storage: DynamicStorage<State<E,
 pub type SemaphoreShmBitSet = GenericSemaphoreTrigger<
     RelocatableBitSet,
     dynamic_storage::posix_shared_memory::Storage<State<RelocatableBitSet, SemaphoreMgmt>>,
+>;
+
+pub type SemaphoreShmCountingBitSet = GenericSemaphoreTrigger<
+    RelocatableCountingBitSet,
+    dynamic_storage::posix_shared_memory::Storage<State<RelocatableCountingBitSet, SemaphoreMgmt>>,
 >;

@@ -24,7 +24,9 @@ use core::ptr::NonNull;
 use iceoryx2_bb_elementary_traits::{
     testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
 };
-use iceoryx2_bb_lock_free::mpmc::bit_set::RelocatableBitSet;
+use iceoryx2_bb_lock_free::mpmc::{
+    bit_set::RelocatableBitSet, counting_bit_set::RelocatableCountingBitSet,
+};
 use iceoryx2_bb_posix::socket_pair::{
     StreamingSocket, StreamingSocketDuplicateError, StreamingSocketPairCreationError,
     StreamingSocketPairReceiveError, StreamingSocketPairSendError,
@@ -277,15 +279,10 @@ unsafe impl ZeroCopySend for SocketPairMgmt {}
 pub type GenericSocketPairTrigger<E: EventState> = EventImpl<
     E,
     SocketPairMgmt,
-    dynamic_storage::process_local::Storage<State<RelocatableBitSet, SocketPairMgmt>>,
-    SocketPairHandle<
-        E,
-        dynamic_storage::process_local::Storage<State<RelocatableBitSet, SocketPairMgmt>>,
-    >,
-    SocketPairWaiter<
-        E,
-        dynamic_storage::process_local::Storage<State<RelocatableBitSet, SocketPairMgmt>>,
-    >,
+    dynamic_storage::process_local::Storage<State<E, SocketPairMgmt>>,
+    SocketPairHandle<E, dynamic_storage::process_local::Storage<State<E, SocketPairMgmt>>>,
+    SocketPairWaiter<E, dynamic_storage::process_local::Storage<State<E, SocketPairMgmt>>>,
 >;
 
 pub type SocketPairBitSet = GenericSocketPairTrigger<RelocatableBitSet>;
+pub type SocketPairCountingBitSet = GenericSocketPairTrigger<RelocatableCountingBitSet>;

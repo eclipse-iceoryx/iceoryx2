@@ -23,7 +23,6 @@ pub mod event_trait {
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-    use iceoryx2_bb_lock_free::mpmc::bit_set::RelocatableBitSet;
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_posix::clock::{Time, nanosleep};
     use iceoryx2_bb_posix::mutex::{MutexBuilder, MutexHandle};
@@ -32,7 +31,7 @@ pub mod event_trait {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing_macros::conformance_test;
-    use iceoryx2_cal::event::event_state::EventActivation;
+    use iceoryx2_cal::event::event_state::{EventActivation, EventState};
     use iceoryx2_cal::event::{EventId, *};
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::testing::*;
@@ -40,7 +39,7 @@ pub mod event_trait {
     const TIMEOUT: Duration = Duration::from_millis(25);
 
     #[conformance_test]
-    pub fn create_works<Sut: Event<RelocatableBitSet>>() {
+    pub fn create_works<E: EventState, Sut: Event<E>>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -58,7 +57,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn listener_cleans_up_when_out_of_scope<Sut: Event<RelocatableBitSet>>() {
+    pub fn listener_cleans_up_when_out_of_scope<E: EventState, Sut: Event<E>>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -74,7 +73,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn cannot_be_created_twice<Sut: Event<RelocatableBitSet>>() {
+    pub fn cannot_be_created_twice<E: EventState, Sut: Event<E>>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -89,7 +88,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn cannot_open_non_existing<Sut: Event<RelocatableBitSet>>() {
+    pub fn cannot_open_non_existing<E: EventState, Sut: Event<E>>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -101,7 +100,8 @@ pub mod event_trait {
 
     #[conformance_test]
     pub fn notify_with_same_id_does_not_lead_to_non_blocking_timed_wait<
-        Sut: Event<RelocatableBitSet>,
+        E: EventState,
+        Sut: Event<E>,
     >() {
         let _watchdog = Watchdog::new();
         const REPETITIONS: u64 = 8;
@@ -134,7 +134,8 @@ pub mod event_trait {
     }
 
     fn sending_notification_works<
-        Sut: Event<RelocatableBitSet>,
+        E: EventState,
+        Sut: Event<E>,
         F: Fn(&Sut::Listener) -> Result<Option<EventId>, ListenerWaitError>,
     >(
         wait_call: F,
@@ -161,8 +162,8 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn sending_notification_and_try_wait_works<Sut: Event<RelocatableBitSet>>() {
-        sending_notification_works::<Sut, _>(|sut| {
+    pub fn sending_notification_and_try_wait_works<E: EventState, Sut: Event<E>>() {
+        sending_notification_works::<E, Sut, _>(|sut| {
             let mut event_id = None;
             sut.try_wait(|id| event_id = Some(id.id))?;
             Ok(event_id)
@@ -170,8 +171,8 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn sending_notification_and_timed_wait_works<Sut: Event<RelocatableBitSet>>() {
-        sending_notification_works::<Sut, _>(|sut| {
+    pub fn sending_notification_and_timed_wait_works<E: EventState, Sut: Event<E>>() {
+        sending_notification_works::<E, Sut, _>(|sut| {
             let mut event_id = None;
             sut.timed_wait(|id| event_id = Some(id.id), TIMEOUT)?;
             Ok(event_id)
@@ -179,8 +180,8 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn sending_notification_and_blocking_wait_works<Sut: Event<RelocatableBitSet>>() {
-        sending_notification_works::<Sut, _>(|sut| {
+    pub fn sending_notification_and_blocking_wait_works<E: EventState, Sut: Event<E>>() {
+        sending_notification_works::<E, Sut, _>(|sut| {
             let mut event_id = None;
             sut.blocking_wait(|id| event_id = Some(id.id))?;
             Ok(event_id)
@@ -188,7 +189,8 @@ pub mod event_trait {
     }
 
     fn sending_multiple_notifications_before_wait_works<
-        Sut: Event<RelocatableBitSet>,
+        E: EventState,
+        Sut: Event<E>,
         F: Fn(&Sut::Listener) -> Result<Vec<EventActivation>, ListenerWaitError>,
     >(
         wait_call: F,
@@ -219,8 +221,8 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn sending_multiple_notifications_before_try_wait_works<Sut: Event<RelocatableBitSet>>() {
-        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| {
+    pub fn sending_multiple_notifications_before_try_wait_works<E: EventState, Sut: Event<E>>() {
+        sending_multiple_notifications_before_wait_works::<E, Sut, _>(|sut| {
             let mut event_ids = vec![];
             sut.try_wait(|id| event_ids.push(id))?;
             Ok(event_ids)
@@ -228,8 +230,8 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn sending_multiple_notifications_before_timed_wait_works<Sut: Event<RelocatableBitSet>>() {
-        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| {
+    pub fn sending_multiple_notifications_before_timed_wait_works<E: EventState, Sut: Event<E>>() {
+        sending_multiple_notifications_before_wait_works::<E, Sut, _>(|sut| {
             let mut event_ids = vec![];
             sut.timed_wait(|id| event_ids.push(id), TIMEOUT)?;
             Ok(event_ids)
@@ -238,9 +240,10 @@ pub mod event_trait {
 
     #[conformance_test]
     pub fn sending_multiple_notifications_before_blocking_wait_works<
-        Sut: Event<RelocatableBitSet>,
+        E: EventState,
+        Sut: Event<E>,
     >() {
-        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| {
+        sending_multiple_notifications_before_wait_works::<E, Sut, _>(|sut| {
             let mut event_ids = vec![];
             sut.blocking_wait(|id| event_ids.push(id))?;
             Ok(event_ids)
@@ -248,7 +251,8 @@ pub mod event_trait {
     }
 
     fn sending_multiple_notifications_from_multiple_sources_before_wait_works<
-        Sut: Event<RelocatableBitSet>,
+        E: EventState,
+        Sut: Event<E>,
         F: Fn(&Sut::Listener) -> Result<Vec<EventActivation>, ListenerWaitError>,
     >(
         wait_call: F,
@@ -292,39 +296,48 @@ pub mod event_trait {
 
     #[conformance_test]
     pub fn sending_multiple_notifications_from_multiple_sources_before_try_wait_works<
-        Sut: Event<RelocatableBitSet>,
+        E: EventState,
+        Sut: Event<E>,
     >() {
-        sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
-            let mut results = vec![];
-            sut.try_wait(|event| results.push(event))?;
-            Ok(results)
-        });
+        sending_multiple_notifications_from_multiple_sources_before_wait_works::<E, Sut, _>(
+            |sut| {
+                let mut results = vec![];
+                sut.try_wait(|event| results.push(event))?;
+                Ok(results)
+            },
+        );
     }
 
     #[conformance_test]
     pub fn sending_multiple_notifications_from_multiple_sources_before_timed_wait_works<
-        Sut: Event<RelocatableBitSet>,
+        E: EventState,
+        Sut: Event<E>,
     >() {
-        sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
-            let mut results = vec![];
-            sut.timed_wait(|event| results.push(event), TIMEOUT)?;
-            Ok(results)
-        });
+        sending_multiple_notifications_from_multiple_sources_before_wait_works::<E, Sut, _>(
+            |sut| {
+                let mut results = vec![];
+                sut.timed_wait(|event| results.push(event), TIMEOUT)?;
+                Ok(results)
+            },
+        );
     }
 
     #[conformance_test]
     pub fn sending_multiple_notifications_from_multiple_sources_before_blocking_wait_works<
-        Sut: Event<RelocatableBitSet>,
+        E: EventState,
+        Sut: Event<E>,
     >() {
-        sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
-            let mut results = vec![];
-            sut.blocking_wait(|event| results.push(event))?;
-            Ok(results)
-        });
+        sending_multiple_notifications_from_multiple_sources_before_wait_works::<E, Sut, _>(
+            |sut| {
+                let mut results = vec![];
+                sut.blocking_wait(|event| results.push(event))?;
+                Ok(results)
+            },
+        );
     }
 
     #[conformance_test]
-    pub fn try_wait_does_not_block<Sut: Event<RelocatableBitSet>>() {
+    pub fn try_wait_does_not_block<E: EventState, Sut: Event<E>>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -342,7 +355,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn timed_wait_does_block_for_at_least_timeout<Sut: Event<RelocatableBitSet>>() {
+    pub fn timed_wait_does_block_for_at_least_timeout<E: EventState, Sut: Event<E>>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -362,7 +375,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn blocking_wait_blocks_until_notification_arrives<Sut: Event<RelocatableBitSet>>() {
+    pub fn blocking_wait_blocks_until_notification_arrives<E: EventState, Sut: Event<E>>() {
         let _watchdog = Watchdog::new();
         let name = generate_file_path().file_name();
         let handle = MutexHandle::new();
@@ -413,7 +426,7 @@ pub mod event_trait {
     /// windows sporadically instantly wakes up in a timed receive operation
     #[cfg(not(target_os = "windows"))]
     #[conformance_test]
-    pub fn timed_wait_blocks_until_notification_arrives<Sut: Event<RelocatableBitSet>>() {
+    pub fn timed_wait_blocks_until_notification_arrives<E: EventState, Sut: Event<E>>() {
         let _watchdog = Watchdog::new();
         let name = generate_file_path().file_name();
         let handle = MutexHandle::new();
@@ -465,13 +478,13 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn defaults_for_configuration_are_set_correctly<Sut: Event<RelocatableBitSet>>() {
+    pub fn defaults_for_configuration_are_set_correctly<E: EventState, Sut: Event<E>>() {
         let config = <Sut as NamedConceptMgmt>::Configuration::default();
         assert_that!(*config.get_suffix(), eq Sut::default_suffix());
     }
 
     #[conformance_test]
-    pub fn setting_trigger_id_limit_works<Sut: Event<RelocatableBitSet>>() {
+    pub fn setting_trigger_id_limit_works<E: EventState, Sut: Event<E>>() {
         const EVENT_ID_MAX: EventId = EventId::new(123);
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
@@ -490,7 +503,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn triggering_up_to_trigger_id_max_works<Sut: Event<RelocatableBitSet>>() {
+    pub fn triggering_up_to_trigger_id_max_works<E: EventState, Sut: Event<E>>() {
         const EVENT_ID_MAX: EventId = EventId::new(24);
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
@@ -530,7 +543,8 @@ pub mod event_trait {
     }
 
     fn wait_all_collects_all_triggers<
-        Sut: Event<RelocatableBitSet>,
+        E: EventState,
+        Sut: Event<E>,
         F: FnMut(&mut Vec<EventId>, &Sut::Listener),
     >(
         mut wait_call: F,
@@ -566,28 +580,29 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn try_wait_all_collects_all_triggers<Sut: Event<RelocatableBitSet>>() {
-        wait_all_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
+    pub fn try_wait_all_collects_all_triggers<E: EventState, Sut: Event<E>>() {
+        wait_all_collects_all_triggers::<E, Sut, _>(|v, sut: &Sut::Listener| {
             sut.try_wait(|id| v.push(id.id)).unwrap();
         });
     }
 
     #[conformance_test]
-    pub fn timed_wait_all_collects_all_triggers<Sut: Event<RelocatableBitSet>>() {
-        wait_all_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
+    pub fn timed_wait_all_collects_all_triggers<E: EventState, Sut: Event<E>>() {
+        wait_all_collects_all_triggers::<E, Sut, _>(|v, sut: &Sut::Listener| {
             sut.timed_wait(|id| v.push(id.id), TIMEOUT * 1000).unwrap();
         });
     }
 
     #[conformance_test]
-    pub fn blocking_wait_all_collects_all_triggers<Sut: Event<RelocatableBitSet>>() {
-        wait_all_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
+    pub fn blocking_wait_all_collects_all_triggers<E: EventState, Sut: Event<E>>() {
+        wait_all_collects_all_triggers::<E, Sut, _>(|v, sut: &Sut::Listener| {
             sut.blocking_wait(|id| v.push(id.id)).unwrap();
         });
     }
 
     fn wait_wakes_up_on_notify<
-        Sut: Event<RelocatableBitSet>,
+        E: EventState,
+        Sut: Event<E>,
         F: FnMut(&mut Vec<EventId>, &Sut::Listener) + Send,
     >(
         wait_call: F,
@@ -636,21 +651,21 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn timed_wait_wakes_up_on_notify<Sut: Event<RelocatableBitSet>>() {
-        wait_wakes_up_on_notify::<Sut, _>(|v, sut: &Sut::Listener| {
+    pub fn timed_wait_wakes_up_on_notify<E: EventState, Sut: Event<E>>() {
+        wait_wakes_up_on_notify::<E, Sut, _>(|v, sut: &Sut::Listener| {
             sut.timed_wait(|id| v.push(id.id), TIMEOUT * 1000).unwrap();
         });
     }
 
     #[conformance_test]
-    pub fn blocking_wait_wakes_up_on_notify<Sut: Event<RelocatableBitSet>>() {
-        wait_wakes_up_on_notify::<Sut, _>(|v, sut: &Sut::Listener| {
+    pub fn blocking_wait_wakes_up_on_notify<E: EventState, Sut: Event<E>>() {
+        wait_wakes_up_on_notify::<E, Sut, _>(|v, sut: &Sut::Listener| {
             sut.blocking_wait(|id| v.push(id.id)).unwrap();
         });
     }
 
     #[conformance_test]
-    pub fn out_of_scope_listener_shall_not_corrupt_notifier<Sut: Event<RelocatableBitSet>>() {
+    pub fn out_of_scope_listener_shall_not_corrupt_notifier<E: EventState, Sut: Event<E>>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -675,7 +690,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn abandoning_listener_keeps_event<Sut: Event<RelocatableBitSet>>() {
+    pub fn abandoning_listener_keeps_event<E: EventState, Sut: Event<E>>() {
         let _watchdog = Watchdog::new();
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
@@ -692,7 +707,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn abandoning_notifier_keeps_event<Sut: Event<RelocatableBitSet>>() {
+    pub fn abandoning_notifier_keeps_event<E: EventState, Sut: Event<E>>() {
         let _watchdog = Watchdog::new();
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
@@ -713,7 +728,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn sending_notification_many_times_never_leads_to_error<Sut: Event<RelocatableBitSet>>() {
+    pub fn sending_notification_many_times_never_leads_to_error<E: EventState, Sut: Event<E>>() {
         let _watchdog = Watchdog::new();
         const REPETITIONS: usize = 4096 * 128;
         let name = generate_file_path().file_name();
@@ -740,7 +755,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn notifier_and_listener_return_same_max_event_count<Sut: Event<RelocatableBitSet>>() {
+    pub fn notifier_and_listener_return_same_max_event_count<E: EventState, Sut: Event<E>>() {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -757,7 +772,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn events_are_counted<Sut: Event<RelocatableBitSet>>() {
+    pub fn events_are_counted<E: EventState, Sut: Event<E>>() {
         let _watchdog = Watchdog::new();
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
@@ -783,7 +798,7 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn many_events_notified_multiple_times_are_counted<Sut: Event<RelocatableBitSet>>() {
+    pub fn many_events_notified_multiple_times_are_counted<E: EventState, Sut: Event<E>>() {
         let _watchdog = Watchdog::new();
         const NUMBER_OF_EVENTS: usize = 10;
         let name = generate_file_path().file_name();

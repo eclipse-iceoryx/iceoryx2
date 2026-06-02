@@ -22,7 +22,9 @@ use crate::{
 use core::marker::PhantomData;
 use core::ptr::NonNull;
 use iceoryx2_bb_elementary_traits::{non_null::NonNullCompat, testing::abandonable::Abandonable};
-use iceoryx2_bb_lock_free::mpmc::bit_set::RelocatableBitSet;
+use iceoryx2_bb_lock_free::mpmc::{
+    bit_set::RelocatableBitSet, counting_bit_set::RelocatableCountingBitSet,
+};
 use iceoryx2_bb_posix::{
     file::CreationMode,
     unix_datagram_socket::{
@@ -266,4 +268,9 @@ pub type GenericUnixDatagramSocketTrigger<E: EventState, Storage: DynamicStorage
 pub type UnixDatagramShmBitSet = GenericUnixDatagramSocketTrigger<
     RelocatableBitSet,
     dynamic_storage::posix_shared_memory::Storage<State<RelocatableBitSet, ()>>,
+>;
+
+pub type UnixDatagramShmCountingBitSet = GenericUnixDatagramSocketTrigger<
+    RelocatableCountingBitSet,
+    dynamic_storage::posix_shared_memory::Storage<State<RelocatableCountingBitSet, ()>>,
 >;
