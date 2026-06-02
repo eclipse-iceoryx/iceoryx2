@@ -556,7 +556,7 @@ impl<
     ) -> Result<<EventImpl<E, Mgmt, Storage, H, W> as Event<E>>::Listener, ListenerCreateError>
     {
         let msg = "Failed to create listener";
-        let state_size = E::memory_size((self.event_id_max.as_value() + 1) as usize);
+        let state_size = E::memory_size(self.event_id_max.as_value() + 1);
         let mut waiter = None;
         let storage = match Storage::Builder::new(&self.name)
             .config(&self.config.to_storage_config())
@@ -564,7 +564,7 @@ impl<
             .supplementary_size(state_size)
             .initializer(|value, allocator| {
                 value.write(State {
-                    event: unsafe { E::new_uninit((self.event_id_max.as_value() + 1) as usize) },
+                    event: unsafe { E::new_uninit(self.event_id_max.as_value() + 1) },
                     handle: MaybeUninit::uninit(),
                     event_id_max: self.event_id_max,
                     notification_count: AtomicU64::new(0),

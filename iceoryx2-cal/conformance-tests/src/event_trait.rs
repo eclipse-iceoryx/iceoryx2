@@ -154,9 +154,9 @@ pub mod event_trait {
             .unwrap();
 
         for i in 0..REPETITIONS {
-            sut_notifier.notify(EventId::new(i as u64)).unwrap();
+            sut_notifier.notify(EventId::new(i)).unwrap();
             let result = wait_call(&sut_listener).unwrap();
-            assert_that!(result.unwrap(), eq EventId::new(i as u64));
+            assert_that!(result.unwrap(), eq EventId::new(i));
         }
     }
 
@@ -193,7 +193,7 @@ pub mod event_trait {
     >(
         wait_call: F,
     ) {
-        const REPETITIONS: u64 = 8;
+        const REPETITIONS: usize = 8;
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -287,7 +287,7 @@ pub mod event_trait {
         for event in &events {
             assert_that!(event_ids, contains event.id.as_value());
         }
-        assert_that!(events, len event_counter as usize);
+        assert_that!(events, len event_counter);
     }
 
     #[conformance_test]
@@ -523,7 +523,7 @@ pub mod event_trait {
                 assert_that!(ids.insert(event.id), eq true);
             })
             .unwrap();
-        assert_that!(result, eq EVENT_ID_MAX.as_value());
+        assert_that!(result, eq EVENT_ID_MAX.as_value() as u64);
 
         let result = sut_listener.try_wait(|_| {}).unwrap();
         assert_that!(result, eq 0);
@@ -536,7 +536,7 @@ pub mod event_trait {
         mut wait_call: F,
     ) {
         let _watchdog = Watchdog::new();
-        const REPETITIONS: u64 = 8;
+        const REPETITIONS: usize = 8;
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -558,7 +558,7 @@ pub mod event_trait {
             let mut vec_of_ids = vec![];
             wait_call(&mut vec_of_ids, &sut_listener);
 
-            assert_that!(vec_of_ids, len { i as usize });
+            assert_that!(vec_of_ids, len i);
             for n in 0..i {
                 assert_that!(vec_of_ids, contains EventId::new(n));
             }

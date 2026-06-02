@@ -10,37 +10,41 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_lock_free::mpmc::bit_set::RelocatableBitSet;
+use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
 use iceoryx2_log::fail;
 
-use crate::event::event_state::{EventActivation, EventId, EventState, EventStateActivateError};
+use crate::event::{
+    EventId,
+    event_state::{EventActivation, EventState, EventStateActivateError},
+};
 
-impl EventState for RelocatableBitSet {
+impl EventState for RelocatableCountingBitSet {
     fn max_event_count() -> u64 {
-        1
+        Self::max_count()
     }
 
     fn max_event_id(&self) -> EventId {
         EventId::new(self.capacity().saturating_sub(1))
     }
 
-    fn activate(&self, event_id: EventId) -> Result<(), EventStateActivateError> {
+    fn activate(&self, event_id: crate::event::EventId) -> Result<(), EventStateActivateError> {
         if self.max_event_id() < event_id {
             fail!(from self, with EventStateActivateError::EventIdOutOfBounds,
                 "Unable to activate {event_id:?} since it is out of bounds (max = {:?}).", self.max_event_id());
         }
+
         self.set(event_id.as_value());
 
         Ok(())
     }
 
-    fn drain<F: FnMut(EventActivation)>(&self, callback: &mut F) -> u64 {
+    fn drain<F: FnMut(super::EventActivation)>(&self, callback: &mut F) -> u64 {
         let mut counter = 0;
-        self.reset_all(|bit_index| {
-            counter += 1;
+        self.reset_all(|bit_state| {
+            counter += bit_state.count();
             callback(EventActivation {
-                id: EventId::new(bit_index),
-                count: 1,
+                id: EventId::new(bit_state.bit()),
+                count: bit_state.count(),
             });
         });
         counter

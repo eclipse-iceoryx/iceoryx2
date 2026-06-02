@@ -27,14 +27,14 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
 #[derive(ZeroCopySend, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[repr(C)]
-pub struct EventId(u64);
+pub struct EventId(usize);
 
 impl EventId {
-    pub const fn new(value: u64) -> Self {
+    pub const fn new(value: usize) -> Self {
         Self(value)
     }
 
-    pub const fn as_value(&self) -> u64 {
+    pub const fn as_value(&self) -> usize {
         self.0
     }
 }
