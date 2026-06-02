@@ -11,22 +11,20 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::{
-    dynamic_storage::{self, DynamicStorage},
+    dynamic_storage::DynamicStorage,
     event::{
         ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
         common::EventImpl,
         event_state::EventState,
-        trigger::{HandlerInterface, State, WaiterInterface},
+        trigger::{Configuration, HandlerInterface, State, WaiterInterface},
     },
+    named_concept::NamedConceptRemoveError,
 };
 use core::marker::PhantomData;
 use core::ptr::NonNull;
 use iceoryx2_bb_elementary_traits::{non_null::NonNullCompat, testing::abandonable::Abandonable};
-use iceoryx2_bb_lock_free::mpmc::{
-    bit_set::RelocatableBitSet, counting_bit_set::RelocatableCountingBitSet,
-};
 use iceoryx2_bb_posix::{
-    file::CreationMode,
+    file::{CreationMode, File, FileRemoveError},
     unix_datagram_socket::{
         UnixDatagramReceiveError, UnixDatagramReceiver, UnixDatagramReceiverBuilder,
         UnixDatagramReceiverCreationError, UnixDatagramSendError, UnixDatagramSender,
@@ -147,6 +145,26 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> Abandonable
 impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, (), Storage>
     for UnixDatagramWaiter<E, Storage>
 {
+    unsafe fn remove(
+        name: &FileName,
+        config: &Configuration,
+    ) -> Result<bool, NamedConceptRemoveError> {
+        let origin = "UnixDatagramWaiter::remove()";
+        let msg = "Unable to remove socket";
+        let full_path = config.path_for(name);
+        match File::remove(&full_path) {
+            Ok(v) => Ok(v),
+            Err(FileRemoveError::InsufficientPermissions) => {
+                fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
+                    "{msg} due to insufficient permissions.");
+            }
+            Err(e) => {
+                fail!(from origin, with NamedConceptRemoveError::InternalError,
+                    "{msg} due to an internal error. [{e:?}]");
+            }
+        }
+    }
+
     fn empty_buffer(&self) -> Result<(), ListenerWaitError> {
         let msg = "Unable to empty notification buffer";
         loop {
@@ -264,13 +282,3 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
 #[allow(type_alias_bounds)] // they are not enforced, but we keep them to communicate the contract
 pub type GenericUnixDatagramSocketTrigger<E: EventState, Storage: DynamicStorage<State<E, ()>>> =
     EventImpl<E, (), Storage, UnixDatagramHandle<E, Storage>, UnixDatagramWaiter<E, Storage>>;
-
-pub type UnixDatagramShmBitSet = GenericUnixDatagramSocketTrigger<
-    RelocatableBitSet,
-    dynamic_storage::posix_shared_memory::Storage<State<RelocatableBitSet, ()>>,
->;
-
-pub type UnixDatagramShmCountingBitSet = GenericUnixDatagramSocketTrigger<
-    RelocatableCountingBitSet,
-    dynamic_storage::posix_shared_memory::Storage<State<RelocatableCountingBitSet, ()>>,
->;

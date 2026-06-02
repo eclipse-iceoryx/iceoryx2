@@ -10,16 +10,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::event::{
-    ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
-    trigger::{Configuration, HandlerInterface},
-};
 use crate::{
     dynamic_storage::DynamicStorage,
     event::{
         event_state::EventState,
         trigger::{State, WaiterInterface},
     },
+};
+use crate::{
+    event::{
+        ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
+        trigger::{Configuration, HandlerInterface},
+    },
+    named_concept::NamedConceptRemoveError,
 };
 use core::fmt::Debug;
 use core::ptr::NonNull;
@@ -46,6 +49,13 @@ impl<
     Storage: DynamicStorage<State<E, Mgmt>>,
 > WaiterInterface<E, Mgmt, Storage> for Stub
 {
+    unsafe fn remove(
+        _name: &FileName,
+        _config: &Configuration,
+    ) -> Result<bool, NamedConceptRemoveError> {
+        Ok(true)
+    }
+
     fn create(
         _name: &FileName,
         _config: &Configuration,

@@ -13,6 +13,7 @@
 use crate::event::{
     EventId, ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
 };
+use crate::named_concept::NamedConceptRemoveError;
 use crate::{dynamic_storage::DynamicStorage, event::event_state::EventState};
 use core::fmt::Debug;
 use core::mem::MaybeUninit;
@@ -71,6 +72,14 @@ pub trait WaiterInterface<
     Storage: DynamicStorage<State<E, Mgmt>>,
 >: Send + Sync + Debug + Abandonable
 {
+    /// # Safety
+    ///
+    ///  * Must ensure that the Waiter or the Handler is currenty not in use by another process.
+    ///
+    unsafe fn remove(
+        name: &FileName,
+        config: &Configuration,
+    ) -> Result<bool, NamedConceptRemoveError>;
     fn create(
         name: &FileName,
         config: &Configuration,

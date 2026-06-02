@@ -16,16 +16,14 @@ use crate::{
         ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
         common::EventImpl,
         event_state::EventState,
-        trigger::{HandlerInterface, State, WaiterInterface},
+        trigger::{Configuration, HandlerInterface, State, WaiterInterface},
     },
+    named_concept::NamedConceptRemoveError,
 };
 use core::marker::PhantomData;
 use core::ptr::NonNull;
 use iceoryx2_bb_elementary_traits::{
     testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
-};
-use iceoryx2_bb_lock_free::mpmc::{
-    bit_set::RelocatableBitSet, counting_bit_set::RelocatableCountingBitSet,
 };
 use iceoryx2_bb_posix::socket_pair::{
     StreamingSocket, StreamingSocketDuplicateError, StreamingSocketPairCreationError,
@@ -163,6 +161,13 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>> Abandonab
 impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
     WaiterInterface<E, SocketPairMgmt, Storage> for SocketPairWaiter<E, Storage>
 {
+    unsafe fn remove(
+        _name: &FileName,
+        _config: &Configuration,
+    ) -> Result<bool, NamedConceptRemoveError> {
+        Ok(true)
+    }
+
     fn empty_buffer(&self) -> Result<(), ListenerWaitError> {
         let msg = "Unable to empty notification buffer";
         loop {
@@ -283,6 +288,3 @@ pub type GenericSocketPairTrigger<E: EventState> = EventImpl<
     SocketPairHandle<E, dynamic_storage::process_local::Storage<State<E, SocketPairMgmt>>>,
     SocketPairWaiter<E, dynamic_storage::process_local::Storage<State<E, SocketPairMgmt>>>,
 >;
-
-pub type SocketPairBitSet = GenericSocketPairTrigger<RelocatableBitSet>;
-pub type SocketPairCountingBitSet = GenericSocketPairTrigger<RelocatableCountingBitSet>;

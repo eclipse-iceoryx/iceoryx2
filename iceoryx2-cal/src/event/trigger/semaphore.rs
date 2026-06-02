@@ -12,21 +12,19 @@
 
 use super::Configuration;
 use crate::{
-    dynamic_storage::{self, DynamicStorage},
+    dynamic_storage::DynamicStorage,
     event::{
         ListenerCreateError, ListenerWaitError, NotifierNotifyError, NotifierOpenError,
         common::EventImpl,
         event_state::EventState,
         trigger::{HandlerInterface, State, WaiterInterface},
     },
+    named_concept::NamedConceptRemoveError,
 };
 use core::{marker::PhantomData, mem::MaybeUninit, ptr::NonNull, time::Duration};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::{
     testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
-};
-use iceoryx2_bb_lock_free::mpmc::{
-    bit_set::RelocatableBitSet, counting_bit_set::RelocatableCountingBitSet,
 };
 use iceoryx2_bb_posix::{
     adaptive_wait::AdaptiveWaitError,
@@ -158,6 +156,13 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> Drop
 impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
     WaiterInterface<E, SemaphoreMgmt, Storage> for SemaphoreWaiter<E, Storage>
 {
+    unsafe fn remove(
+        _name: &FileName,
+        _config: &Configuration,
+    ) -> Result<bool, NamedConceptRemoveError> {
+        Ok(true)
+    }
+
     fn empty_buffer(&self) -> Result<(), ListenerWaitError> {
         let msg = "Unable to empty notification buffer";
         loop {
@@ -268,13 +273,3 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
 #[allow(type_alias_bounds)] // they are not enforced, but we keep them to communicate the contract
 pub type GenericSemaphoreTrigger<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> =
     EventImpl<E, SemaphoreMgmt, Storage, SemaphoreHandle<E, Storage>, SemaphoreWaiter<E, Storage>>;
-
-pub type SemaphoreShmBitSet = GenericSemaphoreTrigger<
-    RelocatableBitSet,
-    dynamic_storage::posix_shared_memory::Storage<State<RelocatableBitSet, SemaphoreMgmt>>,
->;
-
-pub type SemaphoreShmCountingBitSet = GenericSemaphoreTrigger<
-    RelocatableCountingBitSet,
-    dynamic_storage::posix_shared_memory::Storage<State<RelocatableCountingBitSet, SemaphoreMgmt>>,
->;

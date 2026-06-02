@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -12,12 +12,15 @@
 
 pub mod common;
 pub mod event_state;
+pub mod implementations;
 pub mod recommended;
 pub mod trigger;
 
 pub use crate::named_concept::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 pub use iceoryx2_bb_system_types::file_name::*;
 pub use iceoryx2_bb_system_types::path::Path;
+
+pub use implementations::*;
 
 use crate::event::event_state::{EventActivation, EventState, EventStateActivateError};
 use core::{fmt::Debug, time::Duration};

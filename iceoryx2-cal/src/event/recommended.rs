@@ -12,8 +12,8 @@
 
 /// Provides the recommended inter-process [`Event`](crate::event::Event) concept implementation
 /// for the target.
-pub type Ipc = crate::event::trigger::unix_datagram_socket::UnixDatagramShmBitSet;
+pub type Ipc = crate::event::UnixDatagramShmCountingBitSet;
 
 /// Provides the recommended process-local [`Event`](crate::event::Event) concept implementation
 /// for the target.
-pub type Local = crate::event::trigger::socket_pair::SocketPairBitSet;
+pub type Local = crate::event::SocketPairCountingBitSet;

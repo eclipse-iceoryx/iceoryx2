@@ -176,7 +176,25 @@ impl<
         name: &FileName,
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::named_concept::NamedConceptRemoveError> {
-        unsafe { Storage::remove_cfg(name, &cfg.to_storage_config()) }
+        let origin = "EventImpl::remove_cfg()";
+        let msg = "Failed to remove event";
+        let result = unsafe { W::remove(name, &cfg.to_trigger_config()) }.inspect_err(|e| {
+            debug!(from origin, "{msg} since the trigger mechanism could not be removed. [{e:?}]");
+        });
+
+        match unsafe { Storage::remove_cfg(name, &cfg.to_storage_config()) }.inspect_err(|e| {
+            debug!(from origin, "{msg} since the management storage could not be removed. [{e:?}]");
+        }) {
+            Ok(true) => result,
+            Ok(false) => {
+                if result.is_err() {
+                    result
+                } else {
+                    Ok(false)
+                }
+            }
+            Err(e) => Err(e),
+        }
     }
 
     fn remove_path_hint(
