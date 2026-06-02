@@ -176,21 +176,21 @@ impl<Service: service::Service> ListenerConnections<Service> {
                     });
                 }
                 Err(
-                    iceoryx2_cal::event::NotifierCreateError::DoesNotExist
-                    | iceoryx2_cal::event::NotifierCreateError::InitializationNotYetFinalized,
+                    iceoryx2_cal::event::NotifierOpenError::DoesNotExist
+                    | iceoryx2_cal::event::NotifierOpenError::InitializationNotYetFinalized,
                 ) => (),
-                Err(iceoryx2_cal::event::NotifierCreateError::VersionMismatch) => {
+                Err(iceoryx2_cal::event::NotifierOpenError::VersionMismatch) => {
                     warn!(from self,
                         "{} since a version mismatch was detected! All entities must use the same iceoryx2 version!",
                         msg);
                 }
-                Err(iceoryx2_cal::event::NotifierCreateError::InsufficientPermissions) => {
+                Err(iceoryx2_cal::event::NotifierOpenError::InsufficientPermissions) => {
                     warn!(from self, "{} since the permissions do not match. The service or the participants are maybe misconfigured.", msg);
                 }
-                Err(iceoryx2_cal::event::NotifierCreateError::Interrupt) => {
+                Err(iceoryx2_cal::event::NotifierOpenError::Interrupt) => {
                     debug!(from self, "{} since an interrupt signal was received.", msg);
                 }
-                Err(iceoryx2_cal::event::NotifierCreateError::InternalFailure) => {
+                Err(iceoryx2_cal::event::NotifierOpenError::InternalFailure) => {
                     debug!(from self, "{} due to an internal failure.", msg);
                 }
             }

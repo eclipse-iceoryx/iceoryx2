@@ -14,6 +14,7 @@
 
 pub mod bit_set;
 pub mod container;
+pub mod counting_bit_set;
 pub mod robust_unique_index_set;
 pub mod unique_index_set;
 pub mod unique_index_set_enums;

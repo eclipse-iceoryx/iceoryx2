@@ -147,20 +147,19 @@ pub mod details {
                 fatal_panic!(from self,
                 "Memory already initialized. Initializing it twice may lead to undefined behavior.");
             }
-            unsafe {
-                let memory = fail!(from self, when allocator
-            .allocate(Layout::from_size_align_unchecked(
-                    core::mem::size_of::<BitsetElement>() * self.array_capacity,
-                    core::mem::align_of::<BitsetElement>())),
-            "Failed to initialize since the allocation of the data memory failed.");
+            let layout = Layout::array::<BitsetElement>(self.array_capacity)
+                .expect("The capacity always results in a valid layout");
+            let memory = fail!(from self, when allocator.allocate(layout),
+                "Failed to initialize since the allocation of the data memory failed.");
 
-                self.data_ptr.init(memory);
+            unsafe { self.data_ptr.init(memory) };
 
-                for i in 0..self.array_capacity {
-                    (self.data_ptr.as_ptr() as *mut BitsetElement)
+            for i in 0..self.array_capacity {
+                unsafe {
+                    (self.data_ptr.as_mut_ptr())
                         .add(i)
                         .write(BitsetElement::new(0))
-                }
+                };
             }
             // relaxed is sufficient since no relocatable container can be used
             // before init was called. Meaning, it is not allowed to send or share

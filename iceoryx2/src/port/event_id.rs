@@ -38,5 +38,4 @@
 //! # }
 //! ```
 
-/// Type that allows to identify an event uniquely.
-pub type EventId = iceoryx2_cal::event::TriggerId;
+pub use iceoryx2_cal::event::EventId;
