@@ -19,6 +19,7 @@ pub mod reactor_trait {
     use core::time::Duration;
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_concurrency::atomic::Ordering;
+    use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
     use iceoryx2_bb_posix::barrier::BarrierBuilder;
     use iceoryx2_bb_posix::barrier::BarrierHandle;
     use iceoryx2_bb_posix::clock::Time;
@@ -31,8 +32,11 @@ pub mod reactor_trait {
     use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
-    use iceoryx2_cal::event::unix_datagram_socket::*;
+    use iceoryx2_cal::event::Event;
+    use iceoryx2_cal::event::EventId;
+    use iceoryx2_cal::event::UnixDatagramShmCountingBitSet;
     use iceoryx2_cal::event::{Listener, ListenerBuilder, Notifier, NotifierBuilder};
+    use iceoryx2_cal::named_concept::NamedConceptBuilder;
     use iceoryx2_cal::reactor::{Reactor, *};
     use iceoryx2_cal::testing::generate_isolated_config;
 
@@ -40,22 +44,30 @@ pub mod reactor_trait {
     const NUMBER_OF_ATTACHMENTS: usize = 32;
 
     struct NotifierListenerPair {
-        notifier: unix_datagram_socket::Notifier,
-        listener: unix_datagram_socket::Listener,
+        notifier: <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
+            RelocatableCountingBitSet,
+        >>::Notifier,
+        listener: <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
+            RelocatableCountingBitSet,
+        >>::Listener,
     }
 
     impl NotifierListenerPair {
         fn new() -> Self {
             let name = generate_file_path().file_name();
-            let config = generate_isolated_config::<unix_datagram_socket::EventImpl>();
-            let listener = unix_datagram_socket::ListenerBuilder::new(&name)
-                .config(&config)
-                .create()
-                .unwrap();
-            let notifier = unix_datagram_socket::NotifierBuilder::new(&name)
-                .config(&config)
-                .open()
-                .unwrap();
+            let config = generate_isolated_config::<UnixDatagramShmCountingBitSet>();
+            let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
+                RelocatableCountingBitSet,
+            >>::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
+            let notifier = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
+                RelocatableCountingBitSet,
+            >>::NotifierBuilder::new(&name)
+            .config(&config)
+            .open()
+            .unwrap();
 
             Self { listener, notifier }
         }
@@ -64,17 +76,19 @@ pub mod reactor_trait {
     #[conformance_test]
     pub fn attach_and_detach_works<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
-        let config = generate_isolated_config::<unix_datagram_socket::EventImpl>();
+        let config = generate_isolated_config::<UnixDatagramShmCountingBitSet>();
 
         let mut listeners = vec![];
         let mut guards = vec![];
         for _ in 0..NUMBER_OF_ATTACHMENTS {
             let name = generate_file_path().file_name();
             listeners.push(
-                unix_datagram_socket::ListenerBuilder::new(&name)
-                    .config(&config)
-                    .create()
-                    .unwrap(),
+                <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
+                    RelocatableCountingBitSet,
+                >>::ListenerBuilder::new(&name)
+                .config(&config)
+                .create()
+                .unwrap(),
             );
         }
 
@@ -97,13 +111,15 @@ pub mod reactor_trait {
     #[conformance_test]
     pub fn attach_the_same_attachment_twice_fails<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
-        let config = generate_isolated_config::<unix_datagram_socket::EventImpl>();
+        let config = generate_isolated_config::<UnixDatagramShmCountingBitSet>();
 
         let name = generate_file_path().file_name();
-        let listener = unix_datagram_socket::ListenerBuilder::new(&name)
-            .config(&config)
-            .create()
-            .unwrap();
+        let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
+            RelocatableCountingBitSet,
+        >>::ListenerBuilder::new(&name)
+        .config(&config)
+        .create()
+        .unwrap();
 
         let _guard = sut.attach(&listener).unwrap();
         let result = sut.attach(&listener);
@@ -116,7 +132,7 @@ pub mod reactor_trait {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let attachment = NotifierListenerPair::new();
-        attachment.notifier.notify(TriggerId::new(123)).unwrap();
+        attachment.notifier.notify(EventId::new(7)).unwrap();
 
         let _guard = sut.attach(&attachment.listener);
 
@@ -135,7 +151,7 @@ pub mod reactor_trait {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let attachment = NotifierListenerPair::new();
-        attachment.notifier.notify(TriggerId::new(123)).unwrap();
+        attachment.notifier.notify(EventId::new(6)).unwrap();
 
         let _guard = sut.attach(&attachment.listener);
 
@@ -157,7 +173,7 @@ pub mod reactor_trait {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let attachment = NotifierListenerPair::new();
-        attachment.notifier.notify(TriggerId::new(123)).unwrap();
+        attachment.notifier.notify(EventId::new(5)).unwrap();
 
         let _guard = sut.attach(&attachment.listener);
 
@@ -176,7 +192,7 @@ pub mod reactor_trait {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let attachment = NotifierListenerPair::new();
-        attachment.notifier.notify(TriggerId::new(123)).unwrap();
+        attachment.notifier.notify(EventId::new(4)).unwrap();
 
         let _guard = sut.attach(&attachment.listener);
 
@@ -191,7 +207,7 @@ pub mod reactor_trait {
             assert_that!(triggered_fds[0], eq unsafe { attachment. listener.file_descriptor().native_handle() });
         }
 
-        attachment.listener.try_wait_one().unwrap();
+        attachment.listener.try_wait(|_| {}).unwrap();
         let mut triggered_fds = vec![];
         assert_that!(
             sut.try_wait(|fd| triggered_fds.push(unsafe { fd.native_handle() })),
@@ -206,7 +222,7 @@ pub mod reactor_trait {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let attachment = NotifierListenerPair::new();
-        attachment.notifier.notify(TriggerId::new(123)).unwrap();
+        attachment.notifier.notify(EventId::new(3)).unwrap();
 
         let _guard = sut.attach(&attachment.listener);
 
@@ -224,7 +240,7 @@ pub mod reactor_trait {
             assert_that!(triggered_fds[0], eq unsafe { attachment. listener.file_descriptor().native_handle() });
         }
 
-        attachment.listener.try_wait_one().unwrap();
+        attachment.listener.try_wait(|_| {}).unwrap();
         let mut triggered_fds = vec![];
         assert_that!(
             sut.try_wait(|fd| triggered_fds.push(unsafe { fd.native_handle() })),
@@ -236,25 +252,36 @@ pub mod reactor_trait {
 
     #[conformance_test]
     pub fn blocking_wait_activates_as_long_as_there_is_data_to_read<Sut: Reactor>() {
+        const NUMBER_OF_ATTACHMENTS: usize = 4;
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
-        let attachment = NotifierListenerPair::new();
-        attachment.notifier.notify(TriggerId::new(123)).unwrap();
+        let mut attachments = vec![];
+        for _ in 0..NUMBER_OF_ATTACHMENTS {
+            let attachment = NotifierListenerPair::new();
+            attachment.notifier.notify(EventId::new(2)).unwrap();
+            attachments.push(attachment);
+        }
 
-        let _guard = sut.attach(&attachment.listener);
+        let mut guards = vec![];
+        for attachment in &attachments {
+            guards.push(sut.attach(&attachment.listener));
+        }
 
-        for _ in 0..4 {
+        for n in 0..NUMBER_OF_ATTACHMENTS {
             let mut triggered_fds = vec![];
             assert_that!(
                 sut.blocking_wait(|fd| triggered_fds.push(unsafe { fd.native_handle() }),),
-                eq Ok(1)
+                eq Ok(NUMBER_OF_ATTACHMENTS - n)
             );
 
-            assert_that!(triggered_fds, len 1);
-            assert_that!(triggered_fds[0], eq unsafe { attachment. listener.file_descriptor().native_handle() });
+            assert_that!(triggered_fds, len NUMBER_OF_ATTACHMENTS - n);
+            for attachment in &attachments[n..] {
+                assert_that!(triggered_fds, contains unsafe { attachment.listener.file_descriptor().native_handle()});
+            }
+
+            attachments[n].listener.try_wait(|_| {}).unwrap();
         }
 
-        attachment.listener.try_wait_one().unwrap();
         let mut triggered_fds = vec![];
         assert_that!(
             sut.try_wait(|fd| triggered_fds.push(unsafe { fd.native_handle() })),
@@ -271,7 +298,7 @@ pub mod reactor_trait {
         let mut attachments = vec![];
         for _ in 0..NUMBER_OF_ATTACHMENTS {
             let attachment = NotifierListenerPair::new();
-            attachment.notifier.notify(TriggerId::new(123)).unwrap();
+            attachment.notifier.notify(EventId::new(1)).unwrap();
             attachments.push(attachment);
         }
 
@@ -299,7 +326,7 @@ pub mod reactor_trait {
         let mut attachments = vec![];
         for _ in 0..NUMBER_OF_ATTACHMENTS {
             let attachment = NotifierListenerPair::new();
-            attachment.notifier.notify(TriggerId::new(123)).unwrap();
+            attachment.notifier.notify(EventId::new(0)).unwrap();
             attachments.push(attachment);
         }
 
@@ -330,7 +357,7 @@ pub mod reactor_trait {
         let mut attachments = vec![];
         for _ in 0..NUMBER_OF_ATTACHMENTS {
             let attachment = NotifierListenerPair::new();
-            attachment.notifier.notify(TriggerId::new(123)).unwrap();
+            attachment.notifier.notify(EventId::new(8)).unwrap();
             attachments.push(attachment);
         }
 
@@ -382,7 +409,7 @@ pub mod reactor_trait {
         let mut attachments = vec![];
         for _ in 0..NUMBER_OF_ATTACHMENTS {
             let attachment = NotifierListenerPair::new();
-            attachment.notifier.notify(TriggerId::new(123)).unwrap();
+            attachment.notifier.notify(EventId::new(7)).unwrap();
             attachments.push(attachment);
         }
 
@@ -403,7 +430,7 @@ pub mod reactor_trait {
                 assert_that!(triggered_fds, contains unsafe { attachment.listener.file_descriptor().native_handle() } );
             }
 
-            attachments[n].listener.try_wait_one().unwrap();
+            attachments[n].listener.try_wait(|_| {}).unwrap();
         }
 
         let mut triggered_fds = vec![];
@@ -422,7 +449,7 @@ pub mod reactor_trait {
         let mut attachments = vec![];
         for _ in 0..NUMBER_OF_ATTACHMENTS {
             let attachment = NotifierListenerPair::new();
-            attachment.notifier.notify(TriggerId::new(123)).unwrap();
+            attachment.notifier.notify(EventId::new(5)).unwrap();
             attachments.push(attachment);
         }
 
@@ -446,7 +473,7 @@ pub mod reactor_trait {
                 assert_that!(triggered_fds, contains unsafe { attachment.listener.file_descriptor().native_handle() } );
             }
 
-            attachments[n].listener.try_wait_one().unwrap();
+            attachments[n].listener.try_wait(|_| {}).unwrap();
         }
 
         let mut triggered_fds = vec![];
@@ -465,7 +492,7 @@ pub mod reactor_trait {
         let mut attachments = vec![];
         for _ in 0..NUMBER_OF_ATTACHMENTS {
             let attachment = NotifierListenerPair::new();
-            attachment.notifier.notify(TriggerId::new(123)).unwrap();
+            attachment.notifier.notify(EventId::new(4)).unwrap();
             attachments.push(attachment);
         }
 
@@ -486,7 +513,7 @@ pub mod reactor_trait {
                 assert_that!(triggered_fds, contains unsafe { attachment.listener.file_descriptor().native_handle() } );
             }
 
-            attachments[n].listener.try_wait_one().unwrap();
+            attachments[n].listener.try_wait(|_| {}).unwrap();
         }
 
         let mut triggered_fds = vec![];
@@ -510,7 +537,7 @@ pub mod reactor_trait {
         let mutex_handle = MutexHandle::new();
         let config = MutexBuilder::new()
             .create(
-                generate_isolated_config::<unix_datagram_socket::EventImpl>(),
+                generate_isolated_config::<UnixDatagramShmCountingBitSet>(),
                 &mutex_handle,
             )
             .unwrap();
@@ -518,10 +545,12 @@ pub mod reactor_trait {
         thread_scope(|s| {
             s.thread_builder().spawn(|| {
                 let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
-                let listener = unix_datagram_socket::ListenerBuilder::new(&name)
-                    .config(&config.lock().unwrap())
-                    .create()
-                    .unwrap();
+                let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
+                    RelocatableCountingBitSet,
+                >>::ListenerBuilder::new(&name)
+                .config(&config.lock().unwrap())
+                .create()
+                .unwrap();
                 let _guard = sut.attach(&listener);
                 barrier.wait();
 
@@ -541,11 +570,13 @@ pub mod reactor_trait {
             nanosleep(TIMEOUT).unwrap();
             counter_old.store(counter.load(Ordering::Relaxed), Ordering::Relaxed);
 
-            let notifier = unix_datagram_socket::NotifierBuilder::new(&name)
-                .config(&config.lock().unwrap())
-                .open()
-                .unwrap();
-            notifier.notify(TriggerId::new(123)).unwrap();
+            let notifier = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
+                RelocatableCountingBitSet,
+            >>::NotifierBuilder::new(&name)
+            .config(&config.lock().unwrap())
+            .open()
+            .unwrap();
+            notifier.notify(EventId::new(1)).unwrap();
 
             Ok(())
         })
@@ -566,7 +597,7 @@ pub mod reactor_trait {
         let mutex_handle = MutexHandle::new();
         let config = MutexBuilder::new()
             .create(
-                generate_isolated_config::<unix_datagram_socket::EventImpl>(),
+                generate_isolated_config::<UnixDatagramShmCountingBitSet>(),
                 &mutex_handle,
             )
             .unwrap();
@@ -574,10 +605,12 @@ pub mod reactor_trait {
         thread_scope(|s| {
             s.thread_builder().spawn(|| {
                 let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
-                let listener = unix_datagram_socket::ListenerBuilder::new(&name)
-                    .config(&config.lock().unwrap())
-                    .create()
-                    .unwrap();
+                let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
+                    RelocatableCountingBitSet,
+                >>::ListenerBuilder::new(&name)
+                .config(&config.lock().unwrap())
+                .create()
+                .unwrap();
                 let _guard = sut.attach(&listener);
                 barrier.wait();
 
@@ -595,11 +628,13 @@ pub mod reactor_trait {
             nanosleep(TIMEOUT).unwrap();
             counter_old.store(counter.load(Ordering::Relaxed), Ordering::Relaxed);
 
-            let notifier = unix_datagram_socket::NotifierBuilder::new(&name)
-                .config(&config.lock().unwrap())
-                .open()
-                .unwrap();
-            notifier.notify(TriggerId::new(123)).unwrap();
+            let notifier = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
+                RelocatableCountingBitSet,
+            >>::NotifierBuilder::new(&name)
+            .config(&config.lock().unwrap())
+            .open()
+            .unwrap();
+            notifier.notify(EventId::new(2)).unwrap();
 
             Ok(())
         })

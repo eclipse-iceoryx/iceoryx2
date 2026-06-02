@@ -27,7 +27,7 @@ mod dynamic_storage_trait_tests;
 mod event_trait_tests;
 mod monitoring_trait_tests;
 mod named_concept_trait_tests;
-//mod reactor_trait_tests;
+mod reactor_trait_tests;
 mod resizable_shared_memory_trait_tests;
 mod serialize_trait_tests;
 mod shared_memory_trait_tests;

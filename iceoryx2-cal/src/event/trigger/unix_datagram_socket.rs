@@ -25,6 +25,8 @@ use core::ptr::NonNull;
 use iceoryx2_bb_elementary_traits::{non_null::NonNullCompat, testing::abandonable::Abandonable};
 use iceoryx2_bb_posix::{
     file::{CreationMode, File, FileRemoveError},
+    file_descriptor::FileDescriptorBased,
+    file_descriptor_set::SynchronousMultiplexing,
     unix_datagram_socket::{
         UnixDatagramReceiveError, UnixDatagramReceiver, UnixDatagramReceiverBuilder,
         UnixDatagramReceiverCreationError, UnixDatagramSendError, UnixDatagramSender,
@@ -41,6 +43,19 @@ pub struct UnixDatagramHandle<E: EventState, Storage: DynamicStorage<State<E, ()
     sender: UnixDatagramSender,
     _data_1: PhantomData<E>,
     _data_2: PhantomData<Storage>,
+}
+
+impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> FileDescriptorBased
+    for UnixDatagramHandle<E, Storage>
+{
+    fn file_descriptor(&self) -> &iceoryx2_bb_posix::file_descriptor::FileDescriptor {
+        self.sender.file_descriptor()
+    }
+}
+
+impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> SynchronousMultiplexing
+    for UnixDatagramHandle<E, Storage>
+{
 }
 
 impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> Abandonable
@@ -129,6 +144,19 @@ pub struct UnixDatagramWaiter<E: EventState, Storage: DynamicStorage<State<E, ()
     receiver: UnixDatagramReceiver,
     _data_1: PhantomData<E>,
     _data_2: PhantomData<Storage>,
+}
+
+impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> FileDescriptorBased
+    for UnixDatagramWaiter<E, Storage>
+{
+    fn file_descriptor(&self) -> &iceoryx2_bb_posix::file_descriptor::FileDescriptor {
+        self.receiver.file_descriptor()
+    }
+}
+
+impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> SynchronousMultiplexing
+    for UnixDatagramWaiter<E, Storage>
+{
 }
 
 impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> Abandonable

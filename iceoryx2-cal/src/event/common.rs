@@ -30,7 +30,10 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary_traits::{
     non_null::NonNullCompat, testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
 };
-use iceoryx2_bb_posix::file::AccessMode;
+use iceoryx2_bb_posix::{
+    file::AccessMode, file_descriptor::FileDescriptorBased,
+    file_descriptor_set::SynchronousMultiplexing,
+};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::{debug, fail};
@@ -236,6 +239,27 @@ impl<
     E: EventState,
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
+    H: HandlerInterface<E, Mgmt, Storage> + FileDescriptorBased,
+> FileDescriptorBased for Handle<E, Mgmt, Storage, H>
+{
+    fn file_descriptor(&self) -> &iceoryx2_bb_posix::file_descriptor::FileDescriptor {
+        self.handle.file_descriptor()
+    }
+}
+
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    H: HandlerInterface<E, Mgmt, Storage> + SynchronousMultiplexing,
+> SynchronousMultiplexing for Handle<E, Mgmt, Storage, H>
+{
+}
+
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
     H: HandlerInterface<E, Mgmt, Storage>,
 > Abandonable for Handle<E, Mgmt, Storage, H>
 {
@@ -318,6 +342,27 @@ impl<
     E: EventState,
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
+    W: WaiterInterface<E, Mgmt, Storage> + FileDescriptorBased,
+> FileDescriptorBased for Waiter<E, Mgmt, Storage, W>
+{
+    fn file_descriptor(&self) -> &iceoryx2_bb_posix::file_descriptor::FileDescriptor {
+        self.waiter.file_descriptor()
+    }
+}
+
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    W: WaiterInterface<E, Mgmt, Storage> + SynchronousMultiplexing,
+> SynchronousMultiplexing for Waiter<E, Mgmt, Storage, W>
+{
+}
+
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
     W: WaiterInterface<E, Mgmt, Storage>,
 > Abandonable for Waiter<E, Mgmt, Storage, W>
 {
@@ -355,8 +400,11 @@ impl<
         &self,
         mut callback: F,
     ) -> Result<u64, ListenerWaitError> {
+        let msg = "Failed to try wait and acquire all event notifications";
         let mgmt = self.storage.get();
 
+        fail!(from self, when self.waiter.try_wait(),
+           "{msg} since the underlying wait call failed.");
         if mgmt.notification_count.swap(0, Ordering::Acquire) == 0 {
             Ok(0)
         } else {
