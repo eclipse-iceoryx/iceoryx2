@@ -390,78 +390,66 @@ impl<
     Mgmt: ZeroCopySend + Send + Sync + Debug,
     Storage: DynamicStorage<State<E, Mgmt>>,
     W: WaiterInterface<E, Mgmt, Storage>,
+> Waiter<E, Mgmt, Storage, W>
+{
+    fn drain_events<F: FnMut(EventActivation), Fw: FnMut() -> Result<(), ListenerWaitError>>(
+        &self,
+        msg: &str,
+        mut callback: F,
+        mut wait_call: Fw,
+    ) -> Result<u64, ListenerWaitError> {
+        let mgmt = self.storage.get();
+
+        if mgmt.notification_count.swap(0, Ordering::Acquire) == 0 {
+            fail!(from self, when wait_call(),
+                "{msg} since the underlying wait call failed.");
+
+            if mgmt.notification_count.swap(0, Ordering::Acquire) == 0 {
+                Ok(0)
+            } else {
+                fail!(from self, when self.waiter.empty_buffer(),
+                    "{msg} since the wait buffer could not be emptied.");
+                Ok(self.storage.get().event.drain(&mut callback))
+            }
+        } else {
+            fail!(from self, when self.waiter.empty_buffer(),
+                "{msg} since the wait buffer could not be emptied.");
+            Ok(self.storage.get().event.drain(&mut callback))
+        }
+    }
+}
+
+impl<
+    E: EventState,
+    Mgmt: ZeroCopySend + Send + Sync + Debug,
+    Storage: DynamicStorage<State<E, Mgmt>>,
+    W: WaiterInterface<E, Mgmt, Storage>,
 > Listener<E> for Waiter<E, Mgmt, Storage, W>
 {
     fn max_event_count(&self) -> u64 {
         self.storage.get().event.max_event_count()
     }
 
-    fn try_wait<F: FnMut(EventActivation)>(
-        &self,
-        mut callback: F,
-    ) -> Result<u64, ListenerWaitError> {
+    fn try_wait<F: FnMut(EventActivation)>(&self, callback: F) -> Result<u64, ListenerWaitError> {
         let msg = "Failed to try wait and acquire all event notifications";
-        let mgmt = self.storage.get();
-
-        fail!(from self, when self.waiter.try_wait(),
-           "{msg} since the underlying wait call failed.");
-        if mgmt.notification_count.swap(0, Ordering::Acquire) == 0 {
-            Ok(0)
-        } else {
-            let number_of_events = self.storage.get().event.drain(&mut callback);
-            Ok(number_of_events)
-        }
+        self.drain_events(msg, callback, || self.waiter.try_wait())
     }
 
     fn timed_wait<F: FnMut(EventActivation)>(
         &self,
-        mut callback: F,
+        callback: F,
         timeout: Duration,
     ) -> Result<u64, ListenerWaitError> {
         let msg = "Failed to wait with timeout and acquire all event notifications";
-        let mgmt = self.storage.get();
-
-        if mgmt.notification_count.swap(0, Ordering::Acquire) == 0 {
-            fail!(from self,
-              when self.waiter.timed_wait(timeout),
-              "{msg} since the underlying waiting call failed.");
-            self.try_wait(callback)
-        } else {
-            let number_of_events = self.storage.get().event.drain(&mut callback);
-            if number_of_events == 0 {
-                fail!(from self,
-                  when self.waiter.timed_wait(timeout),
-                  "{msg} since the underlying waiting call failed.");
-                self.try_wait(callback)
-            } else {
-                Ok(number_of_events)
-            }
-        }
+        self.drain_events(msg, callback, || self.waiter.timed_wait(timeout))
     }
 
     fn blocking_wait<F: FnMut(EventActivation)>(
         &self,
-        mut callback: F,
+        callback: F,
     ) -> Result<u64, ListenerWaitError> {
         let msg = "Failed to wait with timeout and acquire all event notifications";
-        let mgmt = self.storage.get();
-
-        if mgmt.notification_count.swap(0, Ordering::Acquire) == 0 {
-            fail!(from self,
-              when self.waiter.blocking_wait(),
-              "{msg} since the underlying waiting call failed.");
-            self.try_wait(callback)
-        } else {
-            let number_of_events = self.storage.get().event.drain(&mut callback);
-            if number_of_events == 0 {
-                fail!(from self,
-                  when self.waiter.blocking_wait(),
-                  "{msg} since the underlying waiting call failed.");
-                self.try_wait(callback)
-            } else {
-                Ok(number_of_events)
-            }
-        }
+        self.drain_events(msg, callback, || self.waiter.blocking_wait())
     }
 }
 
