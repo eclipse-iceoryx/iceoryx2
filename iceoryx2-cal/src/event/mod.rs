@@ -117,6 +117,7 @@ impl From<EventStateActivateError> for NotifierNotifyError {
 pub trait Listener<E: EventState>: NamedConcept + Debug + Abandonable + Send {
     const IS_FILE_DESCRIPTOR_BASED: bool = false;
 
+    fn max_event_count(&self) -> u64;
     fn try_wait<F: FnMut(EventActivation)>(&self, callback: F) -> Result<u64, ListenerWaitError>;
     fn timed_wait<F: FnMut(EventActivation)>(
         &self,
@@ -130,6 +131,7 @@ pub trait Listener<E: EventState>: NamedConcept + Debug + Abandonable + Send {
 }
 
 pub trait Notifier<E: EventState>: NamedConcept + Debug + Abandonable + Send {
+    fn max_event_count(&self) -> u64;
     fn event_id_max(&self) -> EventId;
     fn notify(&self, event_id: EventId) -> Result<(), NotifierNotifyError>;
 }

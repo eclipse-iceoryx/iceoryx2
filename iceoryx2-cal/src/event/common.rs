@@ -251,6 +251,10 @@ impl<
         self.storage.get().event_id_max
     }
 
+    fn max_event_count(&self) -> u64 {
+        self.storage.get().event.max_event_count()
+    }
+
     fn notify(&self, event_id: EventId) -> Result<(), super::NotifierNotifyError> {
         let msg = "Unable to notify";
         let mgmt = self.storage.get();
@@ -325,6 +329,10 @@ impl<
     W: WaiterInterface<E, Mgmt, Storage>,
 > Listener<E> for Waiter<E, Mgmt, Storage, W>
 {
+    fn max_event_count(&self) -> u64 {
+        self.storage.get().event.max_event_count()
+    }
+
     fn try_wait<F: FnMut(EventActivation)>(
         &self,
         mut callback: F,

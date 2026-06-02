@@ -38,7 +38,7 @@ impl core::fmt::Display for EventStateActivateError {
 impl core::error::Error for EventStateActivateError {}
 
 pub trait EventState: Sized + Send + Sync + Debug + ZeroCopySend + RelocatableContainer {
-    fn max_event_count() -> u64;
+    fn max_event_count(&self) -> u64;
     fn max_event_id(&self) -> EventId;
     fn activate(&self, event_id: EventId) -> Result<(), EventStateActivateError>;
     fn drain<F: FnMut(EventActivation)>(&self, callback: &mut F) -> u64;

@@ -19,7 +19,7 @@ use crate::event::{
 };
 
 impl EventState for RelocatableCountingBitSet {
-    fn max_event_count() -> u64 {
+    fn max_event_count(&self) -> u64 {
         Self::max_count()
     }
 

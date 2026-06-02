@@ -16,7 +16,7 @@ use iceoryx2_log::fail;
 use crate::event::event_state::{EventActivation, EventId, EventState, EventStateActivateError};
 
 impl EventState for RelocatableBitSet {
-    fn max_event_count() -> u64 {
+    fn max_event_count(&self) -> u64 {
         1
     }
 
