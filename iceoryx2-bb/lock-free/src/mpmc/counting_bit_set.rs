@@ -10,6 +10,36 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! A **threadsafe** and **lock-free** counting bitset. Each bit holds an atomic counter
+//! instead of a boolean value. Bits can be incremented and read from multiple threads
+//! without any restriction. It provides 3 versions.
+//!  * [`CountingBitSet`] - Stores data in the heap and has a fixed capacity that must be defined at
+//!    runtime.
+//!  * [`RelocatableCountingBitSet`] - Stores data in the memory the allocator provides in
+//!    [`RelocatableCountingBitSet::init()`]. Is relocatable and can be used in shared memory,
+//!    when the data allocator provides shared memory.
+//!  * [`FixedSizeCountingBitSet`] - Bitset with a compile time fixed capacity.
+//!
+//!  # Example
+//!
+//!  ```
+//!  # extern crate iceoryx2_bb_loggers;
+//!
+//!  use iceoryx2_bb_lock_free::mpmc::counting_bit_set::*;
+//!
+//!  let capacity = 123;
+//!  let bitset = CountingBitSet::new(capacity);
+//!
+//!  // increment counter for bit number 5
+//!  let old_count = bitset.set(5);
+//!  println!("old count: {}", old_count);
+//!
+//!  // resets the bitset and calls the callback for every bit that was set
+//!  bitset.reset_all(|bit_state| {
+//!     println!("bit {} was set {} times", bit_state.bit(), bit_state.count());
+//!  });
+//!  ```
+
 use core::alloc::Layout;
 use core::mem::MaybeUninit;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU16, AtomicU32, AtomicU64};
@@ -95,6 +125,14 @@ pub mod details {
     unsafe impl<PointerType: PointerTrait<AtomicBaseType>> Sync for CountingBitSet<PointerType> {}
 
     impl CountingBitSet<OwningPointer<AtomicBaseType>> {
+        /// Create a new [`CountingBitSet`] with data located in the heap.
+        ///
+        /// ```
+        /// # extern crate iceoryx2_bb_loggers;
+        ///
+        /// use iceoryx2_bb_lock_free::mpmc::counting_bit_set::*;
+        /// let bitset = CountingBitSet::new(123);
+        /// ```
         pub fn new(capacity: usize) -> Self {
             let mut data_ptr = OwningPointer::<AtomicBaseType>::new_with_alloc(capacity);
 
@@ -157,10 +195,12 @@ pub mod details {
     }
 
     impl<PointerType: PointerTrait<AtomicBaseType>> CountingBitSet<PointerType> {
+        /// Returns the required memory size for a [`CountingBitSet`] with a specified capacity.
         pub const fn const_memory_size(capacity: usize) -> usize {
             unaligned_mem_size::<AtomicBaseType>(capacity)
         }
 
+        /// Returns the capacity of the [`CountingBitSet`].
         pub fn capacity(&self) -> usize {
             self.capacity
         }
@@ -173,10 +213,12 @@ pub mod details {
             );
         }
 
+        /// Returns the maximum value a bit's counter can hold.
         pub fn max_count() -> u64 {
             AtomicBaseType::max_value()
         }
 
+        /// Increments the counter for the bit at the given index and returns the previous count.
         pub fn set(&self, id: usize) -> u64 {
             self.verify_init("set()");
             debug_assert!(
@@ -187,6 +229,8 @@ pub mod details {
             unsafe { &(*self.data_ptr.as_ptr().add(id)) }.fetch_add(1, Ordering::Relaxed) as _
         }
 
+        /// Reset every bit in the [`CountingBitSet`] and call the provided callback for every bit
+        /// that had a non-zero count.
         pub fn reset_all<F: FnMut(BitState)>(&self, mut callback: F) {
             self.verify_init("reset_all()");
 
@@ -220,6 +264,7 @@ impl<const CAPACITY: usize> Default for FixedSizeCountingBitSet<CAPACITY> {
 }
 
 impl<const ARRAY_CAPACITY: usize> FixedSizeCountingBitSet<ARRAY_CAPACITY> {
+    /// Creates a new FixedSizeCountingBitSet.
     pub fn new() -> Self {
         let mut new_self = Self {
             bitset: unsafe { RelocatableCountingBitSet::new_uninit(ARRAY_CAPACITY) },
@@ -241,14 +286,18 @@ impl<const ARRAY_CAPACITY: usize> FixedSizeCountingBitSet<ARRAY_CAPACITY> {
         new_self
     }
 
+    /// Returns the capacity.
     pub fn capacity(&self) -> usize {
         self.bitset.capacity()
     }
 
+    /// Increments the counter for the bit at the given index and returns the previous count.
     pub fn set(&self, id: usize) -> u64 {
         self.bitset.set(id)
     }
 
+    /// Reset every bit in the CountingBitSet and call the provided callback for every bit
+    /// that had a non-zero count.
     pub fn reset_all<F: FnMut(BitState)>(&self, callback: F) {
         self.bitset.reset_all(callback);
     }
