@@ -18,14 +18,15 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 #[conformance_tests]
 pub mod event_trait {
     use alloc::collections::btree_set::BTreeSet;
+    use alloc::sync::Arc;
     use alloc::{vec, vec::Vec};
     use core::time::Duration;
-    use iceoryx2_bb_concurrency::atomic::AtomicU64;
-    use iceoryx2_bb_concurrency::atomic::Ordering;
+    use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicUsize, Ordering};
     use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_posix::clock::{Time, nanosleep};
     use iceoryx2_bb_posix::mutex::{MutexBuilder, MutexHandle};
+    use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_testing::assert_that;
@@ -186,6 +187,34 @@ pub mod event_trait {
             sut.blocking_wait(|id| event_id = Some(id.id))?;
             Ok(event_id)
         });
+    }
+
+    #[conformance_test]
+    pub fn create_notifier_notify_and_drop_works_continuously<E: EventState, Sut: Event<E>>() {
+        let _watchdog = Watchdog::new();
+        const REPETITIONS: usize = 8;
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
+
+        for i in 0..REPETITIONS {
+            let sut_notifier = Sut::NotifierBuilder::new(&name)
+                .config(&config)
+                .open()
+                .unwrap();
+
+            sut_notifier.notify(EventId::new(i)).unwrap();
+            let result = sut_listener
+                .try_wait(|event| {
+                    assert_that!(event.id.as_value(), eq i);
+                })
+                .unwrap();
+            assert_that!(result, eq 1);
+        }
     }
 
     fn sending_multiple_notifications_before_wait_works<
@@ -904,5 +933,102 @@ pub mod event_trait {
             })
             .unwrap();
         assert_that!(result, eq(NUMBER_OF_EVENTS as u64 * event_count));
+    }
+
+    #[conformance_test]
+    pub fn concurrent_notifications_from_multiple_notifiers_do_not_lose_events<
+        E: EventState,
+        Sut: Event<E>,
+    >() {
+        let _watchdog = Watchdog::new();
+
+        let number_of_notifier_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
+        const NUMBER_OF_EVENTS: usize = 10;
+        const ITERATIONS: usize = 1000;
+
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let start_barrier_handle = BarrierHandle::new();
+        let start_barrier = Arc::new(
+            BarrierBuilder::new((number_of_notifier_threads + 1) as u32)
+                .create(&start_barrier_handle)
+                .unwrap(),
+        );
+
+        let send_count = Arc::new([const { AtomicU64::new(0) }; NUMBER_OF_EVENTS]);
+        let received_count = Arc::new([const { AtomicU64::new(0) }; NUMBER_OF_EVENTS]);
+        let number_of_completed_notifier_threads = Arc::new(AtomicUsize::new(0));
+        let listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .event_id_max(EventId::new(NUMBER_OF_EVENTS - 1))
+            .create()
+            .unwrap();
+        let max_event_count = listener.max_event_count();
+
+        thread_scope(|s| {
+            for _ in 0..number_of_notifier_threads {
+                let notifier_name = name;
+                let notifier_config = config.clone();
+                let thread_start_barrier = start_barrier.clone();
+                let completed_threads = number_of_completed_notifier_threads.clone();
+                let thread_send_count = send_count.clone();
+                s.thread_builder()
+                    .spawn(move || {
+                        thread_start_barrier.wait();
+                        let notifier = Sut::NotifierBuilder::new(&notifier_name)
+                            .config(&notifier_config)
+                            .open()
+                            .unwrap();
+                        let mut send_count = [0u64; NUMBER_OF_EVENTS];
+                        for counter in 0..ITERATIONS {
+                            let event_id = counter % NUMBER_OF_EVENTS;
+                            notifier.notify(EventId::new(event_id)).unwrap();
+                            send_count[event_id] += 1;
+                        }
+
+                        completed_threads.fetch_add(1, Ordering::SeqCst);
+                        thread_start_barrier.wait();
+                        for (idx, c) in send_count.iter().enumerate() {
+                            thread_send_count[idx].fetch_add(*c, Ordering::SeqCst);
+                        }
+                        thread_start_barrier.wait();
+                    })
+                    .unwrap();
+            }
+
+            let rc = received_count.clone();
+            s.thread_builder()
+                .spawn(move || {
+                    start_barrier.wait();
+                    while number_of_completed_notifier_threads.load(Ordering::SeqCst)
+                        < number_of_notifier_threads
+                    {
+                        listener
+                            .try_wait(|event| {
+                                rc[event.id.as_value()].fetch_add(event.count, Ordering::Relaxed);
+                            })
+                            .unwrap();
+                    }
+                    start_barrier.wait();
+                    start_barrier.wait();
+                    listener
+                        .try_wait(|event| {
+                            rc[event.id.as_value()].fetch_add(event.count, Ordering::Relaxed);
+                        })
+                        .unwrap();
+                })
+                .unwrap();
+            Ok(())
+        })
+        .unwrap();
+
+        for n in 0..NUMBER_OF_EVENTS {
+            if max_event_count == 1 {
+                assert_that!(send_count[n].load(Ordering::SeqCst), ge received_count[n].load(Ordering::SeqCst));
+            } else {
+                assert_that!(send_count[n].load(Ordering::SeqCst), eq received_count[n].load(Ordering::SeqCst));
+            }
+        }
     }
 }
