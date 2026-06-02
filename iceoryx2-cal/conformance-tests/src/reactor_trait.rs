@@ -458,4 +458,196 @@ pub mod reactor_trait {
                 .unwrap()
         });
     }
+
+    fn after_one_trigger_wait_blocks_until_triggered<
+        Sut: Reactor,
+        F: FnMut(&Sut, &mut Vec<i32>) -> usize + Send,
+    >(
+        mut wait_call: F,
+    ) {
+        const TIMEOUT: Duration = Duration::from_millis(50);
+
+        let name = generate_file_path().file_name();
+        let barrier_handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(2).create(&barrier_handle).unwrap();
+        let counter = AtomicU64::new(0);
+        let counter_old = AtomicU64::new(0);
+        let mutex_handle = MutexHandle::new();
+        let config = MutexBuilder::new()
+            .create(
+                generate_isolated_config::<UnixDatagramShmCountingBitSet>(),
+                &mutex_handle,
+            )
+            .unwrap();
+
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
+                let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
+                let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
+                    RelocatableCountingBitSet,
+                >>::ListenerBuilder::new(&name)
+                .config(&config.lock().unwrap())
+                .create()
+                .unwrap();
+                let _guard = sut.attach(&listener);
+                barrier.wait();
+                barrier.wait();
+                let mut triggered_fds = vec![];
+                let number_of_triggers = wait_call(&sut, &mut triggered_fds);
+                assert_that!(number_of_triggers, eq 1);
+                barrier.wait();
+
+                let mut triggered_fds = vec![];
+                let number_of_triggers = wait_call(&sut, &mut triggered_fds);
+                assert_that!(number_of_triggers, eq 1);
+                counter.fetch_add(1, Ordering::Relaxed);
+
+                assert_that!(triggered_fds, len 1);
+            })?;
+
+            barrier.wait();
+            let notifier = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
+                RelocatableCountingBitSet,
+            >>::NotifierBuilder::new(&name)
+            .config(&config.lock().unwrap())
+            .open()
+            .unwrap();
+            notifier.notify(EventId::new(0)).unwrap();
+            barrier.wait();
+            barrier.wait();
+
+            nanosleep(TIMEOUT).unwrap();
+            notifier.notify(EventId::new(1)).unwrap();
+
+            Ok(())
+        })
+        .unwrap();
+
+        assert_that!(counter_old.load(Ordering::Relaxed), eq 0);
+    }
+
+    #[conformance_test]
+    pub fn after_one_trigger_timed_wait_blocks_until_triggered<Sut: Reactor>() {
+        after_one_trigger_wait_blocks_until_triggered(|sut: &Sut, triggered_fds| {
+            sut.timed_wait(
+                |fd| triggered_fds.push(unsafe { fd.native_handle() }),
+                INFINITE_TIMEOUT,
+            )
+            .unwrap()
+        });
+    }
+
+    #[conformance_test]
+    pub fn after_one_trigger_blocking_wait_blocks_until_triggered<Sut: Reactor>() {
+        after_one_trigger_wait_blocks_until_triggered(|sut: &Sut, triggered_fds| {
+            sut.blocking_wait(|fd| triggered_fds.push(unsafe { fd.native_handle() }))
+                .unwrap()
+        });
+    }
+
+    fn wait_blocks_until_triggered_with_many_attachments<
+        Sut: Reactor,
+        F: FnMut(&Sut, &mut Vec<i32>) -> usize + Send,
+    >(
+        mut wait_call: F,
+    ) {
+        const TIMEOUT: Duration = Duration::from_millis(50);
+        const NUMBER_OF_ATTACHMENTS: usize = 7;
+
+        let name = generate_file_path().file_name();
+        let barrier_handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(2).create(&barrier_handle).unwrap();
+        let counter = AtomicU64::new(0);
+        let counter_old = AtomicU64::new(0);
+        let mutex_handle = MutexHandle::new();
+        let config = MutexBuilder::new()
+            .create(
+                generate_isolated_config::<UnixDatagramShmCountingBitSet>(),
+                &mutex_handle,
+            )
+            .unwrap();
+
+        thread_scope(|s| {
+            s.thread_builder().spawn(|| {
+                let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
+                let mut listeners = vec![];
+                let mut guards = vec![];
+
+                let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
+                    RelocatableCountingBitSet,
+                >>::ListenerBuilder::new(&name)
+                .config(&config.lock().unwrap())
+                .create()
+                .unwrap();
+                listeners.push(listener);
+
+                for _ in 0..NUMBER_OF_ATTACHMENTS {
+                    let name = generate_file_path().file_name();
+                    let listener = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
+                        RelocatableCountingBitSet,
+                    >>::ListenerBuilder::new(&name)
+                    .config(&config.lock().unwrap())
+                    .create()
+                    .unwrap();
+                    listeners.push(listener);
+                }
+
+                for listener in &listeners {
+                    guards.push(sut.attach(listener));
+                }
+
+                barrier.wait();
+                barrier.wait();
+                let mut triggered_fds = vec![];
+                let number_of_triggers = wait_call(&sut, &mut triggered_fds);
+                assert_that!(number_of_triggers, eq 1);
+                barrier.wait();
+
+                let mut triggered_fds = vec![];
+                let number_of_triggers = wait_call(&sut, &mut triggered_fds);
+                assert_that!(number_of_triggers, eq 1);
+                counter.fetch_add(1, Ordering::Relaxed);
+
+                assert_that!(triggered_fds, len 1);
+            })?;
+
+            barrier.wait();
+            let notifier = <iceoryx2_cal::event::UnixDatagramShmCountingBitSet as Event<
+                RelocatableCountingBitSet,
+            >>::NotifierBuilder::new(&name)
+            .config(&config.lock().unwrap())
+            .open()
+            .unwrap();
+            notifier.notify(EventId::new(0)).unwrap();
+            barrier.wait();
+            barrier.wait();
+
+            nanosleep(TIMEOUT).unwrap();
+            notifier.notify(EventId::new(1)).unwrap();
+
+            Ok(())
+        })
+        .unwrap();
+
+        assert_that!(counter_old.load(Ordering::Relaxed), eq 0);
+    }
+
+    #[conformance_test]
+    pub fn timed_wait_blocks_until_triggered_with_many_attachments<Sut: Reactor>() {
+        wait_blocks_until_triggered_with_many_attachments(|sut: &Sut, triggered_fds| {
+            sut.timed_wait(
+                |fd| triggered_fds.push(unsafe { fd.native_handle() }),
+                INFINITE_TIMEOUT,
+            )
+            .unwrap()
+        });
+    }
+
+    #[conformance_test]
+    pub fn blocking_wait_blocks_until_triggered_with_many_attachments<Sut: Reactor>() {
+        wait_blocks_until_triggered_with_many_attachments(|sut: &Sut, triggered_fds| {
+            sut.blocking_wait(|fd| triggered_fds.push(unsafe { fd.native_handle() }))
+                .unwrap()
+        });
+    }
 }
