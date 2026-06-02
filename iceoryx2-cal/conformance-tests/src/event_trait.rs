@@ -738,4 +738,52 @@ pub mod event_trait {
             .unwrap();
         assert_that!(result, le 1);
     }
+
+    #[conformance_test]
+    pub fn notifier_and_listener_return_same_max_event_count<Sut: Event<RelocatableBitSet>>() {
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name)
+            .config(&config)
+            .open()
+            .unwrap();
+
+        assert_that!(sut_notifier.max_event_count(), eq sut_listener.max_event_count());
+    }
+
+    #[conformance_test]
+    pub fn events_are_counted<Sut: Event<RelocatableBitSet>>() {
+        let _watchdog = Watchdog::new();
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name)
+            .config(&config)
+            .open()
+            .unwrap();
+
+        let trigger_count = sut_listener.max_event_count().min(10);
+
+        for _ in 0..trigger_count {
+            sut_notifier.notify(EventId::new(0)).unwrap();
+        }
+
+        let mut collected_count = 0u64;
+        let result = sut_listener
+            .try_wait(|event| {
+                collected_count += event.count;
+            })
+            .unwrap();
+        assert_that!(result, eq 1);
+        assert_that!(collected_count, eq trigger_count);
+    }
 }
