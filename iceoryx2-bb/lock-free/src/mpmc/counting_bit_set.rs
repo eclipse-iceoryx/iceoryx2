@@ -12,8 +12,8 @@
 
 use core::alloc::Layout;
 use core::mem::MaybeUninit;
-use iceoryx2_bb_concurrency::atomic::Ordering;
-use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
+use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU16, AtomicU32, AtomicU64};
+use iceoryx2_bb_concurrency::atomic::{AtomicU8, Ordering};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::{
@@ -27,34 +27,33 @@ use iceoryx2_bb_elementary_traits::{
 use iceoryx2_log::fail;
 use iceoryx2_log::fatal_panic;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, ZeroCopySend)]
-#[repr(C)]
-pub enum CounterBitSize {
-    Bit8 = 1,
-    #[default]
-    Bit16 = 2,
-    Bit32 = 4,
-    Bit64 = 8,
+type AtomicBaseType = AtomicU16;
+
+trait AtomicMax {
+    fn max_value() -> u64;
 }
 
-impl CounterBitSize {
-    pub const fn const_default() -> Self {
-        CounterBitSize::Bit16
+impl AtomicMax for AtomicU8 {
+    fn max_value() -> u64 {
+        u8::MAX as u64
     }
 }
 
-struct Id {
-    index: usize,
-    bit_offset: u8,
+impl AtomicMax for AtomicU16 {
+    fn max_value() -> u64 {
+        u16::MAX as u64
+    }
 }
 
-impl Id {
-    fn new(value: usize, bit_size: CounterBitSize) -> Self {
-        let counter_size = 8 / (bit_size as usize);
-        Self {
-            index: value / counter_size,
-            bit_offset: ((value % counter_size) * (bit_size as usize)) as u8,
-        }
+impl AtomicMax for AtomicU32 {
+    fn max_value() -> u64 {
+        u32::MAX as u64
+    }
+}
+
+impl AtomicMax for AtomicU64 {
+    fn max_value() -> u64 {
+        u64::MAX
     }
 }
 
@@ -73,8 +72,8 @@ impl BitState {
     }
 }
 
-pub type CountingBitSet = details::CountingBitSet<OwningPointer<AtomicU64>>;
-pub type RelocatableCountingBitSet = details::CountingBitSet<RelocatablePointer<AtomicU64>>;
+pub type CountingBitSet = details::CountingBitSet<OwningPointer<AtomicBaseType>>;
+pub type RelocatableCountingBitSet = details::CountingBitSet<RelocatablePointer<AtomicBaseType>>;
 
 #[doc(hidden)]
 pub mod details {
@@ -82,43 +81,44 @@ pub mod details {
 
     #[derive(Debug)]
     #[repr(C)]
-    pub struct CountingBitSet<PointerType: PointerTrait<AtomicU64>> {
+    pub struct CountingBitSet<PointerType: PointerTrait<AtomicBaseType>> {
         data_ptr: PointerType,
         capacity: usize,
-        array_capacity: usize,
-        counter_bit_size: CounterBitSize,
         is_memory_initialized: AtomicBool,
     }
 
-    unsafe impl<PointerType: PointerTrait<AtomicU64> + ZeroCopySend> ZeroCopySend
+    unsafe impl<PointerType: PointerTrait<AtomicBaseType> + ZeroCopySend> ZeroCopySend
         for CountingBitSet<PointerType>
     {
     }
-    unsafe impl<PointerType: PointerTrait<AtomicU64>> Send for CountingBitSet<PointerType> {}
-    unsafe impl<PointerType: PointerTrait<AtomicU64>> Sync for CountingBitSet<PointerType> {}
+    unsafe impl<PointerType: PointerTrait<AtomicBaseType>> Send for CountingBitSet<PointerType> {}
+    unsafe impl<PointerType: PointerTrait<AtomicBaseType>> Sync for CountingBitSet<PointerType> {}
 
-    impl CountingBitSet<OwningPointer<AtomicU64>> {
-        pub fn new(capacity: usize, counter_bit_size: CounterBitSize) -> Self {
-            let array_capacity = Self::array_capacity(capacity, counter_bit_size);
-            let mut data_ptr = OwningPointer::<AtomicU64>::new_with_alloc(array_capacity);
+    impl CountingBitSet<OwningPointer<AtomicBaseType>> {
+        pub fn new(capacity: usize) -> Self {
+            let mut data_ptr = OwningPointer::<AtomicBaseType>::new_with_alloc(capacity);
 
-            for i in 0..array_capacity {
-                unsafe { data_ptr.as_mut_ptr().add(i).write(AtomicU64::new(0)) };
+            for i in 0..capacity {
+                unsafe { data_ptr.as_mut_ptr().add(i).write(AtomicBaseType::new(0)) };
             }
 
             Self {
                 data_ptr,
                 capacity,
-                array_capacity,
-                counter_bit_size,
                 is_memory_initialized: AtomicBool::new(true),
             }
         }
     }
 
-    impl RelocatableContainer for CountingBitSet<RelocatablePointer<AtomicU64>> {
+    impl RelocatableContainer for CountingBitSet<RelocatablePointer<AtomicBaseType>> {
         unsafe fn new_uninit(capacity: usize) -> Self {
-            unsafe { Self::new_uninit_with_counter_bit_size(capacity, CounterBitSize::default()) }
+            unsafe {
+                Self {
+                    data_ptr: RelocatablePointer::new_uninit(),
+                    capacity,
+                    is_memory_initialized: AtomicBool::new(false),
+                }
+            }
         }
 
         unsafe fn init<T: iceoryx2_bb_elementary::bump_allocator::BaseAllocator>(
@@ -130,13 +130,17 @@ pub mod details {
                     "Memory already initialized. Initializing it twice may lead to undefined behavior.");
             }
 
-            let layout = Layout::array::<AtomicU64>(self.array_capacity)
+            let layout = Layout::array::<AtomicBaseType>(self.capacity)
                 .expect("The capacity always results in a valid layout.");
             let memory = fail!(from self, when allocator.allocate(layout),
                 "Failed to initialize since the allocation of the data memory failed.");
             unsafe { self.data_ptr.init(memory) };
-            for i in 0..self.array_capacity {
-                unsafe { (self.data_ptr.as_mut_ptr()).add(i).write(AtomicU64::new(0)) }
+            for i in 0..self.capacity {
+                unsafe {
+                    (self.data_ptr.as_mut_ptr())
+                        .add(i)
+                        .write(AtomicBaseType::new(0))
+                }
             }
 
             // relaxed is sufficient since no relocatable container can be used
@@ -152,37 +156,9 @@ pub mod details {
         }
     }
 
-    impl CountingBitSet<RelocatablePointer<AtomicU64>> {
-        pub unsafe fn new_uninit_with_counter_bit_size(
-            capacity: usize,
-            counter_bit_size: CounterBitSize,
-        ) -> Self {
-            unsafe {
-                Self {
-                    data_ptr: RelocatablePointer::new_uninit(),
-                    capacity,
-                    counter_bit_size,
-                    array_capacity: Self::array_capacity(capacity, counter_bit_size),
-                    is_memory_initialized: AtomicBool::new(false),
-                }
-            }
-        }
-    }
-
-    impl<PointerType: PointerTrait<AtomicU64>> CountingBitSet<PointerType> {
-        pub const fn array_capacity(capacity: usize, counter_bit_size: CounterBitSize) -> usize {
-            capacity.div_ceil(counter_bit_size as usize)
-        }
-
+    impl<PointerType: PointerTrait<AtomicBaseType>> CountingBitSet<PointerType> {
         pub const fn const_memory_size(capacity: usize) -> usize {
-            Self::const_memory_size_with_counter_bit_size(capacity, CounterBitSize::const_default())
-        }
-
-        pub const fn const_memory_size_with_counter_bit_size(
-            capacity: usize,
-            counter_bit_size: CounterBitSize,
-        ) -> usize {
-            unaligned_mem_size::<AtomicU64>(Self::array_capacity(capacity, counter_bit_size))
+            unaligned_mem_size::<AtomicBaseType>(capacity)
         }
 
         pub fn capacity(&self) -> usize {
@@ -197,32 +173,8 @@ pub mod details {
             );
         }
 
-        fn set_bit(&self, id: Id) -> u64 {
-            let data_ref = unsafe { &(*self.data_ptr.as_ptr().add(id.index)) };
-            let mut current = data_ref.load(Ordering::Relaxed);
-
-            loop {
-                let current_value = current >> id.bit_offset;
-
-                let new_value = match self.counter_bit_size {
-                    CounterBitSize::Bit8 => (current_value as u8).saturating_add(1) as u64,
-                    CounterBitSize::Bit16 => (current_value as u16).saturating_add(1) as u64,
-                    CounterBitSize::Bit32 => (current_value as u32).saturating_add(1) as u64,
-                    CounterBitSize::Bit64 => (current_value).saturating_add(1),
-                };
-
-                let updated = current | (new_value << id.bit_offset);
-
-                match data_ref.compare_exchange(
-                    current,
-                    updated,
-                    Ordering::Relaxed,
-                    Ordering::Relaxed,
-                ) {
-                    Ok(_) => return new_value,
-                    Err(v) => current = v,
-                };
-            }
+        pub fn max_count() -> u64 {
+            AtomicBaseType::max_value()
         }
 
         pub fn set(&self, id: usize) -> u64 {
@@ -232,32 +184,23 @@ pub mod details {
                 "This should never happen. Out of bounds access with index {id}."
             );
 
-            self.set_bit(Id::new(id, self.counter_bit_size))
+            unsafe { &(*self.data_ptr.as_ptr().add(id)) }.fetch_add(1, Ordering::Relaxed) as _
         }
 
         pub fn reset_all<F: FnMut(BitState)>(&self, mut callback: F) {
             self.verify_init("reset_all()");
-            let number_of_elements = 8 / (self.counter_bit_size as usize);
-            let element_size = self.counter_bit_size as usize;
 
-            for index in 0..self.array_capacity {
-                let value =
-                    unsafe { (*self.data_ptr.as_ptr().add(index)).swap(0, Ordering::Relaxed) };
-                if value == 0 {
+            for bit in 0..self.capacity {
+                let count =
+                    unsafe { (*self.data_ptr.as_ptr().add(bit)).swap(0, Ordering::Relaxed) };
+                if count == 0 {
                     continue;
                 }
 
-                for offset in 0..number_of_elements {
-                    let count = (value << (element_size * (number_of_elements - offset - 1)))
-                        >> (element_size * offset);
-
-                    if count != 0 {
-                        callback(BitState {
-                            bit: index * number_of_elements + offset,
-                            count,
-                        })
-                    }
-                }
+                callback(BitState {
+                    bit,
+                    count: count as _,
+                })
             }
         }
     }
@@ -265,30 +208,21 @@ pub mod details {
 
 #[derive(Debug, ZeroCopySend)]
 #[repr(C)]
-pub struct FixedSizeCountingBitSet<const ARRAY_CAPACITY: usize> {
+pub struct FixedSizeCountingBitSet<const CAPACITY: usize> {
     bitset: RelocatableCountingBitSet,
-    data: [MaybeUninit<AtomicU64>; ARRAY_CAPACITY],
+    data: [MaybeUninit<AtomicU64>; CAPACITY],
 }
 
-impl<const ARRAY_CAPACITY: usize> Default for FixedSizeCountingBitSet<ARRAY_CAPACITY> {
+impl<const CAPACITY: usize> Default for FixedSizeCountingBitSet<CAPACITY> {
     fn default() -> Self {
-        Self::new_with_counter_bit_size(CounterBitSize::default())
+        Self::new()
     }
 }
 
 impl<const ARRAY_CAPACITY: usize> FixedSizeCountingBitSet<ARRAY_CAPACITY> {
     pub fn new() -> Self {
-        Self::new_with_counter_bit_size(CounterBitSize::default())
-    }
-
-    pub fn new_with_counter_bit_size(counter_bit_size: CounterBitSize) -> Self {
         let mut new_self = Self {
-            bitset: unsafe {
-                RelocatableCountingBitSet::new_uninit_with_counter_bit_size(
-                    ARRAY_CAPACITY,
-                    counter_bit_size,
-                )
-            },
+            bitset: unsafe { RelocatableCountingBitSet::new_uninit(ARRAY_CAPACITY) },
             data: [const { MaybeUninit::uninit() }; ARRAY_CAPACITY],
         };
 
