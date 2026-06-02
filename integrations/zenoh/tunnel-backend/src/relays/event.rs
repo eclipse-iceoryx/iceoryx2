@@ -14,6 +14,7 @@ use std::sync::Arc;
 
 use iceoryx2::prelude::EventId;
 use iceoryx2::service::Service;
+use iceoryx2::service::local_threadsafe;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2_log::{fail, trace};
 use iceoryx2_services_tunnel_backend::traits::{EventRelay, RelayBuilder};
@@ -73,7 +74,7 @@ impl core::error::Error for ReceiveError {}
 pub struct Builder<'a, S: Service> {
     session: &'a Session,
     static_config: &'a StaticConfig,
-    wake: Option<Arc<WakeHandle>>,
+    wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
@@ -81,7 +82,7 @@ impl<'a, S: Service> Builder<'a, S> {
     pub fn new(
         session: &'a Session,
         static_config: &'a StaticConfig,
-        wake: Option<Arc<WakeHandle>>,
+        wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     ) -> Builder<'a, S> {
         Builder {
             session,

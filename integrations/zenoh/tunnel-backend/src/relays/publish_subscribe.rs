@@ -82,7 +82,7 @@ impl core::error::Error for ReceiveError {}
 pub struct Builder<'a, S: Service> {
     session: &'a Session,
     static_config: &'a StaticConfig,
-    wake: Option<Arc<WakeHandle>>,
+    wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
@@ -90,7 +90,7 @@ impl<'a, S: Service> Builder<'a, S> {
     pub fn new(
         session: &'a Session,
         static_config: &'a StaticConfig,
-        wake: Option<Arc<WakeHandle>>,
+        wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     ) -> Builder<'a, S> {
         Builder {
             session,

@@ -104,11 +104,8 @@ pub trait Backend<S: Service>: Sized {
     fn relay_builder(&self) -> Self::RelayFactory<'_>;
 }
 
-/// Builds a [`Backend`] from its [`Backend::Config`].
-///
-/// Each [`Backend`] has an associated [`BackendBuilder`] type accessed via
-/// [`Backend::builder()`]. The builder is consumed by [`BackendBuilder::create`],
-/// which performs any work required to bring the backend online.
+/// Builds a [`Backend`] from its [`Backend::Config`]. Obtained via
+/// [`Backend::builder()`] and consumed by [`BackendBuilder::create`].
 pub trait BackendBuilder<S: Service> {
     /// The [`Backend`] this builder constructs.
     type Backend: Backend<S>;
@@ -123,7 +120,11 @@ pub trait BackendBuilder<S: Service> {
 /// Opt-in capability for backends that signal a [`WakeHandle`] when
 /// new data is ready to propagate. Polling-only backends must not implement it.
 pub trait ReactiveBackendBuilder<S: Service>: BackendBuilder<S> {
+    /// Event service backing the [`WakeHandle`]. Backends that signal from a
+    /// background thread must choose a thread-safe variant.
+    type WakeService: Service;
+
     /// Configures the builder to produce a [`Backend`] that signals `wake`
     /// whenever it has new data ready to be propagated.
-    fn reactive(self, wake: WakeHandle) -> Self;
+    fn reactive(self, wake: WakeHandle<Self::WakeService>) -> Self;
 }

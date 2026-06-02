@@ -27,7 +27,6 @@ use alloc::format;
 use iceoryx2::node::NodeBuilder;
 use iceoryx2::port::listener::Listener;
 use iceoryx2::service::Service;
-use iceoryx2::service::local_threadsafe;
 use iceoryx2_log::{fail, info, trace};
 use iceoryx2_services_tunnel_backend::traits::{Backend, BackendBuilder, ReactiveBackendBuilder};
 use iceoryx2_services_tunnel_backend::types::wake::WakeHandle;
@@ -170,13 +169,12 @@ where
     for<'b> B::Builder<'b>: ReactiveBackendBuilder<S>,
 {
     /// Builds the tunnel in reactive mode.
-    ///
-    /// Returns the tunnel together with a [`Listener`] on a private
-    /// [`local_threadsafe::Service`] event service. Attach the listener to a
-    /// [`WaitSet`](iceoryx2::waitset::WaitSet) to be woken whenever the
-    /// backend or a tunneled event service has work ready.
-    pub fn create(self) -> Result<(Tunnel<S, B>, Listener<local_threadsafe::Service>), CreationError> {
-        create_reactive::<S, B>(
+    pub fn create<W>(self) -> Result<(Tunnel<S, B>, Listener<W>), CreationError>
+    where
+        W: Service,
+        for<'b> B::Builder<'b>: ReactiveBackendBuilder<S, WakeService = W>,
+    {
+        create_reactive::<S, B, W>(
             self.tunnel_config.unwrap_or_default(),
             self.iceoryx_config.unwrap_or_default(),
             self.backend_config.unwrap_or_default(),
@@ -207,21 +205,22 @@ where
 }
 
 /// Builds a tunnel in reactive mode.
-fn create_reactive<S, B>(
+fn create_reactive<S, B, W>(
     tunnel_config: Config,
     iceoryx_config: iceoryx2::config::Config,
     backend_config: <B as Backend<S>>::Config,
-) -> Result<(Tunnel<S, B>, Listener<local_threadsafe::Service>), CreationError>
+) -> Result<(Tunnel<S, B>, Listener<W>), CreationError>
 where
     S: Service,
+    W: Service,
     B: for<'a> Backend<S> + Debug,
-    for<'b> B::Builder<'b>: ReactiveBackendBuilder<S>,
+    for<'b> B::Builder<'b>: ReactiveBackendBuilder<S, WakeService = W>,
 {
     let origin = "TunnelBuilder::<Reactive>::create";
 
     let reactive_node = fail!(
         from origin,
-        when NodeBuilder::new().create::<local_threadsafe::Service>(),
+        when NodeBuilder::new().create::<W>(),
         with CreationError::ReactiveMode,
         "Failed to create local node for wake event service"
     );

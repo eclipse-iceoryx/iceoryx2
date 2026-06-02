@@ -15,6 +15,7 @@
 
 use std::sync::Arc;
 
+use iceoryx2::service::local_threadsafe;
 use iceoryx2_services_tunnel_backend::types::wake::WakeHandle;
 use zenoh::handlers::{Callback, IntoHandler};
 
@@ -24,11 +25,11 @@ use zenoh::handlers::{Callback, IntoHandler};
 /// effect (same as FifoChannel) — used by polled-mode relays.
 pub struct WakeAwareChannel {
     capacity: usize,
-    wake: Option<Arc<WakeHandle>>,
+    wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
 }
 
 impl WakeAwareChannel {
-    pub fn new(capacity: usize, wake: Option<Arc<WakeHandle>>) -> Self {
+    pub fn new(capacity: usize, wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>) -> Self {
         Self { capacity, wake }
     }
 }

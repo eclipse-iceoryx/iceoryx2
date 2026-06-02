@@ -12,7 +12,7 @@
 
 use std::sync::Arc;
 
-use iceoryx2::service::{Service, static_config::StaticConfig};
+use iceoryx2::service::{Service, local_threadsafe, static_config::StaticConfig};
 use iceoryx2_services_tunnel_backend::{traits::RelayFactory, types::wake::WakeHandle};
 
 use zenoh::Session;
@@ -28,12 +28,15 @@ pub struct Factory<'session, S: Service> {
     session: &'session Session,
     /// Wake handle to be signaled by relays when new data arrives.
     /// `None` when the backend was constructed in polled mode.
-    wake: Option<Arc<WakeHandle>>,
+    wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
 impl<'session, S: Service> Factory<'session, S> {
-    pub fn new(session: &'session Session, wake: Option<Arc<WakeHandle>>) -> Self {
+    pub fn new(
+        session: &'session Session,
+        wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
+    ) -> Self {
         Factory {
             session,
             wake,

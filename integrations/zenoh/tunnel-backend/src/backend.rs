@@ -12,7 +12,7 @@
 
 use std::sync::Arc;
 
-use iceoryx2::service::Service;
+use iceoryx2::service::{Service, local_threadsafe};
 use iceoryx2_log::{fail, trace};
 use iceoryx2_services_tunnel_backend::traits::{Backend, BackendBuilder, ReactiveBackendBuilder};
 use iceoryx2_services_tunnel_backend::types::wake::WakeHandle;
@@ -44,7 +44,7 @@ pub struct ZenohBackend<S: Service> {
     discovery: Discovery,
     /// `Some` when constructed in reactive mode. Cloned into each relay's
     /// subscriber callback so that incoming network data signals the wake.
-    wake: Option<Arc<WakeHandle>>,
+    wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
@@ -82,7 +82,7 @@ impl<S: Service> Backend<S> for ZenohBackend<S> {
 #[derive(Debug)]
 pub struct Builder<'config, S: Service> {
     config: &'config Config,
-    wake: Option<WakeHandle>,
+    wake: Option<WakeHandle<local_threadsafe::Service>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
@@ -134,7 +134,9 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
 }
 
 impl<S: Service> ReactiveBackendBuilder<S> for Builder<'_, S> {
-    fn reactive(mut self, wake: WakeHandle) -> Self {
+    type WakeService = local_threadsafe::Service;
+
+    fn reactive(mut self, wake: WakeHandle<local_threadsafe::Service>) -> Self {
         self.wake = Some(wake);
         self
     }

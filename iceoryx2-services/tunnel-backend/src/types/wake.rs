@@ -11,26 +11,22 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::port::notifier::Notifier;
-use iceoryx2::service::local_threadsafe;
+use iceoryx2::service::Service;
 
-/// Process-local wake source backed by a [`Notifier`] on a private
-/// [`local_threadsafe::Service`] event service.
+/// Process-local wake source signaled by reactive backends when new data is
+/// ready to be processed, waking any [`WaitSet`](iceoryx2::waitset::WaitSet)
+/// with the corresponding listener attached.
 ///
-/// Reactive backends signal a [`WakeHandle`] whenever they have new data ready
-/// to be processed, waking up any [`WaitSet`](iceoryx2::waitset::WaitSet) that
-/// has the corresponding listener attached.
-///
-/// The thread-safe service variant is required because the signal may
-/// fire from a backend-internal thread while the listener is read from
-/// the user's main loop.
+/// The wake service type `W` is chosen by the backend. A thread-safe variant
+/// is required only when the backend signals from a thread other than the one
+/// reading the listener.
 #[derive(Debug)]
-pub struct WakeHandle {
-    notifier: Notifier<local_threadsafe::Service>,
+pub struct WakeHandle<W: Service> {
+    notifier: Notifier<W>,
 }
 
-impl WakeHandle {
-    /// Wraps a [`Notifier`] on a [`local_threadsafe::Service`] event service.
-    pub fn new(notifier: Notifier<local_threadsafe::Service>) -> Self {
+impl<W: Service> WakeHandle<W> {
+    pub fn new(notifier: Notifier<W>) -> Self {
         Self { notifier }
     }
 
