@@ -374,8 +374,13 @@ pub mod event_trait {
         assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
     }
 
-    #[conformance_test]
-    pub fn blocking_wait_blocks_until_notification_arrives<E: EventState, Sut: Event<E>>() {
+    fn wait_blocks_until_notification_arrives<
+        E: EventState,
+        Sut: Event<E>,
+        F: FnMut(&mut Vec<EventId>, &Sut::Listener) + Send,
+    >(
+        mut wait_call: F,
+    ) {
         let _watchdog = Watchdog::new();
         let name = generate_file_path().file_name();
         let handle = MutexHandle::new();
@@ -395,16 +400,12 @@ pub mod event_trait {
                     .create()
                     .unwrap();
                 barrier.wait();
-                let mut call_counter = 0;
-                let result = sut_listener
-                    .blocking_wait(|event| {
-                        call_counter += 1;
-                        assert_that!(event.id, eq EventId::new(4))
-                    })
-                    .unwrap();
+                let mut notified_events = vec![];
+                wait_call(&mut notified_events, &sut_listener);
+                assert_that!(notified_events, len 1);
+                assert_that!(notified_events[0].as_value(), eq 4);
+
                 counter.store(1, Ordering::SeqCst);
-                assert_that!(result, eq 1);
-                assert_that!(call_counter, eq 1);
             })?;
 
             barrier.wait();
@@ -423,10 +424,44 @@ pub mod event_trait {
         assert_that!(counter.load(Ordering::SeqCst), eq 1);
     }
 
+    #[conformance_test]
+    pub fn blocking_wait_blocks_until_notification_arrives<E: EventState, Sut: Event<E>>() {
+        wait_blocks_until_notification_arrives::<E, Sut, _>(
+            |event_ids, listener: &Sut::Listener| {
+                listener
+                    .blocking_wait(|event| {
+                        event_ids.push(event.id);
+                    })
+                    .unwrap();
+            },
+        );
+    }
+
     /// windows sporadically instantly wakes up in a timed receive operation
     #[cfg(not(target_os = "windows"))]
     #[conformance_test]
     pub fn timed_wait_blocks_until_notification_arrives<E: EventState, Sut: Event<E>>() {
+        wait_blocks_until_notification_arrives::<E, Sut, _>(
+            |event_ids, listener: &Sut::Listener| {
+                listener
+                    .timed_wait(
+                        |event| {
+                            event_ids.push(event.id);
+                        },
+                        TIMEOUT * 1000,
+                    )
+                    .unwrap();
+            },
+        );
+    }
+
+    fn wait_blocks_until_notification_arrives_after_first_notification_arrived<
+        E: EventState,
+        Sut: Event<E>,
+        F: FnMut(&mut Vec<EventId>, &Sut::Listener) + Send,
+    >(
+        mut wait_call: F,
+    ) {
         let _watchdog = Watchdog::new();
         let name = generate_file_path().file_name();
         let handle = MutexHandle::new();
@@ -446,19 +481,19 @@ pub mod event_trait {
                     .create()
                     .unwrap();
                 barrier.wait();
-                let mut call_counter = 0;
-                let result = sut_listener
-                    .timed_wait(
-                        |event| {
-                            call_counter += 1;
-                            assert_that!(event.id.as_value(), eq 2);
-                        },
-                        TIMEOUT * 1000,
-                    )
-                    .unwrap();
+                barrier.wait();
+                let mut notified_events = vec![];
+                wait_call(&mut notified_events, &sut_listener);
+                assert_that!(notified_events, len 1);
+                assert_that!(notified_events[0].as_value(), eq 2);
+                barrier.wait();
+
+                let mut notified_events = vec![];
+                wait_call(&mut notified_events, &sut_listener);
+                assert_that!(notified_events, len 1);
+                assert_that!(notified_events[0].as_value(), eq 4);
+
                 counter.store(1, Ordering::SeqCst);
-                assert_that!(result, eq 1);
-                assert_that!(call_counter, eq 1);
             })?;
 
             barrier.wait();
@@ -466,15 +501,56 @@ pub mod event_trait {
                 .config(&config.lock().unwrap())
                 .open()
                 .unwrap();
+            sut_notifier.notify(EventId::new(2)).unwrap();
+            barrier.wait();
+            barrier.wait();
+
             nanosleep(TIMEOUT).unwrap();
             counter_old.store(counter.load(Ordering::SeqCst), Ordering::SeqCst);
-            sut_notifier.notify(EventId::new(2)).unwrap();
+            sut_notifier.notify(EventId::new(4)).unwrap();
 
             Ok(())
         })
         .unwrap();
         assert_that!(counter_old.load(Ordering::SeqCst), eq 0);
         assert_that!(counter.load(Ordering::SeqCst), eq 1);
+    }
+
+    #[conformance_test]
+    pub fn blocking_wait_blocks_until_notification_arrives_after_first_notification_arrived<
+        E: EventState,
+        Sut: Event<E>,
+    >() {
+        wait_blocks_until_notification_arrives_after_first_notification_arrived::<E, Sut, _>(
+            |event_ids, listener: &Sut::Listener| {
+                listener
+                    .blocking_wait(|event| {
+                        event_ids.push(event.id);
+                    })
+                    .unwrap();
+            },
+        );
+    }
+
+    /// windows sporadically instantly wakes up in a timed receive operation
+    #[cfg(not(target_os = "windows"))]
+    #[conformance_test]
+    pub fn timed_wait_blocks_until_notification_arrives_after_first_notification_arrived<
+        E: EventState,
+        Sut: Event<E>,
+    >() {
+        wait_blocks_until_notification_arrives_after_first_notification_arrived::<E, Sut, _>(
+            |event_ids, listener: &Sut::Listener| {
+                listener
+                    .timed_wait(
+                        |event| {
+                            event_ids.push(event.id);
+                        },
+                        TIMEOUT * 1000,
+                    )
+                    .unwrap();
+            },
+        );
     }
 
     #[conformance_test]
