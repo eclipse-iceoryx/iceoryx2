@@ -27,7 +27,6 @@ pub mod event_propagation {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::test_fail;
     use iceoryx2_bb_testing_macros::conformance_test;
-    use iceoryx2_services_tunnel::Config as TunnelConfig;
     use iceoryx2_services_tunnel::Tunnel;
     use iceoryx2_services_tunnel_backend::traits::{Backend, testing::Testing};
 
@@ -39,12 +38,13 @@ pub mod event_propagation {
         let service_name = generate_service_name();
 
         // --- Host A ---
-        let backend_config_a = B::Config::default();
         let iceoryx_config_a = generate_isolated_config();
-        let tunnel_config_a = TunnelConfig::default();
 
-        let mut tunnel_a =
-            Tunnel::<S, B>::create(&tunnel_config_a, &iceoryx_config_a, &backend_config_a).unwrap();
+        let mut tunnel_a = Tunnel::<S, B>::new()
+            .iceoryx_config(iceoryx_config_a.clone())
+            .polled()
+            .create()
+            .unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         let node_a = NodeBuilder::new()
@@ -64,10 +64,11 @@ pub mod event_propagation {
 
         // --- Host B ---
         let iceoryx_config_b = generate_isolated_config();
-        let backend_config_b = B::Config::default();
-        let tunnel_config_b = TunnelConfig::default();
-        let mut tunnel_b =
-            Tunnel::<S, B>::create(&tunnel_config_b, &iceoryx_config_b, &backend_config_b).unwrap();
+        let mut tunnel_b = Tunnel::<S, B>::new()
+            .iceoryx_config(iceoryx_config_b.clone())
+            .polled()
+            .create()
+            .unwrap();
 
         // Wait for tunnel on host b to discover the service on host A
         T::retry(
@@ -140,12 +141,13 @@ pub mod event_propagation {
         let service_name = generate_service_name();
 
         // --- Host A ---
-        let tunnel_config_a = TunnelConfig::default();
         let iceoryx_config_a = generate_isolated_config();
-        let backend_config_a = B::Config::default();
 
-        let mut tunnel_a =
-            Tunnel::<S, B>::create(&tunnel_config_a, &iceoryx_config_a, &backend_config_a).unwrap();
+        let mut tunnel_a = Tunnel::<S, B>::new()
+            .iceoryx_config(iceoryx_config_a.clone())
+            .polled()
+            .create()
+            .unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         let node_a = NodeBuilder::new()
@@ -165,12 +167,13 @@ pub mod event_propagation {
         assert_that!(tunnel_a.tunneled_services().contains(service_a.service_hash()), eq true);
 
         // --- Host B ---
-        let tunnel_config_b = TunnelConfig::default();
         let iceoryx_config_b = generate_isolated_config();
-        let backend_config_b = B::Config::default();
 
-        let mut tunnel_b =
-            Tunnel::<S, B>::create(&tunnel_config_b, &iceoryx_config_b, &backend_config_b).unwrap();
+        let mut tunnel_b = Tunnel::<S, B>::new()
+            .iceoryx_config(iceoryx_config_b.clone())
+            .polled()
+            .create()
+            .unwrap();
         tunnel_b.discover_over_iceoryx().unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
@@ -253,12 +256,13 @@ pub mod event_propagation {
         let service_name = generate_service_name();
 
         // --- Host A ---
-        let tunnel_config_a = TunnelConfig::default();
         let iceoryx_config_a = generate_isolated_config();
-        let backend_config_a = B::Config::default();
 
-        let mut tunnel_a =
-            Tunnel::<S, B>::create(&tunnel_config_a, &iceoryx_config_a, &backend_config_a).unwrap();
+        let mut tunnel_a = Tunnel::<S, B>::new()
+            .iceoryx_config(iceoryx_config_a.clone())
+            .polled()
+            .create()
+            .unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         let node_a = NodeBuilder::new()
@@ -277,12 +281,13 @@ pub mod event_propagation {
         assert_that!(tunnel_a.tunneled_services().contains(service_a.service_hash()), eq true);
 
         // --- Host B ---
-        let tunnel_config_b = TunnelConfig::default();
         let iceoryx_config_b = generate_isolated_config();
-        let backend_config_b = B::Config::default();
 
-        let mut tunnel_b =
-            Tunnel::<S, B>::create(&tunnel_config_b, &iceoryx_config_b, &backend_config_b).unwrap();
+        let mut tunnel_b = Tunnel::<S, B>::new()
+            .iceoryx_config(iceoryx_config_b.clone())
+            .polled()
+            .create()
+            .unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
         T::retry(
@@ -379,11 +384,12 @@ pub mod event_propagation {
         let service_name_2 = generate_service_name();
 
         // --- Host A: two services, one notifier each ---
-        let backend_config_a = B::Config::default();
         let iceoryx_config_a = generate_isolated_config();
-        let tunnel_config_a = TunnelConfig::default();
-        let mut tunnel_a =
-            Tunnel::<S, B>::create(&tunnel_config_a, &iceoryx_config_a, &backend_config_a).unwrap();
+        let mut tunnel_a = Tunnel::<S, B>::new()
+            .iceoryx_config(iceoryx_config_a.clone())
+            .polled()
+            .create()
+            .unwrap();
 
         let node_a = NodeBuilder::new()
             .config(&iceoryx_config_a)
@@ -411,10 +417,11 @@ pub mod event_propagation {
 
         // --- Host B ---
         let iceoryx_config_b = generate_isolated_config();
-        let backend_config_b = B::Config::default();
-        let tunnel_config_b = TunnelConfig::default();
-        let mut tunnel_b =
-            Tunnel::<S, B>::create(&tunnel_config_b, &iceoryx_config_b, &backend_config_b).unwrap();
+        let mut tunnel_b = Tunnel::<S, B>::new()
+            .iceoryx_config(iceoryx_config_b.clone())
+            .polled()
+            .create()
+            .unwrap();
 
         // Wait for tunnel on host B to discover both services on host A
         T::retry(

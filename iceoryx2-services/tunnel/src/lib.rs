@@ -44,15 +44,12 @@
 //! ## Usage
 //!
 //! ```rust,ignore
-//! use iceoryx2_services_tunnel::{Config, Tunnel};
+//! use iceoryx2_services_tunnel::Tunnel;
 //!
-//! let tunnel_config = Config::default();
-//! let backend_config = Backend::Config::default();
-//! let iceoryx_config = iceoryx2::config::Config::default();
-//!
-//! let mut tunnel =
-//!     Tunnel::<Service, Backend>::create(&tunnel_config, &iceoryx_config, &backend_config)
-//!         .expect("failed to create tunnel");
+//! let mut tunnel = Tunnel::<Service, Backend>::new()
+//!     .polled()
+//!     .create()
+//!     .expect("failed to create tunnel");
 //!
 //! loop {
 //!     tunnel.discover().expect("discovery failed");
@@ -64,8 +61,10 @@
 
 extern crate alloc;
 
+mod builder;
 mod discovery;
 mod ports;
 mod tunnel;
 
+pub use builder::{Polled, Reactive, TunnelBuilder, Unconfigured};
 pub use tunnel::*;

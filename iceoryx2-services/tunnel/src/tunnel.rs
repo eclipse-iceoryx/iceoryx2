@@ -20,12 +20,12 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use iceoryx2::identifiers::UniqueNodeId;
-use iceoryx2::node::{Node, NodeBuilder, NodeState, NodeView};
+use iceoryx2::node::{Node, NodeState, NodeView};
 use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
-use iceoryx2_log::{debug, fail, info, trace, warn};
+use iceoryx2_log::{debug, fail, info, warn};
 use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
 use iceoryx2_services_tunnel_backend::traits::{
     Backend, Discovery, EventRelay, PublishSubscribeRelay, RelayBuilder, RelayFactory,
@@ -42,6 +42,7 @@ pub enum CreationError {
     ServiceName,
     Backend,
     DiscoverySubscriber,
+    ReactiveMode,
 }
 
 impl core::fmt::Display for CreationError {
@@ -190,7 +191,7 @@ impl TrackedService {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Config {
     pub discovery_service: Option<String>,
     pub services: Option<Vec<String>>,
@@ -209,69 +210,27 @@ pub struct Tunnel<S: Service, B: for<'a> Backend<S> + Debug> {
 }
 
 impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
-    pub fn create(
-        tunnel_config: &Config,
-        iceoryx_config: &iceoryx2::config::Config,
-        backend_config: &<B as Backend<S>>::Config,
-    ) -> Result<Self, CreationError> {
-        let origin = format!(
-            "Tunnel<{}, {}>::create()",
-            core::any::type_name::<S>(),
-            core::any::type_name::<B>()
-        );
+    /// Returns a builder for configuring and constructing a [`Tunnel`].
+    #[allow(clippy::new_ret_no_self)] // entry point to the type-state builder
+    pub fn new() -> crate::builder::TunnelBuilder<S, B, crate::builder::Unconfigured> {
+        crate::builder::TunnelBuilder::new()
+    }
 
-        trace!(
-            from origin,
-            "Creating Tunnel:\n{:?}\n{:?}\n{:?}",
-            &tunnel_config, &iceoryx_config, &backend_config);
+    /// Returns the iceoryx2 [`Node`] hosting the tunnel's services.
+    pub fn node(&self) -> &Node<S> {
+        &self.node
+    }
 
-        let node = fail!(
-            from origin,
-            when NodeBuilder::new().config(iceoryx_config).create::<S>(),
-            with CreationError::Node,
-            "Failed to create Node"
-        );
-
-        let backend = fail!(
-            from origin,
-            when Backend::create(backend_config),
-            with CreationError::Backend,
-            "Failed to create provided Backend"
-        );
-
-        let (subscriber, tracker) = match &tunnel_config.discovery_service {
-            Some(service_name) => {
-                info!(from origin, "Local Discovery via Subscriber");
-
-                let service_name = fail!(
-                    from origin,
-                    when service_name.as_str().try_into(),
-                    with CreationError::ServiceName,
-                    "Failed to create service name {}", service_name
-                );
-
-                let subscriber = fail!(
-                    from origin,
-                    when discovery::subscriber::DiscoverySubscriber::create(&node, service_name),
-                    with CreationError::DiscoverySubscriber,
-                    "Failed to create discovery subscriber"
-                );
-
-                (Some(subscriber), None)
-            }
-            None => {
-                info!(from origin,"Local Discovery via Tracker");
-                let tracker = discovery::tracker::DiscoveryTracker::create(iceoryx_config);
-                (None, Some(tracker))
-            }
-        };
-
-        let services_filter = tunnel_config
-            .services
-            .as_ref()
-            .map(|names| names.iter().cloned().collect());
-
-        Ok(Self {
+    /// Wires pre-built parts into a [`Tunnel`]. All creation logic lives in
+    /// [`crate::builder::TunnelBuilder`].
+    pub(crate) fn create(
+        node: Node<S>,
+        backend: B,
+        subscriber: Option<discovery::subscriber::DiscoverySubscriber<S>>,
+        tracker: Option<discovery::tracker::DiscoveryTracker<S>>,
+        services_filter: Option<BTreeSet<String>>,
+    ) -> Self {
+        Self {
             node,
             backend,
             services: BTreeMap::new(),
@@ -280,7 +239,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
             subscriber,
             tracker,
             services_filter,
-        })
+        }
     }
 
     pub fn discover(&mut self) -> Result<(), DiscoveryError> {

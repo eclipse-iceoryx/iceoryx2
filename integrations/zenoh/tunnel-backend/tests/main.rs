@@ -14,5 +14,6 @@ mod event_discovery_tests;
 mod event_propagation_tests;
 mod publish_subscribe_discovery_tests;
 mod publish_subscribe_propagation_tests;
+mod reactive_tests;
 
 iceoryx2_bb_testing::test_harness!();

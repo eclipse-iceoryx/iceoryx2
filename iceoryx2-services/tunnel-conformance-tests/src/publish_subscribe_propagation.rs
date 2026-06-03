@@ -27,7 +27,6 @@ pub mod publish_subscribe_propagation {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::test_fail;
     use iceoryx2_bb_testing_macros::conformance_test;
-    use iceoryx2_services_tunnel::Config as TunnelConfig;
     use iceoryx2_services_tunnel::Tunnel;
     use iceoryx2_services_tunnel_backend::traits::{Backend, testing::Testing};
 
@@ -55,10 +54,11 @@ pub mod publish_subscribe_propagation {
 
         // --- Host A ---
         let iceoryx_config_a = generate_isolated_config();
-        let backend_config_a = B::Config::default();
-        let tunnel_config_a = TunnelConfig::default();
-        let mut tunnel_a =
-            Tunnel::<S, B>::create(&tunnel_config_a, &iceoryx_config_a, &backend_config_a).unwrap();
+        let mut tunnel_a = Tunnel::<S, B>::new()
+            .iceoryx_config(iceoryx_config_a.clone())
+            .polled()
+            .create()
+            .unwrap();
 
         let node_a = NodeBuilder::new()
             .config(&iceoryx_config_a)
@@ -78,10 +78,11 @@ pub mod publish_subscribe_propagation {
 
         // --- Host B ---
         let iceoryx_config_b = generate_isolated_config();
-        let backend_config_b = B::Config::default();
-        let tunnel_config_b = TunnelConfig::default();
-        let mut tunnel_b =
-            Tunnel::<S, B>::create(&tunnel_config_b, &iceoryx_config_b, &backend_config_b).unwrap();
+        let mut tunnel_b = Tunnel::<S, B>::new()
+            .iceoryx_config(iceoryx_config_b.clone())
+            .polled()
+            .create()
+            .unwrap();
 
         // Wait for tunnel on host B to discover the service on host A
         T::retry(
@@ -174,10 +175,11 @@ pub mod publish_subscribe_propagation {
 
         // --- Host A ---
         let iceoryx_config_a = generate_isolated_config();
-        let backend_config_a = B::Config::default();
-        let tunnel_config_a = TunnelConfig::default();
-        let mut tunnel_a =
-            Tunnel::<S, B>::create(&tunnel_config_a, &iceoryx_config_a, &backend_config_a).unwrap();
+        let mut tunnel_a = Tunnel::<S, B>::new()
+            .iceoryx_config(iceoryx_config_a.clone())
+            .polled()
+            .create()
+            .unwrap();
 
         let node_a = NodeBuilder::new()
             .config(&iceoryx_config_a)
@@ -201,10 +203,11 @@ pub mod publish_subscribe_propagation {
 
         // --- Host B ---
         let iceoryx_config_b = generate_isolated_config();
-        let backend_config_b = B::Config::default();
-        let tunnel_config_b = TunnelConfig::default();
-        let mut tunnel_b =
-            Tunnel::<S, B>::create(&tunnel_config_b, &iceoryx_config_b, &backend_config_b).unwrap();
+        let mut tunnel_b = Tunnel::<S, B>::new()
+            .iceoryx_config(iceoryx_config_b.clone())
+            .polled()
+            .create()
+            .unwrap();
 
         // Wait for tunnel on host b to discover the service on host A
         T::retry(
@@ -323,10 +326,11 @@ pub mod publish_subscribe_propagation {
 
         // --- Host A: two services, one publisher each ---
         let iceoryx_config_a = generate_isolated_config();
-        let backend_config_a = B::Config::default();
-        let tunnel_config_a = TunnelConfig::default();
-        let mut tunnel_a =
-            Tunnel::<S, B>::create(&tunnel_config_a, &iceoryx_config_a, &backend_config_a).unwrap();
+        let mut tunnel_a = Tunnel::<S, B>::new()
+            .iceoryx_config(iceoryx_config_a.clone())
+            .polled()
+            .create()
+            .unwrap();
 
         let node_a = NodeBuilder::new()
             .config(&iceoryx_config_a)
@@ -356,10 +360,11 @@ pub mod publish_subscribe_propagation {
 
         // --- Host B ---
         let iceoryx_config_b = generate_isolated_config();
-        let backend_config_b = B::Config::default();
-        let tunnel_config_b = TunnelConfig::default();
-        let mut tunnel_b =
-            Tunnel::<S, B>::create(&tunnel_config_b, &iceoryx_config_b, &backend_config_b).unwrap();
+        let mut tunnel_b = Tunnel::<S, B>::new()
+            .iceoryx_config(iceoryx_config_b.clone())
+            .polled()
+            .create()
+            .unwrap();
 
         // Wait for tunnel on host B to discover both services on host A
         T::retry(
@@ -479,11 +484,12 @@ pub mod publish_subscribe_propagation {
         // === SETUP ===
         let service_name = generate_service_name();
 
-        let backend_config = B::Config::default();
         let iceoryx_config = generate_isolated_config();
-        let tunnel_config = TunnelConfig::default();
-        let mut tunnel =
-            Tunnel::<S, B>::create(&tunnel_config, &iceoryx_config, &backend_config).unwrap();
+        let mut tunnel = Tunnel::<S, B>::new()
+            .iceoryx_config(iceoryx_config.clone())
+            .polled()
+            .create()
+            .unwrap();
 
         // Publisher
         let node = NodeBuilder::new()

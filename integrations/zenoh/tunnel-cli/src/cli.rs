@@ -51,15 +51,22 @@ pub struct Cli {
     #[clap(
         long,
         value_name = "RATE",
-        conflicts_with = "reactive",
-        help = "Poll for discovery updates and samples at the provided rate in milliseconds [default: 100]"
+        help = "Polling rate in milliseconds for discovery and sample propagation \
+                (defaults to 100ms when no other flags are given; otherwise must be \
+                set explicitly to enable polling)"
     )]
     pub poll: Option<u64>,
 
     #[clap(
-        long,
-        conflicts_with = "poll",
-        help = "Reactively process discovery updates and samples"
+        long = "reactive-backend",
+        help = "Reactively wake the tunnel when the backend has new data"
     )]
-    pub reactive: bool,
+    pub reactive_backend: bool,
+
+    #[clap(
+        long,
+        value_name = "EVENT_SERVICE",
+        help = "Additionally wake the tunnel when the named iceoryx2 event service fires (repeatable)"
+    )]
+    pub listener: Vec<String>,
 }

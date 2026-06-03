@@ -10,9 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::service::Service;
+use std::sync::Arc;
+
+use iceoryx2::service::{Service, local_threadsafe};
 use iceoryx2_log::{fail, trace};
-use iceoryx2_services_tunnel_backend::traits::Backend;
+use iceoryx2_services_tunnel_backend::traits::{Backend, BackendBuilder, ReactiveBackendBuilder};
+use iceoryx2_services_tunnel_backend::types::wake::WakeHandle;
 
 use zenoh::{Config, Session, Wait};
 
@@ -39,12 +42,19 @@ impl core::error::Error for CreationError {}
 pub struct ZenohBackend<S: Service> {
     session: Session,
     discovery: Discovery,
+    /// `Some` when constructed in reactive mode. Cloned into each relay's
+    /// subscriber callback so that incoming network data signals the wake.
+    wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
 impl<S: Service> Backend<S> for ZenohBackend<S> {
     type Config = Config;
     type CreationError = CreationError;
+    type Builder<'config>
+        = Builder<'config, S>
+    where
+        Self::Config: 'config;
     type Discovery = Discovery;
 
     type PublishSubscribeRelay = publish_subscribe::Relay<S>;
@@ -55,19 +65,54 @@ impl<S: Service> Backend<S> for ZenohBackend<S> {
     where
         Self: 'b;
 
-    fn create(config: &Self::Config) -> Result<Self, Self::CreationError> {
-        let origin = "ZenohBackend::create";
+    fn builder(config: &Self::Config) -> Self::Builder<'_> {
+        Builder::new(config)
+    }
+
+    fn relay_builder(&self) -> Self::RelayFactory<'_> {
+        Self::RelayFactory::new(&self.session, self.wake.clone())
+    }
+
+    fn discovery(&self) -> &impl iceoryx2_services_tunnel_backend::traits::Discovery {
+        &self.discovery
+    }
+}
+
+/// Builder for [`ZenohBackend`].
+#[derive(Debug)]
+pub struct Builder<'config, S: Service> {
+    config: &'config Config,
+    wake: Option<WakeHandle<local_threadsafe::Service>>,
+    _phantom: core::marker::PhantomData<S>,
+}
+
+impl<'config, S: Service> Builder<'config, S> {
+    pub fn new(config: &'config Config) -> Self {
+        Self {
+            config,
+            wake: None,
+            _phantom: core::marker::PhantomData,
+        }
+    }
+}
+
+impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
+    type Backend = ZenohBackend<S>;
+    type CreationError = CreationError;
+
+    fn create(self) -> Result<Self::Backend, Self::CreationError> {
+        let origin = "ZenohBackend::Builder::create";
 
         trace!(
             from origin,
             "Initializing Zenoh backend"
         );
 
-        let session = zenoh::open(config.clone()).wait();
+        let session = zenoh::open(self.config.clone()).wait();
         let session = fail!(
             from origin,
             when session,
-            with Self::CreationError::Session,
+            with CreationError::Session,
             "Failed to create zenoh session"
         );
 
@@ -79,18 +124,20 @@ impl<S: Service> Backend<S> for ZenohBackend<S> {
             "Failed to create zenoh discovery"
         );
 
-        Ok(Self {
+        Ok(ZenohBackend {
             session,
             discovery,
+            wake: self.wake.map(Arc::new),
             _phantom: core::marker::PhantomData,
         })
     }
+}
 
-    fn relay_builder(&self) -> Self::RelayFactory<'_> {
-        Self::RelayFactory::new(&self.session)
-    }
+impl<S: Service> ReactiveBackendBuilder<S> for Builder<'_, S> {
+    type WakeService = local_threadsafe::Service;
 
-    fn discovery(&self) -> &impl iceoryx2_services_tunnel_backend::traits::Discovery {
-        &self.discovery
+    fn reactive(mut self, wake: WakeHandle<local_threadsafe::Service>) -> Self {
+        self.wake = Some(wake);
+        self
     }
 }

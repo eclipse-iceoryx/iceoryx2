@@ -10,19 +10,23 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::sync::Arc;
+
 use iceoryx2::prelude::EventId;
 use iceoryx2::service::Service;
+use iceoryx2::service::local_threadsafe;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2_log::{fail, trace};
 use iceoryx2_services_tunnel_backend::traits::{EventRelay, RelayBuilder};
+use iceoryx2_services_tunnel_backend::types::wake::WakeHandle;
 
-use zenoh::handlers::{FifoChannel, FifoChannelHandler};
 use zenoh::pubsub::{Publisher, Subscriber};
 use zenoh::qos::Reliability;
 use zenoh::sample::{Locality, Sample};
 use zenoh::{Session, Wait};
 
 use crate::keys;
+use crate::relays::wake_handler::{WakeAwareChannel, WakeAwareReceiver};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -70,14 +74,20 @@ impl core::error::Error for ReceiveError {}
 pub struct Builder<'a, S: Service> {
     session: &'a Session,
     static_config: &'a StaticConfig,
+    wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
 impl<'a, S: Service> Builder<'a, S> {
-    pub fn new(session: &'a Session, static_config: &'a StaticConfig) -> Builder<'a, S> {
+    pub fn new(
+        session: &'a Session,
+        static_config: &'a StaticConfig,
+        wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
+    ) -> Builder<'a, S> {
         Builder {
             session,
             static_config,
+            wake,
             _phantom: core::marker::PhantomData,
         }
     }
@@ -88,10 +98,11 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
     type Relay = Relay<S>;
 
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
+        let origin = "event::Builder::create";
         let key = keys::event(self.static_config.service_hash());
 
         let notifier = fail!(
-            from self,
+            from origin,
             when self.session
                 .declare_publisher(key.clone())
                 .allowed_destination(Locality::Remote)
@@ -101,16 +112,17 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
             "Failed to create zenoh publisher for notifications"
         );
 
-        // TODO(correctness): Make handler type and properties configurable
+        // TODO(correctness): Make handler buffer capacity configurable
         let listener = fail!(
-        from self,
-        when self.session
-            .declare_subscriber(key.clone())
-            .with(FifoChannel::new(10))
-            .allowed_origin(Locality::Remote)
-            .wait(),
-        with CreationError::SubscriberDeclaration,
-        "Failed to create zenoh subscriber for notifications");
+            from origin,
+            when self.session
+                .declare_subscriber(key.clone())
+                .with(WakeAwareChannel::new(10, self.wake))
+                .allowed_origin(Locality::Remote)
+                .wait(),
+            with CreationError::SubscriberDeclaration,
+            "Failed to create zenoh subscriber for notifications"
+        );
 
         Ok(Relay {
             static_config: self.static_config.clone(),
@@ -125,7 +137,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
 pub struct Relay<S: Service> {
     static_config: StaticConfig,
     notifier: Publisher<'static>,
-    listener: Subscriber<FifoChannelHandler<Sample>>,
+    listener: Subscriber<WakeAwareReceiver<Sample>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
