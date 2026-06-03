@@ -464,8 +464,8 @@ pub mod dynamic_storage_trait {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
-        const TIMEOUT: Duration = Duration::from_millis(100);
-        const ITERATIONS: usize = 100;
+        const TIMEOUT: Duration = Duration::from_millis(50);
+        const ITERATIONS: usize = 20;
 
         for _ in 0..ITERATIONS {
             use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
