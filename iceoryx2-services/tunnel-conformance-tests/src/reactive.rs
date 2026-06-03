@@ -24,7 +24,6 @@ pub mod reactive {
     use iceoryx2::testing::generate_service_name;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
-    use iceoryx2_services_tunnel::Config as TunnelConfig;
     use iceoryx2_services_tunnel::Tunnel;
     use iceoryx2_services_tunnel_backend::traits::{
         Backend, ReactiveBackendBuilder, testing::Testing,
@@ -49,9 +48,7 @@ pub mod reactive {
         // === Host A: polled tunnel + publisher ===
         let iceoryx_config_a = generate_isolated_config();
         let mut tunnel_a = Tunnel::<S, B>::new()
-            .tunnel_config(TunnelConfig::default())
             .iceoryx_config(iceoryx_config_a.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
@@ -73,9 +70,7 @@ pub mod reactive {
         // === Host B: reactive tunnel — wake listener is what we're testing ===
         let iceoryx_config_b = generate_isolated_config();
         let (mut tunnel_b, wake_listener) = Tunnel::<S, B>::new()
-            .tunnel_config(TunnelConfig::default())
             .iceoryx_config(iceoryx_config_b.clone())
-            .backend_config(B::Config::default())
             .reactive()
             .create::<W>()
             .unwrap();
@@ -130,9 +125,7 @@ pub mod reactive {
         // === Host A: polled tunnel + notifier ===
         let iceoryx_config_a = generate_isolated_config();
         let mut tunnel_a = Tunnel::<S, B>::new()
-            .tunnel_config(TunnelConfig::default())
             .iceoryx_config(iceoryx_config_a.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
@@ -154,9 +147,7 @@ pub mod reactive {
         // === Host B: reactive tunnel ===
         let iceoryx_config_b = generate_isolated_config();
         let (mut tunnel_b, wake_listener) = Tunnel::<S, B>::new()
-            .tunnel_config(TunnelConfig::default())
             .iceoryx_config(iceoryx_config_b.clone())
-            .backend_config(B::Config::default())
             .reactive()
             .create::<W>()
             .unwrap();

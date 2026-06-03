@@ -82,7 +82,6 @@ pub mod publish_subscribe_discovery {
         let mut tunnel = Tunnel::<S, B>::new()
             .tunnel_config(tunnel_config.clone())
             .iceoryx_config(iceoryx_config.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
@@ -115,11 +114,8 @@ pub mod publish_subscribe_discovery {
         // === SETUP ===
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
-        let tunnel_config = TunnelConfig::default();
         let mut tunnel = Tunnel::<S, B>::new()
-            .tunnel_config(tunnel_config.clone())
             .iceoryx_config(iceoryx_config.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
@@ -164,12 +160,8 @@ pub mod publish_subscribe_discovery {
 
         // Host A
         let iceoryx_config_a = generate_isolated_config();
-        let backend_config_a = B::Config::default();
-        let tunnel_config_a = TunnelConfig::default();
         let mut tunnel_a = Tunnel::<S, B>::new()
-            .tunnel_config(tunnel_config_a.clone())
             .iceoryx_config(iceoryx_config_a.clone())
-            .backend_config(backend_config_a)
             .polled()
             .create()
             .unwrap();
@@ -177,12 +169,8 @@ pub mod publish_subscribe_discovery {
 
         // Host B
         let iceoryx_config_b = generate_isolated_config();
-        let backend_config_b = B::Config::default();
-        let tunnel_config_b = TunnelConfig::default();
         let mut tunnel_b = Tunnel::<S, B>::new()
-            .tunnel_config(tunnel_config_b.clone())
             .iceoryx_config(iceoryx_config_b.clone())
-            .backend_config(backend_config_b)
             .polled()
             .create()
             .unwrap();
@@ -272,9 +260,7 @@ pub mod publish_subscribe_discovery {
         // Host A — observer, announces nothing locally.
         let iceoryx_config_a = generate_isolated_config();
         let mut tunnel_a = Tunnel::<S, B>::new()
-            .tunnel_config(TunnelConfig::default().clone())
             .iceoryx_config(iceoryx_config_a.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
@@ -282,9 +268,7 @@ pub mod publish_subscribe_discovery {
         // Host B — announces the service.
         let iceoryx_config_b = generate_isolated_config();
         let mut tunnel_b = Tunnel::<S, B>::new()
-            .tunnel_config(TunnelConfig::default().clone())
             .iceoryx_config(iceoryx_config_b.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
@@ -305,9 +289,7 @@ pub mod publish_subscribe_discovery {
         // Host C — announces the same service (same name → same hash).
         let iceoryx_config_c = generate_isolated_config();
         let mut tunnel_c = Tunnel::<S, B>::new()
-            .tunnel_config(TunnelConfig::default().clone())
             .iceoryx_config(iceoryx_config_c.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
@@ -385,9 +367,7 @@ pub mod publish_subscribe_discovery {
         // Host A
         let iceoryx_config_a = generate_isolated_config();
         let mut tunnel_a = Tunnel::<S, B>::new()
-            .tunnel_config(TunnelConfig::default().clone())
             .iceoryx_config(iceoryx_config_a.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
@@ -395,9 +375,7 @@ pub mod publish_subscribe_discovery {
         // Host B
         let iceoryx_config_b = generate_isolated_config();
         let mut tunnel_b = Tunnel::<S, B>::new()
-            .tunnel_config(TunnelConfig::default().clone())
             .iceoryx_config(iceoryx_config_b.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
@@ -462,9 +440,7 @@ pub mod publish_subscribe_discovery {
 
         let iceoryx_config_b = generate_isolated_config();
         let mut tunnel_b = Tunnel::<S, B>::new()
-            .tunnel_config(TunnelConfig::default().clone())
             .iceoryx_config(iceoryx_config_b.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
@@ -489,9 +465,7 @@ pub mod publish_subscribe_discovery {
         // Host A is created after Host B has already announced.
         let iceoryx_config_a = generate_isolated_config();
         let mut tunnel_a = Tunnel::<S, B>::new()
-            .tunnel_config(TunnelConfig::default().clone())
             .iceoryx_config(iceoryx_config_a.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
@@ -523,9 +497,7 @@ pub mod publish_subscribe_discovery {
         // Host A — observer.
         let iceoryx_config_a = generate_isolated_config();
         let mut tunnel_a = Tunnel::<S, B>::new()
-            .tunnel_config(TunnelConfig::default().clone())
             .iceoryx_config(iceoryx_config_a.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
@@ -533,9 +505,7 @@ pub mod publish_subscribe_discovery {
         // Host B — announces, removes, re-announces the same service.
         let iceoryx_config_b = generate_isolated_config();
         let mut tunnel_b = Tunnel::<S, B>::new()
-            .tunnel_config(TunnelConfig::default().clone())
             .iceoryx_config(iceoryx_config_b.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
@@ -655,7 +625,6 @@ pub mod publish_subscribe_discovery {
         let mut tunnel = Tunnel::<S, B>::new()
             .tunnel_config(tunnel_config.clone())
             .iceoryx_config(iceoryx_config.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
@@ -689,9 +658,7 @@ pub mod publish_subscribe_discovery {
         // Host A — no local user; mirrors Host B's service in via the backend.
         let iceoryx_config_a = generate_isolated_config();
         let mut tunnel_a = Tunnel::<S, B>::new()
-            .tunnel_config(TunnelConfig::default().clone())
             .iceoryx_config(iceoryx_config_a.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
@@ -699,9 +666,7 @@ pub mod publish_subscribe_discovery {
         // Host B — will own the service.
         let iceoryx_config_b = generate_isolated_config();
         let mut tunnel_b = Tunnel::<S, B>::new()
-            .tunnel_config(TunnelConfig::default().clone())
             .iceoryx_config(iceoryx_config_b.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
@@ -789,9 +754,7 @@ pub mod publish_subscribe_discovery {
         // Host A — will own the service first.
         let iceoryx_config_a = generate_isolated_config();
         let mut tunnel_a = Tunnel::<S, B>::new()
-            .tunnel_config(TunnelConfig::default().clone())
             .iceoryx_config(iceoryx_config_a.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
@@ -800,9 +763,7 @@ pub mod publish_subscribe_discovery {
         // offerer appears
         let iceoryx_config_b = generate_isolated_config();
         let mut tunnel_b = Tunnel::<S, B>::new()
-            .tunnel_config(TunnelConfig::default().clone())
             .iceoryx_config(iceoryx_config_b.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
@@ -928,7 +889,6 @@ pub mod publish_subscribe_discovery {
         let mut tunnel = Tunnel::<S, B>::new()
             .tunnel_config(tunnel_config.clone())
             .iceoryx_config(iceoryx_config.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
@@ -966,11 +926,8 @@ pub mod publish_subscribe_discovery {
             .open_or_create()
             .unwrap();
 
-        let tunnel_config = TunnelConfig::default();
         let mut tunnel = Tunnel::<S, B>::new()
-            .tunnel_config(tunnel_config.clone())
             .iceoryx_config(iceoryx_config.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
@@ -1007,7 +964,6 @@ pub mod publish_subscribe_discovery {
         let mut tunnel = Tunnel::<S, B>::new()
             .tunnel_config(tunnel_config.clone())
             .iceoryx_config(iceoryx_config.clone())
-            .backend_config(B::Config::default())
             .polled()
             .create()
             .unwrap();
