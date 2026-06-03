@@ -25,9 +25,13 @@ use core::ptr::NonNull;
 use iceoryx2_bb_elementary_traits::{
     testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
 };
-use iceoryx2_bb_posix::socket_pair::{
-    StreamingSocket, StreamingSocketDuplicateError, StreamingSocketPairCreationError,
-    StreamingSocketPairReceiveError, StreamingSocketPairSendError,
+use iceoryx2_bb_posix::{
+    file_descriptor::FileDescriptorBased,
+    file_descriptor_set::SynchronousMultiplexing,
+    socket_pair::{
+        StreamingSocket, StreamingSocketDuplicateError, StreamingSocketPairCreationError,
+        StreamingSocketPairReceiveError, StreamingSocketPairSendError,
+    },
 };
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_log::fail;
@@ -45,6 +49,19 @@ pub struct SocketPairHandle<E: EventState, Storage: DynamicStorage<State<E, Sock
     sender: StreamingSocket,
     _data_1: PhantomData<E>,
     _data_2: PhantomData<Storage>,
+}
+
+impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>> FileDescriptorBased
+    for SocketPairHandle<E, Storage>
+{
+    fn file_descriptor(&self) -> &iceoryx2_bb_posix::file_descriptor::FileDescriptor {
+        self.sender.file_descriptor()
+    }
+}
+
+impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>> SynchronousMultiplexing
+    for SocketPairHandle<E, Storage>
+{
 }
 
 impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>> Abandonable
@@ -145,6 +162,19 @@ unsafe impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>> Se
 }
 
 unsafe impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>> Sync
+    for SocketPairWaiter<E, Storage>
+{
+}
+
+impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>> FileDescriptorBased
+    for SocketPairWaiter<E, Storage>
+{
+    fn file_descriptor(&self) -> &iceoryx2_bb_posix::file_descriptor::FileDescriptor {
+        self.receiver.file_descriptor()
+    }
+}
+
+impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>> SynchronousMultiplexing
     for SocketPairWaiter<E, Storage>
 {
 }
