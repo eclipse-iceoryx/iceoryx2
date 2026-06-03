@@ -191,6 +191,8 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>> Abandonab
 impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
     WaiterInterface<E, SocketPairMgmt, Storage> for SocketPairWaiter<E, Storage>
 {
+    const IS_FILE_DESCRIPTOR_BASED: bool = true;
+
     unsafe fn remove(
         _name: &FileName,
         _config: &Configuration,

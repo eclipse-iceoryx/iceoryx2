@@ -156,6 +156,8 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>> Drop
 impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
     WaiterInterface<E, SemaphoreMgmt, Storage> for SemaphoreWaiter<E, Storage>
 {
+    const IS_FILE_DESCRIPTOR_BASED: bool = false;
+
     unsafe fn remove(
         _name: &FileName,
         _config: &Configuration,

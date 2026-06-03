@@ -461,6 +461,8 @@ impl<
     W: WaiterInterface<E, Mgmt, Storage>,
 > Listener<E> for Waiter<E, Mgmt, Storage, W>
 {
+    const IS_FILE_DESCRIPTOR_BASED: bool = W::IS_FILE_DESCRIPTOR_BASED;
+
     fn max_event_count(&self) -> u64 {
         self.storage.get().event.max_event_count()
     }

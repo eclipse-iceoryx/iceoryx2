@@ -72,6 +72,8 @@ pub trait WaiterInterface<
     Storage: DynamicStorage<State<E, Mgmt>>,
 >: Send + Sync + Debug + Abandonable
 {
+    const IS_FILE_DESCRIPTOR_BASED: bool;
+
     /// # Safety
     ///
     ///  * Must ensure that the Waiter or the Handler is currenty not in use by another process.

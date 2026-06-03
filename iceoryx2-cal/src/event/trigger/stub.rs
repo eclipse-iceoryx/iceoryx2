@@ -49,6 +49,8 @@ impl<
     Storage: DynamicStorage<State<E, Mgmt>>,
 > WaiterInterface<E, Mgmt, Storage> for Stub
 {
+    const IS_FILE_DESCRIPTOR_BASED: bool = false;
+
     unsafe fn remove(
         _name: &FileName,
         _config: &Configuration,
