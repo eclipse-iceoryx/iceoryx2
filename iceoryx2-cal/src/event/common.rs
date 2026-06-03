@@ -442,14 +442,10 @@ impl<
             Ordering::SeqCst,
         ) {
             Ok(_) => {
-                if mgmt.notification_state.load(Ordering::SeqCst) == NOTIFICATION_STATE_NOTIFIED {
-                    mgmt.notification_state
-                        .store(NOTIFICATION_STATE_IDLE, Ordering::SeqCst);
-                    return drain();
+                if mgmt.notification_state.load(Ordering::SeqCst) != NOTIFICATION_STATE_NOTIFIED {
+                    fail!(from self, when wait_call(),
+                        "{msg} since the underlying wait call failed.");
                 }
-
-                fail!(from self, when wait_call(),
-                    "{msg} since the underlying wait call failed.");
 
                 mgmt.notification_state
                     .store(NOTIFICATION_STATE_IDLE, Ordering::SeqCst);
