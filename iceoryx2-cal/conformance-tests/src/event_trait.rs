@@ -1031,4 +1031,56 @@ pub mod event_trait {
             }
         }
     }
+
+    #[conformance_test]
+    pub fn concurrent_ping_pong_does_not_deadlock<E: EventState, Sut: Event<E>>() {
+        let _watchdog = Watchdog::new();
+        const ITERATIONS: usize = 10000;
+
+        let pong_name = generate_file_path().file_name();
+        let ping_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let ping_listener = Sut::ListenerBuilder::new(&ping_name)
+            .config(&config)
+            .create()
+            .unwrap();
+        let ping_notifier = Sut::NotifierBuilder::new(&ping_name)
+            .config(&config)
+            .open()
+            .unwrap();
+        let pong_listener = Sut::ListenerBuilder::new(&pong_name)
+            .config(&config)
+            .create()
+            .unwrap();
+        let pong_notifier = Sut::NotifierBuilder::new(&pong_name)
+            .config(&config)
+            .open()
+            .unwrap();
+
+        thread_scope(|s| {
+            s.thread_builder()
+                .spawn(move || {
+                    for _ in 0..ITERATIONS {
+                        ping_notifier.notify(EventId::new(0)).unwrap();
+                        pong_listener.blocking_wait(|_| {}).unwrap();
+                        //assert_that!(pong_listener.blocking_wait(|_| {}), eq Ok(1));
+                    }
+                })
+                .unwrap();
+
+            s.thread_builder()
+                .spawn(move || {
+                    for _ in 0..ITERATIONS {
+                        //assert_that!(ping_listener.blocking_wait(|_| {}), eq Ok(1));
+                        ping_listener.blocking_wait(|_| {}).unwrap();
+                        pong_notifier.notify(EventId::new(0)).unwrap();
+                    }
+                })
+                .unwrap();
+
+            Ok(())
+        })
+        .unwrap();
+    }
 }
