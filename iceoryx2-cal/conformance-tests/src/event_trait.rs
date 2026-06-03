@@ -835,7 +835,7 @@ pub mod event_trait {
     #[conformance_test]
     pub fn sending_notification_many_times_never_leads_to_error<E: EventState, Sut: Event<E>>() {
         let _watchdog = Watchdog::new();
-        const REPETITIONS: usize = 4096 * 128;
+        const REPETITIONS: u64 = 4096 * 128;
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -856,7 +856,7 @@ pub mod event_trait {
         let result = sut_listener
             .try_wait(|event| assert_that!(event.id, eq EventId::new(3)))
             .unwrap();
-        assert_that!(result, le 1);
+        assert_that!(result, eq sut_listener.max_event_count().min(REPETITIONS));
     }
 
     #[conformance_test]
