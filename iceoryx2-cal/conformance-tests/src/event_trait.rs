@@ -1035,7 +1035,7 @@ pub mod event_trait {
     #[conformance_test]
     pub fn concurrent_ping_pong_does_not_deadlock<E: EventState, Sut: Event<E>>() {
         let _watchdog = Watchdog::new();
-        const ITERATIONS: usize = 10000;
+        const ITERATIONS: usize = 100000;
 
         let pong_name = generate_file_path().file_name();
         let ping_name = generate_file_path().file_name();
@@ -1060,6 +1060,7 @@ pub mod event_trait {
 
         thread_scope(|s| {
             s.thread_builder()
+                .affinity(&[0])
                 .spawn(move || {
                     for _ in 0..ITERATIONS {
                         ping_notifier.notify(EventId::new(0)).unwrap();
@@ -1070,6 +1071,7 @@ pub mod event_trait {
                 .unwrap();
 
             s.thread_builder()
+                .affinity(&[1])
                 .spawn(move || {
                     for _ in 0..ITERATIONS {
                         //assert_that!(ping_listener.blocking_wait(|_| {}), eq Ok(1));

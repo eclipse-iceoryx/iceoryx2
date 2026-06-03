@@ -25,7 +25,7 @@ use crate::{
 };
 use core::fmt::Debug;
 use core::{marker::PhantomData, mem::MaybeUninit, ptr::NonNull, time::Duration};
-use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
+use iceoryx2_bb_concurrency::atomic::{AtomicU8, Ordering};
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary_traits::{
     non_null::NonNullCompat, testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
@@ -36,7 +36,11 @@ use iceoryx2_bb_posix::{
 };
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_log::{debug, fail};
+use iceoryx2_log::{debug, fail, fatal_panic};
+
+const NOTIFICATION_STATE_IDLE: u8 = 0;
+const NOTIFICATION_STATE_NOTIFIED: u8 = 1;
+const NOTIFICATION_STATE_WAITING: u8 = 2;
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct Configuration<
@@ -300,27 +304,39 @@ impl<
     fn notify(&self, event_id: EventId) -> Result<(), super::NotifierNotifyError> {
         let msg = "Unable to notify";
         let mgmt = self.storage.get();
+
         fail!(from self,
               when mgmt.event.activate(event_id),
               "{msg} with {event_id:?} since the activation failed.");
 
-        if mgmt.notification_count.load(Ordering::Relaxed) == 0 {
+        // notify works inverted to drain
+        // 1. activate
+        // 2. set state to notified
+        //
+        // drain
+        // 1. set state to no pending notification
+        // 2. collect activations
+
+        let old_state = mgmt
+            .notification_state
+            .swap(NOTIFICATION_STATE_NOTIFIED, Ordering::SeqCst);
+
+        if old_state == NOTIFICATION_STATE_WAITING {
             match self.handle.notify() {
                 Ok(()) => (),
                 Err(NotifierNotifyError::BufferIsFull) => {
                     if self.fail_when_buffer_is_full {
                         fail!(from self, with NotifierNotifyError::BufferIsFull,
-                            "{msg} with {event_id:?} since the buffer is full.");
+                        "{msg} with {event_id:?} since the buffer is full.");
                     }
                 }
                 Err(e) => {
                     fail!(from self, with e,
-                        "{msg} with {event_id:?} due to {e:?}.");
+                    "{msg} with {event_id:?} due to {e:?}.");
                 }
             }
-
-            mgmt.notification_count.fetch_add(1, Ordering::Release);
         }
+
         Ok(())
     }
 }
@@ -400,21 +416,54 @@ impl<
     ) -> Result<u64, ListenerWaitError> {
         let mgmt = self.storage.get();
 
-        if mgmt.notification_count.swap(0, Ordering::Acquire) == 0 {
-            fail!(from self, when wait_call(),
-                "{msg} since the underlying wait call failed.");
-
-            if mgmt.notification_count.swap(0, Ordering::Acquire) == 0 {
-                Ok(0)
-            } else {
-                fail!(from self, when self.waiter.empty_buffer(),
-                    "{msg} since the wait buffer could not be emptied.");
-                Ok(self.storage.get().event.drain(&mut callback))
-            }
-        } else {
+        let mut drain = || -> Result<u64, ListenerWaitError> {
             fail!(from self, when self.waiter.empty_buffer(),
                 "{msg} since the wait buffer could not be emptied.");
             Ok(self.storage.get().event.drain(&mut callback))
+        };
+
+        if mgmt
+            .notification_state
+            .compare_exchange(
+                NOTIFICATION_STATE_NOTIFIED,
+                NOTIFICATION_STATE_IDLE,
+                Ordering::SeqCst,
+                Ordering::SeqCst,
+            )
+            .is_ok()
+        {
+            return drain();
+        }
+
+        match mgmt.notification_state.compare_exchange(
+            NOTIFICATION_STATE_IDLE,
+            NOTIFICATION_STATE_WAITING,
+            Ordering::SeqCst,
+            Ordering::SeqCst,
+        ) {
+            Ok(_) => {
+                if mgmt.notification_state.load(Ordering::SeqCst) == NOTIFICATION_STATE_NOTIFIED {
+                    mgmt.notification_state
+                        .store(NOTIFICATION_STATE_IDLE, Ordering::SeqCst);
+                    return drain();
+                }
+
+                fail!(from self, when wait_call(),
+                    "{msg} since the underlying wait call failed.");
+
+                mgmt.notification_state
+                    .store(NOTIFICATION_STATE_IDLE, Ordering::SeqCst);
+                drain()
+            }
+            Err(NOTIFICATION_STATE_NOTIFIED) => {
+                mgmt.notification_state
+                    .store(NOTIFICATION_STATE_IDLE, Ordering::SeqCst);
+                drain()
+            }
+            Err(_) => {
+                fatal_panic!(from self,
+                    "This shoul never happen! It seems that the waiter is used concurrently which is not supported.");
+            }
         }
     }
 }
@@ -629,7 +678,7 @@ impl<
                     event: unsafe { E::new_uninit(self.event_id_max.as_value() + 1) },
                     handle: MaybeUninit::uninit(),
                     event_id_max: self.event_id_max,
-                    notification_count: AtomicU64::new(0),
+                    notification_state: AtomicU8::new(NOTIFICATION_STATE_IDLE)
                 });
 
                 unsafe { value.assume_init_mut().event.init(allocator).unwrap() };

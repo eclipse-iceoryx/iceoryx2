@@ -18,7 +18,7 @@ use crate::{dynamic_storage::DynamicStorage, event::event_state::EventState};
 use core::fmt::Debug;
 use core::mem::MaybeUninit;
 use core::time::Duration;
-use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_concurrency::atomic::AtomicU8;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
@@ -63,7 +63,7 @@ pub struct State<E: EventState, Mgmt: ZeroCopySend + Send + Sync + Debug> {
     pub event: E,
     pub handle: MaybeUninit<Mgmt>,
     pub event_id_max: EventId,
-    pub notification_count: AtomicU64,
+    pub notification_state: AtomicU8,
 }
 
 pub trait WaiterInterface<
