@@ -21,3 +21,4 @@ pub mod event_discovery;
 pub mod event_propagation;
 pub mod publish_subscribe_discovery;
 pub mod publish_subscribe_propagation;
+pub mod reactive;

@@ -10,155 +10,28 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::time::Duration;
+use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
-use iceoryx2::prelude::*;
-use iceoryx2::testing::*;
-use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing_macros::test;
+use iceoryx2::service::ipc::Service as Ipc;
+use iceoryx2::service::local::Service as Local;
+use iceoryx2::service::local_threadsafe::Service as WakeService;
 use iceoryx2_integrations_zenoh_tunnel_backend::ZenohBackend;
-use iceoryx2_integrations_zenoh_tunnel_backend::testing::Testing;
-use iceoryx2_services_tunnel::Tunnel;
-use iceoryx2_services_tunnel_backend::traits::testing::Testing as _;
+use iceoryx2_integrations_zenoh_tunnel_backend::testing;
 
-const MAX_ATTEMPTS: usize = 25;
-const RETRY_PERIOD: Duration = Duration::from_millis(250);
+instantiate_conformance_tests_with_module!(
+    ipc,
+    iceoryx2_services_tunnel_conformance_tests::reactive,
+    super::Ipc,
+    super::ZenohBackend<super::Ipc>,
+    super::testing::Testing,
+    super::WakeService
+);
 
-// Two hosts: A is a polled tunnel that publishes; B is a reactive tunnel
-// whose wake listener must fire when A's data arrives over Zenoh.
-#[test]
-fn wakes_on_publish_subscribe_data_from_zenoh() {
-    let service_name = generate_service_name();
-
-    // === Host A: polled tunnel + publisher ===
-    let iceoryx_config_a = generate_isolated_config();
-    let mut tunnel_a = Tunnel::<ipc::Service, ZenohBackend<ipc::Service>>::new()
-        .iceoryx_config(iceoryx_config_a.clone())
-        .polled()
-        .create()
-        .unwrap();
-
-    let node_a = NodeBuilder::new()
-        .config(&iceoryx_config_a)
-        .create::<ipc::Service>()
-        .unwrap();
-    let service_a = node_a
-        .service_builder(&service_name)
-        .publish_subscribe::<u64>()
-        .open_or_create()
-        .unwrap();
-    let publisher_a = service_a.publisher_builder().create().unwrap();
-
-    tunnel_a.discover_over_iceoryx().unwrap();
-    assert_that!(tunnel_a.tunneled_services().contains(service_a.service_hash()), eq true);
-
-    // === Host B: reactive tunnel — wake listener is what we're testing ===
-    let iceoryx_config_b = generate_isolated_config();
-    let (mut tunnel_b, wake_listener) = Tunnel::<ipc::Service, ZenohBackend<ipc::Service>>::new()
-        .iceoryx_config(iceoryx_config_b.clone())
-        .reactive()
-        .create()
-        .unwrap();
-
-    // Wait for B to discover A's service over the backend.
-    Testing::retry(
-        || {
-            tunnel_b.discover_over_backend().unwrap();
-            if tunnel_b
-                .tunneled_services()
-                .contains(service_a.service_hash())
-            {
-                Ok(())
-            } else {
-                Err("backend discovery did not propagate to host B")
-            }
-        },
-        RETRY_PERIOD,
-        Some(MAX_ATTEMPTS),
-    )
-    .unwrap();
-
-    // Publish from A; the wake on B must fire because data arrives on Zenoh
-    Testing::retry(
-        || {
-            publisher_a.send_copy(42u64).map_err(|_| "send failed")?;
-            tunnel_a.propagate().map_err(|_| "propagate failed")?;
-            match wake_listener.try_wait_one() {
-                Ok(Some(_)) => Ok(()),
-                _ => Err("wake did not fire"),
-            }
-        },
-        RETRY_PERIOD,
-        Some(MAX_ATTEMPTS),
-    )
-    .unwrap();
-}
-
-// Two hosts: A is a polled tunnel that fires an event; B is a reactive
-// tunnel whose wake listener must fire when A's event arrives over Zenoh.
-#[test]
-fn wakes_on_event_from_zenoh() {
-    let service_name = generate_service_name();
-
-    // === Host A: polled tunnel + notifier ===
-    let iceoryx_config_a = generate_isolated_config();
-    let mut tunnel_a = Tunnel::<ipc::Service, ZenohBackend<ipc::Service>>::new()
-        .iceoryx_config(iceoryx_config_a.clone())
-        .polled()
-        .create()
-        .unwrap();
-
-    let node_a = NodeBuilder::new()
-        .config(&iceoryx_config_a)
-        .create::<ipc::Service>()
-        .unwrap();
-    let service_a = node_a
-        .service_builder(&service_name)
-        .event()
-        .open_or_create()
-        .unwrap();
-    let notifier_a = service_a.notifier_builder().create().unwrap();
-
-    tunnel_a.discover_over_iceoryx().unwrap();
-    assert_that!(tunnel_a.tunneled_services().contains(service_a.service_hash()), eq true);
-
-    // === Host B: reactive tunnel ===
-    let iceoryx_config_b = generate_isolated_config();
-    let (mut tunnel_b, wake_listener) = Tunnel::<ipc::Service, ZenohBackend<ipc::Service>>::new()
-        .iceoryx_config(iceoryx_config_b.clone())
-        .reactive()
-        .create()
-        .unwrap();
-
-    Testing::retry(
-        || {
-            tunnel_b.discover_over_backend().unwrap();
-            if tunnel_b
-                .tunneled_services()
-                .contains(service_a.service_hash())
-            {
-                Ok(())
-            } else {
-                Err("backend discovery did not propagate to host B")
-            }
-        },
-        RETRY_PERIOD,
-        Some(MAX_ATTEMPTS),
-    )
-    .unwrap();
-
-    // Publish from A; the wake on B must fire because data arrives on Zenoh
-    Testing::retry(
-        || {
-            notifier_a.notify().map_err(|_| "notify failed")?;
-            tunnel_a.propagate().map_err(|_| "propagate failed")?;
-            match wake_listener.try_wait_one() {
-                Ok(Some(_)) => Ok(()),
-                _ => Err("wake did not fire"),
-            }
-        },
-        RETRY_PERIOD,
-        Some(MAX_ATTEMPTS),
-    )
-    .unwrap();
-}
+instantiate_conformance_tests_with_module!(
+    local,
+    iceoryx2_services_tunnel_conformance_tests::reactive,
+    super::Local,
+    super::ZenohBackend<super::Local>,
+    super::testing::Testing,
+    super::WakeService
+);
