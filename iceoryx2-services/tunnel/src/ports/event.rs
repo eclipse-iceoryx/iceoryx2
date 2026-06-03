@@ -53,6 +53,7 @@ impl core::error::Error for SendError {}
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum ReceiveError {
     NotificationPropagation,
+    NotificationReceival,
 }
 
 impl core::fmt::Display for ReceiveError {
@@ -163,13 +164,11 @@ impl<S: Service> EventPorts<S> {
         let mut received_ids: BTreeSet<EventId> = BTreeSet::new();
 
         // Consolidate pending event ids
-        while let Ok(event_id) = self.listener.try_wait_one() {
-            match event_id {
-                Some(event_id) => {
-                    received_ids.insert(event_id);
-                }
-                None => break,
-            }
+        if let Err(e) = self.listener.try_wait(|event| {
+            received_ids.insert(event.id);
+        }) {
+            fail!(from self, with ReceiveError::NotificationReceival,
+                "Failed to receive notifications from listener. [{e:?}]");
         }
 
         // Notify all ids once

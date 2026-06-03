@@ -107,13 +107,13 @@ pub mod event_propagation {
 
             // Receive with retry
             T::retry(
-                || match listener_b.try_wait_one().unwrap() {
-                    Some(_event_id) => Ok(()),
-                    None => {
+                || match listener_b.try_wait(|_| {}).unwrap() {
+                    0 => {
                         tunnel_a.propagate().unwrap();
                         tunnel_b.propagate().unwrap();
                         Err("Failed to receive expected event")
                     }
+                    _ => Ok(()),
                 },
                 TIMEOUT,
                 Some(MAX_ATTEMPTS),
@@ -211,7 +211,7 @@ pub mod event_propagation {
         notifier_a.notify().unwrap();
 
         // Drain the notification at host a
-        listener_a.try_wait_all(|_| {}).unwrap();
+        listener_a.try_wait(|_| {}).unwrap();
 
         // Propagate over tunnels
         tunnel_a.propagate().unwrap();
@@ -219,13 +219,13 @@ pub mod event_propagation {
 
         // Receive at listener b with retry
         T::retry(
-            || match listener_b.try_wait_one().unwrap() {
-                Some(_event_id) => Ok(()),
-                None => {
+            || match listener_b.try_wait(|_| {}).unwrap() {
+                0 => {
                     tunnel_a.propagate().unwrap();
                     tunnel_b.propagate().unwrap();
                     Err("failed to receive expected event")
                 }
+                _ => Ok(()),
             },
             TIMEOUT,
             Some(MAX_ATTEMPTS),
@@ -240,10 +240,8 @@ pub mod event_propagation {
         }
 
         // Notification should not have looped back from b to a
-        let result = listener_a.try_wait_one();
-        assert_that!(result, is_ok);
-        let sample = result.unwrap();
-        assert_that!(sample, is_none);
+        let number_of_notifications = listener_a.try_wait(|_| {}).unwrap();
+        assert_that!(number_of_notifications, eq 0);
     }
 
     // TODO: Fix flaky
@@ -344,15 +342,15 @@ pub mod event_propagation {
         T::retry(
             || {
                 listener_b
-                    .try_wait_all(|id| {
-                        if id == event_a {
-                            num_notifications_a += 1;
+                    .try_wait(|event| {
+                        if event.id == event_a {
+                            num_notifications_a += event.count;
                         }
-                        if id == event_b {
-                            num_notifications_b += 1;
+                        if event.id == event_b {
+                            num_notifications_b += event.count;
                         }
-                        if id == event_c {
-                            num_notifications_c += 1;
+                        if event.id == event_c {
+                            num_notifications_c += event.count;
                         }
                     })
                     .unwrap();

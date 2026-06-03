@@ -23,6 +23,7 @@ use crate::{
     },
     named_concept::NamedConceptConfiguration,
 };
+use alloc::vec::Vec;
 use core::fmt::Debug;
 use core::{marker::PhantomData, mem::MaybeUninit, ptr::NonNull, time::Duration};
 use iceoryx2_bb_concurrency::atomic::{AtomicU8, Ordering};

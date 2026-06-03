@@ -40,6 +40,7 @@ pub(crate) fn notify(options: NotifyOptions, format: Format) -> Result<()> {
         event_type: EventType::NotificationSent,
         service: options.service,
         event_id: Some(options.event_id),
+        event_count: 1,
     };
     let notify = || -> Result<()> {
         notifier.notify()?;

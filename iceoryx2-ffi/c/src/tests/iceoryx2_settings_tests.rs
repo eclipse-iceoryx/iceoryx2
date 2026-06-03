@@ -16,6 +16,7 @@ use iceoryx2::service::{
     attribute::{AttributeKey, AttributeValue},
     static_config::message_type_details::TypeName,
 };
+use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
 use iceoryx2_bb_testing::assert_that;
 
 #[test]
@@ -25,8 +26,8 @@ fn ffi_settings_are_equal_to_iceoryx2_settings() {
     assert_that!(IOX2_MAX_ATTRIBUTES_PER_SERVICE, eq AttributeSet::capacity());
     assert_that!(IOX2_SERVICE_NAME_LENGTH, eq ServiceName::max_len());
     assert_that!(IOX2_SERVICE_HASH_LENGTH, eq iceoryx2::service::service_hash::ServiceHash::max_number_of_characters());
-    assert_that!(IOX2_IS_IPC_LISTENER_FD_BASED, eq <<<ipc::Service as iceoryx2::service::Service>::Event as iceoryx2_cal::event::Event>::Listener as iceoryx2_cal::event::Listener>::IS_FILE_DESCRIPTOR_BASED);
-    assert_that!(IOX2_IS_LOCAL_LISTENER_FD_BASED, eq <<<local::Service as iceoryx2::service::Service>::Event as iceoryx2_cal::event::Event>::Listener as iceoryx2_cal::event::Listener>::IS_FILE_DESCRIPTOR_BASED);
+    assert_that!(IOX2_IS_IPC_LISTENER_FD_BASED, eq <<<ipc::Service as iceoryx2::service::Service>::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::Listener as iceoryx2_cal::event::Listener<RelocatableCountingBitSet>>::IS_FILE_DESCRIPTOR_BASED);
+    assert_that!(IOX2_IS_LOCAL_LISTENER_FD_BASED, eq <<<local::Service as iceoryx2::service::Service>::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::Listener as iceoryx2_cal::event::Listener<RelocatableCountingBitSet>>::IS_FILE_DESCRIPTOR_BASED);
     assert_that!(IOX2_TYPE_NAME_LENGTH, eq TypeName::capacity());
     assert_that!(IOX2_NODE_NAME_LENGTH, eq NodeName::max_len());
 }

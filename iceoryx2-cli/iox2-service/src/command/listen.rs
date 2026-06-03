@@ -13,6 +13,7 @@
 use core::time::Duration;
 
 use anyhow::Result;
+use iceoryx2::port::EventActivation;
 use iceoryx2::prelude::*;
 use iceoryx2_cli::Format;
 
@@ -34,7 +35,7 @@ pub(crate) fn listen(options: ListenOptions, format: Format) -> Result<()> {
 
     for _ in 0..options.repetitions.unwrap_or(u64::MAX) {
         let mut received_notification = false;
-        let callback = |event_id: EventId| {
+        let callback = |event: EventActivation| {
             received_notification = true;
             println!(
                 "{}",
@@ -42,16 +43,17 @@ pub(crate) fn listen(options: ListenOptions, format: Format) -> Result<()> {
                     .as_string(&EventFeedback {
                         event_type: EventType::NotificationReceived,
                         service: options.service.clone(),
-                        event_id: Some(event_id.as_value())
+                        event_id: Some(event.id.as_value()),
+                        event_count: event.count
                     })
                     .unwrap_or("Failed to format EventFeedback".to_string())
             );
         };
 
         if options.timeout_in_ms != 0 {
-            listener.timed_wait_all(callback, Duration::from_millis(options.timeout_in_ms))?;
+            listener.timed_wait(callback, Duration::from_millis(options.timeout_in_ms))?;
         } else {
-            listener.blocking_wait_all(callback)?;
+            listener.blocking_wait(callback)?;
         }
 
         if !received_notification {
@@ -60,7 +62,8 @@ pub(crate) fn listen(options: ListenOptions, format: Format) -> Result<()> {
                 format.as_string(&EventFeedback {
                     event_type: EventType::NotificationTimeoutExceeded,
                     service: options.service.clone(),
-                    event_id: None
+                    event_id: None,
+                    event_count: 0
                 })?
             );
         }

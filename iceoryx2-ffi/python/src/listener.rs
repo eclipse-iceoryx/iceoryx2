@@ -44,59 +44,6 @@ impl Listener {
         }
     }
 
-    /// Non-blocking wait for a new `EventId`. If no `EventId` was notified it returns `None`.
-    /// On error it emits `ListenerWaitError`.
-    pub fn try_wait_one(&self) -> PyResult<Option<EventId>> {
-        match &self.0 {
-            ListenerType::Ipc(Some(v)) => Ok(v
-                .try_wait_one()
-                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
-                .map(EventId)),
-            ListenerType::Local(Some(v)) => Ok(v
-                .try_wait_one()
-                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
-                .map(EventId)),
-            _ => fatal_panic!(from "Listener::try_wait_one()",
-                    "Accessing a released listener."),
-        }
-    }
-
-    /// Blocking wait for a new `EventId` until either an `EventId` was received or the timeout
-    /// has passed. If no `EventId` was notified it returns `None`.
-    /// On error it emits `ListenerWaitError`.
-    pub fn timed_wait_one(&self, timeout: &Duration, py: Python<'_>) -> PyResult<Option<EventId>> {
-        py.detach(move || match &self.0 {
-            ListenerType::Ipc(Some(v)) => Ok(v
-                .timed_wait_one(timeout.0)
-                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
-                .map(EventId)),
-            ListenerType::Local(Some(v)) => Ok(v
-                .timed_wait_one(timeout.0)
-                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
-                .map(EventId)),
-            _ => fatal_panic!(from "Listener::timed_wait_one()",
-                        "Accessing a released listener."),
-        })
-    }
-
-    /// Blocking wait for a new `EventId`.
-    /// Sporadic wakeups can occur and if no `EventId` was notified it returns `None`.
-    /// On error it emits `ListenerWaitError`.
-    pub fn blocking_wait_one(&self, py: Python<'_>) -> PyResult<Option<EventId>> {
-        py.detach(move || match &self.0 {
-            ListenerType::Ipc(Some(v)) => Ok(v
-                .blocking_wait_one()
-                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
-                .map(EventId)),
-            ListenerType::Local(Some(v)) => Ok(v
-                .blocking_wait_one()
-                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
-                .map(EventId)),
-            _ => fatal_panic!(from "Listener::blocking_wait_one()",
-                        "Accessing a released listener."),
-        })
-    }
-
     /// Non-blocking wait for new `EventId`s. Collects all `EventId`s that were received and
     /// calls the provided callback is with the `EventId` as input argument.
     /// On error it emits `ListenerWaitError`.
