@@ -245,8 +245,8 @@ pub mod node_death {
 
         let mut received_events = 0;
         listener
-            .try_wait_all(|event| {
-                assert_that!(event, eq notifier_dead_event);
+            .try_wait(|event| {
+                assert_that!(event.id, eq notifier_dead_event);
                 received_events += 1;
             })
             .unwrap();

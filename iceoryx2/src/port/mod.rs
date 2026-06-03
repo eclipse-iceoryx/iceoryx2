@@ -16,6 +16,9 @@ use core::time::Duration;
 use tiny_fn::tiny_fn;
 use update_connections::ConnectionFailure;
 
+pub use iceoryx2_cal::event::EventId;
+pub use iceoryx2_cal::event::event_state::EventActivation;
+
 pub(crate) mod details;
 pub use details::data_segment::DataSegmentType;
 

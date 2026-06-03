@@ -113,8 +113,8 @@ impl CustomSubscriber {
     }
 
     fn handle_event(&self) -> Result<(), Box<dyn core::error::Error>> {
-        while let Some(event) = self.listener.try_wait_one()? {
-            let event: PubSubEvent = event.into();
+        self.listener.try_wait(|event| {
+            let event: PubSubEvent = event.id.into();
             match event {
                 PubSubEvent::SentHistory => {
                     coutln!("History delivered");
@@ -131,7 +131,7 @@ impl CustomSubscriber {
                 PubSubEvent::PublisherDisconnected => coutln!("publisher disconnected"),
                 _ => (),
             }
-        }
+        })?;
 
         Ok(())
     }

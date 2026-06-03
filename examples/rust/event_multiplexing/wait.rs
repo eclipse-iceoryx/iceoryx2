@@ -69,8 +69,12 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             // there is something to read. If we skip this step completely we will end up in a
             // busy loop.
             listener
-                .try_wait_all(|event_id| {
-                    coutln!("Received trigger from \"{service_name}\" :: {event_id:?}");
+                .try_wait(|event| {
+                    coutln!(
+                        "Received trigger from \"{service_name}\" :: {:?}, {} times",
+                        event.id,
+                        event.count
+                    );
                 })
                 .unwrap();
         }

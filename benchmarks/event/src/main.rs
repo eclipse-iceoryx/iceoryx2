@@ -74,7 +74,7 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn core::error:
             notifier_a2b.notify().expect("failed to notify");
 
             for _ in 0..args.iterations {
-                while listener_b2a.blocking_wait_one().unwrap().is_none() {}
+                while listener_b2a.blocking_wait(|_| {}).unwrap() == 0 {}
                 notifier_a2b.notify().expect("failed to notify");
             }
         });
@@ -90,7 +90,7 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn core::error:
             start_benchmark_barrier.wait();
 
             for _ in 0..args.iterations {
-                while listener_a2b.blocking_wait_one().unwrap().is_none() {}
+                while listener_a2b.blocking_wait(|_| {}).unwrap() == 0 {}
                 notifier_b2a.notify().expect("failed to notify");
             }
         });

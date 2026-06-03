@@ -34,9 +34,12 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     coutln!("Listener ready to receive events!");
 
     while node.wait(Duration::ZERO).is_ok() {
-        if let Ok(Some(event_id)) = listener.timed_wait_one(CYCLE_TIME) {
-            coutln!("event was triggered with id: {event_id:?}");
-        }
+        listener.timed_wait(
+            |event| {
+                coutln!("event {:?} was notified {} times", event.id, event.count);
+            },
+            CYCLE_TIME,
+        )?;
     }
 
     coutln!("exit");
