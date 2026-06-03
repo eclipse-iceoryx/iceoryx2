@@ -235,7 +235,7 @@ where
 
     let wake_service = fail!(
         from origin,
-        when reactive_node.service_builder(&service_name).event().open_or_create(),
+        when reactive_node.service_builder(&service_name).event().create(),
         with CreationError::ReactiveMode,
         "Failed to open wake event service"
     );
