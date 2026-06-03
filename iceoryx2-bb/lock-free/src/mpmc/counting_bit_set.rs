@@ -57,7 +57,7 @@ use iceoryx2_bb_elementary_traits::{
 use iceoryx2_log::fail;
 use iceoryx2_log::fatal_panic;
 
-type AtomicBaseType = AtomicU16;
+type AtomicBaseType = AtomicU64;
 
 trait AtomicMax {
     fn max_value() -> u64;
