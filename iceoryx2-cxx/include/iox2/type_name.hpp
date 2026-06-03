@@ -17,7 +17,29 @@
 #include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {
+
 using TypeName = iox2::bb::StaticString<IOX2_TYPE_NAME_LENGTH>;
+
+/// Customization point that assigns an externally controlled type identity to a
+/// type which cannot carry an `IOX2_TYPE_NAME` member, e.g. a type emitted by an
+/// IDL/code generator whose output must not be edited.
+///
+/// A type must not define both a `TypeNameSpecialization` and an
+/// `IOX2_TYPE_NAME` member; doing so is a compile error.
+template <typename T>
+struct TypeNameSpecialization;
+
 } // namespace iox2
+
+/// Specializes `iox2::TypeNameSpecialization` for `Type` so that `Type` uses
+/// `NameExpr` as its iceoryx2 type identity.
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage) : a function template cannot specialize from arbitrary scopes
+#define IOX2_DEFINE_TYPE_NAME(Type, NameExpr)                                                                          \
+    template <>                                                                                                        \
+    struct iox2::TypeNameSpecialization<Type> {                                                                        \
+        static auto value() -> const char* {                                                                           \
+            return (NameExpr);                                                                                         \
+        }                                                                                                              \
+    }
 
 #endif
