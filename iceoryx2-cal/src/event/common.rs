@@ -36,11 +36,11 @@ use iceoryx2_bb_posix::{
 };
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_log::{debug, fail, fatal_panic};
+use iceoryx2_log::{debug, fail};
 
 const NOTIFICATION_STATE_IDLE: u8 = 0;
-const NOTIFICATION_STATE_NOTIFIED: u8 = 1;
-const NOTIFICATION_STATE_WAITING: u8 = 2;
+const NOTIFICATION_STATE_NOTIFICATION_PENDING: u8 = 1;
+const NOTIFICATION_STATE_NOTIFIED: u8 = 2;
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct Configuration<
@@ -309,35 +309,45 @@ impl<
               when mgmt.event.activate(event_id),
               "{msg} with {event_id:?} since the activation failed.");
 
-        // notify works inverted to drain
-        // 1. activate
-        // 2. set state to notified
-        //
-        // drain
-        // 1. set state to no pending notification
-        // 2. collect activations
-
-        let old_state = mgmt
-            .notification_state
-            .swap(NOTIFICATION_STATE_NOTIFIED, Ordering::SeqCst);
-
-        if old_state == NOTIFICATION_STATE_WAITING {
+        let set_state_to_notified = || {
+            let _ = mgmt.notification_state.compare_exchange(
+                NOTIFICATION_STATE_NOTIFICATION_PENDING,
+                NOTIFICATION_STATE_NOTIFIED,
+                Ordering::SeqCst,
+                Ordering::SeqCst,
+            );
+        };
+        let notify = || -> Result<(), NotifierNotifyError> {
             match self.handle.notify() {
-                Ok(()) => (),
+                Ok(()) => {
+                    set_state_to_notified();
+                    Ok(())
+                }
                 Err(NotifierNotifyError::BufferIsFull) => {
                     if self.fail_when_buffer_is_full {
                         fail!(from self, with NotifierNotifyError::BufferIsFull,
                         "{msg} with {event_id:?} since the buffer is full.");
+                    } else {
+                        set_state_to_notified();
+                        Ok(())
                     }
                 }
                 Err(e) => {
                     fail!(from self, with e,
-                    "{msg} with {event_id:?} due to {e:?}.");
+                            "{msg} with {event_id:?} due to {e:?}.");
                 }
             }
-        }
+        };
 
-        Ok(())
+        match mgmt.notification_state.compare_exchange(
+            NOTIFICATION_STATE_IDLE,
+            NOTIFICATION_STATE_NOTIFICATION_PENDING,
+            Ordering::SeqCst,
+            Ordering::SeqCst,
+        ) {
+            Err(NOTIFICATION_STATE_NOTIFIED) => Ok(()),
+            Ok(_) | Err(_) => notify(),
+        }
     }
 }
 
@@ -435,32 +445,11 @@ impl<
             return drain();
         }
 
-        match mgmt.notification_state.compare_exchange(
-            NOTIFICATION_STATE_IDLE,
-            NOTIFICATION_STATE_WAITING,
-            Ordering::SeqCst,
-            Ordering::SeqCst,
-        ) {
-            Ok(_) => {
-                if mgmt.notification_state.load(Ordering::SeqCst) != NOTIFICATION_STATE_NOTIFIED {
-                    fail!(from self, when wait_call(),
-                        "{msg} since the underlying wait call failed.");
-                }
-
-                mgmt.notification_state
-                    .store(NOTIFICATION_STATE_IDLE, Ordering::SeqCst);
-                drain()
-            }
-            Err(NOTIFICATION_STATE_NOTIFIED) => {
-                mgmt.notification_state
-                    .store(NOTIFICATION_STATE_IDLE, Ordering::SeqCst);
-                drain()
-            }
-            Err(_) => {
-                fatal_panic!(from self,
-                    "This shoul never happen! It seems that the waiter is used concurrently which is not supported.");
-            }
-        }
+        fail!(from self, when wait_call(),
+            "{msg} since the underlying wait call failed.");
+        mgmt.notification_state
+            .store(NOTIFICATION_STATE_IDLE, Ordering::SeqCst);
+        drain()
     }
 }
 
