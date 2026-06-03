@@ -19,6 +19,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
 use crate::event::EventId;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventActivation {
     pub id: EventId,
     pub count: u64,

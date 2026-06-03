@@ -16,7 +16,7 @@ use iceoryx2_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::{
-    duration::Duration, error::ListenerWaitError, event_id::EventId,
+    duration::Duration, error::ListenerWaitError, event_activation::EventActivation,
     unique_listener_id::UniqueListenerId,
 };
 
@@ -47,18 +47,18 @@ impl Listener {
     /// Non-blocking wait for new `EventId`s. Collects all `EventId`s that were received and
     /// calls the provided callback is with the `EventId` as input argument.
     /// On error it emits `ListenerWaitError`.
-    pub fn try_wait_all(&self) -> PyResult<Vec<EventId>> {
+    pub fn try_wait(&self) -> PyResult<Vec<EventActivation>> {
         let mut event_ids = vec![];
         match &self.0 {
             ListenerType::Ipc(Some(v)) => v
-                .try_wait_all(|e| event_ids.push(EventId(e)))
+                .try_wait(|e| event_ids.push(EventActivation(e)))
                 .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
             ListenerType::Local(Some(v)) => v
-                .try_wait_all(|e| event_ids.push(EventId(e)))
+                .try_wait(|e| event_ids.push(EventActivation(e)))
                 .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
             _ => fatal_panic!(from "Listener::try_wait_all()",
                     "Accessing a released listener."),
-        }
+        };
 
         Ok(event_ids)
     }
@@ -67,19 +67,19 @@ impl Listener {
     /// as an `EventId` was received and then collects all `EventId`s that were received and
     /// calls the provided callback is with the `EventId` as input argument.
     /// On error it emits `ListenerWaitError`.
-    pub fn timed_wait_all(&self, timeout: &Duration, py: Python<'_>) -> PyResult<Vec<EventId>> {
+    pub fn timed_wait(&self, timeout: &Duration, py: Python<'_>) -> PyResult<Vec<EventActivation>> {
         py.detach(move || {
             let mut event_ids = vec![];
             match &self.0 {
                 ListenerType::Ipc(Some(v)) => v
-                    .timed_wait_all(|e| event_ids.push(EventId(e)), timeout.0)
+                    .timed_wait(|e| event_ids.push(EventActivation(e)), timeout.0)
                     .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
                 ListenerType::Local(Some(v)) => v
-                    .timed_wait_all(|e| event_ids.push(EventId(e)), timeout.0)
+                    .timed_wait(|e| event_ids.push(EventActivation(e)), timeout.0)
                     .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
                 _ => fatal_panic!(from "Listener::timed_wait_all()",
                         "Accessing a released listener."),
-            }
+            };
 
             Ok(event_ids)
         })
@@ -89,20 +89,19 @@ impl Listener {
     /// as an `EventId` was received and then collects all `EventId`s that were received and
     /// calls the provided callback is with the `EventId` as input argument.
     /// On error it emits `ListenerWaitError`.
-    pub fn blocking_wait_all(&self, py: Python<'_>) -> PyResult<Vec<EventId>> {
+    pub fn blocking_wait(&self, py: Python<'_>) -> PyResult<Vec<EventActivation>> {
         py.detach(move || {
             let mut event_ids = vec![];
             match &self.0 {
-                ListenerType::Ipc(Some(v)) => {
-                    v.blocking_wait_all(|e| event_ids.push(EventId(e)))
-                        .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
-                }
+                ListenerType::Ipc(Some(v)) => v
+                    .blocking_wait(|e| event_ids.push(EventActivation(e)))
+                    .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
                 ListenerType::Local(Some(v)) => v
-                    .blocking_wait_all(|e| event_ids.push(EventId(e)))
+                    .blocking_wait(|e| event_ids.push(EventActivation(e)))
                     .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
                 _ => fatal_panic!(from "Listener::blocking_wait_all()",
                     "Accessing a released listener."),
-            }
+            };
 
             Ok(event_ids)
         })
