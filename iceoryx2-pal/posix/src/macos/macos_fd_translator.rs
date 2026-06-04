@@ -73,11 +73,11 @@ impl ShmFdTranslator {
     pub fn unregister(&self, shm_fd: int) -> Option<int> {
         let mut entries = self.entries.lock().expect("ShmFdTranslator mutex poisoned");
         for slot in entries.iter_mut() {
-            if let Some(e) = *slot
-                && e.shm_fd == shm_fd
-            {
-                *slot = None;
-                return Some(e.state_fd);
+            if let Some(e) = *slot {
+                if e.shm_fd == shm_fd {
+                    *slot = None;
+                    return Some(e.state_fd);
+                }
             }
         }
         None
