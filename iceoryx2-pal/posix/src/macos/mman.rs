@@ -21,9 +21,14 @@ use std::io::Write;
 
 use crate::posix::*;
 
+use super::macos_fd_translator::ShmFdTranslator;
 use super::settings::{MAX_PATH_LENGTH, SHM_STATE_DIRECTORY, SHM_STATE_SUFFIX};
 
 const SHM_MAX_NAME_LEN: usize = 33;
+
+// iox2-156: user mode bytes live at this offset in the .shm_state file.
+pub(crate) const SHM_STATE_MODE_OFFSET: i64 = SHM_MAX_NAME_LEN as i64;
+pub(crate) const SHM_STATE_MODE_LEN: usize = 4;
 
 pub unsafe fn mlock(addr: *const void, len: size_t) -> int {
     unsafe { crate::internal::mlock(addr, len) }
@@ -81,53 +86,80 @@ unsafe fn shm_file_path(name: *const c_char, suffix: &[u8]) -> [u8; MAX_PATH_LEN
     state_file_path
 }
 
-unsafe fn get_real_shm_name(name: *const c_char) -> Option<[u8; SHM_MAX_NAME_LEN]> {
+unsafe fn open_state_file(name: *const c_char) -> Option<([u8; SHM_MAX_NAME_LEN], int)> {
     unsafe {
         let shm_file_path = shm_file_path(name, SHM_STATE_SUFFIX);
-        let shm_state_fd = open_with_mode(shm_file_path.as_ptr().cast(), O_RDONLY, 0);
-        if shm_state_fd == -1 {
+        // O_RDWR so iox2-156 routing can pwrite mode bytes later.
+        let state_fd = open_with_mode(shm_file_path.as_ptr().cast(), O_RDWR, 0);
+        if state_fd == -1 {
             return None;
         }
 
         let mut buffer = [0u8; SHM_MAX_NAME_LEN];
-
-        if read(
-            shm_state_fd,
-            buffer.as_mut_ptr().cast(),
-            SHM_MAX_NAME_LEN - 1,
-        ) <= 0
-        {
-            close(shm_state_fd);
+        if read(state_fd, buffer.as_mut_ptr().cast(), SHM_MAX_NAME_LEN - 1) <= 0 {
+            close(state_fd);
             return None;
         }
 
-        close(shm_state_fd);
-        Some(buffer)
+        Some((buffer, state_fd))
     }
 }
 
-unsafe fn write_real_shm_name(name: *const c_char, buffer: &[u8]) -> bool {
+unsafe fn create_state_file(name: *const c_char, real_name: &[u8], mode: mode_t) -> Option<int> {
     unsafe {
         let shm_file_path = shm_file_path(name, SHM_STATE_SUFFIX);
-        let shm_state_fd = open_with_mode(
+        let state_fd = open_with_mode(
             shm_file_path.as_ptr().cast(),
             O_EXCL | O_CREAT | O_RDWR,
-            S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH,
+            S_IWUSR | S_IRUSR,
         );
-
-        if shm_state_fd == -1 {
-            return false;
+        if state_fd == -1 {
+            return None;
         }
 
-        if write(shm_state_fd, buffer.as_ptr().cast(), buffer.len()) != buffer.len() as _ {
+        if write(state_fd, real_name.as_ptr().cast(), real_name.len()) != real_name.len() as _ {
+            close(state_fd);
             remove(shm_file_path.as_ptr().cast());
-            close(shm_state_fd);
-            return false;
+            return None;
         }
 
-        close(shm_state_fd);
-        true
+        if !write_state_mode(state_fd, mode) {
+            close(state_fd);
+            remove(shm_file_path.as_ptr().cast());
+            return None;
+        }
+
+        Some(state_fd)
     }
+}
+
+pub(crate) unsafe fn write_state_mode(state_fd: int, mode: mode_t) -> bool {
+    let bytes = (mode as u32).to_le_bytes();
+    let written = unsafe {
+        crate::internal::pwrite(
+            state_fd,
+            bytes.as_ptr().cast(),
+            SHM_STATE_MODE_LEN,
+            SHM_STATE_MODE_OFFSET,
+        )
+    };
+    written == SHM_STATE_MODE_LEN as _
+}
+
+pub(crate) unsafe fn read_state_mode(state_fd: int) -> mode_t {
+    let mut bytes = [0u8; SHM_STATE_MODE_LEN];
+    let n = unsafe {
+        crate::internal::pread(
+            state_fd,
+            bytes.as_mut_ptr().cast(),
+            SHM_STATE_MODE_LEN,
+            SHM_STATE_MODE_OFFSET,
+        )
+    };
+    if n != SHM_STATE_MODE_LEN as _ {
+        return 0 as mode_t;
+    }
+    u32::from_le_bytes(bytes) as mode_t
 }
 
 unsafe fn generate_real_shm_name() -> [u8; SHM_MAX_NAME_LEN] {
@@ -153,48 +185,77 @@ unsafe fn generate_real_shm_name() -> [u8; SHM_MAX_NAME_LEN] {
     buffer
 }
 
-pub unsafe fn shm_open(name: *const c_char, oflag: int, _mode: mode_t) -> int {
-    let real_name = unsafe { get_real_shm_name(name) };
-    if oflag & O_EXCL != 0 && real_name.is_some() {
+pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
+    let existing = unsafe { open_state_file(name) };
+    if oflag & O_EXCL != 0 && existing.is_some() {
+        if let Some((_, state_fd)) = existing {
+            unsafe { close(state_fd) };
+        }
         Errno::set(Errno::EEXIST);
         return -1;
     }
 
-    let real_name = match real_name {
-        Some(name) => name,
+    let (real_name, state_fd, created) = match existing {
+        Some((real_name, state_fd)) => (real_name, state_fd, false),
         None => {
             if oflag & O_CREAT == 0 {
                 Errno::set(Errno::ENOENT);
                 return -1;
             }
             let real_name = unsafe { generate_real_shm_name() };
-            if unsafe { !write_real_shm_name(name, &real_name) } {
-                return -1;
-            }
-            real_name
+            let state_fd = match unsafe { create_state_file(name, &real_name, mode) } {
+                Some(fd) => fd,
+                None => return -1,
+            };
+            (real_name, state_fd, true)
         }
     };
 
-    // TODO iox2-156, shared memory permission cannot be adjusted with fchmod, therefore setting
-    //                  it so that the owner can access everything
-    let mode = S_IRWXU;
-    // TODO iox2-156, end
-    unsafe { crate::internal::shm_open(real_name.as_ptr().cast(), oflag, mode as uint) }
+    // macOS ignores shm_open mode; iox2-156 user mode lives on the trampoline.
+    let shm_fd =
+        unsafe { crate::internal::shm_open(real_name.as_ptr().cast(), oflag, S_IRWXU as uint) };
+    if shm_fd == -1 {
+        let err = Errno::get();
+        unsafe { close(state_fd) };
+        if created {
+            unsafe { remove(shm_file_path(name, SHM_STATE_SUFFIX).as_ptr().cast()) };
+        }
+        Errno::set(err);
+        return -1;
+    }
+
+    if !ShmFdTranslator::get_instance().register(shm_fd, state_fd) {
+        unsafe {
+            crate::internal::close(shm_fd);
+            close(state_fd);
+        }
+        if created {
+            unsafe { remove(shm_file_path(name, SHM_STATE_SUFFIX).as_ptr().cast()) };
+        }
+        Errno::set(Errno::ENFILE);
+        return -1;
+    }
+
+    shm_fd
 }
 
 pub unsafe fn shm_unlink(name: *const c_char) -> int {
-    let real_name = unsafe { get_real_shm_name(name) };
-
-    if let Some(real_name) = real_name {
-        let ret_val = unsafe { crate::internal::shm_unlink(real_name.as_ptr().cast()) };
-        if ret_val == 0 || (ret_val == -1 && Errno::get() == Errno::ENOENT) {
-            unsafe { remove(shm_file_path(name, SHM_STATE_SUFFIX).as_ptr().cast()) };
+    let real_name = match unsafe { open_state_file(name) } {
+        Some((real_name, state_fd)) => {
+            unsafe { close(state_fd) };
+            real_name
         }
-        return ret_val;
-    }
+        None => {
+            Errno::set(Errno::ENOENT);
+            return -1;
+        }
+    };
 
-    Errno::set(Errno::ENOENT);
-    -1
+    let ret_val = unsafe { crate::internal::shm_unlink(real_name.as_ptr().cast()) };
+    if ret_val == 0 || (ret_val == -1 && Errno::get() == Errno::ENOENT) {
+        unsafe { remove(shm_file_path(name, SHM_STATE_SUFFIX).as_ptr().cast()) };
+    }
+    ret_val
 }
 
 pub unsafe fn mmap(
