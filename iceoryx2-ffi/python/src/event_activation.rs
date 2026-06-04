@@ -22,7 +22,7 @@ pub struct EventActivation(pub(crate) iceoryx2::prelude::EventActivation);
 impl EventActivation {
     #[getter]
     /// Returns the `EventId`
-    pub fn event_id(&self) -> crate::event_id::EventId {
+    pub fn id(&self) -> crate::event_id::EventId {
         crate::event_id::EventId::new(self.0.id.as_value())
     }
 

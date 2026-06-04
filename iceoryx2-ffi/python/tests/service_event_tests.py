@@ -31,7 +31,11 @@ def test_notifier_use_default_event_id(
     listener = service.listener_builder().create()
 
     notifier.notify()
-    assert listener.try_wait_one() == event_id
+    events = listener.try_wait()
+
+    assert len(events) == 1
+    assert events[0].id == event_id
+    assert events[0].count == 1
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -49,7 +53,11 @@ def test_notification_with_custom_event_id_works(
     listener = service.listener_builder().create()
 
     notifier.notify_with_custom_event_id(event_id)
-    assert listener.try_wait_one() == event_id
+    events = listener.try_wait()
+
+    assert len(events) == 1
+    assert events[0].id == event_id
+    assert events[0].count == 1
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -71,74 +79,7 @@ def test_deadline_can_be_acquired_via_ports(
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_listener_try_wait_one_works(
-    service_type: iox2.ServiceType,
-) -> None:
-    config = iox2.testing.generate_isolated_config()
-    node = iox2.NodeBuilder.new().config(config).create(service_type)
-    event_id_1 = iox2.EventId.new(12)
-    event_id_2 = iox2.EventId.new(21)
-
-    service_name = iox2.testing.generate_service_name()
-    service = node.service_builder(service_name).event().create()
-
-    notifier = service.notifier_builder().create()
-    listener = service.listener_builder().create()
-
-    notifier.notify_with_custom_event_id(event_id_1)
-    notifier.notify_with_custom_event_id(event_id_2)
-
-    assert listener.try_wait_one() == event_id_1
-    assert listener.try_wait_one() == event_id_2
-
-
-@pytest.mark.parametrize("service_type", service_types)
-def test_listener_timed_wait_one_works(
-    service_type: iox2.ServiceType,
-) -> None:
-    config = iox2.testing.generate_isolated_config()
-    node = iox2.NodeBuilder.new().config(config).create(service_type)
-    timeout = iox2.Duration.from_secs(1)
-    event_id_1 = iox2.EventId.new(13)
-    event_id_2 = iox2.EventId.new(31)
-
-    service_name = iox2.testing.generate_service_name()
-    service = node.service_builder(service_name).event().create()
-
-    notifier = service.notifier_builder().create()
-    listener = service.listener_builder().create()
-
-    notifier.notify_with_custom_event_id(event_id_1)
-    notifier.notify_with_custom_event_id(event_id_2)
-
-    assert listener.timed_wait_one(timeout) == event_id_1
-    assert listener.timed_wait_one(timeout) == event_id_2
-
-
-@pytest.mark.parametrize("service_type", service_types)
-def test_listener_blocking_wait_one_works(
-    service_type: iox2.ServiceType,
-) -> None:
-    config = iox2.testing.generate_isolated_config()
-    node = iox2.NodeBuilder.new().config(config).create(service_type)
-    event_id_1 = iox2.EventId.new(14)
-    event_id_2 = iox2.EventId.new(41)
-
-    service_name = iox2.testing.generate_service_name()
-    service = node.service_builder(service_name).event().create()
-
-    notifier = service.notifier_builder().create()
-    listener = service.listener_builder().create()
-
-    notifier.notify_with_custom_event_id(event_id_1)
-    notifier.notify_with_custom_event_id(event_id_2)
-
-    assert listener.blocking_wait_one() == event_id_1
-    assert listener.blocking_wait_one() == event_id_2
-
-
-@pytest.mark.parametrize("service_type", service_types)
-def test_listener_try_wait_all_works(
+def test_listener_try_wait_works(
     service_type: iox2.ServiceType,
 ) -> None:
     config = iox2.testing.generate_isolated_config()
@@ -155,11 +96,13 @@ def test_listener_try_wait_all_works(
     notifier.notify_with_custom_event_id(event_id_1)
     notifier.notify_with_custom_event_id(event_id_2)
 
-    events = listener.try_wait_all()
+    events = listener.try_wait()
 
     assert len(events) == 2
-    assert events[0] == event_id_1
-    assert events[1] == event_id_2
+    assert events[0].id == event_id_1
+    assert events[0].count == 1
+    assert events[1].id == event_id_2
+    assert events[1].count == 1
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -181,11 +124,13 @@ def test_listener_timed_wait_all_works(
     notifier.notify_with_custom_event_id(event_id_1)
     notifier.notify_with_custom_event_id(event_id_2)
 
-    events = listener.timed_wait_all(timeout)
+    events = listener.timed_wait(timeout)
 
     assert len(events) == 2
-    assert events[0] == event_id_1
-    assert events[1] == event_id_2
+    assert events[0].id == event_id_1
+    assert events[0].count == 1
+    assert events[1].id == event_id_2
+    assert events[1].count == 1
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -206,8 +151,10 @@ def test_listener_blocking_wait_all_works(
     notifier.notify_with_custom_event_id(event_id_1)
     notifier.notify_with_custom_event_id(event_id_2)
 
-    events = listener.blocking_wait_all()
+    events = listener.blocking_wait()
 
     assert len(events) == 2
-    assert events[0] == event_id_1
-    assert events[1] == event_id_2
+    assert events[0].id == event_id_1
+    assert events[0].count == 1
+    assert events[1].id == event_id_2
+    assert events[1].count == 1
