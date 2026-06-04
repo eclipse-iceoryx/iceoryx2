@@ -63,9 +63,8 @@ class CustomSubscriber : public iox2::FileDescriptorBased {
     }
 
     void handle_event() {
-        for (auto event = m_listener.try_wait_one(); event.has_value() && event->has_value();
-             event = m_listener.try_wait_one()) {
-            switch (iox2::bb::into<PubSubEvent>(event.value()->as_value())) {
+        m_listener.try_wait([&](auto event) -> void {
+            switch (iox2::bb::into<PubSubEvent>(event.id().as_value())) {
             case PubSubEvent::SentHistory: {
                 std::cout << "History delivered" << std::endl;
                 for (auto sample = receive(); sample.has_value(); sample = receive()) {
@@ -91,7 +90,7 @@ class CustomSubscriber : public iox2::FileDescriptorBased {
                 break;
             }
             }
-        }
+        });
     }
 
     auto receive() -> iox2::bb::Optional<iox2::Sample<iox2::ServiceType::Ipc, TransmissionData, void>> {

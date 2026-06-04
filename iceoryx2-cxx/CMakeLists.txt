@@ -53,6 +53,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/dynamic_config_event.cpp
     src/dynamic_config_publish_subscribe.cpp
     src/dynamic_config_request_response.cpp
+    src/event_activation.cpp
     src/event_id.cpp
     src/file_descriptor.cpp
     src/header_publish_subscribe.cpp
@@ -157,6 +158,6 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/install.cmake)
 
 # Tests
 if(${BUILD_TESTING})
-    enable_testing()
-    add_subdirectory(tests)
+  enable_testing()
+  add_subdirectory(tests)
 endif()

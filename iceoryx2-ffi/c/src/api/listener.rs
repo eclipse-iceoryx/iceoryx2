@@ -271,7 +271,7 @@ pub unsafe extern "C" fn iox2_listener_get_file_descriptor(
 /// * The `listener_handle` must be a valid handle.
 /// * The `callback` must be a valid function pointer.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_listener_try_wait_all(
+pub unsafe extern "C" fn iox2_listener_try_wait(
     listener_handle: iox2_listener_h_ref,
     number_of_notifications: *mut u64,
     callback: iox2_listener_wait_all_callback,
@@ -319,7 +319,7 @@ pub unsafe extern "C" fn iox2_listener_try_wait_all(
 /// * The `listener_handle` must be a valid handle.
 /// * The `callback` must be a valid function pointer.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_listener_timed_wait_all(
+pub unsafe extern "C" fn iox2_listener_timed_wait(
     listener_handle: iox2_listener_h_ref,
     number_of_notifications: *mut u64,
     callback: iox2_listener_wait_all_callback,

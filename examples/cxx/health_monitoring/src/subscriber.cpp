@@ -97,16 +97,16 @@ void handle_incoming_events(Listener<ServiceType::Ipc>& listener,
                             const Subscriber<ServiceType::Ipc, uint64_t, void>& subscriber,
                             const ServiceName& service_name) {
     listener
-        .try_wait_all([&](auto event_id) -> auto {
-            if (event_id == iox2::bb::into<EventId>(PubSubEvent::ProcessDied)) {
+        .try_wait([&](auto event) -> auto {
+            if (event.id() == iox2::bb::into<EventId>(PubSubEvent::ProcessDied)) {
                 std::cout << service_name.to_string().unchecked_access().c_str() << ": process died!" << std::endl;
-            } else if (event_id == iox2::bb::into<EventId>(PubSubEvent::PublisherConnected)) {
+            } else if (event.id() == iox2::bb::into<EventId>(PubSubEvent::PublisherConnected)) {
                 std::cout << service_name.to_string().unchecked_access().c_str() << ": publisher connected!"
                           << std::endl;
-            } else if (event_id == iox2::bb::into<EventId>(PubSubEvent::PublisherDisconnected)) {
+            } else if (event.id() == iox2::bb::into<EventId>(PubSubEvent::PublisherDisconnected)) {
                 std::cout << service_name.to_string().unchecked_access().c_str() << ": publisher disconnected!"
                           << std::endl;
-            } else if (event_id == iox2::bb::into<EventId>(PubSubEvent::SentSample)) {
+            } else if (event.id() == iox2::bb::into<EventId>(PubSubEvent::SentSample)) {
                 const auto receive_result = subscriber.receive();
                 if (receive_result.has_value() && receive_result.value().has_value()) {
                     const auto& sample = receive_result.value().value();
