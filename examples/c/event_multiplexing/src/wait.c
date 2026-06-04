@@ -34,8 +34,6 @@ static void event_callback(const iox2_event_id_t* event_id, uint64_t event_count
 static iox2_callback_progression_e on_event(iox2_waitset_attachment_id_h attachment_id, void* context) {
     struct CallbackContext* ctx = (struct CallbackContext*) context;
 
-    iox2_event_id_t event_id;
-    bool has_received_event = false;
     // check if the event originated from guard_1 of listener_1
     if (iox2_waitset_attachment_id_has_event_from(&attachment_id, ctx->guard_1)) {
         printf("Received trigger from \"%s\" ::", ctx->service_name_1);

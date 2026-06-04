@@ -647,7 +647,7 @@ pub mod event_trait {
         assert_that!(result, eq 0);
     }
 
-    fn wait_all_collects_all_triggers<
+    fn wait_collects_all_triggers<
         E: EventState,
         Sut: Event<E>,
         F: FnMut(&mut Vec<EventId>, &Sut::Listener),
@@ -685,22 +685,22 @@ pub mod event_trait {
     }
 
     #[conformance_test]
-    pub fn try_wait_all_collects_all_triggers<E: EventState, Sut: Event<E>>() {
-        wait_all_collects_all_triggers::<E, Sut, _>(|v, sut: &Sut::Listener| {
+    pub fn try_wait_collects_all_triggers<E: EventState, Sut: Event<E>>() {
+        wait_collects_all_triggers::<E, Sut, _>(|v, sut: &Sut::Listener| {
             sut.try_wait(|id| v.push(id.id)).unwrap();
         });
     }
 
     #[conformance_test]
-    pub fn timed_wait_all_collects_all_triggers<E: EventState, Sut: Event<E>>() {
-        wait_all_collects_all_triggers::<E, Sut, _>(|v, sut: &Sut::Listener| {
+    pub fn timed_wait_collects_all_triggers<E: EventState, Sut: Event<E>>() {
+        wait_collects_all_triggers::<E, Sut, _>(|v, sut: &Sut::Listener| {
             sut.timed_wait(|id| v.push(id.id), TIMEOUT * 1000).unwrap();
         });
     }
 
     #[conformance_test]
-    pub fn blocking_wait_all_collects_all_triggers<E: EventState, Sut: Event<E>>() {
-        wait_all_collects_all_triggers::<E, Sut, _>(|v, sut: &Sut::Listener| {
+    pub fn blocking_wait_collects_all_triggers<E: EventState, Sut: Event<E>>() {
+        wait_collects_all_triggers::<E, Sut, _>(|v, sut: &Sut::Listener| {
             sut.blocking_wait(|id| v.push(id.id)).unwrap();
         });
     }

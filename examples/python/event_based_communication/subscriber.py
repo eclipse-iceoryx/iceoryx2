@@ -12,9 +12,10 @@
 
 """Event-based communication subscriber example."""
 
-import iceoryx2 as iox2
 from pubsub_event import PubSubEvent, from_event_id, to_event_id
 from transmission_data import TransmissionData
+
+import iceoryx2 as iox2
 
 SERVICE_NAME = "EventBasedCommService"
 DEADLINE = iox2.Duration.from_secs(2)
@@ -67,8 +68,8 @@ class CustomSubscriber:
 
     def handle_event(self):
         """Handles incoming events from publishers."""
-        for event_id in self.listener.try_wait_all():
-            event = from_event_id(event_id)
+        for event_handle in self.listener.try_wait():
+            event = from_event_id(event_handle.id)
             if event == PubSubEvent.SentHistory:
                 print("History delivered")
                 for sample in self._drain_samples():

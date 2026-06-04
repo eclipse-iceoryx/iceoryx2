@@ -56,7 +56,7 @@ impl Listener {
             ListenerType::Local(Some(v)) => v
                 .try_wait(|e| event_ids.push(EventActivation(e)))
                 .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
-            _ => fatal_panic!(from "Listener::try_wait_all()",
+            _ => fatal_panic!(from "Listener::try_wait()",
                     "Accessing a released listener."),
         };
 
@@ -77,7 +77,7 @@ impl Listener {
                 ListenerType::Local(Some(v)) => v
                     .timed_wait(|e| event_ids.push(EventActivation(e)), timeout.0)
                     .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
-                _ => fatal_panic!(from "Listener::timed_wait_all()",
+                _ => fatal_panic!(from "Listener::timed_wait()",
                         "Accessing a released listener."),
             };
 
@@ -99,7 +99,7 @@ impl Listener {
                 ListenerType::Local(Some(v)) => v
                     .blocking_wait(|e| event_ids.push(EventActivation(e)))
                     .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
-                _ => fatal_panic!(from "Listener::blocking_wait_all()",
+                _ => fatal_panic!(from "Listener::blocking_wait()",
                     "Accessing a released listener."),
             };
 

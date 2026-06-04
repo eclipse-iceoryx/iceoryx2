@@ -98,9 +98,10 @@ pub mod reactive {
             || {
                 publisher_a.send_copy(42u64).map_err(|_| "send failed")?;
                 tunnel_a.propagate().map_err(|_| "propagate failed")?;
-                match wake_listener.try_wait_one() {
-                    Ok(Some(_)) => Ok(()),
-                    _ => Err("wake did not fire"),
+                if wake_listener.try_wait(|_| {}).unwrap() == 0 {
+                    Err("wake did not fire")
+                } else {
+                    Ok(())
                 }
             },
             TIMEOUT,
@@ -174,9 +175,10 @@ pub mod reactive {
             || {
                 notifier_a.notify().map_err(|_| "notify failed")?;
                 tunnel_a.propagate().map_err(|_| "propagate failed")?;
-                match wake_listener.try_wait_one() {
-                    Ok(Some(_)) => Ok(()),
-                    _ => Err("wake did not fire"),
+                if wake_listener.try_wait(|_| {}).unwrap() == 0 {
+                    Err("wake did not fire")
+                } else {
+                    Ok(())
                 }
             },
             TIMEOUT,

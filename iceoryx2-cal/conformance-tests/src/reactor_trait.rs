@@ -16,6 +16,7 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 #[conformance_tests]
 pub mod reactor_trait {
     use alloc::vec;
+    use alloc::vec::Vec;
     use core::time::Duration;
     use iceoryx2_bb_concurrency::atomic::AtomicU64;
     use iceoryx2_bb_concurrency::atomic::Ordering;

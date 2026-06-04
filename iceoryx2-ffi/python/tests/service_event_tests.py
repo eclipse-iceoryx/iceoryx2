@@ -106,7 +106,7 @@ def test_listener_try_wait_works(
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_listener_timed_wait_all_works(
+def test_listener_timed_wait_works(
     service_type: iox2.ServiceType,
 ) -> None:
     config = iox2.testing.generate_isolated_config()
@@ -134,7 +134,7 @@ def test_listener_timed_wait_all_works(
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_listener_blocking_wait_all_works(
+def test_listener_blocking_wait_works(
     service_type: iox2.ServiceType,
 ) -> None:
     config = iox2.testing.generate_isolated_config()

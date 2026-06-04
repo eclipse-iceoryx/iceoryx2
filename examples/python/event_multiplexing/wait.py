@@ -56,9 +56,9 @@ try:
             service_name, listener = listener_attachments[attachment]
             print('Received trigger from "', service_name, '"')
 
-            event_ids = listener.try_wait_all()
-            for event_id in event_ids:
-                print(event_id, " ")
+            events = listener.try_wait()
+            for event in events:
+                print(event, " ")
 
 except iox2.WaitSetRunError:
     print("exception raised")

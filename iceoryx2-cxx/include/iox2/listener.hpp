@@ -45,7 +45,7 @@ class Listener {
     auto id() const -> UniqueListenerId;
 
     /// Non-blocking wait for new [`EventId`]s. Collects either all [`EventId`]s that were received
-    /// until the call of [`Listener::try_wait_all()`] or a reasonable batch that represent the
+    /// until the call of [`Listener::try_wait()`] or a reasonable batch that represent the
     /// currently available [`EventId`]s in buffer.
     /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
     /// input argument.
@@ -55,7 +55,7 @@ class Listener {
 
     /// Blocking wait for new [`EventId`]s until the provided timeout has passed. Collects either
     /// all [`EventId`]s that were received
-    /// until the call of [`Listener::timed_wait_all()`] or a reasonable batch that represent the
+    /// until the call of [`Listener::timed_wait()`] or a reasonable batch that represent the
     /// currently available [`EventId`]s in buffer.
     /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
     /// input argument.
@@ -65,7 +65,7 @@ class Listener {
 
     /// Blocking wait for new [`EventId`]s. Collects either
     /// all [`EventId`]s that were received
-    /// until the call of [`Listener::timed_wait_all()`] or a reasonable batch that represent the
+    /// until the call of [`Listener::blocking_wait()`] or a reasonable batch that represent the
     /// currently available [`EventId`]s in buffer.
     /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
     /// input argument.

@@ -30,9 +30,9 @@
 //!
 //! let mut listener = event.listener_builder().create()?;
 //!
-//! for event_id in listener.try_wait_one()? {
-//!     println!("event was triggered with id: {:?}", event_id);
-//! }
+//! listener.try_wait(|event| {
+//!     println!("event was triggered with id: {:?} {} times", event.id, event.count);
+//! });
 //!
 //! # Ok(())
 //! # }
@@ -50,8 +50,8 @@
 //!
 //! let mut listener = event.listener_builder().create()?;
 //!
-//! listener.try_wait_all(|id| {
-//!     println!("event was triggered with id: {:?}", id);
+//! listener.try_wait(|event| {
+//!     println!("event was triggered with id: {:?} {} times", event.id, event.count);
 //! })?;
 //!
 //! # Ok(())

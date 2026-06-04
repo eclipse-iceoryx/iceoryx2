@@ -478,17 +478,21 @@ pub mod event_propagation {
             ("service_2", &listener_b2, event_id_for_service_2),
         ] {
             T::retry(
-                || match listener.try_wait_one().unwrap() {
-                    Some(received_id) => {
-                        if received_id != expected_id {
-                            test_fail!("{}: received event id from a different service", label);
-                        }
-                        Ok(())
-                    }
-                    None => {
+                || {
+                    if listener
+                        .try_wait(|event| {
+                            if event.id != expected_id {
+                                test_fail!("{}: received event id from a different service", label);
+                            }
+                        })
+                        .unwrap()
+                        == 0
+                    {
                         tunnel_a.propagate().unwrap();
                         tunnel_b.propagate().unwrap();
                         Err("not yet received")
+                    } else {
+                        Ok(())
                     }
                 },
                 TIMEOUT,

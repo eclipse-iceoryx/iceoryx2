@@ -357,13 +357,6 @@ In this example the `PlacementDefault` trait is introduced that allows in place
 initialization and solves the stack overflow issue when the data type is larger
 than the available stack size.
 
-### 100% CPU Load When Using The WaitSet
-
-The WaitSet wakes up whenever an attachment, such as a `Listener` or a `socket`,
-has something to read. If you do not handle all notifications, for example, with
-`Listener::try_wait_one()`, the WaitSet will wake up immediately again,
-potentially causing an infinite loop and resulting in 100% CPU usage.
-
 ### SIGBUS Error
 
 This error is usually caused by insufficient memory. When iceoryx2 allocates
