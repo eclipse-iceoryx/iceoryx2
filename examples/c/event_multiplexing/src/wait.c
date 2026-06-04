@@ -26,8 +26,8 @@ struct CallbackContext {
 };
 
 static void event_callback(const iox2_event_id_t* event_id, uint64_t event_count, void* context) {
-    (void) (context);
-    printf(" received event: %lu %lu times\n", (long unsigned) event_id->value, event_count);
+    (void) context;
+    printf(" received event: %lu %lu times\n", (long unsigned) event_id->value, (long unsigned) event_count);
 }
 
 // the function that is called when a listener has received an event

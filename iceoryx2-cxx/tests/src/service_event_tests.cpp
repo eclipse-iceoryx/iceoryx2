@@ -364,6 +364,8 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_notifier) {
 }
 // NOLINTEND(readability-function-cognitive-complexity)
 
+// false positive caused by ASSERT_* macro expansion
+// NOLINTBEGIN(readability-function-cognitive-complexity)
 TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_listener) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto event_id = EventId(24);
@@ -405,6 +407,7 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_listener) {
         ASSERT_THAT(temp_sut.has_value(), Eq(true));
     }
 }
+// NOLINTEND(readability-function-cognitive-complexity)
 
 TYPED_TEST(ServiceEventTest, create_with_attributes_sets_attributes) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
