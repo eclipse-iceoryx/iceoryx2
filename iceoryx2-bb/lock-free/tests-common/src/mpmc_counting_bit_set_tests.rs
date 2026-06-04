@@ -10,10 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::ptr::NonNull;
 use core::time::Duration;
-
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
-use iceoryx2_bb_lock_free::mpmc::counting_bit_set::{CountingBitSet, FixedSizeCountingBitSet};
+use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
+use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+use iceoryx2_bb_lock_free::mpmc::counting_bit_set::{
+    CountingBitSet, FixedSizeCountingBitSet, RelocatableCountingBitSet,
+};
 use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle, Handle};
 use iceoryx2_bb_posix::clock::nanosleep;
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
@@ -40,6 +45,17 @@ pub fn set_every_bit_individually_works() {
         });
         assert_that!(callback_counter, eq 1);
     }
+}
+
+#[test]
+pub fn no_bit_is_set_in_newly_created_set() {
+    let sut = FixedSizeSut::new();
+
+    let mut callback_counter = 0;
+    sut.reset_all(|_| {
+        callback_counter += 1;
+    });
+    assert_that!(callback_counter, eq 0);
 }
 
 #[test]
@@ -196,4 +212,28 @@ pub fn concurrent_set_and_reset_works() {
     for i in 0..CAPACITY {
         assert_that!(set_count[i].load(Ordering::Relaxed), eq reset_count[i].load(Ordering::Relaxed));
     }
+}
+
+#[should_panic]
+#[test]
+pub fn initializing_the_bitset_twice_causes_panic() {
+    const CAPACITY: usize = 10;
+    let memory = [0u8; RelocatableCountingBitSet::const_memory_size(CAPACITY)];
+    let allocator = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), CAPACITY);
+    let mut sut = unsafe { RelocatableCountingBitSet::new_uninit(CAPACITY) };
+    unsafe { assert_that!(sut.init(&allocator), is_ok) };
+
+    // panics here
+    let _result = unsafe { sut.init(&allocator) };
+}
+
+#[cfg_attr(debug_assertions, test)]
+#[should_panic]
+#[test]
+pub fn access_without_initialization_causes_panic() {
+    const CAPACITY: usize = 10;
+    let sut = unsafe { RelocatableCountingBitSet::new_uninit(CAPACITY) };
+
+    // panics here
+    sut.set(0);
 }

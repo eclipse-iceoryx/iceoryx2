@@ -263,12 +263,12 @@ impl<const CAPACITY: usize> Default for FixedSizeCountingBitSet<CAPACITY> {
     }
 }
 
-impl<const ARRAY_CAPACITY: usize> FixedSizeCountingBitSet<ARRAY_CAPACITY> {
+impl<const CAPACITY: usize> FixedSizeCountingBitSet<CAPACITY> {
     /// Creates a new FixedSizeCountingBitSet.
     pub fn new() -> Self {
         let mut new_self = Self {
-            bitset: unsafe { RelocatableCountingBitSet::new_uninit(ARRAY_CAPACITY) },
-            data: [const { MaybeUninit::uninit() }; ARRAY_CAPACITY],
+            bitset: unsafe { RelocatableCountingBitSet::new_uninit(CAPACITY) },
+            data: [const { MaybeUninit::uninit() }; CAPACITY],
         };
 
         let data_ptr =

@@ -45,7 +45,7 @@ impl Configuration {
         let mut path = self.path_hint;
         fatal_panic!(from self, when path.add_path_entry(&self.prefix.into()),
                     "The path hint \"{}\" in combination with the prefix \"{}\" exceed the maximum supported path length of {} of the operating system.",
-                    path, value, Path::max_len());
+                    path, self.prefix, Path::max_len());
         fatal_panic!(from self, when path.push_bytes(value.as_string()),
                     "The path hint \"{}\" in combination with the file name \"{}\" exceed the maximum supported path length of {} of the operating system.",
                     path, value, Path::max_len());
