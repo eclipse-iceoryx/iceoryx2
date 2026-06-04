@@ -11,9 +11,12 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/bb/optional.hpp"
+#include "iox2/custom_payload_marker.hpp"
 #include "iox2/legacy/uninitialized_array.hpp"
+#include "iox2/message_type_details.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service.hpp"
+#include "iox2/type_variant.hpp"
 
 #include "test.hpp"
 #include <array>
@@ -1712,5 +1715,63 @@ TYPED_TEST(ServicePublishSubscribeTest, only_max_subscribers_can_be_created) {
 
     auto sut = service.subscriber_builder().create();
     ASSERT_TRUE(sut.has_value());
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, custom_payload_type_details_override_is_applied) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t PAYLOAD_SIZE = 12;
+    constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template publish_subscribe<bb::Slice<CustomPayloadMarker>>()
+                       .set_payload_type_details(TypeDetail(TypeVariant::FixedSize, "MyType", PAYLOAD_SIZE, PAYLOAD_ALIGNMENT))
+                       .create()
+                       .value();
+
+    auto payload = service.static_config().message_type_details().payload();
+
+    ASSERT_THAT(payload.variant(), Eq(TypeVariant::FixedSize));
+    ASSERT_THAT(payload.type_name(), StrEq("MyType"));
+    ASSERT_THAT(payload.size(), Eq(PAYLOAD_SIZE));
+    ASSERT_THAT(payload.alignment(), Eq(PAYLOAD_ALIGNMENT));
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, custom_payload_marker_send_receive_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t PAYLOAD_SIZE = 12;
+    constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template publish_subscribe<bb::Slice<CustomPayloadMarker>>()
+                       .set_payload_type_details(TypeDetail(TypeVariant::FixedSize, "MyType", PAYLOAD_SIZE, PAYLOAD_ALIGNMENT))
+                       .create()
+                       .value();
+
+    auto sut_publisher = service.publisher_builder().initial_max_slice_len(1).create().value();
+    auto sut_subscriber = service.subscriber_builder().create().value();
+
+    auto send_sample = sut_publisher.loan_slice_uninit(1).value();
+    auto send_payload = send_sample.payload_mut();
+    ASSERT_THAT(send_payload.number_of_bytes(), Eq(PAYLOAD_SIZE));
+    for (uint64_t i = 0; i < PAYLOAD_SIZE; ++i) {
+        send_payload[i].value = static_cast<uint8_t>(i + 1);
+    }
+    send(assume_init(std::move(send_sample))).value();
+
+    auto recv_result = sut_subscriber.receive().value();
+    ASSERT_TRUE(recv_result.has_value());
+
+    auto recv_sample = std::move(recv_result.value());
+    auto recv_payload = recv_sample.payload();
+    ASSERT_THAT(recv_payload.number_of_bytes(), Eq(PAYLOAD_SIZE));
+    for (uint64_t i = 0; i < PAYLOAD_SIZE; ++i) {
+        ASSERT_THAT(recv_payload[i].value, Eq(static_cast<uint8_t>(i + 1)));
+    }
 }
 } // namespace

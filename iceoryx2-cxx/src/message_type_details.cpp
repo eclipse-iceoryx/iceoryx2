@@ -13,9 +13,21 @@
 #include "iox2/message_type_details.hpp"
 #include "iox2/bb/into.hpp"
 
+#include <cstring>
+
 namespace iox2 {
 TypeDetail::TypeDetail(iox2_type_detail_t value)
     : m_value { value } {
+}
+
+TypeDetail::TypeDetail(TypeVariant variant, const char* type_name, size_t size, size_t alignment)
+    : m_value {} {
+    m_value.variant = variant == TypeVariant::FixedSize ? iox2_type_variant_e_FIXED_SIZE : iox2_type_variant_e_DYNAMIC;
+    m_value.size = size;
+    m_value.alignment = alignment;
+
+    m_value.type_name[IOX2_TYPE_NAME_LENGTH - 1] = '\0';
+    std::strncpy(&m_value.type_name[0], type_name, IOX2_TYPE_NAME_LENGTH - 1);
 }
 
 auto TypeDetail::variant() const -> TypeVariant {

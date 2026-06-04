@@ -18,12 +18,20 @@
 #include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/layout.hpp"
+#include "iox2/bb/slice.hpp"
+#include "iox2/custom_payload_marker.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/internal/service_builder_internal.hpp"
+#include "iox2/message_type_details.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/port_factory_publish_subscribe.hpp"
 #include "iox2/service_builder_publish_subscribe_error.hpp"
 #include "iox2/service_type.hpp"
+#include "iox2/type_name.hpp"
+#include "iox2/type_variant.hpp"
+
+#include <cstring>
+#include <type_traits>
 
 namespace iox2 {
 /// Builder to create new [`MessagingPattern::PublishSubscribe`] based [`Service`]s
@@ -106,6 +114,11 @@ class ServiceBuilderPublishSubscribe {
     template <typename NewHeader>
     auto user_header() && -> ServiceBuilderPublishSubscribe<Payload, NewHeader, S>&&;
 
+    /// Overrides the payload type details with values provided at runtime instead of derived
+    /// from the compile-time `Payload`. Only available for `bb::Slice<CustomPayloadMarker>`.
+    template <typename P = Payload, typename = std::enable_if_t<std::is_same<P, bb::Slice<CustomPayloadMarker>>::value>>
+    auto set_payload_type_details(const TypeDetail& value) && -> ServiceBuilderPublishSubscribe<Payload, UserHeader, S>&&;
+
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
     auto open_or_create() && -> bb::Expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
@@ -143,6 +156,7 @@ class ServiceBuilderPublishSubscribe {
     void set_parameters();
 
     iox2_service_builder_pub_sub_h m_handle = nullptr;
+    bb::Optional<TypeDetail> m_payload_type_details_override;
 };
 
 template <typename Payload, typename UserHeader, ServiceType S>
@@ -180,20 +194,27 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
     }
 
     using ValueType = typename PayloadInfo<Payload>::ValueType;
+
+    // payload type details, derived from the compile-time Payload unless overridden at runtime
+    const auto derived_type_name = internal::get_type_name<Payload>();
     auto type_variant = bb::IsSlice<Payload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
+    const char* payload_type_name = derived_type_name.unchecked_access().c_str();
+    uint64_t payload_type_name_len = derived_type_name.size();
+    uint64_t payload_type_size = sizeof(ValueType);
+    uint64_t payload_type_align = alignof(ValueType);
 
-    // payload type details
-    const auto payload_type_name = internal::get_type_name<Payload>();
-    const auto payload_type_size = sizeof(ValueType);
-    const auto payload_type_align = alignof(ValueType);
+    if (m_payload_type_details_override.has_value()) {
+        const auto& details = m_payload_type_details_override.value();
+        type_variant =
+            details.variant() == TypeVariant::FixedSize ? iox2_type_variant_e_FIXED_SIZE : iox2_type_variant_e_DYNAMIC;
+        payload_type_name = details.type_name();
+        payload_type_name_len = std::strlen(details.type_name());
+        payload_type_size = details.size();
+        payload_type_align = details.alignment();
+    }
 
-    const auto payload_result =
-        iox2_service_builder_pub_sub_set_payload_type_details(&m_handle,
-                                                              type_variant,
-                                                              payload_type_name.unchecked_access().c_str(),
-                                                              payload_type_name.size(),
-                                                              payload_type_size,
-                                                              payload_type_align);
+    const auto payload_result = iox2_service_builder_pub_sub_set_payload_type_details(
+        &m_handle, type_variant, payload_type_name, payload_type_name_len, payload_type_size, payload_type_align);
 
     if (payload_result != IOX2_OK) {
         IOX2_PANIC("This should never happen! Implementation failure while setting the Payload-Type.");
@@ -225,6 +246,14 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::
     // required here since we just change the template header type but the builder structure stays the same
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     return std::move(*reinterpret_cast<ServiceBuilderPublishSubscribe<Payload, NewHeader, S>*>(this));
+}
+
+template <typename Payload, typename UserHeader, ServiceType S>
+template <typename, typename>
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_payload_type_details(
+    const TypeDetail& value) && -> ServiceBuilderPublishSubscribe<Payload, UserHeader, S>&& {
+    m_payload_type_details_override = bb::Optional<TypeDetail>(value);
+    return std::move(*this);
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
