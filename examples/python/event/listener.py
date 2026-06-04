@@ -29,7 +29,6 @@ cycle_time = iox2.Duration.from_secs(1)
 
 try:
     while True:
-        events = listener.timed_wait(cycle_time)
         for event in listener.timed_wait(cycle_time):
             print("event was triggered with id: ", event.id, " ", event.count, " times")
 except iox2.ListenerWaitError:
