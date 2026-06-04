@@ -20,6 +20,7 @@ TypeDetail::TypeDetail(iox2_type_detail_t value)
     : m_value { value } {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 TypeDetail::TypeDetail(TypeVariant variant, const char* type_name, size_t size, size_t alignment)
     : m_value {} {
     m_value.variant = variant == TypeVariant::FixedSize ? iox2_type_variant_e_FIXED_SIZE : iox2_type_variant_e_DYNAMIC;
