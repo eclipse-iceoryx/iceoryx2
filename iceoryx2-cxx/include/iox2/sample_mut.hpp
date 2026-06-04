@@ -195,8 +195,8 @@ inline auto SampleMut<S, Payload, UserHeader>::payload() const -> bb::ImmutableS
 
     iox2_sample_mut_payload(&m_handle, &ptr, &number_of_elements);
 
-    // for the custom payload marker the FFI reports the element count; the slice length is the
-    // runtime payload byte size which is provided directly by the FFI
+    // for the custom payload marker, the slice length is the
+    // runtime payload byte size
     auto length = number_of_elements;
     if (std::is_same<ValueType, CustomPayloadMarker>::value) {
         length = iox2_sample_mut_payload_number_of_bytes(&m_handle);

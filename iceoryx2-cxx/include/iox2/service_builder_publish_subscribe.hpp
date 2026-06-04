@@ -19,6 +19,7 @@
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/layout.hpp"
 #include "iox2/bb/slice.hpp"
+#include "iox2/custom_header_marker.hpp"
 #include "iox2/custom_payload_marker.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/internal/service_builder_internal.hpp"
@@ -114,10 +115,17 @@ class ServiceBuilderPublishSubscribe {
     template <typename NewHeader>
     auto user_header() && -> ServiceBuilderPublishSubscribe<Payload, NewHeader, S>&&;
 
+    /// Overrides the user header type details with values provided at runtime instead of derived
+    /// from the compile-time `UserHeader`. Only available for `CustomHeaderMarker`.
+    template <typename H = UserHeader, typename = std::enable_if_t<std::is_same<H, CustomHeaderMarker>::value>>
+    auto set_user_header_type_details(
+        const TypeDetail& value) && -> ServiceBuilderPublishSubscribe<Payload, UserHeader, S>&&;
+
     /// Overrides the payload type details with values provided at runtime instead of derived
     /// from the compile-time `Payload`. Only available for `bb::Slice<CustomPayloadMarker>`.
     template <typename P = Payload, typename = std::enable_if_t<std::is_same<P, bb::Slice<CustomPayloadMarker>>::value>>
-    auto set_payload_type_details(const TypeDetail& value) && -> ServiceBuilderPublishSubscribe<Payload, UserHeader, S>&&;
+    auto
+    set_payload_type_details(const TypeDetail& value) && -> ServiceBuilderPublishSubscribe<Payload, UserHeader, S>&&;
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
@@ -156,6 +164,7 @@ class ServiceBuilderPublishSubscribe {
     void set_parameters();
 
     iox2_service_builder_pub_sub_h m_handle = nullptr;
+    bb::Optional<TypeDetail> m_user_header_type_details_override;
     bb::Optional<TypeDetail> m_payload_type_details_override;
 };
 
@@ -195,6 +204,26 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
 
     using ValueType = typename PayloadInfo<Payload>::ValueType;
 
+    // user header type details, derived from the compile-time UserHeader unless overridden at runtime
+    const auto header_layout = bb::Layout::from<UserHeader>();
+    const auto derived_user_header_type_name = internal::get_type_name<UserHeader>();
+    auto user_header_type_variant = iox2_type_variant_e_FIXED_SIZE;
+    const char* user_header_type_name = derived_user_header_type_name.unchecked_access().c_str();
+    uint64_t user_header_type_name_len = derived_user_header_type_name.size();
+    uint64_t user_header_type_size = header_layout.size();
+    uint64_t user_header_type_align = header_layout.alignment();
+
+    if (m_user_header_type_details_override.has_value()) {
+        const auto& header_details_override = m_user_header_type_details_override.value();
+        user_header_type_variant = header_details_override.variant() == TypeVariant::FixedSize
+                                       ? iox2_type_variant_e_FIXED_SIZE
+                                       : iox2_type_variant_e_DYNAMIC;
+        user_header_type_name = header_details_override.type_name();
+        user_header_type_name_len = std::strlen(header_details_override.type_name());
+        user_header_type_size = header_details_override.size();
+        user_header_type_align = header_details_override.alignment();
+    }
+
     // payload type details, derived from the compile-time Payload unless overridden at runtime
     const auto derived_type_name = internal::get_type_name<Payload>();
     auto type_variant = bb::IsSlice<Payload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
@@ -204,13 +233,13 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
     uint64_t payload_type_align = alignof(ValueType);
 
     if (m_payload_type_details_override.has_value()) {
-        const auto& details = m_payload_type_details_override.value();
-        type_variant =
-            details.variant() == TypeVariant::FixedSize ? iox2_type_variant_e_FIXED_SIZE : iox2_type_variant_e_DYNAMIC;
-        payload_type_name = details.type_name();
-        payload_type_name_len = std::strlen(details.type_name());
-        payload_type_size = details.size();
-        payload_type_align = details.alignment();
+        const auto& payload_details_override = m_payload_type_details_override.value();
+        type_variant = payload_details_override.variant() == TypeVariant::FixedSize ? iox2_type_variant_e_FIXED_SIZE
+                                                                                    : iox2_type_variant_e_DYNAMIC;
+        payload_type_name = payload_details_override.type_name();
+        payload_type_name_len = std::strlen(payload_details_override.type_name());
+        payload_type_size = payload_details_override.size();
+        payload_type_align = payload_details_override.alignment();
     }
 
     const auto payload_result = iox2_service_builder_pub_sub_set_payload_type_details(
@@ -220,19 +249,12 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
         IOX2_PANIC("This should never happen! Implementation failure while setting the Payload-Type.");
     }
 
-    // user header type details
-    const auto header_layout = bb::Layout::from<UserHeader>();
-    const auto user_header_type_name = internal::get_type_name<UserHeader>();
-    const auto user_header_type_size = header_layout.size();
-    const auto user_header_type_align = header_layout.alignment();
-
-    const auto user_header_result =
-        iox2_service_builder_pub_sub_set_user_header_type_details(&m_handle,
-                                                                  iox2_type_variant_e_FIXED_SIZE,
-                                                                  user_header_type_name.unchecked_access().c_str(),
-                                                                  user_header_type_name.size(),
-                                                                  user_header_type_size,
-                                                                  user_header_type_align);
+    const auto user_header_result = iox2_service_builder_pub_sub_set_user_header_type_details(&m_handle,
+                                                                                              user_header_type_variant,
+                                                                                              user_header_type_name,
+                                                                                              user_header_type_name_len,
+                                                                                              user_header_type_size,
+                                                                                              user_header_type_align);
 
     if (user_header_result != IOX2_OK) {
         IOX2_PANIC("This should never happen! Implementation failure while setting the User-Header-Type.");
@@ -246,6 +268,14 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::
     // required here since we just change the template header type but the builder structure stays the same
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     return std::move(*reinterpret_cast<ServiceBuilderPublishSubscribe<Payload, NewHeader, S>*>(this));
+}
+
+template <typename Payload, typename UserHeader, ServiceType S>
+template <typename, typename>
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_user_header_type_details(
+    const TypeDetail& value) && -> ServiceBuilderPublishSubscribe<Payload, UserHeader, S>&& {
+    m_user_header_type_details_override = bb::Optional<TypeDetail>(value);
+    return std::move(*this);
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
