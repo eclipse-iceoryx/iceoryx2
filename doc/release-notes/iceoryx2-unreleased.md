@@ -99,7 +99,7 @@
   use iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator;
   ```
 
-1. `Listener::{try|timed|blocking}_wait_one` has been removed and `Listener::{try|timed|blocking}_wail_all` 
+1. `Listener::{try|timed|blocking}_wait_one` has been removed and `Listener::{try|timed|blocking}_wail_all`
    has been renamed to `Listener::{try|timed|blocking}_wait`. The input argument has changed from `EventId`
    to `EventActivation`.
 

@@ -34,7 +34,7 @@ spawn cargo run --example event_multiplexing_wait -- --services hypnotoad --serv
 
 expect_output_from $id_notifier_1 "*Trigger event *"
 expect_output_from $id_notifier_2 "*Trigger event *"
-expect_output "Received trigger from \"hypnotoad\" :: TriggerId(42)"
-expect_output "Received trigger from \"brainslug\" :: TriggerId(13)"
+expect_output "Received trigger from "hypnotoad" :: EventId(42), 1 times"
+expect_output "Received trigger from "brainslug" :: EventId(13), 1 times"
 
 show_test_passed

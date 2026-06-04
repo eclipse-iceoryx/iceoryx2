@@ -318,6 +318,8 @@ TYPED_TEST(ServiceEventTest, timed_wait_does_not_deadlock) {
     this->listener.timed_wait([](auto) -> auto { }, TIMEOUT).value();
 }
 
+// false positive caused by ASSERT_* macro expansion
+// NOLINTBEGIN(readability-function-cognitive-complexity)
 TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_notifier) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto event_id = EventId(54);
@@ -360,6 +362,7 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_notifier) {
         ASSERT_THAT(temp_sut.has_value(), Eq(true));
     }
 }
+// NOLINTEND(readability-function-cognitive-complexity)
 
 TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_listener) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;

@@ -35,8 +35,8 @@ spawn python examples/python/event_multiplexing/wait.py hypnotoad brainslug
 expect_output_from $id_notifier_1 "*Trigger event *"
 expect_output_from $id_notifier_2 "*Trigger event *"
 expect_output "Received trigger from \" hypnotoad \""
-expect_output "TriggerId(42)"
+expect_output "EventActivation { id: EventId(42), count: 1 }"
 expect_output "Received trigger from \" brainslug \""
-expect_output "TriggerId(13)"
+expect_output "EventActivation { id: EventId(13), count: 1 }"
 
 show_test_passed

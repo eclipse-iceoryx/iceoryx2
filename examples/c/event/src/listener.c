@@ -16,9 +16,9 @@
 #include <stdio.h>
 #include <string.h>
 
-void event_callback(const iox2_event_id_t* event_id, uint64_t count, void* context) {
+static void event_callback(const iox2_event_id_t* event_id, uint64_t count, void* context) {
     (void) (context);
-    printf("event was triggered with id: %lu %lu times\n", (long unsigned) event_id->value, count);
+    printf("event was triggered with id: %lu %lu times\n", (long unsigned) event_id->value, (long unsigned) count);
 }
 
 int main(void) {

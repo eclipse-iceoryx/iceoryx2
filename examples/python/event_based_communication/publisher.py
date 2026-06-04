@@ -12,10 +12,9 @@
 
 """Event-based communication publisher example."""
 
+import iceoryx2 as iox2
 from pubsub_event import PubSubEvent, from_event_id, to_event_id
 from transmission_data import TransmissionData
-
-import iceoryx2 as iox2
 
 SERVICE_NAME = "EventBasedCommService"
 CYCLE_TIME = iox2.Duration.from_secs(1)
