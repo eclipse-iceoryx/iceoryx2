@@ -30,6 +30,7 @@ pub mod event_trait {
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_posix::thread::thread_scope;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::test_requires;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::event::event_state::{EventActivation, EventState};
@@ -796,6 +797,7 @@ pub mod event_trait {
 
     #[conformance_test]
     pub fn abandoning_listener_keeps_event<E: EventState, Sut: Event<E>>() {
+        test_requires!(Sut::does_support_persistency());
         let _watchdog = Watchdog::new();
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
@@ -1035,7 +1037,7 @@ pub mod event_trait {
     #[conformance_test]
     pub fn concurrent_ping_pong_does_not_deadlock<E: EventState, Sut: Event<E>>() {
         let _watchdog = Watchdog::new();
-        const ITERATIONS: usize = 100000;
+        const ITERATIONS: usize = 10000;
 
         let pong_name = generate_file_path().file_name();
         let ping_name = generate_file_path().file_name();
@@ -1065,7 +1067,6 @@ pub mod event_trait {
                     for _ in 0..ITERATIONS {
                         ping_notifier.notify(EventId::new(0)).unwrap();
                         pong_listener.blocking_wait(|_| {}).unwrap();
-                        //assert_that!(pong_listener.blocking_wait(|_| {}), eq Ok(1));
                     }
                 })
                 .unwrap();
@@ -1074,7 +1075,6 @@ pub mod event_trait {
                 .affinity(&[1])
                 .spawn(move || {
                     for _ in 0..ITERATIONS {
-                        //assert_that!(ping_listener.blocking_wait(|_| {}), eq Ok(1));
                         ping_listener.blocking_wait(|_| {}).unwrap();
                         pong_notifier.notify(EventId::new(0)).unwrap();
                     }

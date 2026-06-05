@@ -156,6 +156,8 @@ pub trait Event<E: EventState>: Sized + NamedConceptMgmt + Debug {
     type Notifier: Notifier<E>;
     type NotifierBuilder: NotifierBuilder<E, Self>;
 
+    fn does_support_persistency() -> bool;
+
     fn default_suffix() -> FileName {
         unsafe { FileName::new_unchecked(b".trigger") }
     }

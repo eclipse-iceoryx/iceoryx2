@@ -224,6 +224,10 @@ impl<
     type ListenerBuilder = WaiterBuilder<E, Mgmt, Storage, H, W>;
     type Notifier = Handle<E, Mgmt, Storage, H>;
     type NotifierBuilder = HandleBuilder<E, Mgmt, Storage, H, W>;
+
+    fn does_support_persistency() -> bool {
+        Storage::does_support_persistency()
+    }
 }
 
 #[derive(Debug)]

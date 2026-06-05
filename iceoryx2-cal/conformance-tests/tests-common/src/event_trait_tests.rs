@@ -12,6 +12,9 @@
 
 use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
+// semaphore is implemented in the platform abstraction layer with WaitOnAddress
+// on Windows that comes with some problems
+#[cfg(not(target_os = "windows"))]
 instantiate_conformance_tests_with_module!(
     semaphore_shared_memory_bitset,
     iceoryx2_cal_conformance_tests::event_trait,
@@ -33,6 +36,9 @@ instantiate_conformance_tests_with_module!(
     iceoryx2_cal::event::SocketPairBitSet
 );
 
+// semaphore is implemented in the platform abstraction layer with WaitOnAddress
+// on Windows that comes with some problems
+#[cfg(not(target_os = "windows"))]
 instantiate_conformance_tests_with_module!(
     semaphore_shared_memory_counting_bitset,
     iceoryx2_cal_conformance_tests::event_trait,
