@@ -25,44 +25,39 @@ struct CallbackContext {
     const char* service_name_2;
 };
 
+static void event_callback(const iox2_event_id_t* event_id, uint64_t event_count, void* context) {
+    (void) context;
+    printf(" received event: %lu %lu times\n", (long unsigned) event_id->value, (long unsigned) event_count);
+}
 
 // the function that is called when a listener has received an event
 static iox2_callback_progression_e on_event(iox2_waitset_attachment_id_h attachment_id, void* context) {
     struct CallbackContext* ctx = (struct CallbackContext*) context;
 
-    iox2_event_id_t event_id;
-    bool has_received_event = false;
     // check if the event originated from guard_1 of listener_1
     if (iox2_waitset_attachment_id_has_event_from(&attachment_id, ctx->guard_1)) {
         printf("Received trigger from \"%s\" ::", ctx->service_name_1);
-        do {
-            // IMPORTANT:
-            // We need to collect all notifications since the WaitSet will wake us up as long as
-            // there is something to read. If we skip this step completely we will end up in a
-            // busy loop.
-            int ret_val = iox2_listener_try_wait_one(ctx->listener_1, &event_id, &has_received_event);
-            if (ret_val != IOX2_OK) {
-                printf("failed to receive event on listener: %s! Error: %d\n", ctx->service_name_1, ret_val);
-            }
+        // IMPORTANT:
+        // We need to collect all notifications since the WaitSet will wake us up as long as
+        // there is something to read. If we skip this step completely we will end up in a
+        // busy loop.
+        uint64_t number_of_notifications = 0;
+        int ret_val = iox2_listener_try_wait(ctx->listener_1, &number_of_notifications, event_callback, NULL);
+        if (ret_val != IOX2_OK) {
+            printf("failed to receive event on listener: %s! Error: %d\n", ctx->service_name_1, ret_val);
+        }
 
-            if (has_received_event) {
-                printf(" %lu", (long unsigned) event_id.value);
-            }
-        } while (has_received_event);
         printf("\n");
         // check if the event originated from guard_2 of listener_2
     } else if (iox2_waitset_attachment_id_has_event_from(&attachment_id, ctx->guard_2)) {
         printf("Received trigger from \"%s\" ::", ctx->service_name_2);
-        do {
-            int ret_val = iox2_listener_try_wait_one(ctx->listener_2, &event_id, &has_received_event);
-            if (ret_val != IOX2_OK) {
-                printf("failed to receive event on listener: %s! Error: %d\n", ctx->service_name_2, ret_val);
-            }
 
-            if (has_received_event) {
-                printf(" %lu", (long unsigned) event_id.value);
-            }
-        } while (has_received_event);
+        uint64_t number_of_notifications = 0;
+        int ret_val = iox2_listener_try_wait(ctx->listener_2, &number_of_notifications, event_callback, NULL);
+        if (ret_val != IOX2_OK) {
+            printf("failed to receive event on listener: %s! Error: %d\n", ctx->service_name_2, ret_val);
+        }
+
         printf("\n");
     }
 

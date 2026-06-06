@@ -58,7 +58,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
         if attachment_id == attachment {
             // Drain all pending.
-            listener.try_wait_all(|_| {}).unwrap();
+            listener.try_wait(|_| {}).unwrap();
 
             // Process new discovery information.
             while let Ok(Some(sample)) = subscriber.receive() {

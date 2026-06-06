@@ -150,28 +150,20 @@ impl ThreadStates {
     }
 }
 
-#[link(name = "c++")]
-unsafe extern "C" {
-    #[link_name = "_ZNSt3__123__libcpp_atomic_monitorEPVKv"]
-    fn __libcpp_atomic_monitor(ptr: *const void) -> i64;
-
-    #[link_name = "_ZNSt3__120__libcpp_atomic_waitEPVKvx"]
-    fn __libcpp_atomic_wait(ptr: *const void, monitor: i64);
-
-    #[link_name = "_ZNSt3__123__cxx_atomic_notify_oneEPVKv"]
-    fn __cxx_atomic_notify_one(ptr: *const void);
-
-    #[link_name = "_ZNSt3__123__cxx_atomic_notify_allEPVKv"]
-    fn __cxx_atomic_notify_all(ptr: *const void);
-}
-
 pub fn wait(atomic: &AtomicU64, expected: &u64) {
-    let ptr = (atomic as *const AtomicU64) as *const void;
-    let monitor = unsafe { __libcpp_atomic_monitor(ptr) };
-    if atomic.load(Ordering::Relaxed) != *expected {
-        return;
-    }
-    unsafe { __libcpp_atomic_wait(ptr, monitor) };
+    let sleep_time = timespec {
+        tv_sec: 0,
+        tv_nsec: 2000000,
+    };
+
+    unsafe {
+        clock_nanosleep(
+            CLOCK_REALTIME,
+            0,
+            &sleep_time,
+            core::ptr::null_mut::<timespec>().cast(),
+        )
+    };
 }
 
 pub fn timed_wait(atomic: &AtomicU64, expected: &u64, timeout: timespec) {
@@ -203,15 +195,9 @@ pub fn timed_wait(atomic: &AtomicU64, expected: &u64, timeout: timespec) {
     }
 }
 
-pub fn wake_one(atomic: &AtomicU64) {
-    let ptr = (atomic as *const AtomicU64) as *const void;
-    unsafe { __cxx_atomic_notify_one(ptr) };
-}
+pub fn wake_one(_atomic: &AtomicU64) {}
 
-pub fn wake_all(atomic: &AtomicU64) {
-    let ptr = (atomic as *const AtomicU64) as *const void;
-    unsafe { __cxx_atomic_notify_all(ptr) };
-}
+pub fn wake_all(_atomic: &AtomicU64) {}
 
 pub unsafe fn pthread_barrier_wait(barrier: *mut pthread_barrier_t) -> int {
     unsafe {

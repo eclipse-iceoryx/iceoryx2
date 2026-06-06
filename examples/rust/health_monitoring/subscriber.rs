@@ -115,14 +115,14 @@ fn handle_incoming_event(
     service_name: &ServiceName,
 ) {
     listener
-        .try_wait_all(|event_id| {
-            if event_id == PubSubEvent::ProcessDied.into() {
+        .try_wait(|event| {
+            if event.id == PubSubEvent::ProcessDied.into() {
                 coutln!("{service_name}: process died!");
-            } else if event_id == PubSubEvent::PublisherConnected.into() {
+            } else if event.id == PubSubEvent::PublisherConnected.into() {
                 coutln!("{service_name}: publisher connected!");
-            } else if event_id == PubSubEvent::PublisherDisconnected.into() {
+            } else if event.id == PubSubEvent::PublisherDisconnected.into() {
                 coutln!("{service_name}: publisher disconnected!");
-            } else if event_id == PubSubEvent::SentSample.into() {
+            } else if event.id == PubSubEvent::SentSample.into() {
                 if let Some(sample) = subscriber.receive().expect("") {
                     coutln!("{}: Received sample {} ...", service_name, *sample)
                 }

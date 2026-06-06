@@ -40,11 +40,11 @@ class EventId {
     friend class PortFactoryNotifier;
     template <ServiceType>
     friend class Listener;
-    friend void wait_callback(const iox2_event_id_t*, iox2_callback_context);
     template <ServiceType, typename, typename>
     friend class EntryHandle;
     template <ServiceType, typename, typename>
     friend class EntryHandleMut;
+    friend class EventActivation;
 
     explicit EventId(iox2_event_id_t value);
 

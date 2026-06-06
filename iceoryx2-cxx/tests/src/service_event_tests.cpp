@@ -243,103 +243,83 @@ TYPED_TEST(ServiceEventTest, notifier_emits_create_and_drop_events) {
     {
         auto notifier = service.notifier_builder().create();
 
-        auto counter = 0;
+        uint64_t counter = 0;
         listener
-            .try_wait_all([&](auto event_id) -> auto {
-                EXPECT_THAT(event_id, Eq(create_event_id));
-                counter++;
+            .try_wait([&](auto event) -> auto {
+                EXPECT_THAT(event.id(), Eq(create_event_id));
+                counter += event.count();
             })
             .value();
         ASSERT_THAT(counter, Eq(1));
     }
 
-    auto counter = 0;
+    uint64_t counter = 0;
     listener
-        .try_wait_all([&](auto event_id) -> auto {
-            EXPECT_THAT(event_id, Eq(dropped_event_id));
-            counter++;
+        .try_wait([&](auto event) -> auto {
+            EXPECT_THAT(event.id(), Eq(dropped_event_id));
+            counter += event.count();
         })
         .value();
     ASSERT_THAT(counter, Eq(1));
 }
 
 
-TYPED_TEST(ServiceEventTest, notification_is_received_with_try_wait_one) {
+TYPED_TEST(ServiceEventTest, notification_is_received_with_try_wait) {
     this->notifier.notify().value();
 
-    auto result = this->listener.try_wait_one().value();
-    ASSERT_TRUE(result.has_value());
-    ASSERT_THAT(result.value().as_value(), Eq(EventId(0).as_value()));
+    auto number_of_notifications = this->listener
+                                       .try_wait([](auto event) -> void {
+                                           ASSERT_THAT(event.id(), Eq(EventId(0)));
+                                           ASSERT_THAT(event.count(), Eq(1));
+                                       })
+                                       .value();
+    ASSERT_THAT(number_of_notifications, Eq(1));
 }
 
-TYPED_TEST(ServiceEventTest, notification_with_custom_event_id_is_received_with_try_wait_one) {
+TYPED_TEST(ServiceEventTest, notification_with_custom_event_id_is_received_with_try_wait) {
     this->notifier.notify_with_custom_event_id(this->event_id_1).value();
 
-    auto result = this->listener.try_wait_one().value();
-    ASSERT_TRUE(result.has_value());
-    ASSERT_THAT(result.value().as_value(), Eq(this->event_id_1.as_value()));
+    auto number_of_notifications = this->listener
+                                       .try_wait([&](auto event) -> void {
+                                           ASSERT_THAT(event.id(), Eq(this->event_id_1));
+                                           ASSERT_THAT(event.count(), Eq(1));
+                                       })
+                                       .value();
+    ASSERT_THAT(number_of_notifications, Eq(1));
 }
 
-TYPED_TEST(ServiceEventTest, notification_is_received_with_timed_wait_one) {
+TYPED_TEST(ServiceEventTest, notification_is_received_with_timed_wait) {
     this->notifier.notify_with_custom_event_id(this->event_id_1).value();
 
-    auto result = this->listener.timed_wait_one(TIMEOUT).value();
-    ASSERT_TRUE(result.has_value());
-    ASSERT_THAT(result.value().as_value(), Eq(this->event_id_1.as_value()));
+    auto number_of_notifications = this->listener
+                                       .timed_wait(
+                                           [&](auto event) -> void {
+                                               ASSERT_THAT(event.id(), Eq(this->event_id_1));
+                                               ASSERT_THAT(event.count(), Eq(1));
+                                           },
+                                           TIMEOUT)
+                                       .value();
+    ASSERT_THAT(number_of_notifications, Eq(1));
 }
 
-TYPED_TEST(ServiceEventTest, notification_is_received_with_blocking_wait_one) {
+TYPED_TEST(ServiceEventTest, notification_is_received_with_blocking_wait) {
     this->notifier.notify_with_custom_event_id(this->event_id_1).value();
 
-    auto result = this->listener.timed_wait_one(TIMEOUT).value();
-    ASSERT_TRUE(result.has_value());
-    ASSERT_THAT(result.value().as_value(), Eq(this->event_id_1.as_value()));
+    auto number_of_notifications = this->listener
+                                       .blocking_wait([&](auto event) -> void {
+                                           ASSERT_THAT(event.id(), Eq(this->event_id_1));
+                                           ASSERT_THAT(event.count(), Eq(1));
+                                       })
+                                       .value();
+    ASSERT_THAT(number_of_notifications, Eq(1));
 }
 
-TYPED_TEST(ServiceEventTest, notification_is_received_with_try_wait_all) {
-    this->notifier.notify_with_custom_event_id(this->event_id_1).value();
-    this->notifier.notify_with_custom_event_id(this->event_id_2).value();
-
-    std::set<size_t> received_ids;
-    this->listener
-        .try_wait_all([&](auto event_id) -> auto { ASSERT_TRUE(received_ids.emplace(event_id.as_value()).second); })
-        .value();
-    ASSERT_THAT(received_ids.size(), Eq(2));
+TYPED_TEST(ServiceEventTest, timed_wait_does_not_deadlock) {
+    this->listener.timed_wait([](auto) -> auto { }, TIMEOUT).value();
 }
 
-TYPED_TEST(ServiceEventTest, notification_is_received_with_timed_wait_all) {
-    this->notifier.notify_with_custom_event_id(this->event_id_1).value();
-    this->notifier.notify_with_custom_event_id(this->event_id_2).value();
-
-    std::set<size_t> received_ids;
-    this->listener
-        .timed_wait_all([&](auto event_id) -> auto { ASSERT_TRUE(received_ids.emplace(event_id.as_value()).second); },
-                        TIMEOUT)
-        .value();
-    ASSERT_THAT(received_ids.size(), Eq(2));
-}
-
-TYPED_TEST(ServiceEventTest, notification_is_received_with_blocking_wait_all) {
-    this->notifier.notify_with_custom_event_id(this->event_id_1).value();
-    this->notifier.notify_with_custom_event_id(this->event_id_2).value();
-
-    std::set<size_t> received_ids;
-    this->listener
-        .blocking_wait_all(
-            [&](auto event_id) -> auto { ASSERT_TRUE(received_ids.emplace(event_id.as_value()).second); })
-        .value();
-    ASSERT_THAT(received_ids.size(), Eq(2));
-}
-
-TYPED_TEST(ServiceEventTest, timed_wait_one_does_not_deadlock) {
-    auto result = this->listener.timed_wait_one(TIMEOUT).value();
-    ASSERT_FALSE(result.has_value());
-}
-
-TYPED_TEST(ServiceEventTest, timed_wait_all_does_not_deadlock) {
-    this->listener.timed_wait_all([](auto) -> auto { }, TIMEOUT).value();
-}
-
+// false positive caused by ASSERT_* macro expansion
+// NOLINTBEGIN(readability-function-cognitive-complexity)
 TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_notifier) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto event_id = EventId(54);
@@ -365,8 +345,9 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_notifier) {
     sut = bb::Optional<PortFactoryEvent<SERVICE_TYPE>>(node.service_builder(service_name).event().open().value());
     listener = bb::Optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().value());
     notifier->notify_with_custom_event_id(event_id).value();
-    auto notification = listener->try_wait_one().value();
-    ASSERT_THAT(notification->as_value(), Eq(event_id.as_value()));
+    auto number_of_notifications =
+        listener->try_wait([&](auto event) -> void { ASSERT_THAT(event.id(), Eq(event_id)); }).value();
+    ASSERT_THAT(number_of_notifications, Eq(1));
 
     listener.reset();
     sut.reset();
@@ -381,7 +362,10 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_notifier) {
         ASSERT_THAT(temp_sut.has_value(), Eq(true));
     }
 }
+// NOLINTEND(readability-function-cognitive-complexity)
 
+// false positive caused by ASSERT_* macro expansion
+// NOLINTBEGIN(readability-function-cognitive-complexity)
 TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_listener) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto event_id = EventId(24);
@@ -407,8 +391,8 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_listener) {
     sut = bb::Optional<PortFactoryEvent<SERVICE_TYPE>>(node.service_builder(service_name).event().open().value());
     notifier = bb::Optional<Notifier<SERVICE_TYPE>>(sut->notifier_builder().create().value());
     notifier->notify_with_custom_event_id(event_id).value();
-    auto notification = listener->try_wait_one().value();
-    ASSERT_THAT(notification->as_value(), Eq(event_id.as_value()));
+    auto notification = listener->try_wait([&](auto event) -> void { ASSERT_THAT(event.id(), Eq(event_id)); }).value();
+    ASSERT_THAT(notification, Eq(1));
 
     notifier.reset();
     sut.reset();
@@ -423,6 +407,7 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_listener) {
         ASSERT_THAT(temp_sut.has_value(), Eq(true));
     }
 }
+// NOLINTEND(readability-function-cognitive-complexity)
 
 TYPED_TEST(ServiceEventTest, create_with_attributes_sets_attributes) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
@@ -551,13 +536,13 @@ TYPED_TEST(ServiceEventTest, notifier_is_informed_when_deadline_was_missed) {
     auto result = notifier_create.notify();
     ASSERT_THAT(result.has_value(), Eq(false));
     ASSERT_THAT(result.error(), Eq(NotifierNotifyError::MissedDeadline));
-    ASSERT_THAT(listener.try_wait_one().value().has_value(), Eq(true));
+    ASSERT_THAT(listener.try_wait([](auto) -> void { }).value(), Eq(1));
 
     std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT));
     result = notifier_open.notify();
     ASSERT_THAT(result.has_value(), Eq(false));
     ASSERT_THAT(result.error(), Eq(NotifierNotifyError::MissedDeadline));
-    ASSERT_THAT(listener.try_wait_one().value().has_value(), Eq(true));
+    ASSERT_THAT(listener.try_wait([](auto) -> void { }).value(), Eq(1));
 }
 
 TYPED_TEST(ServiceEventTest, when_deadline_is_not_missed_notification_works) {
@@ -577,12 +562,12 @@ TYPED_TEST(ServiceEventTest, when_deadline_is_not_missed_notification_works) {
     std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT));
     auto result = notifier_create.notify();
     ASSERT_THAT(result.has_value(), Eq(true));
-    ASSERT_THAT(listener.try_wait_one().value().has_value(), Eq(true));
+    ASSERT_THAT(listener.try_wait([](auto) -> void { }).value(), Eq(1));
 
     std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT));
     result = notifier_open.notify();
     ASSERT_THAT(result.has_value(), Eq(true));
-    ASSERT_THAT(listener.try_wait_one().value().has_value(), Eq(true));
+    ASSERT_THAT(listener.try_wait([](auto) -> void { }).value(), Eq(1));
 }
 
 TYPED_TEST(ServiceEventTest, number_of_listener_notifier_works) {

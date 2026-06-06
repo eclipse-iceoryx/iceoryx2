@@ -17,6 +17,7 @@
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
 #include "iox2/bb/static_function.hpp"
+#include "iox2/event_activation.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/file_descriptor.hpp"
 #include "iox2/internal/callback_context.hpp"
@@ -44,46 +45,33 @@ class Listener {
     auto id() const -> UniqueListenerId;
 
     /// Non-blocking wait for new [`EventId`]s. Collects either all [`EventId`]s that were received
-    /// until the call of [`Listener::try_wait_all()`] or a reasonable batch that represent the
+    /// until the call of [`Listener::try_wait()`] or a reasonable batch that represent the
     /// currently available [`EventId`]s in buffer.
     /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
     /// input argument.
-    auto try_wait_all(const iox2::bb::StaticFunction<void(EventId)>& callback) -> bb::Expected<void, ListenerWaitError>;
+    /// Returns the total number of events handled by the call.
+    auto try_wait(const iox2::bb::StaticFunction<void(EventActivation)>& callback)
+        -> bb::Expected<uint64_t, ListenerWaitError>;
 
     /// Blocking wait for new [`EventId`]s until the provided timeout has passed. Collects either
     /// all [`EventId`]s that were received
-    /// until the call of [`Listener::timed_wait_all()`] or a reasonable batch that represent the
+    /// until the call of [`Listener::timed_wait()`] or a reasonable batch that represent the
     /// currently available [`EventId`]s in buffer.
     /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
     /// input argument.
-    auto timed_wait_all(const iox2::bb::StaticFunction<void(EventId)>& callback, const iox2::bb::Duration& timeout)
-        -> bb::Expected<void, ListenerWaitError>;
+    /// Returns the total number of events handled by the call.
+    auto timed_wait(const iox2::bb::StaticFunction<void(EventActivation)>& callback, const iox2::bb::Duration& timeout)
+        -> bb::Expected<uint64_t, ListenerWaitError>;
 
     /// Blocking wait for new [`EventId`]s. Collects either
     /// all [`EventId`]s that were received
-    /// until the call of [`Listener::timed_wait_all()`] or a reasonable batch that represent the
+    /// until the call of [`Listener::blocking_wait()`] or a reasonable batch that represent the
     /// currently available [`EventId`]s in buffer.
     /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
     /// input argument.
-    auto blocking_wait_all(const iox2::bb::StaticFunction<void(EventId)>& callback)
-        -> bb::Expected<void, ListenerWaitError>;
-
-    /// Non-blocking wait for a new [`EventId`]. If no [`EventId`] was notified it returns [`None`].
-    /// On error it returns [`ListenerWaitError`] is returned which describes the error
-    /// in detail.
-    auto try_wait_one() -> bb::Expected<bb::Optional<EventId>, ListenerWaitError>;
-
-    /// Blocking wait for a new [`EventId`] until either an [`EventId`] was received or the timeout
-    /// has passed. If no [`EventId`] was notified it returns [`None`].
-    /// On error it returns [`ListenerWaitError`] is returned which describes the error
-    /// in detail.
-    auto timed_wait_one(const iox2::bb::Duration& timeout) -> bb::Expected<bb::Optional<EventId>, ListenerWaitError>;
-
-    /// Blocking wait for a new [`EventId`].
-    /// Sporadic wakeups can occur and if no [`EventId`] was notified it returns [`None`].
-    /// On error it returns [`ListenerWaitError`] is returned which describes the error
-    /// in detail.
-    auto blocking_wait_one() -> bb::Expected<bb::Optional<EventId>, ListenerWaitError>;
+    /// Returns the total number of events handled by the call.
+    auto blocking_wait(const iox2::bb::StaticFunction<void(EventActivation)>& callback)
+        -> bb::Expected<uint64_t, ListenerWaitError>;
 
     /// Returns the deadline of the corresponding [`Service`].
     auto deadline() const -> bb::Optional<iox2::bb::Duration>;
@@ -175,102 +163,54 @@ inline auto Listener<S>::deadline() const -> bb::Optional<iox2::bb::Duration> {
     return bb::NULLOPT;
 }
 
-inline void wait_callback(const iox2_event_id_t* event_id, iox2_callback_context context) {
-    auto* callback = internal::ctx_cast<iox2::bb::StaticFunction<void(EventId)>>(context);
-    callback->value()(EventId(*event_id));
+inline void wait_callback(const iox2_event_id_t* event_id, const uint64_t event_count, iox2_callback_context context) {
+    auto* callback = internal::ctx_cast<iox2::bb::StaticFunction<void(EventActivation)>>(context);
+    callback->value()(EventActivation(*event_id, event_count));
 }
 
 template <ServiceType S>
-inline auto Listener<S>::try_wait_all(const iox2::bb::StaticFunction<void(EventId)>& callback)
-    -> bb::Expected<void, ListenerWaitError> {
+inline auto Listener<S>::try_wait(const iox2::bb::StaticFunction<void(EventActivation)>& callback)
+    -> bb::Expected<uint64_t, ListenerWaitError> {
     auto ctx = internal::ctx(callback);
 
-    auto result = iox2_listener_try_wait_all(&m_handle, wait_callback, static_cast<void*>(&ctx));
+    uint64_t number_of_activations = 0;
+    auto result = iox2_listener_try_wait(&m_handle, &number_of_activations, wait_callback, static_cast<void*>(&ctx));
     if (result == IOX2_OK) {
-        return {};
+        return number_of_activations;
     }
 
     return bb::err(bb::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>
-inline auto Listener<S>::timed_wait_all(const iox2::bb::StaticFunction<void(EventId)>& callback,
-                                        const iox2::bb::Duration& timeout) -> bb::Expected<void, ListenerWaitError> {
+inline auto Listener<S>::timed_wait(const iox2::bb::StaticFunction<void(EventActivation)>& callback,
+                                    const iox2::bb::Duration& timeout) -> bb::Expected<uint64_t, ListenerWaitError> {
     auto ctx = internal::ctx(callback);
 
-    auto result = iox2_listener_timed_wait_all(
-        &m_handle, wait_callback, static_cast<void*>(&ctx), timeout.as_secs(), timeout.subsec_nanos());
+    uint64_t number_of_activations = 0;
+    auto result = iox2_listener_timed_wait(&m_handle,
+                                           &number_of_activations,
+                                           wait_callback,
+                                           static_cast<void*>(&ctx),
+                                           timeout.as_secs(),
+                                           timeout.subsec_nanos());
     if (result == IOX2_OK) {
-        return {};
+        return number_of_activations;
     }
 
     return bb::err(bb::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>
-inline auto Listener<S>::blocking_wait_all(const iox2::bb::StaticFunction<void(EventId)>& callback)
-    -> bb::Expected<void, ListenerWaitError> {
+inline auto Listener<S>::blocking_wait(const iox2::bb::StaticFunction<void(EventActivation)>& callback)
+    -> bb::Expected<uint64_t, ListenerWaitError> {
     auto ctx = internal::ctx(callback);
 
-    auto result = iox2_listener_blocking_wait_all(&m_handle, wait_callback, static_cast<void*>(&ctx));
+    uint64_t number_of_activations = 0;
+    auto result =
+        iox2_listener_blocking_wait(&m_handle, &number_of_activations, wait_callback, static_cast<void*>(&ctx));
     if (result == IOX2_OK) {
-        return {};
-    }
-
-    return bb::err(bb::into<ListenerWaitError>(result));
-}
-
-template <ServiceType S>
-inline auto Listener<S>::try_wait_one() -> bb::Expected<bb::Optional<EventId>, ListenerWaitError> {
-    iox2_event_id_t event_id {};
-    bool has_received_one { false };
-
-    auto result = iox2_listener_try_wait_one(&m_handle, &event_id, &has_received_one);
-
-    if (result == IOX2_OK) {
-        if (has_received_one) {
-            return bb::Optional<EventId>(EventId { event_id });
-        }
-
-        return bb::Optional<EventId>();
-    }
-
-    return bb::err(bb::into<ListenerWaitError>(result));
-}
-
-template <ServiceType S>
-inline auto Listener<S>::timed_wait_one(const iox2::bb::Duration& timeout)
-    -> bb::Expected<bb::Optional<EventId>, ListenerWaitError> {
-    iox2_event_id_t event_id {};
-    bool has_received_one { false };
-
-    auto result = iox2_listener_timed_wait_one(
-        &m_handle, &event_id, &has_received_one, timeout.as_secs(), timeout.subsec_nanos());
-
-    if (result == IOX2_OK) {
-        if (has_received_one) {
-            return bb::Optional<EventId>(EventId { event_id });
-        }
-
-        return bb::Optional<EventId>();
-    }
-
-    return bb::err(bb::into<ListenerWaitError>(result));
-}
-
-template <ServiceType S>
-inline auto Listener<S>::blocking_wait_one() -> bb::Expected<bb::Optional<EventId>, ListenerWaitError> {
-    iox2_event_id_t event_id {};
-    bool has_received_one { false };
-
-    auto result = iox2_listener_blocking_wait_one(&m_handle, &event_id, &has_received_one);
-
-    if (result == IOX2_OK) {
-        if (has_received_one) {
-            return bb::Optional<EventId>(EventId { event_id });
-        }
-
-        return bb::Optional<EventId>();
+        return number_of_activations;
     }
 
     return bb::err(bb::into<ListenerWaitError>(result));

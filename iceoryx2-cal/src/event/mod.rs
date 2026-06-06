@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -11,26 +11,45 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pub mod common;
-pub mod id_tracker;
-pub mod process_local_socketpair;
+pub mod event_state;
+pub mod implementations;
 pub mod recommended;
-pub mod sem_bitset_posix_shared_memory;
-pub mod sem_bitset_process_local;
-pub mod signal_mechanism;
-pub mod unix_datagram_socket;
-
-use core::{fmt::Debug, time::Duration};
+pub mod trigger;
 
 pub use crate::named_concept::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
-use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 pub use iceoryx2_bb_system_types::file_name::*;
 pub use iceoryx2_bb_system_types::path::Path;
+
+pub use implementations::*;
+
+use crate::event::event_state::{EventActivation, EventState, EventStateActivateError};
+use core::{fmt::Debug, time::Duration};
+use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+
+pub const DEFAULT_MAX_EVENT_ID: EventId = EventId::new(u8::MAX as usize);
+
+#[derive(ZeroCopySend, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
+#[repr(C)]
+pub struct EventId(usize);
+
+impl EventId {
+    pub const fn new(value: usize) -> Self {
+        Self(value)
+    }
+
+    pub const fn as_value(&self) -> usize {
+        self.0
+    }
+}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum NotifierNotifyError {
     Interrupt,
-    FailedToDeliverSignal,
-    TriggerIdOutOfBounds,
+    BufferIsFull,
+    EventIdOutOfBounds,
+    InsufficientPermissions,
     Disconnected,
     InternalFailure,
 }
@@ -44,7 +63,7 @@ impl core::fmt::Display for NotifierNotifyError {
 impl core::error::Error for NotifierNotifyError {}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum NotifierCreateError {
+pub enum NotifierOpenError {
     Interrupt,
     DoesNotExist,
     InsufficientPermissions,
@@ -53,13 +72,13 @@ pub enum NotifierCreateError {
     InternalFailure,
 }
 
-impl core::fmt::Display for NotifierCreateError {
+impl core::fmt::Display for NotifierOpenError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}::{:?}", stringify!(Self), self)
     }
 }
 
-impl core::error::Error for NotifierCreateError {}
+impl core::error::Error for NotifierOpenError {}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum ListenerWaitError {
@@ -80,6 +99,7 @@ impl core::error::Error for ListenerWaitError {}
 pub enum ListenerCreateError {
     AlreadyExists,
     InsufficientPermissions,
+    Interrupt,
     InternalFailure,
 }
 
@@ -91,64 +111,56 @@ impl core::fmt::Display for ListenerCreateError {
 
 impl core::error::Error for ListenerCreateError {}
 
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct TriggerId(usize);
-
-impl TriggerId {
-    pub const fn new(value: usize) -> Self {
-        Self(value)
-    }
-
-    pub const fn as_value(&self) -> usize {
-        self.0
+impl From<EventStateActivateError> for NotifierNotifyError {
+    fn from(value: EventStateActivateError) -> Self {
+        match value {
+            EventStateActivateError::EventIdOutOfBounds => NotifierNotifyError::EventIdOutOfBounds,
+        }
     }
 }
 
-pub trait Notifier: NamedConcept + Debug + Send + Abandonable {
-    fn trigger_id_max(&self) -> TriggerId {
-        TriggerId::new(usize::MAX)
-    }
-    fn notify(&self, id: TriggerId) -> Result<(), NotifierNotifyError>;
-}
-
-pub trait NotifierBuilder<T: Event>: NamedConceptBuilder<T> + Debug {
-    fn timeout(self, timeout: Duration) -> Self;
-    fn open(self) -> Result<T::Notifier, NotifierCreateError>;
-}
-
-pub trait Listener: NamedConcept + Debug + Send + Abandonable {
+pub trait Listener<E: EventState>: NamedConcept + Debug + Abandonable + Send {
     const IS_FILE_DESCRIPTOR_BASED: bool = false;
 
-    fn try_wait_one(&self) -> Result<Option<TriggerId>, ListenerWaitError>;
-    fn timed_wait_one(&self, timeout: Duration) -> Result<Option<TriggerId>, ListenerWaitError>;
-    fn blocking_wait_one(&self) -> Result<Option<TriggerId>, ListenerWaitError>;
-
-    fn try_wait_all<F: FnMut(TriggerId)>(&self, callback: F) -> Result<(), ListenerWaitError>;
-    fn timed_wait_all<F: FnMut(TriggerId)>(
+    fn max_event_count(&self) -> u64;
+    fn try_wait<F: FnMut(EventActivation)>(&self, callback: F) -> Result<u64, ListenerWaitError>;
+    fn timed_wait<F: FnMut(EventActivation)>(
         &self,
         callback: F,
         timeout: Duration,
-    ) -> Result<(), ListenerWaitError>;
-    fn blocking_wait_all<F: FnMut(TriggerId)>(&self, callback: F) -> Result<(), ListenerWaitError>;
+    ) -> Result<u64, ListenerWaitError>;
+    fn blocking_wait<F: FnMut(EventActivation)>(
+        &self,
+        callback: F,
+    ) -> Result<u64, ListenerWaitError>;
 }
 
-pub trait ListenerBuilder<T: Event>: NamedConceptBuilder<T> + Debug {
-    fn trigger_id_max(self, id: TriggerId) -> Self;
+pub trait Notifier<E: EventState>: NamedConcept + Debug + Abandonable + Send {
+    fn max_event_count(&self) -> u64;
+    fn event_id_max(&self) -> EventId;
+    fn notify(&self, event_id: EventId) -> Result<(), NotifierNotifyError>;
+}
+
+pub trait NotifierBuilder<E: EventState, T: Event<E>>: NamedConceptBuilder<T> + Debug {
+    fn timeout(self, timeout: Duration) -> Self;
+    fn fail_when_buffer_is_full(self, value: bool) -> Self;
+    fn open(self) -> Result<T::Notifier, NotifierOpenError>;
+}
+
+pub trait ListenerBuilder<E: EventState, T: Event<E>>: NamedConceptBuilder<T> + Debug {
+    fn event_id_max(self, id: EventId) -> Self;
     fn create(self) -> Result<T::Listener, ListenerCreateError>;
 }
 
-pub trait Event: Sized + NamedConceptMgmt + Debug {
-    type Notifier: Notifier;
-    type NotifierBuilder: NotifierBuilder<Self>;
-    type Listener: Listener;
-    type ListenerBuilder: ListenerBuilder<Self>;
+pub trait Event<E: EventState>: Sized + NamedConceptMgmt + Debug {
+    type Listener: Listener<E>;
+    type ListenerBuilder: ListenerBuilder<E, Self>;
+    type Notifier: Notifier<E>;
+    type NotifierBuilder: NotifierBuilder<E, Self>;
 
-    /// The default suffix of every event
+    fn does_support_persistency() -> bool;
+
     fn default_suffix() -> FileName {
-        unsafe { FileName::new_unchecked(b".event") }
-    }
-
-    fn has_trigger_id_limit() -> bool {
-        false
+        unsafe { FileName::new_unchecked(b".trigger") }
     }
 }

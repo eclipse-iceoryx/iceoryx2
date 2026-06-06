@@ -61,9 +61,16 @@ extern "C" fn main() -> i32 {
     coutln!("Listener ready to receive events!");
 
     while node.wait(Duration::ZERO).is_ok() {
-        if let Ok(Some(event_id)) = listener.timed_wait_one(CYCLE_TIME) {
-            coutln!("event was triggered with id: {event_id:?}");
-        }
+        let _ = listener.timed_wait(
+            |event| {
+                coutln!(
+                    "event was triggered with id: {:?} {} times",
+                    event.id,
+                    event.count
+                );
+            },
+            CYCLE_TIME,
+        );
     }
 
     coutln!("exit");

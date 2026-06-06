@@ -15,8 +15,9 @@
 extern crate alloc;
 extern crate iceoryx2_bb_loggers;
 
-pub mod bitset_tests;
+pub mod mpmc_bitset_tests;
 pub mod mpmc_container_tests;
+pub mod mpmc_counting_bit_set_tests;
 pub mod mpmc_robust_unique_index_set_tests;
 pub mod mpmc_unique_index_set_tests;
 pub mod spmc_unrestricted_atomic_tests;

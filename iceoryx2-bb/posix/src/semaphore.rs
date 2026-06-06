@@ -72,6 +72,7 @@ enum_gen! { UnnamedSemaphoreCreationError
 enum_gen! { SemaphorePostError
   entry:
     Overflow,
+    InvalidSemaphoreHandle,
     UnknownError(i32)
 }
 
@@ -79,6 +80,7 @@ enum_gen! { SemaphoreWaitError
   entry:
     NotSupported,
     DeadlockConditionDetected,
+    InvalidSemaphoreHandle,
     Interrupt,
     UnknownError(i32)
 }
@@ -92,6 +94,7 @@ enum_gen! { UnnamedSemaphoreOpenIpcHandleError
 enum_gen! {
     SemaphoreTimedWaitError
   entry:
+    InvalidSemaphoreHandle,
     WaitingTimeExceedsSystemLimits
   mapping:
     SemaphoreWaitError,
@@ -129,7 +132,7 @@ mod internal {
 
     #[doc(hidden)]
     pub trait SemaphoreHandle {
-        fn handle(&self) -> *mut posix::sem_t;
+        fn handle<E>(&self, invalid_handle_error: E) -> Result<*mut posix::sem_t, E>;
         fn get_clock_type(&self) -> ClockType;
     }
 }
@@ -139,13 +142,14 @@ pub trait SemaphoreInterface: internal::SemaphoreHandle + Debug {
     /// Increments the semaphore by one. If the semaphore already holds the maximum supported value
     /// another post call will lead to [`SemaphorePostError::Overflow`].
     fn post(&self) -> Result<(), SemaphorePostError> {
-        if unsafe { posix::sem_post(self.handle()) } == 0 {
+        if unsafe { posix::sem_post(self.handle(SemaphorePostError::InvalidSemaphoreHandle)?) } == 0
+        {
             return Ok(());
         }
 
         let msg = "Unable to post semaphore";
         handle_errno!(SemaphorePostError, from self,
-            fatal Errno::EINVAL => ("This should never happen! {} since an invalid handle was provided.", msg),
+            Errno::EINVAL => (InvalidSemaphoreHandle, "{} since an invalid handle was provided.", msg),
             Errno::EOVERFLOW => (Overflow, "{} since the operation would cause an overflow.", msg),
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
         );
@@ -155,7 +159,8 @@ pub trait SemaphoreInterface: internal::SemaphoreHandle + Debug {
     /// [`SemaphoreInterface::post()`] call incremented the semaphore by one. A semaphores internal
     /// value is always greater or equal to zero.
     fn blocking_wait(&self) -> Result<(), SemaphoreWaitError> {
-        if unsafe { posix::sem_wait(self.handle()) } == 0 {
+        if unsafe { posix::sem_wait(self.handle(SemaphoreWaitError::InvalidSemaphoreHandle)?) } == 0
+        {
             return Ok(());
         }
 
@@ -172,7 +177,9 @@ pub trait SemaphoreInterface: internal::SemaphoreHandle + Debug {
     /// Tries to decrement the semaphore by one if it is greater zero and returns true. If the semaphores
     /// internal value is zero it returns false and does not decrement the semaphore.
     fn try_wait(&self) -> Result<bool, SemaphoreWaitError> {
-        if unsafe { posix::sem_trywait(self.handle()) } == 0 {
+        if unsafe { posix::sem_trywait(self.handle(SemaphoreWaitError::InvalidSemaphoreHandle)?) }
+            == 0
+        {
             return Ok(true);
         }
 
@@ -217,7 +224,13 @@ pub trait SemaphoreInterface: internal::SemaphoreHandle + Debug {
                     + fail!(from self, when Time::now_with_clock(self.clock_type()),
                     "{} due to a failure while acquiring the current system time.", msg)
                     .as_duration();
-                if unsafe { posix::sem_timedwait(self.handle(), &wait_time.as_timespec()) } == 0 {
+                if unsafe {
+                    posix::sem_timedwait(
+                        self.handle(SemaphoreTimedWaitError::InvalidSemaphoreHandle)?,
+                        &wait_time.as_timespec(),
+                    )
+                } == 0
+                {
                     return Ok(true);
                 }
 
@@ -572,8 +585,8 @@ impl NamedSemaphore {
 }
 
 impl internal::SemaphoreHandle for NamedSemaphore {
-    fn handle(&self) -> *mut posix::sem_t {
-        self.handle
+    fn handle<E>(&self, _invalid_handle_error: E) -> Result<*mut posix::sem_t, E> {
+        Ok(self.handle)
     }
 
     fn get_clock_type(&self) -> ClockType {
@@ -799,8 +812,13 @@ impl<'a> IpcCapable<'a, UnnamedSemaphoreHandle> for UnnamedSemaphore<'a> {
 }
 
 impl internal::SemaphoreHandle for UnnamedSemaphore<'_> {
-    fn handle(&self) -> *mut posix::sem_t {
-        unsafe { self.handle.handle.get() }
+    fn handle<E>(&self, invalid_handle_error: E) -> Result<*mut posix::sem_t, E> {
+        if self.handle.is_initialized() {
+            Ok(unsafe { self.handle.handle.get() })
+        } else {
+            fail!(from self, with invalid_handle_error,
+                "The semaphore handle is no longer initialized.");
+        }
     }
 
     fn get_clock_type(&self) -> ClockType {

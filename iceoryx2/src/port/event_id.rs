@@ -30,13 +30,12 @@
 //!
 //! notifier.notify_with_custom_event_id(EventId::new(5));
 //!
-//! while let Some(event_id) = listener.try_wait_one()? {
-//!     println!("event was triggered with id: {:?}", event_id);
-//! }
+//! listener.try_wait(|event| {
+//!     println!("event was triggered with id: {:?} {} times", event.id, event.count);
+//! });
 //!
 //! # Ok(())
 //! # }
 //! ```
 
-/// Type that allows to identify an event uniquely.
-pub type EventId = iceoryx2_cal::event::TriggerId;
+pub use iceoryx2_cal::event::EventId;

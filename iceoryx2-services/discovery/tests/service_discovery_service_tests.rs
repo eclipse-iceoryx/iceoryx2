@@ -130,19 +130,15 @@ mod service_discovery_service {
             .unwrap();
         sut.spin(|_| {}, |_| {}).unwrap();
 
-        let result = listener.try_wait_one();
-        assert_that!(result, is_ok);
-        let result = result.unwrap();
-        assert_that!(result, is_some);
+        let number_of_notifications = listener.try_wait(|_| {}).unwrap();
+        assert_that!(number_of_notifications, eq 1);
 
         // remove a service
         drop(service);
         sut.spin(|_| {}, |_| {}).unwrap();
 
-        let result = listener.try_wait_one();
-        assert_that!(result, is_ok);
-        let result = result.unwrap();
-        assert_that!(result, is_some);
+        let number_of_notifications = listener.try_wait(|_| {}).unwrap();
+        assert_that!(number_of_notifications, eq 1);
     }
 
     #[test]

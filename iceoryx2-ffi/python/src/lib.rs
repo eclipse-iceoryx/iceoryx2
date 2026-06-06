@@ -28,6 +28,7 @@ pub mod entry_handle;
 pub mod entry_handle_mut;
 pub mod entry_value_uninit;
 pub mod error;
+pub mod event_activation;
 pub mod event_id;
 pub mod file_descriptor;
 pub mod file_name;
@@ -139,6 +140,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::entry_handle::EntryHandle>()?;
     m.add_class::<crate::entry_handle_mut::EntryHandleMut>()?;
     m.add_class::<crate::entry_value_uninit::EntryValueUninit>()?;
+    m.add_class::<crate::event_activation::EventActivation>()?;
     m.add_class::<crate::event_id::EventId>()?;
     m.add_class::<crate::file_name::FileName>()?;
     m.add_class::<crate::file_path::FilePath>()?;

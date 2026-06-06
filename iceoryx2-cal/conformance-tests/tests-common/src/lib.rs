@@ -22,8 +22,6 @@ mod arc_sync_policy_abandonable_trait_tests;
 mod arc_sync_policy_trait_tests;
 mod communication_channel_trait_tests;
 mod dynamic_storage_trait_tests;
-mod event_id_tracker_trait_tests;
-mod event_signal_mechanism_trait_tests;
 mod event_trait_tests;
 mod monitoring_trait_tests;
 mod named_concept_trait_tests;

@@ -18,8 +18,8 @@ use iceoryx2_cal::communication_channel::unix_datagram::Channel as Communication
 use iceoryx2_cal::dynamic_storage::file::Storage as DynamicStorageFile;
 use iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage as DynamicStoragePosixSharedMemory;
 use iceoryx2_cal::dynamic_storage::process_local::Storage as DynamicStorageProcessLocal;
-use iceoryx2_cal::event::process_local_socketpair::EventImpl as EventProcessLocal;
-use iceoryx2_cal::event::unix_datagram_socket::EventImpl as EventUnixDatagram;
+use iceoryx2_cal::event::SocketPairCountingBitSet as EventProcessLocal;
+use iceoryx2_cal::event::UnixDatagramShmCountingBitSet as EventUnixDatagram;
 use iceoryx2_cal::monitoring::file_lock::FileLockMonitoring as MonitoringFileLock;
 use iceoryx2_cal::monitoring::process_local::ProcessLocalMonitoring as MonitoringProcessLocal;
 use iceoryx2_cal::resizable_shared_memory::dynamic::DynamicMemory as ResizableSharedMemoryDynamic;

@@ -12,27 +12,50 @@
 
 use iceoryx2_bb_testing::instantiate_conformance_tests_with_module;
 
+// semaphore is implemented in the platform abstraction layer with WaitOnAddress
+// on Windows that comes with some problems
+#[cfg(not(target_os = "windows"))]
 instantiate_conformance_tests_with_module!(
-    process_local_socket_pair,
+    semaphore_shared_memory_bitset,
     iceoryx2_cal_conformance_tests::event_trait,
-    iceoryx2_cal::event::process_local_socketpair::EventImpl
+    iceoryx2_cal::event::event_state::bit_set::RelocatableBitSet,
+    iceoryx2_cal::event::SemaphoreShmBitSet
 );
 
 instantiate_conformance_tests_with_module!(
-    unix_datagram,
+    unix_datagram_shared_memory_bitset,
     iceoryx2_cal_conformance_tests::event_trait,
-    iceoryx2_cal::event::unix_datagram_socket::EventImpl
+    iceoryx2_cal::event::event_state::bit_set::RelocatableBitSet,
+    iceoryx2_cal::event::UnixDatagramShmBitSet
 );
 
 instantiate_conformance_tests_with_module!(
-    sem_bitset_process_local,
+    socket_pair_process_local_bitset,
     iceoryx2_cal_conformance_tests::event_trait,
-    iceoryx2_cal::event::sem_bitset_process_local::Event
+    iceoryx2_cal::event::event_state::bit_set::RelocatableBitSet,
+    iceoryx2_cal::event::SocketPairBitSet
 );
 
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+// semaphore is implemented in the platform abstraction layer with WaitOnAddress
+// on Windows that comes with some problems
+#[cfg(not(target_os = "windows"))]
 instantiate_conformance_tests_with_module!(
-    sem_bitset_posix_shared_memory,
+    semaphore_shared_memory_counting_bitset,
     iceoryx2_cal_conformance_tests::event_trait,
-    iceoryx2_cal::event::sem_bitset_posix_shared_memory::Event
+    iceoryx2_cal::event::event_state::counting_bit_set::RelocatableCountingBitSet,
+    iceoryx2_cal::event::SemaphoreShmCountingBitSet
+);
+
+instantiate_conformance_tests_with_module!(
+    unix_datagram_shared_memory_counting_bitset,
+    iceoryx2_cal_conformance_tests::event_trait,
+    iceoryx2_cal::event::event_state::counting_bit_set::RelocatableCountingBitSet,
+    iceoryx2_cal::event::UnixDatagramShmCountingBitSet
+);
+
+instantiate_conformance_tests_with_module!(
+    socket_pair_process_local_counting_bitset,
+    iceoryx2_cal_conformance_tests::event_trait,
+    iceoryx2_cal::event::event_state::counting_bit_set::RelocatableCountingBitSet,
+    iceoryx2_cal::event::SocketPairCountingBitSet
 );

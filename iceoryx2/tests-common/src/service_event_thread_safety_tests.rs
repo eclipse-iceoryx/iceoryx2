@@ -81,24 +81,32 @@ fn notifying_events_concurrently_works() {
         let mut total_received_events = 0;
         let mut received_events = [0; NUMBER_OF_ITERATIONS];
         while total_received_events < number_of_notifier_threads * NUMBER_OF_ITERATIONS {
-            if let Ok(Some(event)) = listener.try_wait_one() {
-                received_events[event.as_value()] += 1;
-                total_received_events += 1;
-            } else if number_of_finished_notifier_threads.load(Ordering::Relaxed)
-                == number_of_notifier_threads
+            let number_of_notifications = listener
+                .try_wait(|event| {
+                    received_events[event.id.as_value()] += event.count;
+                    total_received_events += event.count as usize;
+                })
+                .unwrap();
+
+            if number_of_notifications == 0
+                && number_of_finished_notifier_threads.load(Ordering::Relaxed)
+                    == number_of_notifier_threads
             {
                 break;
             }
         }
 
         // ensure all events are read
-        while let Ok(Some(event)) = listener.try_wait_one() {
-            received_events[event.as_value()] += 1;
-        }
+        listener
+            .try_wait(|event| {
+                received_events[event.id.as_value()] += event.count;
+                total_received_events += event.count as usize;
+            })
+            .unwrap();
 
         for n in received_events {
             assert_that!(n, ge 1);
-            assert_that!(n, le number_of_notifier_threads);
+            assert_that!(n, le number_of_notifier_threads as u64);
         }
 
         Ok(())
@@ -148,17 +156,25 @@ fn listening_on_events_concurrently_works() {
                     let mut received_events = vec![0usize; NUMBER_OF_ITERATIONS];
                     barrier.wait();
                     loop {
-                        if let Ok(Some(event)) = listener.try_wait_one() {
-                            received_events[event.as_value()] += 1;
-                        } else if notification_finished.load(Ordering::Relaxed) {
+                        let number_of_notifications = listener
+                            .try_wait(|event| {
+                                received_events[event.id.as_value()] += event.count as usize;
+                            })
+                            .unwrap();
+
+                        if number_of_notifications == 0
+                            && notification_finished.load(Ordering::Relaxed)
+                        {
                             break;
                         }
                     }
 
                     // ensure all events are received
-                    while let Ok(Some(event)) = listener.try_wait_one() {
-                        received_events[event.as_value()] += 1;
-                    }
+                    listener
+                        .try_wait(|event| {
+                            received_events[event.id.as_value()] += event.count as usize;
+                        })
+                        .unwrap();
 
                     let mut guard = all_events.lock().unwrap();
                     for (i, count) in received_events.iter().enumerate() {

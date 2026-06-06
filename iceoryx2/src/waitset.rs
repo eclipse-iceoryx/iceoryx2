@@ -59,9 +59,9 @@
 //!
 //! let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
 //!     if attachment_id.has_event_from(&guard) {
-//!         while let Ok(Some(event_id)) = listener.try_wait_one() {
-//!             println!("received notification {:?}", event_id);
-//!         }
+//!         listener.try_wait(|event| {
+//!             println!("received notification {:?} {} times", event.id, event.count);
+//!         });
 //!     }
 //!     CallbackProgression::Continue
 //! };
@@ -91,9 +91,9 @@
 //!
 //! let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
 //!     if attachment_id.has_event_from(&guard) {
-//!         while let Ok(Some(event_id)) = listener.try_wait_one() {
-//!             println!("received notification {:?}", event_id);
-//!         }
+//!         listener.try_wait(|event| {
+//!             println!("received notification {:?} {} times", event.id, event.count);
+//!         });
 //!     } else if attachment_id.has_missed_deadline(&guard) {
 //!         println!("Oh no, we hit the deadline without receiving any kind of event");
 //!     }
@@ -172,9 +172,9 @@
 //!
 //! let on_event = |attachment_id| {
 //!     if let Some(listener) = listeners.get(&attachment_id) {
-//!         while let Ok(Some(event_id)) = listener.try_wait_one() {
-//!             println!("received notification {:?}", event_id);
-//!         }
+//!         listener.try_wait(|event| {
+//!             println!("received notification {:?} {} times", event.id, event.count);
+//!         });
 //!     }
 //!     CallbackProgression::Continue
 //! };

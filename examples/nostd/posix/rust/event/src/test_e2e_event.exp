@@ -32,6 +32,6 @@ spawn cargo run --example posix_nostd_event_listener
 #### Test Assertion
 
 expect_output_from $id_notifier "Trigger event with id*"
-expect_output "event was triggered with id: TriggerId(3)"
+expect_output "event was triggered with id: EventId(3) 1 times"
 
 show_test_passed

@@ -14,6 +14,7 @@
 -->
 
 * [#820](https://github.com/eclipse-iceoryx/iceoryx2/issues/820) Allow restricting the tunnel to a configurable allowlist of services via `Config::services` and the `--service`/`-s` flag on `iox2 tunnel zenoh`
+* [#925](https://github.com/eclipse-iceoryx/iceoryx2/issues/925) Adjust event API and guarantee that events can be always delivered.
 * [#1584](https://github.com/eclipse-iceoryx/iceoryx2/issues/1584) Introduce `Node::force_remove_service` to remove corrupted services manually.
 * [#1544](https://github.com/eclipse-iceoryx/iceoryx2/issues/1544) Announce service removal over the tunnel to remote hosts
 * [#1616](https://github.com/eclipse-iceoryx/iceoryx2/issues/1616) Add reactive execution mode to tunnel
@@ -97,5 +98,28 @@
   // new
   use iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator;
   ```
+
+1. `Listener::{try|timed|blocking}_wait_one` has been removed and `Listener::{try|timed|blocking}_wail_all`
+   has been renamed to `Listener::{try|timed|blocking}_wait`. The input argument has changed from `EventId`
+   to `EventActivation`.
+
+   ```rust
+   // old: no more `**_wait_one()`
+   while let Ok(Some(event_id)) = listener.timed_wait_one(CYCLE_TIME) {
+       coutln!("event was triggered with id: {event_id:?}");
+   }
+
+   // old: renamed to `**_wait()`
+   listener.timed_wait_all(|event_id| {
+       coutln!("event was triggered with id: {event_id:?}");
+   }, CYCLE_TIME)?;
+
+   // new
+   listener.timed_wait(|event| {
+       // EventActivation provides access to the event.id and how often it was
+       // notified with event.count.
+       coutln!("event {:?} was notified {} times", event.id, event.count);
+   }, CYCLE_TIME)?;
+   ```
 
 <!-- markdownlint-enable MD013 -->

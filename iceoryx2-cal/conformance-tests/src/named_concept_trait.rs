@@ -19,6 +19,7 @@ use core::any::Any;
 use core::marker::PhantomData;
 use core::time::Duration;
 use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_posix::testing::generate_file_path;
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -117,16 +118,16 @@ impl<T: CommunicationChannel<u64> + 'static> NamedConceptTest for CommunicationC
     }
 }
 
-pub struct EventTest<T: Event + 'static>(PhantomData<T>);
+pub struct EventTest<T: Event<RelocatableCountingBitSet> + 'static>(PhantomData<T>);
 
-impl<T: Event + 'static> NamedConceptTest for EventTest<T> {
+impl<T: Event<RelocatableCountingBitSet> + 'static> NamedConceptTest for EventTest<T> {
     type Sut = T;
 
     fn create(
         name: &FileName,
         config: &<Self::Sut as NamedConceptMgmt>::Configuration,
     ) -> Result<Box<dyn Any>, Box<dyn core::error::Error>> {
-        let sut = <Self::Sut as Event>::ListenerBuilder::new(name)
+        let sut = <Self::Sut as Event<RelocatableCountingBitSet>>::ListenerBuilder::new(name)
             .config(config)
             .create()?;
 
@@ -137,7 +138,7 @@ impl<T: Event + 'static> NamedConceptTest for EventTest<T> {
         name: &FileName,
         config: &<Self::Sut as NamedConceptMgmt>::Configuration,
     ) -> Result<Box<dyn Any>, Box<dyn core::error::Error>> {
-        let sut = <Self::Sut as Event>::NotifierBuilder::new(name)
+        let sut = <Self::Sut as Event<RelocatableCountingBitSet>>::NotifierBuilder::new(name)
             .config(config)
             .open()?;
 

@@ -21,8 +21,6 @@ pub mod arc_sync_policy_abandonable_trait;
 pub mod arc_sync_policy_trait;
 pub mod communication_channel_trait;
 pub mod dynamic_storage_trait;
-pub mod event_id_tracker_trait;
-pub mod event_signal_mechanism_trait;
 pub mod event_trait;
 pub mod monitoring_trait;
 pub mod named_concept_trait;

@@ -162,7 +162,7 @@ impl HandleToType for iox2_listener_h_ref {
 }
 
 pub type iox2_listener_wait_all_callback =
-    extern "C" fn(*const iox2_event_id_t, iox2_callback_context);
+    extern "C" fn(*const iox2_event_id_t, u64, iox2_callback_context);
 
 // END type definition
 
@@ -262,6 +262,7 @@ pub unsafe extern "C" fn iox2_listener_get_file_descriptor(
 /// # Arguments
 ///
 /// * `listener_handle` - A valid [`iox2_listener_h_ref`],
+/// * `number_of_notifications` - A valid pointer to an `uint64_t` integer.
 /// * `callback` - A valid callback with [`iox2_listener_wait_all_callback`} signature
 /// * `callback_ctx` - An optional callback context [`iox2_callback_context`} to e.g. store information across callback iterations
 ///
@@ -270,26 +271,32 @@ pub unsafe extern "C" fn iox2_listener_get_file_descriptor(
 /// * The `listener_handle` must be a valid handle.
 /// * The `callback` must be a valid function pointer.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_listener_try_wait_all(
+pub unsafe extern "C" fn iox2_listener_try_wait(
     listener_handle: iox2_listener_h_ref,
+    number_of_notifications: *mut u64,
     callback: iox2_listener_wait_all_callback,
     callback_ctx: iox2_callback_context,
 ) -> c_int {
     listener_handle.assert_non_null();
+    debug_assert!(!number_of_notifications.is_null());
+
     unsafe {
         let listener = &mut *listener_handle.as_type();
 
         let wait_result = match listener.service_type {
-            iox2_service_type_e::IPC => listener.value.as_mut().ipc.try_wait_all(|event_id| {
-                callback(&event_id.into(), callback_ctx);
+            iox2_service_type_e::IPC => listener.value.as_mut().ipc.try_wait(|event| {
+                callback(&event.id.into(), event.count, callback_ctx);
             }),
-            iox2_service_type_e::LOCAL => listener.value.as_mut().local.try_wait_all(|event_id| {
-                callback(&event_id.into(), callback_ctx);
+            iox2_service_type_e::LOCAL => listener.value.as_mut().local.try_wait(|event| {
+                callback(&event.id.into(), event.count, callback_ctx);
             }),
         };
 
         match wait_result {
-            Ok(()) => IOX2_OK,
+            Ok(n) => {
+                *number_of_notifications = n;
+                IOX2_OK
+            }
             Err(e) => e.into_c_int(),
         }
     }
@@ -303,6 +310,7 @@ pub unsafe extern "C" fn iox2_listener_try_wait_all(
 /// # Arguments
 ///
 /// * `listener_handle` - A valid [`iox2_listener_h_ref`],
+/// * `number_of_notifications` - A valid pointer to an `uint64_t` integer.
 /// * `callback` - A valid callback with [`iox2_listener_wait_all_callback`} signature
 /// * `callback_ctx` - An optional callback context [`iox2_callback_context`} to e.g. store information across callback iterations
 ///
@@ -311,35 +319,40 @@ pub unsafe extern "C" fn iox2_listener_try_wait_all(
 /// * The `listener_handle` must be a valid handle.
 /// * The `callback` must be a valid function pointer.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_listener_timed_wait_all(
+pub unsafe extern "C" fn iox2_listener_timed_wait(
     listener_handle: iox2_listener_h_ref,
+    number_of_notifications: *mut u64,
     callback: iox2_listener_wait_all_callback,
     callback_ctx: iox2_callback_context,
     seconds: u64,
     nanoseconds: u32,
 ) -> c_int {
     listener_handle.assert_non_null();
+    debug_assert!(!number_of_notifications.is_null());
     unsafe {
         let listener = &mut *listener_handle.as_type();
         let timeout = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as u64);
 
         let wait_result = match listener.service_type {
-            iox2_service_type_e::IPC => listener.value.as_mut().ipc.timed_wait_all(
-                |event_id| {
-                    callback(&event_id.into(), callback_ctx);
+            iox2_service_type_e::IPC => listener.value.as_mut().ipc.timed_wait(
+                |event| {
+                    callback(&event.id.into(), event.count, callback_ctx);
                 },
                 timeout,
             ),
-            iox2_service_type_e::LOCAL => listener.value.as_mut().local.timed_wait_all(
-                |event_id| {
-                    callback(&event_id.into(), callback_ctx);
+            iox2_service_type_e::LOCAL => listener.value.as_mut().local.timed_wait(
+                |event| {
+                    callback(&event.id.into(), event.count, callback_ctx);
                 },
                 timeout,
             ),
         };
 
         match wait_result {
-            Ok(()) => IOX2_OK,
+            Ok(n) => {
+                *number_of_notifications = n;
+                IOX2_OK
+            }
             Err(e) => e.into_c_int(),
         }
     }
@@ -430,6 +443,7 @@ pub unsafe extern "C" fn iox2_listener_deadline(
 /// # Arguments
 ///
 /// * `listener_handle` - A valid [`iox2_listener_h_ref`],
+/// * `number_of_notifications` - A valid pointer to an `uint64_t` integer.
 /// * `callback` - A valid callback with [`iox2_listener_wait_all_callback`} signature
 /// * `callback_ctx` - An optional callback context [`iox2_callback_context`} to e.g. store information across callback iterations
 ///
@@ -438,177 +452,35 @@ pub unsafe extern "C" fn iox2_listener_deadline(
 /// * The `listener_handle` must be a valid handle.
 /// * The `callback` must be a valid function pointer.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_listener_blocking_wait_all(
+pub unsafe extern "C" fn iox2_listener_blocking_wait(
     listener_handle: iox2_listener_h_ref,
+    number_of_notifications: *mut u64,
     callback: iox2_listener_wait_all_callback,
     callback_ctx: iox2_callback_context,
 ) -> c_int {
     listener_handle.assert_non_null();
+    debug_assert!(!number_of_notifications.is_null());
+
     unsafe {
         let listener = &mut *listener_handle.as_type();
 
         let wait_result = match listener.service_type {
-            iox2_service_type_e::IPC => listener.value.as_mut().ipc.blocking_wait_all(|event_id| {
-                callback(&event_id.into(), callback_ctx);
+            iox2_service_type_e::IPC => listener.value.as_mut().ipc.blocking_wait(|event| {
+                callback(&event.id.into(), event.count, callback_ctx);
             }),
-            iox2_service_type_e::LOCAL => {
-                listener.value.as_mut().local.blocking_wait_all(|event_id| {
-                    callback(&event_id.into(), callback_ctx);
-                })
-            }
+            iox2_service_type_e::LOCAL => listener.value.as_mut().local.blocking_wait(|event| {
+                callback(&event.id.into(), event.count, callback_ctx);
+            }),
         };
 
         match wait_result {
-            Ok(()) => IOX2_OK,
+            Ok(n) => {
+                *number_of_notifications = n;
+                IOX2_OK
+            }
             Err(e) => e.into_c_int(),
         }
     }
-}
-
-/// Tries to wait on the listener. If there is no event id present it returns immediately and sets
-/// the out parameter `has_received_one` to false. Otherwise, it sets the `event_id` out parameter
-/// and `has_received_one` to true.
-/// On error it returns [`iox2_listener_wait_error_e`].
-///
-/// # Arguments
-///
-/// * `listener_handle` - A valid [`iox2_listener_h_ref`],
-/// * `event_id` - A pointer to an [`iox2_event_id_t`] to store the received id.
-/// * `has_received_one` - A pointer to a [`bool`] that signals if an event id was received or not
-///
-/// # Safety
-///
-/// * All input arguments must be non-null.
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_listener_try_wait_one(
-    listener_handle: iox2_listener_h_ref,
-    event_id: *mut iox2_event_id_t,
-    has_received_one: *mut bool,
-) -> c_int {
-    listener_handle.assert_non_null();
-    debug_assert!(!event_id.is_null());
-    debug_assert!(!has_received_one.is_null());
-    unsafe {
-        let listener = &mut *listener_handle.as_type();
-
-        let wait_result = match listener.service_type {
-            iox2_service_type_e::IPC => listener.value.as_mut().ipc.try_wait_one(),
-            iox2_service_type_e::LOCAL => listener.value.as_mut().local.try_wait_one(),
-        };
-
-        *has_received_one = false;
-
-        match wait_result {
-            Ok(Some(e)) => {
-                *event_id = e.into();
-                *has_received_one = true;
-            }
-            Ok(None) => (),
-            Err(error) => {
-                return error.into_c_int();
-            }
-        }
-    }
-    IOX2_OK
-}
-
-/// Blocks on the listener until an event id was received or the provided timeout has passed.
-/// When no event id was received and the
-/// function was interrupted by a signal, `has_received_one` is set to false.
-/// Otherwise, it sets the `event_id` out parameter and `has_received_one` to true.
-/// On error it returns [`iox2_listener_wait_error_e`].
-///
-/// # Arguments
-///
-/// * `listener_handle` - A valid [`iox2_listener_h_ref`],
-/// * `event_id` - A pointer to an [`iox2_event_id_t`] to store the received id.
-/// * `has_received_one` - A pointer to a [`bool`] that signals if an event id was received or not
-/// * `seconds` - The timeout seconds part
-/// * `nanoseconds` - The timeout nanoseconds part
-///
-/// # Safety
-///
-/// * All input arguments must be non-null.
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_listener_timed_wait_one(
-    listener_handle: iox2_listener_h_ref,
-    event_id: *mut iox2_event_id_t,
-    has_received_one: *mut bool,
-    seconds: u64,
-    nanoseconds: u32,
-) -> c_int {
-    listener_handle.assert_non_null();
-    debug_assert!(!event_id.is_null());
-    debug_assert!(!has_received_one.is_null());
-    unsafe {
-        let listener = &mut *listener_handle.as_type();
-        *has_received_one = false;
-
-        let timeout = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as u64);
-
-        let wait_result = match listener.service_type {
-            iox2_service_type_e::IPC => listener.value.as_mut().ipc.timed_wait_one(timeout),
-            iox2_service_type_e::LOCAL => listener.value.as_mut().local.timed_wait_one(timeout),
-        };
-
-        match wait_result {
-            Ok(Some(e)) => {
-                *event_id = e.into();
-                *has_received_one = true;
-            }
-            Ok(None) => (),
-            Err(error) => {
-                return error.into_c_int();
-            }
-        }
-    }
-    IOX2_OK
-}
-
-/// Blocks on the listener until an event id was received. When no event id was received and the
-/// function was interrupted by a signal, `has_received_one` is set to false.
-/// Otherwise, it sets the `event_id` out parameter and `has_received_one` to true.
-/// On error it returns [`iox2_listener_wait_error_e`].
-///
-/// # Arguments
-///
-/// * `listener_handle` - A valid [`iox2_listener_h_ref`],
-/// * `event_id` - A pointer to an [`iox2_event_id_t`] to store the received id.
-/// * `has_received_one` - A pointer to a [`bool`] that signals if an event id was received or not
-///
-/// # Safety
-///
-/// * All input arguments must be non-null.
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_listener_blocking_wait_one(
-    listener_handle: iox2_listener_h_ref,
-    event_id: *mut iox2_event_id_t,
-    has_received_one: *mut bool,
-) -> c_int {
-    listener_handle.assert_non_null();
-    debug_assert!(!event_id.is_null());
-    debug_assert!(!has_received_one.is_null());
-    unsafe {
-        let listener = &mut *listener_handle.as_type();
-        *has_received_one = false;
-
-        let wait_result = match listener.service_type {
-            iox2_service_type_e::IPC => listener.value.as_mut().ipc.blocking_wait_one(),
-            iox2_service_type_e::LOCAL => listener.value.as_mut().local.blocking_wait_one(),
-        };
-
-        match wait_result {
-            Ok(Some(e)) => {
-                *event_id = e.into();
-                *has_received_one = true;
-            }
-            Ok(None) => (),
-            Err(error) => {
-                return error.into_c_int();
-            }
-        }
-    }
-    IOX2_OK
 }
 
 // END C API

@@ -17,6 +17,7 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 pub mod waitset {
     use alloc::vec;
     use core::time::Duration;
+    use iceoryx2_cal::event::event_state::counting_bit_set::RelocatableCountingBitSet;
 
     use iceoryx2::port::listener::Listener;
     use iceoryx2::port::notifier::Notifier;
@@ -75,7 +76,7 @@ pub mod waitset {
     #[conformance_test]
     pub fn attach_multiple_notifications_works<S: Service>()
     where
-        <S::Event as Event>::Listener: SynchronousMultiplexing,
+        <S::Event as Event<RelocatableCountingBitSet>>::Listener: SynchronousMultiplexing,
     {
         const LISTENER_LIMIT: usize = 16;
         const EXTERNAL_LIMIT: usize = 16;
@@ -120,7 +121,7 @@ pub mod waitset {
     #[conformance_test]
     pub fn attaching_same_notification_twice_fails<S: Service>()
     where
-        <S::Event as Event>::Listener: SynchronousMultiplexing,
+        <S::Event as Event<RelocatableCountingBitSet>>::Listener: SynchronousMultiplexing,
     {
         let test = Test::<S>::new();
         let node = test.create_node();
@@ -139,7 +140,7 @@ pub mod waitset {
     #[conformance_test]
     pub fn attaching_same_deadline_twice_fails<S: Service>()
     where
-        <S::Event as Event>::Listener: SynchronousMultiplexing,
+        <S::Event as Event<RelocatableCountingBitSet>>::Listener: SynchronousMultiplexing,
     {
         let test = Test::<S>::new();
         let node = test.create_node();
@@ -158,7 +159,7 @@ pub mod waitset {
     #[conformance_test]
     pub fn wait_and_process_once_lists_all_notifications<S: Service>()
     where
-        <S::Event as Event>::Listener: SynchronousMultiplexing,
+        <S::Event as Event<RelocatableCountingBitSet>>::Listener: SynchronousMultiplexing,
     {
         let test = Test::<S>::new();
         let node = test.create_node();
@@ -206,7 +207,7 @@ pub mod waitset {
     #[conformance_test]
     pub fn wait_and_process_once_with_tick_interval_blocks_for_at_least_timeout<S: Service>()
     where
-        <S::Event as Event>::Listener: SynchronousMultiplexing,
+        <S::Event as Event<RelocatableCountingBitSet>>::Listener: SynchronousMultiplexing,
     {
         let test = Test::<S>::new();
         let node = test.create_node();
@@ -233,7 +234,7 @@ pub mod waitset {
     #[conformance_test]
     pub fn wait_and_process_once_with_deadline_blocks_for_at_least_timeout<S: Service>()
     where
-        <S::Event as Event>::Listener: SynchronousMultiplexing,
+        <S::Event as Event<RelocatableCountingBitSet>>::Listener: SynchronousMultiplexing,
     {
         let test = Test::<S>::new();
         let node = test.create_node();
@@ -255,7 +256,7 @@ pub mod waitset {
     #[conformance_test]
     pub fn wait_and_process_once_does_not_block_longer_than_provided_timeout<S: Service>()
     where
-        <S::Event as Event>::Listener: SynchronousMultiplexing,
+        <S::Event as Event<RelocatableCountingBitSet>>::Listener: SynchronousMultiplexing,
     {
         let _watchdog = Watchdog::new();
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
@@ -280,7 +281,7 @@ pub mod waitset {
     #[conformance_test]
     pub fn wait_and_process_once_with_timeout_blocks_at_each_invocation<S: Service>()
     where
-        <S::Event as Event>::Listener: SynchronousMultiplexing,
+        <S::Event as Event<RelocatableCountingBitSet>>::Listener: SynchronousMultiplexing,
     {
         let test = Test::<S>::new_with_custom_watchdog(Watchdog::new_with_timeout(TIMEOUT * 40));
         let node = test.create_node();
@@ -309,7 +310,7 @@ pub mod waitset {
     #[conformance_test]
     pub fn wait_and_process_once_does_block_until_interval_when_user_timeout_is_larger<S: Service>()
     where
-        <S::Event as Event>::Listener: SynchronousMultiplexing,
+        <S::Event as Event<RelocatableCountingBitSet>>::Listener: SynchronousMultiplexing,
     {
         let _watchdog = Watchdog::new();
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
@@ -331,7 +332,7 @@ pub mod waitset {
     #[conformance_test]
     pub fn wait_and_process_once_lists_all_deadlines<S: Service>()
     where
-        <S::Event as Event>::Listener: SynchronousMultiplexing,
+        <S::Event as Event<RelocatableCountingBitSet>>::Listener: SynchronousMultiplexing,
     {
         let test = Test::<S>::new();
         let node = test.create_node();
@@ -387,7 +388,7 @@ pub mod waitset {
     #[conformance_test]
     pub fn wait_and_process_once_lists_all_ticks<S: Service>()
     where
-        <S::Event as Event>::Listener: SynchronousMultiplexing,
+        <S::Event as Event<RelocatableCountingBitSet>>::Listener: SynchronousMultiplexing,
     {
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
 
@@ -429,7 +430,7 @@ pub mod waitset {
     #[conformance_test]
     pub fn wait_and_process_stops_when_requested<S: Service>()
     where
-        <S::Event as Event>::Listener: SynchronousMultiplexing,
+        <S::Event as Event<RelocatableCountingBitSet>>::Listener: SynchronousMultiplexing,
     {
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
 
@@ -454,7 +455,7 @@ pub mod waitset {
     #[conformance_test]
     pub fn wait_and_process_once_lists_mixed<S: Service>()
     where
-        <S::Event as Event>::Listener: SynchronousMultiplexing,
+        <S::Event as Event<RelocatableCountingBitSet>>::Listener: SynchronousMultiplexing,
     {
         let test = Test::<S>::new();
         let node = test.create_node();
@@ -526,7 +527,7 @@ pub mod waitset {
     #[conformance_test]
     pub fn missed_deadline_and_then_notify_is_not_reported<S: Service>()
     where
-        <S::Event as Event>::Listener: SynchronousMultiplexing,
+        <S::Event as Event<RelocatableCountingBitSet>>::Listener: SynchronousMultiplexing,
     {
         let test = Test::<S>::new();
         let node = test.create_node();
@@ -563,7 +564,7 @@ pub mod waitset {
     #[conformance_test]
     pub fn after_missed_deadline_is_reported_the_waitset_waits_again<S: Service>()
     where
-        <S::Event as Event>::Listener: SynchronousMultiplexing,
+        <S::Event as Event<RelocatableCountingBitSet>>::Listener: SynchronousMultiplexing,
     {
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
 

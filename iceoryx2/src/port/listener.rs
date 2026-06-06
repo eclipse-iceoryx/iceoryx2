@@ -30,9 +30,9 @@
 //!
 //! let mut listener = event.listener_builder().create()?;
 //!
-//! for event_id in listener.try_wait_one()? {
-//!     println!("event was triggered with id: {:?}", event_id);
-//! }
+//! listener.try_wait(|event| {
+//!     println!("event was triggered with id: {:?} {} times", event.id, event.count);
+//! });
 //!
 //! # Ok(())
 //! # }
@@ -50,8 +50,8 @@
 //!
 //! let mut listener = event.listener_builder().create()?;
 //!
-//! listener.try_wait_all(|id| {
-//!     println!("event was triggered with id: {:?}", id);
+//! listener.try_wait(|event| {
+//!     println!("event was triggered with id: {:?} {} times", event.id, event.count);
 //! })?;
 //!
 //! # Ok(())
@@ -71,15 +71,15 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
+use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
 use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
 use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
-use iceoryx2_cal::event::{ListenerBuilder, ListenerWaitError, NamedConceptMgmt, TriggerId};
+use iceoryx2_cal::event::event_state::EventActivation;
+use iceoryx2_cal::event::{EventId, ListenerBuilder, ListenerWaitError, NamedConceptMgmt};
 use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptRemoveError};
 use iceoryx2_log::fail;
-
-use super::event_id::EventId;
 
 /// Defines the failures that can occur when a [`Listener`] is created with the
 /// [`crate::service::port_factory::listener::PortFactoryListener`].
@@ -111,8 +111,9 @@ impl core::error::Error for ListenerCreateError {}
 #[derive(Debug)]
 pub struct Listener<Service: service::Service> {
     dynamic_listener_handle: Option<ContainerHandle>,
-    listener:
-        Service::ArcThreadSafetyPolicy<<Service::Event as iceoryx2_cal::event::Event>::Listener>,
+    listener: Service::ArcThreadSafetyPolicy<
+        <Service::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::Listener,
+    >,
     service_state: SharedServiceState<Service, NoResource>,
     listener_id: UniqueListenerId,
     // IMPORTANT!
@@ -125,20 +126,23 @@ pub struct Listener<Service: service::Service> {
 }
 
 unsafe impl<Service: service::Service> Send for Listener<Service> where
-    Service::ArcThreadSafetyPolicy<<Service::Event as iceoryx2_cal::event::Event>::Listener>:
-        Send + Sync
+    Service::ArcThreadSafetyPolicy<
+        <Service::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::Listener,
+    >: Send + Sync
 {
 }
 
 unsafe impl<Service: service::Service> Sync for Listener<Service> where
-    Service::ArcThreadSafetyPolicy<<Service::Event as iceoryx2_cal::event::Event>::Listener>:
-        Send + Sync
+    Service::ArcThreadSafetyPolicy<
+        <Service::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::Listener,
+    >: Send + Sync
 {
 }
 
 impl<Service: service::Service> FileDescriptorBased for Listener<Service>
 where
-    <Service::Event as iceoryx2_cal::event::Event>::Listener: FileDescriptorBased,
+    <Service::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::Listener:
+        FileDescriptorBased,
 {
     fn file_descriptor(&self) -> &FileDescriptor {
         let fd = self.listener.lock().file_descriptor() as *const FileDescriptor;
@@ -149,7 +153,8 @@ where
 }
 
 impl<Service: service::Service> SynchronousMultiplexing for Listener<Service> where
-    <Service::Event as iceoryx2_cal::event::Event>::Listener: SynchronousMultiplexing
+    <Service::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::Listener:
+        SynchronousMultiplexing
 {
 }
 
@@ -208,8 +213,8 @@ impl<Service: service::Service> Listener<Service> {
         let event_config = event_config::<Service>(service.shared_node().config());
 
         let listener = fail!(from origin,
-                             when <Service::Event as iceoryx2_cal::event::Event>::ListenerBuilder::new(&event_name).config(&event_config)
-                                .trigger_id_max(TriggerId::new(service.static_config().event().event_id_max_value))
+                             when <Service::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::ListenerBuilder::new(&event_name).config(&event_config)
+                                .event_id_max(EventId::new(service.static_config().event().event_id_max_value))
                                 .create(),
                              with ListenerCreateError::ResourceCreationFailed,
                              "{} since the underlying event concept \"{}\" could not be created.", msg, event_name);
@@ -264,72 +269,42 @@ impl<Service: service::Service> Listener<Service> {
     }
 
     /// Non-blocking wait for new [`EventId`]s. Collects all [`EventId`]s that were received and
-    /// calls the provided callback is with the [`EventId`] as input argument.
-    pub fn try_wait_all<F: FnMut(EventId)>(&self, callback: F) -> Result<(), ListenerWaitError> {
+    /// calls the provided callback with the [`EventActivation`] as input argument.
+    pub fn try_wait<F: FnMut(EventActivation)>(
+        &self,
+        callback: F,
+    ) -> Result<u64, ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
-        fail!(from self, when self.listener.lock().try_wait_all(callback),
-            "Failed to while calling try_wait on underlying event::Listener");
-        Ok(())
+        let number_of_notifications = fail!(from self, when self.listener.lock().try_wait(callback),
+                                            "Failed try_wait on underlying event::Listener");
+        Ok(number_of_notifications)
     }
 
     /// Blocking wait for new [`EventId`]s until the provided timeout has passed. Unblocks as soon
     /// as an [`EventId`] was received and then collects all [`EventId`]s that were received and
-    /// calls the provided callback is with the [`EventId`] as input argument.
-    pub fn timed_wait_all<F: FnMut(EventId)>(
+    /// calls the provided callback with the [`EventActivation`] as input argument.
+    pub fn timed_wait<F: FnMut(EventActivation)>(
         &self,
         callback: F,
         timeout: Duration,
-    ) -> Result<(), ListenerWaitError> {
+    ) -> Result<u64, ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
-        fail!(from self, when self.listener.lock().timed_wait_all(callback, timeout),
-            "Failed to while calling timed_wait({:?}) on underlying event::Listener", timeout);
-        Ok(())
+        let number_of_notifications = fail!(from self, when self.listener.lock().timed_wait(callback, timeout),
+                                            "Failed timed_wait({:?}) on underlying event::Listener", timeout);
+        Ok(number_of_notifications)
     }
 
     /// Blocking wait for new [`EventId`]s. Unblocks as soon
     /// as an [`EventId`] was received and then collects all [`EventId`]s that were received and
-    /// calls the provided callback is with the [`EventId`] as input argument.
-    pub fn blocking_wait_all<F: FnMut(EventId)>(
+    /// calls the provided callback with the [`EventActivation`] as input argument.
+    pub fn blocking_wait<F: FnMut(EventActivation)>(
         &self,
         callback: F,
-    ) -> Result<(), ListenerWaitError> {
+    ) -> Result<u64, ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
-        fail!(from self, when self.listener.lock().blocking_wait_all(callback),
-            "Failed to while calling blocking_wait on underlying event::Listener");
-        Ok(())
-    }
-
-    /// Non-blocking wait for a new [`EventId`]. If no [`EventId`] was notified it returns [`None`].
-    /// On error it returns [`ListenerWaitError`] is returned which describes the error
-    /// in detail.
-    pub fn try_wait_one(&self) -> Result<Option<EventId>, ListenerWaitError> {
-        use iceoryx2_cal::event::Listener;
-        Ok(fail!(from self, when self.listener.lock().try_wait_one(),
-            "Failed to while calling try_wait on underlying event::Listener"))
-    }
-
-    /// Blocking wait for a new [`EventId`] until either an [`EventId`] was received or the timeout
-    /// has passed. If no [`EventId`] was notified it returns [`None`].
-    /// On error it returns [`ListenerWaitError`] is returned which describes the error
-    /// in detail.
-    pub fn timed_wait_one(&self, timeout: Duration) -> Result<Option<EventId>, ListenerWaitError> {
-        use iceoryx2_cal::event::Listener;
-        Ok(
-            fail!(from self, when self.listener.lock().timed_wait_one(timeout),
-            "Failed to while calling timed_wait({:?}) on underlying event::Listener", timeout),
-        )
-    }
-
-    /// Blocking wait for a new [`EventId`].
-    /// Sporadic wakeups can occur and if no [`EventId`] was notified it returns [`None`].
-    /// On error it returns [`ListenerWaitError`] is returned which describes the error
-    /// in detail.
-    pub fn blocking_wait_one(&self) -> Result<Option<EventId>, ListenerWaitError> {
-        use iceoryx2_cal::event::Listener;
-        Ok(
-            fail!(from self, when self.listener.lock().blocking_wait_one(),
-            "Failed to while calling blocking_wait on underlying event::Listener"),
-        )
+        let number_of_notifications = fail!(from self, when self.listener.lock().blocking_wait(callback),
+                                            "Failed blocking_wait on underlying event::Listener");
+        Ok(number_of_notifications)
     }
 
     /// Returns the [`UniqueListenerId`] of the [`Listener`]

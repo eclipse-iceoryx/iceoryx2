@@ -16,6 +16,11 @@
 #include <stdio.h>
 #include <string.h>
 
+static void event_callback(const iox2_event_id_t* event_id, uint64_t count, void* context) {
+    (void) context;
+    printf("event was triggered with id: %lu %lu times\n", (long unsigned) event_id->value, (long unsigned) count);
+}
+
 int main(void) {
     // Setup logging
     iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
@@ -64,7 +69,8 @@ int main(void) {
 
     while (iox2_node_wait(&node_handle, 0, 0) == IOX2_OK) {
         bool has_received_one = false;
-        ret_val = iox2_listener_timed_wait_one(&listener, &event_id, &has_received_one, 1, 0);
+        uint64_t number_of_notifications = 0;
+        ret_val = iox2_listener_timed_wait(&listener, &number_of_notifications, &event_callback, NULL, 1, 0);
         if (ret_val != IOX2_OK) {
             printf("Unable to wait for notification! Error: %d\n", ret_val);
             goto drop_listener;

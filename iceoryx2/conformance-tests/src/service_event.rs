@@ -358,10 +358,12 @@ pub mod service_event {
         assert_that!(notifier.notify(), is_ok);
 
         let mut received_events = 0;
-        for event in listener.try_wait_one().unwrap().iter() {
-            assert_that!(*event, eq event_id);
-            received_events += 1;
-        }
+        listener
+            .try_wait(|event| {
+                received_events += event.count;
+                assert_that!(event.id, eq event_id);
+            })
+            .unwrap();
         assert_that!(received_events, eq 1);
     }
 
@@ -390,15 +392,17 @@ pub mod service_event {
         assert_that!(notifier.notify(), is_ok);
 
         let mut received_events = 0;
-        for event in listener.try_wait_one().unwrap().iter() {
-            assert_that!(*event, eq event_id);
-            received_events += 1;
-        }
+        listener
+            .try_wait(|event| {
+                received_events += event.count;
+                assert_that!(event.id, eq event_id);
+            })
+            .unwrap();
         assert_that!(received_events, eq 1);
     }
 
     #[conformance_test]
-    pub fn notifier_emits_create_and_dropped_event_id<Sut: Service>() {
+    pub fn notifier_emits_nothing_when_no_events_are_configured<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
@@ -416,23 +420,17 @@ pub mod service_event {
         let listener = sut.listener_builder().create().unwrap();
         let notifier = sut2.notifier_builder().create().unwrap();
 
-        let mut received_events = 0;
-        for _ in listener.try_wait_one().unwrap().iter() {
-            received_events += 1;
-        }
+        let received_events = listener.try_wait(|_| {}).unwrap();
         assert_that!(received_events, eq 0);
 
         drop(notifier);
 
-        let mut received_events = 0;
-        for _ in listener.try_wait_one().unwrap().iter() {
-            received_events += 1;
-        }
+        let received_events = listener.try_wait(|_| {}).unwrap();
         assert_that!(received_events, eq 0);
     }
 
     #[conformance_test]
-    pub fn notifier_emits_nothing_when_no_events_are_configured<Sut: Service>() {
+    pub fn notifier_emits_create_and_dropped_event_id<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
@@ -453,19 +451,23 @@ pub mod service_event {
         let notifier = sut2.notifier_builder().create().unwrap();
 
         let mut received_events = 0;
-        for event in listener.try_wait_one().unwrap().iter() {
-            assert_that!(*event, eq notifier_created);
-            received_events += 1;
-        }
+        listener
+            .try_wait(|event| {
+                received_events += event.count;
+                assert_that!(event.id, eq notifier_created);
+            })
+            .unwrap();
         assert_that!(received_events, eq 1);
 
         drop(notifier);
 
         let mut received_events = 0;
-        for event in listener.try_wait_one().unwrap().iter() {
-            assert_that!(*event, eq notifier_dropped);
-            received_events += 1;
-        }
+        listener
+            .try_wait(|event| {
+                received_events += event.count;
+                assert_that!(event.id, eq notifier_dropped);
+            })
+            .unwrap();
         assert_that!(received_events, eq 1);
     }
 
@@ -508,10 +510,12 @@ pub mod service_event {
 
                 for listener in &mut listeners {
                     let mut received_events = 0;
-                    for event in listener.try_wait_one().unwrap().iter() {
-                        assert_that!(*event, eq EventId::new(i + 3));
-                        received_events += 1;
-                    }
+                    listener
+                        .try_wait(|event| {
+                            received_events += event.count;
+                            assert_that!(event.id, eq EventId::new(i + 3));
+                        })
+                        .unwrap();
                     assert_that!(received_events, eq 1);
                 }
             }
@@ -560,12 +564,14 @@ pub mod service_event {
                 let mut received_events = 0;
 
                 let mut received_event_ids = [false; MAX_NOTIFIERS];
-                while let Some(event) = listener.try_wait_one().unwrap() {
-                    assert_that!(received_event_ids[event.as_value()], eq false);
-                    received_event_ids[event.as_value()] = true;
-                    received_events += 1;
-                }
-                assert_that!(received_events, eq MAX_NOTIFIERS);
+                listener
+                    .try_wait(|event| {
+                        received_events += event.count;
+                        assert_that!(received_event_ids[event.id.as_value()], eq false);
+                        received_event_ids[event.id.as_value()] = true;
+                    })
+                    .unwrap();
+                assert_that!(received_events, eq MAX_NOTIFIERS as u64);
             }
         }
     }
@@ -717,7 +723,12 @@ pub mod service_event {
             assert_that!(notifier
                 .notify_with_custom_event_id(EventId::new(i))
                 .unwrap(), eq 1);
-            assert_that!(listener.try_wait_one().unwrap(), eq Some(EventId::new(i)));
+            let number_of_notifications = listener
+                .try_wait(|event| {
+                    assert_that!(event.id.as_value(), eq i);
+                })
+                .unwrap();
+            assert_that!(number_of_notifications, eq 1);
         }
 
         let result = notifier.notify_with_custom_event_id(EventId::new(EVENT_ID_MAX_VALUE + 1));
@@ -764,11 +775,12 @@ pub mod service_event {
 
                     let mut counter = 0;
                     while counter < NUMBER_OF_ITERATIONS {
-                        let event_ids = listener.blocking_wait_one().unwrap();
-                        if let Some(id) = event_ids {
-                            counter += 1;
-                            assert_that!(id, eq EVENT_ID);
-                        }
+                        listener
+                            .blocking_wait(|event| {
+                                assert_that!(event.id, eq EVENT_ID);
+                                counter += event.count as usize;
+                            })
+                            .unwrap();
                     }
 
                     finish_barrier.wait();
@@ -831,14 +843,14 @@ pub mod service_event {
                     barrier.wait();
 
                     let mut counter = 0;
-                    let mut listener = sut.listener_builder().create().unwrap();
+                    let listener = sut.listener_builder().create().unwrap();
                     while counter < NUMBER_OF_ITERATIONS {
-                        let event_ids = listener.blocking_wait_one().unwrap();
-                        if let Some(id) = event_ids {
-                            counter += 1;
-                            assert_that!(id, eq EVENT_ID);
-                            listener = sut.listener_builder().create().unwrap();
-                        }
+                        listener
+                            .blocking_wait(|event| {
+                                assert_that!(event.id, eq EVENT_ID);
+                                counter += event.count as usize;
+                            })
+                            .unwrap();
                     }
 
                     finish_barrier.wait();
@@ -894,10 +906,12 @@ pub mod service_event {
         assert_that!(notifier.notify(), eq Ok(1));
 
         let mut received_events = 0;
-        for event in listener.try_wait_one().unwrap().iter() {
-            assert_that!(*event, eq event_id);
-            received_events += 1;
-        }
+        listener
+            .try_wait(|event| {
+                assert_that!(event.id, eq event_id);
+                received_events += event.count;
+            })
+            .unwrap();
         assert_that!(received_events, eq 1);
     }
 
@@ -959,8 +973,12 @@ pub mod service_event {
         let sut = node.service_builder(&service_name).event().open().unwrap();
         let listener = sut.listener_builder().create().unwrap();
         notifier.notify_with_custom_event_id(event_id).unwrap();
-        let notification = listener.try_wait_one().unwrap();
-        assert_that!(notification, eq Some(event_id));
+        let number_of_notifications = listener
+            .try_wait(|event| {
+                assert_that!(event.id, eq event_id);
+            })
+            .unwrap();
+        assert_that!(number_of_notifications, eq 1);
 
         drop(listener);
         drop(sut);
@@ -997,8 +1015,12 @@ pub mod service_event {
         let sut = node.service_builder(&service_name).event().open().unwrap();
         let notifier = sut.notifier_builder().create().unwrap();
         notifier.notify_with_custom_event_id(event_id).unwrap();
-        let notification = listener.try_wait_one().unwrap();
-        assert_that!(notification, eq Some(event_id));
+        let number_of_notifications = listener
+            .try_wait(|event| {
+                assert_that!(event.id, eq event_id);
+            })
+            .unwrap();
+        assert_that!(number_of_notifications, eq 1);
 
         drop(notifier);
         drop(sut);
@@ -1023,7 +1045,7 @@ pub mod service_event {
             .unwrap();
         let listener = sut.listener_builder().create().unwrap();
 
-        assert_that!(listener.try_wait_one(), is_ok);
+        assert_that!(listener.try_wait(|_| {}), eq Ok(0));
     }
 
     #[conformance_test]
@@ -1041,7 +1063,7 @@ pub mod service_event {
         let listener = sut.listener_builder().create().unwrap();
 
         let now = Time::now().unwrap();
-        assert_that!(listener.timed_wait_one(TIMEOUT), is_ok);
+        assert_that!(listener.timed_wait(|_| {}, TIMEOUT), eq Ok(0));
         assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
     }
 
@@ -1086,16 +1108,27 @@ pub mod service_event {
     #[conformance_test]
     pub fn timed_wait_blocks_until_notification<Sut: Service>() {
         wait_blocks_until_notification(|l: &Listener<Sut>| {
-            let id = l.timed_wait_one(TIMEOUT * 1000).unwrap();
-            assert_that!(id, eq Some(EventId::new(13)));
+            let number_of_notifications = l
+                .timed_wait(
+                    |event| {
+                        assert_that!(event.id, eq EventId::new(13));
+                    },
+                    TIMEOUT * 1000,
+                )
+                .unwrap();
+            assert_that!(number_of_notifications, eq 1);
         })
     }
 
     #[conformance_test]
     pub fn blocking_wait_blocks_until_notification<Sut: Service>() {
         wait_blocks_until_notification(|l: &Listener<Sut>| {
-            let id = l.blocking_wait_one().unwrap();
-            assert_that!(id, eq Some(EventId::new(13)));
+            let number_of_notifications = l
+                .blocking_wait(|event| {
+                    assert_that!(event.id, eq EventId::new(13));
+                })
+                .unwrap();
+            assert_that!(number_of_notifications, eq 1);
         })
     }
 
@@ -1103,9 +1136,10 @@ pub mod service_event {
     pub fn try_wait_collects_all_notifications<Sut: Service>() {
         const NUMBER_OF_NOTIFICATIONS: usize = 8;
         wait_collects_all_notifications(NUMBER_OF_NOTIFICATIONS, |l: &Listener<Sut>, ids| {
-            while let Some(id) = l.try_wait_one().unwrap() {
-                assert_that!(ids.insert(id), eq true);
-            }
+            l.try_wait(|event| {
+                assert_that!(ids.insert(event.id), eq true);
+            })
+            .unwrap();
         });
     }
 
@@ -1113,10 +1147,13 @@ pub mod service_event {
     pub fn timed_wait_collects_all_notifications<Sut: Service>() {
         const NUMBER_OF_NOTIFICATIONS: usize = 8;
         wait_collects_all_notifications(NUMBER_OF_NOTIFICATIONS, |l: &Listener<Sut>, ids| {
-            for _ in 0..NUMBER_OF_NOTIFICATIONS {
-                let id = l.timed_wait_one(TIMEOUT).unwrap().unwrap();
-                assert_that!(ids.insert(id), eq true);
-            }
+            l.timed_wait(
+                |event| {
+                    assert_that!(ids.insert(event.id), eq true);
+                },
+                TIMEOUT,
+            )
+            .unwrap();
         });
     }
 
@@ -1124,87 +1161,11 @@ pub mod service_event {
     pub fn blocking_wait_collects_all_notifications<Sut: Service>() {
         const NUMBER_OF_NOTIFICATIONS: usize = 8;
         wait_collects_all_notifications(NUMBER_OF_NOTIFICATIONS, |l: &Listener<Sut>, ids| {
-            for _ in 0..NUMBER_OF_NOTIFICATIONS {
-                let id = l.blocking_wait_one().unwrap().unwrap();
-                assert_that!(ids.insert(id), eq true);
-            }
-        });
-    }
-
-    #[conformance_test]
-    pub fn try_wait_all_does_not_block<Sut: Service>() {
-        let test = Test::<Sut>::new();
-        let node = test.create_node();
-        let service_name = generate_service_name();
-
-        let sut = node
-            .service_builder(&service_name)
-            .event()
-            .create()
+            l.blocking_wait(|event| {
+                assert_that!(ids.insert(event.id), eq true);
+            })
             .unwrap();
-
-        let listener = sut.listener_builder().create().unwrap();
-
-        let mut callback_called = false;
-        assert_that!(listener.try_wait_all(|_| callback_called = true), is_ok);
-        assert_that!(callback_called, eq false);
-    }
-
-    #[conformance_test]
-    pub fn timed_wait_all_blocks_for_at_least_timeout<Sut: Service>() {
-        let test = Test::<Sut>::new();
-        let node = test.create_node();
-        let service_name = generate_service_name();
-
-        let sut = node
-            .service_builder(&service_name)
-            .event()
-            .create()
-            .unwrap();
-
-        let listener = sut.listener_builder().create().unwrap();
-
-        let now = Time::now().unwrap();
-        let mut callback_called = false;
-        assert_that!(
-            listener.timed_wait_all(|_| callback_called = true, TIMEOUT),
-            is_ok
-        );
-        assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
-        assert_that!(callback_called, eq false);
-    }
-
-    #[conformance_test]
-    pub fn timed_wait_all_blocks_until_notification<Sut: Service>() {
-        let mut callback_was_called = false;
-        wait_blocks_until_notification(|l: &Listener<Sut>| {
-            assert_that!(
-                l.timed_wait_all(
-                    |id| {
-                        assert_that!(id, eq EventId::new(13));
-                        callback_was_called = true;
-                    },
-                    TIMEOUT * 1000
-                ),
-                is_ok
-            );
         });
-        assert_that!(callback_was_called, eq true);
-    }
-
-    #[conformance_test]
-    pub fn blocking_wait_all_blocks_until_notification<Sut: Service>() {
-        let mut callback_was_called = false;
-        wait_blocks_until_notification(|l: &Listener<Sut>| {
-            assert_that!(
-                l.blocking_wait_all(|id| {
-                    assert_that!(id, eq EventId::new(13));
-                    callback_was_called = true;
-                }),
-                is_ok
-            );
-        });
-        assert_that!(callback_was_called, eq true);
     }
 
     fn wait_collects_all_notifications<
@@ -1233,33 +1194,6 @@ pub mod service_event {
 
         let mut id_set = BTreeSet::new();
         wait_call(&listener, &mut id_set);
-    }
-
-    #[conformance_test]
-    pub fn try_wait_all_collects_all_notifications<Sut: Service>() {
-        const NUMBER_OF_NOTIFICATIONS: usize = 8;
-        wait_collects_all_notifications(NUMBER_OF_NOTIFICATIONS, |l: &Listener<Sut>, ids| {
-            let result = l.try_wait_all(|id| assert_that!(ids.insert(id), eq true));
-            assert_that!(result, is_ok);
-        });
-    }
-
-    #[conformance_test]
-    pub fn timed_wait_all_collects_all_notifications<Sut: Service>() {
-        const NUMBER_OF_NOTIFICATIONS: usize = 8;
-        wait_collects_all_notifications(NUMBER_OF_NOTIFICATIONS, |l: &Listener<Sut>, ids| {
-            let result = l.timed_wait_all(|id| assert_that!(ids.insert(id), eq true), TIMEOUT);
-            assert_that!(result, is_ok);
-        });
-    }
-
-    #[conformance_test]
-    pub fn blocking_wait_all_collects_all_notifications<Sut: Service>() {
-        const NUMBER_OF_NOTIFICATIONS: usize = 8;
-        wait_collects_all_notifications(NUMBER_OF_NOTIFICATIONS, |l: &Listener<Sut>, ids| {
-            let result = l.blocking_wait_all(|id| assert_that!(ids.insert(id), eq true));
-            assert_that!(result, is_ok);
-        });
     }
 
     #[conformance_test]
@@ -1382,12 +1316,12 @@ pub mod service_event {
         nanosleep(TIMEOUT).unwrap();
         let result = notifier_create.notify();
         assert_that!(result.err(), eq Some(NotifierNotifyError::MissedDeadline));
-        assert_that!(listener.try_wait_one().unwrap(), is_some);
+        assert_that!(listener.try_wait(|_| {}).unwrap(), eq 1);
 
         nanosleep(TIMEOUT).unwrap();
         let result = notifier_open.notify();
         assert_that!(result.err(), eq Some(NotifierNotifyError::MissedDeadline));
-        assert_that!(listener.try_wait_one().unwrap(), is_some);
+        assert_that!(listener.try_wait(|_| {}).unwrap(), eq 1);
     }
 
     #[conformance_test]
@@ -1413,11 +1347,11 @@ pub mod service_event {
 
         nanosleep(TIMEOUT).unwrap();
         assert_that!(notifier_create.notify(), is_ok);
-        assert_that!(listener.try_wait_one().unwrap(), is_some);
+        assert_that!(listener.try_wait(|_|{}).unwrap(), eq 1);
 
         nanosleep(TIMEOUT).unwrap();
         assert_that!(notifier_open.notify(), is_ok);
-        assert_that!(listener.try_wait_one().unwrap(), is_some);
+        assert_that!(listener.try_wait(|_|{}).unwrap(), eq 1);
     }
 
     #[conformance_test]
@@ -1573,16 +1507,20 @@ pub mod service_event {
         assert_that!(notifier.__internal_notify(event_id, true), is_ok);
 
         let mut received_events = 0;
-        for _ in listener_1.try_wait_one().unwrap().iter() {
-            received_events += 1;
-        }
+        listener_1
+            .try_wait(|event| {
+                received_events += event.count;
+            })
+            .unwrap();
         assert_that!(received_events, eq 0);
 
         let mut received_events = 0;
-        for event in listener_2.try_wait_one().unwrap().iter() {
-            assert_that!(*event, eq event_id);
-            received_events += 1;
-        }
+        listener_2
+            .try_wait(|event| {
+                assert_that!(event.id, eq event_id);
+                received_events += event.count;
+            })
+            .unwrap();
         assert_that!(received_events, eq 1);
     }
 }

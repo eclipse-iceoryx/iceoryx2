@@ -13,6 +13,7 @@
 #ifndef IOX2_EXAMPLES_CUSTOM_PUBLISHER_HPP
 #define IOX2_EXAMPLES_CUSTOM_PUBLISHER_HPP
 
+#include "iox2/bb/detail/attributes.hpp"
 #include "iox2/iceoryx2.hpp"
 #include "pubsub_event.hpp"
 #include "transmission_data.hpp"
@@ -59,9 +60,8 @@ class CustomPublisher : public iox2::FileDescriptorBased {
     }
 
     void handle_event() {
-        for (auto event = m_listener.try_wait_one(); event.has_value() && event->has_value();
-             event = m_listener.try_wait_one()) {
-            switch (iox2::bb::into<PubSubEvent>(event.value()->as_value())) {
+        IOX2_DISCARD_RESULT(m_listener.try_wait([&](auto event) -> void {
+            switch (iox2::bb::into<PubSubEvent>(event.id().as_value())) {
             case PubSubEvent::SubscriberConnected: {
                 std::cout << "new subscriber connected - delivering history" << std::endl;
                 m_publisher.update_connections().value();
@@ -81,7 +81,7 @@ class CustomPublisher : public iox2::FileDescriptorBased {
                 break;
             }
             }
-        }
+        }));
     }
 
     void send(const uint64_t counter) {

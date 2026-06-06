@@ -70,7 +70,7 @@ fn run_ponger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
 
     let on_event = |id: WaitSetAttachmentId<ipc::Service>| {
         if id == ping_id {
-            ping_listener.try_wait_all(|_| {}).unwrap();
+            ping_listener.try_wait(|_| {}).unwrap();
 
             while let Ok(Some(ping_sample)) = ping_subscriber.receive() {
                 let mut pong_sample = pong_publisher.loan_uninit().unwrap();

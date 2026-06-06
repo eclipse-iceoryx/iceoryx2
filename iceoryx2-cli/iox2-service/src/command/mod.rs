@@ -60,6 +60,7 @@ struct EventFeedback {
     event_type: EventType,
     service: String,
     event_id: Option<usize>,
+    event_count: u64,
 }
 
 pub(crate) fn get_pubsub_service_types(

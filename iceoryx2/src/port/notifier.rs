@@ -47,6 +47,7 @@ use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
+use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy, dynamic_storage::DynamicStorage, event::NotifierBuilder,
 };
@@ -117,7 +118,7 @@ impl core::error::Error for NotifierNotifyError {}
 
 #[derive(Debug)]
 struct Connection<Service: service::Service> {
-    notifier: <Service::Event as Event>::Notifier,
+    notifier: <Service::Event as Event<RelocatableCountingBitSet>>::Notifier,
     listener_id: UniqueListenerId,
     node_id: UniqueNodeId,
 }
@@ -164,7 +165,7 @@ impl<Service: service::Service> ListenerConnections<Service> {
         let event_name = event_concept_name(&listener_id);
         let event_config = event_config::<Service>(self.service_state.shared_node().config());
         if self.get(index).is_none() {
-            match <Service::Event as iceoryx2_cal::event::Event>::NotifierBuilder::new(&event_name)
+            match <Service::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::NotifierBuilder::new(&event_name)
                 .config(&event_config)
                 .open()
             {
@@ -176,21 +177,21 @@ impl<Service: service::Service> ListenerConnections<Service> {
                     });
                 }
                 Err(
-                    iceoryx2_cal::event::NotifierCreateError::DoesNotExist
-                    | iceoryx2_cal::event::NotifierCreateError::InitializationNotYetFinalized,
+                    iceoryx2_cal::event::NotifierOpenError::DoesNotExist
+                    | iceoryx2_cal::event::NotifierOpenError::InitializationNotYetFinalized,
                 ) => (),
-                Err(iceoryx2_cal::event::NotifierCreateError::VersionMismatch) => {
+                Err(iceoryx2_cal::event::NotifierOpenError::VersionMismatch) => {
                     warn!(from self,
                         "{} since a version mismatch was detected! All entities must use the same iceoryx2 version!",
                         msg);
                 }
-                Err(iceoryx2_cal::event::NotifierCreateError::InsufficientPermissions) => {
+                Err(iceoryx2_cal::event::NotifierOpenError::InsufficientPermissions) => {
                     warn!(from self, "{} since the permissions do not match. The service or the participants are maybe misconfigured.", msg);
                 }
-                Err(iceoryx2_cal::event::NotifierCreateError::Interrupt) => {
+                Err(iceoryx2_cal::event::NotifierOpenError::Interrupt) => {
                     debug!(from self, "{} since an interrupt signal was received.", msg);
                 }
-                Err(iceoryx2_cal::event::NotifierCreateError::InternalFailure) => {
+                Err(iceoryx2_cal::event::NotifierOpenError::InternalFailure) => {
                     debug!(from self, "{} due to an internal failure.", msg);
                 }
             }

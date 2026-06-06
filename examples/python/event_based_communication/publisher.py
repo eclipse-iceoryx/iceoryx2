@@ -48,8 +48,8 @@ class CustomPublisher:
 
     def handle_event(self):
         """Handles incoming feedback events from subscribers."""
-        for event_id in self.listener.try_wait_all():
-            event = from_event_id(event_id)
+        for event_handle in self.listener.try_wait():
+            event = from_event_id(event_handle.id)
             if event == PubSubEvent.SubscriberConnected:
                 print("new subscriber connected - delivering history")
                 self._publisher.update_connections()

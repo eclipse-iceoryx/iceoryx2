@@ -35,6 +35,6 @@ set id_iox2_service_notify $spawn_id
 #### Test Assertion
 
 expect_output_from $id_iox2_service_notify "NotificationSent"
-expect_output_from $id_listener "event was triggered with id: TriggerId(0)"
+expect_output_from $id_listener "event EventId(0) was notified 1 times"
 
 show_test_passed

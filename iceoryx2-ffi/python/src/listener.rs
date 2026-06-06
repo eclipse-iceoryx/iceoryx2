@@ -16,7 +16,7 @@ use iceoryx2_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::{
-    duration::Duration, error::ListenerWaitError, event_id::EventId,
+    duration::Duration, error::ListenerWaitError, event_activation::EventActivation,
     unique_listener_id::UniqueListenerId,
 };
 
@@ -44,74 +44,21 @@ impl Listener {
         }
     }
 
-    /// Non-blocking wait for a new `EventId`. If no `EventId` was notified it returns `None`.
-    /// On error it emits `ListenerWaitError`.
-    pub fn try_wait_one(&self) -> PyResult<Option<EventId>> {
-        match &self.0 {
-            ListenerType::Ipc(Some(v)) => Ok(v
-                .try_wait_one()
-                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
-                .map(EventId)),
-            ListenerType::Local(Some(v)) => Ok(v
-                .try_wait_one()
-                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
-                .map(EventId)),
-            _ => fatal_panic!(from "Listener::try_wait_one()",
-                    "Accessing a released listener."),
-        }
-    }
-
-    /// Blocking wait for a new `EventId` until either an `EventId` was received or the timeout
-    /// has passed. If no `EventId` was notified it returns `None`.
-    /// On error it emits `ListenerWaitError`.
-    pub fn timed_wait_one(&self, timeout: &Duration, py: Python<'_>) -> PyResult<Option<EventId>> {
-        py.detach(move || match &self.0 {
-            ListenerType::Ipc(Some(v)) => Ok(v
-                .timed_wait_one(timeout.0)
-                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
-                .map(EventId)),
-            ListenerType::Local(Some(v)) => Ok(v
-                .timed_wait_one(timeout.0)
-                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
-                .map(EventId)),
-            _ => fatal_panic!(from "Listener::timed_wait_one()",
-                        "Accessing a released listener."),
-        })
-    }
-
-    /// Blocking wait for a new `EventId`.
-    /// Sporadic wakeups can occur and if no `EventId` was notified it returns `None`.
-    /// On error it emits `ListenerWaitError`.
-    pub fn blocking_wait_one(&self, py: Python<'_>) -> PyResult<Option<EventId>> {
-        py.detach(move || match &self.0 {
-            ListenerType::Ipc(Some(v)) => Ok(v
-                .blocking_wait_one()
-                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
-                .map(EventId)),
-            ListenerType::Local(Some(v)) => Ok(v
-                .blocking_wait_one()
-                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
-                .map(EventId)),
-            _ => fatal_panic!(from "Listener::blocking_wait_one()",
-                        "Accessing a released listener."),
-        })
-    }
-
     /// Non-blocking wait for new `EventId`s. Collects all `EventId`s that were received and
     /// calls the provided callback is with the `EventId` as input argument.
     /// On error it emits `ListenerWaitError`.
-    pub fn try_wait_all(&self) -> PyResult<Vec<EventId>> {
+    pub fn try_wait(&self) -> PyResult<Vec<EventActivation>> {
         let mut event_ids = vec![];
         match &self.0 {
             ListenerType::Ipc(Some(v)) => v
-                .try_wait_all(|e| event_ids.push(EventId(e)))
+                .try_wait(|e| event_ids.push(EventActivation(e)))
                 .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
             ListenerType::Local(Some(v)) => v
-                .try_wait_all(|e| event_ids.push(EventId(e)))
+                .try_wait(|e| event_ids.push(EventActivation(e)))
                 .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
-            _ => fatal_panic!(from "Listener::try_wait_all()",
+            _ => fatal_panic!(from "Listener::try_wait()",
                     "Accessing a released listener."),
-        }
+        };
 
         Ok(event_ids)
     }
@@ -120,19 +67,19 @@ impl Listener {
     /// as an `EventId` was received and then collects all `EventId`s that were received and
     /// calls the provided callback is with the `EventId` as input argument.
     /// On error it emits `ListenerWaitError`.
-    pub fn timed_wait_all(&self, timeout: &Duration, py: Python<'_>) -> PyResult<Vec<EventId>> {
+    pub fn timed_wait(&self, timeout: &Duration, py: Python<'_>) -> PyResult<Vec<EventActivation>> {
         py.detach(move || {
             let mut event_ids = vec![];
             match &self.0 {
                 ListenerType::Ipc(Some(v)) => v
-                    .timed_wait_all(|e| event_ids.push(EventId(e)), timeout.0)
+                    .timed_wait(|e| event_ids.push(EventActivation(e)), timeout.0)
                     .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
                 ListenerType::Local(Some(v)) => v
-                    .timed_wait_all(|e| event_ids.push(EventId(e)), timeout.0)
+                    .timed_wait(|e| event_ids.push(EventActivation(e)), timeout.0)
                     .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
-                _ => fatal_panic!(from "Listener::timed_wait_all()",
+                _ => fatal_panic!(from "Listener::timed_wait()",
                         "Accessing a released listener."),
-            }
+            };
 
             Ok(event_ids)
         })
@@ -142,20 +89,19 @@ impl Listener {
     /// as an `EventId` was received and then collects all `EventId`s that were received and
     /// calls the provided callback is with the `EventId` as input argument.
     /// On error it emits `ListenerWaitError`.
-    pub fn blocking_wait_all(&self, py: Python<'_>) -> PyResult<Vec<EventId>> {
+    pub fn blocking_wait(&self, py: Python<'_>) -> PyResult<Vec<EventActivation>> {
         py.detach(move || {
             let mut event_ids = vec![];
             match &self.0 {
-                ListenerType::Ipc(Some(v)) => {
-                    v.blocking_wait_all(|e| event_ids.push(EventId(e)))
-                        .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
-                }
-                ListenerType::Local(Some(v)) => v
-                    .blocking_wait_all(|e| event_ids.push(EventId(e)))
+                ListenerType::Ipc(Some(v)) => v
+                    .blocking_wait(|e| event_ids.push(EventActivation(e)))
                     .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
-                _ => fatal_panic!(from "Listener::blocking_wait_all()",
+                ListenerType::Local(Some(v)) => v
+                    .blocking_wait(|e| event_ids.push(EventActivation(e)))
+                    .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
+                _ => fatal_panic!(from "Listener::blocking_wait()",
                     "Accessing a released listener."),
-            }
+            };
 
             Ok(event_ids)
         })

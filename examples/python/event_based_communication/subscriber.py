@@ -67,8 +67,8 @@ class CustomSubscriber:
 
     def handle_event(self):
         """Handles incoming events from publishers."""
-        for event_id in self.listener.try_wait_all():
-            event = from_event_id(event_id)
+        for event_handle in self.listener.try_wait():
+            event = from_event_id(event_handle.id)
             if event == PubSubEvent.SentHistory:
                 print("History delivered")
                 for sample in self._drain_samples():

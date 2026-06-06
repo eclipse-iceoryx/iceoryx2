@@ -34,7 +34,7 @@ spawn target/ff/cc/build/examples/c/event_multiplexing/example_c_event_multiplex
 
 expect_output_from $id_notifier_1 "Trigger event with id*"
 expect_output_from $id_notifier_2 "Trigger event with id*"
-expect_output "Received trigger from \"hypnotoad\" :: 42"
-expect_output "Received trigger from \"brainslug\" :: 13"
+expect_output "Received trigger from \"hypnotoad\" :: received event: 42 1 times"
+expect_output "Received trigger from \"brainslug\" :: received event: 13 1 times"
 
 show_test_passed
