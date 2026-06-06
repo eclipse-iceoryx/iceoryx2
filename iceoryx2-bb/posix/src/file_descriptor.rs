@@ -382,8 +382,8 @@ pub trait FileDescriptorManagement: FileDescriptorBased + Debug + Sized {
         );
     }
 
-    /// Acquires the file lock state.
-    fn get_lock_state(&self) -> Result<LockState, FileGetLockStateError> {
+    /// Acquires the file lock state. When the underlying [`FileDescriptor`] is not locked, it returns [`None`].
+    fn get_lock_state(&self) -> Result<Option<LockState>, FileGetLockStateError> {
         let msg = "Unable to acquire lock state";
         let mut current_state = posix::flock::new_zeroed();
         current_state.l_type = LockType::Write as _;
@@ -411,10 +411,13 @@ pub trait FileDescriptorManagement: FileDescriptorBased + Debug + Sized {
             }
         };
 
-        Ok(LockState {
-            lock_type,
-            process: Process::from_pid(ProcessId::new(current_state.l_pid)),
-        })
+        match lock_type {
+            LockType::Read | LockType::Write => Ok(Some(LockState {
+                lock_type,
+                process: Process::from_pid(ProcessId::new(current_state.l_pid)),
+            })),
+            LockType::Unlock => Ok(None),
+        }
     }
 
     /// Returns the current user and group owner of the file descriptor
