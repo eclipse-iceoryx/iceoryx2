@@ -160,7 +160,7 @@ impl Display for ProcessId {
 }
 
 /// Represent a process in a POSIX system.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Process {
     pid: ProcessId,
 }
