@@ -269,7 +269,7 @@ impl<Service: service::Service> Listener<Service> {
     }
 
     /// Non-blocking wait for new [`EventId`]s. Collects all [`EventId`]s that were received and
-    /// calls the provided callback is with the [`EventActivation`] as input argument.
+    /// calls the provided callback with the [`EventActivation`] as input argument.
     pub fn try_wait<F: FnMut(EventActivation)>(
         &self,
         callback: F,
@@ -282,7 +282,7 @@ impl<Service: service::Service> Listener<Service> {
 
     /// Blocking wait for new [`EventId`]s until the provided timeout has passed. Unblocks as soon
     /// as an [`EventId`] was received and then collects all [`EventId`]s that were received and
-    /// calls the provided callback is with the [`EventActivation`] as input argument.
+    /// calls the provided callback with the [`EventActivation`] as input argument.
     pub fn timed_wait<F: FnMut(EventActivation)>(
         &self,
         callback: F,
@@ -296,7 +296,7 @@ impl<Service: service::Service> Listener<Service> {
 
     /// Blocking wait for new [`EventId`]s. Unblocks as soon
     /// as an [`EventId`] was received and then collects all [`EventId`]s that were received and
-    /// calls the provided callback is with the [`EventActivation`] as input argument.
+    /// calls the provided callback with the [`EventActivation`] as input argument.
     pub fn blocking_wait<F: FnMut(EventActivation)>(
         &self,
         callback: F,

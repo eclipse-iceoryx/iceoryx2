@@ -36,6 +36,9 @@ use iceoryx2_bb_posix::{
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_log::fail;
 
+/// A notification is usually just 1 byte. In highly concurrent scenarios, it is possible
+/// to send more than 1 notification. To clean the buffer with one call, the receive buffer
+/// is increased.
 const RECEIVE_BUFFER_SIZE: usize = 32;
 
 #[derive(Debug)]

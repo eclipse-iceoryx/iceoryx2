@@ -16,6 +16,7 @@ use iceoryx2_testing::Test;
 
 use alloc::vec;
 use core::fmt::Debug;
+use core::time::Duration;
 use iceoryx2::node::{CleanupState, NodeState};
 use iceoryx2::prelude::*;
 use iceoryx2::testing::*;
@@ -30,6 +31,8 @@ use iceoryx2_cal::static_storage::StaticStorage;
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod node_death {
+
+    use iceoryx2_bb_testing::watchdog::Watchdog;
 
     use super::*;
 
@@ -961,7 +964,9 @@ pub mod node_death {
     >() {
         const MAX_NUMBER_OF_TAGS: usize = 10;
 
-        let test = Test::<S>::new();
+        let test = Test::<S>::new_with_custom_watchdog(Watchdog::new_with_timeout(
+            Duration::from_secs(60),
+        ));
         let config = test.config().clone();
 
         for number_of_service_tags in 1..=MAX_NUMBER_OF_TAGS {
