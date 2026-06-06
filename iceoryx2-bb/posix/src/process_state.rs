@@ -148,13 +148,14 @@ pub use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_log::{fail, fatal_panic, trace, warn};
-use iceoryx2_pal_posix::posix::{self, Errno, MemZeroedStruct};
 
 use crate::{
     access_mode::AccessMode,
     directory::{Directory, DirectoryAccessError, DirectoryCreateError},
     file::{File, FileBuilder, FileCreationError, FileOpenError, FileRemoveError, FileStatError},
-    file_descriptor::{FileDescriptorBased, FileDescriptorManagement, LockType},
+    file_descriptor::{
+        FileDescriptorManagement, FileGetLockStateError, FileTryLockError, LockType,
+    },
     permission::Permission,
     process::{Process, UniqueProcessId},
     unix_datagram_socket::CreationMode,
@@ -189,7 +190,6 @@ enum_gen! {
     InvalidCleanerPathName,
     FailedToWriteUniqueProcessIdIntoContextFile,
     FailedToAcquireUniqueProcessId,
-    FailedToAcquireStateFileMetaData,
     SystemCorrupted,
     UnknownError(i32)
 }
@@ -247,6 +247,15 @@ enum_gen! {
   mapping:
     ProcessMonitorOpenError,
     FileStatError
+}
+
+impl From<FileGetLockStateError> for ProcessMonitorStateError {
+    fn from(value: FileGetLockStateError) -> Self {
+        match value {
+            FileGetLockStateError::Interrupt => ProcessMonitorStateError::Interrupt,
+            FileGetLockStateError::UnknownError(_) => ProcessMonitorStateError::InternalError,
+        }
+    }
 }
 
 enum_gen! {
@@ -384,31 +393,28 @@ impl ProcessGuardBuilder {
               with ProcessGuardCreateError::FailedToWriteUniqueProcessIdIntoContextFile,
               "{msg} since the unique process could not be written to the owner file.");
 
-        match Self::set_lock(&state_file, LockType::Write) {
-            Ok(()) => (),
-            Err(lock_error) => match lock_error {
-                ProcessGuardLockError::Interrupt => {
-                    fail!(from origin, with ProcessGuardCreateError::Interrupt,
-                            "{} since an interrupt signal was received while locking the file.", msg);
-                }
-                ProcessGuardLockError::FailedToAcquireStateFileMetaData => {
-                    fail!(from origin, with ProcessGuardCreateError::FailedToAcquireStateFileMetaData,
-                        "{msg} since the state file's metadata could not be acquired.");
-                }
-                ProcessGuardLockError::FileRemovedFromFileSystem => {
-                    fail!(from origin, with ProcessGuardCreateError::SystemCorrupted,
-                        "{msg} since an external process removed the state file while it was being initialized.");
-                }
-                ProcessGuardLockError::OwnedByAnotherProcess => {
-                    fail!(from origin, with ProcessGuardCreateError::ContractViolation,
-                            "{} since the another process holds the lock of a process state that is in initialization.", msg);
-                }
-                ProcessGuardLockError::UnknownError(v) => {
-                    fail!(from origin, with ProcessGuardCreateError::UnknownError(v),
-                            "{} since an unknown failure occurred while locking the file ({:?}).", msg, v);
-                }
-            },
-        };
+        match unsafe { state_file.try_lock(LockType::Write) } {
+            Ok(Some(lock)) => {
+                // SAFE: lock is bound to the lifetime of the state_file
+                unsafe { lock.leak() };
+            }
+            Ok(None) => {
+                fail!(from origin, with ProcessGuardCreateError::ContractViolation,
+                        "{} since another process holds the lock of a process state that is in initialization.", msg);
+            }
+            Err(FileTryLockError::Interrupt) => {
+                fail!(from origin, with ProcessGuardCreateError::Interrupt,
+                        "{} since an interrupt signal was received while locking the file.", msg);
+            }
+            Err(FileTryLockError::FileRemovedFromFileSystem) => {
+                fail!(from origin, with ProcessGuardCreateError::SystemCorrupted,
+                    "{msg} since an external process removed the state file while it was being initialized.");
+            }
+            Err(v) => {
+                fail!(from origin, with ProcessGuardCreateError::UnknownError(0),
+                        "{} since an unknown failure occurred while locking the file ({:?}).", msg, v);
+            }
+        }
 
         if let Err(e) = owner_lock_file.set_permission(self.guard_permissions) {
             fail!(from origin, with ProcessGuardCreateError::UnknownError(0),
@@ -537,45 +543,6 @@ impl ProcessGuardBuilder {
             }
         }
     }
-
-    fn set_lock(file: &File, lock_type: LockType) -> Result<(), ProcessGuardLockError> {
-        let origin = "ProcessState::set_lock()";
-        let msg = format!("Unable to lock process state file {file:?}");
-        let mut new_lock_state = posix::flock::new_zeroed();
-        new_lock_state.l_type = lock_type as _;
-        new_lock_state.l_whence = posix::SEEK_SET as _;
-
-        if unsafe {
-            posix::fcntl(
-                file.file_descriptor().native_handle(),
-                posix::F_SETLK,
-                &mut new_lock_state,
-            )
-        } != -1
-        {
-            let metadata = match file.metadata() {
-                Ok(metadata) => metadata,
-                Err(e) => {
-                    fail!(from origin, with ProcessGuardLockError::FailedToAcquireStateFileMetaData,
-                        "{msg} since the metadata of the state file could not be acquired. [{e:?}]");
-                }
-            };
-
-            if metadata.number_of_links() == 0 {
-                fail!(from origin, with ProcessGuardLockError::FileRemovedFromFileSystem,
-                    "{msg} since the state file was removed from the file system.");
-            }
-
-            return Ok(());
-        }
-
-        handle_errno!(ProcessGuardLockError, from origin,
-            Errno::EACCES => (OwnedByAnotherProcess, "{} since the lock is owned by another process.", msg),
-            Errno::EAGAIN => (OwnedByAnotherProcess, "{} since the lock is owned by another process.", msg),
-            Errno::EINTR => (Interrupt, "{} since an interrupt signal was received.", msg),
-            v => (UnknownError(v as i32), "{} due to an unknown failure (errno code: {}).", msg, v)
-        );
-    }
 }
 
 #[derive(Debug)]
@@ -684,27 +651,7 @@ impl Abandonable for ProcessGuard {
             fatal_panic!(from this, "{msg} since the state file could not be overridden with zeros. [{e:?}]");
         }
 
-        if let Some(f) = &this.files.state {
-            if let Err(e) = ProcessGuardBuilder::set_lock(f, LockType::Unlock) {
-                warn!(from this,
-                    "{msg} since the lock of the state file could not be released. [{e:?}]");
-            }
-        }
-
         unsafe { StateFiles::abandon_in_place(NonNull::iox2_from_mut(&mut this.files)) };
-    }
-}
-
-impl Drop for ProcessGuard {
-    fn drop(&mut self) {
-        let msg = "Unable to remove the ProcessGuard";
-
-        if let Some(f) = &self.files.state {
-            if let Err(e) = ProcessGuardBuilder::set_lock(f, LockType::Unlock) {
-                warn!(from self,
-                    "{msg} since the lock of the state file could not be released. [{e:?}]");
-            }
-        }
     }
 }
 
@@ -952,9 +899,11 @@ impl ProcessMonitor {
             Self::open_file(self, &self.owner_lock_path, AccessMode::Write)?
         {
             let lock_state = fail!(from self,
-                                    when Self::get_lock_state(&owner_lock_file),
+                                    when owner_lock_file.get_lock_state(),
                                     "{} since the lock state of the owner_lock file could not be acquired.", msg);
-            if lock_state == posix::F_WRLCK as _ {
+            if let Some(l) = lock_state
+                && l.lock_type() == LockType::Write
+            {
                 return Ok(ProcessState::CleaningUp);
             }
         } else {
@@ -981,37 +930,18 @@ impl ProcessMonitor {
         // are still open.
         match Self::open_file(self, &self.state_path, AccessMode::Write)? {
             Some(state_file) => {
-                let lock_state = fail!(from self, when Self::get_lock_state(&state_file),
+                let lock_state = fail!(from self, when state_file.get_lock_state(),
                                     "{} since the lock state of the state file could not be acquired.", msg);
-                match lock_state as _ {
-                    posix::F_WRLCK => Ok(ProcessState::Alive),
-                    _ => Ok(ProcessState::Dead),
+                if let Some(l) = lock_state
+                    && l.lock_type() == LockType::Write
+                {
+                    Ok(ProcessState::Alive)
+                } else {
+                    Ok(ProcessState::Dead)
                 }
             }
             None => Ok(ProcessState::CleaningUp),
         }
-    }
-
-    fn get_lock_state(file: &File) -> Result<i64, ProcessMonitorStateError> {
-        let msg = format!("Unable to acquire lock on file {file:?}");
-        let mut current_state = posix::flock::new_zeroed();
-        current_state.l_type = LockType::Write as _;
-
-        if unsafe {
-            posix::fcntl(
-                file.file_descriptor().native_handle(),
-                posix::F_GETLK,
-                &mut current_state,
-            )
-        } == -1
-        {
-            handle_errno!(ProcessMonitorStateError, from "ProcessMonitor::get_lock_state()",
-                Errno::EINTR => (Interrupt, "{} since an interrupt signal was received.", msg),
-                v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
-            )
-        }
-
-        Ok(current_state.l_type as _)
     }
 
     fn open_file<T: Debug + ?Sized>(
@@ -1073,13 +1003,6 @@ pub struct ProcessCleaner {
 impl Abandonable for ProcessCleaner {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-
-        if let Some(f) = &this.files.owner_lock {
-            if let Err(e) = ProcessGuardBuilder::set_lock(f, LockType::Unlock) {
-                warn!(from this,
-                    "Unable to abandon ProcessCleaner since the lock of the owner file could not be released. [{e:?}]");
-            }
-        }
 
         unsafe { StateFiles::abandon_in_place(NonNull::iox2_from_mut(&mut this.files)) };
     }
@@ -1174,37 +1097,31 @@ impl ProcessCleaner {
             }
         };
 
-        let lock_state = fail!(from origin, when ProcessMonitor::get_lock_state(&state_file),
+        let lock_state = fail!(from origin, when state_file.get_lock_state(),
             with ProcessCleanerCreateError::FailedToAcquireLockState,
             "{} since the lock state could not be acquired.", msg);
 
-        if lock_state == posix::F_WRLCK as _ {
+        if let Some(l) = lock_state
+            && l.lock_type() == LockType::Write
+        {
             fail!(from origin, with ProcessCleanerCreateError::ProcessIsStillAlive,
                 "{} since the corresponding process is still alive.", msg);
         }
 
-        match ProcessGuardBuilder::set_lock(&owner_lock_file, LockType::Write) {
-            Ok(()) => {
-                context_file.acquire_ownership();
-                state_file.acquire_ownership();
-                owner_lock_file.acquire_ownership();
-                Ok(Self {
-                    files: StateFiles {
-                        state: Some(state_file),
-                        owner_lock: Some(owner_lock_file),
-                        context: Some(context_file),
-                    },
-                })
+        match unsafe { owner_lock_file.try_lock(LockType::Write) } {
+            Ok(Some(lock_guard)) => {
+                // SAFE: lock is bound to the lifetime of the owner_lock_file
+                unsafe { lock_guard.leak() };
             }
-            Err(ProcessGuardLockError::OwnedByAnotherProcess) => {
+            Ok(None) => {
                 fail!(from origin, with ProcessCleanerCreateError::OwnedByAnotherProcess,
                     "{} since another process already has instantiated a ProcessCleaner.", msg);
             }
-            Err(ProcessGuardLockError::Interrupt) => {
+            Err(FileTryLockError::Interrupt) => {
                 fail!(from origin, with ProcessCleanerCreateError::Interrupt,
                     "{} since an interrupt signal was received.", msg);
             }
-            Err(ProcessGuardLockError::FileRemovedFromFileSystem) => {
+            Err(FileTryLockError::FileRemovedFromFileSystem) => {
                 fail!(from origin, with ProcessCleanerCreateError::DoesNotExist,
                     "{} since the process state file was cleaned up right before acquiring the lock.", msg);
             }
@@ -1213,6 +1130,17 @@ impl ProcessCleaner {
                     "{} due to an unknown failure ({:?}).", msg, e);
             }
         }
+
+        context_file.acquire_ownership();
+        state_file.acquire_ownership();
+        owner_lock_file.acquire_ownership();
+        Ok(Self {
+            files: StateFiles {
+                state: Some(state_file),
+                owner_lock: Some(owner_lock_file),
+                context: Some(context_file),
+            },
+        })
     }
 
     /// Abandons the [`ProcessCleaner`] without removing the underlying resources. This is useful

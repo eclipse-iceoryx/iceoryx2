@@ -264,6 +264,7 @@ enum_gen! { FileTryLockError
     ExceedsMaximumNumberOfLockedRegionsInSystem,
     InvalidFileDescriptorOrWrongOpenMode,
     DeadlockConditionDetected,
+    FileRemovedFromFileSystem,
     UnknownError(i32)
 }
 
@@ -278,18 +279,6 @@ enum_gen! { FileGetLockStateError
 pub enum LockType {
     Read = posix::F_RDLCK as i16,
     Write = posix::F_WRLCK as i16,
-    Unlock = posix::F_UNLCK as i16,
-}
-
-impl LockType {
-    fn from_i16(value: i16) -> Option<LockType> {
-        match value as _ {
-            posix::F_RDLCK => Some(LockType::Read),
-            posix::F_WRLCK => Some(LockType::Write),
-            posix::F_UNLCK => Some(LockType::Unlock),
-            _ => None,
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -297,10 +286,24 @@ pub struct FileLockGuard<'a, T: Debug + FileDescriptorBased> {
     parent: &'a T,
 }
 
+impl<'a, T: Debug + FileDescriptorBased> FileLockGuard<'a, T> {
+    /// Leaks the [`FileLockGuard`] without unlocking the corresponding file lock.
+    /// This can be useful when the file lock is coupled to the lifetime of the file itself and one wants
+    /// to avoid self-referencing structs.
+    ///
+    /// # Safety
+    ///
+    /// * Ensure that the underlying [`FileDescriptor`] is owned and closed, otherwise a deadlock might
+    ///   occur.
+    pub unsafe fn leak(self) {
+        core::mem::forget(self);
+    }
+}
+
 impl<'a, T: Debug + FileDescriptorBased> Drop for FileLockGuard<'a, T> {
     fn drop(&mut self) {
         let mut new_lock_state = posix::flock::new_zeroed();
-        new_lock_state.l_type = LockType::Unlock as i16;
+        new_lock_state.l_type = posix::F_UNLCK as i16;
         new_lock_state.l_whence = posix::SEEK_SET as _;
 
         if unsafe {
@@ -347,7 +350,15 @@ impl FileDescriptorManagement for FileDescriptor {}
 ///
 pub trait FileDescriptorManagement: FileDescriptorBased + Debug + Sized {
     /// Acquires a file lock based on the [`FileDescriptor`].
-    fn try_lock<'a>(
+    ///
+    /// # Safety
+    ///
+    /// Due to the nature of the different behaviors of file locks across POSIX platforms:
+    ///
+    /// * The write/read lock may be obtained multiple times for the same process.
+    /// * Opening the same file and closing it before dropping the [`FileLockGuard`] may release any lock.
+    ///
+    unsafe fn try_lock<'a>(
         &'a self,
         lock_type: LockType,
     ) -> Result<Option<FileLockGuard<'a, Self>>, FileTryLockError> {
@@ -371,15 +382,38 @@ pub trait FileDescriptorManagement: FileDescriptorBased + Debug + Sized {
             _ => "Unable to acquire write file-lock",
         };
 
-        handle_errno!(FileTryLockError, from self,
-            success Errno::EACCES => None;
-            success Errno::EAGAIN => None,
-            Errno::EBADF => (InvalidFileDescriptorOrWrongOpenMode, "{} since the file-descriptor is invalid or not opened in the correct mode.", msg),
-            Errno::EINTR => (Interrupt, "{} since an interrupt signal was received.", msg),
-            Errno::ENOLCK => (ExceedsMaximumNumberOfLockedRegionsInSystem, "{} since it would exceed the maximum supported number of locked regions in the system..", msg),
-            Errno::EDEADLK => (DeadlockConditionDetected, "{} since a deadlock condition was detected.", msg),
-            v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
-        );
+        let errno = Errno::get();
+
+        if let Ok(metadata) = self.metadata() {
+            if metadata.number_of_links() == 0 {
+                fail!(from self, with FileTryLockError::FileRemovedFromFileSystem,
+                    "{msg} since the file was removed from the file system.");
+            }
+        }
+
+        match errno {
+            Errno::EACCES | Errno::EAGAIN => Ok(None),
+            Errno::EBADF => {
+                fail!(from self, with FileTryLockError::InvalidFileDescriptorOrWrongOpenMode,
+                    "{msg} since the file-descriptor is invalid or not opened in the correct access mode.");
+            }
+            Errno::EINTR => {
+                fail!(from self, with FileTryLockError::Interrupt,
+                    "{msg} since an interrupt signal was raised.");
+            }
+            Errno::ENOLCK => {
+                fail!(from self, with FileTryLockError::ExceedsMaximumNumberOfLockedRegionsInSystem,
+                    "{msg} since it would exceed the maximum supported number of locked regions in the system.");
+            }
+            Errno::EDEADLK => {
+                fail!(from self, with FileTryLockError::DeadlockConditionDetected,
+                    "{msg} since a deadlock condition was detected.");
+            }
+            v => {
+                fail!(from self, with FileTryLockError::UnknownError(v as i32),
+                    "{msg} since an unknown error occurred ({v}).");
+            }
+        }
     }
 
     /// Acquires the file lock state. When the underlying [`FileDescriptor`] is not locked, it returns [`None`].
@@ -403,21 +437,20 @@ pub trait FileDescriptorManagement: FileDescriptorBased + Debug + Sized {
             )
         }
 
-        let lock_type = match LockType::from_i16(current_state.l_type as _) {
-            Some(lock_type) => lock_type,
-            None => {
+        let lock_type = match current_state.l_type as _ {
+            posix::F_UNLCK => return Ok(None),
+            posix::F_RDLCK => LockType::Read,
+            posix::F_WRLCK => LockType::Write,
+            n => {
                 fail!(from self, with FileGetLockStateError::UnknownError(0),
-                    "{msg} since the sys-call provided an invalid lock-state");
+                    "{msg} since the sys-call provided an invalid lock-state: {n}.");
             }
         };
 
-        match lock_type {
-            LockType::Read | LockType::Write => Ok(Some(LockState {
-                lock_type,
-                process: Process::from_pid(ProcessId::new(current_state.l_pid)),
-            })),
-            LockType::Unlock => Ok(None),
-        }
+        Ok(Some(LockState {
+            lock_type,
+            process: Process::from_pid(ProcessId::new(current_state.l_pid)),
+        }))
     }
 
     /// Returns the current user and group owner of the file descriptor

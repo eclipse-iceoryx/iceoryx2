@@ -152,7 +152,7 @@ pub mod generic {
     >() {
         let sut = Sut::sut();
 
-        assert_that!(sut.try_lock(LockType::Read).unwrap(), is_some);
+        assert_that!(unsafe { sut.try_lock(LockType::Read).unwrap() }, is_some);
     }
 
     #[test]
@@ -161,6 +161,6 @@ pub mod generic {
     >() {
         let sut = Sut::sut();
 
-        assert_that!(sut.try_lock(LockType::Write).unwrap(), is_some);
+        assert_that!(unsafe { sut.try_lock(LockType::Write).unwrap() }, is_some);
     }
 }
