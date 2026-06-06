@@ -269,7 +269,7 @@ impl<Service: service::Service> Listener<Service> {
     }
 
     /// Non-blocking wait for new [`EventId`]s. Collects all [`EventId`]s that were received and
-    /// calls the provided callback is with the [`EventActivations`] as input argument.
+    /// calls the provided callback is with the [`EventActivation`] as input argument.
     pub fn try_wait<F: FnMut(EventActivation)>(
         &self,
         callback: F,
