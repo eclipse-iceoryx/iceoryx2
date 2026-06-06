@@ -28,6 +28,8 @@ use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
+pub const DEFAULT_MAX_EVENT_ID: EventId = EventId::new(u8::MAX as usize);
+
 #[derive(ZeroCopySend, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
 #[repr(C)]
 pub struct EventId(usize);

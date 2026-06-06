@@ -269,20 +269,20 @@ impl<Service: service::Service> Listener<Service> {
     }
 
     /// Non-blocking wait for new [`EventId`]s. Collects all [`EventId`]s that were received and
-    /// calls the provided callback is with the [`EventId`] as input argument.
+    /// calls the provided callback is with the [`EventActivations`] as input argument.
     pub fn try_wait<F: FnMut(EventActivation)>(
         &self,
         callback: F,
     ) -> Result<u64, ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
         let number_of_notifications = fail!(from self, when self.listener.lock().try_wait(callback),
-                                            "Failed to while calling try_wait on underlying event::Listener");
+                                            "Failed try_wait on underlying event::Listener");
         Ok(number_of_notifications)
     }
 
     /// Blocking wait for new [`EventId`]s until the provided timeout has passed. Unblocks as soon
     /// as an [`EventId`] was received and then collects all [`EventId`]s that were received and
-    /// calls the provided callback is with the [`EventId`] as input argument.
+    /// calls the provided callback is with the [`EventActivation`] as input argument.
     pub fn timed_wait<F: FnMut(EventActivation)>(
         &self,
         callback: F,
@@ -290,20 +290,20 @@ impl<Service: service::Service> Listener<Service> {
     ) -> Result<u64, ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
         let number_of_notifications = fail!(from self, when self.listener.lock().timed_wait(callback, timeout),
-                                            "Failed to while calling timed_wait({:?}) on underlying event::Listener", timeout);
+                                            "Failed timed_wait({:?}) on underlying event::Listener", timeout);
         Ok(number_of_notifications)
     }
 
     /// Blocking wait for new [`EventId`]s. Unblocks as soon
     /// as an [`EventId`] was received and then collects all [`EventId`]s that were received and
-    /// calls the provided callback is with the [`EventId`] as input argument.
+    /// calls the provided callback is with the [`EventActivation`] as input argument.
     pub fn blocking_wait<F: FnMut(EventActivation)>(
         &self,
         callback: F,
     ) -> Result<u64, ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
         let number_of_notifications = fail!(from self, when self.listener.lock().blocking_wait(callback),
-                                            "Failed to while calling blocking_wait on underlying event::Listener");
+                                            "Failed blocking_wait on underlying event::Listener");
         Ok(number_of_notifications)
     }
 

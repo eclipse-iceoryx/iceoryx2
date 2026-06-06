@@ -76,7 +76,7 @@ pub trait WaiterInterface<
 
     /// # Safety
     ///
-    ///  * Must ensure that the Waiter or the Handler is currenty not in use by another process.
+    ///  * Must ensure that the Waiter or the Handler is currently not in use by another process.
     ///
     unsafe fn remove(
         name: &FileName,

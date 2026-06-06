@@ -15,9 +15,9 @@ use crate::{
         DynamicStorage, DynamicStorageBuilder, DynamicStorageCreateError, DynamicStorageOpenError,
     },
     event::{
-        Event, EventId, Listener, ListenerBuilder, ListenerCreateError, ListenerWaitError,
-        NamedConcept, NamedConceptBuilder, NamedConceptMgmt, Notifier, NotifierBuilder,
-        NotifierNotifyError, NotifierOpenError,
+        DEFAULT_MAX_EVENT_ID, Event, EventId, Listener, ListenerBuilder, ListenerCreateError,
+        ListenerWaitError, NamedConcept, NamedConceptBuilder, NamedConceptMgmt, Notifier,
+        NotifierBuilder, NotifierNotifyError, NotifierOpenError,
         event_state::{EventActivation, EventState},
         trigger::{HandlerInterface, State, WaiterInterface, stub::Stub},
     },
@@ -40,7 +40,7 @@ use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::{debug, fail};
 
 const NOTIFICATION_STATE_IDLE: u8 = 0;
-const NOTIFICATION_STATE_NOTIFICATION_PENDING: u8 = 1;
+const NOTIFICATION_STATE_PENDING: u8 = 1;
 const NOTIFICATION_STATE_NOTIFIED: u8 = 2;
 
 #[derive(PartialEq, Eq, Debug)]
@@ -316,7 +316,7 @@ impl<
 
         let set_state_to_notified = || {
             let _ = mgmt.notification_state.compare_exchange(
-                NOTIFICATION_STATE_NOTIFICATION_PENDING,
+                NOTIFICATION_STATE_PENDING,
                 NOTIFICATION_STATE_NOTIFIED,
                 Ordering::SeqCst,
                 Ordering::SeqCst,
@@ -346,7 +346,7 @@ impl<
 
         match mgmt.notification_state.compare_exchange(
             NOTIFICATION_STATE_IDLE,
-            NOTIFICATION_STATE_NOTIFICATION_PENDING,
+            NOTIFICATION_STATE_PENDING,
             Ordering::SeqCst,
             Ordering::SeqCst,
         ) {
@@ -625,7 +625,7 @@ impl<
     fn new(name: &FileName) -> Self {
         Self {
             name: *name,
-            event_id_max: EventId::new(8),
+            event_id_max: DEFAULT_MAX_EVENT_ID,
             config: Configuration::default(),
             _data_1: PhantomData,
             _data_2: PhantomData,
