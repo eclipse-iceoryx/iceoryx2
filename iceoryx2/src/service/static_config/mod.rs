@@ -33,6 +33,7 @@ pub mod blackboard;
 use alloc::format;
 
 use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::hash::Hash;
 use iceoryx2_log::fatal_panic;
@@ -49,6 +50,7 @@ use super::{attribute::AttributeSet, service_name::ServiceName};
 #[derive(Debug, Eq, PartialEq, Clone, ZeroCopySend, Serialize, Deserialize)]
 #[repr(C)]
 pub struct StaticConfig {
+    iceoryx2_version: PackageVersion,
     service_hash: ServiceHash,
     service_name: ServiceName,
     unique_service_id: UniqueServiceId,
@@ -64,6 +66,7 @@ impl StaticConfig {
         let messaging_pattern =
             MessagingPattern::RequestResponse(request_response::StaticConfig::new(config));
         Self {
+            iceoryx2_version: PackageVersion::get(),
             service_hash: ServiceHash::new::<Hasher>(
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::RequestResponse,
@@ -81,6 +84,7 @@ impl StaticConfig {
     ) -> Self {
         let messaging_pattern = MessagingPattern::Event(event::StaticConfig::new(config));
         Self {
+            iceoryx2_version: PackageVersion::get(),
             service_hash: ServiceHash::new::<Hasher>(
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::Event,
@@ -99,6 +103,7 @@ impl StaticConfig {
         let messaging_pattern =
             MessagingPattern::PublishSubscribe(publish_subscribe::StaticConfig::new(config));
         Self {
+            iceoryx2_version: PackageVersion::get(),
             service_hash: ServiceHash::new::<Hasher>(
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::PublishSubscribe,
@@ -116,6 +121,7 @@ impl StaticConfig {
     ) -> Self {
         let messaging_pattern = MessagingPattern::Blackboard(blackboard::StaticConfig::new(config));
         Self {
+            iceoryx2_version: PackageVersion::get(),
             service_hash: ServiceHash::new::<Hasher>(
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::Blackboard,
@@ -125,6 +131,11 @@ impl StaticConfig {
             messaging_pattern,
             attributes: AttributeSet::new(),
         }
+    }
+
+    /// Returns the iceoryx2 version of the [`Service`](crate::service::Service)
+    pub fn iceoryx2_version(&self) -> PackageVersion {
+        self.iceoryx2_version
     }
 
     /// Returns the attributes of the [`crate::service::Service`]

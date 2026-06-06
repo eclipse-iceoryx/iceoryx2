@@ -113,6 +113,7 @@ impl From<ServiceState> for RequestResponseOpenError {
             ServiceState::HangsInCreation => RequestResponseOpenError::HangsInCreation,
             ServiceState::Corrupted => RequestResponseOpenError::ServiceInCorruptedState,
             ServiceState::InternalFailure => RequestResponseOpenError::InternalFailure,
+            ServiceState::VersionMismatch => RequestResponseOpenError::VersionMismatch,
         }
     }
 }
@@ -231,9 +232,9 @@ impl From<ServiceState> for RequestResponseCreateError {
     fn from(value: ServiceState) -> Self {
         match value {
             ServiceState::Interrupt => RequestResponseCreateError::Interrupt,
-            ServiceState::IncompatiblePayload | ServiceState::IncompatibleMessagingPattern => {
-                RequestResponseCreateError::AlreadyExists
-            }
+            ServiceState::IncompatiblePayload
+            | ServiceState::IncompatibleMessagingPattern
+            | ServiceState::VersionMismatch => RequestResponseCreateError::AlreadyExists,
             ServiceState::InsufficientPermissions => {
                 RequestResponseCreateError::InsufficientPermissions
             }

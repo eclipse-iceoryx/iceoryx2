@@ -792,6 +792,7 @@ dependencies = [
  "iceoryx2-bb-testing-macros",
  "iceoryx2-log",
  "iceoryx2-pal-concurrency-sync",
+ "serde",
 ]
 
 [[package]]

@@ -113,6 +113,7 @@ impl From<ServiceState> for BlackboardOpenError {
             ServiceState::HangsInCreation => BlackboardOpenError::HangsInCreation,
             ServiceState::Corrupted => BlackboardOpenError::ServiceInCorruptedState,
             ServiceState::InternalFailure => BlackboardOpenError::InternalFailure,
+            ServiceState::VersionMismatch => BlackboardOpenError::VersionMismatch,
         }
     }
 }
@@ -184,9 +185,9 @@ impl From<ServiceState> for BlackboardCreateError {
     fn from(value: ServiceState) -> Self {
         match value {
             ServiceState::Interrupt => BlackboardCreateError::Interrupt,
-            ServiceState::IncompatiblePayload | ServiceState::IncompatibleMessagingPattern => {
-                BlackboardCreateError::AlreadyExists
-            }
+            ServiceState::IncompatiblePayload
+            | ServiceState::IncompatibleMessagingPattern
+            | ServiceState::VersionMismatch => BlackboardCreateError::AlreadyExists,
             ServiceState::InsufficientPermissions => BlackboardCreateError::InsufficientPermissions,
             ServiceState::HangsInCreation => BlackboardCreateError::HangsInCreation,
             ServiceState::Corrupted => BlackboardCreateError::ServiceInCorruptedState,
