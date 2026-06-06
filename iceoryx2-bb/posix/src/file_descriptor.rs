@@ -79,7 +79,9 @@ use crate::metadata::Metadata;
 use crate::ownership::*;
 use crate::permission::{Permission, PermissionExt};
 use crate::user::Uid;
-use iceoryx2_log::{error, fail, fatal_panic, trace};
+use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_log::{error, fail, fatal_panic, trace, warn};
+use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::*;
 
@@ -255,6 +257,48 @@ impl FileDescriptorBased for FileDescriptor {
     }
 }
 
+enum_gen! { FileTryLockError
+  entry:
+    Interrupt,
+    ExceedsMaximumNumberOfLockedRegionsInSystem,
+    InvalidFileDescriptorOrWrongOpenMode,
+    DeadlockConditionDetected,
+    UnknownError(i32)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(i16)]
+pub enum LockType {
+    Read = posix::F_RDLCK as i16,
+    Write = posix::F_WRLCK as i16,
+    Unlock = posix::F_UNLCK as i16,
+}
+
+#[derive(Debug)]
+pub struct FileLockGuard<'a, T: Debug + FileDescriptorBased> {
+    parent: &'a T,
+}
+
+impl<'a, T: Debug + FileDescriptorBased> Drop for FileLockGuard<'a, T> {
+    fn drop(&mut self) {
+        let mut new_lock_state = posix::flock::new_zeroed();
+        new_lock_state.l_type = LockType::Unlock as i16;
+        new_lock_state.l_whence = posix::SEEK_SET as _;
+
+        if unsafe {
+            posix::fcntl(
+                self.parent.file_descriptor().native_handle(),
+                posix::F_SETLK,
+                &mut new_lock_state,
+            )
+        } == -1
+        {
+            warn!(from self,
+                "Failed to release file read lock. This can be caused by opening the same file multiple times and closing it before releasing the readlock. [{:?}]", Errno::get());
+        }
+    }
+}
+
 impl FileDescriptorManagement for FileDescriptor {}
 
 /// Provides additional feature for every file descriptor based construct like
@@ -266,6 +310,42 @@ impl FileDescriptorManagement for FileDescriptor {}
 ///  * accessing extended stats via [`Metadata`], [`metadata`](FileDescriptorManagement::metadata())
 ///
 pub trait FileDescriptorManagement: FileDescriptorBased + Debug + Sized {
+    /// Acquires a file lock based on the [`FileDescriptor`].
+    fn try_lock<'a>(
+        &'a self,
+        lock_type: LockType,
+    ) -> Result<Option<FileLockGuard<'a, Self>>, FileTryLockError> {
+        let mut new_lock_state = posix::flock::new_zeroed();
+        new_lock_state.l_type = lock_type as _;
+        new_lock_state.l_whence = posix::SEEK_SET as _;
+
+        if unsafe {
+            posix::fcntl(
+                self.file_descriptor().native_handle(),
+                posix::F_SETLK,
+                &mut new_lock_state,
+            )
+        } != -1
+        {
+            return Ok(Some(FileLockGuard { parent: self }));
+        }
+
+        let msg = match lock_type {
+            LockType::Read => "Unable to acquire read file-lock",
+            _ => "Unable to acquire write file-lock",
+        };
+
+        handle_errno!(FileTryLockError, from self,
+            success Errno::EACCES => None;
+            success Errno::EAGAIN => None,
+            Errno::EBADF => (InvalidFileDescriptorOrWrongOpenMode, "{} since the file-descriptor is invalid or not opened in the correct mode.", msg),
+            Errno::EINTR => (Interrupt, "{} since an interrupt signal was received.", msg),
+            Errno::ENOLCK => (ExceedsMaximumNumberOfLockedRegionsInSystem, "{} since it would exceed the maximum supported number of locked regions in the system..", msg),
+            Errno::EDEADLK => (DeadlockConditionDetected, "{} since a deadlock condition was detected.", msg),
+            v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
+        );
+    }
+
     /// Returns the current user and group owner of the file descriptor
     fn ownership(&self) -> Result<Ownership, FileStatError> {
         let attr =

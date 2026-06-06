@@ -23,7 +23,6 @@ use barrier::BarrierCreationError;
 use clock::ClockError;
 use directory::DirectoryError;
 use file::FileError;
-use file_lock::FileLockError;
 use group::GroupError;
 use iceoryx2_bb_elementary::enum_gen;
 use memory_lock::MemoryLockError;
@@ -52,7 +51,6 @@ pub mod directory;
 pub mod file;
 pub mod file_descriptor;
 pub mod file_descriptor_set;
-pub mod file_lock;
 pub mod file_type;
 pub mod group;
 pub mod ipc_capable;
@@ -86,7 +84,6 @@ enum_gen! {Error
     Clock <= ClockError,
     Directory <= DirectoryError,
     File <= FileError,
-    FileLock <= FileLockError,
     Group <= GroupError,
     MemoryLock <= MemoryLockError,
     Mutex <= MutexError,
