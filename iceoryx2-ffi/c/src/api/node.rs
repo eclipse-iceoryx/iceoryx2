@@ -407,7 +407,7 @@ pub unsafe extern "C" fn iox2_unique_node_id(
     }
 }
 
-/// Removes a [`Service`](crate::service::Service) by force. This shall be used if the
+/// Removes a service by force. This shall be used if the
 /// resources could not be removed in a previous run and now it is no longer possible to
 /// open the service.
 ///
