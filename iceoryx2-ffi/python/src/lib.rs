@@ -368,6 +368,10 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
         "EntryHandleMutError",
         py.get_type::<crate::error::EntryHandleMutError>(),
     )?;
+    m.add(
+        "ServiceRemoveError",
+        py.get_type::<crate::error::ServiceRemoveError>(),
+    )?;
 
     Ok(())
 }

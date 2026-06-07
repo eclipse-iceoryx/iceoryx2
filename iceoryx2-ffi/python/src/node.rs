@@ -16,7 +16,8 @@ use crate::{
     cleanup_state::CleanupState,
     config::Config,
     duration::Duration,
-    error::{NodeListFailure, NodeWaitFailure},
+    error::{NodeListFailure, NodeWaitFailure, ServiceRemoveError},
+    messaging_pattern::MessagingPattern,
     node_name::NodeName,
     node_state::{AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState},
     parc::Parc,
@@ -163,6 +164,33 @@ impl Node {
         match &*self.0.lock() {
             NodeType::Ipc(node) => node.signal_handling_mode().into(),
             NodeType::Local(node) => node.signal_handling_mode().into(),
+        }
+    }
+
+    /// Removes a [`Service`](crate::service::Service) by force. This shall be used if the
+    /// resources could not be removed in a previous run and now it is no longer possible to
+    /// open the service.
+    ///
+    /// # Safety
+    ///
+    ///  * No other process shall use the service.
+    ///
+    pub fn force_remove_service(
+        &self,
+        name: &ServiceName,
+        messaging_pattern: &MessagingPattern,
+    ) -> PyResult<bool> {
+        match &*self.0.lock() {
+            NodeType::Ipc(node) => unsafe {
+                Ok(node
+                    .force_remove_service(&name.0, (*messaging_pattern).into())
+                    .map_err(|e| ServiceRemoveError::new_err(format!("{e:?}")))?)
+            },
+            NodeType::Local(node) => unsafe {
+                Ok(node
+                    .force_remove_service(&name.0, (*messaging_pattern).into())
+                    .map_err(|e| ServiceRemoveError::new_err(format!("{e:?}")))?)
+            },
         }
     }
 

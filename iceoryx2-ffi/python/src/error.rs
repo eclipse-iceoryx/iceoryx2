@@ -306,3 +306,10 @@ create_exception!(
     PyException,
     "Errors caused when an EntryHandleMut is created with Writer::entry()."
 );
+
+create_exception!(
+    iceoryx2_ffi_python,
+    ServiceRemoveError,
+    PyException,
+    "Errors caused when a Service is removed with Node::force_remove_service()."
+);

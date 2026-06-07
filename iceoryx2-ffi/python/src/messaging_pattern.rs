@@ -13,7 +13,7 @@
 use pyo3::prelude::*;
 
 #[pyclass(eq, eq_int, from_py_object)]
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum MessagingPattern {
     PublishSubscribe,
     Event,
