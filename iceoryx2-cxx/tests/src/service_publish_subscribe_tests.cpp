@@ -1720,63 +1720,63 @@ TYPED_TEST(ServicePublishSubscribeTest, only_max_subscribers_can_be_created) {
 
 TYPED_TEST(ServicePublishSubscribeTest, custom_user_header_type_details_override_is_applied) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr const char* HEADER_TYPE_NAME = "MyHeader";
     constexpr uint64_t HEADER_SIZE = 16;
     constexpr uint64_t HEADER_ALIGNMENT = 8;
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
-    auto service =
-        node.service_builder(service_name)
-            .template publish_subscribe<uint64_t>()
-            .template user_header<CustomHeaderMarker>()
-            .set_user_header_type_details(TypeDetail(TypeVariant::FixedSize, "MyHeader", HEADER_SIZE, HEADER_ALIGNMENT))
-            .create()
-            .value();
+    auto service_builder = node.service_builder(service_name)
+                               .template publish_subscribe<uint64_t>()
+                               .template user_header<CustomHeaderMarker>();
+    set_user_header_type_details(service_builder,
+                                 TypeDetail(TypeVariant::FixedSize, HEADER_TYPE_NAME, HEADER_SIZE, HEADER_ALIGNMENT));
+    auto service = service_builder.resume_build().create().value();
 
     auto user_header = service.static_config().message_type_details().user_header();
     ASSERT_THAT(user_header.variant(), Eq(TypeVariant::FixedSize));
-    ASSERT_THAT(user_header.type_name(), StrEq("MyHeader"));
+    ASSERT_THAT(user_header.type_name(), StrEq(HEADER_TYPE_NAME));
     ASSERT_THAT(user_header.size(), Eq(HEADER_SIZE));
     ASSERT_THAT(user_header.alignment(), Eq(HEADER_ALIGNMENT));
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, custom_payload_type_details_override_is_applied) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr const char* PAYLOAD_TYPE_NAME = "MyType";
     constexpr uint64_t PAYLOAD_SIZE = 12;
     constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
 
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
-    auto service =
-        node.service_builder(service_name)
-            .template publish_subscribe<bb::Slice<CustomPayloadMarker>>()
-            .set_payload_type_details(TypeDetail(TypeVariant::FixedSize, "MyType", PAYLOAD_SIZE, PAYLOAD_ALIGNMENT))
-            .create()
-            .value();
+    auto service_builder =
+        node.service_builder(service_name).template publish_subscribe<bb::Slice<CustomPayloadMarker>>();
+    set_payload_type_details(service_builder,
+                             TypeDetail(TypeVariant::FixedSize, PAYLOAD_TYPE_NAME, PAYLOAD_SIZE, PAYLOAD_ALIGNMENT));
+    auto service = service_builder.resume_build().create().value();
 
     auto payload = service.static_config().message_type_details().payload();
 
     ASSERT_THAT(payload.variant(), Eq(TypeVariant::FixedSize));
-    ASSERT_THAT(payload.type_name(), StrEq("MyType"));
+    ASSERT_THAT(payload.type_name(), StrEq(PAYLOAD_TYPE_NAME));
     ASSERT_THAT(payload.size(), Eq(PAYLOAD_SIZE));
     ASSERT_THAT(payload.alignment(), Eq(PAYLOAD_ALIGNMENT));
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, custom_payload_marker_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr const char* PAYLOAD_TYPE_NAME = "MyType";
     constexpr uint64_t PAYLOAD_SIZE = 12;
     constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
 
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
-    auto service =
-        node.service_builder(service_name)
-            .template publish_subscribe<bb::Slice<CustomPayloadMarker>>()
-            .set_payload_type_details(TypeDetail(TypeVariant::FixedSize, "MyType", PAYLOAD_SIZE, PAYLOAD_ALIGNMENT))
-            .create()
-            .value();
+    auto service_builder =
+        node.service_builder(service_name).template publish_subscribe<bb::Slice<CustomPayloadMarker>>();
+    set_payload_type_details(service_builder,
+                             TypeDetail(TypeVariant::FixedSize, PAYLOAD_TYPE_NAME, PAYLOAD_SIZE, PAYLOAD_ALIGNMENT));
+    auto service = service_builder.resume_build().create().value();
 
     auto sut_publisher = service.publisher_builder().initial_max_slice_len(1).create().value();
     auto sut_subscriber = service.subscriber_builder().create().value();
