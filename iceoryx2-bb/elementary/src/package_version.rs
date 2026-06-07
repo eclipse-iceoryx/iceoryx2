@@ -13,6 +13,8 @@
 use alloc::boxed::Box;
 use alloc::format;
 use core::fmt::Display;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use serde::{Deserialize, Serialize};
 
 /// Represents the crates version acquired through the internal environment variables set by cargo,
 /// ("CARGO_PKG_VERSION_{MAJOR|MINOR|PATCH}").
@@ -30,37 +32,52 @@ use core::fmt::Display;
 /// println!(" minor: {}", version.minor());
 /// println!(" patch: {}", version.patch());
 /// ```
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
-pub struct PackageVersion(u64);
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize, Clone, Copy)]
+#[repr(C)]
+pub struct PackageVersion {
+    major: u16,
+    minor: u16,
+    patch: u16,
+}
+
+unsafe impl ZeroCopySend for PackageVersion {}
 
 impl PackageVersion {
     /// Creates a [`PackageVersion`] from a raw encoded u64
     pub fn from_u64(value: u64) -> Self {
-        Self(value)
+        Self {
+            major: ((value >> 32) & (u16::MAX as u64)) as u16,
+            minor: ((value >> 16) & (u16::MAX as u64)) as u16,
+            patch: ((value) & (u16::MAX as u64)) as u16,
+        }
     }
 
     /// Converts the [`PackageVersion`] to an u64
     pub fn to_u64(&self) -> u64 {
-        self.0
+        ((self.major as u64) << 32) | ((self.minor as u64) << 16) | self.patch as u64
     }
 
     fn from_version(major: u16, minor: u16, patch: u16) -> Self {
-        Self(((major as u64) << 32) | ((minor as u64) << 16) | patch as u64)
+        Self {
+            major,
+            minor,
+            patch,
+        }
     }
 
     /// Returns the major part of the version
     pub fn major(&self) -> u16 {
-        ((self.0 >> 32) & (u16::MAX as u64)) as u16
+        self.major
     }
 
     /// Returns the minor part of the version
     pub fn minor(&self) -> u16 {
-        ((self.0 >> 16) & (u16::MAX as u64)) as u16
+        self.minor
     }
 
     /// Returns the patch part of the version
     pub fn patch(&self) -> u16 {
-        ((self.0) & (u16::MAX as u64)) as u16
+        self.patch
     }
 
     /// Returns the current [`PackageVersion`]

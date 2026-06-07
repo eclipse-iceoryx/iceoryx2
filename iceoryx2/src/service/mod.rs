@@ -262,6 +262,7 @@ use alloc::string::String as CoreString;
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
+use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -1240,6 +1241,11 @@ fn read_static_service_config<S: Service>(
         fail!(from origin, with ServiceDetailsError::ServiceInInconsistentState,
                 "{} since the service {:?} has an inconsistent hash of {} according to config {:?}",
                 msg, service_config, service_hash, config);
+    }
+
+    if service_config.iceoryx2_version() != PackageVersion::get() {
+        fail!(from origin, with ServiceDetailsError::VersionMismatch,
+            "{} since the service was created with iceoryx2 version {} but this process expects iceoryx2 version {}.", msg, service_config.iceoryx2_version(), PackageVersion::get());
     }
 
     Ok(Some(service_config))

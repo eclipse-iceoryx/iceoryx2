@@ -106,6 +106,7 @@ impl From<ServiceState> for EventOpenError {
             ServiceState::HangsInCreation => EventOpenError::HangsInCreation,
             ServiceState::Corrupted => EventOpenError::ServiceInCorruptedState,
             ServiceState::InternalFailure => EventOpenError::InternalFailure,
+            ServiceState::VersionMismatch => EventOpenError::VersionMismatch,
         }
     }
 }

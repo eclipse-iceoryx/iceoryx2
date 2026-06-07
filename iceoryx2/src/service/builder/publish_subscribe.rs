@@ -107,6 +107,7 @@ impl From<ServiceState> for PublishSubscribeOpenError {
             ServiceState::HangsInCreation => PublishSubscribeOpenError::HangsInCreation,
             ServiceState::Corrupted => PublishSubscribeOpenError::ServiceInCorruptedState,
             ServiceState::InternalFailure => PublishSubscribeOpenError::InternalFailure,
+            ServiceState::VersionMismatch => PublishSubscribeOpenError::VersionMismatch,
         }
     }
 }
@@ -276,9 +277,9 @@ impl From<PublishSubscribeCreateError> for ServiceCreateError {
 impl From<ServiceState> for PublishSubscribeCreateError {
     fn from(value: ServiceState) -> Self {
         match value {
-            ServiceState::IncompatiblePayload | ServiceState::IncompatibleMessagingPattern => {
-                PublishSubscribeCreateError::AlreadyExists
-            }
+            ServiceState::IncompatiblePayload
+            | ServiceState::IncompatibleMessagingPattern
+            | ServiceState::VersionMismatch => PublishSubscribeCreateError::AlreadyExists,
             ServiceState::InsufficientPermissions => {
                 PublishSubscribeCreateError::InsufficientPermissions
             }

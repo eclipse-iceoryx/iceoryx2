@@ -39,6 +39,7 @@ use iceoryx2_bb_container::vector::StaticVec;
 use iceoryx2_bb_container::vector::Vector;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
@@ -89,6 +90,7 @@ enum ServiceState {
     HangsInCreation,
     Corrupted,
     IncompatiblePayload,
+    VersionMismatch,
 }
 
 #[repr(C)]
@@ -153,7 +155,8 @@ impl From<ServiceState> for ServiceCreateError {
         match value {
             ServiceState::IncompatibleMessagingPattern
             | ServiceState::HangsInCreation
-            | ServiceState::IncompatiblePayload => ServiceCreateError::AlreadyExists,
+            | ServiceState::IncompatiblePayload
+            | ServiceState::VersionMismatch => ServiceCreateError::AlreadyExists,
             ServiceState::InsufficientPermissions => ServiceCreateError::InsufficientPermissions,
             ServiceState::Corrupted => ServiceCreateError::ServiceInCorruptedState,
             ServiceState::InternalFailure => ServiceCreateError::InternalFailure,
@@ -190,6 +193,7 @@ impl From<ServiceState> for ServiceOpenError {
             ServiceState::InsufficientPermissions => ServiceOpenError::InsufficientPermissions,
             ServiceState::InternalFailure => ServiceOpenError::InternalFailure,
             ServiceState::Interrupt => ServiceOpenError::Interrupt,
+            ServiceState::VersionMismatch => ServiceOpenError::VersionMismatch,
         }
     }
 }
@@ -837,9 +841,15 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                                             read_content.as_mut_vec() }),
                                      with ServiceState::Corrupted, "Unable to deserialize the service config. Is the service corrupted?");
 
-                if service_config.service_hash() != service_config.service_hash() {
+                if service_config.service_hash() != expected_service_config.service_hash() {
                     fail!(from self, with ServiceState::Corrupted,
                         "{} a service with that name exist but different ServiceHash.", msg);
+                }
+
+                if service_config.iceoryx2_version() != PackageVersion::get() {
+                    fail!(from self, with ServiceState::VersionMismatch,
+                        "{} since the service uses version {} but this process expects iceoryx2 version {}",
+                        msg, service_config.iceoryx2_version(), PackageVersion::get());
                 }
 
                 let msg = "Service exist but is not compatible";
