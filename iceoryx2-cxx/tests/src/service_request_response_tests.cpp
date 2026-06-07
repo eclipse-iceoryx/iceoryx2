@@ -11,8 +11,12 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/bb/optional.hpp"
+#include "iox2/custom_header_marker.hpp"
+#include "iox2/custom_payload_marker.hpp"
+#include "iox2/message_type_details.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service.hpp"
+#include "iox2/type_variant.hpp"
 
 #include "test.hpp"
 #include <array>
@@ -2169,6 +2173,92 @@ TYPED_TEST(ServiceRequestResponseTest, client_can_request_graceful_disconnect) {
 
     ASSERT_FALSE(active_request.is_connected());
     ASSERT_FALSE(active_request.has_disconnect_hint());
+}
+
+TYPED_TEST(ServiceRequestResponseTest, custom_request_header_type_details_override_is_applied) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr const char* HEADER_TYPE_NAME = "MyHeader";
+    constexpr uint64_t HEADER_SIZE = 16;
+    constexpr uint64_t HEADER_ALIGNMENT = 8;
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_builder = node.service_builder(service_name)
+                               .template request_response<uint64_t, uint64_t>()
+                               .template request_user_header<CustomHeaderMarker>();
+    set_request_header_type_details(
+        service_builder, TypeDetail(TypeVariant::FixedSize, HEADER_TYPE_NAME, HEADER_SIZE, HEADER_ALIGNMENT));
+    auto service = service_builder.resume_build().create().value();
+
+    auto user_header = service.static_config().request_message_type_details().user_header();
+    ASSERT_THAT(user_header.variant(), Eq(TypeVariant::FixedSize));
+    ASSERT_THAT(user_header.type_name(), StrEq(HEADER_TYPE_NAME));
+    ASSERT_THAT(user_header.size(), Eq(HEADER_SIZE));
+    ASSERT_THAT(user_header.alignment(), Eq(HEADER_ALIGNMENT));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, custom_response_header_type_details_override_is_applied) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr const char* HEADER_TYPE_NAME = "MyHeader";
+    constexpr uint64_t HEADER_SIZE = 16;
+    constexpr uint64_t HEADER_ALIGNMENT = 8;
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_builder = node.service_builder(service_name)
+                               .template request_response<uint64_t, uint64_t>()
+                               .template response_user_header<CustomHeaderMarker>();
+    set_response_header_type_details(
+        service_builder, TypeDetail(TypeVariant::FixedSize, HEADER_TYPE_NAME, HEADER_SIZE, HEADER_ALIGNMENT));
+    auto service = service_builder.resume_build().create().value();
+
+    auto user_header = service.static_config().response_message_type_details().user_header();
+    ASSERT_THAT(user_header.variant(), Eq(TypeVariant::FixedSize));
+    ASSERT_THAT(user_header.type_name(), StrEq(HEADER_TYPE_NAME));
+    ASSERT_THAT(user_header.size(), Eq(HEADER_SIZE));
+    ASSERT_THAT(user_header.alignment(), Eq(HEADER_ALIGNMENT));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, custom_request_payload_type_details_override_is_applied) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr const char* PAYLOAD_TYPE_NAME = "MyType";
+    constexpr uint64_t PAYLOAD_SIZE = 12;
+    constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_builder =
+        node.service_builder(service_name).template request_response<bb::Slice<CustomPayloadMarker>, uint64_t>();
+    set_request_payload_type_details(
+        service_builder, TypeDetail(TypeVariant::FixedSize, PAYLOAD_TYPE_NAME, PAYLOAD_SIZE, PAYLOAD_ALIGNMENT));
+    auto service = service_builder.resume_build().create().value();
+
+    auto payload = service.static_config().request_message_type_details().payload();
+    ASSERT_THAT(payload.variant(), Eq(TypeVariant::FixedSize));
+    ASSERT_THAT(payload.type_name(), StrEq(PAYLOAD_TYPE_NAME));
+    ASSERT_THAT(payload.size(), Eq(PAYLOAD_SIZE));
+    ASSERT_THAT(payload.alignment(), Eq(PAYLOAD_ALIGNMENT));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, custom_response_payload_type_details_override_is_applied) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr const char* PAYLOAD_TYPE_NAME = "MyType";
+    constexpr uint64_t PAYLOAD_SIZE = 12;
+    constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_builder =
+        node.service_builder(service_name).template request_response<uint64_t, bb::Slice<CustomPayloadMarker>>();
+    set_response_payload_type_details(
+        service_builder, TypeDetail(TypeVariant::FixedSize, PAYLOAD_TYPE_NAME, PAYLOAD_SIZE, PAYLOAD_ALIGNMENT));
+    auto service = service_builder.resume_build().create().value();
+
+    auto payload = service.static_config().response_message_type_details().payload();
+    ASSERT_THAT(payload.variant(), Eq(TypeVariant::FixedSize));
+    ASSERT_THAT(payload.type_name(), StrEq(PAYLOAD_TYPE_NAME));
+    ASSERT_THAT(payload.size(), Eq(PAYLOAD_SIZE));
+    ASSERT_THAT(payload.alignment(), Eq(PAYLOAD_ALIGNMENT));
 }
 
 } // namespace
