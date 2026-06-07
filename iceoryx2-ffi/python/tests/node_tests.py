@@ -46,10 +46,11 @@ def test_creating_node_with_properties_works(
 def test_cleanup_dead_nodes_can_be_called(
     service_type: iox2.ServiceType,
 ) -> None:
+    config = iox2.testing.generate_isolated_config()
+    sut = iox2.NodeBuilder.new().config(config).create(service_type)
+
     try:
-        iox2.Node.try_cleanup_dead_nodes(
-            service_type, iox2.testing.generate_isolated_config()
-        )
+        sut.try_cleanup_dead_nodes()
     except iox2.NodeCleanupFailure:
         assert False
 
