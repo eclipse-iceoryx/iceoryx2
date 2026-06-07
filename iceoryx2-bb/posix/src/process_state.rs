@@ -901,10 +901,10 @@ impl ProcessMonitor {
             let lock_state = fail!(from self,
                                     when owner_lock_file.get_lock_state(),
                                     "{} since the lock state of the owner_lock file could not be acquired.", msg);
-            if let Some(l) = lock_state
-                && l.lock_type() == LockType::Write
-            {
-                return Ok(ProcessState::CleaningUp);
+            if let Some(l) = lock_state {
+                if l.lock_type() == LockType::Write {
+                    return Ok(ProcessState::CleaningUp);
+                }
             }
         } else {
             match File::does_exist(&self.state_path) {
@@ -932,10 +932,12 @@ impl ProcessMonitor {
             Some(state_file) => {
                 let lock_state = fail!(from self, when state_file.get_lock_state(),
                                     "{} since the lock state of the state file could not be acquired.", msg);
-                if let Some(l) = lock_state
-                    && l.lock_type() == LockType::Write
-                {
-                    Ok(ProcessState::Alive)
+                if let Some(l) = lock_state {
+                    if l.lock_type() == LockType::Write {
+                        Ok(ProcessState::Alive)
+                    } else {
+                        Ok(ProcessState::Dead)
+                    }
                 } else {
                     Ok(ProcessState::Dead)
                 }
@@ -1101,11 +1103,11 @@ impl ProcessCleaner {
             with ProcessCleanerCreateError::FailedToAcquireLockState,
             "{} since the lock state could not be acquired.", msg);
 
-        if let Some(l) = lock_state
-            && l.lock_type() == LockType::Write
-        {
-            fail!(from origin, with ProcessCleanerCreateError::ProcessIsStillAlive,
+        if let Some(l) = lock_state {
+            if l.lock_type() == LockType::Write {
+                fail!(from origin, with ProcessCleanerCreateError::ProcessIsStillAlive,
                 "{} since the corresponding process is still alive.", msg);
+            }
         }
 
         match unsafe { owner_lock_file.try_lock(LockType::Write) } {
