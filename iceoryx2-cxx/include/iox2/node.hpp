@@ -75,7 +75,7 @@ class Node {
     ///
     /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions or it
     /// is currently being cleaned up by another process then the [`Node`] is skipped.
-    static auto try_cleanup_dead_nodes(ConfigView config) -> CleanupState;
+    auto try_cleanup_dead_nodes() -> CleanupState;
 
     /// Removes the stale system resources of all dead [`Node`]s. The dead [`Node`]s are also
     /// removed from all registered [`Service`](crate::service::Service)s.
@@ -85,7 +85,7 @@ class Node {
     /// cleaner will wait until the timeout as either passed or the cleaned was finished.
     ///
     /// The timeout is applied to every individual dead [`Node`] the function needs to wait on.
-    static auto blocking_cleanup_dead_nodes(ConfigView config, iox2::bb::Duration timeout) -> CleanupState;
+    auto blocking_cleanup_dead_nodes(iox2::bb::Duration timeout) -> CleanupState;
 
   private:
     explicit Node(iox2_node_h handle);
