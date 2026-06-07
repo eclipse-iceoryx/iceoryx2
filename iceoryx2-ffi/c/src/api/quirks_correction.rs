@@ -22,9 +22,9 @@ use crate::{
     iox2_node_wait_failure_e, iox2_notifier_create_error_e, iox2_notifier_notify_error_e,
     iox2_pub_sub_open_or_create_error_e, iox2_publisher_create_error_e, iox2_receive_error_e,
     iox2_semantic_string_error_e, iox2_send_error_e, iox2_server_create_error_e,
-    iox2_service_details_error_e, iox2_service_list_error_e, iox2_subscriber_create_error_e,
-    iox2_type_detail_error_e, iox2_waitset_attachment_error_e, iox2_waitset_create_error_e,
-    iox2_waitset_run_error_e, iox2_waitset_run_result_e,
+    iox2_service_details_error_e, iox2_service_list_error_e, iox2_service_remove_error_e,
+    iox2_subscriber_create_error_e, iox2_type_detail_error_e, iox2_waitset_attachment_error_e,
+    iox2_waitset_create_error_e, iox2_waitset_run_error_e, iox2_waitset_run_result_e,
 };
 
 use super::{
@@ -264,4 +264,12 @@ pub unsafe extern "C" fn __iox2_internal_iox2_degradation_action_stub() -> iox2_
 pub unsafe extern "C" fn __iox2_internal_iox2_iox2_degradation_cause_stub()
 -> iox2_degradation_cause_e {
     iox2_degradation_cause_e::FAILED_TO_ESTABLISH_CONNECTION
+}
+
+#[doc(hidden)]
+#[unsafe(no_mangle)]
+// TODO: enums are only exported when they are actually used by some function
+pub unsafe extern "C" fn __iox2_internal_iox2_service_remove_error_stub()
+-> iox2_service_remove_error_e {
+    iox2_service_remove_error_e::INTERNAL_ERROR
 }

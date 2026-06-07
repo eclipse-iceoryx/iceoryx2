@@ -15,6 +15,8 @@
 #include "iox2/bb/into.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/messaging_pattern.hpp"
+#include "iox2/node_failure_enums.hpp"
 
 namespace iox2 {
 template <ServiceType T>
@@ -120,6 +122,20 @@ auto Node<T>::blocking_cleanup_dead_nodes(iox2::bb::Duration timeout) -> Cleanup
     ret_val.cleanups = cleanup_state.cleanups;
     ret_val.failed_cleanups = cleanup_state.failed_cleanups;
     return ret_val;
+}
+
+template <ServiceType T>
+auto Node<T>::force_remove_service(const iox2::ServiceName& name, const iox2::MessagingPattern messaging_pattern) const
+    -> iox2::bb::Expected<bool, ServiceRemoveError> {
+    auto service_removed = false;
+    auto result = iox2_node_force_remove_service(
+        &m_handle, name.as_view().m_ptr, iox2::bb::into<iox2_messaging_pattern_e>(messaging_pattern), &service_removed);
+
+    if (result == IOX2_OK) {
+        return service_removed;
+    }
+
+    return iox2::bb::err(iox2::bb::into<ServiceRemoveError>(static_cast<iox2_service_remove_error_e>(result)));
 }
 
 template <ServiceType T>

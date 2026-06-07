@@ -21,6 +21,8 @@
 #include "iox2/cleanup_state.hpp"
 #include "iox2/config.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/messaging_pattern.hpp"
+#include "iox2/node_failure_enums.hpp"
 #include "iox2/node_name.hpp"
 #include "iox2/node_state.hpp"
 #include "iox2/node_wait_failure.hpp"
@@ -86,6 +88,17 @@ class Node {
     ///
     /// The timeout is applied to every individual dead [`Node`] the function needs to wait on.
     auto blocking_cleanup_dead_nodes(iox2::bb::Duration timeout) -> CleanupState;
+
+    /// Removes a [`Service`] by force. This shall be used if the
+    /// resources could not be removed in a previous run and now it is no longer possible to
+    /// open the service.
+    ///
+    /// # Safety
+    ///
+    ///  * No other process shall use the service.
+    ///
+    auto force_remove_service(const iox2::ServiceName& name, iox2::MessagingPattern messaging_pattern) const
+        -> iox2::bb::Expected<bool, ServiceRemoveError>;
 
   private:
     explicit Node(iox2_node_h handle);
