@@ -194,28 +194,18 @@ impl Node {
         }
     }
 
-    #[staticmethod]
     /// Removes the stale system resources of all dead `Node`s. The dead `Node`s are also
     /// removed from all registered `Service`s.
     ///
     /// If a `Node` cannot be cleaned up since the process has insufficient permissions then
     /// the `Node` is skipped.
-    pub fn try_cleanup_dead_nodes(service_type: &ServiceType, config: &Config) -> CleanupState {
-        match service_type {
-            ServiceType::Ipc => CleanupState(
-                iceoryx2::prelude::Node::<crate::IpcService>::try_cleanup_dead_nodes(
-                    &config.0.lock(),
-                ),
-            ),
-            ServiceType::Local => CleanupState(
-                iceoryx2::prelude::Node::<crate::LocalService>::try_cleanup_dead_nodes(
-                    &config.0.lock(),
-                ),
-            ),
+    pub fn try_cleanup_dead_nodes(&self) -> CleanupState {
+        match &*self.0.lock() {
+            NodeType::Ipc(node) => CleanupState(node.try_cleanup_dead_nodes()),
+            NodeType::Local(node) => CleanupState(node.try_cleanup_dead_nodes()),
         }
     }
 
-    #[staticmethod]
     /// Removes the stale system resources of all dead `Node`s. The dead `Node`s are also
     /// removed from all registered `Service`s.
     ///
@@ -224,24 +214,10 @@ impl Node {
     /// cleaner will wait until the timeout as either passed or the cleaned was finished.
     ///
     /// The timeout is applied to every individual dead `Node` the function needs to wait on.
-    pub fn blocking_cleanup_dead_nodes(
-        service_type: &ServiceType,
-        config: &Config,
-        timeout: &Duration,
-    ) -> CleanupState {
-        match service_type {
-            ServiceType::Ipc => CleanupState(
-                iceoryx2::prelude::Node::<crate::IpcService>::blocking_cleanup_dead_nodes(
-                    &config.0.lock(),
-                    timeout.0,
-                ),
-            ),
-            ServiceType::Local => CleanupState(
-                iceoryx2::prelude::Node::<crate::LocalService>::blocking_cleanup_dead_nodes(
-                    &config.0.lock(),
-                    timeout.0,
-                ),
-            ),
+    pub fn blocking_cleanup_dead_nodes(&self, timeout: &Duration) -> CleanupState {
+        match &*self.0.lock() {
+            NodeType::Ipc(node) => CleanupState(node.blocking_cleanup_dead_nodes(timeout.0)),
+            NodeType::Local(node) => CleanupState(node.blocking_cleanup_dead_nodes(timeout.0)),
         }
     }
 }

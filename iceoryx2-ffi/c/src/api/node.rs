@@ -593,35 +593,30 @@ pub unsafe extern "C" fn iox2_node_list(
 /// If a node cannot be cleaned up since the process has insufficient permissions or it
 /// is currently being cleaned up by another process then the node is skipped.
 ///
-/// # Arguments
-///
-/// * `service_type` - A [`iox2_service_type_e`]
-/// * `config_ptr` - A valid [`iox2_config_ptr`]
-/// * `cleanup_state` - A valid pointer to a [`iox2_cleanup_state_t`]
-///
 /// # Safety
 ///
-/// * The `config_ptr` must be valid and obtained by ether [`iox2_node_config`] or [`iox2_config_global_config`](crate::iox2_config_global_config)!
-/// * The `cleanup_state` must be a valid pointer.
+/// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
+/// * `cleanup_state` - A valid pointer to a [`iox2_cleanup_state_t`]
 ///
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_node_try_cleanup_dead_nodes(
-    service_type: iox2_service_type_e,
-    config_ptr: iox2_config_ptr,
+    node_handle: iox2_node_h_ref,
     cleanup_state: *mut iox2_cleanup_state_t,
 ) {
-    debug_assert!(!config_ptr.is_null());
+    node_handle.assert_non_null();
     debug_assert!(!cleanup_state.is_null());
 
-    let config = unsafe { &*config_ptr };
+    unsafe {
+        let node = &mut *node_handle.as_type();
 
-    let result = match service_type {
-        iox2_service_type_e::IPC => Node::<crate::IpcService>::try_cleanup_dead_nodes(config),
-        iox2_service_type_e::LOCAL => Node::<crate::LocalService>::try_cleanup_dead_nodes(config),
-    };
+        let result = match node.service_type {
+            iox2_service_type_e::IPC => node.value.as_ref().ipc.try_cleanup_dead_nodes(),
+            iox2_service_type_e::LOCAL => node.value.as_ref().local.try_cleanup_dead_nodes(),
+        };
 
-    unsafe { (*cleanup_state).cleanups = result.cleanups };
-    unsafe { (*cleanup_state).failed_cleanups = result.failed_cleanups };
+        (*cleanup_state).cleanups = result.cleanups;
+        (*cleanup_state).failed_cleanups = result.failed_cleanups;
+    }
 }
 
 /// Removes the stale system resources of all dead nodes. The dead nodes are also
@@ -635,42 +630,44 @@ pub unsafe extern "C" fn iox2_node_try_cleanup_dead_nodes(
 ///
 /// # Arguments
 ///
-/// * `service_type` - A [`iox2_service_type_e`]
-/// * `config_ptr` - A valid [`iox2_config_ptr`](crate::iox2_config_ptr)
-/// * `cleanup_state` - A valid pointer to a [`iox2_cleanup_state_t`](crate::iox2_cleanup_state_t)
 /// * `timeout_secs` - The timeout second part
 /// * `timeout_nsecs` - The timeout nanosecond part
 ///
 /// # Safety
 ///
-/// * The `config_ptr` must be valid and obtained by ether [`iox2_node_config`] or [`iox2_config_global_config`](crate::iox2_config_global_config)!
-/// * The `cleanup_state` must be a valid pointer.
+/// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
+/// * `cleanup_state` - A valid pointer to a [`iox2_cleanup_state_t`]
 ///
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_node_blocking_cleanup_dead_nodes(
-    service_type: iox2_service_type_e,
-    config_ptr: iox2_config_ptr,
+    node_handle: iox2_node_h_ref,
     cleanup_state: *mut iox2_cleanup_state_t,
     timeout_secs: u64,
     timeout_nsecs: u32,
 ) {
-    debug_assert!(!config_ptr.is_null());
+    node_handle.assert_non_null();
     debug_assert!(!cleanup_state.is_null());
 
-    let config = unsafe { &*config_ptr };
-    let timeout = Duration::from_secs(timeout_secs) + Duration::from_nanos(timeout_nsecs as u64);
+    unsafe {
+        let node = &mut *node_handle.as_type();
 
-    let result = match service_type {
-        iox2_service_type_e::IPC => {
-            Node::<crate::IpcService>::blocking_cleanup_dead_nodes(config, timeout)
-        }
-        iox2_service_type_e::LOCAL => {
-            Node::<crate::LocalService>::blocking_cleanup_dead_nodes(config, timeout)
-        }
-    };
+        let timeout =
+            Duration::from_secs(timeout_secs) + Duration::from_nanos(timeout_nsecs as u64);
 
-    unsafe { (*cleanup_state).cleanups = result.cleanups };
-    unsafe { (*cleanup_state).failed_cleanups = result.failed_cleanups };
+        let result = match node.service_type {
+            iox2_service_type_e::IPC => {
+                node.value.as_ref().ipc.blocking_cleanup_dead_nodes(timeout)
+            }
+            iox2_service_type_e::LOCAL => node
+                .value
+                .as_ref()
+                .local
+                .blocking_cleanup_dead_nodes(timeout),
+        };
+
+        (*cleanup_state).cleanups = result.cleanups;
+        (*cleanup_state).failed_cleanups = result.failed_cleanups;
+    }
 }
 
 /// Instantiates a [`iox2_service_builder_h`] for a service with the provided name.

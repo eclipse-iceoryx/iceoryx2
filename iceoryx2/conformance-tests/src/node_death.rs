@@ -136,7 +136,7 @@ pub mod node_death {
         test.abandon_contents(bad_publishers);
         test.abandon_contents(bad_subscribers);
 
-        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
+        assert_that!(good_nodes[0].try_cleanup_dead_nodes(), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
 
         for service in &good_services {
             assert_that!(service.dynamic_config().number_of_publishers(), eq NUMBER_OF_PUBLISHERS - NUMBER_OF_BAD_NODES);
@@ -207,7 +207,7 @@ pub mod node_death {
         test.abandon_contents(bad_listeners);
         test.abandon_contents(bad_services);
 
-        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
+        assert_that!(good_nodes[0].try_cleanup_dead_nodes(), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
 
         for service in &good_services {
             assert_that!(service.dynamic_config().number_of_notifiers(), eq NUMBER_OF_NOTIFIERS - NUMBER_OF_BAD_NODES);
@@ -244,7 +244,7 @@ pub mod node_death {
         dead_notifier.abandon();
         dead_service.abandon();
 
-        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(node.try_cleanup_dead_nodes(), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         let mut received_events = 0;
         listener
@@ -321,7 +321,7 @@ pub mod node_death {
         test.abandon_contents(bad_servers);
         test.abandon_contents(bad_clients);
 
-        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
+        assert_that!(good_nodes[0].try_cleanup_dead_nodes(), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
 
         for service in &good_services {
             assert_that!(service.dynamic_config().number_of_clients(), eq NUMBER_OF_CLIENTS - NUMBER_OF_BAD_NODES);
@@ -390,7 +390,7 @@ pub mod node_death {
         test.abandon_contents(bad_services);
         test.abandon_contents(bad_readers);
 
-        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
+        assert_that!(good_nodes[0].try_cleanup_dead_nodes(), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES as _, failed_cleanups: 0});
 
         for service in &good_services {
             assert_that!(service.dynamic_config().number_of_readers(), eq NUMBER_OF_READERS - NUMBER_OF_BAD_NODES);
@@ -428,7 +428,7 @@ pub mod node_death {
         bad_writer.abandon();
         bad_service.abandon();
 
-        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(good_node.try_cleanup_dead_nodes(), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(good_service.dynamic_config().number_of_readers(), eq 1);
         assert_that!(good_service.dynamic_config().number_of_writers(), eq 0);
@@ -448,6 +448,7 @@ pub mod node_death {
         let test = Test::<S>::new();
         let service_name = generate_service_name();
 
+        let good_node = test.create_node();
         let bad_node = test.create_node();
         let bad_service = bad_node
             .service_builder(&service_name)
@@ -465,7 +466,7 @@ pub mod node_death {
             is_ok
         );
 
-        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(good_node.try_cleanup_dead_nodes(), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
             S::list(test.config(), |_| {
@@ -480,6 +481,7 @@ pub mod node_death {
         let test = Test::<S>::new();
         let service_name = generate_service_name();
 
+        let good_node = test.create_node();
         let bad_node = test.create_node();
         let bad_service = bad_node
             .service_builder(&service_name)
@@ -497,7 +499,7 @@ pub mod node_death {
             is_ok
         );
 
-        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(good_node.try_cleanup_dead_nodes(), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
             S::list(test.config(), |_| {
@@ -514,6 +516,7 @@ pub mod node_death {
         let test = Test::<S>::new();
         let service_name = generate_service_name();
 
+        let good_node = test.create_node();
         let bad_node = test.create_node();
         let bad_service = bad_node
             .service_builder(&service_name)
@@ -531,7 +534,7 @@ pub mod node_death {
             is_ok
         );
 
-        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(good_node.try_cleanup_dead_nodes(), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
             S::list(test.config(), |_| {
@@ -546,6 +549,7 @@ pub mod node_death {
         let test = Test::<S>::new();
         let service_name = generate_service_name();
 
+        let good_node = test.create_node();
         let bad_node = test.create_node();
         let bad_service = bad_node
             .service_builder(&service_name)
@@ -566,7 +570,7 @@ pub mod node_death {
             is_ok
         );
 
-        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(good_node.try_cleanup_dead_nodes(), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
             S::list(test.config(), |_| {
@@ -606,7 +610,7 @@ pub mod node_death {
         bad_reader.abandon();
         bad_service.abandon();
 
-        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(good_node.try_cleanup_dead_nodes(), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         let writer = good_service.writer_builder().create();
         assert_that!(writer, is_ok);
@@ -628,6 +632,7 @@ pub mod node_death {
         #[type_name("SoSpecial")]
         struct SpecialKey(u64);
 
+        let good_node = test.create_node();
         let bad_node = test.create_node();
         let bad_service = bad_node
             .service_builder(&service_name)
@@ -648,7 +653,7 @@ pub mod node_death {
             is_ok
         );
 
-        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(good_node.try_cleanup_dead_nodes(), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
             S::list(test.config(), |_| {
@@ -675,6 +680,7 @@ pub mod node_death {
         let test = Test::<S>::new();
         let service_name = generate_service_name();
 
+        let good_node = test.create_node();
         let bad_node = test.create_node();
         let bad_service = bad_node
             .service_builder(&service_name)
@@ -693,7 +699,7 @@ pub mod node_death {
             is_ok
         );
 
-        assert_that!(Node::<S>::try_cleanup_dead_nodes(test.config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(good_node.try_cleanup_dead_nodes(), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
             S::list(test.config(), |_| {
@@ -969,6 +975,7 @@ pub mod node_death {
         ));
         let config = test.config().clone();
 
+        let good_node = test.create_node();
         for number_of_service_tags in 1..=MAX_NUMBER_OF_TAGS {
             let sut = test.create_node();
             let node_id = *sut.id();
@@ -988,7 +995,7 @@ pub mod node_death {
 
             sut.abandon();
 
-            let cleanup_results = Node::<S>::try_cleanup_dead_nodes(&config);
+            let cleanup_results = good_node.try_cleanup_dead_nodes();
             assert_that!(cleanup_results.cleanups, eq 1);
             assert_that!(cleanup_results.failed_cleanups, eq 0);
 
@@ -1008,6 +1015,7 @@ pub mod node_death {
         let test = Test::<S>::new();
         let config = test.config().clone();
 
+        let good_node = test.create_node();
         for number_of_service_tags in 1..=MAX_NUMBER_OF_TAGS {
             let sut = test.create_node();
             let node_id = *sut.id();
@@ -1022,13 +1030,13 @@ pub mod node_death {
 
             sut.abandon();
 
-            let cleanup_results = Node::<S>::try_cleanup_dead_nodes(&config);
+            let cleanup_results = good_node.try_cleanup_dead_nodes();
             assert_that!(cleanup_results.cleanups, eq 1);
             assert_that!(cleanup_results.failed_cleanups, eq 0);
 
             let node_state = get_node_state::<S>(&node_id, &config).unwrap();
             assert_that!(node_state, is_none);
-            assert_that!(test.number_of_nodes(), eq 0);
+            assert_that!(test.number_of_nodes(), eq 1);
 
             for tag in port_tags {
                 assert_that!(does_port_tag_exist::<S>(tag.0, &tag.1, &tag.2).unwrap(), eq false);
@@ -1043,6 +1051,7 @@ pub mod node_death {
 
         let test = Test::<S>::new();
         let config = test.config().clone();
+        let good_node = test.create_node();
 
         for number_of_tags in 1..=MAX_NUMBER_OF_TAGS {
             let mut port_tags = vec![];
@@ -1073,10 +1082,10 @@ pub mod node_death {
                 sut.abandon();
             }
 
-            let cleanup_results = Node::<S>::try_cleanup_dead_nodes(&config);
+            let cleanup_results = good_node.try_cleanup_dead_nodes();
             assert_that!(cleanup_results.cleanups, eq NUMBER_OF_NODES as u64);
             assert_that!(cleanup_results.failed_cleanups, eq 0);
-            assert_that!(test.number_of_nodes(), eq 0);
+            assert_that!(test.number_of_nodes(), eq 1);
 
             for node_id in node_ids {
                 let node_state = get_node_state::<S>(&node_id, &config).unwrap();
@@ -1176,6 +1185,7 @@ pub mod node_death {
         mut create_service: F,
     ) {
         let test = Test::<S>::new();
+        let good_node = test.create_node();
         let bad_node = test.create_node();
         let service_name = generate_service_name();
         let (bad_service, messaging_pattern) = create_service(&bad_node, &service_name);
@@ -1186,13 +1196,12 @@ pub mod node_death {
 
         unsafe { remove_dynamic_config::<S>(test.config(), service_id) };
 
-        let cleanup_result = Node::<S>::try_cleanup_dead_nodes(test.config());
+        let cleanup_result = good_node.try_cleanup_dead_nodes();
         assert_that!(cleanup_result.cleanups, eq 1);
         assert_that!(cleanup_result.failed_cleanups, eq 0);
 
         assert_that!(S::does_exist(&service_name, test.config(), messaging_pattern).unwrap(), eq false);
 
-        let good_node = test.create_node();
         let good_service = create_service(&good_node, &service_name);
         let mut counter = 0;
         good_service
