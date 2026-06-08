@@ -1763,32 +1763,50 @@ TYPED_TEST(ServicePublishSubscribeTest, custom_payload_type_details_override_is_
     ASSERT_THAT(payload.alignment(), Eq(PAYLOAD_ALIGNMENT));
 }
 
-TYPED_TEST(ServicePublishSubscribeTest, custom_payload_marker_send_receive_works) {
+// NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
+TYPED_TEST(ServicePublishSubscribeTest, custom_header_payload_marker_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr const char* HEADER_TYPE_NAME = "MyHeader";
+    constexpr uint64_t HEADER_SIZE = 16;
+    constexpr uint64_t HEADER_ALIGNMENT = 8;
+    constexpr uint8_t HEADER_BASE_VALUE = 100;
     constexpr const char* PAYLOAD_TYPE_NAME = "MyType";
-    constexpr uint64_t PAYLOAD_SIZE = 12;
+    constexpr uint64_t PAYLOAD_SIZE = 16;
     constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
+    constexpr uint8_t PAYLOAD_BASE_VALUE = 1;
 
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
-    auto service_builder =
-        node.service_builder(service_name).template publish_subscribe<bb::Slice<CustomPayloadMarker>>();
+    auto service_builder = node.service_builder(service_name)
+                               .template publish_subscribe<bb::Slice<CustomPayloadMarker>>()
+                               .template user_header<CustomHeaderMarker>();
+
+    set_user_header_type_details(service_builder,
+                                 TypeDetail(TypeVariant::FixedSize, HEADER_TYPE_NAME, HEADER_SIZE, HEADER_ALIGNMENT));
     set_payload_type_details(service_builder,
                              TypeDetail(TypeVariant::FixedSize, PAYLOAD_TYPE_NAME, PAYLOAD_SIZE, PAYLOAD_ALIGNMENT));
+
     auto service = service_builder.resume_build().create().value();
 
     auto sut_publisher = service.publisher_builder().initial_max_slice_len(1).create().value();
     auto sut_subscriber = service.subscriber_builder().create().value();
 
+    // Publisher: populate the payload and header, then send.
     auto send_sample = sut_publisher.loan_slice_uninit(1).value();
     auto send_payload = send_sample.payload_mut();
     ASSERT_THAT(send_payload.number_of_bytes(), Eq(PAYLOAD_SIZE));
     for (uint64_t i = 0; i < PAYLOAD_SIZE; ++i) {
-        send_payload[i].value = static_cast<uint8_t>(i + 1);
+        send_payload[i].value = static_cast<uint8_t>(PAYLOAD_BASE_VALUE + i);
     }
+    auto& send_header = send_sample.template user_header_mut<std::array<uint8_t, HEADER_SIZE>>();
+    for (uint64_t i = 0; i < HEADER_SIZE; ++i) {
+        send_header.at(i) = static_cast<uint8_t>(HEADER_BASE_VALUE + i);
+    }
+
     send(assume_init(std::move(send_sample))).value();
 
+    // Subscriber: verify the received payload and header bytes.
     auto recv_result = sut_subscriber.receive().value();
     ASSERT_TRUE(recv_result.has_value());
 
@@ -1796,8 +1814,13 @@ TYPED_TEST(ServicePublishSubscribeTest, custom_payload_marker_send_receive_works
     auto recv_payload = recv_sample.payload();
     ASSERT_THAT(recv_payload.number_of_bytes(), Eq(PAYLOAD_SIZE));
     for (uint64_t i = 0; i < PAYLOAD_SIZE; ++i) {
-        ASSERT_THAT(recv_payload[i].value, Eq(static_cast<uint8_t>(i + 1)));
+        ASSERT_THAT(recv_payload[i].value, Eq(static_cast<uint8_t>(PAYLOAD_BASE_VALUE + i)));
+    }
+    const auto& recv_header = recv_sample.template user_header<std::array<uint8_t, HEADER_SIZE>>();
+    for (uint64_t i = 0; i < HEADER_SIZE; ++i) {
+        ASSERT_THAT(recv_header.at(i), Eq(static_cast<uint8_t>(HEADER_BASE_VALUE + i)));
     }
 }
+// NOLINTEND(readability-function-cognitive-complexity)
 
 } // namespace

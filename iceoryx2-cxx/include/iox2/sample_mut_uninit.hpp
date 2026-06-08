@@ -100,13 +100,13 @@ inline auto SampleMutUninit<S, Payload, UserHeader>::header() const -> HeaderPub
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline auto SampleMutUninit<S, Payload, UserHeader>::user_header() const -> const T& {
-    return m_sample.user_header();
+    return m_sample.template user_header<T>();
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline auto SampleMutUninit<S, Payload, UserHeader>::user_header_mut() -> T& {
-    return m_sample.user_header_mut();
+    return m_sample.template user_header_mut<T>();
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
