@@ -124,7 +124,7 @@ template <typename T, typename>
 inline auto
 RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::user_header() const
     -> const T& {
-    return m_request.user_header();
+    return m_request.template user_header<T>();
 }
 
 template <ServiceType Service,
@@ -136,7 +136,7 @@ template <typename T, typename>
 inline auto
 RequestMutUninit<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::user_header_mut()
     -> T& {
-    return m_request.user_header_mut();
+    return m_request.template user_header_mut<T>();
 }
 
 template <ServiceType Service,
