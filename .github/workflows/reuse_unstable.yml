@@ -81,14 +81,16 @@ jobs:
       - name: Run workspaces
         shell: bash
         run: |
-          just build sdk ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
-          just build integrations ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
+          rustc --version
+          just build sdk +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
+          just build integrations +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
 
       - name: Test workspaces
         shell: bash
         run: |
-          just test sdk ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast
-          just test integrations ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast
+          rustc --version
+          just test sdk +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast
+          just test integrations +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast
 
       - name: Cleanup build artifacts
         uses: ./.github/actions/save-disk-space
