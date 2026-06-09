@@ -38,8 +38,15 @@ pub(crate) struct OfferedServices {
 }
 
 impl OfferedServices {
-    fn insert(&mut self, config: StaticConfig) {
-        let epoch = self.epoch;
+    /// Advances and returns the epoch, beginning a new update session.
+    fn next_epoch(&mut self) -> u64 {
+        self.epoch = self.epoch.wrapping_add(1);
+        self.epoch
+    }
+
+    /// Records `config` as offered, stamping it with `epoch`. The caller passes
+    /// its session epoch so all updates in a session share one stamp.
+    fn insert(&mut self, config: StaticConfig, epoch: u64) {
         self.offered.insert(
             *config.service_hash(),
             OfferedService {
@@ -72,8 +79,7 @@ impl OfferedServices {
         mut on_added: impl FnMut(&StaticConfig) -> Result<(), E>,
         mut on_removed: impl FnMut(&StaticConfig) -> Result<(), E>,
     ) -> Result<(), E> {
-        self.epoch = self.epoch.wrapping_add(1);
-        let epoch = self.epoch;
+        let epoch = self.next_epoch();
 
         for static_config in target {
             let hash = *static_config.service_hash();
@@ -81,13 +87,7 @@ impl OfferedServices {
                 offered_service.last_seen = epoch;
             } else {
                 on_added(static_config)?;
-                self.offered.insert(
-                    hash,
-                    OfferedService {
-                        static_config: static_config.clone(),
-                        last_seen: epoch,
-                    },
-                );
+                self.insert(static_config.clone(), epoch);
             }
         }
 
@@ -130,17 +130,28 @@ impl<'a> Snapshot<'a> {
     }
 }
 
-/// Handle for applying incremental (delta) updates to one side's
-/// offered services. Users must explicitly select this method of
-/// update to access the corresponding operations.
+/// Handle for applying incremental (delta) updates to one side's offered
+/// services within a single epoch.
 pub(crate) struct DeltaUpdate<'a> {
     offered_services: &'a mut OfferedServices,
+    origin: Origin,
+    epoch: u64,
 }
 
 impl DeltaUpdate<'_> {
-    /// Records `static_config` as offered.
+    /// The side these updates apply to.
+    pub(crate) fn origin(&self) -> Origin {
+        self.origin
+    }
+
+    /// Whether the side currently offers `hash`.
+    pub(crate) fn is_offered(&self, hash: &ServiceHash) -> bool {
+        self.offered_services.contains(hash)
+    }
+
+    /// Records `static_config` as offered, stamped with this handle's epoch.
     pub(crate) fn set_offered(&mut self, static_config: StaticConfig) {
-        self.offered_services.insert(static_config);
+        self.offered_services.insert(static_config, self.epoch);
     }
 
     /// Marks `hash` as no longer offered, returning its [`StaticConfig`] if it
@@ -158,14 +169,19 @@ pub(crate) struct DiscoveryState {
 }
 
 impl DiscoveryState {
-    /// Returns the handle for applying delta updates to `origin`'s offered
-    /// services.
+    /// Returns a handle for applying delta updates to `origin`'s offered
+    /// services. Advances that side's epoch, beginning a new update session.
     pub(crate) fn delta_update(&mut self, origin: Origin) -> DeltaUpdate<'_> {
+        let offered_services = match origin {
+            Origin::Local => &mut self.local,
+            Origin::Remote => &mut self.remote,
+        };
+        let epoch = offered_services.next_epoch();
+
         DeltaUpdate {
-            offered_services: match origin {
-                Origin::Local => &mut self.local,
-                Origin::Remote => &mut self.remote,
-            },
+            offered_services,
+            origin,
+            epoch,
         }
     }
 
@@ -181,14 +197,6 @@ impl DiscoveryState {
         match origin {
             Origin::Local => self.local.reconcile(target, on_added, on_removed),
             Origin::Remote => self.remote.reconcile(target, on_added, on_removed),
-        }
-    }
-
-    /// Whether `origin` currently offers `hash`.
-    pub(crate) fn is_offered_by(&self, origin: Origin, hash: &ServiceHash) -> bool {
-        match origin {
-            Origin::Local => self.local.contains(hash),
-            Origin::Remote => self.remote.contains(hash),
         }
     }
 

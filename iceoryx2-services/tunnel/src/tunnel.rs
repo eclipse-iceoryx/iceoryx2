@@ -31,6 +31,7 @@ use iceoryx2_services_tunnel_backend::traits::{Backend, Discovery};
 
 use crate::bridge::Bridge;
 use crate::discovery::LocalDiscoveryStrategy;
+use crate::discovery::state::DeltaUpdate;
 use crate::discovery::state::DiscoveryState;
 use crate::discovery::state::Origin;
 
@@ -194,24 +195,17 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
 
     /// Updates the remotely offerred services.
     fn backend_discovery(&mut self) -> Result<(), DiscoveryError> {
-        let origin = format!("Tunnel({})::discover_remote", self.node.id());
+        let origin = format!("Tunnel({})::backend_discovery", self.node.id());
 
         let node = &self.node;
         let backend = &self.backend;
         let services_filter = &self.services_filter;
-        let discovery_state = &mut self.discovery_state;
+        let mut update = self.discovery_state.delta_update(Origin::Remote);
 
         fail!(
             from origin,
             when backend.discovery().discover(|event| {
-                on_discovery_event::<S, B>(
-                    node,
-                    backend,
-                    discovery_state,
-                    services_filter,
-                    event,
-                    Origin::Remote,
-                )
+                on_discovery_event::<S, B>(node, backend, &mut update, services_filter, event)
             }),
             with DiscoveryError::DiscoveryOverBackend,
             "Failed to discover services via Backend"
@@ -222,7 +216,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     /// Subscriber-mode local discovery: events from the discovery service
     /// describe local additions and removals.
     fn subscriber_discovery(&mut self) -> Result<(), DiscoveryError> {
-        let origin = format!("Tunnel({})::discover_over_subscriber", self.node.id());
+        let origin = format!("Tunnel({})::subscriber_discovery", self.node.id());
 
         let LocalDiscoveryStrategy::Subscriber(subscriber) = &self.discovery_strategy else {
             panic!("Should never happen. Discovery strategy enforced in discover().");
@@ -231,19 +225,12 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         let node = &self.node;
         let backend = &self.backend;
         let services_filter = &self.services_filter;
-        let discovery_state = &mut self.discovery_state;
+        let mut update = self.discovery_state.delta_update(Origin::Local);
 
         fail!(
             from origin,
             when subscriber.discover(|event| {
-                on_discovery_event::<S, B>(
-                    node,
-                    backend,
-                    discovery_state,
-                    services_filter,
-                    event,
-                    Origin::Local,
-                )
+                on_discovery_event::<S, B>(node, backend, &mut update, services_filter, event)
             }),
             with DiscoveryError::DiscoveryOverService,
             "Failed to discover services via subscriber to discovery service"
@@ -330,15 +317,14 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     }
 }
 
-/// Processes a discovery event from `origin` to the offering snapshots and
-/// announces local-side 0 → 1 and 1 → 0 transitions.
+/// Updates the discovery state and announces local-side 0 → 1 and 1 → 0
+/// transitions.
 fn on_discovery_event<S: Service, B: Backend<S>>(
     node: &Node<S>,
     backend: &B,
-    discovery_state: &mut DiscoveryState,
+    update: &mut DeltaUpdate<'_>,
     services_filter: &Option<BTreeSet<String>>,
     event: DiscoveryEvent,
-    origin: Origin,
 ) -> Result<(), DiscoveryError> {
     match event {
         DiscoveryEvent::Added(static_config) => {
@@ -346,21 +332,19 @@ fn on_discovery_event<S: Service, B: Backend<S>>(
                 return Ok(());
             }
 
-            // Mark this side as offered; announce on local 0 → 1 transitions.
+            // Announce on local 0 → 1 transitions, then record as offered.
             let hash = *static_config.service_hash();
-            let offered_locally =
-                origin == Origin::Local && discovery_state.is_offered_by(origin, &hash);
-            if !offered_locally {
+            let newly_offered_locally =
+                update.origin() == Origin::Local && !update.is_offered(&hash);
+            if newly_offered_locally {
                 announce_added::<S, B>(node, backend, &static_config)?;
             }
-            discovery_state
-                .delta_update(origin)
-                .set_offered(static_config);
+            update.set_offered(static_config);
         }
         DiscoveryEvent::Removed(hash) => {
-            // Mark this side as not offered; announce on local 1 → 0 transitions.
-            let removed_config = discovery_state.delta_update(origin).set_not_offered(&hash);
-            if origin == Origin::Local {
+            // Announce on local 1 → 0 transitions.
+            let removed_config = update.set_not_offered(&hash);
+            if update.origin() == Origin::Local {
                 if let Some(static_config) = &removed_config {
                     announce_removed::<S, B>(node, backend, static_config)?;
                 }
