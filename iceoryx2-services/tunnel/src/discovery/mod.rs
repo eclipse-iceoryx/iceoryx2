@@ -12,3 +12,17 @@
 
 pub(crate) mod subscriber;
 pub(crate) mod tracker;
+
+use iceoryx2::service::Service;
+
+use crate::discovery::subscriber::DiscoverySubscriber;
+use crate::discovery::tracker::DiscoveryTracker;
+
+/// The active local-discovery mechanism. Exactly one is in use for a given
+/// [`Tunnel`](crate::Tunnel): a subscriber to a discovery service, or a
+/// poll-based tracker over the local service registry.
+#[derive(Debug)]
+pub(crate) enum LocalDiscoveryStrategy<S: Service> {
+    Subscriber(DiscoverySubscriber<S>),
+    Tracker(DiscoveryTracker<S>),
+}

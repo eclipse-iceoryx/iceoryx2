@@ -31,6 +31,7 @@ use iceoryx2_log::{fail, info, trace};
 use iceoryx2_services_tunnel_backend::traits::{Backend, BackendBuilder, ReactiveBackendBuilder};
 use iceoryx2_services_tunnel_backend::types::wake::WakeHandle;
 
+use crate::discovery::LocalDiscoveryStrategy;
 use crate::discovery::subscriber::DiscoverySubscriber;
 use crate::discovery::tracker::DiscoveryTracker;
 use crate::tunnel::{Config, CreationError, Tunnel};
@@ -302,7 +303,7 @@ where
         "Failed to create Tunnel node"
     );
 
-    let (subscriber, tracker) = match &tunnel_config.discovery_service {
+    let local_discovery = match &tunnel_config.discovery_service {
         Some(service_name) => {
             info!(from origin, "Local Discovery via Subscriber");
 
@@ -320,12 +321,12 @@ where
                 "Failed to create discovery subscriber"
             );
 
-            (Some(subscriber), None)
+            LocalDiscoveryStrategy::Subscriber(subscriber)
         }
         None => {
             info!(from origin, "Local Discovery via Tracker");
             let tracker = DiscoveryTracker::create(&iceoryx_config);
-            (None, Some(tracker))
+            LocalDiscoveryStrategy::Tracker(tracker)
         }
     };
 
@@ -337,8 +338,7 @@ where
     Ok(Tunnel::create(
         tunnel_node,
         backend,
-        subscriber,
-        tracker,
+        local_discovery,
         services_filter,
     ))
 }

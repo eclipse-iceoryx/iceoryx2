@@ -32,7 +32,7 @@ use iceoryx2_services_tunnel_backend::traits::{
 };
 use iceoryx2_services_tunnel_backend::types::publish_subscribe::LoanFn;
 
-use crate::discovery;
+use crate::discovery::LocalDiscoveryStrategy;
 use crate::ports::event::EventPorts;
 use crate::ports::publish_subscribe::PublishSubscribePorts;
 
@@ -204,8 +204,7 @@ pub struct Tunnel<S: Service, B: for<'a> Backend<S> + Debug> {
     services: BTreeMap<ServiceHash, TrackedService>,
     ports: Ports<S>,
     relays: Relays<S, B>,
-    subscriber: Option<discovery::subscriber::DiscoverySubscriber<S>>,
-    tracker: Option<discovery::tracker::DiscoveryTracker<S>>,
+    local_discovery: LocalDiscoveryStrategy<S>,
     services_filter: Option<BTreeSet<String>>,
 }
 
@@ -226,8 +225,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     pub(crate) fn create(
         node: Node<S>,
         backend: B,
-        subscriber: Option<discovery::subscriber::DiscoverySubscriber<S>>,
-        tracker: Option<discovery::tracker::DiscoveryTracker<S>>,
+        local_discovery: LocalDiscoveryStrategy<S>,
         services_filter: Option<BTreeSet<String>>,
     ) -> Self {
         Self {
@@ -236,8 +234,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
             services: BTreeMap::new(),
             ports: Ports::new(),
             relays: Relays::new(),
-            subscriber,
-            tracker,
+            local_discovery,
             services_filter,
         }
     }
@@ -250,13 +247,10 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     }
 
     pub fn discover_over_iceoryx(&mut self) -> Result<(), DiscoveryError> {
-        if self.subscriber.is_some() {
-            self.discover_over_subscriber()?;
+        match &self.local_discovery {
+            LocalDiscoveryStrategy::Subscriber(_) => self.discover_over_subscriber(),
+            LocalDiscoveryStrategy::Tracker(_) => self.discover_over_tracker(),
         }
-        if self.tracker.is_some() {
-            self.discover_over_tracker()?;
-        }
-        Ok(())
     }
 
     pub fn discover_over_backend(&mut self) -> Result<(), DiscoveryError> {
@@ -319,10 +313,9 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         let origin = format!("Tunnel({})::discover_over_subscriber", self.node.id());
 
         let mut events: Vec<DiscoveryEvent> = Vec::new();
-        let subscriber = self
-            .subscriber
-            .as_mut()
-            .expect("Should never happen. Subscriber created in constructor.");
+        let LocalDiscoveryStrategy::Subscriber(subscriber) = &self.local_discovery else {
+            panic!("Should never happen. Discovery strategy enforced in discover().");
+        };
         fail!(
             from origin,
             when subscriber.discover(|event| -> Result<(), Infallible> {
@@ -352,10 +345,9 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         // Consider refactoring if it becomes an issue.
         let mut events: Vec<DiscoveryEvent> = Vec::new();
         {
-            let tracker = self
-                .tracker
-                .as_ref()
-                .expect("Should never happen. Tracker created in constructor.");
+            let LocalDiscoveryStrategy::Tracker(tracker) = &self.local_discovery else {
+                panic!("Should never happen. Discovery strategy enforced in discover().");
+            };
 
             // Helper to determine whether any node other than the tunnel
             // is currently offering a particular service. Also true when
@@ -532,7 +524,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
                     // Drop the tracker's cached snapshot so a same-hash service
                     // recreated by a another node reappears as a fresh `added` on the
                     // next sync.
-                    if let Some(tracker) = &self.tracker {
+                    if let LocalDiscoveryStrategy::Tracker(tracker) = &self.local_discovery {
                         tracker.forget(&hash);
                     }
                 }
