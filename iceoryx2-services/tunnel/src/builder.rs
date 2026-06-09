@@ -22,6 +22,7 @@
 use core::fmt::Debug;
 use core::marker::PhantomData;
 
+use alloc::boxed::Box;
 use alloc::format;
 
 use iceoryx2::node::NodeBuilder;
@@ -326,7 +327,7 @@ where
         None => {
             info!(from origin, "Local Discovery via Tracker");
             let tracker = DiscoveryTracker::create(&iceoryx_config);
-            LocalDiscoveryStrategy::Tracker(tracker)
+            LocalDiscoveryStrategy::Tracker(Box::new(tracker))
         }
     };
 

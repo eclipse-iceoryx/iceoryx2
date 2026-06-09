@@ -14,6 +14,8 @@ pub(crate) mod state;
 pub(crate) mod subscriber;
 pub(crate) mod tracker;
 
+use alloc::boxed::Box;
+
 use iceoryx2::service::Service;
 
 use crate::discovery::subscriber::DiscoverySubscriber;
@@ -25,5 +27,5 @@ use crate::discovery::tracker::DiscoveryTracker;
 #[derive(Debug)]
 pub(crate) enum LocalDiscoveryStrategy<S: Service> {
     Subscriber(DiscoverySubscriber<S>),
-    Tracker(DiscoveryTracker<S>),
+    Tracker(Box<DiscoveryTracker<S>>),
 }
