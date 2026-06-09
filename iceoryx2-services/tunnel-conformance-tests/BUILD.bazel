@@ -20,7 +20,7 @@ filegroup(
 )
 
 rust_library(
-    name = "iceoryx2-services-tunnel-conformance-tests",
+    name = "iceoryx2-tunnel-conformance-tests",
     srcs = glob(["src/**/*.rs"]),
     crate_features = select({
         "//:cfg_feature_std": [

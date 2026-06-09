@@ -1357,6 +1357,7 @@ dependencies = [
  "iceoryx2-bb-elementary-traits",
  "iceoryx2-log",
  "iceoryx2-pal-concurrency-sync",
+ "serde",
 ]
 
 [[package]]
@@ -1542,7 +1543,7 @@ dependencies = [
  "iceoryx2-services-common",
  "iceoryx2-services-tunnel",
  "iceoryx2-services-tunnel-backend",
- "iceoryx2-services-tunnel-conformance-tests",
+ "iceoryx2-tunnel-conformance-tests",
  "serde_json",
  "zenoh",
 ]
@@ -1666,7 +1667,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "iceoryx2-services-tunnel-conformance-tests"
+name = "iceoryx2-tunnel-conformance-tests"
 version = "0.9.999"
 dependencies = [
  "iceoryx2",

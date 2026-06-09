@@ -91,22 +91,30 @@ jobs:
       - name: Build sdk workspace
         if: ${{ inputs.workspace == 'sdk' }}
         shell: bash
-        run: just build sdk ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
+        run: |
+          rustc --version
+          just build sdk +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
 
       - name: Test sdk workspace
         if: ${{ inputs.workspace == 'sdk' }}
         shell: bash
-        run: just test sdk ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast
+        run: |
+          rustc --version
+          just test sdk +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast
 
       - name: Build integrations workspace
         if: ${{ inputs.workspace == 'integrations' }}
         shell: bash
-        run: just build integrations ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
+        run: |
+          rustc --version
+          just build integrations +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
 
       - name: Test integrations workspace
         if: ${{ inputs.workspace == 'integrations' }}
         shell: bash
-        run: just test integrations ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast
+        run: |
+          rustc --version
+          just test integrations +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast
 
       - name: Cleanup build artifacts
         uses: ./.github/actions/save-disk-space

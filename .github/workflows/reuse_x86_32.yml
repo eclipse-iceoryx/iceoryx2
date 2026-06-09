@@ -83,7 +83,8 @@ jobs:
       - name: Build workspace
         shell: bash
         run: |
-          just build sdk --target i686-unknown-linux-gnu ${{ steps.set-build-flags.outputs.cargo-build-mode }} \
+          rustc --version
+          just build sdk +${{ inputs.toolchain }} --target i686-unknown-linux-gnu ${{ steps.set-build-flags.outputs.cargo-build-mode }} \
           -- \
           --all-targets \
           --exclude iceoryx2-ffi-python
@@ -91,7 +92,8 @@ jobs:
       - name: Test workspace
         shell: bash
         run: |
-          just test sdk --target i686-unknown-linux-gnu ${{ steps.set-build-flags.outputs.cargo-build-mode }} \
+          rustc --version
+          just test sdk +${{ inputs.toolchain }} --target i686-unknown-linux-gnu ${{ steps.set-build-flags.outputs.cargo-build-mode }} \
           -- \
           --all-targets \
           --exclude iceoryx2-ffi-python \

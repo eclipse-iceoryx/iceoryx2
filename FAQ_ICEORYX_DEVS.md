@@ -137,3 +137,15 @@ For python the poetry lock files can be updated:
 poetry --project iceoryx2-ffi/python update urllib3
 poetry --project doc/api/python update urllib3
 ```
+
+## Crate names
+
+When adding a new crate to iceoryx2 it is recommended
+to use short names for the crates itself and the path to it.
+Reason is that iceoryx2
+needs to be compatible with many platforms where possible restrictions
+on the filesystem apply:
+[https://github.com/eclipse-iceoryx/iceoryx2/issues/1708](https://github.com/eclipse-iceoryx/iceoryx2/issues/1708)
+The "iceoryx2-" prefix must be set in the crate name
+(especially when the crate will be published to crates.io) to make
+visible that it belongs to the iceoryx2 project. Abbreviations are allowed.

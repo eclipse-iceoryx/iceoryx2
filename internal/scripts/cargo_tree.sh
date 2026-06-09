@@ -63,8 +63,8 @@ iceoryx2-services-discovery
 PACKAGE_LIST_TUNNEL="
 iceoryx2-services-tunnel
 iceoryx2-services-tunnel-backend
-iceoryx2-services-tunnel-conformance-tests
 iceoryx2-services-tunnel-end-to-end-tests
+iceoryx2-tunnel-conformance-tests
 "
 
 PACKAGE_LIST_USERLAND="
