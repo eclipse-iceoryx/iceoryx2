@@ -568,13 +568,15 @@ e.g. `--features iceoryx2/dev_permissions`.
 
 This error can have multiple causes.
 
-1. systemd started an iceoryx2 service with `RemoveIPC=yes`. This causes systemd
+1. Some external process removes files, sockets or shared memory and corrupts
+   an iceoryx2 services as a side effect.
+2. systemd started an iceoryx2 service with `RemoveIPC=yes`. This causes systemd
    to remove all SystemV and POSIX IPC resources like shared memory and sockets
    which corrupts the service. **When combining iceoryx2 with systemd, always
    `RemoveIPC=no`.**
-2. Crashed processes cleaned up resources incompletely, see: [Remove Stale Resources](#remove-stale-resources)
-3. The processes are compiled with two incompatible iceoryx2 versions.
-4. Two service variants were used that are not compatible.
+3. Crashed processes cleaned up resources incompletely, see: [Remove Stale Resources](#remove-stale-resources)
+4. The processes are compiled with two incompatible iceoryx2 versions.
+5. Two service variants were used that are not compatible.
 
 ### Unable To Connect Due To `IncompatibleTypes`
 
