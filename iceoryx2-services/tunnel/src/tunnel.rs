@@ -162,8 +162,17 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
             "bridges out of sync with discovery state"
         );
 
+        // Propagate publish-subscribe payloads before events
+        // TODO(#1103): Retain ordering across the wire
         for bridge in self.bridges.values() {
-            bridge.propagate(self.node.id())?;
+            if matches!(bridge, Bridge::PublishSubscribe { .. }) {
+                bridge.propagate(self.node.id())?;
+            }
+        }
+        for bridge in self.bridges.values() {
+            if matches!(bridge, Bridge::Event { .. }) {
+                bridge.propagate(self.node.id())?;
+            }
         }
 
         Ok(())
