@@ -30,6 +30,7 @@
     * [Service In Corrupted state](#service-in-corrupted-state)
     * [Unable To Connect Due To `IncompatibleTypes`](#unable-to-connect-due-to-incompatibletypes)
     * [Failed To Create Port Due To `ExceedsMaxSupported**`](#failed-to-create-port-due-to-exceedsmaxsupported)
+    * [Insufficient Permission To Remove Shared Memory](#insufficient-permission-to-remove-shared-memory)
 
 ## Tips And Tricks
 
@@ -645,3 +646,31 @@ If this doesn't happen:
 
 Consequently, iceoryx2 assumes the maximum number of publishers/publishers are
 still active, triggering the `ExceedsMaxSupported**` error.
+
+### Insufficient Permission To Remove Shared Memory
+
+If a service cannot be removed because iceoryx2 lacks permission to remove the
+corresponding shared memory, the sticky bit on `/dev/shm` or `/tmp/iceoryx2`
+could be the cause.
+
+You can check whether the sticky bit is set with:
+
+```sh
+ls -alh /dev/ | grep shm
+````
+
+If the permission string ends with `t`, for example `drwxrwxrwt`, the sticky bit
+is enabled.
+
+The sticky bit prevents users from deleting or renaming files owned by other
+users in that directory. Usually, only the file owner, the directory owner, or
+root may remove such files.
+
+For development setups, you can remove the sticky bit with:
+
+```sh
+chmod -t /dev/shm
+```
+
+Do this only during development. Changing permissions on `/dev/shm` can affect
+other applications on the system.
