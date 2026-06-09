@@ -20,7 +20,7 @@ use iceoryx2_integrations_zenoh_tunnel_backend::testing;
 
 instantiate_conformance_tests_with_module!(
     ipc,
-    iceoryx2_services_tunnel_conformance_tests::reactive,
+    iceoryx2_tunnel_conformance_tests::reactive,
     super::Ipc,
     super::ZenohBackend<super::Ipc>,
     super::testing::Testing,
@@ -29,7 +29,7 @@ instantiate_conformance_tests_with_module!(
 
 instantiate_conformance_tests_with_module!(
     local,
-    iceoryx2_services_tunnel_conformance_tests::reactive,
+    iceoryx2_tunnel_conformance_tests::reactive,
     super::Local,
     super::ZenohBackend<super::Local>,
     super::testing::Testing,

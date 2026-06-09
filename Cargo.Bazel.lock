@@ -1,5 +1,5 @@
 {
-  "checksum": "0b1bd09176a6bafe823fdf1fe3fdf523811aefeb38eef0ba4fc4fa7bdce8f2fd",
+  "checksum": "9de836713cd5c3acdc5f4617c2e9a8f12a230cf7af84c97f15d5d2aeb4e07d3e",
   "crates": {
     "addr2line 0.25.1": {
       "name": "addr2line",
@@ -6639,116 +6639,6 @@
       ],
       "license_file": null
     },
-    "iceoryx2-services-tunnel-conformance-tests 0.9.999": {
-      "name": "iceoryx2-services-tunnel-conformance-tests",
-      "version": "0.9.999",
-      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
-      "repository": null,
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "iceoryx2_services_tunnel_conformance_tests",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "iceoryx2_services_tunnel_conformance_tests",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "default",
-            "std"
-          ],
-          "selects": {}
-        },
-        "edition": "2024",
-        "version": "0.9.999"
-      },
-      "license": "MIT OR Apache-2.0",
-      "license_ids": [
-        "Apache-2.0",
-        "MIT"
-      ],
-      "license_file": null
-    },
-    "iceoryx2-services-tunnel-conformance-tests-common 0.9.999": {
-      "name": "iceoryx2-services-tunnel-conformance-tests-common",
-      "version": "0.9.999",
-      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
-      "repository": null,
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "iceoryx2_services_tunnel_conformance_tests_common",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "iceoryx2_services_tunnel_conformance_tests_common",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "default",
-            "std"
-          ],
-          "selects": {}
-        },
-        "edition": "2024",
-        "version": "0.9.999"
-      },
-      "license": "MIT OR Apache-2.0",
-      "license_ids": [
-        "Apache-2.0",
-        "MIT"
-      ],
-      "license_file": null
-    },
-    "iceoryx2-services-tunnel-conformance-tests-nostd 0.9.999": {
-      "name": "iceoryx2-services-tunnel-conformance-tests-nostd",
-      "version": "0.9.999",
-      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
-      "repository": null,
-      "targets": [],
-      "library_target_name": null,
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "default",
-            "std"
-          ],
-          "selects": {}
-        },
-        "edition": "2024",
-        "version": "0.9.999"
-      },
-      "license": "MIT OR Apache-2.0",
-      "license_ids": [
-        "Apache-2.0",
-        "MIT"
-      ],
-      "license_file": null
-    },
     "iceoryx2-services-tunnel-end-to-end-tests 0.9.999": {
       "name": "iceoryx2-services-tunnel-end-to-end-tests",
       "version": "0.9.999",
@@ -6931,6 +6821,116 @@
     },
     "iceoryx2-tests-nostd 0.9.999": {
       "name": "iceoryx2-tests-nostd",
+      "version": "0.9.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [],
+      "library_target_name": null,
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2024",
+        "version": "0.9.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-tunnel-conformance-tests 0.9.999": {
+      "name": "iceoryx2-tunnel-conformance-tests",
+      "version": "0.9.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_tunnel_conformance_tests",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_tunnel_conformance_tests",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2024",
+        "version": "0.9.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-tunnel-conformance-tests-common 0.9.999": {
+      "name": "iceoryx2-tunnel-conformance-tests-common",
+      "version": "0.9.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_tunnel_conformance_tests_common",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_tunnel_conformance_tests_common",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2024",
+        "version": "0.9.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-tunnel-conformance-tests-nostd 0.9.999": {
+      "name": "iceoryx2-tunnel-conformance-tests-nostd",
       "version": "0.9.999",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
@@ -16478,14 +16478,14 @@
     "iceoryx2-services-discovery 0.9.999": "iceoryx2-services/discovery",
     "iceoryx2-services-tunnel 0.9.999": "iceoryx2-services/tunnel",
     "iceoryx2-services-tunnel-backend 0.9.999": "iceoryx2-services/tunnel-backend",
-    "iceoryx2-services-tunnel-conformance-tests 0.9.999": "iceoryx2-services/tunnel-conformance-tests",
-    "iceoryx2-services-tunnel-conformance-tests-common 0.9.999": "iceoryx2-services/tunnel-conformance-tests/tests-common",
-    "iceoryx2-services-tunnel-conformance-tests-nostd 0.9.999": "iceoryx2-services/tunnel-conformance-tests/tests-nostd",
     "iceoryx2-services-tunnel-end-to-end-tests 0.9.999": "iceoryx2-services/tunnel-end-to-end-tests",
     "iceoryx2-services-tunnel-testing 0.9.999": "iceoryx2-services/tunnel-testing",
     "iceoryx2-testing 0.9.999": "iceoryx2/testing",
     "iceoryx2-tests-common 0.9.999": "iceoryx2/tests-common",
     "iceoryx2-tests-nostd 0.9.999": "iceoryx2/tests-nostd",
+    "iceoryx2-tunnel-conformance-tests 0.9.999": "iceoryx2-services/tunnel-conformance-tests",
+    "iceoryx2-tunnel-conformance-tests-common 0.9.999": "iceoryx2-services/tunnel-conformance-tests/tests-common",
+    "iceoryx2-tunnel-conformance-tests-nostd 0.9.999": "iceoryx2-services/tunnel-conformance-tests/tests-nostd",
     "iceoryx2-userland-record-and-replay 0.9.999": "iceoryx2-userland/record-and-replay"
   },
   "conditions": {

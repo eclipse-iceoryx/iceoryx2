@@ -49,7 +49,7 @@ SDK_CRATES_TO_PUBLISH := `echo \
     iceoryx2-services-discovery         \
     iceoryx2-services-tunnel-backend    \
     iceoryx2-services-tunnel            \
-    iceoryx2-services-tunnel-conformance-tests \
+    iceoryx2-tunnel-conformance-tests \
     iceoryx2-userland-record-and-replay \
     iceoryx2-cli`
 
@@ -64,9 +64,9 @@ SDK_CRATES_TO_IGNORE := `echo \
     iceoryx2-ffi-macros                    \
     iceoryx2-ffi-python                    \
     iceoryx2-services-tunnel-testing       \
-    iceoryx2-services-tunnel-conformance-tests-common \
-    iceoryx2-services-tunnel-conformance-tests-nostd \
     iceoryx2-services-tunnel-end-to-end-tests \
+    iceoryx2-tunnel-conformance-tests-common \
+    iceoryx2-tunnel-conformance-tests-nostd \
     iceoryx2-bb-trait-tests                \
     iceoryx2-bb-elementary-tests-common    \
     iceoryx2-bb-elementary-tests-nostd     \
@@ -114,7 +114,7 @@ INTEGRATIONS_CRATES_TO_IGNORE := `echo \
     iceoryx2-services-common                \
     iceoryx2-services-tunnel                \
     iceoryx2-services-tunnel-backend        \
-    iceoryx2-services-tunnel-conformance-tests`
+    iceoryx2-tunnel-conformance-tests`
 
 [private]
 _publish-dispatch workspace *flags:
