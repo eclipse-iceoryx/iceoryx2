@@ -27,8 +27,7 @@ pub(crate) enum Origin {
 #[derive(Debug)]
 struct OfferedService {
     static_config: StaticConfig,
-    /// Epoch in which this service was last observed.
-    epoch: u64,
+    last_seen: u64,
 }
 
 /// The set of services offered by one side, keyed by hash.
@@ -45,7 +44,7 @@ impl OfferedServices {
             *config.service_hash(),
             OfferedService {
                 static_config: config,
-                epoch,
+                last_seen: epoch,
             },
         );
     }
@@ -79,14 +78,14 @@ impl OfferedServices {
         for static_config in target {
             let hash = *static_config.service_hash();
             if let Some(offered_service) = self.offered.get_mut(&hash) {
-                offered_service.epoch = epoch;
+                offered_service.last_seen = epoch;
             } else {
                 on_added(static_config)?;
                 self.offered.insert(
                     hash,
                     OfferedService {
                         static_config: static_config.clone(),
-                        epoch,
+                        last_seen: epoch,
                     },
                 );
             }
@@ -94,7 +93,7 @@ impl OfferedServices {
 
         let mut result = Ok(());
         self.offered.retain(|_, offered_service| {
-            if offered_service.epoch == epoch {
+            if offered_service.last_seen == epoch {
                 true
             } else {
                 if result.is_ok() {
@@ -170,9 +169,9 @@ impl DiscoveryState {
         }
     }
 
-    /// Reconciles `origin`'s offerings against an external target set, calling
+    /// Forces `origin`'s offerings to match an external target set, calling
     /// the provided callbacks on addition or removal.
-    pub(crate) fn reconcile_update<'c, E>(
+    pub(crate) fn force_update<'c, E>(
         &mut self,
         origin: Origin,
         target: impl Iterator<Item = &'c StaticConfig>,

@@ -100,7 +100,7 @@ pub struct Tunnel<S: Service, B: for<'a> Backend<S> + Debug> {
     backend: B,
     discovery_state: DiscoveryState,
     bridges: BTreeMap<ServiceHash, Bridge<S, B>>,
-    local_discovery: LocalDiscoveryStrategy<S>,
+    discovery_strategy: LocalDiscoveryStrategy<S>,
     services_filter: Option<BTreeSet<String>>,
 }
 
@@ -121,7 +121,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     pub(crate) fn create(
         node: Node<S>,
         backend: B,
-        local_discovery: LocalDiscoveryStrategy<S>,
+        discovery_strategy: LocalDiscoveryStrategy<S>,
         services_filter: Option<BTreeSet<String>>,
     ) -> Self {
         Self {
@@ -129,24 +129,24 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
             backend,
             discovery_state: DiscoveryState::default(),
             bridges: BTreeMap::new(),
-            local_discovery,
+            discovery_strategy,
             services_filter,
         }
     }
 
     pub fn discover(&mut self) -> Result<(), DiscoveryError> {
-        self.discover_local()?;
-        self.discover_remote()?;
+        self.iceoryx_discovery()?;
+        self.backend_discovery()?;
         self.reconcile()
     }
 
     pub fn discover_over_iceoryx(&mut self) -> Result<(), DiscoveryError> {
-        self.discover_local()?;
+        self.iceoryx_discovery()?;
         self.reconcile()
     }
 
     pub fn discover_over_backend(&mut self) -> Result<(), DiscoveryError> {
-        self.discover_remote()?;
+        self.backend_discovery()?;
         self.reconcile()
     }
 
@@ -185,15 +185,15 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     }
 
     /// Updates the locally offerred services..
-    fn discover_local(&mut self) -> Result<(), DiscoveryError> {
-        match &self.local_discovery {
-            LocalDiscoveryStrategy::Subscriber(_) => self.discover_over_subscriber(),
-            LocalDiscoveryStrategy::Tracker(_) => self.discover_over_tracker(),
+    fn iceoryx_discovery(&mut self) -> Result<(), DiscoveryError> {
+        match &self.discovery_strategy {
+            LocalDiscoveryStrategy::Subscriber(_) => self.subscriber_discovery(),
+            LocalDiscoveryStrategy::Tracker(_) => self.tracker_discovery(),
         }
     }
 
     /// Updates the remotely offerred services.
-    fn discover_remote(&mut self) -> Result<(), DiscoveryError> {
+    fn backend_discovery(&mut self) -> Result<(), DiscoveryError> {
         let origin = format!("Tunnel({})::discover_remote", self.node.id());
 
         let node = &self.node;
@@ -204,7 +204,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         fail!(
             from origin,
             when backend.discovery().discover(|event| {
-                apply_discovery::<S, B>(
+                on_discovery_event::<S, B>(
                     node,
                     backend,
                     discovery_state,
@@ -221,10 +221,10 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
 
     /// Subscriber-mode local discovery: events from the discovery service
     /// describe local additions and removals.
-    fn discover_over_subscriber(&mut self) -> Result<(), DiscoveryError> {
+    fn subscriber_discovery(&mut self) -> Result<(), DiscoveryError> {
         let origin = format!("Tunnel({})::discover_over_subscriber", self.node.id());
 
-        let LocalDiscoveryStrategy::Subscriber(subscriber) = &self.local_discovery else {
+        let LocalDiscoveryStrategy::Subscriber(subscriber) = &self.discovery_strategy else {
             panic!("Should never happen. Discovery strategy enforced in discover().");
         };
 
@@ -236,7 +236,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         fail!(
             from origin,
             when subscriber.discover(|event| {
-                apply_discovery::<S, B>(
+                on_discovery_event::<S, B>(
                     node,
                     backend,
                     discovery_state,
@@ -254,10 +254,10 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     /// Tracker-mode local discovery: refresh the local registry snapshot, then
     /// bring the locally-offered set in line with it. A service is considered
     /// locally offered when at least one non-tunnel, non-dead node offers it.
-    fn discover_over_tracker(&mut self) -> Result<(), DiscoveryError> {
+    fn tracker_discovery(&mut self) -> Result<(), DiscoveryError> {
         let origin = format!("Tunnel({})::discover_over_tracker", self.node.id());
 
-        let LocalDiscoveryStrategy::Tracker(tracker) = &mut self.local_discovery else {
+        let LocalDiscoveryStrategy::Tracker(tracker) = &mut self.discovery_strategy else {
             panic!("Should never happen. Discovery strategy enforced in discover().");
         };
 
@@ -274,9 +274,8 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         let services_filter = &self.services_filter;
         let discovery_state = &mut self.discovery_state;
 
-        // Reconcile the locally-offered set against the tracker snapshot:
-        // services offered by some non-tunnel node and admitted by the filters.
-        discovery_state.reconcile_update(
+        // Force the discovery local state to match the tracker snapshot.
+        discovery_state.force_update(
             Origin::Local,
             tracker
                 .iter()
@@ -331,9 +330,9 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     }
 }
 
-/// Applies a discovery event from `origin` to the offering snapshots and
+/// Processes a discovery event from `origin` to the offering snapshots and
 /// announces local-side 0 → 1 and 1 → 0 transitions.
-fn apply_discovery<S: Service, B: Backend<S>>(
+fn on_discovery_event<S: Service, B: Backend<S>>(
     node: &Node<S>,
     backend: &B,
     discovery_state: &mut DiscoveryState,
@@ -347,9 +346,7 @@ fn apply_discovery<S: Service, B: Backend<S>>(
                 return Ok(());
             }
 
-            // Announce on local 0 → 1 transitions, then record this side as
-            // offering. Announcing first keeps `static_config` available for the
-            // announcement before it is moved into the snapshot.
+            // Mark this side as offered; announce on local 0 → 1 transitions.
             let hash = *static_config.service_hash();
             let offered_locally =
                 origin == Origin::Local && discovery_state.is_offered_by(origin, &hash);
