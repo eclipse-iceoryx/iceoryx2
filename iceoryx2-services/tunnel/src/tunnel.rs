@@ -142,21 +142,66 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     }
 
     pub fn discover(&mut self) -> Result<(), DiscoveryError> {
-        self.discover_over_iceoryx()?;
-        self.discover_over_backend()?;
+        self.discover_local()?;
+        self.discover_remote()?;
+        self.reconcile()
+    }
+
+    pub fn discover_over_iceoryx(&mut self) -> Result<(), DiscoveryError> {
+        self.discover_local()?;
+        self.reconcile()
+    }
+
+    pub fn discover_over_backend(&mut self) -> Result<(), DiscoveryError> {
+        self.discover_remote()?;
+        self.reconcile()
+    }
+
+    pub fn propagate(&mut self) -> Result<(), PropagateError> {
+        // Ensure open bridges are in sync with discovery state. Debug only.
+        debug_assert!(
+            self.bridges.len() == self.discovery_state.snapshot().iter().count()
+                && self
+                    .discovery_state
+                    .snapshot()
+                    .iter()
+                    .all(|(hash, _)| self.bridges.contains_key(hash)),
+            "bridges out of sync with desired services — a discovery path skipped reconcile"
+        );
+
+        for bridge in self.bridges.values() {
+            bridge.propagate(self.node.id())?;
+        }
 
         Ok(())
     }
 
-    pub fn discover_over_iceoryx(&mut self) -> Result<(), DiscoveryError> {
+    pub fn tunneled_services(&self) -> BTreeSet<ServiceHash> {
+        // Ensure open bridges are in sync with discovery state. Debug only.
+        debug_assert!(
+            self.bridges.len() == self.discovery_state.snapshot().iter().count()
+                && self
+                    .discovery_state
+                    .snapshot()
+                    .iter()
+                    .all(|(hash, _)| self.bridges.contains_key(hash)),
+            "bridges out of sync with desired services — a discovery path skipped reconcile"
+        );
+
+        self.bridges.keys().cloned().collect()
+    }
+
+    /// Updates the locally offerred services..
+    fn discover_local(&mut self) -> Result<(), DiscoveryError> {
         match &self.local_discovery {
             LocalDiscoveryStrategy::Subscriber(_) => self.discover_over_subscriber(),
             LocalDiscoveryStrategy::Tracker(_) => self.discover_over_tracker(),
         }
     }
 
-    pub fn discover_over_backend(&mut self) -> Result<(), DiscoveryError> {
-        let origin = format!("Tunnel({})::discover_over_backend", self.node.id());
+    /// Updates the remotely offerred services.
+    fn discover_remote(&mut self) -> Result<(), DiscoveryError> {
+        let origin = format!("Tunnel({})::discover_remote", self.node.id());
 
         let mut events: Vec<DiscoveryEvent> = Vec::new();
         fail!(
@@ -170,21 +215,9 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         );
 
         for event in events {
-            self.process_discovery(event, Origin::Remote)?;
+            self.apply_discovery(event, Origin::Remote)?;
         }
         Ok(())
-    }
-
-    pub fn propagate(&mut self) -> Result<(), PropagateError> {
-        for bridge in self.bridges.values() {
-            bridge.propagate(self.node.id())?;
-        }
-
-        Ok(())
-    }
-
-    pub fn tunneled_services(&self) -> BTreeSet<ServiceHash> {
-        self.bridges.keys().cloned().collect()
     }
 
     /// Subscriber-mode local discovery: events from the discovery service
@@ -207,7 +240,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         );
 
         for event in events {
-            self.process_discovery(event, Origin::Local)?;
+            self.apply_discovery(event, Origin::Local)?;
         }
         Ok(())
     }
@@ -280,22 +313,20 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         }
 
         for event in events {
-            self.process_discovery(event, Origin::Local)?;
+            self.apply_discovery(event, Origin::Local)?;
         }
         Ok(())
     }
 
-    /// Processes a discovery event from `origin`, advancing per-service state.
-    ///
-    /// Opens the mirror on first observation, announces over the backend on
-    /// local-side 0 → 1 and 1 → 0 transitions, and tears the mirror down once
-    /// neither side is offering.
-    fn process_discovery(
+    /// Applies a discovery event from `origin` to the offering snapshots and
+    /// announces local-side 0 → 1 and 1 → 0 transitions. Does not touch
+    /// bridges — that is [`reconcile`](Self::reconcile)'s job.
+    fn apply_discovery(
         &mut self,
         event: DiscoveryEvent,
         origin: Origin,
     ) -> Result<(), DiscoveryError> {
-        let log_origin = format!("Tunnel({})::process_discovery", self.node.id());
+        let log_origin = format!("Tunnel({})::apply_discovery", self.node.id());
 
         match event {
             DiscoveryEvent::Added(static_config) => {
@@ -315,7 +346,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
                 if let Some(allowlist) = &self.services_filter {
                     if !allowlist.contains(static_config.name().as_str()) {
                         debug!(
-                            from "Tunnel::process_discovery",
+                            from log_origin,
                             "Skipping {}({}): not in services allowlist",
                             static_config.messaging_pattern(),
                             static_config.name()
@@ -325,20 +356,6 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
                 }
 
                 let hash = *static_config.service_hash();
-
-                // If no bridge exists yet, open one on first observation.
-                if !self.bridges.contains_key(&hash) {
-                    info!(
-                        from log_origin,
-                        "Opening bridge ({:?}): {}({})",
-                        origin,
-                        static_config.messaging_pattern(),
-                        static_config.name()
-                    );
-
-                    let bridge = Bridge::open(&self.node, &self.backend, &static_config)?;
-                    self.bridges.insert(hash, bridge);
-                }
 
                 // Announce on local 0 → 1 transitions, then record this side as
                 // offering. Announcing first keeps `static_config` available for
@@ -351,15 +368,6 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
                 self.discovery_state.set_offered(origin, static_config);
             }
             DiscoveryEvent::Removed(hash) => {
-                if !self.bridges.contains_key(&hash) {
-                    debug!(
-                        from log_origin,
-                        "Ignoring Removed for untracked service: {}",
-                        hash.as_str()
-                    );
-                    return Ok(());
-                }
-
                 // Mark this side as not offered; announce on local 1 → 0 transitions.
                 let removed_config = self.discovery_state.set_not_offered(origin, &hash);
                 if origin == Origin::Local {
@@ -367,28 +375,53 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
                         self.announce_removed(static_config)?;
                     }
                 }
-
-                // If no side is offering anymore, close the bridge.
-                if !self.discovery_state.is_offered(&hash) {
-                    if let Some(static_config) = &removed_config {
-                        info!(
-                            from log_origin,
-                            "Closing bridge ({:?}): {}({})",
-                            origin,
-                            static_config.messaging_pattern(),
-                            static_config.name()
-                        );
-                    }
-                    self.bridges.remove(&hash);
-
-                    // Drop the tracker's cached snapshot so a same-hash service
-                    // recreated by a another node reappears as a fresh `added` on the
-                    // next sync.
-                    if let LocalDiscoveryStrategy::Tracker(tracker) = &self.local_discovery {
-                        tracker.forget(&hash);
-                    }
-                }
             }
+        }
+
+        Ok(())
+    }
+
+    /// Reconciles the opened bridges with the discovery snapshot.
+    fn reconcile(&mut self) -> Result<(), DiscoveryError> {
+        let log_origin = format!("Tunnel({})::reconcile", self.node.id());
+
+        // Close bridges no longer offered by any side.
+        let snapshot = self.discovery_state.snapshot();
+        let stale: Vec<ServiceHash> = self
+            .bridges
+            .keys()
+            .filter(|hash| !snapshot.contains(hash))
+            .cloned()
+            .collect();
+        for hash in stale {
+            info!(from log_origin, "Closing bridge: {}", hash.as_str());
+            self.bridges.remove(&hash);
+
+            // Drop the tracker's cached snapshot so a same-hash service recreated
+            // by another node reappears as a fresh `added` on the next sync.
+            if let LocalDiscoveryStrategy::Tracker(tracker) = &self.local_discovery {
+                tracker.forget(&hash);
+            }
+        }
+
+        // Open bridges for newly-offered services.
+        let missing: Vec<StaticConfig> = self
+            .discovery_state
+            .snapshot()
+            .iter()
+            .filter(|&(hash, _)| !self.bridges.contains_key(hash))
+            .map(|(_, static_config)| static_config.clone())
+            .collect();
+        for static_config in missing {
+            let hash = *static_config.service_hash();
+            info!(
+                from log_origin,
+                "Opening bridge: {}({})",
+                static_config.messaging_pattern(),
+                static_config.name()
+            );
+            let bridge = Bridge::open(&self.node, &self.backend, &static_config)?;
+            self.bridges.insert(hash, bridge);
         }
 
         Ok(())
