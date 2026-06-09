@@ -15,6 +15,8 @@
 #include "iox2/bb/into.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/messaging_pattern.hpp"
+#include "iox2/node_failure_enums.hpp"
 
 namespace iox2 {
 template <ServiceType T>
@@ -99,10 +101,10 @@ auto Node<T>::list(ConfigView config, const iox2::bb::StaticFunction<CallbackPro
 }
 
 template <ServiceType T>
-auto Node<T>::try_cleanup_dead_nodes(ConfigView config) -> CleanupState {
+auto Node<T>::try_cleanup_dead_nodes() -> CleanupState {
     iox2_cleanup_state_t cleanup_state {};
 
-    iox2_node_try_cleanup_dead_nodes(iox2::bb::into<iox2_service_type_e>(T), config.m_ptr, &cleanup_state);
+    iox2_node_try_cleanup_dead_nodes(&m_handle, &cleanup_state);
 
     CleanupState ret_val {};
     ret_val.cleanups = cleanup_state.cleanups;
@@ -111,19 +113,29 @@ auto Node<T>::try_cleanup_dead_nodes(ConfigView config) -> CleanupState {
 }
 
 template <ServiceType T>
-auto Node<T>::blocking_cleanup_dead_nodes(ConfigView config, iox2::bb::Duration timeout) -> CleanupState {
+auto Node<T>::blocking_cleanup_dead_nodes(iox2::bb::Duration timeout) -> CleanupState {
     iox2_cleanup_state_t cleanup_state {};
 
-    iox2_node_blocking_cleanup_dead_nodes(iox2::bb::into<iox2_service_type_e>(T),
-                                          config.m_ptr,
-                                          &cleanup_state,
-                                          timeout.as_secs(),
-                                          timeout.subsec_nanos());
+    iox2_node_blocking_cleanup_dead_nodes(&m_handle, &cleanup_state, timeout.as_secs(), timeout.subsec_nanos());
 
     CleanupState ret_val {};
     ret_val.cleanups = cleanup_state.cleanups;
     ret_val.failed_cleanups = cleanup_state.failed_cleanups;
     return ret_val;
+}
+
+template <ServiceType T>
+auto Node<T>::force_remove_service(const iox2::ServiceName& name, const iox2::MessagingPattern messaging_pattern) const
+    -> iox2::bb::Expected<bool, ServiceRemoveError> {
+    auto service_removed = false;
+    auto result = iox2_node_force_remove_service(
+        &m_handle, name.as_view().m_ptr, iox2::bb::into<iox2_messaging_pattern_e>(messaging_pattern), &service_removed);
+
+    if (result == IOX2_OK) {
+        return service_removed;
+    }
+
+    return iox2::bb::err(iox2::bb::into<ServiceRemoveError>(static_cast<iox2_service_remove_error_e>(result)));
 }
 
 template <ServiceType T>

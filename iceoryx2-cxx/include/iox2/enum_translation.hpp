@@ -2782,6 +2782,25 @@ constexpr auto from<iox2::BackpressureAction, iox2_backpressure_action_e>(const 
     IOX2_UNREACHABLE();
 }
 
+template <>
+constexpr auto
+from<iox2_service_remove_error_e, iox2::ServiceRemoveError>(const iox2_service_remove_error_e value) noexcept
+    -> iox2::ServiceRemoveError {
+    switch (value) {
+    case iox2_service_remove_error_e_INTERNAL_ERROR:
+        return iox2::ServiceRemoveError::InternalError;
+    case iox2_service_remove_error_e_INSUFFICIENT_PERMISSIONS:
+        return iox2::ServiceRemoveError::InsufficientPermissions;
+    case iox2_service_remove_error_e_VERSION_MISMATCH:
+        return iox2::ServiceRemoveError::VersionMismatch;
+    case iox2_service_remove_error_e_INTERRUPT:
+        return iox2::ServiceRemoveError::Interrupt;
+    }
+
+    IOX2_UNREACHABLE();
+}
+
+
 } // namespace bb
 } // namespace iox2
 

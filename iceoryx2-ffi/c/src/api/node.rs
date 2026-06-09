@@ -18,11 +18,13 @@ use crate::api::{
     iox2_callback_context, iox2_callback_progression_e, iox2_config_ptr, iox2_node_name_ptr,
     iox2_service_builder_h, iox2_service_builder_t, iox2_service_name_ptr, iox2_service_type_e,
 };
+use crate::iox2_messaging_pattern_e;
 
 use iceoryx2::node::{
     DeadNodeView, NodeCleanupFailure, NodeDetails, NodeListFailure, NodeView, NodeWaitFailure,
 };
 use iceoryx2::prelude::*;
+use iceoryx2::service::ServiceRemoveError;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
@@ -61,6 +63,32 @@ impl IntoCInt for NodeListFailure {
             }
             NodeListFailure::Interrupt => iox2_node_list_failure_e::INTERRUPT,
             NodeListFailure::InternalError => iox2_node_list_failure_e::INTERNAL_ERROR,
+        }) as c_int
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, CStrRepr)]
+pub enum iox2_service_remove_error_e {
+    /// Service could not be removed due to insufficient permissions.
+    INSUFFICIENT_PERMISSIONS = IOX2_OK as isize + 1,
+    /// The operation was interrupted by a signal
+    INTERRUPT,
+    /// The service was created with a different iceoryx2 version
+    VERSION_MISMATCH,
+    /// Service could not be removed due to an internal error.
+    INTERNAL_ERROR,
+}
+
+impl IntoCInt for ServiceRemoveError {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            ServiceRemoveError::InsufficientPermissions => {
+                iox2_service_remove_error_e::INSUFFICIENT_PERMISSIONS
+            }
+            ServiceRemoveError::InternalError => iox2_service_remove_error_e::INTERNAL_ERROR,
+            ServiceRemoveError::Interrupt => iox2_service_remove_error_e::INTERRUPT,
+            ServiceRemoveError::VersionMismatch => iox2_service_remove_error_e::INTERRUPT,
         }) as c_int
     }
 }
@@ -379,6 +407,54 @@ pub unsafe extern "C" fn iox2_unique_node_id(
     }
 }
 
+/// Removes a service by force. This shall be used if the
+/// resources could not be removed in a previous run and now it is no longer possible to
+/// open the service.
+///
+/// # Safety
+///
+/// * No other process shall use the service.
+/// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
+/// * The `service_name_ptr` is valid and non-null
+/// * The `service_removed` variable points to a valid bool
+///
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_node_force_remove_service(
+    node_handle: iox2_node_h_ref,
+    service_name_ptr: iox2_service_name_ptr,
+    messaging_pattern: iox2_messaging_pattern_e,
+    service_removed: *mut bool,
+) -> c_int {
+    node_handle.assert_non_null();
+    debug_assert!(!service_name_ptr.is_null());
+    debug_assert!(!service_removed.is_null());
+
+    unsafe {
+        let node = &mut *node_handle.as_type();
+
+        let result = match node.service_type {
+            iox2_service_type_e::IPC => node
+                .value
+                .as_ref()
+                .ipc
+                .force_remove_service(&*service_name_ptr, messaging_pattern.into()),
+            iox2_service_type_e::LOCAL => node
+                .value
+                .as_ref()
+                .local
+                .force_remove_service(&*service_name_ptr, messaging_pattern.into()),
+        };
+
+        match result {
+            Ok(value) => {
+                *service_removed = value;
+                IOX2_OK
+            }
+            Err(e) => e.into_c_int(),
+        }
+    }
+}
+
 /// Removes all stale resources of a dead node under a provided config. If another instance
 /// is already removing the stale resources it waits until the resources are cleaned up
 /// or the timeout has passed.
@@ -593,35 +669,30 @@ pub unsafe extern "C" fn iox2_node_list(
 /// If a node cannot be cleaned up since the process has insufficient permissions or it
 /// is currently being cleaned up by another process then the node is skipped.
 ///
-/// # Arguments
-///
-/// * `service_type` - A [`iox2_service_type_e`]
-/// * `config_ptr` - A valid [`iox2_config_ptr`]
-/// * `cleanup_state` - A valid pointer to a [`iox2_cleanup_state_t`]
-///
 /// # Safety
 ///
-/// * The `config_ptr` must be valid and obtained by ether [`iox2_node_config`] or [`iox2_config_global_config`](crate::iox2_config_global_config)!
-/// * The `cleanup_state` must be a valid pointer.
+/// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
+/// * `cleanup_state` - A valid pointer to a [`iox2_cleanup_state_t`]
 ///
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_node_try_cleanup_dead_nodes(
-    service_type: iox2_service_type_e,
-    config_ptr: iox2_config_ptr,
+    node_handle: iox2_node_h_ref,
     cleanup_state: *mut iox2_cleanup_state_t,
 ) {
-    debug_assert!(!config_ptr.is_null());
+    node_handle.assert_non_null();
     debug_assert!(!cleanup_state.is_null());
 
-    let config = unsafe { &*config_ptr };
+    unsafe {
+        let node = &mut *node_handle.as_type();
 
-    let result = match service_type {
-        iox2_service_type_e::IPC => Node::<crate::IpcService>::try_cleanup_dead_nodes(config),
-        iox2_service_type_e::LOCAL => Node::<crate::LocalService>::try_cleanup_dead_nodes(config),
-    };
+        let result = match node.service_type {
+            iox2_service_type_e::IPC => node.value.as_ref().ipc.try_cleanup_dead_nodes(),
+            iox2_service_type_e::LOCAL => node.value.as_ref().local.try_cleanup_dead_nodes(),
+        };
 
-    unsafe { (*cleanup_state).cleanups = result.cleanups };
-    unsafe { (*cleanup_state).failed_cleanups = result.failed_cleanups };
+        (*cleanup_state).cleanups = result.cleanups;
+        (*cleanup_state).failed_cleanups = result.failed_cleanups;
+    }
 }
 
 /// Removes the stale system resources of all dead nodes. The dead nodes are also
@@ -635,46 +706,46 @@ pub unsafe extern "C" fn iox2_node_try_cleanup_dead_nodes(
 ///
 /// # Arguments
 ///
-/// * `service_type` - A [`iox2_service_type_e`]
-/// * `config_ptr` - A valid [`iox2_config_ptr`](crate::iox2_config_ptr)
-/// * `cleanup_state` - A valid pointer to a [`iox2_cleanup_state_t`](crate::iox2_cleanup_state_t)
 /// * `timeout_secs` - The timeout second part
 /// * `timeout_nsecs` - The timeout nanosecond part
 ///
 /// # Safety
 ///
-/// * The `config_ptr` must be valid and obtained by ether [`iox2_node_config`] or [`iox2_config_global_config`](crate::iox2_config_global_config)!
-/// * The `cleanup_state` must be a valid pointer.
+/// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
+/// * `cleanup_state` - A valid pointer to a [`iox2_cleanup_state_t`]
 ///
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_node_blocking_cleanup_dead_nodes(
-    service_type: iox2_service_type_e,
-    config_ptr: iox2_config_ptr,
+    node_handle: iox2_node_h_ref,
     cleanup_state: *mut iox2_cleanup_state_t,
     timeout_secs: u64,
     timeout_nsecs: u32,
 ) {
-    debug_assert!(!config_ptr.is_null());
+    node_handle.assert_non_null();
     debug_assert!(!cleanup_state.is_null());
 
-    let config = unsafe { &*config_ptr };
-    let timeout = Duration::from_secs(timeout_secs) + Duration::from_nanos(timeout_nsecs as u64);
+    unsafe {
+        let node = &mut *node_handle.as_type();
 
-    let result = match service_type {
-        iox2_service_type_e::IPC => {
-            Node::<crate::IpcService>::blocking_cleanup_dead_nodes(config, timeout)
-        }
-        iox2_service_type_e::LOCAL => {
-            Node::<crate::LocalService>::blocking_cleanup_dead_nodes(config, timeout)
-        }
-    };
+        let timeout =
+            Duration::from_secs(timeout_secs) + Duration::from_nanos(timeout_nsecs as u64);
 
-    unsafe { (*cleanup_state).cleanups = result.cleanups };
-    unsafe { (*cleanup_state).failed_cleanups = result.failed_cleanups };
+        let result = match node.service_type {
+            iox2_service_type_e::IPC => {
+                node.value.as_ref().ipc.blocking_cleanup_dead_nodes(timeout)
+            }
+            iox2_service_type_e::LOCAL => node
+                .value
+                .as_ref()
+                .local
+                .blocking_cleanup_dead_nodes(timeout),
+        };
+
+        (*cleanup_state).cleanups = result.cleanups;
+        (*cleanup_state).failed_cleanups = result.failed_cleanups;
+    }
 }
 
-/// Instantiates a [`iox2_service_builder_h`] for a service with the provided name.
-///
 /// # Arguments
 ///
 /// * `node_handle` - Must be a valid [`iox2_node_h_ref`] obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)

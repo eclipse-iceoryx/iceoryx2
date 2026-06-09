@@ -21,6 +21,8 @@
 #include "iox2/cleanup_state.hpp"
 #include "iox2/config.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/messaging_pattern.hpp"
+#include "iox2/node_failure_enums.hpp"
 #include "iox2/node_name.hpp"
 #include "iox2/node_state.hpp"
 #include "iox2/node_wait_failure.hpp"
@@ -75,7 +77,7 @@ class Node {
     ///
     /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions or it
     /// is currently being cleaned up by another process then the [`Node`] is skipped.
-    static auto try_cleanup_dead_nodes(ConfigView config) -> CleanupState;
+    auto try_cleanup_dead_nodes() -> CleanupState;
 
     /// Removes the stale system resources of all dead [`Node`]s. The dead [`Node`]s are also
     /// removed from all registered [`Service`](crate::service::Service)s.
@@ -85,7 +87,18 @@ class Node {
     /// cleaner will wait until the timeout as either passed or the cleaned was finished.
     ///
     /// The timeout is applied to every individual dead [`Node`] the function needs to wait on.
-    static auto blocking_cleanup_dead_nodes(ConfigView config, iox2::bb::Duration timeout) -> CleanupState;
+    auto blocking_cleanup_dead_nodes(iox2::bb::Duration timeout) -> CleanupState;
+
+    /// Removes a [`Service`] by force. This shall be used if the
+    /// resources could not be removed in a previous run and now it is no longer possible to
+    /// open the service.
+    ///
+    /// # Safety
+    ///
+    ///  * No other process shall use the service.
+    ///
+    auto force_remove_service(const iox2::ServiceName& name, iox2::MessagingPattern messaging_pattern) const
+        -> iox2::bb::Expected<bool, ServiceRemoveError>;
 
   private:
     explicit Node(iox2_node_h handle);

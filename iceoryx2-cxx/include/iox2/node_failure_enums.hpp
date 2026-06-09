@@ -16,6 +16,19 @@
 #include <cstdint>
 
 namespace iox2 {
+/// Error that can be reported when removing a [`Node`](crate::node::Node).
+enum class ServiceRemoveError : uint8_t {
+    /// An interrupt signal was received
+    Interrupt,
+    /// The iceoryx2 version that created the [`Node`](crate::node::Node) does
+    /// not match this iceoryx2 version.
+    VersionMismatch,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
+    InternalError,
+    /// The process does not have the permissions to remove the service
+    InsufficientPermissions,
+};
+
 /// All failures that can occur in [`Node::list()`].
 enum class NodeListFailure : uint8_t {
     /// The process has insufficient permissions.

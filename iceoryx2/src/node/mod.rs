@@ -968,12 +968,52 @@ impl<Service: service::Service> Abandonable for SharedNodeState<Service> {
     }
 }
 
+impl<Service: service::Service> SharedNodeState<Service> {
+    pub(crate) fn blocking_cleanup_dead_nodes(&self, timeout: Duration) -> CleanupState {
+        let mut cleanup_state = CleanupState {
+            cleanups: 0,
+            failed_cleanups: 0,
+        };
+        let origin = format!(
+            "Node::<{}>::cleanup_dead_nodes()",
+            core::any::type_name::<Service>()
+        );
+
+        let cleanup_call = |node_state| {
+            if let NodeState::Dead(dead_node) = node_state {
+                let node_id = *dead_node.id();
+                debug!(from origin, "Dead node ({:?}) detected", node_id);
+                match dead_node.blocking_remove_stale_resources(timeout) {
+                    Ok(_) => {
+                        cleanup_state.cleanups += 1;
+                        trace!(from origin, "The dead node ({:?}) was successfully removed.", node_id)
+                    }
+                    Err(e) => {
+                        cleanup_state.failed_cleanups += 1;
+                        trace!(from origin, "Unable to remove dead node {:?} ({:?}).", node_id, e)
+                    }
+                }
+            }
+
+            CallbackProgression::Continue
+        };
+
+        match Node::<Service>::list(&self.details.config, cleanup_call) {
+            Ok(()) => cleanup_state,
+            Err(e) => {
+                debug!(from origin, "Unable to perform a full scan for dead nodes since the all existing nodes could not be listed ({:?}).", e);
+                cleanup_state
+            }
+        }
+    }
+}
+
 impl<Service: service::Service> Drop for SharedNodeState<Service> {
     fn drop(&mut self) {
         let config = self.details.config();
         if self.monitoring_token.get_mut().is_some() {
             if config.global.node.cleanup_dead_nodes_on_destruction {
-                Node::<Service>::try_cleanup_dead_nodes(config);
+                self.blocking_cleanup_dead_nodes(Duration::ZERO);
             }
 
             warn!(from self, when remove_node::<Service>(self.id, config),
@@ -1203,8 +1243,10 @@ impl<Service: service::Service> Node<Service> {
     ///
     /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions or it
     /// is currently being cleaned up by another process then the [`Node`] is skipped.
-    pub fn try_cleanup_dead_nodes(config: &Config) -> CleanupState {
-        Self::blocking_cleanup_dead_nodes(config, Duration::ZERO)
+    pub fn try_cleanup_dead_nodes(&self) -> CleanupState {
+        self.shared
+            .state
+            .blocking_cleanup_dead_nodes(Duration::ZERO)
     }
 
     /// Removes the stale system resources of all dead [`Node`]s. The dead [`Node`]s are also
@@ -1215,42 +1257,8 @@ impl<Service: service::Service> Node<Service> {
     /// cleaner will wait until the timeout as either passed or the cleaned was finished.
     ///
     /// The timeout is applied to every individual dead [`Node`] the function needs to wait on.
-    pub fn blocking_cleanup_dead_nodes(config: &Config, timeout: Duration) -> CleanupState {
-        let mut cleanup_state = CleanupState {
-            cleanups: 0,
-            failed_cleanups: 0,
-        };
-        let origin = format!(
-            "Node::<{}>::cleanup_dead_nodes()",
-            core::any::type_name::<Service>()
-        );
-
-        let cleanup_call = |node_state| {
-            if let NodeState::Dead(dead_node) = node_state {
-                let node_id = *dead_node.id();
-                debug!(from origin, "Dead node ({:?}) detected", node_id);
-                match dead_node.blocking_remove_stale_resources(timeout) {
-                    Ok(_) => {
-                        cleanup_state.cleanups += 1;
-                        trace!(from origin, "The dead node ({:?}) was successfully removed.", node_id)
-                    }
-                    Err(e) => {
-                        cleanup_state.failed_cleanups += 1;
-                        trace!(from origin, "Unable to remove dead node {:?} ({:?}).", node_id, e)
-                    }
-                }
-            }
-
-            CallbackProgression::Continue
-        };
-
-        match Node::<Service>::list(config, cleanup_call) {
-            Ok(()) => cleanup_state,
-            Err(e) => {
-                debug!(from origin, "Unable to perform a full scan for dead nodes since the all existing nodes could not be listed ({:?}).", e);
-                cleanup_state
-            }
-        }
+    pub fn blocking_cleanup_dead_nodes(&self, timeout: Duration) -> CleanupState {
+        self.shared.state.blocking_cleanup_dead_nodes(timeout)
     }
 
     /// Removes a [`Service`](crate::service::Service) by force. This shall be used if the
@@ -1564,10 +1572,6 @@ impl NodeBuilder {
             .config
             .as_ref()
             .unwrap_or_else(|| Config::global_config());
-        if config.global.node.cleanup_dead_nodes_on_creation {
-            Node::<Service>::try_cleanup_dead_nodes(config);
-        }
-
         let msg = "Unable to create node";
         let monitor_name = fatal_panic!(from self, when FileName::new(node_id.value().to_string().as_bytes()),
                                 "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
@@ -1575,17 +1579,21 @@ impl NodeBuilder {
             self.create_node_details_storage::<Service>(config, &node_id)?;
         let monitoring_token = self.create_token::<Service>(config, &monitor_name)?;
 
+        let state = Arc::new(SharedNodeState {
+            id: node_id,
+            monitoring_token: UnsafeCell::new(Some(monitoring_token)),
+            registered_services: RegisteredServices::new(),
+            details_storage,
+            signal_handling_mode: self.signal_handling_mode,
+            details,
+        });
+
+        if config.global.node.cleanup_dead_nodes_on_creation {
+            state.blocking_cleanup_dead_nodes(Duration::ZERO);
+        }
+
         let new_node = Node {
-            shared: SharedNode {
-                state: Arc::new(SharedNodeState {
-                    id: node_id,
-                    monitoring_token: UnsafeCell::new(Some(monitoring_token)),
-                    registered_services: RegisteredServices::new(),
-                    details_storage,
-                    signal_handling_mode: self.signal_handling_mode,
-                    details,
-                }),
-            },
+            shared: SharedNode { state },
         };
 
         trace!(from new_node, "created");

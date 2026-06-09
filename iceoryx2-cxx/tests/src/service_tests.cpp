@@ -11,7 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/attribute_specifier.hpp"
+#include "iox2/messaging_pattern.hpp"
 #include "iox2/node.hpp"
+#include "iox2/port_factory_publish_subscribe.hpp"
 #include "iox2/service.hpp"
 
 #include "test.hpp"
@@ -303,4 +305,28 @@ TYPED_TEST(ServiceTest, details_works) {
     ASSERT_THAT(result->has_value(), Eq(false));
 }
 //NOLINTEND(readability-function-cognitive-complexity)
+
+TYPED_TEST(ServiceTest, force_remove_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+
+
+    //NOLINTBEGIN(cppcoreguidelines-owning-memory), purposely leak service here since we want to test a forced service removal
+    new iox2::PortFactoryPublishSubscribe<SERVICE_TYPE, uint64_t, void>(
+        node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value());
+    //NOLINTEND(cppcoreguidelines-owning-memory)
+    ASSERT_TRUE(
+        Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::PublishSubscribe)
+            .value());
+
+    ASSERT_FALSE(node.force_remove_service(service_name, MessagingPattern::RequestResponse).value());
+    ASSERT_TRUE(node.force_remove_service(service_name, MessagingPattern::PublishSubscribe).value());
+
+    ASSERT_FALSE(
+        Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::PublishSubscribe)
+            .value());
+}
 } // namespace

@@ -40,13 +40,13 @@ impl Service {
             ServiceType::Ipc => Ok(crate::IpcService::does_exist(
                 &service_name.0,
                 &config.0.lock(),
-                messaging_pattern.clone().into(),
+                messaging_pattern.into(),
             )
             .map_err(|e| ServiceDetailsError::new_err(format!("{e:?}")))?),
             ServiceType::Local => Ok(crate::LocalService::does_exist(
                 &service_name.0,
                 &config.0.lock(),
-                messaging_pattern.clone().into(),
+                messaging_pattern.into(),
             )
             .map_err(|e| ServiceDetailsError::new_err(format!("{e:?}")))?),
         }

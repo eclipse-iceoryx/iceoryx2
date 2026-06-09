@@ -16,7 +16,8 @@ use crate::{
     cleanup_state::CleanupState,
     config::Config,
     duration::Duration,
-    error::{NodeListFailure, NodeWaitFailure},
+    error::{NodeListFailure, NodeWaitFailure, ServiceRemoveError},
+    messaging_pattern::MessagingPattern,
     node_name::NodeName,
     node_state::{AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState},
     parc::Parc,
@@ -166,28 +167,45 @@ impl Node {
         }
     }
 
-    #[staticmethod]
+    /// Removes a [`Service`](crate::service::Service) by force. This shall be used if the
+    /// resources could not be removed in a previous run and now it is no longer possible to
+    /// open the service.
+    ///
+    /// # Safety
+    ///
+    ///  * No other process shall use the service.
+    ///
+    pub fn force_remove_service(
+        &self,
+        name: &ServiceName,
+        messaging_pattern: &MessagingPattern,
+    ) -> PyResult<bool> {
+        match &*self.0.lock() {
+            NodeType::Ipc(node) => unsafe {
+                Ok(node
+                    .force_remove_service(&name.0, (*messaging_pattern).into())
+                    .map_err(|e| ServiceRemoveError::new_err(format!("{e:?}")))?)
+            },
+            NodeType::Local(node) => unsafe {
+                Ok(node
+                    .force_remove_service(&name.0, (*messaging_pattern).into())
+                    .map_err(|e| ServiceRemoveError::new_err(format!("{e:?}")))?)
+            },
+        }
+    }
+
     /// Removes the stale system resources of all dead `Node`s. The dead `Node`s are also
     /// removed from all registered `Service`s.
     ///
     /// If a `Node` cannot be cleaned up since the process has insufficient permissions then
     /// the `Node` is skipped.
-    pub fn try_cleanup_dead_nodes(service_type: &ServiceType, config: &Config) -> CleanupState {
-        match service_type {
-            ServiceType::Ipc => CleanupState(
-                iceoryx2::prelude::Node::<crate::IpcService>::try_cleanup_dead_nodes(
-                    &config.0.lock(),
-                ),
-            ),
-            ServiceType::Local => CleanupState(
-                iceoryx2::prelude::Node::<crate::LocalService>::try_cleanup_dead_nodes(
-                    &config.0.lock(),
-                ),
-            ),
+    pub fn try_cleanup_dead_nodes(&self) -> CleanupState {
+        match &*self.0.lock() {
+            NodeType::Ipc(node) => CleanupState(node.try_cleanup_dead_nodes()),
+            NodeType::Local(node) => CleanupState(node.try_cleanup_dead_nodes()),
         }
     }
 
-    #[staticmethod]
     /// Removes the stale system resources of all dead `Node`s. The dead `Node`s are also
     /// removed from all registered `Service`s.
     ///
@@ -196,24 +214,10 @@ impl Node {
     /// cleaner will wait until the timeout as either passed or the cleaned was finished.
     ///
     /// The timeout is applied to every individual dead `Node` the function needs to wait on.
-    pub fn blocking_cleanup_dead_nodes(
-        service_type: &ServiceType,
-        config: &Config,
-        timeout: &Duration,
-    ) -> CleanupState {
-        match service_type {
-            ServiceType::Ipc => CleanupState(
-                iceoryx2::prelude::Node::<crate::IpcService>::blocking_cleanup_dead_nodes(
-                    &config.0.lock(),
-                    timeout.0,
-                ),
-            ),
-            ServiceType::Local => CleanupState(
-                iceoryx2::prelude::Node::<crate::LocalService>::blocking_cleanup_dead_nodes(
-                    &config.0.lock(),
-                    timeout.0,
-                ),
-            ),
+    pub fn blocking_cleanup_dead_nodes(&self, timeout: &Duration) -> CleanupState {
+        match &*self.0.lock() {
+            NodeType::Ipc(node) => CleanupState(node.blocking_cleanup_dead_nodes(timeout.0)),
+            NodeType::Local(node) => CleanupState(node.blocking_cleanup_dead_nodes(timeout.0)),
         }
     }
 }
