@@ -133,13 +133,6 @@ impl<S: Service> Tracker<S> {
         Ok(())
     }
 
-    /// Removes a service from the tracker without waiting for it to
-    /// disappear from the system listing. Intended for callers that have
-    /// determined a service should logically be considered removed
-    pub fn forget(&mut self, id: &ServiceHash) -> Option<ServiceDetails<S>> {
-        self.services.remove(id).map(|e| e.details)
-    }
-
     /// Retrieves service details for a specific tracked service.
     pub fn get(&self, id: &ServiceHash) -> Option<&ServiceDetails<S>> {
         self.services.get(id).map(|e| &e.details)

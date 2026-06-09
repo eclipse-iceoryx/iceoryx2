@@ -18,18 +18,21 @@ use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 
+use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::node::{Node, NodeState, NodeView};
 use iceoryx2::service::Service;
+use iceoryx2::service::ServiceDetails;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
-use iceoryx2_log::{debug, fail, info};
+use iceoryx2_log::{fail, info};
 use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
 use iceoryx2_services_tunnel_backend::traits::{Backend, Discovery};
 
 use crate::bridge::Bridge;
 use crate::discovery::LocalDiscoveryStrategy;
 use crate::discovery::state::DiscoveryState;
+use crate::discovery::state::Origin;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -84,15 +87,6 @@ impl core::fmt::Display for PropagateError {
 }
 
 impl core::error::Error for PropagateError {}
-
-/// Side of the system that a discovery event refers to.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub(crate) enum Origin {
-    /// Service was discovered (or its absence detected) on the local iceoryx system.
-    Local,
-    /// Service was discovered (or its absence detected) over the backend.
-    Remote,
-}
 
 #[derive(Debug, Default, Clone)]
 pub struct Config {
@@ -257,84 +251,43 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         Ok(())
     }
 
-    /// Tracker-mode local discovery: sync against the local registry, then
-    /// derive `locally_offered` transitions from the snapshot. A service is
-    /// considered locally offered when at least one non-tunnel, non-dead node
-    /// is offering it.
+    /// Tracker-mode local discovery: refresh the local registry snapshot, then
+    /// bring the locally-offered set in line with it. A service is considered
+    /// locally offered when at least one non-tunnel, non-dead node offers it.
     fn discover_over_tracker(&mut self) -> Result<(), DiscoveryError> {
         let origin = format!("Tunnel({})::discover_over_tracker", self.node.id());
 
-        // Allocation here is not ideal, especially for embedded, but
-        // side-stepping this adds complexity to the logic to satisfy borrowing
-        // or a bigger refactoring is needed.
-        // Consider refactoring if it becomes an issue.
-        let mut events: Vec<DiscoveryEvent> = Vec::new();
-        {
-            let LocalDiscoveryStrategy::Tracker(tracker) = &self.local_discovery else {
-                panic!("Should never happen. Discovery strategy enforced in discover().");
-            };
+        let LocalDiscoveryStrategy::Tracker(tracker) = &mut self.local_discovery else {
+            panic!("Should never happen. Discovery strategy enforced in discover().");
+        };
 
-            // Helper to determine whether any node other than the tunnel
-            // is currently offering a particular service. Also true when
-            // no live offerer exists at all (empty node list, all-dead).
-            // Required to detect when services are logically added/removed
-            // from the tunnel's perspective.
-            let no_other_nodes_offering = |hash: &ServiceHash| -> bool {
-                tracker.get(hash, |service_details| {
-                    service_details
-                        .and_then(|d| d.dynamic_details.as_ref())
-                        .map(|d| {
-                            !d.nodes.iter().any(|node| match node {
-                                NodeState::Alive(view) => view.id() != self.node.id(),
-                                NodeState::Inaccessible(id) | NodeState::Undefined(id) => {
-                                    id != self.node.id()
-                                }
-                                NodeState::Dead(_) => false,
-                            })
-                        })
-                        .unwrap_or(true)
+        // Refresh the tracker's view of the system.
+        fail!(
+            from origin,
+            when tracker.sync(),
+            with DiscoveryError::DiscoveryOverTracker,
+            "Failed to refresh discovery tracker"
+        );
+
+        let node = &self.node;
+        let backend = &self.backend;
+        let services_filter = &self.services_filter;
+        let discovery_state = &mut self.discovery_state;
+
+        // Reconcile the locally-offered set against the tracker snapshot:
+        // services offered by some non-tunnel node and admitted by the filters.
+        discovery_state.reconcile_update(
+            Origin::Local,
+            tracker
+                .iter()
+                .filter(|details| {
+                    is_locally_offered(details, node.id())
+                        && allowed(&details.static_details, services_filter)
                 })
-            };
-
-            // For a service to be processed as 'added' by the tunnel:
-            // * The tracker must detect the service as newly added
-            // * The newly added service must be held by a node other than
-            //   the tunnel
-            fail!(
-                from origin,
-                when tracker.sync(|event| {
-                    if let DiscoveryEvent::Added(static_config) = &event {
-                        if no_other_nodes_offering(static_config.service_hash()) {
-                            return;
-                        }
-                    }
-                    events.push(event);
-                }),
-                with DiscoveryError::DiscoveryOverTracker,
-                "Failed to synchronize discovery tracker"
-            );
-
-            // For a service to be processed as 'removed' by the tunnel:
-            // * The service was previously locally offered
-            // * No node other than the tunnel is currently offering it
-            for hash in self.discovery_state.locally_offered() {
-                if no_other_nodes_offering(hash) {
-                    events.push(DiscoveryEvent::Removed(*hash));
-                }
-            }
-        }
-
-        for event in events {
-            apply_discovery::<S, B>(
-                &self.node,
-                &self.backend,
-                &mut self.discovery_state,
-                &self.services_filter,
-                event,
-                Origin::Local,
-            )?;
-        }
-        Ok(())
+                .map(|details| &details.static_details),
+            |config| announce_added::<S, B>(node, backend, config),
+            |config| announce_removed::<S, B>(node, backend, config),
+        )
     }
 
     /// Reconciles the opened bridges with the discovery snapshot.
@@ -352,12 +305,6 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         for hash in stale {
             info!(from log_origin, "Closing bridge: {}", hash.as_str());
             self.bridges.remove(&hash);
-
-            // Drop the tracker's cached snapshot so a same-hash service recreated
-            // by another node reappears as a fresh `added` on the next sync.
-            if let LocalDiscoveryStrategy::Tracker(tracker) = &self.local_discovery {
-                tracker.forget(&hash);
-            }
         }
 
         // Open bridges for newly-offered services.
@@ -394,50 +341,28 @@ fn apply_discovery<S: Service, B: Backend<S>>(
     event: DiscoveryEvent,
     origin: Origin,
 ) -> Result<(), DiscoveryError> {
-    let log_origin = format!("Tunnel({})::apply_discovery", node.id());
-
     match event {
         DiscoveryEvent::Added(static_config) => {
-            if !matches!(
-                static_config.messaging_pattern(),
-                MessagingPattern::PublishSubscribe(_) | MessagingPattern::Event(_)
-            ) {
-                debug!(
-                    from log_origin,
-                    "Skipping unsupported messaging pattern: {}({})",
-                    static_config.messaging_pattern(),
-                    static_config.name()
-                );
+            if !allowed(&static_config, services_filter) {
                 return Ok(());
             }
-
-            if let Some(allowlist) = services_filter {
-                if !allowlist.contains(static_config.name().as_str()) {
-                    debug!(
-                        from log_origin,
-                        "Skipping {}({}): not in services allowlist",
-                        static_config.messaging_pattern(),
-                        static_config.name()
-                    );
-                    return Ok(());
-                }
-            }
-
-            let hash = *static_config.service_hash();
 
             // Announce on local 0 → 1 transitions, then record this side as
             // offering. Announcing first keeps `static_config` available for the
             // announcement before it is moved into the snapshot.
-            let newly_offered_locally =
-                origin == Origin::Local && !discovery_state.is_offered_by(origin, &hash);
-            if newly_offered_locally {
+            let hash = *static_config.service_hash();
+            let offered_locally =
+                origin == Origin::Local && discovery_state.is_offered_by(origin, &hash);
+            if !offered_locally {
                 announce_added::<S, B>(node, backend, &static_config)?;
             }
-            discovery_state.set_offered(origin, static_config);
+            discovery_state
+                .delta_update(origin)
+                .set_offered(static_config);
         }
         DiscoveryEvent::Removed(hash) => {
             // Mark this side as not offered; announce on local 1 → 0 transitions.
-            let removed_config = discovery_state.set_not_offered(origin, &hash);
+            let removed_config = discovery_state.delta_update(origin).set_not_offered(&hash);
             if origin == Origin::Local {
                 if let Some(static_config) = &removed_config {
                     announce_removed::<S, B>(node, backend, static_config)?;
@@ -447,6 +372,21 @@ fn apply_discovery<S: Service, B: Backend<S>>(
     }
 
     Ok(())
+}
+
+/// Whether the tunnel should offer `static_config`: a supported messaging
+/// pattern (publish-subscribe or event) that passes the optional services
+/// allowlist.
+fn allowed(static_config: &StaticConfig, services_filter: &Option<BTreeSet<String>>) -> bool {
+    let supported_pattern = matches!(
+        static_config.messaging_pattern(),
+        MessagingPattern::PublishSubscribe(_) | MessagingPattern::Event(_)
+    );
+    let in_allowlist = match services_filter {
+        Some(allowlist) => allowlist.contains(static_config.name().as_str()),
+        None => true,
+    };
+    supported_pattern && in_allowlist
 }
 
 /// Broadcasts a service's availability to remote peers over the backend.
@@ -492,4 +432,18 @@ fn announce_removed<S: Service, B: Backend<S>>(
         "Failed to announce service removal over backend"
     );
     Ok(())
+}
+
+/// Whether `details` is offered by at least one live node other than the tunnel
+/// itself (`tunnel_node`). The tunnel's own mirror ports keep a service alive in
+/// the registry, so they must be excluded when deciding if a service is still
+/// locally offered.
+fn is_locally_offered<S: Service>(details: &ServiceDetails<S>, tunnel_node: &UniqueNodeId) -> bool {
+    details.dynamic_details.as_ref().is_some_and(|d| {
+        d.nodes.iter().any(|node| match node {
+            NodeState::Alive(view) => view.id() != tunnel_node,
+            NodeState::Inaccessible(id) | NodeState::Undefined(id) => id != tunnel_node,
+            NodeState::Dead(_) => false,
+        })
+    })
 }
