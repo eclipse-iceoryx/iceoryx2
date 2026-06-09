@@ -32,6 +32,7 @@
 * [#1695](https://github.com/eclipse-iceoryx/iceoryx2/issues/1695) Remove port_tag when stale resources of port are removed.
 * [#1699](https://github.com/eclipse-iceoryx/iceoryx2/issues/1699) Enforce synchronization with compare exchange in UnrestrictedAtomic, RobustUniqueIndexSet and Container.
 * [#1708](https://github.com/eclipse-iceoryx/iceoryx2/issues/1708) Remove `services` from tunnel conformance test crate to fix a linker error on macOS.
+* [#1724](https://github.com/eclipse-iceoryx/iceoryx2/issues/1724) Fix chunk leak when offset cannot be translated to dynamic data segment.
 
 ### Refactoring
 

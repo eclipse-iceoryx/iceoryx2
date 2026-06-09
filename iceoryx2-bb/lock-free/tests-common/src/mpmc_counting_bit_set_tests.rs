@@ -227,7 +227,7 @@ pub fn initializing_the_bitset_twice_causes_panic() {
     let _result = unsafe { sut.init(&allocator) };
 }
 
-#[cfg_attr(debug_assertions, test)]
+#[cfg(debug_assertions)]
 #[should_panic]
 #[test]
 pub fn access_without_initialization_causes_panic() {
