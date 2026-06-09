@@ -22,6 +22,9 @@ namespace iox2 {
 /// [`crate::service::Service`]
 class TypeDetail {
   public:
+    /// Creates a [`TypeDetail`] from runtime values.
+    TypeDetail(TypeVariant variant, const char* type_name, size_t size, size_t alignment);
+
     /// The [`TypeVariant`] of the type
     auto variant() const -> TypeVariant;
 

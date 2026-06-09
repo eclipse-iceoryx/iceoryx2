@@ -15,10 +15,13 @@
 
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/slice.hpp"
+#include "iox2/custom_payload_marker.hpp"
 #include "iox2/header_request_response.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/port_error.hpp"
 #include "iox2/service_type.hpp"
+
+#include <type_traits>
 
 namespace iox2 {
 
@@ -158,7 +161,15 @@ inline auto ResponseMut<Service, ResponsePayload, ResponseUserHeader>::payload()
     const void* ptr = nullptr;
     size_t number_of_elements = 0;
     iox2_response_mut_payload(&m_handle, &ptr, &number_of_elements);
-    return bb::ImmutableSlice<ValueType>(static_cast<const ValueType*>(ptr), number_of_elements);
+
+    // for the custom payload marker, the slice length is the
+    // runtime payload byte size
+    auto length = number_of_elements;
+    if (std::is_same<ValueType, CustomPayloadMarker>::value) {
+        length = iox2_response_mut_payload_number_of_bytes(&m_handle);
+    }
+
+    return bb::ImmutableSlice<ValueType>(static_cast<const ValueType*>(ptr), length);
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
@@ -176,7 +187,14 @@ inline auto ResponseMut<Service, ResponsePayload, ResponseUserHeader>::payload_m
     size_t number_of_elements = 0;
     iox2_response_mut_payload_mut(&m_handle, &ptr, &number_of_elements);
 
-    return bb::MutableSlice<ValueType>(static_cast<ValueType*>(ptr), number_of_elements);
+    // for the custom payload marker, the slice length is the
+    // runtime payload byte size
+    auto length = number_of_elements;
+    if (std::is_same<ValueType, CustomPayloadMarker>::value) {
+        length = iox2_response_mut_payload_number_of_bytes(&m_handle);
+    }
+
+    return bb::MutableSlice<ValueType>(static_cast<ValueType*>(ptr), length);
 }
 
 

@@ -418,6 +418,26 @@ pub unsafe extern "C" fn iox2_request_mut_payload(
     }
 }
 
+/// Returns the number of bytes of the request payload.
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_client_loan_slice_uninit()`](crate::iox2_client_loan_slice_uninit())
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_request_mut_payload_number_of_bytes(
+    handle: iox2_request_mut_h_ref,
+) -> c_size_t {
+    handle.assert_non_null();
+    unsafe {
+        let request = &mut *handle.as_type();
+        let number_of_bytes = match request.service_type {
+            iox2_service_type_e::IPC => request.value.as_mut().ipc.payload_mut().len(),
+            iox2_service_type_e::LOCAL => request.value.as_mut().local.payload_mut().len(),
+        };
+        number_of_bytes as c_size_t
+    }
+}
+
 /// Takes the ownership of the request and sends it
 ///
 /// # Safety

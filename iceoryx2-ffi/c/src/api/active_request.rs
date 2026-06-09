@@ -303,6 +303,26 @@ pub unsafe extern "C" fn iox2_active_request_payload(
     }
 }
 
+/// Returns the number of bytes of the received request payload.
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_server_receive()`](crate::iox2_server_receive())
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_active_request_payload_number_of_bytes(
+    handle: iox2_active_request_h_ref,
+) -> c_size_t {
+    handle.assert_non_null();
+    unsafe {
+        let active_request = &mut *handle.as_type();
+        let number_of_bytes = match active_request.service_type {
+            iox2_service_type_e::IPC => active_request.value.as_mut().ipc.payload().len(),
+            iox2_service_type_e::LOCAL => active_request.value.as_mut().local.payload().len(),
+        };
+        number_of_bytes as c_size_t
+    }
+}
+
 /// Loans memory from the servers data segment.
 ///
 /// # Arguments

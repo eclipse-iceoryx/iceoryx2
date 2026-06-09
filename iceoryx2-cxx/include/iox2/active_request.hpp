@@ -15,10 +15,13 @@
 
 #include "internal/helper.hpp"
 #include "iox2/bb/expected.hpp"
+#include "iox2/custom_payload_marker.hpp"
 #include "iox2/internal/helper.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/response_mut_uninit.hpp"
 #include "iox2/service_type.hpp"
+
+#include <type_traits>
 
 namespace iox2 {
 /// Represents a one-to-one connection to a [`Client`] holding the corresponding
@@ -255,7 +258,14 @@ ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, Respo
 
     iox2_active_request_payload(&m_handle, &ptr, &number_of_elements);
 
-    return bb::ImmutableSlice<ValueType>(static_cast<const ValueType*>(ptr), number_of_elements);
+    // for the custom payload marker, the slice length is the
+    // runtime payload byte size
+    auto length = number_of_elements;
+    if (std::is_same<ValueType, CustomPayloadMarker>::value) {
+        length = iox2_active_request_payload_number_of_bytes(&m_handle);
+    }
+
+    return bb::ImmutableSlice<ValueType>(static_cast<const ValueType*>(ptr), length);
 }
 
 template <ServiceType Service,

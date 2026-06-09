@@ -18,14 +18,102 @@
 #include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/layout.hpp"
+#include "iox2/bb/slice.hpp"
+#include "iox2/custom_header_marker.hpp"
+#include "iox2/custom_payload_marker.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/internal/service_builder_internal.hpp"
+#include "iox2/message_type_details.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/port_factory_request_response.hpp"
 #include "iox2/service_builder_request_response_error.hpp"
 #include "iox2/service_type.hpp"
+#include "iox2/type_name.hpp"
+#include "iox2/type_variant.hpp"
+
+#include <cstring>
+#include <type_traits>
 
 namespace iox2 {
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+class ServiceBuilderRequestResponse;
+
+/// Overrides the request user header type details with values provided at runtime instead of derived
+/// from the compile-time `RequestUserHeader`. Only available for `CustomHeaderMarker`.
+///
+/// # Safety
+///
+///  * It is preferred to let the type details be derived from the provided type; overriding them is
+///    only meant for advanced usage.
+///  * The provided [`TypeDetail`] must accurately describe the request user header type that is
+///    accessed at runtime; a mismatching size or alignment leads to undefined behavior.
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+auto set_request_header_type_details(
+    ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>& builder,
+    const TypeDetail& value) -> std::enable_if_t<std::is_same<RequestUserHeader, CustomHeaderMarker>::value>;
+
+/// Overrides the response user header type details with values provided at runtime instead of
+/// derived from the compile-time `ResponseUserHeader`. Only available for `CustomHeaderMarker`.
+///
+/// # Safety
+///
+///  * It is preferred to let the type details be derived from the provided type; overriding them is
+///    only meant for advanced usage.
+///  * The provided [`TypeDetail`] must accurately describe the response user header type that is
+///    accessed at runtime; a mismatching size or alignment leads to undefined behavior.
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+auto set_response_header_type_details(
+    ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>& builder,
+    const TypeDetail& value) -> std::enable_if_t<std::is_same<ResponseUserHeader, CustomHeaderMarker>::value>;
+
+/// Overrides the request payload type details with values provided at runtime instead of derived
+/// from the compile-time `RequestPayload`. Only available for `bb::Slice<CustomPayloadMarker>`.
+///
+/// # Safety
+///
+///  * It is preferred to let the type details be derived from the provided type; overriding them is
+///    only meant for advanced usage.
+///  * The provided [`TypeDetail`] must accurately describe the request payload type that is loaned,
+///    sent and received at runtime; a mismatching size or alignment leads to undefined behavior.
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+auto set_request_payload_type_details(
+    ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>& builder,
+    const TypeDetail& value) -> std::enable_if_t<std::is_same<RequestPayload, bb::Slice<CustomPayloadMarker>>::value>;
+
+/// Overrides the response payload type details with values provided at runtime instead of derived
+/// from the compile-time `ResponsePayload`. Only available for `bb::Slice<CustomPayloadMarker>`.
+///
+/// # Safety
+///
+///  * It is preferred to let the type details be derived from the provided type; overriding them is
+///    only meant for advanced usage.
+///  * The provided [`TypeDetail`] must accurately describe the response payload type that is loaned,
+///    sent and received at runtime; a mismatching size or alignment leads to undefined behavior.
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+auto set_response_payload_type_details(
+    ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>& builder,
+    const TypeDetail& value) -> std::enable_if_t<std::is_same<ResponsePayload, bb::Slice<CustomPayloadMarker>>::value>;
+
 template <typename RequestPayload,
           typename RequestUserHeader,
           typename ResponsePayload,
@@ -157,6 +245,15 @@ class ServiceBuilderRequestResponse {
                                                                     NewResponseUserHeader,
                                                                     S>&&;
 
+    /// Returns the builder as an r-value so the fluent chain can be resumed after a free function,
+    /// such as [`set_request_header_type_details()`] or [`set_request_payload_type_details()`], has
+    /// been applied to the named builder.
+    auto resume_build() & -> ServiceBuilderRequestResponse<RequestPayload,
+                                                           RequestUserHeader,
+                                                           ResponsePayload,
+                                                           ResponseUserHeader,
+                                                           S>&&;
+
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
     auto open_or_create() && -> bb::Expected<
@@ -198,11 +295,40 @@ class ServiceBuilderRequestResponse {
     template <ServiceType>
     friend class ServiceBuilder;
 
+    template <typename ReqP, typename ReqH, typename ResP, typename ResH, ServiceType St>
+    friend auto set_request_header_type_details(ServiceBuilderRequestResponse<ReqP, ReqH, ResP, ResH, St>& builder,
+                                                const TypeDetail& value)
+        -> std::enable_if_t<std::is_same<ReqH, CustomHeaderMarker>::value>;
+    template <typename ReqP, typename ReqH, typename ResP, typename ResH, ServiceType St>
+    friend auto set_response_header_type_details(ServiceBuilderRequestResponse<ReqP, ReqH, ResP, ResH, St>& builder,
+                                                 const TypeDetail& value)
+        -> std::enable_if_t<std::is_same<ResH, CustomHeaderMarker>::value>;
+    template <typename ReqP, typename ReqH, typename ResP, typename ResH, ServiceType St>
+    friend auto set_request_payload_type_details(ServiceBuilderRequestResponse<ReqP, ReqH, ResP, ResH, St>& builder,
+                                                 const TypeDetail& value)
+        -> std::enable_if_t<std::is_same<ReqP, bb::Slice<CustomPayloadMarker>>::value>;
+    template <typename ReqP, typename ReqH, typename ResP, typename ResH, ServiceType St>
+    friend auto set_response_payload_type_details(ServiceBuilderRequestResponse<ReqP, ReqH, ResP, ResH, St>& builder,
+                                                  const TypeDetail& value)
+        -> std::enable_if_t<std::is_same<ResP, bb::Slice<CustomPayloadMarker>>::value>;
+
     explicit ServiceBuilderRequestResponse(iox2_service_builder_h handle);
 
     void set_parameters();
+    void derive_request_header_type_details();
+    void override_request_header_type_details(const TypeDetail& value);
+    void derive_response_header_type_details();
+    void override_response_header_type_details(const TypeDetail& value);
+    void derive_request_payload_type_details();
+    void override_request_payload_type_details(const TypeDetail& value);
+    void derive_response_payload_type_details();
+    void override_response_payload_type_details(const TypeDetail& value);
 
     iox2_service_builder_request_response_h m_handle = nullptr;
+    bb::Optional<TypeDetail> m_request_header_type_details_override;
+    bb::Optional<TypeDetail> m_response_header_type_details_override;
+    bb::Optional<TypeDetail> m_request_payload_type_details_override;
+    bb::Optional<TypeDetail> m_response_payload_type_details_override;
 };
 
 template <typename RequestPayload,
@@ -247,6 +373,20 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
                                                         ResponsePayload,
                                                         NewResponseUserHeader,
                                                         S>*>(this));
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    resume_build() & -> ServiceBuilderRequestResponse<RequestPayload,
+                                                      RequestUserHeader,
+                                                      ResponsePayload,
+                                                      ResponseUserHeader,
+                                                      S>&& {
+    return std::move(*this);
 }
 
 template <typename RequestPayload,
@@ -445,83 +585,251 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
             &m_handle, m_enable_fire_and_forget_requests.value());
     }
 
-    // request payload type details
-    using RequestValueType = typename PayloadInfo<RequestPayload>::ValueType;
-    auto type_variant_request_payload =
-        bb::IsSlice<RequestPayload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
-
-    const auto request_payload_type_name = internal::get_type_name<RequestPayload>();
-    const auto request_payload_type_size = sizeof(RequestValueType);
-    const auto request_payload_type_align = alignof(RequestValueType);
-
-    const auto request_payload_result = iox2_service_builder_request_response_set_request_payload_type_details(
-        &m_handle,
-        type_variant_request_payload,
-        request_payload_type_name.unchecked_access().c_str(),
-        request_payload_type_name.size(),
-        request_payload_type_size,
-        request_payload_type_align);
-
-    if (request_payload_result != IOX2_OK) {
-        IOX2_PANIC("This should never happen! Implementation failure while setting the RequestPayload-Type.");
+    if (m_request_header_type_details_override.has_value()) {
+        override_request_header_type_details(m_request_header_type_details_override.value());
+    } else {
+        derive_request_header_type_details();
     }
 
-    // response payload type details
-    using ResponseValueType = typename PayloadInfo<ResponsePayload>::ValueType;
-    auto type_variant_response_payload =
-        bb::IsSlice<ResponsePayload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
-
-    const auto response_payload_type_name = internal::get_type_name<ResponsePayload>();
-    const auto response_payload_type_size = sizeof(ResponseValueType);
-    const auto response_payload_type_align = alignof(ResponseValueType);
-
-    const auto response_payload_result = iox2_service_builder_request_response_set_response_payload_type_details(
-        &m_handle,
-        type_variant_response_payload,
-        response_payload_type_name.unchecked_access().c_str(),
-        response_payload_type_name.size(),
-        response_payload_type_size,
-        response_payload_type_align);
-
-    if (response_payload_result != IOX2_OK) {
-        IOX2_PANIC("This should never happen! Implementation failure while setting the ResponsePayload-Type.");
+    if (m_response_header_type_details_override.has_value()) {
+        override_response_header_type_details(m_response_header_type_details_override.value());
+    } else {
+        derive_response_header_type_details();
     }
 
-    // request header type details
-    const auto request_header_layout = bb::Layout::from<RequestUserHeader>();
-    const auto request_header_type_name = internal::get_type_name<RequestUserHeader>();
-    const auto request_header_type_size = request_header_layout.size();
-    const auto request_header_type_align = request_header_layout.alignment();
+    if (m_request_payload_type_details_override.has_value()) {
+        override_request_payload_type_details(m_request_payload_type_details_override.value());
+    } else {
+        derive_request_payload_type_details();
+    }
 
-    const auto request_header_result = iox2_service_builder_request_response_set_request_header_type_details(
+    if (m_response_payload_type_details_override.has_value()) {
+        override_response_payload_type_details(m_response_payload_type_details_override.value());
+    } else {
+        derive_response_payload_type_details();
+    }
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    derive_request_header_type_details() {
+    // request header type details derived from the compile-time RequestUserHeader
+    const auto header_layout = bb::Layout::from<RequestUserHeader>();
+    const auto header_type_name = internal::get_type_name<RequestUserHeader>();
+
+    const auto result = iox2_service_builder_request_response_set_request_header_type_details(
         &m_handle,
         iox2_type_variant_e_FIXED_SIZE,
-        request_header_type_name.unchecked_access().c_str(),
-        request_header_type_name.size(),
-        request_header_type_size,
-        request_header_type_align);
+        header_type_name.unchecked_access().c_str(),
+        header_type_name.size(),
+        header_layout.size(),
+        header_layout.alignment());
 
-    if (request_header_result != IOX2_OK) {
+    if (result != IOX2_OK) {
         IOX2_PANIC("This should never happen! Implementation failure while setting the Request-Header-Type.");
     }
+}
 
-    // response header type details
-    const auto response_header_layout = bb::Layout::from<ResponseUserHeader>();
-    const auto response_header_type_name = internal::get_type_name<ResponseUserHeader>();
-    const auto response_header_type_size = response_header_layout.size();
-    const auto response_header_type_align = response_header_layout.alignment();
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    override_request_header_type_details(const TypeDetail& value) {
+    // request header type details provided at runtime
+    const auto type_variant =
+        value.variant() == TypeVariant::FixedSize ? iox2_type_variant_e_FIXED_SIZE : iox2_type_variant_e_DYNAMIC;
 
-    const auto response_header_result = iox2_service_builder_request_response_set_response_header_type_details(
+    const auto result = iox2_service_builder_request_response_set_request_header_type_details(
+        &m_handle, type_variant, value.type_name(), std::strlen(value.type_name()), value.size(), value.alignment());
+
+    if (result != IOX2_OK) {
+        IOX2_PANIC("This should never happen! Implementation failure while setting the Request-Header-Type.");
+    }
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    derive_response_header_type_details() {
+    // response header type details derived from the compile-time ResponseUserHeader
+    const auto header_layout = bb::Layout::from<ResponseUserHeader>();
+    const auto header_type_name = internal::get_type_name<ResponseUserHeader>();
+
+    const auto result = iox2_service_builder_request_response_set_response_header_type_details(
         &m_handle,
         iox2_type_variant_e_FIXED_SIZE,
-        response_header_type_name.unchecked_access().c_str(),
-        response_header_type_name.size(),
-        response_header_type_size,
-        response_header_type_align);
+        header_type_name.unchecked_access().c_str(),
+        header_type_name.size(),
+        header_layout.size(),
+        header_layout.alignment());
 
-    if (response_header_result != IOX2_OK) {
+    if (result != IOX2_OK) {
         IOX2_PANIC("This should never happen! Implementation failure while setting the Response-Header-Type.");
     }
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    override_response_header_type_details(const TypeDetail& value) {
+    // response header type details provided at runtime
+    const auto type_variant =
+        value.variant() == TypeVariant::FixedSize ? iox2_type_variant_e_FIXED_SIZE : iox2_type_variant_e_DYNAMIC;
+
+    const auto result = iox2_service_builder_request_response_set_response_header_type_details(
+        &m_handle, type_variant, value.type_name(), std::strlen(value.type_name()), value.size(), value.alignment());
+
+    if (result != IOX2_OK) {
+        IOX2_PANIC("This should never happen! Implementation failure while setting the Response-Header-Type.");
+    }
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    derive_request_payload_type_details() {
+    using ValueType = typename PayloadInfo<RequestPayload>::ValueType;
+
+    // request payload type details derived from the compile-time RequestPayload
+    const auto payload_type_name = internal::get_type_name<RequestPayload>();
+    const auto type_variant =
+        bb::IsSlice<RequestPayload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
+
+    const auto result = iox2_service_builder_request_response_set_request_payload_type_details(
+        &m_handle,
+        type_variant,
+        payload_type_name.unchecked_access().c_str(),
+        payload_type_name.size(),
+        sizeof(ValueType),
+        alignof(ValueType));
+
+    if (result != IOX2_OK) {
+        IOX2_PANIC("This should never happen! Implementation failure while setting the RequestPayload-Type.");
+    }
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    override_request_payload_type_details(const TypeDetail& value) {
+    // request payload type details provided at runtime
+    const auto type_variant =
+        value.variant() == TypeVariant::FixedSize ? iox2_type_variant_e_FIXED_SIZE : iox2_type_variant_e_DYNAMIC;
+
+    const auto result = iox2_service_builder_request_response_set_request_payload_type_details(
+        &m_handle, type_variant, value.type_name(), std::strlen(value.type_name()), value.size(), value.alignment());
+
+    if (result != IOX2_OK) {
+        IOX2_PANIC("This should never happen! Implementation failure while setting the RequestPayload-Type.");
+    }
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    derive_response_payload_type_details() {
+    using ValueType = typename PayloadInfo<ResponsePayload>::ValueType;
+
+    // response payload type details derived from the compile-time ResponsePayload
+    const auto payload_type_name = internal::get_type_name<ResponsePayload>();
+    const auto type_variant =
+        bb::IsSlice<ResponsePayload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
+
+    const auto result = iox2_service_builder_request_response_set_response_payload_type_details(
+        &m_handle,
+        type_variant,
+        payload_type_name.unchecked_access().c_str(),
+        payload_type_name.size(),
+        sizeof(ValueType),
+        alignof(ValueType));
+
+    if (result != IOX2_OK) {
+        IOX2_PANIC("This should never happen! Implementation failure while setting the ResponsePayload-Type.");
+    }
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    override_response_payload_type_details(const TypeDetail& value) {
+    // response payload type details provided at runtime
+    const auto type_variant =
+        value.variant() == TypeVariant::FixedSize ? iox2_type_variant_e_FIXED_SIZE : iox2_type_variant_e_DYNAMIC;
+
+    const auto result = iox2_service_builder_request_response_set_response_payload_type_details(
+        &m_handle, type_variant, value.type_name(), std::strlen(value.type_name()), value.size(), value.alignment());
+
+    if (result != IOX2_OK) {
+        IOX2_PANIC("This should never happen! Implementation failure while setting the ResponsePayload-Type.");
+    }
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+inline auto set_request_header_type_details(
+    ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>& builder,
+    const TypeDetail& value) -> std::enable_if_t<std::is_same<RequestUserHeader, CustomHeaderMarker>::value> {
+    builder.m_request_header_type_details_override = bb::Optional<TypeDetail>(value);
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+inline auto set_response_header_type_details(
+    ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>& builder,
+    const TypeDetail& value) -> std::enable_if_t<std::is_same<ResponseUserHeader, CustomHeaderMarker>::value> {
+    builder.m_response_header_type_details_override = bb::Optional<TypeDetail>(value);
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+inline auto set_request_payload_type_details(
+    ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>& builder,
+    const TypeDetail& value) -> std::enable_if_t<std::is_same<RequestPayload, bb::Slice<CustomPayloadMarker>>::value> {
+    builder.m_request_payload_type_details_override = bb::Optional<TypeDetail>(value);
+}
+
+template <typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader,
+          ServiceType S>
+inline auto set_response_payload_type_details(
+    ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>& builder,
+    const TypeDetail& value) -> std::enable_if_t<std::is_same<ResponsePayload, bb::Slice<CustomPayloadMarker>>::value> {
+    builder.m_response_payload_type_details_override = bb::Optional<TypeDetail>(value);
 }
 } // namespace iox2
 #endif

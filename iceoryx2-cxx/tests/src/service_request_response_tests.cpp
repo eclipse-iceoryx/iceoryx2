@@ -11,8 +11,12 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/bb/optional.hpp"
+#include "iox2/custom_header_marker.hpp"
+#include "iox2/custom_payload_marker.hpp"
+#include "iox2/message_type_details.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service.hpp"
+#include "iox2/type_variant.hpp"
 
 #include "test.hpp"
 #include <array>
@@ -2170,5 +2174,188 @@ TYPED_TEST(ServiceRequestResponseTest, client_can_request_graceful_disconnect) {
     ASSERT_FALSE(active_request.is_connected());
     ASSERT_FALSE(active_request.has_disconnect_hint());
 }
+
+TYPED_TEST(ServiceRequestResponseTest, custom_request_header_type_details_override_is_applied) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr const char* HEADER_TYPE_NAME = "MyHeader";
+    constexpr uint64_t HEADER_SIZE = 16;
+    constexpr uint64_t HEADER_ALIGNMENT = 8;
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_builder = node.service_builder(service_name)
+                               .template request_response<uint64_t, uint64_t>()
+                               .template request_user_header<CustomHeaderMarker>();
+    set_request_header_type_details(
+        service_builder, TypeDetail(TypeVariant::FixedSize, HEADER_TYPE_NAME, HEADER_SIZE, HEADER_ALIGNMENT));
+    auto service = service_builder.resume_build().create().value();
+
+    auto user_header = service.static_config().request_message_type_details().user_header();
+    ASSERT_THAT(user_header.variant(), Eq(TypeVariant::FixedSize));
+    ASSERT_THAT(user_header.type_name(), StrEq(HEADER_TYPE_NAME));
+    ASSERT_THAT(user_header.size(), Eq(HEADER_SIZE));
+    ASSERT_THAT(user_header.alignment(), Eq(HEADER_ALIGNMENT));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, custom_response_header_type_details_override_is_applied) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr const char* HEADER_TYPE_NAME = "MyHeader";
+    constexpr uint64_t HEADER_SIZE = 16;
+    constexpr uint64_t HEADER_ALIGNMENT = 8;
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_builder = node.service_builder(service_name)
+                               .template request_response<uint64_t, uint64_t>()
+                               .template response_user_header<CustomHeaderMarker>();
+    set_response_header_type_details(
+        service_builder, TypeDetail(TypeVariant::FixedSize, HEADER_TYPE_NAME, HEADER_SIZE, HEADER_ALIGNMENT));
+    auto service = service_builder.resume_build().create().value();
+
+    auto user_header = service.static_config().response_message_type_details().user_header();
+    ASSERT_THAT(user_header.variant(), Eq(TypeVariant::FixedSize));
+    ASSERT_THAT(user_header.type_name(), StrEq(HEADER_TYPE_NAME));
+    ASSERT_THAT(user_header.size(), Eq(HEADER_SIZE));
+    ASSERT_THAT(user_header.alignment(), Eq(HEADER_ALIGNMENT));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, custom_request_payload_type_details_override_is_applied) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr const char* PAYLOAD_TYPE_NAME = "MyType";
+    constexpr uint64_t PAYLOAD_SIZE = 12;
+    constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_builder =
+        node.service_builder(service_name).template request_response<bb::Slice<CustomPayloadMarker>, uint64_t>();
+    set_request_payload_type_details(
+        service_builder, TypeDetail(TypeVariant::FixedSize, PAYLOAD_TYPE_NAME, PAYLOAD_SIZE, PAYLOAD_ALIGNMENT));
+    auto service = service_builder.resume_build().create().value();
+
+    auto payload = service.static_config().request_message_type_details().payload();
+    ASSERT_THAT(payload.variant(), Eq(TypeVariant::FixedSize));
+    ASSERT_THAT(payload.type_name(), StrEq(PAYLOAD_TYPE_NAME));
+    ASSERT_THAT(payload.size(), Eq(PAYLOAD_SIZE));
+    ASSERT_THAT(payload.alignment(), Eq(PAYLOAD_ALIGNMENT));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, custom_response_payload_type_details_override_is_applied) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr const char* PAYLOAD_TYPE_NAME = "MyType";
+    constexpr uint64_t PAYLOAD_SIZE = 12;
+    constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_builder =
+        node.service_builder(service_name).template request_response<uint64_t, bb::Slice<CustomPayloadMarker>>();
+    set_response_payload_type_details(
+        service_builder, TypeDetail(TypeVariant::FixedSize, PAYLOAD_TYPE_NAME, PAYLOAD_SIZE, PAYLOAD_ALIGNMENT));
+    auto service = service_builder.resume_build().create().value();
+
+    auto payload = service.static_config().response_message_type_details().payload();
+    ASSERT_THAT(payload.variant(), Eq(TypeVariant::FixedSize));
+    ASSERT_THAT(payload.type_name(), StrEq(PAYLOAD_TYPE_NAME));
+    ASSERT_THAT(payload.size(), Eq(PAYLOAD_SIZE));
+    ASSERT_THAT(payload.alignment(), Eq(PAYLOAD_ALIGNMENT));
+}
+
+// NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
+TYPED_TEST(ServiceRequestResponseTest, custom_header_payload_marker_send_receive_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr const char* HEADER_TYPE_NAME = "MyHeader";
+    constexpr uint64_t HEADER_SIZE = 16;
+    constexpr uint64_t HEADER_ALIGNMENT = 8;
+    constexpr const char* PAYLOAD_TYPE_NAME = "MyType";
+    constexpr uint64_t PAYLOAD_SIZE = 16;
+    constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
+
+    constexpr uint8_t REQUEST_PAYLOAD_BASE_VALUE = 1;
+    constexpr uint8_t RESPONSE_PAYLOAD_BASE_VALUE = 50;
+    constexpr uint8_t REQUEST_HEADER_BASE_VALUE = 100;
+    constexpr uint8_t RESPONSE_HEADER_BASE_VALUE = 150;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service_builder =
+        node.service_builder(service_name)
+            .template request_response<bb::Slice<CustomPayloadMarker>, bb::Slice<CustomPayloadMarker>>()
+            .template request_user_header<CustomHeaderMarker>()
+            .template response_user_header<CustomHeaderMarker>();
+
+    set_request_header_type_details(
+        service_builder, TypeDetail(TypeVariant::FixedSize, HEADER_TYPE_NAME, HEADER_SIZE, HEADER_ALIGNMENT));
+    set_response_header_type_details(
+        service_builder, TypeDetail(TypeVariant::FixedSize, HEADER_TYPE_NAME, HEADER_SIZE, HEADER_ALIGNMENT));
+    set_request_payload_type_details(
+        service_builder, TypeDetail(TypeVariant::FixedSize, PAYLOAD_TYPE_NAME, PAYLOAD_SIZE, PAYLOAD_ALIGNMENT));
+    set_response_payload_type_details(
+        service_builder, TypeDetail(TypeVariant::FixedSize, PAYLOAD_TYPE_NAME, PAYLOAD_SIZE, PAYLOAD_ALIGNMENT));
+
+    auto service = service_builder.resume_build().create().value();
+
+    auto sut_client = service.client_builder().initial_max_slice_len(1).create().value();
+    auto sut_server = service.server_builder().initial_max_slice_len(1).create().value();
+
+    // Client: populate request payload and request header, then send.
+    auto request = sut_client.loan_slice_uninit(1).value();
+    auto request_payload = request.payload_mut();
+    ASSERT_THAT(request_payload.number_of_bytes(), Eq(PAYLOAD_SIZE));
+    for (uint64_t i = 0; i < PAYLOAD_SIZE; ++i) {
+        request_payload[i].value = static_cast<uint8_t>(REQUEST_PAYLOAD_BASE_VALUE + i);
+    }
+    auto& request_header = request.template user_header_mut<std::array<uint8_t, HEADER_SIZE>>();
+    for (uint64_t i = 0; i < HEADER_SIZE; ++i) {
+        request_header.at(i) = static_cast<uint8_t>(REQUEST_HEADER_BASE_VALUE + i);
+    }
+
+    auto pending_response = send(assume_init(std::move(request))).value();
+
+    // Server: verify the received request bytes, then populate response payload and header.
+    auto active_request_result = sut_server.receive().value();
+    ASSERT_TRUE(active_request_result.has_value());
+    auto active_request = std::move(active_request_result.value());
+
+    auto recv_request_payload = active_request.payload();
+    ASSERT_THAT(recv_request_payload.number_of_bytes(), Eq(PAYLOAD_SIZE));
+    for (uint64_t i = 0; i < PAYLOAD_SIZE; ++i) {
+        ASSERT_THAT(recv_request_payload[i].value, Eq(static_cast<uint8_t>(REQUEST_PAYLOAD_BASE_VALUE + i)));
+    }
+    const auto& recv_request_header = active_request.template user_header<std::array<uint8_t, HEADER_SIZE>>();
+    for (uint64_t i = 0; i < HEADER_SIZE; ++i) {
+        ASSERT_THAT(recv_request_header.at(i), Eq(static_cast<uint8_t>(REQUEST_HEADER_BASE_VALUE + i)));
+    }
+
+    auto response = active_request.loan_slice_uninit(1).value();
+    auto response_payload = response.payload_mut();
+    ASSERT_THAT(response_payload.number_of_bytes(), Eq(PAYLOAD_SIZE));
+    for (uint64_t i = 0; i < PAYLOAD_SIZE; ++i) {
+        response_payload[i].value = static_cast<uint8_t>(RESPONSE_PAYLOAD_BASE_VALUE + i);
+    }
+    auto& response_header = response.template user_header_mut<std::array<uint8_t, HEADER_SIZE>>();
+    for (uint64_t i = 0; i < HEADER_SIZE; ++i) {
+        response_header.at(i) = static_cast<uint8_t>(RESPONSE_HEADER_BASE_VALUE + i);
+    }
+
+    send(assume_init(std::move(response))).value();
+
+    // Client: verify the received response bytes.
+    auto recv_response_result = pending_response.receive().value();
+    ASSERT_TRUE(recv_response_result.has_value());
+    auto recv_response = std::move(recv_response_result.value());
+
+    auto recv_response_payload = recv_response.payload();
+    ASSERT_THAT(recv_response_payload.number_of_bytes(), Eq(PAYLOAD_SIZE));
+    for (uint64_t i = 0; i < PAYLOAD_SIZE; ++i) {
+        ASSERT_THAT(recv_response_payload[i].value, Eq(static_cast<uint8_t>(RESPONSE_PAYLOAD_BASE_VALUE + i)));
+    }
+    const auto& recv_response_header = recv_response.template user_header<std::array<uint8_t, HEADER_SIZE>>();
+    for (uint64_t i = 0; i < HEADER_SIZE; ++i) {
+        ASSERT_THAT(recv_response_header.at(i), Eq(static_cast<uint8_t>(RESPONSE_HEADER_BASE_VALUE + i)));
+    }
+}
+// NOLINTEND(readability-function-cognitive-complexity)
 
 } // namespace

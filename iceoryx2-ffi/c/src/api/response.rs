@@ -244,6 +244,26 @@ pub unsafe extern "C" fn iox2_response_payload(
     }
 }
 
+/// Returns the number of bytes of the response payload.
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_pending_response_receive()`](crate::iox2_pending_response_receive())
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_response_payload_number_of_bytes(
+    handle: iox2_response_h_ref,
+) -> c_size_t {
+    handle.assert_non_null();
+    unsafe {
+        let response = &mut *handle.as_type();
+        let number_of_bytes = match response.service_type {
+            iox2_service_type_e::IPC => response.value.as_mut().ipc.payload().len(),
+            iox2_service_type_e::LOCAL => response.value.as_mut().local.payload().len(),
+        };
+        number_of_bytes as c_size_t
+    }
+}
+
 /// Destroys the response.
 ///
 /// # Safety

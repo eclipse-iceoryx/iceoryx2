@@ -107,13 +107,13 @@ inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::hea
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
 inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::user_header() const -> const T& {
-    return m_response.user_header();
+    return m_response.template user_header<T>();
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
 inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::user_header_mut() -> T& {
-    return m_response.user_header_mut();
+    return m_response.template user_header_mut<T>();
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
