@@ -30,6 +30,7 @@
 * [#1690](https://github.com/eclipse-iceoryx/iceoryx2/issues/1690) Fix dependencies in iceoryx2-bb-loggers to re-enable `bazel query`.
 * [#1695](https://github.com/eclipse-iceoryx/iceoryx2/issues/1695) Remove port_tag when stale resources of port are removed.
 * [#1699](https://github.com/eclipse-iceoryx/iceoryx2/issues/1699) Enforce synchronization with compare exchange in UnrestrictedAtomic, RobustUniqueIndexSet and Container.
+* [#1708](https://github.com/eclipse-iceoryx/iceoryx2/issues/1708) Remove `services` from tunnel conformance test crate to fix a linker error on macOS.
 
 ### Refactoring
 
@@ -122,5 +123,27 @@
        coutln!("event {:?} was notified {} times", event.id, event.count);
    }, CYCLE_TIME)?;
    ```
+
+1. The tunnel conformance create name has been shortened.
+
+    ```rust
+    // old
+    instantiate_conformance_tests_with_module!(
+        ipc,
+        iceoryx2_services_tunnel_conformance_tests::publish_subscribe_discovery,
+        super::Ipc,
+        super::TestBackend<super::Ipc>,
+        super::Testing
+    );
+
+    // new
+    instantiate_conformance_tests_with_module!(
+        ipc,
+        iceoryx2_tunnel_conformance_tests::publish_subscribe_discovery,
+        super::Ipc,
+        super::TestBackend<super::Ipc>,
+        super::Testing
+    );
+    ```
 
 <!-- markdownlint-enable MD013 -->
