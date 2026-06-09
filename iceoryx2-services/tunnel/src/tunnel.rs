@@ -19,22 +19,17 @@ use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::node::{Node, NodeState, NodeView};
 use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
-use iceoryx2_log::{debug, fail, info, warn};
+use iceoryx2_log::{debug, fail, info};
 use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
-use iceoryx2_services_tunnel_backend::traits::{
-    Backend, Discovery, EventRelay, PublishSubscribeRelay, RelayBuilder, RelayFactory,
-};
-use iceoryx2_services_tunnel_backend::types::publish_subscribe::LoanFn;
+use iceoryx2_services_tunnel_backend::traits::{Backend, Discovery};
 
+use crate::bridge::Bridge;
 use crate::discovery::LocalDiscoveryStrategy;
-use crate::ports::event::EventPorts;
-use crate::ports::publish_subscribe::PublishSubscribePorts;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -63,6 +58,7 @@ pub enum DiscoveryError {
     EventPortsCreation,
     EventRelayCreation,
     DiscoveryAnnouncement,
+    UnsupportedMessagingPattern,
 }
 
 impl core::fmt::Display for DiscoveryError {
@@ -88,36 +84,6 @@ impl core::fmt::Display for PropagateError {
 }
 
 impl core::error::Error for PropagateError {}
-
-#[derive(Debug)]
-pub(crate) struct Ports<S: Service> {
-    pub(crate) publish_subscribe: BTreeMap<ServiceHash, PublishSubscribePorts<S>>,
-    pub(crate) event: BTreeMap<ServiceHash, EventPorts<S>>,
-}
-
-impl<S: Service> Ports<S> {
-    pub fn new() -> Self {
-        Self {
-            publish_subscribe: BTreeMap::new(),
-            event: BTreeMap::new(),
-        }
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct Relays<S: Service, B: Backend<S>> {
-    publish_subscribe: BTreeMap<ServiceHash, B::PublishSubscribeRelay>,
-    event: BTreeMap<ServiceHash, B::EventRelay>,
-}
-
-impl<S: Service, B: Backend<S>> Relays<S, B> {
-    pub fn new() -> Self {
-        Self {
-            publish_subscribe: BTreeMap::new(),
-            event: BTreeMap::new(),
-        }
-    }
-}
 
 /// Side of the system that a discovery event refers to.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -202,8 +168,7 @@ pub struct Tunnel<S: Service, B: for<'a> Backend<S> + Debug> {
     node: Node<S>,
     backend: B,
     services: BTreeMap<ServiceHash, TrackedService>,
-    ports: Ports<S>,
-    relays: Relays<S, B>,
+    bridges: BTreeMap<ServiceHash, Bridge<S, B>>,
     local_discovery: LocalDiscoveryStrategy<S>,
     services_filter: Option<BTreeSet<String>>,
 }
@@ -232,8 +197,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
             node,
             backend,
             services: BTreeMap::new(),
-            ports: Ports::new(),
-            relays: Relays::new(),
+            bridges: BTreeMap::new(),
             local_discovery,
             services_filter,
         }
@@ -274,30 +238,8 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     }
 
     pub fn propagate(&mut self) -> Result<(), PropagateError> {
-        let origin = format!("Tunnel({})::propagate", self.node.id());
-
-        for (service_hash, port) in &self.ports.publish_subscribe {
-            match self.relays.publish_subscribe.get(service_hash) {
-                Some(relay) => {
-                    propagate_publish_subscribe_payloads::<S, B>(self.node.id(), port, relay)?;
-                }
-                None => {
-                    warn!(from origin, "No relay available for {:?}", service_hash);
-                    continue;
-                }
-            };
-        }
-
-        for (service_hash, port) in &self.ports.event {
-            match self.relays.event.get(service_hash) {
-                Some(relay) => {
-                    propagate_events::<S, B>(self.node.id(), port, relay)?;
-                }
-                None => {
-                    warn!(from origin, "No relay available for {:?}", service_hash);
-                    continue;
-                }
-            };
+        for bridge in self.bridges.values() {
+            bridge.propagate(self.node.id())?;
         }
 
         Ok(())
@@ -446,18 +388,18 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
 
                 let hash = *static_config.service_hash();
 
-                // If the service was not already tracked, mirror the service
+                // If the service was not already tracked, create a bridge
                 if !self.services.contains_key(&hash) {
                     info!(
                         from log_origin,
-                        "Opening mirror ({:?}): {}({})",
+                        "Opening bridge ({:?}): {}({})",
                         origin,
                         static_config.messaging_pattern(),
                         static_config.name()
                     );
 
-                    self.open_ports(&static_config)?;
-                    self.open_relay(&static_config)?;
+                    let bridge = Bridge::open(&self.node, &self.backend, &static_config)?;
+                    self.bridges.insert(hash, bridge);
                     self.services.insert(
                         hash,
                         TrackedService {
@@ -505,7 +447,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
                     self.announce_removed(&tracked_service.static_config)?;
                 }
 
-                // If no side is offering anymore, close the mirror.
+                // If no side is offering anymore, close the bridge.
                 if last_offerer_gone {
                     let removed_service = self
                         .services
@@ -513,13 +455,12 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
                         .expect("Should never happen. Entry was confirmed above.");
                     info!(
                         from log_origin,
-                        "Closing mirror ({:?}): {}({})",
+                        "Closing bridge ({:?}): {}({})",
                         origin,
                         removed_service.static_config.messaging_pattern(),
                         removed_service.static_config.name()
                     );
-                    self.close_ports(&hash);
-                    self.close_relay(&hash);
+                    self.bridges.remove(&hash);
 
                     // Drop the tracker's cached snapshot so a same-hash service
                     // recreated by a another node reappears as a fresh `added` on the
@@ -532,82 +473,6 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         }
 
         Ok(())
-    }
-
-    /// Creates the mirror ports for a service.
-    fn open_ports(&mut self, static_config: &StaticConfig) -> Result<(), DiscoveryError> {
-        let origin = format!("Tunnel({})::open_ports", self.node.id());
-
-        let hash = *static_config.service_hash();
-        match static_config.messaging_pattern() {
-            MessagingPattern::PublishSubscribe(_) => {
-                let port = fail!(
-                    from origin,
-                    when PublishSubscribePorts::new(static_config, &self.node),
-                    with DiscoveryError::PublishSubscribePortCreation,
-                    "Failed to create publish-subscribe ports"
-                );
-                self.ports.publish_subscribe.insert(hash, port);
-            }
-            MessagingPattern::Event(_) => {
-                let port = fail!(
-                    from origin,
-                    when EventPorts::new(static_config, &self.node),
-                    with DiscoveryError::EventPortsCreation,
-                    "Failed to create event ports"
-                );
-                self.ports.event.insert(hash, port);
-            }
-            _ => {}
-        }
-        Ok(())
-    }
-
-    /// Creates the backend relay for a service.
-    fn open_relay(&mut self, static_config: &StaticConfig) -> Result<(), DiscoveryError> {
-        let origin = format!("Tunnel({})::open_relay", self.node.id());
-
-        let hash = *static_config.service_hash();
-        match static_config.messaging_pattern() {
-            MessagingPattern::PublishSubscribe(_) => {
-                let relay = fail!(
-                    from origin,
-                    when self.backend
-                        .relay_builder()
-                        .publish_subscribe(static_config)
-                        .create(),
-                    with DiscoveryError::PublishSubscribeRelayCreation,
-                    "Failed to create publish-subscribe relay"
-                );
-                self.relays.publish_subscribe.insert(hash, relay);
-            }
-            MessagingPattern::Event(_) => {
-                let relay = fail!(
-                    from origin,
-                    when self.backend
-                        .relay_builder()
-                        .event(static_config)
-                        .create(),
-                    with DiscoveryError::EventRelayCreation,
-                    "Failed to create event relay"
-                );
-                self.relays.event.insert(hash, relay);
-            }
-            _ => {}
-        }
-        Ok(())
-    }
-
-    /// Drops a service's mirrored ports.
-    fn close_ports(&mut self, hash: &ServiceHash) {
-        self.ports.publish_subscribe.remove(hash);
-        self.ports.event.remove(hash);
-    }
-
-    /// Drops a service's backend relay.
-    fn close_relay(&mut self, hash: &ServiceHash) {
-        self.relays.publish_subscribe.remove(hash);
-        self.relays.event.remove(hash);
     }
 
     /// Broadcasts a service's availability to remote peers over the backend.
@@ -646,93 +511,4 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         );
         Ok(())
     }
-}
-
-fn propagate_publish_subscribe_payloads<S: Service, B: Backend<S> + Debug>(
-    node_id: &UniqueNodeId,
-    port: &PublishSubscribePorts<S>,
-    relay: &B::PublishSubscribeRelay,
-) -> Result<(), PropagateError> {
-    let origin = format!("Tunnel({})::propagate_publish_subscribe_payloads", node_id);
-
-    let propagated = fail!(
-        from origin,
-        when port.receive(node_id, |sample| {
-            relay.send(sample)
-        }),
-        with PropagateError::PayloadPropagation,
-        "Failed to receive publish-subscribe payload for propagation"
-    );
-    if propagated {
-        info!(
-            from origin,
-            "Propagated {}({})",
-            port.static_config.messaging_pattern(),
-            port.static_config.name()
-        );
-    }
-
-    let ingested = fail!(
-        from origin,
-        when port.send(|loan: &mut LoanFn<_, _>| {
-            relay.receive::<_>(&mut |size| {
-            loan(size)})
-        }),
-        with PropagateError::PayloadIngestion,
-        "Failed to ingest publish-subscribe payload received from backend"
-    );
-    if ingested {
-        info!(
-            from origin,
-            "Ingested {}({})",
-            port.static_config.messaging_pattern(),
-            port.static_config.name()
-        );
-    }
-
-    Ok(())
-}
-
-fn propagate_events<S: Service, B: Backend<S> + Debug>(
-    node_id: &UniqueNodeId,
-    port: &EventPorts<S>,
-    relay: &B::EventRelay,
-) -> Result<(), PropagateError> {
-    let origin = format!("Tunnel({})::propagate_events", node_id);
-
-    let propagated = fail!(
-        from origin,
-        when port.receive(|id| {
-            relay.send(id)
-        }),
-        with PropagateError::EventPropagation,
-        "Failed to receive events for propagation"
-    );
-    if propagated {
-        info!(
-            from origin,
-            "Propagated {}({})",
-            port.static_config.messaging_pattern(),
-            port.static_config.name()
-        );
-    }
-
-    let ingested = fail!(
-        from origin,
-        when port.send(|| {
-            relay.receive()
-        }),
-        with PropagateError::EventIngestion,
-        "Failed to ingest event received from backend"
-    );
-    if ingested {
-        info!(
-            from origin,
-            "Ingested {}({})",
-            port.static_config.messaging_pattern(),
-            port.static_config.name()
-        );
-    }
-
-    Ok(())
 }
