@@ -23,6 +23,7 @@
 -->
 
 * [#1641](https://github.com/eclipse-iceoryx/iceoryx2/issues/1641) Deliver with Backpressure::Retry when receiver is disconnected until the buffer is full.
+* [#1724](https://github.com/eclipse-iceoryx/iceoryx2/issues/1724) Fix chunk leak when offset cannot be translated to dynamic data segment.
 
 ### Refactoring
 
