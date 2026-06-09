@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::convert::Infallible;
 use core::fmt::Debug;
 
 use alloc::collections::BTreeMap;
@@ -203,20 +202,26 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     fn discover_remote(&mut self) -> Result<(), DiscoveryError> {
         let origin = format!("Tunnel({})::discover_remote", self.node.id());
 
-        let mut events: Vec<DiscoveryEvent> = Vec::new();
+        let node = &self.node;
+        let backend = &self.backend;
+        let services_filter = &self.services_filter;
+        let discovery_state = &mut self.discovery_state;
+
         fail!(
             from origin,
-            when self.backend.discovery().discover(|event| -> Result<(), Infallible> {
-                events.push(event);
-                Ok(())
+            when backend.discovery().discover(|event| {
+                apply_discovery::<S, B>(
+                    node,
+                    backend,
+                    discovery_state,
+                    services_filter,
+                    event,
+                    Origin::Remote,
+                )
             }),
             with DiscoveryError::DiscoveryOverBackend,
             "Failed to discover services via Backend"
         );
-
-        for event in events {
-            self.apply_discovery(event, Origin::Remote)?;
-        }
         Ok(())
     }
 
@@ -225,23 +230,30 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     fn discover_over_subscriber(&mut self) -> Result<(), DiscoveryError> {
         let origin = format!("Tunnel({})::discover_over_subscriber", self.node.id());
 
-        let mut events: Vec<DiscoveryEvent> = Vec::new();
         let LocalDiscoveryStrategy::Subscriber(subscriber) = &self.local_discovery else {
             panic!("Should never happen. Discovery strategy enforced in discover().");
         };
+
+        let node = &self.node;
+        let backend = &self.backend;
+        let services_filter = &self.services_filter;
+        let discovery_state = &mut self.discovery_state;
+
         fail!(
             from origin,
-            when subscriber.discover(|event| -> Result<(), Infallible> {
-                events.push(event);
-                Ok(())
+            when subscriber.discover(|event| {
+                apply_discovery::<S, B>(
+                    node,
+                    backend,
+                    discovery_state,
+                    services_filter,
+                    event,
+                    Origin::Local,
+                )
             }),
             with DiscoveryError::DiscoveryOverService,
             "Failed to discover services via subscriber to discovery service"
         );
-
-        for event in events {
-            self.apply_discovery(event, Origin::Local)?;
-        }
         Ok(())
     }
 
@@ -313,71 +325,15 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         }
 
         for event in events {
-            self.apply_discovery(event, Origin::Local)?;
+            apply_discovery::<S, B>(
+                &self.node,
+                &self.backend,
+                &mut self.discovery_state,
+                &self.services_filter,
+                event,
+                Origin::Local,
+            )?;
         }
-        Ok(())
-    }
-
-    /// Applies a discovery event from `origin` to the offering snapshots and
-    /// announces local-side 0 → 1 and 1 → 0 transitions. Does not touch
-    /// bridges — that is [`reconcile`](Self::reconcile)'s job.
-    fn apply_discovery(
-        &mut self,
-        event: DiscoveryEvent,
-        origin: Origin,
-    ) -> Result<(), DiscoveryError> {
-        let log_origin = format!("Tunnel({})::apply_discovery", self.node.id());
-
-        match event {
-            DiscoveryEvent::Added(static_config) => {
-                if !matches!(
-                    static_config.messaging_pattern(),
-                    MessagingPattern::PublishSubscribe(_) | MessagingPattern::Event(_)
-                ) {
-                    debug!(
-                        from log_origin,
-                        "Skipping unsupported messaging pattern: {}({})",
-                        static_config.messaging_pattern(),
-                        static_config.name()
-                    );
-                    return Ok(());
-                }
-
-                if let Some(allowlist) = &self.services_filter {
-                    if !allowlist.contains(static_config.name().as_str()) {
-                        debug!(
-                            from log_origin,
-                            "Skipping {}({}): not in services allowlist",
-                            static_config.messaging_pattern(),
-                            static_config.name()
-                        );
-                        return Ok(());
-                    }
-                }
-
-                let hash = *static_config.service_hash();
-
-                // Announce on local 0 → 1 transitions, then record this side as
-                // offering. Announcing first keeps `static_config` available for
-                // the announcement before it is moved into the snapshot.
-                let newly_offered_locally =
-                    origin == Origin::Local && !self.discovery_state.is_offered_by(origin, &hash);
-                if newly_offered_locally {
-                    self.announce_added(&static_config)?;
-                }
-                self.discovery_state.set_offered(origin, static_config);
-            }
-            DiscoveryEvent::Removed(hash) => {
-                // Mark this side as not offered; announce on local 1 → 0 transitions.
-                let removed_config = self.discovery_state.set_not_offered(origin, &hash);
-                if origin == Origin::Local {
-                    if let Some(static_config) = &removed_config {
-                        self.announce_removed(static_config)?;
-                    }
-                }
-            }
-        }
-
         Ok(())
     }
 
@@ -426,41 +382,114 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
 
         Ok(())
     }
+}
 
-    /// Broadcasts a service's availability to remote peers over the backend.
-    fn announce_added(&self, static_config: &StaticConfig) -> Result<(), DiscoveryError> {
-        let origin = format!("Tunnel({})::announce_added", self.node.id());
+/// Applies a discovery event from `origin` to the offering snapshots and
+/// announces local-side 0 → 1 and 1 → 0 transitions.
+fn apply_discovery<S: Service, B: Backend<S>>(
+    node: &Node<S>,
+    backend: &B,
+    discovery_state: &mut DiscoveryState,
+    services_filter: &Option<BTreeSet<String>>,
+    event: DiscoveryEvent,
+    origin: Origin,
+) -> Result<(), DiscoveryError> {
+    let log_origin = format!("Tunnel({})::apply_discovery", node.id());
 
-        info!(
-            from origin,
-            "Announcing addition: {}({})",
-            static_config.messaging_pattern(),
-            static_config.name()
-        );
-        fail!(
-            from origin,
-            when self.backend.discovery().announce(DiscoveryEventRef::Added(static_config)),
-            with DiscoveryError::DiscoveryAnnouncement,
-            "Failed to announce service over backend"
-        );
-        Ok(())
+    match event {
+        DiscoveryEvent::Added(static_config) => {
+            if !matches!(
+                static_config.messaging_pattern(),
+                MessagingPattern::PublishSubscribe(_) | MessagingPattern::Event(_)
+            ) {
+                debug!(
+                    from log_origin,
+                    "Skipping unsupported messaging pattern: {}({})",
+                    static_config.messaging_pattern(),
+                    static_config.name()
+                );
+                return Ok(());
+            }
+
+            if let Some(allowlist) = services_filter {
+                if !allowlist.contains(static_config.name().as_str()) {
+                    debug!(
+                        from log_origin,
+                        "Skipping {}({}): not in services allowlist",
+                        static_config.messaging_pattern(),
+                        static_config.name()
+                    );
+                    return Ok(());
+                }
+            }
+
+            let hash = *static_config.service_hash();
+
+            // Announce on local 0 → 1 transitions, then record this side as
+            // offering. Announcing first keeps `static_config` available for the
+            // announcement before it is moved into the snapshot.
+            let newly_offered_locally =
+                origin == Origin::Local && !discovery_state.is_offered_by(origin, &hash);
+            if newly_offered_locally {
+                announce_added::<S, B>(node, backend, &static_config)?;
+            }
+            discovery_state.set_offered(origin, static_config);
+        }
+        DiscoveryEvent::Removed(hash) => {
+            // Mark this side as not offered; announce on local 1 → 0 transitions.
+            let removed_config = discovery_state.set_not_offered(origin, &hash);
+            if origin == Origin::Local {
+                if let Some(static_config) = &removed_config {
+                    announce_removed::<S, B>(node, backend, static_config)?;
+                }
+            }
+        }
     }
 
-    /// Withdraws a previously-announced service from remote peers over the backend.
-    fn announce_removed(&self, static_config: &StaticConfig) -> Result<(), DiscoveryError> {
-        let origin = format!("Tunnel({})::announce_removed", self.node.id());
-        info!(
-            from origin,
-            "Announcing removal: {}({})",
-            static_config.messaging_pattern(),
-            static_config.name()
-        );
-        fail!(
-            from origin,
-            when self.backend.discovery().announce(DiscoveryEventRef::Removed(static_config.service_hash())),
-            with DiscoveryError::DiscoveryAnnouncement,
-            "Failed to announce service removal over backend"
-        );
-        Ok(())
-    }
+    Ok(())
+}
+
+/// Broadcasts a service's availability to remote peers over the backend.
+fn announce_added<S: Service, B: Backend<S>>(
+    node: &Node<S>,
+    backend: &B,
+    static_config: &StaticConfig,
+) -> Result<(), DiscoveryError> {
+    let origin = format!("Tunnel({})::announce_added", node.id());
+
+    info!(
+        from origin,
+        "Announcing addition: {}({})",
+        static_config.messaging_pattern(),
+        static_config.name()
+    );
+    fail!(
+        from origin,
+        when backend.discovery().announce(DiscoveryEventRef::Added(static_config)),
+        with DiscoveryError::DiscoveryAnnouncement,
+        "Failed to announce service over backend"
+    );
+    Ok(())
+}
+
+/// Withdraws a previously-announced service from remote peers over the backend.
+fn announce_removed<S: Service, B: Backend<S>>(
+    node: &Node<S>,
+    backend: &B,
+    static_config: &StaticConfig,
+) -> Result<(), DiscoveryError> {
+    let origin = format!("Tunnel({})::announce_removed", node.id());
+    info!(
+        from origin,
+        "Announcing removal: {}({})",
+        static_config.messaging_pattern(),
+        static_config.name()
+    );
+    fail!(
+        from origin,
+        when backend.discovery().announce(DiscoveryEventRef::Removed(static_config.service_hash())),
+        with DiscoveryError::DiscoveryAnnouncement,
+        "Failed to announce service removal over backend"
+    );
+    Ok(())
 }
