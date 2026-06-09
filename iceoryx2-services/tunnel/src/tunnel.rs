@@ -30,6 +30,7 @@ use iceoryx2_services_tunnel_backend::traits::{Backend, Discovery};
 
 use crate::bridge::Bridge;
 use crate::discovery::LocalDiscoveryStrategy;
+use crate::discovery::state::DiscoveryState;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -94,69 +95,6 @@ pub(crate) enum Origin {
     Remote,
 }
 
-/// Outcome of marking a side as offering.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub(crate) enum AddOutcome {
-    /// Side just started offering.
-    NewlyOffering,
-    /// Side was already offering.
-    AlreadyOffering,
-}
-
-/// Outcome of marking a side as no longer offering.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub(crate) enum RemoveOutcome {
-    /// Side just stopped offering.
-    NoLongerOffering,
-    /// Side was already not offering.
-    AlreadyNotOffering,
-}
-
-/// Per-service lifecycle state tracked by the tunnel.
-///
-/// Required to determine that services that only exist because the tunnel
-/// is mirroring it rather than an active node offering the service.
-#[derive(Debug)]
-pub(crate) struct TrackedService {
-    static_config: StaticConfig,
-    locally_offered: bool,
-    remotely_offered: bool,
-}
-
-impl TrackedService {
-    fn is_offered(&self) -> bool {
-        self.locally_offered || self.remotely_offered
-    }
-
-    /// Returns a mutable reference to the offered flag for `origin`.
-    fn offered_mut(&mut self, origin: Origin) -> &mut bool {
-        match origin {
-            Origin::Local => &mut self.locally_offered,
-            Origin::Remote => &mut self.remotely_offered,
-        }
-    }
-
-    /// Sets the service as offered from `origin`.
-    fn set_offered(&mut self, origin: Origin) -> AddOutcome {
-        let offered = self.offered_mut(origin);
-        if core::mem::replace(offered, true) {
-            AddOutcome::AlreadyOffering
-        } else {
-            AddOutcome::NewlyOffering
-        }
-    }
-
-    /// Sets the service as no longer offered from `origin`.
-    fn set_not_offered(&mut self, origin: Origin) -> RemoveOutcome {
-        let offered = self.offered_mut(origin);
-        if core::mem::replace(offered, false) {
-            RemoveOutcome::NoLongerOffering
-        } else {
-            RemoveOutcome::AlreadyNotOffering
-        }
-    }
-}
-
 #[derive(Debug, Default, Clone)]
 pub struct Config {
     pub discovery_service: Option<String>,
@@ -167,7 +105,7 @@ pub struct Config {
 pub struct Tunnel<S: Service, B: for<'a> Backend<S> + Debug> {
     node: Node<S>,
     backend: B,
-    services: BTreeMap<ServiceHash, TrackedService>,
+    discovery_state: DiscoveryState,
     bridges: BTreeMap<ServiceHash, Bridge<S, B>>,
     local_discovery: LocalDiscoveryStrategy<S>,
     services_filter: Option<BTreeSet<String>>,
@@ -196,7 +134,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         Self {
             node,
             backend,
-            services: BTreeMap::new(),
+            discovery_state: DiscoveryState::default(),
             bridges: BTreeMap::new(),
             local_discovery,
             services_filter,
@@ -246,7 +184,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     }
 
     pub fn tunneled_services(&self) -> BTreeSet<ServiceHash> {
-        self.services.keys().cloned().collect()
+        self.bridges.keys().cloned().collect()
     }
 
     /// Subscriber-mode local discovery: events from the discovery service
@@ -334,8 +272,8 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
             // For a service to be processed as 'removed' by the tunnel:
             // * The service was previously locally offered
             // * No node other than the tunnel is currently offering it
-            for (hash, state) in &self.services {
-                if state.locally_offered && no_other_nodes_offering(hash) {
+            for hash in self.discovery_state.locally_offered() {
+                if no_other_nodes_offering(hash) {
                     events.push(DiscoveryEvent::Removed(*hash));
                 }
             }
@@ -388,8 +326,8 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
 
                 let hash = *static_config.service_hash();
 
-                // If the service was not already tracked, create a bridge
-                if !self.services.contains_key(&hash) {
+                // If no bridge exists yet, open one on first observation.
+                if !self.bridges.contains_key(&hash) {
                     info!(
                         from log_origin,
                         "Opening bridge ({:?}): {}({})",
@@ -400,66 +338,47 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
 
                     let bridge = Bridge::open(&self.node, &self.backend, &static_config)?;
                     self.bridges.insert(hash, bridge);
-                    self.services.insert(
-                        hash,
-                        TrackedService {
-                            static_config,
-                            locally_offered: false,
-                            remotely_offered: false,
-                        },
-                    );
                 }
 
-                // Mark this side as offered; announce on local 0 → 1 transitions.
-                let outcome = self
-                    .services
-                    .get_mut(&hash)
-                    .expect("Should never happen. Entry was just inserted.")
-                    .set_offered(origin);
-
-                if origin == Origin::Local && outcome == AddOutcome::NewlyOffering {
-                    let tracked_service = self
-                        .services
-                        .get(&hash)
-                        .expect("Should never happen. Entry was confirmed above.");
-                    self.announce_added(&tracked_service.static_config)?;
+                // Announce on local 0 → 1 transitions, then record this side as
+                // offering. Announcing first keeps `static_config` available for
+                // the announcement before it is moved into the snapshot.
+                let newly_offered_locally =
+                    origin == Origin::Local && !self.discovery_state.is_offered_by(origin, &hash);
+                if newly_offered_locally {
+                    self.announce_added(&static_config)?;
                 }
+                self.discovery_state.set_offered(origin, static_config);
             }
             DiscoveryEvent::Removed(hash) => {
-                let Some(tracked_service) = self.services.get_mut(&hash) else {
+                if !self.bridges.contains_key(&hash) {
                     debug!(
                         from log_origin,
                         "Ignoring Removed for untracked service: {}",
                         hash.as_str()
                     );
                     return Ok(());
-                };
+                }
 
                 // Mark this side as not offered; announce on local 1 → 0 transitions.
-                let outcome = tracked_service.set_not_offered(origin);
-                let last_offerer_gone = !tracked_service.is_offered();
-
-                if origin == Origin::Local && outcome == RemoveOutcome::NoLongerOffering {
-                    let tracked_service = self
-                        .services
-                        .get(&hash)
-                        .expect("Should never happen. Entry was confirmed above.");
-                    self.announce_removed(&tracked_service.static_config)?;
+                let removed_config = self.discovery_state.set_not_offered(origin, &hash);
+                if origin == Origin::Local {
+                    if let Some(static_config) = &removed_config {
+                        self.announce_removed(static_config)?;
+                    }
                 }
 
                 // If no side is offering anymore, close the bridge.
-                if last_offerer_gone {
-                    let removed_service = self
-                        .services
-                        .remove(&hash)
-                        .expect("Should never happen. Entry was confirmed above.");
-                    info!(
-                        from log_origin,
-                        "Closing bridge ({:?}): {}({})",
-                        origin,
-                        removed_service.static_config.messaging_pattern(),
-                        removed_service.static_config.name()
-                    );
+                if !self.discovery_state.is_offered(&hash) {
+                    if let Some(static_config) = &removed_config {
+                        info!(
+                            from log_origin,
+                            "Closing bridge ({:?}): {}({})",
+                            origin,
+                            static_config.messaging_pattern(),
+                            static_config.name()
+                        );
+                    }
                     self.bridges.remove(&hash);
 
                     // Drop the tracker's cached snapshot so a same-hash service
