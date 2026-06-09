@@ -27,9 +27,10 @@
     * [Losing Data](#losing-data)
     * [Losing Dynamic Data](#losing-dynamic-data)
     * [`iceoryx2-ffi-c` does not contain this feature](#iceoryx2-ffi-c-does-not-contain-this-feature)
-    * [Service In Corrupted state](#service-in-corrupted-state)
+    * [Service In Corrupted State or Repeatedly `HangsInCreation`](#service-in-corrupted-state-or-repeatedly-hangsincreation)
     * [Unable To Connect Due To `IncompatibleTypes`](#unable-to-connect-due-to-incompatibletypes)
     * [Failed To Create Port Due To `ExceedsMaxSupported**`](#failed-to-create-port-due-to-exceedsmaxsupported)
+    * [Insufficient Permission To Remove Shared Memory](#insufficient-permission-to-remove-shared-memory)
 
 ## Tips And Tricks
 
@@ -563,13 +564,19 @@ In order to use the `iceoryx2` feature flags when building the `iceoryx2-ffi-c`
 crate standalone, you needs to prefix the feature with `iceoryx2/`,
 e.g. `--features iceoryx2/dev_permissions`.
 
-### Service In Corrupted State
+### Service In Corrupted State or Repeatedly `HangsInCreation`
 
 This error can have multiple causes.
 
-1. Crashed processes cleaned up resources incompletely, see: [Remove Stale Resources](#remove-stale-resources)
-2. The processes are compiled with two incompatible iceoryx2 versions.
-3. Two service variants were used that are not compatible.
+1. Some external process removes files, sockets or shared memory and corrupts
+   an iceoryx2 services as a side effect.
+2. systemd started an iceoryx2 service with `RemoveIPC=yes`. This causes systemd
+   to remove all SystemV and POSIX IPC resources like shared memory and sockets
+   which corrupts the service. **When combining iceoryx2 with systemd, always
+   `RemoveIPC=no`.**
+3. Crashed processes cleaned up resources incompletely, see: [Remove Stale Resources](#remove-stale-resources)
+4. The processes are compiled with two incompatible iceoryx2 versions.
+5. Two service variants were used that are not compatible.
 
 ### Unable To Connect Due To `IncompatibleTypes`
 
@@ -641,3 +648,31 @@ If this doesn't happen:
 
 Consequently, iceoryx2 assumes the maximum number of publishers/publishers are
 still active, triggering the `ExceedsMaxSupported**` error.
+
+### Insufficient Permission To Remove Shared Memory
+
+If a service cannot be removed because iceoryx2 lacks permission to remove the
+corresponding shared memory, the sticky bit on `/dev/shm` or `/tmp/iceoryx2`
+could be the cause.
+
+You can check whether the sticky bit is set with:
+
+```sh
+ls -alh /dev/ | grep shm
+````
+
+If the permission string ends with `t`, for example `drwxrwxrwt`, the sticky bit
+is enabled.
+
+The sticky bit prevents users from deleting or renaming files owned by other
+users in that directory. Usually, only the file owner, the directory owner, or
+root may remove such files.
+
+For development setups, you can remove the sticky bit with:
+
+```sh
+chmod -t /dev/shm
+```
+
+Do this only during development. Changing permissions on `/dev/shm` can affect
+other applications on the system.
