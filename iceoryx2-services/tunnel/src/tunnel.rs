@@ -152,7 +152,6 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     }
 
     pub fn propagate(&mut self) -> Result<(), PropagateError> {
-        // Ensure open bridges are in sync with discovery state. Debug only.
         debug_assert!(
             self.bridges.len() == self.discovery_state.snapshot().iter().count()
                 && self
@@ -160,7 +159,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
                     .snapshot()
                     .iter()
                     .all(|(hash, _)| self.bridges.contains_key(hash)),
-            "bridges out of sync with desired services — a discovery path skipped reconcile"
+            "bridges out of sync with discovery state"
         );
 
         for bridge in self.bridges.values() {
@@ -171,7 +170,6 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     }
 
     pub fn tunneled_services(&self) -> BTreeSet<ServiceHash> {
-        // Ensure open bridges are in sync with discovery state. Debug only.
         debug_assert!(
             self.bridges.len() == self.discovery_state.snapshot().iter().count()
                 && self
@@ -179,7 +177,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
                     .snapshot()
                     .iter()
                     .all(|(hash, _)| self.bridges.contains_key(hash)),
-            "bridges out of sync with desired services — a discovery path skipped reconcile"
+            "bridges out of sync with discovery state"
         );
 
         self.bridges.keys().cloned().collect()
@@ -276,41 +274,34 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         )
     }
 
-    /// Reconciles the opened bridges with the discovery snapshot.
+    /// Reconciles the opened bridges with a snapshot of the discovery state.
     fn reconcile(&mut self) -> Result<(), DiscoveryError> {
         let log_origin = format!("Tunnel({})::reconcile", self.node.id());
 
-        // Close bridges no longer offered by any side.
         let snapshot = self.discovery_state.snapshot();
-        let stale: Vec<ServiceHash> = self
-            .bridges
-            .keys()
-            .filter(|hash| !snapshot.contains(hash))
-            .cloned()
-            .collect();
-        for hash in stale {
-            info!(from log_origin, "Closing bridge: {}", hash.as_str());
-            self.bridges.remove(&hash);
-        }
+
+        // Close bridges no longer offered by any side.
+        self.bridges.retain(|hash, _| {
+            let keep = snapshot.contains(hash);
+            if !keep {
+                info!(from log_origin, "Closing bridge: {}", hash.as_str());
+            }
+            keep
+        });
 
         // Open bridges for newly-offered services.
-        let missing: Vec<StaticConfig> = self
-            .discovery_state
-            .snapshot()
-            .iter()
-            .filter(|&(hash, _)| !self.bridges.contains_key(hash))
-            .map(|(_, static_config)| static_config.clone())
-            .collect();
-        for static_config in missing {
-            let hash = *static_config.service_hash();
+        for (hash, static_config) in snapshot.iter() {
+            if self.bridges.contains_key(hash) {
+                continue;
+            }
             info!(
                 from log_origin,
                 "Opening bridge: {}({})",
                 static_config.messaging_pattern(),
                 static_config.name()
             );
-            let bridge = Bridge::open(&self.node, &self.backend, &static_config)?;
-            self.bridges.insert(hash, bridge);
+            let bridge = Bridge::open(&self.node, &self.backend, static_config)?;
+            self.bridges.insert(*hash, bridge);
         }
 
         Ok(())
