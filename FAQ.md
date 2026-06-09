@@ -27,7 +27,7 @@
     * [Losing Data](#losing-data)
     * [Losing Dynamic Data](#losing-dynamic-data)
     * [`iceoryx2-ffi-c` does not contain this feature](#iceoryx2-ffi-c-does-not-contain-this-feature)
-    * [Service In Corrupted state](#service-in-corrupted-state)
+    * [Service In Corrupted State or Repeatedly `HangsInCreation`](#service-in-corrupted-state-or-repeatedly-hangsincreation)
     * [Unable To Connect Due To `IncompatibleTypes`](#unable-to-connect-due-to-incompatibletypes)
     * [Failed To Create Port Due To `ExceedsMaxSupported**`](#failed-to-create-port-due-to-exceedsmaxsupported)
     * [Insufficient Permission To Remove Shared Memory](#insufficient-permission-to-remove-shared-memory)
@@ -564,7 +564,7 @@ In order to use the `iceoryx2` feature flags when building the `iceoryx2-ffi-c`
 crate standalone, you needs to prefix the feature with `iceoryx2/`,
 e.g. `--features iceoryx2/dev_permissions`.
 
-### Service In Corrupted State
+### Service In Corrupted State or Repeatedly `HangsInCreation`
 
 This error can have multiple causes.
 
