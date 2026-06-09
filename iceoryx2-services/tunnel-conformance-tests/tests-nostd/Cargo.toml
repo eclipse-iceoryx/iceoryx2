@@ -1,5 +1,5 @@
 [package]
-name = "iceoryx2-services-tunnel-conformance-tests-nostd"
+name = "iceoryx2-tunnel-conformance-tests-nostd"
 description = "iceoryx2: [internal] nostd deployment of iceoryx2-services-tunnel-conformance-tests"
 categories = { workspace = true }
 edition = { workspace = true }
@@ -16,15 +16,15 @@ default = ["std"]
 
 std = [
   "iceoryx2/std",
-  "iceoryx2-services-tunnel-conformance-tests/std",
-  "iceoryx2-services-tunnel-conformance-tests-common/std",
+  "iceoryx2-tunnel-conformance-tests/std",
+  "iceoryx2-tunnel-conformance-tests-common/std",
   "iceoryx2-bb-testing/std",
 ]
 
 [dependencies]
 iceoryx2 = { workspace = true, features = [] }
-iceoryx2-services-tunnel-conformance-tests = { workspace = true, features = [] }
-iceoryx2-services-tunnel-conformance-tests-common = { workspace = true, features = [] }
+iceoryx2-tunnel-conformance-tests = { workspace = true, features = [] }
+iceoryx2-tunnel-conformance-tests-common = { workspace = true, features = [] }
 iceoryx2-bb-loggers = { workspace = true, features = [] }
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-memory = { workspace = true, features = [] }

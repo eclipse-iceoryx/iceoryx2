@@ -1,5 +1,5 @@
 [package]
-name = "iceoryx2-services-tunnel-conformance-tests"
+name = "iceoryx2-tunnel-conformance-tests"
 description = "iceoryx2-services: conformance tests for the tunnel service"
 categories = { workspace = true }
 edition = { workspace = true }
@@ -39,4 +39,4 @@ iceoryx2-services-tunnel = { workspace = true }
 iceoryx2-services-tunnel-backend = { workspace = true }
 
 [dev-dependencies]
-iceoryx2-services-tunnel-conformance-tests-common = { workspace = true, features = ["std"] }
+iceoryx2-tunnel-conformance-tests-common = { workspace = true, features = ["std"] }

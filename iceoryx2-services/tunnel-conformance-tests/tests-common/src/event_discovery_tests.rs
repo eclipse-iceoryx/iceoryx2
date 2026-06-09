@@ -19,7 +19,7 @@ use iceoryx2_services_tunnel_testing::backend::testing::Testing;
 
 instantiate_conformance_tests_with_module!(
     ipc,
-    iceoryx2_services_tunnel_conformance_tests::event_discovery,
+    iceoryx2_tunnel_conformance_tests::event_discovery,
     super::Ipc,
     super::TestBackend<super::Ipc>,
     super::Testing
@@ -27,7 +27,7 @@ instantiate_conformance_tests_with_module!(
 
 instantiate_conformance_tests_with_module!(
     local,
-    iceoryx2_services_tunnel_conformance_tests::event_discovery,
+    iceoryx2_tunnel_conformance_tests::event_discovery,
     super::Local,
     super::TestBackend<super::Local>,
     super::Testing

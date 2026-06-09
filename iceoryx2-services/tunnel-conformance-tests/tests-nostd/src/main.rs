@@ -14,7 +14,7 @@
 #![cfg_attr(not(feature = "std"), no_main)]
 
 extern crate iceoryx2_bb_loggers;
-extern crate iceoryx2_services_tunnel_conformance_tests_common;
+extern crate iceoryx2_tunnel_conformance_tests_common;
 
 use core::{
     alloc::{GlobalAlloc, Layout},

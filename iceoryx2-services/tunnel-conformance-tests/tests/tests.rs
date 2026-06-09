@@ -10,6 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate iceoryx2_services_tunnel_conformance_tests_common;
+extern crate iceoryx2_tunnel_conformance_tests_common;
 
 iceoryx2_bb_testing::test_harness!();
