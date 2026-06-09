@@ -16,7 +16,10 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 #[conformance_tests]
 pub mod zero_copy_connection_trait {
     use alloc::collections::btree_set::BTreeSet;
+    // TODO: iox2-671 enable this test when the concurrency issue is fixed.
+    #[cfg(not(any(target_os = "windows")))]
     use alloc::sync::Arc;
+
     use alloc::vec;
     use core::time::Duration;
     use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, Ordering};

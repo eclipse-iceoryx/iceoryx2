@@ -14,7 +14,7 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
-use std::time::Duration;
+use core::time::Duration;
 
 use windows_sys::Win32::{
     Foundation::{

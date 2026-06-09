@@ -15,7 +15,9 @@ extern crate alloc;
 use iceoryx2_testing::Test;
 
 use alloc::vec;
+#[cfg(not(target_os = "windows"))]
 use core::fmt::Debug;
+
 use core::time::Duration;
 use iceoryx2::node::{CleanupState, NodeState};
 use iceoryx2::prelude::*;

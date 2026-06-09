@@ -22,6 +22,7 @@ use windows_sys::Win32::{
 
 use crate::posix::{c_string_length, types::*};
 use core::ffi::CStr;
+use core::hint::spin_loop;
 use iceoryx2_pal_concurrency_sync::atomic::Ordering;
 
 use iceoryx2_pal_concurrency_sync::atomic::AtomicU64;
@@ -163,7 +164,11 @@ impl PortToUdsNameMap {
                 self.uds_names.initialize();
                 self.init_check.store(IS_INITIALIZED, Ordering::Relaxed);
             }
-            Err(_) => while self.init_check.load(Ordering::Relaxed) != IS_INITIALIZED {},
+            Err(_) => {
+                while self.init_check.load(Ordering::Relaxed) != IS_INITIALIZED {
+                    spin_loop()
+                }
+            }
         }
     }
 

@@ -14,6 +14,7 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
+use core::hint::spin_loop;
 use core::time::Duration;
 use std::time::Instant;
 
@@ -63,7 +64,11 @@ impl GlobalWsaInitializer {
                 });
                     INITIALIZATION_STATE.store(2, Ordering::Relaxed);
                 }
-                Err(1) => while INITIALIZATION_STATE.load(Ordering::Relaxed) == 1 {},
+                Err(1) => {
+                    while INITIALIZATION_STATE.load(Ordering::Relaxed) == 1 {
+                        spin_loop()
+                    }
+                }
                 Err(_) => (),
             }
         }
