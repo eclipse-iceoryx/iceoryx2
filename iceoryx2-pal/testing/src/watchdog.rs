@@ -147,7 +147,7 @@ mod std_platform {
 
     impl Default for Watchdog {
         fn default() -> Self {
-            Self::new_with_timeout(Duration::from_secs(10))
+            Self::new_with_timeout(Duration::from_secs(30))
         }
     }
 
@@ -161,7 +161,7 @@ mod std_platform {
                     let now = Instant::now();
                     while *keep_running.lock().unwrap() {
                         std::thread::yield_now();
-                        std::thread::sleep(Duration::from_millis(10));
+                        std::thread::sleep(Duration::from_millis(30));
                         std::thread::yield_now();
 
                         if now.elapsed() > timeout {
