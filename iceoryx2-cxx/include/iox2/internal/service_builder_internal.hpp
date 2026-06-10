@@ -34,35 +34,62 @@ struct HasPayloadTypeNameMember : std::false_type { };
 template <typename Payload>
 struct HasPayloadTypeNameMember<Payload, decltype((void) Payload::IOX2_TYPE_NAME)> : std::true_type { };
 
+template <typename Payload, typename = void>
+struct HasPayloadTypeNameSpecialization : std::false_type { };
+
 template <typename Payload>
-using FromCustomizedPayloadTypeName = std::enable_if_t<HasPayloadTypeNameMember<Payload>::value, TypeName>;
+struct HasPayloadTypeNameSpecialization<Payload, decltype((void) TypeNameSpecialization<Payload>::value())>
+    : std::true_type { };
+
+template <typename Payload>
+using FromPayloadTypeNameSpecialization = std::enable_if_t<HasPayloadTypeNameSpecialization<Payload>::value, TypeName>;
+
+template <typename Payload>
+using FromPayloadTypeNameMember =
+    std::enable_if_t<!HasPayloadTypeNameSpecialization<Payload>::value && HasPayloadTypeNameMember<Payload>::value,
+                     TypeName>;
 
 template <typename Payload>
 using FromNonSlice =
-    std::enable_if_t<!HasPayloadTypeNameMember<Payload>::value && !bb::IsSlice<Payload>::VALUE
-                         && !iox2::bb::IsStaticVector<Payload>::value && !iox2::bb::IsStaticString<Payload>::value,
+    std::enable_if_t<!HasPayloadTypeNameSpecialization<Payload>::value && !HasPayloadTypeNameMember<Payload>::value
+                         && !bb::IsSlice<Payload>::VALUE && !iox2::bb::IsStaticVector<Payload>::value
+                         && !iox2::bb::IsStaticString<Payload>::value,
                      TypeName>;
 
 template <typename Payload>
-using FromStaticVector = std::enable_if_t<iox2::bb::IsStaticVector<Payload>::value, TypeName>;
-
-template <typename Payload>
-using FromStaticString = std::enable_if_t<iox2::bb::IsStaticString<Payload>::value, TypeName>;
-
-template <typename Payload>
-using FromSliceWithCustomizedInnerPayloadTypeName =
-    std::enable_if_t<!HasPayloadTypeNameMember<Payload>::value && bb::IsSlice<Payload>::VALUE
-                         && HasPayloadTypeNameMember<typename Payload::ValueType>::value,
+using FromStaticVector =
+    std::enable_if_t<!HasPayloadTypeNameSpecialization<Payload>::value && iox2::bb::IsStaticVector<Payload>::value,
                      TypeName>;
 
 template <typename Payload>
-using FromSliceWithoutCustomizedInnerPayloadTypeName =
-    std::enable_if_t<!HasPayloadTypeNameMember<Payload>::value && bb::IsSlice<Payload>::VALUE
+using FromStaticString =
+    std::enable_if_t<!HasPayloadTypeNameSpecialization<Payload>::value && iox2::bb::IsStaticString<Payload>::value,
+                     TypeName>;
+
+template <typename Payload>
+using FromSliceWithInnerPayloadTypeNameMember =
+    std::enable_if_t<!HasPayloadTypeNameSpecialization<Payload>::value && !HasPayloadTypeNameMember<Payload>::value
+                         && bb::IsSlice<Payload>::VALUE && HasPayloadTypeNameMember<typename Payload::ValueType>::value,
+                     TypeName>;
+
+template <typename Payload>
+using FromSliceWithoutInnerPayloadTypeNameMember =
+    std::enable_if_t<!HasPayloadTypeNameSpecialization<Payload>::value && !HasPayloadTypeNameMember<Payload>::value
+                         && bb::IsSlice<Payload>::VALUE
                          && !HasPayloadTypeNameMember<typename Payload::ValueType>::value,
                      TypeName>;
 
 template <typename PayloadType>
-auto get_type_name_impl() -> internal::FromCustomizedPayloadTypeName<PayloadType> {
+auto get_type_name_impl() -> internal::FromPayloadTypeNameSpecialization<PayloadType> {
+    static_assert(!HasPayloadTypeNameMember<PayloadType>::value,
+                  "A type must not define both an iox2::TypeNameSpecialization and an IOX2_TYPE_NAME "
+                  "member. Choose exactly one source for the type name.");
+
+    return *TypeName::from_utf8_null_terminated_unchecked(TypeNameSpecialization<PayloadType>::value());
+}
+
+template <typename PayloadType>
+auto get_type_name_impl() -> internal::FromPayloadTypeNameMember<PayloadType> {
     return *TypeName::from_utf8_null_terminated_unchecked(PayloadType::IOX2_TYPE_NAME);
 }
 
@@ -147,12 +174,12 @@ auto get_type_name_impl() -> internal::FromNonSlice<PayloadType> {
 // NOLINTEND(readability-function-size)
 
 template <typename PayloadType>
-auto get_type_name_impl() -> internal::FromSliceWithCustomizedInnerPayloadTypeName<PayloadType> {
+auto get_type_name_impl() -> internal::FromSliceWithInnerPayloadTypeNameMember<PayloadType> {
     return *TypeName::from_utf8_null_terminated_unchecked(PayloadType::ValueType::IOX2_TYPE_NAME);
 }
 
 template <typename PayloadType>
-auto get_type_name_impl() -> internal::FromSliceWithoutCustomizedInnerPayloadTypeName<PayloadType> {
+auto get_type_name_impl() -> internal::FromSliceWithoutInnerPayloadTypeNameMember<PayloadType> {
     return get_type_name_impl<typename PayloadType::ValueType>();
 }
 
