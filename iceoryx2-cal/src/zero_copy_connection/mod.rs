@@ -79,7 +79,7 @@ pub enum ZeroCopySendError {
     ReceiveBufferFull,
     UnableToDeliver, // NOTE: in order to distinguish between a try_send failure and a user induced send aborting, the UnableToDeliver error is used
     UsedChunkListFull,
-    NoConnectedReceiver,
+    NoConnectedReceiverAndBufferIsFull,
     ChannelIsClosed,
     InternalError,
 }
