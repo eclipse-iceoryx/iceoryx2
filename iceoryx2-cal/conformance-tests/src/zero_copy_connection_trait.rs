@@ -1069,7 +1069,7 @@ pub mod zero_copy_connection_trait {
                         follow_backpressure_stratety,
                         BackpressureToReceiverAction::Retry,
                     ).err(),
-                     eq Some(ZeroCopySendError::NoConnectedReceiver)
+                     eq Some(ZeroCopySendError::NoConnectedReceiverAndBufferIsFull)
                 );
                 has_finished_send_thread.store(true, Ordering::Relaxed);
             })?;
@@ -2210,5 +2210,57 @@ pub mod zero_copy_connection_trait {
 
         drop(sut_sender);
         assert_that!(unsafe { Sut::remove_cfg(&name, &config) }, eq Ok(true));
+    }
+
+    #[conformance_test]
+    pub fn blocking_send_delivers_data_to_disconnected_channel_until_buffer_is_full<
+        Sut: ZeroCopyConnection,
+    >() {
+        let _watchdog = Watchdog::new_with_timeout(Duration::from_secs(1));
+        const BUFFER_SIZE: usize = 10;
+
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .buffer_size(BUFFER_SIZE)
+            .config(&config)
+            .create_sender()
+            .unwrap();
+
+        for n in 0..BUFFER_SIZE {
+            let sample_offset = SAMPLE_SIZE * n;
+            let result = sut_sender.blocking_send(
+                PointerOffset::new(sample_offset),
+                SAMPLE_SIZE,
+                ChannelId::new(0),
+                follow_backpressure_stratety,
+                BackpressureToReceiverAction::Retry,
+            );
+            assert_that!(result, is_ok);
+        }
+
+        let result = sut_sender.blocking_send(
+            PointerOffset::new(SAMPLE_SIZE * BUFFER_SIZE),
+            SAMPLE_SIZE,
+            ChannelId::new(0),
+            follow_backpressure_stratety,
+            BackpressureToReceiverAction::Retry,
+        );
+        assert_that!(result.err(), eq Some(ZeroCopySendError::NoConnectedReceiverAndBufferIsFull));
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .buffer_size(BUFFER_SIZE)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+
+        for n in 0..BUFFER_SIZE {
+            let offset = sut_receiver.receive(ChannelId::new(0)).unwrap().unwrap();
+            assert_that!(offset.offset(), eq SAMPLE_SIZE * n);
+            sut_receiver.release(offset, ChannelId::new(0)).unwrap();
+        }
     }
 }
