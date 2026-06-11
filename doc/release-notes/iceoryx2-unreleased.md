@@ -22,7 +22,7 @@
     conflicts when merging.
 -->
 
-* [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1) Example text
+* [#1641](https://github.com/eclipse-iceoryx/iceoryx2/issues/1641) Deliver with Backpressure::Retry when receiver is disconnected until the buffer is full.
 
 ### Refactoring
 
