@@ -81,8 +81,13 @@ pub(crate) fn replay(options: ReplayOptions, _format: Format) -> Result<()> {
     for n in 0..u64::MAX {
         let start = Instant::now();
         for data in &buffer {
+            let payload_len = match required_header.types.payload.variant() {
+                TypeVariant::FixedSize => 1,
+                TypeVariant::Dynamic => data.payload.len(),
+            };
+
             let sample = unsafe {
-                let mut sample = publisher.loan_custom_payload(1)?;
+                let mut sample = publisher.loan_custom_payload(payload_len)?;
                 copy_nonoverlapping(
                     data.payload.as_ptr(),
                     sample.payload_mut().as_ptr() as *mut u8,
