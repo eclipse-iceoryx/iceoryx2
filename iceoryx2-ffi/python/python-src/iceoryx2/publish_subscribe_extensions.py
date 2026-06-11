@@ -27,17 +27,21 @@ def payload(self: Any) -> Any:
     assert self.__payload_type_details is not None
     if get_origin(self.__payload_type_details) is Slice:
         (contained_type,) = get_args(self.__payload_type_details)
-        return Slice(self.payload_ptr, self.__slice_len, contained_type)
+        return Slice(self.payload_ptr, self.__slice_len, contained_type, owner=self)
 
-    return ctypes.cast(self.payload_ptr, ctypes.POINTER(self.__payload_type_details))
+    ptr = ctypes.cast(self.payload_ptr, ctypes.POINTER(self.__payload_type_details))
+    ptr._iox2_owner = self  # type: ignore[attr-defined]
+    return ptr
 
 
 def user_header(self: Any) -> Any:
     """Returns a `ctypes.POINTER` to the user header."""
     assert self.__user_header_type_details is not None
-    return ctypes.cast(
+    ptr = ctypes.cast(
         self.user_header_ptr, ctypes.POINTER(self.__user_header_type_details)
     )
+    ptr._iox2_owner = self  # type: ignore[attr-defined]
+    return ptr
 
 
 def publish_subscribe(

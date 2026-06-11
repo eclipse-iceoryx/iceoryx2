@@ -147,11 +147,13 @@ def request_payload(self: Any) -> Any:
     assert self.__request_payload_type_details is not None
     if get_origin(self.__request_payload_type_details) is Slice:
         (contained_type,) = get_args(self.__request_payload_type_details)
-        return Slice(self.payload_ptr, self.__slice_len, contained_type)
+        return Slice(self.payload_ptr, self.__slice_len, contained_type, owner=self)
 
-    return ctypes.cast(
+    ptr = ctypes.cast(
         self.payload_ptr, ctypes.POINTER(self.__request_payload_type_details)
     )
+    ptr._iox2_owner = self
+    return ptr
 
 
 def response_payload(self: Any) -> Any:
@@ -159,28 +161,34 @@ def response_payload(self: Any) -> Any:
     assert self.__response_payload_type_details is not None
     if get_origin(self.__response_payload_type_details) is Slice:
         (contained_type,) = get_args(self.__response_payload_type_details)
-        return Slice(self.payload_ptr, self.__slice_len, contained_type)
+        return Slice(self.payload_ptr, self.__slice_len, contained_type, owner=self)
 
-    return ctypes.cast(
+    ptr = ctypes.cast(
         self.payload_ptr, ctypes.POINTER(self.__response_payload_type_details)
     )
+    ptr._iox2_owner = self
+    return ptr
 
 
 def request_header(self: Any) -> Any:
     """Returns a `ctypes.POINTER` to the request header."""
     assert self.__request_header_type_details is not None
-    return ctypes.cast(
+    ptr = ctypes.cast(
         self.user_header_ptr, ctypes.POINTER(self.__request_header_type_details)
     )
+    ptr._iox2_owner = self
+    return ptr
 
 
 def response_header(self: Any) -> Any:
     """Returns a `ctypes.POINTER` to the response header."""
     assert self.__response_header_type_details is not None
-    return ctypes.cast(
+    ptr = ctypes.cast(
         self.user_header_ptr,
         ctypes.POINTER(self.__response_header_type_details),
     )
+    ptr._iox2_owner = self
+    return ptr
 
 
 def write_request_payload(self: RequestMutUninit, t: Type[ReqT]) -> RequestMut:

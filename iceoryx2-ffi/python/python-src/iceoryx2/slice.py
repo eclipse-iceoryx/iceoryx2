@@ -28,11 +28,18 @@ class Slice(Generic[T]):
     T -  The type of elements in the slice. Can be const-qualified for read-only slices.
     """
 
-    def __init__(self, data_ptr: int, number_of_elements: int, t: Type[T]) -> None:
+    def __init__(
+        self,
+        data_ptr: int,
+        number_of_elements: int,
+        t: Type[T],
+        owner: Any = None,
+    ) -> None:
         """Initializes a slice with a data_ptr, number_of_elements it contains and the type."""
         self.data_ptr = data_ptr
         self.number_of_elements = number_of_elements
         self.contained_type = t
+        self._owner = owner
 
     def __str__(self) -> str:
         """Returns human-readable string of the contents."""
