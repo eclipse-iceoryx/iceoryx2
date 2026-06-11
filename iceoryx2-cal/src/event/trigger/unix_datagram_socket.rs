@@ -27,6 +27,7 @@ use iceoryx2_bb_posix::{
     file::{CreationMode, File, FileRemoveError},
     file_descriptor::FileDescriptorBased,
     file_descriptor_set::SynchronousMultiplexing,
+    permission::Permission,
     unix_datagram_socket::{
         UnixDatagramReceiveError, UnixDatagramReceiver, UnixDatagramReceiverBuilder,
         UnixDatagramReceiverCreationError, UnixDatagramSendError, UnixDatagramSender,
@@ -37,6 +38,12 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_log::fail;
 
 const RECEIVE_BUFFER_SIZE: u64 = 32;
+
+#[cfg(not(feature = "dev_permissions"))]
+const SOCKET_PERMISSIONS: Permission = Permission::OWNER_ALL;
+
+#[cfg(feature = "dev_permissions")]
+const SOCKET_PERMISSIONS: Permission = Permission::ALL;
 
 #[derive(Debug)]
 pub struct UnixDatagramHandle<E: EventState, Storage: DynamicStorage<State<E, ()>>> {
@@ -226,6 +233,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
         let full_path = config.path_for(name);
         let receiver = match UnixDatagramReceiverBuilder::new(&full_path)
             .creation_mode(CreationMode::CreateExclusive)
+            .permission(SOCKET_PERMISSIONS)
             .create()
         {
             Ok(v) => v,
