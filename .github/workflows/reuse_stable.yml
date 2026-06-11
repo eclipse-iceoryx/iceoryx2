@@ -138,7 +138,7 @@ jobs:
                 -DWARNING_AS_ERROR=ON \
                 ${{ steps.set-build-flags.outputs.cmake-build-type }} \
                 -DCMAKE_INSTALL_PREFIX=target/ff/cc/install \
-                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ inputs.profile }}" \
+                -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/${{ inputs.profile }}" \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build target/ff/cc/build ${{ steps.set-build-flags.outputs.cmake-build-config }}

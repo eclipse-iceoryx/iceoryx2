@@ -114,7 +114,7 @@ jobs:
                 -DBUILD_TESTING=ON \
                 -DCMAKE_C_FLAGS="-m32" \
                 -DCMAKE_CXX_FLAGS="-m32" \
-                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ inputs.profile }}" \
+                -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/i686-unknown-linux-gnu/${{ inputs.profile }}" \
                 ${{ steps.set-build-flags.outputs.cmake-build-type }} \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
