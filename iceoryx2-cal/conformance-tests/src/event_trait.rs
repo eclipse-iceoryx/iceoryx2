@@ -516,12 +516,15 @@ pub mod event_trait {
                 wait_call(&mut notified_events, &sut_listener);
                 assert_that!(notified_events, len 1);
                 assert_that!(notified_events[0].as_value(), eq 2);
+
+                let now = Time::now().unwrap();
                 barrier.wait();
 
                 let mut notified_events = vec![];
                 wait_call(&mut notified_events, &sut_listener);
                 assert_that!(notified_events, len 1);
                 assert_that!(notified_events[0].as_value(), eq 4);
+                assert_that!(now.elapsed().unwrap(), time_at_least TIMEOUT);
 
                 counter.store(1, Ordering::SeqCst);
             })?;
