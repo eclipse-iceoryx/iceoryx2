@@ -152,15 +152,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     }
 
     pub fn propagate(&mut self) -> Result<(), PropagateError> {
-        debug_assert!(
-            self.bridges.len() == self.discovery_state.snapshot().iter().count()
-                && self
-                    .discovery_state
-                    .snapshot()
-                    .iter()
-                    .all(|(hash, _)| self.bridges.contains_key(hash)),
-            "bridges out of sync with discovery state"
-        );
+        self.debug_assert_synchronized();
 
         // Propagate publish-subscribe payloads before events
         // TODO(#1103): Retain ordering across the wire
@@ -179,16 +171,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     }
 
     pub fn tunneled_services(&self) -> BTreeSet<ServiceHash> {
-        debug_assert!(
-            self.bridges.len() == self.discovery_state.snapshot().iter().count()
-                && self
-                    .discovery_state
-                    .snapshot()
-                    .iter()
-                    .all(|(hash, _)| self.bridges.contains_key(hash)),
-            "bridges out of sync with discovery state"
-        );
-
+        self.debug_assert_synchronized();
         self.bridges.keys().cloned().collect()
     }
 
@@ -314,6 +297,24 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         }
 
         Ok(())
+    }
+
+    /// Sanity check that the open bridges match the discovery
+    /// state exactly. No-op in release builds.
+    fn debug_assert_synchronized(&self) {
+        #[cfg(debug_assertions)]
+        {
+            let snapshot = self.discovery_state.snapshot();
+            let same_count = self.bridges.len() == snapshot.iter().count();
+            let all_services_bridged = snapshot
+                .iter()
+                .all(|(hash, _)| self.bridges.contains_key(hash));
+
+            debug_assert!(
+                same_count && all_services_bridged,
+                "bridges out of sync with discovery state"
+            );
+        }
     }
 }
 
