@@ -192,7 +192,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         self.bridges.keys().cloned().collect()
     }
 
-    /// Updates the locally offerred services..
+    /// Updates the locally offerred services.
     fn iceoryx_discovery(&mut self) -> Result<(), DiscoveryError> {
         match &self.discovery_strategy {
             LocalDiscoveryStrategy::Subscriber(_) => self.subscriber_discovery(),
@@ -249,7 +249,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
     /// bring the locally-offered set in line with it. A service is considered
     /// locally offered when at least one non-tunnel, non-dead node offers it.
     fn tracker_discovery(&mut self) -> Result<(), DiscoveryError> {
-        let origin = format!("Tunnel({})::discover_over_tracker", self.node.id());
+        let origin = format!("Tunnel({})::tracker_discovery", self.node.id());
 
         let LocalDiscoveryStrategy::Tracker(tracker) = &mut self.discovery_strategy else {
             panic!("Should never happen. Discovery strategy enforced in discover().");

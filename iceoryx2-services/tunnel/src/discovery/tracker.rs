@@ -43,7 +43,7 @@ impl<S: Service> DiscoveryTracker<S> {
 
     /// Synchronize the tracker with the services currently in the system.
     pub fn sync(&mut self) -> Result<(), DiscoveryError> {
-        let origin = "DiscoveryTracker::refresh";
+        let origin = "DiscoveryTracker::sync";
         fail!(
             from origin,
             when self.tracker.sync(|_| {}),
