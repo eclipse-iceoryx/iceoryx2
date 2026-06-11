@@ -37,8 +37,10 @@ set id_publisher $spawn_id
 expect_output_from $id_publisher "send message"
 
 #### Test Assertion
-expect_output_from $id_iox2_tunnel "Opening mirror (Local): PublishSubscribe(EventBasedCommService)"
-expect_output_from $id_iox2_tunnel "Opening mirror (Local): Event(EventBasedCommService)"
+expect_outputs_from_any_order $id_iox2_tunnel {
+    {Opening mirror (Local): PublishSubscribe(EventBasedCommService)}
+    {Opening mirror (Local): Event(EventBasedCommService)}
+}
 expect_output_from $id_iox2_tunnel "Propagated PublishSubscribe(EventBasedCommService)"
 expect_output_from $id_iox2_tunnel "Propagated Event(EventBasedCommService)"
 

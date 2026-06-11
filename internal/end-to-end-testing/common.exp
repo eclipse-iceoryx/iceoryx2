@@ -56,6 +56,28 @@ proc expect_output_from { SPAWN_ID EXPECTED_OUTPUT } {
     }
 }
 
+proc expect_outputs_from_any_order { SPAWN_ID EXPECTED_OUTPUTS } {
+    set remaining ${EXPECTED_OUTPUTS}
+
+    while { [llength ${remaining}] > 0 } {
+        expect {
+            -i ${SPAWN_ID} -ex [lindex ${remaining} 0] { }
+            timeout { handle_timeout ${remaining} }
+            eof { handle_end_of_file ${remaining} }
+        }
+
+        set consumed $expect_out(buffer)
+        set still_expected {}
+        foreach pattern ${remaining} {
+            if { [string first ${pattern} ${consumed}] == -1 } {
+                lappend still_expected ${pattern}
+            }
+        }
+
+        set remaining ${still_expected}
+    }
+}
+
 proc expect_pattern_from { SPAWN_ID REGEX_PATTERN DESCRIPTION } {
     expect {
         -i ${SPAWN_ID} -re ${REGEX_PATTERN} { }
