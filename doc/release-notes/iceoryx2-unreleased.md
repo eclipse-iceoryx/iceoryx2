@@ -34,6 +34,7 @@
 * [#1699](https://github.com/eclipse-iceoryx/iceoryx2/issues/1699) Enforce synchronization with compare exchange in UnrestrictedAtomic, RobustUniqueIndexSet and Container.
 * [#1708](https://github.com/eclipse-iceoryx/iceoryx2/issues/1708) Remove `services` from tunnel conformance test crate to fix a linker error on macOS.
 * [#1724](https://github.com/eclipse-iceoryx/iceoryx2/issues/1724) Fix chunk leak when offset cannot be translated to dynamic data segment.
+* [#1733](https://github.com/eclipse-iceoryx/iceoryx2/issues/1733) `iox2 service replay` sends full payload for dynamic data.
 
 ### Refactoring
 

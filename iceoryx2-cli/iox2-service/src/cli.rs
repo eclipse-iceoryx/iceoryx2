@@ -133,10 +133,9 @@ pub struct ListenOptions {
     #[clap(
         short,
         long,
-        default_value = "1000",
-        help = "Maximum delay between two notifications. Set to 0 to wait indefinitely."
+        help = "[Optional] Maximum delay between two notifications. If its not specified the call will wait indefinitely."
     )]
-    pub timeout_in_ms: u64,
+    pub timeout_in_ms: Option<u64>,
     #[clap(
         short,
         long,
@@ -434,8 +433,8 @@ pub struct ReplayOptions {
     #[clap(
         short,
         long,
-        default_value = "1",
-        help = "How often the recorded data shall be sent repeatedly."
+        default_value = "0",
+        help = "How often the recorded data shall be sent after the initial sent."
     )]
     pub repetitions: u64,
 

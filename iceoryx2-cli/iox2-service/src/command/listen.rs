@@ -50,10 +50,13 @@ pub(crate) fn listen(options: ListenOptions, format: Format) -> Result<()> {
             );
         };
 
-        if options.timeout_in_ms != 0 {
-            listener.timed_wait(callback, Duration::from_millis(options.timeout_in_ms))?;
-        } else {
-            listener.blocking_wait(callback)?;
+        match options.timeout_in_ms {
+            Some(t) => {
+                listener.timed_wait(callback, Duration::from_millis(t))?;
+            }
+            None => {
+                listener.blocking_wait(callback)?;
+            }
         }
 
         if !received_notification {
