@@ -31,6 +31,11 @@ node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
 service = (
     node.service_builder(iox2.ServiceName.new("Service-Variants-Example"))
     .publish_subscribe(ctypes.c_uint64)
+    # A received sample now keeps its payload alive until the sample (and any
+    # pointer obtained from `payload()`) is dropped. Since this subscriber is
+    # shared between two threads and each thread may hold its previous sample
+    # while receiving the next one, more borrowed samples can be alive at once.
+    .subscriber_max_borrowed_samples(4)
     .open_or_create()
 )
 

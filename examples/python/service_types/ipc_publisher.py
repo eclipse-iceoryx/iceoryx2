@@ -31,6 +31,9 @@ node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
 service = (
     node.service_builder(iox2.ServiceName.new("Service-Variants-Example"))
     .publish_subscribe(ctypes.c_uint64)
+    # Must match the threadsafe subscriber that shares this service, since the
+    # borrowed-samples setting is a service-wide attribute verified on open.
+    .subscriber_max_borrowed_samples(4)
     .open_or_create()
 )
 
