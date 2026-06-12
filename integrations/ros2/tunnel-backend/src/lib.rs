@@ -21,6 +21,7 @@ pub mod backend;
 pub mod discovery;
 pub(crate) mod keys;
 pub mod relays;
+pub mod ros_header;
 
 #[allow(unsafe_code)]
 pub(crate) mod payload;

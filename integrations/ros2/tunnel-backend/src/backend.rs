@@ -63,7 +63,7 @@ pub struct Ros2Backend<S: Service> {
     node: rcl::NodeHandle,
     /// Typesupport for all configured topics, loaded on initialization.
     type_registry: TypeSupportRegistry,
-    discovery: Discovery,
+    discovery: Discovery<S>,
     /// `Some` when constructed in reactive mode. Cloned into each relay so
     /// that incoming ROS 2 data signals the wake.
     wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
@@ -79,7 +79,7 @@ impl<S: Service> Backend<S> for Ros2Backend<S> {
     where
         Self::Config: 'a;
 
-    type Discovery = Discovery;
+    type Discovery = Discovery<S>;
 
     type PublishSubscribeRelay = publish_subscribe::Relay<S>;
     type EventRelay = event::Relay<S>;
@@ -149,10 +149,12 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
             );
         }
 
+        let discovery = Discovery::new(node.clone(), &self.config.topics);
+
         Ok(Ros2Backend {
             node,
             type_registry,
-            discovery: Discovery {},
+            discovery,
             wake: self.wake.map(Arc::new),
             _phantom: core::marker::PhantomData,
         })
