@@ -33,6 +33,7 @@ pub enum CreationError {
     TypeSupport,
     Publisher,
     Subscription,
+    WakeCallback,
 }
 
 impl core::fmt::Display for CreationError {
@@ -210,12 +211,22 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
             "Failed to create ROS 2 publisher for topic '{}'",
             topic
         );
-        let subscription = fail!(from origin,
+        let mut subscription = fail!(from origin,
             when rcl::Subscription::create(&self.node, topic, type_support),
             with CreationError::Subscription,
             "Failed to create ROS 2 subscription for topic '{}'",
             topic
         );
+
+        // Reactive mode: incoming ROS 2 data wakes the tunnel.
+        if let Some(wake) = &self.wake {
+            let wake = wake.clone();
+            fail!(from origin,
+                when subscription.on_new_message(Box::new(move |_number_of_events| wake.signal())),
+                with CreationError::WakeCallback,
+                "Failed to register wake callback on ROS 2 subscription"
+            );
+        }
 
         // Only services declaring the RosHeader user header receive the
         // remote origin; anything else (e.g. a header-less local service)
