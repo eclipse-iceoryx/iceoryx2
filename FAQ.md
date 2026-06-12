@@ -31,6 +31,7 @@
     * [Unable To Connect Due To `IncompatibleTypes`](#unable-to-connect-due-to-incompatibletypes)
     * [Failed To Create Port Due To `ExceedsMaxSupported**`](#failed-to-create-port-due-to-exceedsmaxsupported)
     * [Insufficient Permission To Remove Shared Memory](#insufficient-permission-to-remove-shared-memory)
+    * [Encountered A `SIGBUS` Signal](#encountered-a-sigbus-signal)
 
 ## Tips And Tricks
 
@@ -153,12 +154,39 @@ applications interoperabel.
 
 ### Docker
 
+#### Small Shared Memory Size
+
 By default, a Docker container has a shared memory size of 64 MB. This can be
 exceeded quickly, since iceoryx2 always pre-allocates memory for the worst-case
 scenario.
 
 The shared memory size can be adjusted with the `--shm-size=` parameter, see:
 [https://docs.docker.com/engine/containers/run/#runtime-constraints-on-resources](https://docs.docker.com/engine/containers/run/#runtime-constraints-on-resources)
+
+#### Slow System
+
+iceoryx2 uses the `ICEORYX2_ROOT_PATH` to store operational files for services
+and nodes.
+
+By default, the root path in iceoryx2 is `/tmp/iceoryx2`, which is usually
+located on a tmpfs filesystem. Most Linux distributions mount `/tmp` as tmpfs,
+meaning it resides in virtual memory and does not require hard disk interaction.
+
+In larger setups that run many iceoryx2 nodes, many filesystem operations can
+happen concurrently, for example when starting or stopping many processes.
+
+In Docker, `/tmp` is not mounted as tmpfs by default.
+
+You can check whether `/tmp` is mounted as tmpfs with the following command:
+
+```sh
+df -h --type=tmpfs
+```
+
+There are two ways to use tmpfs in Docker:
+
+1. Mount the host’s `/tmp` folder directly into Docker.
+2. Create a tmpfs mount in Docker: [https://docs.docker.com/engine/storage/tmpfs](https://docs.docker.com/engine/storage/tmpfs)
 
 ### Async API
 
@@ -676,3 +704,21 @@ chmod -t /dev/shm
 
 Do this only during development. Changing permissions on `/dev/shm` can affect
 other applications on the system.
+
+### Encountered a `SIGBUS` Signal
+
+If a process crashes due to a `SIGBUS` signal, it can indicate that the system
+is out of memory. On Linux, this can be caused by the kernel's memory
+overcommitment behavior. Memory pages are only allocated when they are actually
+used, which allows a process to reserve more memory than the system has
+available.
+
+You can disable memory overcommitment as root with the following command:
+
+```sh
+echo 2 > /proc/sys/vm/overcommit_memory
+```
+
+After this adjustment, when creating services, iceoryx2 will immediately return
+an out-of-memory error as soon as a service or port requires more memory than
+the system has available.
