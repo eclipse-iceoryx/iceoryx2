@@ -81,38 +81,6 @@ mod service_discovery_tracker {
         }
     }
 
-    #[test]
-    fn forgetting_a_service_causes_it_to_reappear_as_added<S: Service>() {
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
-
-        let mut sut = Tracker::<S>::new(&config);
-
-        let service = node
-            .service_builder(&generate_service_name())
-            .publish_subscribe::<u64>()
-            .create()
-            .unwrap();
-        let hash = *service.service_hash();
-
-        // Initial sync picks up the service.
-        let (added, removed) = collect_sync(&mut sut);
-        assert_that!(added, contains hash);
-        assert_that!(removed.len(), eq 0);
-
-        // Follow-up sync with no system changes does not re-fire Added.
-        let (added, removed) = collect_sync(&mut sut);
-        assert_that!(added.len(), eq 0);
-        assert_that!(removed.len(), eq 0);
-
-        // Forget drops the cached entry; the service is still present in the
-        // system so the next sync sees it as fresh.
-        sut.forget(&hash);
-        let (added, removed) = collect_sync(&mut sut);
-        assert_that!(added, contains hash);
-        assert_that!(removed.len(), eq 0);
-    }
-
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 

@@ -20,6 +20,7 @@
 * [#1616](https://github.com/eclipse-iceoryx/iceoryx2/issues/1616) Add reactive execution mode to tunnel
 * [#1649](https://github.com/eclipse-iceoryx/iceoryx2/issues/1649) Add `IOX2_DEFINE_TYPE_NAME` to the C++ bindings to set the cross-language type name for types that cannot carry an `IOX2_TYPE_NAME` member
 * [#1707](https://github.com/eclipse-iceoryx/iceoryx2/issues/1707) Expose `CustomHeaderMarker` and `CustomPayloadMarker` in C++ bindings
+* [#1722](https://github.com/eclipse-iceoryx/iceoryx2/issues/1722) Remove allocations in tunnel hot path
 
 ### Bugfixes
 

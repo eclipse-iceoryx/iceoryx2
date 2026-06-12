@@ -61,6 +61,7 @@
 
 extern crate alloc;
 
+mod bridge;
 mod builder;
 mod discovery;
 mod ports;
