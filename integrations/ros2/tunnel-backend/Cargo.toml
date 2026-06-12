@@ -26,6 +26,5 @@ iceoryx2-log = { version = "0.9.999", path = "../../../iceoryx2-log/log", featur
 iceoryx2-services-common = { version = "0.9.999", path = "../../../iceoryx2-services/common", features = ["std"] }
 iceoryx2-services-tunnel-backend = { version = "0.9.999", path = "../../../iceoryx2-services/tunnel-backend", features = ["std"] }
 
-r2r = { version = "0.9.5" }
-
-[dev-dependencies]
+libloading = { version = "0.8" }
+r2r_rcl = { version = "0.9.5" }

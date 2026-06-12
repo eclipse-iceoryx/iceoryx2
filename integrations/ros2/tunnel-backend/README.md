@@ -1,7 +1,9 @@
 # iceoryx2-integrations-ros2-tunnel-backend
 
 Tunnel backend connecting native iceoryx2 applications with ROS 2 nodes,
-implemented on top of [r2r](https://github.com/sequenceplanner/r2r).
+implemented on the
+[r2r_rcl](https://github.com/sequenceplanner/r2r/tree/master/r2r_rcl)
+bindings to `rcl`.
 
 ## Prerequisites
 

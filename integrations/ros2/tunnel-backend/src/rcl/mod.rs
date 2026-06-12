@@ -10,18 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Tunnel backend connecting native iceoryx2 applications with ROS 2 nodes,
-//! implemented on the [r2r_rcl](https://docs.rs/r2r_rcl) bindings to `rcl`.
+//! Safe RAII wrappers around the `r2r_rcl` bindings, exposing only what the
+//! tunnel calls. Everything stays on the tunnel thread.
 
-// Stub phase: builder fields are stored but not yet read
-#![allow(dead_code)]
-// All unsafe lives in the `rcl` and `typesupport` wrapper modules.
-#![deny(unsafe_code)]
+mod node;
 
-pub mod backend;
-pub mod discovery;
-pub mod relays;
-
-#[allow(unsafe_code)]
-pub(crate) mod rcl;
-pub use backend::*;
+pub(crate) use node::*;
