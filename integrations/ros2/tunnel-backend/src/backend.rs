@@ -21,9 +21,22 @@ use crate::{
     relays::{Factory, event, publish_subscribe},
 };
 
+/// A ROS 2 topic to bridge.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct TopicConfig {
+    /// Fully-qualified ROS 2 topic name, e.g. `/Camera/FrontRight`.
+    pub topic: String,
+    /// ROS 2 type name, e.g. `geometry_msgs/msg/Twist`.
+    pub type_name: String,
+}
+
 /// Configuration for the [`Ros2Backend`].
 #[derive(Debug, Default)]
-pub struct Config {}
+pub struct Config {
+    /// The topics to bridge. Typesupport for every entry is resolved during
+    /// backend creation, which fails if any cannot be resolved.
+    pub topics: Vec<TopicConfig>,
+}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {}
