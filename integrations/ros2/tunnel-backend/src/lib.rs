@@ -20,6 +20,7 @@
 
 pub mod backend;
 pub mod discovery;
+pub(crate) mod keys;
 pub mod relays;
 
 #[allow(unsafe_code)]
