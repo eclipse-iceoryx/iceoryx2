@@ -12,7 +12,6 @@
 
 use std::ffi::CString;
 use std::ffi::c_void;
-use std::rc::Rc;
 
 use r2r_rcl::{
     RCL_RET_OK, RCL_RET_SUBSCRIPTION_TAKE_FAILED, rcl_get_zero_initialized_subscription,
@@ -20,7 +19,7 @@ use r2r_rcl::{
     rcl_subscription_init, rcl_take_serialized_message, rcutils_allocator_t, rmw_message_info_t,
 };
 
-use crate::rcl::node::NodeInner;
+use crate::rcl::NodeHandle;
 use crate::typesupport::TypeSupportHandle;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -77,14 +76,14 @@ impl From<&rmw_message_info_t> for MessageInfo {
 #[derive(Debug)]
 pub struct Subscription {
     subscription: *mut r2r_rcl::rcl_subscription_t,
-    node: Rc<NodeInner>,
+    node: NodeHandle,
     /// Keeps the typesupport library loaded while the endpoint uses it.
     _type_support: TypeSupportHandle,
 }
 
 impl Subscription {
     pub fn create(
-        node: &Rc<NodeInner>,
+        node: &NodeHandle,
         topic: &str,
         type_support: TypeSupportHandle,
     ) -> Result<Self, CreationError> {
@@ -92,7 +91,9 @@ impl Subscription {
 
         unsafe {
             let mut subscription = Box::new(rcl_get_zero_initialized_subscription());
-            let options = rcl_subscription_get_default_options();
+            let mut options = rcl_subscription_get_default_options();
+            // Prevent loopback.
+            options.rmw_subscription_options.ignore_local_publications = true;
             let ret = rcl_subscription_init(
                 subscription.as_mut(),
                 node.handle(),

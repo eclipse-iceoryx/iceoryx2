@@ -58,7 +58,7 @@ impl core::error::Error for AnnouncementError {}
 /// the configuration is the allowlist, the graph decides timing.
 #[derive(Debug)]
 pub struct Discovery<S: Service> {
-    node: rcl::Node,
+    node: rcl::NodeHandle,
     /// The configured allowlist: ROS 2 topic → type name.
     topics: HashMap<String, String>,
     /// Configured topics currently present in the graph, with the service
@@ -68,7 +68,7 @@ pub struct Discovery<S: Service> {
 }
 
 impl<S: Service> Discovery<S> {
-    pub(crate) fn new(node: rcl::Node, topics: &[TopicConfig]) -> Self {
+    pub(crate) fn new(node: rcl::NodeHandle, topics: &[TopicConfig]) -> Self {
         Self {
             node,
             topics: topics
