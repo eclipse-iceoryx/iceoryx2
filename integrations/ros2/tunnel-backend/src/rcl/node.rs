@@ -11,13 +11,16 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::cell::UnsafeCell;
+use std::ffi::CStr;
 use std::rc::Rc;
 
 use r2r_rcl::{
-    RCL_RET_OK, rcl_context_fini, rcl_context_t, rcl_get_zero_initialized_context,
-    rcl_get_zero_initialized_init_options, rcl_get_zero_initialized_node, rcl_init,
-    rcl_init_options_fini, rcl_init_options_init, rcl_node_fini, rcl_node_get_default_options,
+    RCL_RET_OK, rcl_context_fini, rcl_context_t, rcl_get_topic_names_and_types,
+    rcl_get_zero_initialized_context, rcl_get_zero_initialized_init_options,
+    rcl_get_zero_initialized_node, rcl_init, rcl_init_options_fini, rcl_init_options_init,
+    rcl_names_and_types_fini, rcl_names_and_types_t, rcl_node_fini, rcl_node_get_default_options,
     rcl_node_init, rcl_node_t, rcl_ret_t, rcl_shutdown, rcutils_get_default_allocator,
+    rcutils_string_array_t,
 };
 
 use iceoryx2_log::{fail, warn};
@@ -42,6 +45,19 @@ impl core::fmt::Display for CreationError {
 }
 
 impl core::error::Error for CreationError {}
+
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum GraphError {
+    Query(i32),
+}
+
+impl core::fmt::Display for GraphError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "GraphError::{self:?}")
+    }
+}
+
+impl core::error::Error for GraphError {}
 
 /// An rcl node together with the context it belongs to. The tunnel is a single
 /// node, so it can be coupled to the context.
@@ -186,4 +202,45 @@ impl NodeHandle {
     pub(crate) fn handle(&self) -> *mut rcl_node_t {
         self.inner.handle()
     }
+
+    pub fn topic_names_and_types(&self) -> Result<Vec<(String, Vec<String>)>, GraphError> {
+        unsafe {
+            let mut allocator = rcutils_get_default_allocator();
+            let mut names_and_types: rcl_names_and_types_t = core::mem::zeroed();
+            let ret = rcl_get_topic_names_and_types(
+                self.inner.node.get(),
+                &mut allocator,
+                false,
+                &mut names_and_types,
+            );
+            if ret != RCL_RET_OK as i32 {
+                return Err(GraphError::Query(ret));
+            }
+
+            let mut topics = Vec::with_capacity(names_and_types.names.size);
+            for i in 0..names_and_types.names.size {
+                let name = string_at(&names_and_types.names, i);
+                let types_array = &*names_and_types.types.add(i);
+                let types = (0..types_array.size)
+                    .map(|j| string_at(types_array, j))
+                    .collect();
+                topics.push((name, types));
+            }
+
+            let _ = rcl_names_and_types_fini(&mut names_and_types);
+            Ok(topics)
+        }
+    }
+}
+
+/// Copies the string at `index` out of an rcutils string array.
+///
+/// # Safety
+///
+/// `index` must be within bounds and the array's entries must be valid
+/// null-terminated strings (guaranteed by rcl for graph query results).
+unsafe fn string_at(array: &rcutils_string_array_t, index: usize) -> String {
+    unsafe { CStr::from_ptr(*array.data.add(index)) }
+        .to_string_lossy()
+        .into_owned()
 }
