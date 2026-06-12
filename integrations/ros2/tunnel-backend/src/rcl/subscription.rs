@@ -16,11 +16,15 @@ use std::ffi::c_void;
 use r2r_rcl::{
     RCL_RET_OK, RCL_RET_SUBSCRIPTION_TAKE_FAILED, rcl_get_zero_initialized_subscription,
     rcl_serialized_message_t, rcl_subscription_fini, rcl_subscription_get_default_options,
-    rcl_subscription_init, rcl_take_serialized_message, rcutils_allocator_t, rmw_message_info_t,
+    rcl_subscription_init, rcl_subscription_set_on_new_message_callback,
+    rcl_take_serialized_message, rcutils_allocator_t, rmw_message_info_t,
 };
 
 use crate::rcl::NodeHandle;
 use crate::typesupport::TypeSupportHandle;
+
+/// Invoked by the RMW (from a middleware thread) when new messages arrive.
+pub type NewMessageCallback = Box<dyn Fn(usize) + Send>;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -35,6 +39,19 @@ impl core::fmt::Display for CreationError {
 }
 
 impl core::error::Error for CreationError {}
+
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum CallbackError {
+    Set(i32),
+}
+
+impl core::fmt::Display for CallbackError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "CallbackError::{self:?}")
+    }
+}
+
+impl core::error::Error for CallbackError {}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum TakeError {
@@ -73,12 +90,26 @@ impl From<&rmw_message_info_t> for MessageInfo {
 }
 
 /// Receives serialized messages from a ROS 2 topic.
-#[derive(Debug)]
 pub struct Subscription {
     subscription: *mut r2r_rcl::rcl_subscription_t,
+    /// TODO: Is there a better way than double Box?
+    /// The registered new-message callback. Boxed twice: the inner box is
+    /// the object the trampoline's thin `user_data` pointer refers to, and
+    /// must stay at a stable heap address while registered.
+    callback: Option<Box<NewMessageCallback>>,
     node: NodeHandle,
     /// Keeps the typesupport library loaded while the endpoint uses it.
     _type_support: TypeSupportHandle,
+}
+
+impl core::fmt::Debug for Subscription {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Subscription")
+            .field("subscription", &self.subscription)
+            .field("callback", &self.callback.is_some())
+            .field("node", &self.node)
+            .finish_non_exhaustive()
+    }
 }
 
 impl Subscription {
@@ -107,10 +138,35 @@ impl Subscription {
 
             Ok(Self {
                 subscription: Box::into_raw(subscription),
+                callback: None,
                 node: node.clone(),
                 _type_support: type_support,
             })
         }
+    }
+
+    /// Registers `callback` to be invoked whenever new messages arrive on
+    /// the subscription, with the number of new messages. It is invoked by
+    /// the RMW from a middleware thread and must not panic; a previously
+    /// registered callback is replaced.
+    pub fn on_new_message(&mut self, callback: NewMessageCallback) -> Result<(), CallbackError> {
+        // The trampoline's `user_data` refers to the heap-stable inner box.
+        let callback = Box::new(callback);
+        let user_data: *const NewMessageCallback = &*callback;
+
+        let ret = unsafe {
+            rcl_subscription_set_on_new_message_callback(
+                self.subscription,
+                Some(new_message_trampoline),
+                user_data.cast(),
+            )
+        };
+        if ret != RCL_RET_OK as i32 {
+            return Err(CallbackError::Set(ret));
+        }
+
+        self.callback = Some(callback);
+        Ok(())
     }
 
     /// Takes the next message from the subscription's queue directly into a
@@ -169,10 +225,26 @@ impl Subscription {
 impl Drop for Subscription {
     fn drop(&mut self) {
         unsafe {
+            // Clear the callback before the closure is dropped: a middleware
+            // thread must not invoke a freed closure.
+            if self.callback.is_some() {
+                let _ = rcl_subscription_set_on_new_message_callback(
+                    self.subscription,
+                    None,
+                    core::ptr::null(),
+                );
+            }
+
             let mut subscription = Box::from_raw(self.subscription);
             let _ = rcl_subscription_fini(subscription.as_mut(), self.node.handle());
         }
     }
+}
+
+/// Bounces the RMW's C callback to the registered [`NewMessageCallback`].
+unsafe extern "C" fn new_message_trampoline(user_data: *const c_void, number_of_events: usize) {
+    let callback = unsafe { &*(user_data as *const NewMessageCallback) };
+    callback(number_of_events);
 }
 
 /// An `rcutils` allocator that satisfies the single grow-from-empty request
