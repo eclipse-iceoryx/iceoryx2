@@ -18,7 +18,9 @@ set(ICEORYX2_CXX_FLAGS CACHE INTERNAL "")
 set(ICEORYX2_TEST_CXX_FLAGS CACHE INTERNAL "")
 
 if(CMAKE_C_COMPILER_ID MATCHES MSVC)
-    set(ICEORYX2_CXX_FLAGS      "/EHsc" CACHE INTERNAL "") # TODO same as iceoryx classic; check if we should change the exception handling for iceoryx2
+    # /EHsc: enable synchronous C++ exception handling
+    # /Zc:__cplusplus: define the '__cplusplus' macro with correct value
+    set(ICEORYX2_CXX_FLAGS      "/EHsc;/Zc:__cplusplus" CACHE INTERNAL "") # TODO same as iceoryx classic; check if we should change the exception handling for iceoryx2
     set(ICEORYX2_TEST_CXX_FLAGS "/bigobj" CACHE INTERNAL "")
 endif()
 
