@@ -14,5 +14,8 @@
 //! tunnel calls. Everything stays on the tunnel thread.
 
 mod node;
+mod publisher;
 
 pub(crate) use node::*;
+#[allow(unused_imports)]
+pub(crate) use publisher::*;
