@@ -269,7 +269,7 @@ impl<Service: service::Service> Sender<Service> {
                      *
                      * */
                 }
-                Err(ZeroCopySendError::NoConnectedReceiver)
+                Err(ZeroCopySendError::NoConnectedReceiverAndBufferIsFull)
                 | Err(ZeroCopySendError::ChannelIsClosed) => {
                     // causes no problem, when the receiver/subscriber disconnected it will be
                     // cleaned up in the next round and it is no failure when we skip delivering data
