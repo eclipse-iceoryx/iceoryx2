@@ -15,7 +15,7 @@ use core::fmt::Debug;
 
 use iceoryx2::service::Service;
 
-use crate::traits::{Discovery, EventRelay, PublishSubscribeRelay, RelayFactory};
+use crate::traits::{Discovery, EventRelay, PublishSubscribeRelay, RelayFactory, Translator};
 use crate::types::wake::WakeHandle;
 
 /// Core interface for tunnel backends that extend iceoryx2 over another
@@ -40,6 +40,7 @@ use crate::types::wake::WakeHandle;
 /// ```text
 /// Backend
 ///   ├── Config
+///   ├── Translator
 ///   ├── Builder (BackendBuilder)
 ///   ├── Discovery
 ///   ├── RelayFactory
@@ -52,6 +53,7 @@ use crate::types::wake::WakeHandle;
 ///
 /// Each component has specific responsibilities:
 /// - **Config**: Backend-specific connection and initialization settings
+/// - **Translator**: Payload transformation strategy applied to payloads crossing the backend.
 /// - **Builder**: Constructs the [`Backend`] from its [`Backend::Config`]
 /// - **Discovery**: Mechanisms to query the backend communication mechanism for remote services and announce local [`Service`]s
 /// - **Relays**: Handle data transmission for each messaging pattern between the backend and iceoryx2
@@ -63,6 +65,9 @@ use crate::types::wake::WakeHandle;
 pub trait Backend<S: Service>: Sized {
     /// Configuration type for the backend initialization
     type Config: Default + Debug;
+
+    /// Payload translation strategy applied by this backend.
+    type Translator: Translator;
 
     /// Error type that can occur during backend creation
     type CreationError: Error;
@@ -112,6 +117,9 @@ pub trait BackendBuilder<S: Service> {
 
     /// Error type returned by [`BackendBuilder::create`].
     type CreationError: Error;
+
+    /// Sets the payload translation strategy the backend will apply.
+    fn translator(self, translator: <Self::Backend as Backend<S>>::Translator) -> Self;
 
     /// Consumes the builder, producing a configured [`Backend`].
     fn create(self) -> Result<Self::Backend, Self::CreationError>;

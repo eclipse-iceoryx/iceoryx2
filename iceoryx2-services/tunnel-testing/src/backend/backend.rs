@@ -16,7 +16,7 @@
 
 use alloc::rc::Rc;
 use iceoryx2::service::Service;
-use iceoryx2_services_tunnel_backend::traits::{Backend, BackendBuilder};
+use iceoryx2_services_tunnel_backend::traits::{Backend, BackendBuilder, Passthrough, Translator};
 
 use crate::backend::{
     discovery::Discovery,
@@ -41,17 +41,20 @@ impl core::fmt::Display for CreationError {
 impl core::error::Error for CreationError {}
 
 #[derive(Debug)]
-pub struct TestBackend<S: Service> {
+pub struct TestBackend<S: Service, T: Translator = Passthrough> {
     session: Rc<Session>,
     discovery: Discovery,
+    #[allow(dead_code)]
+    translator: T,
     _phantom: core::marker::PhantomData<S>,
 }
 
-impl<S: Service> Backend<S> for TestBackend<S> {
+impl<S: Service, T: Translator> Backend<S> for TestBackend<S, T> {
     type Config = Config;
+    type Translator = T;
     type CreationError = CreationError;
     type Builder<'config>
-        = Builder<'config, S>
+        = Builder<'config, S, T>
     where
         Self::Config: 'config;
 
@@ -80,23 +83,30 @@ impl<S: Service> Backend<S> for TestBackend<S> {
 
 /// Builder for [`TestBackend`].
 #[derive(Debug)]
-pub struct Builder<'config, S: Service> {
+pub struct Builder<'config, S: Service, T: Translator = Passthrough> {
     _config: &'config Config,
+    translator: T,
     _phantom: core::marker::PhantomData<S>,
 }
 
-impl<'config, S: Service> Builder<'config, S> {
+impl<'config, S: Service, T: Translator> Builder<'config, S, T> {
     pub fn new(config: &'config Config) -> Self {
         Self {
             _config: config,
+            translator: T::default(),
             _phantom: core::marker::PhantomData,
         }
     }
 }
 
-impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
-    type Backend = TestBackend<S>;
+impl<S: Service, T: Translator> BackendBuilder<S> for Builder<'_, S, T> {
+    type Backend = TestBackend<S, T>;
     type CreationError = CreationError;
+
+    fn translator(mut self, translator: T) -> Self {
+        self.translator = translator;
+        self
+    }
 
     fn create(self) -> Result<Self::Backend, Self::CreationError> {
         let session = Rc::new(Session::create().map_err(CreationError::CreateSession)?);
@@ -105,6 +115,7 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
         Ok(TestBackend {
             session,
             discovery,
+            translator: self.translator,
             _phantom: core::marker::PhantomData,
         })
     }

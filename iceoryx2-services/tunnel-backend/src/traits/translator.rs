@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Contributors to the Eclipse Foundation
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,14 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod backend;
-mod discovery;
-mod relay;
-mod translator;
+use core::fmt::Debug;
 
-pub mod testing;
+/// Strategy for translating payload bytes between the wire format and the
+/// iceoryx2 payload.
+pub trait Translator: Default + Debug + Send + 'static {}
 
-pub use backend::*;
-pub use discovery::*;
-pub use relay::*;
-pub use translator::*;
+/// The identity [`Translator`]: payloads cross unmodified in both directions.
+#[derive(Debug, Default, Clone, Copy)]
+pub struct Passthrough;
+
+impl Translator for Passthrough {}

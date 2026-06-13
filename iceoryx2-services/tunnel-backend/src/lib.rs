@@ -31,6 +31,7 @@
 //! - [`RelayBuilder`](traits::RelayBuilder): Builder pattern for configuring relays
 //! - [`PublishSubscribeRelay`](traits::PublishSubscribeRelay): Bidirectional pub-sub data tunneling
 //! - [`EventRelay`](traits::EventRelay): Bidirectional event notification tunneling
+//! - [`Translator`](traits::Translator): Payload translation strategy applied as data crosses the backend
 //!
 //! # Architecture
 //!
