@@ -196,12 +196,8 @@ impl<'a> Drop for TrackerGuard<'a> {
         if self.has_ownership.load(Ordering::Relaxed) {
             self.state.remove(self.path);
         } else {
-            if let Some(entry) = self.state.get_mut(self.path) {
-                if entry.owned_by_process {
-                    if entry.state == ProcessState::CleaningUp {
-                        entry.state = ProcessState::Dead;
-                    }
-                } else {
+            if let Some(entry) = self.state.get(self.path) {
+                if !entry.owned_by_process {
                     self.state.remove(self.path);
                 }
             }
@@ -246,7 +242,7 @@ impl<'a> TrackerGuard<'a> {
                     has_ownership: AtomicBool::new(true),
                 })
             }
-            Some(v) => match v.state {
+            Some(v) => match &mut v.state {
                 ProcessState::Alive => Err(ProcessCleanerCreateError::ProcessIsStillAlive),
                 ProcessState::CleaningUp => {
                     Err(ProcessCleanerCreateError::ProcessIsBeingCleanedUpOrCrashedDuringCleanup)
@@ -254,14 +250,11 @@ impl<'a> TrackerGuard<'a> {
                 ProcessState::Starting => Err(
                     ProcessCleanerCreateError::ProcessIsInitializedOrCrashedDuringInitialization,
                 ),
-                ProcessState::Dead => {
-                    v.state = ProcessState::CleaningUp;
-                    Ok(Self {
-                        state,
-                        path,
-                        has_ownership: AtomicBool::new(true),
-                    })
-                }
+                ProcessState::Dead => Ok(Self {
+                    state,
+                    path,
+                    has_ownership: AtomicBool::new(true),
+                }),
                 ProcessState::DoesNotExist => {
                     fatal_panic!(from "TrackerGuard::new_cleaning_up()",
                             "This should never happen! Process state tracker of non-existing process state was not removed.");
@@ -683,7 +676,22 @@ struct StateFiles {
 
 impl Abandonable for StateFiles {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
+        let msg = "Unable to abandon state files";
         let this = unsafe { this.as_mut() };
+        let mut lock_guard = fatal_panic!(from "StateFiles::abandon_in_place",
+            when PROCESS_STATE_TRACKING.lock(),
+            "This should never happen. {msg} since the global mutex could not be locked.");
+
+        if let Some(path) = this.state.as_ref().and_then(|f| f.path()) {
+            if let Some(entry) = lock_guard.get_mut(path) {
+                if !entry.owned_by_process {
+                    lock_guard.remove(path);
+                } else {
+                    entry.state = ProcessState::Dead;
+                }
+            }
+        }
+
         for file in [&mut this.state, &mut this.owner_lock, &mut this.context] {
             if let Some(f) = file.take() {
                 f.abandon();
@@ -768,16 +776,6 @@ impl Abandonable for ProcessGuard {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         let msg = "Unable to stage death";
-
-        let mut lock_guard = fatal_panic!(from "ProcessGuard::abandon_in_place()",
-            when PROCESS_STATE_TRACKING.lock(),
-            "This should never happen. {msg} since the global mutex could not be locked.");
-
-        if let Some(f) = this.files.state.as_ref().and_then(|v| v.path()) {
-            lock_guard
-                .entry(*f)
-                .and_modify(|v| v.state = ProcessState::Dead);
-        }
 
         if let Err(e) = this
             .files
@@ -1220,14 +1218,13 @@ impl ProcessCleaner {
         let mut lock_guard = fatal_panic!(from origin, when PROCESS_STATE_TRACKING.lock(),
             "This should never happen. {msg} since the global mutex could not be locked.");
 
-        let tracker_guard = match TrackerGuard::new_cleaning_up(path, &mut lock_guard) {
-            Ok(v) => v,
+        match TrackerGuard::new_cleaning_up(path, &mut lock_guard) {
+            Ok(v) => v.release_ownership(),
             Err(e) => {
                 fail!(from origin, with e,
                     "{msg} since the internal tracking failed. [{e:?}]");
             }
         };
-        tracker_guard.release_ownership();
 
         let owner_lock_file = match ProcessMonitor::open_file(
             origin,
@@ -1294,6 +1291,9 @@ impl ProcessCleaner {
         context_file.acquire_ownership();
         state_file.acquire_ownership();
         owner_lock_file.acquire_ownership();
+        lock_guard
+            .entry(*path)
+            .and_modify(|v| v.state = ProcessState::CleaningUp);
         Ok(Self {
             files: StateFiles {
                 state: Some(state_file),

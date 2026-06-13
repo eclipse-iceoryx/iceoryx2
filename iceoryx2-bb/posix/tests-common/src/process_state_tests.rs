@@ -474,47 +474,12 @@ pub fn cleaner_cannot_acquire_a_corrupted_process() {
     assert_that!(ProcessCleaner::new(&path).err(), eq Some(ProcessCleanerCreateError::ProcessMonitorStateError(ProcessMonitorStateError::CorruptedState)));
 }
 
-// START: OS with IPC only lock detection
-//
-// the lock detection does work on some OS only in the inter process context.
-// In the process local context the lock is not detected when the fcntl GETLK call is originating
-// from the same thread os the fcntl SETLK call. If it is called from a different thread GETLK
-// blocks despite it should be non-blocking.
-#[cfg(not(any(
-    target_os = "linux",
-    target_os = "freebsd",
-    target_os = "macos",
-    target_os = "nto"
-)))]
 #[test]
 pub fn owner_lock_cannot_be_acquired_twice() {
     create_test_directory();
     let path = generate_file_path();
-    let mut owner_lock_path = path;
-    owner_lock_path.push_bytes(b"_owner_lock").unwrap();
-    let mut context_path = path;
-    context_path.push_bytes(b"_context").unwrap();
-
-    let mut context_file = FileBuilder::new(&context_path)
-        .has_ownership(true)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
-    context_file
-        .write_val(&UniqueProcessId::new_zeroed())
-        .unwrap();
-
-    let _state_file = FileBuilder::new(&path)
-        .has_ownership(true)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
-
-    let _owner_lock_file = FileBuilder::new(&owner_lock_path)
-        .has_ownership(true)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
+    let guard = ProcessGuardBuilder::new().create(&path).unwrap();
+    guard.abandon();
 
     let _owner_lock = ProcessCleaner::new(&path).unwrap();
     let owner_lock = ProcessCleaner::new(&path);
@@ -524,8 +489,6 @@ pub fn owner_lock_cannot_be_acquired_twice() {
         ProcessCleanerCreateError::ProcessIsBeingCleanedUpOrCrashedDuringCleanup
     );
 }
-
-// END: OS with IPC only lock detection
 
 #[test]
 pub fn abandoning_a_process_guard_results_in_a_dead_process() {
