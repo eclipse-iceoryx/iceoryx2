@@ -46,13 +46,18 @@ impl iceoryx2_services_tunnel_backend::traits::Discovery for Discovery {
     type AnnouncementError = AnnouncementError;
 
     fn announce(&self, _event: DiscoveryEventRef<'_>) -> Result<(), Self::AnnouncementError> {
-        todo!()
+        // Nothing to announce explicitly. The tunnel creates a relay for
+        // every service it discovers on iceoryx2, and relay creation
+        // registers the ROS 2 endpoints, which DDS discovery (SEDP) broadcasts
+        // to all participants.
+        Ok(())
     }
 
     fn discover<E: Error, F: FnMut(DiscoveryEvent) -> Result<(), E>>(
         &self,
         _process_discovery: F,
     ) -> Result<(), Self::DiscoveryError> {
-        todo!()
+        // To be implemented with receive path.
+        Ok(())
     }
 }

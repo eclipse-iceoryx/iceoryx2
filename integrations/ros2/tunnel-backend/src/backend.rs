@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::rc::Rc;
 use std::sync::Arc;
 
 use iceoryx2::service::{Service, local_threadsafe};
@@ -18,8 +19,13 @@ use iceoryx2_services_tunnel_backend::types::wake::WakeHandle;
 
 use crate::{
     discovery::Discovery,
+    rcl,
     relays::{Factory, event, publish_subscribe},
+    typesupport::{self, TypeSupportRegistry},
 };
+
+/// The name of the ROS 2 node representing the tunnel.
+const NODE_NAME: &str = "iceoryx2_tunnel";
 
 /// A ROS 2 topic to bridge.
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -38,8 +44,11 @@ pub struct Config {
     pub topics: Vec<TopicConfig>,
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum CreationError {}
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub enum CreationError {
+    Node(rcl::node::CreationError),
+    TypeSupport(typesupport::LoadError),
+}
 
 impl core::fmt::Display for CreationError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -51,6 +60,10 @@ impl core::error::Error for CreationError {}
 
 #[derive(Debug)]
 pub struct Ros2Backend<S: Service> {
+    node: Rc<rcl::Node>,
+    /// Typesupport for all configured topics, loaded dynamically on
+    /// initialization.
+    type_support: Rc<TypeSupportRegistry>,
     discovery: Discovery,
     /// `Some` when constructed in reactive mode. Cloned into each relay so
     /// that incoming ROS 2 data signals the wake.
@@ -80,7 +93,11 @@ impl<S: Service> Backend<S> for Ros2Backend<S> {
     }
 
     fn relay_builder(&self) -> Self::RelayFactory<'_> {
-        Factory::new(self.wake.clone())
+        Factory::new(
+            self.node.clone(),
+            self.type_support.clone(),
+            self.wake.clone(),
+        )
     }
 
     fn discovery(&self) -> &impl iceoryx2_services_tunnel_backend::traits::Discovery {
@@ -111,7 +128,24 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
     type CreationError = CreationError;
 
     fn create(self) -> Result<Self::Backend, Self::CreationError> {
-        todo!()
+        let node = Rc::new(rcl::Node::create(NODE_NAME, "").map_err(CreationError::Node)?);
+
+        // Load all typesupport libraries for configured topics during
+        // initialization.
+        let type_support = Rc::new(TypeSupportRegistry::default());
+        for topic in &self.config.topics {
+            type_support
+                .load(&topic.type_name)
+                .map_err(CreationError::TypeSupport)?;
+        }
+
+        Ok(Ros2Backend {
+            node,
+            type_support,
+            discovery: Discovery {},
+            wake: self.wake.map(Arc::new),
+            _phantom: core::marker::PhantomData,
+        })
     }
 }
 

@@ -38,7 +38,9 @@ impl core::fmt::Display for CreationError {
 
 impl core::error::Error for CreationError {}
 
-/// An rcl node together with the context it lives in.
+/// An rcl node together with the context it belongs to.
+/// The tunnel is a single node, so it can be coupled to
+/// the context.
 #[derive(Debug)]
 pub struct Node {
     node: *mut rcl_node_t,

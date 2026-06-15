@@ -4,7 +4,7 @@
 
 [package]
 name = "iceoryx2-integrations-ros2-tunnel-backend"
-description = "iceoryx2-integrations: ros2 tunnel backend implemented with r2r"
+description = "iceoryx2-integrations: ros2 tunnel backend"
 categories = ["network-programming"]
 edition = "2024"
 homepage = "https://iceoryx.io"

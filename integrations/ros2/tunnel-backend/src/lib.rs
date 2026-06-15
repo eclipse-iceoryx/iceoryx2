@@ -13,9 +13,8 @@
 //! Tunnel backend connecting native iceoryx2 applications with ROS 2 nodes,
 //! implemented on the [r2r_rcl](https://docs.rs/r2r_rcl) bindings to `rcl`.
 
-// Stub phase: builder fields are stored but not yet read
+// Work in progress. Not all APIs are implemented.
 #![allow(dead_code)]
-// All unsafe lives in the `rcl` and `typesupport` wrapper modules.
 #![deny(unsafe_code)]
 
 pub mod backend;
@@ -23,6 +22,8 @@ pub mod discovery;
 pub(crate) mod keys;
 pub mod relays;
 
+#[allow(unsafe_code)]
+pub(crate) mod payload;
 #[allow(unsafe_code)]
 pub(crate) mod rcl;
 #[allow(unsafe_code)]

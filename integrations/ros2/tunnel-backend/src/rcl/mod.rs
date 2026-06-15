@@ -11,11 +11,11 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! Safe RAII wrappers around the `r2r_rcl` bindings, exposing only what the
-//! tunnel calls. Everything stays on the tunnel thread.
+//! tunnel needs.
 
-mod node;
-mod publisher;
+pub(crate) mod node;
+pub(crate) mod publisher;
 
-pub(crate) use node::*;
+pub(crate) use node::Node;
 #[allow(unused_imports)]
-pub(crate) use publisher::*;
+pub(crate) use publisher::Publisher;

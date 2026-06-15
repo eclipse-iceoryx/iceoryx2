@@ -91,7 +91,6 @@ impl Publisher {
     /// Publishes the payload as-is; it must be a serialized message of the
     /// publisher's type.
     pub fn publish(&self, payload: &[u8]) -> Result<(), PublishError> {
-        // A non-owning view; rcl does not retain it beyond the call.
         let message = rcl_serialized_message_t {
             buffer: payload.as_ptr() as *mut u8,
             buffer_length: payload.len(),
