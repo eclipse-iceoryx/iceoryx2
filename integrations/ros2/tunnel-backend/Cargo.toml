@@ -1,0 +1,31 @@
+# Standalone workspace: building this crate requires a sourced ROS 2
+# environment, which the surrounding workspaces must not depend on.
+[workspace]
+
+[package]
+name = "iceoryx2-integrations-ros2-tunnel-backend"
+description = "iceoryx2-integrations: ros2 tunnel backend implemented with r2r"
+categories = ["network-programming"]
+edition = "2024"
+homepage = "https://iceoryx.io"
+keywords = [
+    "zero-copy",
+    "communication",
+    "ipc",
+    "publish-subscribe",
+    "ros2",
+]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/eclipse-iceoryx/iceoryx2"
+rust-version = "1.88"
+version = "0.9.999"
+
+[dependencies]
+iceoryx2 = { version = "0.9.999", path = "../../../iceoryx2", features = ["std"] }
+iceoryx2-log = { version = "0.9.999", path = "../../../iceoryx2-log/log", features = ["std"] }
+iceoryx2-services-common = { version = "0.9.999", path = "../../../iceoryx2-services/common", features = ["std"] }
+iceoryx2-services-tunnel-backend = { version = "0.9.999", path = "../../../iceoryx2-services/tunnel-backend", features = ["std"] }
+
+r2r = { version = "0.9.5" }
+
+[dev-dependencies]
