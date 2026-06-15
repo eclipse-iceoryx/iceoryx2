@@ -15,6 +15,7 @@
 # =============================================================================
 
 INTEGRATIONS_DIR := justfile_directory() / "integrations"
+ROS2_DIR := INTEGRATIONS_DIR / "ros2"
 
 SDK_CRATES_TO_PUBLISH := `echo \
     iceoryx2-pal-configuration          \

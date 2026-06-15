@@ -116,6 +116,7 @@ _verify-clippy workspace profile has_nostd extra_args:
 # Paths should be relative to repository root.
 MIRI_WHITELIST_SDK          := ""
 MIRI_WHITELIST_INTEGRATIONS := ""
+MIRI_WHITELIST_ROS2         := ""
 
 [private]
 _verify-miri workspace extra_args:
@@ -130,6 +131,7 @@ _verify-miri workspace extra_args:
         case "$WS" in
             sdk)          WHITELIST="{{MIRI_WHITELIST_SDK}}" ;;
             integrations) WHITELIST="{{MIRI_WHITELIST_INTEGRATIONS}}" ;;
+            ros2)         WHITELIST="{{MIRI_WHITELIST_ROS2}}" ;;
         esac
 
         for CRATE in $WHITELIST; do
@@ -155,8 +157,8 @@ _verify-std-propagation what:
     set -euo pipefail
 
     case "{{what}}" in
-        sdk|integrations|all) just _verify-std-propagation-workspace "{{what}}" ;;
-        *)                    just _verify-std-propagation-package "{{what}}" ;;
+        sdk|integrations|ros2|all) just _verify-std-propagation-workspace "{{what}}" ;;
+        *)                         just _verify-std-propagation-package "{{what}}" ;;
     esac
 
 [private]
@@ -179,7 +181,15 @@ _verify-std-propagation-workspace workspace:
             integrations)
                 TOMLS=$(find ./integrations -name "Cargo.toml" \
                     -not -path "*/target/*" \
+                    -not -path "./integrations/ros2/*" \
                     | grep -v "^\./integrations/Cargo\.toml$" \
+                    | sort)
+                ;;
+            ros2)
+                TOMLS=$(find ./integrations/ros2 -name "Cargo.toml" \
+                    -not -path "*/target/*" \
+                    -not -path "./integrations/ros2/examples/*" \
+                    | grep -v "^\./integrations/ros2/Cargo\.toml$" \
                     | sort)
                 ;;
         esac

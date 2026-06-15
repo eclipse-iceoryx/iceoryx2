@@ -71,6 +71,7 @@ _doc-rust workspace:
         case "$WS" in
             sdk)          echo "Available at: {{justfile_directory()}}/target/doc/" ;;
             integrations) echo "Available at: {{INTEGRATIONS_DIR}}/target/doc/" ;;
+            ros2)         echo "Available at: {{ROS2_DIR}}/target/doc/" ;;
         esac
     done
 

@@ -58,6 +58,7 @@ _test-dispatch what *flags:
             echo "Scope:"
             echo "  sdk                    run all tests for the main workspace"
             echo "  integrations           run all tests for the integrations workspace"
+            echo "  ros2                   run all tests for the ros2 workspace (requires a sourced ROS 2 env)"
             echo "  <package>              run tests for a specific package"
             echo ""
             echo "Flags:"
@@ -72,6 +73,9 @@ _test-dispatch what *flags:
             ;;
         integrations)
             just _test-integrations "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
+            ;;
+        ros2)
+            just _test-ros2 "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
             ;;
         *)
             just _test-package "{{what}}" "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
@@ -162,6 +166,24 @@ _test-integrations toolchain target_triplet has_nostd has_doc extra_args:
     fi
 
     MANIFEST_ARG=$(just _workspace-manifest-arg integrations)
+
+    if [ "{{has_doc}}" = "true" ]; then
+        cargo {{toolchain}} test --workspace --doc $MANIFEST_ARG {{extra_args}}
+    else
+        cargo {{toolchain}} nextest run --workspace $MANIFEST_ARG {{extra_args}}
+    fi
+
+[private]
+_test-ros2 toolchain target_triplet has_nostd has_doc extra_args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [ "{{has_nostd}}" = "true" ]; then
+        echo "Error: the ros2 workspace cannot be built with --no_std" >&2
+        exit 1
+    fi
+
+    MANIFEST_ARG=$(just _workspace-manifest-arg ros2)
 
     if [ "{{has_doc}}" = "true" ]; then
         cargo {{toolchain}} test --workspace --doc $MANIFEST_ARG {{extra_args}}

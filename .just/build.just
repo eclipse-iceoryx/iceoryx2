@@ -61,6 +61,7 @@ _build-dispatch what *flags:
             echo "Scope:"
             echo "  sdk                    build the main workspace"
             echo "  integrations           build the integrations workspace"
+            echo "  ros2                   build the ros2 workspace (requires a sourced ROS 2 env)"
             echo "  <package>              build a specific package"
             echo ""
             echo "Flags:"
@@ -77,6 +78,9 @@ _build-dispatch what *flags:
             ;;
         integrations)
             just _build-integrations "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$HAS_TESTS" "$EXTRA_ARGS"
+            ;;
+        ros2)
+            just _build-ros2 "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$HAS_TESTS" "$EXTRA_ARGS"
             ;;
         *)
             just _build-package "{{what}}" "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$EXTRA_ARGS"
@@ -152,6 +156,30 @@ _build-integrations toolchain target_triplet profile has_nostd has_tests extra_a
     fi
 
     MANIFEST_ARG=$(just _workspace-manifest-arg integrations)
+
+    cargo {{toolchain}} build --workspace $MANIFEST_ARG {{profile}} $TESTS_FLAG $TARGET_ARG {{extra_args}}
+
+[private]
+_build-ros2 toolchain target_triplet profile has_nostd has_tests extra_args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [ "{{has_nostd}}" = "true" ]; then
+        echo "Error: the ros2 workspace cannot be built with --no_std" >&2
+        exit 1
+    fi
+
+    TESTS_FLAG=""
+    if [ "{{has_tests}}" = "true" ]; then
+        TESTS_FLAG="--tests"
+    fi
+
+    TARGET_ARG=""
+    if [ -n "{{target_triplet}}" ]; then
+        TARGET_ARG="--target {{target_triplet}}"
+    fi
+
+    MANIFEST_ARG=$(just _workspace-manifest-arg ros2)
 
     cargo {{toolchain}} build --workspace $MANIFEST_ARG {{profile}} $TESTS_FLAG $TARGET_ARG {{extra_args}}
 

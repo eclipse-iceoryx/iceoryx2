@@ -48,6 +48,7 @@ _lint-dispatch workspace target *flags:
         echo "Workspace:"
         echo "  sdk             lint the main workspace"
         echo "  integrations    lint the integrations workspace"
+        echo "  ros2            lint the ros2 workspace"
         echo "  all             lint everything"
         echo ""
         echo "Target:"
@@ -118,7 +119,8 @@ _lint-markdown workspace mode:
 
     case "{{workspace}}" in
         sdk)          FILES=$(git ls-files '*.md' | grep -v '^integrations/' || true) ;;
-        integrations) FILES=$(git ls-files '*.md' | grep    '^integrations/' || true) ;;
+        integrations) FILES=$(git ls-files '*.md' | grep '^integrations/' | grep -v '^integrations/ros2/' || true) ;;
+        ros2)         FILES=$(git ls-files '*.md' | grep '^integrations/ros2/' || true) ;;
         all)          FILES=$(git ls-files '*.md') ;;
     esac
 
