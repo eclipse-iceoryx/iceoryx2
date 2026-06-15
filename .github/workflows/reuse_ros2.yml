@@ -1,0 +1,93 @@
+name: Reusable workflow for ros2 integrations
+
+on:
+  workflow_call:
+    inputs:
+      ros-distro:
+        required: true
+        type: string
+      rmw:
+        required: true
+        type: string
+      toolchain:
+        required: true
+        type: string
+      profile:
+        required: true
+        type: string
+
+jobs:
+  ros2:
+    timeout-minutes: 90
+    runs-on: ubuntu-latest
+    container:
+      image: ros:${{ inputs.ros-distro }}
+    env:
+      RMW_IMPLEMENTATION: ${{ inputs.rmw }}
+    steps:
+      # git is required by actions/checkout and is not present in the base
+      # ros image, so it must be installed before checking out.
+      - name: Install git
+        run: |
+          apt-get update
+          apt-get install -y git
+
+      - name: Checkout sources
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
+
+      - name: Install build dependencies and RMW
+        run: |
+          # The RMW package name is the implementation name with '_' -> '-',
+          # e.g. rmw_cyclonedds_cpp -> ros-<distro>-rmw-cyclonedds-cpp.
+          RMW_PKG="ros-${{ inputs.ros-distro }}-$(echo '${{ inputs.rmw }}' | tr '_' '-')"
+          apt-get update
+          apt-get install -y build-essential ca-certificates curl pkg-config libclang-dev "$RMW_PKG"
+
+      - name: Install just
+        uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
+        with:
+          toolchain: ${{ inputs.toolchain }}
+          components: clippy
+
+      - name: Install cargo-nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C "${CARGO_HOME:-$HOME/.cargo}/bin"
+
+      - name: Install rust-script
+        run: cargo install rust-script --locked
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
+
+      - name: Set caching env vars
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
+      - name: Set build flags
+        id: set-build-flags
+        uses: ./.github/actions/set-build-flags
+        with:
+          profile: ${{ inputs.profile }}
+
+      - name: Build ros2 workspace
+        shell: bash
+        run: |
+          source /opt/ros/${{ inputs.ros-distro }}/setup.bash
+          rustc --version
+          just build integrations-ros2 +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
+
+      - name: Test ros2 workspace
+        shell: bash
+        run: |
+          source /opt/ros/${{ inputs.ros-distro }}/setup.bash
+          echo "Using RMW: $RMW_IMPLEMENTATION"
+          just test integrations-ros2 +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast
+
+      - name: Run clippy on ros2 workspace
+        shell: bash
+        run: |
+          source /opt/ros/${{ inputs.ros-distro }}/setup.bash
+          just verify integrations-ros2 clippy ${{ steps.set-build-flags.outputs.cargo-build-mode }}

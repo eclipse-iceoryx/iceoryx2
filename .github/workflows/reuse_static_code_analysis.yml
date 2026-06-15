@@ -39,12 +39,12 @@ jobs:
       - name: Run cargo clippy with default features for 'std' in debug mode
         run: |
           just verify sdk clippy
-          just verify integrations clippy
+          just verify integrations-zenoh clippy
 
       - name: Run cargo clippy with default features for 'std' in release mode
         run: |
           just verify sdk clippy --release
-          just verify integrations clippy --release
+          just verify integrations-zenoh clippy --release
 
       - name: Run cargo clippy with no-default features for 'no_std' in debug mode
         if: ${{ runner.os == 'Linux' }}
@@ -80,4 +80,4 @@ jobs:
           ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
           just verify sdk miri
-          just verify integrations miri
+          just verify integrations-zenoh miri

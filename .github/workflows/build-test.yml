@@ -84,7 +84,7 @@ jobs:
       - name: Lint Rust
         run: |
           just lint sdk rust
-          just lint integrations rust
+          just lint integrations-zenoh rust
 
       - name: Install rust-script
         run: cargo install rust-script --locked
@@ -92,7 +92,8 @@ jobs:
       - name: Verify std feature propagation
         run: |
           just verify sdk std-propagation
-          just verify integrations std-propagation
+          just verify integrations-zenoh std-propagation
+          just verify integrations-ros2 std-propagation
 
   linting-markdown:
     needs: changes
@@ -117,7 +118,7 @@ jobs:
       - name: Lint markdown
         run: |
           just lint sdk markdown
-          just lint integrations markdown
+          just lint integrations-zenoh markdown
 
       - name: Check config key documentation
         run: ./internal/scripts/ci_check_description_vector_and_README.sh
@@ -170,12 +171,12 @@ jobs:
       - name: Run code examples in documentation
         run: |
           just test sdk --doc
-          just test integrations --doc
+          just test integrations-zenoh --doc
 
       - name: Build documentation
         run: |
           just doc sdk rust
-          just doc integrations rust
+          just doc integrations-zenoh rust
 
   cargo-nextest:
     needs: preflight-check
@@ -331,7 +332,7 @@ jobs:
           docker build \
             -f iceoryx2-services/tunnel-end-to-end-tests/Dockerfile \
             --build-arg ENTRYPOINT_BIN=target/release/iox2-tunnel \
-            --build-arg BACKEND_BIN=integrations/target/release/iox2-tunnel-${{ matrix.tunnel }} \
+            --build-arg BACKEND_BIN=integrations/${{ matrix.tunnel }}/target/release/iox2-tunnel-${{ matrix.tunnel }} \
             --build-arg PINGER_BIN=target/release/iceoryx2-services-tunnel-end-to-end-tests-pinger \
             --build-arg PONGER_BIN=target/release/iceoryx2-services-tunnel-end-to-end-tests-ponger \
             -t end-to-end-tests:${{ github.sha }} .
@@ -381,7 +382,7 @@ jobs:
       profile: "debug"
       workspace: sdk
 
-  integrations-stable-debug:
+  integrations-zenoh-stable-debug:
     needs: [preflight-check, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
@@ -393,7 +394,23 @@ jobs:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
       profile: "debug"
-      workspace: integrations
+      workspace: zenoh
+
+  integrations-ros2-stable-debug:
+    needs: [preflight-check]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        ros:
+          - { distro: jazzy, rmw: rmw_fastrtps_cpp }
+          - { distro: humble, rmw: rmw_cyclonedds_cpp }
+    uses: ./.github/workflows/reuse_ros2.yml
+    with:
+      ros-distro: ${{ matrix.ros.distro }}
+      rmw: ${{ matrix.ros.rmw }}
+      toolchain: stable
+      profile: "debug"
 
   sdk-stable-release:
     needs: [preflight-check, cargo-nextest]
@@ -405,7 +422,7 @@ jobs:
       profile: "release"
       workspace: sdk
 
-  integrations-stable-release:
+  integrations-zenoh-stable-release:
     needs: [preflight-check, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     uses: ./.github/workflows/reuse_stable.yml
@@ -413,7 +430,7 @@ jobs:
       os: ubuntu-latest
       toolchain: stable
       profile: "release"
-      workspace: integrations
+      workspace: zenoh
 
   unstable:
     needs: [preflight-check, cargo-nextest]
@@ -458,7 +475,7 @@ jobs:
             ./internal/scripts/ci_prepare_freebsd.sh
             ./internal/scripts/ci_build_and_test_freebsd.sh --toolchain ${{ matrix.toolchain }} --mode ${{ matrix.mode }}
 
-  # NOTE: No Bazel build for integrations workspace. This is on purpose.
+  # NOTE: No Bazel build for zenoh workspace. This is on purpose.
   Bazel:
     needs: [preflight-check]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
@@ -541,14 +558,14 @@ jobs:
         run: |
           just prepare-release all versions --version 0.0.0
 
-      # NOTE: No publish dry run for integrations workspace. This is on purpose.
-      #       A dry run is not possible since the integrations workspace depends
+      # NOTE: No publish dry run for zenoh workspace. This is on purpose.
+      #       A dry run is not possible since the zenoh workspace depends
       #       on crates in the sdk workspace.
       # TODO: Test publishing to local crate registry OR kellnr.
       - name: Cargo Publish Dry-Run
         run: |
           just publish sdk --dry-run --allow-dirty
-          just publish integrations --sanity-checks
+          just publish integrations-zenoh --sanity-checks
 
   grcov:
     needs: [preflight-check]
@@ -580,7 +597,8 @@ jobs:
         static-code-analysis-rust,
         static-code-analysis-cpp,
         sdk-stable-debug,
-        integrations-stable-debug,
+        integrations-zenoh-stable-debug,
+        integrations-ros2-stable-debug,
         freebsd,
         Bazel,
         x86_32-debug,
