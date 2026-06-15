@@ -181,7 +181,7 @@ _release-update-bazel old new:
 
 [private]
 _release-update-ros old new:
-    @sed -i 's|    <version>{{old}}|    <version>{{new}}|g' package.xml
+    @sed -i 's|    <version>{{old}}|    <version>{{new}}|g' $(git ls-files '*package.xml')
 
 [private]
 _release-update-docs old new:

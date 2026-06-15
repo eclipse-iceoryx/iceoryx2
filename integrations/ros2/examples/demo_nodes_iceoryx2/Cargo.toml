@@ -9,7 +9,6 @@ description = "Native iceoryx2 applications sending and receiving std_msgs/msg/S
 edition = "2024"
 license = "MIT OR Apache-2.0"
 publish = false
-version = "0.9.999"
 
 [dependencies]
 cdr = { version = "0.2.4" }
