@@ -454,16 +454,6 @@ impl<
             with ClientCreateError::UnableToCreateDataSegment,
             "{} since the client data segment could not be created.", msg);
 
-        let client_details = ClientDetails {
-            client_id,
-            node_id: *service.shared_node().id(),
-            number_of_requests,
-            response_buffer_size: static_config.max_response_buffer_size,
-            max_slice_len: client_factory.config.initial_max_slice_len,
-            data_segment_type,
-            max_number_of_segments,
-        };
-
         let max_active_requests = match client_factory.config.max_active_requests {
             Some(requests) => {
                 if static_config.max_active_requests_per_client < requests {
@@ -474,6 +464,17 @@ impl<
                 requests
             }
             None => static_config.max_active_requests_per_client,
+        };
+
+        let client_details = ClientDetails {
+            client_id,
+            node_id: *service.shared_node().id(),
+            number_of_requests,
+            response_buffer_size: static_config.max_response_buffer_size,
+            max_slice_len: client_factory.config.initial_max_slice_len,
+            data_segment_type,
+            max_number_of_segments,
+            max_active_requests,
         };
 
         let request_sender = Sender {

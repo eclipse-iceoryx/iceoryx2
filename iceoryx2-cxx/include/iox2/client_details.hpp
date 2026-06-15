@@ -44,6 +44,9 @@ class ClientDetailsView {
     /// The current maximum length of a slice.
     auto max_slice_len() const -> uint64_t;
 
+    /// The maximal amount of active requests the [`Client`] can send.
+    auto max_active_requests() const -> uint64_t;
+
   private:
     template <typename T, typename>
     friend auto internal::list_ports_callback(void* context, T port_details_view) -> iox2_callback_progression_e;

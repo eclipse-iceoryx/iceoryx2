@@ -46,6 +46,9 @@ class Client {
     /// if the [`Server`]s buffer is full.
     auto backpressure_strategy() const -> BackpressureStrategy;
 
+    /// Returns the maximal active requests a [`Client`] can send.
+    auto max_active_requests() const -> uint64_t;
+
     /// Returns the maximum number of elements that can be loaned in a slice.
     template <typename T = RequestPayload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto initial_max_slice_len() const -> uint64_t;
@@ -161,6 +164,17 @@ inline auto
 Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::backpressure_strategy() const
     -> BackpressureStrategy {
     return iox2::bb::into<BackpressureStrategy>(static_cast<int>(iox2_client_backpressure_strategy(&m_handle)));
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+inline auto
+Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::max_active_requests() const
+    -> uint64_t {
+    return iox2_client_max_active_requests(&m_handle);
 }
 
 template <ServiceType Service,

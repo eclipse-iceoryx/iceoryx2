@@ -1631,7 +1631,7 @@ pub mod service_request_response {
             let client1 = service.client_builder().create().unwrap();
             let client2 = service
                 .client_builder()
-                .set_max_active_requests(i)
+                .max_active_requests(i)
                 .create()
                 .unwrap();
 
@@ -1673,7 +1673,7 @@ pub mod service_request_response {
 
         let client = service
             .client_builder()
-            .set_max_active_requests(MAX_ACTIVE_REQUESTS + 1)
+            .max_active_requests(MAX_ACTIVE_REQUESTS + 1)
             .create();
         assert_that!(client, is_err);
         assert_that!(client.err().unwrap(), eq ClientCreateError::MaxActiveRequestsExceedsMaxSupportedActiveRequestsOfService);
@@ -1693,7 +1693,7 @@ pub mod service_request_response {
 
         let client = service
             .client_builder()
-            .set_max_active_requests(0)
+            .max_active_requests(0)
             .create()
             .unwrap();
 

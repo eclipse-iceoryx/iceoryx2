@@ -282,7 +282,7 @@ impl<
     }
 
     /// Sets the maximal amount of active requests the [`Client`] can send.
-    pub fn set_max_active_requests(mut self, value: usize) -> Self {
+    pub fn max_active_requests(mut self, value: usize) -> Self {
         self.config.max_active_requests = Some(value.max(1));
         self
     }

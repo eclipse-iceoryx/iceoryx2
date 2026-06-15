@@ -232,6 +232,27 @@ pub unsafe extern "C" fn iox2_client_id(
     }
 }
 
+/// Returns the maximal active requests of the client.
+///
+/// # Arguments
+///
+/// * `handle` obtained by [`iox2_port_factory_client_builder_create`](crate::iox2_port_factory_client_builder_create)
+///
+/// # Safety
+///
+/// * `handle` is valid and non-null
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_client_max_active_requests(handle: iox2_client_h_ref) -> c_size_t {
+    handle.assert_non_null();
+    unsafe {
+        let client = &mut *handle.as_type();
+        match client.service_type {
+            iox2_service_type_e::IPC => client.value.as_ref().ipc.max_active_requests(),
+            iox2_service_type_e::LOCAL => client.value.as_ref().local.max_active_requests(),
+        }
+    }
+}
+
 /// Loans memory from the clients data segment.
 ///
 /// # Arguments

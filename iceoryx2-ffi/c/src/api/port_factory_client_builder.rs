@@ -37,6 +37,7 @@ pub enum iox2_client_create_error_e {
     EXCEEDS_MAX_SUPPORTED_CLIENTS,
     FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY,
     UNABLE_TO_CREATE_PORT_TAG,
+    MAX_ACTIVE_REQUESTS_EXCEEDS_MAX_SUPPORTED_ACTIVE_REQUESTS_OF_SERVICE,
 }
 
 impl IntoCInt for ClientCreateError {
@@ -53,6 +54,9 @@ impl IntoCInt for ClientCreateError {
             }
             ClientCreateError::UnableToCreatePortTag => {
                 iox2_client_create_error_e::UNABLE_TO_CREATE_PORT_TAG
+            }
+            ClientCreateError::MaxActiveRequestsExceedsMaxSupportedActiveRequestsOfService => {
+                iox2_client_create_error_e::MAX_ACTIVE_REQUESTS_EXCEEDS_MAX_SUPPORTED_ACTIVE_REQUESTS_OF_SERVICE
             }
         }) as c_int
     }
@@ -115,7 +119,7 @@ impl PortFactoryClientBuilderUnion {
 #[repr(C)]
 #[repr(align(16))] // alignment of Option<PortFactoryClientBuilderUnion>
 pub struct iox2_port_factory_client_builder_storage_t {
-    internal: [u8; 256], // magic number obtained with size_of::<Option<PortFactoryClientBuilderUnion>>()
+    internal: [u8; 272], // magic number obtained with size_of::<Option<PortFactoryClientBuilderUnion>>()
 }
 
 #[repr(C)]
@@ -531,6 +535,42 @@ pub unsafe extern "C" fn iox2_port_factory_client_builder_backpressure_strategy(
 
                 handle.set(PortFactoryClientBuilderUnion::new_local(
                     builder.backpressure_strategy(value.into()),
+                ));
+            }
+        }
+    }
+}
+
+/// Sets the maximal active requests for the client.
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_client_builder_h_ref`]
+///   obtained by [`iox2_port_factory_request_response_client_builder`](crate::iox2_port_factory_request_response_client_builder).
+/// * `value` - The value to set the maximal active requests to
+///
+/// # Safety
+///
+/// * `port_factory_handle` must be valid
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_port_factory_client_builder_set_max_active_requests(
+    port_factory_handle: iox2_port_factory_client_builder_h_ref,
+    value: c_size_t,
+) {
+    port_factory_handle.assert_non_null();
+    unsafe {
+        let handle = &mut *port_factory_handle.as_type();
+        match handle.service_type {
+            iox2_service_type_e::IPC => {
+                let builder = ManuallyDrop::take(&mut handle.value.as_mut().ipc);
+                handle.set(PortFactoryClientBuilderUnion::new_ipc(
+                    builder.max_active_requests(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let builder = ManuallyDrop::take(&mut handle.value.as_mut().local);
+                handle.set(PortFactoryClientBuilderUnion::new_local(
+                    builder.max_active_requests(value),
                 ));
             }
         }

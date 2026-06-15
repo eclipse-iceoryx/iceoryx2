@@ -11,15 +11,19 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/bb/optional.hpp"
+#include "iox2/client_error.hpp"
 #include "iox2/custom_header_marker.hpp"
 #include "iox2/custom_payload_marker.hpp"
 #include "iox2/message_type_details.hpp"
 #include "iox2/node.hpp"
+#include "iox2/pending_response.hpp"
+#include "iox2/port_error.hpp"
 #include "iox2/service.hpp"
 #include "iox2/type_variant.hpp"
 
 #include "test.hpp"
 #include <array>
+#include <cstdint>
 #include <gtest/gtest.h>
 
 namespace {
@@ -1099,6 +1103,24 @@ TYPED_TEST(ServiceRequestResponseTest, client_applies_initial_max_slice_length) 
     ASSERT_THAT(sut_client.initial_max_slice_len(), Eq(INITIAL_MAX_SLICE_LEN));
 }
 
+TYPED_TEST(ServiceRequestResponseTest, client_applies_max_active_requests) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    constexpr uint64_t MAX_ACTIVE_REQUESTS = 6;
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template request_response<bb::Slice<uint64_t>, uint64_t>()
+                       .max_active_requests_per_client(2 * MAX_ACTIVE_REQUESTS)
+                       .create()
+                       .value();
+
+    auto sut_client = service.client_builder().max_active_requests(MAX_ACTIVE_REQUESTS).create().value();
+
+    ASSERT_THAT(sut_client.max_active_requests(), Eq(MAX_ACTIVE_REQUESTS));
+}
+
 TYPED_TEST(ServiceRequestResponseTest, number_of_clients_servers_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
@@ -1994,14 +2016,22 @@ TYPED_TEST(ServiceRequestResponseTest, listing_all_clients_stops_on_request) {
 TYPED_TEST(ServiceRequestResponseTest, client_details_are_correct) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t MAX_SLICE_LEN = 9;
+    constexpr uint64_t MAX_ACTIVE_REQUESTS = 13;
 
     const auto service_name = iox2_testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
-    auto sut =
-        node.service_builder(service_name).template request_response<bb::Slice<uint64_t>, uint64_t>().create().value();
+    auto sut = node.service_builder(service_name)
+                   .template request_response<bb::Slice<uint64_t>, uint64_t>()
+                   .max_active_requests_per_client(2 * MAX_ACTIVE_REQUESTS)
+                   .create()
+                   .value();
 
     iox2::Client<SERVICE_TYPE, bb::Slice<uint64_t>, void, uint64_t, void> client =
-        sut.client_builder().initial_max_slice_len(MAX_SLICE_LEN).create().value();
+        sut.client_builder()
+            .initial_max_slice_len(MAX_SLICE_LEN)
+            .max_active_requests(MAX_ACTIVE_REQUESTS)
+            .create()
+            .value();
 
     auto counter = 0;
     sut.dynamic_config().list_clients([&](auto client_details_view) -> auto {
@@ -2009,6 +2039,7 @@ TYPED_TEST(ServiceRequestResponseTest, client_details_are_correct) {
         EXPECT_TRUE(client_details_view.client_id() == client.id());
         EXPECT_TRUE(client_details_view.node_id() == node.id());
         EXPECT_TRUE(client_details_view.max_slice_len() == MAX_SLICE_LEN);
+        EXPECT_TRUE(client_details_view.max_active_requests() == MAX_ACTIVE_REQUESTS);
         return CallbackProgression::Stop;
     });
 
@@ -2357,5 +2388,72 @@ TYPED_TEST(ServiceRequestResponseTest, custom_header_payload_marker_send_receive
     }
 }
 // NOLINTEND(readability-function-cognitive-complexity)
+
+TYPED_TEST(ServiceRequestResponseTest, client_can_decrease_max_active_requests) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t MAX_ACTIVE_REQUESTS = 13;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template request_response<uint64_t, uint64_t>()
+                       .max_active_requests_per_client(MAX_ACTIVE_REQUESTS)
+                       .create()
+                       .value();
+
+    for (uint64_t i = 1; i < MAX_ACTIVE_REQUESTS; ++i) {
+        auto client1 = service.client_builder().create().value();
+        auto client2 = service.client_builder().max_active_requests(i).create().value();
+
+        ASSERT_THAT(client1.max_active_requests(), Eq(MAX_ACTIVE_REQUESTS));
+        ASSERT_THAT(client2.max_active_requests(), Eq(i));
+
+        std::vector<PendingResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>> pending_responses_client1;
+        for (uint64_t j = 0; j < MAX_ACTIVE_REQUESTS; ++j) {
+            pending_responses_client1.push_back(client1.send_copy(j).value());
+        }
+
+        std::vector<PendingResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>> pending_responses_client2;
+        for (uint64_t j = 0; j < i; ++j) {
+            pending_responses_client2.push_back(client2.send_copy(j).value());
+        }
+        auto pending_response = client2.send_copy(0);
+        ASSERT_FALSE(pending_response.has_value());
+        ASSERT_THAT(pending_response.error(), Eq(RequestSendError::ExceedsMaxActiveRequests));
+    }
+}
+
+TYPED_TEST(ServiceRequestResponseTest, client_creation_fails_when_max_active_requests_exceeds_service_max) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t MAX_ACTIVE_REQUESTS = 13;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template request_response<uint64_t, uint64_t>()
+                       .max_active_requests_per_client(MAX_ACTIVE_REQUESTS)
+                       .create()
+                       .value();
+
+    auto client = service.client_builder().max_active_requests(MAX_ACTIVE_REQUESTS + 1).create();
+
+    ASSERT_FALSE(client.has_value());
+    ASSERT_THAT(client.error(), Eq(ClientCreateError::MaxActiveRequestsExceedsMaxSupportedActiveRequestsOfService));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, client_max_active_requests_is_at_least_one) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
+
+    auto client = service.client_builder().max_active_requests(0).create().value();
+
+    ASSERT_THAT(client.max_active_requests(), Eq(1));
+}
 
 } // namespace

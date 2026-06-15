@@ -55,4 +55,8 @@ auto ClientDetailsView::number_of_requests() const -> uint64_t {
 auto ClientDetailsView::max_slice_len() const -> uint64_t {
     return iox2_client_details_max_slice_len(m_handle);
 }
+
+auto ClientDetailsView::max_active_requests() const -> uint64_t {
+    return iox2_client_details_max_active_requests(m_handle);
+}
 } // namespace iox2
