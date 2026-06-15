@@ -1,5 +1,5 @@
 {
-  "checksum": "4c67c12715343800e1e80d846d28cc0ad222af8cf02ef9455876dd9407f300fc",
+  "checksum": "a6b8b640da786929613051bb4d3c25a841ce3c704b3016f90aef219107823377",
   "crates": {
     "addr2line 0.25.1": {
       "name": "addr2line",
@@ -5994,7 +5994,7 @@
         "deps": {
           "common": [
             {
-              "id": "pyo3 0.28.2",
+              "id": "pyo3 0.29.0",
               "target": "pyo3"
             }
           ],
@@ -8174,7 +8174,7 @@
           "selects": {
             "cfg(windows)": [
               {
-                "id": "windows-sys 0.59.0",
+                "id": "windows-sys 0.61.2",
                 "target": "windows_sys",
                 "alias": "windows"
               }
@@ -8806,14 +8806,14 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "pyo3 0.28.2": {
+    "pyo3 0.29.0": {
       "name": "pyo3",
-      "version": "0.28.2",
+      "version": "0.29.0",
       "package_url": "https://github.com/pyo3/pyo3",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/pyo3/0.28.2/download",
-          "sha256": "cf85e27e86080aafd5a22eae58a162e133a589551542b3e5cee4beb27e54f8e1"
+          "url": "https://static.crates.io/crates/pyo3/0.29.0/download",
+          "sha256": "cd274650b21d4bfc26a0a47587962c1edb425f69287324355cd040c3ea66071c"
         }
       },
       "targets": [
@@ -8855,6 +8855,7 @@
             "abi3-py312",
             "abi3-py313",
             "abi3-py314",
+            "abi3-py315",
             "abi3-py38",
             "abi3-py39",
             "default",
@@ -8874,11 +8875,11 @@
               "target": "once_cell"
             },
             {
-              "id": "pyo3 0.28.2",
+              "id": "pyo3 0.29.0",
               "target": "build_script_build"
             },
             {
-              "id": "pyo3-ffi 0.28.2",
+              "id": "pyo3-ffi 0.29.0",
               "target": "pyo3_ffi"
             }
           ],
@@ -8895,13 +8896,13 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "pyo3-macros 0.28.2",
+              "id": "pyo3-macros 0.29.0",
               "target": "pyo3_macros"
             }
           ],
           "selects": {}
         },
-        "version": "0.28.2"
+        "version": "0.29.0"
       },
       "build_script_attrs": {
         "compile_data_glob": [
@@ -8916,7 +8917,7 @@
         "deps": {
           "common": [
             {
-              "id": "pyo3-build-config 0.28.2",
+              "id": "pyo3-build-config 0.29.0",
               "target": "pyo3_build_config"
             }
           ],
@@ -8925,12 +8926,13 @@
         "link_deps": {
           "common": [
             {
-              "id": "pyo3-ffi 0.28.2",
+              "id": "pyo3-ffi 0.29.0",
               "target": "pyo3_ffi"
             }
           ],
           "selects": {}
-        }
+        },
+        "links": "pyo3-python"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8939,14 +8941,14 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "pyo3-build-config 0.28.2": {
+    "pyo3-build-config 0.29.0": {
       "name": "pyo3-build-config",
-      "version": "0.28.2",
+      "version": "0.29.0",
       "package_url": "https://github.com/pyo3/pyo3",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/pyo3-build-config/0.28.2/download",
-          "sha256": "8bf94ee265674bf76c09fa430b0e99c26e319c945d96ca0d5a8215f31bf81cf7"
+          "url": "https://static.crates.io/crates/pyo3-build-config/0.29.0/download",
+          "sha256": "c5e2a7d2f0d013342f295c048ad19237add5154a55b1c5a254c0ec93d4109078"
         }
       },
       "targets": [
@@ -8954,18 +8956,6 @@
           "Library": {
             "crate_name": "pyo3_build_config",
             "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        },
-        {
-          "BuildScript": {
-            "crate_name": "build_script_build",
-            "crate_root": "build.rs",
             "srcs": {
               "allow_empty": true,
               "include": [
@@ -8982,25 +8972,12 @@
         ],
         "crate_features": {
           "common": [
-            "abi3",
-            "abi3-py310",
-            "abi3-py311",
-            "abi3-py312",
-            "abi3-py313",
-            "abi3-py314",
-            "abi3-py38",
-            "abi3-py39",
-            "default",
-            "resolve-config"
+            "default"
           ],
           "selects": {}
         },
         "deps": {
           "common": [
-            {
-              "id": "pyo3-build-config 0.28.2",
-              "target": "build_script_build"
-            },
             {
               "id": "target-lexicon 0.13.5",
               "target": "target_lexicon"
@@ -9009,27 +8986,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.28.2"
-      },
-      "build_script_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "compile_data_glob_excludes": [
-          "**/*.rs"
-        ],
-        "data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "target-lexicon 0.13.5",
-              "target": "target_lexicon"
-            }
-          ],
-          "selects": {}
-        }
+        "version": "0.29.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -9038,14 +8995,14 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "pyo3-ffi 0.28.2": {
+    "pyo3-ffi 0.29.0": {
       "name": "pyo3-ffi",
-      "version": "0.28.2",
+      "version": "0.29.0",
       "package_url": "https://github.com/pyo3/pyo3",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/pyo3-ffi/0.28.2/download",
-          "sha256": "491aa5fc66d8059dd44a75f4580a2962c1862a1c2945359db36f6c2818b748dc"
+          "url": "https://static.crates.io/crates/pyo3-ffi/0.29.0/download",
+          "sha256": "ca85c467da1bbc8d866eea5deff9cf29ea5f7785054a17da36e65bda9c05845b"
         }
       },
       "targets": [
@@ -9087,6 +9044,7 @@
             "abi3-py312",
             "abi3-py313",
             "abi3-py314",
+            "abi3-py315",
             "abi3-py38",
             "abi3-py39",
             "default"
@@ -9100,14 +9058,14 @@
               "target": "libc"
             },
             {
-              "id": "pyo3-ffi 0.28.2",
+              "id": "pyo3-ffi 0.29.0",
               "target": "build_script_build"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.28.2"
+        "version": "0.29.0"
       },
       "build_script_attrs": {
         "compile_data_glob": [
@@ -9122,7 +9080,7 @@
         "deps": {
           "common": [
             {
-              "id": "pyo3-build-config 0.28.2",
+              "id": "pyo3-build-config 0.29.0",
               "target": "pyo3_build_config"
             }
           ],
@@ -9137,14 +9095,14 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "pyo3-macros 0.28.2": {
+    "pyo3-macros 0.29.0": {
       "name": "pyo3-macros",
-      "version": "0.28.2",
+      "version": "0.29.0",
       "package_url": "https://github.com/pyo3/pyo3",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/pyo3-macros/0.28.2/download",
-          "sha256": "f5d671734e9d7a43449f8480f8b38115df67bef8d21f76837fa75ee7aaa5e52e"
+          "url": "https://static.crates.io/crates/pyo3-macros/0.29.0/download",
+          "sha256": "9ac53762fd065daa3194dd09337a38bd793a188100fd1a9304c4ab312d901771"
         }
       },
       "targets": [
@@ -9173,7 +9131,7 @@
               "target": "proc_macro2"
             },
             {
-              "id": "pyo3-macros-backend 0.28.2",
+              "id": "pyo3-macros-backend 0.29.0",
               "target": "pyo3_macros_backend"
             },
             {
@@ -9188,7 +9146,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.28.2"
+        "version": "0.29.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -9197,14 +9155,14 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "pyo3-macros-backend 0.28.2": {
+    "pyo3-macros-backend 0.29.0": {
       "name": "pyo3-macros-backend",
-      "version": "0.28.2",
+      "version": "0.29.0",
       "package_url": "https://github.com/pyo3/pyo3",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/pyo3-macros-backend/0.28.2/download",
-          "sha256": "22faaa1ce6c430a1f71658760497291065e6450d7b5dc2bcf254d49f66ee700a"
+          "url": "https://static.crates.io/crates/pyo3-macros-backend/0.29.0/download",
+          "sha256": "4ca3a1557399783172dc5bf39cfca835157732532cba56b71d2292161e53b362"
         }
       },
       "targets": [
@@ -9212,18 +9170,6 @@
           "Library": {
             "crate_name": "pyo3_macros_backend",
             "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        },
-        {
-          "BuildScript": {
-            "crate_name": "build_script_build",
-            "crate_root": "build.rs",
             "srcs": {
               "allow_empty": true,
               "include": [
@@ -9249,14 +9195,6 @@
               "target": "proc_macro2"
             },
             {
-              "id": "pyo3-build-config 0.28.2",
-              "target": "pyo3_build_config"
-            },
-            {
-              "id": "pyo3-macros-backend 0.28.2",
-              "target": "build_script_build"
-            },
-            {
               "id": "quote 1.0.45",
               "target": "quote"
             },
@@ -9268,27 +9206,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.28.2"
-      },
-      "build_script_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "compile_data_glob_excludes": [
-          "**/*.rs"
-        ],
-        "data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "pyo3-build-config 0.28.2",
-              "target": "pyo3_build_config"
-            }
-          ],
-          "selects": {}
-        }
+        "version": "0.29.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -16637,7 +16555,7 @@
     "libtest-mimic 0.8.2",
     "postcard 1.1.3",
     "proc-macro2 1.0.106",
-    "pyo3 0.28.2",
+    "pyo3 0.29.0",
     "quote 1.0.45",
     "ron 0.11.0",
     "serde 1.0.228",
