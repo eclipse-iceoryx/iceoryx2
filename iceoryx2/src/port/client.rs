@@ -221,14 +221,17 @@ impl<Service: service::Service> ClientSharedState<Service> {
         let msg = "Unable to send request";
 
         let active_request_counter = self.active_request_counter.load(Ordering::Relaxed);
-        if self
-            .request_sender
-            .service_state
-            .static_config()
-            .request_response()
-            .max_active_requests_per_client
-            <= active_request_counter
-        {
+        let max_active_requests = match self.config.max_active_requests {
+            Some(requests) => requests,
+            None => {
+                self.request_sender
+                    .service_state
+                    .static_config()
+                    .request_response()
+                    .max_active_requests_per_client
+            }
+        };
+        if max_active_requests <= active_request_counter {
             fail!(from self, with RequestSendError::ExceedsMaxActiveRequests,
                     "{} since the number of active requests is limited to {} and sending this request would exceed the limit.", msg, active_request_counter);
         }
@@ -407,6 +410,7 @@ impl<
         };
 
         let static_config = client_factory.factory.static_config();
+        // TODO: use max_active_requests (if set) for chunk calculation to decrease size of data segment?
         let number_of_requests =
             unsafe { service.static_config().messaging_pattern.request_response() }
                 .required_amount_of_chunks_per_client_data_segment(
@@ -460,6 +464,18 @@ impl<
             max_number_of_segments,
         };
 
+        let max_active_requests = match client_factory.config.max_active_requests {
+            Some(requests) => {
+                if static_config.max_active_requests_per_client < requests {
+                    fail!(from origin, with ClientCreateError::MaxActiveRequestsExceedsMaxSupportedActiveRequestsOfService,
+                        "{} since the requested max_active_requests {} exceeds the maximum supported active requests {} of the service.",
+                    msg, requests, static_config.max_active_requests_per_client);
+                }
+                requests
+            }
+            None => static_config.max_active_requests_per_client,
+        };
+
         let request_sender = Sender {
             data_segment,
             segment_states: {
@@ -475,8 +491,8 @@ impl<
             connections: (0..server_list.capacity())
                 .map(|_| UnsafeCell::new(None))
                 .collect(),
-            receiver_max_buffer_size: static_config.max_active_requests_per_client,
-            receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
+            receiver_max_buffer_size: max_active_requests,
+            receiver_max_borrowed_samples: max_active_requests,
             enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
             degradation_handler: client_factory.request_degradation_handler,
             backpressure_handler: client_factory.backpressure_handler,
@@ -623,6 +639,14 @@ impl<
             .lock()
             .request_sender
             .backpressure_strategy
+    }
+
+    /// Returns the maximal active requests a [`Client`] can send.
+    pub fn max_active_requests(&self) -> usize {
+        self.client_shared_state
+            .lock()
+            .request_sender
+            .receiver_max_borrowed_samples
     }
 }
 

@@ -19,10 +19,11 @@ pub mod service_request_response {
     use alloc::{vec, vec::Vec};
 
     use iceoryx2::port::LoanError;
-    use iceoryx2::port::client::Client;
+    use iceoryx2::port::client::{Client, RequestSendError};
     use iceoryx2::port::server::Server;
     use iceoryx2::prelude::{PortFactory, *};
     use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
+    use iceoryx2::service::port_factory::client::ClientCreateError;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
@@ -1610,5 +1611,92 @@ pub mod service_request_response {
 
         assert_that!(active_request.is_connected(), eq false);
         assert_that!(active_request.has_disconnect_hint(), eq false);
+    }
+
+    #[conformance_test]
+    pub fn client_can_decrease_max_active_requests<S: Service>() {
+        const MAX_ACTIVE_REQUESTS: usize = 13;
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<usize, usize>()
+            .max_active_requests_per_client(MAX_ACTIVE_REQUESTS)
+            .create()
+            .unwrap();
+
+        for i in 1..MAX_ACTIVE_REQUESTS {
+            let client1 = service.client_builder().create().unwrap();
+            let client2 = service
+                .client_builder()
+                .set_max_active_requests(i)
+                .create()
+                .unwrap();
+
+            assert_that!(client1.max_active_requests(), eq MAX_ACTIVE_REQUESTS);
+            assert_that!(client2.max_active_requests(), eq i);
+
+            let mut pending_responses_client1 = vec![];
+            for n in 0..MAX_ACTIVE_REQUESTS {
+                let pr = client1.send_copy(n);
+                assert_that!(pr, is_ok);
+                pending_responses_client1.push(pr.unwrap());
+            }
+
+            let mut pending_responses_client2 = vec![];
+            for n in 0..i {
+                let pr = client2.send_copy(n);
+                assert_that!(pr, is_ok);
+                pending_responses_client2.push(pr.unwrap());
+            }
+            let pr = client2.send_copy(0);
+            assert_that!(pr, is_err);
+            assert_that!(pr.err().unwrap(), eq RequestSendError::ExceedsMaxActiveRequests);
+        }
+    }
+
+    #[conformance_test]
+    pub fn client_creation_fails_when_max_active_requests_exceeds_service_max<S: Service>() {
+        const MAX_ACTIVE_REQUESTS: usize = 13;
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<usize, usize>()
+            .max_active_requests_per_client(MAX_ACTIVE_REQUESTS)
+            .create()
+            .unwrap();
+
+        let client = service
+            .client_builder()
+            .set_max_active_requests(MAX_ACTIVE_REQUESTS + 1)
+            .create();
+        assert_that!(client, is_err);
+        assert_that!(client.err().unwrap(), eq ClientCreateError::MaxActiveRequestsExceedsMaxSupportedActiveRequestsOfService);
+    }
+
+    #[conformance_test]
+    pub fn client_max_active_requests_is_at_least_one<S: Service>() {
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<usize, usize>()
+            .create()
+            .unwrap();
+
+        let client = service
+            .client_builder()
+            .set_max_active_requests(0)
+            .create()
+            .unwrap();
+
+        assert_that!(client.max_active_requests(), eq 1);
     }
 }
