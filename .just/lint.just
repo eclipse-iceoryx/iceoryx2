@@ -46,17 +46,17 @@ _lint-dispatch workspace target *flags:
         echo "Usage: just lint <workspace> <target> [flags]"
         echo ""
         echo "Workspace:"
-        echo "  sdk             lint the main workspace"
-        echo "  integrations    lint the integrations workspace"
-        echo "  ros2            lint the ros2 workspace"
-        echo "  all             lint everything"
+        echo "  sdk                 lint the main workspace"
+        echo "  integrations-zenoh  lint the zenoh workspace"
+        echo "  integrations-ros2   lint the ros2 workspace"
+        echo "  all                 lint everything"
         echo ""
         echo "Target:"
-        echo "  rust            cargo fmt check / fix"
-        echo "  markdown        markdownlint check / fix"
+        echo "  rust                cargo fmt check / fix"
+        echo "  markdown            markdownlint check / fix"
         echo ""
         echo "Flags:"
-        echo "  --fix           fix linting issues when possible"
+        echo "  --fix               fix linting issues when possible"
         exit 1
     fi
 
@@ -119,8 +119,8 @@ _lint-markdown workspace mode:
 
     case "{{workspace}}" in
         sdk)          FILES=$(git ls-files '*.md' | grep -v '^integrations/' || true) ;;
-        integrations) FILES=$(git ls-files '*.md' | grep '^integrations/' | grep -v '^integrations/ros2/' || true) ;;
-        ros2)         FILES=$(git ls-files '*.md' | grep '^integrations/ros2/' || true) ;;
+        integrations-zenoh) FILES=$(git ls-files '*.md' | grep '^integrations/zenoh/' || true) ;;
+        integrations-ros2)  FILES=$(git ls-files '*.md' | grep '^integrations/ros2/' || true) ;;
         all)          FILES=$(git ls-files '*.md') ;;
     esac
 

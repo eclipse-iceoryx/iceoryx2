@@ -49,7 +49,7 @@ _verify-dispatch what tool *flags:
         echo ""
         echo "Scope:"
         echo "  sdk                    target the main workspace"
-        echo "  integrations           target the integrations workspace"
+        echo "  integrations-zenoh     target the zenoh workspace"
         echo "  all                    target all workspaces"
         echo "  <package>              target a specific package (std-propagation only)"
         echo ""
@@ -86,8 +86,8 @@ _verify-clippy workspace profile has_nostd extra_args:
     WORKSPACES=$(just _parse-workspace "{{workspace}}")
 
     for WS in $WORKSPACES; do
-        if [ "$WS" = "integrations" ] && [ "{{has_nostd}}" = "true" ]; then
-            echo "Error: the integrations workspace cannot be built with --no_std" >&2
+        if [ "$WS" != "sdk" ] && [ "{{has_nostd}}" = "true" ]; then
+            echo "Error: the $WS workspace cannot be built with --no_std" >&2
             exit 1
         fi
 
@@ -114,9 +114,9 @@ _verify-clippy workspace profile has_nostd extra_args:
 
 # Crates whitelisted for which `cargo miri test` should be run.
 # Paths should be relative to repository root.
-MIRI_WHITELIST_SDK          := ""
-MIRI_WHITELIST_INTEGRATIONS := ""
-MIRI_WHITELIST_ROS2         := ""
+MIRI_WHITELIST_SDK   := ""
+MIRI_WHITELIST_INTEGRATIONS_ZENOH := ""
+MIRI_WHITELIST_INTEGRATIONS_ROS2  := ""
 
 [private]
 _verify-miri workspace extra_args:
@@ -129,9 +129,9 @@ _verify-miri workspace extra_args:
 
     for WS in $WORKSPACES; do
         case "$WS" in
-            sdk)          WHITELIST="{{MIRI_WHITELIST_SDK}}" ;;
-            integrations) WHITELIST="{{MIRI_WHITELIST_INTEGRATIONS}}" ;;
-            ros2)         WHITELIST="{{MIRI_WHITELIST_ROS2}}" ;;
+            sdk)                WHITELIST="{{MIRI_WHITELIST_SDK}}" ;;
+            integrations-zenoh) WHITELIST="{{MIRI_WHITELIST_INTEGRATIONS_ZENOH}}" ;;
+            integrations-ros2)  WHITELIST="{{MIRI_WHITELIST_INTEGRATIONS_ROS2}}" ;;
         esac
 
         for CRATE in $WHITELIST; do
@@ -157,8 +157,8 @@ _verify-std-propagation what:
     set -euo pipefail
 
     case "{{what}}" in
-        sdk|integrations|ros2|all) just _verify-std-propagation-workspace "{{what}}" ;;
-        *)                         just _verify-std-propagation-package "{{what}}" ;;
+        sdk|integrations-zenoh|integrations-ros2|all) just _verify-std-propagation-workspace "{{what}}" ;;
+        *)                  just _verify-std-propagation-package "{{what}}" ;;
     esac
 
 [private]
@@ -178,14 +178,13 @@ _verify-std-propagation-workspace workspace:
                     | grep -v "^\./Cargo\.toml$" \
                     | sort)
                 ;;
-            integrations)
-                TOMLS=$(find ./integrations -name "Cargo.toml" \
+            integrations-zenoh)
+                TOMLS=$(find ./integrations/zenoh -name "Cargo.toml" \
                     -not -path "*/target/*" \
-                    -not -path "./integrations/ros2/*" \
-                    | grep -v "^\./integrations/Cargo\.toml$" \
+                    | grep -v "^\./integrations/zenoh/Cargo\.toml$" \
                     | sort)
                 ;;
-            ros2)
+            integrations-ros2)
                 TOMLS=$(find ./integrations/ros2 -name "Cargo.toml" \
                     -not -path "*/target/*" \
                     -not -path "./integrations/ros2/examples/*" \

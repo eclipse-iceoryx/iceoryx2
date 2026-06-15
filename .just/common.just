@@ -87,19 +87,19 @@ _find-crate-manifest package:
           '.packages[] | select(.name == $pkg) | .manifest_path')
 
     if [[ -z "$MANIFEST" ]]; then
-        MANIFEST=$(cargo metadata --format-version=1 --no-deps --manifest-path {{INTEGRATIONS_DIR}}/Cargo.toml 2>/dev/null \
+        MANIFEST=$(cargo metadata --format-version=1 --no-deps --manifest-path {{INTEGRATIONS_ZENOH_DIR}}/Cargo.toml 2>/dev/null \
             | jq -r --arg pkg "{{package}}" \
               '.packages[] | select(.name == $pkg) | .manifest_path')
     fi
 
     if [[ -z "$MANIFEST" ]]; then
-        MANIFEST=$(cargo metadata --format-version=1 --no-deps --manifest-path {{ROS2_DIR}}/Cargo.toml 2>/dev/null \
+        MANIFEST=$(cargo metadata --format-version=1 --no-deps --manifest-path {{INTEGRATIONS_ROS2_DIR}}/Cargo.toml 2>/dev/null \
             | jq -r --arg pkg "{{package}}" \
               '.packages[] | select(.name == $pkg) | .manifest_path')
     fi
 
     if [[ -z "$MANIFEST" ]]; then
-        echo "Error: crate '{{package}}' not found in sdk, integrations, or ros2 workspace" >&2
+        echo "Error: crate '{{package}}' not found in sdk, integrations-zenoh, or integrations-ros2 workspace" >&2
         exit 1
     fi
 
@@ -121,19 +121,19 @@ _find-package-workspace package:
     MANIFEST=$(just _find-crate-manifest "{{package}}")
 
     case "$MANIFEST" in
-        {{ROS2_DIR}}/*)         echo "ros2" ;;
-        {{INTEGRATIONS_DIR}}/*) echo "integrations" ;;
-        *)                      echo "sdk" ;;
+        {{INTEGRATIONS_ROS2_DIR}}/*)  echo "integrations-ros2" ;;
+        {{INTEGRATIONS_ZENOH_DIR}}/*) echo "integrations-zenoh" ;;
+        *)               echo "sdk" ;;
     esac
 
 [private]
 _parse-workspace workspace:
     #!/usr/bin/env bash
     case "{{workspace}}" in
-        sdk|integrations|ros2) echo "{{workspace}}" ;;
-        all)                   echo "sdk integrations" ;;
+        sdk|integrations-zenoh|integrations-ros2) echo "{{workspace}}" ;;
+        all)            echo "sdk integrations-zenoh" ;;
         *)
-            echo "Error: unknown workspace '{{workspace}}' (expected: sdk|integrations|ros2|all)" >&2
+            echo "Error: unknown workspace '{{workspace}}' (expected: sdk|integrations-zenoh|integrations-ros2|all)" >&2
             exit 1
             ;;
     esac
@@ -142,11 +142,11 @@ _parse-workspace workspace:
 _workspace-manifest-arg workspace:
     #!/usr/bin/env bash
     case "{{workspace}}" in
-        sdk)          echo "" ;;
-        integrations) echo "--manifest-path {{INTEGRATIONS_DIR}}/Cargo.toml" ;;
-        ros2)         echo "--manifest-path {{ROS2_DIR}}/Cargo.toml" ;;
+        sdk)                echo "" ;;
+        integrations-zenoh) echo "--manifest-path {{INTEGRATIONS_ZENOH_DIR}}/Cargo.toml" ;;
+        integrations-ros2)  echo "--manifest-path {{INTEGRATIONS_ROS2_DIR}}/Cargo.toml" ;;
         *)
-            echo "Error: unknown workspace '{{workspace}}' (expected: sdk|integrations|ros2)" >&2
+            echo "Error: unknown workspace '{{workspace}}' (expected: sdk|integrations-zenoh|integrations-ros2)" >&2
             exit 1
             ;;
     esac
