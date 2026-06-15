@@ -1,0 +1,18 @@
+# Built by colcon as an `ament_cargo` package (requires the colcon-cargo and
+# colcon-ros-cargo plugins); colcon-ros-cargo patches the `std_msgs`
+# dependency to the rosidl_generator_rs-generated crate in the install space.
+[workspace]
+
+[package]
+name = "demo_nodes_iceoryx2"
+description = "Native iceoryx2 applications sending and receiving std_msgs/msg/String"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+publish = false
+version = "0.9.999"
+
+[dependencies]
+cdr = { version = "0.2.4" }
+iceoryx2 = { path = "../../../../iceoryx2", features = ["std"] }
+rosidl_runtime_rs = { version = "0.6" }
+std_msgs = { version = "*", features = ["serde"] }
