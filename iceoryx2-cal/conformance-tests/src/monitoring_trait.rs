@@ -99,10 +99,12 @@ pub mod monitoring_trait {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
-        let sut_token = Sut::Builder::new(&name).config(&config).token().unwrap();
-        Sut::Token::abandon(sut_token);
-
         let sut_monitor = Sut::Builder::new(&name).config(&config).monitor().unwrap();
+        assert_that!(sut_monitor.state().unwrap(), eq State::DoesNotExist);
+        let sut_token = Sut::Builder::new(&name).config(&config).token().unwrap();
+        assert_that!(sut_monitor.state().unwrap(), eq State::Alive);
+
+        Sut::Token::abandon(sut_token);
 
         assert_that!(sut_monitor.state().unwrap(), eq State::Dead);
         assert_that!(unsafe { Sut::remove_cfg(&name, &config).unwrap() }, eq true);
