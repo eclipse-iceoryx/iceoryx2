@@ -44,8 +44,25 @@ struct Entry {
     _library: Library,
 }
 
-/// A resolved typesupport handle. The library stays loaded as long as any
-/// clone (or the registry) is alive.
+/// A resolved ROS 2 *typesupport* handle.
+///
+/// In ROS 2 a "typesupport" is the per-message-type descriptor that rcl and
+/// the underlying middleware (DDS) need in order to work with a type: its
+/// fully-qualified name, a type hash used to match endpoints, and the function
+/// table to (de)serialize it. The `rosidl` code generator emits one for every
+/// `.msg` definition.
+///
+/// The tunnel must handle whatever message types the user bridges, known only
+/// by *name* (a string from config or graph discovery) at runtime, never at
+/// compile time. ROS ships each package's typesupport as a compiled shared
+/// object (`lib<pkg>__rosidl_typesupport_c.so`) exporting a C getter function
+/// per type, so the only way to obtain the handle for a given name is to
+/// `dlopen` that library and resolve the getter symbol at runtime. Without
+/// the handle, rcl cannot create a publisher or subscription that DDS peers
+/// will match.
+///
+/// The handle points into the loaded library's memory, so the `Library` is
+/// kept alive here; it stays loaded as long as any clone is alive.
 #[derive(Debug, Clone)]
 pub struct TypeSupport {
     entry: Rc<Entry>,
