@@ -172,6 +172,7 @@ pub(crate) struct ClientSharedState<Service: service::Service> {
     server_list_state: UnsafeCell<ContainerState<ServerDetails>>,
     pub(crate) active_request_counter: AtomicUsize,
     pub(crate) available_channel_ids: UnsafeCell<Queue<ChannelId>>,
+    pub(crate) max_active_requests: usize,
     // IMPORTANT!
     // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
     // port exists and might require cleanup after a crash, the tag must be defined as last member of
@@ -410,12 +411,20 @@ impl<
         };
 
         let static_config = client_factory.factory.static_config();
-        // TODO: use max_active_requests (if set) for chunk calculation to decrease size of data segment?
-        let number_of_requests =
-            unsafe { service.static_config().messaging_pattern.request_response() }
+        let number_of_requests = match client_factory.config.max_active_requests {
+            Some(requests) => {
+                unsafe { service.static_config().messaging_pattern.request_response() }
+                    .required_amount_of_chunks_per_client_data_segment(
+                        static_config.max_loaned_requests,
+                        requests,
+                    )
+            }
+            None => unsafe { service.static_config().messaging_pattern.request_response() }
                 .required_amount_of_chunks_per_client_data_segment(
                     static_config.max_loaned_requests,
-                );
+                    static_config.max_active_requests_per_client,
+                ),
+        };
         let number_of_requests = client_factory
             .preallocate_number_of_requests_override
             .call(number_of_requests);
@@ -492,8 +501,8 @@ impl<
             connections: (0..server_list.capacity())
                 .map(|_| UnsafeCell::new(None))
                 .collect(),
-            receiver_max_buffer_size: max_active_requests,
-            receiver_max_borrowed_samples: max_active_requests,
+            receiver_max_buffer_size: static_config.max_active_requests_per_client,
+            receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
             enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
             degradation_handler: client_factory.request_degradation_handler,
             backpressure_handler: client_factory.backpressure_handler,
@@ -564,6 +573,7 @@ impl<
             response_receiver,
             server_list_state: UnsafeCell::new(unsafe { server_list.get_state() }),
             active_request_counter: AtomicUsize::new(0),
+            max_active_requests,
         });
 
         let client_shared_state = match client_shared_state {
@@ -644,10 +654,7 @@ impl<
 
     /// Returns the maximal active requests a [`Client`] can send.
     pub fn max_active_requests(&self) -> usize {
-        self.client_shared_state
-            .lock()
-            .request_sender
-            .receiver_max_borrowed_samples
+        self.client_shared_state.lock().max_active_requests
     }
 }
 

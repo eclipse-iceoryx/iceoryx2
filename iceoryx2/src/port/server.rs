@@ -350,6 +350,7 @@ impl<
             unsafe { service.static_config().messaging_pattern.request_response() }
                 .required_amount_of_chunks_per_client_data_segment(
                     static_config.max_loaned_requests,
+                    static_config.max_active_requests_per_client,
                 );
 
         let number_of_responses =

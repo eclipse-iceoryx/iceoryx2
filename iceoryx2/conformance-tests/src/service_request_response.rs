@@ -1699,4 +1699,37 @@ pub mod service_request_response {
 
         assert_that!(client.max_active_requests(), eq 1);
     }
+
+    #[conformance_test]
+    pub fn communication_works_when_client_sets_max_active_requests<S: Service>() {
+        let test = Test::<S>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<usize, usize>()
+            .create()
+            .unwrap();
+
+        let client = service
+            .client_builder()
+            .max_active_requests(2) // works with 4
+            .create()
+            .unwrap();
+        let server = service.server_builder().create().unwrap();
+
+        let pending_response = client.send_copy(0).unwrap();
+
+        let active_request = server.receive().unwrap().unwrap();
+        assert_that!(active_request.send_copy(1), is_ok);
+
+        // Client response_receiver und Server response_sender don't connect
+        // because of number_of_channels
+        // server uses required_amount_of_chunks_per_client_data_segment for calculation
+        // request_sender and request_receiver connect, because number_of_channels = 1
+        let response = pending_response.receive().unwrap();
+        assert_that!(response, is_some);
+        // assert_that!(*response, eq 1);
+    }
 }
