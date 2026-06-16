@@ -29,6 +29,7 @@
     conflicts when merging.
 -->
 
+* [#1548](https://github.com/eclipse-iceoryx/iceoryx2/issues/1548) Fix Payload data lifetime tracking in python ffi by anchoring views to their owning Sample.
 * [#1641](https://github.com/eclipse-iceoryx/iceoryx2/issues/1641) Deliver with Backpressure::Retry when receiver is disconnected until the buffer is full.
 * [#1673](https://github.com/eclipse-iceoryx/iceoryx2/issues/1673) Thread-stack-size is the same as process-stack-size on all platforms.
 * [#1690](https://github.com/eclipse-iceoryx/iceoryx2/issues/1690) Fix dependencies in iceoryx2-bb-loggers to re-enable `bazel query`.
