@@ -548,3 +548,38 @@ def test_client_can_request_graceful_disconnect(
 
     assert active_request.is_connected is False
     assert active_request.has_disconnect_hint is False
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_client_can_decrease_max_active_requests(
+    service_type: iox2.ServiceType,
+) -> None:
+    MAX_ACTIVE_REQUESTS = 13
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(Payload, Payload)
+        .max_active_requests_per_client(MAX_ACTIVE_REQUESTS)
+        .create()
+    )
+
+    for i in range(1, MAX_ACTIVE_REQUESTS):
+        client1 = service.client_builder().create()
+        client2 = service.client_builder().max_active_requests(i).create()
+
+        assert client1.max_active_requests == MAX_ACTIVE_REQUESTS
+        assert client2.max_active_requests == i
+
+        pending_responses_client1 = []
+        for j in range(0, MAX_ACTIVE_REQUESTS):
+            pending_responses_client1.append(client1.send_copy(Payload(data=j)))
+
+        pending_responses_client2 = []
+        for j in range(0, i):
+            pending_responses_client2.append(client2.send_copy(Payload(data=j)))
+
+        with pytest.raises(iox2.RequestSendError):
+            client2.send_copy(Payload(data=0))

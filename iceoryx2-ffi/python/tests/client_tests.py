@@ -134,3 +134,58 @@ def test_deleting_request_mut_removes_it_from_the_service(
         request_uninit = sut.loan_uninit()
     except iox2.LoanError:
         assert False
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_client_applies_max_active_requests(
+    service_type: iox2.ServiceType,
+) -> None:
+    MAX_ACTIVE_REQUESTS = 6
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(Payload, Payload)
+        .max_active_requests_per_client(2 * MAX_ACTIVE_REQUESTS)
+        .create()
+    )
+
+    client = service.client_builder().max_active_requests(MAX_ACTIVE_REQUESTS).create()
+
+    assert client.max_active_requests == MAX_ACTIVE_REQUESTS
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_client_creation_fails_when_max_active_requests_exceeds_service_max(
+    service_type: iox2.ServiceType,
+) -> None:
+    MAX_ACTIVE_REQUESTS = 13
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(Payload, Payload)
+        .max_active_requests_per_client(MAX_ACTIVE_REQUESTS)
+        .create()
+    )
+
+    with pytest.raises(iox2.ClientCreateError):
+        service.client_builder().max_active_requests(MAX_ACTIVE_REQUESTS + 1).create()
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_client_max_active_requests_is_at_least_one(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name).request_response(Payload, Payload).create()
+    )
+
+    client = service.client_builder().max_active_requests(0).create()
+
+    assert client.max_active_requests == 1

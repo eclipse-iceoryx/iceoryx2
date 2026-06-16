@@ -158,9 +158,19 @@ impl Client {
             ClientType::Ipc(Some(v)) => v.initial_max_slice_len(),
             ClientType::Local(Some(v)) => v.initial_max_slice_len(),
             _ => {
-                fatal_panic!(from "Client::loan_slice_uninit()",
+                fatal_panic!(from "Client::initial_max_slice_len()",
                     "Accessing a released client.")
             }
+        }
+    }
+
+    #[getter]
+    /// Returns the maximum amount of active requests the `Client` can send.
+    pub fn max_active_requests(&self) -> usize {
+        match &self.value {
+            ClientType::Ipc(Some(v)) => v.max_active_requests(),
+            ClientType::Local(Some(v)) => v.max_active_requests(),
+            _ => fatal_panic!(from "Client::max_active_requests()", "Accessing a released client."),
         }
     }
 }
