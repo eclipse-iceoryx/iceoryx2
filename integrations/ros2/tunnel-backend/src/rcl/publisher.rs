@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::cell::UnsafeCell;
 use std::ffi::CString;
 use std::rc::Rc;
 
@@ -50,12 +51,21 @@ impl core::fmt::Display for PublishError {
 impl core::error::Error for PublishError {}
 
 /// Publishes pre-serialized messages on a ROS 2 topic.
-#[derive(Debug)]
 pub struct Publisher {
-    publisher: *mut r2r_rcl::rcl_publisher_t,
+    publisher: Box<UnsafeCell<r2r_rcl::rcl_publisher_t>>,
     node: Rc<Node>,
     /// Keeps the typesupport library loaded while the endpoint uses it.
     _type_support: TypeSupport,
+}
+
+impl core::fmt::Debug for Publisher {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Publisher")
+            .field("publisher", &self.publisher.get())
+            .field("node", &self.node)
+            .field("_type_support", &self._type_support)
+            .finish()
+    }
 }
 
 impl Publisher {
@@ -67,10 +77,10 @@ impl Publisher {
         let topic = CString::new(topic).map_err(|_| CreationError::InvalidTopic)?;
 
         unsafe {
-            let mut publisher = Box::new(rcl_get_zero_initialized_publisher());
+            let publisher = Box::new(UnsafeCell::new(rcl_get_zero_initialized_publisher()));
             let options = rcl_publisher_get_default_options();
             let ret = rcl_publisher_init(
-                publisher.as_mut(),
+                publisher.get(),
                 node.handle(),
                 type_support.handle(),
                 topic.as_ptr(),
@@ -81,7 +91,7 @@ impl Publisher {
             }
 
             Ok(Self {
-                publisher: Box::into_raw(publisher),
+                publisher,
                 node: node.clone(),
                 _type_support: type_support,
             })
@@ -99,7 +109,7 @@ impl Publisher {
         };
 
         let ret = unsafe {
-            rcl_publish_serialized_message(self.publisher, &message, core::ptr::null_mut())
+            rcl_publish_serialized_message(self.publisher.get(), &message, core::ptr::null_mut())
         };
         if ret != RCL_RET_OK as i32 {
             return Err(PublishError::Publish(ret));
@@ -112,8 +122,7 @@ impl Publisher {
 impl Drop for Publisher {
     fn drop(&mut self) {
         unsafe {
-            let mut publisher = Box::from_raw(self.publisher);
-            let _ = rcl_publisher_fini(publisher.as_mut(), self.node.handle());
+            let _ = rcl_publisher_fini(self.publisher.get(), self.node.handle());
         }
     }
 }

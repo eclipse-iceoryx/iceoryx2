@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::cell::UnsafeCell;
 use std::ffi::CString;
 
 use r2r_rcl::{
@@ -41,10 +42,18 @@ impl core::error::Error for CreationError {}
 /// An rcl node together with the context it belongs to.
 /// The tunnel is a single node, so it can be coupled to
 /// the context.
-#[derive(Debug)]
 pub struct Node {
-    node: *mut rcl_node_t,
-    context: *mut rcl_context_t,
+    node: Box<UnsafeCell<rcl_node_t>>,
+    context: Box<UnsafeCell<rcl_context_t>>,
+}
+
+impl core::fmt::Debug for Node {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Node")
+            .field("node", &self.node.get())
+            .field("context", &self.context.get())
+            .finish()
+    }
 }
 
 impl Node {
@@ -59,49 +68,43 @@ impl Node {
                 return Err(CreationError::InitOptionsInit(ret));
             }
 
-            let mut context = Box::new(rcl_get_zero_initialized_context());
-            let ret = rcl_init(NO_ARGS, core::ptr::null(), &init_options, context.as_mut());
+            let context = Box::new(UnsafeCell::new(rcl_get_zero_initialized_context()));
+            let ret = rcl_init(NO_ARGS, core::ptr::null(), &init_options, context.get());
             let _ = rcl_init_options_fini(&mut init_options);
             if ret != RCL_RET_OK as i32 {
                 return Err(CreationError::ContextInit(ret));
             }
 
-            let mut node = Box::new(rcl_get_zero_initialized_node());
+            let node = Box::new(UnsafeCell::new(rcl_get_zero_initialized_node()));
             let node_options = rcl_node_get_default_options();
             let ret = rcl_node_init(
-                node.as_mut(),
+                node.get(),
                 name.as_ptr(),
                 namespace.as_ptr(),
-                context.as_mut(),
+                context.get(),
                 &node_options,
             );
             if ret != RCL_RET_OK as i32 {
-                let _ = rcl_shutdown(context.as_mut());
-                let _ = rcl_context_fini(context.as_mut());
+                let _ = rcl_shutdown(context.get());
+                let _ = rcl_context_fini(context.get());
                 return Err(CreationError::NodeInit(ret));
             }
 
-            Ok(Self {
-                node: Box::into_raw(node),
-                context: Box::into_raw(context),
-            })
+            Ok(Self { node, context })
         }
     }
 
     pub(crate) fn handle(&self) -> *mut rcl_node_t {
-        self.node
+        self.node.get()
     }
 }
 
 impl Drop for Node {
     fn drop(&mut self) {
         unsafe {
-            let mut node = Box::from_raw(self.node);
-            let _ = rcl_node_fini(node.as_mut());
-
-            let mut context = Box::from_raw(self.context);
-            let _ = rcl_shutdown(context.as_mut());
-            let _ = rcl_context_fini(context.as_mut());
+            let _ = rcl_node_fini(self.node.get());
+            let _ = rcl_shutdown(self.context.get());
+            let _ = rcl_context_fini(self.context.get());
         }
     }
 }
