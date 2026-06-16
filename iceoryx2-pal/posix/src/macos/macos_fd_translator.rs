@@ -12,29 +12,21 @@
 
 // iox2-156: shm_fd → state_fd mapping for permission trampoline routing.
 
+use alloc::collections::BTreeMap;
 use std::sync::Mutex;
 
 use crate::posix::types::int;
 
-const MAX_SHM_ENTRIES: usize = 1024;
-
-#[doc(hidden)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct ShmEntry {
-    pub shm_fd: int,
-    pub state_fd: int,
-}
-
 #[doc(hidden)]
 pub struct ShmFdTranslator {
-    entries: Mutex<[Option<ShmEntry>; MAX_SHM_ENTRIES]>,
+    // shm_fd -> state_fd
+    entries: Mutex<BTreeMap<int, int>>,
 }
 
 impl ShmFdTranslator {
     const fn new() -> Self {
-        const INIT: Option<ShmEntry> = None;
         Self {
-            entries: Mutex::new([INIT; MAX_SHM_ENTRIES]),
+            entries: Mutex::new(BTreeMap::new()),
         }
     }
 
@@ -45,42 +37,21 @@ impl ShmFdTranslator {
 
     pub fn register(&self, shm_fd: int, state_fd: int) -> bool {
         let mut entries = self.entries.lock().expect("ShmFdTranslator mutex poisoned");
-        let mut free_slot: Option<usize> = None;
-        for (idx, slot) in entries.iter().enumerate() {
-            match slot {
-                Some(e) if e.shm_fd == shm_fd => return false,
-                None if free_slot.is_none() => free_slot = Some(idx),
-                _ => {}
-            }
+        if entries.contains_key(&shm_fd) {
+            return false;
         }
-        match free_slot {
-            Some(idx) => {
-                entries[idx] = Some(ShmEntry { shm_fd, state_fd });
-                true
-            }
-            None => false,
-        }
+        entries.insert(shm_fd, state_fd);
+        true
     }
 
     pub fn lookup_state_fd(&self, shm_fd: int) -> Option<int> {
         let entries = self.entries.lock().expect("ShmFdTranslator mutex poisoned");
-        entries.iter().find_map(|slot| match slot {
-            Some(e) if e.shm_fd == shm_fd => Some(e.state_fd),
-            _ => None,
-        })
+        entries.get(&shm_fd).copied()
     }
 
     pub fn unregister(&self, shm_fd: int) -> Option<int> {
         let mut entries = self.entries.lock().expect("ShmFdTranslator mutex poisoned");
-        for slot in entries.iter_mut() {
-            if let Some(e) = *slot {
-                if e.shm_fd == shm_fd {
-                    *slot = None;
-                    return Some(e.state_fd);
-                }
-            }
-        }
-        None
+        entries.remove(&shm_fd)
     }
 }
 
@@ -108,15 +79,26 @@ mod tests {
 
     #[test]
     fn many_entries_independent() {
+        // BTreeMap has no fixed capacity, so go well past the old 1024 array limit.
         let t = ShmFdTranslator::new();
-        for i in 0..256 {
+        for i in 0..5000 {
             assert!(t.register(i, i + 10_000));
         }
-        for i in 0..256 {
+        for i in 0..5000 {
             assert_eq!(t.lookup_state_fd(i), Some(i + 10_000));
         }
-        for i in (0..256).rev() {
+        for i in (0..5000).rev() {
             assert_eq!(t.unregister(i), Some(i + 10_000));
         }
+    }
+
+    #[test]
+    fn reregister_after_unregister_succeeds() {
+        // A closed shm fd may be reused by the OS for a new shm later.
+        let t = ShmFdTranslator::new();
+        assert!(t.register(42, 100));
+        assert_eq!(t.unregister(42), Some(100));
+        assert!(t.register(42, 200));
+        assert_eq!(t.lookup_state_fd(42), Some(200));
     }
 }
