@@ -1081,14 +1081,9 @@ impl ProcessMonitor {
             Some(state_file) => {
                 let lock_state = fail!(from self, when state_file.get_lock_state(),
                                     "{} since the lock state of the state file could not be acquired.", msg);
-                if let Some(l) = lock_state {
-                    if l.lock_type() == LockType::Write {
-                        Ok(ProcessState::Alive)
-                    } else {
-                        Ok(ProcessState::Dead)
-                    }
-                } else {
-                    Ok(ProcessState::Dead)
+                match lock_state {
+                    Some(l) if l.lock_type() == LockType::Write => Ok(ProcessState::Alive),
+                    _ => Ok(ProcessState::Dead),
                 }
             }
             None => Ok(ProcessState::CleaningUp),
