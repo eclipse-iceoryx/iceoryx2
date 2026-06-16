@@ -20,15 +20,17 @@ use r2r_rcl::{
     rcl_node_init, rcl_node_t, rcl_shutdown, rcutils_get_default_allocator,
 };
 
+use crate::rcl::RclError;
+
 /// rcl is initialized without forwarding any command-line arguments.
 const NO_ARGS: core::ffi::c_int = 0;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
     InvalidName,
-    InitOptionsInit(i32),
-    ContextInit(i32),
-    NodeInit(i32),
+    InitOptionsInit(RclError),
+    ContextInit(RclError),
+    NodeInit(RclError),
 }
 
 impl core::fmt::Display for CreationError {
@@ -65,14 +67,14 @@ impl Node {
             let mut init_options = rcl_get_zero_initialized_init_options();
             let ret = rcl_init_options_init(&mut init_options, rcutils_get_default_allocator());
             if ret != RCL_RET_OK as i32 {
-                return Err(CreationError::InitOptionsInit(ret));
+                return Err(CreationError::InitOptionsInit(ret.into()));
             }
 
             let context = Box::new(UnsafeCell::new(rcl_get_zero_initialized_context()));
             let ret = rcl_init(NO_ARGS, core::ptr::null(), &init_options, context.get());
             let _ = rcl_init_options_fini(&mut init_options);
             if ret != RCL_RET_OK as i32 {
-                return Err(CreationError::ContextInit(ret));
+                return Err(CreationError::ContextInit(ret.into()));
             }
 
             let node = Box::new(UnsafeCell::new(rcl_get_zero_initialized_node()));
@@ -87,7 +89,7 @@ impl Node {
             if ret != RCL_RET_OK as i32 {
                 let _ = rcl_shutdown(context.get());
                 let _ = rcl_context_fini(context.get());
-                return Err(CreationError::NodeInit(ret));
+                return Err(CreationError::NodeInit(ret.into()));
             }
 
             Ok(Self { node, context })

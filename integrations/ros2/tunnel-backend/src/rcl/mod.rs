@@ -13,9 +13,11 @@
 //! Safe RAII wrappers around the `r2r_rcl` bindings, exposing only what the
 //! tunnel needs.
 
+pub(crate) mod error;
 pub(crate) mod node;
 pub(crate) mod publisher;
 
+pub(crate) use error::RclError;
 pub(crate) use node::Node;
 #[allow(unused_imports)]
 pub(crate) use publisher::Publisher;

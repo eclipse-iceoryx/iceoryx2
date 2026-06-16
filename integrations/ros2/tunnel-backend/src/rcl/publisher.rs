@@ -20,13 +20,13 @@ use r2r_rcl::{
     rcl_serialized_message_t, rcutils_get_default_allocator,
 };
 
-use crate::rcl::Node;
+use crate::rcl::{Node, RclError};
 use crate::typesupport::TypeSupport;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
     InvalidTopic,
-    PublisherInit(i32),
+    PublisherInit(RclError),
 }
 
 impl core::fmt::Display for CreationError {
@@ -39,7 +39,7 @@ impl core::error::Error for CreationError {}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum PublishError {
-    Publish(i32),
+    Publish(RclError),
 }
 
 impl core::fmt::Display for PublishError {
@@ -87,7 +87,7 @@ impl Publisher {
                 &options,
             );
             if ret != RCL_RET_OK as i32 {
-                return Err(CreationError::PublisherInit(ret));
+                return Err(CreationError::PublisherInit(ret.into()));
             }
 
             Ok(Self {
@@ -112,7 +112,7 @@ impl Publisher {
             rcl_publish_serialized_message(self.publisher.get(), &message, core::ptr::null_mut())
         };
         if ret != RCL_RET_OK as i32 {
-            return Err(PublishError::Publish(ret));
+            return Err(PublishError::Publish(ret.into()));
         }
 
         Ok(())
