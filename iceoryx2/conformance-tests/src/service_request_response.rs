@@ -1714,7 +1714,7 @@ pub mod service_request_response {
 
         let client = service
             .client_builder()
-            .max_active_requests(2) // works with 4
+            .max_active_requests(2)
             .create()
             .unwrap();
         let server = service.server_builder().create().unwrap();
@@ -1724,12 +1724,8 @@ pub mod service_request_response {
         let active_request = server.receive().unwrap().unwrap();
         assert_that!(active_request.send_copy(1), is_ok);
 
-        // Client response_receiver und Server response_sender don't connect
-        // because of number_of_channels
-        // server uses required_amount_of_chunks_per_client_data_segment for calculation
-        // request_sender and request_receiver connect, because number_of_channels = 1
         let response = pending_response.receive().unwrap();
         assert_that!(response, is_some);
-        // assert_that!(*response, eq 1);
+        assert_that!(*response.unwrap(), eq 1);
     }
 }
