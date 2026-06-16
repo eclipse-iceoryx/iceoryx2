@@ -37,7 +37,6 @@ use alloc::vec;
 
 use iceoryx2_bb_container::vector::StaticVec;
 use iceoryx2_bb_container::vector::Vector;
-use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -92,21 +91,6 @@ enum ServiceState {
     IncompatiblePayload,
     VersionMismatch,
 }
-
-#[repr(C)]
-#[derive(Debug, ZeroCopySend, Clone, Default)]
-#[doc(hidden)]
-pub struct CustomHeaderMarker {}
-
-#[repr(C)]
-#[derive(Debug, ZeroCopySend, Clone)]
-#[doc(hidden)]
-pub struct CustomPayloadMarker(u8);
-
-#[repr(C)]
-#[derive(ZeroCopySend, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[doc(hidden)]
-pub struct CustomKeyMarker(u8);
 
 enum_gen! {
 #[doc(hidden)]

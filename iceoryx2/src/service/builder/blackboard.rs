@@ -26,12 +26,11 @@ use alloc::vec::Vec;
 
 use crate::constants::{MAX_BLACKBOARD_KEY_ALIGNMENT, MAX_BLACKBOARD_KEY_SIZE};
 use crate::service;
-use crate::service::builder::{
-    CustomKeyMarker, DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError,
-};
+use crate::service::builder::{DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError};
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::blackboard::DynamicConfigSettings;
+use crate::service::marker::CustomKeyMarker;
 use crate::service::naming_scheme::blackboard_name;
 use crate::service::port_factory::blackboard;
 use crate::service::static_config::message_type_details::TypeDetail;

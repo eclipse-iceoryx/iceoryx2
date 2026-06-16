@@ -16,7 +16,7 @@ use core::mem::MaybeUninit;
 use iceoryx2::port::publisher::Publisher;
 use iceoryx2::prelude::*;
 use iceoryx2::sample_mut_uninit::SampleMutUninit;
-use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
+use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeName, TypeVariant};
 use iceoryx2_cli::Format;
 use iceoryx2_userland_record_and_replay::hex_conversion::hex_string_to_bytes;

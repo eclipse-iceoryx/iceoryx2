@@ -75,7 +75,7 @@
 
 use crate::port::update_connections::UpdateConnections;
 use crate::prelude::BackpressureStrategy;
-use crate::service::builder::CustomPayloadMarker;
+use crate::service::marker::CustomPayloadMarker;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::server::LocalServerConfig;
 use crate::service::{NoResource, SharedServiceState};

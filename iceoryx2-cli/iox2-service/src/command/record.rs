@@ -15,7 +15,7 @@ use crate::command::{extract_pubsub_payload, get_pubsub_service_types};
 use anyhow::Result;
 use core::time::Duration;
 use iceoryx2::prelude::*;
-use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
+use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2_cli::Format;
 use iceoryx2_userland_record_and_replay::prelude::*;
 use std::io::Write;

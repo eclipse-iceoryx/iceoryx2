@@ -38,9 +38,9 @@
 use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
 use crate::identifiers::UniqueReaderId;
 use crate::prelude::EventId;
-use crate::service::builder::CustomKeyMarker;
 use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
 use crate::service::dynamic_config::blackboard::ReaderDetails;
+use crate::service::marker::CustomKeyMarker;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, SharedServiceState};
 use core::alloc::Layout;

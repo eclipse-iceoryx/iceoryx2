@@ -22,15 +22,15 @@ use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic, warn};
 
+use super::ServiceState;
 use crate::service::builder::{DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError};
 use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;
 use crate::service::header::publish_subscribe::Header;
+use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
 use crate::service::port_factory::publish_subscribe;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
 use crate::service::{self, dynamic_config::MessagingPatternSettings};
-
-use super::{CustomHeaderMarker, CustomPayloadMarker, ServiceState};
 
 use self::{
     attribute::{AttributeSpecifier, AttributeVerifier},

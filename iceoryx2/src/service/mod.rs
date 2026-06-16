@@ -250,6 +250,9 @@ pub mod ipc;
 /// [`Send`] but at the cost of an additional internal mutex.
 pub mod ipc_threadsafe;
 
+/// Contains marker types to enable additional API features.
+pub mod marker;
+
 pub(crate) mod config_scheme;
 pub(crate) mod naming_scheme;
 

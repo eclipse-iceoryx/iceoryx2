@@ -14,8 +14,8 @@ use std::alloc::Layout;
 use std::ptr::copy_nonoverlapping;
 
 use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
-use iceoryx2::service::builder::CustomKeyMarker;
 use iceoryx2::service::builder::blackboard::KeyMemory;
+use iceoryx2::service::marker::CustomKeyMarker;
 use pyo3::prelude::*;
 
 use crate::attribute_specifier::AttributeSpecifier;
