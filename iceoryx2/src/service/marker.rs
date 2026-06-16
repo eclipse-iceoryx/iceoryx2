@@ -37,4 +37,8 @@ pub struct Flatbuffer<T> {
     _phantom: PhantomData<T>,
 }
 
-unsafe impl<T> ZeroCopySend for Flatbuffer<T> {}
+unsafe impl<T> ZeroCopySend for Flatbuffer<T> {
+    unsafe fn type_name() -> &'static str {
+        "iox2::Flatbuffer"
+    }
+}
