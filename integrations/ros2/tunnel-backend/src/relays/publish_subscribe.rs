@@ -14,19 +14,20 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use iceoryx2::service::{Service, local_threadsafe, static_config::StaticConfig};
+use iceoryx2_log::fail;
 use iceoryx2_services_tunnel_backend::traits::{PublishSubscribeRelay, RelayBuilder};
 use iceoryx2_services_tunnel_backend::types::publish_subscribe::{LoanFn, Sample, SampleMut};
 use iceoryx2_services_tunnel_backend::types::wake::WakeHandle;
 
-use crate::typesupport::{self, TypeSupportRegistry};
+use crate::typesupport::TypeSupportRegistry;
 use crate::{keys, payload, rcl};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum CreationError {
     InvalidServiceName,
     InvalidTypeName,
-    TypeSupport(typesupport::LoadError),
-    Publisher(rcl::publisher::CreationError),
+    TypeSupport,
+    Publisher,
 }
 
 impl core::fmt::Display for CreationError {
@@ -39,7 +40,7 @@ impl core::error::Error for CreationError {}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum SendError {
-    Publish(rcl::publisher::PublishError),
+    Publish,
 }
 
 impl core::fmt::Display for SendError {
@@ -73,9 +74,15 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
     type ReceiveError = ReceiveError;
 
     fn send(&self, sample: Sample<S>) -> Result<(), Self::SendError> {
-        self.publisher
-            .publish(payload::as_bytes(sample.payload()))
-            .map_err(SendError::Publish)
+        let origin = "publish_subscribe::Relay::send";
+
+        fail!(from origin,
+            when self.publisher.publish(payload::as_bytes(sample.payload())),
+            with SendError::Publish,
+            "Failed to relay sample to ROS 2"
+        );
+
+        Ok(())
     }
 
     fn receive<LoanError>(
@@ -119,24 +126,38 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
 
     // Endpoint creation simultaneously announces over the DDS SEDP.
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
-        let topic = keys::topic(self.static_config.name().as_str())
-            .ok_or(CreationError::InvalidServiceName)?;
-        // The payload type name carries the ROS 2 type name.
-        let type_name = core::str::from_utf8(
-            self.static_config
-                .publish_subscribe()
-                .message_type_details()
-                .payload
-                .type_name(),
-        )
-        .map_err(|_| CreationError::InvalidTypeName)?;
+        let origin = "publish_subscribe::Relay::create";
 
-        let type_support = self
-            .type_support
-            .load(type_name)
-            .map_err(CreationError::TypeSupport)?;
-        let publisher = rcl::Publisher::create(&self.node, topic, type_support)
-            .map_err(CreationError::Publisher)?;
+        let topic = fail!(from origin,
+            when keys::topic(self.static_config.name().as_str()).ok_or(CreationError::InvalidServiceName),
+            "Failed to map service name to a ROS 2 topic"
+        );
+
+        // The payload type name carries the ROS 2 type name.
+        let type_name = fail!(from origin,
+            when core::str::from_utf8(
+                self.static_config
+                    .publish_subscribe()
+                    .message_type_details()
+                    .payload
+                    .type_name(),
+            ),
+            with CreationError::InvalidTypeName,
+            "Failed to read the payload type name as UTF-8"
+        );
+
+        let type_support = fail!(from origin,
+            when self.type_support.load(type_name),
+            with CreationError::TypeSupport,
+            "Failed to load typesupport for '{}'",
+            type_name
+        );
+        let publisher = fail!(from origin,
+            when rcl::Publisher::create(&self.node, topic, type_support),
+            with CreationError::Publisher,
+            "Failed to create ROS 2 publisher for topic '{}'",
+            topic
+        );
 
         Ok(Relay {
             publisher,

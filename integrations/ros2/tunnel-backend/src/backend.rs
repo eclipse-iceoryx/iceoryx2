@@ -14,6 +14,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use iceoryx2::service::{Service, local_threadsafe};
+use iceoryx2_log::fail;
 use iceoryx2_services_tunnel_backend::traits::{Backend, BackendBuilder, ReactiveBackendBuilder};
 use iceoryx2_services_tunnel_backend::types::wake::WakeHandle;
 
@@ -21,7 +22,7 @@ use crate::{
     discovery::Discovery,
     rcl,
     relays::{Factory, event, publish_subscribe},
-    typesupport::{self, TypeSupportRegistry},
+    typesupport::TypeSupportRegistry,
 };
 
 /// The name of the ROS 2 node representing the tunnel.
@@ -46,8 +47,8 @@ pub struct Config {
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum CreationError {
-    Node(rcl::node::CreationError),
-    TypeSupport(typesupport::LoadError),
+    Node,
+    TypeSupport,
 }
 
 impl core::fmt::Display for CreationError {
@@ -128,15 +129,23 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
     type CreationError = CreationError;
 
     fn create(self) -> Result<Self::Backend, Self::CreationError> {
-        let node = Rc::new(rcl::Node::create(NODE_NAME, "").map_err(CreationError::Node)?);
+        let origin = "Ros2Backend::create";
+
+        let node = Rc::new(fail!(from origin,
+            when rcl::Node::create(NODE_NAME, ""),
+            with CreationError::Node,
+            "Failed to create ROS 2 node"
+        ));
 
         // Load all typesupport libraries for configured topics during
         // initialization.
         let type_support = Rc::new(TypeSupportRegistry::default());
         for topic in &self.config.topics {
-            type_support
-                .load(&topic.type_name)
-                .map_err(CreationError::TypeSupport)?;
+            fail!(from origin,
+                when type_support.load(&topic.type_name),
+                with CreationError::TypeSupport,
+                "Failed to load typesupport for configured topic '{}'", topic.type_name
+            );
         }
 
         Ok(Ros2Backend {

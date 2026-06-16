@@ -18,6 +18,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use iceoryx2_log::fail;
 use libloading::Library;
 use r2r_rcl::rosidl_message_type_support_t;
 
@@ -83,33 +84,47 @@ impl TypeSupportRegistry {
 /// Loads the typesupport library of the type's package and looks up the
 /// type's handle in it.
 fn load_typesupport_library(type_name: &str) -> Result<Entry, LoadError> {
-    let (package, message) = split_type_name(type_name)?;
+    let origin = "TypeSupportRegistry::load";
+
+    let (package, message) = fail!(
+        from origin,
+        when split_type_name(type_name),
+        "Invalid ROS 2 type name '{}'",
+        type_name
+    );
     let library_name = format!("lib{package}__rosidl_typesupport_c.so");
     let symbol_name =
         format!("rosidl_typesupport_c__get_message_type_support_handle__{package}__msg__{message}");
 
     // Load the typesupport library, found via the sourced environment's
     // LD_LIBRARY_PATH.
-    let library =
-        unsafe { Library::new(&library_name) }.map_err(|_| LoadError::LibraryNotFound {
-            library: library_name,
-        })?;
+    let library = fail!(from origin,
+        when unsafe { Library::new(&library_name) },
+        with LoadError::LibraryNotFound { library: library_name },
+        "Failed to load typesupport library for package '{}'",
+        package
+    );
 
     // Get the typesupport handle from the loaded library.
     let handle = {
         let get_handle: libloading::Symbol<
             unsafe extern "C" fn() -> *const rosidl_message_type_support_t,
-        > = unsafe { library.get(symbol_name.as_bytes()) }.map_err(|_| {
-            LoadError::SymbolNotFound {
-                symbol: symbol_name,
-            }
-        })?;
+        > = fail!(
+            from origin,
+            when unsafe { library.get(symbol_name.as_bytes()) },
+            with LoadError::SymbolNotFound { symbol: symbol_name },
+            "Failed to resolve typesupport symbol for type '{}'",
+            message
+        );
         unsafe { get_handle() }
     };
     if handle.is_null() {
-        return Err(LoadError::NullHandle {
-            type_name: type_name.to_string(),
-        });
+        fail!(
+            from origin,
+            with LoadError::NullHandle { type_name: type_name.to_string() },
+            "Typesupport handle for '{}' is null",
+            type_name
+        );
     }
 
     Ok(Entry {

@@ -20,6 +20,8 @@ use r2r_rcl::{
     rcl_serialized_message_t, rcutils_get_default_allocator,
 };
 
+use iceoryx2_log::fail;
+
 use crate::rcl::{Node, RclError};
 use crate::typesupport::TypeSupport;
 
@@ -74,7 +76,14 @@ impl Publisher {
         topic: &str,
         type_support: TypeSupport,
     ) -> Result<Self, CreationError> {
-        let topic = CString::new(topic).map_err(|_| CreationError::InvalidTopic)?;
+        let origin = "Publisher::create";
+
+        let topic = fail!(
+            from origin,
+            when CString::new(topic),
+            with CreationError::InvalidTopic,
+            "Failed to convert topic name to a CString"
+        );
 
         unsafe {
             let publisher = Box::new(UnsafeCell::new(rcl_get_zero_initialized_publisher()));
@@ -87,7 +96,11 @@ impl Publisher {
                 &options,
             );
             if ret != RCL_RET_OK as i32 {
-                return Err(CreationError::PublisherInit(ret.into()));
+                fail!(
+                    from origin,
+                    with CreationError::PublisherInit(ret.into()),
+                    "Failed to initialize publisher"
+                );
             }
 
             Ok(Self {
@@ -101,6 +114,7 @@ impl Publisher {
     /// Publishes the payload as-is; it must be a serialized message of the
     /// publisher's type.
     pub fn publish(&self, payload: &[u8]) -> Result<(), PublishError> {
+        let origin = "Publisher::publish";
         let message = rcl_serialized_message_t {
             buffer: payload.as_ptr() as *mut u8,
             buffer_length: payload.len(),
@@ -112,7 +126,11 @@ impl Publisher {
             rcl_publish_serialized_message(self.publisher.get(), &message, core::ptr::null_mut())
         };
         if ret != RCL_RET_OK as i32 {
-            return Err(PublishError::Publish(ret.into()));
+            fail!(
+                from origin,
+                with PublishError::Publish(ret.into()),
+                "Failed to publish serialized message"
+            );
         }
 
         Ok(())

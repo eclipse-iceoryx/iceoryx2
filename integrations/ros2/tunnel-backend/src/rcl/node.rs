@@ -20,6 +20,8 @@ use r2r_rcl::{
     rcl_node_init, rcl_node_t, rcl_shutdown, rcutils_get_default_allocator,
 };
 
+use iceoryx2_log::fail;
+
 use crate::rcl::RclError;
 
 /// rcl is initialized without forwarding any command-line arguments.
@@ -60,21 +62,41 @@ impl core::fmt::Debug for Node {
 
 impl Node {
     pub fn create(name: &str, namespace: &str) -> Result<Self, CreationError> {
-        let name = CString::new(name).map_err(|_| CreationError::InvalidName)?;
-        let namespace = CString::new(namespace).map_err(|_| CreationError::InvalidName)?;
+        let origin = "Node::create";
+
+        let name = fail!(
+            from origin,
+            when CString::new(name),
+            with CreationError::InvalidName,
+            "Failed to convert node name to a CString"
+        );
+        let namespace = fail!(
+            from origin,
+            when CString::new(namespace),
+            with CreationError::InvalidName,
+            "Failed to convert node namespace to a CString"
+        );
 
         unsafe {
             let mut init_options = rcl_get_zero_initialized_init_options();
             let ret = rcl_init_options_init(&mut init_options, rcutils_get_default_allocator());
             if ret != RCL_RET_OK as i32 {
-                return Err(CreationError::InitOptionsInit(ret.into()));
+                fail!(
+                    from origin,
+                    with CreationError::InitOptionsInit(ret.into()),
+                    "Failed to initialize init options"
+                );
             }
 
             let context = Box::new(UnsafeCell::new(rcl_get_zero_initialized_context()));
             let ret = rcl_init(NO_ARGS, core::ptr::null(), &init_options, context.get());
             let _ = rcl_init_options_fini(&mut init_options);
             if ret != RCL_RET_OK as i32 {
-                return Err(CreationError::ContextInit(ret.into()));
+                fail!(
+                    from origin,
+                    with CreationError::ContextInit(ret.into()),
+                    "Failed to initialize context"
+                );
             }
 
             let node = Box::new(UnsafeCell::new(rcl_get_zero_initialized_node()));
@@ -89,7 +111,11 @@ impl Node {
             if ret != RCL_RET_OK as i32 {
                 let _ = rcl_shutdown(context.get());
                 let _ = rcl_context_fini(context.get());
-                return Err(CreationError::NodeInit(ret.into()));
+                fail!(
+                    from origin,
+                    with CreationError::NodeInit(ret.into()),
+                    "Failed to initialize node"
+                );
             }
 
             Ok(Self { node, context })
