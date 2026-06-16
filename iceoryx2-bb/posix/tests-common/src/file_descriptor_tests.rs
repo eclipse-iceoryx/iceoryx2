@@ -23,6 +23,7 @@ pub mod generic {
     use iceoryx2_bb_posix::user::*;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::test_requires;
+    use iceoryx2_pal_posix::posix::POSIX_SUPPORT_FILE_LOCK_FOR_SHARED_MEMORY;
     use iceoryx2_pal_posix::posix::{POSIX_SUPPORT_PERMISSIONS, POSIX_SUPPORT_USERS_AND_GROUPS};
 
     #[test]
@@ -38,6 +39,7 @@ pub mod generic {
 
     pub trait GenericTestBuilder {
         fn sut() -> Self;
+        fn supports_file_locks() -> bool;
     }
     impl GenericTestBuilder for File {
         fn sut() -> Self {
@@ -53,6 +55,10 @@ pub mod generic {
             file.write(&file_content).unwrap();
             file
         }
+
+        fn supports_file_locks() -> bool {
+            true
+        }
     }
 
     impl GenericTestBuilder for SharedMemory {
@@ -64,14 +70,15 @@ pub mod generic {
                 .create()
                 .unwrap()
         }
+
+        fn supports_file_locks() -> bool {
+            POSIX_SUPPORT_FILE_LOCK_FOR_SHARED_MEMORY
+        }
     }
 
     #[test]
     pub fn owner_handling_works<Sut: GenericTestBuilder + FileDescriptorManagement>() {
         test_requires!(POSIX_SUPPORT_USERS_AND_GROUPS);
-
-        create_test_directory();
-
         let mut sut = Sut::sut();
 
         let me = User::from_self().unwrap();
@@ -91,8 +98,6 @@ pub mod generic {
     #[test]
     pub fn permission_handling_works<Sut: GenericTestBuilder + FileDescriptorManagement>() {
         test_requires!(POSIX_SUPPORT_PERMISSIONS);
-        create_test_directory();
-
         let mut sut = Sut::sut();
 
         let rw_all = Permission::OWNER_READ
@@ -110,9 +115,6 @@ pub mod generic {
     #[test]
     pub fn metadata_handling_works<Sut: GenericTestBuilder + FileDescriptorManagement>() {
         test_requires!(POSIX_SUPPORT_PERMISSIONS);
-
-        create_test_directory();
-
         let mut sut = Sut::sut();
 
         let mut test = |perms| {
@@ -143,5 +145,35 @@ pub mod generic {
                 | Permission::OTHERS_READ
                 | Permission::OTHERS_WRITE,
         );
+    }
+
+    #[test]
+    pub fn lock_state_of_unlocked_file_is_unlocked<
+        Sut: GenericTestBuilder + FileDescriptorManagement,
+    >() {
+        test_requires!(Sut::supports_file_locks());
+        let sut = Sut::sut();
+
+        assert_that!(sut.get_lock_state().unwrap(), is_none);
+    }
+
+    #[test]
+    pub fn read_lock_can_be_acquired_of_unlocked_file<
+        Sut: GenericTestBuilder + FileDescriptorManagement,
+    >() {
+        test_requires!(Sut::supports_file_locks());
+        let sut = Sut::sut();
+
+        assert_that!(unsafe { sut.try_lock(LockType::Read).unwrap() }, is_some);
+    }
+
+    #[test]
+    pub fn write_lock_can_be_acquired_of_unlocked_file<
+        Sut: GenericTestBuilder + FileDescriptorManagement,
+    >() {
+        test_requires!(Sut::supports_file_locks());
+        let sut = Sut::sut();
+
+        assert_that!(unsafe { sut.try_lock(LockType::Write).unwrap() }, is_some);
     }
 }

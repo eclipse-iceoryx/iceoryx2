@@ -24,7 +24,6 @@ pub mod deadline_queue_tests;
 pub mod directory_tests;
 pub mod file_descriptor_set_tests;
 pub mod file_descriptor_tests;
-pub mod file_lock_tests;
 pub mod file_tests;
 pub mod file_type_tests;
 pub mod group_tests;

@@ -18,6 +18,7 @@ pub const POSIX_SUPPORT_CPU_AFFINITY: bool = true;
 pub const POSIX_SUPPORT_USERS_AND_GROUPS: bool = true;
 pub const POSIX_SUPPORT_PERMISSIONS: bool = true;
 pub const POSIX_SUPPORT_FILE_LOCK: bool = true;
+pub const POSIX_SUPPORT_FILE_LOCK_FOR_SHARED_MEMORY: bool = true;
 pub const POSIX_SUPPORT_MEMORY_LOCK: bool = true;
 pub const POSIX_SUPPORT_MESSAGE_QUEUE: bool = true;
 pub const POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING: bool = true;
