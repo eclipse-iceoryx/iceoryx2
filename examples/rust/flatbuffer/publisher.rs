@@ -32,7 +32,11 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .publish_subscribe::<Flatbuffer<UnboundedData>>()
         .open_or_create()?;
 
-    let publisher = service.publisher_builder().create()?;
+    let publisher = service
+        .publisher_builder()
+        .initial_reserved_memory(4096)
+        .allocation_strategy(AllocationStrategy::Static)
+        .create()?;
 
     let mut counter: u64 = 0;
 
