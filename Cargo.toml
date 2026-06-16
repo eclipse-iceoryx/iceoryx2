@@ -204,6 +204,7 @@ clap = { version = "4.6.1", features = ["derive"] }
 enum-iterator = { version = "2.1.0" }
 better-panic = { version = "0.3.0" }
 colored = { version = "2.1" }
+flatbuffers = { version = "25.12.19" }
 generic-tests = { version = "0.1.2" }
 human-panic = { version = "2.0.5" }
 libc = { version = "0.2.183", default-features = false, features = ['extra_traits'] }
