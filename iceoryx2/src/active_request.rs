@@ -54,6 +54,8 @@ use iceoryx2_cal::{
 };
 use iceoryx2_log::fail;
 
+use crate::service::marker::CustomHeaderMarker;
+use crate::service::marker::CustomPayloadMarker;
 use crate::{
     identifiers::{UniqueClientId, UniqueServerId},
     port::{
@@ -64,11 +66,7 @@ use crate::{
     raw_sample::{RawSample, RawSampleMut},
     response_mut::ResponseMut,
     response_mut_uninit::ResponseMutUninit,
-    service::{
-        self,
-        builder::{CustomHeaderMarker, CustomPayloadMarker},
-        static_config::message_type_details::TypeVariant,
-    },
+    service::{self, static_config::message_type_details::TypeVariant},
 };
 
 /// Represents the id of the [`RequestMut`](crate::request_mut::RequestMut)

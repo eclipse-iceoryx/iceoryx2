@@ -54,9 +54,9 @@ use iceoryx2_log::{fail, warn};
 
 use crate::port::port_name::PortName;
 use crate::port::update_connections::UpdateConnections;
-use crate::service::builder::CustomPayloadMarker;
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::header::publish_subscribe::Header;
+use crate::service::marker::CustomPayloadMarker;
 use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::static_config::publish_subscribe::StaticConfig;
 use crate::service::{NoResource, SharedServiceState};

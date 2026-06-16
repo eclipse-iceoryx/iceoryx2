@@ -20,7 +20,9 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic, warn};
 
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
-use crate::service::builder::{DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError};
+use crate::service::builder::{
+    DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError, ServiceState,
+};
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::request_response::DynamicConfigSettings;
 use crate::service::port_factory::request_response;
@@ -31,7 +33,7 @@ use crate::service::{NoResource, header, static_config};
 use crate::service::{Service, builder, dynamic_config};
 
 use super::message_type_details::{MessageTypeDetails, TypeVariant};
-use super::{CustomHeaderMarker, CustomPayloadMarker, ServiceState};
+use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
 
 /// Errors that can occur when an existing [`MessagingPattern::RequestResponse`] [`Service`] shall
 /// be opened.
