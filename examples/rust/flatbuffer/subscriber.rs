@@ -12,24 +12,15 @@
 
 extern crate alloc;
 
+use crate::unbounded_data_generated::example::UnboundedData;
 use alloc::boxed::Box;
 use core::time::Duration;
-use iceoryx2::prelude::*;
-use std::marker::PhantomData;
-
-use crate::unbounded_data_generated::example::UnboundedData;
+use iceoryx2::{prelude::*, service::marker::Flatbuffer};
 
 #[path = "unbounded_data_generated.rs"]
 mod unbounded_data_generated;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
-
-#[derive(Debug)]
-pub struct Flatbuffer<T> {
-    _data: PhantomData<T>,
-}
-
-unsafe impl<T> ZeroCopySend for Flatbuffer<T> {}
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);

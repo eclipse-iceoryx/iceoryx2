@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::marker::PhantomData;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
@@ -27,3 +28,13 @@ pub struct CustomPayloadMarker(u8);
 #[derive(ZeroCopySend, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[doc(hidden)]
 pub struct CustomKeyMarker(u8);
+
+#[derive(Debug)]
+/// Marker Type to mark a payload as serialized via Flatbuffer.
+#[repr(C)]
+pub struct Flatbuffer<T>{
+   _data: u8,
+   _phantom: PhantomData<T>,
+}
+
+unsafe impl<T> ZeroCopySend for Flatbuffer<T> {}
