@@ -32,9 +32,9 @@ pub struct CustomKeyMarker(u8);
 #[derive(Debug)]
 /// Marker Type to mark a payload as serialized via Flatbuffer.
 #[repr(C)]
-pub struct Flatbuffer<T>{
-   _data: u8,
-   _phantom: PhantomData<T>,
+pub struct Flatbuffer<T> {
+    _data: u8,
+    _phantom: PhantomData<T>,
 }
 
 unsafe impl<T> ZeroCopySend for Flatbuffer<T> {}

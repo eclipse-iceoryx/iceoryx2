@@ -92,12 +92,15 @@
 
 use core::{fmt::Debug, mem::MaybeUninit};
 
+use flatbuffers::FlatBufferBuilder;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::shm_allocator::PointerOffset;
 
 use crate::{
-    port::publisher::PublisherSharedState, raw_sample::RawSampleMut, sample_mut::SampleMut,
-    service::header::publish_subscribe::Header,
+    port::publisher::PublisherSharedState,
+    raw_sample::RawSampleMut,
+    sample_mut::SampleMut,
+    service::{header::publish_subscribe::Header, marker::Flatbuffer},
 };
 
 /// Acquired by a [`crate::port::publisher::Publisher`] via
@@ -107,13 +110,13 @@ use crate::{
 /// It stores the payload that will be sent
 /// to all connected [`crate::port::subscriber::Subscriber`]s. If the [`SampleMut`] is not sent
 /// it will release the loaned memory when going out of scope.
-#[repr(transparent)]
 pub struct SampleMutUninit<
     Service: crate::service::Service,
     Payload: Debug + ZeroCopySend + ?Sized,
     UserHeader: ZeroCopySend,
 > {
     sample: SampleMut<Service, Payload, UserHeader>,
+    flatbuffer_builder: Option<FlatBufferBuilder<'static>>,
 }
 
 unsafe impl<
@@ -124,6 +127,18 @@ unsafe impl<
 where
     Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>: Send + Sync,
 {
+}
+
+impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
+    SampleMutUninit<Service, MaybeUninit<Flatbuffer<Payload>>, UserHeader>
+{
+    pub fn flatbuffer_builder(&mut self) -> &FlatBufferBuilder<'static> {
+        self.flatbuffer_builder.get_or_insert(unsafe {
+            core::mem::transmute::<FlatBufferBuilder<'_>, FlatBufferBuilder<'static>>(
+                FlatBufferBuilder::new(),
+            )
+        })
+    }
 }
 
 impl<
@@ -279,6 +294,7 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
         sample_size: usize,
     ) -> Self {
         Self {
+            flatbuffer_builder: None,
             sample: SampleMut {
                 publisher_shared_state: publisher_shared_state.clone(),
                 ptr,
@@ -363,6 +379,7 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
         sample_size: usize,
     ) -> Self {
         Self {
+            flatbuffer_builder: None,
             sample: SampleMut {
                 publisher_shared_state: publisher_shared_state.clone(),
                 ptr,

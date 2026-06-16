@@ -15,7 +15,6 @@ extern crate alloc;
 use crate::unbounded_data_generated::example::UnboundedData;
 use alloc::boxed::Box;
 use core::time::Duration;
-use flatbuffers::FlatBufferBuilder;
 use iceoryx2::{prelude::*, service::marker::Flatbuffer};
 
 #[path = "unbounded_data_generated.rs"]
@@ -39,7 +38,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     while node.wait(CYCLE_TIME).is_ok() {
         counter += 1;
-        let sample = publisher.loan_uninit()?;
+        let mut sample = publisher.loan_uninit()?;
+        sample.flatbuffer_builder();
 
         coutln!("Send sample {counter} ...");
     }
