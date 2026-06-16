@@ -14,6 +14,7 @@ pub mod constants;
 pub mod dirent;
 pub mod errno;
 pub mod fcntl;
+pub mod macos_fd_translator;
 pub mod mman;
 pub mod pthread;
 pub mod pwd;

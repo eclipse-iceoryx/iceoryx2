@@ -66,7 +66,13 @@ pub unsafe fn dup(fildes: int) -> int {
 }
 
 pub unsafe fn close(fd: int) -> int {
-    unsafe { crate::internal::close(fd) }
+    // iox2-156: unregister before close to avoid fd-reuse races.
+    let state_fd = super::macos_fd_translator::ShmFdTranslator::get_instance().unregister(fd);
+    let ret = unsafe { crate::internal::close(fd) };
+    if let Some(state_fd) = state_fd {
+        unsafe { crate::internal::close(state_fd) };
+    }
+    ret
 }
 
 pub unsafe fn read(fd: int, buf: *mut void, count: size_t) -> ssize_t {
@@ -106,7 +112,11 @@ pub unsafe fn ftruncate(fd: int, length: off_t) -> int {
 }
 
 pub unsafe fn fchown(fd: int, owner: uid_t, group: gid_t) -> int {
-    unsafe { crate::internal::fchown(fd, owner, group) }
+    // iox2-156: ownership lives on the trampoline state file for shm fds.
+    let target_fd = super::macos_fd_translator::ShmFdTranslator::get_instance()
+        .lookup_state_fd(fd)
+        .unwrap_or(fd);
+    unsafe { crate::internal::fchown(target_fd, owner, group) }
 }
 
 pub unsafe fn fsync(fd: int) -> int {
