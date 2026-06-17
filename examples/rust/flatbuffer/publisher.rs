@@ -25,7 +25,15 @@ const CYCLE_TIME: Duration = Duration::from_secs(1);
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
 
-    let node = NodeBuilder::new().create::<ipc::Service>()?;
+    let mut config = Config::default();
+    config
+        .global
+        .service
+        .flatbuffer_schema_paths
+        .push("examples/rust/flatbuffer".try_into()?);
+    let node = NodeBuilder::new()
+        .config(&config)
+        .create::<ipc::Service>()?;
 
     println!("type name: {}", core::any::type_name::<UnboundedData>());
     println!("{}", core::env!("PWD"));
