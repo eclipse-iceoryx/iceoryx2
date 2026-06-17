@@ -28,10 +28,12 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     println!("type name: {}", core::any::type_name::<UnboundedData>());
+    println!("{}", core::env!("PWD"));
 
     let service = node
         .service_builder(&"My/Flatbuffer/Service".try_into()?)
         .publish_subscribe::<Flatbuffer<UnboundedData>>()
+        .flatbuffer_schema_path(&"unbounded_data.fbs".try_into()?)
         .open_or_create()?;
 
     let publisher = service
