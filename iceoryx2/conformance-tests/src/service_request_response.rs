@@ -1714,7 +1714,7 @@ pub mod service_request_response {
 
         let client = service
             .client_builder()
-            .max_active_requests(2)
+            .max_active_requests(1)
             .create()
             .unwrap();
         let server = service.server_builder().create().unwrap();

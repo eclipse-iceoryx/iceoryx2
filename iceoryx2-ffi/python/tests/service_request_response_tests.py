@@ -583,3 +583,27 @@ def test_client_can_decrease_max_active_requests(
 
         with pytest.raises(iox2.RequestSendError):
             client2.send_copy(Payload(data=0))
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_communication_works_when_client_sets_max_active_requests(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name).request_response(Payload, Payload).create()
+    )
+
+    client = service.client_builder().max_active_requests(1).create()
+    server = service.server_builder().create()
+
+    pending_response = client.send_copy(Payload(data=0))
+
+    active_request = server.receive()
+    active_request.send_copy(Payload(data=1))
+
+    response = pending_response.receive()
+    assert response.payload().contents.data == 1

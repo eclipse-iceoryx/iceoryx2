@@ -2013,6 +2013,7 @@ TYPED_TEST(ServiceRequestResponseTest, listing_all_clients_stops_on_request) {
     ASSERT_THAT(counter, Eq(1));
 }
 
+//NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
 TYPED_TEST(ServiceRequestResponseTest, client_details_are_correct) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t MAX_SLICE_LEN = 9;
@@ -2045,6 +2046,7 @@ TYPED_TEST(ServiceRequestResponseTest, client_details_are_correct) {
 
     ASSERT_THAT(counter, Eq(1));
 }
+// NOLINTEND(readability-function-cognitive-complexity)
 
 TYPED_TEST(ServiceRequestResponseTest, listing_all_servers_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
@@ -2389,6 +2391,7 @@ TYPED_TEST(ServiceRequestResponseTest, custom_header_payload_marker_send_receive
 }
 // NOLINTEND(readability-function-cognitive-complexity)
 
+//NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
 TYPED_TEST(ServiceRequestResponseTest, client_can_decrease_max_active_requests) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t MAX_ACTIVE_REQUESTS = 13;
@@ -2410,11 +2413,13 @@ TYPED_TEST(ServiceRequestResponseTest, client_can_decrease_max_active_requests) 
         ASSERT_THAT(client2.max_active_requests(), Eq(i));
 
         std::vector<PendingResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>> pending_responses_client1;
+        pending_responses_client1.reserve(MAX_ACTIVE_REQUESTS);
         for (uint64_t j = 0; j < MAX_ACTIVE_REQUESTS; ++j) {
             pending_responses_client1.push_back(client1.send_copy(j).value());
         }
 
         std::vector<PendingResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>> pending_responses_client2;
+        pending_responses_client2.reserve(i);
         for (uint64_t j = 0; j < i; ++j) {
             pending_responses_client2.push_back(client2.send_copy(j).value());
         }
@@ -2423,6 +2428,7 @@ TYPED_TEST(ServiceRequestResponseTest, client_can_decrease_max_active_requests) 
         ASSERT_THAT(pending_response.error(), Eq(RequestSendError::ExceedsMaxActiveRequests));
     }
 }
+// NOLINTEND(readability-function-cognitive-complexity)
 
 TYPED_TEST(ServiceRequestResponseTest, client_creation_fails_when_max_active_requests_exceeds_service_max) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
@@ -2454,6 +2460,27 @@ TYPED_TEST(ServiceRequestResponseTest, client_max_active_requests_is_at_least_on
     auto client = service.client_builder().max_active_requests(0).create().value();
 
     ASSERT_THAT(client.max_active_requests(), Eq(1));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, communication_works_when_client_sets_max_active_requests) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().value();
+
+    auto client = service.client_builder().max_active_requests(1).create().value();
+    auto server = service.server_builder().create().value();
+
+    auto pending_response = client.send_copy(0).value();
+
+    auto active_request = server.receive().value().value();
+    ASSERT_TRUE(active_request.send_copy(1).has_value());
+
+    auto response = pending_response.receive().value();
+    ASSERT_TRUE(response.has_value());
+    ASSERT_THAT(response.value().payload(), Eq(1));
 }
 
 } // namespace

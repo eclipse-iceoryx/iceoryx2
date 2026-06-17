@@ -411,6 +411,12 @@ impl<
         };
 
         let static_config = client_factory.factory.static_config();
+        let number_of_requests_with_max_service_setting =
+            unsafe { service.static_config().messaging_pattern.request_response() }
+                .required_amount_of_chunks_per_client_data_segment(
+                    static_config.max_loaned_requests,
+                    static_config.max_active_requests_per_client,
+                );
         let number_of_requests = match client_factory.config.max_active_requests {
             Some(requests) => {
                 unsafe { service.static_config().messaging_pattern.request_response() }
@@ -419,11 +425,7 @@ impl<
                         requests,
                     )
             }
-            None => unsafe { service.static_config().messaging_pattern.request_response() }
-                .required_amount_of_chunks_per_client_data_segment(
-                    static_config.max_loaned_requests,
-                    static_config.max_active_requests_per_client,
-                ),
+            None => number_of_requests_with_max_service_setting,
         };
         let number_of_requests = client_factory
             .preallocate_number_of_requests_override
@@ -533,20 +535,6 @@ impl<
         let number_of_connections =
             number_of_to_be_removed_connections + number_of_active_connections;
 
-        // The number of channels must be calculated with `max_active_requests_per_client` set on
-        // service creation, because the connection between the client's response_receiver and the
-        // server's response_sender can only be established when the number is the same for both.
-        // This doesn't matter for the request channel since all requests are sent via the same channel.
-        let number_of_responses =
-            unsafe { service.static_config().messaging_pattern.request_response() }
-                .required_amount_of_chunks_per_client_data_segment(
-                    static_config.max_loaned_requests,
-                    static_config.max_active_requests_per_client,
-                );
-        let number_of_responses = client_factory
-            .preallocate_number_of_requests_override
-            .call(number_of_responses);
-
         let response_receiver = Receiver {
             connections: PolymorphicVec::from_fn(
                 HeapAllocator::global(),
@@ -567,7 +555,7 @@ impl<
             receiver_max_borrowed_samples: static_config
                 .max_borrowed_responses_per_pending_response,
             enable_safe_overflow: static_config.enable_safe_overflow_for_responses,
-            number_of_channels: number_of_responses,
+            number_of_channels: number_of_requests_with_max_service_setting,
             connection_storage: UnsafeCell::new(SlotMap::new(number_of_connections)),
             initial_channel_state: CHANNEL_STATE_CLOSED,
         };
