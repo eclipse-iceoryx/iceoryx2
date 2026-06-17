@@ -93,9 +93,6 @@ echo "###########################################################"
 
 cargo clean
 
-# Skip everything from here onwards on FreeBSD due to limitations on the disk space when building on the VM
-exit 0
-
 echo "###########################"
 echo "# Build language bindings #"
 echo "###########################"
