@@ -15,6 +15,9 @@ set -e
 
 export ASSUME_ALWAYS_YES=yes
 
+echo "OS Info:"
+uname -a
+echo "Installing Packages"
 pkg install python3 bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-path
 export PATH=$PATH:$HOME/.cargo/bin
