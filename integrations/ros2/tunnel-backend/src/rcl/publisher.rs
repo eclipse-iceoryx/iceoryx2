@@ -21,7 +21,7 @@ use r2r_rcl::{
 
 use iceoryx2_log::fail;
 
-use crate::rcl::{NameError, Node, RclError, TopicName};
+use crate::rcl::{Node, RclError, TopicName};
 use crate::typesupport::TypeSupport;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -51,6 +51,61 @@ impl core::fmt::Display for PublishError {
 
 impl core::error::Error for PublishError {}
 
+/// Builder for [`Publisher`]. Created via [`Node::publisher_builder`].
+#[derive(Debug)]
+pub struct Builder<'a> {
+    node: Rc<Node>,
+    topic: &'a str,
+    type_support: TypeSupport,
+}
+
+impl<'a> Builder<'a> {
+    pub(crate) fn new(node: Rc<Node>, topic: &'a str, type_support: TypeSupport) -> Self {
+        Self {
+            node,
+            topic,
+            type_support,
+        }
+    }
+
+    pub fn create(self) -> Result<Publisher, CreationError> {
+        let origin = "Publisher::Builder::create";
+
+        let topic = fail!(
+            from origin,
+            when TopicName::new(self.topic),
+            with CreationError::InvalidTopic,
+            "Invalid topic name '{}'", self.topic
+        );
+
+        unsafe {
+            let publisher = Box::new(UnsafeCell::new(rcl_get_zero_initialized_publisher()));
+            let options = rcl_publisher_get_default_options();
+
+            let ret = rcl_publisher_init(
+                publisher.get(),
+                self.node.handle(),
+                self.type_support.handle(),
+                topic.as_c_str().as_ptr(),
+                &options,
+            );
+            if ret != RCL_RET_OK as i32 {
+                fail!(
+                    from origin,
+                    with CreationError::PublisherInit(ret.into()),
+                    "Failed to initialize publisher"
+                );
+            }
+
+            Ok(Publisher {
+                publisher,
+                node: self.node,
+                _type_support: self.type_support,
+            })
+        }
+    }
+}
+
 /// Publishes pre-serialized messages on a ROS 2 topic.
 pub struct Publisher {
     publisher: Box<UnsafeCell<r2r_rcl::rcl_publisher_t>>,
@@ -70,49 +125,11 @@ impl core::fmt::Debug for Publisher {
 }
 
 impl Publisher {
-    pub fn create(
-        node: &Rc<Node>,
-        topic: &str,
-        type_support: TypeSupport,
-    ) -> Result<Self, CreationError> {
-        let origin = "Publisher::create";
-
-        let topic = fail!(
-            from origin,
-            when TopicName::new(topic).map_err(CreationError::InvalidTopic),
-            "Invalid topic name '{}'", topic
-        );
-
-        unsafe {
-            let publisher = Box::new(UnsafeCell::new(rcl_get_zero_initialized_publisher()));
-            let options = rcl_publisher_get_default_options();
-            let ret = rcl_publisher_init(
-                publisher.get(),
-                node.handle(),
-                type_support.handle(),
-                topic.as_c_str().as_ptr(),
-                &options,
-            );
-            if ret != RCL_RET_OK as i32 {
-                fail!(
-                    from origin,
-                    with CreationError::PublisherInit(ret.into()),
-                    "Failed to initialize publisher"
-                );
-            }
-
-            Ok(Self {
-                publisher,
-                node: node.clone(),
-                _type_support: type_support,
-            })
-        }
-    }
-
     /// Publishes the payload as-is; it must be a serialized message of the
     /// publisher's type.
     pub fn publish(&self, payload: &[u8]) -> Result<(), PublishError> {
         let origin = "Publisher::publish";
+
         let message = rcl_serialized_message_t {
             buffer: payload.as_ptr() as *mut u8,
             buffer_length: payload.len(),

@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::cell::UnsafeCell;
+use std::rc::Rc;
 
 use r2r_rcl::{
     RCL_RET_OK, rcl_context_fini, rcl_context_t, rcl_get_zero_initialized_context,
@@ -21,7 +22,8 @@ use r2r_rcl::{
 
 use iceoryx2_log::fail;
 
-use crate::rcl::{Namespace, NodeName, RclError};
+use crate::rcl::{Namespace, NodeName, RclError, publisher};
+use crate::typesupport::TypeSupport;
 
 /// rcl is initialized without forwarding any command-line arguments.
 const NO_ARGS: core::ffi::c_int = 0;
@@ -148,6 +150,15 @@ impl Node {
     /// the root namespace unless set via [`Builder::namespace`].
     pub fn new(name: &str) -> Builder<'_> {
         Builder::new(name)
+    }
+
+    /// Build a publisher on this node for the given topic and typesupport.
+    pub fn publisher_builder(
+        self: Rc<Self>,
+        topic: &str,
+        type_support: TypeSupport,
+    ) -> publisher::Builder<'_> {
+        publisher::Builder::new(self, topic, type_support)
     }
 
     pub(crate) fn handle(&self) -> *mut rcl_node_t {

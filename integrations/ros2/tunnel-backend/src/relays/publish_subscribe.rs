@@ -153,7 +153,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
             type_name
         );
         let publisher = fail!(from origin,
-            when rcl::Publisher::create(&self.node, topic, type_support),
+            when self.node.publisher_builder(topic, type_support).create(),
             with CreationError::Publisher,
             "Failed to create ROS 2 publisher for topic '{}'",
             topic
