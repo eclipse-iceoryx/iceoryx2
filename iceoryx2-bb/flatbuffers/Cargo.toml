@@ -14,9 +14,11 @@ version = { workspace = true }
 default = []
 
 std = [
+    "iceoryx2-bb-elementary/std",
     "iceoryx2-bb-container/std",
     "iceoryx2-bb-system-types/std",
     "iceoryx2-bb-posix/std",
+    "iceoryx2-log/std",
 ]
 
 [[test]]
@@ -25,9 +27,11 @@ path = "tests/tests.rs"
 harness = false
 
 [dependencies]
+iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
+iceoryx2-log = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-flatbuffers-tests-common = { workspace = true, features = ["std"] }

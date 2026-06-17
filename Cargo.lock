@@ -849,11 +849,13 @@ name = "iceoryx2-bb-flatbuffers"
 version = "0.9.999"
 dependencies = [
  "iceoryx2-bb-container",
+ "iceoryx2-bb-elementary",
  "iceoryx2-bb-flatbuffers-tests-common",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
  "iceoryx2-bb-testing",
+ "iceoryx2-log",
 ]
 
 [[package]]
