@@ -21,7 +21,6 @@ struct TypeWithoutNamespace {}
 #[test]
 pub fn type_without_extra_namespace_works() {
     let sut = type_name::<TypeWithoutNamespace>();
-    println!(">> {sut:?}");
 
     assert_that!(sut.name, eq "TypeWithoutNamespace");
 }
@@ -33,7 +32,6 @@ pub mod some_namespace {
 #[test]
 pub fn type_with_extra_namespace_works() {
     let sut = type_name::<some_namespace::TypeWithNamespace>();
-    println!(">> {sut:?}");
 
     assert_that!(sut.name, eq "TypeWithNamespace");
     assert_that!(sut.namespace, eq "some_namespace");
@@ -46,7 +44,6 @@ struct TypeWithLifetimeArg<'a> {
 #[test]
 pub fn type_with_lifetime_arg_works() {
     let sut = type_name::<TypeWithLifetimeArg<'static>>();
-    println!(">> {sut:?}");
 
     assert_that!(sut.name, eq "TypeWithLifetimeArg");
 }
@@ -61,7 +58,6 @@ pub mod another_namespace {
 #[test]
 pub fn type_with_lifetime_arg_and_extra_namespace_works() {
     let sut = type_name::<another_namespace::TypeWithLifetimeArgAndNamespace<'static>>();
-    println!(">> {sut:?}");
 
     assert_that!(sut.name, eq "TypeWithLifetimeArgAndNamespace");
     assert_that!(sut.namespace, eq "another_namespace");
