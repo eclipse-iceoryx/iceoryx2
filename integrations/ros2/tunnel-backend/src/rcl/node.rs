@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::cell::UnsafeCell;
-use std::ffi::CString;
 
 use r2r_rcl::{
     RCL_RET_OK, rcl_context_fini, rcl_context_t, rcl_get_zero_initialized_context,
@@ -22,7 +21,7 @@ use r2r_rcl::{
 
 use iceoryx2_log::fail;
 
-use crate::rcl::RclError;
+use crate::rcl::{Namespace, NodeName, RclError};
 
 /// rcl is initialized without forwarding any command-line arguments.
 const NO_ARGS: core::ffi::c_int = 0;
@@ -30,6 +29,7 @@ const NO_ARGS: core::ffi::c_int = 0;
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
     InvalidName,
+    InvalidNamespace,
     InitOptionsInit(RclError),
     ContextInit(RclError),
     NodeInit(RclError),
@@ -86,15 +86,15 @@ impl<'a> Builder<'a> {
 
         let name = fail!(
             from origin,
-            when CString::new(self.name),
+            when NodeName::new(self.name),
             with CreationError::InvalidName,
-            "Failed to convert node name to a CString"
+            "Invalid node name '{}'", self.name
         );
         let namespace = fail!(
             from origin,
-            when CString::new(self.namespace),
-            with CreationError::InvalidName,
-            "Failed to convert node namespace to a CString"
+            when Namespace::new(self.namespace),
+            with CreationError::InvalidNamespace,
+            "Invalid node namespace '{}'", self.namespace
         );
 
         unsafe {
@@ -123,8 +123,8 @@ impl<'a> Builder<'a> {
             let node_options = rcl_node_get_default_options();
             let ret = rcl_node_init(
                 node.get(),
-                name.as_ptr(),
-                namespace.as_ptr(),
+                name.as_c_str().as_ptr(),
+                namespace.as_c_str().as_ptr(),
                 context.get(),
                 &node_options,
             );

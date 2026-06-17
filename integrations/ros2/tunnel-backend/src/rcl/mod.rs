@@ -14,10 +14,12 @@
 //! tunnel needs.
 
 pub(crate) mod error;
+pub(crate) mod names;
 pub(crate) mod node;
 pub(crate) mod publisher;
 
 pub(crate) use error::RclError;
+pub(crate) use names::*;
 pub(crate) use node::Node;
 #[allow(unused_imports)]
 pub(crate) use publisher::Publisher;

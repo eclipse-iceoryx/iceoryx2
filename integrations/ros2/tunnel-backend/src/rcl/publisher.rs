@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::cell::UnsafeCell;
-use std::ffi::CString;
 use std::rc::Rc;
 
 use r2r_rcl::{
@@ -22,7 +21,7 @@ use r2r_rcl::{
 
 use iceoryx2_log::fail;
 
-use crate::rcl::{Node, RclError};
+use crate::rcl::{NameError, Node, RclError, TopicName};
 use crate::typesupport::TypeSupport;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -80,9 +79,8 @@ impl Publisher {
 
         let topic = fail!(
             from origin,
-            when CString::new(topic),
-            with CreationError::InvalidTopic,
-            "Failed to convert topic name to a CString"
+            when TopicName::new(topic).map_err(CreationError::InvalidTopic),
+            "Invalid topic name '{}'", topic
         );
 
         unsafe {
@@ -92,7 +90,7 @@ impl Publisher {
                 publisher.get(),
                 node.handle(),
                 type_support.handle(),
-                topic.as_ptr(),
+                topic.as_c_str().as_ptr(),
                 &options,
             );
             if ret != RCL_RET_OK as i32 {
