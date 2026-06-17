@@ -845,6 +845,26 @@ name = "iceoryx2-bb-elementary-traits"
 version = "0.9.999"
 
 [[package]]
+name = "iceoryx2-bb-flatbuffers"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2-bb-flatbuffers-tests-common",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-testing",
+]
+
+[[package]]
+name = "iceoryx2-bb-flatbuffers-tests-common"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2-bb-flatbuffers",
+ "iceoryx2-bb-loggers",
+ "iceoryx2-bb-testing",
+ "iceoryx2-bb-testing-macros",
+ "iceoryx2-pal-print",
+]
+
+[[package]]
 name = "iceoryx2-bb-linux"
 version = "0.9.999"
 dependencies = [
