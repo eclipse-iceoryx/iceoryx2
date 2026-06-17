@@ -66,3 +66,41 @@ pub fn snake_case_conversion_works() {
         "scream"
     );
 }
+
+#[test]
+pub fn upper_camel_case_conversion_works() {
+    assert_that!(
+        snake_to_upper_camel_case("did_you_eyeball_me"), eq
+        "DidYouEyeballMe"
+    );
+
+    assert_that!(
+        snake_to_upper_camel_case("ohNoTheDeadSeagull_again"), eq
+        "OhNoTheDeadSeagullAgain"
+    );
+
+    assert_that!(
+        snake_to_upper_camel_case("___"), eq
+        ""
+    );
+
+    assert_that!(
+        snake_to_upper_camel_case("a"), eq
+        "A"
+    );
+
+    assert_that!(
+        snake_to_upper_camel_case("B"), eq
+        "B"
+    );
+
+    assert_that!(
+        snake_to_upper_camel_case("_meat_ice_cream_for_nala"), eq
+        "MeatIceCreamForNala"
+    );
+
+    assert_that!(
+        snake_to_upper_camel_case("paprika_is_evil_"), eq
+        "PaprikaIsEvil"
+    );
+}

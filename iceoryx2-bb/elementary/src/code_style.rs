@@ -14,11 +14,15 @@ extern crate alloc;
 
 use alloc::string::String;
 
-pub fn snake_to_camel_case(input: &str) -> String {
+pub fn snake_to_upper_camel_case(input: &str) -> String {
     let mut result = String::new();
     let mut capitalize_next = false;
-    for c in input.chars() {
-        if c == '_' {
+    for (pos, c) in input.chars().enumerate() {
+        if pos == 0 && c.is_lowercase() {
+            for upper_c in c.to_uppercase() {
+                result.push(upper_c);
+            }
+        } else if c == '_' {
             capitalize_next = true;
         } else if capitalize_next {
             for upper_c in c.to_uppercase() {
