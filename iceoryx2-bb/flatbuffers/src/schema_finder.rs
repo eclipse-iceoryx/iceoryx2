@@ -15,6 +15,7 @@ extern crate alloc;
 use crate::TypeName;
 use alloc::format;
 use iceoryx2_bb_elementary::code_style::{camel_to_snake_case, snake_to_upper_camel_case};
+use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_posix::directory::{
     Directory, DirectoryOpenError, DirectoryReadError, DirectoryStatError,
 };
@@ -24,12 +25,13 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fail;
 
-pub enum FindSchemaFileError {
+enum_gen! { FindSchemaFileError
+  entry:
     InsufficientPermissions,
     InvalidRootPath,
     FailedToOpenDirectory,
     FailedToReadDirectory,
-    SchemaFilePathExceedsMaxSupportedPathLength,
+    SchemaFilePathExceedsMaxSupportedPathLength
 }
 
 fn is_flatbuffer_schema(name: &FileName) -> bool {
