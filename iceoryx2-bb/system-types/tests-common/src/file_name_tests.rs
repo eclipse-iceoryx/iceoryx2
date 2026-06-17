@@ -81,3 +81,9 @@ pub fn retain_fails_when_it_results_in_illegal_name() {
     assert_that!(sut, len 4);
     assert_that!(sut.as_bytes(), eq b".fuu");
 }
+
+#[test]
+pub fn can_be_converted_to_str() {
+    let sut = FileName::new(b"oh-my-fuu").unwrap();
+    assert_that!(sut.as_str(), eq "oh-my-fuu");
+}

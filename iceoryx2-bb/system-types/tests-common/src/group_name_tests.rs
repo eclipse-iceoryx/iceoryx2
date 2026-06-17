@@ -44,3 +44,9 @@ pub fn new_with_legal_name_works() {
     let sut = GroupName::new(b"_fuu_bar_");
     assert_that!(sut, is_ok);
 }
+
+#[test]
+pub fn can_be_converted_to_str() {
+    let sut = GroupName::new(b"ron-swanson").unwrap();
+    assert_that!(sut.as_str(), eq "ron-swanson");
+}
