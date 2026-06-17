@@ -10,6 +10,29 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub fn add(a: i32, b: i32) -> i32 {
-    a + b
+#[derive(Debug, PartialEq, Eq)]
+pub struct TypeName {
+    pub name: &'static str,
+    pub namespace: &'static str,
+}
+
+pub fn type_name<T>() -> TypeName {
+    let full_name = core::any::type_name::<T>();
+    let mut namespace = "";
+    let mut name = full_name;
+
+    if let Some(pos) = full_name.rfind("::") {
+        namespace = &full_name[..pos];
+        name = &full_name[pos + 2..];
+    }
+
+    if let Some(pos) = name.rfind("<") {
+        name = &name[..pos];
+    }
+
+    if let Some(pos) = namespace.rfind("::") {
+        namespace = &namespace[pos + 2..];
+    }
+
+    TypeName { name, namespace }
 }
