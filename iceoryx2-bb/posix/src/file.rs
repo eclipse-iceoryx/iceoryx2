@@ -65,6 +65,9 @@ pub use crate::creation_mode::CreationMode;
 use crate::file_descriptor::{FileDescriptor, FileDescriptorBased, FileDescriptorManagement};
 use crate::group::Gid;
 use crate::group::GroupError;
+use crate::memory_mapping::MappingBehavior;
+use crate::memory_mapping::MappingPermission;
+use crate::memory_mapping::MemoryMappingBuilder;
 use crate::ownership::OwnershipBuilder;
 use crate::user::{Uid, UserError};
 pub use crate::{access_mode::AccessMode, permission::*};
@@ -604,6 +607,65 @@ impl File {
             Errno::ENOMEM => (InsufficientMemory, "{} due to insufficient memory.", msg),
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).",msg, v)
         );
+    }
+
+    /// Copies a file from the given source to the destination.
+    pub fn copy(source: &FilePath, destination: &FilePath) {
+        match FileBuilder::new(source).open_existing(AccessMode::Read) {
+            Ok(f) => f.copy_to(destination),
+            Err(_) => todo!(),
+        }
+    }
+
+    /// Copies the file's content into a new [`File`].
+    pub fn copy_to(&self, destination: &FilePath) {
+        let file_size = match self.metadata() {
+            Ok(v) => v.size(),
+            Err(_) => todo!(),
+        };
+
+        let dest = match FileBuilder::new(destination)
+            .creation_mode(CreationMode::CreateExclusive)
+            .truncate_size(file_size as usize)
+            .create()
+        {
+            Ok(f) => f,
+            Err(_) => todo!(),
+        };
+
+        let fd = unsafe {
+            FileDescriptor::non_owning_new_unchecked(self.file_descriptor.native_handle())
+        };
+        let src_mapping = match MemoryMappingBuilder::from_file_descriptor(fd)
+            .mapping_behavior(MappingBehavior::Private)
+            .initial_mapping_permission(MappingPermission::Read)
+            .size(file_size as usize)
+            .create()
+        {
+            Ok(v) => v,
+            Err(_) => todo!(),
+        };
+
+        let fd = unsafe {
+            FileDescriptor::non_owning_new_unchecked(dest.file_descriptor.native_handle())
+        };
+        let mut dst_mapping = match MemoryMappingBuilder::from_file_descriptor(fd)
+            .mapping_behavior(MappingBehavior::Private)
+            .initial_mapping_permission(MappingPermission::Write)
+            .size(file_size as usize)
+            .create()
+        {
+            Ok(v) => v,
+            Err(_) => todo!(),
+        };
+
+        unsafe {
+            core::ptr::copy_nonoverlapping(
+                src_mapping.base_address(),
+                dst_mapping.base_address_mut(),
+                file_size as usize,
+            )
+        };
     }
 
     /// Returns the [`AccessMode`] under which the [`File`] was opened. The [`AccessMode`] defines if
