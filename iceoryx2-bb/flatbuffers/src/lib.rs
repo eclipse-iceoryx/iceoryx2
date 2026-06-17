@@ -12,6 +12,8 @@
 
 #![no_std]
 
+pub mod schema_finder;
 pub mod type_name;
 
+pub use schema_finder::*;
 pub use type_name::*;
