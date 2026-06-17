@@ -15,4 +15,54 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
 #[test]
-pub fn start_position_is_correctly_used() {}
+pub fn snake_case_conversion_works() {
+    assert_that!(
+        camel_to_snake_case("the_toad_is_watching_you"), eq
+        "the_toad_is_watching_you"
+    );
+
+    assert_that!(
+        camel_to_snake_case("BiteDust"), eq
+        "bite_dust"
+    );
+
+    assert_that!(
+        camel_to_snake_case("LickAToad"), eq
+        "lick_atoad"
+    );
+
+    assert_that!(
+        camel_to_snake_case("here__is__nothing__ToSniff"), eq
+        "here__is__nothing__to_sniff"
+    );
+
+    assert_that!(
+        camel_to_snake_case("A"), eq
+        "a"
+    );
+
+    assert_that!(
+        camel_to_snake_case("?"), eq
+        "?"
+    );
+
+    assert_that!(
+        camel_to_snake_case("_"), eq
+        "_"
+    );
+
+    assert_that!(
+        camel_to_snake_case("a"), eq
+        "a"
+    );
+
+    assert_that!(
+        camel_to_snake_case("_wherever_you_go"), eq
+        "_wherever_you_go"
+    );
+
+    assert_that!(
+        camel_to_snake_case("SCREAM"), eq
+        "scream"
+    );
+}
