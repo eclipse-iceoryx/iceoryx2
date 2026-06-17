@@ -17,7 +17,7 @@ use r2r_rcl::{
     RCL_RET_OK, rcl_context_fini, rcl_context_t, rcl_get_zero_initialized_context,
     rcl_get_zero_initialized_init_options, rcl_get_zero_initialized_node, rcl_init,
     rcl_init_options_fini, rcl_init_options_init, rcl_node_fini, rcl_node_get_default_options,
-    rcl_node_init, rcl_node_t, rcl_shutdown, rcutils_get_default_allocator,
+    rcl_node_init, rcl_node_t, rcl_ret_t, rcl_shutdown, rcutils_get_default_allocator,
 };
 
 use iceoryx2_log::fail;
@@ -102,7 +102,7 @@ impl<'a> Builder<'a> {
         unsafe {
             let mut init_options = rcl_get_zero_initialized_init_options();
             let ret = rcl_init_options_init(&mut init_options, rcutils_get_default_allocator());
-            if ret != RCL_RET_OK as i32 {
+            if ret != RCL_RET_OK as rcl_ret_t {
                 fail!(
                     from origin,
                     with CreationError::InitOptionsInit(ret.into()),
@@ -113,7 +113,7 @@ impl<'a> Builder<'a> {
             let context = Box::new(UnsafeCell::new(rcl_get_zero_initialized_context()));
             let ret = rcl_init(NO_ARGS, core::ptr::null(), &init_options, context.get());
             let _ = rcl_init_options_fini(&mut init_options);
-            if ret != RCL_RET_OK as i32 {
+            if ret != RCL_RET_OK as rcl_ret_t {
                 fail!(
                     from origin,
                     with CreationError::ContextInit(ret.into()),
@@ -130,7 +130,7 @@ impl<'a> Builder<'a> {
                 context.get(),
                 &node_options,
             );
-            if ret != RCL_RET_OK as i32 {
+            if ret != RCL_RET_OK as rcl_ret_t {
                 let _ = rcl_shutdown(context.get());
                 let _ = rcl_context_fini(context.get());
                 fail!(

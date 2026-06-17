@@ -15,7 +15,7 @@ use std::rc::Rc;
 
 use r2r_rcl::{
     RCL_RET_OK, rcl_get_zero_initialized_publisher, rcl_publish_serialized_message,
-    rcl_publisher_fini, rcl_publisher_get_default_options, rcl_publisher_init,
+    rcl_publisher_fini, rcl_publisher_get_default_options, rcl_publisher_init, rcl_ret_t,
     rcl_serialized_message_t, rcutils_get_default_allocator,
 };
 
@@ -89,7 +89,7 @@ impl<'a> Builder<'a> {
                 topic.as_c_str().as_ptr(),
                 &options,
             );
-            if ret != RCL_RET_OK as i32 {
+            if ret != RCL_RET_OK as rcl_ret_t {
                 fail!(
                     from origin,
                     with CreationError::PublisherInit(ret.into()),
@@ -140,7 +140,7 @@ impl Publisher {
         let ret = unsafe {
             rcl_publish_serialized_message(self.publisher.get(), &message, core::ptr::null_mut())
         };
-        if ret != RCL_RET_OK as i32 {
+        if ret != RCL_RET_OK as rcl_ret_t {
             fail!(
                 from origin,
                 with PublishError::Publish(ret.into()),

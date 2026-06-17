@@ -24,7 +24,7 @@ use r2r_rcl::{
     RCL_RET_SUBSCRIPTION_TAKE_FAILED, RCL_RET_TIMEOUT, RCL_RET_TIMER_CANCELED,
     RCL_RET_TIMER_INVALID, RCL_RET_TOPIC_NAME_INVALID, RCL_RET_UNKNOWN_SUBSTITUTION,
     RCL_RET_UNSUPPORTED, RCL_RET_WAIT_SET_EMPTY, RCL_RET_WAIT_SET_FULL, RCL_RET_WAIT_SET_INVALID,
-    RCL_RET_WRONG_LEXEME,
+    RCL_RET_WRONG_LEXEME, rcl_ret_t,
 };
 
 /// A non-`OK` `rcl_ret_t`, decoded into its named meaning.
@@ -69,11 +69,11 @@ pub enum RclError {
     LifecycleStateRegistered,
     LifecycleStateNotRegistered,
     /// A code this build does not know (e.g. introduced by a newer distro).
-    Unknown(i32),
+    Unknown(rcl_ret_t),
 }
 
-impl From<i32> for RclError {
-    fn from(ret: i32) -> Self {
+impl From<rcl_ret_t> for RclError {
+    fn from(ret: rcl_ret_t) -> Self {
         match ret as u32 {
             RCL_RET_ERROR => Self::Error,
             RCL_RET_TIMEOUT => Self::Timeout,
