@@ -1,0 +1,29 @@
+[package]
+name = "iceoryx2-bb-flatbuffers"
+description = "iceoryx2: [internal] helper functions for smooth flatbuffer integration"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[features]
+default = []
+
+std = [
+]
+
+[[test]]
+name = "iceoryx2-bb-flatbuffers-tests"
+path = "tests/tests.rs"
+harness = false
+
+[dependencies]
+
+[dev-dependencies]
+iceoryx2-bb-flatbuffers-tests-common = { workspace = true, features = ["std"] }
+iceoryx2-bb-loggers = { workspace = true, features = ["std"]  }
+iceoryx2-bb-testing = { workspace = true, features = ["std"]  }
