@@ -132,7 +132,7 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
         let origin = "Ros2Backend::create";
 
         let node = Rc::new(fail!(from origin,
-            when rcl::Node::create(NODE_NAME, ""),
+            when rcl::Node::new(NODE_NAME).create(),
             with CreationError::Node,
             "Failed to create ROS 2 node"
         ));

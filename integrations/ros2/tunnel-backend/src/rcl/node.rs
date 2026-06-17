@@ -60,19 +60,39 @@ impl core::fmt::Debug for Node {
     }
 }
 
-impl Node {
-    pub fn create(name: &str, namespace: &str) -> Result<Self, CreationError> {
+/// Builder for [`Node`].
+#[derive(Debug)]
+pub struct Builder<'a> {
+    name: &'a str,
+    namespace: &'a str,
+}
+
+impl<'a> Builder<'a> {
+    fn new(name: &'a str) -> Self {
+        Self {
+            name,
+            namespace: "",
+        }
+    }
+
+    /// Sets the node's namespace. Defaults to the root namespace.
+    pub fn namespace(mut self, namespace: &'a str) -> Self {
+        self.namespace = namespace;
+        self
+    }
+
+    pub fn create(self) -> Result<Node, CreationError> {
         let origin = "Node::create";
 
         let name = fail!(
             from origin,
-            when CString::new(name),
+            when CString::new(self.name),
             with CreationError::InvalidName,
             "Failed to convert node name to a CString"
         );
         let namespace = fail!(
             from origin,
-            when CString::new(namespace),
+            when CString::new(self.namespace),
             with CreationError::InvalidName,
             "Failed to convert node namespace to a CString"
         );
@@ -118,8 +138,16 @@ impl Node {
                 );
             }
 
-            Ok(Self { node, context })
+            Ok(Node { node, context })
         }
+    }
+}
+
+impl Node {
+    /// Begins building a node with the given name. The namespace defaults to
+    /// the root namespace unless set via [`Builder::namespace`].
+    pub fn new(name: &str) -> Builder<'_> {
+        Builder::new(name)
     }
 
     pub(crate) fn handle(&self) -> *mut rcl_node_t {
