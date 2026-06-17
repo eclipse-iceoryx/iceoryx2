@@ -135,6 +135,10 @@ impl core::error::Error for ConfigCreationError {}
 #[serde(rename_all = "kebab-case")]
 #[serde(default)]
 pub struct Service {
+    /// A list of directories where iceoryx2 will look for `.fbs` flatbuffer schemas. If no path is
+    /// provided, iceoryx2 will perform no lookup and the user must explicitly define the path to
+    /// the flatbuffer schemas.
+    pub flatbuffer_schema_paths: Vec<Path>,
     /// The directory in which all service files are stored
     pub directory: Path,
     /// The suffix of the ports data segment
@@ -159,6 +163,7 @@ pub struct Service {
 impl Default for Service {
     fn default() -> Self {
         Self {
+            flatbuffer_schema_paths: Vec::new(),
             directory: Path::new(b"services").unwrap(),
             data_segment_suffix: FileName::new(b".data").unwrap(),
             static_config_storage_suffix: FileName::new(b".service").unwrap(),

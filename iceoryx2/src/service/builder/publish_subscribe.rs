@@ -26,7 +26,7 @@ use super::ServiceState;
 use crate::service::builder::{DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError};
 use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;
 use crate::service::header::publish_subscribe::Header;
-use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
+use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker, Flatbuffer};
 use crate::service::port_factory::publish_subscribe;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
@@ -356,6 +356,7 @@ pub struct Builder<
     override_alignment: Option<usize>,
     override_payload_type: Option<TypeDetail>,
     override_user_header_type: Option<TypeDetail>,
+    flatbuffer_schema_path: Option<FilePath>,
     verify: Verify,
     _data: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
@@ -373,6 +374,7 @@ impl<
             override_alignment: self.override_alignment,
             override_payload_type: self.override_payload_type,
             override_user_header_type: self.override_user_header_type,
+            flatbuffer_schema_path: self.flatbuffer_schema_path,
             verify: self.verify,
             _data: PhantomData,
             _user_header: PhantomData,
@@ -393,6 +395,7 @@ impl<
             override_alignment: None,
             override_payload_type: None,
             override_user_header_type: None,
+            flatbuffer_schema_path: None,
             _data: PhantomData,
             _user_header: PhantomData,
         };
@@ -855,6 +858,18 @@ impl<Payload: Debug + ZeroCopySend, UserHeader: Debug + ZeroCopySend, ServiceTyp
         self.adjust_configuration_to_meaningful_values();
         self.prepare_config_details();
         self.create_impl(attributes)
+    }
+}
+
+impl<Payload: Debug, UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
+    Builder<Flatbuffer<Payload>, UserHeader, ServiceType>
+{
+    /// Sets the path to the flatbuffer schema file. If this is not explicitly defined, iceoryx2
+    /// will try to find the best fitting schema file in the configured filebuffer schema paths
+    /// defined in the config.
+    pub fn flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
+        self.flatbuffer_schema_path = Some(*path);
+        self
     }
 }
 
