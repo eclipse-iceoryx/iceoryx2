@@ -13,3 +13,5 @@
 #![no_std]
 
 pub mod type_name;
+
+pub use type_name::*;

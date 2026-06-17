@@ -10,11 +10,59 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_flatbuffers::type_name::add;
+use core::marker::PhantomData;
+
+use iceoryx2_bb_flatbuffers::type_name;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
+struct TypeWithoutNamespace {}
+
 #[test]
-pub fn works() {
-    assert_that!(add(1,2), eq 3);
+pub fn type_without_extra_namespace_works() {
+    let sut = type_name::<TypeWithoutNamespace>();
+    println!(">> {sut:?}");
+
+    assert_that!(sut.name, eq "TypeWithoutNamespace");
+}
+
+pub mod some_namespace {
+    pub struct TypeWithNamespace {}
+}
+
+#[test]
+pub fn type_with_extra_namespace_works() {
+    let sut = type_name::<some_namespace::TypeWithNamespace>();
+    println!(">> {sut:?}");
+
+    assert_that!(sut.name, eq "TypeWithNamespace");
+    assert_that!(sut.namespace, eq "some_namespace");
+}
+
+struct TypeWithLifetimeArg<'a> {
+    _data: PhantomData<&'a ()>,
+}
+
+#[test]
+pub fn type_with_lifetime_arg_works() {
+    let sut = type_name::<TypeWithLifetimeArg<'static>>();
+    println!(">> {sut:?}");
+
+    assert_that!(sut.name, eq "TypeWithLifetimeArg");
+}
+
+pub mod another_namespace {
+    use super::*;
+    pub struct TypeWithLifetimeArgAndNamespace<'a> {
+        _data: PhantomData<&'a ()>,
+    }
+}
+
+#[test]
+pub fn type_with_lifetime_arg_and_extra_namespace_works() {
+    let sut = type_name::<another_namespace::TypeWithLifetimeArgAndNamespace<'static>>();
+    println!(">> {sut:?}");
+
+    assert_that!(sut.name, eq "TypeWithLifetimeArgAndNamespace");
+    assert_that!(sut.namespace, eq "another_namespace");
 }
