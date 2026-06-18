@@ -38,8 +38,10 @@ impl core::fmt::Display for LoadError {
 
 impl core::error::Error for LoadError {}
 
+/// Owns a resolved typesupport handle together with the [`Library`] it points
+/// into, keeping that library loaded for as long as the handle is used.
 #[derive(Debug)]
-struct Entry {
+struct TypeSupportInner {
     handle: *const rosidl_message_type_support_t,
     _library: Library,
 }
@@ -65,12 +67,12 @@ struct Entry {
 /// kept alive here; it stays loaded as long as any clone is alive.
 #[derive(Debug, Clone)]
 pub struct TypeSupport {
-    entry: Rc<Entry>,
+    inner: Rc<TypeSupportInner>,
 }
 
 impl TypeSupport {
     pub(crate) fn handle(&self) -> *const rosidl_message_type_support_t {
-        self.entry.handle
+        self.inner.handle
     }
 }
 
@@ -78,29 +80,27 @@ impl TypeSupport {
 /// registry must outlive all endpoints created from its handles.
 #[derive(Debug, Default)]
 pub struct TypeSupportRegistry {
-    entries: RefCell<HashMap<String, Rc<Entry>>>,
+    entries: RefCell<HashMap<String, TypeSupport>>,
 }
 
 impl TypeSupportRegistry {
     pub fn load(&self, type_name: &str) -> Result<TypeSupport, LoadError> {
-        if let Some(entry) = self.entries.borrow().get(type_name) {
-            return Ok(TypeSupport {
-                entry: entry.clone(),
-            });
+        if let Some(type_support) = self.entries.borrow().get(type_name) {
+            return Ok(type_support.clone());
         }
 
-        let entry = Rc::new(load_typesupport_library(type_name)?);
+        let type_support = load_typesupport_library(type_name)?;
         self.entries
             .borrow_mut()
-            .insert(type_name.to_string(), entry.clone());
+            .insert(type_name.to_string(), type_support.clone());
 
-        Ok(TypeSupport { entry })
+        Ok(type_support)
     }
 }
 
 /// Loads the typesupport library of the type's package and looks up the
 /// type's handle in it.
-fn load_typesupport_library(type_name: &str) -> Result<Entry, LoadError> {
+fn load_typesupport_library(type_name: &str) -> Result<TypeSupport, LoadError> {
     let origin = "TypeSupportRegistry::load";
 
     let (package, message) = fail!(
@@ -144,9 +144,11 @@ fn load_typesupport_library(type_name: &str) -> Result<Entry, LoadError> {
         );
     }
 
-    Ok(Entry {
-        handle,
-        _library: library,
+    Ok(TypeSupport {
+        inner: Rc::new(TypeSupportInner {
+            handle,
+            _library: library,
+        }),
     })
 }
 
