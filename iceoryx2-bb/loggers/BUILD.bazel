@@ -10,10 +10,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-package(default_visibility = ["//visibility:public"])
-
-load("@bazel_skylib//lib:selects.bzl", "selects")
 load("@rules_rust//rust:defs.bzl", "rust_library")
+
+package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "all_srcs",
@@ -25,7 +24,7 @@ rust_library(
     srcs = glob(["src/**/*.rs"]),
     crate_features = select({
         "//:cfg_feature_std": [
-            "std"
+            "std",
         ],
         "//conditions:default": [],
     }) + select({
@@ -64,14 +63,13 @@ rust_library(
         "//conditions:default": [],
     }) + select({
         "//:cfg_feature_logger_log": [
-            "@crate_index//:log",
+            ":log",
         ],
         "//conditions:default": [],
     }) + select({
         "//:cfg_feature_logger_tracing": [
-            "@crate_index//:tracing",
+            ":tracing",
         ],
         "//conditions:default": [],
     }),
 )
-

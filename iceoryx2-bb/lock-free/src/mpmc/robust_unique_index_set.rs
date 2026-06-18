@@ -304,14 +304,14 @@ impl RobustUniqueIndexSet {
         self.verify_init("acquire()");
         let cell_ptr = unsafe { self.cell_ptr.as_ptr() };
 
-        loop {
-            //////////////////////////////////////
-            // SYNC POINT enforce order of:
-            //   1. cell
-            //   2. generation counter
-            //////////////////////////////////////
-            let current_generation_count = self.generation_counter.load(Ordering::Acquire);
+        //////////////////////////////////////
+        // SYNC POINT enforce order of:
+        //   1. cell
+        //   2. generation counter
+        //////////////////////////////////////
+        let mut current_generation_count = self.generation_counter.load(Ordering::Acquire);
 
+        loop {
             if current_generation_count == GENERATION_COUNTER_LOCK_INDICATOR {
                 fail!(from self, with UniqueIndexSetAcquireFailure::IsLocked,
                     "{msg} since the RobustUniqueIndexSet is locked.");
@@ -344,9 +344,17 @@ impl RobustUniqueIndexSet {
                 }
             }
 
-            if current_generation_count == self.generation_counter.load(Ordering::Relaxed) {
-                fail!(from self, with UniqueIndexSetAcquireFailure::OutOfIndices,
-                    "{msg} since the RobustUniqueIndexSet is out of indices.");
+            match self.generation_counter.compare_exchange(
+                current_generation_count,
+                current_generation_count,
+                Ordering::AcqRel,
+                Ordering::SeqCst,
+            ) {
+                Ok(_) => {
+                    fail!(from self, with UniqueIndexSetAcquireFailure::OutOfIndices,
+                        "{msg} since the RobustUniqueIndexSet is out of indices.");
+                }
+                Err(v) => current_generation_count = v,
             }
         }
     }

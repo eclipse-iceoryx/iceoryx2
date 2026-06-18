@@ -746,7 +746,9 @@ pub mod details {
             debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
 
             let mgmt = self.storage.get();
-            if !mgmt.enable_safe_overflow {
+            if !mgmt.enable_safe_overflow
+                && mgmt.channels[channel_id.value()].submission_queue.is_full()
+            {
                 let mut is_connected = false;
                 let mut has_valid_channel_state = false;
                 let mut do_fail = false;
@@ -802,8 +804,8 @@ pub mod details {
                 }
 
                 if !is_connected {
-                    fail!(from self, with ZeroCopySendError::NoConnectedReceiver,
-                        "{msg} {ptr:?} via channel {channel_id:?} since there is no connected receiver anymore.");
+                    fail!(from self, with ZeroCopySendError::NoConnectedReceiverAndBufferIsFull,
+                        "{msg} {ptr:?} via channel {channel_id:?} since there is no connected receiver and the buffer is full. To prevent a deadlock on sender side the operation is aborted.");
                 }
 
                 if !has_valid_channel_state {

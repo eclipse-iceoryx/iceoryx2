@@ -444,7 +444,11 @@ impl<Service: service::Service> Receiver<Service> {
                         Ok(offset) => offset,
                         Err(e) => {
                             if connection.data_segment.is_dynamic() {
-                                warn!(from self, "Lost a sample. This only happens in the dynamic use case when a sender has reallocated its data segment and gone out of scope before the receiver has mapped the realloacted data segment. To circumvent this, you could either use static memory or increase the initial max slice len.");
+                                warn!(from self, "Lost chunk. This only happens in the dynamic use case when a sender has reallocated its data segment and gone out of scope before the receiver has mapped the realloacted data segment. To circumvent this, you could either use static memory or increase the initial max slice len.");
+                                if let Err(e) = connection.receiver.release(offset, channel_id) {
+                                    error!(from self,
+                                        "This should never happen! Failed to return the lost chunk that was received before. [{e:?}]");
+                                }
                                 return Ok(None);
                             }
                             fail!(from self, with ReceiveError::ConnectionFailure(ConnectionFailure::UnableToMapSendersDataSegment(e)),

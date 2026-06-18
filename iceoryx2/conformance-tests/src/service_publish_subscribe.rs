@@ -3893,4 +3893,46 @@ pub mod service_publish_subscribe {
         let recv_res = subscriber.receive();
         assert_that!(recv_res, is_ok);
     }
+
+    #[conformance_test]
+    pub fn subscriber_created_first_receives_first_sample_when_safe_overflow_is_disabled<
+        S: Service,
+    >() {
+        let service_name = generate_service_name();
+        let config = testing::generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .enable_safe_overflow(false)
+            .create()
+            .unwrap();
+
+        let sut2 = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .enable_safe_overflow(false)
+            .open()
+            .unwrap();
+
+        let subscriber = sut.subscriber_builder().create().unwrap();
+        let publisher = sut2
+            .publisher_builder()
+            .backpressure_strategy(BackpressureStrategy::RetryUntilDelivered)
+            .create()
+            .unwrap();
+
+        assert_that!(publisher.send_copy(1234), is_ok);
+
+        let first = subscriber.receive().unwrap();
+
+        assert_that!(publisher.send_copy(4567), is_ok);
+        let second = subscriber.receive().unwrap();
+
+        assert_that!(first, is_some);
+        assert_that!(*first.unwrap(), eq 1234);
+        assert_that!(second, is_some);
+        assert_that!(*second.unwrap(), eq 4567);
+    }
 }

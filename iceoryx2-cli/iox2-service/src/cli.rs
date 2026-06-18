@@ -434,8 +434,8 @@ pub struct ReplayOptions {
     #[clap(
         short,
         long,
-        default_value = "1",
-        help = "How often the recorded data shall be sent repeatedly."
+        default_value = "0",
+        help = "How often the recorded data shall be sent after the initial sent."
     )]
     pub repetitions: u64,
 
