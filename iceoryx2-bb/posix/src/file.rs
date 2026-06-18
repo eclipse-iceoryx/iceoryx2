@@ -67,10 +67,35 @@ use crate::group::Gid;
 use crate::group::GroupError;
 use crate::memory_mapping::MappingBehavior;
 use crate::memory_mapping::MappingPermission;
+use crate::memory_mapping::MemoryMapping;
 use crate::memory_mapping::MemoryMappingBuilder;
+use crate::memory_mapping::MemoryMappingCreationError;
 use crate::ownership::OwnershipBuilder;
 use crate::user::{Uid, UserError};
 pub use crate::{access_mode::AccessMode, permission::*};
+
+enum_gen! { FileCopyError
+  entry:
+    SourceDoesNotExist,
+    InterruptedBySignal,
+    IoError,
+    LoopInSymbolicLink,
+    InsufficientMemory,
+    InsufficientPermissions,
+    InsufficientResources,
+    SourceIsADirectory,
+    SourceFileIsTooBig,
+    DestinationFileIsTooBig,
+    DestinationIsADirection,
+    PerProcessFileHandleLimitReached,
+    SystemWideFileHandleLimitReached,
+    DestinationAlreadyExists,
+    DestinationDirectoryDoesNotExist,
+    FileSystemIsReadOnly,
+    NoSpaceLeft,
+    ExceedsTheMaximumNumberOfMappedRegions,
+    UnknownError(i32)
+}
 
 enum_gen! { FileRemoveError
   entry:
@@ -610,18 +635,75 @@ impl File {
     }
 
     /// Copies a file from the given source to the destination.
-    pub fn copy(source: &FilePath, destination: &FilePath) {
+    pub fn copy(source: &FilePath, destination: &FilePath) -> Result<(), FileCopyError> {
+        let origin = format!("File::copy({source}, {destination})");
+        let msg = "Unable to copy the file";
         match FileBuilder::new(source).open_existing(AccessMode::Read) {
             Ok(f) => f.copy_to(destination),
-            Err(_) => todo!(),
+            Err(FileOpenError::FileDoesNotExist) => {
+                fail!(from origin, with FileCopyError::SourceDoesNotExist,
+                    "{msg} since the source does not exist.");
+            }
+            Err(FileOpenError::InsufficientPermissions) => {
+                fail!(from origin, with FileCopyError::InsufficientPermissions,
+                    "{msg} since the source could not be opened due to insufficient permissions.");
+            }
+            Err(FileOpenError::Interrupt) => {
+                fail!(from origin, with FileCopyError::InterruptedBySignal,
+                    "{msg} since the source file open operation was interrupted by a signal.");
+            }
+            Err(FileOpenError::IsDirectory) => {
+                fail!(from origin, with FileCopyError::SourceIsADirectory,
+                    "{msg} since the source is a directory.");
+            }
+            Err(FileOpenError::FileTooBig) => {
+                fail!(from origin, with FileCopyError::SourceFileIsTooBig,
+                    "{msg} since the source file is too big.");
+            }
+            Err(FileOpenError::InsufficientMemory) => {
+                fail!(from origin, with FileCopyError::InsufficientMemory,
+                    "{msg} since the source could not be opened due to insufficient memory.");
+            }
+            Err(FileOpenError::LoopInSymbolicLinks) => {
+                fail!(from origin, with FileCopyError::LoopInSymbolicLink,
+                    "{msg} since the source file has a loop in its symbolic link.");
+            }
+            Err(FileOpenError::PerProcessFileHandleLimitReached) => {
+                fail!(from origin, with FileCopyError::PerProcessFileHandleLimitReached,
+                    "{msg} since the per process file handle limit was reached while opening the source file.");
+            }
+            Err(FileOpenError::SystemWideFileHandleLimitReached) => {
+                fail!(from origin, with FileCopyError::SystemWideFileHandleLimitReached,
+                    "{msg} since the per system wide file handle limit was reached while opening the source file.");
+            }
+            Err(FileOpenError::UnknownError(v)) => {
+                fail!(from origin, with FileCopyError::UnknownError(v),
+                    "{msg} since the source file could not be opened due to an unknown error. [{v}]");
+            }
+            Err(e) => {
+                fail!(from origin, with FileCopyError::UnknownError(0),
+                    "{msg} since the source file could not be opened due to an unknown error. [{e:?}]");
+            }
         }
     }
 
     /// Copies the file's content into a new [`File`].
-    pub fn copy_to(&self, destination: &FilePath) {
+    pub fn copy_to(&self, destination: &FilePath) -> Result<(), FileCopyError> {
+        let msg = format!("Unable to copy file to \"{destination}\"");
         let file_size = match self.metadata() {
             Ok(v) => v.size(),
-            Err(_) => todo!(),
+            Err(FileStatError::FileTooBig) => {
+                fail!(from self, with FileCopyError::SourceFileIsTooBig,
+                    "{msg} since the metadata could not be acquired because the file is too big.");
+            }
+            Err(FileStatError::IOerror) => {
+                fail!(from self, with FileCopyError::IoError,
+                    "{msg} since the metadata could not be acquired due to an IO error.");
+            }
+            Err(e) => {
+                fail!(from self, with FileCopyError::UnknownError(0),
+                    "{msg} since the metadata could not be acquired due to an internal failure. [{e:?}]");
+            }
         };
 
         let dest = match FileBuilder::new(destination)
@@ -630,34 +712,127 @@ impl File {
             .create()
         {
             Ok(f) => f,
-            Err(_) => todo!(),
+            Err(FileCreationError::FileAlreadyExists) => {
+                fail!(from self, with FileCopyError::DestinationAlreadyExists,
+                    "{msg} since the destination already exists.");
+            }
+            Err(FileCreationError::DirectoryDoesNotExist) => {
+                fail!(from self, with FileCopyError::DestinationDirectoryDoesNotExist,
+                    "{msg} since the destination directory does not exist.");
+            }
+            Err(FileCreationError::InsufficientPermissions) => {
+                fail!(from self, with FileCopyError::InsufficientPermissions,
+                    "{msg} since the destination could not be created due to insufficient permissions.");
+            }
+            Err(FileCreationError::InsufficientMemory) => {
+                fail!(from self, with FileCopyError::InsufficientMemory,
+                    "{msg} since the destination could not be created due to insufficient memory.");
+            }
+            Err(FileCreationError::Interrupt) => {
+                fail!(from self, with FileCopyError::InterruptedBySignal,
+                    "{msg} since the destination creation was interrupted by a signal.");
+            }
+            Err(FileCreationError::FileTooBig) => {
+                fail!(from self, with FileCopyError::DestinationFileIsTooBig,
+                    "{msg} since the destination file is too big.");
+            }
+            Err(FileCreationError::FilesytemIsReadOnly) => {
+                fail!(from self, with FileCopyError::FileSystemIsReadOnly,
+                    "{msg} since the destinations file system is read only.");
+            }
+            Err(FileCreationError::NoSpaceLeft) => {
+                fail!(from self, with FileCopyError::NoSpaceLeft,
+                    "{msg} since the destinations file could not be created since there is no space left on the destination.");
+            }
+            Err(FileCreationError::IsDirectory) => {
+                fail!(from self, with FileCopyError::DestinationIsADirection,
+                    "{msg} since the destinations is a directory and not a file.");
+            }
+            Err(FileCreationError::PerProcessFileHandleLimitReached) => {
+                fail!(from self, with FileCopyError::PerProcessFileHandleLimitReached,
+                    "{msg} since the destination could not be opened since the process file handle limit was reached.");
+            }
+            Err(FileCreationError::SystemWideFileHandleLimitReached) => {
+                fail!(from self, with FileCopyError::SystemWideFileHandleLimitReached,
+                    "{msg} since the destination could not be opened since the system wide file handle limit was reached.");
+            }
+            Err(FileCreationError::LoopInSymbolicLinks) => {
+                fail!(from self, with FileCopyError::LoopInSymbolicLink,
+                    "{msg} since the destination path contains a loop in the symbolic links.");
+            }
+            Err(FileCreationError::UnknownError(v)) => {
+                fail!(from self, with FileCopyError::UnknownError(v),
+                    "{msg} since the destination file could not be created due to an unknown error. [{v}]");
+            }
+            Err(e) => {
+                fail!(from self, with FileCopyError::UnknownError(0),
+                    "{msg} since the destination file could not be created. [{e:?}]");
+            }
         };
+
+        if file_size == 0 {
+            return Ok(());
+        }
 
         let fd = unsafe {
             FileDescriptor::non_owning_new_unchecked(self.file_descriptor.native_handle())
         };
-        let src_mapping = match MemoryMappingBuilder::from_file_descriptor(fd)
-            .mapping_behavior(MappingBehavior::Private)
-            .initial_mapping_permission(MappingPermission::Read)
-            .size(file_size as usize)
-            .create()
-        {
-            Ok(v) => v,
-            Err(_) => todo!(),
+
+        let create_mapping = |fd,
+                              behavior,
+                              permissions,
+                              file_size|
+         -> Result<MemoryMapping, FileCopyError> {
+            match MemoryMappingBuilder::from_file_descriptor(fd)
+                .mapping_behavior(behavior)
+                .initial_mapping_permission(permissions)
+                .size(file_size as usize)
+                .create()
+            {
+                Ok(v) => Ok(v),
+                Err(MemoryMappingCreationError::InsufficientPermissions) => {
+                    fail!(from self, with FileCopyError::InsufficientPermissions,
+                            "{msg} due to insufficient permissions while mapping the files into the process.");
+                }
+                Err(MemoryMappingCreationError::ExceedsTheMaximumNumberOfMappedRegions) => {
+                    fail!(from self, with FileCopyError::ExceedsTheMaximumNumberOfMappedRegions,
+                            "{msg} since the mapping exceeds the system wide limit of mapped regions.");
+                }
+                Err(MemoryMappingCreationError::InsufficientResources) => {
+                    fail!(from self, with FileCopyError::InsufficientResources,
+                            "{msg} since the memory mapping failed due to insufficient resources.");
+                }
+                Err(MemoryMappingCreationError::InterruptSignal) => {
+                    fail!(from self, with FileCopyError::InterruptedBySignal,
+                            "{msg} since the memory mapping failed due to an interrupt by a signal.");
+                }
+                Err(MemoryMappingCreationError::UnknownFailure(v)) => {
+                    fail!(from self, with FileCopyError::UnknownError(v),
+                        "{msg} since the memory mapping failed with an unknown failure. [{v}]");
+                }
+                Err(e) => {
+                    fail!(from self, with FileCopyError::UnknownError(0),
+                        "{msg} since the memory mapping failed with an unknown failure. [{e:?}]");
+                }
+            }
         };
+
+        let src_mapping = create_mapping(
+            fd,
+            MappingBehavior::Private,
+            MappingPermission::Read,
+            file_size,
+        )?;
 
         let fd = unsafe {
             FileDescriptor::non_owning_new_unchecked(dest.file_descriptor.native_handle())
         };
-        let mut dst_mapping = match MemoryMappingBuilder::from_file_descriptor(fd)
-            .mapping_behavior(MappingBehavior::Private)
-            .initial_mapping_permission(MappingPermission::Write)
-            .size(file_size as usize)
-            .create()
-        {
-            Ok(v) => v,
-            Err(_) => todo!(),
-        };
+        let mut dst_mapping = create_mapping(
+            fd,
+            MappingBehavior::Shared,
+            MappingPermission::Write,
+            file_size,
+        )?;
 
         unsafe {
             core::ptr::copy_nonoverlapping(
@@ -666,6 +841,8 @@ impl File {
                 file_size as usize,
             )
         };
+
+        Ok(())
     }
 
     /// Returns the [`AccessMode`] under which the [`File`] was opened. The [`AccessMode`] defines if

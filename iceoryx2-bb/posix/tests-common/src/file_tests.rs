@@ -591,3 +591,58 @@ pub fn abandon_file_keeps_all_resources() {
 
     File::remove(&test.file).unwrap();
 }
+
+#[test]
+pub fn copy_to_works() {
+    let test = TestFixture::new();
+    let mut file = test.create_file(&test.file);
+
+    let mut content = "bits and bytes and a nibble on the side".to_string();
+    file.write(unsafe { content.as_mut_vec() }.as_slice())
+        .unwrap();
+    assert_that!(file.sync_all(), is_ok);
+    let destination = generate_file_path();
+
+    assert_that!(file.copy_to(&destination), is_ok);
+
+    let destination = FileBuilder::new(&destination)
+        .has_ownership(true)
+        .open_existing(AccessMode::Read)
+        .unwrap();
+
+    let mut read_content = String::new();
+    let read_len = destination.read_to_string(&mut read_content).unwrap();
+
+    assert_that!(read_len, eq content.len() as _);
+    assert_that!(content, eq read_content);
+
+    file.remove_self().unwrap();
+}
+
+#[test]
+pub fn copy_works() {
+    let test = TestFixture::new();
+    let mut file = test.create_file(&test.file);
+
+    let mut content = "the nibble said nope".to_string();
+    file.write(unsafe { content.as_mut_vec() }.as_slice())
+        .unwrap();
+    assert_that!(file.sync_all(), is_ok);
+
+    let destination = generate_file_path();
+
+    assert_that!(File::copy(test.file(), &destination), is_ok);
+
+    let destination = FileBuilder::new(&destination)
+        .has_ownership(true)
+        .open_existing(AccessMode::Read)
+        .unwrap();
+
+    let mut read_content = String::new();
+    let read_len = destination.read_to_string(&mut read_content).unwrap();
+
+    assert_that!(read_len, eq content.len() as _);
+    assert_that!(content, eq read_content);
+
+    file.remove_self().unwrap();
+}
