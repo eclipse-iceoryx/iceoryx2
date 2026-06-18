@@ -25,6 +25,7 @@ use crate::{keys, payload, rcl};
 pub enum CreationError {
     InvalidServiceName,
     InvalidTypeName,
+    InvalidTopic,
     TypeSupport,
     Publisher,
 }
@@ -151,8 +152,14 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
             "Failed to load typesupport for '{}'",
             type_name
         );
+        let topic_name = fail!(from origin,
+            when rcl::TopicName::new(topic),
+            with CreationError::InvalidTopic,
+            "Invalid ROS 2 topic name '{}'",
+            topic
+        );
         let publisher = fail!(from origin,
-            when self.node.publisher_builder(topic, type_support).create(),
+            when self.node.publisher_builder(topic_name, type_support).create(),
             with CreationError::Publisher,
             "Failed to create ROS 2 publisher for topic '{}'",
             topic

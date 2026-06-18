@@ -127,8 +127,13 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
     fn create(self) -> Result<Self::Backend, Self::CreationError> {
         let origin = "Ros2Backend::create";
 
+        let node_name = fail!(from origin,
+            when rcl::NodeName::new(NODE_NAME),
+            with CreationError::Node,
+            "Invalid node name '{}'", NODE_NAME
+        );
         let node = fail!(from origin,
-            when rcl::Node::new(NODE_NAME).create(),
+            when rcl::Node::new(node_name).create(),
             with CreationError::Node,
             "Failed to create ROS 2 node"
         );

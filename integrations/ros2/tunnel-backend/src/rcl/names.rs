@@ -67,6 +67,12 @@ fn into_cstring(name: &str) -> CString {
 pub struct NodeName(CString);
 
 impl NodeName {
+    /// Creates a new ROS 2 node name from the given string.
+    ///
+    /// A valid node name must:
+    /// - Be non-empty
+    /// - Start with a letter or underscore
+    /// - Contain only ASCII alphanumeric characters or underscores
     pub fn new(name: &str) -> Result<Self, NameError> {
         let origin = "NodeName::new";
 
@@ -97,9 +103,19 @@ impl NodeName {
 /// A ROS 2 node namespace: an absolute, `/`-separated path of name tokens. The
 /// empty string and `/` both denote the root namespace.
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Namespace(CString);
+pub struct NodeNamespace(CString);
 
-impl Namespace {
+impl NodeNamespace {
+    /// The root namespace.
+    pub fn root() -> Self {
+        Self(into_cstring(""))
+    }
+
+    /// Creates a new ROS 2 namespace from the given string.
+    ///
+    /// A valid namespace is either:
+    /// - An empty string or "/" (representing the root namespace)
+    /// - An absolute path starting with '/' followed by valid name tokens separated by '/'
     pub fn new(namespace: &str) -> Result<Self, NameError> {
         let origin = "Namespace::new";
 
@@ -133,6 +149,15 @@ impl Namespace {
 pub struct TopicName(CString);
 
 impl TopicName {
+    /// Creates a new ROS 2 topic name from the given string.
+    ///
+    /// A valid topic name is a non-empty, `/`-separated path of name tokens.
+    /// It can be either absolute (starting with `/`) or relative.
+    ///
+    /// A valid topic name must:
+    /// - Be non-empty
+    /// - Start with a letter or underscore
+    /// - Contain only ASCII alphanumeric characters or underscores
     pub fn new(topic: &str) -> Result<Self, NameError> {
         let origin = "TopicName::new";
 
@@ -184,16 +209,16 @@ mod tests {
     #[test]
     fn namespace_accepts_valid_namespaces() {
         for namespace in ["", "/", "/foo", "/foo/bar", "/_hidden/n0de"] {
-            assert!(Namespace::new(namespace).is_ok(), "{namespace}");
+            assert!(NodeNamespace::new(namespace).is_ok(), "{namespace}");
         }
     }
 
     #[test]
     fn namespace_rejects_invalid_namespaces() {
-        assert_eq!(Namespace::new("foo"), Err(NameError::NoLeadingSlash));
+        assert_eq!(NodeNamespace::new("foo"), Err(NameError::NoLeadingSlash));
         for namespace in ["/foo/", "/foo//bar", "/0foo", "/foo/-bar"] {
             assert_eq!(
-                Namespace::new(namespace),
+                NodeNamespace::new(namespace),
                 Err(NameError::InvalidToken),
                 "{namespace}"
             );

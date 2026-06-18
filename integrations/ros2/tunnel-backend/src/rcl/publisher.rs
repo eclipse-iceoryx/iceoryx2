@@ -25,7 +25,6 @@ use crate::typesupport::TypeSupport;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    InvalidTopic,
     PublisherInit(RclError),
 }
 
@@ -50,16 +49,16 @@ impl core::fmt::Display for PublishError {
 
 impl core::error::Error for PublishError {}
 
-/// Builder for [`Publisher`]. Created via [`Node::publisher_builder`].
+/// Builder for [`Publisher`].
 #[derive(Debug)]
-pub struct Builder<'a> {
+pub struct Builder {
     node: Node,
-    topic: &'a str,
+    topic: TopicName,
     type_support: TypeSupport,
 }
 
-impl<'a> Builder<'a> {
-    pub(crate) fn new(node: Node, topic: &'a str, type_support: TypeSupport) -> Self {
+impl Builder {
+    pub(crate) fn new(node: Node, topic: TopicName, type_support: TypeSupport) -> Self {
         Self {
             node,
             topic,
@@ -70,13 +69,6 @@ impl<'a> Builder<'a> {
     pub fn create(self) -> Result<Publisher, CreationError> {
         let origin = "Publisher::Builder::create";
 
-        let topic = fail!(
-            from origin,
-            when TopicName::new(self.topic),
-            with CreationError::InvalidTopic,
-            "Invalid topic name '{}'", self.topic
-        );
-
         unsafe {
             let publisher = Box::new(UnsafeCell::new(rcl_get_zero_initialized_publisher()));
             let options = rcl_publisher_get_default_options();
@@ -85,7 +77,7 @@ impl<'a> Builder<'a> {
                 publisher.get(),
                 self.node.handle(),
                 self.type_support.handle(),
-                topic.as_c_str().as_ptr(),
+                self.topic.as_c_str().as_ptr(),
                 &options,
             );
             if ret != RCL_RET_OK as rcl_ret_t {

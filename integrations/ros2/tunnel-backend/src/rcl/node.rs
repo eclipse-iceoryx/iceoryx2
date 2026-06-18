@@ -22,7 +22,7 @@ use r2r_rcl::{
 
 use iceoryx2_log::fail;
 
-use crate::rcl::{Namespace, NodeName, RclError, publisher};
+use crate::rcl::{NodeName, NodeNamespace, RclError, TopicName, publisher};
 use crate::typesupport::TypeSupport;
 
 /// rcl is initialized without forwarding any command-line arguments.
@@ -30,8 +30,6 @@ const NO_ARGS: core::ffi::c_int = 0;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    InvalidName,
-    InvalidNamespace,
     InitOptionsInit(RclError),
     ContextInit(RclError),
     NodeInit(RclError),
@@ -81,40 +79,27 @@ impl core::fmt::Debug for Node {
 
 /// Builder for [`Node`].
 #[derive(Debug)]
-pub struct Builder<'a> {
-    name: &'a str,
-    namespace: &'a str,
+pub struct Builder {
+    name: NodeName,
+    namespace: NodeNamespace,
 }
 
-impl<'a> Builder<'a> {
-    fn new(name: &'a str) -> Self {
+impl Builder {
+    fn new(name: NodeName) -> Self {
         Self {
             name,
-            namespace: "",
+            namespace: NodeNamespace::root(),
         }
     }
 
     /// Sets the node's namespace. Defaults to the root namespace.
-    pub fn namespace(mut self, namespace: &'a str) -> Self {
+    pub fn namespace(mut self, namespace: NodeNamespace) -> Self {
         self.namespace = namespace;
         self
     }
 
     pub fn create(self) -> Result<Node, CreationError> {
         let origin = "Node::create";
-
-        let name = fail!(
-            from origin,
-            when NodeName::new(self.name),
-            with CreationError::InvalidName,
-            "Invalid node name '{}'", self.name
-        );
-        let namespace = fail!(
-            from origin,
-            when Namespace::new(self.namespace),
-            with CreationError::InvalidNamespace,
-            "Invalid node namespace '{}'", self.namespace
-        );
 
         unsafe {
             let mut init_options = rcl_get_zero_initialized_init_options();
@@ -142,8 +127,8 @@ impl<'a> Builder<'a> {
             let node_options = rcl_node_get_default_options();
             let ret = rcl_node_init(
                 node.get(),
-                name.as_c_str().as_ptr(),
-                namespace.as_c_str().as_ptr(),
+                self.name.as_c_str().as_ptr(),
+                self.namespace.as_c_str().as_ptr(),
                 context.get(),
                 &node_options,
             );
@@ -167,16 +152,16 @@ impl<'a> Builder<'a> {
 impl Node {
     /// Begins building a node with the given name. The namespace defaults to
     /// the root namespace unless set via [`Builder::namespace`].
-    pub fn new(name: &str) -> Builder<'_> {
+    pub fn new(name: NodeName) -> Builder {
         Builder::new(name)
     }
 
     /// Build a publisher on this node for the given topic and typesupport.
-    pub fn publisher_builder<'a>(
+    pub fn publisher_builder(
         &self,
-        topic: &'a str,
+        topic: TopicName,
         type_support: TypeSupport,
-    ) -> publisher::Builder<'a> {
+    ) -> publisher::Builder {
         publisher::Builder::new(self.clone(), topic, type_support)
     }
 
