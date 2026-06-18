@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::rc::Rc;
 use std::sync::Arc;
 
 use iceoryx2::service::{Service, local_threadsafe, static_config::StaticConfig};
@@ -95,24 +94,24 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
 
 /// Builder for publish-subscribe [`Relay`]s.
 #[derive(Debug)]
-pub struct Builder<'config, S: Service> {
+pub struct Builder<'a, S: Service> {
     node: rcl::Node,
-    type_support: Rc<TypeSupportRegistry>,
-    static_config: &'config StaticConfig,
+    type_registry: &'a TypeSupportRegistry,
+    static_config: &'a StaticConfig,
     wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
-impl<'config, S: Service> Builder<'config, S> {
+impl<'a, S: Service> Builder<'a, S> {
     pub fn new(
         node: rcl::Node,
-        type_support: Rc<TypeSupportRegistry>,
-        static_config: &'config StaticConfig,
+        type_registry: &'a TypeSupportRegistry,
+        static_config: &'a StaticConfig,
         wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     ) -> Self {
         Self {
             node,
-            type_support,
+            type_registry,
             static_config,
             wake,
             _phantom: core::marker::PhantomData,
@@ -147,7 +146,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
         );
 
         let type_support = fail!(from origin,
-            when self.type_support.load(type_name),
+            when self.type_registry.load(type_name),
             with CreationError::TypeSupport,
             "Failed to load typesupport for '{}'",
             type_name

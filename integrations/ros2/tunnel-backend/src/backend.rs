@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::rc::Rc;
 use std::sync::Arc;
 
 use iceoryx2::service::{Service, local_threadsafe};
@@ -62,9 +61,8 @@ impl core::error::Error for CreationError {}
 #[derive(Debug)]
 pub struct Ros2Backend<S: Service> {
     node: rcl::Node,
-    /// Typesupport for all configured topics, loaded dynamically on
-    /// initialization.
-    type_support: Rc<TypeSupportRegistry>,
+    /// Typesupport for all configured topics, loaded on initialization.
+    type_registry: TypeSupportRegistry,
     discovery: Discovery,
     /// `Some` when constructed in reactive mode. Cloned into each relay so
     /// that incoming ROS 2 data signals the wake.
@@ -75,17 +73,19 @@ pub struct Ros2Backend<S: Service> {
 impl<S: Service> Backend<S> for Ros2Backend<S> {
     type Config = Config;
     type CreationError = CreationError;
-    type Builder<'config>
-        = Builder<'config, S>
+
+    type Builder<'a>
+        = Builder<'a, S>
     where
-        Self::Config: 'config;
+        Self::Config: 'a;
+
     type Discovery = Discovery;
 
     type PublishSubscribeRelay = publish_subscribe::Relay<S>;
     type EventRelay = event::Relay<S>;
 
     type RelayFactory<'b>
-        = Factory<S>
+        = Factory<'b, S>
     where
         Self: 'b;
 
@@ -94,11 +94,7 @@ impl<S: Service> Backend<S> for Ros2Backend<S> {
     }
 
     fn relay_builder(&self) -> Self::RelayFactory<'_> {
-        Factory::new(
-            self.node.clone(),
-            self.type_support.clone(),
-            self.wake.clone(),
-        )
+        Factory::new(self.node.clone(), &self.type_registry, self.wake.clone())
     }
 
     fn discovery(&self) -> &impl iceoryx2_services_tunnel_backend::traits::Discovery {
@@ -108,14 +104,14 @@ impl<S: Service> Backend<S> for Ros2Backend<S> {
 
 /// Builder for [`Ros2Backend`].
 #[derive(Debug)]
-pub struct Builder<'config, S: Service> {
-    config: &'config Config,
+pub struct Builder<'a, S: Service> {
+    config: &'a Config,
     wake: Option<WakeHandle<local_threadsafe::Service>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
-impl<'config, S: Service> Builder<'config, S> {
-    pub fn new(config: &'config Config) -> Self {
+impl<'a, S: Service> Builder<'a, S> {
+    pub fn new(config: &'a Config) -> Self {
         Self {
             config,
             wake: None,
@@ -139,10 +135,10 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
 
         // Load all typesupport libraries for configured topics during
         // initialization.
-        let type_support = Rc::new(TypeSupportRegistry::default());
+        let type_registry = TypeSupportRegistry::default();
         for topic in &self.config.topics {
             fail!(from origin,
-                when type_support.load(&topic.type_name),
+                when type_registry.load(&topic.type_name),
                 with CreationError::TypeSupport,
                 "Failed to load typesupport for configured topic '{}'", topic.type_name
             );
@@ -150,7 +146,7 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
 
         Ok(Ros2Backend {
             node,
-            type_support,
+            type_registry,
             discovery: Discovery {},
             wake: self.wake.map(Arc::new),
             _phantom: core::marker::PhantomData,
