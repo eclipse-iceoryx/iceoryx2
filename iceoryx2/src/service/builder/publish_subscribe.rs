@@ -388,6 +388,10 @@ impl<
     ServiceType: service::Service,
 > Builder<Payload, UserHeader, ServiceType>
 {
+    fn has_flatbuffer_payload() -> bool {
+        unsafe { Payload::type_name() == Flatbuffer::<()>::type_name() }
+    }
+
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         let mut new_self = Self {
             base,
