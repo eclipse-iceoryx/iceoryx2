@@ -25,18 +25,20 @@ const CYCLE_TIME: Duration = Duration::from_secs(1);
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
 
+    // export IOX2_FLATBUFFER_SCHEMA_PATH=${pwd}/examples/rust/flatbuffer
+    let lookup_path = std::env::var("IOX2_FLATBUFFER_SCHEMA_PATH")
+        .inspect_err(|e| cerrln!("Please define IOX2_FLATBUFFER_SCHEMA_PATH! [{e:?}]"))?;
+
     let mut config = Config::default();
     config
         .global
         .service
         .flatbuffer_schema_paths
-        .push("examples/rust/flatbuffer".try_into()?);
+        .push(lookup_path.as_str().try_into()?);
+
     let node = NodeBuilder::new()
         .config(&config)
         .create::<ipc::Service>()?;
-
-    println!("type name: {}", core::any::type_name::<UnboundedData>());
-    println!("{}", core::env!("PWD"));
 
     let service = node
         .service_builder(&"My/Flatbuffer/Service".try_into()?)
