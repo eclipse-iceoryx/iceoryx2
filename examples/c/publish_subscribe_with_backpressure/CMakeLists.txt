@@ -13,7 +13,7 @@
 cmake_minimum_required(VERSION 3.22)
 project(example_c_publish_subscribe_with_backpressure_handler LANGUAGES C)
 
-find_package(iceoryx2-c 0.9.1 REQUIRED)
+find_package(iceoryx2-c 0.9.2 REQUIRED)
 
 add_executable(example_c_publish_subscribe_backpressure_publisher src/publisher.c)
 target_link_libraries(example_c_publish_subscribe_backpressure_publisher iceoryx2-c::static-lib)
