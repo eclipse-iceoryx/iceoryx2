@@ -78,6 +78,9 @@ pub struct ClientDetails {
     /// [`DataSegmentType::Dynamic`] it defines how many segment the
     /// [`Client`](crate::port::client::Client) can have at most.
     pub max_number_of_segments: u8,
+    /// The maximal amount of active request a
+    /// [`Client`](crate::port::client::Client) can send.
+    pub max_active_requests: usize,
 }
 
 #[repr(C)]

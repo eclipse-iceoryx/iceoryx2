@@ -43,6 +43,13 @@ class PortFactoryClient {
 #else
     IOX2_BUILDER_OPTIONAL(BackpressureStrategy, backpressure_strategy);
 #endif
+    /// Defines the required maximal amount of active requests the [`Client`] can send.
+    /// Smallest possible value is `1`.
+#ifdef DOXYGEN_MACRO_FIX
+    auto max_active_requests(const uint64_t value) -> decltype(auto);
+#else
+    IOX2_BUILDER_OPTIONAL(uint64_t, max_active_requests);
+#endif
 
   public:
     PortFactoryClient(const PortFactoryClient&) = delete;
@@ -234,6 +241,10 @@ inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, Respon
     if (m_backpressure_handler.has_value()) {
         iox2_port_factory_client_builder_set_backpressure_handler(
             &m_handle, detail::backpressure_handler_delegate, static_cast<void*>(m_backpressure_handler.value()));
+    }
+
+    if (m_max_active_requests.has_value()) {
+        iox2_port_factory_client_builder_set_max_active_requests(&m_handle, m_max_active_requests.value());
     }
 
     iox2_client_h client_handle {};

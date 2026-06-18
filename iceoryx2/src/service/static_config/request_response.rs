@@ -103,14 +103,15 @@ impl StaticConfig {
     pub(crate) fn required_amount_of_chunks_per_client_data_segment(
         &self,
         client_max_loaned_data: usize,
+        client_max_active_requests: usize,
     ) -> usize {
         // all chunks a server can hold
         self.max_servers * (
             // a client sent so many active requests to a server in parallel
-            self.max_active_requests_per_client +
+            client_max_active_requests +
             // the server can still hold old requests that the client has already dropped. in this case
             // the client can fill up the server's buffer with at most max_active_requests_per_client again
-            self.max_active_requests_per_client
+            client_max_active_requests
         )
         // all chunks a client can loan in parallel
             + client_max_loaned_data

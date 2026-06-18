@@ -1800,6 +1800,8 @@ constexpr auto from<int, iox2::ClientCreateError>(const int value) noexcept -> i
         return iox2::ClientCreateError::FailedToDeployThreadsafetyPolicy;
     case iox2_client_create_error_e_UNABLE_TO_CREATE_PORT_TAG:
         return iox2::ClientCreateError::UnableToCreatePortTag;
+    case iox2_client_create_error_e_MAX_ACTIVE_REQUESTS_EXCEEDS_MAX_SUPPORTED_ACTIVE_REQUESTS_OF_SERVICE:
+        return iox2::ClientCreateError::MaxActiveRequestsExceedsMaxSupportedActiveRequestsOfService;
     }
 
     IOX2_UNREACHABLE();
@@ -1817,6 +1819,8 @@ constexpr auto from<iox2::ClientCreateError, iox2_client_create_error_e>(const i
         return iox2_client_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
     case iox2::ClientCreateError::UnableToCreatePortTag:
         return iox2_client_create_error_e_UNABLE_TO_CREATE_PORT_TAG;
+    case iox2::ClientCreateError::MaxActiveRequestsExceedsMaxSupportedActiveRequestsOfService:
+        return iox2_client_create_error_e_MAX_ACTIVE_REQUESTS_EXCEEDS_MAX_SUPPORTED_ACTIVE_REQUESTS_OF_SERVICE;
     }
 
     IOX2_UNREACHABLE();

@@ -218,6 +218,23 @@ impl PortFactoryClient {
         }
     }
 
+    /// Defines the maximal active requests the `Client` can send. Smallest possible value is `1`.
+    pub fn max_active_requests(&self, value: usize) -> Self {
+        let _guard = self.factory.lock();
+        match &self.value {
+            PortFactoryClientType::Ipc(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = this.max_active_requests(value);
+                self.clone_ipc(this)
+            }
+            PortFactoryClientType::Local(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = this.max_active_requests(value);
+                self.clone_local(this)
+            }
+        }
+    }
+
     /// Creates a new `Client` or emits a `ClientCreateError` on failure.
     pub fn create(&self) -> PyResult<Client> {
         let _guard = self.factory.lock();

@@ -62,6 +62,9 @@ pub enum ClientCreateError {
     FailedToDeployThreadsafetyPolicy,
     /// The tracking port tag, required for cleanup, could not be created.
     UnableToCreatePortTag,
+    /// When the [`Client`] requires more active requests than the
+    /// [`Service`](crate::service::Service) offers, the creation will fail.
+    MaxActiveRequestsExceedsMaxSupportedActiveRequestsOfService,
 }
 
 impl core::fmt::Display for ClientCreateError {
@@ -99,6 +102,7 @@ pub(crate) struct LocalClientConfig {
     pub(crate) backpressure_strategy: BackpressureStrategy,
     pub(crate) initial_max_slice_len: usize,
     pub(crate) allocation_strategy: AllocationStrategy,
+    pub(crate) max_active_requests: Option<usize>,
 }
 
 /// Factory to create a new [`Client`] port/endpoint for
@@ -198,6 +202,7 @@ impl<
                 backpressure_strategy: defs.client_backpressure_strategy,
                 initial_max_slice_len: 1,
                 allocation_strategy: defs.client_allocation_strategy,
+                max_active_requests: None,
             },
             preallocate_number_of_requests_override: PreallocatedRequestsOverride::new(|v| v),
             request_degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
@@ -273,6 +278,12 @@ impl<
     pub fn set_backpressure_handler<F: BackpressureFn + 'static>(mut self, handler: F) -> Self {
         self.backpressure_handler = Some(BackpressureHandler::new(handler));
 
+        self
+    }
+
+    /// Sets the maximal amount of active requests the [`Client`] can send.
+    pub fn max_active_requests(mut self, value: usize) -> Self {
+        self.config.max_active_requests = Some(value.max(1));
         self
     }
 

@@ -172,6 +172,7 @@ pub(crate) struct ClientSharedState<Service: service::Service> {
     server_list_state: UnsafeCell<ContainerState<ServerDetails>>,
     pub(crate) active_request_counter: AtomicUsize,
     pub(crate) available_channel_ids: UnsafeCell<Queue<ChannelId>>,
+    pub(crate) max_active_requests: usize,
     // IMPORTANT!
     // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
     // port exists and might require cleanup after a crash, the tag must be defined as last member of
@@ -221,14 +222,17 @@ impl<Service: service::Service> ClientSharedState<Service> {
         let msg = "Unable to send request";
 
         let active_request_counter = self.active_request_counter.load(Ordering::Relaxed);
-        if self
-            .request_sender
-            .service_state
-            .static_config()
-            .request_response()
-            .max_active_requests_per_client
-            <= active_request_counter
-        {
+        let max_active_requests = match self.config.max_active_requests {
+            Some(requests) => requests,
+            None => {
+                self.request_sender
+                    .service_state
+                    .static_config()
+                    .request_response()
+                    .max_active_requests_per_client
+            }
+        };
+        if max_active_requests <= active_request_counter {
             fail!(from self, with RequestSendError::ExceedsMaxActiveRequests,
                     "{} since the number of active requests is limited to {} and sending this request would exceed the limit.", msg, active_request_counter);
         }
@@ -407,11 +411,22 @@ impl<
         };
 
         let static_config = client_factory.factory.static_config();
-        let number_of_requests =
+        let number_of_requests_with_max_service_setting =
             unsafe { service.static_config().messaging_pattern.request_response() }
                 .required_amount_of_chunks_per_client_data_segment(
                     static_config.max_loaned_requests,
+                    static_config.max_active_requests_per_client,
                 );
+        let number_of_requests = match client_factory.config.max_active_requests {
+            Some(requests) => {
+                unsafe { service.static_config().messaging_pattern.request_response() }
+                    .required_amount_of_chunks_per_client_data_segment(
+                        static_config.max_loaned_requests,
+                        requests,
+                    )
+            }
+            None => number_of_requests_with_max_service_setting,
+        };
         let number_of_requests = client_factory
             .preallocate_number_of_requests_override
             .call(number_of_requests);
@@ -450,6 +465,18 @@ impl<
             with ClientCreateError::UnableToCreateDataSegment,
             "{} since the client data segment could not be created.", msg);
 
+        let max_active_requests = match client_factory.config.max_active_requests {
+            Some(requests) => {
+                if static_config.max_active_requests_per_client < requests {
+                    fail!(from origin, with ClientCreateError::MaxActiveRequestsExceedsMaxSupportedActiveRequestsOfService,
+                        "{} since the requested max_active_requests {} exceeds the maximum supported active requests {} of the service.",
+                    msg, requests, static_config.max_active_requests_per_client);
+                }
+                requests
+            }
+            None => static_config.max_active_requests_per_client,
+        };
+
         let client_details = ClientDetails {
             client_id,
             node_id: *service.shared_node().id(),
@@ -458,6 +485,7 @@ impl<
             max_slice_len: client_factory.config.initial_max_slice_len,
             data_segment_type,
             max_number_of_segments,
+            max_active_requests,
         };
 
         let request_sender = Sender {
@@ -527,7 +555,7 @@ impl<
             receiver_max_borrowed_samples: static_config
                 .max_borrowed_responses_per_pending_response,
             enable_safe_overflow: static_config.enable_safe_overflow_for_responses,
-            number_of_channels: number_of_requests,
+            number_of_channels: number_of_requests_with_max_service_setting,
             connection_storage: UnsafeCell::new(SlotMap::new(number_of_connections)),
             initial_channel_state: CHANNEL_STATE_CLOSED,
         };
@@ -547,6 +575,7 @@ impl<
             response_receiver,
             server_list_state: UnsafeCell::new(unsafe { server_list.get_state() }),
             active_request_counter: AtomicUsize::new(0),
+            max_active_requests,
         });
 
         let client_shared_state = match client_shared_state {
@@ -623,6 +652,11 @@ impl<
             .lock()
             .request_sender
             .backpressure_strategy
+    }
+
+    /// Returns the maximal active requests a [`Client`] can send.
+    pub fn max_active_requests(&self) -> usize {
+        self.client_shared_state.lock().max_active_requests
     }
 }
 

@@ -105,3 +105,16 @@ pub unsafe extern "C" fn iox2_client_details_max_slice_len(
     debug_assert!(!handle.is_null());
     unsafe { (*handle).max_slice_len as _ }
 }
+
+/// Returns the maximal active requests the client can send.
+///
+/// # Safety
+///
+/// * `handle` valid pointer to the client details
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_client_details_max_active_requests(
+    handle: iox2_client_details_ptr,
+) -> c_size_t {
+    debug_assert!(!handle.is_null());
+    unsafe { (*handle).max_active_requests as _ }
+}
