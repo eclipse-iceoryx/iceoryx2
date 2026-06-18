@@ -61,7 +61,7 @@ impl core::error::Error for CreationError {}
 
 #[derive(Debug)]
 pub struct Ros2Backend<S: Service> {
-    node: Rc<rcl::Node>,
+    node: rcl::Node,
     /// Typesupport for all configured topics, loaded dynamically on
     /// initialization.
     type_support: Rc<TypeSupportRegistry>,
@@ -131,11 +131,11 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
     fn create(self) -> Result<Self::Backend, Self::CreationError> {
         let origin = "Ros2Backend::create";
 
-        let node = Rc::new(fail!(from origin,
+        let node = fail!(from origin,
             when rcl::Node::new(NODE_NAME).create(),
             with CreationError::Node,
             "Failed to create ROS 2 node"
-        ));
+        );
 
         // Load all typesupport libraries for configured topics during
         // initialization.

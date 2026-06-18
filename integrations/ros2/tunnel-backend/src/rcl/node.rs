@@ -45,19 +45,36 @@ impl core::fmt::Display for CreationError {
 
 impl core::error::Error for CreationError {}
 
-/// An rcl node together with the context it belongs to.
-/// The tunnel is a single node, so it can be coupled to
-/// the context.
-pub struct Node {
+/// An rcl node together with the context it belongs to. The tunnel is a single
+/// node, so it can be coupled to the context.
+struct NodeInner {
     node: Box<UnsafeCell<rcl_node_t>>,
     context: Box<UnsafeCell<rcl_context_t>>,
+}
+
+impl Drop for NodeInner {
+    fn drop(&mut self) {
+        unsafe {
+            let _ = rcl_node_fini(self.node.get());
+            let _ = rcl_shutdown(self.context.get());
+            let _ = rcl_context_fini(self.context.get());
+        }
+    }
+}
+
+/// A handle to an rcl node.
+///
+/// The node and its context stay alive until the last handle is dropped.
+#[derive(Clone)]
+pub struct Node {
+    inner: Rc<NodeInner>,
 }
 
 impl core::fmt::Debug for Node {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Node")
-            .field("node", &self.node.get())
-            .field("context", &self.context.get())
+            .field("node", &self.inner.node.get())
+            .field("context", &self.inner.context.get())
             .finish()
     }
 }
@@ -140,7 +157,9 @@ impl<'a> Builder<'a> {
                 );
             }
 
-            Ok(Node { node, context })
+            Ok(Node {
+                inner: Rc::new(NodeInner { node, context }),
+            })
         }
     }
 }
@@ -153,25 +172,15 @@ impl Node {
     }
 
     /// Build a publisher on this node for the given topic and typesupport.
-    pub fn publisher_builder(
-        self: Rc<Self>,
-        topic: &str,
+    pub fn publisher_builder<'a>(
+        &self,
+        topic: &'a str,
         type_support: TypeSupport,
-    ) -> publisher::Builder<'_> {
-        publisher::Builder::new(self, topic, type_support)
+    ) -> publisher::Builder<'a> {
+        publisher::Builder::new(self.clone(), topic, type_support)
     }
 
     pub(crate) fn handle(&self) -> *mut rcl_node_t {
-        self.node.get()
-    }
-}
-
-impl Drop for Node {
-    fn drop(&mut self) {
-        unsafe {
-            let _ = rcl_node_fini(self.node.get());
-            let _ = rcl_shutdown(self.context.get());
-            let _ = rcl_context_fini(self.context.get());
-        }
+        self.inner.node.get()
     }
 }
