@@ -135,6 +135,7 @@
 //! }
 //! ```
 
+use alloc::collections::BTreeMap;
 use alloc::format;
 use core::fmt::Debug;
 use core::ptr::NonNull;
@@ -145,10 +146,6 @@ use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 pub use iceoryx2_bb_system_types::file_path::FilePath;
 
-use iceoryx2_bb_container::semantic_string::SemanticStringError;
-use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_log::{fail, fatal_panic, trace, warn};
-
 use crate::{
     access_mode::AccessMode,
     directory::{Directory, DirectoryAccessError, DirectoryCreateError},
@@ -156,14 +153,132 @@ use crate::{
     file_descriptor::{
         FileDescriptorManagement, FileGetLockStateError, FileTryLockError, LockType,
     },
+    mutex::{Handle, Mutex, MutexBuilder, MutexHandle},
     permission::Permission,
     process::{Process, UniqueProcessId},
     unix_datagram_socket::CreationMode,
 };
+use iceoryx2_bb_concurrency::{
+    atomic::{AtomicBool, Ordering},
+    lazy_lock::LazyLock,
+};
+use iceoryx2_bb_container::semantic_string::SemanticStringError;
+use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_log::{fail, fatal_panic, trace, warn};
 
 const INIT_PERMISSION: Permission = Permission::OWNER_WRITE;
 const OWNER_LOCK_SUFFIX: &[u8] = b"_owner_lock";
 const CONTEXT_SUFFIX: &[u8] = b"_context";
+
+#[derive(Debug)]
+struct ProcessStateTracker {
+    state: ProcessState,
+    owned_by_process: bool,
+}
+
+static PROCESS_STATE_TRACKING_MTX_HANDLE: LazyLock<
+    MutexHandle<BTreeMap<FilePath, ProcessStateTracker>>,
+> = LazyLock::new(MutexHandle::new);
+static PROCESS_STATE_TRACKING: LazyLock<
+    Mutex<'static, 'static, BTreeMap<FilePath, ProcessStateTracker>>,
+> = LazyLock::new(
+    || fatal_panic!(from "PROCESS_STATE_TRACKING", when MutexBuilder::new().is_interprocess_capable(false).create(BTreeMap::new(), &PROCESS_STATE_TRACKING_MTX_HANDLE), "Failed to create global process state tracker"),
+);
+
+struct TrackerGuard<'a> {
+    state: &'a mut BTreeMap<FilePath, ProcessStateTracker>,
+    path: &'a FilePath,
+    has_ownership: AtomicBool,
+}
+
+impl<'a> Drop for TrackerGuard<'a> {
+    fn drop(&mut self) {
+        if self.has_ownership.load(Ordering::Relaxed) {
+            self.state.remove(self.path);
+        } else {
+            if let Some(entry) = self.state.get(self.path) {
+                if !entry.owned_by_process {
+                    self.state.remove(self.path);
+                }
+            }
+        }
+    }
+}
+
+impl<'a> TrackerGuard<'a> {
+    fn new_alive(
+        path: &'a FilePath,
+        state: &'a mut BTreeMap<FilePath, ProcessStateTracker>,
+    ) -> Result<Self, ProcessGuardCreateError> {
+        if state.contains_key(path) {
+            return Err(ProcessGuardCreateError::AlreadyExists);
+        }
+
+        state.entry(*path).or_insert_with(|| ProcessStateTracker {
+            state: ProcessState::Alive,
+            owned_by_process: true,
+        });
+
+        Ok(Self {
+            state,
+            path,
+            has_ownership: AtomicBool::new(true),
+        })
+    }
+
+    fn new_cleaning_up(
+        path: &'a FilePath,
+        state: &'a mut BTreeMap<FilePath, ProcessStateTracker>,
+    ) -> Result<Self, ProcessCleanerCreateError> {
+        match state.get_mut(path) {
+            None => {
+                state.entry(*path).or_insert_with(|| ProcessStateTracker {
+                    state: ProcessState::CleaningUp,
+                    owned_by_process: false,
+                });
+                Ok(Self {
+                    state,
+                    path,
+                    has_ownership: AtomicBool::new(true),
+                })
+            }
+            Some(v) => match &mut v.state {
+                ProcessState::Alive => Err(ProcessCleanerCreateError::ProcessIsStillAlive),
+                ProcessState::CleaningUp => {
+                    Err(ProcessCleanerCreateError::ProcessIsBeingCleanedUpOrCrashedDuringCleanup)
+                }
+                ProcessState::Starting => Err(
+                    ProcessCleanerCreateError::ProcessIsInitializedOrCrashedDuringInitialization,
+                ),
+                ProcessState::Dead => Ok(Self {
+                    state,
+                    path,
+                    has_ownership: AtomicBool::new(true),
+                }),
+                ProcessState::DoesNotExist => {
+                    fatal_panic!(from "TrackerGuard::new_cleaning_up()",
+                            "This should never happen! Process state tracker of non-existing process state was not removed.");
+                }
+            },
+        }
+    }
+
+    fn acquire_ownership(&self) {
+        self.has_ownership.store(true, Ordering::Relaxed);
+    }
+
+    fn release_ownership(&self) {
+        self.has_ownership.store(false, Ordering::Relaxed);
+    }
+
+    fn new(path: &'a FilePath, state: &'a mut BTreeMap<FilePath, ProcessStateTracker>) -> Self {
+        Self {
+            state,
+            path,
+            has_ownership: AtomicBool::new(true),
+        }
+    }
+}
 
 /// Defines the current state of a process.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -366,6 +481,12 @@ impl ProcessGuardBuilder {
         let origin = "ProcessGuard::new()";
         let msg = format!("Unable to create new ProcessGuard with the file \"{path}\"");
 
+        let mut lock_guard = fatal_panic!(from origin, when PROCESS_STATE_TRACKING.lock(),
+            "This should never happen. {msg} since the global mutex could not be locked.");
+        let tracker_guard = fail!(from origin, when TrackerGuard::new_alive(path, &mut lock_guard),
+                "{} since the process guard already exists.", msg);
+        tracker_guard.acquire_ownership();
+
         let context_path = generate_context_path(path)
             .map_err(|_| ProcessGuardCreateError::InvalidCleanerPathName)?;
         let owner_lock_path = generate_owner_lock_path(path)
@@ -429,6 +550,7 @@ impl ProcessGuardBuilder {
         match context_file.set_permission(self.create_context_permissions()) {
             Ok(()) => {
                 trace!(from "ProcessGuard::new()", "create process state \"{}\" for monitoring", path);
+                tracker_guard.release_ownership();
                 Ok(ProcessGuard {
                     files: StateFiles {
                         state: Some(state_file),
@@ -552,26 +674,24 @@ struct StateFiles {
     context: Option<File>,
 }
 
-impl StateFiles {
-    fn release_ownership(self) {
-        self.context
-            .as_ref()
-            .expect("contains always a value, only removed on destruction")
-            .release_ownership();
-        self.state
-            .as_ref()
-            .expect("contains always a value, only removed on destruction")
-            .release_ownership();
-        self.owner_lock
-            .as_ref()
-            .expect("contains always a value, only removed on destruction")
-            .release_ownership();
-    }
-}
-
 impl Abandonable for StateFiles {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
+        let msg = "Unable to abandon state files";
         let this = unsafe { this.as_mut() };
+        let mut lock_guard = fatal_panic!(from "StateFiles::abandon_in_place",
+            when PROCESS_STATE_TRACKING.lock(),
+            "This should never happen. {msg} since the global mutex could not be locked.");
+
+        if let Some(path) = this.state.as_ref().and_then(|f| f.path()) {
+            if let Some(entry) = lock_guard.get_mut(path) {
+                if !entry.owned_by_process {
+                    lock_guard.remove(path);
+                } else {
+                    entry.state = ProcessState::Dead;
+                }
+            }
+        }
+
         for file in [&mut this.state, &mut this.owner_lock, &mut this.context] {
             if let Some(f) = file.take() {
                 f.abandon();
@@ -584,6 +704,23 @@ impl Drop for StateFiles {
     fn drop(&mut self) {
         let msg = "Unable to remove the ProcessGuard";
         let origin = format!("{:?}", self);
+        let state_path = self.state.as_ref().and_then(|v| v.path()).cloned();
+        let has_ownership = self
+            .state
+            .as_ref()
+            .map(|v| v.has_ownership())
+            .unwrap_or(false);
+        let mut lock_guard = fatal_panic!(from origin, when PROCESS_STATE_TRACKING.lock(),
+            "This should never happen. {msg} since the global mutex could not be locked.");
+        let _tracker_guard = if has_ownership {
+            state_path.as_ref().map(|p| {
+                let t = TrackerGuard::new(p, &mut lock_guard);
+                t.acquire_ownership();
+                t
+            })
+        } else {
+            None
+        };
 
         // The drop order is important, the last entry must be the context file so that we can also recover if
         // the cleaner process dies in the middle of cleaning up the resources
@@ -683,6 +820,12 @@ impl ProcessGuard {
     pub unsafe fn remove(file: &FilePath) -> Result<bool, FileRemoveError> {
         let msg = "Unable to remove process guard resources";
         let origin = "ProcessGuard::remove()";
+
+        let mut lock_guard = fatal_panic!(from "ProcessGuard::abandon_in_place()",
+            when PROCESS_STATE_TRACKING.lock(),
+            "This should never happen. {msg} since the global mutex could not be locked.");
+        lock_guard.remove(file);
+
         let owner_lock_path = generate_owner_lock_path(file)
             .map_err(|_| FileRemoveError::MaxSupportedPathLengthExceeded)?;
 
@@ -843,6 +986,12 @@ impl ProcessMonitor {
     /// ```
     pub fn state(&self) -> Result<ProcessState, ProcessMonitorStateError> {
         let msg = "Unable to acquire ProcessState";
+        let lock_guard = fatal_panic!(from self, when PROCESS_STATE_TRACKING.lock(),
+            "This should never happen. {msg} since the global mutex could not be locked.");
+
+        if let Some(v) = lock_guard.get(&self.state_path) {
+            return Ok(v.state);
+        }
 
         let my_process_id = match Process::unique_id() {
             Ok(v) => v,
@@ -932,14 +1081,9 @@ impl ProcessMonitor {
             Some(state_file) => {
                 let lock_state = fail!(from self, when state_file.get_lock_state(),
                                     "{} since the lock state of the state file could not be acquired.", msg);
-                if let Some(l) = lock_state {
-                    if l.lock_type() == LockType::Write {
-                        Ok(ProcessState::Alive)
-                    } else {
-                        Ok(ProcessState::Dead)
-                    }
-                } else {
-                    Ok(ProcessState::Dead)
+                match lock_state {
+                    Some(l) if l.lock_type() == LockType::Write => Ok(ProcessState::Alive),
+                    _ => Ok(ProcessState::Dead),
                 }
             }
             None => Ok(ProcessState::CleaningUp),
@@ -1066,6 +1210,17 @@ impl ProcessCleaner {
             }
         };
 
+        let mut lock_guard = fatal_panic!(from origin, when PROCESS_STATE_TRACKING.lock(),
+            "This should never happen. {msg} since the global mutex could not be locked.");
+
+        match TrackerGuard::new_cleaning_up(path, &mut lock_guard) {
+            Ok(v) => v.release_ownership(),
+            Err(e) => {
+                fail!(from origin, with e,
+                    "{msg} since the internal tracking failed. [{e:?}]");
+            }
+        };
+
         let owner_lock_file = match ProcessMonitor::open_file(
             origin,
             &owner_lock_path,
@@ -1082,11 +1237,6 @@ impl ProcessCleaner {
             }
         };
 
-        // IMPORTANT: it is essential that the state file is only then opened when it is ensured that the
-        // ProcessGuard is not hold by the same process. Otherwise, the lock is released as soon as the
-        // state file is closed. This is a weird case in some OSes that release a file lock as soon as
-        // any file descriptor is closed to that file, even when other file descriptors to that same file
-        // are still open.
         let state_file = match ProcessMonitor::open_file(origin, path, AccessMode::Write) {
             Ok(Some(file)) => file,
             Ok(None) => {
@@ -1136,6 +1286,9 @@ impl ProcessCleaner {
         context_file.acquire_ownership();
         state_file.acquire_ownership();
         owner_lock_file.acquire_ownership();
+        lock_guard
+            .entry(*path)
+            .and_modify(|v| v.state = ProcessState::CleaningUp);
         Ok(Self {
             files: StateFiles {
                 state: Some(state_file),
@@ -1143,12 +1296,5 @@ impl ProcessCleaner {
                 context: Some(context_file),
             },
         })
-    }
-
-    /// Abandons the [`ProcessCleaner`] without removing the underlying resources. This is useful
-    /// when another process tried to cleanup the stale resources of the dead process but is unable
-    /// to due to insufficient permissions.
-    pub fn abandon(self) {
-        self.files.release_ownership();
     }
 }

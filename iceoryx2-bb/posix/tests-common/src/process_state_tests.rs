@@ -66,14 +66,15 @@ pub fn guard_can_be_created_with_default() {
 }
 
 #[test]
-pub fn guard_removes_file_when_dropped() {
+pub fn alive_and_does_not_exist_detection_works() {
     create_test_directory();
     let path = generate_file_path();
 
     let guard = ProcessGuardBuilder::new().create(&path).unwrap();
-    assert_that!(File::does_exist(&path).unwrap(), eq true);
+    let monitor = ProcessMonitor::new(&path).unwrap();
+    assert_that!(monitor.state(), eq Ok(ProcessState::Alive));
     drop(guard);
-    assert_that!(File::does_exist(&path).unwrap(), eq false);
+    assert_that!(monitor.state(), eq Ok(ProcessState::DoesNotExist));
 }
 
 #[test]
@@ -91,6 +92,32 @@ pub fn guard_cannot_use_already_existing_file() {
     assert_that!(guard.err().unwrap(), eq ProcessGuardCreateError::AlreadyExists);
 
     file.remove_self().unwrap();
+}
+
+#[test]
+pub fn guard_cannot_be_created_twice() {
+    create_test_directory();
+    let path = generate_file_path();
+
+    let _guard = ProcessGuardBuilder::new().create(&path).unwrap();
+    let guard = ProcessGuardBuilder::new().create(&path);
+    assert_that!(guard.is_err(), eq true);
+    assert_that!(guard.err().unwrap(), eq ProcessGuardCreateError::AlreadyExists);
+}
+
+#[test]
+pub fn guard_creating_it_twice_does_not_unlock_guard() {
+    create_test_directory();
+    let path = generate_file_path();
+
+    let monitor = ProcessMonitor::new(&path).unwrap();
+    let _guard = ProcessGuardBuilder::new().create(&path).unwrap();
+    let guard = ProcessGuardBuilder::new().create(&path);
+    assert_that!(guard.is_err(), eq true);
+
+    assert_that!(monitor.state(), eq Ok(ProcessState::Alive));
+    drop(_guard);
+    assert_that!(monitor.state(), eq Ok(ProcessState::DoesNotExist));
 }
 
 #[test]
@@ -253,6 +280,24 @@ pub fn monitor_detects_initialized_state() {
     file.set_permission(Permission::OWNER_ALL).unwrap();
     file.remove_self().unwrap();
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
+}
+
+#[test]
+pub fn monitor_transitions_from_guard_to_cleaner_works() {
+    create_test_directory();
+    let path = generate_file_path();
+    let monitor = ProcessMonitor::new(&path).unwrap();
+    assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
+    let guard = ProcessGuardBuilder::new().create(&path).unwrap();
+
+    assert_that!(monitor.state().unwrap(), eq ProcessState::Alive);
+    guard.abandon();
+    assert_that!(monitor.state().unwrap(), eq ProcessState::Dead);
+    let cleaner = ProcessCleaner::new(&path).unwrap();
+    assert_that!(monitor.state().unwrap(), eq ProcessState::CleaningUp);
+    cleaner.abandon();
+    assert_that!(monitor.state().unwrap(), eq ProcessState::Dead);
+    ProcessCleaner::new(&path).unwrap();
 }
 
 #[test]
@@ -474,47 +519,12 @@ pub fn cleaner_cannot_acquire_a_corrupted_process() {
     assert_that!(ProcessCleaner::new(&path).err(), eq Some(ProcessCleanerCreateError::ProcessMonitorStateError(ProcessMonitorStateError::CorruptedState)));
 }
 
-// START: OS with IPC only lock detection
-//
-// the lock detection does work on some OS only in the inter process context.
-// In the process local context the lock is not detected when the fcntl GETLK call is originating
-// from the same thread os the fcntl SETLK call. If it is called from a different thread GETLK
-// blocks despite it should be non-blocking.
-#[cfg(not(any(
-    target_os = "linux",
-    target_os = "freebsd",
-    target_os = "macos",
-    target_os = "nto"
-)))]
 #[test]
 pub fn owner_lock_cannot_be_acquired_twice() {
     create_test_directory();
     let path = generate_file_path();
-    let mut owner_lock_path = path;
-    owner_lock_path.push_bytes(b"_owner_lock").unwrap();
-    let mut context_path = path;
-    context_path.push_bytes(b"_context").unwrap();
-
-    let mut context_file = FileBuilder::new(&context_path)
-        .has_ownership(true)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
-    context_file
-        .write_val(&UniqueProcessId::new_zeroed())
-        .unwrap();
-
-    let _state_file = FileBuilder::new(&path)
-        .has_ownership(true)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
-
-    let _owner_lock_file = FileBuilder::new(&owner_lock_path)
-        .has_ownership(true)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
+    let guard = ProcessGuardBuilder::new().create(&path).unwrap();
+    guard.abandon();
 
     let _owner_lock = ProcessCleaner::new(&path).unwrap();
     let owner_lock = ProcessCleaner::new(&path);
@@ -524,8 +534,6 @@ pub fn owner_lock_cannot_be_acquired_twice() {
         ProcessCleanerCreateError::ProcessIsBeingCleanedUpOrCrashedDuringCleanup
     );
 }
-
-// END: OS with IPC only lock detection
 
 #[test]
 pub fn abandoning_a_process_guard_results_in_a_dead_process() {

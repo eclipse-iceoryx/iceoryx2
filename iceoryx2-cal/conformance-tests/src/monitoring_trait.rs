@@ -99,10 +99,12 @@ pub mod monitoring_trait {
         let name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
 
-        let sut_token = Sut::Builder::new(&name).config(&config).token().unwrap();
-        Sut::Token::abandon(sut_token);
-
         let sut_monitor = Sut::Builder::new(&name).config(&config).monitor().unwrap();
+        assert_that!(sut_monitor.state().unwrap(), eq State::DoesNotExist);
+        let sut_token = Sut::Builder::new(&name).config(&config).token().unwrap();
+        assert_that!(sut_monitor.state().unwrap(), eq State::Alive);
+
+        Sut::Token::abandon(sut_token);
 
         assert_that!(sut_monitor.state().unwrap(), eq State::Dead);
         assert_that!(unsafe { Sut::remove_cfg(&name, &config).unwrap() }, eq true);
@@ -124,37 +126,25 @@ pub mod monitoring_trait {
 
     #[conformance_test]
     pub fn cleaner_of_abandoned_token_can_be_acquired_once<Sut: Monitoring>() {
-        // the lock detection does work on some OS only in the inter process context.
-        // In the process local context the lock is not detected when the fcntl GETLK call is originating
-        // from the same thread os the fcntl SETLK call. If it is called from a different thread GETLK
-        // blocks despite it should be non-blocking.
-        #[cfg(not(any(
-            target_os = "linux",
-            target_os = "freebsd",
-            target_os = "macos",
-            target_os = "nto"
-        )))]
-        {
-            let name = generate_file_path().file_name();
-            let config = generate_isolated_config::<Sut>();
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
 
-            let sut_token = Sut::Builder::new(&name).config(&config).token().unwrap();
-            Sut::Token::abandon(sut_token);
+        let sut_token = Sut::Builder::new(&name).config(&config).token().unwrap();
+        Sut::Token::abandon(sut_token);
 
-            let sut_cleaner = Sut::Builder::new(&name).config(&config).cleaner().unwrap();
-            let result = Sut::Builder::new(&name)
-                .config(&config)
-                .cleaner()
-                .err()
-                .unwrap();
-            assert_that!(result == MonitoringCreateCleanerError::AlreadyOwnedByAnotherInstance ||
+        let sut_cleaner = Sut::Builder::new(&name).config(&config).cleaner().unwrap();
+        let result = Sut::Builder::new(&name)
+            .config(&config)
+            .cleaner()
+            .err()
+            .unwrap();
+        assert_that!(result == MonitoringCreateCleanerError::AlreadyOwnedByAnotherInstance ||
                          result == MonitoringCreateCleanerError::IsBeingCleanedUpOrAnotherCleanerCrashedDuringCleanup,
                          eq true);
 
-            drop(sut_cleaner);
+        drop(sut_cleaner);
 
-            assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq false);
-        }
+        assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq false);
     }
 
     #[conformance_test]

@@ -34,6 +34,7 @@
 * [#1673](https://github.com/eclipse-iceoryx/iceoryx2/issues/1673) Thread-stack-size is the same as process-stack-size on all platforms.
 * [#1695](https://github.com/eclipse-iceoryx/iceoryx2/issues/1695) Remove port_tag when stale resources of port are removed.
 * [#1708](https://github.com/eclipse-iceoryx/iceoryx2/issues/1708) Remove `services` from tunnel conformance test crate to fix a linker error on macOS.
+* [#1718](https://github.com/eclipse-iceoryx/iceoryx2/issues/1718) Protect `ProcessState` from accidental file lock release.
 * [#1739](https://github.com/eclipse-iceoryx/iceoryx2/issues/1739) Make sure MSVC defines __cplusplus with accurate value
 * [#1746](https://github.com/eclipse-iceoryx/iceoryx2/issues/1746) Disable `POSIX_SUPPORT_FILE_LOCK_FOR_SHARED_MEMORY` on FreeBSD and move CI job for FreeBSD to main pipeline
 
@@ -77,18 +78,18 @@
     ```rust
     // old
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-    
+
     let memory = [0u8; 8192];
     let start_position: *mut u8 = memory.as_mut_ptr();
     let sut = BumpAllocator::new(start_position);
-    
+
     // new
 
     use core::ptr::NonNull;
-    
+
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
     use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
-    
+
     let memory = [0u8; 8192];
     let sut = BumpAllocator::new(
         NonNull::<u8>::iox2_from_ref(&memory[0]),
@@ -102,7 +103,7 @@
   ```rust
   // old
   use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
-  
+
   // new
   use iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator;
   ```
