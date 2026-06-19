@@ -16,7 +16,7 @@ pub struct TypeName {
     pub namespace: &'static str,
 }
 
-pub fn type_name<T>() -> TypeName {
+pub fn type_name<T: ?Sized>() -> TypeName {
     let full_name = core::any::type_name::<T>();
     let mut namespace = "";
     let mut name = full_name;
