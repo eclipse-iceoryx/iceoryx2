@@ -412,8 +412,6 @@ jobs:
       profile: "debug"
 
   freebsd:
-    # Disable job till the FreeBSD Images are upgraded
-    if: false
     needs: [preflight-check]
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -432,7 +430,7 @@ jobs:
           mode: "remove-unneeded-software-from-runner"
 
       - name: Build and Test
-        uses: vmactions/freebsd-vm@a6de9343ef5747433d9c25784c90e84998b9d69a # version v1.4.6
+        uses: vmactions/freebsd-vm@bac9cda6a14057f08e3793f6a5e037292b59868f # version v1.4.7
         with:
           release: ${{ matrix.freebsd_version }}
           mem: 16384
@@ -566,6 +564,7 @@ jobs:
         static-code-analysis-cpp,
         sdk-stable-debug,
         integrations-stable-debug,
+        freebsd,
         Bazel,
         x86_32-debug,
         no_std,
