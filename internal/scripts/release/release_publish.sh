@@ -59,6 +59,10 @@ print_publish_crates_io() {
     echo -e "* Run 'just publish all'"
 }
 
+print_publish_pypi_org() {
+    echo -e "Check out ./doc/how-to-create-an-iceoryx2-release.md for instructions"
+}
+
 print_howto() {
     STEP_COUNTER=0
 
@@ -70,6 +74,9 @@ print_howto() {
 
     print_step "Publish To crates.io"
     print_publish_crates_io
+
+    print_step "Publish To pypi.org"
+    print_publish_pypi_org
 }
 
 while (( "$#" )); do
@@ -152,5 +159,8 @@ if [[ ${SELECTION} == ${YES} ]]; then
 
     show_completion
 fi
+
+print_step "Publish to pypi.org"
+print_publish_pypi_org
 
 echo -e "${C_GREEN}FINISHED${C_OFF}"
