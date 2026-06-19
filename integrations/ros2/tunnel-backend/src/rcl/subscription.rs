@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::ffi::CString;
 use std::ffi::c_void;
+use std::rc::Rc;
 
 use r2r_rcl::{
     RCL_RET_OK, RCL_RET_SUBSCRIPTION_TAKE_FAILED, rcl_get_zero_initialized_subscription,
@@ -22,14 +22,14 @@ use r2r_rcl::{
 
 use iceoryx2_log::fail;
 
-use crate::rcl::{NodeHandle, RclError};
+use crate::rcl::node::NodeInner;
+use crate::rcl::{RclError, TopicName};
 use crate::typesupport::TypeSupportHandle;
 
 /// Invoked by the RMW (from a middleware thread) when new messages arrive.
 pub type NewMessageCallback = Box<dyn Fn(usize) + Send>;
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    InvalidTopic,
     SubscriptionInit,
 }
 
@@ -90,6 +90,60 @@ impl From<&rmw_message_info_t> for MessageInfo {
     }
 }
 
+/// Builder for [`Subscription`].
+#[derive(Debug)]
+pub struct Builder<'a> {
+    node: Rc<NodeInner>,
+    topic: &'a TopicName,
+    type_support: TypeSupportHandle,
+}
+
+impl<'a> Builder<'a> {
+    pub(crate) fn new(
+        node: Rc<NodeInner>,
+        topic: &'a TopicName,
+        type_support: TypeSupportHandle,
+    ) -> Self {
+        Self {
+            node,
+            topic,
+            type_support,
+        }
+    }
+
+    pub fn create(self) -> Result<Subscription, CreationError> {
+        let origin = "Subscription::Builder::create";
+
+        unsafe {
+            let mut subscription = Box::new(rcl_get_zero_initialized_subscription());
+            let mut options = rcl_subscription_get_default_options();
+            // Prevent loopback.
+            options.rmw_subscription_options.ignore_local_publications = true;
+            let ret = rcl_subscription_init(
+                subscription.as_mut(),
+                self.node.handle(),
+                self.type_support.handle(),
+                self.topic.as_c_str().as_ptr(),
+                &options,
+            );
+            if ret != RCL_RET_OK as i32 {
+                fail!(from origin,
+                    with CreationError::SubscriptionInit,
+                    "Failed to initialize subscription: {}",
+                    RclError::from(ret)
+                );
+            }
+
+            Ok(Subscription {
+                subscription: Box::into_raw(subscription),
+                callback: None,
+                node: self.node,
+                _type_support: self.type_support,
+            })
+        }
+    }
+}
+
 /// Receives serialized messages from a ROS 2 topic.
 pub struct Subscription {
     subscription: *mut r2r_rcl::rcl_subscription_t,
@@ -98,7 +152,7 @@ pub struct Subscription {
     /// the object the trampoline's thin `user_data` pointer refers to, and
     /// must stay at a stable heap address while registered.
     callback: Option<Box<NewMessageCallback>>,
-    node: NodeHandle,
+    node: Rc<NodeInner>,
     /// Keeps the typesupport library loaded while the endpoint uses it.
     _type_support: TypeSupportHandle,
 }
@@ -114,49 +168,6 @@ impl core::fmt::Debug for Subscription {
 }
 
 impl Subscription {
-    pub fn create(
-        node: &NodeHandle,
-        topic: &str,
-        type_support: TypeSupportHandle,
-    ) -> Result<Self, CreationError> {
-        let origin = "Subscription::create";
-
-        let topic = fail!(from origin,
-            when CString::new(topic),
-            with CreationError::InvalidTopic,
-            "Invalid topic name '{}'",
-            topic
-        );
-
-        unsafe {
-            let mut subscription = Box::new(rcl_get_zero_initialized_subscription());
-            let mut options = rcl_subscription_get_default_options();
-            // Prevent loopback.
-            options.rmw_subscription_options.ignore_local_publications = true;
-            let ret = rcl_subscription_init(
-                subscription.as_mut(),
-                node.handle(),
-                type_support.handle(),
-                topic.as_ptr(),
-                &options,
-            );
-            if ret != RCL_RET_OK as i32 {
-                fail!(from origin,
-                    with CreationError::SubscriptionInit,
-                    "Failed to initialize subscription: {}",
-                    RclError::from(ret)
-                );
-            }
-
-            Ok(Self {
-                subscription: Box::into_raw(subscription),
-                callback: None,
-                node: node.clone(),
-                _type_support: type_support,
-            })
-        }
-    }
-
     /// Registers `callback` to be invoked whenever new messages arrive on
     /// the subscription, with the number of new messages. It is invoked by
     /// the RMW from a middleware thread and must not panic; a previously

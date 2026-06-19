@@ -206,13 +206,13 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
             topic
         );
         let publisher = fail!(from origin,
-            when self.node.publisher_builder(topic_name, type_support.clone()).create(),
+            when self.node.publisher_builder(&topic_name, type_support.clone()).create(),
             with CreationError::Publisher,
             "Failed to create ROS 2 publisher for topic '{}'",
             topic
         );
         let mut subscription = fail!(from origin,
-            when rcl::Subscription::create(&self.node, topic, type_support),
+            when self.node.subscription_builder(&topic_name, type_support).create(),
             with CreationError::Subscription,
             "Failed to create ROS 2 subscription for topic '{}'",
             topic

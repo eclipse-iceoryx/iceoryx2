@@ -53,16 +53,16 @@ impl core::error::Error for PublishError {}
 
 /// Builder for [`Publisher`].
 #[derive(Debug)]
-pub struct Builder {
+pub struct Builder<'a> {
     node: Rc<NodeInner>,
-    topic: TopicName,
+    topic: &'a TopicName,
     type_support: TypeSupportHandle,
 }
 
-impl Builder {
+impl<'a> Builder<'a> {
     pub(crate) fn new(
         node: Rc<NodeInner>,
-        topic: TopicName,
+        topic: &'a TopicName,
         type_support: TypeSupportHandle,
     ) -> Self {
         Self {

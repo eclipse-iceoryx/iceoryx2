@@ -25,7 +25,7 @@ use r2r_rcl::{
 
 use iceoryx2_log::{fail, warn};
 
-use crate::rcl::{NodeName, NodeNamespace, RclError, TopicName, publisher};
+use crate::rcl::{NodeName, NodeNamespace, RclError, TopicName, publisher, subscription};
 use crate::typesupport::TypeSupportHandle;
 
 /// rcl is initialized without forwarding any command-line arguments.
@@ -194,12 +194,21 @@ impl NodeHandle {
     }
 
     /// Build a publisher on this node for the given topic and typesupport.
-    pub fn publisher_builder(
+    pub fn publisher_builder<'a>(
         &self,
-        topic: TopicName,
+        topic: &'a TopicName,
         type_support: TypeSupportHandle,
-    ) -> publisher::Builder {
+    ) -> publisher::Builder<'a> {
         publisher::Builder::new(Rc::clone(&self.inner), topic, type_support)
+    }
+
+    /// Build a subscription on this node for the given topic and typesupport.
+    pub fn subscription_builder<'a>(
+        &self,
+        topic: &'a TopicName,
+        type_support: TypeSupportHandle,
+    ) -> subscription::Builder<'a> {
+        subscription::Builder::new(Rc::clone(&self.inner), topic, type_support)
     }
 
     pub(crate) fn handle(&self) -> *mut rcl_node_t {
