@@ -78,6 +78,24 @@ There are three scripts to perform the iceoryx2 release
 6. `./internal/scripts/release/release_publish.sh`
 7. Verify that the release looks fine on `docs.rs` (click through the
     documentation to check if everything was generated correctly)
+8. For patch releases, port the changelog back to the main branch and set
+   `PREVIOUS_RELEASE` from `internal/VERSIONS` to the latest patch release
+
+## 3: Publish Python bindings to pypi.org
+
+1. Start a [release workflow](https://github.com/eclipse-iceoryx/iceoryx2/actions/workflows/release.yml)
+   for the new tag
+2. Once finished, the `python-dist-...` artifact needs to be downloaded and
+   extracted
+3. If not yet done, create a API token at <https://pypi.org>
+4. Upload the dist artifacts with the following command. During the execution
+   of the command, the API token is requested
+
+```sh
+poetry --project=path/to/iceoryx2-ffi/python/ upload-dist --dist /full/path/to/extracted/dist/artifacts --repo pypi
+```
+
+Reference for configuration: <https://packaging.python.org/en/latest/specifications/pypirc/>
 
 ### Details
 
