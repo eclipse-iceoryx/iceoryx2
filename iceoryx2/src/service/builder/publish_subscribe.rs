@@ -20,6 +20,8 @@ use alloc::format;
 
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_flatbuffers::find_best_fitting_schema_file;
+use iceoryx2_bb_posix::file::FileBuilder;
 use iceoryx2_log::{fail, fatal_panic, warn};
 
 use super::ServiceState;
@@ -681,6 +683,29 @@ impl<
                 max_number_of_nodes: pubsub_config.max_nodes,
             }
         };
+
+        if Self::has_flatbuffer_payload() {
+            let schema_path = match self.flatbuffer_schema_path {
+                Some(path) => path,
+                None => match self
+                    .base
+                    .shared_node
+                    .config()
+                    .global
+                    .service
+                    .flatbuffer_schema_path
+                {
+                    Some(p) => find_best_fitting_schema_file::<Payload>(&p)
+                        .unwrap()
+                        .unwrap(),
+                    None => todo!(),
+                },
+            };
+
+            let schema = FileBuilder::new(&schema_path)
+                .open_existing(AccessMode::Read)
+                .unwrap();
+        }
 
         let service_state = self.base.create(
             msg,

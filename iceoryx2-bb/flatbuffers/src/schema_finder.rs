@@ -68,7 +68,7 @@ fn is_namespace(file_name: &FileName, type_name: &TypeName) -> bool {
         || name.eq_ignore_ascii_case(&snake_to_upper_camel_case(type_name.namespace))
 }
 
-pub fn find_best_fitting_schema_file<T>(
+pub fn find_best_fitting_schema_file<T: ?Sized>(
     root_path: &Path,
 ) -> Result<Option<FilePath>, FindSchemaFileError> {
     let origin = format!("find_best_fitting_schema_file({root_path:?})");
