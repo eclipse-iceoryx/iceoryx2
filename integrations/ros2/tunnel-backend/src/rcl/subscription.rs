@@ -20,16 +20,17 @@ use r2r_rcl::{
     rcl_take_serialized_message, rcutils_allocator_t, rmw_message_info_t,
 };
 
-use crate::rcl::NodeHandle;
+use iceoryx2_log::fail;
+
+use crate::rcl::{NodeHandle, RclError};
 use crate::typesupport::TypeSupportHandle;
 
 /// Invoked by the RMW (from a middleware thread) when new messages arrive.
 pub type NewMessageCallback = Box<dyn Fn(usize) + Send>;
-
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
     InvalidTopic,
-    SubscriptionInit(i32),
+    SubscriptionInit,
 }
 
 impl core::fmt::Display for CreationError {
@@ -42,7 +43,7 @@ impl core::error::Error for CreationError {}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CallbackError {
-    Set(i32),
+    Set,
 }
 
 impl core::fmt::Display for CallbackError {
@@ -57,7 +58,7 @@ impl core::error::Error for CallbackError {}
 pub enum TakeError {
     /// The loan closure declined to provide a destination buffer.
     LoanDeclined,
-    Take(i32),
+    Take,
 }
 
 impl core::fmt::Display for TakeError {
@@ -118,7 +119,14 @@ impl Subscription {
         topic: &str,
         type_support: TypeSupportHandle,
     ) -> Result<Self, CreationError> {
-        let topic = CString::new(topic).map_err(|_| CreationError::InvalidTopic)?;
+        let origin = "Subscription::create";
+
+        let topic = fail!(from origin,
+            when CString::new(topic),
+            with CreationError::InvalidTopic,
+            "Invalid topic name '{}'",
+            topic
+        );
 
         unsafe {
             let mut subscription = Box::new(rcl_get_zero_initialized_subscription());
@@ -133,7 +141,11 @@ impl Subscription {
                 &options,
             );
             if ret != RCL_RET_OK as i32 {
-                return Err(CreationError::SubscriptionInit(ret));
+                fail!(from origin,
+                    with CreationError::SubscriptionInit,
+                    "Failed to initialize subscription: {}",
+                    RclError::from(ret)
+                );
             }
 
             Ok(Self {
@@ -150,6 +162,8 @@ impl Subscription {
     /// the RMW from a middleware thread and must not panic; a previously
     /// registered callback is replaced.
     pub fn on_new_message(&mut self, callback: NewMessageCallback) -> Result<(), CallbackError> {
+        let origin = "Subscription::on_new_message";
+
         // The trampoline's `user_data` refers to the heap-stable inner box.
         let callback = Box::new(callback);
         let user_data: *const NewMessageCallback = &*callback;
@@ -162,7 +176,11 @@ impl Subscription {
             )
         };
         if ret != RCL_RET_OK as i32 {
-            return Err(CallbackError::Set(ret));
+            fail!(from origin,
+                with CallbackError::Set,
+                "Failed to set on-new-message callback: {}",
+                RclError::from(ret)
+            );
         }
 
         self.callback = Some(callback);
@@ -181,11 +199,13 @@ impl Subscription {
     /// `loan` must not panic (it is invoked from C). It is called
     /// at most once per take; the caller owns the provided buffer
     /// throughout. Returns the number of bytes written and the message
-    /// info, or [`None`] when the queue is empty (callers loop until then).
+    /// info, or [`None`] when the queue is empty.
     pub fn take_into<F>(&self, loan: F) -> Result<Option<(usize, MessageInfo)>, TakeError>
     where
         F: FnOnce(usize) -> Option<*mut u8>,
     {
+        let origin = "Subscription::take_into";
+
         let mut loan: Option<F> = Some(loan);
         let mut message = rcl_serialized_message_t {
             buffer: core::ptr::null_mut(),
@@ -210,9 +230,16 @@ impl Subscription {
             // A consumed loan closure means the buffer request was declined,
             // which surfaces as an allocation error.
             if loan.is_none() {
-                return Err(TakeError::LoanDeclined);
+                fail!(from origin,
+                    with TakeError::LoanDeclined,
+                    "Failed to take serialized message into loaned buffer"
+                );
             }
-            return Err(TakeError::Take(ret));
+            fail!(from origin,
+                with TakeError::Take,
+                "Failed to take serialized message: {}",
+                RclError::from(ret)
+            );
         }
 
         Ok(Some((

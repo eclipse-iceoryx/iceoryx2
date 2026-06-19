@@ -27,7 +27,7 @@ use crate::typesupport::TypeSupportHandle;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    PublisherInit(RclError),
+    PublisherInit,
 }
 
 impl core::fmt::Display for CreationError {
@@ -40,7 +40,7 @@ impl core::error::Error for CreationError {}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum PublishError {
-    Publish(RclError),
+    Publish,
 }
 
 impl core::fmt::Display for PublishError {
@@ -89,8 +89,9 @@ impl Builder {
             if ret != RCL_RET_OK as rcl_ret_t {
                 fail!(
                     from origin,
-                    with CreationError::PublisherInit(ret.into()),
-                    "Failed to initialize publisher"
+                    with CreationError::PublisherInit,
+                    "Failed to initialize publisher: {}",
+                    RclError::from(ret)
                 );
             }
 
@@ -140,8 +141,9 @@ impl Publisher {
         if ret != RCL_RET_OK as rcl_ret_t {
             fail!(
                 from origin,
-                with PublishError::Publish(ret.into()),
-                "Failed to publish serialized message"
+                with PublishError::Publish,
+                "Failed to publish serialized message: {}",
+                RclError::from(ret)
             );
         }
 

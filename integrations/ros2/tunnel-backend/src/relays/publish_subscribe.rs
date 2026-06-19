@@ -60,7 +60,7 @@ impl core::error::Error for SendError {}
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum ReceiveError {
     Loan,
-    Take(i32),
+    Take,
 }
 
 impl core::fmt::Display for ReceiveError {
@@ -135,7 +135,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
             }
             Ok(None) => Ok(None),
             Err(rcl::subscription::TakeError::LoanDeclined) => Err(ReceiveError::Loan),
-            Err(rcl::subscription::TakeError::Take(code)) => Err(ReceiveError::Take(code)),
+            Err(rcl::subscription::TakeError::Take) => Err(ReceiveError::Take),
         }
     }
 }

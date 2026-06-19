@@ -33,9 +33,9 @@ const NO_ARGS: core::ffi::c_int = 0;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    InitOptionsInit(RclError),
-    ContextInit(RclError),
-    NodeInit(RclError),
+    InitOptionsInit,
+    ContextInit,
+    NodeInit,
 }
 
 impl core::fmt::Display for CreationError {
@@ -48,7 +48,7 @@ impl core::error::Error for CreationError {}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum GraphError {
-    Query(i32),
+    Query,
 }
 
 impl core::fmt::Display for GraphError {
@@ -141,8 +141,9 @@ impl Builder {
             if ret != RCL_RET_OK as rcl_ret_t {
                 fail!(
                     from origin,
-                    with CreationError::InitOptionsInit(ret.into()),
-                    "Failed to initialize init options"
+                    with CreationError::InitOptionsInit,
+                    "Failed to initialize init options: {}",
+                    RclError::from(ret)
                 );
             }
 
@@ -152,8 +153,9 @@ impl Builder {
             if ret != RCL_RET_OK as rcl_ret_t {
                 fail!(
                     from origin,
-                    with CreationError::ContextInit(ret.into()),
-                    "Failed to initialize context"
+                    with CreationError::ContextInit,
+                    "Failed to initialize context: {}",
+                    RclError::from(ret)
                 );
             }
 
@@ -171,8 +173,9 @@ impl Builder {
                 let _ = rcl_context_fini(context.get());
                 fail!(
                     from origin,
-                    with CreationError::NodeInit(ret.into()),
-                    "Failed to initialize node"
+                    with CreationError::NodeInit,
+                    "Failed to initialize node: {}",
+                    RclError::from(ret)
                 );
             }
 
@@ -204,6 +207,8 @@ impl NodeHandle {
     }
 
     pub fn topic_names_and_types(&self) -> Result<Vec<(String, Vec<String>)>, GraphError> {
+        let origin = "Node::topic_names_and_types";
+
         unsafe {
             let mut allocator = rcutils_get_default_allocator();
             let mut names_and_types: rcl_names_and_types_t = core::mem::zeroed();
@@ -214,7 +219,12 @@ impl NodeHandle {
                 &mut names_and_types,
             );
             if ret != RCL_RET_OK as i32 {
-                return Err(GraphError::Query(ret));
+                fail!(
+                    from origin,
+                    with GraphError::Query,
+                    "Failed to query topic names and types: {}",
+                    RclError::from(ret)
+                );
             }
 
             let mut topics = Vec::with_capacity(names_and_types.names.size);
