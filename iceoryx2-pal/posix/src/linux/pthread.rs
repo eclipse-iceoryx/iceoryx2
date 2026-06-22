@@ -15,6 +15,7 @@
 
 use crate::posix::*;
 
+#[cfg(not(target_env = "musl"))]
 pub unsafe fn pthread_rwlockattr_setkind_np(attr: *mut pthread_rwlockattr_t, pref: int) -> int {
     unsafe { libc::pthread_rwlockattr_setkind_np(attr, pref) }
 }
@@ -81,11 +82,15 @@ pub unsafe fn pthread_attr_setstacksize(attr: *mut pthread_attr_t, stacksize: si
     unsafe { libc::pthread_attr_setstacksize(attr, stacksize) }
 }
 
+#[allow(unused_variables)]
 pub unsafe fn pthread_attr_setaffinity_np(
     attr: *mut pthread_attr_t,
     cpusetsize: size_t,
     cpuset: *const cpu_set_t,
 ) -> int {
+    #[cfg(target_env = "musl")]
+    return 0;
+    #[cfg(not(target_env = "musl"))]
     unsafe {
         let cpuset = core::mem::transmute::<cpu_set_t, native_cpu_set_t>(*cpuset);
 
