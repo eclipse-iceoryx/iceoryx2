@@ -22,7 +22,6 @@ instantiate_conformance_tests_with_module!(
     iceoryx2_cal::event::SemaphoreShmBitSet
 );
 
-#[cfg(not(target_os = "freebsd"))]
 instantiate_conformance_tests_with_module!(
     unix_datagram_shared_memory_bitset,
     iceoryx2_cal_conformance_tests::event_trait,
@@ -47,7 +46,6 @@ instantiate_conformance_tests_with_module!(
     iceoryx2_cal::event::SemaphoreShmCountingBitSet
 );
 
-#[cfg(not(target_os = "freebsd"))]
 instantiate_conformance_tests_with_module!(
     unix_datagram_shared_memory_counting_bitset,
     iceoryx2_cal_conformance_tests::event_trait,
