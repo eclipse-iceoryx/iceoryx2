@@ -32,6 +32,11 @@ enum class SubscriberCreateError : uint8_t {
     FailedToDeployThreadsafetyPolicy,
     /// The tracking port tag, required for cleanup, could not be created.
     UnableToCreatePortTag,
+    /// When the [`Subscriber`] requests a larger history than the
+    /// [`Service`](crate::service::Service) offers the creation will fail.
+    HistoryRequestExceedsHistorySizeOfService,
+    /// When the [`Subscriber`] requests a larger history than its buffer can hold.
+    HistoryRequestExceedsBufferSizeOfSubscriber,
 };
 
 } // namespace iox2

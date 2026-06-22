@@ -38,6 +38,8 @@ pub enum iox2_subscriber_create_error_e {
     BUFFER_SIZE_EXCEEDS_MAX_SUPPORTED_BUFFER_SIZE_OF_SERVICE,
     FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY,
     UNABLE_TO_CREATE_PORT_TAG,
+    HISTORY_REQUEST_EXCEEDS_HISTORY_SIZE_OF_SERVICE,
+    HISTORY_REQUEST_EXCEEDS_BUFFER_SIZE_OF_SUBSCRIBER,
 }
 
 impl IntoCInt for SubscriberCreateError {
@@ -54,6 +56,12 @@ impl IntoCInt for SubscriberCreateError {
             }
             SubscriberCreateError::UnableToCreatePortTag => {
                 iox2_subscriber_create_error_e::UNABLE_TO_CREATE_PORT_TAG
+            }
+            SubscriberCreateError::HistoryRequestExceedsHistorySizeOfService => {
+                iox2_subscriber_create_error_e::HISTORY_REQUEST_EXCEEDS_HISTORY_SIZE_OF_SERVICE
+            }
+            SubscriberCreateError::HistoryRequestExceedsBufferSizeOfSubscriber => {
+                iox2_subscriber_create_error_e::HISTORY_REQUEST_EXCEEDS_BUFFER_SIZE_OF_SUBSCRIBER
             }
         }) as c_int
     }

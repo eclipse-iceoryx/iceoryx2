@@ -82,6 +82,8 @@ pub struct SubscriberDetails {
     pub node_id: UniqueNodeId,
     /// The size of the receive buffer that stores [`Sample`](crate::sample::Sample).
     pub buffer_size: usize,
+    /// The requested amount of [`Sample`](crate::sample::Sample) to get as history.
+    pub history_request: usize,
 }
 
 /// The dynamic configuration of an

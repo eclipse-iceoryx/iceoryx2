@@ -235,7 +235,7 @@ impl<Service: service::Service> PublisherSharedState<Service> {
                         port_id: port.subscriber_id.value(),
                         buffer_size: port.buffer_size,
                     },
-                    |connection| self.deliver_sample_history(connection),
+                    |connection| self.deliver_sample_history(connection, port.history_request),
                 );
 
                 if result.is_ok() {
@@ -268,13 +268,14 @@ impl<Service: service::Service> PublisherSharedState<Service> {
         Ok(())
     }
 
-    fn deliver_sample_history(&self, connection: &Connection<Service>) {
+    fn deliver_sample_history(&self, connection: &Connection<Service>, history_request: usize) {
         match &self.history {
             None => (),
             Some(history) => {
                 let history = unsafe { &mut *history.get() };
                 let buffer_size = connection.sender.buffer_size();
-                let history_start = history.len().saturating_sub(buffer_size);
+                let history_deliver_count = history_request.min(buffer_size);
+                let history_start = history.len().saturating_sub(history_deliver_count);
 
                 for i in history_start..history.len() {
                     let old_sample = unsafe { history.get_unchecked(i) };
