@@ -45,9 +45,16 @@ impl core::error::Error for CreationError {}
 
 /// An rcl node together with the context it belongs to. The tunnel is a single
 /// node, so it can be coupled to the context.
-struct NodeInner {
+#[derive(Debug)]
+pub(crate) struct NodeInner {
     node: Box<UnsafeCell<rcl_node_t>>,
     context: Box<UnsafeCell<rcl_context_t>>,
+}
+
+impl NodeInner {
+    pub(crate) fn handle(&self) -> *mut rcl_node_t {
+        self.node.get()
+    }
 }
 
 impl Drop for NodeInner {
@@ -162,10 +169,10 @@ impl Node {
         topic: TopicName,
         type_support: TypeSupport,
     ) -> publisher::Builder {
-        publisher::Builder::new(self.clone(), topic, type_support)
+        publisher::Builder::new(Rc::clone(&self.inner), topic, type_support)
     }
 
     pub(crate) fn handle(&self) -> *mut rcl_node_t {
-        self.inner.node.get()
+        self.inner.handle()
     }
 }

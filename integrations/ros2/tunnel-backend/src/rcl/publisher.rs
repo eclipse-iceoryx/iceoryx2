@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::cell::UnsafeCell;
+use std::rc::Rc;
 
 use r2r_rcl::{
     RCL_RET_OK, rcl_get_zero_initialized_publisher, rcl_publish_serialized_message,
@@ -20,7 +21,8 @@ use r2r_rcl::{
 
 use iceoryx2_log::fail;
 
-use crate::rcl::{Node, RclError, TopicName};
+use crate::rcl::node::NodeInner;
+use crate::rcl::{RclError, TopicName};
 use crate::typesupport::TypeSupport;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -52,13 +54,13 @@ impl core::error::Error for PublishError {}
 /// Builder for [`Publisher`].
 #[derive(Debug)]
 pub struct Builder {
-    node: Node,
+    node: Rc<NodeInner>,
     topic: TopicName,
     type_support: TypeSupport,
 }
 
 impl Builder {
-    pub(crate) fn new(node: Node, topic: TopicName, type_support: TypeSupport) -> Self {
+    pub(crate) fn new(node: Rc<NodeInner>, topic: TopicName, type_support: TypeSupport) -> Self {
         Self {
             node,
             topic,
@@ -99,7 +101,7 @@ impl Builder {
 
 /// Publishes pre-serialized messages on a ROS 2 topic.
 pub struct Publisher {
-    node: Node,
+    node: Rc<NodeInner>,
     publisher: Box<UnsafeCell<r2r_rcl::rcl_publisher_t>>,
     /// Keeps the typesupport library loaded while the endpoint uses it.
     _type_support: TypeSupport,
