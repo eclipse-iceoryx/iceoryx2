@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::rc::Rc;
 use std::sync::Arc;
 
 use iceoryx2::service::{Service, local_threadsafe, static_config::StaticConfig};
@@ -96,7 +97,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
 /// Builder for publish-subscribe [`Relay`]s.
 #[derive(Debug)]
 pub struct Builder<'a, S: Service> {
-    node: rcl::Node,
+    node: Rc<rcl::Node>,
     type_registry: &'a TypeSupportRegistry,
     static_config: &'a StaticConfig,
     wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
@@ -105,7 +106,7 @@ pub struct Builder<'a, S: Service> {
 
 impl<'a, S: Service> Builder<'a, S> {
     pub fn new(
-        node: rcl::Node,
+        node: Rc<rcl::Node>,
         type_registry: &'a TypeSupportRegistry,
         static_config: &'a StaticConfig,
         wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
