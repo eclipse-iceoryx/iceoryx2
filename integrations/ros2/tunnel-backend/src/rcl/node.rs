@@ -20,7 +20,7 @@ use r2r_rcl::{
     rcl_node_init, rcl_node_t, rcl_ret_t, rcl_shutdown, rcutils_get_default_allocator,
 };
 
-use iceoryx2_log::fail;
+use iceoryx2_log::{fail, warn};
 
 use crate::rcl::{NodeName, NodeNamespace, RclError, TopicName, publisher};
 use crate::typesupport::TypeSupport;
@@ -60,9 +60,20 @@ impl NodeInner {
 impl Drop for NodeInner {
     fn drop(&mut self) {
         unsafe {
-            let _ = rcl_node_fini(self.node.get());
-            let _ = rcl_shutdown(self.context.get());
-            let _ = rcl_context_fini(self.context.get());
+            let ret = rcl_node_fini(self.node.get());
+            if ret != RCL_RET_OK as rcl_ret_t {
+                warn!("Failed to finalize node: {}", RclError::from(ret));
+            }
+
+            let ret = rcl_shutdown(self.context.get());
+            if ret != RCL_RET_OK as rcl_ret_t {
+                warn!("Failed to shut down context: {}", RclError::from(ret));
+            }
+
+            let ret = rcl_context_fini(self.context.get());
+            if ret != RCL_RET_OK as rcl_ret_t {
+                warn!("Failed to finalize context: {}", RclError::from(ret));
+            }
         }
     }
 }
