@@ -2260,4 +2260,78 @@ pub mod zero_copy_connection_trait {
             sut_receiver.release(offset, ChannelId::new(0)).unwrap();
         }
     }
+
+    #[conformance_test]
+    pub fn removing_receiver_closes_all_channels<Sut: ZeroCopyConnection>() {
+        const BUFFER_SIZE: usize = 10;
+        const NUMBER_OF_CHANNELS: usize = 4;
+
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_channels(NUMBER_OF_CHANNELS)
+            .buffer_size(BUFFER_SIZE)
+            .config(&config)
+            .create_sender()
+            .unwrap();
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_channels(NUMBER_OF_CHANNELS)
+            .buffer_size(BUFFER_SIZE)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+
+        for n in 0..NUMBER_OF_CHANNELS {
+            sut_receiver.set_channel_state(ChannelId::new(n), ChannelState::new(1234).unwrap());
+        }
+
+        sut_receiver.abandon();
+
+        unsafe { Sut::remove_receiver(&name, &config).unwrap() };
+
+        for n in 0..NUMBER_OF_CHANNELS {
+            assert_that!(sut_sender.is_channel_closed(ChannelId::new(n)), eq true);
+        }
+    }
+
+    #[conformance_test]
+    pub fn removing_sender_closes_all_channels<Sut: ZeroCopyConnection>() {
+        const BUFFER_SIZE: usize = 10;
+        const NUMBER_OF_CHANNELS: usize = 4;
+
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_channels(NUMBER_OF_CHANNELS)
+            .buffer_size(BUFFER_SIZE)
+            .config(&config)
+            .create_sender()
+            .unwrap();
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_channels(NUMBER_OF_CHANNELS)
+            .buffer_size(BUFFER_SIZE)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+
+        for n in 0..NUMBER_OF_CHANNELS {
+            sut_sender.set_channel_state(ChannelId::new(n), ChannelState::new(1234).unwrap());
+        }
+
+        sut_sender.abandon();
+
+        unsafe { Sut::remove_sender(&name, &config).unwrap() };
+
+        for n in 0..NUMBER_OF_CHANNELS {
+            assert_that!(sut_receiver.is_channel_closed(ChannelId::new(n)), eq true);
+        }
+    }
 }
