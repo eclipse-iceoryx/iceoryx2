@@ -120,6 +120,24 @@ impl PortFactorySubscriber {
         }
     }
 
+    /// Defines the amount of requested history samples. By default the value defined with the
+    /// service's `history_size` is used
+    pub fn history_request(&self, value: usize) -> Self {
+        let _guard = self.factory.lock();
+        match &self.value {
+            PortFactorySubscriberType::Ipc(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = this.history_request(value);
+                self.clone_ipc(this)
+            }
+            PortFactorySubscriberType::Local(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = this.history_request(value);
+                self.clone_local(this)
+            }
+        }
+    }
+
     /// Creates a new `Subscriber` or emits a `SubscriberCreateError` on failure.
     pub fn create(&self) -> PyResult<Subscriber> {
         let _guard = self.factory.lock();
