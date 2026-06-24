@@ -45,3 +45,13 @@ flume = { version = "0.12.0" }
 human-panic = { version = "2.0.5" }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 zenoh = { version = "1.9.0", features = ["default", "unstable"] }
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+codegen-units = 1
+strip = true
+lto = true
+# opt-level = "z"
+panic = "abort"
