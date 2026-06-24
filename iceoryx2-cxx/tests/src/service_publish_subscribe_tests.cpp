@@ -584,9 +584,40 @@ TYPED_TEST(ServicePublishSubscribeTest, update_connections_delivers_history) {
 
     auto sut_publisher = service.publisher_builder().create().value();
     const uint64_t payload = 123;
+    // send dummy value first
+    sut_publisher.send_copy(0).value();
+    // send value expected to be in the history
     sut_publisher.send_copy(payload).value();
 
     auto sut_subscriber = service.subscriber_builder().create().value();
+    auto sample = sut_subscriber.receive().value();
+
+    ASSERT_FALSE(sample.has_value());
+
+    ASSERT_TRUE(sut_publisher.update_connections().has_value());
+    sample = sut_subscriber.receive().value();
+
+    ASSERT_TRUE(sample.has_value());
+    ASSERT_THAT(sample->payload(), Eq(payload));
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, history_request_reduces_delivered_history) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service =
+        node.service_builder(service_name).template publish_subscribe<uint64_t>().history_size(2).create().value();
+
+    auto sut_publisher = service.publisher_builder().create().value();
+    const uint64_t payload = 123;
+    // send dummy value first
+    sut_publisher.send_copy(0).value();
+    // send value expected to be in the history
+    sut_publisher.send_copy(payload).value();
+
+    auto sut_subscriber = service.subscriber_builder().history_request(1).create().value();
     auto sample = sut_subscriber.receive().value();
 
     ASSERT_FALSE(sample.has_value());
@@ -1575,14 +1606,19 @@ TYPED_TEST(ServicePublishSubscribeTest, listing_all_subscribers_stops_on_request
     ASSERT_THAT(counter, Eq(1));
 }
 
+// NOLINTJUSTIFICATION The complexity comes from the expanded macros; without the expansions the function is quite readable
+// NOLINTNEXTLINE(readability-function-size, readability-function-cognitive-complexity)
 TYPED_TEST(ServicePublishSubscribeTest, subscriber_details_are_correct) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr auto HISTORY_REQUEST = 1;
 
     const auto service_name = iox2_testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().value();
-    auto sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
+    auto sut =
+        node.service_builder(service_name).template publish_subscribe<uint64_t>().history_size(2).create().value();
 
-    iox2::Subscriber<SERVICE_TYPE, uint64_t, void> subscriber = sut.subscriber_builder().create().value();
+    iox2::Subscriber<SERVICE_TYPE, uint64_t, void> subscriber =
+        sut.subscriber_builder().history_request(HISTORY_REQUEST).create().value();
 
     auto counter = 0;
     sut.dynamic_config().list_subscribers([&](auto subscriber_details_view) -> auto {
@@ -1590,6 +1626,7 @@ TYPED_TEST(ServicePublishSubscribeTest, subscriber_details_are_correct) {
         EXPECT_TRUE(subscriber_details_view.subscriber_id() == subscriber.id());
         EXPECT_TRUE(subscriber_details_view.node_id() == node.id());
         EXPECT_TRUE(subscriber_details_view.buffer_size() == subscriber.buffer_size());
+        EXPECT_THAT(subscriber_details_view.history_request(), Eq(HISTORY_REQUEST));
         return CallbackProgression::Stop;
     });
 

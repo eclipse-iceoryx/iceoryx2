@@ -224,6 +224,46 @@ pub unsafe extern "C" fn iox2_port_factory_subscriber_builder_set_buffer_size(
     }
 }
 
+/// Defines the amount of requested history samples. By default the value defined with the
+/// service's `history_size` is used.
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_subscriber_builder_h_ref`]
+///   obtained by [`iox2_port_factory_pub_sub_subscriber_builder`](crate::iox2_port_factory_pub_sub_subscriber_builder).
+/// * `value` - The value to set buffer size to
+///
+/// # Safety
+///
+/// * `port_factory_handle` must be valid handles
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_port_factory_subscriber_builder_set_history_request(
+    port_factory_handle: iox2_port_factory_subscriber_builder_h_ref,
+    value: c_size_t,
+) {
+    port_factory_handle.assert_non_null();
+    unsafe {
+        let port_factory_struct = &mut *port_factory_handle.as_type();
+        match port_factory_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
+
+                port_factory_struct.set(PortFactorySubscriberBuilderUnion::new_ipc(
+                    port_factory.history_request(value),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let port_factory =
+                    ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
+
+                port_factory_struct.set(PortFactorySubscriberBuilderUnion::new_local(
+                    port_factory.history_request(value),
+                ));
+            }
+        }
+    }
+}
+
 /// Sets the degradation handler for the subscriber
 ///
 /// # Arguments

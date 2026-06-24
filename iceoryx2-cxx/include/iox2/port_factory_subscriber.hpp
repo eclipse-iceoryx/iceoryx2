@@ -36,6 +36,14 @@ class PortFactorySubscriber {
     IOX2_BUILDER_OPTIONAL(uint64_t, buffer_size);
 #endif
 
+    /// Defines the amount of requested history samples. By default the value defined with the
+    /// service's `history_size` is used.
+#ifdef DOXYGEN_MACRO_FIX
+    auto history_request(const uint64_t value) -> decltype(auto);
+#else
+    IOX2_BUILDER_OPTIONAL(uint64_t, history_request);
+#endif
+
   public:
     PortFactorySubscriber(const PortFactorySubscriber&) = delete;
     PortFactorySubscriber(PortFactorySubscriber&&) = default;
@@ -83,6 +91,10 @@ PortFactorySubscriber<S, Payload, UserHeader>::create() && -> bb::Expected<Subsc
                                                                            SubscriberCreateError> {
     if (m_buffer_size.has_value()) {
         iox2_port_factory_subscriber_builder_set_buffer_size(&m_handle, m_buffer_size.value());
+    }
+
+    if (m_history_request.has_value()) {
+        iox2_port_factory_subscriber_builder_set_history_request(&m_handle, m_history_request.value());
     }
 
     if (m_degradation_handler.has_value()) {
