@@ -81,6 +81,7 @@ impl Drop for NodeInner {
 /// A handle to an rcl node.
 ///
 /// The node and its context stay alive until the last handle is dropped.
+#[derive(Clone)]
 pub struct NodeHandle {
     inner: Rc<NodeInner>,
 }
