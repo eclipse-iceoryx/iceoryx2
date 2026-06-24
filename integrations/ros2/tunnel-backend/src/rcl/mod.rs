@@ -20,6 +20,6 @@ pub(crate) mod publisher;
 
 pub(crate) use error::RclError;
 pub(crate) use names::*;
-pub(crate) use node::Node;
+pub(crate) use node::NodeHandle;
 #[allow(unused_imports)]
 pub(crate) use publisher::Publisher;

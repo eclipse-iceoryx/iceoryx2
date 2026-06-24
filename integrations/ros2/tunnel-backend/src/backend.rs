@@ -61,7 +61,7 @@ impl core::error::Error for CreationError {}
 
 #[derive(Debug)]
 pub struct Ros2Backend<S: Service> {
-    node: Rc<rcl::Node>,
+    node: Rc<rcl::NodeHandle>,
     /// Typesupport for all configured topics, loaded on initialization.
     type_registry: TypeSupportRegistry,
     discovery: Discovery,
@@ -138,7 +138,7 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
             "Invalid node name '{}'", NODE_NAME
         );
         let node = fail!(from origin,
-            when rcl::Node::new(node_name).create(),
+            when rcl::NodeHandle::new(node_name).create(),
             with CreationError::Node,
             "Failed to create ROS 2 node"
         );

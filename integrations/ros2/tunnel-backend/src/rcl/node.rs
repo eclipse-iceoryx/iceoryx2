@@ -23,7 +23,7 @@ use r2r_rcl::{
 use iceoryx2_log::{fail, warn};
 
 use crate::rcl::{NodeName, NodeNamespace, RclError, TopicName, publisher};
-use crate::typesupport::TypeSupport;
+use crate::typesupport::TypeSupportHandle;
 
 /// rcl is initialized without forwarding any command-line arguments.
 const NO_ARGS: core::ffi::c_int = 0;
@@ -81,11 +81,11 @@ impl Drop for NodeInner {
 /// A handle to an rcl node.
 ///
 /// The node and its context stay alive until the last handle is dropped.
-pub struct Node {
+pub struct NodeHandle {
     inner: Rc<NodeInner>,
 }
 
-impl core::fmt::Debug for Node {
+impl core::fmt::Debug for NodeHandle {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Node")
             .field("node", &self.inner.node.get())
@@ -94,7 +94,7 @@ impl core::fmt::Debug for Node {
     }
 }
 
-/// Builder for [`Node`].
+/// Builder for [`NodeHandle`].
 #[derive(Debug)]
 pub struct Builder {
     name: NodeName,
@@ -115,7 +115,7 @@ impl Builder {
         self
     }
 
-    pub fn create(self) -> Result<Node, CreationError> {
+    pub fn create(self) -> Result<NodeHandle, CreationError> {
         let origin = "Node::create";
 
         unsafe {
@@ -159,14 +159,14 @@ impl Builder {
                 );
             }
 
-            Ok(Node {
+            Ok(NodeHandle {
                 inner: Rc::new(NodeInner { node, context }),
             })
         }
     }
 }
 
-impl Node {
+impl NodeHandle {
     /// Begins building a node with the given name. The namespace defaults to
     /// the root namespace unless set via [`Builder::namespace`].
     pub fn new(name: NodeName) -> Builder {
@@ -177,7 +177,7 @@ impl Node {
     pub fn publisher_builder(
         &self,
         topic: TopicName,
-        type_support: TypeSupport,
+        type_support: TypeSupportHandle,
     ) -> publisher::Builder {
         publisher::Builder::new(Rc::clone(&self.inner), topic, type_support)
     }

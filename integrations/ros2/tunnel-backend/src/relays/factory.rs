@@ -23,7 +23,7 @@ use crate::typesupport::TypeSupportRegistry;
 /// Factory for creating relay builders.
 #[derive(Debug)]
 pub struct Factory<'a, S: Service> {
-    node: Rc<rcl::Node>,
+    node: Rc<rcl::NodeHandle>,
     type_registry: &'a TypeSupportRegistry,
     /// Wake handle to be signaled by relays when new data arrives.
     /// `None` when the backend was constructed in polled mode.
@@ -33,7 +33,7 @@ pub struct Factory<'a, S: Service> {
 
 impl<'a, S: Service> Factory<'a, S> {
     pub fn new(
-        node: Rc<rcl::Node>,
+        node: Rc<rcl::NodeHandle>,
         type_registry: &'a TypeSupportRegistry,
         wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     ) -> Self {

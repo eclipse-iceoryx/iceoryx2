@@ -66,11 +66,11 @@ struct TypeSupportInner {
 /// The handle points into the loaded library's memory, so the `Library` is
 /// kept alive here; it stays loaded as long as any clone is alive.
 #[derive(Debug, Clone)]
-pub struct TypeSupport {
+pub struct TypeSupportHandle {
     inner: Rc<TypeSupportInner>,
 }
 
-impl TypeSupport {
+impl TypeSupportHandle {
     pub(crate) fn handle(&self) -> *const rosidl_message_type_support_t {
         self.inner.handle
     }
@@ -80,11 +80,11 @@ impl TypeSupport {
 /// registry must outlive all endpoints created from its handles.
 #[derive(Debug, Default)]
 pub struct TypeSupportRegistry {
-    entries: RefCell<HashMap<String, TypeSupport>>,
+    entries: RefCell<HashMap<String, TypeSupportHandle>>,
 }
 
 impl TypeSupportRegistry {
-    pub fn load(&self, type_name: &str) -> Result<TypeSupport, LoadError> {
+    pub fn load(&self, type_name: &str) -> Result<TypeSupportHandle, LoadError> {
         if let Some(type_support) = self.entries.borrow().get(type_name) {
             return Ok(type_support.clone());
         }
@@ -100,7 +100,7 @@ impl TypeSupportRegistry {
 
 /// Loads the typesupport library of the type's package and looks up the
 /// type's handle in it.
-fn load_typesupport_library(type_name: &str) -> Result<TypeSupport, LoadError> {
+fn load_typesupport_library(type_name: &str) -> Result<TypeSupportHandle, LoadError> {
     let origin = "TypeSupportRegistry::load";
 
     let (package, message) = fail!(
@@ -144,7 +144,7 @@ fn load_typesupport_library(type_name: &str) -> Result<TypeSupport, LoadError> {
         );
     }
 
-    Ok(TypeSupport {
+    Ok(TypeSupportHandle {
         inner: Rc::new(TypeSupportInner {
             handle,
             _library: library,

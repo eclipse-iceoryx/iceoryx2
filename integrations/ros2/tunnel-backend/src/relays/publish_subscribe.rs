@@ -97,7 +97,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
 /// Builder for publish-subscribe [`Relay`]s.
 #[derive(Debug)]
 pub struct Builder<'a, S: Service> {
-    node: Rc<rcl::Node>,
+    node: Rc<rcl::NodeHandle>,
     type_registry: &'a TypeSupportRegistry,
     static_config: &'a StaticConfig,
     wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
@@ -106,7 +106,7 @@ pub struct Builder<'a, S: Service> {
 
 impl<'a, S: Service> Builder<'a, S> {
     pub fn new(
-        node: Rc<rcl::Node>,
+        node: Rc<rcl::NodeHandle>,
         type_registry: &'a TypeSupportRegistry,
         static_config: &'a StaticConfig,
         wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
