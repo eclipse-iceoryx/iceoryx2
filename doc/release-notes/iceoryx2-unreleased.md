@@ -22,7 +22,7 @@
     conflicts when merging.
 -->
 
-* [#1757](https://github.com/eclipse-iceoryx/iceoryx2/issues/1757) Enable running multiple iceoryx2 versions in parallel by adding a version suffix to the global mgmt segment
+* [#1757](https://github.com/eclipse-iceoryx/iceoryx2/issues/1757) Enable running multiple iceoryx2 versions in distinct domains in parallel by adding a version suffix to the global mgmt segment
 * [#1763](https://github.com/eclipse-iceoryx/iceoryx2/issues/1763) Close `ActiveRequest-PendingResponse` connection when dead process is cleaned up.
 
 ### Refactoring
