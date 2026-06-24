@@ -13,10 +13,13 @@
 use crate::{config::Config, service::Service};
 use iceoryx2_bb_concurrency::atomic::AtomicU32;
 use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::dynamic_storage::*;
 use iceoryx2_cal::named_concept::*;
 use iceoryx2_log::fail;
+use iceoryx2_log::fatal_panic;
 
 const GLOBAL_MGMT_NAME: FileName = unsafe { FileName::new_unchecked_const(b"node") };
 
@@ -64,9 +67,16 @@ impl<S: Service> GlobalManagementSegment<S> {
     fn dynamic_storage_config(
         global_config: &Config,
     ) -> <S::PersistentDynamicStorage<State> as NamedConceptMgmt>::Configuration {
+        let mut suffix = global_config.global.node.global_mgmt_suffix;
+        let ver = PackageVersion::get();
+        fatal_panic!(
+            from "dynamic_storage_config()",
+            when suffix.push_bytes(format!("_{}_{}_{}", ver.major(), ver.minor(), ver.patch()).as_bytes()),
+            "This should never happen! Failed to added package version suffix to global management segment.");
+
         <S::PersistentDynamicStorage<State> as NamedConceptMgmt>::Configuration::default()
             .prefix(&global_config.global.prefix)
-            .suffix(&global_config.global.node.global_mgmt_suffix)
+            .suffix(&suffix)
             .path_hint(global_config.global.root_path())
     }
 }
