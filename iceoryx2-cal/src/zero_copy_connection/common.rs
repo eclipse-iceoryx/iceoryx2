@@ -1088,7 +1088,11 @@ pub mod details {
             match <<Storage as DynamicStorage<SharedManagementData>>::Builder<'_> as NamedConceptBuilder<
                     Storage>>::new(name)
                        .config(&config.dynamic_storage_config).open(AccessMode::ReadWrite) {
-                           Ok(storage) => { cleanup_shared_memory(&storage, port); Ok(())},
+                           Ok(storage) => {
+                               for channel in storage.get().channels.iter() {
+                                   channel.state.store(CHANNEL_STATE_CLOSED.0, Ordering::Relaxed);
+                               }
+                               cleanup_shared_memory(&storage, port); Ok(())},
                            Err(DynamicStorageOpenError::InitializationNotYetFinalized) => {
                                match unsafe { Storage::remove_cfg(name, &config.dynamic_storage_config) } {
                                    Ok(_) => Ok(()),
