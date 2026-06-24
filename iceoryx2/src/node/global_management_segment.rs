@@ -10,7 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate alloc;
+
 use crate::{config::Config, service::Service};
+use alloc::format;
 use iceoryx2_bb_concurrency::atomic::AtomicU32;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_container::semantic_string::SemanticString;
@@ -97,7 +100,7 @@ impl<S: Service> GlobalManagementSegment<S> {
         let ver = PackageVersion::get();
         fatal_panic!(
             from "dynamic_storage_config()",
-            when suffix.push_bytes(format!("_{}_{}_{}", ver.major(), ver.minor(), ver.patch()).as_bytes()),
+            when suffix.insert_bytes(0, format!(".{}_{}_{}", ver.major(), ver.minor(), ver.patch()).as_bytes()),
             "This should never happen! Failed to added package version suffix to global management segment.");
 
         <S::PersistentDynamicStorage<State> as NamedConceptMgmt>::Configuration::default()
