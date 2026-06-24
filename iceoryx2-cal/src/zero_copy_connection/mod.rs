@@ -281,6 +281,13 @@ pub trait ZeroCopyPortDetails {
         expected_state.0 == state_without_disconnect_hint_bit
     }
 
+    fn is_channel_closed(&self, channel_id: ChannelId) -> bool {
+        let state = self
+            .__internal_get_channel_state(channel_id)
+            .load(Ordering::Relaxed);
+        state == CHANNEL_STATE_CLOSED.0
+    }
+
     fn close_channel(&self, channel_id: ChannelId, expected_state: ChannelState) {
         match self
             .__internal_get_channel_state(channel_id)
