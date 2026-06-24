@@ -41,6 +41,7 @@
 
 use alloc::sync::Arc;
 use core::{any::TypeId, fmt::Debug, marker::PhantomData, mem::MaybeUninit, ops::Deref};
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_cal::zero_copy_connection::ChannelState;
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
@@ -102,6 +103,22 @@ pub struct ActiveRequest<
     pub(crate) connection_id: usize,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
     pub(crate) _response_header: PhantomData<ResponseHeader>,
+}
+
+impl<
+    Service: crate::service::Service,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
+    ResponseHeader: Debug + ZeroCopySend,
+> Abandonable
+    for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe { core::ptr::drop_in_place(&mut this.shared_state) };
+        unsafe { core::ptr::drop_in_place(&mut this.shared_loan_counter) };
+    }
 }
 
 unsafe impl<
