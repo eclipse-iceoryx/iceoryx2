@@ -305,7 +305,6 @@ pub struct FileBuilder {
     access_mode: AccessMode,
     permission: Permission,
     has_ownership: bool,
-    sync_on_open: bool,
     owner: Option<Uid>,
     group: Option<Gid>,
     truncate_size: Option<usize>,
@@ -320,22 +319,11 @@ impl FileBuilder {
             access_mode: AccessMode::Read,
             permission: Permission::OWNER_ALL,
             has_ownership: false,
-            sync_on_open: true,
             owner: None,
             group: None,
             truncate_size: None,
             creation_mode: None,
         }
-    }
-
-    /// Shall the [`File`] be synced before it is opened so that the user has the most current
-    /// view on it. This could cause some performance impact for large files that have been
-    /// updated.
-    ///
-    /// It is enabled by default.
-    pub fn sync_on_open(mut self, value: bool) -> Self {
-        self.sync_on_open = value;
-        self
     }
 
     /// Defines if the created or opened file is owned by the [`File`] object. If it is owned, the
@@ -593,19 +581,12 @@ impl File {
 
         if let Some(v) = file_descriptor {
             trace!(from config, "opened");
-            let mut new_self = File {
+            let new_self = File {
                 path: Some(config.file_path),
                 file_descriptor: v,
                 has_ownership: AtomicBool::new(config.has_ownership),
                 access_mode: config.access_mode,
             };
-
-            if config.sync_on_open {
-                if let Err(e) = new_self.sync_all() {
-                    debug!(from new_self,
-                        "Unable to sync file before opening it. The file properties and content might be out-of-date. [{e:?}]");
-                }
-            }
 
             return Ok(new_self);
         }
