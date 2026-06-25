@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::ffi::c_void;
+use std::pin::Pin;
 use std::rc::Rc;
 
 use r2r_rcl::{
@@ -26,8 +27,10 @@ use crate::rcl::node::NodeInner;
 use crate::rcl::{RclError, TopicName};
 use crate::typesupport::TypeSupportHandle;
 
-/// Invoked by the RMW (from a middleware thread) when new messages arrive.
+/// A callback invoked with the number of newly-arrived messages. The RMW
+/// calls it from a middleware thread.
 pub type NewMessageCallback = Box<dyn Fn(usize) + Send>;
+
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
     SubscriptionInit,
@@ -147,11 +150,9 @@ impl<'a> Builder<'a> {
 /// Receives serialized messages from a ROS 2 topic.
 pub struct Subscription {
     subscription: *mut r2r_rcl::rcl_subscription_t,
-    /// TODO: Is there a better way than double Box?
-    /// The registered new-message callback. Boxed twice: the inner box is
-    /// the object the trampoline's thin `user_data` pointer refers to, and
-    /// must stay at a stable heap address while registered.
-    callback: Option<Box<NewMessageCallback>>,
+    /// The new-message callback while one is registered, kept alive and pinned
+    /// so the `user_data` pointer rcl holds stays valid until it is cleared.
+    callback: Option<Pin<Box<NewMessageCallback>>>,
     node: Rc<NodeInner>,
     /// Keeps the typesupport library loaded while the endpoint uses it.
     _type_support: TypeSupportHandle,
@@ -175,14 +176,15 @@ impl Subscription {
     pub fn on_new_message(&mut self, callback: NewMessageCallback) -> Result<(), CallbackError> {
         let origin = "Subscription::on_new_message";
 
-        // The trampoline's `user_data` refers to the heap-stable inner box.
-        let callback = Box::new(callback);
+        // Pin to a stable heap address, then pass rcl a thin pointer to the
+        // boxed closure as `user_data`.
+        let callback = Box::pin(callback);
         let user_data: *const NewMessageCallback = &*callback;
 
         let ret = unsafe {
             rcl_subscription_set_on_new_message_callback(
                 self.subscription,
-                Some(new_message_trampoline),
+                Some(on_new_message_trampoline),
                 user_data.cast(),
             )
         };
@@ -279,8 +281,10 @@ impl Drop for Subscription {
     }
 }
 
-/// Bounces the RMW's C callback to the registered [`NewMessageCallback`].
-unsafe extern "C" fn new_message_trampoline(user_data: *const c_void, number_of_events: usize) {
+/// The C entry point rcl invokes when messages arrive; recovers the
+/// [`NewMessageCallback`] from the `user_data` pointer registered in
+/// [`Subscription::on_new_message`] and calls it.
+unsafe extern "C" fn on_new_message_trampoline(user_data: *const c_void, number_of_events: usize) {
     let callback = unsafe { &*(user_data as *const NewMessageCallback) };
     callback(number_of_events);
 }
