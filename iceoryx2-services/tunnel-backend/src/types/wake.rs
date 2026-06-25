@@ -13,7 +13,7 @@
 use iceoryx2::port::notifier::Notifier;
 use iceoryx2::service::Service;
 
-/// Process-local wake source signaled by reactive backends when new data is
+/// Handle to be used by reactive backends to signal when new data is
 /// ready to be processed, waking any [`WaitSet`](iceoryx2::waitset::WaitSet)
 /// with the corresponding listener attached.
 ///

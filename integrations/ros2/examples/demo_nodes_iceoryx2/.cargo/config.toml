@@ -1,0 +1,5 @@
+# Point to message crates in the symlinked ROS install space.
+# See README for instructions.
+[patch.crates-io]
+std_msgs = { path = ".ros_install/std_msgs/share/std_msgs/rust" }
+builtin_interfaces = { path = ".ros_install/builtin_interfaces/share/builtin_interfaces/rust" }

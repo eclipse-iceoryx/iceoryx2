@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+    <name>demo_nodes_iceoryx2</name>
+    <version>0.9.999</version>
+    <description>Native iceoryx2 demo nodes exchanging std_msgs with ROS 2 demo nodes</description>
+    <maintainer email="iceoryx-oss-support@ekxide.io">ekxide developers</maintainer>
+    <license>Apache 2.0</license>
+    <license>MIT</license>
+    <url type="bugtracker">https://github.com/eclipse-iceoryx/iceoryx2/issues</url>
+    <url type="repository">https://github.com/eclipse-iceoryx/iceoryx2</url>
+    <depend>std_msgs</depend>
+    <export>
+        <build_type>ament_cargo</build_type>
+    </export>
+</package>

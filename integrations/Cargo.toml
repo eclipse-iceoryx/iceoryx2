@@ -4,6 +4,11 @@ members = [
     "zenoh/tunnel-backend",
     "zenoh/tunnel-cli",
 ]
+# The ros2 crates require a sourced ROS 2 environment to build and are
+# therefore excluded from the workspace.
+exclude = [
+    "ros2",
+]
 
 [workspace.package]
 categories = ["network-programming"]
