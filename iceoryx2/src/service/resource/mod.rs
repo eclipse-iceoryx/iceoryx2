@@ -16,7 +16,9 @@ pub mod blackboard;
 use core::ptr::NonNull;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 
-use crate::service::{builder::ServiceCreateError, static_config::StaticConfig};
+use crate::service::{
+    builder::ServiceCreateError, builder::ServiceOpenError, static_config::StaticConfig,
+};
 
 /// Represents resources a service could use and have to be cleaned up when no owners
 /// are left
@@ -28,13 +30,18 @@ pub trait ServiceResource: Abandonable {
         resource_config: &Self::Config,
     ) -> Result<Self, ServiceCreateError>;
 
+    fn open(
+        static_config: &StaticConfig,
+        resource_config: &Self::Config,
+    ) -> Result<Self, ServiceOpenError>;
+
     /// Acquires the ownership of the additional resources. When the objects go out of scope the
     /// underlying resources will be removed.
     fn acquire_ownership(&self);
 }
 
 #[derive(Debug)]
-pub(crate) struct NoResource;
+pub struct NoResource;
 impl ServiceResource for NoResource {
     type Config = ();
 
@@ -42,6 +49,13 @@ impl ServiceResource for NoResource {
         _static_config: &StaticConfig,
         _resource_config: &Self::Config,
     ) -> Result<Self, ServiceCreateError> {
+        Ok(Self {})
+    }
+
+    fn open(
+        _static_config: &StaticConfig,
+        _resource_config: &Self::Config,
+    ) -> Result<Self, ServiceOpenError> {
         Ok(Self {})
     }
 
