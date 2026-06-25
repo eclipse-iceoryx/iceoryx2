@@ -10,22 +10,36 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::alloc::Layout;
-use std::{fmt::Debug, ptr::NonNull, sync::Arc};
+extern crate alloc;
 
 use crate::constants::{MAX_BLACKBOARD_KEY_ALIGNMENT, MAX_BLACKBOARD_KEY_SIZE};
+use crate::service::builder::{self, ServiceCreateError};
+use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
+use crate::service::naming_scheme::blackboard_name;
+use crate::service::static_config::StaticConfig;
 use crate::service::{
     self, resource::ServiceResource, static_config::message_type_details::TypeDetail,
 };
+use alloc::sync::Arc;
+use core::alloc::Layout;
+use core::mem::MaybeUninit;
+use core::{fmt::Debug, ptr::NonNull};
 use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_container::queue::RelocatableContainer;
+use iceoryx2_bb_container::string::String;
+use iceoryx2_bb_container::vector::Vector;
 use iceoryx2_bb_container::{flatmap::RelocatableFlatMap, vector::RelocatableVec};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::static_assert::static_assert_eq;
 use iceoryx2_bb_elementary_traits::{
     non_null::NonNullCompat, testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
 };
-use iceoryx2_cal::dynamic_storage::DynamicStorage;
+use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_cal::dynamic_storage::{DynamicStorage, DynamicStorageBuilder};
+use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shared_memory::SharedMemory;
+use iceoryx2_cal::shared_memory::SharedMemoryBuilder;
+use iceoryx2_log::error;
 use iceoryx2_log::fail;
 
 #[doc(hidden)]
@@ -151,6 +165,18 @@ pub(crate) struct BlackboardResources<ServiceType: service::Service> {
     pub(crate) key_eq_func: Arc<dyn Fn(*const u8, *const u8) -> bool + Send + Sync>,
 }
 
+impl<ServiceType: service::Service> Debug for BlackboardResources<ServiceType> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "BlackboardResource<{}> {{ mgmt: {:?}, data: {:?} }}",
+            core::any::type_name::<ServiceType>(),
+            self.mgmt,
+            self.data,
+        )
+    }
+}
+
 impl<ServiceType: service::Service> Abandonable for BlackboardResources<ServiceType> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
@@ -165,19 +191,115 @@ impl<ServiceType: service::Service> Abandonable for BlackboardResources<ServiceT
     }
 }
 
-impl<ServiceType: service::Service> Debug for BlackboardResources<ServiceType> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "BlackboardResources {{ mgmt: {:?}, data: {:?} }}",
-            self.mgmt, self.data
-        )
-    }
-}
-
 impl<ServiceType: service::Service> ServiceResource for BlackboardResources<ServiceType> {
+    type Config = builder::blackboard::BuilderConfig<ServiceType>;
+
     fn acquire_ownership(&self) {
         self.data.acquire_ownership();
         self.mgmt.acquire_ownership();
+    }
+
+    fn create(
+        service_config: &StaticConfig,
+        resource_config: &Self::Config,
+    ) -> Result<BlackboardResources<ServiceType>, ServiceCreateError> {
+        let origin = format!(
+            "BlackboardResource<{}>::create()",
+            core::any::type_name::<ServiceType>()
+        );
+        let msg = "Failed to create blackboard service resources";
+        let blackboard_config = *resource_config.config_details();
+        let key_eq_func = resource_config.key_eq_func.clone();
+        let builder_internals = resource_config.internals.as_slice();
+        let shared_node = &resource_config.base.shared_node;
+        // create the payload data segment for the writer
+        let name = blackboard_name(service_config.unique_service_id());
+        let shm_config = blackboard_data_config::<ServiceType>(shared_node.config());
+        let mut payload_size = 0;
+        for i in builder_internals.iter() {
+            payload_size += i.internal_value_size + i.internal_value_alignment - 1;
+        }
+        let payload_shm = match <<ServiceType::BlackboardPayload as SharedMemory<
+            iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator,
+        >>::Builder as NamedConceptBuilder<ServiceType::BlackboardPayload>>::new(
+            &name
+        )
+        .config(&shm_config)
+        .has_ownership(true)
+        .size(payload_size)
+        .create(&iceoryx2_cal::shared_memory::shm_bump_allocator::Config::default())
+        {
+            Ok(v) => v,
+            Err(_) => {
+                fail!(from origin, with ServiceCreateError::ServiceInCorruptedState,
+                    "{} since the blackboard payload data segment could not be created. This could indicate a corrupted system.",
+                    msg);
+            }
+        };
+
+        // create the management segment
+        let capacity = builder_internals.len();
+
+        let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt>(shared_node.config());
+        let mgmt_name = blackboard_config.type_details.type_name.as_str();
+
+        // The name is set to be able to remove the concept when a node dies. Safe since the
+        // same name is set in ServiceInternal::__internal_remove_node_from_service.
+        unsafe {
+            <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage::<
+                Mgmt,
+            >>::__internal_set_type_name_in_config(&mut mgmt_config, mgmt_name)
+        };
+
+        let mgmt_storage = fail!(from origin, when
+            <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage<Mgmt,
+            >>::Builder::new(&name)
+                .config(&mgmt_config)
+                .has_ownership(true)
+                .supplementary_size(RelocatableFlatMap::<KeyMemory<MAX_BLACKBOARD_KEY_SIZE>, usize>::const_memory_size(capacity)+RelocatableVec::<Entry>::const_memory_size(capacity))
+                .initializer(|mgmt: &mut MaybeUninit<Mgmt>, allocator: &mut BumpAllocator| {
+                    mgmt.write(Mgmt {
+                        map: unsafe { RelocatableFlatMap::<KeyMemory<MAX_BLACKBOARD_KEY_SIZE>, usize>::new_uninit(capacity) },
+                        entries: unsafe { RelocatableVec::<Entry>::new_uninit(capacity) },
+                    });
+                    let mgmt = unsafe { mgmt.assume_init_mut() };
+
+                    if unsafe {mgmt.map.init(allocator)}.is_err() || unsafe {mgmt.entries.init(allocator).is_err()} {
+                        return false
+                    }
+                    for entry in builder_internals.iter() {
+                        // write value passed to add() to payload_shm
+                        let mem = match payload_shm.allocate(unsafe { Layout::from_size_align_unchecked(entry.internal_value_size, entry.internal_value_alignment) })
+                        {
+                            Ok(m) => m,
+                            Err(_) => {
+                                error!(from origin, "Writing the value to the blackboard data segment failed.");
+                                return false
+                            }
+                        };
+                        (*entry.value_writer)(mem.data_ptr);
+                        // write offset to value in payload_shm to entries vector
+                        let res = mgmt.entries.push(Entry{type_details: entry.value_type_details, offset: AtomicU64::new(mem.offset.offset() as u64)});
+                        if res.is_err() {
+                            error!(from origin, "Writing the value offset to the blackboard management segment failed.");
+                            return false
+                        }
+                        // write offset index to map
+                        let res = unsafe {mgmt.map.__internal_insert(entry.key, mgmt.entries.len() - 1, &*key_eq_func)};
+                        if res.is_err() {
+                            error!(from origin, "Inserting the key-value pair into the blackboard management segment failed.");
+                            return false
+                        }
+                    }
+                    true})
+                .create(),
+                    with ServiceCreateError::ServiceInCorruptedState, "{} since the blackboard management segment could not be created. This could indicate a corrupted system.",
+                    msg);
+
+        Ok(BlackboardResources {
+            mgmt: mgmt_storage,
+            data: payload_shm,
+            key_eq_func,
+        })
     }
 }
