@@ -39,6 +39,7 @@
 * [#1746](https://github.com/eclipse-iceoryx/iceoryx2/issues/1746) Disable `POSIX_SUPPORT_FILE_LOCK_FOR_SHARED_MEMORY` on FreeBSD and move CI job for FreeBSD to main pipeline
 * [#1757](https://github.com/eclipse-iceoryx/iceoryx2/issues/1757) Enable running multiple iceoryx2 versions in distinct domains in parallel by adding a version suffix to the global mgmt segment
 * [#1763](https://github.com/eclipse-iceoryx/iceoryx2/issues/1763) Close `ActiveRequest-PendingResponse` connection when dead process is cleaned up.
+* [#1765](https://github.com/eclipse-iceoryx/iceoryx2/issues/1765) Remove unnecessary `fsync` on file open
 
 ### Refactoring
 
