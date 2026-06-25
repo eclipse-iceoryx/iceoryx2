@@ -31,10 +31,52 @@ const NODE_NAME: &str = "iceoryx2_tunnel";
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct TopicConfig {
     /// Fully-qualified ROS 2 topic name, e.g. `/Camera/FrontRight`.
-    pub topic: String,
+    pub(crate) topic: rcl::TopicName,
     /// ROS 2 type name, e.g. `geometry_msgs/msg/Twist`.
-    pub type_name: String,
+    pub(crate) type_name: rcl::TypeName,
 }
+
+impl TopicConfig {
+    /// Creates a config entry, validating the ROS 2 topic name and message
+    /// type name.
+    ///
+    /// * The topic must be a valid ROS 2 topic name
+    /// * The type name must have the form `package/msg/Message`
+    pub fn new(topic: &str, type_name: &str) -> Result<Self, TopicConfigError> {
+        let origin = "TopicConfig::new";
+
+        let topic = fail!(from origin,
+            when rcl::TopicName::new(topic),
+            with TopicConfigError::InvalidTopic,
+            "Failed to create topic config from invalid topic name '{}'",
+            topic
+        );
+        let type_name = fail!(from origin,
+            when rcl::TypeName::new(type_name),
+            with TopicConfigError::InvalidTypeName,
+            "Failed to create topic config from invalid type name '{}'",
+            type_name
+        );
+
+        Ok(Self { topic, type_name })
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum TopicConfigError {
+    /// The topic is not a valid ROS 2 topic name.
+    InvalidTopic,
+    /// The type name is not of the form `package/msg/Message`.
+    InvalidTypeName,
+}
+
+impl core::fmt::Display for TopicConfigError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "TopicConfigError::{self:?}")
+    }
+}
+
+impl core::error::Error for TopicConfigError {}
 
 /// Configuration for the [`Ros2Backend`].
 #[derive(Debug, Default)]
@@ -143,9 +185,9 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
         let type_registry = TypeSupportRegistry::default();
         for topic in &self.config.topics {
             fail!(from origin,
-                when type_registry.load(&topic.type_name),
+                when type_registry.load(topic.type_name.as_str()),
                 with CreationError::TypeSupport,
-                "Failed to load typesupport for configured topic '{}'", topic.type_name
+                "Failed to load typesupport for configured topic '{}'", topic.type_name.as_str()
             );
         }
 

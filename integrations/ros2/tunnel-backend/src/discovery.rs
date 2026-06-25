@@ -26,6 +26,7 @@ use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
 use iceoryx2_log::fail;
 
 use crate::backend::TopicConfig;
+use crate::rcl::{TopicName, TypeName};
 use crate::ros_header::RosHeader;
 use crate::{keys, rcl};
 
@@ -60,13 +61,11 @@ impl core::error::Error for AnnouncementError {}
 #[derive(Debug)]
 pub struct Discovery<S: Service> {
     node: rcl::NodeHandle,
-    // TODO: Use TopicName and TypeName structs
-    /// The configured allowlist: ROS 2 topic → type name.
-    allowlist: HashMap<String, String>,
-    /// TODO: Is a RefCell needed here?
+    /// The configured allowlist.
+    allowlist: HashMap<TopicName, TypeName>,
     /// Configured topics detected as live in the ROS graph, with the service
     /// hash they were reported under.
-    discovered: RefCell<HashMap<String, ServiceHash>>,
+    discovered: RefCell<HashMap<TopicName, ServiceHash>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
@@ -86,20 +85,24 @@ impl<S: Service> Discovery<S> {
     /// The [`StaticConfig`] synthesized for a discovered ROS topic:
     /// service name and payload type per the bridge contract, [`RosHeader`]
     /// user header, everything else from the global iceoryx2 defaults.
-    fn static_config(&self, topic: &str, type_name: &str) -> Result<StaticConfig, DiscoveryError> {
+    fn static_config(
+        &self,
+        topic: &TopicName,
+        type_name: &TypeName,
+    ) -> Result<StaticConfig, DiscoveryError> {
         let origin = "Discovery::static_config";
 
         let service_name: ServiceName = fail!(from origin,
-            when keys::service_name(topic).as_str().try_into(),
+            when keys::service_name(topic.as_str()).as_str().try_into(),
             with DiscoveryError::InvalidServiceName,
             "Invalid service name derived from topic '{}'",
-            topic
+            topic.as_str()
         );
         let payload = fail!(from origin,
-            when TypeDetail::__internal_new_from_parts(TypeVariant::Dynamic, type_name, 1, 1),
+            when TypeDetail::__internal_new_from_parts(TypeVariant::Dynamic, type_name.as_str(), 1, 1),
             with DiscoveryError::InvalidTypeName,
             "Invalid payload type name '{}'",
-            type_name
+            type_name.as_str()
         );
         let user_header = TypeDetail::new::<RosHeader>(TypeVariant::FixedSize);
 
@@ -139,14 +142,16 @@ impl<S: Service> iceoryx2_services_tunnel_backend::traits::Discovery for Discove
         );
 
         for (topic, type_name) in &self.allowlist {
-            let live = graph.iter().any(|(name, _)| name == topic);
-            let known = self.discovered.borrow().contains_key(topic);
+            let live = graph
+                .iter()
+                .any(|(name, _)| name.as_str() == topic.as_str());
+            let discovered = self.discovered.borrow().contains_key(topic);
 
-            if live && !known {
+            if live && !discovered {
                 let static_config = fail!(from origin,
                     when self.static_config(topic, type_name),
                     "Failed to synthesize the static config for topic '{}'",
-                    topic
+                    topic.as_str()
                 );
 
                 let service_hash = *static_config.service_hash();
@@ -154,19 +159,19 @@ impl<S: Service> iceoryx2_services_tunnel_backend::traits::Discovery for Discove
                     when process_discovery(DiscoveryEvent::Added(static_config)),
                     with DiscoveryError::Processing,
                     "Failed to process discovery 'Added' event for topic '{}'",
-                    topic
+                    topic.as_str()
                 );
 
                 self.discovered
                     .borrow_mut()
                     .insert(topic.clone(), service_hash);
-            } else if !live && known {
+            } else if !live && discovered {
                 let service_hash = self.discovered.borrow()[topic];
                 fail!(from origin,
                     when process_discovery(DiscoveryEvent::Removed(service_hash)),
                     with DiscoveryError::Processing,
                     "Failed to process discovery 'Removed' event for topic '{}'",
-                    topic
+                    topic.as_str()
                 );
                 self.discovered.borrow_mut().remove(topic);
             }

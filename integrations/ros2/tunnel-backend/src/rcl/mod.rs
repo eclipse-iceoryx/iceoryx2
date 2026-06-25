@@ -23,5 +23,4 @@ pub(crate) use error::RclError;
 pub(crate) use names::*;
 pub(crate) use node::NodeHandle;
 pub(crate) use publisher::Publisher;
-#[allow(unused_imports)]
 pub(crate) use subscription::{MessageInfo, Subscription};

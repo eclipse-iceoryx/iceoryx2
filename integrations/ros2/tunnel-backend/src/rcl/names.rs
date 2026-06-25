@@ -145,7 +145,7 @@ impl NodeNamespace {
 
 /// A ROS 2 topic name: a non-empty, `/`-separated path of name tokens, either
 /// absolute (leading `/`) or relative.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct TopicName(CString);
 
 impl TopicName {
@@ -184,6 +184,61 @@ impl TopicName {
 
     pub fn as_c_str(&self) -> &CStr {
         &self.0
+    }
+
+    /// The name as a string slice.
+    pub fn as_str(&self) -> &str {
+        self.0
+            .to_str()
+            .expect("a validated ROS 2 name is valid UTF-8")
+    }
+}
+
+/// A ROS 2 message type name of the form `package/msg/Message`, e.g.
+/// `std_msgs/msg/String`. The `package` and `Message` parts are valid name
+/// tokens.
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct TypeName(CString);
+
+impl TypeName {
+    /// Creates a new ROS 2 message type name from the given string.
+    ///
+    /// A valid type name has the form `package/msg/Message`, where `package`
+    /// and `Message` are each a valid name token.
+    pub fn new(type_name: &str) -> Result<Self, NameError> {
+        let origin = "TypeName::new";
+
+        if type_name.is_empty() {
+            fail!(
+                from origin,
+                with NameError::Empty,
+                "Failed to create type name as it is empty"
+            );
+        }
+
+        let mut segments = type_name.split('/');
+        let well_formed = matches!(
+            (segments.next(), segments.next(), segments.next(), segments.next()),
+            (Some(package), Some("msg"), Some(message), None)
+                if is_valid_token(package) && is_valid_token(message)
+        );
+        if !well_formed {
+            fail!(
+                from origin,
+                with NameError::InvalidToken,
+                "Failed to create type name from '{}' as it is not of the form 'package/msg/Message'",
+                type_name
+            );
+        }
+
+        Ok(Self(into_cstring(type_name)))
+    }
+
+    /// The type name as a string slice.
+    pub fn as_str(&self) -> &str {
+        self.0
+            .to_str()
+            .expect("a validated ROS 2 name is valid UTF-8")
     }
 }
 
@@ -240,6 +295,36 @@ mod tests {
                 TopicName::new(topic),
                 Err(NameError::InvalidToken),
                 "{topic}"
+            );
+        }
+    }
+
+    #[test]
+    fn type_name_accepts_valid_types() {
+        for type_name in [
+            "std_msgs/msg/String",
+            "geometry_msgs/msg/Twist",
+            "my_pkg/msg/Vector3",
+        ] {
+            assert!(TypeName::new(type_name).is_ok(), "{type_name}");
+        }
+    }
+
+    #[test]
+    fn type_name_rejects_invalid_types() {
+        assert_eq!(TypeName::new(""), Err(NameError::Empty));
+        for type_name in [
+            "std_msgs/String",
+            "std_msgs/msg/String/extra",
+            "std_msgs/srv/Thing",
+            "/msg/String",
+            "std_msgs/msg/",
+            "std_msgs/msg/0String",
+        ] {
+            assert_eq!(
+                TypeName::new(type_name),
+                Err(NameError::InvalidToken),
+                "{type_name}"
             );
         }
     }

@@ -32,10 +32,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
 
     let backend_config = Config {
-        topics: vec![TopicConfig {
-            topic: "/chatter".into(),
-            type_name: "std_msgs/msg/String".into(),
-        }],
+        topics: vec![TopicConfig::new("/chatter", "std_msgs/msg/String")?],
     };
 
     let mut tunnel = Tunnel::<ipc::Service, Ros2Backend<ipc::Service>>::new()
