@@ -574,7 +574,7 @@ impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
 #[doc(hidden)]
 pub mod internal {
     use crate::service::{
-        resource::blackboard::BlackboardResources, stale_resource_cleanup::ServiceRemoveTagError,
+        resource::remove_stale_service_resources, stale_resource_cleanup::ServiceRemoveTagError,
     };
 
     use super::*;
@@ -668,13 +668,7 @@ pub mod internal {
                 ServiceHash::new::<S::ServiceNameHasher>(service_name, messaging_pattern);
             match read_static_service_config::<S>(config, &service_hash) {
                 Ok(Some(static_config)) => {
-                    unsafe {
-                        S::__internal_remove_service(
-                            &service_hash,
-                            static_config.unique_service_id(),
-                            config,
-                        )?
-                    };
+                    unsafe { S::__internal_remove_service(&static_config, config)? };
 
                     Ok(true)
                 }
@@ -707,35 +701,15 @@ pub mod internal {
         ///
         #[doc(hidden)]
         unsafe fn __internal_remove_service(
-            service_hash: &ServiceHash,
-            unique_service_id: UniqueServiceId,
+            service_config: &StaticConfig,
             config: &config::Config,
         ) -> Result<(), ServiceRemoveError> {
             let origin = "Service::remove()";
             let msg = "Unable to remove all service resources";
+            let unique_service_id = service_config.unique_service_id();
+            let service_hash = service_config.service_hash();
 
-            // check if service was a blackboard service to remove its additional resources
-            let blackboard_name = crate::service::naming_scheme::blackboard_name(unique_service_id);
-            let blackboard_payload_config =
-                crate::service::config_scheme::blackboard_data_config::<S>(config);
-            let blackboard_payload = <S::BlackboardPayload as NamedConceptMgmt>::does_exist_cfg(
-                &blackboard_name,
-                &blackboard_payload_config,
-            );
-            if let Ok(true) = blackboard_payload {
-                match __internal_details::<S>(config, service_hash) {
-                    Ok(Some(details)) => {
-                        BlackboardResources::<S>::remove_stale_resources(
-                            config,
-                            &details.static_details,
-                        );
-                    }
-                    _ => {
-                        warn!(from origin,
-                            "{} for {service_hash} due to a failure while acquiring the service details", msg);
-                    }
-                };
-            }
+            remove_stale_service_resources::<S>(config, service_config);
 
             let segment_name = dynamic_config_name(unique_service_id);
             match unsafe {
@@ -831,13 +805,7 @@ pub mod internal {
                 Ok(None) => {
                     warn!(from origin,
                         "Found corrupted service {service_hash}. Trying to remove it completely");
-                    match unsafe {
-                        Self::__internal_remove_service(
-                            service_hash,
-                            static_config.unique_service_id(),
-                            config,
-                        )
-                    } {
+                    match unsafe { Self::__internal_remove_service(&static_config, config) } {
                         Ok(()) => {
                             return remove_service_tag();
                         }
@@ -935,13 +903,7 @@ pub mod internal {
             };
 
             if remove_service {
-                unsafe {
-                    Self::__internal_remove_service(
-                        service_hash,
-                        static_config.unique_service_id(),
-                        config,
-                    )?
-                };
+                unsafe { Self::__internal_remove_service(&static_config, config)? };
             } else if number_of_dead_node_notifications != 0 {
                 send_dead_node_signal::<S>(service_hash, config);
             }

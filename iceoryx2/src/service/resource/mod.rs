@@ -19,10 +19,26 @@ use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use crate::{
     config,
     service::{
+        self,
         builder::{ServiceCreateError, ServiceOpenError},
-        static_config::StaticConfig,
+        resource::blackboard::BlackboardResources,
+        static_config::{StaticConfig, messaging_pattern::MessagingPattern},
     },
 };
+
+pub fn remove_stale_service_resources<ServiceType: service::Service>(
+    config: &config::Config,
+    static_config: &StaticConfig,
+) {
+    match static_config.messaging_pattern() {
+        MessagingPattern::Blackboard(_) => {
+            BlackboardResources::<ServiceType>::remove_stale_resources(config, static_config);
+        }
+        MessagingPattern::RequestResponse(_) => {}
+        MessagingPattern::Event(_) => {}
+        MessagingPattern::PublishSubscribe(_) => {}
+    }
+}
 
 /// Represents resources a service could use and have to be cleaned up when no owners
 /// are left
