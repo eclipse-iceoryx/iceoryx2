@@ -15,10 +15,11 @@ use std::pin::Pin;
 use std::rc::Rc;
 
 use r2r_rcl::{
-    RCL_RET_OK, RCL_RET_SUBSCRIPTION_TAKE_FAILED, rcl_get_zero_initialized_subscription,
-    rcl_serialized_message_t, rcl_subscription_fini, rcl_subscription_get_default_options,
-    rcl_subscription_init, rcl_subscription_set_on_new_message_callback,
-    rcl_take_serialized_message, rcutils_allocator_t, rmw_message_info_t,
+    RCL_RET_OK, RCL_RET_SUBSCRIPTION_TAKE_FAILED, RMW_GID_STORAGE_SIZE,
+    rcl_get_zero_initialized_subscription, rcl_serialized_message_t, rcl_subscription_fini,
+    rcl_subscription_get_default_options, rcl_subscription_init,
+    rcl_subscription_set_on_new_message_callback, rcl_take_serialized_message, rcutils_allocator_t,
+    rmw_message_info_t,
 };
 
 use iceoryx2_log::fail;
@@ -76,15 +77,15 @@ impl core::error::Error for TakeError {}
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct MessageInfo {
     /// The originating DDS writer's GUID.
-    pub gid: [u8; 16],
+    pub gid: [u8; RMW_GID_STORAGE_SIZE as usize],
     pub source_timestamp_ns: i64,
     pub sequence_number: u64,
 }
 
 impl From<&rmw_message_info_t> for MessageInfo {
     fn from(info: &rmw_message_info_t) -> Self {
-        let mut gid = [0u8; 16];
-        gid.copy_from_slice(&info.publisher_gid.data[..16]);
+        let mut gid = [0u8; RMW_GID_STORAGE_SIZE as usize];
+        gid.copy_from_slice(&info.publisher_gid.data);
         Self {
             gid,
             source_timestamp_ns: info.source_timestamp,
