@@ -37,6 +37,23 @@ jobs:
     timeout-minutes: 20
     runs-on: ubuntu-latest
     steps:
+      - name: Check nightly action status
+        run: |
+          COLOR_OFF='\033[0m'
+          COLOR_RED='\033[1;31m'
+          COLOR_GREEN='\033[1;32m'
+          COLOR_YELLOW='\033[1;33m'
+          LAST_RUN_STATUS=$(curl -s "https://api.github.com/repos/eclipse-iceoryx/iceoryx2/actions/workflows/nightly.yml/runs" | jq -r '.workflow_runs[0].conclusion')
+          if [[ "${LAST_RUN_STATUS}" == "success" ]]; then
+            echo -e "Last nightly run status: ${COLOR_GREEN}${LAST_RUN_STATUS}${COLOR_OFF}"
+          else
+            echo -e "Last nightly run status: ${COLOR_RED}${LAST_RUN_STATUS}${COLOR_OFF}"
+            echo -e "${COLOR_RED}Error! The nightly workflow failed on the last run. Please check and fix the nightly workflow before merging this PR.${COLOR_OFF}"
+            echo -e "${COLOR_YELLOW}You can trigger the nightly workflow manually from 'https://github.com/eclipse-iceoryx/iceoryx2/actions/workflows/nightly.yml'.${COLOR_OFF}"
+            echo -e "${COLOR_YELLOW}Just look for the 'Run workflow' button. The branch where the workflow shall run can also be selected.${COLOR_OFF}"
+            exit 1
+          fi
+
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
 
