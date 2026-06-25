@@ -18,13 +18,12 @@ use core::alloc::Layout;
 use core::hash::Hash;
 use core::marker::PhantomData;
 use core::mem::MaybeUninit;
-use core::ptr::NonNull;
 
 use alloc::boxed::Box;
 use alloc::format;
 use alloc::vec::Vec;
 
-use crate::constants::{MAX_BLACKBOARD_KEY_ALIGNMENT, MAX_BLACKBOARD_KEY_SIZE};
+use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
 use crate::service;
 use crate::service::builder::{DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError};
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
@@ -33,6 +32,7 @@ use crate::service::dynamic_config::blackboard::DynamicConfigSettings;
 use crate::service::marker::CustomKeyMarker;
 use crate::service::naming_scheme::blackboard_name;
 use crate::service::port_factory::blackboard;
+use crate::service::resource::blackboard::{BlackboardResources, Entry, KeyMemory, Mgmt};
 use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
@@ -41,8 +41,6 @@ use iceoryx2_bb_container::flatmap::RelocatableFlatMap;
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_container::vector::relocatable_vec::*;
-use iceoryx2_bb_derive_macros::ZeroCopySend;
-use iceoryx2_bb_elementary::static_assert::static_assert_eq;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
@@ -221,109 +219,6 @@ impl From<ServiceCreateError> for BlackboardCreateError {
 }
 
 #[doc(hidden)]
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
-pub enum KeyMemoryError {
-    ValueTooLarge,
-    ValueAlignmentTooLarge,
-}
-
-#[doc(hidden)]
-#[repr(C)]
-#[repr(align(8))]
-#[derive(Debug, Clone, Copy, Eq, PartialEq, ZeroCopySend)]
-pub struct KeyMemory<const CAPACITY: usize> {
-    pub data: [u8; CAPACITY],
-}
-
-impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
-    pub fn try_from<T: Copy>(value: &T) -> Result<Self, KeyMemoryError> {
-        static_assert_eq::<{ align_of::<KeyMemory<1>>() }, MAX_BLACKBOARD_KEY_ALIGNMENT>();
-
-        let origin = "KeyMemory::try_from()";
-        let msg = "Unable to create KeyMemory";
-
-        // Replace if block with below compile-time assertion once available for generic parameters
-        // static_assert_le::<{ size_of::<T>() }, CAPACITY>();
-        if size_of::<T>() > CAPACITY {
-            fail!(from origin, with KeyMemoryError::ValueTooLarge,
-                "{} since the passed value is too large. Its size must be <= {}.", msg, CAPACITY);
-        }
-        // Replace if block with below compile-time assertion once available for generic parameters
-        // static_assert_le::<{ align_of::<T>() }, MAX_BLACKBOARD_KEY_ALIGNMENT>();
-        if align_of::<T>() > MAX_BLACKBOARD_KEY_ALIGNMENT {
-            fail!(from origin, with KeyMemoryError::ValueAlignmentTooLarge,
-                "{} since the alignment of the passed value is too large. The alignment must be <= {}.",
-                msg, MAX_BLACKBOARD_KEY_ALIGNMENT);
-        }
-
-        let mut new_self = Self {
-            data: [0; CAPACITY],
-        };
-        unsafe { core::ptr::copy_nonoverlapping(value, new_self.data.as_mut_ptr() as *mut T, 1) };
-        Ok(new_self)
-    }
-
-    /// # Safety
-    ///
-    ///   * see Safety section of core::ptr::copy_nonoverlapping
-    pub unsafe fn try_from_ptr(ptr: *const u8, key_layout: Layout) -> Result<Self, KeyMemoryError> {
-        static_assert_eq::<{ align_of::<KeyMemory<1>>() }, MAX_BLACKBOARD_KEY_ALIGNMENT>();
-
-        let origin = "KeyMemory::try_from_ptr()";
-        let msg = "Unable to create KeyMemory";
-
-        if key_layout.size() > CAPACITY {
-            fail!(from origin, with KeyMemoryError::ValueTooLarge,
-                "{} since the passed key size is too large. The size must be <= {}.", msg, CAPACITY);
-        }
-        if key_layout.align() > MAX_BLACKBOARD_KEY_ALIGNMENT {
-            fail!(from origin, with KeyMemoryError::ValueAlignmentTooLarge,
-                "{} since the alignment of the passed key is too large. The alignment must be <= {}.",
-                msg, MAX_BLACKBOARD_KEY_ALIGNMENT);
-        }
-
-        let mut new_self = Self {
-            data: [0; CAPACITY],
-        };
-        unsafe {
-            core::ptr::copy_nonoverlapping(ptr, new_self.data.as_mut_ptr(), key_layout.size())
-        };
-        Ok(new_self)
-    }
-
-    /// This function compares two KeyMemory<CAPACITY> for equality and is only for blackboard internal
-    /// usage. It is passed to functions that require a Fn(*const u8, *const u8) -> bool so
-    /// default_key_eq_comparison cannot be marked unsafe. Still, there are safety requirements which are
-    /// guaranteed by the by the blackboard implementation:
-    ///
-    /// # Safety
-    ///
-    ///   * lhs and rhs must be valid pointers to valid KeyMemory<CAPACITY>
-    pub fn default_key_eq_comparison<T: Eq>(lhs: *const u8, rhs: *const u8) -> bool {
-        let lhs = unsafe { *(lhs as *const KeyMemory<CAPACITY>) };
-        let rhs = unsafe { *(rhs as *const KeyMemory<CAPACITY>) };
-        unsafe { *(lhs.data.as_ptr() as *const T) == *(rhs.data.as_ptr() as *const T) }
-    }
-
-    /// This function compares two KeyMemory<CAPACITY> for equality using the given compare function.
-    /// It is passed to functions that require a Fn(*const u8, *const u8) -> bool so key_eq_comparison
-    /// cannot be unsafe. Still, there are safety requirements:
-    ///
-    /// # Safety
-    ///
-    ///   * lhs and rhs must be valid pointers to valid KeyMemory<CAPACITY>
-    pub fn key_eq_comparison<F: Fn(*const u8, *const u8) -> bool>(
-        lhs: *const u8,
-        rhs: *const u8,
-        eq_func: &F,
-    ) -> bool {
-        let lhs = unsafe { *(lhs as *const KeyMemory<CAPACITY>) };
-        let rhs = unsafe { *(rhs as *const KeyMemory<CAPACITY>) };
-        eq_func(lhs.data.as_ptr(), rhs.data.as_ptr())
-    }
-}
-
-#[doc(hidden)]
 pub struct BuilderInternals {
     key: KeyMemory<MAX_BLACKBOARD_KEY_SIZE>,
     value_type_details: TypeDetail,
@@ -362,57 +257,6 @@ impl BuilderInternals {
             internal_value_alignment: value_alignment,
             internal_value_cleanup_callback: value_cleanup_callback,
         }
-    }
-}
-
-#[repr(C)]
-#[derive(Debug, ZeroCopySend)]
-pub(crate) struct Entry {
-    pub(crate) type_details: TypeDetail,
-    pub(crate) offset: AtomicU64,
-}
-
-#[repr(C)]
-#[derive(Debug, ZeroCopySend)]
-pub(crate) struct Mgmt {
-    pub(crate) map: RelocatableFlatMap<KeyMemory<MAX_BLACKBOARD_KEY_SIZE>, usize>,
-    pub(crate) entries: RelocatableVec<Entry>,
-}
-
-pub(crate) struct BlackboardResources<ServiceType: service::Service> {
-    pub(crate) mgmt: ServiceType::BlackboardMgmt<Mgmt>,
-    pub(crate) data: ServiceType::BlackboardPayload,
-    pub(crate) key_eq_func: Arc<dyn Fn(*const u8, *const u8) -> bool + Send + Sync>,
-}
-
-impl<ServiceType: service::Service> Abandonable for BlackboardResources<ServiceType> {
-    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
-        let this = unsafe { this.as_mut() };
-        unsafe {
-            ServiceType::BlackboardMgmt::<Mgmt>::abandon_in_place(NonNull::iox2_from_mut(
-                &mut this.mgmt,
-            ))
-        };
-        unsafe {
-            ServiceType::BlackboardPayload::abandon_in_place(NonNull::iox2_from_mut(&mut this.data))
-        };
-    }
-}
-
-impl<ServiceType: service::Service> Debug for BlackboardResources<ServiceType> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "BlackboardResources {{ mgmt: {:?}, data: {:?} }}",
-            self.mgmt, self.data
-        )
-    }
-}
-
-impl<ServiceType: service::Service> ServiceResource for BlackboardResources<ServiceType> {
-    fn acquire_ownership(&self) {
-        self.data.acquire_ownership();
-        self.mgmt.acquire_ownership();
     }
 }
 

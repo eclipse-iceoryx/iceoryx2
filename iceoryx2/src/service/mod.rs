@@ -256,6 +256,9 @@ pub mod marker;
 pub(crate) mod config_scheme;
 pub(crate) mod naming_scheme;
 
+#[doc(hidden)]
+pub mod resource;
+
 use core::fmt::Debug;
 use core::ptr::NonNull;
 use core::time::Duration;
@@ -279,6 +282,7 @@ use crate::service::config_scheme::dynamic_config_storage_config;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::naming_scheme::dynamic_config_name;
 use crate::service::naming_scheme::static_config_name;
+use crate::service::resource::ServiceResource;
 use crate::service::stale_resource_cleanup::{
     remove_additional_blackboard_resources,
     remove_sender_and_receiver_connections_and_data_segment,
@@ -950,24 +954,6 @@ pub mod internal {
             remove_service_tag()
         }
     }
-}
-
-/// Represents additional resources a service could use and have to be cleaned up when no owners
-/// are left
-pub trait ServiceResource: Abandonable {
-    /// Acquires the ownership of the additional resources. When the objects go out of scope the
-    /// underlying resources will be removed.
-    fn acquire_ownership(&self);
-}
-
-#[derive(Debug)]
-pub(crate) struct NoResource;
-impl ServiceResource for NoResource {
-    fn acquire_ownership(&self) {}
-}
-
-impl Abandonable for NoResource {
-    unsafe fn abandon_in_place(_this: NonNull<Self>) {}
 }
 
 /// Represents a service. Used to create or open new services with the

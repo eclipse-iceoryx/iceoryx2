@@ -30,9 +30,9 @@ use crate::port::DegradationCause;
 use crate::port::DegradationInfo;
 use crate::port::update_connections::ConnectionFailure;
 use crate::port::{DegradationAction, DegradationHandler, ReceiveError};
-use crate::service::NoResource;
 use crate::service::SharedServiceState;
 use crate::service::naming_scheme::data_segment_name;
+use crate::service::resource::NoResource;
 use crate::service::static_config::message_type_details::MessageTypeDetails;
 use crate::service::{self, config_scheme::connection_config, naming_scheme::connection_name};
 

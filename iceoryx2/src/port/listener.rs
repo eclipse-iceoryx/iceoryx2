@@ -59,10 +59,11 @@
 //! ```
 
 use crate::config::Config;
+use crate::service::SharedServiceState;
 use crate::service::config_scheme::event_config;
 use crate::service::dynamic_config::event::ListenerDetails;
 use crate::service::naming_scheme::event_concept_name;
-use crate::service::{NoResource, SharedServiceState};
+use crate::service::resource::NoResource;
 use crate::{identifiers::UniqueListenerId, service};
 use alloc::format;
 use core::ptr::NonNull;

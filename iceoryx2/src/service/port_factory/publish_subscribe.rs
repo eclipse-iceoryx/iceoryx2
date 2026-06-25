@@ -47,11 +47,10 @@ use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
 use crate::identifiers::UniqueServiceId;
 use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
+use crate::service::resource::NoResource;
 use crate::service::service_hash::ServiceHash;
 use crate::service::service_name::ServiceName;
-use crate::service::{
-    self, NoResource, ServiceState, SharedServiceState, dynamic_config, static_config,
-};
+use crate::service::{self, ServiceState, SharedServiceState, dynamic_config, static_config};
 use core::ptr::NonNull;
 use core::{fmt::Debug, marker::PhantomData};
 use iceoryx2_bb_elementary::CallbackProgression;
