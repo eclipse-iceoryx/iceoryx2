@@ -35,6 +35,7 @@ use iceoryx2_bb_elementary_traits::{
     non_null::NonNullCompat, testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
 };
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_cal::dynamic_storage::{DynamicStorage, DynamicStorageBuilder};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shared_memory::SharedMemory;
@@ -197,6 +198,64 @@ impl<ServiceType: service::Service> ServiceResource for BlackboardResources<Serv
     fn acquire_ownership(&self) {
         self.data.acquire_ownership();
         self.mgmt.acquire_ownership();
+    }
+
+    fn open(
+        static_config: &StaticConfig,
+        resource_config: &Self::Config,
+    ) -> Result<Self, builder::ServiceOpenError> {
+        let origin = format!(
+            "BlackboardResource<{}>::open()",
+            core::any::type_name::<ServiceType>()
+        );
+        let msg = "Failed to open blackboard service resources";
+        let shared_node = &resource_config.base.shared_node;
+        let blackboard_config = resource_config.config_details();
+        let key_eq_func = resource_config.key_eq_func.clone();
+        let name = blackboard_name(static_config.unique_service_id());
+        let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt>(shared_node.config());
+        let mgmt_name = blackboard_config.type_details.type_name.as_str();
+        // The name was set in create_impl to be able to remove the concept when a node
+        // dies. Safe since the same name is set in
+        // ServiceInternal::__internal_remove_node_from_service.
+        unsafe {
+            <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage<
+                Mgmt,
+            >>::__internal_set_type_name_in_config(
+                &mut mgmt_config, mgmt_name
+            )
+        };
+        let mgmt_storage = fail!(from origin, when
+            <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage<Mgmt>
+            >::Builder::new(&name)
+                .config(&mgmt_config)
+                .has_ownership(false)
+                .open(AccessMode::ReadWrite),
+            with builder::ServiceOpenError::ServiceInCorruptedState,
+            "{} since the blackboard management information could not be opened. This could indicate a corrupted system.", msg);
+
+        let shm_config = blackboard_data_config::<ServiceType>(shared_node.config());
+        let payload_shm = match <<ServiceType::BlackboardPayload as SharedMemory<
+            iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator,
+        >>::Builder as NamedConceptBuilder<ServiceType::BlackboardPayload>>::new(
+            &name
+        )
+        .config(&shm_config)
+        .open(AccessMode::ReadWrite)
+        {
+            Ok(v) => v,
+            Err(_) => {
+                fail!(from origin, with builder::ServiceOpenError::ServiceInCorruptedState,
+                    "{} since the blackboard payload data segment could not be opened. This could indicate a corrupted system.",
+                    msg);
+            }
+        };
+
+        Ok(BlackboardResources {
+            mgmt: mgmt_storage,
+            data: payload_shm,
+            key_eq_func,
+        })
     }
 
     fn create(

@@ -25,21 +25,17 @@ use alloc::vec::Vec;
 use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
 use crate::service;
 use crate::service::builder::{DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError};
-use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::blackboard::DynamicConfigSettings;
 use crate::service::marker::CustomKeyMarker;
-use crate::service::naming_scheme::blackboard_name;
 use crate::service::port_factory::blackboard;
-use crate::service::resource::blackboard::{BlackboardResources, KeyMemory, Mgmt};
+use crate::service::resource::blackboard::{BlackboardResources, KeyMemory};
 use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
-use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
-use iceoryx2_bb_posix::file::AccessMode;
-use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryBuilder};
+use iceoryx2_cal::shared_memory::SharedMemory;
 use iceoryx2_log::fatal_panic;
 
 use super::ServiceState;
@@ -741,60 +737,6 @@ impl<
         self.open_impl(verifier)
     }
 
-    fn open_blackboard_resources(
-        &self,
-        msg: &str,
-        service_config: &StaticConfig,
-    ) -> Result<BlackboardResources<ServiceType>, BlackboardOpenError> {
-        let shared_node = &self.builder.config.base.shared_node;
-        let blackboard_config = self.builder.config_details();
-        let key_eq_func = self.builder.config.key_eq_func.clone();
-        let name = blackboard_name(service_config.unique_service_id());
-        let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt>(shared_node.config());
-        let mgmt_name = blackboard_config.type_details.type_name.as_str();
-        // The name was set in create_impl to be able to remove the concept when a node
-        // dies. Safe since the same name is set in
-        // ServiceInternal::__internal_remove_node_from_service.
-        unsafe {
-            <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage<
-                Mgmt,
-            >>::__internal_set_type_name_in_config(
-                &mut mgmt_config, mgmt_name
-            )
-        };
-        let mgmt_storage = fail!(from self, when
-            <ServiceType::BlackboardMgmt<Mgmt> as DynamicStorage<Mgmt>
-            >::Builder::new(&name)
-                .config(&mgmt_config)
-                .has_ownership(false)
-                .open(AccessMode::ReadWrite),
-            with BlackboardOpenError::ServiceInCorruptedState,
-            "{} since the blackboard management information could not be opened. This could indicate a corrupted system.", msg);
-
-        let shm_config = blackboard_data_config::<ServiceType>(shared_node.config());
-        let payload_shm = match <<ServiceType::BlackboardPayload as SharedMemory<
-            iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator,
-        >>::Builder as NamedConceptBuilder<ServiceType::BlackboardPayload>>::new(
-            &name
-        )
-        .config(&shm_config)
-        .open(AccessMode::ReadWrite)
-        {
-            Ok(v) => v,
-            Err(_) => {
-                fail!(from self, with BlackboardOpenError::ServiceInCorruptedState,
-                    "{} since the blackboard payload data segment could not be opened. This could indicate a corrupted system.",
-                    msg);
-            }
-        };
-
-        Ok(BlackboardResources {
-            mgmt: mgmt_storage,
-            data: payload_shm,
-            key_eq_func,
-        })
-    }
-
     fn open_impl(
         self,
         required_attributes: &AttributeVerifier,
@@ -807,7 +749,7 @@ impl<
             |existing_service_config| -> Result<(), BlackboardOpenError> {
                 self.verify_service_configuration(msg, existing_service_config, required_attributes)
             },
-            |service_config| self.open_blackboard_resources(msg, service_config),
+            |service_config| BlackboardResources::open(service_config, &self.builder.config),
         )?;
 
         Ok(blackboard::PortFactory::new(service_state))

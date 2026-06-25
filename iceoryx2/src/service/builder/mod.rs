@@ -150,8 +150,9 @@ impl From<ServiceState> for ServiceCreateError {
     }
 }
 
+#[doc(hidden)]
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-enum ServiceOpenError {
+pub enum ServiceOpenError {
     InternalFailure,
     DoesNotExist,
     UnableToCreateServiceTag,
@@ -459,7 +460,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         R: service::ServiceResource,
         FA: FnMut() -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState>,
         F1: FnMut(&StaticConfig) -> Result<(), ErrorType>,
-        F2: FnMut(&StaticConfig) -> Result<R, ErrorType>,
+        F2: FnMut(&StaticConfig) -> Result<R, ServiceOpenError>,
     >(
         &self,
         msg: &str,
