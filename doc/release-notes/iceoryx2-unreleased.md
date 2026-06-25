@@ -37,6 +37,7 @@
 * [#1718](https://github.com/eclipse-iceoryx/iceoryx2/issues/1718) Protect `ProcessState` from accidental file lock release.
 * [#1739](https://github.com/eclipse-iceoryx/iceoryx2/issues/1739) Make sure MSVC defines __cplusplus with accurate value
 * [#1746](https://github.com/eclipse-iceoryx/iceoryx2/issues/1746) Disable `POSIX_SUPPORT_FILE_LOCK_FOR_SHARED_MEMORY` on FreeBSD and move CI job for FreeBSD to main pipeline
+* [#1763](https://github.com/eclipse-iceoryx/iceoryx2/issues/1763) Close `ActiveRequest-PendingResponse` connection when dead process is cleaned up.
 
 ### Refactoring
 

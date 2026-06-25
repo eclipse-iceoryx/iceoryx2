@@ -1378,4 +1378,90 @@ pub mod node_death {
             )
         });
     }
+
+    #[conformance_test]
+    pub fn connection_state_is_updated_when_dead_client_is_cleaned_up<
+        S: iceoryx2::service::Service,
+    >() {
+        test_requires!(does_support_persistency::<S>());
+
+        let test = Test::<S>::new();
+        let service_name = generate_service_name();
+
+        let bad_node = test.create_node();
+        let bad_service = bad_node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create()
+            .unwrap();
+        let bad_client = bad_service.client_builder().create().unwrap();
+
+        let good_node = test.create_node();
+        let good_service = good_node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .open()
+            .unwrap();
+        let good_server = good_service.server_builder().create().unwrap();
+
+        let bad_pending_response = bad_client.send_copy(0).unwrap();
+        let good_active_request = good_server.receive().unwrap().unwrap();
+
+        assert_that!(good_active_request.is_connected(), eq true);
+
+        bad_pending_response.abandon();
+        bad_client.abandon();
+        bad_service.abandon();
+        bad_node.abandon();
+
+        let cleanup_results = good_node.try_cleanup_dead_nodes();
+
+        assert_that!(cleanup_results.cleanups, eq 1);
+        assert_that!(cleanup_results.failed_cleanups, eq 0);
+
+        assert_that!(good_active_request.is_connected(), eq false);
+    }
+
+    #[conformance_test]
+    pub fn connection_state_is_updated_when_dead_server_is_cleaned_up<
+        S: iceoryx2::service::Service,
+    >() {
+        test_requires!(does_support_persistency::<S>());
+
+        let test = Test::<S>::new();
+        let service_name = generate_service_name();
+
+        let bad_node = test.create_node();
+        let bad_service = bad_node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create()
+            .unwrap();
+        let bad_server = bad_service.server_builder().create().unwrap();
+
+        let good_node = test.create_node();
+        let good_service = good_node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .open()
+            .unwrap();
+        let good_client = good_service.client_builder().create().unwrap();
+
+        let good_pending_response = good_client.send_copy(0).unwrap();
+        let bad_active_request = bad_server.receive().unwrap().unwrap();
+
+        assert_that!(good_pending_response.is_connected(), eq true);
+
+        bad_active_request.abandon();
+        bad_server.abandon();
+        bad_service.abandon();
+        bad_node.abandon();
+
+        let cleanup_results = good_node.try_cleanup_dead_nodes();
+
+        assert_that!(cleanup_results.cleanups, eq 1);
+        assert_that!(cleanup_results.failed_cleanups, eq 0);
+
+        assert_that!(good_pending_response.is_connected(), eq false);
+    }
 }
