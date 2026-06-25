@@ -37,9 +37,10 @@ use crate::port::{
     DegradationInfo, LoanError, SendError,
 };
 use crate::prelude::BackpressureStrategy;
+use crate::service::SharedServiceState;
 use crate::service::config_scheme::connection_config;
+use crate::service::resource::NoResource;
 use crate::service::static_config::message_type_details::{MessageTypeDetails, TypeVariant};
-use crate::service::{NoResource, SharedServiceState};
 use crate::{service, service::naming_scheme::connection_name};
 
 use super::chunk::ChunkMut;

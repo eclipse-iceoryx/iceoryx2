@@ -30,11 +30,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .inspect_err(|e| cerrln!("Please define IOX2_FLATBUFFER_SCHEMA_PATH! [{e:?}]"))?;
 
     let mut config = Config::default();
-    config
-        .global
-        .service
-        .flatbuffer_schema_paths
-        .push(lookup_path.as_str().try_into()?);
+    config.global.service.flatbuffer_schema_path = Some(lookup_path.as_str().try_into()?);
 
     let node = NodeBuilder::new()
         .config(&config)

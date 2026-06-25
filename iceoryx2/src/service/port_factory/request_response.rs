@@ -46,7 +46,7 @@ use crate::{
     node::NodeListFailure,
     prelude::AttributeSet,
     service::{
-        self, NoResource, ServiceState, SharedServiceState, dynamic_config,
+        self, ServiceState, SharedServiceState, dynamic_config, resource::NoResource,
         service_hash::ServiceHash, service_name::ServiceName, static_config,
     },
 };

@@ -15,6 +15,7 @@
 //! See [`crate::service`]
 //!
 pub use crate::port::event_id::EventId;
+use crate::service::resource::NoResource;
 
 use alloc::format;
 

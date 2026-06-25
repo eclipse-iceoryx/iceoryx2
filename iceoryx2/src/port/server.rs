@@ -76,10 +76,11 @@
 use crate::port::port_name::PortName;
 use crate::port::update_connections::UpdateConnections;
 use crate::prelude::BackpressureStrategy;
+use crate::service::SharedServiceState;
 use crate::service::marker::CustomPayloadMarker;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::server::LocalServerConfig;
-use crate::service::{NoResource, SharedServiceState};
+use crate::service::resource::NoResource;
 use crate::{
     active_request::ActiveRequest,
     prelude::PortFactory,

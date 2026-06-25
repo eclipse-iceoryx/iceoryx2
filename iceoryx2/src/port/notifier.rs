@@ -55,12 +55,13 @@ use iceoryx2_cal::{event::Event, named_concept::NamedConceptBuilder};
 use iceoryx2_log::{debug, fail, warn};
 
 use crate::service::SharedServiceState;
+use crate::service::resource::NoResource;
 use crate::{
     identifiers::{UniqueListenerId, UniqueNodeId, UniqueNotifierId},
     port::port_name::PortName,
     port::update_connections::UpdateConnections,
     service::{
-        self, NoResource,
+        self,
         config_scheme::event_config,
         dynamic_config::event::{ListenerDetails, NotifierDetails},
         naming_scheme::event_concept_name,
