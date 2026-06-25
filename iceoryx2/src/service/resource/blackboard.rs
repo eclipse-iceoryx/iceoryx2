@@ -12,6 +12,7 @@
 
 extern crate alloc;
 
+use crate::config;
 use crate::constants::{MAX_BLACKBOARD_KEY_ALIGNMENT, MAX_BLACKBOARD_KEY_SIZE};
 use crate::service::builder::{self, ServiceCreateError};
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
@@ -37,11 +38,12 @@ use iceoryx2_bb_elementary_traits::{
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_cal::dynamic_storage::{DynamicStorage, DynamicStorageBuilder};
+use iceoryx2_cal::event::NamedConceptMgmt;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shared_memory::SharedMemory;
 use iceoryx2_cal::shared_memory::SharedMemoryBuilder;
-use iceoryx2_log::error;
 use iceoryx2_log::fail;
+use iceoryx2_log::{error, trace};
 
 #[doc(hidden)]
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
@@ -198,6 +200,59 @@ impl<ServiceType: service::Service> ServiceResource for BlackboardResources<Serv
     fn acquire_ownership(&self) {
         self.data.acquire_ownership();
         self.mgmt.acquire_ownership();
+    }
+
+    fn remove_stale_resources(config: &config::Config, static_config: &StaticConfig) {
+        let origin = format!(
+            "BlackboardResource<{}>::remove_stale_resources()",
+            core::any::type_name::<ServiceType>()
+        );
+        let msg = "Unable to remove stale blackboard resources";
+        let service_id = static_config.unique_service_id();
+        let blackboard_name = blackboard_name(service_id);
+        let blackboard_payload_config = blackboard_data_config::<ServiceType>(config);
+        let blackboard_mgmt_name = static_config.blackboard().type_details.type_name;
+
+        match unsafe {
+            <ServiceType::BlackboardPayload as NamedConceptMgmt>::remove_cfg(
+                &blackboard_name,
+                &blackboard_payload_config,
+            )
+        } {
+            Ok(true) => {
+                trace!(from origin, "Remove blackboard payload segment.");
+            }
+            _ => {
+                error!(from origin,
+                                  "{} since the blackboard payload segment cannot be removed - service seems to be in a corrupted state.", msg);
+            }
+        }
+
+        // u64 is just a placeholder needed for the DynamicStorageConfiguration; it is
+        // overwritten right below
+        let mut blackboard_mgmt_config =
+            crate::service::config_scheme::blackboard_mgmt_config::<ServiceType, u64>(config);
+        // Safe since the same type name is set when creating the BlackboardMgmt in
+        // Creator::create_impl so we can safely remove the concept.
+        unsafe {
+            <ServiceType::BlackboardMgmt<u64> as DynamicStorage<u64>>::__internal_set_type_name_in_config(
+                &mut blackboard_mgmt_config,
+                blackboard_mgmt_name.as_str(),
+            )
+        };
+        match unsafe {
+            <ServiceType::BlackboardMgmt<u64> as NamedConceptMgmt>::remove_cfg(
+                &blackboard_name,
+                &blackboard_mgmt_config,
+            )
+        } {
+            Ok(true) => {
+                trace!(from origin, "Remove blackboard mgmt segment.");
+            }
+            _ => {
+                error!(from origin, "{} since the blackboard mgmt segment cannot be removed - service seems to be in a corrupted state.", msg);
+            }
+        }
     }
 
     fn open(
