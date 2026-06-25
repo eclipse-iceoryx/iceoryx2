@@ -284,7 +284,6 @@ use crate::service::naming_scheme::dynamic_config_name;
 use crate::service::naming_scheme::static_config_name;
 use crate::service::resource::ServiceResource;
 use crate::service::stale_resource_cleanup::{
-    remove_additional_blackboard_resources,
     remove_sender_and_receiver_connections_and_data_segment,
     remove_sender_connection_and_data_segment,
 };
@@ -575,7 +574,8 @@ impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
 #[doc(hidden)]
 pub mod internal {
     use crate::{
-        port::port_name::PortName, service::stale_resource_cleanup::ServiceRemoveTagError,
+        port::port_name::PortName, service::resource::blackboard::BlackboardResources,
+        service::stale_resource_cleanup::ServiceRemoveTagError,
     };
 
     use super::*;
@@ -729,15 +729,9 @@ pub mod internal {
             if let Ok(true) = blackboard_payload {
                 match __internal_details::<S>(config, service_hash) {
                     Ok(Some(details)) => {
-                        let blackboard_mgmt_name =
-                            details.static_details.blackboard().type_details.type_name;
-
-                        remove_additional_blackboard_resources::<S>(
+                        BlackboardResources::<S>::remove_stale_resources(
                             config,
-                            unique_service_id,
-                            &blackboard_mgmt_name,
-                            origin,
-                            msg,
+                            &details.static_details,
                         );
                     }
                     _ => {
