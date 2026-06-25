@@ -122,8 +122,9 @@ pub struct Builder<S: Service> {
     _phantom_s: PhantomData<S>,
 }
 
+#[doc(hidden)]
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-enum ServiceCreateError {
+pub enum ServiceCreateError {
     InternalFailure,
     AlreadyExists,
     IsBeingCreatedByAnotherInstance,
@@ -278,8 +279,8 @@ impl<S: Service> Builder<S> {
 #[doc(hidden)]
 #[derive(Debug, Clone)]
 pub struct BuilderWithServiceType<ServiceType: service::Service> {
-    service_config: StaticConfig,
-    shared_node: SharedNode<ServiceType>,
+    pub(crate) service_config: StaticConfig,
+    pub(crate) shared_node: SharedNode<ServiceType>,
     _phantom_data: PhantomData<ServiceType>,
 }
 
