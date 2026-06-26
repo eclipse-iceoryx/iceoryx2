@@ -68,12 +68,12 @@ fn is_namespace(file_name: &FileName, type_name: &TypeName) -> bool {
         || name.eq_ignore_ascii_case(&snake_to_upper_camel_case(type_name.namespace))
 }
 
-pub fn find_best_fitting_schema_file<T: ?Sized>(
+pub fn find_best_fitting_schema_file(
+    type_name: &TypeName,
     root_path: &Path,
 ) -> Result<Option<FilePath>, FindSchemaFileError> {
     let origin = format!("find_best_fitting_schema_file({root_path:?})");
     let msg = "Unable to find best fitting schema file";
-    let type_name = crate::type_name::<T>();
 
     let dir = match Directory::new(root_path) {
         Ok(dir) => dir,
@@ -131,7 +131,7 @@ pub fn find_best_fitting_schema_file<T: ?Sized>(
     for entry in &contents {
         match entry.metadata().file_type() {
             FileType::File => {
-                if is_schema_for_type_name(entry.name(), &type_name) {
+                if is_schema_for_type_name(entry.name(), type_name) {
                     match FilePath::from_path_and_file(root_path, entry.name()) {
                         Ok(file) => schema_file = Some(file),
                         Err(e) => {
@@ -143,7 +143,7 @@ pub fn find_best_fitting_schema_file<T: ?Sized>(
                 }
             }
             FileType::Directory => {
-                if is_namespace(entry.name(), &type_name) {
+                if is_namespace(entry.name(), type_name) {
                     namespace_subdirectory = Some(create_sub_path(root_path, entry.name())?);
                 }
             }
@@ -152,7 +152,7 @@ pub fn find_best_fitting_schema_file<T: ?Sized>(
     }
 
     if let Some(dir) = &namespace_subdirectory {
-        if let Ok(Some(file)) = find_best_fitting_schema_file::<T>(dir) {
+        if let Ok(Some(file)) = find_best_fitting_schema_file(type_name, dir) {
             return Ok(Some(file));
         }
     }
@@ -164,7 +164,7 @@ pub fn find_best_fitting_schema_file<T: ?Sized>(
     for entry in &contents {
         if entry.metadata().file_type() == FileType::Directory {
             if let Ok(Some(file)) =
-                find_best_fitting_schema_file::<T>(&create_sub_path(root_path, entry.name())?)
+                find_best_fitting_schema_file(type_name, &create_sub_path(root_path, entry.name())?)
             {
                 return Ok(Some(file));
             }

@@ -40,6 +40,8 @@ use alloc::format;
 use alloc::vec;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::string::strnlen;
 use iceoryx2_bb_elementary::enum_gen;
@@ -195,17 +197,18 @@ pub struct Directory {
     path: Path,
     directory_stream: *mut posix::DIR,
     file_descriptor: FileDescriptor,
+    has_ownership: AtomicBool,
 }
 
 impl Drop for Directory {
     fn drop(&mut self) {
+        let msg = "Unable to close directory stream";
         let mut counter = 0;
         loop {
             if unsafe { posix::closedir(self.directory_stream) } == 0 {
                 break;
             }
 
-            let msg = "Unable to close directory stream";
             match Errno::get() {
                 Errno::EBADF => {
                     fatal_panic!(from self, "This should never happen! {} due to an invalid file-descriptor.", msg);
@@ -226,11 +229,29 @@ impl Drop for Directory {
             }
         }
 
+        if self.has_ownership() {
+            if let Err(e) = Directory::remove(&self.path) {
+                error!(from self, "{} and remove it. [{e:?}]", msg);
+            }
+        }
+
         trace!(from self, "closed");
     }
 }
 
 impl Directory {
+    pub fn has_ownership(&self) -> bool {
+        self.has_ownership.load(Ordering::Relaxed)
+    }
+
+    pub fn acquire_ownership(&self) {
+        self.has_ownership.store(true, Ordering::Relaxed);
+    }
+
+    pub fn release_ownership(&self) {
+        self.has_ownership.store(false, Ordering::Relaxed);
+    }
+
     pub fn new(path: &Path) -> Result<Self, DirectoryOpenError> {
         let directory_stream = unsafe { posix::opendir(path.as_c_str()) };
 
@@ -257,6 +278,7 @@ impl Directory {
         let new_self = Directory {
             path: *path,
             directory_stream,
+            has_ownership: AtomicBool::new(false),
             file_descriptor: file_descriptor.unwrap(),
         };
 

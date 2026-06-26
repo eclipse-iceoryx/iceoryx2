@@ -20,7 +20,7 @@ use alloc::format;
 
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_flatbuffers::find_best_fitting_schema_file;
+use iceoryx2_bb_flatbuffers::{find_best_fitting_schema_file, type_name};
 use iceoryx2_bb_posix::file::FileBuilder;
 use iceoryx2_log::{fail, fatal_panic, warn};
 
@@ -31,6 +31,9 @@ use crate::service::header::publish_subscribe::Header;
 use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker, Flatbuffer};
 use crate::service::port_factory::publish_subscribe;
 use crate::service::resource::NoResource;
+use crate::service::resource::publish_subscribe::{
+    PublishSubscribeResourceConfig, PublishSubscribeResources,
+};
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
 use crate::service::{self, dynamic_config::MessagingPatternSettings};
@@ -685,28 +688,15 @@ impl<
             }
         };
 
-        if Self::has_flatbuffer_payload() {
-            let schema_path = match self.flatbuffer_schema_path {
-                Some(path) => path,
-                None => match self
-                    .base
-                    .shared_node
-                    .config()
-                    .global
-                    .service
-                    .flatbuffer_schema_path
-                {
-                    Some(p) => find_best_fitting_schema_file::<Payload>(&p)
-                        .unwrap()
-                        .unwrap(),
-                    None => todo!(),
-                },
-            };
-
-            let schema = FileBuilder::new(&schema_path)
-                .open_existing(AccessMode::Read)
-                .unwrap();
-        }
+        PublishSubscribeResources::create(
+            &self.base.service_config,
+            &PublishSubscribeResourceConfig::<ServiceType> {
+                copy_type_definition: Self::has_flatbuffer_payload(),
+                schema_path: self.flatbuffer_schema_path,
+                shared_node: self.base.shared_node.clone(),
+                type_name: type_name::<Payload>(),
+            },
+        );
 
         let service_state = self.base.create(
             msg,
