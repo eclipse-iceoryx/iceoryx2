@@ -81,28 +81,42 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
         )?;
         directory.acquire_ownership();
 
+        let flatbuffer_schema_path = match resource_config
+            .shared_node
+            .config()
+            .global
+            .service
+            .flatbuffer_schema_path
+        {
+            Some(p) => p,
+            None => {
+                todo!()
+            }
+        };
+
         if resource_config.copy_type_definition {
             let schema_path = match resource_config.schema_path {
-                Some(path) => path,
-                None => match resource_config
-                    .shared_node
-                    .config()
-                    .global
-                    .service
-                    .flatbuffer_schema_path
-                {
-                    Some(p) => find_best_fitting_schema_file(&resource_config.type_name, &p)
-                        .unwrap()
-                        .unwrap(),
-                    None => todo!(),
-                },
+                Some(file_path) => {
+                    if file_path.path().is_absolute() {
+                        file_path
+                    } else {
+                        let mut path = flatbuffer_schema_path;
+                        path.add_path_entry(&file_path.into()).unwrap();
+                        unsafe { FilePath::new_unchecked(path.as_bytes()) }
+                    }
+                }
+                None => find_best_fitting_schema_file(
+                    &resource_config.type_name,
+                    &flatbuffer_schema_path,
+                )
+                .unwrap()
+                .unwrap(),
             };
 
             let schema_dest =
                 FilePath::from_path_and_file(directory.path(), &FileName::new(b"asd").unwrap())
                     .unwrap();
 
-            println!("found >> {schema_path}");
             File::copy(&schema_path, &schema_dest).unwrap();
 
             directory.release_ownership();
