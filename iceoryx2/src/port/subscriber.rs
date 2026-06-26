@@ -86,6 +86,11 @@ pub enum SubscriberCreateError {
     FailedToDeployThreadsafetyPolicy,
     /// The tracking port tag, required for cleanup, could not be created.
     UnableToCreatePortTag,
+    /// When the [`Subscriber`] requests a larger history than the
+    /// [`Service`](crate::service::Service) offers the creation will fail.
+    HistoryRequestExceedsHistorySizeOfService,
+    /// When the [`Subscriber`] requests a larger history than its buffer can hold.
+    HistoryRequestExceedsBufferSizeOfSubscriber,
 }
 
 impl core::fmt::Display for SubscriberCreateError {
@@ -235,6 +240,25 @@ impl<
             None => static_config.subscriber_max_buffer_size,
         };
 
+        let history_request = match config.history_request {
+            Some(history_request) => {
+                if history_request > static_config.history_size {
+                    fail!(from origin, with SubscriberCreateError::HistoryRequestExceedsHistorySizeOfService,
+                          "{} since the requested history {} exceeds the supported history size {} of the service.",
+                          msg, history_request, static_config.history_size);
+                }
+
+                if history_request > buffer_size {
+                    fail!(from origin, with SubscriberCreateError::HistoryRequestExceedsBufferSizeOfSubscriber,
+                        "{} since the requested history {} exceeds the buffer size {}.",
+                        msg, history_request, buffer_size);
+                }
+
+                history_request
+            }
+            None => static_config.history_size.min(buffer_size),
+        };
+
         let subscriber_max_borrowed_samples = static_config.subscriber_max_borrowed_samples;
         let subscriber_expired_connection_buffer = service
             .shared_node()
@@ -321,6 +345,7 @@ impl<
             .add_subscriber_id(SubscriberDetails {
                 subscriber_id,
                 buffer_size,
+                history_request,
                 node_id: *service.shared_node().id(),
             }) {
             Some(unique_index) => unique_index,

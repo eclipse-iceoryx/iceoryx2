@@ -48,6 +48,7 @@ use super::publish_subscribe::PortFactory;
 #[derive(Debug)]
 pub(crate) struct SubscriberConfig {
     pub(crate) buffer_size: Option<usize>,
+    pub(crate) history_request: Option<usize>,
     pub(crate) degradation_handler: DegradationHandler<'static>,
 }
 
@@ -88,6 +89,7 @@ impl<
         Self {
             config: SubscriberConfig {
                 buffer_size: self.config.buffer_size,
+                history_request: self.config.history_request,
                 degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
             },
             factory: self.factory,
@@ -98,6 +100,7 @@ impl<
         Self {
             config: SubscriberConfig {
                 buffer_size: None,
+                history_request: None,
                 degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
             },
             factory,
@@ -107,6 +110,13 @@ impl<
     /// Defines the buffer size of the [`Subscriber`]. Smallest possible value is `1`.
     pub fn buffer_size(mut self, value: usize) -> Self {
         self.config.buffer_size = Some(value.max(1));
+        self
+    }
+
+    /// Defines the amount of requested history samples. By default the value defined with the
+    /// service's `history_size` is used.
+    pub fn history_request(mut self, value: usize) -> Self {
+        self.config.history_request = Some(value);
         self
     }
 

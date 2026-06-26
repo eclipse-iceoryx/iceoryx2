@@ -38,6 +38,9 @@ class SubscriberDetailsView {
     /// The receive buffer size for incoming samples.
     auto buffer_size() const -> uint64_t;
 
+    /// The history request for the subscriber.
+    auto history_request() const -> uint64_t;
+
   private:
     template <typename T, typename>
     friend auto internal::list_ports_callback(void* context, T port_details_view) -> iox2_callback_progression_e;

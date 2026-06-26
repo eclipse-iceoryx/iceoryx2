@@ -47,4 +47,8 @@ auto SubscriberDetailsView::node_id() const -> UniqueNodeId {
 auto SubscriberDetailsView::buffer_size() const -> uint64_t {
     return iox2_subscriber_details_buffer_size(m_handle);
 }
+
+auto SubscriberDetailsView::history_request() const -> uint64_t {
+    return iox2_subscriber_details_history_request(m_handle);
+}
 } // namespace iox2
