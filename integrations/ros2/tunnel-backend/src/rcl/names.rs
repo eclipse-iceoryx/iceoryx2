@@ -11,10 +11,11 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! Validated ROS 2 names. Each type checks the relevant ROS 2 naming rules on
-//! construction and holds the result as a [`CString`], so an instance is a
-//! proof that the contained string is a legal name of that kind, ready to hand
-//! to rcl across the FFI boundary.
+//! construction and holds the result as a C string, so an instance is a proof
+//! that the contained string is a legal name of that kind, ready to hand to rcl
+//! across the FFI boundary.
 
+use std::borrow::Cow;
 use std::ffi::{CStr, CString};
 
 use iceoryx2_log::fail;
@@ -57,14 +58,14 @@ fn all_segments_valid(path: &str) -> bool {
     path.split('/').all(is_valid_token)
 }
 
-/// Converts an already-validated name into a [`CString`].
-fn into_cstring(name: &str) -> CString {
-    CString::new(name).expect("a validated ROS 2 name contains no interior nul byte")
+/// Stores an already-validated name as an owned C string.
+fn owned(name: &str) -> Cow<'static, CStr> {
+    Cow::Owned(CString::new(name).expect("a validated ROS 2 name contains no interior nul byte"))
 }
 
 /// A ROS 2 node name: a single name token.
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct NodeName(CString);
+pub struct NodeName(Cow<'static, CStr>);
 
 impl NodeName {
     /// Creates a new ROS 2 node name from the given string.
@@ -92,7 +93,19 @@ impl NodeName {
             );
         }
 
-        Ok(Self(into_cstring(name)))
+        Ok(Self(owned(name)))
+    }
+
+    /// Wraps an already-valid node name without re-checking it.
+    ///
+    /// The caller must guarantee `name` is a well-formed ROS 2 node name.
+    pub fn new_unchecked(name: &str) -> Self {
+        Self(owned(name))
+    }
+
+    /// Wraps a static, already-valid node name at compile time.
+    pub const fn new_static_unchecked(name: &'static CStr) -> Self {
+        Self(Cow::Borrowed(name))
     }
 
     pub fn as_c_str(&self) -> &CStr {
@@ -103,12 +116,12 @@ impl NodeName {
 /// A ROS 2 node namespace: an absolute, `/`-separated path of name tokens. The
 /// empty string and `/` both denote the root namespace.
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct NodeNamespace(CString);
+pub struct NodeNamespace(Cow<'static, CStr>);
 
 impl NodeNamespace {
     /// The root namespace.
-    pub fn root() -> Self {
-        Self(into_cstring(""))
+    pub const fn root() -> Self {
+        Self(Cow::Borrowed(c""))
     }
 
     /// Creates a new ROS 2 namespace from the given string.
@@ -120,7 +133,7 @@ impl NodeNamespace {
         let origin = "Namespace::new";
 
         if namespace.is_empty() || namespace == "/" {
-            return Ok(Self(into_cstring(namespace)));
+            return Ok(Self(owned(namespace)));
         }
         let path = fail!(from origin,
             when namespace.strip_prefix('/').ok_or(NameError::NoLeadingSlash),
@@ -135,7 +148,19 @@ impl NodeNamespace {
             );
         }
 
-        Ok(Self(into_cstring(namespace)))
+        Ok(Self(owned(namespace)))
+    }
+
+    /// Wraps an already-valid namespace without re-checking it.
+    ///
+    /// The caller must guarantee `namespace` is a well-formed ROS 2 node namespace.
+    pub fn new_unchecked(namespace: &str) -> Self {
+        Self(owned(namespace))
+    }
+
+    /// Wraps a static, already-valid namespace at compile time.
+    pub const fn new_static_unchecked(namespace: &'static CStr) -> Self {
+        Self(Cow::Borrowed(namespace))
     }
 
     pub fn as_c_str(&self) -> &CStr {
@@ -146,7 +171,7 @@ impl NodeNamespace {
 /// A ROS 2 topic name: a non-empty, `/`-separated path of name tokens, either
 /// absolute (leading `/`) or relative.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct TopicName(CString);
+pub struct TopicName(Cow<'static, CStr>);
 
 impl TopicName {
     /// Creates a new ROS 2 topic name from the given string.
@@ -179,7 +204,7 @@ impl TopicName {
             );
         }
 
-        Ok(Self(into_cstring(topic)))
+        Ok(Self(owned(topic)))
     }
 
     /// Wraps an already-valid topic name without re-checking it.
@@ -187,7 +212,12 @@ impl TopicName {
     /// The caller must guarantee `topic` is a well-formed ROS 2 topic name,
     /// e.g. it came straight from an rcl graph query.
     pub fn new_unchecked(topic: &str) -> Self {
-        Self(into_cstring(topic))
+        Self(owned(topic))
+    }
+
+    /// Wraps a static, already-valid topic name at compile time.
+    pub const fn new_static_unchecked(topic: &'static CStr) -> Self {
+        Self(Cow::Borrowed(topic))
     }
 
     pub fn as_c_str(&self) -> &CStr {
@@ -206,7 +236,7 @@ impl TopicName {
 /// `std_msgs/msg/String`. The `package` and `Message` parts are valid name
 /// tokens.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct TypeName(CString);
+pub struct TypeName(Cow<'static, CStr>);
 
 impl TypeName {
     /// Creates a new ROS 2 message type name from the given string.
@@ -239,7 +269,7 @@ impl TypeName {
             );
         }
 
-        Ok(Self(into_cstring(type_name)))
+        Ok(Self(owned(type_name)))
     }
 
     /// Wraps an already-valid type name without re-checking it.
@@ -247,7 +277,12 @@ impl TypeName {
     /// The caller must guarantee `type_name` is a well-formed ROS 2 type name,
     /// e.g. it came straight from an rcl graph query.
     pub fn new_unchecked(type_name: &str) -> Self {
-        Self(into_cstring(type_name))
+        Self(owned(type_name))
+    }
+
+    /// Wraps a static, already-valid type name at compile time.
+    pub const fn new_static_unchecked(type_name: &'static CStr) -> Self {
+        Self(Cow::Borrowed(type_name))
     }
 
     /// The type name as a string slice.
@@ -343,5 +378,22 @@ mod tests {
                 "{type_name}"
             );
         }
+    }
+
+    #[test]
+    fn constructors_round_trip_and_agree() {
+        const STATIC: TopicName = TopicName::new_static_unchecked(c"/chatter");
+        let checked = TopicName::new("/chatter").unwrap();
+        let unchecked = TopicName::new_unchecked("/chatter");
+
+        assert_eq!(checked.as_str(), "/chatter");
+        assert_eq!(checked.as_c_str(), c"/chatter");
+        assert_eq!(checked, unchecked);
+        assert_eq!(checked, STATIC);
+    }
+
+    #[test]
+    fn root_namespace_is_empty() {
+        assert_eq!(NodeNamespace::root().as_c_str(), c"");
     }
 }

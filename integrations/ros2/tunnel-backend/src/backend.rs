@@ -25,7 +25,7 @@ use crate::{
 };
 
 /// The name of the ROS 2 node representing the tunnel.
-const NODE_NAME: &str = "iceoryx2_tunnel";
+const NODE_NAME: rcl::NodeName = rcl::NodeName::new_static_unchecked(c"iceoryx2_tunnel");
 
 /// A ROS 2 topic to bridge.
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -169,13 +169,8 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
     fn create(self) -> Result<Self::Backend, Self::CreationError> {
         let origin = "Ros2Backend::create";
 
-        let node_name = fail!(from origin,
-            when rcl::NodeName::new(NODE_NAME),
-            with CreationError::Node,
-            "Invalid node name '{}'", NODE_NAME
-        );
         let node = fail!(from origin,
-            when rcl::NodeHandle::new(node_name).create(),
+            when rcl::NodeHandle::new(NODE_NAME).create(),
             with CreationError::Node,
             "Failed to create ROS 2 node"
         );
