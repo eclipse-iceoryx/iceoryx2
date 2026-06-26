@@ -12,7 +12,6 @@
 
 use std::sync::Arc;
 
-use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use iceoryx2::service::{Service, local_threadsafe, static_config::StaticConfig};
 use iceoryx2_log::fail;
 use iceoryx2_services_tunnel_backend::traits::{PublishSubscribeRelay, RelayBuilder};
@@ -127,7 +126,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
                 if self.write_ros_header {
                     payload::write_user_header(
                         sample.user_header_mut(),
-                        RosHeader::from_message_info(&message_info),
+                        RosHeader::from(message_info),
                     );
                 }
 
@@ -236,7 +235,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
             .publish_subscribe()
             .message_type_details()
             .user_header
-            == TypeDetail::new::<RosHeader>(TypeVariant::FixedSize);
+            == RosHeader::type_detail();
 
         Ok(Relay {
             publisher,

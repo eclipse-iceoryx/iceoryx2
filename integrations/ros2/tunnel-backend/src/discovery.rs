@@ -104,7 +104,7 @@ impl<S: Service> Discovery<S> {
             "Invalid payload type name '{}'",
             type_name.as_str()
         );
-        let user_header = TypeDetail::new::<RosHeader>(TypeVariant::FixedSize);
+        let user_header = RosHeader::type_detail();
 
         Ok(
             StaticConfig::__internal_new_publish_subscribe_with_details::<S::ServiceNameHasher>(

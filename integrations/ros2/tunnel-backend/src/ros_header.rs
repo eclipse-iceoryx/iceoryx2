@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::prelude::*;
+use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 
 use crate::rcl::MessageInfo;
 
@@ -35,7 +36,15 @@ const _: () = assert!(core::mem::size_of::<RosHeader>() == 32);
 const _: () = assert!(core::mem::align_of::<RosHeader>() == 8);
 
 impl RosHeader {
-    pub(crate) fn from_message_info(info: &MessageInfo) -> Self {
+    /// The iceoryx2 [`TypeDetail`] describing this header. Bridged services
+    /// declare it as their user header so the tunnel can recognize them.
+    pub(crate) fn type_detail() -> TypeDetail {
+        TypeDetail::new::<RosHeader>(TypeVariant::FixedSize)
+    }
+}
+
+impl From<MessageInfo> for RosHeader {
+    fn from(info: MessageInfo) -> Self {
         Self {
             gid: info.gid,
             source_timestamp_ns: info.source_timestamp_ns,
