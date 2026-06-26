@@ -17,8 +17,8 @@
 //! ```bash
 //! cargo run --example tunnel_reactive
 //! # in other shells:
-//! #   ros2 run iceoryx2_ros2_chatter_nodes publisher
-//! #   ros2 run iceoryx2_ros2_chatter_nodes subscriber
+//! #   ros2 run demo_nodes_iceoryx2 talker
+//! #   ros2 run demo_nodes_iceoryx2 listener
 //! #   ros2 run demo_nodes_cpp talker
 //! #   ros2 topic echo /chatter
 //! ```
