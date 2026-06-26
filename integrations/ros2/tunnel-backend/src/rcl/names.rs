@@ -182,6 +182,14 @@ impl TopicName {
         Ok(Self(into_cstring(topic)))
     }
 
+    /// Wraps an already-valid topic name without re-checking it.
+    ///
+    /// The caller must guarantee `topic` is a well-formed ROS 2 topic name,
+    /// e.g. it came straight from an rcl graph query.
+    pub fn new_unchecked(topic: &str) -> Self {
+        Self(into_cstring(topic))
+    }
+
     pub fn as_c_str(&self) -> &CStr {
         &self.0
     }
@@ -232,6 +240,14 @@ impl TypeName {
         }
 
         Ok(Self(into_cstring(type_name)))
+    }
+
+    /// Wraps an already-valid type name without re-checking it.
+    ///
+    /// The caller must guarantee `type_name` is a well-formed ROS 2 type name,
+    /// e.g. it came straight from an rcl graph query.
+    pub fn new_unchecked(type_name: &str) -> Self {
+        Self(into_cstring(type_name))
     }
 
     /// The type name as a string slice.

@@ -142,9 +142,7 @@ impl<S: Service> iceoryx2_services_tunnel_backend::traits::Discovery for Discove
         );
 
         for (topic, type_name) in &self.allowlist {
-            let live = graph
-                .iter()
-                .any(|(name, _)| name.as_str() == topic.as_str());
+            let live = graph.iter().any(|(name, _)| name == topic);
             let discovered = self.discovered.borrow().contains_key(topic);
 
             if live && !discovered {
@@ -173,6 +171,7 @@ impl<S: Service> iceoryx2_services_tunnel_backend::traits::Discovery for Discove
                     "Failed to process discovery 'Removed' event for topic '{}'",
                     topic.as_str()
                 );
+
                 self.discovered.borrow_mut().remove(topic);
             }
         }

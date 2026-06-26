@@ -25,11 +25,15 @@ use r2r_rcl::{
 
 use iceoryx2_log::{fail, warn};
 
-use crate::rcl::{NodeName, NodeNamespace, RclError, TopicName, publisher, subscription};
+use crate::rcl::{NodeName, NodeNamespace, RclError, TopicName, TypeName, publisher, subscription};
 use crate::typesupport::TypeSupportHandle;
 
 /// rcl is initialized without forwarding any command-line arguments.
 const NO_ARGS: core::ffi::c_int = 0;
+
+/// Topic and type names are demangled into their ROS form rather than left as
+/// the underlying middleware names.
+const NO_DEMANGLE: bool = false;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -215,17 +219,18 @@ impl NodeHandle {
         self.inner.handle()
     }
 
-    pub fn topic_names_and_types(&self) -> Result<Vec<(String, Vec<String>)>, GraphError> {
+    /// Query the ROS graph for all topics visible to this node and their type names.
+    pub fn topic_names_and_types(&self) -> Result<Vec<(TopicName, Vec<TypeName>)>, GraphError> {
         let origin = "Node::topic_names_and_types";
 
         unsafe {
             let mut allocator = rcutils_get_default_allocator();
-            let mut names_and_types: rcl_names_and_types_t = core::mem::zeroed();
+            let mut rcl_names_and_types: rcl_names_and_types_t = core::mem::zeroed();
             let ret = rcl_get_topic_names_and_types(
                 self.inner.node.get(),
                 &mut allocator,
-                false,
-                &mut names_and_types,
+                NO_DEMANGLE,
+                &mut rcl_names_and_types,
             );
             if ret != RCL_RET_OK as i32 {
                 fail!(
@@ -236,18 +241,19 @@ impl NodeHandle {
                 );
             }
 
-            let mut topics = Vec::with_capacity(names_and_types.names.size);
-            for i in 0..names_and_types.names.size {
-                let name = string_at(&names_and_types.names, i);
-                let types_array = &*names_and_types.types.add(i);
-                let types = (0..types_array.size)
-                    .map(|j| string_at(types_array, j))
+            let mut names_and_types = Vec::with_capacity(rcl_names_and_types.names.size);
+            for i in 0..rcl_names_and_types.names.size {
+                let topic = TopicName::new_unchecked(&string_at(&rcl_names_and_types.names, i));
+                let types = collect_strings(&*rcl_names_and_types.types.add(i))
+                    .iter()
+                    .map(|type_name| TypeName::new_unchecked(type_name))
                     .collect();
-                topics.push((name, types));
+                names_and_types.push((topic, types));
             }
 
-            let _ = rcl_names_and_types_fini(&mut names_and_types);
-            Ok(topics)
+            let _ = rcl_names_and_types_fini(&mut rcl_names_and_types);
+
+            Ok(names_and_types)
         }
     }
 }
@@ -262,4 +268,16 @@ unsafe fn string_at(array: &rcutils_string_array_t, index: usize) -> String {
     unsafe { CStr::from_ptr(*array.data.add(index)) }
         .to_string_lossy()
         .into_owned()
+}
+
+/// Copies every string out of an rcutils string array into a Vec.
+///
+/// # Safety
+///
+/// The array's entries must be valid null-terminated strings (guaranteed by
+/// rcl for graph query results).
+unsafe fn collect_strings(array: &rcutils_string_array_t) -> Vec<String> {
+    (0..array.size)
+        .map(|i| unsafe { string_at(array, i) })
+        .collect()
 }
