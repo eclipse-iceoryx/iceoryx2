@@ -23,7 +23,7 @@ use iceoryx2_services_tunnel_backend::types::wake::WakeHandle;
 
 use crate::ros_header::RosHeader;
 use crate::typesupport::TypeSupportRegistry;
-use crate::{keys, payload, rcl};
+use crate::{mapping, payload, rcl};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum CreationError {
@@ -176,7 +176,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
         let origin = "publish_subscribe::Relay::create";
 
         let topic = fail!(from origin,
-            when keys::topic(self.static_config.name().as_str()).ok_or(CreationError::InvalidServiceName),
+            when mapping::topic(self.static_config.name().as_str()).ok_or(CreationError::InvalidServiceName),
             "Failed to map service name to a ROS 2 topic"
         );
 

@@ -28,7 +28,7 @@ use iceoryx2_log::fail;
 use crate::backend::TopicConfig;
 use crate::rcl::{TopicName, TypeName};
 use crate::ros_header::RosHeader;
-use crate::{keys, rcl};
+use crate::{mapping, rcl};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
@@ -93,7 +93,7 @@ impl<S: Service> Discovery<S> {
         let origin = "Discovery::static_config";
 
         let service_name: ServiceName = fail!(from origin,
-            when keys::service_name(topic.as_str()).as_str().try_into(),
+            when mapping::service_name(topic.as_str()).as_str().try_into(),
             with DiscoveryError::InvalidServiceName,
             "Invalid service name derived from topic '{}'",
             topic.as_str()

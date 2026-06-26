@@ -19,7 +19,7 @@
 
 pub mod backend;
 pub mod discovery;
-pub(crate) mod keys;
+pub(crate) mod mapping;
 pub mod relays;
 pub mod ros_header;
 
