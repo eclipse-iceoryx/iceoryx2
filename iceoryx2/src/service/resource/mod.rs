@@ -10,11 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[doc(hidden)]
 pub mod blackboard;
+pub mod publish_subscribe;
 
 use core::ptr::NonNull;
+use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_bb_posix::{
+    directory::{Directory, DirectoryCreateError, DirectoryRemoveError},
+    file::Permission,
+    file_descriptor::FileDescriptorManagement,
+    ownership::Ownership,
+};
+use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_log::{fail, fatal_panic};
 
 use crate::{
     config,
@@ -44,6 +53,52 @@ pub fn remove_stale_service_resources<ServiceType: service::Service>(
 /// are left
 pub trait ServiceResource: Abandonable {
     type Config;
+
+    fn service_resource_directory(config: &config::Config, static_config: &StaticConfig) -> Path {
+        let origin = "ServiceResource::service_resource_directory()";
+        let mut root = config.global.service_dir();
+        let id = fatal_panic!(from origin,
+               when Path::new(static_config.unique_service_id().value().to_string().as_bytes()),
+               "This should never happen! The service id is always a valid path name.");
+        fatal_panic!(from origin,
+                when root.add_path_entry(&id),
+                "This should never happen! The full service directory is too long. A shorter iceoryx2 root path might solve the issue.");
+        root
+    }
+
+    fn create_service_resource_directory(
+        config: &config::Config,
+        static_config: &StaticConfig,
+    ) -> Result<Directory, ServiceCreateError> {
+        let origin = "ServiceResource::create_service_resource_directory()";
+        let dir = Self::service_resource_directory(config, static_config);
+        let msg = format!("Unable to create service resource directory \"{dir}\"");
+        match Directory::create(&dir, Permission::OWNER_ALL | Permission::GROUP_ALL) {
+            Ok(dir) => Ok(dir),
+            Err(DirectoryCreateError::InsufficientPermissions) => {
+                fail!(from origin, with ServiceCreateError::InsufficientPermissions,
+                "{msg} due to insufficient permissions.");
+            }
+            Err(e) => {
+                fail!(from origin, with ServiceCreateError::InternalFailure,
+                    "{msg} due to an internal failure. [{e:?}]");
+            }
+        }
+    }
+
+    fn remove_service_resource_directory(
+        config: &config::Config,
+        static_config: &StaticConfig,
+    ) -> Result<(), DirectoryRemoveError> {
+        let origin = "ServiceResource::create_service_resource_directory()";
+        let dir = Self::service_resource_directory(config, static_config);
+        if let Err(e) = Directory::remove(&dir) {
+            fail!(from origin, with e,
+                "Unable to remove service resource directory \"{dir}\". [{e:?}]");
+        }
+
+        Ok(())
+    }
 
     fn create(
         static_config: &StaticConfig,
