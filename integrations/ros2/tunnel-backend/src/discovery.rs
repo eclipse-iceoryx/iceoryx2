@@ -81,40 +81,6 @@ impl<S: Service> Discovery<S> {
             _phantom: core::marker::PhantomData,
         }
     }
-
-    /// The [`StaticConfig`] synthesized for a discovered ROS topic:
-    /// service name and payload type per the bridge contract, [`RosHeader`]
-    /// user header, everything else from the global iceoryx2 defaults.
-    fn static_config(
-        &self,
-        topic: &TopicName,
-        type_name: &TypeName,
-    ) -> Result<StaticConfig, DiscoveryError> {
-        let origin = "Discovery::static_config";
-
-        let service_name: ServiceName = fail!(from origin,
-            when mapping::service_name(topic.as_str()).as_str().try_into(),
-            with DiscoveryError::InvalidServiceName,
-            "Invalid service name derived from topic '{}'",
-            topic.as_str()
-        );
-        let payload = fail!(from origin,
-            when TypeDetail::__internal_new_from_parts(TypeVariant::Dynamic, type_name.as_str(), 1, 1),
-            with DiscoveryError::InvalidTypeName,
-            "Invalid payload type name '{}'",
-            type_name.as_str()
-        );
-        let user_header = RosHeader::type_detail();
-
-        Ok(
-            StaticConfig::__internal_new_publish_subscribe_with_details::<S::ServiceNameHasher>(
-                &service_name,
-                IceoryxConfig::global_config(),
-                payload,
-                user_header,
-            ),
-        )
-    }
 }
 
 impl<S: Service> iceoryx2_services_tunnel_backend::traits::Discovery for Discovery<S> {
@@ -147,7 +113,7 @@ impl<S: Service> iceoryx2_services_tunnel_backend::traits::Discovery for Discove
 
             if live && !discovered {
                 let static_config = fail!(from origin,
-                    when self.static_config(topic, type_name),
+                    when static_config::<S>(topic, type_name),
                     "Failed to synthesize the static config for topic '{}'",
                     topic.as_str()
                 );
@@ -178,4 +144,37 @@ impl<S: Service> iceoryx2_services_tunnel_backend::traits::Discovery for Discove
 
         Ok(())
     }
+}
+
+/// The [`StaticConfig`] synthesized for a discovered ROS topic.
+fn static_config<S: Service>(
+    topic: &TopicName,
+    type_name: &TypeName,
+) -> Result<StaticConfig, DiscoveryError> {
+    let origin = "discovery::static_config";
+
+    let service_name: ServiceName = fail!(from origin,
+        when mapping::service_name(topic.as_str()).as_str().try_into(),
+        with DiscoveryError::InvalidServiceName,
+        "Invalid service name derived from topic '{}'",
+        topic.as_str()
+    );
+    // TODO: Define configuration per-topic in configuration file; apply here.
+    let config = IceoryxConfig::global_config();
+    let payload = fail!(from origin,
+        when TypeDetail::__internal_new_from_parts(TypeVariant::Dynamic, type_name.as_str(), 1, 1),
+        with DiscoveryError::InvalidTypeName,
+        "Invalid payload type name '{}'",
+        type_name.as_str()
+    );
+    let user_header = RosHeader::type_detail();
+
+    Ok(
+        StaticConfig::__internal_new_publish_subscribe_with_details::<S::ServiceNameHasher>(
+            &service_name,
+            config,
+            payload,
+            user_header,
+        ),
+    )
 }
