@@ -646,3 +646,66 @@ pub fn copy_works() {
 
     file.remove_self().unwrap();
 }
+
+#[test]
+pub fn two_empty_files_are_equal() {
+    let test = TestFixture::new();
+    let left_file_path = generate_file_path();
+    let right_file_path = generate_file_path();
+    let left_file = test.create_file(&left_file_path);
+    left_file.acquire_ownership();
+    let right_file = test.create_file(&right_file_path);
+    right_file.acquire_ownership();
+
+    assert_that!(File::compare(&left_file_path, &right_file_path), eq Ok(true));
+}
+
+#[test]
+pub fn two_files_with_the_same_content_are_equal() {
+    let test = TestFixture::new();
+    let content = b"all hail the white bippus";
+    let left_file_path = generate_file_path();
+    let right_file_path = generate_file_path();
+    let mut left_file = test.create_file(&left_file_path);
+    left_file.write(content).unwrap();
+    left_file.acquire_ownership();
+    let mut right_file = test.create_file(&right_file_path);
+    right_file.acquire_ownership();
+    right_file.write(content).unwrap();
+
+    assert_that!(File::compare(&left_file_path, &right_file_path), eq Ok(true));
+}
+
+#[test]
+pub fn two_files_with_the_same_size_but_different_content_are_not_equal() {
+    let test = TestFixture::new();
+    let left_content = b"all hail the white bippus";
+    let right_content = b"i like to move it move it";
+    let left_file_path = generate_file_path();
+    let right_file_path = generate_file_path();
+    let mut left_file = test.create_file(&left_file_path);
+    left_file.write(left_content).unwrap();
+    left_file.acquire_ownership();
+    let mut right_file = test.create_file(&right_file_path);
+    right_file.acquire_ownership();
+    right_file.write(right_content).unwrap();
+
+    assert_that!(File::compare(&left_file_path, &right_file_path), eq Ok(false));
+}
+
+#[test]
+pub fn two_files_with_different_size_are_not_equal() {
+    let test = TestFixture::new();
+    let left_content = b"peekapuu";
+    let right_content = b"who is who";
+    let left_file_path = generate_file_path();
+    let right_file_path = generate_file_path();
+    let mut left_file = test.create_file(&left_file_path);
+    left_file.write(left_content).unwrap();
+    left_file.acquire_ownership();
+    let mut right_file = test.create_file(&right_file_path);
+    right_file.acquire_ownership();
+    right_file.write(right_content).unwrap();
+
+    assert_that!(File::compare(&left_file_path, &right_file_path), eq Ok(false));
+}
