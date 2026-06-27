@@ -668,6 +668,10 @@ impl File {
             return Ok(false);
         }
 
+        if left_file_size == 0 {
+            return Ok(true);
+        }
+
         let create_mapping =
             |fd, file_size: usize| -> Result<MemoryMapping, MemoryMappingCreationError> {
                 match MemoryMappingBuilder::from_file_descriptor(fd)
