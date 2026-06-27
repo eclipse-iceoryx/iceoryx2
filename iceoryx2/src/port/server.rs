@@ -383,6 +383,7 @@ impl<
             )
             .expect("Heap allocator provides memory."),
             receiver_port_id: server_id.value(),
+            receiver_port_name: PortName::new_empty(),
             service_state: service.clone(),
             message_type_details: static_config.request_message_type_details,
             receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
