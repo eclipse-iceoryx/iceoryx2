@@ -38,6 +38,7 @@ use iceoryx2_log::fail;
 use crate::{
     port::{
         DegradationAction, DegradationFn, DegradationHandler,
+        port_name::PortName,
         subscriber::{Subscriber, SubscriberCreateError},
     },
     service,
@@ -50,6 +51,7 @@ pub(crate) struct SubscriberConfig {
     pub(crate) buffer_size: Option<usize>,
     pub(crate) history_request: Option<usize>,
     pub(crate) degradation_handler: DegradationHandler<'static>,
+    pub(crate) port_name: PortName,
 }
 
 /// Factory to create a new [`Subscriber`] port/endpoint for
@@ -91,6 +93,7 @@ impl<
                 buffer_size: self.config.buffer_size,
                 history_request: self.config.history_request,
                 degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
+                port_name: self.config.port_name,
             },
             factory: self.factory,
         }
@@ -102,6 +105,7 @@ impl<
                 buffer_size: None,
                 history_request: None,
                 degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
+                port_name: PortName::new_empty(),
             },
             factory,
         }
@@ -126,6 +130,12 @@ impl<
     pub fn set_degradation_handler<F: DegradationFn + 'static>(mut self, handler: F) -> Self {
         self.config.degradation_handler = DegradationHandler::new(handler);
 
+        self
+    }
+
+    /// Sets the [`PortName`] of the  [`Subscriber`].
+    pub fn name(mut self, name: &PortName) -> Self {
+        self.config.port_name = *name;
         self
     }
 

@@ -80,6 +80,8 @@ pub struct PublisherDetails {
 pub struct SubscriberDetails {
     /// The [`UniqueSubscriberId`] of the [`Subscriber`](crate::port::subscriber::Subscriber).
     pub subscriber_id: UniqueSubscriberId,
+    /// The [`PortName`] of the [`Subscriber`](crate::port::subscriber::Subscriber).
+    pub subscriber_name: PortName,
     /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Subscriber`](crate::port::subscriber::Subscriber) was created.
     pub node_id: UniqueNodeId,

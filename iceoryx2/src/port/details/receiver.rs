@@ -28,6 +28,7 @@ use iceoryx2_log::{error, fail, warn};
 
 use crate::port::DegradationCause;
 use crate::port::DegradationInfo;
+use crate::port::port_name::PortName;
 use crate::port::update_connections::ConnectionFailure;
 use crate::port::{DegradationAction, DegradationHandler, ReceiveError};
 use crate::service::NoResource;
@@ -135,6 +136,7 @@ impl<Service: service::Service> Connection<Service> {
 pub(crate) struct Receiver<Service: service::Service> {
     pub(crate) connections: PolymorphicVec<'static, UnsafeCell<Option<SlotMapKey>>, HeapAllocator>,
     pub(crate) receiver_port_id: u128,
+    pub(crate) receiver_port_name: PortName,
     pub(crate) service_state: SharedServiceState<Service, NoResource>,
     pub(crate) buffer_size: usize,
     pub(crate) tagger: CyclicTagger,

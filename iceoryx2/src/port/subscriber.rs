@@ -53,6 +53,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_OPEN, ChannelId};
 use iceoryx2_log::{fail, warn};
 
+use crate::port::port_name::PortName;
 use crate::port::update_connections::UpdateConnections;
 use crate::service::builder::CustomPayloadMarker;
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
@@ -293,6 +294,7 @@ impl<
                 )
                 .expect("Heap allocator provides memory."),
                 receiver_port_id: subscriber_id.value(),
+                receiver_port_name: config.port_name,
                 service_state: service.clone(),
                 message_type_details: static_config.message_type_details,
                 receiver_max_borrowed_samples: subscriber_max_borrowed_samples,
@@ -347,6 +349,7 @@ impl<
                 buffer_size,
                 history_request,
                 node_id: *service.shared_node().id(),
+                subscriber_name: config.port_name,
             }) {
             Some(unique_index) => unique_index,
             None => {
@@ -404,6 +407,14 @@ impl<
                 .receiver
                 .receiver_port_id(),
         ))
+    }
+
+    /// Returns the [`PortName`] of the [`Subscriber`]
+    pub fn name(&self) -> PortName {
+        self.subscriber_shared_state
+            .lock()
+            .receiver
+            .receiver_port_name
     }
 
     /// Returns the internal buffer size of the [`Subscriber`].
