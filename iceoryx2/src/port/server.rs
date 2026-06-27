@@ -73,6 +73,7 @@
 //! # }
 //! ```
 
+use crate::port::port_name::PortName;
 use crate::port::update_connections::UpdateConnections;
 use crate::prelude::BackpressureStrategy;
 use crate::service::builder::CustomPayloadMarker;
@@ -450,6 +451,7 @@ impl<
                 .map(|_| UnsafeCell::new(None))
                 .collect(),
             sender_port_id: server_id.value(),
+            sender_port_name: PortName::new_empty(),
             shared_node: service.shared_node().clone(),
             receiver_max_buffer_size: static_config.max_response_buffer_size,
             receiver_max_borrowed_samples: static_config

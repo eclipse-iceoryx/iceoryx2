@@ -29,6 +29,7 @@
 use crate::{
     identifiers::{UniqueNodeId, UniquePortId, UniquePublisherId, UniqueSubscriberId},
     port::details::data_segment::DataSegmentType,
+    port::port_name::PortName,
 };
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
@@ -53,6 +54,8 @@ pub(crate) struct DynamicConfigSettings {
 pub struct PublisherDetails {
     /// The [`UniquePublisherId`] of the [`Publisher`](crate::port::publisher::Publisher).
     pub publisher_id: UniquePublisherId,
+    /// The [`PortName`] of the [`Publisher`](crate::port::publisher::Publisher).
+    pub publisher_name: PortName,
     /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Publisher`](crate::port::publisher::Publisher) was created.
     pub node_id: UniqueNodeId,
