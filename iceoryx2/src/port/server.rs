@@ -383,7 +383,7 @@ impl<
             )
             .expect("Heap allocator provides memory."),
             receiver_port_id: server_id.value(),
-            receiver_port_name: PortName::new_empty(),
+            receiver_port_name: server_factory.config.port_name,
             service_state: service.clone(),
             message_type_details: static_config.request_message_type_details,
             receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
@@ -452,7 +452,7 @@ impl<
                 .map(|_| UnsafeCell::new(None))
                 .collect(),
             sender_port_id: server_id.value(),
-            sender_port_name: PortName::new_empty(),
+            sender_port_name: server_factory.config.port_name,
             shared_node: service.shared_node().clone(),
             receiver_max_buffer_size: static_config.max_response_buffer_size,
             receiver_max_borrowed_samples: static_config
@@ -528,6 +528,7 @@ impl<
                     max_slice_len: server_factory.config.initial_max_slice_len,
                     data_segment_type,
                     max_number_of_segments,
+                    server_name: server_factory.config.port_name,
                 }) {
                 Some(v) => Some(v),
                 None => {
@@ -547,6 +548,11 @@ impl<
         UniqueServerId(UniqueSystemId::from(
             self.shared_state.lock().request_receiver.receiver_port_id,
         ))
+    }
+
+    /// Returns the [`PortName`] of the [`Server`]
+    pub fn name(&self) -> PortName {
+        self.shared_state.lock().request_receiver.receiver_port_name
     }
 
     /// Returns true if the [`Server`] has [`RequestMut`](crate::request_mut::RequestMut)s in its buffer.
