@@ -77,6 +77,43 @@ pub mod publisher {
     }
 
     #[conformance_test]
+    pub fn publisher_name_is_empty_by_default<Sut: Service>()
+    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        let test = Test::<Sut>::new();
+        let service_name = generate_service_name();
+        let node = test.create_node();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create()?;
+
+        let sut = service.publisher_builder().create()?;
+
+        assert_that!(sut.name(), eq "");
+
+        Ok(())
+    }
+
+    #[conformance_test]
+    pub fn publisher_name_can_be_set<Sut: Service>()
+    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        let test = Test::<Sut>::new();
+        let service_name = generate_service_name();
+        let node = test.create_node();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create()?;
+
+        let publisher_name = PortName::new("hypnotoad").unwrap();
+        let sut = service.publisher_builder().name(&publisher_name).create()?;
+
+        assert_that!(sut.name(), eq publisher_name);
+
+        Ok(())
+    }
+
+    #[conformance_test]
     pub fn override_preallocated_samples_to_one_works<Sut: Service>()
     -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
         let test = Test::<Sut>::new();

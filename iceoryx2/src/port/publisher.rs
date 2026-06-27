@@ -128,6 +128,7 @@ use iceoryx2_cal::zero_copy_connection::{
 use iceoryx2_log::{fail, warn};
 
 use crate::port::details::sender::*;
+use crate::port::port_name::PortName;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
 use crate::prelude::BackpressureStrategy;
 use crate::raw_sample::RawSampleMut;
@@ -456,6 +457,7 @@ impl<
         let publisher_details = PublisherDetails {
             data_segment_type,
             publisher_id: port_id,
+            publisher_name: config.port_name,
             number_of_samples,
             max_slice_len,
             node_id: *service.shared_node().id(),
@@ -503,6 +505,7 @@ impl<
                         .map(|_| UnsafeCell::new(None))
                         .collect(),
                     sender_port_id: port_id.value(),
+                    sender_port_name: config.port_name,
                     shared_node: service.shared_node().clone(),
                     receiver_max_buffer_size: static_config.subscriber_max_buffer_size,
                     receiver_max_borrowed_samples: static_config.subscriber_max_borrowed_samples,
@@ -581,6 +584,11 @@ impl<
         UniquePublisherId(UniqueSystemId::from(
             self.publisher_shared_state.lock().sender.sender_port_id,
         ))
+    }
+
+    /// Returns the [`PortName`] of the [`Publisher`]
+    pub fn name(&self) -> PortName {
+        self.publisher_shared_state.lock().sender.sender_port_name
     }
 
     /// Returns the strategy the [`Publisher`] follows when a [`SampleMut`] cannot be delivered

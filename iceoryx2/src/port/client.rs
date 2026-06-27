@@ -98,7 +98,10 @@ use crate::active_request::RequestId;
 use crate::{
     identifiers::UniqueClientId,
     pending_response::PendingResponse,
-    port::{details::data_segment::DataSegment, update_connections::UpdateConnections},
+    port::{
+        details::data_segment::DataSegment, port_name::PortName,
+        update_connections::UpdateConnections,
+    },
     prelude::{BackpressureStrategy, PortFactory},
     raw_sample::RawSampleMut,
     request_mut::RequestMut,
@@ -499,6 +502,7 @@ impl<
                 v
             },
             sender_port_id: client_id.value(),
+            sender_port_name: PortName::new_empty(),
             shared_node: service.shared_node().clone(),
             connections: (0..server_list.capacity())
                 .map(|_| UnsafeCell::new(None))
