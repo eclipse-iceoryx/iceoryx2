@@ -489,6 +489,7 @@ impl<
             data_segment_type,
             max_number_of_segments,
             max_active_requests,
+            client_name: client_factory.config.port_name,
         };
 
         let request_sender = Sender {
@@ -502,7 +503,7 @@ impl<
                 v
             },
             sender_port_id: client_id.value(),
-            sender_port_name: PortName::new_empty(),
+            sender_port_name: client_factory.config.port_name,
             shared_node: service.shared_node().clone(),
             connections: (0..server_list.capacity())
                 .map(|_| UnsafeCell::new(None))
@@ -547,7 +548,7 @@ impl<
             )
             .expect("Heap allocator provides memory."),
             receiver_port_id: client_id.value(),
-            receiver_port_name: PortName::new_empty(),
+            receiver_port_name: client_factory.config.port_name,
             service_state: service.clone(),
             buffer_size: static_config.max_response_buffer_size,
             tagger: CyclicTagger::new(),
@@ -637,6 +638,14 @@ impl<
     /// Returns the [`UniqueClientId`] of the [`Client`]
     pub fn id(&self) -> UniqueClientId {
         self.client_id
+    }
+
+    /// Returns the [`PortName`] of the [`Client`]
+    pub fn name(&self) -> PortName {
+        self.client_shared_state
+            .lock()
+            .request_sender
+            .sender_port_name
     }
 
     fn next_request_id(&self) -> RequestId {

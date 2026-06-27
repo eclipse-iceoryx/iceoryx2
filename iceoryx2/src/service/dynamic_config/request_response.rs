@@ -64,6 +64,8 @@ pub struct ServerDetails {
 pub struct ClientDetails {
     /// The [`UniqueClientId`] of the [`Client`](crate::port::client::Client).
     pub client_id: UniqueClientId,
+    /// The [`PortName`] of the [`Clinet`](crate::port::client::Client).
+    pub client_name: PortName,
     /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Client`](crate::port::client::Client) was created.
     pub node_id: UniqueNodeId,
