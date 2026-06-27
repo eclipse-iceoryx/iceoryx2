@@ -33,7 +33,7 @@ use super::request_response::PortFactory;
 use crate::{
     port::{
         BackpressureFn, BackpressureHandler, DegradationAction, DegradationFn, DegradationHandler,
-        client::Client,
+        client::Client, port_name::PortName,
     },
     prelude::BackpressureStrategy,
     service,
@@ -103,6 +103,7 @@ pub(crate) struct LocalClientConfig {
     pub(crate) initial_max_slice_len: usize,
     pub(crate) allocation_strategy: AllocationStrategy,
     pub(crate) max_active_requests: Option<usize>,
+    pub(crate) port_name: PortName,
 }
 
 /// Factory to create a new [`Client`] port/endpoint for
@@ -203,6 +204,7 @@ impl<
                 initial_max_slice_len: 1,
                 allocation_strategy: defs.client_allocation_strategy,
                 max_active_requests: None,
+                port_name: PortName::new_empty(),
             },
             preallocate_number_of_requests_override: PreallocatedRequestsOverride::new(|v| v),
             request_degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
@@ -284,6 +286,12 @@ impl<
     /// Sets the maximal amount of active requests the [`Client`] can send.
     pub fn max_active_requests(mut self, value: usize) -> Self {
         self.config.max_active_requests = Some(value.max(1));
+        self
+    }
+
+    /// Sets the [`PortName`] of the  [`Client`].
+    pub fn name(mut self, name: &PortName) -> Self {
+        self.config.port_name = *name;
         self
     }
 
