@@ -58,6 +58,7 @@ use crate::{
     port::{
         BackpressureFn, BackpressureHandler, DegradationAction, DegradationFn, DegradationHandler,
         backpressure_strategy::BackpressureStrategy,
+        port_name::PortName,
         publisher::{Publisher, PublisherCreateError},
     },
     service,
@@ -99,6 +100,7 @@ pub(crate) struct LocalPublisherConfig {
     pub(crate) backpressure_strategy: BackpressureStrategy,
     pub(crate) initial_max_slice_len: usize,
     pub(crate) allocation_strategy: AllocationStrategy,
+    pub(crate) port_name: PortName,
 }
 
 /// Factory to create a new [`Publisher`] port/endpoint for
@@ -168,6 +170,7 @@ impl<
                 initial_max_slice_len: 1,
                 max_loaned_samples: defaults.publisher_max_loaned_samples,
                 backpressure_strategy: defaults.backpressure_strategy,
+                port_name: PortName::new_empty(),
             },
             degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
             backpressure_handler: None,
@@ -230,6 +233,12 @@ impl<
     pub fn set_backpressure_handler<F: BackpressureFn + 'static>(mut self, handler: F) -> Self {
         self.backpressure_handler = Some(BackpressureHandler::new(handler));
 
+        self
+    }
+
+    /// Sets the [`PortName`] of the  [`Publisher`].
+    pub fn name(mut self, name: &PortName) -> Self {
+        self.config.port_name = *name;
         self
     }
 
