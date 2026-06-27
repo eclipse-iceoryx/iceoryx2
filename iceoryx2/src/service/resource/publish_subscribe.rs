@@ -81,20 +81,20 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
         )?;
         directory.acquire_ownership();
 
-        let flatbuffer_schema_path = match resource_config
-            .shared_node
-            .config()
-            .global
-            .service
-            .flatbuffer_schema_path
-        {
-            Some(p) => p,
-            None => {
-                todo!()
-            }
-        };
-
         if resource_config.copy_type_definition {
+            let flatbuffer_schema_path = match resource_config
+                .shared_node
+                .config()
+                .global
+                .service
+                .flatbuffer_schema_path
+            {
+                Some(p) => p,
+                None => {
+                    todo!()
+                }
+            };
+
             let schema_path = match resource_config.schema_path {
                 Some(file_path) => {
                     if file_path.path().is_absolute() {
