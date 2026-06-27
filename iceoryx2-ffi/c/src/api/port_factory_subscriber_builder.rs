@@ -99,7 +99,7 @@ impl PortFactorySubscriberBuilderUnion {
 #[repr(C)]
 #[repr(align(16))] // alignment of Option<PortFactorySubscriberBuilderUnion>
 pub struct iox2_port_factory_subscriber_builder_storage_t {
-    internal: [u8; 112], // magic number obtained with size_of::<Option<PortFactorySubscriberBuilderUnion>>()
+    internal: [u8; 192], // magic number obtained with size_of::<Option<PortFactorySubscriberBuilderUnion>>()
 }
 
 #[repr(C)]

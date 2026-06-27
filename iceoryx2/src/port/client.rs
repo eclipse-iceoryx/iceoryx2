@@ -547,6 +547,7 @@ impl<
             )
             .expect("Heap allocator provides memory."),
             receiver_port_id: client_id.value(),
+            receiver_port_name: PortName::new_empty(),
             service_state: service.clone(),
             buffer_size: static_config.max_response_buffer_size,
             tagger: CyclicTagger::new(),
