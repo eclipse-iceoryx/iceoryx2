@@ -24,6 +24,7 @@ use iceoryx2_log::{error, fatal_panic};
 use crate::{
     identifiers::{UniqueClientId, UniqueNodeId, UniquePortId, UniqueServerId},
     port::details::data_segment::DataSegmentType,
+    port::port_name::PortName,
 };
 
 use super::PortCleanupAction;
@@ -35,6 +36,8 @@ use super::PortCleanupAction;
 pub struct ServerDetails {
     /// The [`UniqueServerId`] of the [`Server`](crate::port::server::Server).
     pub server_id: UniqueServerId,
+    /// The [`PortName`] of the [`Server`](crate::port::server::Server).
+    pub server_name: PortName,
     /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Server`](crate::port::server::Server) was created.
     pub node_id: UniqueNodeId,
