@@ -42,10 +42,12 @@
 
 use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
 use crate::identifiers::UniqueWriterId;
+use crate::port::port_name::PortName;
 use crate::prelude::EventId;
 use crate::service::builder::CustomKeyMarker;
 use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
 use crate::service::dynamic_config::blackboard::WriterDetails;
+use crate::service::port_factory::writer::WriterConfig;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, SharedServiceState};
 use core::alloc::Layout;
@@ -149,6 +151,7 @@ pub struct Writer<
 > {
     shared_state: Service::ArcThreadSafetyPolicy<WriterSharedState<Service, KeyType>>,
     writer_id: UniqueWriterId,
+    writer_name: PortName,
     // IMPORTANT!
     // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
     // port exists and might require cleanup after a crash, the tag must be defined as last member of
@@ -183,6 +186,7 @@ impl<
 {
     pub(crate) fn new(
         service: SharedServiceState<Service, BlackboardResources<Service>>,
+        config: WriterConfig,
     ) -> Result<Self, WriterCreateError> {
         let origin = "Writer::new()";
         let msg = "Unable to create Writer port";
@@ -218,6 +222,7 @@ impl<
             shared_state,
             writer_id,
             port_tag,
+            writer_name: config.port_name,
         };
 
         core::sync::atomic::compiler_fence(Ordering::SeqCst);
@@ -230,6 +235,7 @@ impl<
             .blackboard()
             .add_writer_id(WriterDetails {
                 writer_id,
+                writer_name: config.port_name,
                 node_id: *service.shared_node().id(),
             }) {
             Some(unique_index) => unique_index,
@@ -249,6 +255,11 @@ impl<
     /// Returns the [`UniqueWriterId`] of the [`Writer`]
     pub fn id(&self) -> UniqueWriterId {
         self.writer_id
+    }
+
+    /// Returns the [`PortName`] of the [`Writer`]
+    pub fn name(&self) -> PortName {
+        self.writer_name
     }
 
     /// Creates a [`EntryHandleMut`] for direct write access to the value. There can be only one
