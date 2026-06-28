@@ -202,8 +202,6 @@ pub unsafe extern "C" fn iox2_node_name_as_chars(
 
 /// This function needs to be called to destroy the node name!
 ///
-/// In general, this function is not required to call, since [`iox2_node_builder_set_name`](crate::iox2_node_builder_set_name) will consume the [`iox2_node_name_h`] handle.
-///
 /// # Arguments
 ///
 /// * `node_name_handle` - A valid [`iox2_node_name_h`]
