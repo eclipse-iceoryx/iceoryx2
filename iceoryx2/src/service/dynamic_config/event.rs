@@ -36,6 +36,7 @@ use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_log::{error, fatal_panic};
 
 use crate::identifiers::{UniqueListenerId, UniqueNodeId, UniqueNotifierId, UniquePortId};
+use crate::port::port_name::PortName;
 
 use super::PortCleanupAction;
 
@@ -75,6 +76,8 @@ pub struct ListenerDetails {
 pub struct NotifierDetails {
     /// The [`UniqueNotifierId`] of the [`Notifier`](crate::port::notifier::Notifier).
     pub notifier_id: UniqueNotifierId,
+    /// The [`PortName`] of the [`Notifier`](crate::port::notifier::Notifier).
+    pub notifier_name: PortName,
     /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Notifier`](crate::port::notifier::Notifier) was created.
     pub node_id: UniqueNodeId,
