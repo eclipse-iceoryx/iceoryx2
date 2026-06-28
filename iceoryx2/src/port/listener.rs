@@ -59,9 +59,11 @@
 //! ```
 
 use crate::config::Config;
+use crate::port::port_name::PortName;
 use crate::service::config_scheme::event_config;
 use crate::service::dynamic_config::event::ListenerDetails;
 use crate::service::naming_scheme::event_concept_name;
+use crate::service::port_factory::listener::ListenerConfig;
 use crate::service::{NoResource, SharedServiceState};
 use crate::{identifiers::UniqueListenerId, service};
 use alloc::format;
@@ -116,6 +118,7 @@ pub struct Listener<Service: service::Service> {
     >,
     service_state: SharedServiceState<Service, NoResource>,
     listener_id: UniqueListenerId,
+    listener_name: PortName,
     // IMPORTANT!
     // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
     // port exists and might require cleanup after a crash, the tag must be defined as last member of
@@ -190,6 +193,7 @@ impl<Service: service::Service> Drop for Listener<Service> {
 impl<Service: service::Service> Listener<Service> {
     pub(crate) fn new(
         service: SharedServiceState<Service, NoResource>,
+        config: ListenerConfig,
     ) -> Result<Self, ListenerCreateError> {
         let msg = "Failed to create listener";
         let origin = "Listener::new()";
@@ -233,6 +237,7 @@ impl<Service: service::Service> Listener<Service> {
             dynamic_listener_handle: None,
             listener,
             listener_id,
+            listener_name: config.port_name,
         };
 
         core::sync::atomic::compiler_fence(Ordering::SeqCst);
@@ -242,6 +247,7 @@ impl<Service: service::Service> Listener<Service> {
         let dynamic_listener_handle = match service.dynamic_storage().get().event().add_listener_id(
             ListenerDetails {
                 listener_id,
+                listener_name: config.port_name,
                 node_id: *service.shared_node().id(),
             },
         ) {
@@ -256,6 +262,11 @@ impl<Service: service::Service> Listener<Service> {
         new_self.dynamic_listener_handle = Some(dynamic_listener_handle);
 
         Ok(new_self)
+    }
+
+    /// Returns the [`PortName`] of the [`Listener`]
+    pub fn name(&self) -> PortName {
+        self.listener_name
     }
 
     /// Returns the deadline of the corresponding [`Service`](crate::service::Service).

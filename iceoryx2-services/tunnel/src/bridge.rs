@@ -29,6 +29,7 @@ use crate::tunnel::{DiscoveryError, PropagateError};
 
 /// A bidirectional bridge for a single service: the local iceoryx2 ports on one
 /// side and the backend relay on the other.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 pub(crate) enum Bridge<S: Service, B: Backend<S>> {
     PublishSubscribe {
