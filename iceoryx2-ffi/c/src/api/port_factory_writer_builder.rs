@@ -80,7 +80,7 @@ impl PortFactoryWriterBuilderUnion {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<PortFactoryWriterBuilderUnion>
 pub struct iox2_port_factory_writer_builder_storage_t {
-    internal: [u8; 16], // magic number obtained with size_of::<Option<PortFactoryWriterBuilderUnion>>()
+    internal: [u8; 96], // magic number obtained with size_of::<Option<PortFactoryWriterBuilderUnion>>()
 }
 
 #[repr(C)]
