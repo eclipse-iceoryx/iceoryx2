@@ -57,6 +57,45 @@ pub mod reader {
     }
 
     #[conformance_test]
+    pub fn reader_name_is_empty_by_default<Sut: Service>()
+    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        let test = Test::<Sut>::new();
+        let service_name = generate_service_name();
+        let node = test.create_node();
+        let service = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u64>(0, 0)
+            .create()?;
+
+        let sut = service.reader_builder().create()?;
+
+        assert_that!(sut.name(), eq "");
+
+        Ok(())
+    }
+
+    #[conformance_test]
+    pub fn reader_name_can_be_set<Sut: Service>()
+    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        let test = Test::<Sut>::new();
+        let service_name = generate_service_name();
+        let node = test.create_node();
+        let service = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u64>(0, 0)
+            .create()?;
+
+        let reader_name = PortName::new("scheherazade").unwrap();
+        let sut = service.reader_builder().name(&reader_name).create()?;
+
+        assert_that!(sut.name(), eq reader_name);
+
+        Ok(())
+    }
+
+    #[conformance_test]
     pub fn handle_can_be_acquired_for_existing_key_value_pair<Sut: Service>() {
         type ValueType = u64;
         let test = Test::<Sut>::new();

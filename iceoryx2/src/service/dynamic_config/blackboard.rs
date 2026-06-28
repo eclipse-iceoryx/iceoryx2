@@ -53,6 +53,8 @@ pub(crate) struct DynamicConfigSettings {
 pub struct ReaderDetails {
     /// The [`UniqueReaderId`] of the [`Reader`](crate::port::reader::Reader).
     pub reader_id: UniqueReaderId,
+    /// The [`PortName`] of the [`Reader`](crate::port::reader::Reader).
+    pub reader_name: PortName,
     /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Reader`](crate::port::reader::Reader) was created.
     pub node_id: UniqueNodeId,
