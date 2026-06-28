@@ -29,6 +29,7 @@
 //! ```
 
 use crate::identifiers::{UniqueNodeId, UniquePortId, UniqueReaderId, UniqueWriterId};
+use crate::port::port_name::PortName;
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -64,6 +65,8 @@ pub struct ReaderDetails {
 pub struct WriterDetails {
     /// The [`UniqueWriterId`] of the [`Writer`](crate::port::writer::Writer).
     pub writer_id: UniqueWriterId,
+    /// The [`PortName`] of the [`Writer`](crate::port::writer::Writer).
+    pub writer_name: PortName,
     /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Writer`](crate::port::writer::Writer) was created.
     pub node_id: UniqueNodeId,
