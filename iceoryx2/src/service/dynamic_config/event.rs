@@ -64,6 +64,8 @@ pub struct DynamicConfig {
 pub struct ListenerDetails {
     /// The [`UniqueListenerId`] of the [`Listener`](crate::port::listener::Listener).
     pub listener_id: UniqueListenerId,
+    /// The [`PortName`] of the [`Listener`](crate::port::listener::Listener).
+    pub listener_name: PortName,
     /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Listener`](crate::port::listener::Listener) was created.
     pub node_id: UniqueNodeId,

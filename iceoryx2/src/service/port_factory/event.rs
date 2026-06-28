@@ -161,6 +161,6 @@ impl<Service: service::Service> PortFactory<Service> {
     /// # }
     /// ```
     pub fn listener_builder(&self) -> PortFactoryListener<'_, Service> {
-        PortFactoryListener { factory: self }
+        PortFactoryListener::new(self)
     }
 }

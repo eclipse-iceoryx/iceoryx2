@@ -80,7 +80,7 @@ impl PortFactoryListenerBuilderUnion {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<PortFactoryListenerBuilderUnion>
 pub struct iox2_port_factory_listener_builder_storage_t {
-    internal: [u8; 24], // magic number obtained with size_of::<Option<PortFactoryListenerBuilderUnion>>()
+    internal: [u8; 96], // magic number obtained with size_of::<Option<PortFactoryListenerBuilderUnion>>()
 }
 
 #[repr(C)]
