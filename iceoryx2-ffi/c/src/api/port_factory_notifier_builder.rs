@@ -76,7 +76,7 @@ impl PortFactoryNotifierBuilderUnion {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<PortFactoryNotifierBuilderUnion>
 pub struct iox2_port_factory_notifier_builder_storage_t {
-    internal: [u8; 24], // magic number obtained with size_of::<Option<PortFactoryNotifierBuilderUnion>>()
+    internal: [u8; 104], // magic number obtained with size_of::<Option<PortFactoryNotifierBuilderUnion>>()
 }
 
 #[repr(C)]
