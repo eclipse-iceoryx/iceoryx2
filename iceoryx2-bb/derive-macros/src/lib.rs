@@ -390,17 +390,17 @@ pub fn atomic_copy_derive(input: TokenStream) -> TokenStream {
                         // Since struct fields can also be structs, we must traverse the fields recursively. The
                         // callback must still be applied to field offsets relative to the root struct. So we
                         // convert "local" offsets (relative to the field) into "absolute" offsets (relative to
-                        // the root struct) and pass these to `__for_each_field`.
+                        // the root struct) and pass these to `for_each_field`.
                         let rel_offset = core::mem::offset_of!(#struct_name #ty_generics, #field_name);
                         let abs_offset = base_offset + rel_offset;
                         let size = core::mem::size_of::<#field_type>();
-                        AtomicCopy::__for_each_field(&self.#field_name, abs_offset, callback);
+                        AtomicCopy::for_each_field(&self.#field_name, abs_offset, callback);
                     };
                     field_offsets_and_sizes.push(block);
                 }
 
                 quote! {
-                    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+                    fn for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
                         #(#field_offsets_and_sizes)*
                     }
                 }
@@ -415,17 +415,17 @@ pub fn atomic_copy_derive(input: TokenStream) -> TokenStream {
                         // Since struct fields can also be structs, we must traverse the fields recursively. The
                         // callback must still be applied to field offsets relative to the root struct. So we
                         // convert "local" offsets (relative to the field) into "absolute" offsets (relative to
-                        // the root struct) and pass these to `__for_each_field`.
+                        // the root struct) and pass these to `for_each_field`.
                         let rel_offset = core::mem::offset_of!(#struct_name #ty_generics, #field_index);
                         let abs_offset = base_offset + rel_offset;
                         let size = core::mem::size_of::<#field_type>();
-                        AtomicCopy::__for_each_field(&self.#field_index, abs_offset, callback);
+                        AtomicCopy::for_each_field(&self.#field_index, abs_offset, callback);
                     };
                     field_offsets_and_sizes.push(block);
                 }
 
                 quote! {
-                    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+                    fn for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
                         #(#field_offsets_and_sizes)*
                     }
                 }

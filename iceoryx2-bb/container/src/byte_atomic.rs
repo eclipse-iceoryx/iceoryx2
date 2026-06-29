@@ -123,7 +123,7 @@ impl<T: AtomicCopy> RelocatableByteAtomic<T> {
         }
 
         let value_ptr = (&value as *const T) as *const u8;
-        value.__for_each_field(0, &mut |offset, size| {
+        value.for_each_field(0, &mut |offset, size| {
             for i in offset..offset + size {
                 unsafe {
                     (*self.data_ptr.as_ptr().add(i)).store(*value_ptr.add(i), Ordering::Relaxed);
@@ -198,7 +198,7 @@ impl<T: AtomicCopy, const SIZE: usize> FixedSizeByteAtomic<T, SIZE> {
         // would lead to undefined behavior. Therefore, we first set all bytes to zero and
         // then copy only the fields, i.e. the initialized bytes, of the passed value.
         let mut bytes = [0u8; SIZE];
-        value.__for_each_field(0, &mut |offset, size| {
+        value.for_each_field(0, &mut |offset, size| {
             for (i, byte) in bytes.iter_mut().enumerate().skip(offset).take(size) {
                 *byte = unsafe { *value_ptr.add(i) };
             }
@@ -243,7 +243,7 @@ unsafe fn read_impl<T: AtomicCopy>(src_data_ptr: *const AtomicU8) -> MaybeUninit
 
 unsafe fn write_impl<T: AtomicCopy>(dest_data_ptr: *const AtomicU8, value: T) {
     let value_ptr = (&value as *const T) as *const u8;
-    value.__for_each_field(0, &mut |offset, size| {
+    value.for_each_field(0, &mut |offset, size| {
         for i in offset..offset + size {
             unsafe {
                 (*dest_data_ptr.add(i)).store(*value_ptr.add(i), Ordering::Relaxed);
