@@ -194,7 +194,7 @@ impl<T: AtomicCopy, const SIZE: usize> FixedSizeByteAtomic<T, SIZE> {
 
         let value_ptr = (&value as *const T) as *const u8;
 
-        // The passed value may contain padding bytes. Reading or copying these padding bytes
+        // The passed value may contain padding bytes. Reading these padding bytes
         // would lead to undefined behavior. Therefore, we first set all bytes to zero and
         // then copy only the fields, i.e. the initialized bytes, of the passed value.
         let mut bytes = [0u8; SIZE];
