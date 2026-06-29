@@ -2862,6 +2862,143 @@ pub mod service_publish_subscribe {
     }
 
     #[conformance_test]
+    pub fn subscriber_history_request_cannot_exceed_history_size<Sut: Service>() {
+        const HISTORY_SIZE: usize = 8;
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .history_size(HISTORY_SIZE)
+            .subscriber_max_buffer_size(HISTORY_SIZE * 2)
+            .create()
+            .unwrap();
+
+        let subscriber = sut
+            .subscriber_builder()
+            .history_request(HISTORY_SIZE * 2)
+            .create();
+
+        assert_that!(subscriber, is_err);
+        assert_that!(subscriber.err().unwrap(), eq SubscriberCreateError::HistoryRequestExceedsHistorySizeOfService);
+    }
+
+    #[conformance_test]
+    pub fn subscriber_history_request_cannot_exceed_buffer_size<Sut: Service>() {
+        const HISTORY_SIZE: usize = 8;
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .history_size(HISTORY_SIZE)
+            .subscriber_max_buffer_size(HISTORY_SIZE * 2)
+            .create()
+            .unwrap();
+
+        let subscriber = sut
+            .subscriber_builder()
+            .buffer_size(HISTORY_SIZE / 4)
+            .history_request(HISTORY_SIZE / 2)
+            .create();
+
+        assert_that!(subscriber, is_err);
+        assert_that!(subscriber.err().unwrap(), eq SubscriberCreateError::HistoryRequestExceedsBufferSizeOfSubscriber);
+    }
+
+    #[conformance_test]
+    pub fn subscriber_receives_history_request_amount_of_samples<Sut: Service>() {
+        const HISTORY_SIZE: usize = 8;
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .history_size(HISTORY_SIZE)
+            .subscriber_max_buffer_size(HISTORY_SIZE * 2)
+            .create()
+            .unwrap();
+
+        let publisher = sut.publisher_builder().create().unwrap();
+        for i in 0..=HISTORY_SIZE {
+            publisher.send_copy(i as _).unwrap();
+        }
+
+        let subscriber = sut
+            .subscriber_builder()
+            .history_request(HISTORY_SIZE / 2)
+            .create()
+            .unwrap();
+
+        publisher.update_connections().unwrap();
+
+        let mut sample_count: usize = 0;
+
+        while let Ok(Some(sample)) = subscriber.receive() {
+            sample_count += 1;
+            let expected_sample_value = HISTORY_SIZE / 2 + sample_count;
+            assert_that!(*sample, eq(expected_sample_value as _));
+        }
+
+        assert_that!(sample_count, eq(HISTORY_SIZE / 2));
+    }
+
+    #[conformance_test]
+    pub fn subscriber_with_different_history_request_receive_samples<Sut: Service>() {
+        const HISTORY_SIZE: usize = 8;
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .history_size(HISTORY_SIZE)
+            .subscriber_max_buffer_size(HISTORY_SIZE * 2)
+            .create()
+            .unwrap();
+
+        let publisher = sut.publisher_builder().create().unwrap();
+        for i in 0..=HISTORY_SIZE {
+            publisher.send_copy(i as _).unwrap();
+        }
+
+        let subscriber1 = sut
+            .subscriber_builder()
+            .buffer_size(HISTORY_SIZE / 2)
+            .history_request(HISTORY_SIZE / 2)
+            .create()
+            .unwrap();
+
+        let subscriber2 = sut
+            .subscriber_builder()
+            .buffer_size(HISTORY_SIZE / 4)
+            .history_request(HISTORY_SIZE / 4)
+            .create()
+            .unwrap();
+
+        publisher.update_connections().unwrap();
+
+        let mut sample_count: usize = 0;
+        while let Ok(Some(sample)) = subscriber1.receive() {
+            sample_count += 1;
+            let expected_sample_value = HISTORY_SIZE / 2 + sample_count;
+            assert_that!(*sample, eq(expected_sample_value as _));
+        }
+        assert_that!(sample_count, eq(HISTORY_SIZE / 2));
+
+        let mut sample_count: usize = 0;
+        while let Ok(Some(sample)) = subscriber2.receive() {
+            sample_count += 1;
+            let expected_sample_value = (HISTORY_SIZE - HISTORY_SIZE / 4) + sample_count;
+            assert_that!(*sample, eq(expected_sample_value as _));
+        }
+        assert_that!(sample_count, eq(HISTORY_SIZE / 4));
+    }
+
+    #[conformance_test]
     pub fn sliced_service_works<Sut: Service>() {
         const MAX_ELEMENTS: usize = 91;
         let test = Test::<Sut>::new();

@@ -79,3 +79,16 @@ pub unsafe extern "C" fn iox2_subscriber_details_buffer_size(
     debug_assert!(!handle.is_null());
     unsafe { (*handle).buffer_size as _ }
 }
+
+/// Returns the amount of requested history samples.
+///
+/// # Safety
+///
+/// * `handle` valid pointer to the subscriber details
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_subscriber_details_history_request(
+    handle: iox2_subscriber_details_ptr,
+) -> c_size_t {
+    debug_assert!(!handle.is_null());
+    unsafe { (*handle).history_request as _ }
+}

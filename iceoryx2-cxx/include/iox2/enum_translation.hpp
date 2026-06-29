@@ -2073,6 +2073,10 @@ constexpr auto from<int, iox2::SubscriberCreateError>(const int value) noexcept 
         return iox2::SubscriberCreateError::FailedToDeployThreadsafetyPolicy;
     case iox2_subscriber_create_error_e_UNABLE_TO_CREATE_PORT_TAG:
         return iox2::SubscriberCreateError::UnableToCreatePortTag;
+    case iox2_subscriber_create_error_e_HISTORY_REQUEST_EXCEEDS_HISTORY_SIZE_OF_SERVICE:
+        return iox2::SubscriberCreateError::HistoryRequestExceedsHistorySizeOfService;
+    case iox2_subscriber_create_error_e_HISTORY_REQUEST_EXCEEDS_BUFFER_SIZE_OF_SUBSCRIBER:
+        return iox2::SubscriberCreateError::HistoryRequestExceedsBufferSizeOfSubscriber;
     }
 
     IOX2_UNREACHABLE();
@@ -2091,6 +2095,10 @@ from<iox2::SubscriberCreateError, iox2_subscriber_create_error_e>(const iox2::Su
         return iox2_subscriber_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
     case iox2::SubscriberCreateError::UnableToCreatePortTag:
         return iox2_subscriber_create_error_e_UNABLE_TO_CREATE_PORT_TAG;
+    case iox2::SubscriberCreateError::HistoryRequestExceedsHistorySizeOfService:
+        return iox2_subscriber_create_error_e_HISTORY_REQUEST_EXCEEDS_HISTORY_SIZE_OF_SERVICE;
+    case iox2::SubscriberCreateError::HistoryRequestExceedsBufferSizeOfSubscriber:
+        return iox2_subscriber_create_error_e_HISTORY_REQUEST_EXCEEDS_BUFFER_SIZE_OF_SUBSCRIBER;
     }
 
     IOX2_UNREACHABLE();

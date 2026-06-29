@@ -376,10 +376,58 @@ def test_history_is_delivered_with_update_connections(
 
     publisher = service.publisher_builder().create()
 
+    # send some dummy samples first
+    for i in range(0, number_of_samples):
+        publisher.send_copy(Payload(data=0))
+
+    # send some samples expected to be in the history
     for i in range(0, number_of_samples):
         publisher.send_copy(Payload(data=85 + i))
 
     subscriber = service.subscriber_builder().create()
+    assert not subscriber.has_samples()
+
+    publisher.update_connections()
+
+    assert subscriber.has_samples()
+
+    for i in range(0, number_of_samples):
+        received_sample = subscriber.receive()
+        assert received_sample.payload().contents.data == 85 + i
+
+    assert not subscriber.has_samples()
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_history_request_reduces_delivered_history(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    number_of_samples = 4
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .publish_subscribe(Payload)
+        .history_size(number_of_samples * 2)
+        .subscriber_max_buffer_size(number_of_samples * 2)
+        .create()
+    )
+
+    publisher = service.publisher_builder().create()
+
+    # send some dummy samples first
+    for i in range(0, number_of_samples):
+        publisher.send_copy(Payload(data=0))
+
+    # send some samples expected to be in the history
+    for i in range(0, number_of_samples):
+        publisher.send_copy(Payload(data=85 + i))
+
+    subscriber = (
+        service.subscriber_builder().history_request(number_of_samples).create()
+    )
     assert not subscriber.has_samples()
 
     publisher.update_connections()
