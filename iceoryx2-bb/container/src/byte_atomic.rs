@@ -24,18 +24,68 @@
 //!
 //! # User Examples
 //!
+//! ## Use the [`FixedSizeByteAtomic`](crate::byte_atomic::FixedSizeByteAtomic)
+//!
 //! ```
 //! use iceoryx2_bb_container::byte_atomic::FixedSizeByteAtomic;
+//! use iceoryx2_bb_derive_macros::AtomicCopy;
+//! use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
 //!
-//! const SIZE: usize = size_of::<u64>();
-//! let wrapper = FixedSizeByteAtomic::<u64, SIZE>::new(0).unwrap();
-//!
-//! let new_value: u64 = 752389;
-//! unsafe {
-//!     wrapper.write(new_value);
-//!     assert_eq!(wrapper.read().assume_init(), new_value);
+//! #[repr(C)]
+//! #[derive(AtomicCopy, Clone, Copy)]
+//! struct Foo {
+//!     bar: u8,
+//!     baz: u64,
 //! }
 //!
+//! const SIZE: usize = size_of::<Foo>();
+//! let wrapper = FixedSizeByteAtomic::<Foo, SIZE>::new(Foo { bar: 0, baz: 0 }).unwrap();
+//!
+//! let new_value = Foo { bar: 4, baz: 6 };
+//! unsafe {
+//!     wrapper.write(new_value);
+//!     let read_value = wrapper.read().assume_init();
+//!     assert_eq!(read_value.bar, new_value.bar);
+//!     assert_eq!(read_value.baz, new_value.baz);
+//! }
+//! ```
+//!
+//! ## Use the [`RelocatableByteAtomic`](crate::byte_atomic::RelocatableByteAtomic)
+//!
+//! ```
+//! use iceoryx2_bb_container::byte_atomic::RelocatableByteAtomic;
+//! use iceoryx2_bb_derive_macros::AtomicCopy;
+//! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+//! use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
+//! use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
+//!
+//! #[repr(C)]
+//! #[derive(AtomicCopy, Clone, Copy)]
+//! struct Foo {
+//!     bar: u8,
+//!     baz: u64,
+//! }
+//!
+//! let value = Foo { bar: 0, baz: 0 };
+//! let new_value = Foo { bar: 4, baz: 6 };
+//!
+//! const SIZE: usize = RelocatableByteAtomic::<Foo>::const_memory_size();
+//! let memory = [0u8; SIZE];
+//! let allocator = BumpAllocator::new(
+//!     core::ptr::NonNull::<u8>::iox2_from_ref(&memory[0]),
+//!     memory.len(),
+//! );
+//! unsafe {
+//!     let mut wrapper = RelocatableByteAtomic::new_uninit();
+//!     wrapper
+//!         .init(&allocator, value)
+//!         .expect("RelocatableByteAtomic initialized.");
+//!
+//!     wrapper.write(new_value);
+//!     let read_value = wrapper.read().assume_init();
+//!     assert_eq!(read_value.bar, new_value.bar);
+//!     assert_eq!(read_value.baz, new_value.baz);
+//! }
 //! ```
 
 use core::alloc::Layout;
