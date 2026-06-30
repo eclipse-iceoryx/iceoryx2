@@ -12,6 +12,10 @@ inputs:
     description: "Defines if the Dotnet Framework shall be removed in the pre step"
     required: false
     default: "false"
+  skip-remove-go-from-runner:
+    description: "Defines if the golang shall be removed in the pre step"
+    required: false
+    default: "false"
 runs:
   using: "composite"
   steps:
@@ -22,8 +26,11 @@ runs:
           sudo rm -rf /opt/ghc || true # Remove Haskell
           sudo rm -rf /usr/local/.ghcup || true # Remove Haskell
           sudo rm -rf /usr/share/swift || true 
-          sudo rm -rf /usr/lib/google-cloud-sdk || true 
-          sudo rm -rf /usr/local/share/chromium || true 
+          sudo rm -rf /usr/lib/firefox || true
+          sudo rm -rf /usr/lib/google-cloud-sdk || true
+          sudo rm -rf /usr/local/julia* || true
+          sudo rm -rf /usr/local/share/chromium || true
+          sudo rm -rf /usr/share/miniconda || true
           sudo rm -rf /opt/microsoft/msedge || true
           sudo rm -rf /opt/google/chrome || true
 
@@ -33,6 +40,10 @@ runs:
 
           if [[ ${{ inputs.skip-remove-dotnet-from-runner }} == 'false' ]]; then
             sudo rm -rf /usr/share/dotnet || true
+          fi
+
+          if [[ ${{ inputs.skip-remove-go-from-runner }} == 'false' ]]; then
+            sudo rm -rf /opt/hostedtoolcache/go || true
           fi
 
 
