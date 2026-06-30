@@ -23,7 +23,7 @@ use iceoryx2_bb_testing_macros::test;
 #[derive(Copy, Clone)]
 struct Foo(u16);
 unsafe impl AtomicCopy for Foo {
-    fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+    fn for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
         callback(align_to::<u16>(base_offset), 2);
     }
 }
@@ -44,7 +44,7 @@ pub fn field_offsets_and_sizes_are_correct_for_named_struct() {
     let sut = NamedTestStruct { a: 0, b: Foo(0) };
 
     let mut v = Vec::new();
-    sut.__for_each_field(0, &mut |offset, size| {
+    sut.for_each_field(0, &mut |offset, size| {
         v.push((offset, size));
     });
 
@@ -68,7 +68,7 @@ pub fn field_offsets_and_sizes_are_correct_for_generic_named_struct() {
     let sut = GenericNamedTestStruct { a: 0u8, b: 0i32 };
 
     let mut v = Vec::new();
-    sut.__for_each_field(0, &mut |offset, size| {
+    sut.for_each_field(0, &mut |offset, size| {
         v.push((offset, size));
     });
 
@@ -87,7 +87,7 @@ pub fn field_offsets_and_sizes_are_correct_for_generic_named_struct() {
 pub fn field_offsets_and_sizes_are_correct_for_unnamed_struct() {
     let mut v = Vec::new();
     let sut = NestedUnnamedTestStruct(0, 0, Foo(0));
-    sut.__for_each_field(0, &mut |offset, size| {
+    sut.for_each_field(0, &mut |offset, size| {
         v.push((offset, size));
     });
 
@@ -117,7 +117,7 @@ pub fn field_offsets_and_sizes_are_correct_for_generic_unnamed_struct() {
     let sut = GenericUnnamedTestStruct(0u64, NestedUnnamedTestStruct(0, 0, Foo(0)));
 
     let mut v = Vec::new();
-    sut.__for_each_field(0, &mut |offset, size| {
+    sut.for_each_field(0, &mut |offset, size| {
         v.push((offset, size));
     });
 
@@ -171,7 +171,7 @@ pub fn field_offsets_and_sizes_are_correct_when_alignment_changes_inner_padding(
         a: 3,
         b: AlignedU32(9),
     };
-    sut.__for_each_field(0, &mut |offset, size| {
+    sut.for_each_field(0, &mut |offset, size| {
         v.push((offset, size));
     });
 
@@ -212,7 +212,7 @@ pub fn field_offsets_and_sizes_are_correct_for_nested_structs() {
             c: SomeUnnamedStruct(5),
         },
     };
-    sut.__for_each_field(0, &mut |offset, size| {
+    sut.for_each_field(0, &mut |offset, size| {
         v.push((offset, size));
     });
 
@@ -230,7 +230,7 @@ pub fn field_offsets_are_correct_with_custom_implementation() {
     #[derive(Clone, Copy)]
     struct Foo(u32, u8);
     unsafe impl AtomicCopy for Foo {
-        fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+        fn for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
             let aligned_base_offset = align_to::<Self>(base_offset);
             callback(aligned_base_offset + core::mem::offset_of!(Foo, 0), 4);
             callback(aligned_base_offset + core::mem::offset_of!(Foo, 1), 1);
@@ -243,7 +243,7 @@ pub fn field_offsets_are_correct_with_custom_implementation() {
 
     let mut v = Vec::new();
     let sut = Bar(0, Foo(0, 0));
-    sut.__for_each_field(0, &mut |offset, size| {
+    sut.for_each_field(0, &mut |offset, size| {
         v.push((offset, size));
     });
 

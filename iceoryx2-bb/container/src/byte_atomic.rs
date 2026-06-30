@@ -24,18 +24,68 @@
 //!
 //! # User Examples
 //!
+//! ## Use the [`FixedSizeByteAtomic`](crate::byte_atomic::FixedSizeByteAtomic)
+//!
 //! ```
 //! use iceoryx2_bb_container::byte_atomic::FixedSizeByteAtomic;
+//! use iceoryx2_bb_derive_macros::AtomicCopy;
+//! use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
 //!
-//! const SIZE: usize = size_of::<u64>();
-//! let wrapper = FixedSizeByteAtomic::<u64, SIZE>::new(0).unwrap();
-//!
-//! let new_value: u64 = 752389;
-//! unsafe {
-//!     wrapper.write(new_value);
-//!     assert_eq!(wrapper.read().assume_init(), new_value);
+//! #[repr(C)]
+//! #[derive(AtomicCopy, Clone, Copy)]
+//! struct Foo {
+//!     bar: u8,
+//!     baz: u64,
 //! }
 //!
+//! const SIZE: usize = size_of::<Foo>();
+//! let wrapper = FixedSizeByteAtomic::<Foo, SIZE>::new(Foo { bar: 0, baz: 0 }).unwrap();
+//!
+//! let new_value = Foo { bar: 4, baz: 6 };
+//! unsafe {
+//!     wrapper.write(new_value);
+//!     let read_value = wrapper.read().assume_init();
+//!     assert_eq!(read_value.bar, new_value.bar);
+//!     assert_eq!(read_value.baz, new_value.baz);
+//! }
+//! ```
+//!
+//! ## Use the [`RelocatableByteAtomic`](crate::byte_atomic::RelocatableByteAtomic)
+//!
+//! ```
+//! use iceoryx2_bb_container::byte_atomic::RelocatableByteAtomic;
+//! use iceoryx2_bb_derive_macros::AtomicCopy;
+//! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+//! use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
+//! use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
+//!
+//! #[repr(C)]
+//! #[derive(AtomicCopy, Clone, Copy)]
+//! struct Foo {
+//!     bar: u8,
+//!     baz: u64,
+//! }
+//!
+//! let value = Foo { bar: 0, baz: 0 };
+//! let new_value = Foo { bar: 4, baz: 6 };
+//!
+//! const SIZE: usize = RelocatableByteAtomic::<Foo>::const_memory_size();
+//! let memory = [0u8; SIZE];
+//! let allocator = BumpAllocator::new(
+//!     core::ptr::NonNull::<u8>::iox2_from_ref(&memory[0]),
+//!     memory.len(),
+//! );
+//! unsafe {
+//!     let mut wrapper = RelocatableByteAtomic::new_uninit();
+//!     wrapper
+//!         .init(&allocator, value)
+//!         .expect("RelocatableByteAtomic initialized.");
+//!
+//!     wrapper.write(new_value);
+//!     let read_value = wrapper.read().assume_init();
+//!     assert_eq!(read_value.bar, new_value.bar);
+//!     assert_eq!(read_value.baz, new_value.baz);
+//! }
 //! ```
 
 use core::alloc::Layout;
@@ -123,7 +173,7 @@ impl<T: AtomicCopy> RelocatableByteAtomic<T> {
         }
 
         let value_ptr = (&value as *const T) as *const u8;
-        value.__for_each_field(0, &mut |offset, size| {
+        value.for_each_field(0, &mut |offset, size| {
             for i in offset..offset + size {
                 unsafe {
                     (*self.data_ptr.as_ptr().add(i)).store(*value_ptr.add(i), Ordering::Relaxed);
@@ -194,11 +244,11 @@ impl<T: AtomicCopy, const SIZE: usize> FixedSizeByteAtomic<T, SIZE> {
 
         let value_ptr = (&value as *const T) as *const u8;
 
-        // The passed value may contain padding bytes. Reading or copying these padding bytes
+        // The passed value may contain padding bytes. Reading these padding bytes
         // would lead to undefined behavior. Therefore, we first set all bytes to zero and
         // then copy only the fields, i.e. the initialized bytes, of the passed value.
         let mut bytes = [0u8; SIZE];
-        value.__for_each_field(0, &mut |offset, size| {
+        value.for_each_field(0, &mut |offset, size| {
             for (i, byte) in bytes.iter_mut().enumerate().skip(offset).take(size) {
                 *byte = unsafe { *value_ptr.add(i) };
             }
@@ -243,7 +293,7 @@ unsafe fn read_impl<T: AtomicCopy>(src_data_ptr: *const AtomicU8) -> MaybeUninit
 
 unsafe fn write_impl<T: AtomicCopy>(dest_data_ptr: *const AtomicU8, value: T) {
     let value_ptr = (&value as *const T) as *const u8;
-    value.__for_each_field(0, &mut |offset, size| {
+    value.for_each_field(0, &mut |offset, size| {
         for i in offset..offset + size {
             unsafe {
                 (*dest_data_ptr.add(i)).store(*value_ptr.add(i), Ordering::Relaxed);
