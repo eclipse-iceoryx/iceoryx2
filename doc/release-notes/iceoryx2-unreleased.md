@@ -51,6 +51,7 @@
 -->
 
 * [#996](https://github.com/eclipse-iceoryx/iceoryx2/issues/996) Move BumpAllocator from iceoryx2-bb-memory into iceoryx2-bb-elementary
+* [#1776](https://github.com/eclipse-iceoryx/iceoryx2/issues/1776) Rename AtomicCopy::__for_each_field() to for_each_field()
 
 ### Workflow
 
@@ -105,13 +106,13 @@
 1. The `bump_allocator` module in the `iceoryx2-cal` package
  has been renamed to shm_bump_allocator.
 
-  ```rust
-  // old
-  use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
+    ```rust
+    // old
+    use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
 
-  // new
-  use iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator;
-  ```
+    // new
+    use iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator;
+    ```
 
 1. `Listener::{try|timed|blocking}_wait_one` has been removed and `Listener::{try|timed|blocking}_wail_all`
    has been renamed to `Listener::{try|timed|blocking}_wait`. The input argument has changed from `EventId`
@@ -156,6 +157,32 @@
         super::TestBackend<super::Ipc>,
         super::Testing
     );
+    ```
+
+1. `AtomicCopy::__for_each_field()` was renamed to `for_each_field()`.
+
+    ```rust
+    // old
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct Foo {
+        bar: u8,
+        baz: u64,
+    }
+    
+    unsafe impl AtomicCopy for Foo {
+        fn __for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+            // ...
+        }
+    }
+    
+    // new
+    // ...
+    unsafe impl AtomicCopy for Foo {
+        fn for_each_field<F: FnMut(usize, usize)>(&self, base_offset: usize, callback: &mut F) {
+            // ...
+        }
+    }
     ```
 
 <!-- markdownlint-enable MD013 -->
