@@ -44,7 +44,7 @@ requires = ["maturin>=1.8,<2.0"]
 build-backend = "maturin"
 
 [tool.maturin]
-features = ["pyo3/extension-module"]
+features = ["log", "pyo3/extension-module"]
 python-source = "python-src"
 bindings = "pyo3"
 module-name = "iceoryx2._iceoryx2"

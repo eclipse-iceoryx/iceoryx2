@@ -117,6 +117,9 @@ pub(crate) use service_type::LocalService;
 /// iceoryx2 Python language bindings
 #[pymodule]
 fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
+    // Init pyo3 log module so all the logs get redirected into python's logging system.
+    pyo3_log::init();
+
     m.add_wrapped(wrap_pymodule!(crate::config::config))?;
     m.add_wrapped(wrap_pymodule!(crate::testing::testing))?;
     m.add_wrapped(wrap_pyfunction!(crate::log::set_log_level))?;
