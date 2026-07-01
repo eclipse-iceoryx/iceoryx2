@@ -22,13 +22,16 @@ use iceoryx2_bb_posix::{directory::Directory, file::File};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_log::warn;
+use iceoryx2_log::{fail, warn};
+
+const TYPE_DEFINITION_FILE: FileName =
+    unsafe { FileName::new_unchecked_const(b"payload.type_definition") };
 
 pub struct PublishSubscribeResourceConfig<ServiceType: service::Service> {
-    pub copy_type_definition: bool,
-    pub schema_path: Option<FilePath>,
-    pub shared_node: SharedNode<ServiceType>,
-    pub type_name: TypeName,
+    pub(crate) use_type_definition: bool,
+    pub(crate) schema_path: Option<FilePath>,
+    pub(crate) type_name: TypeName,
+    pub(crate) shared_node: SharedNode<ServiceType>,
 }
 
 pub struct PublishSubscribeResources<ServiceType: service::Service> {
@@ -81,41 +84,10 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
         )?;
         directory.acquire_ownership();
 
-        if resource_config.copy_type_definition {
-            let flatbuffer_schema_path = match resource_config
-                .shared_node
-                .config()
-                .global
-                .service
-                .flatbuffer_schema_path
-            {
-                Some(p) => p,
-                None => {
-                    todo!()
-                }
-            };
-
-            let schema_path = match resource_config.schema_path {
-                Some(file_path) => {
-                    if file_path.path().is_absolute() {
-                        file_path
-                    } else {
-                        let mut path = flatbuffer_schema_path;
-                        path.add_path_entry(&file_path.into()).unwrap();
-                        unsafe { FilePath::new_unchecked(path.as_bytes()) }
-                    }
-                }
-                None => find_best_fitting_schema_file(
-                    &resource_config.type_name,
-                    &flatbuffer_schema_path,
-                )
-                .unwrap()
-                .unwrap(),
-            };
-
+        if resource_config.use_type_definition {
+            let schema_path = Self::schema_path(resource_config);
             let schema_dest =
-                FilePath::from_path_and_file(directory.path(), &FileName::new(b"asd").unwrap())
-                    .unwrap();
+                Self::type_definition_path(resource_config.shared_node.config(), static_config);
 
             File::copy(&schema_path, &schema_dest).unwrap();
 
@@ -141,13 +113,91 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
         static_config: &crate::service::static_config::StaticConfig,
         resource_config: &Self::Config,
     ) -> Result<Self, crate::service::builder::ServiceOpenError> {
-        todo!()
+        let origin = "PublishSubscribeResource::open()";
+        let msg = "Unable to open publish subscribe resources";
+
+        if resource_config.use_type_definition {
+            let schema_path = Self::schema_path(resource_config);
+            let service_schema =
+                Self::type_definition_path(resource_config.shared_node.config(), static_config);
+
+            if File::compare(&schema_path, &service_schema).unwrap() {
+                fail!(from origin, with service::builder::ServiceOpenError::IncompatiblePayload,
+                "{msg} since the payload definition of the service {service_schema} is not the same as the one requested in {schema_path}. Both files must be identical!");
+            }
+
+            Ok(Self {
+                resource_directory: Self::service_resource_directory(
+                    resource_config.shared_node.config(),
+                    static_config,
+                ),
+                has_ownership: AtomicBool::new(false),
+                type_definition: Some(service_schema),
+                _service_type: PhantomData,
+            })
+        } else {
+            Ok(Self {
+                resource_directory: Self::service_resource_directory(
+                    resource_config.shared_node.config(),
+                    static_config,
+                ),
+                has_ownership: AtomicBool::new(false),
+                type_definition: None,
+                _service_type: PhantomData,
+            })
+        }
     }
 
     fn remove_stale_resources(
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
     ) {
-        todo!()
+        let type_definition_path = Self::type_definition_path(config, static_config);
+        let resource_path = Self::service_resource_directory(config, static_config);
+
+        File::remove(&type_definition_path).unwrap();
+        Directory::remove(&resource_path).unwrap();
+    }
+}
+
+impl<ServiceType: service::Service> PublishSubscribeResources<ServiceType> {
+    fn type_definition_path(
+        config: &crate::config::Config,
+        static_config: &crate::service::static_config::StaticConfig,
+    ) -> FilePath {
+        let dir = Self::service_resource_directory(config, static_config);
+        FilePath::from_path_and_file(&dir, &TYPE_DEFINITION_FILE).unwrap()
+    }
+
+    fn schema_path(resource_config: &PublishSubscribeResourceConfig<ServiceType>) -> FilePath {
+        let flatbuffer_schema_path = match resource_config
+            .shared_node
+            .config()
+            .global
+            .service
+            .flatbuffer_schema_path
+        {
+            Some(p) => p,
+            None => {
+                todo!()
+            }
+        };
+
+        match resource_config.schema_path {
+            Some(file_path) => {
+                if file_path.path().is_absolute() {
+                    file_path
+                } else {
+                    let mut path = flatbuffer_schema_path;
+                    path.add_path_entry(&file_path.into()).unwrap();
+                    unsafe { FilePath::new_unchecked(path.as_bytes()) }
+                }
+            }
+            None => {
+                find_best_fitting_schema_file(&resource_config.type_name, &flatbuffer_schema_path)
+                    .unwrap()
+                    .unwrap()
+            }
+        }
     }
 }
