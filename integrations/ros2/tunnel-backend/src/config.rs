@@ -11,11 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! Public, serializable configuration for the ROS 2 tunnel backend.
-//!
-//! The name types here validate against the ROS 2 naming rules on construction
-//! and on deserialization, and store their value as a plain string. This keeps
-//! the FFI-facing `rcl` name types out of the public API while sharing the same
-//! validation grammar; converting into an `rcl` name is therefore infallible.
 
 use serde::{Deserialize, Serialize};
 
