@@ -95,6 +95,7 @@ pub mod recommended;
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum DynamicStorageCreateError {
     AlreadyExists,
+    Creation,
     InsufficientPermissions,
     InitializationFailed,
     InternalError,
