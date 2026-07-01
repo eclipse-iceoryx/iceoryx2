@@ -22,7 +22,7 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_posix::testing::generate_file_path;
-use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::conformance_test;
 use iceoryx2_bb_testing_macros::conformance_tests;
@@ -303,6 +303,8 @@ impl<T: Monitoring + 'static> NamedConceptTest for MonitoringTest<T> {
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod named_concept_trait {
+    use iceoryx2_bb_posix::directory::*;
+
     use super::*;
 
     #[conformance_test]
@@ -463,4 +465,42 @@ pub mod named_concept_trait {
 
         assert_that!(T::open(&name, &config), is_err);
     }
+
+    #[conformance_test]
+    pub fn creation_with_custom_path_hint_works<T: NamedConceptTest>() {
+        let service_root_directory: Path =
+            unsafe { Path::new_unchecked_const(b"iceoryx2_test_root_dir") };
+        let name = generate_file_path().file_name();
+
+        let mut test_dir = iceoryx2_bb_posix::config::TEMP_DIRECTORY;
+        let _ = test_dir.add_path_entry(&service_root_directory).unwrap();
+
+        let config = generate_custom_config::<T::Sut>(&test_dir);
+
+        assert_that!(T::create(&name, &config), is_ok);
+
+        // We clean the previously created directly up afterwards
+        // assuming that it is empty
+        assert_that!(Directory::remove_empty(&test_dir), is_ok);
+    }
+
+    #[conformance_test]
+    pub fn custom_path_hint_deleted_after_drop_and_removal<T: NamedConceptTest>() {
+        let service_root_directory: Path =
+            unsafe { Path::new_unchecked_const(b"iceoryx2_test_root_dir") };
+        let name = generate_file_path().file_name();
+
+        let mut test_dir = iceoryx2_bb_posix::config::TEMP_DIRECTORY;
+        let _ = test_dir.add_path_entry(&service_root_directory).unwrap();
+
+        let config = generate_custom_config::<T::Sut>(&test_dir);
+        let sut = T::create(&name, &config).unwrap();
+        drop(sut);
+        assert_that!(T::Sut::remove_path_hint(&test_dir), is_ok);
+
+        let test_dir_removed = Directory::does_exist(&test_dir);
+        assert_that!(test_dir_removed, is_ok);
+        assert_that!(test_dir_removed.unwrap(), eq(false));
+    }
+
 }
