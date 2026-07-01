@@ -18,6 +18,7 @@
 #![deny(unsafe_code)]
 
 pub mod backend;
+pub mod config;
 pub mod discovery;
 pub(crate) mod mapping;
 pub mod relays;
@@ -31,8 +32,29 @@ pub(crate) mod rcl;
 pub(crate) mod typesupport;
 
 pub use backend::*;
+pub use config::*;
 
 /// The name of the ROS 2 node representing the tunnel.
 #[allow(unsafe_code)]
 const NODE_NAME: rcl::NodeName =
     unsafe { rcl::NodeName::from_c_str_static_unchecked(c"iceoryx2_tunnel") };
+
+/// The reason a string failed ROS 2 name validation.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum NameError {
+    /// The name is empty where a name is required.
+    Empty,
+    /// A token is empty or contains characters outside `[A-Za-z0-9_]`, or
+    /// starts with a digit.
+    InvalidToken,
+    /// A namespace does not start with `/`.
+    NoLeadingSlash,
+}
+
+impl core::fmt::Display for NameError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "NameError::{self:?}")
+    }
+}
+
+impl core::error::Error for NameError {}

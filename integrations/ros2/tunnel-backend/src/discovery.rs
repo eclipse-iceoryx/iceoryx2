@@ -25,7 +25,7 @@ use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
 
 use iceoryx2_log::fail;
 
-use crate::backend::TopicConfig;
+use crate::config::TopicConfig;
 use crate::rcl::{TopicName, TypeName};
 use crate::ros_header::RosHeader;
 use crate::{mapping, rcl};
@@ -75,7 +75,12 @@ impl<S: Service> Discovery<S> {
             node,
             allowlist: topics
                 .iter()
-                .map(|topic| (topic.topic.clone(), topic.type_name.clone()))
+                .map(|topic| {
+                    (
+                        rcl::TopicName::from(&topic.topic),
+                        rcl::TypeName::from(&topic.type_name),
+                    )
+                })
                 .collect(),
             discovered: RefCell::new(HashMap::new()),
             _phantom: core::marker::PhantomData,

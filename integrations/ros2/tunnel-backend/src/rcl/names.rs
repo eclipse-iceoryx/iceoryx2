@@ -20,24 +20,7 @@ use std::ffi::{CStr, CString};
 
 use iceoryx2_log::fail;
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum NameError {
-    /// The name is empty where a name is required.
-    Empty,
-    /// A token is empty or contains characters outside `[A-Za-z0-9_]`, or
-    /// starts with a digit.
-    InvalidToken,
-    /// A namespace does not start with `/`.
-    NoLeadingSlash,
-}
-
-impl core::fmt::Display for NameError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "NameError::{self:?}")
-    }
-}
-
-impl core::error::Error for NameError {}
+use crate::NameError;
 
 /// A single ROS 2 name token: non-empty, only `[A-Za-z0-9_]`, not starting with
 /// a digit. This is common for all ROS 2 names.
@@ -56,6 +39,63 @@ fn is_valid_token(token: &str) -> bool {
 /// fails the token check.
 fn all_segments_valid(path: &str) -> bool {
     path.split('/').all(is_valid_token)
+}
+
+/// Checks a string against the ROS 2 node name grammar: a single name token.
+fn validate_node(name: &str) -> Result<(), NameError> {
+    if name.is_empty() {
+        return Err(NameError::Empty);
+    }
+    if !is_valid_token(name) {
+        return Err(NameError::InvalidToken);
+    }
+    Ok(())
+}
+
+/// Checks a string against the ROS 2 namespace grammar: the root (`""` or `/`),
+/// or an absolute `/`-separated path of name tokens.
+fn validate_namespace(namespace: &str) -> Result<(), NameError> {
+    if namespace.is_empty() || namespace == "/" {
+        return Ok(());
+    }
+    let path = namespace
+        .strip_prefix('/')
+        .ok_or(NameError::NoLeadingSlash)?;
+    if !all_segments_valid(path) {
+        return Err(NameError::InvalidToken);
+    }
+    Ok(())
+}
+
+/// Checks a string against the ROS 2 topic name grammar: a non-empty,
+/// `/`-separated path of name tokens, either absolute or relative.
+fn validate_topic(topic: &str) -> Result<(), NameError> {
+    if topic.is_empty() {
+        return Err(NameError::Empty);
+    }
+    let path = topic.strip_prefix('/').unwrap_or(topic);
+    if path.is_empty() || !all_segments_valid(path) {
+        return Err(NameError::InvalidToken);
+    }
+    Ok(())
+}
+
+/// Checks a string against the ROS 2 type name grammar: `package/msg/Message`,
+/// where `package` and `Message` are each a valid name token.
+fn validate_type(type_name: &str) -> Result<(), NameError> {
+    if type_name.is_empty() {
+        return Err(NameError::Empty);
+    }
+    let mut segments = type_name.split('/');
+    let well_formed = matches!(
+        (segments.next(), segments.next(), segments.next(), segments.next()),
+        (Some(package), Some("msg"), Some(message), None)
+            if is_valid_token(package) && is_valid_token(message)
+    );
+    if !well_formed {
+        return Err(NameError::InvalidToken);
+    }
+    Ok(())
 }
 
 /// Stores an already-validated name as an owned C string.
@@ -77,21 +117,11 @@ impl NodeName {
     pub fn new(name: &str) -> Result<Self, NameError> {
         let origin = "NodeName::new";
 
-        if name.is_empty() {
-            fail!(
-                from origin,
-                with NameError::Empty,
-                "Failed to create node name as it is empty"
-            );
-        }
-        if !is_valid_token(name) {
-            fail!(
-                from origin,
-                with NameError::InvalidToken,
-                "Failed to create node name from '{}' as it is not a valid token",
-                name
-            );
-        }
+        fail!(from origin,
+            when validate_node(name),
+            "Failed to create node name from '{}'",
+            name
+        );
 
         Ok(Self(owned(name)))
     }
@@ -138,21 +168,11 @@ impl NodeNamespace {
     pub fn new(namespace: &str) -> Result<Self, NameError> {
         let origin = "Namespace::new";
 
-        if namespace.is_empty() || namespace == "/" {
-            return Ok(Self(owned(namespace)));
-        }
-        let path = fail!(from origin,
-            when namespace.strip_prefix('/').ok_or(NameError::NoLeadingSlash),
-            with NameError::NoLeadingSlash,
-            "Failed to create namespace from '{}' as it does not start with '/'",
-            namespace);
-        if !all_segments_valid(path) {
-            fail!(from origin,
-                with NameError::InvalidToken,
-                "Failed to create namespace from '{}' as it contains an invalid token",
-                namespace
-            );
-        }
+        fail!(from origin,
+            when validate_namespace(namespace),
+            "Failed to create namespace from '{}'",
+            namespace
+        );
 
         Ok(Self(owned(namespace)))
     }
@@ -198,23 +218,11 @@ impl TopicName {
     pub fn new(topic: &str) -> Result<Self, NameError> {
         let origin = "TopicName::new";
 
-        if topic.is_empty() {
-            fail!(
-                from origin,
-                with NameError::Empty,
-                "Failed to create topic name as it is empty"
-            );
-        }
-
-        let path = topic.strip_prefix('/').unwrap_or(topic);
-        if path.is_empty() || !all_segments_valid(path) {
-            fail!(
-                from origin,
-                with NameError::InvalidToken,
-                "Failed to create topic name from '{}' as it contains an invalid token",
-                topic
-            );
-        }
+        fail!(from origin,
+            when validate_topic(topic),
+            "Failed to create topic name from '{}'",
+            topic
+        );
 
         Ok(Self(owned(topic)))
     }
@@ -275,28 +283,11 @@ impl TypeName {
     pub fn new(type_name: &str) -> Result<Self, NameError> {
         let origin = "TypeName::new";
 
-        if type_name.is_empty() {
-            fail!(
-                from origin,
-                with NameError::Empty,
-                "Failed to create type name as it is empty"
-            );
-        }
-
-        let mut segments = type_name.split('/');
-        let well_formed = matches!(
-            (segments.next(), segments.next(), segments.next(), segments.next()),
-            (Some(package), Some("msg"), Some(message), None)
-                if is_valid_token(package) && is_valid_token(message)
+        fail!(from origin,
+            when validate_type(type_name),
+            "Failed to create type name from '{}'",
+            type_name
         );
-        if !well_formed {
-            fail!(
-                from origin,
-                with NameError::InvalidToken,
-                "Failed to create type name from '{}' as it is not of the form 'package/msg/Message'",
-                type_name
-            );
-        }
 
         Ok(Self(owned(type_name)))
     }
