@@ -110,11 +110,11 @@ pub mod generic {
         for i in 0..CAPACITY - 1 {
             let index = sut.add((i * 3 + 1).into(), owner_id);
             assert_that!(index, is_ok);
-            stored_indices.push(index.unwrap());
+            stored_indices.push(index.unwrap().1);
 
             let index = sut.add((i * 7 + 5).into(), owner_id);
             assert_that!(index, is_ok);
-            stored_indices.push(index.unwrap());
+            stored_indices.push(index.unwrap().1);
 
             unsafe {
                 sut.remove(
@@ -142,7 +142,7 @@ pub mod generic {
     pub fn double_remove_is_detected<T: Debug + Copy + From<usize> + Into<usize> + ZeroCopySend>() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let owner_id = OwnerId::new(2).unwrap();
-        let handle = sut.add((123).into(), owner_id).unwrap();
+        let (_, handle) = sut.add((123).into(), owner_id).unwrap();
         assert_that!(unsafe { sut.remove(handle, ReleaseMode::Default) }, is_ok);
 
         assert_that!(unsafe {
@@ -180,11 +180,11 @@ pub mod generic {
         for i in 0..CAPACITY - 1 {
             let index = unsafe { sut.add((i * 3 + 1).into(), owner_id) };
             assert_that!(index, is_ok);
-            stored_indices.push(index.unwrap());
+            stored_indices.push(index.unwrap().1);
 
             let index = unsafe { sut.add((i * 7 + 5).into(), owner_id) };
             assert_that!(index, is_ok);
-            stored_indices.push(index.unwrap());
+            stored_indices.push(index.unwrap().1);
 
             unsafe {
                 sut.remove(
@@ -218,11 +218,11 @@ pub mod generic {
         for i in 0..CAPACITY - 1 {
             let handle = sut.add((i * 3 + 1).into(), owner_id);
             assert_that!(handle, is_ok);
-            stored_handles.push(handle.unwrap());
+            stored_handles.push(handle.unwrap().1);
 
             let handle = sut.add((i * 7 + 5).into(), owner_id);
             assert_that!(handle, is_ok);
-            stored_handles.push(handle.unwrap());
+            stored_handles.push(handle.unwrap().1);
 
             unsafe {
                 sut.remove(
@@ -310,7 +310,7 @@ pub mod generic {
         for i in 0..CAPACITY - 1 {
             let index = sut.add((i * 3 + 1).into(), owner_id);
             assert_that!(index, is_ok);
-            stored_indices.push(index.unwrap());
+            stored_indices.push(index.unwrap().1);
         }
 
         let mut state = sut.get_state();
@@ -340,7 +340,7 @@ pub mod generic {
         for i in 0..CAPACITY - 1 {
             let index = sut.add((i * 3 + 1).into(), owner_id);
             assert_that!(index, is_ok);
-            stored_indices.push(index.unwrap());
+            stored_indices.push(index.unwrap().1);
         }
 
         let mut state = sut.get_state();
@@ -352,7 +352,7 @@ pub mod generic {
         for i in 0..CAPACITY - 1 {
             let index = sut.add((i * 81 + 56).into(), owner_id);
             assert_that!(index, is_ok);
-            results.insert(index.as_ref().unwrap().index(), i * 81 + 56);
+            results.insert(index.as_ref().unwrap().1.index(), i * 81 + 56);
         }
 
         assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
@@ -382,7 +382,7 @@ pub mod generic {
             let index = sut.add(v.into(), owner_id);
             assert_that!(index, is_ok);
             stored_values.push(v);
-            stored_indices.push(index.unwrap());
+            stored_indices.push(index.unwrap().1);
 
             unsafe { sut.update_state(&mut state) };
             let mut contained_values = vec![];
@@ -427,7 +427,7 @@ pub mod generic {
         let owner_id = OwnerId::new(123).unwrap();
 
         let index = sut.add(123.into(), owner_id).unwrap();
-        unsafe { sut.remove(index, ReleaseMode::Default).unwrap() };
+        unsafe { sut.remove(index.1, ReleaseMode::Default).unwrap() };
         assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
     }
 
@@ -478,7 +478,7 @@ pub mod generic {
                                 Err(ContainerAddFailure::OutOfSpace) => {
                                     repetition += 1;
                                     for id in &ids {
-                                        unsafe { sut.remove(*id, ReleaseMode::Default).unwrap() };
+                                        unsafe { sut.remove(id.1, ReleaseMode::Default).unwrap() };
                                     }
                                     ids.clear();
                                 }
@@ -545,12 +545,12 @@ pub mod generic {
         let good_owner_id = OwnerId::new(2).unwrap();
         let bad_owner_id = OwnerId::new(3).unwrap();
         for i in 0..CAPACITY {
-            let handle = sut.add(i.into(), good_owner_id).unwrap();
+            let (_, handle) = sut.add(i.into(), good_owner_id).unwrap();
             stored_handles.push(handle);
         }
 
         for i in 0..CAPACITY {
-            let handle = sut.add((i + CAPACITY).into(), bad_owner_id).unwrap();
+            let (_, handle) = sut.add((i + CAPACITY).into(), bad_owner_id).unwrap();
             stored_handles.push(handle);
         }
 
@@ -579,7 +579,7 @@ pub mod generic {
         let good_owner_id = OwnerId::new(2).unwrap();
         let bad_owner_id = OwnerId::new(3).unwrap();
         for i in 0..CAPACITY {
-            let handle = sut.add(i.into(), good_owner_id).unwrap();
+            let (_, handle) = sut.add(i.into(), good_owner_id).unwrap();
             stored_handles.push(handle);
         }
 
@@ -608,12 +608,12 @@ pub mod generic {
         let good_owner_id = OwnerId::new(2).unwrap();
         let bad_owner_id = OwnerId::new(3).unwrap();
         for i in 0..CAPACITY {
-            let handle = sut.add(i.into(), good_owner_id).unwrap();
+            let (_, handle) = sut.add(i.into(), good_owner_id).unwrap();
             stored_handles.push(handle);
         }
 
         for i in 0..CAPACITY {
-            let handle = sut.add((i + CAPACITY).into(), bad_owner_id).unwrap();
+            let (_, handle) = sut.add((i + CAPACITY).into(), bad_owner_id).unwrap();
             stored_handles.push(handle);
         }
 
@@ -641,7 +641,7 @@ pub mod generic {
 
         let bad_owner_id = OwnerId::new(3).unwrap();
         for i in 0..CAPACITY {
-            let handle = sut.add((i + CAPACITY).into(), bad_owner_id).unwrap();
+            let (_, handle) = sut.add((i + CAPACITY).into(), bad_owner_id).unwrap();
             stored_handles.push(handle);
         }
 
@@ -668,7 +668,7 @@ pub mod generic {
 
         let bad_owner_id = OwnerId::new(3).unwrap();
         for i in 0..CAPACITY {
-            let handle = sut.add(i.into(), bad_owner_id).unwrap();
+            let (_, handle) = sut.add(i.into(), bad_owner_id).unwrap();
             stored_handles.push(handle);
         }
 
@@ -706,7 +706,7 @@ pub mod generic {
 
         let bad_owner_id = OwnerId::new(3).unwrap();
         for i in 0..CAPACITY {
-            let handle = sut.add(i.into(), bad_owner_id).unwrap();
+            let (_, handle) = sut.add(i.into(), bad_owner_id).unwrap();
             stored_handles.push(handle);
         }
 
