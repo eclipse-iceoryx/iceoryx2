@@ -93,7 +93,7 @@ pub mod notifier {
         let notifier_name = PortName::new("yell").unwrap();
         let sut = service.notifier_builder().name(&notifier_name).create()?;
 
-        assert_that!(sut.name(), eq notifier_name);
+        assert_that!(*sut.name(), eq notifier_name);
 
         Ok(())
     }

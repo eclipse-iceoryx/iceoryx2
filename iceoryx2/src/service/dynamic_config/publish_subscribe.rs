@@ -195,7 +195,10 @@ impl DynamicConfig {
         state.for_each(|_, details| callback(details));
     }
 
-    pub(crate) fn add_subscriber_id(&self, details: SubscriberDetails) -> Option<ContainerHandle> {
+    pub(crate) fn add_subscriber_id(
+        &self,
+        details: SubscriberDetails,
+    ) -> Option<(*const SubscriberDetails, ContainerHandle)> {
         unsafe {
             self.subscribers
                 .add(details, details.node_id.owner_id())
@@ -209,7 +212,10 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn add_publisher_id(&self, details: PublisherDetails) -> Option<ContainerHandle> {
+    pub(crate) fn add_publisher_id(
+        &self,
+        details: PublisherDetails,
+    ) -> Option<(*const PublisherDetails, ContainerHandle)> {
         unsafe {
             self.publishers
                 .add(details, details.node_id.owner_id())

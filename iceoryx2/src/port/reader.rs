@@ -166,9 +166,9 @@ pub struct Reader<
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > {
     shared_state: Service::ArcThreadSafetyPolicy<ReaderSharedState<Service, KeyType>>,
-    dynamic_reader_handle: Option<ContainerHandle>,
+    dynamic_reader_handle: ContainerHandle,
+    reader_details: &'static ReaderDetails,
     reader_id: UniqueReaderId,
-    reader_name: PortName,
 }
 
 impl<
@@ -192,15 +192,13 @@ impl<
 > Drop for Reader<Service, KeyType>
 {
     fn drop(&mut self) {
-        if let Some(handle) = self.dynamic_reader_handle {
-            self.shared_state
-                .lock()
-                .service_state
-                .dynamic_storage()
-                .get()
-                .blackboard()
-                .release_reader_handle(handle)
-        }
+        self.shared_state
+            .lock()
+            .service_state
+            .dynamic_storage()
+            .get()
+            .blackboard()
+            .release_reader_handle(self.dynamic_reader_handle)
     }
 }
 
@@ -244,27 +242,18 @@ impl<
             }
         };
 
-        let mut new_self = Self {
-            shared_state,
-            reader_id,
-            reader_name: config.port_name,
-            dynamic_reader_handle: None,
-        };
-
         core::sync::atomic::compiler_fence(Ordering::SeqCst);
 
         // !MUST! be the last task otherwise a reader is added to the dynamic config without the
         // creation of all required resources
-        let dynamic_reader_handle = match service
-            .dynamic_storage()
-            .get()
-            .blackboard()
-            .add_reader_id(ReaderDetails {
+        let (details, handle) = match service.dynamic_storage().get().blackboard().add_reader_id(
+            ReaderDetails {
                 reader_id,
                 reader_name: config.port_name,
                 node_id: *service.shared_node().id(),
-            }) {
-            Some(unique_index) => unique_index,
+            },
+        ) {
+            Some(v) => v,
             None => {
                 fail!(from origin, with ReaderCreateError::ExceedsMaxSupportedReaders,
                             "{} since it would exceed the maximum supported amount of readers of {}.",
@@ -272,7 +261,13 @@ impl<
             }
         };
 
-        new_self.dynamic_reader_handle = Some(dynamic_reader_handle);
+        let new_self = Self {
+            shared_state,
+            reader_id,
+            reader_details: unsafe { &*details },
+            dynamic_reader_handle: handle,
+        };
+
         Ok(new_self)
     }
 
@@ -282,8 +277,8 @@ impl<
     }
 
     /// Returns the [`PortName`] of the [`Reader`]
-    pub fn name(&self) -> PortName {
-        self.reader_name
+    pub fn name(&self) -> &PortName {
+        &self.reader_details.reader_name
     }
 
     /// Creates a [`EntryHandle`] for direct read access to the value.

@@ -34,7 +34,7 @@ use iceoryx2_log::{error, fail, fatal_panic, warn};
 use crate::node::SharedNode;
 use crate::port::{
     BackpressureHandler, BackpressureInfo, DegradationAction, DegradationCause, DegradationHandler,
-    DegradationInfo, LoanError, SendError, port_name::PortName,
+    DegradationInfo, LoanError, SendError,
 };
 use crate::prelude::BackpressureStrategy;
 use crate::service::config_scheme::connection_config;
@@ -123,7 +123,6 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) data_segment: DataSegment<Service>,
     pub(crate) connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
     pub(crate) sender_port_id: u128,
-    pub(crate) sender_port_name: PortName,
     pub(crate) shared_node: SharedNode<Service>,
     pub(crate) receiver_max_buffer_size: usize,
     pub(crate) receiver_max_borrowed_samples: usize,

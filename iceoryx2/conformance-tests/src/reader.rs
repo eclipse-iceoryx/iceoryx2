@@ -90,7 +90,7 @@ pub mod reader {
         let reader_name = PortName::new("scheherazade").unwrap();
         let sut = service.reader_builder().name(&reader_name).create()?;
 
-        assert_that!(sut.name(), eq reader_name);
+        assert_that!(*sut.name(), eq reader_name);
 
         Ok(())
     }

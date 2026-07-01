@@ -98,7 +98,7 @@ pub mod subscriber {
             .name(&subscriber_name)
             .create()?;
 
-        assert_that!(sut.name(), eq subscriber_name);
+        assert_that!(*sut.name(), eq subscriber_name);
 
         Ok(())
     }

@@ -332,7 +332,8 @@ pub struct Publisher<
 > {
     pub(crate) publisher_shared_state:
         Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
-    dynamic_publisher_handle: Option<ContainerHandle>,
+    dynamic_publisher_handle: ContainerHandle,
+    publisher_details: &'static PublisherDetails,
     _payload: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
 }
@@ -382,15 +383,13 @@ impl<
     fn drop(&mut self) {
         let shared_state = self.publisher_shared_state.lock();
         shared_state.is_active.store(false, Ordering::Relaxed);
-        if let Some(handle) = self.dynamic_publisher_handle {
-            shared_state
-                .sender
-                .service_state
-                .dynamic_storage()
-                .get()
-                .publish_subscribe()
-                .release_publisher_handle(handle)
-        }
+        shared_state
+            .sender
+            .service_state
+            .dynamic_storage()
+            .get()
+            .publish_subscribe()
+            .release_publisher_handle(self.dynamic_publisher_handle)
     }
 }
 
@@ -505,7 +504,6 @@ impl<
                         .map(|_| UnsafeCell::new(None))
                         .collect(),
                     sender_port_id: port_id.value(),
-                    sender_port_name: config.port_name,
                     shared_node: service.shared_node().clone(),
                     receiver_max_buffer_size: static_config.subscriber_max_buffer_size,
                     receiver_max_borrowed_samples: static_config.subscriber_max_borrowed_samples,
@@ -540,19 +538,8 @@ impl<
             }
         };
 
-        let mut new_self = Self {
-            publisher_shared_state,
-            dynamic_publisher_handle: None,
-            _payload: PhantomData,
-            _user_header: PhantomData,
-        };
-
-        if let Err(e) = new_self
-            .publisher_shared_state
-            .lock()
-            .force_update_connections()
-        {
-            warn!(from new_self,
+        if let Err(e) = publisher_shared_state.lock().force_update_connections() {
+            warn!(from origin,
                 "The new Publisher port is unable to connect to every Subscriber port, caused by {:?}.", e);
         }
 
@@ -560,13 +547,13 @@ impl<
 
         // !MUST! be the last task otherwise a publisher is added to the dynamic config without the
         // creation of all required resources
-        let dynamic_publisher_handle = match service
+        let (details, handle) = match service
             .dynamic_storage()
             .get()
             .publish_subscribe()
             .add_publisher_id(publisher_details)
         {
-            Some(unique_index) => unique_index,
+            Some(v) => v,
             None => {
                 fail!(from origin, with PublisherCreateError::ExceedsMaxSupportedPublishers,
                             "{} since it would exceed the maximum supported amount of publishers of {}.",
@@ -574,7 +561,13 @@ impl<
             }
         };
 
-        new_self.dynamic_publisher_handle = Some(dynamic_publisher_handle);
+        let new_self = Self {
+            publisher_shared_state,
+            dynamic_publisher_handle: handle,
+            publisher_details: unsafe { &*details },
+            _payload: PhantomData,
+            _user_header: PhantomData,
+        };
 
         Ok(new_self)
     }
@@ -587,8 +580,8 @@ impl<
     }
 
     /// Returns the [`PortName`] of the [`Publisher`]
-    pub fn name(&self) -> PortName {
-        self.publisher_shared_state.lock().sender.sender_port_name
+    pub fn name(&self) -> &PortName {
+        &self.publisher_details.publisher_name
     }
 
     /// Returns the strategy the [`Publisher`] follows when a [`SampleMut`] cannot be delivered

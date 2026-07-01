@@ -83,7 +83,7 @@ pub mod listener {
         let listener_name = PortName::new("wiretap").unwrap();
         let sut = service.listener_builder().name(&listener_name).create()?;
 
-        assert_that!(sut.name(), eq listener_name);
+        assert_that!(*sut.name(), eq listener_name);
 
         Ok(())
     }

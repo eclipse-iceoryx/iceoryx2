@@ -170,7 +170,10 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn add_reader_id(&self, details: ReaderDetails) -> Option<ContainerHandle> {
+    pub(crate) fn add_reader_id(
+        &self,
+        details: ReaderDetails,
+    ) -> Option<(*const ReaderDetails, ContainerHandle)> {
         unsafe { self.readers.add(details, details.node_id.owner_id()).ok() }
     }
 
@@ -180,7 +183,10 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn add_writer_id(&self, details: WriterDetails) -> Option<ContainerHandle> {
+    pub(crate) fn add_writer_id(
+        &self,
+        details: WriterDetails,
+    ) -> Option<(*const WriterDetails, ContainerHandle)> {
         unsafe { self.writers.add(details, details.node_id.owner_id()).ok() }
     }
 

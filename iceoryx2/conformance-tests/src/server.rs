@@ -262,7 +262,7 @@ pub mod server {
         let server_name = PortName::new("alfred").unwrap();
         let sut = service.server_builder().name(&server_name).create()?;
 
-        assert_that!(sut.name(), eq server_name);
+        assert_that!(*sut.name(), eq server_name);
 
         Ok(())
     }

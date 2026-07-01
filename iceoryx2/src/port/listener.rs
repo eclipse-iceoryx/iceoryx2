@@ -112,13 +112,13 @@ impl core::error::Error for ListenerCreateError {}
 /// Represents the receiving endpoint of an event based communication.
 #[derive(Debug)]
 pub struct Listener<Service: service::Service> {
-    dynamic_listener_handle: Option<ContainerHandle>,
+    dynamic_listener_handle: ContainerHandle,
     listener: Service::ArcThreadSafetyPolicy<
         <Service::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::Listener,
     >,
     service_state: SharedServiceState<Service, NoResource>,
     listener_id: UniqueListenerId,
-    listener_name: PortName,
+    listener_details: &'static ListenerDetails,
     // IMPORTANT!
     // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
     // port exists and might require cleanup after a crash, the tag must be defined as last member of
@@ -180,13 +180,11 @@ impl<Service: service::Service> Abandonable for Listener<Service> {
 
 impl<Service: service::Service> Drop for Listener<Service> {
     fn drop(&mut self) {
-        if let Some(handle) = self.dynamic_listener_handle {
-            self.service_state
-                .dynamic_storage()
-                .get()
-                .event()
-                .release_listener_handle(handle)
-        }
+        self.service_state
+            .dynamic_storage()
+            .get()
+            .event()
+            .release_listener_handle(self.dynamic_listener_handle)
     }
 }
 
@@ -231,27 +229,16 @@ impl<Service: service::Service> Listener<Service> {
             }
         };
 
-        let mut new_self = Self {
-            port_tag,
-            service_state: service.clone(),
-            dynamic_listener_handle: None,
-            listener,
-            listener_id,
-            listener_name: config.port_name,
-        };
-
-        core::sync::atomic::compiler_fence(Ordering::SeqCst);
-
         // !MUST! be the last task otherwise a listener is added to the dynamic config without
         // the creation of all required channels
-        let dynamic_listener_handle = match service.dynamic_storage().get().event().add_listener_id(
+        let (details, handle) = match service.dynamic_storage().get().event().add_listener_id(
             ListenerDetails {
                 listener_id,
                 listener_name: config.port_name,
                 node_id: *service.shared_node().id(),
             },
         ) {
-            Some(unique_index) => unique_index,
+            Some(v) => v,
             None => {
                 fail!(from origin, with ListenerCreateError::ExceedsMaxSupportedListeners,
                                  "{} since it would exceed the maximum supported amount of listeners of {}.",
@@ -259,14 +246,23 @@ impl<Service: service::Service> Listener<Service> {
             }
         };
 
-        new_self.dynamic_listener_handle = Some(dynamic_listener_handle);
+        let new_self = Self {
+            port_tag,
+            service_state: service.clone(),
+            dynamic_listener_handle: handle,
+            listener_details: unsafe { &*details },
+            listener,
+            listener_id,
+        };
+
+        core::sync::atomic::compiler_fence(Ordering::SeqCst);
 
         Ok(new_self)
     }
 
     /// Returns the [`PortName`] of the [`Listener`]
-    pub fn name(&self) -> PortName {
-        self.listener_name
+    pub fn name(&self) -> &PortName {
+        &self.listener_details.listener_name
     }
 
     /// Returns the deadline of the corresponding [`Service`](crate::service::Service).
