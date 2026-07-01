@@ -99,6 +99,7 @@ impl NodeName {
     /// Wraps an already-valid node name without re-checking it.
     ///
     /// # Safety
+    ///
     /// The caller must guarantee `name` is a well-formed ROS 2 node name.
     pub unsafe fn new_unchecked(name: &str) -> Self {
         Self(owned(name))
@@ -107,6 +108,7 @@ impl NodeName {
     /// Wraps a static, already-valid node name at compile time.
     ///
     /// # Safety
+    ///
     /// The caller must guarantee `name` is a well-formed ROS 2 node name.
     pub const unsafe fn from_c_str_static_unchecked(name: &'static CStr) -> Self {
         Self(Cow::Borrowed(name))
@@ -158,6 +160,7 @@ impl NodeNamespace {
     /// Wraps an already-valid namespace without re-checking it.
     ///
     /// # Safety
+    ///
     /// The caller must guarantee `namespace` is a well-formed ROS 2 node namespace.
     pub unsafe fn new_unchecked(namespace: &str) -> Self {
         Self(owned(namespace))
@@ -166,6 +169,7 @@ impl NodeNamespace {
     /// Wraps a static, already-valid namespace at compile time.
     ///
     /// # Safety
+    ///
     /// The caller must guarantee `namespace` is a well-formed ROS 2 node namespace.
     pub const unsafe fn from_c_str_static_unchecked(namespace: &'static CStr) -> Self {
         Self(Cow::Borrowed(namespace))
@@ -218,6 +222,7 @@ impl TopicName {
     /// Wraps an already-valid topic name without re-checking it.
     ///
     /// # Safety
+    ///
     /// The caller must guarantee `topic` is a well-formed ROS 2 topic name
     /// e.g. it came straight from an rcl graph query.
     pub unsafe fn new_unchecked(topic: &str) -> Self {
@@ -227,6 +232,7 @@ impl TopicName {
     /// Wraps an already-valid topic name from a C string without re-checking it.
     ///
     /// # Safety
+    ///
     /// The caller must guarantee `topic` is a well-formed ROS 2 topic name
     /// e.g. it came straight from an rcl graph query.
     pub unsafe fn from_c_str_unchecked(topic: &CStr) -> Self {
@@ -236,6 +242,7 @@ impl TopicName {
     /// Wraps a static, already-valid topic name at compile time.
     ///
     /// # Safety
+    ///
     /// The caller must guarantee `topic` is a well-formed ROS 2 topic name
     /// e.g. it came straight from an rcl graph query.
     pub const unsafe fn from_c_str_static_unchecked(topic: &'static CStr) -> Self {
@@ -297,6 +304,7 @@ impl TypeName {
     /// Wraps an already-valid type name without re-checking it.
     ///
     /// # Safety
+    ///
     /// The caller must guarantee `type_name` is a well-formed ROS 2 type name,
     /// e.g. it came straight from an rcl graph query.
     pub unsafe fn new_unchecked(type_name: &str) -> Self {
@@ -306,6 +314,7 @@ impl TypeName {
     /// Wraps an already-valid type name from a C string without re-checking it.
     ///
     /// # Safety
+    ///
     /// The caller must guarantee `type_name` is a well-formed ROS 2 type name,
     /// e.g. it came straight from an rcl graph query.
     pub unsafe fn from_c_str_unchecked(type_name: &CStr) -> Self {
@@ -315,6 +324,7 @@ impl TypeName {
     /// Wraps a static, already-valid type name at compile time.
     ///
     /// # Safety
+    ///
     /// The caller must guarantee `type_name` is a well-formed ROS 2 type name,
     /// e.g. it came straight from an rcl graph query.
     pub const unsafe fn from_c_str_static_unchecked(type_name: &'static CStr) -> Self {
