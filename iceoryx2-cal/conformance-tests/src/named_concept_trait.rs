@@ -502,5 +502,4 @@ pub mod named_concept_trait {
         assert_that!(test_dir_removed, is_ok);
         assert_that!(test_dir_removed.unwrap(), eq(false));
     }
-
 }
