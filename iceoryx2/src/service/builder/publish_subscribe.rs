@@ -20,8 +20,7 @@ use alloc::format;
 
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_flatbuffers::{find_best_fitting_schema_file, type_name};
-use iceoryx2_bb_posix::file::FileBuilder;
+use iceoryx2_bb_flatbuffers::type_name;
 use iceoryx2_log::{fail, fatal_panic, warn};
 
 use super::ServiceState;
@@ -691,7 +690,7 @@ impl<
         PublishSubscribeResources::create(
             &self.base.service_config,
             &PublishSubscribeResourceConfig::<ServiceType> {
-                copy_type_definition: Self::has_flatbuffer_payload(),
+                use_type_definition: Self::has_flatbuffer_payload(),
                 schema_path: self.flatbuffer_schema_path,
                 shared_node: self.base.shared_node.clone(),
                 type_name: type_name::<Payload>(),
