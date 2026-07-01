@@ -15,11 +15,14 @@ use std::sync::Arc;
 use iceoryx2::service::{Service, local_threadsafe, static_config::StaticConfig};
 use iceoryx2_log::fail;
 use iceoryx2_services_tunnel_backend::traits::{PublishSubscribeRelay, RelayBuilder};
-use iceoryx2_services_tunnel_backend::types::publish_subscribe::{LoanFn, Sample, SampleMut};
+use iceoryx2_services_tunnel_backend::types::publish_subscribe::{
+    LoanFn, Sample, SampleMut, SampleMutUninit,
+};
 use iceoryx2_services_tunnel_backend::types::wake::WakeHandle;
 
+use crate::ros_header::RosHeader;
 use crate::typesupport::TypeSupportRegistry;
-use crate::{keys, payload, rcl};
+use crate::{mapping, payload, rcl};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum CreationError {
@@ -28,6 +31,8 @@ pub enum CreationError {
     InvalidTopic,
     TypeSupport,
     Publisher,
+    Subscription,
+    WakeCallback,
 }
 
 impl core::fmt::Display for CreationError {
@@ -52,7 +57,10 @@ impl core::fmt::Display for SendError {
 impl core::error::Error for SendError {}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum ReceiveError {}
+pub enum ReceiveError {
+    Loan,
+    Take,
+}
 
 impl core::fmt::Display for ReceiveError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -66,6 +74,10 @@ impl core::error::Error for ReceiveError {}
 #[derive(Debug)]
 pub struct Relay<S: Service> {
     publisher: rcl::Publisher,
+    subscription: rcl::Subscription,
+    /// Whether the service's user-header type is [`RosHeader`], i.e. the
+    /// relay may write the remote origin into received samples.
+    write_ros_header: bool,
     _phantom: core::marker::PhantomData<S>,
 }
 
@@ -87,9 +99,43 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
 
     fn receive<LoanError>(
         &self,
-        _loan: &mut LoanFn<'_, S, LoanError>,
+        loan: &mut LoanFn<'_, S, LoanError>,
     ) -> Result<Option<SampleMut<S>>, Self::ReceiveError> {
-        Ok(None)
+        let mut loaned: Option<SampleMutUninit<S>> = None;
+        let result = self.subscription.take_into(|size| match loan(size) {
+            Ok(mut sample) => {
+                let buffer = payload::uninit_bytes_ptr(sample.payload_mut());
+                loaned = Some(sample);
+                Some(buffer)
+            }
+            Err(_) => None,
+        });
+
+        match result {
+            Ok(Some((size, message_info))) => {
+                let Some(mut sample) = loaned.take() else {
+                    return Err(ReceiveError::Loan);
+                };
+                debug_assert!(
+                    sample.payload().len() == size,
+                    "Loaned payload size ({}) does not match the taken message size ({})",
+                    sample.payload().len(),
+                    size
+                );
+
+                if self.write_ros_header {
+                    payload::write_user_header(
+                        sample.user_header_mut(),
+                        RosHeader::from(message_info),
+                    );
+                }
+
+                Ok(Some(payload::assume_init(sample)))
+            }
+            Ok(None) => Ok(None),
+            Err(rcl::subscription::TakeError::LoanDeclined) => Err(ReceiveError::Loan),
+            Err(rcl::subscription::TakeError::Take) => Err(ReceiveError::Take),
+        }
     }
 }
 
@@ -129,7 +175,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
         let origin = "publish_subscribe::Relay::create";
 
         let topic = fail!(from origin,
-            when keys::topic(self.static_config.name().as_str()).ok_or(CreationError::InvalidServiceName),
+            when mapping::topic(self.static_config.name().as_str()).ok_or(CreationError::InvalidServiceName),
             "Failed to map service name to a ROS 2 topic"
         );
 
@@ -159,14 +205,42 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
             topic
         );
         let publisher = fail!(from origin,
-            when self.node.publisher_builder(topic_name, type_support).create(),
+            when self.node.publisher_builder(&topic_name, type_support.clone()).create(),
             with CreationError::Publisher,
             "Failed to create ROS 2 publisher for topic '{}'",
             topic
         );
+        let mut subscription = fail!(from origin,
+            when self.node.subscription_builder(&topic_name, type_support).create(),
+            with CreationError::Subscription,
+            "Failed to create ROS 2 subscription for topic '{}'",
+            topic
+        );
+
+        // Reactive mode: incoming ROS 2 data wakes the tunnel.
+        if let Some(wake) = &self.wake {
+            let wake = wake.clone();
+            fail!(from origin,
+                when subscription.on_new_message(Box::new(move |_number_of_events| wake.signal())),
+                with CreationError::WakeCallback,
+                "Failed to register wake callback on ROS 2 subscription"
+            );
+        }
+
+        // Only services declaring the RosHeader user header receive the
+        // remote origin; anything else (e.g. a header-less local service)
+        // must not be written to.
+        let write_ros_header = self
+            .static_config
+            .publish_subscribe()
+            .message_type_details()
+            .user_header
+            == RosHeader::type_detail();
 
         Ok(Relay {
             publisher,
+            subscription,
+            write_ros_header,
             _phantom: core::marker::PhantomData,
         })
     }

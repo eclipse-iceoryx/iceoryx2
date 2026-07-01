@@ -10,12 +10,33 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::cell::RefCell;
+use std::collections::HashMap;
+
 use core::error::Error;
 
+use iceoryx2::config::Config as IceoryxConfig;
+use iceoryx2::service::Service;
+use iceoryx2::service::service_hash::ServiceHash;
+use iceoryx2::service::service_name::ServiceName;
+use iceoryx2::service::static_config::StaticConfig;
+use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
 
+use iceoryx2_log::fail;
+
+use crate::config::TopicConfig;
+use crate::rcl::{TopicName, TypeName};
+use crate::ros_header::RosHeader;
+use crate::{mapping, rcl};
+
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum DiscoveryError {}
+pub enum DiscoveryError {
+    Graph,
+    InvalidServiceName,
+    InvalidTypeName,
+    Processing,
+}
 
 impl core::fmt::Display for DiscoveryError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -36,12 +57,38 @@ impl core::fmt::Display for AnnouncementError {
 
 impl core::error::Error for AnnouncementError {}
 
-/// Discovers remote ROS 2 endpoints via graph queries and announces local
-/// services by creating the corresponding ROS 2 endpoints.
+/// Reports liveness status of the configured topics in the ROS graph.
 #[derive(Debug)]
-pub struct Discovery {}
+pub struct Discovery<S: Service> {
+    node: rcl::NodeHandle,
+    /// The configured allowlist.
+    allowlist: HashMap<TopicName, TypeName>,
+    /// Configured topics detected as live in the ROS graph, with the service
+    /// hash they were reported under.
+    discovered: RefCell<HashMap<TopicName, ServiceHash>>,
+    _phantom: core::marker::PhantomData<S>,
+}
 
-impl iceoryx2_services_tunnel_backend::traits::Discovery for Discovery {
+impl<S: Service> Discovery<S> {
+    pub(crate) fn new(node: rcl::NodeHandle, topics: &[TopicConfig]) -> Self {
+        Self {
+            node,
+            allowlist: topics
+                .iter()
+                .map(|topic| {
+                    (
+                        rcl::TopicName::from(&topic.topic),
+                        rcl::TypeName::from(&topic.type_name),
+                    )
+                })
+                .collect(),
+            discovered: RefCell::new(HashMap::new()),
+            _phantom: core::marker::PhantomData,
+        }
+    }
+}
+
+impl<S: Service> iceoryx2_services_tunnel_backend::traits::Discovery for Discovery<S> {
     type DiscoveryError = DiscoveryError;
     type AnnouncementError = AnnouncementError;
 
@@ -55,9 +102,84 @@ impl iceoryx2_services_tunnel_backend::traits::Discovery for Discovery {
 
     fn discover<E: Error, F: FnMut(DiscoveryEvent) -> Result<(), E>>(
         &self,
-        _process_discovery: F,
+        mut process_discovery: F,
     ) -> Result<(), Self::DiscoveryError> {
-        // To be implemented with receive path.
+        let origin = "Discovery::discover";
+
+        let graph = fail!(from origin,
+            when self.node.topic_names_and_types(),
+            with DiscoveryError::Graph,
+            "Failed to query the ROS 2 graph"
+        );
+
+        for (topic, type_name) in &self.allowlist {
+            let live = graph.iter().any(|(name, _)| name == topic);
+            let discovered = self.discovered.borrow().contains_key(topic);
+
+            if live && !discovered {
+                let static_config = fail!(from origin,
+                    when static_config::<S>(topic, type_name),
+                    "Failed to synthesize the static config for topic '{}'",
+                    topic.as_str()
+                );
+
+                let service_hash = *static_config.service_hash();
+                fail!(from origin,
+                    when process_discovery(DiscoveryEvent::Added(static_config)),
+                    with DiscoveryError::Processing,
+                    "Failed to process discovery 'Added' event for topic '{}'",
+                    topic.as_str()
+                );
+
+                self.discovered
+                    .borrow_mut()
+                    .insert(topic.clone(), service_hash);
+            } else if !live && discovered {
+                let service_hash = self.discovered.borrow()[topic];
+                fail!(from origin,
+                    when process_discovery(DiscoveryEvent::Removed(service_hash)),
+                    with DiscoveryError::Processing,
+                    "Failed to process discovery 'Removed' event for topic '{}'",
+                    topic.as_str()
+                );
+
+                self.discovered.borrow_mut().remove(topic);
+            }
+        }
+
         Ok(())
     }
+}
+
+/// The [`StaticConfig`] synthesized for a discovered ROS topic.
+fn static_config<S: Service>(
+    topic: &TopicName,
+    type_name: &TypeName,
+) -> Result<StaticConfig, DiscoveryError> {
+    let origin = "discovery::static_config";
+
+    let service_name: ServiceName = fail!(from origin,
+        when mapping::service_name(topic.as_str()).as_str().try_into(),
+        with DiscoveryError::InvalidServiceName,
+        "Invalid service name derived from topic '{}'",
+        topic.as_str()
+    );
+    // TODO: Define configuration per-topic in configuration file; apply here.
+    let config = IceoryxConfig::global_config();
+    let payload = fail!(from origin,
+        when TypeDetail::__internal_new_from_parts(TypeVariant::Dynamic, type_name.as_str(), 1, 1),
+        with DiscoveryError::InvalidTypeName,
+        "Invalid payload type name '{}'",
+        type_name.as_str()
+    );
+    let user_header = RosHeader::type_detail();
+
+    Ok(
+        StaticConfig::__internal_new_publish_subscribe_with_details::<S::ServiceNameHasher>(
+            &service_name,
+            config,
+            payload,
+            user_header,
+        ),
+    )
 }

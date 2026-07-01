@@ -11,28 +11,35 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::cell::UnsafeCell;
+use std::ffi::CStr;
 use std::rc::Rc;
 
 use r2r_rcl::{
-    RCL_RET_OK, rcl_context_fini, rcl_context_t, rcl_get_zero_initialized_context,
-    rcl_get_zero_initialized_init_options, rcl_get_zero_initialized_node, rcl_init,
-    rcl_init_options_fini, rcl_init_options_init, rcl_node_fini, rcl_node_get_default_options,
+    RCL_RET_OK, rcl_context_fini, rcl_context_t, rcl_get_topic_names_and_types,
+    rcl_get_zero_initialized_context, rcl_get_zero_initialized_init_options,
+    rcl_get_zero_initialized_node, rcl_init, rcl_init_options_fini, rcl_init_options_init,
+    rcl_names_and_types_fini, rcl_names_and_types_t, rcl_node_fini, rcl_node_get_default_options,
     rcl_node_init, rcl_node_t, rcl_ret_t, rcl_shutdown, rcutils_get_default_allocator,
+    rcutils_string_array_t,
 };
 
 use iceoryx2_log::{fail, warn};
 
-use crate::rcl::{NodeName, NodeNamespace, RclError, TopicName, publisher};
+use crate::rcl::{NodeName, NodeNamespace, RclError, TopicName, TypeName, publisher, subscription};
 use crate::typesupport::TypeSupportHandle;
 
 /// rcl is initialized without forwarding any command-line arguments.
 const NO_ARGS: core::ffi::c_int = 0;
 
+/// Topic and type names are demangled into their ROS form rather than left as
+/// the underlying middleware names.
+const NO_DEMANGLE: bool = false;
+
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    InitOptionsInit(RclError),
-    ContextInit(RclError),
-    NodeInit(RclError),
+    InitOptionsInit,
+    ContextInit,
+    NodeInit,
 }
 
 impl core::fmt::Display for CreationError {
@@ -42,6 +49,19 @@ impl core::fmt::Display for CreationError {
 }
 
 impl core::error::Error for CreationError {}
+
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum GraphError {
+    Query,
+}
+
+impl core::fmt::Display for GraphError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "GraphError::{self:?}")
+    }
+}
+
+impl core::error::Error for GraphError {}
 
 /// An rcl node together with the context it belongs to. The tunnel is a single
 /// node, so it can be coupled to the context.
@@ -125,8 +145,9 @@ impl Builder {
             if ret != RCL_RET_OK as rcl_ret_t {
                 fail!(
                     from origin,
-                    with CreationError::InitOptionsInit(ret.into()),
-                    "Failed to initialize init options"
+                    with CreationError::InitOptionsInit,
+                    "Failed to initialize init options: {}",
+                    RclError::from(ret)
                 );
             }
 
@@ -136,8 +157,9 @@ impl Builder {
             if ret != RCL_RET_OK as rcl_ret_t {
                 fail!(
                     from origin,
-                    with CreationError::ContextInit(ret.into()),
-                    "Failed to initialize context"
+                    with CreationError::ContextInit,
+                    "Failed to initialize context: {}",
+                    RclError::from(ret)
                 );
             }
 
@@ -155,8 +177,9 @@ impl Builder {
                 let _ = rcl_context_fini(context.get());
                 fail!(
                     from origin,
-                    with CreationError::NodeInit(ret.into()),
-                    "Failed to initialize node"
+                    with CreationError::NodeInit,
+                    "Failed to initialize node: {}",
+                    RclError::from(ret)
                 );
             }
 
@@ -175,15 +198,86 @@ impl NodeHandle {
     }
 
     /// Build a publisher on this node for the given topic and typesupport.
-    pub fn publisher_builder(
+    pub fn publisher_builder<'a>(
         &self,
-        topic: TopicName,
+        topic: &'a TopicName,
         type_support: TypeSupportHandle,
-    ) -> publisher::Builder {
+    ) -> publisher::Builder<'a> {
         publisher::Builder::new(Rc::clone(&self.inner), topic, type_support)
+    }
+
+    /// Build a subscription on this node for the given topic and typesupport.
+    pub fn subscription_builder<'a>(
+        &self,
+        topic: &'a TopicName,
+        type_support: TypeSupportHandle,
+    ) -> subscription::Builder<'a> {
+        subscription::Builder::new(Rc::clone(&self.inner), topic, type_support)
     }
 
     pub(crate) fn handle(&self) -> *mut rcl_node_t {
         self.inner.handle()
     }
+
+    /// Query the ROS graph for all topics visible to this node and their type names.
+    pub fn topic_names_and_types(&self) -> Result<Vec<(TopicName, Vec<TypeName>)>, GraphError> {
+        let origin = "Node::topic_names_and_types";
+
+        unsafe {
+            let mut allocator = rcutils_get_default_allocator();
+            let mut rcl_names_and_types: rcl_names_and_types_t = core::mem::zeroed();
+            let ret = rcl_get_topic_names_and_types(
+                self.inner.node.get(),
+                &mut allocator,
+                NO_DEMANGLE,
+                &mut rcl_names_and_types,
+            );
+            if ret != RCL_RET_OK as i32 {
+                fail!(
+                    from origin,
+                    with GraphError::Query,
+                    "Failed to query topic names and types: {}",
+                    RclError::from(ret)
+                );
+            }
+
+            let mut names_and_types = Vec::with_capacity(rcl_names_and_types.names.size);
+            for i in 0..rcl_names_and_types.names.size {
+                let topic = TopicName::from_c_str_unchecked(cstr_at(&rcl_names_and_types.names, i));
+                let types = collect_cstrs(&*rcl_names_and_types.types.add(i))
+                    .into_iter()
+                    .map(|type_name| TypeName::from_c_str_unchecked(type_name))
+                    .collect();
+                names_and_types.push((topic, types));
+            }
+
+            let _ = rcl_names_and_types_fini(&mut rcl_names_and_types);
+
+            Ok(names_and_types)
+        }
+    }
+}
+
+/// Borrows the string at `index` out of an rcutils string array.
+///
+/// # Safety
+///
+/// `index` must be within bounds and the array's entries must be valid
+/// null-terminated strings (guaranteed by rcl for graph query results). The
+/// returned reference is valid until the array is finalized.
+unsafe fn cstr_at(array: &rcutils_string_array_t, index: usize) -> &CStr {
+    unsafe { CStr::from_ptr(*array.data.add(index)) }
+}
+
+/// Borrows every string out of an rcutils string array into a Vec.
+///
+/// # Safety
+///
+/// The array's entries must be valid null-terminated strings (guaranteed by
+/// rcl for graph query results). The returned references are valid until the
+/// array is finalized.
+unsafe fn collect_cstrs(array: &rcutils_string_array_t) -> Vec<&CStr> {
+    (0..array.size)
+        .map(|i| unsafe { cstr_at(array, i) })
+        .collect()
 }

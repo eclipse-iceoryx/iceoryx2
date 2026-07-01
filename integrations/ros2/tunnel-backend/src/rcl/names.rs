@@ -11,32 +11,16 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! Validated ROS 2 names. Each type checks the relevant ROS 2 naming rules on
-//! construction and holds the result as a [`CString`], so an instance is a
-//! proof that the contained string is a legal name of that kind, ready to hand
-//! to rcl across the FFI boundary.
+//! construction and holds the result as a C string, so an instance is a proof
+//! that the contained string is a legal name of that kind, ready to hand to rcl
+//! across the FFI boundary.
 
+use std::borrow::Cow;
 use std::ffi::{CStr, CString};
 
 use iceoryx2_log::fail;
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum NameError {
-    /// The name is empty where a name is required.
-    Empty,
-    /// A token is empty or contains characters outside `[A-Za-z0-9_]`, or
-    /// starts with a digit.
-    InvalidToken,
-    /// A namespace does not start with `/`.
-    NoLeadingSlash,
-}
-
-impl core::fmt::Display for NameError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "NameError::{self:?}")
-    }
-}
-
-impl core::error::Error for NameError {}
+use crate::NameError;
 
 /// A single ROS 2 name token: non-empty, only `[A-Za-z0-9_]`, not starting with
 /// a digit. This is common for all ROS 2 names.
@@ -57,14 +41,71 @@ fn all_segments_valid(path: &str) -> bool {
     path.split('/').all(is_valid_token)
 }
 
-/// Converts an already-validated name into a [`CString`].
-fn into_cstring(name: &str) -> CString {
-    CString::new(name).expect("a validated ROS 2 name contains no interior nul byte")
+/// Checks a string against the ROS 2 node name grammar: a single name token.
+fn validate_node(name: &str) -> Result<(), NameError> {
+    if name.is_empty() {
+        return Err(NameError::Empty);
+    }
+    if !is_valid_token(name) {
+        return Err(NameError::InvalidToken);
+    }
+    Ok(())
+}
+
+/// Checks a string against the ROS 2 namespace grammar: the root (`""` or `/`),
+/// or an absolute `/`-separated path of name tokens.
+fn validate_namespace(namespace: &str) -> Result<(), NameError> {
+    if namespace.is_empty() || namespace == "/" {
+        return Ok(());
+    }
+    let path = namespace
+        .strip_prefix('/')
+        .ok_or(NameError::NoLeadingSlash)?;
+    if !all_segments_valid(path) {
+        return Err(NameError::InvalidToken);
+    }
+    Ok(())
+}
+
+/// Checks a string against the ROS 2 topic name grammar: a non-empty,
+/// `/`-separated path of name tokens, either absolute or relative.
+fn validate_topic(topic: &str) -> Result<(), NameError> {
+    if topic.is_empty() {
+        return Err(NameError::Empty);
+    }
+    let path = topic.strip_prefix('/').unwrap_or(topic);
+    if path.is_empty() || !all_segments_valid(path) {
+        return Err(NameError::InvalidToken);
+    }
+    Ok(())
+}
+
+/// Checks a string against the ROS 2 type name grammar: `package/msg/Message`,
+/// where `package` and `Message` are each a valid name token.
+fn validate_type(type_name: &str) -> Result<(), NameError> {
+    if type_name.is_empty() {
+        return Err(NameError::Empty);
+    }
+    let mut segments = type_name.split('/');
+    let well_formed = matches!(
+        (segments.next(), segments.next(), segments.next(), segments.next()),
+        (Some(package), Some("msg"), Some(message), None)
+            if is_valid_token(package) && is_valid_token(message)
+    );
+    if !well_formed {
+        return Err(NameError::InvalidToken);
+    }
+    Ok(())
+}
+
+/// Stores an already-validated name as an owned C string.
+fn owned(name: &str) -> Cow<'static, CStr> {
+    Cow::Owned(CString::new(name).expect("a validated ROS 2 name contains no interior nul byte"))
 }
 
 /// A ROS 2 node name: a single name token.
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct NodeName(CString);
+pub struct NodeName(Cow<'static, CStr>);
 
 impl NodeName {
     /// Creates a new ROS 2 node name from the given string.
@@ -76,23 +117,31 @@ impl NodeName {
     pub fn new(name: &str) -> Result<Self, NameError> {
         let origin = "NodeName::new";
 
-        if name.is_empty() {
-            fail!(
-                from origin,
-                with NameError::Empty,
-                "Failed to create node name as it is empty"
-            );
-        }
-        if !is_valid_token(name) {
-            fail!(
-                from origin,
-                with NameError::InvalidToken,
-                "Failed to create node name from '{}' as it is not a valid token",
-                name
-            );
-        }
+        fail!(from origin,
+            when validate_node(name),
+            "Failed to create node name from '{}'",
+            name
+        );
 
-        Ok(Self(into_cstring(name)))
+        Ok(Self(owned(name)))
+    }
+
+    /// Wraps an already-valid node name without re-checking it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee `name` is a well-formed ROS 2 node name.
+    pub unsafe fn new_unchecked(name: &str) -> Self {
+        Self(owned(name))
+    }
+
+    /// Wraps a static, already-valid node name at compile time.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee `name` is a well-formed ROS 2 node name.
+    pub const unsafe fn from_c_str_static_unchecked(name: &'static CStr) -> Self {
+        Self(Cow::Borrowed(name))
     }
 
     pub fn as_c_str(&self) -> &CStr {
@@ -103,12 +152,12 @@ impl NodeName {
 /// A ROS 2 node namespace: an absolute, `/`-separated path of name tokens. The
 /// empty string and `/` both denote the root namespace.
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct NodeNamespace(CString);
+pub struct NodeNamespace(Cow<'static, CStr>);
 
 impl NodeNamespace {
     /// The root namespace.
-    pub fn root() -> Self {
-        Self(into_cstring(""))
+    pub const fn root() -> Self {
+        Self(Cow::Borrowed(c""))
     }
 
     /// Creates a new ROS 2 namespace from the given string.
@@ -119,23 +168,31 @@ impl NodeNamespace {
     pub fn new(namespace: &str) -> Result<Self, NameError> {
         let origin = "Namespace::new";
 
-        if namespace.is_empty() || namespace == "/" {
-            return Ok(Self(into_cstring(namespace)));
-        }
-        let path = fail!(from origin,
-            when namespace.strip_prefix('/').ok_or(NameError::NoLeadingSlash),
-            with NameError::NoLeadingSlash,
-            "Failed to create namespace from '{}' as it does not start with '/'",
-            namespace);
-        if !all_segments_valid(path) {
-            fail!(from origin,
-                with NameError::InvalidToken,
-                "Failed to create namespace from '{}' as it contains an invalid token",
-                namespace
-            );
-        }
+        fail!(from origin,
+            when validate_namespace(namespace),
+            "Failed to create namespace from '{}'",
+            namespace
+        );
 
-        Ok(Self(into_cstring(namespace)))
+        Ok(Self(owned(namespace)))
+    }
+
+    /// Wraps an already-valid namespace without re-checking it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee `namespace` is a well-formed ROS 2 node namespace.
+    pub unsafe fn new_unchecked(namespace: &str) -> Self {
+        Self(owned(namespace))
+    }
+
+    /// Wraps a static, already-valid namespace at compile time.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee `namespace` is a well-formed ROS 2 node namespace.
+    pub const unsafe fn from_c_str_static_unchecked(namespace: &'static CStr) -> Self {
+        Self(Cow::Borrowed(namespace))
     }
 
     pub fn as_c_str(&self) -> &CStr {
@@ -145,8 +202,8 @@ impl NodeNamespace {
 
 /// A ROS 2 topic name: a non-empty, `/`-separated path of name tokens, either
 /// absolute (leading `/`) or relative.
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct TopicName(CString);
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct TopicName(Cow<'static, CStr>);
 
 impl TopicName {
     /// Creates a new ROS 2 topic name from the given string.
@@ -161,29 +218,115 @@ impl TopicName {
     pub fn new(topic: &str) -> Result<Self, NameError> {
         let origin = "TopicName::new";
 
-        if topic.is_empty() {
-            fail!(
-                from origin,
-                with NameError::Empty,
-                "Failed to create topic name as it is empty"
-            );
-        }
+        fail!(from origin,
+            when validate_topic(topic),
+            "Failed to create topic name from '{}'",
+            topic
+        );
 
-        let path = topic.strip_prefix('/').unwrap_or(topic);
-        if path.is_empty() || !all_segments_valid(path) {
-            fail!(
-                from origin,
-                with NameError::InvalidToken,
-                "Failed to create topic name from '{}' as it contains an invalid token",
-                topic
-            );
-        }
+        Ok(Self(owned(topic)))
+    }
 
-        Ok(Self(into_cstring(topic)))
+    /// Wraps an already-valid topic name without re-checking it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee `topic` is a well-formed ROS 2 topic name
+    /// e.g. it came straight from an rcl graph query.
+    pub unsafe fn new_unchecked(topic: &str) -> Self {
+        Self(owned(topic))
+    }
+
+    /// Wraps an already-valid topic name from a C string without re-checking it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee `topic` is a well-formed ROS 2 topic name
+    /// e.g. it came straight from an rcl graph query.
+    pub unsafe fn from_c_str_unchecked(topic: &CStr) -> Self {
+        Self(Cow::Owned(topic.to_owned()))
+    }
+
+    /// Wraps a static, already-valid topic name at compile time.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee `topic` is a well-formed ROS 2 topic name
+    /// e.g. it came straight from an rcl graph query.
+    pub const unsafe fn from_c_str_static_unchecked(topic: &'static CStr) -> Self {
+        Self(Cow::Borrowed(topic))
     }
 
     pub fn as_c_str(&self) -> &CStr {
         &self.0
+    }
+
+    /// The name as a string slice.
+    pub fn as_str(&self) -> &str {
+        self.0
+            .to_str()
+            .expect("a validated ROS 2 name is valid UTF-8")
+    }
+}
+
+/// A ROS 2 message type name of the form `package/msg/Message`, e.g.
+/// `std_msgs/msg/String`. The `package` and `Message` parts are valid name
+/// tokens.
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct TypeName(Cow<'static, CStr>);
+
+impl TypeName {
+    /// Creates a new ROS 2 message type name from the given string.
+    ///
+    /// A valid type name has the form `package/msg/Message`, where `package`
+    /// and `Message` are each a valid name token.
+    pub fn new(type_name: &str) -> Result<Self, NameError> {
+        let origin = "TypeName::new";
+
+        fail!(from origin,
+            when validate_type(type_name),
+            "Failed to create type name from '{}'",
+            type_name
+        );
+
+        Ok(Self(owned(type_name)))
+    }
+
+    /// Wraps an already-valid type name without re-checking it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee `type_name` is a well-formed ROS 2 type name,
+    /// e.g. it came straight from an rcl graph query.
+    pub unsafe fn new_unchecked(type_name: &str) -> Self {
+        Self(owned(type_name))
+    }
+
+    /// Wraps an already-valid type name from a C string without re-checking it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee `type_name` is a well-formed ROS 2 type name,
+    /// e.g. it came straight from an rcl graph query.
+    pub unsafe fn from_c_str_unchecked(type_name: &CStr) -> Self {
+        Self(Cow::Owned(type_name.to_owned()))
+    }
+
+    /// Wraps a static, already-valid type name at compile time.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee `type_name` is a well-formed ROS 2 type name,
+    /// e.g. it came straight from an rcl graph query.
+    pub const unsafe fn from_c_str_static_unchecked(type_name: &'static CStr) -> Self {
+        Self(Cow::Borrowed(type_name))
+    }
+
+    /// The type name as a string slice.
+    pub fn as_str(&self) -> &str {
+        self.0
+            .to_str()
+            .expect("a validated ROS 2 name is valid UTF-8")
     }
 }
 
@@ -242,5 +385,52 @@ mod tests {
                 "{topic}"
             );
         }
+    }
+
+    #[test]
+    fn type_name_accepts_valid_types() {
+        for type_name in [
+            "std_msgs/msg/String",
+            "geometry_msgs/msg/Twist",
+            "my_pkg/msg/Vector3",
+        ] {
+            assert!(TypeName::new(type_name).is_ok(), "{type_name}");
+        }
+    }
+
+    #[test]
+    fn type_name_rejects_invalid_types() {
+        assert_eq!(TypeName::new(""), Err(NameError::Empty));
+        for type_name in [
+            "std_msgs/String",
+            "std_msgs/msg/String/extra",
+            "std_msgs/srv/Thing",
+            "/msg/String",
+            "std_msgs/msg/",
+            "std_msgs/msg/0String",
+        ] {
+            assert_eq!(
+                TypeName::new(type_name),
+                Err(NameError::InvalidToken),
+                "{type_name}"
+            );
+        }
+    }
+
+    #[test]
+    fn constructors_round_trip_and_agree() {
+        const STATIC: TopicName = unsafe { TopicName::from_c_str_static_unchecked(c"/chatter") };
+        let checked = TopicName::new("/chatter").unwrap();
+        let unchecked = unsafe { TopicName::new_unchecked("/chatter") };
+
+        assert_eq!(checked.as_str(), "/chatter");
+        assert_eq!(checked.as_c_str(), c"/chatter");
+        assert_eq!(checked, unchecked);
+        assert_eq!(checked, STATIC);
+    }
+
+    #[test]
+    fn root_namespace_is_empty() {
+        assert_eq!(NodeNamespace::root().as_c_str(), c"");
     }
 }

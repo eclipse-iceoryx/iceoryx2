@@ -14,15 +14,15 @@ Verified with Jazzy (`rmw_fastrtps_cpp`) and Humble (`rmw_cyclonedds_cpp`).
 
 | Relay             | Send (iceoryx2 → ROS 2) | Receive (ROS 2 → iceoryx2) |
 |-------------------|-------------------------|----------------------------|
-| Publish-subscribe | ✅ Implemented          | 🚧 In progress             |
+| Publish-subscribe | ✅ Implemented          | ✅ Implemented             |
 | Event             | ➖ N/A                  | ➖ N/A                     |
 
 | Capability                            | Status         |
 |---------------------------------------|----------------|
 | Static discovery (configured topics)  | ✅ Implemented |
-| Dynamic discovery (ROS 2 graph)       | 🚧 In progress |
+| Dynamic discovery (ROS 2 graph)       | ✅ Implemented |
 | Topic & QoS mapping                   | 🚧 In progress |
-| Passthrough mode (CDR payloads as-is) | 🚧 In progress |
+| Passthrough mode (CDR payloads as-is) | ✅ Implemented |
 | Translation mode (CDR transcoded)     | 🚧 In progress |
 | CI integration                        | 🚧 In progress |
 

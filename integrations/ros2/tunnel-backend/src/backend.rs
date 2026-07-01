@@ -17,32 +17,14 @@ use iceoryx2_log::fail;
 use iceoryx2_services_tunnel_backend::traits::{Backend, BackendBuilder, ReactiveBackendBuilder};
 use iceoryx2_services_tunnel_backend::types::wake::WakeHandle;
 
+use crate::NODE_NAME;
+use crate::config::Config;
 use crate::{
     discovery::Discovery,
     rcl,
     relays::{Factory, event, publish_subscribe},
     typesupport::TypeSupportRegistry,
 };
-
-/// The name of the ROS 2 node representing the tunnel.
-const NODE_NAME: &str = "iceoryx2_tunnel";
-
-/// A ROS 2 topic to bridge.
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct TopicConfig {
-    /// Fully-qualified ROS 2 topic name, e.g. `/Camera/FrontRight`.
-    pub topic: String,
-    /// ROS 2 type name, e.g. `geometry_msgs/msg/Twist`.
-    pub type_name: String,
-}
-
-/// Configuration for the [`Ros2Backend`].
-#[derive(Debug, Default)]
-pub struct Config {
-    /// The topics to bridge. Typesupport for every entry is resolved during
-    /// backend creation, which fails if any cannot be resolved.
-    pub topics: Vec<TopicConfig>,
-}
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum CreationError {
@@ -63,7 +45,7 @@ pub struct Ros2Backend<S: Service> {
     node: rcl::NodeHandle,
     /// Typesupport for all configured topics, loaded on initialization.
     type_registry: TypeSupportRegistry,
-    discovery: Discovery,
+    discovery: Discovery<S>,
     /// `Some` when constructed in reactive mode. Cloned into each relay so
     /// that incoming ROS 2 data signals the wake.
     wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
@@ -79,7 +61,7 @@ impl<S: Service> Backend<S> for Ros2Backend<S> {
     where
         Self::Config: 'a;
 
-    type Discovery = Discovery;
+    type Discovery = Discovery<S>;
 
     type PublishSubscribeRelay = publish_subscribe::Relay<S>;
     type EventRelay = event::Relay<S>;
@@ -127,13 +109,8 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
     fn create(self) -> Result<Self::Backend, Self::CreationError> {
         let origin = "Ros2Backend::create";
 
-        let node_name = fail!(from origin,
-            when rcl::NodeName::new(NODE_NAME),
-            with CreationError::Node,
-            "Invalid node name '{}'", NODE_NAME
-        );
         let node = fail!(from origin,
-            when rcl::NodeHandle::new(node_name).create(),
+            when rcl::NodeHandle::new(NODE_NAME).create(),
             with CreationError::Node,
             "Failed to create ROS 2 node"
         );
@@ -142,17 +119,20 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
         // initialization.
         let type_registry = TypeSupportRegistry::default();
         for topic in &self.config.topics {
+            let type_name = topic.type_name.as_str();
             fail!(from origin,
-                when type_registry.load(&topic.type_name),
+                when type_registry.load(type_name),
                 with CreationError::TypeSupport,
-                "Failed to load typesupport for configured topic '{}'", topic.type_name
+                "Failed to load typesupport for configured topic '{}'", type_name
             );
         }
+
+        let discovery = Discovery::new(node.clone(), &self.config.topics);
 
         Ok(Ros2Backend {
             node,
             type_registry,
-            discovery: Discovery {},
+            discovery,
             wake: self.wake.map(Arc::new),
             _phantom: core::marker::PhantomData,
         })

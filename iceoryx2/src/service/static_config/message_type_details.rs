@@ -83,6 +83,28 @@ impl TypeDetail {
         }
     }
 
+    /// Creates a new [`TypeDetail`] from its parts, with the type name
+    /// provided at runtime. Fails when the name does not fit into the
+    /// fixed-size [`TypeName`].
+    ///
+    /// Intended for infrastructure that describes services whose types it
+    /// cannot know at compile time, e.g. tunnels. Not part of the stable
+    /// public API.
+    #[doc(hidden)]
+    pub fn __internal_new_from_parts(
+        variant: TypeVariant,
+        type_name: &str,
+        size: usize,
+        alignment: usize,
+    ) -> Result<Self, StringModificationError> {
+        Ok(Self {
+            variant,
+            type_name: TypeName::try_from(type_name)?,
+            size,
+            alignment,
+        })
+    }
+
     /// The [`TypeVariant`] of the type
     pub fn variant(&self) -> TypeVariant {
         self.variant
