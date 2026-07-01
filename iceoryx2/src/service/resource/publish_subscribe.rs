@@ -34,6 +34,7 @@ pub struct PublishSubscribeResourceConfig<ServiceType: service::Service> {
     pub(crate) shared_node: SharedNode<ServiceType>,
 }
 
+#[derive(Debug)]
 pub struct PublishSubscribeResources<ServiceType: service::Service> {
     type_definition: Option<FilePath>,
     resource_directory: Path,

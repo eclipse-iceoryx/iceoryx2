@@ -59,7 +59,7 @@ use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, Subscr
 use crate::service::header::publish_subscribe::Header;
 use crate::service::marker::CustomPayloadMarker;
 use crate::service::port_factory::subscriber::SubscriberConfig;
-use crate::service::resource::NoResource;
+use crate::service::resource::publish_subscribe::PublishSubscribeResources;
 use crate::service::static_config::publish_subscribe::StaticConfig;
 use crate::{raw_sample::RawSample, sample::Sample, service};
 
@@ -104,7 +104,7 @@ impl core::error::Error for SubscriberCreateError {}
 
 #[derive(Debug)]
 pub(crate) struct SubscriberSharedState<Service: service::Service> {
-    pub(crate) receiver: Receiver<Service>,
+    pub(crate) receiver: Receiver<Service, PublishSubscribeResources<Service>>,
     pub(crate) publisher_list_state: UnsafeCell<ContainerState<PublisherDetails>>,
     // IMPORTANT!
     // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
@@ -202,7 +202,7 @@ impl<
 > Subscriber<Service, Payload, UserHeader>
 {
     pub(crate) fn new(
-        service: SharedServiceState<Service, NoResource>,
+        service: SharedServiceState<Service, PublishSubscribeResources<Service>>,
         static_config: &StaticConfig,
         config: SubscriberConfig,
     ) -> Result<Self, SubscriberCreateError> {

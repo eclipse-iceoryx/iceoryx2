@@ -13,14 +13,13 @@
 pub mod blackboard;
 pub mod publish_subscribe;
 
+use core::fmt::Debug;
 use core::ptr::NonNull;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::{
     directory::{Directory, DirectoryCreateError, DirectoryRemoveError},
     file::Permission,
-    file_descriptor::FileDescriptorManagement,
-    ownership::Ownership,
 };
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::{fail, fatal_panic};
@@ -51,7 +50,7 @@ pub fn remove_stale_service_resources<ServiceType: service::Service>(
 
 /// Represents resources a service could use and have to be cleaned up when no owners
 /// are left
-pub trait ServiceResource: Abandonable {
+pub trait ServiceResource: Abandonable + Debug + Send {
     type Config;
 
     fn service_resource_directory(config: &config::Config, static_config: &StaticConfig) -> Path {

@@ -132,9 +132,9 @@ pub(crate) const INVALID_CONNECTION_ID: usize = usize::MAX;
 #[derive(Debug)]
 pub(crate) struct SharedServerState<Service: service::Service> {
     pub(crate) config: LocalServerConfig,
-    pub(crate) response_sender: Sender<Service>,
+    pub(crate) response_sender: Sender<Service, NoResource>,
     server_handle: UnsafeCell<Option<ContainerHandle>>,
-    pub(crate) request_receiver: Receiver<Service>,
+    pub(crate) request_receiver: Receiver<Service, NoResource>,
     client_list_state: UnsafeCell<ContainerState<ClientDetails>>,
     service_state: SharedServiceState<Service, NoResource>,
     // IMPORTANT!
