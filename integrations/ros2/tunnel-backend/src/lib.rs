@@ -34,4 +34,5 @@ pub use backend::*;
 
 /// The name of the ROS 2 node representing the tunnel.
 #[allow(unsafe_code)]
-const NODE_NAME: rcl::NodeName = unsafe { rcl::NodeName::new_static_unchecked(c"iceoryx2_tunnel") };
+const NODE_NAME: rcl::NodeName =
+    unsafe { rcl::NodeName::from_c_str_static_unchecked(c"iceoryx2_tunnel") };

@@ -108,7 +108,7 @@ impl NodeName {
     ///
     /// # Safety
     /// The caller must guarantee `name` is a well-formed ROS 2 node name.
-    pub const unsafe fn new_static_unchecked(name: &'static CStr) -> Self {
+    pub const unsafe fn from_c_str_static_unchecked(name: &'static CStr) -> Self {
         Self(Cow::Borrowed(name))
     }
 
@@ -167,7 +167,7 @@ impl NodeNamespace {
     ///
     /// # Safety
     /// The caller must guarantee `namespace` is a well-formed ROS 2 node namespace.
-    pub const unsafe fn new_static_unchecked(namespace: &'static CStr) -> Self {
+    pub const unsafe fn from_c_str_static_unchecked(namespace: &'static CStr) -> Self {
         Self(Cow::Borrowed(namespace))
     }
 
@@ -229,7 +229,7 @@ impl TopicName {
     /// # Safety
     /// The caller must guarantee `topic` is a well-formed ROS 2 topic name
     /// e.g. it came straight from an rcl graph query.
-    pub const unsafe fn new_static_unchecked(topic: &'static CStr) -> Self {
+    pub const unsafe fn from_c_str_static_unchecked(topic: &'static CStr) -> Self {
         Self(Cow::Borrowed(topic))
     }
 
@@ -299,7 +299,7 @@ impl TypeName {
     /// # Safety
     /// The caller must guarantee `type_name` is a well-formed ROS 2 type name,
     /// e.g. it came straight from an rcl graph query.
-    pub const unsafe fn new_static_unchecked(type_name: &'static CStr) -> Self {
+    pub const unsafe fn from_c_str_static_unchecked(type_name: &'static CStr) -> Self {
         Self(Cow::Borrowed(type_name))
     }
 
@@ -400,9 +400,9 @@ mod tests {
 
     #[test]
     fn constructors_round_trip_and_agree() {
-        const STATIC: TopicName = TopicName::new_static_unchecked(c"/chatter");
+        const STATIC: TopicName = unsafe { TopicName::from_c_str_static_unchecked(c"/chatter") };
         let checked = TopicName::new("/chatter").unwrap();
-        let unchecked = TopicName::new_unchecked("/chatter");
+        let unchecked = unsafe { TopicName::new_unchecked("/chatter") };
 
         assert_eq!(checked.as_str(), "/chatter");
         assert_eq!(checked.as_c_str(), c"/chatter");
