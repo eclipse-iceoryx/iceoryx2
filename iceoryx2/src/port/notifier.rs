@@ -271,9 +271,9 @@ pub struct Notifier<Service: service::Service> {
     listener_connections: Service::ArcThreadSafetyPolicy<ListenerConnections<Service>>,
     default_event_id: EventId,
     event_id_max_value: usize,
-    dynamic_notifier_handle: Option<ContainerHandle>,
+    dynamic_notifier_handle: ContainerHandle,
+    notifier_details: &'static NotifierDetails,
     notifier_id: UniqueNotifierId,
-    notifier_name: PortName,
     on_drop_notification: Option<EventId>,
     node_id: UniqueNodeId,
     // IMPORTANT!
@@ -318,15 +318,13 @@ impl<Service: service::Service> Drop for Notifier<Service> {
             }
         }
 
-        if let Some(handle) = self.dynamic_notifier_handle {
-            self.listener_connections
-                .lock()
-                .service_state
-                .dynamic_storage()
-                .get()
-                .event()
-                .release_notifier_handle(handle)
-        }
+        self.listener_connections
+            .lock()
+            .service_state
+            .dynamic_storage()
+            .get()
+            .event()
+            .release_notifier_handle(self.dynamic_notifier_handle)
     }
 }
 
@@ -408,29 +406,11 @@ impl<Service: service::Service> Notifier<Service> {
             }
         };
 
-        let mut new_self = Self {
-            port_tag,
-            listener_connections,
-            default_event_id: config.default_event_id,
-            event_id_max_value: static_config.event_id_max_value,
-            dynamic_notifier_handle: None,
-            notifier_id,
-            notifier_name: config.port_name,
-            on_drop_notification: None,
-            node_id,
-        };
-
-        new_self
-            .listener_connections
-            .lock()
-            .populate_listener_channels();
-
-        core::sync::atomic::compiler_fence(Ordering::SeqCst);
+        listener_connections.lock().populate_listener_channels();
 
         // !MUST! be the last task otherwise a notifier is added to the dynamic config without
         // the creation of all required channels
-        let dynamic_notifier_handle = match new_self
-            .listener_connections
+        let (details, handle) = match listener_connections
             .lock()
             .service_state
             .dynamic_storage()
@@ -441,14 +421,27 @@ impl<Service: service::Service> Notifier<Service> {
                 node_id,
                 notifier_name: config.port_name,
             }) {
-            Some(handle) => handle,
+            Some(v) => v,
             None => {
                 fail!(from origin, with NotifierCreateError::ExceedsMaxSupportedNotifiers,
                             "{} since it would exceed the maximum supported amount of notifiers of {}.",
                             msg, service.static_config().event().max_notifiers);
             }
         };
-        new_self.dynamic_notifier_handle = Some(dynamic_notifier_handle);
+
+        let new_self = Self {
+            port_tag,
+            listener_connections,
+            default_event_id: config.default_event_id,
+            event_id_max_value: static_config.event_id_max_value,
+            dynamic_notifier_handle: handle,
+            notifier_details: unsafe { &*details },
+            notifier_id,
+            on_drop_notification: None,
+            node_id,
+        };
+
+        core::sync::atomic::compiler_fence(Ordering::SeqCst);
 
         Ok(new_self)
     }
@@ -459,8 +452,8 @@ impl<Service: service::Service> Notifier<Service> {
     }
 
     /// Returns the [`PortName`] of the [`Notifier`]
-    pub fn name(&self) -> PortName {
-        self.notifier_name
+    pub fn name(&self) -> &PortName {
+        &self.notifier_details.notifier_name
     }
 
     /// Notifies all [`crate::port::listener::Listener`] connected to the service with the default

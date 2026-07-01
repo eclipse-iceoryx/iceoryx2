@@ -108,7 +108,7 @@ pub mod publisher {
         let publisher_name = PortName::new("hypnotoad").unwrap();
         let sut = service.publisher_builder().name(&publisher_name).create()?;
 
-        assert_that!(sut.name(), eq publisher_name);
+        assert_that!(*sut.name(), eq publisher_name);
 
         Ok(())
     }

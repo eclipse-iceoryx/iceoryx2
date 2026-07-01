@@ -68,7 +68,7 @@ pub mod writer {
         let writer_name = PortName::new("homer").unwrap();
         let sut = service.writer_builder().name(&writer_name).create()?;
 
-        assert_that!(sut.name(), eq writer_name);
+        assert_that!(*sut.name(), eq writer_name);
 
         Ok(())
     }

@@ -177,7 +177,7 @@ pub mod client {
         let client_name = PortName::new("bruce").unwrap();
         let sut = service.client_builder().name(&client_name).create()?;
 
-        assert_that!(sut.name(), eq client_name);
+        assert_that!(*sut.name(), eq client_name);
 
         Ok(())
     }

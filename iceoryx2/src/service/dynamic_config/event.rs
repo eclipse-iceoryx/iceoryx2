@@ -180,7 +180,10 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn add_listener_id(&self, details: ListenerDetails) -> Option<ContainerHandle> {
+    pub(crate) fn add_listener_id(
+        &self,
+        details: ListenerDetails,
+    ) -> Option<(*const ListenerDetails, ContainerHandle)> {
         unsafe { self.listeners.add(details, details.node_id.owner_id()).ok() }
     }
 
@@ -190,7 +193,10 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn add_notifier_id(&self, details: NotifierDetails) -> Option<ContainerHandle> {
+    pub(crate) fn add_notifier_id(
+        &self,
+        details: NotifierDetails,
+    ) -> Option<(*const NotifierDetails, ContainerHandle)> {
         unsafe { self.notifiers.add(details, details.node_id.owner_id()).ok() }
     }
 

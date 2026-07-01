@@ -171,7 +171,10 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn add_client_id(&self, details: ClientDetails) -> Option<ContainerHandle> {
+    pub(crate) fn add_client_id(
+        &self,
+        details: ClientDetails,
+    ) -> Option<(*const ClientDetails, ContainerHandle)> {
         unsafe { self.clients.add(details, details.node_id.owner_id()).ok() }
     }
 
@@ -181,7 +184,10 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn add_server_id(&self, details: ServerDetails) -> Option<ContainerHandle> {
+    pub(crate) fn add_server_id(
+        &self,
+        details: ServerDetails,
+    ) -> Option<(*const ServerDetails, ContainerHandle)> {
         unsafe { self.servers.add(details, details.node_id.owner_id()).ok() }
     }
 

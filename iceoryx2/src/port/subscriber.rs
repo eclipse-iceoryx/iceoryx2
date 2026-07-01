@@ -132,7 +132,8 @@ pub struct Subscriber<
     Payload: Debug + ZeroCopySend + ?Sized + 'static,
     UserHeader: Debug + ZeroCopySend,
 > {
-    dynamic_subscriber_handle: Option<ContainerHandle>,
+    dynamic_subscriber_handle: ContainerHandle,
+    subscriber_details: &'static SubscriberDetails,
     subscriber_shared_state: Service::ArcThreadSafetyPolicy<SubscriberSharedState<Service>>,
 
     _payload: PhantomData<Payload>,
@@ -182,16 +183,14 @@ impl<
 > Drop for Subscriber<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
-        if let Some(handle) = self.dynamic_subscriber_handle {
-            self.subscriber_shared_state
-                .lock()
-                .receiver
-                .service_state
-                .dynamic_storage()
-                .get()
-                .publish_subscribe()
-                .release_subscriber_handle(handle)
-        }
+        self.subscriber_shared_state
+            .lock()
+            .receiver
+            .service_state
+            .dynamic_storage()
+            .get()
+            .publish_subscribe()
+            .release_subscriber_handle(self.dynamic_subscriber_handle)
     }
 }
 
@@ -294,7 +293,6 @@ impl<
                 )
                 .expect("Heap allocator provides memory."),
                 receiver_port_id: subscriber_id.value(),
-                receiver_port_name: config.port_name,
                 service_state: service.clone(),
                 message_type_details: static_config.message_type_details,
                 receiver_max_borrowed_samples: subscriber_max_borrowed_samples,
@@ -324,23 +322,9 @@ impl<
             }
         };
 
-        let mut new_self = Self {
-            subscriber_shared_state,
-            dynamic_subscriber_handle: None,
-            _payload: PhantomData,
-            _user_header: PhantomData,
-        };
-
-        if let Err(e) = new_self.force_update_connections(&new_self.subscriber_shared_state.lock())
-        {
-            warn!(from new_self, "The new subscriber is unable to connect to every publisher, caused by {:?}.", e);
-        }
-
-        core::sync::atomic::compiler_fence(Ordering::SeqCst);
-
         // !MUST! be the last task otherwise a subscriber is added to the dynamic config without
         // the creation of all required channels
-        let dynamic_subscriber_handle = match service
+        let (details, handle) = match service
             .dynamic_storage()
             .get()
             .publish_subscribe()
@@ -351,15 +335,28 @@ impl<
                 node_id: *service.shared_node().id(),
                 subscriber_name: config.port_name,
             }) {
-            Some(unique_index) => unique_index,
+            Some(v) => v,
             None => {
-                fail!(from new_self, with SubscriberCreateError::ExceedsMaxSupportedSubscribers,
+                fail!(from origin, with SubscriberCreateError::ExceedsMaxSupportedSubscribers,
                                 "{} since it would exceed the maximum supported amount of subscribers of {}.",
                                 msg, service.static_config().publish_subscribe().max_subscribers);
             }
         };
 
-        new_self.dynamic_subscriber_handle = Some(dynamic_subscriber_handle);
+        let new_self = Self {
+            subscriber_shared_state,
+            dynamic_subscriber_handle: handle,
+            subscriber_details: unsafe { &*details },
+            _payload: PhantomData,
+            _user_header: PhantomData,
+        };
+
+        if let Err(e) = new_self.force_update_connections(&new_self.subscriber_shared_state.lock())
+        {
+            warn!(from new_self, "The new subscriber is unable to connect to every publisher, caused by {:?}.", e);
+        }
+
+        core::sync::atomic::compiler_fence(Ordering::SeqCst);
 
         Ok(new_self)
     }
@@ -410,11 +407,8 @@ impl<
     }
 
     /// Returns the [`PortName`] of the [`Subscriber`]
-    pub fn name(&self) -> PortName {
-        self.subscriber_shared_state
-            .lock()
-            .receiver
-            .receiver_port_name
+    pub fn name(&self) -> &PortName {
+        &self.subscriber_details.subscriber_name
     }
 
     /// Returns the internal buffer size of the [`Subscriber`].

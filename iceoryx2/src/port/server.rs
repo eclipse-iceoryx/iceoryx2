@@ -250,6 +250,7 @@ pub struct Server<
     shared_state: Service::ArcThreadSafetyPolicy<SharedServerState<Service>>,
     max_loaned_responses_per_request: usize,
     enable_fire_and_forget: bool,
+    server_details: &'static ServerDetails,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
     _response_payload: PhantomData<ResponsePayload>,
@@ -383,7 +384,6 @@ impl<
             )
             .expect("Heap allocator provides memory."),
             receiver_port_id: server_id.value(),
-            receiver_port_name: server_factory.config.port_name,
             service_state: service.clone(),
             message_type_details: static_config.request_message_type_details,
             receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
@@ -452,7 +452,6 @@ impl<
                 .map(|_| UnsafeCell::new(None))
                 .collect(),
             sender_port_id: server_id.value(),
-            sender_port_name: server_factory.config.port_name,
             shared_node: service.shared_node().clone(),
             receiver_max_buffer_size: static_config.max_response_buffer_size,
             receiver_max_borrowed_samples: static_config
@@ -492,6 +491,37 @@ impl<
             }
         };
 
+        if let Err(e) = shared_state.lock().force_update_connections() {
+            warn!(from origin, "The new server is unable to connect to every client, caused by {:?}.", e);
+        }
+
+        core::sync::atomic::compiler_fence(Ordering::SeqCst);
+
+        // !MUST! be the last task otherwise a server is added to the dynamic config without the
+        // creation of all required resources
+        let (details, handle) = match service
+            .dynamic_storage()
+            .get()
+            .request_response()
+            .add_server_id(ServerDetails {
+                server_id,
+                node_id: *service.shared_node().id(),
+                request_buffer_size: static_config.max_active_requests_per_client,
+                number_of_responses,
+                max_slice_len: server_factory.config.initial_max_slice_len,
+                data_segment_type,
+                max_number_of_segments,
+                server_name: server_factory.config.port_name,
+            }) {
+            Some(v) => v,
+            None => {
+                fail!(from origin,
+                    with ServerCreateError::ExceedsMaxSupportedServers,
+                    "{} since it would exceed the maximum supported amount of servers of {}.",
+                    msg, service.static_config().request_response().max_servers());
+            }
+        };
+
         let new_self = Self {
             max_loaned_responses_per_request: server_factory
                 .config
@@ -501,44 +531,13 @@ impl<
                 .request_response()
                 .enable_fire_and_forget_requests,
             shared_state,
+            server_details: unsafe { &*details },
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,
             _response_header: PhantomData,
         };
-
-        if let Err(e) = new_self.shared_state.lock().force_update_connections() {
-            warn!(from new_self, "The new server is unable to connect to every client, caused by {:?}.", e);
-        }
-
-        core::sync::atomic::compiler_fence(Ordering::SeqCst);
-
-        // !MUST! be the last task otherwise a server is added to the dynamic config without the
-        // creation of all required resources
-        unsafe {
-            *new_self.shared_state.lock().server_handle.get() = match service
-                .dynamic_storage()
-                .get()
-                .request_response()
-                .add_server_id(ServerDetails {
-                    server_id,
-                    node_id: *service.shared_node().id(),
-                    request_buffer_size: static_config.max_active_requests_per_client,
-                    number_of_responses,
-                    max_slice_len: server_factory.config.initial_max_slice_len,
-                    data_segment_type,
-                    max_number_of_segments,
-                    server_name: server_factory.config.port_name,
-                }) {
-                Some(v) => Some(v),
-                None => {
-                    fail!(from origin,
-                    with ServerCreateError::ExceedsMaxSupportedServers,
-                    "{} since it would exceed the maximum supported amount of servers of {}.",
-                    msg, service.static_config().request_response().max_servers());
-                }
-            }
-        };
+        unsafe { *new_self.shared_state.lock().server_handle.get() = Some(handle) };
 
         Ok(new_self)
     }
@@ -551,8 +550,8 @@ impl<
     }
 
     /// Returns the [`PortName`] of the [`Server`]
-    pub fn name(&self) -> PortName {
-        self.shared_state.lock().request_receiver.receiver_port_name
+    pub fn name(&self) -> &PortName {
+        &self.server_details.server_name
     }
 
     /// Returns true if the [`Server`] has [`RequestMut`](crate::request_mut::RequestMut)s in its buffer.

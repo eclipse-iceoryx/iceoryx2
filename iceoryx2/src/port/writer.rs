@@ -151,7 +151,7 @@ pub struct Writer<
 > {
     shared_state: Service::ArcThreadSafetyPolicy<WriterSharedState<Service, KeyType>>,
     writer_id: UniqueWriterId,
-    writer_name: PortName,
+    writer_details: &'static WriterDetails,
     // IMPORTANT!
     // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
     // port exists and might require cleanup after a crash, the tag must be defined as last member of
@@ -218,26 +218,15 @@ impl<
             }
         };
 
-        let new_self = Self {
-            shared_state,
-            writer_id,
-            port_tag,
-            writer_name: config.port_name,
-        };
-
-        core::sync::atomic::compiler_fence(Ordering::SeqCst);
-
         // !MUST! be the last task otherwise a writer is added to the dynamic config without the
         // creation of all required resources
-        let dynamic_writer_handle = match service
-            .dynamic_storage()
-            .get()
-            .blackboard()
-            .add_writer_id(WriterDetails {
+        let (details, handle) = match service.dynamic_storage().get().blackboard().add_writer_id(
+            WriterDetails {
                 writer_id,
                 writer_name: config.port_name,
                 node_id: *service.shared_node().id(),
-            }) {
+            },
+        ) {
             Some(unique_index) => unique_index,
             None => {
                 fail!(from origin, with WriterCreateError::ExceedsMaxSupportedWriters,
@@ -246,9 +235,16 @@ impl<
             }
         };
 
-        unsafe {
-            *new_self.shared_state.lock().dynamic_writer_handle.get() = Some(dynamic_writer_handle)
+        let new_self = Self {
+            shared_state,
+            writer_details: unsafe { &*details },
+            writer_id,
+            port_tag,
         };
+
+        core::sync::atomic::compiler_fence(Ordering::SeqCst);
+
+        unsafe { *new_self.shared_state.lock().dynamic_writer_handle.get() = Some(handle) };
         Ok(new_self)
     }
 
@@ -258,8 +254,8 @@ impl<
     }
 
     /// Returns the [`PortName`] of the [`Writer`]
-    pub fn name(&self) -> PortName {
-        self.writer_name
+    pub fn name(&self) -> &PortName {
+        &self.writer_details.writer_name
     }
 
     /// Creates a [`EntryHandleMut`] for direct write access to the value. There can be only one
