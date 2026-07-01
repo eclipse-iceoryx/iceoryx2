@@ -731,7 +731,7 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     /// let owner_id = OwnerId::new(91230).unwrap();
     ///
     /// match unsafe { container.add(1234567, owner_id) } {
-    ///     Ok(index) => {
+    ///     Ok((ptr_to_element, index)) => {
     ///         println!("added at index {:?}", index);
     ///         unsafe { container.remove(index, ReleaseMode::Default) };
     ///     },
