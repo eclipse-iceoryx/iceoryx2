@@ -17,15 +17,13 @@ use iceoryx2_log::fail;
 use iceoryx2_services_tunnel_backend::traits::{Backend, BackendBuilder, ReactiveBackendBuilder};
 use iceoryx2_services_tunnel_backend::types::wake::WakeHandle;
 
+use crate::NODE_NAME;
 use crate::{
     discovery::Discovery,
     rcl,
     relays::{Factory, event, publish_subscribe},
     typesupport::TypeSupportRegistry,
 };
-
-/// The name of the ROS 2 node representing the tunnel.
-const NODE_NAME: rcl::NodeName = rcl::NodeName::new_static_unchecked(c"iceoryx2_tunnel");
 
 /// A ROS 2 topic to bridge.
 #[derive(Debug, Clone, Eq, PartialEq)]
