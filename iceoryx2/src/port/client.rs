@@ -96,6 +96,7 @@ use iceoryx2_log::{fail, fatal_panic, warn};
 
 use crate::active_request::RequestId;
 use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
+use crate::service::resource::NoResource;
 use crate::{
     identifiers::UniqueClientId,
     pending_response::PendingResponse,
@@ -169,8 +170,8 @@ impl core::error::Error for RequestSendError {}
 #[derive(Debug)]
 pub(crate) struct ClientSharedState<Service: service::Service> {
     pub(crate) config: LocalClientConfig,
-    pub(crate) request_sender: Sender<Service>,
-    pub(crate) response_receiver: Receiver<Service>,
+    pub(crate) request_sender: Sender<Service, NoResource>,
+    pub(crate) response_receiver: Receiver<Service, NoResource>,
     client_handle: UnsafeCell<Option<ContainerHandle>>,
     server_list_state: UnsafeCell<ContainerState<ServerDetails>>,
     pub(crate) active_request_counter: AtomicUsize,

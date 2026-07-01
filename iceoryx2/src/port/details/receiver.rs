@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use alloc::format;
+use core::marker::PhantomData;
 use core::ptr::NonNull;
 
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
@@ -32,7 +33,7 @@ use crate::port::update_connections::ConnectionFailure;
 use crate::port::{DegradationAction, DegradationHandler, ReceiveError};
 use crate::service::SharedServiceState;
 use crate::service::naming_scheme::data_segment_name;
-use crate::service::resource::NoResource;
+use crate::service::resource::ServiceResource;
 use crate::service::static_config::message_type_details::MessageTypeDetails;
 use crate::service::{self, config_scheme::connection_config, naming_scheme::connection_name};
 
@@ -49,14 +50,17 @@ pub(crate) struct SenderDetails {
 }
 
 #[derive(Debug)]
-pub(crate) struct Connection<Service: service::Service> {
+pub(crate) struct Connection<Service: service::Service, Resource: ServiceResource> {
     pub(crate) receiver: <Service::Connection as ZeroCopyConnection>::Receiver,
     pub(crate) data_segment: DataSegmentView<Service>,
     pub(crate) sender_port_id: u128,
     tag: Tag,
+    _resource: PhantomData<Resource>,
 }
 
-impl<Service: service::Service> Abandonable for Connection<Service> {
+impl<Service: service::Service, Resource: ServiceResource> Abandonable
+    for Connection<Service, Resource>
+{
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
 
@@ -71,15 +75,17 @@ impl<Service: service::Service> Abandonable for Connection<Service> {
     }
 }
 
-impl<Service: service::Service> Taggable for Connection<Service> {
+impl<Service: service::Service, Resource: ServiceResource> Taggable
+    for Connection<Service, Resource>
+{
     fn tag(&self) -> &Tag {
         &self.tag
     }
 }
 
-impl<Service: service::Service> Connection<Service> {
+impl<Service: service::Service, Resource: ServiceResource> Connection<Service, Resource> {
     fn new(
-        this: &Receiver<Service>,
+        this: &Receiver<Service, Resource>,
         data_segment_type: DataSegmentType,
         sender_port_id: u128,
         number_of_samples: usize,
@@ -127,15 +133,16 @@ impl<Service: service::Service> Connection<Service> {
             data_segment,
             sender_port_id,
             tag: cyclic_tagger.create_tag(),
+            _resource: PhantomData,
         })
     }
 }
 
 #[derive(Debug)]
-pub(crate) struct Receiver<Service: service::Service> {
+pub(crate) struct Receiver<Service: service::Service, Resource: ServiceResource> {
     pub(crate) connections: PolymorphicVec<'static, UnsafeCell<Option<SlotMapKey>>, HeapAllocator>,
     pub(crate) receiver_port_id: u128,
-    pub(crate) service_state: SharedServiceState<Service, NoResource>,
+    pub(crate) service_state: SharedServiceState<Service, Resource>,
     pub(crate) buffer_size: usize,
     pub(crate) tagger: CyclicTagger,
     pub(crate) to_be_removed_connections:
@@ -145,11 +152,13 @@ pub(crate) struct Receiver<Service: service::Service> {
     pub(crate) receiver_max_borrowed_samples: usize,
     pub(crate) enable_safe_overflow: bool,
     pub(crate) number_of_channels: usize,
-    pub(crate) connection_storage: UnsafeCell<SlotMap<Connection<Service>>>,
+    pub(crate) connection_storage: UnsafeCell<SlotMap<Connection<Service, Resource>>>,
     pub(crate) initial_channel_state: ChannelState,
 }
 
-impl<Service: service::Service> Abandonable for Receiver<Service> {
+impl<Service: service::Service, Resource: ServiceResource> Abandonable
+    for Receiver<Service, Resource>
+{
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
 
@@ -159,7 +168,7 @@ impl<Service: service::Service> Abandonable for Receiver<Service> {
     }
 }
 
-impl<Service: service::Service> Receiver<Service> {
+impl<Service: service::Service, Resource: ServiceResource> Receiver<Service, Resource> {
     pub(crate) fn release_offset(&self, chunk: &ChunkDetails, channel_id: ChannelId) {
         let connection_storage = unsafe { &mut *self.connection_storage.get() };
         if let Some(connection) = connection_storage.get(chunk.connection_key) {
@@ -324,7 +333,7 @@ impl<Service: service::Service> Receiver<Service> {
     }
 
     fn find_connection_without_data_and_borrows(
-        connection_storage: &SlotMap<Connection<Service>>,
+        connection_storage: &SlotMap<Connection<Service, Resource>>,
         connections: &PolymorphicVec<'static, SlotMapKey, HeapAllocator>,
     ) -> Option<(usize, SlotMapKey)> {
         Self::find_connection_with_condition(
@@ -335,7 +344,7 @@ impl<Service: service::Service> Receiver<Service> {
     }
 
     fn find_connection_without_borrows(
-        connection_storage: &SlotMap<Connection<Service>>,
+        connection_storage: &SlotMap<Connection<Service, Resource>>,
         connections: &PolymorphicVec<'static, SlotMapKey, HeapAllocator>,
     ) -> Option<(usize, SlotMapKey)> {
         Self::find_connection_with_condition(
@@ -346,7 +355,7 @@ impl<Service: service::Service> Receiver<Service> {
     }
 
     fn find_connection_with_condition<C: Fn(bool, bool) -> bool>(
-        connection_storage: &SlotMap<Connection<Service>>,
+        connection_storage: &SlotMap<Connection<Service, Resource>>,
         connections: &PolymorphicVec<'static, SlotMapKey, HeapAllocator>,
         condition: C,
     ) -> Option<(usize, SlotMapKey)> {
@@ -421,7 +430,7 @@ impl<Service: service::Service> Receiver<Service> {
 
     fn receive_from_connection(
         &self,
-        connection: &Connection<Service>,
+        connection: &Connection<Service, Resource>,
         connection_key: SlotMapKey,
         channel_id: ChannelId,
     ) -> Result<Option<(ChunkDetails, Chunk)>, ReceiveError> {

@@ -47,7 +47,7 @@ use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
 use crate::identifiers::UniqueServiceId;
 use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
-use crate::service::resource::NoResource;
+use crate::service::resource::publish_subscribe::PublishSubscribeResources;
 use crate::service::service_hash::ServiceHash;
 use crate::service::service_name::ServiceName;
 use crate::service::{self, ServiceState, SharedServiceState, dynamic_config, static_config};
@@ -70,7 +70,7 @@ pub struct PortFactory<
     Payload: Debug + ZeroCopySend + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) service: SharedServiceState<Service, NoResource>,
+    pub(crate) service: SharedServiceState<Service, PublishSubscribeResources<Service>>,
     _payload: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
 }
@@ -154,7 +154,7 @@ impl<
     UserHeader: Debug + ZeroCopySend,
 > PortFactory<Service, Payload, UserHeader>
 {
-    pub(crate) fn new(service: ServiceState<Service, NoResource>) -> Self {
+    pub(crate) fn new(service: ServiceState<Service, PublishSubscribeResources<Service>>) -> Self {
         Self {
             service: SharedServiceState {
                 state: Arc::new(service),
