@@ -243,10 +243,10 @@ impl NodeHandle {
 
             let mut names_and_types = Vec::with_capacity(rcl_names_and_types.names.size);
             for i in 0..rcl_names_and_types.names.size {
-                let topic = TopicName::new_unchecked(&string_at(&rcl_names_and_types.names, i));
-                let types = collect_strings(&*rcl_names_and_types.types.add(i))
-                    .iter()
-                    .map(|type_name| TypeName::new_unchecked(type_name))
+                let topic = TopicName::from_c_str_unchecked(cstr_at(&rcl_names_and_types.names, i));
+                let types = collect_cstrs(&*rcl_names_and_types.types.add(i))
+                    .into_iter()
+                    .map(|type_name| TypeName::from_c_str_unchecked(type_name))
                     .collect();
                 names_and_types.push((topic, types));
             }
@@ -258,26 +258,26 @@ impl NodeHandle {
     }
 }
 
-/// Copies the string at `index` out of an rcutils string array.
+/// Borrows the string at `index` out of an rcutils string array.
 ///
 /// # Safety
 ///
 /// `index` must be within bounds and the array's entries must be valid
-/// null-terminated strings (guaranteed by rcl for graph query results).
-unsafe fn string_at(array: &rcutils_string_array_t, index: usize) -> String {
+/// null-terminated strings (guaranteed by rcl for graph query results). The
+/// returned reference is valid until the array is finalized.
+unsafe fn cstr_at(array: &rcutils_string_array_t, index: usize) -> &CStr {
     unsafe { CStr::from_ptr(*array.data.add(index)) }
-        .to_string_lossy()
-        .into_owned()
 }
 
-/// Copies every string out of an rcutils string array into a Vec.
+/// Borrows every string out of an rcutils string array into a Vec.
 ///
 /// # Safety
 ///
 /// The array's entries must be valid null-terminated strings (guaranteed by
-/// rcl for graph query results).
-unsafe fn collect_strings(array: &rcutils_string_array_t) -> Vec<String> {
+/// rcl for graph query results). The returned references are valid until the
+/// array is finalized.
+unsafe fn collect_cstrs(array: &rcutils_string_array_t) -> Vec<&CStr> {
     (0..array.size)
-        .map(|i| unsafe { string_at(array, i) })
+        .map(|i| unsafe { cstr_at(array, i) })
         .collect()
 }

@@ -224,6 +224,15 @@ impl TopicName {
         Self(owned(topic))
     }
 
+    /// Wraps an already-valid topic name from a C string without re-checking it.
+    ///
+    /// # Safety
+    /// The caller must guarantee `topic` is a well-formed ROS 2 topic name
+    /// e.g. it came straight from an rcl graph query.
+    pub unsafe fn from_c_str_unchecked(topic: &CStr) -> Self {
+        Self(Cow::Owned(topic.to_owned()))
+    }
+
     /// Wraps a static, already-valid topic name at compile time.
     ///
     /// # Safety
@@ -292,6 +301,15 @@ impl TypeName {
     /// e.g. it came straight from an rcl graph query.
     pub unsafe fn new_unchecked(type_name: &str) -> Self {
         Self(owned(type_name))
+    }
+
+    /// Wraps an already-valid type name from a C string without re-checking it.
+    ///
+    /// # Safety
+    /// The caller must guarantee `type_name` is a well-formed ROS 2 type name,
+    /// e.g. it came straight from an rcl graph query.
+    pub unsafe fn from_c_str_unchecked(type_name: &CStr) -> Self {
+        Self(Cow::Owned(type_name.to_owned()))
     }
 
     /// Wraps a static, already-valid type name at compile time.
