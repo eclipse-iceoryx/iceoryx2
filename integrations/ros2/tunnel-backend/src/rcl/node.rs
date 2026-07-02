@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::cell::UnsafeCell;
 use std::ffi::CStr;
 use std::rc::Rc;
 
@@ -23,6 +22,7 @@ use r2r_rcl::{
     rcutils_string_array_t,
 };
 
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_log::{fail, warn};
 
 use crate::rcl::{NodeName, NodeNamespace, RclError, TopicName, TypeName, publisher, subscription};
@@ -37,9 +37,9 @@ const NO_DEMANGLE: bool = false;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    InitOptionsInit,
-    ContextInit,
-    NodeInit,
+    InitOptions,
+    Context,
+    Node,
 }
 
 impl core::fmt::Display for CreationError {
@@ -145,7 +145,7 @@ impl Builder {
             if ret != RCL_RET_OK as rcl_ret_t {
                 fail!(
                     from origin,
-                    with CreationError::InitOptionsInit,
+                    with CreationError::InitOptions,
                     "Failed to initialize init options: {}",
                     RclError::from(ret)
                 );
@@ -157,7 +157,7 @@ impl Builder {
             if ret != RCL_RET_OK as rcl_ret_t {
                 fail!(
                     from origin,
-                    with CreationError::ContextInit,
+                    with CreationError::Context,
                     "Failed to initialize context: {}",
                     RclError::from(ret)
                 );
@@ -177,7 +177,7 @@ impl Builder {
                 let _ = rcl_context_fini(context.get());
                 fail!(
                     from origin,
-                    with CreationError::NodeInit,
+                    with CreationError::Node,
                     "Failed to initialize node: {}",
                     RclError::from(ret)
                 );
@@ -193,6 +193,7 @@ impl Builder {
 impl NodeHandle {
     /// Begins building a node with the given name. The namespace defaults to
     /// the root namespace unless set via [`Builder::namespace`].
+    #[allow(clippy::new_ret_no_self)]
     pub fn new(name: NodeName) -> Builder {
         Builder::new(name)
     }

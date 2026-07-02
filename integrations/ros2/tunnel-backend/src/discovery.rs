@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::cell::RefCell;
 use std::collections::HashMap;
 
 use core::error::Error;
@@ -21,9 +20,9 @@ use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
-
+use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_log::fail;
+use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
 
 use crate::config::TopicConfig;
 use crate::rcl::{TopicName, TypeName};

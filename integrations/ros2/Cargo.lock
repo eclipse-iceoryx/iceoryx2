@@ -383,6 +383,7 @@ name = "iceoryx2-integrations-ros2-tunnel-backend"
 version = "0.9.999"
 dependencies = [
  "iceoryx2",
+ "iceoryx2-bb-concurrency",
  "iceoryx2-log",
  "iceoryx2-services-common",
  "iceoryx2-services-tunnel",
