@@ -574,7 +574,8 @@ impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
 #[doc(hidden)]
 pub mod internal {
     use crate::service::{
-        resource::remove_stale_service_resources, stale_resource_cleanup::ServiceRemoveTagError,
+        resource::{RemoveStaleResourcesError, remove_stale_service_resources},
+        stale_resource_cleanup::ServiceRemoveTagError,
     };
 
     use super::*;
@@ -709,7 +710,21 @@ pub mod internal {
             let unique_service_id = service_config.unique_service_id();
             let service_hash = service_config.service_hash();
 
-            remove_stale_service_resources::<S>(config, service_config);
+            match remove_stale_service_resources::<S>(config, service_config) {
+                Ok(()) => (),
+                Err(RemoveStaleResourcesError::InterruptedBySignal) => {
+                    fail!(from origin, with ServiceRemoveError::Interrupt,
+                       "{msg} since the service resources could not be removed since the operation was interrupted by a signal.");
+                }
+                Err(RemoveStaleResourcesError::InsufficientPermissions) => {
+                    fail!(from origin, with ServiceRemoveError::InsufficientPermissions,
+                        "{msg} since the service resources could not be removed due to insufficient permissions.");
+                }
+                Err(RemoveStaleResourcesError::InternalFailure) => {
+                    fail!(from origin, with ServiceRemoveError::InternalError,
+                        "{msg} since the service resources could not be removed due to an internal failure.");
+                }
+            }
 
             let segment_name = dynamic_config_name(unique_service_id);
             match unsafe {

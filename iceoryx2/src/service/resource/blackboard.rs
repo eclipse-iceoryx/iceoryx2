@@ -17,6 +17,7 @@ use crate::constants::{MAX_BLACKBOARD_KEY_ALIGNMENT, MAX_BLACKBOARD_KEY_SIZE};
 use crate::service::builder::{self, ServiceCreateError};
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
 use crate::service::naming_scheme::blackboard_name;
+use crate::service::resource::RemoveStaleResourcesError;
 use crate::service::static_config::StaticConfig;
 use crate::service::{
     self, resource::ServiceResource, static_config::message_type_details::TypeDetail,
@@ -39,7 +40,7 @@ use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_cal::dynamic_storage::{DynamicStorage, DynamicStorageBuilder};
 use iceoryx2_cal::event::NamedConceptMgmt;
-use iceoryx2_cal::named_concept::NamedConceptBuilder;
+use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptRemoveError};
 use iceoryx2_cal::shared_memory::SharedMemory;
 use iceoryx2_cal::shared_memory::SharedMemoryBuilder;
 use iceoryx2_log::fail;
@@ -202,7 +203,10 @@ impl<ServiceType: service::Service> ServiceResource for BlackboardResources<Serv
         self.mgmt.acquire_ownership();
     }
 
-    fn remove_stale_resources(config: &config::Config, static_config: &StaticConfig) {
+    fn remove_stale_resources(
+        config: &config::Config,
+        static_config: &StaticConfig,
+    ) -> Result<(), RemoveStaleResourcesError> {
         let origin = format!(
             "BlackboardResource<{}>::remove_stale_resources()",
             core::any::type_name::<ServiceType>()
@@ -222,9 +226,18 @@ impl<ServiceType: service::Service> ServiceResource for BlackboardResources<Serv
             Ok(true) => {
                 trace!(from origin, "Remove blackboard payload segment.");
             }
-            _ => {
-                error!(from origin,
-                                  "{} since the blackboard payload segment cannot be removed - service seems to be in a corrupted state.", msg);
+            Ok(false) => {}
+            Err(NamedConceptRemoveError::InsufficientPermissions) => {
+                fail!(from origin, with RemoveStaleResourcesError::InsufficientPermissions,
+                    "{msg} since the blackboard payload segment could not be removed due to insufficient permissions.");
+            }
+            Err(NamedConceptRemoveError::Interrupt) => {
+                fail!(from origin, with RemoveStaleResourcesError::InterruptedBySignal,
+                    "{msg} since the removal of the blackboard payload segment was interrupted by a signal.");
+            }
+            Err(NamedConceptRemoveError::InternalError) => {
+                fail!(from origin, with RemoveStaleResourcesError::InternalFailure,
+                    "{msg} since the blackboard payload segment cannot be removed due to an internal failure.");
             }
         }
 
@@ -248,9 +261,20 @@ impl<ServiceType: service::Service> ServiceResource for BlackboardResources<Serv
         } {
             Ok(true) => {
                 trace!(from origin, "Remove blackboard mgmt segment.");
+                Ok(())
             }
-            _ => {
-                error!(from origin, "{} since the blackboard mgmt segment cannot be removed - service seems to be in a corrupted state.", msg);
+            Ok(false) => Ok(()),
+            Err(NamedConceptRemoveError::InsufficientPermissions) => {
+                fail!(from origin, with RemoveStaleResourcesError::InsufficientPermissions,
+                    "{msg} since the blackboard mgmt segment cannot be removed due to insufficient permisssions.");
+            }
+            Err(NamedConceptRemoveError::Interrupt) => {
+                fail!(from origin, with RemoveStaleResourcesError::InterruptedBySignal,
+                    "{msg} since the removal of the blackboard mgmt segment was interrupted by a signal.");
+            }
+            Err(NamedConceptRemoveError::InternalError) => {
+                fail!(from origin, with RemoveStaleResourcesError::InternalFailure,
+                    "{msg} since the blackboard mgmt segment cannot be removed due to an internal failure.");
             }
         }
     }
