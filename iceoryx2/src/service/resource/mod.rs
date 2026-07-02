@@ -16,6 +16,7 @@ pub mod publish_subscribe;
 use core::fmt::Debug;
 use core::ptr::NonNull;
 use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::{
     directory::{Directory, DirectoryCreateError, DirectoryRemoveError},
@@ -29,7 +30,7 @@ use crate::{
     service::{
         self,
         builder::{ServiceCreateError, ServiceOpenError},
-        resource::blackboard::BlackboardResources,
+        resource::{blackboard::BlackboardResources, publish_subscribe::PublishSubscribeResources},
         static_config::{StaticConfig, messaging_pattern::MessagingPattern},
     },
 };
@@ -37,15 +38,25 @@ use crate::{
 pub fn remove_stale_service_resources<ServiceType: service::Service>(
     config: &config::Config,
     static_config: &StaticConfig,
-) {
+) -> Result<(), RemoveStaleResourcesError> {
     match static_config.messaging_pattern() {
         MessagingPattern::Blackboard(_) => {
-            BlackboardResources::<ServiceType>::remove_stale_resources(config, static_config);
+            BlackboardResources::<ServiceType>::remove_stale_resources(config, static_config)
         }
-        MessagingPattern::RequestResponse(_) => {}
-        MessagingPattern::Event(_) => {}
-        MessagingPattern::PublishSubscribe(_) => {}
+        MessagingPattern::RequestResponse(_) => Ok(()),
+        MessagingPattern::Event(_) => Ok(()),
+        MessagingPattern::PublishSubscribe(_) => {
+            PublishSubscribeResources::<ServiceType>::remove_stale_resources(config, static_config)
+        }
     }
+}
+
+enum_gen! {
+    RemoveStaleResourcesError
+  entry:
+    InsufficientPermissions,
+    InterruptedBySignal,
+    InternalFailure
 }
 
 /// Represents resources a service could use and have to be cleaned up when no owners
@@ -109,7 +120,10 @@ pub trait ServiceResource: Abandonable + Debug + Send {
         resource_config: &Self::Config,
     ) -> Result<Self, ServiceOpenError>;
 
-    fn remove_stale_resources(config: &config::Config, static_config: &StaticConfig);
+    fn remove_stale_resources(
+        config: &config::Config,
+        static_config: &StaticConfig,
+    ) -> Result<(), RemoveStaleResourcesError>;
 
     /// Acquires the ownership of the additional resources. When the objects go out of scope the
     /// underlying resources will be removed.
@@ -137,7 +151,12 @@ impl ServiceResource for NoResource {
 
     fn acquire_ownership(&self) {}
 
-    fn remove_stale_resources(_config: &config::Config, _static_config: &StaticConfig) {}
+    fn remove_stale_resources(
+        _config: &config::Config,
+        _static_config: &StaticConfig,
+    ) -> Result<(), RemoveStaleResourcesError> {
+        Ok(())
+    }
 }
 
 impl Abandonable for NoResource {

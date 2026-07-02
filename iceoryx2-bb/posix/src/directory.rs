@@ -425,8 +425,15 @@ impl Directory {
         let msg = format!("Unable to remove directory \"{path}\"");
         let origin = "Directory::remove()";
 
-        let dir = fail!(from origin, when Directory::new(path),
-                            "{} since the directory {} could not be opened.", msg, path);
+        let dir = match Directory::new(path) {
+            Ok(dir) => dir,
+            Err(DirectoryOpenError::DoesNotExist) => return Ok(()),
+            Err(e) => {
+                fail!(from origin, with e.into(),
+                     "{} since the directory {} could not be opened.", msg, path);
+            }
+        };
+
         let contents = fail!(from origin, when dir.contents(),
                             "{} since the directory contents of {} could not be read.", msg, path);
 
