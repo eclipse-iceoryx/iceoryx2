@@ -39,14 +39,6 @@ impl core::fmt::Display for LoadError {
 
 impl core::error::Error for LoadError {}
 
-/// Owns a resolved typesupport handle together with the [`Library`] it points
-/// into, keeping that library loaded for as long as the handle is used.
-#[derive(Debug)]
-struct TypeSupportInner {
-    handle: *const rosidl_message_type_support_t,
-    _library: Library,
-}
-
 /// A resolved ROS 2 *typesupport* handle.
 ///
 /// In ROS 2 a "typesupport" is the per-message-type descriptor that rcl and
@@ -65,15 +57,18 @@ struct TypeSupportInner {
 /// will match.
 ///
 /// The handle points into the loaded library's memory, so the `Library` is
-/// kept alive here; it stays loaded as long as any clone is alive.
-#[derive(Debug, Clone)]
-pub struct TypeSupportHandle {
-    inner: Rc<TypeSupportInner>,
+/// kept alive here. The typesupport is shared: the registry cache and every
+/// endpoint using it hold a share of one `Rc<TypeSupport>`, keeping the
+/// library loaded as long as any share is alive.
+#[derive(Debug)]
+pub struct TypeSupport {
+    handle: *const rosidl_message_type_support_t,
+    _library: Library,
 }
 
-impl TypeSupportHandle {
+impl TypeSupport {
     pub(crate) fn handle(&self) -> *const rosidl_message_type_support_t {
-        self.inner.handle
+        self.handle
     }
 }
 
@@ -81,19 +76,19 @@ impl TypeSupportHandle {
 /// registry must outlive all endpoints created from its handles.
 #[derive(Debug, Default)]
 pub struct TypeSupportRegistry {
-    entries: RefCell<HashMap<String, TypeSupportHandle>>,
+    entries: RefCell<HashMap<String, Rc<TypeSupport>>>,
 }
 
 impl TypeSupportRegistry {
-    pub fn load(&self, type_name: &str) -> Result<TypeSupportHandle, LoadError> {
+    pub fn load(&self, type_name: &str) -> Result<Rc<TypeSupport>, LoadError> {
         if let Some(type_support) = self.entries.borrow().get(type_name) {
-            return Ok(type_support.clone());
+            return Ok(Rc::clone(type_support));
         }
 
-        let type_support = load_typesupport_library(type_name)?;
+        let type_support = Rc::new(load_typesupport_library(type_name)?);
         self.entries
             .borrow_mut()
-            .insert(type_name.to_string(), type_support.clone());
+            .insert(type_name.to_string(), Rc::clone(&type_support));
 
         Ok(type_support)
     }
@@ -101,7 +96,7 @@ impl TypeSupportRegistry {
 
 /// Loads the typesupport library of the type's package and looks up the
 /// type's handle in it.
-fn load_typesupport_library(type_name: &str) -> Result<TypeSupportHandle, LoadError> {
+fn load_typesupport_library(type_name: &str) -> Result<TypeSupport, LoadError> {
     let origin = "TypeSupportRegistry::load";
 
     let (package, message) = fail!(
@@ -145,11 +140,9 @@ fn load_typesupport_library(type_name: &str) -> Result<TypeSupportHandle, LoadEr
         );
     }
 
-    Ok(TypeSupportHandle {
-        inner: Rc::new(TypeSupportInner {
-            handle,
-            _library: library,
-        }),
+    Ok(TypeSupport {
+        handle,
+        _library: library,
     })
 }
 

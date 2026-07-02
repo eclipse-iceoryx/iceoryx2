@@ -24,9 +24,9 @@ use r2r_rcl::{
 
 use iceoryx2_log::fail;
 
-use crate::rcl::node::NodeInner;
+use crate::rcl::node::RclNode;
 use crate::rcl::{RclError, TopicName};
-use crate::typesupport::TypeSupportHandle;
+use crate::typesupport::TypeSupport;
 
 /// A callback invoked with the number of newly-arrived messages. The RMW
 /// calls it from a middleware thread.
@@ -94,20 +94,18 @@ impl From<&rmw_message_info_t> for MessageInfo {
     }
 }
 
-/// Builder for [`Subscription`].
+/// Builder for [`RclSubscription`].
 #[derive(Debug)]
-pub struct Builder<'a> {
-    node: Rc<NodeInner>,
+pub struct RclSubscriptionBuilder<'a> {
+    node: Rc<RclNode>,
     topic: &'a TopicName,
-    type_support: TypeSupportHandle,
+    type_support: Rc<TypeSupport>,
 }
 
-impl<'a> Builder<'a> {
-    pub(crate) fn new(
-        node: Rc<NodeInner>,
-        topic: &'a TopicName,
-        type_support: TypeSupportHandle,
-    ) -> Self {
+impl<'a> RclSubscriptionBuilder<'a> {
+    /// Begins building a subscription on `node` for the given topic and
+    /// typesupport.
+    pub fn new(node: Rc<RclNode>, topic: &'a TopicName, type_support: Rc<TypeSupport>) -> Self {
         Self {
             node,
             topic,
@@ -115,8 +113,8 @@ impl<'a> Builder<'a> {
         }
     }
 
-    pub fn create(self) -> Result<Subscription, CreationError> {
-        let origin = "Subscription::Builder::create";
+    pub fn create(self) -> Result<RclSubscription, CreationError> {
+        let origin = "RclSubscriptionBuilder::create";
 
         unsafe {
             let mut subscription = Box::new(rcl_get_zero_initialized_subscription());
@@ -138,7 +136,7 @@ impl<'a> Builder<'a> {
                 );
             }
 
-            Ok(Subscription {
+            Ok(RclSubscription {
                 subscription: Box::into_raw(subscription),
                 callback: None,
                 node: self.node,
@@ -149,19 +147,19 @@ impl<'a> Builder<'a> {
 }
 
 /// Receives serialized messages from a ROS 2 topic.
-pub struct Subscription {
+pub struct RclSubscription {
     subscription: *mut r2r_rcl::rcl_subscription_t,
     /// The new-message callback while one is registered, kept alive and pinned
     /// so the `user_data` pointer rcl holds stays valid until it is cleared.
     callback: Option<Pin<Box<NewMessageCallback>>>,
-    node: Rc<NodeInner>,
+    node: Rc<RclNode>,
     /// Keeps the typesupport library loaded while the endpoint uses it.
-    _type_support: TypeSupportHandle,
+    _type_support: Rc<TypeSupport>,
 }
 
-impl core::fmt::Debug for Subscription {
+impl core::fmt::Debug for RclSubscription {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("Subscription")
+        f.debug_struct("RclSubscription")
             .field("subscription", &self.subscription)
             .field("callback", &self.callback.is_some())
             .field("node", &self.node)
@@ -169,13 +167,13 @@ impl core::fmt::Debug for Subscription {
     }
 }
 
-impl Subscription {
+impl RclSubscription {
     /// Registers `callback` to be invoked whenever new messages arrive on
     /// the subscription, with the number of new messages. It is invoked by
     /// the RMW from a middleware thread and must not panic; a previously
     /// registered callback is replaced.
     pub fn on_new_message(&mut self, callback: NewMessageCallback) -> Result<(), CallbackError> {
-        let origin = "Subscription::on_new_message";
+        let origin = "RclSubscription::on_new_message";
 
         // Pin to a stable heap address, then pass rcl a thin pointer to the
         // boxed closure as `user_data`.
@@ -218,7 +216,7 @@ impl Subscription {
     where
         F: FnOnce(usize) -> Option<*mut u8>,
     {
-        let origin = "Subscription::take_into";
+        let origin = "RclSubscription::take_into";
 
         let mut loan: Option<F> = Some(loan);
         let mut message = rcl_serialized_message_t {
@@ -263,7 +261,7 @@ impl Subscription {
     }
 }
 
-impl Drop for Subscription {
+impl Drop for RclSubscription {
     fn drop(&mut self) {
         unsafe {
             // Clear the callback before the closure is dropped: a middleware
@@ -284,7 +282,7 @@ impl Drop for Subscription {
 
 /// The C entry point rcl invokes when messages arrive; recovers the
 /// [`NewMessageCallback`] from the `user_data` pointer registered in
-/// [`Subscription::on_new_message`] and calls it.
+/// [`RclSubscription::on_new_message`] and calls it.
 unsafe extern "C" fn on_new_message_trampoline(user_data: *const c_void, number_of_events: usize) {
     let callback = unsafe { &*(user_data as *const NewMessageCallback) };
     callback(number_of_events);

@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use core::error::Error;
 
@@ -25,9 +26,9 @@ use iceoryx2_log::fail;
 use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
 
 use crate::config::TopicConfig;
-use crate::rcl::{TopicName, TypeName};
+use crate::mapping;
+use crate::rcl::{RclNode, TopicName, TypeName};
 use crate::ros_header::RosHeader;
-use crate::{mapping, rcl};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
@@ -59,7 +60,7 @@ impl core::error::Error for AnnouncementError {}
 /// Reports liveness status of the configured topics in the ROS graph.
 #[derive(Debug)]
 pub struct Discovery<S: Service> {
-    node: rcl::NodeHandle,
+    node: Rc<RclNode>,
     /// The configured allowlist.
     allowlist: HashMap<TopicName, TypeName>,
     /// Configured topics detected as live in the ROS graph, with the service
@@ -69,15 +70,15 @@ pub struct Discovery<S: Service> {
 }
 
 impl<S: Service> Discovery<S> {
-    pub(crate) fn new(node: rcl::NodeHandle, topics: &[TopicConfig]) -> Self {
+    pub(crate) fn new(node: Rc<RclNode>, topics: &[TopicConfig]) -> Self {
         Self {
             node,
             allowlist: topics
                 .iter()
                 .map(|topic| {
                     (
-                        rcl::TopicName::from(&topic.topic),
-                        rcl::TypeName::from(&topic.type_name),
+                        TopicName::from(&topic.topic),
+                        TypeName::from(&topic.type_name),
                     )
                 })
                 .collect(),
