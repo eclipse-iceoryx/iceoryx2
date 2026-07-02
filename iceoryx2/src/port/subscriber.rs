@@ -322,6 +322,12 @@ impl<
             }
         };
 
+        if let Err(e) = Self::force_update_connections(&subscriber_shared_state.lock()) {
+            warn!(from origin, "The new subscriber is unable to connect to every publisher, caused by {:?}.", e);
+        }
+
+        core::sync::atomic::compiler_fence(Ordering::SeqCst);
+
         // !MUST! be the last task otherwise a subscriber is added to the dynamic config without
         // the creation of all required channels
         let (details, handle) = match service
@@ -343,26 +349,16 @@ impl<
             }
         };
 
-        let new_self = Self {
+        Ok(Self {
             subscriber_shared_state,
             dynamic_subscriber_handle: handle,
             subscriber_details: unsafe { &*details },
             _payload: PhantomData,
             _user_header: PhantomData,
-        };
-
-        if let Err(e) = new_self.force_update_connections(&new_self.subscriber_shared_state.lock())
-        {
-            warn!(from new_self, "The new subscriber is unable to connect to every publisher, caused by {:?}.", e);
-        }
-
-        core::sync::atomic::compiler_fence(Ordering::SeqCst);
-
-        Ok(new_self)
+        })
     }
 
     fn force_update_connections(
-        &self,
         subscriber_shared_state: &SubscriberSharedState<Service>,
     ) -> Result<(), ConnectionFailure> {
         subscriber_shared_state
@@ -456,7 +452,7 @@ impl<
                 .publishers
                 .update_state(&mut *subscriber_shared_state.publisher_list_state.get())
         } {
-            fail!(from self, when self.force_update_connections(&subscriber_shared_state),
+            fail!(from self, when Self::force_update_connections(&subscriber_shared_state),
                 "Connections were updated only partially since at least one connection to a publisher failed.");
         }
 

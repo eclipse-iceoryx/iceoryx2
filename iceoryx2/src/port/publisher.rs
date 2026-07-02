@@ -561,15 +561,13 @@ impl<
             }
         };
 
-        let new_self = Self {
+        Ok(Self {
             publisher_shared_state,
             dynamic_publisher_handle: handle,
             publisher_details: unsafe { &*details },
             _payload: PhantomData,
             _user_header: PhantomData,
-        };
-
-        Ok(new_self)
+        })
     }
 
     /// Returns the [`UniquePublisherId`] of the [`Publisher`]

@@ -183,7 +183,6 @@ pub(crate) struct ClientSharedState<Service: service::Service> {
     // Otherwise the process might crash during cleanup, has already removed the tag but other resources
     // are still existing. This would make a cleanup from another process impossible.
     port_tag: Service::StaticStorage,
-    client_details: &'static ClientDetails,
 }
 
 impl<Service: service::Service> Abandonable for ClientSharedState<Service> {
@@ -330,6 +329,7 @@ pub struct Client<
 > {
     client_id: UniqueClientId,
     client_shared_state: Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
+    client_details: &'static ClientDetails,
     request_id_counter: AtomicU64,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
@@ -565,23 +565,6 @@ impl<
             initial_channel_state: CHANNEL_STATE_CLOSED,
         };
 
-        // !MUST! be the last task otherwise a client is added to the dynamic config without the
-        // creation of all required resources
-        let (details, handle) = match service
-            .dynamic_storage()
-            .get()
-            .request_response()
-            .add_client_id(client_details)
-        {
-            Some(v) => v,
-            None => {
-                fail!(from origin,
-                      with ClientCreateError::ExceedsMaxSupportedClients,
-                      "{} since it would exceed the maximum support amount of clients of {}.",
-                      msg, service.static_config().request_response().max_clients());
-            }
-        };
-
         let client_shared_state = Service::ArcThreadSafetyPolicy::new(ClientSharedState {
             port_tag,
             config: client_factory.config,
@@ -598,7 +581,6 @@ impl<
             server_list_state: UnsafeCell::new(unsafe { server_list.get_state() }),
             active_request_counter: AtomicUsize::new(0),
             max_active_requests,
-            client_details: unsafe { &*details },
         });
 
         let client_shared_state = match client_shared_state {
@@ -616,18 +598,35 @@ impl<
 
         core::sync::atomic::compiler_fence(Ordering::SeqCst);
 
-        let new_self = Self {
+        // !MUST! be the last task otherwise a client is added to the dynamic config without the
+        // creation of all required resources
+        let (details, handle) = match service
+            .dynamic_storage()
+            .get()
+            .request_response()
+            .add_client_id(client_details)
+        {
+            Some(v) => v,
+            None => {
+                fail!(from origin,
+                      with ClientCreateError::ExceedsMaxSupportedClients,
+                      "{} since it would exceed the maximum support amount of clients of {}.",
+                      msg, service.static_config().request_response().max_clients());
+            }
+        };
+
+        unsafe { *client_shared_state.lock().client_handle.get() = Some(handle) };
+
+        Ok(Self {
             request_id_counter: AtomicU64::new(0),
             client_shared_state,
+            client_details: unsafe { &*details },
             client_id,
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,
             _response_header: PhantomData,
-        };
-        unsafe { *new_self.client_shared_state.lock().client_handle.get() = Some(handle) };
-
-        Ok(new_self)
+        })
     }
 
     /// Returns the [`UniqueClientId`] of the [`Client`]
@@ -637,7 +636,7 @@ impl<
 
     /// Returns the [`PortName`] of the [`Client`]
     pub fn name(&self) -> &PortName {
-        &self.client_shared_state.lock().client_details.client_name
+        &self.client_details.client_name
     }
 
     fn next_request_id(&self) -> RequestId {

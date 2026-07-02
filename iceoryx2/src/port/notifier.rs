@@ -408,6 +408,8 @@ impl<Service: service::Service> Notifier<Service> {
 
         listener_connections.lock().populate_listener_channels();
 
+        core::sync::atomic::compiler_fence(Ordering::SeqCst);
+
         // !MUST! be the last task otherwise a notifier is added to the dynamic config without
         // the creation of all required channels
         let (details, handle) = match listener_connections
@@ -429,7 +431,7 @@ impl<Service: service::Service> Notifier<Service> {
             }
         };
 
-        let new_self = Self {
+        Ok(Self {
             port_tag,
             listener_connections,
             default_event_id: config.default_event_id,
@@ -439,11 +441,7 @@ impl<Service: service::Service> Notifier<Service> {
             notifier_id,
             on_drop_notification: None,
             node_id,
-        };
-
-        core::sync::atomic::compiler_fence(Ordering::SeqCst);
-
-        Ok(new_self)
+        })
     }
 
     /// Returns the [`UniqueNotifierId`] of the [`Notifier`]
