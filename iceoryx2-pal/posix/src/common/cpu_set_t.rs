@@ -18,7 +18,10 @@ use crate::posix::{CPU_SETSIZE, MemZeroedStruct};
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub struct cpu_set_t {
+    #[cfg(not(target_env = "musl"))]
     pub __bits: [u8; CPU_SETSIZE / 8],
+    #[cfg(target_env = "musl")]
+    pub __bits: [u8; CPU_SETSIZE],
 }
 impl MemZeroedStruct for cpu_set_t {}
 
@@ -46,7 +49,10 @@ impl cpu_set_t {
 
     pub(crate) fn new_allow_all() -> Self {
         Self {
+    #[cfg(not(target_env = "musl"))]
             __bits: [0xff; CPU_SETSIZE / 8],
+    #[cfg(target_env = "musl")]
+            __bits: [0xff; CPU_SETSIZE],
         }
     }
 }
