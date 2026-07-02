@@ -14,7 +14,7 @@ extern crate alloc;
 
 use alloc::{vec, vec::Vec};
 use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_flatbuffers::{find_best_fitting_schema_file, type_name};
+use iceoryx2_bb_flatbuffers::{TypeName, find_best_fitting_schema_file};
 use iceoryx2_bb_posix::config::TEST_DIRECTORY;
 use iceoryx2_bb_posix::directory::Directory;
 use iceoryx2_bb_posix::file::{CreationMode, File, FileBuilder, Permission};
@@ -96,7 +96,7 @@ pub fn find_schema_works() {
     test.create_file(&path);
 
     let sut = find_best_fitting_schema_file(
-        &type_name::<test_name_space::FlatbufferTestType>(),
+        &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
     .unwrap();
@@ -109,7 +109,7 @@ pub fn when_the_schema_is_not_existing_it_returns_none() {
     let test = Test::new();
 
     let sut = find_best_fitting_schema_file(
-        &type_name::<test_name_space::FlatbufferTestType>(),
+        &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
     .unwrap();
@@ -126,7 +126,7 @@ pub fn schema_in_namespace_is_preferred() {
     test.create_file(&path);
 
     let sut = find_best_fitting_schema_file(
-        &type_name::<test_name_space::FlatbufferTestType>(),
+        &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
     .unwrap();
@@ -141,7 +141,7 @@ pub fn schema_requires_flatbuffer_extension() {
     test.create_file(&path);
 
     let sut = find_best_fitting_schema_file(
-        &type_name::<test_name_space::FlatbufferTestType>(),
+        &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
     .unwrap();
@@ -156,7 +156,7 @@ pub fn file_extension_can_have_lower_and_upper_case() {
     test.create_file(&path);
 
     let sut = find_best_fitting_schema_file(
-        &type_name::<test_name_space::FlatbufferTestType>(),
+        &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
     .unwrap();
@@ -171,7 +171,7 @@ pub fn name_can_have_lower_and_upper_case() {
     test.create_file(&path);
 
     let sut = find_best_fitting_schema_file(
-        &type_name::<test_name_space::FlatbufferTestType>(),
+        &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
     .unwrap();
@@ -186,7 +186,7 @@ pub fn name_can_be_camel_case() {
     test.create_file(&path);
 
     let sut = find_best_fitting_schema_file(
-        &type_name::<test_name_space::FlatbufferTestType>(),
+        &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
     .unwrap();
@@ -203,7 +203,7 @@ pub fn schema_in_camel_case_namespace_is_preferred() {
     test.create_file(&path);
 
     let sut = find_best_fitting_schema_file(
-        &type_name::<test_name_space::FlatbufferTestType>(),
+        &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
     .unwrap();
@@ -219,7 +219,7 @@ pub fn schema_is_preferred_over_non_namespace_directory() {
     test.create_file(&["fuu", "flatbuffer_test_type.fbs"]);
 
     let sut = find_best_fitting_schema_file(
-        &type_name::<test_name_space::FlatbufferTestType>(),
+        &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
     .unwrap();
@@ -236,7 +236,7 @@ pub fn the_correct_schema_file_is_picked() {
     test.create_file(&["flatbuype.fbs"]);
 
     let sut = find_best_fitting_schema_file(
-        &type_name::<test_name_space::FlatbufferTestType>(),
+        &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
     .unwrap();
@@ -255,7 +255,7 @@ pub fn namespace_directory_is_preferred_over_any_other_directory() {
     test.create_file(&["TestNameSpace", "fuu_type.fbs"]);
 
     let sut = find_best_fitting_schema_file(
-        &type_name::<test_name_space::FlatbufferTestType>(),
+        &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
     .unwrap();
@@ -280,7 +280,7 @@ pub fn namespace_directory_is_preferred_over_any_other_directory_in_subdirectory
     test.create_file(&["birnenschaedel", "TestNameSpace", "fuu_type.fbs"]);
 
     let sut = find_best_fitting_schema_file(
-        &type_name::<test_name_space::FlatbufferTestType>(),
+        &TypeName::new::<test_name_space::FlatbufferTestType>(),
         test.root_path(),
     )
     .unwrap();

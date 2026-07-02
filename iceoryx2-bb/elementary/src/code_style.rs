@@ -14,6 +14,7 @@ extern crate alloc;
 
 use alloc::string::String;
 
+/// Converts a string from snake_case to UpperCamelCase.
 pub fn snake_to_upper_camel_case(input: &str) -> String {
     let mut result = String::new();
     let mut capitalize_next = false;
@@ -36,6 +37,7 @@ pub fn snake_to_upper_camel_case(input: &str) -> String {
     result
 }
 
+/// Converts a string from CamelCase to snake_case
 pub fn camel_to_snake_case(input: &str) -> String {
     let mut result = String::new();
     let mut prev_char: Option<char> = None;

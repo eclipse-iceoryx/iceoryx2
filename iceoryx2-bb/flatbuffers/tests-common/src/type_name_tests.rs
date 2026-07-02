@@ -12,7 +12,7 @@
 
 use core::marker::PhantomData;
 
-use iceoryx2_bb_flatbuffers::type_name;
+use iceoryx2_bb_flatbuffers::TypeName;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
@@ -20,7 +20,7 @@ struct TypeWithoutNamespace {}
 
 #[test]
 pub fn type_without_extra_namespace_works() {
-    let sut = type_name::<TypeWithoutNamespace>();
+    let sut = TypeName::new::<TypeWithoutNamespace>();
 
     assert_that!(sut.name, eq "TypeWithoutNamespace");
 }
@@ -31,7 +31,7 @@ pub mod some_namespace {
 
 #[test]
 pub fn type_with_extra_namespace_works() {
-    let sut = type_name::<some_namespace::TypeWithNamespace>();
+    let sut = TypeName::new::<some_namespace::TypeWithNamespace>();
 
     assert_that!(sut.name, eq "TypeWithNamespace");
     assert_that!(sut.namespace, eq "some_namespace");
@@ -43,7 +43,7 @@ struct TypeWithLifetimeArg<'a> {
 
 #[test]
 pub fn type_with_lifetime_arg_works() {
-    let sut = type_name::<TypeWithLifetimeArg<'static>>();
+    let sut = TypeName::new::<TypeWithLifetimeArg<'static>>();
 
     assert_that!(sut.name, eq "TypeWithLifetimeArg");
 }
@@ -57,7 +57,7 @@ pub mod another_namespace {
 
 #[test]
 pub fn type_with_lifetime_arg_and_extra_namespace_works() {
-    let sut = type_name::<another_namespace::TypeWithLifetimeArgAndNamespace<'static>>();
+    let sut = TypeName::new::<another_namespace::TypeWithLifetimeArgAndNamespace<'static>>();
 
     assert_that!(sut.name, eq "TypeWithLifetimeArgAndNamespace");
     assert_that!(sut.namespace, eq "another_namespace");
