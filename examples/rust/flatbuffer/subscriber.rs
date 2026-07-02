@@ -18,6 +18,7 @@ use core::time::Duration;
 use iceoryx2::{prelude::*, service::marker::Flatbuffer};
 
 #[path = "unbounded_data_generated.rs"]
+#[allow(clippy::all)]
 mod unbounded_data_generated;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
