@@ -34,3 +34,10 @@ pub fn generate_isolated_config<T: NamedConceptMgmt>() -> T::Configuration {
         .prefix(&generate_file_path().file_name())
         .path_hint(&TEST_DIRECTORY)
 }
+
+pub fn generate_custom_config<T: NamedConceptMgmt>(
+    name: &FileName,
+    path: &Path,
+) -> T::Configuration {
+    T::Configuration::default().prefix(&name).path_hint(&path)
+}

@@ -35,6 +35,11 @@ pub fn create_test_directory() {
 
 pub fn generate_file_path() -> FilePath {
     create_test_directory();
+
+    FilePath::from_path_and_file(&TEST_DIRECTORY, &generate_file_name()).unwrap()
+}
+
+pub fn generate_file_name() -> FileName {
     let mut file = FileName::new(b"test_").unwrap();
     file.push_bytes(
         UniqueSystemId::new()
@@ -44,6 +49,5 @@ pub fn generate_file_path() -> FilePath {
             .as_bytes(),
     )
     .unwrap();
-
-    FilePath::from_path_and_file(&TEST_DIRECTORY, &file).unwrap()
+    file
 }
