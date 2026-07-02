@@ -167,7 +167,7 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
 }
 
 impl<ServiceType: service::Service> PublishSubscribeResources<ServiceType> {
-    fn type_definition_path(
+    pub(crate) fn type_definition_path(
         config: &crate::config::Config,
         static_config: &crate::service::static_config::StaticConfig,
     ) -> FilePath {
