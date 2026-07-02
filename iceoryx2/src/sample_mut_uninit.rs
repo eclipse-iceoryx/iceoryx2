@@ -132,6 +132,8 @@ where
 impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
     SampleMutUninit<Service, MaybeUninit<Flatbuffer<Payload>>, UserHeader>
 {
+    /// Returns the internal [`FlatBufferBuilder`] that was constructed with the internal iceoryx2
+    /// allocator to enable true zero-copy data transfer.
     pub fn flatbuffer_builder(&mut self) -> &FlatBufferBuilder<'static> {
         self.flatbuffer_builder.get_or_insert(unsafe {
             core::mem::transmute::<FlatBufferBuilder<'_>, FlatBufferBuilder<'static>>(

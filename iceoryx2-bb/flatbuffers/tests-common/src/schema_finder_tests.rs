@@ -10,6 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate alloc;
+
+use alloc::{vec, vec::Vec};
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_flatbuffers::{find_best_fitting_schema_file, type_name};
 use iceoryx2_bb_posix::config::TEST_DIRECTORY;

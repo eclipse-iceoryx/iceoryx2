@@ -53,7 +53,6 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         counter += 1;
         let mut sample = publisher.loan_uninit()?;
         sample.flatbuffer_builder();
-        unsafe { sample.assume_init().send() };
 
         coutln!("Send sample {counter} ...");
     }
