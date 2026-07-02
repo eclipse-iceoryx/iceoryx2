@@ -44,4 +44,18 @@ clap = { version = "4.5.4", features = ["derive"] }
 flume = { version = "0.12.0" }
 human-panic = { version = "2.0.5" }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
-zenoh = { version = "1.9.0", features = ["default", "unstable"] }
+# Mitigate https://rustsec.org/advisories/RUSTSEC-2026-0041 by not enabling
+# transport_compression feature until a new version of lz4_flex is available in zenoh
+zenoh = { version = "1.9.0", default-features = false, features = [
+    "unstable",
+    "auth_pubkey",
+    "auth_usrpwd",
+    "transport_multilink",
+    "transport_quic",
+    "transport_quic_datagram",
+    "transport_tcp",
+    "transport_tls",
+    "transport_udp",
+    "transport_unixsock-stream",
+    "transport_ws",
+] }
