@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use core::error::Error;
 
@@ -59,7 +60,7 @@ impl core::error::Error for AnnouncementError {}
 /// Reports liveness status of the configured topics in the ROS graph.
 #[derive(Debug)]
 pub struct Discovery<S: Service> {
-    node: rcl::NodeHandle,
+    node: Rc<rcl::Node>,
     /// The configured allowlist.
     allowlist: HashMap<TopicName, TypeName>,
     /// Configured topics detected as live in the ROS graph, with the service
@@ -69,7 +70,7 @@ pub struct Discovery<S: Service> {
 }
 
 impl<S: Service> Discovery<S> {
-    pub(crate) fn new(node: rcl::NodeHandle, topics: &[TopicConfig]) -> Self {
+    pub(crate) fn new(node: Rc<rcl::Node>, topics: &[TopicConfig]) -> Self {
         Self {
             node,
             allowlist: topics

@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::ffi::CStr;
-use std::rc::Rc;
 
 use r2r_rcl::{
     RCL_RET_OK, rcl_context_fini, rcl_context_t, rcl_get_topic_names_and_types,
@@ -25,8 +24,7 @@ use r2r_rcl::{
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_log::{fail, warn};
 
-use crate::rcl::{NodeName, NodeNamespace, RclError, TopicName, TypeName, publisher, subscription};
-use crate::typesupport::TypeSupportHandle;
+use crate::rcl::{NodeName, NodeNamespace, RclError, TopicName, TypeName};
 
 /// rcl is initialized without forwarding any command-line arguments.
 const NO_ARGS: core::ffi::c_int = 0;
@@ -65,19 +63,67 @@ impl core::error::Error for GraphError {}
 
 /// An rcl node together with the context it belongs to. The tunnel is a single
 /// node, so it can be coupled to the context.
+///
+/// The node is shared: everything that needs it to stay alive - endpoints,
+/// discovery, the backend itself - holds a share of one `Rc<Node>`.
 #[derive(Debug)]
-pub(crate) struct NodeInner {
+pub struct Node {
     node: Box<UnsafeCell<rcl_node_t>>,
     context: Box<UnsafeCell<rcl_context_t>>,
 }
 
-impl NodeInner {
+impl Node {
+    /// Begins building a node with the given name. The namespace defaults to
+    /// the root namespace unless set via [`Builder::namespace`].
+    #[allow(clippy::new_ret_no_self)]
+    pub fn new(name: NodeName) -> Builder {
+        Builder::new(name)
+    }
+
     pub(crate) fn handle(&self) -> *mut rcl_node_t {
         self.node.get()
     }
+
+    /// Query the ROS graph for all topics visible to this node and their type names.
+    pub fn topic_names_and_types(&self) -> Result<Vec<(TopicName, Vec<TypeName>)>, GraphError> {
+        let origin = "Node::topic_names_and_types";
+
+        unsafe {
+            let mut allocator = rcutils_get_default_allocator();
+            let mut rcl_names_and_types: rcl_names_and_types_t = core::mem::zeroed();
+            let ret = rcl_get_topic_names_and_types(
+                self.node.get(),
+                &mut allocator,
+                NO_DEMANGLE,
+                &mut rcl_names_and_types,
+            );
+            if ret != RCL_RET_OK as i32 {
+                fail!(
+                    from origin,
+                    with GraphError::Query,
+                    "Failed to query topic names and types: {}",
+                    RclError::from(ret)
+                );
+            }
+
+            let mut names_and_types = Vec::with_capacity(rcl_names_and_types.names.size);
+            for i in 0..rcl_names_and_types.names.size {
+                let topic = TopicName::from_c_str_unchecked(cstr_at(&rcl_names_and_types.names, i));
+                let types = collect_cstrs(&*rcl_names_and_types.types.add(i))
+                    .into_iter()
+                    .map(|type_name| TypeName::from_c_str_unchecked(type_name))
+                    .collect();
+                names_and_types.push((topic, types));
+            }
+
+            let _ = rcl_names_and_types_fini(&mut rcl_names_and_types);
+
+            Ok(names_and_types)
+        }
+    }
 }
 
-impl Drop for NodeInner {
+impl Drop for Node {
     fn drop(&mut self) {
         unsafe {
             let ret = rcl_node_fini(self.node.get());
@@ -98,24 +144,7 @@ impl Drop for NodeInner {
     }
 }
 
-/// A handle to an rcl node.
-///
-/// The node and its context stay alive until the last handle is dropped.
-#[derive(Clone)]
-pub struct NodeHandle {
-    inner: Rc<NodeInner>,
-}
-
-impl core::fmt::Debug for NodeHandle {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("Node")
-            .field("node", &self.inner.node.get())
-            .field("context", &self.inner.context.get())
-            .finish()
-    }
-}
-
-/// Builder for [`NodeHandle`].
+/// Builder for [`Node`].
 #[derive(Debug)]
 pub struct Builder {
     name: NodeName,
@@ -136,7 +165,7 @@ impl Builder {
         self
     }
 
-    pub fn create(self) -> Result<NodeHandle, CreationError> {
+    pub fn create(self) -> Result<Node, CreationError> {
         let origin = "Node::create";
 
         unsafe {
@@ -183,78 +212,7 @@ impl Builder {
                 );
             }
 
-            Ok(NodeHandle {
-                inner: Rc::new(NodeInner { node, context }),
-            })
-        }
-    }
-}
-
-impl NodeHandle {
-    /// Begins building a node with the given name. The namespace defaults to
-    /// the root namespace unless set via [`Builder::namespace`].
-    #[allow(clippy::new_ret_no_self)]
-    pub fn new(name: NodeName) -> Builder {
-        Builder::new(name)
-    }
-
-    /// Build a publisher on this node for the given topic and typesupport.
-    pub fn publisher_builder<'a>(
-        &self,
-        topic: &'a TopicName,
-        type_support: TypeSupportHandle,
-    ) -> publisher::Builder<'a> {
-        publisher::Builder::new(Rc::clone(&self.inner), topic, type_support)
-    }
-
-    /// Build a subscription on this node for the given topic and typesupport.
-    pub fn subscription_builder<'a>(
-        &self,
-        topic: &'a TopicName,
-        type_support: TypeSupportHandle,
-    ) -> subscription::Builder<'a> {
-        subscription::Builder::new(Rc::clone(&self.inner), topic, type_support)
-    }
-
-    pub(crate) fn handle(&self) -> *mut rcl_node_t {
-        self.inner.handle()
-    }
-
-    /// Query the ROS graph for all topics visible to this node and their type names.
-    pub fn topic_names_and_types(&self) -> Result<Vec<(TopicName, Vec<TypeName>)>, GraphError> {
-        let origin = "Node::topic_names_and_types";
-
-        unsafe {
-            let mut allocator = rcutils_get_default_allocator();
-            let mut rcl_names_and_types: rcl_names_and_types_t = core::mem::zeroed();
-            let ret = rcl_get_topic_names_and_types(
-                self.inner.node.get(),
-                &mut allocator,
-                NO_DEMANGLE,
-                &mut rcl_names_and_types,
-            );
-            if ret != RCL_RET_OK as i32 {
-                fail!(
-                    from origin,
-                    with GraphError::Query,
-                    "Failed to query topic names and types: {}",
-                    RclError::from(ret)
-                );
-            }
-
-            let mut names_and_types = Vec::with_capacity(rcl_names_and_types.names.size);
-            for i in 0..rcl_names_and_types.names.size {
-                let topic = TopicName::from_c_str_unchecked(cstr_at(&rcl_names_and_types.names, i));
-                let types = collect_cstrs(&*rcl_names_and_types.types.add(i))
-                    .into_iter()
-                    .map(|type_name| TypeName::from_c_str_unchecked(type_name))
-                    .collect();
-                names_and_types.push((topic, types));
-            }
-
-            let _ = rcl_names_and_types_fini(&mut rcl_names_and_types);
-
-            Ok(names_and_types)
+            Ok(Node { node, context })
         }
     }
 }

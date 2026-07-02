@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::rc::Rc;
 use std::sync::Arc;
 
 use iceoryx2::service::{Service, local_threadsafe, static_config::StaticConfig};
@@ -142,7 +143,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
 /// Builder for publish-subscribe [`Relay`]s.
 #[derive(Debug)]
 pub struct Builder<'a, S: Service> {
-    node: rcl::NodeHandle,
+    node: Rc<rcl::Node>,
     type_registry: &'a TypeSupportRegistry,
     static_config: &'a StaticConfig,
     wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
@@ -151,7 +152,7 @@ pub struct Builder<'a, S: Service> {
 
 impl<'a, S: Service> Builder<'a, S> {
     pub fn new(
-        node: rcl::NodeHandle,
+        node: Rc<rcl::Node>,
         type_registry: &'a TypeSupportRegistry,
         static_config: &'a StaticConfig,
         wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
@@ -205,13 +206,13 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
             topic
         );
         let publisher = fail!(from origin,
-            when self.node.publisher_builder(&topic_name, type_support.clone()).create(),
+            when rcl::Publisher::new(Rc::clone(&self.node), &topic_name, type_support.clone()).create(),
             with CreationError::Publisher,
             "Failed to create ROS 2 publisher for topic '{}'",
             topic
         );
         let mut subscription = fail!(from origin,
-            when self.node.subscription_builder(&topic_name, type_support).create(),
+            when rcl::Subscription::new(Rc::clone(&self.node), &topic_name, type_support).create(),
             with CreationError::Subscription,
             "Failed to create ROS 2 subscription for topic '{}'",
             topic

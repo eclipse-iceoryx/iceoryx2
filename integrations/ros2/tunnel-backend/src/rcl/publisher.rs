@@ -21,7 +21,7 @@ use r2r_rcl::{
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_log::fail;
 
-use crate::rcl::node::NodeInner;
+use crate::rcl::node::Node;
 use crate::rcl::{RclError, TopicName};
 use crate::typesupport::TypeSupportHandle;
 
@@ -54,17 +54,13 @@ impl core::error::Error for PublishError {}
 /// Builder for [`Publisher`].
 #[derive(Debug)]
 pub struct Builder<'a> {
-    node: Rc<NodeInner>,
+    node: Rc<Node>,
     topic: &'a TopicName,
     type_support: TypeSupportHandle,
 }
 
 impl<'a> Builder<'a> {
-    pub(crate) fn new(
-        node: Rc<NodeInner>,
-        topic: &'a TopicName,
-        type_support: TypeSupportHandle,
-    ) -> Self {
+    fn new(node: Rc<Node>, topic: &'a TopicName, type_support: TypeSupportHandle) -> Self {
         Self {
             node,
             topic,
@@ -106,7 +102,7 @@ impl<'a> Builder<'a> {
 
 /// Publishes pre-serialized messages on a ROS 2 topic.
 pub struct Publisher {
-    node: Rc<NodeInner>,
+    node: Rc<Node>,
     publisher: Box<UnsafeCell<r2r_rcl::rcl_publisher_t>>,
     /// Keeps the typesupport library loaded while the endpoint uses it.
     _type_support: TypeSupportHandle,
@@ -123,6 +119,17 @@ impl core::fmt::Debug for Publisher {
 }
 
 impl Publisher {
+    /// Begins building a publisher on `node` for the given topic and
+    /// typesupport.
+    #[allow(clippy::new_ret_no_self)]
+    pub fn new<'a>(
+        node: Rc<Node>,
+        topic: &'a TopicName,
+        type_support: TypeSupportHandle,
+    ) -> Builder<'a> {
+        Builder::new(node, topic, type_support)
+    }
+
     /// Publishes the payload as-is; it must be a serialized message of the
     /// publisher's type.
     pub fn publish(&self, payload: &[u8]) -> Result<(), PublishError> {

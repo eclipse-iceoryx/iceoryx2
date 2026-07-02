@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::rc::Rc;
 use std::sync::Arc;
 
 use iceoryx2::service::{Service, local_threadsafe, static_config::StaticConfig};
@@ -22,7 +23,7 @@ use crate::typesupport::TypeSupportRegistry;
 /// Factory for creating relay builders.
 #[derive(Debug)]
 pub struct Factory<'a, S: Service> {
-    node: rcl::NodeHandle,
+    node: Rc<rcl::Node>,
     type_registry: &'a TypeSupportRegistry,
     /// Wake handle to be signaled by relays when new data arrives.
     /// `None` when the backend was constructed in polled mode.
@@ -32,7 +33,7 @@ pub struct Factory<'a, S: Service> {
 
 impl<'a, S: Service> Factory<'a, S> {
     pub fn new(
-        node: rcl::NodeHandle,
+        node: Rc<rcl::Node>,
         type_registry: &'a TypeSupportRegistry,
         wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     ) -> Self {
@@ -67,7 +68,7 @@ impl<S: Service> RelayFactory<S> for Factory<'_, S> {
         Self: 'a,
     {
         publish_subscribe::Builder::new(
-            self.node.clone(),
+            Rc::clone(&self.node),
             self.type_registry,
             static_config,
             self.wake.clone(),

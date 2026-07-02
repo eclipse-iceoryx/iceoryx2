@@ -24,7 +24,7 @@ use r2r_rcl::{
 
 use iceoryx2_log::fail;
 
-use crate::rcl::node::NodeInner;
+use crate::rcl::node::Node;
 use crate::rcl::{RclError, TopicName};
 use crate::typesupport::TypeSupportHandle;
 
@@ -97,17 +97,13 @@ impl From<&rmw_message_info_t> for MessageInfo {
 /// Builder for [`Subscription`].
 #[derive(Debug)]
 pub struct Builder<'a> {
-    node: Rc<NodeInner>,
+    node: Rc<Node>,
     topic: &'a TopicName,
     type_support: TypeSupportHandle,
 }
 
 impl<'a> Builder<'a> {
-    pub(crate) fn new(
-        node: Rc<NodeInner>,
-        topic: &'a TopicName,
-        type_support: TypeSupportHandle,
-    ) -> Self {
+    fn new(node: Rc<Node>, topic: &'a TopicName, type_support: TypeSupportHandle) -> Self {
         Self {
             node,
             topic,
@@ -154,7 +150,7 @@ pub struct Subscription {
     /// The new-message callback while one is registered, kept alive and pinned
     /// so the `user_data` pointer rcl holds stays valid until it is cleared.
     callback: Option<Pin<Box<NewMessageCallback>>>,
-    node: Rc<NodeInner>,
+    node: Rc<Node>,
     /// Keeps the typesupport library loaded while the endpoint uses it.
     _type_support: TypeSupportHandle,
 }
@@ -170,6 +166,17 @@ impl core::fmt::Debug for Subscription {
 }
 
 impl Subscription {
+    /// Begins building a subscription on `node` for the given topic and
+    /// typesupport.
+    #[allow(clippy::new_ret_no_self)]
+    pub fn new<'a>(
+        node: Rc<Node>,
+        topic: &'a TopicName,
+        type_support: TypeSupportHandle,
+    ) -> Builder<'a> {
+        Builder::new(node, topic, type_support)
+    }
+
     /// Registers `callback` to be invoked whenever new messages arrive on
     /// the subscription, with the number of new messages. It is invoked by
     /// the RMW from a middleware thread and must not panic; a previously
