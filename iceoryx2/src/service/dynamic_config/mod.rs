@@ -186,7 +186,7 @@ impl DynamicConfig {
     ) -> Result<ContainerHandle, RegisterNodeResult> {
         let msg = "Unable to register NodeId in service";
         match unsafe { self.nodes.add(node_id, node_id.owner_id()) } {
-            Ok(handle) => Ok(handle),
+            Ok(handle) => Ok(handle.1),
             Err(ContainerAddFailure::IsLocked) => {
                 fail!(from self, with RegisterNodeResult::MarkedForDestruction,
                     "{msg} since the service is already marked for destruction.");

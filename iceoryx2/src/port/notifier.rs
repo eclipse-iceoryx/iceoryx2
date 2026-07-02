@@ -57,12 +57,14 @@ use iceoryx2_log::{debug, fail, warn};
 use crate::service::SharedServiceState;
 use crate::{
     identifiers::{UniqueListenerId, UniqueNodeId, UniqueNotifierId},
+    port::port_name::PortName,
     port::update_connections::UpdateConnections,
     service::{
         self, NoResource,
         config_scheme::event_config,
         dynamic_config::event::{ListenerDetails, NotifierDetails},
         naming_scheme::event_concept_name,
+        port_factory::notifier::NotifierConfig,
     },
 };
 
@@ -269,7 +271,8 @@ pub struct Notifier<Service: service::Service> {
     listener_connections: Service::ArcThreadSafetyPolicy<ListenerConnections<Service>>,
     default_event_id: EventId,
     event_id_max_value: usize,
-    dynamic_notifier_handle: Option<ContainerHandle>,
+    dynamic_notifier_handle: ContainerHandle,
+    notifier_details: &'static NotifierDetails,
     notifier_id: UniqueNotifierId,
     on_drop_notification: Option<EventId>,
     node_id: UniqueNodeId,
@@ -315,15 +318,13 @@ impl<Service: service::Service> Drop for Notifier<Service> {
             }
         }
 
-        if let Some(handle) = self.dynamic_notifier_handle {
-            self.listener_connections
-                .lock()
-                .service_state
-                .dynamic_storage()
-                .get()
-                .event()
-                .release_notifier_handle(handle)
-        }
+        self.listener_connections
+            .lock()
+            .service_state
+            .dynamic_storage()
+            .get()
+            .event()
+            .release_notifier_handle(self.dynamic_notifier_handle)
     }
 }
 
@@ -337,10 +338,9 @@ impl<Service: service::Service> UpdateConnections for Notifier<Service> {
 impl<Service: service::Service> Notifier<Service> {
     pub(crate) fn new(
         service: SharedServiceState<Service, NoResource>,
-        default_event_id: EventId,
+        config: NotifierConfig,
     ) -> Result<Self, NotifierCreateError> {
-        let mut new_self =
-            Self::new_without_auto_event_emission(service.clone(), default_event_id)?;
+        let mut new_self = Self::new_without_auto_event_emission(service.clone(), config)?;
 
         let static_config = service.static_config().event();
         new_self.on_drop_notification = static_config
@@ -368,7 +368,7 @@ impl<Service: service::Service> Notifier<Service> {
 
     pub(crate) fn new_without_auto_event_emission(
         service: SharedServiceState<Service, NoResource>,
-        default_event_id: EventId,
+        config: NotifierConfig,
     ) -> Result<Self, NotifierCreateError> {
         let msg = "Unable to create Notifier port";
         let origin = "Notifier::new()";
@@ -406,28 +406,13 @@ impl<Service: service::Service> Notifier<Service> {
             }
         };
 
-        let mut new_self = Self {
-            port_tag,
-            listener_connections,
-            default_event_id,
-            event_id_max_value: static_config.event_id_max_value,
-            dynamic_notifier_handle: None,
-            notifier_id,
-            on_drop_notification: None,
-            node_id,
-        };
-
-        new_self
-            .listener_connections
-            .lock()
-            .populate_listener_channels();
+        listener_connections.lock().populate_listener_channels();
 
         core::sync::atomic::compiler_fence(Ordering::SeqCst);
 
         // !MUST! be the last task otherwise a notifier is added to the dynamic config without
         // the creation of all required channels
-        let dynamic_notifier_handle = match new_self
-            .listener_connections
+        let (details, handle) = match listener_connections
             .lock()
             .service_state
             .dynamic_storage()
@@ -436,22 +421,37 @@ impl<Service: service::Service> Notifier<Service> {
             .add_notifier_id(NotifierDetails {
                 notifier_id,
                 node_id,
+                notifier_name: config.port_name,
             }) {
-            Some(handle) => handle,
+            Some(v) => v,
             None => {
                 fail!(from origin, with NotifierCreateError::ExceedsMaxSupportedNotifiers,
                             "{} since it would exceed the maximum supported amount of notifiers of {}.",
                             msg, service.static_config().event().max_notifiers);
             }
         };
-        new_self.dynamic_notifier_handle = Some(dynamic_notifier_handle);
 
-        Ok(new_self)
+        Ok(Self {
+            port_tag,
+            listener_connections,
+            default_event_id: config.default_event_id,
+            event_id_max_value: static_config.event_id_max_value,
+            dynamic_notifier_handle: handle,
+            notifier_details: unsafe { &*details },
+            notifier_id,
+            on_drop_notification: None,
+            node_id,
+        })
     }
 
     /// Returns the [`UniqueNotifierId`] of the [`Notifier`]
     pub fn id(&self) -> UniqueNotifierId {
         self.notifier_id
+    }
+
+    /// Returns the [`PortName`] of the [`Notifier`]
+    pub fn name(&self) -> &PortName {
+        &self.notifier_details.notifier_name
     }
 
     /// Notifies all [`crate::port::listener::Listener`] connected to the service with the default

@@ -37,7 +37,7 @@ use super::request_response::PortFactory;
 use crate::{
     port::{
         BackpressureFn, BackpressureHandler, DegradationAction, DegradationFn, DegradationHandler,
-        server::Server,
+        port_name::PortName, server::Server,
     },
     prelude::BackpressureStrategy,
     service,
@@ -55,6 +55,7 @@ pub(crate) struct LocalServerConfig {
     pub(crate) initial_max_slice_len: usize,
     pub(crate) allocation_strategy: AllocationStrategy,
     pub(crate) max_loaned_responses_per_request: usize,
+    pub(crate) port_name: PortName,
 }
 
 /// Defines a failure that can occur when a [`Server`] is created with
@@ -204,6 +205,7 @@ impl<
                 initial_max_slice_len: 1,
                 allocation_strategy: defs.server_allocation_strategy,
                 max_loaned_responses_per_request: defs.server_max_loaned_responses_per_request,
+                port_name: PortName::new_empty(),
             },
             request_degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
             response_degradation_handler: DegradationHandler::new_with(DegradationAction::Warn),
@@ -291,6 +293,12 @@ impl<
     pub fn set_backpressure_handler<F: BackpressureFn + 'static>(mut self, handler: F) -> Self {
         self.backpressure_handler = Some(BackpressureHandler::new(handler));
 
+        self
+    }
+
+    /// Sets the [`PortName`] of the  [`Server`].
+    pub fn name(mut self, name: &PortName) -> Self {
+        self.config.port_name = *name;
         self
     }
 

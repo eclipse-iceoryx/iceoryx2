@@ -53,6 +53,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_OPEN, ChannelId};
 use iceoryx2_log::{fail, warn};
 
+use crate::port::port_name::PortName;
 use crate::port::update_connections::UpdateConnections;
 use crate::service::builder::CustomPayloadMarker;
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
@@ -131,7 +132,8 @@ pub struct Subscriber<
     Payload: Debug + ZeroCopySend + ?Sized + 'static,
     UserHeader: Debug + ZeroCopySend,
 > {
-    dynamic_subscriber_handle: Option<ContainerHandle>,
+    dynamic_subscriber_handle: ContainerHandle,
+    subscriber_details: &'static SubscriberDetails,
     subscriber_shared_state: Service::ArcThreadSafetyPolicy<SubscriberSharedState<Service>>,
 
     _payload: PhantomData<Payload>,
@@ -181,16 +183,14 @@ impl<
 > Drop for Subscriber<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
-        if let Some(handle) = self.dynamic_subscriber_handle {
-            self.subscriber_shared_state
-                .lock()
-                .receiver
-                .service_state
-                .dynamic_storage()
-                .get()
-                .publish_subscribe()
-                .release_subscriber_handle(handle)
-        }
+        self.subscriber_shared_state
+            .lock()
+            .receiver
+            .service_state
+            .dynamic_storage()
+            .get()
+            .publish_subscribe()
+            .release_subscriber_handle(self.dynamic_subscriber_handle)
     }
 }
 
@@ -322,23 +322,15 @@ impl<
             }
         };
 
-        let mut new_self = Self {
-            subscriber_shared_state,
-            dynamic_subscriber_handle: None,
-            _payload: PhantomData,
-            _user_header: PhantomData,
-        };
-
-        if let Err(e) = new_self.force_update_connections(&new_self.subscriber_shared_state.lock())
-        {
-            warn!(from new_self, "The new subscriber is unable to connect to every publisher, caused by {:?}.", e);
+        if let Err(e) = Self::force_update_connections(&subscriber_shared_state.lock()) {
+            warn!(from origin, "The new subscriber is unable to connect to every publisher, caused by {:?}.", e);
         }
 
         core::sync::atomic::compiler_fence(Ordering::SeqCst);
 
         // !MUST! be the last task otherwise a subscriber is added to the dynamic config without
         // the creation of all required channels
-        let dynamic_subscriber_handle = match service
+        let (details, handle) = match service
             .dynamic_storage()
             .get()
             .publish_subscribe()
@@ -347,22 +339,26 @@ impl<
                 buffer_size,
                 history_request,
                 node_id: *service.shared_node().id(),
+                subscriber_name: config.port_name,
             }) {
-            Some(unique_index) => unique_index,
+            Some(v) => v,
             None => {
-                fail!(from new_self, with SubscriberCreateError::ExceedsMaxSupportedSubscribers,
+                fail!(from origin, with SubscriberCreateError::ExceedsMaxSupportedSubscribers,
                                 "{} since it would exceed the maximum supported amount of subscribers of {}.",
                                 msg, service.static_config().publish_subscribe().max_subscribers);
             }
         };
 
-        new_self.dynamic_subscriber_handle = Some(dynamic_subscriber_handle);
-
-        Ok(new_self)
+        Ok(Self {
+            subscriber_shared_state,
+            dynamic_subscriber_handle: handle,
+            subscriber_details: unsafe { &*details },
+            _payload: PhantomData,
+            _user_header: PhantomData,
+        })
     }
 
     fn force_update_connections(
-        &self,
         subscriber_shared_state: &SubscriberSharedState<Service>,
     ) -> Result<(), ConnectionFailure> {
         subscriber_shared_state
@@ -404,6 +400,11 @@ impl<
                 .receiver
                 .receiver_port_id(),
         ))
+    }
+
+    /// Returns the [`PortName`] of the [`Subscriber`]
+    pub fn name(&self) -> &PortName {
+        &self.subscriber_details.subscriber_name
     }
 
     /// Returns the internal buffer size of the [`Subscriber`].
@@ -451,7 +452,7 @@ impl<
                 .publishers
                 .update_state(&mut *subscriber_shared_state.publisher_list_state.get())
         } {
-            fail!(from self, when self.force_update_connections(&subscriber_shared_state),
+            fail!(from self, when Self::force_update_connections(&subscriber_shared_state),
                 "Connections were updated only partially since at least one connection to a publisher failed.");
         }
 
