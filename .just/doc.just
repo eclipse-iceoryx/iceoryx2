@@ -25,6 +25,7 @@ _doc-dispatch workspace target *flags:
         echo "Workspace:"
         echo "  sdk                 build docs for the main workspace"
         echo "  integrations-zenoh  build docs for the zenoh workspace"
+        echo "  integrations-ros2   build docs for the ros2 workspace (requires a sourced ROS 2 env)"
         echo "  all                 build docs for all workspaces"
         echo ""
         echo "Target:"

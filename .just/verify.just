@@ -50,6 +50,7 @@ _verify-dispatch what tool *flags:
         echo "Scope:"
         echo "  sdk                    target the main workspace"
         echo "  integrations-zenoh     target the zenoh workspace"
+        echo "  integrations-ros2      target the ros2 workspace (requires a sourced ROS 2 env)"
         echo "  all                    target all workspaces"
         echo "  <package>              target a specific package (std-propagation only)"
         echo ""
