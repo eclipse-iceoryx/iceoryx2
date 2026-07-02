@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! An iceoryx2 support library that helps to find schema files.
+
 extern crate alloc;
 
 use crate::TypeName;
@@ -68,6 +70,8 @@ fn is_namespace(file_name: &FileName, type_name: &TypeName) -> bool {
         || name.eq_ignore_ascii_case(&snake_to_upper_camel_case(type_name.namespace))
 }
 
+/// Returns the best fitting schema file for a given [`TypeName`]. If no schema file could be found
+/// [`None`] is returned.
 pub fn find_best_fitting_schema_file(
     type_name: &TypeName,
     root_path: &Path,

@@ -240,18 +240,24 @@ impl Drop for Directory {
 }
 
 impl Directory {
+    /// Returns true if the object has the ownership of the directory, otherwise false.
     pub fn has_ownership(&self) -> bool {
         self.has_ownership.load(Ordering::Relaxed)
     }
 
+    /// Acquires the ownership of the [`Directory`] object. If it goes out-of-scope the directory
+    /// is removed.
     pub fn acquire_ownership(&self) {
         self.has_ownership.store(true, Ordering::Relaxed);
     }
 
+    /// Releases the ownership of the [`Directory`] object. If it goes out-of-scope the directory
+    /// is not removed.
     pub fn release_ownership(&self) {
         self.has_ownership.store(false, Ordering::Relaxed);
     }
 
+    /// Instantiates a new [`Directory`] from an existing [`Path`].
     pub fn new(path: &Path) -> Result<Self, DirectoryOpenError> {
         let directory_stream = unsafe { posix::opendir(path.as_c_str()) };
 
