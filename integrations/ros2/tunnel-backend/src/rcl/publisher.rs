@@ -21,7 +21,7 @@ use r2r_rcl::{
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_log::fail;
 
-use crate::rcl::node::Node;
+use crate::rcl::node::RclNode;
 use crate::rcl::{RclError, TopicName};
 use crate::typesupport::TypeSupport;
 
@@ -51,16 +51,18 @@ impl core::fmt::Display for PublishError {
 
 impl core::error::Error for PublishError {}
 
-/// Builder for [`Publisher`].
+/// Builder for [`RclPublisher`].
 #[derive(Debug)]
-pub struct Builder<'a> {
-    node: Rc<Node>,
+pub struct RclPublisherBuilder<'a> {
+    node: Rc<RclNode>,
     topic: &'a TopicName,
     type_support: Rc<TypeSupport>,
 }
 
-impl<'a> Builder<'a> {
-    fn new(node: Rc<Node>, topic: &'a TopicName, type_support: Rc<TypeSupport>) -> Self {
+impl<'a> RclPublisherBuilder<'a> {
+    /// Begins building a publisher on `node` for the given topic and
+    /// typesupport.
+    pub fn new(node: Rc<RclNode>, topic: &'a TopicName, type_support: Rc<TypeSupport>) -> Self {
         Self {
             node,
             topic,
@@ -68,8 +70,8 @@ impl<'a> Builder<'a> {
         }
     }
 
-    pub fn create(self) -> Result<Publisher, CreationError> {
-        let origin = "Publisher::Builder::create";
+    pub fn create(self) -> Result<RclPublisher, CreationError> {
+        let origin = "RclPublisherBuilder::create";
 
         unsafe {
             let publisher = Box::new(UnsafeCell::new(rcl_get_zero_initialized_publisher()));
@@ -91,7 +93,7 @@ impl<'a> Builder<'a> {
                 );
             }
 
-            Ok(Publisher {
+            Ok(RclPublisher {
                 node: self.node,
                 publisher,
                 _type_support: self.type_support,
@@ -101,16 +103,16 @@ impl<'a> Builder<'a> {
 }
 
 /// Publishes pre-serialized messages on a ROS 2 topic.
-pub struct Publisher {
-    node: Rc<Node>,
+pub struct RclPublisher {
+    node: Rc<RclNode>,
     publisher: Box<UnsafeCell<r2r_rcl::rcl_publisher_t>>,
     /// Keeps the typesupport library loaded while the endpoint uses it.
     _type_support: Rc<TypeSupport>,
 }
 
-impl core::fmt::Debug for Publisher {
+impl core::fmt::Debug for RclPublisher {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("Publisher")
+        f.debug_struct("RclPublisher")
             .field("publisher", &self.publisher.get())
             .field("node", &self.node)
             .field("_type_support", &self._type_support)
@@ -118,22 +120,11 @@ impl core::fmt::Debug for Publisher {
     }
 }
 
-impl Publisher {
-    /// Begins building a publisher on `node` for the given topic and
-    /// typesupport.
-    #[allow(clippy::new_ret_no_self)]
-    pub fn new<'a>(
-        node: Rc<Node>,
-        topic: &'a TopicName,
-        type_support: Rc<TypeSupport>,
-    ) -> Builder<'a> {
-        Builder::new(node, topic, type_support)
-    }
-
+impl RclPublisher {
     /// Publishes the payload as-is; it must be a serialized message of the
     /// publisher's type.
     pub fn publish(&self, payload: &[u8]) -> Result<(), PublishError> {
-        let origin = "Publisher::publish";
+        let origin = "RclPublisher::publish";
 
         let message = rcl_serialized_message_t {
             buffer: payload.as_ptr() as *mut u8,
@@ -158,7 +149,7 @@ impl Publisher {
     }
 }
 
-impl Drop for Publisher {
+impl Drop for RclPublisher {
     fn drop(&mut self) {
         unsafe {
             let _ = rcl_publisher_fini(self.publisher.get(), self.node.handle());

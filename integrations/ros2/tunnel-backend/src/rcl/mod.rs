@@ -21,6 +21,6 @@ pub(crate) mod subscription;
 
 pub(crate) use error::RclError;
 pub(crate) use names::*;
-pub(crate) use node::Node;
-pub(crate) use publisher::Publisher;
-pub(crate) use subscription::{MessageInfo, Subscription};
+pub(crate) use node::{RclNode, RclNodeBuilder};
+pub(crate) use publisher::{RclPublisher, RclPublisherBuilder};
+pub(crate) use subscription::{MessageInfo, RclSubscription, RclSubscriptionBuilder};

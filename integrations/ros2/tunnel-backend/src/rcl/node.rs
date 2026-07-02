@@ -65,28 +65,21 @@ impl core::error::Error for GraphError {}
 /// node, so it can be coupled to the context.
 ///
 /// The node is shared: everything that needs it to stay alive - endpoints,
-/// discovery, the backend itself - holds a share of one `Rc<Node>`.
+/// discovery, the backend itself - holds a share of one `Rc<RclNode>`.
 #[derive(Debug)]
-pub struct Node {
+pub struct RclNode {
     node: Box<UnsafeCell<rcl_node_t>>,
     context: Box<UnsafeCell<rcl_context_t>>,
 }
 
-impl Node {
-    /// Begins building a node with the given name. The namespace defaults to
-    /// the root namespace unless set via [`Builder::namespace`].
-    #[allow(clippy::new_ret_no_self)]
-    pub fn new(name: NodeName) -> Builder {
-        Builder::new(name)
-    }
-
+impl RclNode {
     pub(crate) fn handle(&self) -> *mut rcl_node_t {
         self.node.get()
     }
 
     /// Query the ROS graph for all topics visible to this node and their type names.
     pub fn topic_names_and_types(&self) -> Result<Vec<(TopicName, Vec<TypeName>)>, GraphError> {
-        let origin = "Node::topic_names_and_types";
+        let origin = "RclNode::topic_names_and_types";
 
         unsafe {
             let mut allocator = rcutils_get_default_allocator();
@@ -123,7 +116,7 @@ impl Node {
     }
 }
 
-impl Drop for Node {
+impl Drop for RclNode {
     fn drop(&mut self) {
         unsafe {
             let ret = rcl_node_fini(self.node.get());
@@ -144,15 +137,17 @@ impl Drop for Node {
     }
 }
 
-/// Builder for [`Node`].
+/// Builder for [`RclNode`].
 #[derive(Debug)]
-pub struct Builder {
+pub struct RclNodeBuilder {
     name: NodeName,
     namespace: NodeNamespace,
 }
 
-impl Builder {
-    fn new(name: NodeName) -> Self {
+impl RclNodeBuilder {
+    /// Begins building a node with the given name. The namespace defaults to
+    /// the root namespace unless set via [`RclNodeBuilder::namespace`].
+    pub fn new(name: NodeName) -> Self {
         Self {
             name,
             namespace: NodeNamespace::root(),
@@ -165,8 +160,8 @@ impl Builder {
         self
     }
 
-    pub fn create(self) -> Result<Node, CreationError> {
-        let origin = "Node::create";
+    pub fn create(self) -> Result<RclNode, CreationError> {
+        let origin = "RclNodeBuilder::create";
 
         unsafe {
             let mut init_options = rcl_get_zero_initialized_init_options();
@@ -212,7 +207,7 @@ impl Builder {
                 );
             }
 
-            Ok(Node { node, context })
+            Ok(RclNode { node, context })
         }
     }
 }

@@ -16,14 +16,14 @@ use std::sync::Arc;
 use iceoryx2::service::{Service, local_threadsafe, static_config::StaticConfig};
 use iceoryx2_services_tunnel_backend::{traits::RelayFactory, types::wake::WakeHandle};
 
-use crate::rcl;
+use crate::rcl::RclNode;
 use crate::relays::{event, publish_subscribe};
 use crate::typesupport::TypeSupportRegistry;
 
 /// Factory for creating relay builders.
 #[derive(Debug)]
 pub struct Factory<'a, S: Service> {
-    node: Rc<rcl::Node>,
+    node: Rc<RclNode>,
     type_registry: &'a TypeSupportRegistry,
     /// Wake handle to be signaled by relays when new data arrives.
     /// `None` when the backend was constructed in polled mode.
@@ -33,7 +33,7 @@ pub struct Factory<'a, S: Service> {
 
 impl<'a, S: Service> Factory<'a, S> {
     pub fn new(
-        node: Rc<rcl::Node>,
+        node: Rc<RclNode>,
         type_registry: &'a TypeSupportRegistry,
         wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     ) -> Self {

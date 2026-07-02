@@ -21,9 +21,13 @@ use iceoryx2_services_tunnel_backend::types::publish_subscribe::{
 };
 use iceoryx2_services_tunnel_backend::types::wake::WakeHandle;
 
+use crate::rcl::{
+    RclNode, RclPublisher, RclPublisherBuilder, RclSubscription, RclSubscriptionBuilder, TopicName,
+    subscription::TakeError,
+};
 use crate::ros_header::RosHeader;
 use crate::typesupport::TypeSupportRegistry;
-use crate::{mapping, payload, rcl};
+use crate::{mapping, payload};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum CreationError {
@@ -74,8 +78,8 @@ impl core::error::Error for ReceiveError {}
 /// Relays publish-subscribe payloads between iceoryx2 and a ROS 2 topic.
 #[derive(Debug)]
 pub struct Relay<S: Service> {
-    publisher: rcl::Publisher,
-    subscription: rcl::Subscription,
+    publisher: RclPublisher,
+    subscription: RclSubscription,
     /// Whether the service's user-header type is [`RosHeader`], i.e. the
     /// relay may write the remote origin into received samples.
     write_ros_header: bool,
@@ -134,8 +138,8 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
                 Ok(Some(payload::assume_init(sample)))
             }
             Ok(None) => Ok(None),
-            Err(rcl::subscription::TakeError::LoanDeclined) => Err(ReceiveError::Loan),
-            Err(rcl::subscription::TakeError::Take) => Err(ReceiveError::Take),
+            Err(TakeError::LoanDeclined) => Err(ReceiveError::Loan),
+            Err(TakeError::Take) => Err(ReceiveError::Take),
         }
     }
 }
@@ -143,7 +147,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
 /// Builder for publish-subscribe [`Relay`]s.
 #[derive(Debug)]
 pub struct Builder<'a, S: Service> {
-    node: Rc<rcl::Node>,
+    node: Rc<RclNode>,
     type_registry: &'a TypeSupportRegistry,
     static_config: &'a StaticConfig,
     wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
@@ -152,7 +156,7 @@ pub struct Builder<'a, S: Service> {
 
 impl<'a, S: Service> Builder<'a, S> {
     pub fn new(
-        node: Rc<rcl::Node>,
+        node: Rc<RclNode>,
         type_registry: &'a TypeSupportRegistry,
         static_config: &'a StaticConfig,
         wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
@@ -200,19 +204,19 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
             type_name
         );
         let topic_name = fail!(from origin,
-            when rcl::TopicName::new(topic),
+            when TopicName::new(topic),
             with CreationError::InvalidTopic,
             "Invalid ROS 2 topic name '{}'",
             topic
         );
         let publisher = fail!(from origin,
-            when rcl::Publisher::new(Rc::clone(&self.node), &topic_name, Rc::clone(&type_support)).create(),
+            when RclPublisherBuilder::new(Rc::clone(&self.node), &topic_name, Rc::clone(&type_support)).create(),
             with CreationError::Publisher,
             "Failed to create ROS 2 publisher for topic '{}'",
             topic
         );
         let mut subscription = fail!(from origin,
-            when rcl::Subscription::new(Rc::clone(&self.node), &topic_name, type_support).create(),
+            when RclSubscriptionBuilder::new(Rc::clone(&self.node), &topic_name, type_support).create(),
             with CreationError::Subscription,
             "Failed to create ROS 2 subscription for topic '{}'",
             topic
