@@ -33,7 +33,7 @@ pub(crate) use replay::*;
 pub(crate) use subscribe::*;
 
 use anyhow::{Result, anyhow};
-use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
+use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2::{
     prelude::*,
     sample::Sample,

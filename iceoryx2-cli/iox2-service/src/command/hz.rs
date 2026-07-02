@@ -14,7 +14,7 @@ use crate::cli::HzOptions;
 use crate::command::get_pubsub_service_types;
 use anyhow::Result;
 use iceoryx2::prelude::*;
-use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
+use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2_cli::Format;
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};

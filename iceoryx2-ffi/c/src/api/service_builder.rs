@@ -26,7 +26,7 @@ use iceoryx2::service::builder::{
     publish_subscribe::Builder as ServiceBuilderPubSub,
     request_response::Builder as ServiceBuilderRequestResponse,
 };
-use iceoryx2::service::builder::{CustomHeaderMarker, CustomKeyMarker, CustomPayloadMarker};
+use iceoryx2::service::marker::{CustomHeaderMarker, CustomKeyMarker, CustomPayloadMarker};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 

@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::prelude::{CallbackProgression, PortFactory};
-use iceoryx2::service::builder::CustomKeyMarker;
+use iceoryx2::service::marker::CustomKeyMarker;
 use iceoryx2_log::fatal_panic;
 use pyo3::prelude::*;
 

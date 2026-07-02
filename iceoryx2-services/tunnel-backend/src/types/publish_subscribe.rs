@@ -12,8 +12,8 @@
 
 use core::mem::MaybeUninit;
 
-use iceoryx2::service::builder::CustomHeaderMarker;
-use iceoryx2::service::builder::CustomPayloadMarker;
+use iceoryx2::service::marker::CustomHeaderMarker;
+use iceoryx2::service::marker::CustomPayloadMarker;
 
 pub type Header = CustomHeaderMarker;
 pub type Payload = [CustomPayloadMarker];

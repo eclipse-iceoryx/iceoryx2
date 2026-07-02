@@ -47,17 +47,18 @@ use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
 use crate::identifiers::UniqueServiceId;
 use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
+use crate::service::marker::Flatbuffer;
+use crate::service::resource::publish_subscribe::PublishSubscribeResources;
 use crate::service::service_hash::ServiceHash;
 use crate::service::service_name::ServiceName;
-use crate::service::{
-    self, NoResource, ServiceState, SharedServiceState, dynamic_config, static_config,
-};
+use crate::service::{self, ServiceState, SharedServiceState, dynamic_config, static_config};
 use core::ptr::NonNull;
 use core::{fmt::Debug, marker::PhantomData};
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 /// The factory for
@@ -71,7 +72,7 @@ pub struct PortFactory<
     Payload: Debug + ZeroCopySend + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) service: SharedServiceState<Service, NoResource>,
+    pub(crate) service: SharedServiceState<Service, PublishSubscribeResources<Service>>,
     _payload: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
 }
@@ -155,7 +156,7 @@ impl<
     UserHeader: Debug + ZeroCopySend,
 > PortFactory<Service, Payload, UserHeader>
 {
-    pub(crate) fn new(service: ServiceState<Service, NoResource>) -> Self {
+    pub(crate) fn new(service: ServiceState<Service, PublishSubscribeResources<Service>>) -> Self {
         Self {
             service: SharedServiceState {
                 state: Arc::new(service),
@@ -212,5 +213,17 @@ impl<
     /// ```
     pub fn publisher_builder(&self) -> PortFactoryPublisher<'_, Service, Payload, UserHeader> {
         PortFactoryPublisher::new(self)
+    }
+}
+
+impl<Service: service::Service, Payload, UserHeader: Debug + ZeroCopySend>
+    PortFactory<Service, Flatbuffer<Payload>, UserHeader>
+{
+    /// Returns the [`FilePath`] where the type definition file is stored.
+    pub fn type_definition_file(&self) -> FilePath {
+        PublishSubscribeResources::<Service>::type_definition_path(
+            self.service.shared_node().config(),
+            self.service.static_config(),
+        )
     }
 }

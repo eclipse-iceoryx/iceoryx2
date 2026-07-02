@@ -19,7 +19,7 @@ use alloc::boxed::Box;
 
 use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
 use iceoryx2::service::builder::blackboard::{
-    BlackboardCreateError, BlackboardOpenError, Creator, KeyMemory, Opener,
+    BlackboardCreateError, BlackboardOpenError, Creator, Opener,
 };
 use iceoryx2::service::port_factory::blackboard::PortFactory;
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeName, TypeVariant};
@@ -400,7 +400,11 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_key_eq_comp
                 let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
                 service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
                     service_builder.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
-                        KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &*eq_func)
+                        iceoryx2::service::resource::blackboard::KeyMemory::<
+                                    MAX_BLACKBOARD_KEY_SIZE,
+                                >::key_eq_comparison(
+                                    lhs, rhs, &*eq_func
+                                )
                     })),
                 ));
             }
@@ -409,11 +413,19 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_key_eq_comp
                     ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
                 let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
-                service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
-                    service_builder.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
-                        KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &*eq_func)
-                    })),
-                ));
+                service_builder_struct.set(
+                    ServiceBuilderUnion::new_local_blackboard_creator(
+                        service_builder.__internal_set_key_eq_cmp_func(Box::new(
+                            move |lhs, rhs| {
+                                iceoryx2::service::resource::blackboard::KeyMemory::<
+                                    MAX_BLACKBOARD_KEY_SIZE,
+                                >::key_eq_comparison(
+                                    lhs, rhs, &*eq_func
+                                )
+                            },
+                        )),
+                    ),
+                );
             }
         }
     }

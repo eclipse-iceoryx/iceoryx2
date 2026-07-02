@@ -14,7 +14,7 @@ use crate::cli::{DataRepresentation, SubscribeOptions};
 use crate::command::{extract_pubsub_payload, get_pubsub_service_types};
 use anyhow::Result;
 use iceoryx2::prelude::*;
-use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
+use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2_cli::Format;
 use iceoryx2_userland_record_and_replay::hex_conversion::bytes_to_hex_string;
 use std::time::Duration;

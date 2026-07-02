@@ -35,6 +35,7 @@
 
 use super::message_type_details::MessageTypeDetails;
 use crate::config;
+use iceoryx2_bb_container::{relocatable_option::RelocatableOption, string::StaticString};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use serde::{Deserialize, Serialize};
@@ -54,6 +55,7 @@ pub struct StaticConfig {
     pub(crate) subscriber_max_borrowed_samples: usize,
     pub(crate) enable_safe_overflow: bool,
     pub(crate) message_type_details: MessageTypeDetails,
+    pub(crate) idl_hash: RelocatableOption<StaticString<128>>,
 }
 
 impl StaticConfig {
@@ -73,6 +75,7 @@ impl StaticConfig {
                 .subscriber_max_borrowed_samples,
             enable_safe_overflow: config.defaults.publish_subscribe.enable_safe_overflow,
             message_type_details: MessageTypeDetails::default(),
+            idl_hash: RelocatableOption::None,
         }
     }
 

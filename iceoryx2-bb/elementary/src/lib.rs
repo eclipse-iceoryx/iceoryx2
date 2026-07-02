@@ -25,6 +25,7 @@ pub mod enum_gen;
 pub mod alignment;
 /// A strong type that represents the alignment part of [`core::alloc::Layout`]
 pub mod bump_allocator;
+pub mod code_style;
 pub mod cyclic_tagger;
 pub mod lazy_singleton;
 pub mod math;

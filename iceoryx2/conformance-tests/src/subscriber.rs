@@ -67,11 +67,9 @@ pub mod subscriber {
     pub fn subscriber_with_custom_payload_details_panics_when_calling_non_custom_receive<
         Sut: Service,
     >() {
+        use iceoryx2::service::marker::CustomPayloadMarker;
         #[cfg(debug_assertions)]
-        use iceoryx2::service::{
-            builder::CustomPayloadMarker,
-            static_config::message_type_details::{TypeDetail, TypeVariant},
-        };
+        use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 
         const TYPE_SIZE_OVERRIDE: usize = 128;
         let test = Test::<Sut>::new();

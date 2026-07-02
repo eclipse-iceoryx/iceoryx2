@@ -37,7 +37,6 @@ use alloc::vec;
 
 use iceoryx2_bb_container::vector::StaticVec;
 use iceoryx2_bb_container::vector::Vector;
-use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -93,21 +92,6 @@ enum ServiceState {
     VersionMismatch,
 }
 
-#[repr(C)]
-#[derive(Debug, ZeroCopySend, Clone, Default)]
-#[doc(hidden)]
-pub struct CustomHeaderMarker {}
-
-#[repr(C)]
-#[derive(Debug, ZeroCopySend, Clone)]
-#[doc(hidden)]
-pub struct CustomPayloadMarker(u8);
-
-#[repr(C)]
-#[derive(ZeroCopySend, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[doc(hidden)]
-pub struct CustomKeyMarker(u8);
-
 enum_gen! {
 #[doc(hidden)]
     OpenDynamicStorageFailure
@@ -138,8 +122,9 @@ pub struct Builder<S: Service> {
     _phantom_s: PhantomData<S>,
 }
 
+#[doc(hidden)]
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-enum ServiceCreateError {
+pub enum ServiceCreateError {
     InternalFailure,
     AlreadyExists,
     IsBeingCreatedByAnotherInstance,
@@ -165,8 +150,9 @@ impl From<ServiceState> for ServiceCreateError {
     }
 }
 
+#[doc(hidden)]
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-enum ServiceOpenError {
+pub enum ServiceOpenError {
     InternalFailure,
     DoesNotExist,
     UnableToCreateServiceTag,
@@ -294,8 +280,8 @@ impl<S: Service> Builder<S> {
 #[doc(hidden)]
 #[derive(Debug, Clone)]
 pub struct BuilderWithServiceType<ServiceType: service::Service> {
-    service_config: StaticConfig,
-    shared_node: SharedNode<ServiceType>,
+    pub(crate) service_config: StaticConfig,
+    pub(crate) shared_node: SharedNode<ServiceType>,
     _phantom_data: PhantomData<ServiceType>,
 }
 
@@ -474,7 +460,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         R: service::ServiceResource,
         FA: FnMut() -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState>,
         F1: FnMut(&StaticConfig) -> Result<(), ErrorType>,
-        F2: FnMut(&StaticConfig) -> Result<R, ErrorType>,
+        F2: FnMut(&StaticConfig) -> Result<R, ServiceOpenError>,
     >(
         &self,
         msg: &str,

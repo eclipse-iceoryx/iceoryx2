@@ -14,8 +14,7 @@ use std::alloc::Layout;
 use std::ptr::copy_nonoverlapping;
 
 use iceoryx2::constants::MAX_BLACKBOARD_KEY_SIZE;
-use iceoryx2::service::builder::CustomKeyMarker;
-use iceoryx2::service::builder::blackboard::KeyMemory;
+use iceoryx2::service::marker::CustomKeyMarker;
 use pyo3::prelude::*;
 
 use crate::attribute_specifier::AttributeSpecifier;
@@ -25,6 +24,7 @@ use crate::parc::Parc;
 use crate::port_factory_blackboard::{PortFactoryBlackboard, PortFactoryBlackboardType};
 use crate::type_detail::TypeDetail;
 use crate::type_storage::TypeStorage;
+use iceoryx2::service::resource::blackboard::KeyMemory;
 
 type IpcCreator =
     iceoryx2::service::builder::blackboard::Creator<CustomKeyMarker, crate::IpcService>;

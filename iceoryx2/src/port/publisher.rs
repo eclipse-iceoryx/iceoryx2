@@ -133,11 +133,12 @@ use crate::prelude::BackpressureStrategy;
 use crate::raw_sample::RawSampleMut;
 use crate::sample_mut::SampleMut;
 use crate::sample_mut_uninit::SampleMutUninit;
-use crate::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::header::publish_subscribe::Header;
+use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::publisher::{LocalPublisherConfig, PortFactoryPublisher};
+use crate::service::resource::publish_subscribe::PublishSubscribeResources;
 use crate::service::static_config::message_type_details::TypeVariant;
 use crate::service::{self};
 
@@ -181,7 +182,7 @@ struct OffsetAndSize {
 #[derive(Debug)]
 pub(crate) struct PublisherSharedState<Service: service::Service> {
     config: LocalPublisherConfig,
-    pub(crate) sender: Sender<Service>,
+    pub(crate) sender: Sender<Service, PublishSubscribeResources<Service>>,
     subscriber_list_state: UnsafeCell<ContainerState<SubscriberDetails>>,
     history: Option<UnsafeCell<Queue<OffsetAndSize>>>,
     is_active: AtomicBool,
@@ -197,7 +198,11 @@ pub(crate) struct PublisherSharedState<Service: service::Service> {
 impl<Service: service::Service> Abandonable for PublisherSharedState<Service> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { Sender::<Service>::abandon_in_place(NonNull::iox2_from_mut(&mut this.sender)) }
+        unsafe {
+            Sender::<Service, PublishSubscribeResources<Service>>::abandon_in_place(
+                NonNull::iox2_from_mut(&mut this.sender),
+            )
+        }
         unsafe {
             Service::StaticStorage::abandon_in_place(NonNull::iox2_from_mut(&mut this.port_tag))
         }
@@ -268,7 +273,11 @@ impl<Service: service::Service> PublisherSharedState<Service> {
         Ok(())
     }
 
-    fn deliver_sample_history(&self, connection: &Connection<Service>, history_request: usize) {
+    fn deliver_sample_history(
+        &self,
+        connection: &Connection<Service, PublishSubscribeResources<Service>>,
+        history_request: usize,
+    ) {
         match &self.history {
             None => (),
             Some(history) => {
