@@ -23,7 +23,7 @@ use iceoryx2_log::fail;
 
 use crate::rcl::node::Node;
 use crate::rcl::{RclError, TopicName};
-use crate::typesupport::TypeSupportHandle;
+use crate::typesupport::TypeSupport;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -56,11 +56,11 @@ impl core::error::Error for PublishError {}
 pub struct Builder<'a> {
     node: Rc<Node>,
     topic: &'a TopicName,
-    type_support: TypeSupportHandle,
+    type_support: Rc<TypeSupport>,
 }
 
 impl<'a> Builder<'a> {
-    fn new(node: Rc<Node>, topic: &'a TopicName, type_support: TypeSupportHandle) -> Self {
+    fn new(node: Rc<Node>, topic: &'a TopicName, type_support: Rc<TypeSupport>) -> Self {
         Self {
             node,
             topic,
@@ -105,7 +105,7 @@ pub struct Publisher {
     node: Rc<Node>,
     publisher: Box<UnsafeCell<r2r_rcl::rcl_publisher_t>>,
     /// Keeps the typesupport library loaded while the endpoint uses it.
-    _type_support: TypeSupportHandle,
+    _type_support: Rc<TypeSupport>,
 }
 
 impl core::fmt::Debug for Publisher {
@@ -125,7 +125,7 @@ impl Publisher {
     pub fn new<'a>(
         node: Rc<Node>,
         topic: &'a TopicName,
-        type_support: TypeSupportHandle,
+        type_support: Rc<TypeSupport>,
     ) -> Builder<'a> {
         Builder::new(node, topic, type_support)
     }

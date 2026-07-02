@@ -26,7 +26,7 @@ use iceoryx2_log::fail;
 
 use crate::rcl::node::Node;
 use crate::rcl::{RclError, TopicName};
-use crate::typesupport::TypeSupportHandle;
+use crate::typesupport::TypeSupport;
 
 /// A callback invoked with the number of newly-arrived messages. The RMW
 /// calls it from a middleware thread.
@@ -99,11 +99,11 @@ impl From<&rmw_message_info_t> for MessageInfo {
 pub struct Builder<'a> {
     node: Rc<Node>,
     topic: &'a TopicName,
-    type_support: TypeSupportHandle,
+    type_support: Rc<TypeSupport>,
 }
 
 impl<'a> Builder<'a> {
-    fn new(node: Rc<Node>, topic: &'a TopicName, type_support: TypeSupportHandle) -> Self {
+    fn new(node: Rc<Node>, topic: &'a TopicName, type_support: Rc<TypeSupport>) -> Self {
         Self {
             node,
             topic,
@@ -152,7 +152,7 @@ pub struct Subscription {
     callback: Option<Pin<Box<NewMessageCallback>>>,
     node: Rc<Node>,
     /// Keeps the typesupport library loaded while the endpoint uses it.
-    _type_support: TypeSupportHandle,
+    _type_support: Rc<TypeSupport>,
 }
 
 impl core::fmt::Debug for Subscription {
@@ -172,7 +172,7 @@ impl Subscription {
     pub fn new<'a>(
         node: Rc<Node>,
         topic: &'a TopicName,
-        type_support: TypeSupportHandle,
+        type_support: Rc<TypeSupport>,
     ) -> Builder<'a> {
         Builder::new(node, topic, type_support)
     }
