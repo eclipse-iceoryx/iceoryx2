@@ -739,6 +739,10 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                         fail!(from self, with ServiceCreateError::ServiceInCorruptedState,
                             "This should never happen! {} since the unique dynamic service management segment already exists.", msg);
                     }
+                    Err(DynamicStorageCreateError::Creation) => {
+                        fail!(from self, with ServiceCreateError::InternalFailure,
+                            "This should never happen! {} since the creation of the underlying DynamicStorage failed.", msg);
+                    }
                     Err(DynamicStorageCreateError::InsufficientPermissions) => {
                         fail!(from self, with ServiceCreateError::InsufficientPermissions,
                             "{msg} since the dynamic service config could not be created due to insufficient permissions.");

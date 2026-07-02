@@ -37,6 +37,7 @@ use iceoryx2_bb_posix::{
     },
 };
 use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fail;
 
 #[derive(Debug, ZeroCopySend)]
@@ -163,6 +164,12 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SemaphoreMgmt>>>
         _config: &Configuration,
     ) -> Result<bool, NamedConceptRemoveError> {
         Ok(true)
+    }
+
+    fn remove_path_hint(
+        _value: &Path,
+    ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
+        Ok(())
     }
 
     fn empty_buffer(&self) -> Result<(), ListenerWaitError> {

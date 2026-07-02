@@ -118,6 +118,7 @@ impl core::error::Error for CommunicationChannelReceiveError {}
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum CommunicationChannelCreateError {
     AlreadyExists,
+    Creation,
     SafeOverflowNotSupported,
     CustomBufferSizeNotSupported,
     InternalFailure,

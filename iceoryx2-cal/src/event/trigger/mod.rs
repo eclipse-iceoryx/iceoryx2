@@ -82,6 +82,9 @@ pub trait WaiterInterface<
         name: &FileName,
         config: &Configuration,
     ) -> Result<bool, NamedConceptRemoveError>;
+    fn remove_path_hint(
+        value: &Path,
+    ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError>;
     fn create(
         name: &FileName,
         config: &Configuration,

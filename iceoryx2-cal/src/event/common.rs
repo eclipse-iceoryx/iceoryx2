@@ -208,7 +208,8 @@ impl<
     fn remove_path_hint(
         value: &Path,
     ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
-        Storage::remove_path_hint(value)
+        let _ = Storage::remove_path_hint(value);
+        W::remove_path_hint(value)
     }
 }
 
@@ -694,6 +695,10 @@ impl<
             Err(DynamicStorageCreateError::AlreadyExists) => {
                 fail!(from self, with ListenerCreateError::AlreadyExists,
                     "{msg} since it already exists.");
+            }
+            Err(DynamicStorageCreateError::Creation) => {
+                fail!(from self, with ListenerCreateError::InternalFailure,
+                    "{msg} since the creation of the underlying DynamicStorage failed.");
             }
             Err(DynamicStorageCreateError::InsufficientPermissions) => {
                 fail!(from self, with ListenerCreateError::InsufficientPermissions,

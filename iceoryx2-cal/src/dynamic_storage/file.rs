@@ -47,7 +47,7 @@ use iceoryx2_bb_posix::memory_mapping::MemoryMapping;
 use iceoryx2_bb_posix::memory_mapping::MemoryMappingBuilder;
 use iceoryx2_bb_posix::shared_memory::*;
 use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_log::fail;
+use iceoryx2_log::{fail, trace};
 
 use crate::static_storage::file::NamedConceptConfiguration;
 use crate::static_storage::file::NamedConceptRemoveError;
@@ -58,9 +58,15 @@ const INIT_PERMISSIONS: Permission = Permission::OWNER_WRITE;
 
 #[cfg(not(feature = "dev_permissions"))]
 const FINAL_PERMISSIONS: Permission = Permission::OWNER_ALL;
+#[cfg(not(feature = "dev_permissions"))]
+const DIR_PERMISSIONS: Permission = Permission::OWNER_ALL
+    .const_bitor(Permission::GROUP_READ)
+    .const_bitor(Permission::GROUP_EXEC);
 
 #[cfg(feature = "dev_permissions")]
 const FINAL_PERMISSIONS: Permission = Permission::ALL;
+#[cfg(feature = "dev_permissions")]
+const DIR_PERMISSIONS: Permission = Permission::ALL;
 
 /// The builder of [`Storage`].
 #[derive(Debug)]
@@ -299,6 +305,22 @@ impl<T: Send + Sync + Debug + ZeroCopySend> Builder<'_, T> {
 
     fn create_impl(&mut self) -> Result<Storage<T>, DynamicStorageCreateError> {
         let msg = "Failed to create dynamic_storage::file::DynamicStorage";
+
+        // create target directory first before the dynamic storage
+        let dir_msg = format!("Unable to create target directory \"{}\"", self.config.path);
+        if !fail!(from self, when Directory::does_exist(&self.config.path),
+            with DynamicStorageCreateError::Creation,
+               "{} since the system is unable to determine if the directory even exists.", dir_msg)
+        {
+            match Directory::create(&self.config.path, DIR_PERMISSIONS) {
+                Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => (),
+                Err(e) => {
+                    fail!(from self, with DynamicStorageCreateError::Creation,
+                        "{} due to a failure while creating the service root directory ({:?}).", dir_msg, e);
+                }
+            }
+            trace!(from self, "Created service root directory \"{}\" since it did not exist before.", self.config.path);
+        }
 
         let full_name = self.config.path_for(&self.storage_name);
         let mut file = match FileBuilder::new(&full_name)
