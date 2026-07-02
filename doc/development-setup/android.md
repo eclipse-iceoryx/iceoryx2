@@ -169,7 +169,7 @@ environment variable must point to `clang` from the Android NDK:
 
 ```bash
 export CC=/opt/android/android-ndk-r29/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android35-clang
-cargo build --target x86_64-linux-android --manifest-path integrations/Cargo.toml --package iceoryx2-integrations-zenoh-tunnel-backend
+cargo build --target x86_64-linux-android --manifest-path integrations/zenoh/Cargo.toml --package iceoryx2-integrations-zenoh-tunnel-backend
 ```
 
 In order to make the tunnel functional, more work is required.

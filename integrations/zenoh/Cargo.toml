@@ -1,0 +1,47 @@
+[workspace]
+resolver = "2"
+members = [
+    "tunnel-backend",
+    "tunnel-cli",
+]
+
+[workspace.package]
+categories = ["network-programming"]
+description = "iceoryx2 integration with Zenoh"
+edition = "2024"
+homepage = "https://iceoryx.io"
+keywords = [
+    "zero-copy",
+    "communication",
+    "ipc",
+    "publish-subscribe",
+    "zenoh",
+]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/eclipse-iceoryx/iceoryx2"
+rust-version = "1.88"
+version = "0.9.999"
+
+[workspace.dependencies]
+iceoryx2-integrations-zenoh-tunnel-cli = { version = "0.9.999", path = "tunnel-cli" }
+iceoryx2-integrations-zenoh-tunnel-backend = { version = "0.9.999", path = "tunnel-backend" }
+
+iceoryx2 = { version = "0.9.999", path = "../../iceoryx2/" }
+iceoryx2-cli = { version = "0.9.999", path = "../../iceoryx2-cli/" }
+iceoryx2-log = { version = "0.9.999", path = "../../iceoryx2-log/log/" }
+iceoryx2-bb-concurrency = { version = "0.9.999", path = "../../iceoryx2-bb/concurrency/" }
+iceoryx2-bb-posix = { version = "0.9.999", path = "../../iceoryx2-bb/posix/" }
+iceoryx2-bb-testing = { version = "0.9.999", path = "../../iceoryx2-bb/testing/" }
+iceoryx2-bb-testing-macros = { version = "0.9.999", path = "../../iceoryx2-bb/testing-macros/" }
+iceoryx2-services-common = { version = "0.9.999", path = "../../iceoryx2-services/common" }
+iceoryx2-services-tunnel = { version = "0.9.999", path = "../../iceoryx2-services/tunnel" }
+iceoryx2-services-tunnel-backend = { version = "0.9.999", path = "../../iceoryx2-services/tunnel-backend" }
+iceoryx2-tunnel-conformance-tests = { version = "0.9.999", path = "../../iceoryx2-services/tunnel-conformance-tests" }
+
+anyhow = { version = "1.0.86" }
+better-panic = { version = "0.3.0" }
+clap = { version = "4.5.4", features = ["derive"] }
+flume = { version = "0.12.0" }
+human-panic = { version = "2.0.5" }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+zenoh = { version = "1.9.0", features = ["default", "unstable"] }

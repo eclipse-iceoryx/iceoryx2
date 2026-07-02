@@ -102,19 +102,19 @@ jobs:
           rustc --version
           just test sdk +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast
 
-      - name: Build integrations workspace
-        if: ${{ inputs.workspace == 'integrations' }}
+      - name: Build zenoh workspace
+        if: ${{ inputs.workspace == 'zenoh' }}
         shell: bash
         run: |
           rustc --version
-          just build integrations +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
+          just build integrations-zenoh +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
 
-      - name: Test integrations workspace
-        if: ${{ inputs.workspace == 'integrations' }}
+      - name: Test zenoh workspace
+        if: ${{ inputs.workspace == 'zenoh' }}
         shell: bash
         run: |
           rustc --version
-          just test integrations +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast
+          just test integrations-zenoh +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast
 
       - name: Cleanup build artifacts
         uses: ./.github/actions/save-disk-space

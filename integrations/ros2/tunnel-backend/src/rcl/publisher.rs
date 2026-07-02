@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::cell::UnsafeCell;
 use std::rc::Rc;
 
 use r2r_rcl::{
@@ -19,6 +18,7 @@ use r2r_rcl::{
     rcl_serialized_message_t, rcutils_get_default_allocator,
 };
 
+use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_log::fail;
 
 use crate::rcl::node::NodeInner;

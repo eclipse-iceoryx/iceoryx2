@@ -68,7 +68,7 @@ jobs:
       profile: ${{ matrix.profile }}
       workspace: sdk
 
-  integrations-stable-nightly:
+  integrations-zenoh-stable-nightly:
     needs: [static-code-analysis-rust-nightly, cargo-nextest-nightly]
     strategy:
       matrix:
@@ -84,7 +84,27 @@ jobs:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
       profile: ${{ matrix.profile }}
-      workspace: integrations
+      workspace: zenoh
+
+  integrations-ros2-stable-nightly:
+    needs: [static-code-analysis-rust-nightly]
+    strategy:
+      fail-fast: false
+      matrix:
+        ros:
+          - { distro: jazzy, rmw: rmw_fastrtps_cpp }
+          - { distro: humble, rmw: rmw_cyclonedds_cpp }
+        toolchain: [stable, 1.88.0]
+        profile: ["release", "debug"]
+        exclude:
+          - toolchain: stable
+            profile: "debug"
+    uses: ./.github/workflows/reuse_ros2.yml
+    with:
+      ros-distro: ${{ matrix.ros.distro }}
+      rmw: ${{ matrix.ros.rmw }}
+      toolchain: ${{ matrix.toolchain }}
+      profile: ${{ matrix.profile }}
 
   unstable-nightly:
     needs: [static-code-analysis-rust-nightly, cargo-nextest-nightly]

@@ -1,0 +1,43 @@
+# Standalone workspace: building the ros2 crates requires a sourced ROS 2
+# environment, which the surrounding `integrations` and `sdk` workspaces must
+# not depend on.
+[workspace]
+resolver = "2"
+members = [
+    "tunnel-backend",
+]
+# The examples are `ament_cargo` packages built individually by colcon, which
+# patches their dependencies in the install space; they are their own
+# standalone workspaces, not members of this one.
+exclude = [
+    "examples",
+]
+
+[workspace.package]
+categories = ["network-programming"]
+description = "iceoryx2 integration with ROS 2"
+edition = "2024"
+homepage = "https://iceoryx.io"
+keywords = [
+    "zero-copy",
+    "communication",
+    "ipc",
+    "publish-subscribe",
+    "ros2",
+]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/eclipse-iceoryx/iceoryx2"
+rust-version = "1.88"
+version = "0.9.999"
+
+[workspace.dependencies]
+iceoryx2 = { version = "0.9.999", path = "../../iceoryx2/", features = ["std"] }
+iceoryx2-bb-concurrency = { version = "0.9.999", path = "../../iceoryx2-bb/concurrency/", features = ["std"] }
+iceoryx2-log = { version = "0.9.999", path = "../../iceoryx2-log/log/", features = ["std"] }
+iceoryx2-services-common = { version = "0.9.999", path = "../../iceoryx2-services/common", features = ["std"] }
+iceoryx2-services-tunnel = { version = "0.9.999", path = "../../iceoryx2-services/tunnel", features = ["std"] }
+iceoryx2-services-tunnel-backend = { version = "0.9.999", path = "../../iceoryx2-services/tunnel-backend", features = ["std"] }
+
+libloading = { version = "0.8" }
+r2r_rcl = { version = "0.9.5" }
+serde = { version = "1.0.203", default-features = false, features = ["alloc", "derive"] }

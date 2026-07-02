@@ -15,6 +15,8 @@
 # =============================================================================
 
 INTEGRATIONS_DIR := justfile_directory() / "integrations"
+INTEGRATIONS_ZENOH_DIR := INTEGRATIONS_DIR / "zenoh"
+INTEGRATIONS_ROS2_DIR := INTEGRATIONS_DIR / "ros2"
 
 SDK_CRATES_TO_PUBLISH := `echo \
     iceoryx2-pal-configuration          \
@@ -99,11 +101,11 @@ SDK_CRATES_TO_IGNORE := `echo \
     iceoryx2-tests-common                  \
     iceoryx2-tests-nostd`
 
-INTEGRATIONS_CRATES_TO_PUBLISH := `echo \
+INTEGRATIONS_ZENOH_CRATES_TO_PUBLISH := `echo \
     iceoryx2-integrations-zenoh-tunnel-backend \
     iceoryx2-integrations-zenoh-tunnel-cli`
 
-INTEGRATIONS_CRATES_TO_IGNORE := `echo \
+INTEGRATIONS_ZENOH_CRATES_TO_IGNORE := `echo \
     iceoryx2                                \
     iceoryx2-bb-concurrency                 \
     iceoryx2-bb-posix                       \
@@ -115,6 +117,16 @@ INTEGRATIONS_CRATES_TO_IGNORE := `echo \
     iceoryx2-services-tunnel                \
     iceoryx2-services-tunnel-backend        \
     iceoryx2-tunnel-conformance-tests`
+
+INTEGRATIONS_ROS2_CRATES_TO_PUBLISH := `echo \
+    iceoryx2-integrations-ros2-tunnel-backend`
+
+INTEGRATIONS_ROS2_CRATES_TO_IGNORE := `echo \
+    iceoryx2                                \
+    iceoryx2-log                            \
+    iceoryx2-services-common                \
+    iceoryx2-services-tunnel                \
+    iceoryx2-services-tunnel-backend`
 
 [private]
 _publish-dispatch workspace *flags:
@@ -146,7 +158,8 @@ _publish-dispatch workspace *flags:
         echo ""
         echo "Workspace:"
         echo "  sdk             publish the main workspace crates"
-        echo "  integrations    publish the integrations workspace crates"
+        echo "  integrations-zenoh  publish the zenoh workspace crates"
+        echo "  integrations-ros2   publish the ros2 workspace crates (requires a sourced ROS 2 env)"
         echo "  all             publish all workspaces in order"
         echo ""
         echo "Flags:"
@@ -175,16 +188,18 @@ _publish-dispatch workspace *flags:
 _publish-crates-to-publish workspace:
     #!/usr/bin/env bash
     case "{{workspace}}" in
-        sdk)          echo "{{SDK_CRATES_TO_PUBLISH}}" ;;
-        integrations) echo "{{INTEGRATIONS_CRATES_TO_PUBLISH}}" ;;
+        sdk)                echo "{{SDK_CRATES_TO_PUBLISH}}" ;;
+        integrations-zenoh) echo "{{INTEGRATIONS_ZENOH_CRATES_TO_PUBLISH}}" ;;
+        integrations-ros2)  echo "{{INTEGRATIONS_ROS2_CRATES_TO_PUBLISH}}" ;;
     esac
 
 [private]
 _publish-crates-to-ignore workspace:
     #!/usr/bin/env bash
     case "{{workspace}}" in
-        sdk)          echo "{{SDK_CRATES_TO_IGNORE}}" ;;
-        integrations) echo "{{INTEGRATIONS_CRATES_TO_IGNORE}}" ;;
+        sdk)                echo "{{SDK_CRATES_TO_IGNORE}}" ;;
+        integrations-zenoh) echo "{{INTEGRATIONS_ZENOH_CRATES_TO_IGNORE}}" ;;
+        integrations-ros2)  echo "{{INTEGRATIONS_ROS2_CRATES_TO_IGNORE}}" ;;
     esac
 
 # -----------------------------------------------------------------------------

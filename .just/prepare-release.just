@@ -148,7 +148,8 @@ _release-update-cargo-tomls old new:
     # Workspace-level `version = "..."` fields
     sed -i 's/^version = "{{old}}"/version = "{{new}}"/g' \
         Cargo.toml \
-        integrations/Cargo.toml \
+        integrations/zenoh/Cargo.toml \
+        integrations/ros2/Cargo.toml \
         examples/nostd/posix/rust/Cargo.toml
 
     # iceoryx2-* path-dep version pins. Matches lines such as:

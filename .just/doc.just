@@ -23,20 +23,21 @@ _doc-dispatch workspace target *flags:
         echo "Usage: just doc <workspace> <target>"
         echo ""
         echo "Workspace:"
-        echo "  sdk             build docs for the main workspace"
-        echo "  integrations    build docs for the integrations workspace"
-        echo "  all             build docs for all workspaces"
+        echo "  sdk                 build docs for the main workspace"
+        echo "  integrations-zenoh  build docs for the zenoh workspace"
+        echo "  integrations-ros2   build docs for the ros2 workspace (requires a sourced ROS 2 env)"
+        echo "  all                 build docs for all workspaces"
         echo ""
         echo "Target:"
-        echo "  rust            build Rust API docs"
-        echo "  c               build C API docs"
-        echo "  cxx             build C++ API docs"
-        echo "  python          build Python API docs"
+        echo "  rust                build Rust API docs"
+        echo "  c                   build C API docs"
+        echo "  cxx                 build C++ API docs"
+        echo "  python              build Python API docs"
         exit 1
     fi
 
-    if [ "{{workspace}}" = "integrations" ] && [ "{{target}}" != "rust" ]; then
-        echo "Error: the integrations workspace only has Rust docs (given: {{target}})" >&2
+    if [ "{{workspace}}" != "sdk" ] && [ "{{workspace}}" != "all" ] && [ "{{target}}" != "rust" ]; then
+        echo "Error: the {{workspace}} workspace only has Rust docs (given: {{target}})" >&2
         exit 1
     fi
 
@@ -70,7 +71,8 @@ _doc-rust workspace:
         echo ""
         case "$WS" in
             sdk)          echo "Available at: {{justfile_directory()}}/target/doc/" ;;
-            integrations) echo "Available at: {{INTEGRATIONS_DIR}}/target/doc/" ;;
+            integrations-zenoh) echo "Available at: {{INTEGRATIONS_ZENOH_DIR}}/target/doc/" ;;
+            integrations-ros2)  echo "Available at: {{INTEGRATIONS_ROS2_DIR}}/target/doc/" ;;
         esac
     done
 

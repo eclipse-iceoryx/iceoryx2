@@ -57,7 +57,8 @@ _test-dispatch what *flags:
             echo ""
             echo "Scope:"
             echo "  sdk                    run all tests for the main workspace"
-            echo "  integrations           run all tests for the integrations workspace"
+            echo "  integrations-zenoh     run all tests for the zenoh workspace"
+            echo "  integrations-ros2      run all tests for the ros2 workspace (requires a sourced ROS 2 env)"
             echo "  <package>              run tests for a specific package"
             echo ""
             echo "Flags:"
@@ -70,8 +71,11 @@ _test-dispatch what *flags:
         sdk)
             just _test-sdk "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
             ;;
-        integrations)
-            just _test-integrations "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
+        integrations-zenoh)
+            just _test-integrations-zenoh "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
+            ;;
+        integrations-ros2)
+            just _test-integrations-ros2 "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
             ;;
         *)
             just _test-package "{{what}}" "$TOOLCHAIN" "$TARGET_TRIPLET" "$HAS_NOSTD" "$HAS_DOC" "$EXTRA_ARGS"
@@ -152,16 +156,34 @@ _test-sdk toolchain target_triplet has_nostd has_doc extra_args:
     fi
 
 [private]
-_test-integrations toolchain target_triplet has_nostd has_doc extra_args:
+_test-integrations-zenoh toolchain target_triplet has_nostd has_doc extra_args:
     #!/usr/bin/env bash
     set -euo pipefail
 
     if [ "{{has_nostd}}" = "true" ]; then
-        echo "Error: the integrations workspace cannot be built with --no_std" >&2
+        echo "Error: the zenoh workspace cannot be built with --no_std" >&2
         exit 1
     fi
 
-    MANIFEST_ARG=$(just _workspace-manifest-arg integrations)
+    MANIFEST_ARG=$(just _workspace-manifest-arg integrations-zenoh)
+
+    if [ "{{has_doc}}" = "true" ]; then
+        cargo {{toolchain}} test --workspace --doc $MANIFEST_ARG {{extra_args}}
+    else
+        cargo {{toolchain}} nextest run --workspace $MANIFEST_ARG {{extra_args}}
+    fi
+
+[private]
+_test-integrations-ros2 toolchain target_triplet has_nostd has_doc extra_args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [ "{{has_nostd}}" = "true" ]; then
+        echo "Error: the ros2 workspace cannot be built with --no_std" >&2
+        exit 1
+    fi
+
+    MANIFEST_ARG=$(just _workspace-manifest-arg integrations-ros2)
 
     if [ "{{has_doc}}" = "true" ]; then
         cargo {{toolchain}} test --workspace --doc $MANIFEST_ARG {{extra_args}}

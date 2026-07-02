@@ -14,11 +14,12 @@
 //! by loading the per-package typesupport library from the sourced
 //! environment.
 
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_log::fail;
+
 use libloading::Library;
 use r2r_rcl::rosidl_message_type_support_t;
 

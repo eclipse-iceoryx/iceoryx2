@@ -60,7 +60,8 @@ _build-dispatch what *flags:
             echo ""
             echo "Scope:"
             echo "  sdk                    build the main workspace"
-            echo "  integrations           build the integrations workspace"
+            echo "  integrations-zenoh     build the zenoh workspace"
+            echo "  integrations-ros2      build the ros2 workspace (requires a sourced ROS 2 env)"
             echo "  <package>              build a specific package"
             echo ""
             echo "Flags:"
@@ -75,8 +76,11 @@ _build-dispatch what *flags:
         sdk)
             just _build-sdk "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$HAS_TESTS" "$EXTRA_ARGS"
             ;;
-        integrations)
-            just _build-integrations "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$HAS_TESTS" "$EXTRA_ARGS"
+        integrations-zenoh)
+            just _build-integrations-zenoh "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$HAS_TESTS" "$EXTRA_ARGS"
+            ;;
+        integrations-ros2)
+            just _build-integrations-ros2 "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$HAS_TESTS" "$EXTRA_ARGS"
             ;;
         *)
             just _build-package "{{what}}" "$TOOLCHAIN" "$TARGET_TRIPLET" "$PROFILE" "$HAS_NOSTD" "$EXTRA_ARGS"
@@ -132,12 +136,12 @@ _build-sdk toolchain target_triplet profile has_nostd has_tests extra_args:
     fi
 
 [private]
-_build-integrations toolchain target_triplet profile has_nostd has_tests extra_args:
+_build-integrations-zenoh toolchain target_triplet profile has_nostd has_tests extra_args:
     #!/usr/bin/env bash
     set -euo pipefail
 
     if [ "{{has_nostd}}" = "true" ]; then
-        echo "Error: the integrations workspace cannot be built with --no_std" >&2
+        echo "Error: the zenoh workspace cannot be built with --no_std" >&2
         exit 1
     fi
 
@@ -151,7 +155,31 @@ _build-integrations toolchain target_triplet profile has_nostd has_tests extra_a
         TARGET_ARG="--target {{target_triplet}}"
     fi
 
-    MANIFEST_ARG=$(just _workspace-manifest-arg integrations)
+    MANIFEST_ARG=$(just _workspace-manifest-arg integrations-zenoh)
+
+    cargo {{toolchain}} build --workspace $MANIFEST_ARG {{profile}} $TESTS_FLAG $TARGET_ARG {{extra_args}}
+
+[private]
+_build-integrations-ros2 toolchain target_triplet profile has_nostd has_tests extra_args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [ "{{has_nostd}}" = "true" ]; then
+        echo "Error: the ros2 workspace cannot be built with --no_std" >&2
+        exit 1
+    fi
+
+    TESTS_FLAG=""
+    if [ "{{has_tests}}" = "true" ]; then
+        TESTS_FLAG="--tests"
+    fi
+
+    TARGET_ARG=""
+    if [ -n "{{target_triplet}}" ]; then
+        TARGET_ARG="--target {{target_triplet}}"
+    fi
+
+    MANIFEST_ARG=$(just _workspace-manifest-arg integrations-ros2)
 
     cargo {{toolchain}} build --workspace $MANIFEST_ARG {{profile}} $TESTS_FLAG $TARGET_ARG {{extra_args}}
 
