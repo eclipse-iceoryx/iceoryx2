@@ -37,6 +37,7 @@ pub struct PublishSubscribeResourceConfig<ServiceType: service::Service> {
 #[derive(Debug)]
 pub struct PublishSubscribeResources<ServiceType: service::Service> {
     type_definition: Option<FilePath>,
+    use_type_definition: bool,
     resource_directory: Path,
     has_ownership: AtomicBool,
     _service_type: PhantomData<ServiceType>,
@@ -45,7 +46,7 @@ pub struct PublishSubscribeResources<ServiceType: service::Service> {
 impl<ServiceType: service::Service> Drop for PublishSubscribeResources<ServiceType> {
     fn drop(&mut self) {
         let origin = "PublishSubscribeResources::drop()";
-        if self.has_ownership.load(Ordering::Relaxed) {
+        if self.has_ownership.load(Ordering::Relaxed) && self.use_type_definition {
             if let Some(file) = self.type_definition {
                 if let Err(e) = File::remove(&file) {
                     warn!(from origin,
@@ -98,6 +99,7 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
                 resource_directory: *directory.path(),
                 type_definition: Some(schema_dest),
                 has_ownership: AtomicBool::new(false),
+                use_type_definition: resource_config.use_type_definition,
                 _service_type: PhantomData,
             })
         } else {
@@ -105,6 +107,7 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
                 resource_directory: *directory.path(),
                 type_definition: None,
                 has_ownership: AtomicBool::new(false),
+                use_type_definition: resource_config.use_type_definition,
                 _service_type: PhantomData,
             })
         }
@@ -122,7 +125,7 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
             let service_schema =
                 Self::type_definition_path(resource_config.shared_node.config(), static_config);
 
-            if File::compare(&schema_path, &service_schema).unwrap() {
+            if !File::compare(&schema_path, &service_schema).unwrap() {
                 fail!(from origin, with service::builder::ServiceOpenError::IncompatiblePayload,
                 "{msg} since the payload definition of the service {service_schema} is not the same as the one requested in {schema_path}. Both files must be identical!");
             }
@@ -134,6 +137,7 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
                 ),
                 has_ownership: AtomicBool::new(false),
                 type_definition: Some(service_schema),
+                use_type_definition: resource_config.use_type_definition,
                 _service_type: PhantomData,
             })
         } else {
@@ -144,6 +148,7 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
                 ),
                 has_ownership: AtomicBool::new(false),
                 type_definition: None,
+                use_type_definition: resource_config.use_type_definition,
                 _service_type: PhantomData,
             })
         }

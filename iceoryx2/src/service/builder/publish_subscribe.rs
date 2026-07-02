@@ -692,16 +692,16 @@ impl<
             || self.is_service_available(msg),
             |_| Ok(()),
             generate_dynamic_config,
-            |_| {
-                Ok(PublishSubscribeResources::create(
-                    &self.base.service_config,
+            |service_config| {
+                PublishSubscribeResources::create(
+                    service_config,
                     &PublishSubscribeResourceConfig::<ServiceType> {
                         use_type_definition: Self::has_flatbuffer_payload(),
                         schema_path: self.flatbuffer_schema_path,
                         shared_node: self.base.shared_node.clone(),
                         type_name: type_name::<Payload>(),
                     },
-                )?)
+                )
             },
             |_| {},
         )?;
@@ -724,16 +724,16 @@ impl<
             |existing_service_config| -> Result<(), PublishSubscribeOpenError> {
                 self.verify_service_configuration(msg, existing_service_config, required_attributes)
             },
-            |_| {
-                Ok(PublishSubscribeResources::open(
-                    &self.base.service_config,
+            |service_config| {
+                PublishSubscribeResources::open(
+                    service_config,
                     &PublishSubscribeResourceConfig::<ServiceType> {
                         use_type_definition: Self::has_flatbuffer_payload(),
                         schema_path: self.flatbuffer_schema_path,
                         shared_node: self.base.shared_node.clone(),
                         type_name: type_name::<Payload>(),
                     },
-                )?)
+                )
             },
         )?;
 
