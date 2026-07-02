@@ -219,6 +219,13 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
                     ),
                     description: "Defines if there shall be a scan for dead nodes with a following stale resource cleanup whenever an existing service is opened.",
                 },
+                Field {
+                    key: "global.service.flatbuffer-schema-path",
+                    value_type: "string [optional]",
+                    default_value: format!("\"{}\"", config.global.service.directory),
+                    description: "A list of directories where iceoryx2 will look for '.fbs' flatbuffer schemas. If no path is provided, iceoryx2 will perform no lookup and the user must explicitly define the path to the flatbuffer schemas.",
+                },
+
             ],
         },
         Section {
