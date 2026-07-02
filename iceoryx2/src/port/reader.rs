@@ -261,14 +261,12 @@ impl<
             }
         };
 
-        let new_self = Self {
+        Ok(Self {
             shared_state,
             reader_id,
             reader_details: unsafe { &*details },
             dynamic_reader_handle: handle,
-        };
-
-        Ok(new_self)
+        })
     }
 
     /// Returns the [`UniqueReaderId`] of the [`Reader`]

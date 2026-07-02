@@ -229,6 +229,8 @@ impl<Service: service::Service> Listener<Service> {
             }
         };
 
+        core::sync::atomic::compiler_fence(Ordering::SeqCst);
+
         // !MUST! be the last task otherwise a listener is added to the dynamic config without
         // the creation of all required channels
         let (details, handle) = match service.dynamic_storage().get().event().add_listener_id(
@@ -246,18 +248,14 @@ impl<Service: service::Service> Listener<Service> {
             }
         };
 
-        let new_self = Self {
+        Ok(Self {
             port_tag,
             service_state: service.clone(),
             dynamic_listener_handle: handle,
             listener_details: unsafe { &*details },
             listener,
             listener_id,
-        };
-
-        core::sync::atomic::compiler_fence(Ordering::SeqCst);
-
-        Ok(new_self)
+        })
     }
 
     /// Returns the [`PortName`] of the [`Listener`]

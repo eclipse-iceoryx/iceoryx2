@@ -522,7 +522,9 @@ impl<
             }
         };
 
-        let new_self = Self {
+        unsafe { *shared_state.lock().server_handle.get() = Some(handle) };
+
+        Ok(Self {
             max_loaned_responses_per_request: server_factory
                 .config
                 .max_loaned_responses_per_request,
@@ -536,10 +538,7 @@ impl<
             _request_header: PhantomData,
             _response_payload: PhantomData,
             _response_header: PhantomData,
-        };
-        unsafe { *new_self.shared_state.lock().server_handle.get() = Some(handle) };
-
-        Ok(new_self)
+        })
     }
 
     /// Returns the [`UniqueServerId`] of the [`Server`]

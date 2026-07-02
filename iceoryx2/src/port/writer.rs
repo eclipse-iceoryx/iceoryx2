@@ -218,6 +218,8 @@ impl<
             }
         };
 
+        core::sync::atomic::compiler_fence(Ordering::SeqCst);
+
         // !MUST! be the last task otherwise a writer is added to the dynamic config without the
         // creation of all required resources
         let (details, handle) = match service.dynamic_storage().get().blackboard().add_writer_id(
@@ -235,17 +237,14 @@ impl<
             }
         };
 
-        let new_self = Self {
+        unsafe { *shared_state.lock().dynamic_writer_handle.get() = Some(handle) };
+
+        Ok(Self {
             shared_state,
             writer_details: unsafe { &*details },
             writer_id,
             port_tag,
-        };
-
-        core::sync::atomic::compiler_fence(Ordering::SeqCst);
-
-        unsafe { *new_self.shared_state.lock().dynamic_writer_handle.get() = Some(handle) };
-        Ok(new_self)
+        })
     }
 
     /// Returns the [`UniqueWriterId`] of the [`Writer`]
