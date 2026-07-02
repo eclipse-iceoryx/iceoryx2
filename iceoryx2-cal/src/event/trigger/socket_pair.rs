@@ -34,6 +34,7 @@ use iceoryx2_bb_posix::{
     },
 };
 use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fail;
 
 /// A notification is usually just 1 byte. In highly concurrent scenarios, it is possible
@@ -201,6 +202,12 @@ impl<E: EventState, Storage: DynamicStorage<State<E, SocketPairMgmt>>>
         _config: &Configuration,
     ) -> Result<bool, NamedConceptRemoveError> {
         Ok(true)
+    }
+
+    fn remove_path_hint(
+        _value: &Path,
+    ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
+        Ok(())
     }
 
     fn empty_buffer(&self) -> Result<(), ListenerWaitError> {

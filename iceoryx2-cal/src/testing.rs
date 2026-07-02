@@ -39,5 +39,5 @@ pub fn generate_custom_config<T: NamedConceptMgmt>(
     name: &FileName,
     path: &Path,
 ) -> T::Configuration {
-    T::Configuration::default().prefix(&name).path_hint(&path)
+    T::Configuration::default().prefix(name).path_hint(path)
 }
