@@ -235,14 +235,12 @@ impl<T: Copy + Debug> CommunicationChannelCreator<T, Channel<T>> for Creator<T> 
             "Unable to create root directory \"{}\"",
             self.config.path_hint
         );
-
-        let root_dir_exist = Directory::does_exist(&self.config.path_hint);
-        if root_dir_exist.is_err() {
+        let Ok(root_dir_exist) = Directory::does_exist(&self.config.path_hint) else {
             fail!(from self, with CommunicationChannelCreateError::RootDirectoryCreationFailure,
-                "{} since the system is unable to determine if the directory even exists ({:?}).", dir_msg, root_dir_exist.err());
-        }
+                "{} since the system is unable to determine if the directory even exists.", dir_msg);
+        };
 
-        if !root_dir_exist.unwrap() {
+        if !root_dir_exist {
             match Directory::create(&self.config.path_hint, DIR_PERMISSIONS) {
                 Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => (),
                 Err(e) => {

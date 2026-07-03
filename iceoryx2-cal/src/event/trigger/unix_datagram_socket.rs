@@ -248,14 +248,12 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
 
         // create root directory before the Unix Datagram Receiver
         let dir_msg = format!("Unable to create root directory \"{}\"", config.path_hint);
-
-        let root_dir_exist = Directory::does_exist(&config.path_hint);
-        if root_dir_exist.is_err() {
+        let Ok(root_dir_exist) = Directory::does_exist(&config.path_hint) else {
             fail!(from origin, with ListenerCreateError::RootDirectoryCreationFailure,
-                "{} since the system is unable to determine if the directory even exists ({:?}).", dir_msg, root_dir_exist.err());
-        }
+                "{} since the system is unable to determine if the directory even exists.", dir_msg);
+        };
 
-        if !root_dir_exist.unwrap() {
+        if !root_dir_exist {
             match Directory::create(&config.path_hint, DIR_PERMISSIONS) {
                 Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => (),
                 Err(e) => {

@@ -468,14 +468,12 @@ impl crate::static_storage::StaticStorageBuilder<Storage> for Builder {
     fn create_locked(self) -> Result<Locked, StaticStorageCreateError> {
         // create root directory before File
         let msg = format!("Unable to create root directory \"{}\"", self.config.path);
-
-        let root_dir_exist = Directory::does_exist(&self.config.path);
-        if root_dir_exist.is_err() {
+        let Ok(root_dir_exist) = Directory::does_exist(&self.config.path) else {
             fail!(from self, with StaticStorageCreateError::RootDirectoryCreationFailure,
-                "{} since the system is unable to determine if the directory even exists ({:?}).", msg, root_dir_exist.err());
-        }
+                "{} since the system is unable to determine if the directory even exists.", msg);
+        };
 
-        if !root_dir_exist.unwrap() {
+        if !root_dir_exist {
             match Directory::create(&self.config.path, DIR_PERMISSIONS) {
                 Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => (),
                 Err(e) => {

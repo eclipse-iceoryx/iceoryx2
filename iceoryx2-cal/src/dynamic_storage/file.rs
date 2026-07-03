@@ -308,14 +308,12 @@ impl<T: Send + Sync + Debug + ZeroCopySend> Builder<'_, T> {
 
         // create root directory before the DynamicStorage
         let dir_msg = format!("Unable to create root directory \"{}\"", self.config.path);
-
-        let root_dir_exist = Directory::does_exist(&self.config.path);
-        if root_dir_exist.is_err() {
+        let Ok(root_dir_exist) = Directory::does_exist(&self.config.path) else {
             fail!(from self, with DynamicStorageCreateError::RootDirectoryCreationFailure,
-                "{} since the system is unable to determine if the directory even exists ({:?}).", dir_msg, root_dir_exist.err());
-        }
+                "{} since the system is unable to determine if the directory even exists.", dir_msg);
+        };
 
-        if !root_dir_exist.unwrap() {
+        if !root_dir_exist {
             match Directory::create(&self.config.path, DIR_PERMISSIONS) {
                 Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => (),
                 Err(e) => {
