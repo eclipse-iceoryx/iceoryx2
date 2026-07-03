@@ -15,7 +15,7 @@
 #![allow(unused_variables)]
 
 use windows_sys::Win32::{
-    Foundation::{ERROR_FILE_NOT_FOUND, FALSE},
+    Foundation::{ERROR_FILE_NOT_FOUND, ERROR_PATH_NOT_FOUND, FALSE},
     Security::{DACL_SECURITY_INFORMATION, SetFileSecurityA},
     Storage::FileSystem::{FILE_ATTRIBUTE_DIRECTORY, GetFileAttributesA, INVALID_FILE_ATTRIBUTES},
 };
@@ -35,7 +35,8 @@ pub unsafe fn stat(path: *const c_char, buf: *mut stat_t) -> int {
     }
 
     let (attr, _) = unsafe {
-        win32call! { GetFileAttributesA(path as *const u8), ignore ERROR_FILE_NOT_FOUND}
+        win32call! { GetFileAttributesA(path as *const u8),
+        ignore ERROR_FILE_NOT_FOUND, ERROR_PATH_NOT_FOUND}
     };
     if attr == INVALID_FILE_ATTRIBUTES {
         Errno::set(Errno::ENOENT);
