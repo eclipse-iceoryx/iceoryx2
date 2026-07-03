@@ -42,6 +42,7 @@
 * [#1763](https://github.com/eclipse-iceoryx/iceoryx2/issues/1763) Close `ActiveRequest-PendingResponse` connection when dead process is cleaned up.
 * [#1765](https://github.com/eclipse-iceoryx/iceoryx2/issues/1765) Remove unnecessary `fsync` on file open
 * [#1770](https://github.com/eclipse-iceoryx/iceoryx2/issues/1770) Fix logging in python module.
+* [#1777](https://github.com/eclipse-iceoryx/iceoryx2/issues/1777) Fix service root folder creation named concept of iceoryx2-cal fixing execution on Windows platform.
 * [#1786](https://github.com/eclipse-iceoryx/iceoryx2/issues/1786) Disable transport_compression feature in Zenoh.
 
 ### Refactoring
