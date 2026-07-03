@@ -168,7 +168,6 @@ pub struct Reader<
     shared_state: Service::ArcThreadSafetyPolicy<ReaderSharedState<Service, KeyType>>,
     dynamic_reader_handle: ContainerHandle,
     reader_details: &'static ReaderDetails,
-    reader_id: UniqueReaderId,
 }
 
 impl<
@@ -263,7 +262,6 @@ impl<
 
         Ok(Self {
             shared_state,
-            reader_id,
             reader_details: unsafe { &*details },
             dynamic_reader_handle: handle,
         })
@@ -271,7 +269,7 @@ impl<
 
     /// Returns the [`UniqueReaderId`] of the [`Reader`]
     pub fn id(&self) -> UniqueReaderId {
-        self.reader_id
+        self.reader_details.reader_id
     }
 
     /// Returns the [`PortName`] of the [`Reader`]

@@ -327,7 +327,6 @@ pub struct Client<
     ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
-    client_id: UniqueClientId,
     client_shared_state: Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
     client_details: &'static ClientDetails,
     request_id_counter: AtomicU64,
@@ -621,7 +620,6 @@ impl<
             request_id_counter: AtomicU64::new(0),
             client_shared_state,
             client_details: unsafe { &*details },
-            client_id,
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,
@@ -631,7 +629,7 @@ impl<
 
     /// Returns the [`UniqueClientId`] of the [`Client`]
     pub fn id(&self) -> UniqueClientId {
-        self.client_id
+        self.client_details.client_id
     }
 
     /// Returns the [`PortName`] of the [`Client`]

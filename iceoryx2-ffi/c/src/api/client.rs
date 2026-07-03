@@ -71,7 +71,7 @@ impl ClientUnion {
 #[repr(C)]
 #[repr(align(16))] // alignment of Option<ClientUnion>
 pub struct iox2_client_storage_t {
-    internal: [u8; 248], // magic number obtained with size_of::<Option<ClientUnion>>()
+    internal: [u8; 32], // magic number obtained with size_of::<Option<ClientUnion>>()
 }
 
 #[repr(C)]

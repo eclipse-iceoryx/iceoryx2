@@ -273,9 +273,7 @@ pub struct Notifier<Service: service::Service> {
     event_id_max_value: usize,
     dynamic_notifier_handle: ContainerHandle,
     notifier_details: &'static NotifierDetails,
-    notifier_id: UniqueNotifierId,
     on_drop_notification: Option<EventId>,
-    node_id: UniqueNodeId,
     // IMPORTANT!
     // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
     // port exists and might require cleanup after a crash, the tag must be defined as last member of
@@ -438,15 +436,13 @@ impl<Service: service::Service> Notifier<Service> {
             event_id_max_value: static_config.event_id_max_value,
             dynamic_notifier_handle: handle,
             notifier_details: unsafe { &*details },
-            notifier_id,
             on_drop_notification: None,
-            node_id,
         })
     }
 
     /// Returns the [`UniqueNotifierId`] of the [`Notifier`]
     pub fn id(&self) -> UniqueNotifierId {
-        self.notifier_id
+        self.notifier_details.notifier_id
     }
 
     /// Returns the [`PortName`] of the [`Notifier`]
@@ -517,7 +513,7 @@ impl<Service: service::Service> Notifier<Service> {
 
         for i in 0..listener_connections.len() {
             if let Some(connection) = listener_connections.get(i) {
-                if !(skip_self_deliver && connection.node_id == self.node_id) {
+                if !(skip_self_deliver && connection.node_id == self.notifier_details.node_id) {
                     match connection.notifier.notify(value) {
                         Err(iceoryx2_cal::event::NotifierNotifyError::Disconnected) => {
                             listener_connections.remove(i);

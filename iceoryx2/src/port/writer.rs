@@ -150,7 +150,6 @@ pub struct Writer<
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > {
     shared_state: Service::ArcThreadSafetyPolicy<WriterSharedState<Service, KeyType>>,
-    writer_id: UniqueWriterId,
     writer_details: &'static WriterDetails,
     // IMPORTANT!
     // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
@@ -242,14 +241,13 @@ impl<
         Ok(Self {
             shared_state,
             writer_details: unsafe { &*details },
-            writer_id,
             port_tag,
         })
     }
 
     /// Returns the [`UniqueWriterId`] of the [`Writer`]
     pub fn id(&self) -> UniqueWriterId {
-        self.writer_id
+        self.writer_details.writer_id
     }
 
     /// Returns the [`PortName`] of the [`Writer`]

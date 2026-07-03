@@ -117,7 +117,6 @@ pub struct Listener<Service: service::Service> {
         <Service::Event as iceoryx2_cal::event::Event<RelocatableCountingBitSet>>::Listener,
     >,
     service_state: SharedServiceState<Service, NoResource>,
-    listener_id: UniqueListenerId,
     listener_details: &'static ListenerDetails,
     // IMPORTANT!
     // Fields of a rust struct are dropped in declaration order. Since this tag is our marker that the
@@ -254,7 +253,6 @@ impl<Service: service::Service> Listener<Service> {
             dynamic_listener_handle: handle,
             listener_details: unsafe { &*details },
             listener,
-            listener_id,
         })
     }
 
@@ -314,7 +312,7 @@ impl<Service: service::Service> Listener<Service> {
 
     /// Returns the [`UniqueListenerId`] of the [`Listener`]
     pub fn id(&self) -> UniqueListenerId {
-        self.listener_id
+        self.listener_details.listener_id
     }
 }
 

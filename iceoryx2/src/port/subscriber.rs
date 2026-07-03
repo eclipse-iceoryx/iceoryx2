@@ -47,7 +47,6 @@ use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
-use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::zero_copy_connection::{CHANNEL_STATE_OPEN, ChannelId};
@@ -394,12 +393,7 @@ impl<
 
     /// Returns the [`UniqueSubscriberId`] of the [`Subscriber`]
     pub fn id(&self) -> UniqueSubscriberId {
-        UniqueSubscriberId(UniqueSystemId::from(
-            self.subscriber_shared_state
-                .lock()
-                .receiver
-                .receiver_port_id(),
-        ))
+        self.subscriber_details.subscriber_id
     }
 
     /// Returns the [`PortName`] of the [`Subscriber`]
