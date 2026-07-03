@@ -25,7 +25,7 @@ use iceoryx2_bb_posix::{
     directory::*, file::*, system_configuration::SystemInfo, unix_datagram_socket::*,
 };
 use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_log::{fail, fatal_panic};
+use iceoryx2_log::{fail, fatal_panic, trace};
 
 pub use crate::communication_channel::*;
 use crate::static_storage::file::{
@@ -35,9 +35,15 @@ use crate::static_storage::file::{
 
 #[cfg(not(feature = "dev_permissions"))]
 const SOCKET_PERMISSIONS: Permission = Permission::OWNER_ALL;
+#[cfg(not(feature = "dev_permissions"))]
+const DIR_PERMISSIONS: Permission = Permission::OWNER_ALL
+    .const_bitor(Permission::GROUP_READ)
+    .const_bitor(Permission::GROUP_EXEC);
 
 #[cfg(feature = "dev_permissions")]
 const SOCKET_PERMISSIONS: Permission = Permission::ALL;
+#[cfg(feature = "dev_permissions")]
+const DIR_PERMISSIONS: Permission = Permission::ALL;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Configuration {
@@ -224,6 +230,30 @@ impl<T: Copy + Debug> CommunicationChannelCreator<T, Channel<T>> for Creator<T> 
                 "{} since the channel does not support the safe overflow feature.", msg);
         }
 
+        // create root directory before the Unix Datagram Receiver
+        let dir_msg = format!(
+            "Unable to create root directory \"{}\"",
+            self.config.path_hint
+        );
+
+        let root_dir_exist = Directory::does_exist(&self.config.path_hint);
+        if root_dir_exist.is_err() {
+            fail!(from self, with CommunicationChannelCreateError::RootDirectoryCreationFailure,
+                "{} since the system is unable to determine if the directory even exists ({:?}).", dir_msg, root_dir_exist.err());
+        }
+
+        if !root_dir_exist.unwrap() {
+            match Directory::create(&self.config.path_hint, DIR_PERMISSIONS) {
+                Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => (),
+                Err(e) => {
+                    fail!(from self, with CommunicationChannelCreateError::RootDirectoryCreationFailure,
+                        "{} due to a failure while creating the service root directory ({:?}).", dir_msg, e);
+                }
+            }
+            trace!(from self, "Created service root directory \"{}\" since it did not exist before.", self.config.path_hint);
+        }
+
+        // create Unix Datagram Receiver
         let full_name = self.config.path_for(&self.channel_name);
         let receiver = UnixDatagramReceiverBuilder::new(&full_name)
             .creation_mode(CreationMode::CreateExclusive)
