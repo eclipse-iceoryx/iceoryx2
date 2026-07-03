@@ -24,7 +24,7 @@ cd $(git rev-parse --show-toplevel)
 
 RET_VAL=0
 
-FILES=$(find . -type f -not -path "./git/*" -not -path "*/target/*" -not -path "*/.env/*" -not -path "*/.poetry/*" | grep -E ${FILE_FILTER}) | grep -Ev ${FILE_EXCLUDE}
+FILES=$(find . -type f -not -path "./git/*" -not -path "*/target/*" -not -path "*/.env/*" -not -path "*/.poetry/*" | grep -E ${FILE_FILTER} | grep -Ev ${FILE_EXCLUDE})
 
 for FILE in $FILES
 do
