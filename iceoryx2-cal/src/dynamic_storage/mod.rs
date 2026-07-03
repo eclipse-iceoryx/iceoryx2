@@ -97,6 +97,7 @@ pub enum DynamicStorageCreateError {
     AlreadyExists,
     InsufficientPermissions,
     InitializationFailed,
+    RootDirectoryCreationFailure,
     InternalError,
 }
 

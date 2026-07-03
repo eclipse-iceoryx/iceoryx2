@@ -31,6 +31,7 @@ use iceoryx2_bb_elementary_traits::{
     testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
 };
 use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_system_types::path::Path;
 
 #[derive(Debug)]
 pub(crate) struct Stub {}
@@ -56,6 +57,12 @@ impl<
         _config: &Configuration,
     ) -> Result<bool, NamedConceptRemoveError> {
         Ok(true)
+    }
+
+    fn remove_path_hint(
+        _value: &Path,
+    ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
+        Ok(())
     }
 
     fn create(
