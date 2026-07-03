@@ -14,7 +14,7 @@
 set -e
 
 FILE_FILTER="(\.(rs|h|h.in|hh|hh.in|hpp|hpp.in|hxx|hxx.in|inl|c|cc|cpp|cxx|cmake|cmake.in|bazel|py|sh|exp|just)|CMakeLists.txt|justfile)$"
-FILE_EXCLUDE="(*generated*)"
+FILE_EXCLUDE="(generated)"
 
 COLOR_RESET='\033[0m'
 COLOR_GREEN='\033[1;32m'

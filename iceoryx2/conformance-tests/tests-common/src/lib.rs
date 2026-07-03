@@ -32,6 +32,7 @@ mod sample_tests;
 mod server_tests;
 mod service_blackboard_tests;
 mod service_event_tests;
+mod service_publish_subscribe_flatbuffer_tests;
 mod service_publish_subscribe_tests;
 mod service_request_response_builder_tests;
 mod service_request_response_tests;
