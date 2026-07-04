@@ -32,6 +32,7 @@ rust_library(
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-log/log:iceoryx2-log",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
+        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
         "//iceoryx2-pal/os-api:iceoryx2-pal-os-api",
         "//iceoryx2-pal/posix:iceoryx2-pal-posix",
@@ -47,7 +48,9 @@ rust_test(
     crate_features = ["std"],
     deps = [
         "//iceoryx2-bb/linux/tests-common:iceoryx2-bb-linux-tests-common",
+        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
+        "//iceoryx2-bb/flatbuffers/tests-common:iceoryx2-bb-flatbuffers-tests-common",
     ],
     proc_macro_deps = [
         "//iceoryx2-bb/testing-macros:iceoryx2-bb-testing-macros",
