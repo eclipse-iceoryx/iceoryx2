@@ -10,9 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate alloc;
+
 pub mod blackboard;
 pub mod publish_subscribe;
 
+use alloc::format;
+use alloc::string::ToString;
 use core::fmt::Debug;
 use core::ptr::NonNull;
 use iceoryx2_bb_container::semantic_string::SemanticString;

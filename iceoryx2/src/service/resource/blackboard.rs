@@ -22,6 +22,7 @@ use crate::service::static_config::StaticConfig;
 use crate::service::{
     self, resource::ServiceResource, static_config::message_type_details::TypeDetail,
 };
+use alloc::format;
 use alloc::sync::Arc;
 use core::alloc::Layout;
 use core::mem::MaybeUninit;

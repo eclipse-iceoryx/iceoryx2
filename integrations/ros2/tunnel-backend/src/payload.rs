@@ -16,7 +16,7 @@
 use core::mem::MaybeUninit;
 
 use iceoryx2::service::Service;
-use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
+use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2_services_tunnel_backend::types::publish_subscribe::{SampleMut, SampleMutUninit};
 
 // The byte views rely on the marker being exactly one byte.
