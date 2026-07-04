@@ -23,3 +23,7 @@ std = [
 iceoryx2-services-common = { workspace = true }
 iceoryx2 = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-testing = { workspace = true }

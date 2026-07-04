@@ -1554,7 +1554,8 @@ version = "0.9.999"
 dependencies = [
  "iceoryx2",
  "iceoryx2-bb-posix",
- "iceoryx2-services-common",
+ "iceoryx2-bb-testing",
+ "serde",
 ]
 
 [[package]]
