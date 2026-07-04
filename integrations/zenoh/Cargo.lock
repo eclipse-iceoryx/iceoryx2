@@ -917,6 +917,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d674e81391d1e1ab681a28d99df07927c6d4aa5b027d7da16ba32d1d21ecd99"
 
 [[package]]
+name = "flatbuffers"
+version = "25.12.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "35f6839d7b3b98adde531effaf34f0c2badc6f4735d26fe74709d8e513a96ef3"
+dependencies = [
+ "bitflags",
+ "rustc_version",
+]
+
+[[package]]
 name = "flate2"
 version = "1.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1285,11 +1295,13 @@ dependencies = [
 name = "iceoryx2"
 version = "0.9.999"
 dependencies = [
+ "flatbuffers",
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",
  "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-elementary-traits",
+ "iceoryx2-bb-flatbuffers",
  "iceoryx2-bb-lock-free",
  "iceoryx2-bb-loggers",
  "iceoryx2-bb-memory",
@@ -1349,6 +1361,17 @@ dependencies = [
 [[package]]
 name = "iceoryx2-bb-elementary-traits"
 version = "0.9.999"
+
+[[package]]
+name = "iceoryx2-bb-flatbuffers"
+version = "0.9.999"
+dependencies = [
+ "iceoryx2-bb-container",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-system-types",
+ "iceoryx2-log",
+]
 
 [[package]]
 name = "iceoryx2-bb-linux"
