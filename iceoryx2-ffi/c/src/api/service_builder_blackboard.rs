@@ -413,19 +413,15 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_key_eq_comp
                     ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
                 let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
-                service_builder_struct.set(
-                    ServiceBuilderUnion::new_local_blackboard_creator(
-                        service_builder.__internal_set_key_eq_cmp_func(Box::new(
-                            move |lhs, rhs| {
-                                iceoryx2::service::resource::blackboard::KeyMemory::<
+                service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
+                    service_builder.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                        iceoryx2::service::resource::blackboard::KeyMemory::<
                                     MAX_BLACKBOARD_KEY_SIZE,
                                 >::key_eq_comparison(
                                     lhs, rhs, &*eq_func
                                 )
-                            },
-                        )),
-                    ),
-                );
+                    })),
+                ));
             }
         }
     }
