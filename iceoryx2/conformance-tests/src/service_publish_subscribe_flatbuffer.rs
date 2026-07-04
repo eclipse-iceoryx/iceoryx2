@@ -71,7 +71,7 @@ pub mod service_publish_subscribe_flatbuffer {
             .publish_subscribe::<Flatbuffer<u64>>()
             .create();
 
-        assert_that!(sut.err(), eq Some(PublishSubscribeCreateError::InternalFailure));
+        assert_that!(sut.err(), eq Some(PublishSubscribeCreateError::UnableToAcquireTypeDefinition));
     }
 
     #[conformance_test]
@@ -108,7 +108,7 @@ pub mod service_publish_subscribe_flatbuffer {
             .publish_subscribe::<Flatbuffer<u64>>()
             .open();
 
-        assert_that!(sut.err(), eq Some(PublishSubscribeOpenError::InternalFailure));
+        assert_that!(sut.err(), eq Some(PublishSubscribeOpenError::UnableToAcquireTypeDefinition));
     }
 
     #[conformance_test]

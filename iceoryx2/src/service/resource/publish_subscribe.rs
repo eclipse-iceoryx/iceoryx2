@@ -60,12 +60,12 @@ enum SchemaPathError {
 impl From<SchemaPathError> for ServiceCreateError {
     fn from(value: SchemaPathError) -> Self {
         match value {
-            SchemaPathError::InternalError
-            | SchemaPathError::NoFittingSchemaFileFound
-            | SchemaPathError::NoFlatbufferSchemaSearchPathConfigured => {
-                ServiceCreateError::InternalFailure
-            }
+            SchemaPathError::InternalError => ServiceCreateError::InternalFailure,
             SchemaPathError::InsufficientPermissions => ServiceCreateError::InsufficientPermissions,
+            SchemaPathError::NoFittingSchemaFileFound
+            | SchemaPathError::NoFlatbufferSchemaSearchPathConfigured => {
+                ServiceCreateError::UnableToAcquireTypeDefinition
+            }
         }
     }
 }
@@ -73,12 +73,12 @@ impl From<SchemaPathError> for ServiceCreateError {
 impl From<SchemaPathError> for ServiceOpenError {
     fn from(value: SchemaPathError) -> Self {
         match value {
-            SchemaPathError::InternalError
-            | SchemaPathError::NoFittingSchemaFileFound
-            | SchemaPathError::NoFlatbufferSchemaSearchPathConfigured => {
-                ServiceOpenError::InternalFailure
-            }
+            SchemaPathError::InternalError => ServiceOpenError::InternalFailure,
             SchemaPathError::InsufficientPermissions => ServiceOpenError::InsufficientPermissions,
+            SchemaPathError::NoFittingSchemaFileFound
+            | SchemaPathError::NoFlatbufferSchemaSearchPathConfigured => {
+                ServiceOpenError::UnableToAcquireTypeDefinition
+            }
         }
     }
 }

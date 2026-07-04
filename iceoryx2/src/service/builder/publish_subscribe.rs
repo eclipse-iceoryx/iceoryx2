@@ -87,6 +87,11 @@ pub enum PublishSubscribeOpenError {
     UnableToCreateServiceTag,
     /// The iceoryx2 service version does not match the one of the [`Service`].
     VersionMismatch,
+    /// When using a serialized format such as FlatBuffers, the iceoryx2 service
+    /// requires the type definition. By default, it uses the lookup path defined in
+    /// the config. If no type definition file was specified in the service builder
+    /// and no file could be found, this error is returned.
+    UnableToAcquireTypeDefinition,
 }
 
 impl core::fmt::Display for PublishSubscribeOpenError {
@@ -143,6 +148,9 @@ impl From<ServiceOpenError> for PublishSubscribeOpenError {
             }
             ServiceOpenError::VersionMismatch => PublishSubscribeOpenError::VersionMismatch,
             ServiceOpenError::Interrupt => PublishSubscribeOpenError::Interrupt,
+            ServiceOpenError::UnableToAcquireTypeDefinition => {
+                PublishSubscribeOpenError::UnableToAcquireTypeDefinition
+            }
         }
     }
 }
@@ -184,6 +192,9 @@ impl From<PublishSubscribeOpenError> for ServiceOpenError {
             | PublishSubscribeOpenError::IncompatibleOverflowBehavior => {
                 ServiceOpenError::InternalFailure
             }
+            PublishSubscribeOpenError::UnableToAcquireTypeDefinition => {
+                ServiceOpenError::UnableToAcquireTypeDefinition
+            }
         }
     }
 }
@@ -214,6 +225,11 @@ pub enum PublishSubscribeCreateError {
     UnableToCreateServiceTag,
     /// The [`Service`]s config could not be created and written to the static service configuration.
     ServiceConfigCouldNotBeCreated,
+    /// When using a serialized format such as FlatBuffers, the iceoryx2 service
+    /// requires the type definition. By default, it uses the lookup path defined in
+    /// the config. If no type definition file was specified in the service builder
+    /// and no file could be found, this error is returned.
+    UnableToAcquireTypeDefinition,
 }
 
 impl core::fmt::Display for PublishSubscribeCreateError {
@@ -245,6 +261,9 @@ impl From<ServiceCreateError> for PublishSubscribeCreateError {
                 PublishSubscribeCreateError::UnableToCreateServiceTag
             }
             ServiceCreateError::Interrupt => PublishSubscribeCreateError::Interrupt,
+            ServiceCreateError::UnableToAcquireTypeDefinition => {
+                PublishSubscribeCreateError::UnableToAcquireTypeDefinition
+            }
         }
     }
 }
@@ -273,6 +292,9 @@ impl From<PublishSubscribeCreateError> for ServiceCreateError {
             | PublishSubscribeCreateError::HangsInCreation
             | PublishSubscribeCreateError::SubscriberBufferMustBeLargerThanHistorySize => {
                 ServiceCreateError::InternalFailure
+            }
+            PublishSubscribeCreateError::UnableToAcquireTypeDefinition => {
+                ServiceCreateError::UnableToAcquireTypeDefinition
             }
         }
     }

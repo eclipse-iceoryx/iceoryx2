@@ -81,6 +81,8 @@ pub enum iox2_pub_sub_open_or_create_error_e {
     O_IS_MARKED_FOR_DESTRUCTION,
     #[CStr = "interrupt"]
     O_INTERRUPT,
+    #[CStr = "unable to acquire type definition"]
+    O_UNABLE_TO_ACQUIRE_TYPE_DEFINITION,
     #[CStr = "service in corrupted state"]
     C_SERVICE_IN_CORRUPTED_STATE,
     #[CStr = "subscriber buffer must be larger than history size"]
@@ -101,6 +103,8 @@ pub enum iox2_pub_sub_open_or_create_error_e {
     C_SERVICE_CONFIG_COULD_NOT_BE_CREATED,
     #[CStr = "interrupt"]
     C_INTERRUPT,
+    #[CStr = "unable to acquire type definition"]
+    C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION,
     #[CStr = "same service is created and removed repeatedly"]
     SYSTEM_IN_FLUX,
 }
@@ -164,6 +168,7 @@ impl IntoCInt for PublishSubscribeOpenError {
          PublishSubscribeOpenError::VersionMismatch => {
              iox2_pub_sub_open_or_create_error_e::O_VERSION_MISMATCH
          }
+         PublishSubscribeOpenError::UnableToAcquireTypeDefinition => iox2_pub_sub_open_or_create_error_e::O_UNABLE_TO_ACQUIRE_TYPE_DEFINITION
         }) as c_int
     }
 }
@@ -197,6 +202,7 @@ impl IntoCInt for PublishSubscribeCreateError {
          PublishSubscribeCreateError::ServiceConfigCouldNotBeCreated => {
              iox2_pub_sub_open_or_create_error_e::C_SERVICE_CONFIG_COULD_NOT_BE_CREATED
          }
+         PublishSubscribeCreateError::UnableToAcquireTypeDefinition => iox2_pub_sub_open_or_create_error_e::C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION
         }) as c_int
     }
 }

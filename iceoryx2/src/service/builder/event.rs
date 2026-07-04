@@ -124,7 +124,9 @@ impl From<ServiceOpenError> for EventOpenError {
             }
             ServiceOpenError::IncompatiblePayload => EventOpenError::IncompatibleMessagingPattern,
             ServiceOpenError::InsufficientPermissions => EventOpenError::InsufficientPermissions,
-            ServiceOpenError::InternalFailure => EventOpenError::InternalFailure,
+            ServiceOpenError::InternalFailure | ServiceOpenError::UnableToAcquireTypeDefinition => {
+                EventOpenError::InternalFailure
+            }
             ServiceOpenError::IsMarkedForDestruction => EventOpenError::IsMarkedForDestruction,
             ServiceOpenError::ServiceInCorruptedState => EventOpenError::ServiceInCorruptedState,
             ServiceOpenError::UnableToCreateServiceTag => EventOpenError::UnableToCreateServiceTag,
@@ -191,7 +193,10 @@ impl From<ServiceCreateError> for EventCreateError {
             ServiceCreateError::InsufficientPermissions => {
                 EventCreateError::InsufficientPermissions
             }
-            ServiceCreateError::InternalFailure => EventCreateError::InternalFailure,
+            ServiceCreateError::InternalFailure
+            | ServiceCreateError::UnableToAcquireTypeDefinition => {
+                EventCreateError::InternalFailure
+            }
             ServiceCreateError::IsBeingCreatedByAnotherInstance => {
                 EventCreateError::IsBeingCreatedByAnotherInstance
             }

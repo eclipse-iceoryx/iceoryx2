@@ -133,6 +133,7 @@ pub enum ServiceCreateError {
     UnableToCreateServiceTag,
     ServiceConfigCouldNotBeCreated,
     Interrupt,
+    UnableToAcquireTypeDefinition,
 }
 
 impl From<ServiceState> for ServiceCreateError {
@@ -165,6 +166,7 @@ pub enum ServiceOpenError {
     IncompatiblePayload,
     InsufficientPermissions,
     VersionMismatch,
+    UnableToAcquireTypeDefinition,
 }
 
 impl From<ServiceState> for ServiceOpenError {
@@ -394,7 +396,8 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                         | ServiceOpenError::IncompatiblePayload
                         | ServiceOpenError::UnableToCreateServiceTag
                         | ServiceOpenError::Interrupt
-                        | ServiceOpenError::VersionMismatch => {
+                        | ServiceOpenError::VersionMismatch
+                        | ServiceOpenError::UnableToAcquireTypeDefinition => {
                             return Err(Into::<ErrorTypeOpenOrCreate>::into(e));
                         }
                     }
@@ -415,7 +418,8 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                             | ServiceCreateError::ServiceInCorruptedState
                             | ServiceCreateError::UnableToCreateServiceTag
                             | ServiceCreateError::Interrupt
-                            | ServiceCreateError::ServiceConfigCouldNotBeCreated => {
+                            | ServiceCreateError::ServiceConfigCouldNotBeCreated
+                            | ServiceCreateError::UnableToAcquireTypeDefinition => {
                                 return Err(Into::<ErrorTypeOpenOrCreate>::into(e));
                             }
                         }
