@@ -23,11 +23,10 @@ use iceoryx2::node::{Node, NodeState, NodeView};
 use iceoryx2::service::Service;
 use iceoryx2::service::ServiceDetails;
 use iceoryx2::service::service_hash::ServiceHash;
-use iceoryx2::service::static_config::StaticConfig;
-use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2_log::{fail, info};
-use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
 use iceoryx2_services_tunnel_backend::traits::{Backend, Discovery};
+use iceoryx2_services_tunnel_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
+use iceoryx2_services_tunnel_backend::types::service_description::ServiceDescription;
 
 use crate::bridge::Bridge;
 use crate::discovery::LocalDiscoveryStrategy;
@@ -62,7 +61,6 @@ pub enum DiscoveryError {
     EventPortsCreation,
     EventRelayCreation,
     DiscoveryAnnouncement,
-    UnsupportedMessagingPattern,
 }
 
 impl core::fmt::Display for DiscoveryError {
@@ -195,7 +193,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         fail!(
             from origin,
             when backend.discovery().discover(|event| {
-                on_discovery_event::<S, B>(node, backend, &mut update, services_filter, event)
+                on_discovery_update::<S, B>(node, backend, &mut update, services_filter, event)
             }),
             with DiscoveryError::DiscoveryOverBackend,
             "Failed to discover services via Backend"
@@ -220,7 +218,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         fail!(
             from origin,
             when subscriber.discover(|event| {
-                on_discovery_event::<S, B>(node, backend, &mut update, services_filter, event)
+                on_discovery_update::<S, B>(node, backend, &mut update, services_filter, event)
             }),
             with DiscoveryError::DiscoveryOverService,
             "Failed to discover services via subscriber to discovery service"
@@ -256,13 +254,11 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
             Origin::Local,
             tracker
                 .iter()
-                .filter(|details| {
-                    is_locally_offered(details, node.id())
-                        && allowed(&details.static_details, services_filter)
-                })
-                .map(|details| &details.static_details),
-            |config| announce_added::<S, B>(node, backend, config),
-            |config| announce_removed::<S, B>(node, backend, config),
+                .filter(|details| is_locally_offered(details, node.id()))
+                .filter_map(|details| ServiceDescription::try_from(&details.static_details).ok())
+                .filter(|description| allowed(description, services_filter)),
+            |description| announce_added::<S, B>(node, backend, description),
+            |description| announce_removed::<S, B>(node, backend, description),
         )
     }
 
@@ -282,17 +278,17 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         });
 
         // Open bridges for newly-offered services.
-        for (hash, static_config) in snapshot.iter() {
+        for (hash, description) in snapshot.iter() {
             if self.bridges.contains_key(hash) {
                 continue;
             }
             info!(
                 from log_origin,
                 "Opening bridge: {}({})",
-                static_config.messaging_pattern(),
-                static_config.name()
+                description.pattern,
+                description.name
             );
-            let bridge = Bridge::open(&self.node, &self.backend, static_config)?;
+            let bridge = Bridge::open(&self.node, &self.backend, description)?;
             self.bridges.insert(*hash, bridge);
         }
 
@@ -320,34 +316,33 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
 
 /// Updates the discovery state and announces local-side 0 → 1 and 1 → 0
 /// transitions.
-fn on_discovery_event<S: Service, B: Backend<S>>(
+fn on_discovery_update<S: Service, B: Backend<S>>(
     node: &Node<S>,
     backend: &B,
-    update: &mut DeltaUpdate<'_>,
-    services_filter: &Option<BTreeSet<String>>,
-    event: DiscoveryEvent,
+    state: &mut DeltaUpdate<'_>,
+    allowlist: &Option<BTreeSet<String>>,
+    update: DiscoveryUpdate,
 ) -> Result<(), DiscoveryError> {
-    match event {
-        DiscoveryEvent::Added(static_config) => {
-            if !allowed(&static_config, services_filter) {
+    match update {
+        DiscoveryUpdate::Added(description) => {
+            if !allowed(&description, allowlist) {
                 return Ok(());
             }
 
             // Announce on local 0 → 1 transitions, then record as offered.
-            let hash = *static_config.service_hash();
-            let newly_offered_locally =
-                update.origin() == Origin::Local && !update.is_offered(&hash);
+            let hash = description.service_hash;
+            let newly_offered_locally = state.origin() == Origin::Local && !state.is_offered(&hash);
             if newly_offered_locally {
-                announce_added::<S, B>(node, backend, &static_config)?;
+                announce_added::<S, B>(node, backend, &description)?;
             }
-            update.set_offered(static_config);
+            state.set_offered(description);
         }
-        DiscoveryEvent::Removed(hash) => {
+        DiscoveryUpdate::Removed(hash) => {
             // Announce on local 1 → 0 transitions.
-            let removed_config = update.set_not_offered(&hash);
-            if update.origin() == Origin::Local {
-                if let Some(static_config) = &removed_config {
-                    announce_removed::<S, B>(node, backend, static_config)?;
+            let removed_description = state.set_not_offered(&hash);
+            if state.origin() == Origin::Local {
+                if let Some(description) = &removed_description {
+                    announce_removed::<S, B>(node, backend, description)?;
                 }
             }
         }
@@ -356,38 +351,32 @@ fn on_discovery_event<S: Service, B: Backend<S>>(
     Ok(())
 }
 
-/// Whether the tunnel should offer `static_config`: a supported messaging
-/// pattern (publish-subscribe or event) that passes the optional services
-/// allowlist.
-fn allowed(static_config: &StaticConfig, services_filter: &Option<BTreeSet<String>>) -> bool {
-    let supported_pattern = matches!(
-        static_config.messaging_pattern(),
-        MessagingPattern::PublishSubscribe(_) | MessagingPattern::Event(_)
-    );
-    let in_allowlist = match services_filter {
-        Some(allowlist) => allowlist.contains(static_config.name().as_str()),
+/// Whether the tunnel should offer `description` i.e. passes the optional
+/// services allowlist.
+fn allowed(description: &ServiceDescription, allowlist: &Option<BTreeSet<String>>) -> bool {
+    match allowlist {
+        Some(allowlist) => allowlist.contains(description.name.as_str()),
         None => true,
-    };
-    supported_pattern && in_allowlist
+    }
 }
 
 /// Broadcasts a service's availability to remote peers over the backend.
 fn announce_added<S: Service, B: Backend<S>>(
     node: &Node<S>,
     backend: &B,
-    static_config: &StaticConfig,
+    description: &ServiceDescription,
 ) -> Result<(), DiscoveryError> {
     let origin = format!("Tunnel({})::announce_added", node.id());
 
     info!(
         from origin,
         "Announcing addition: {}({})",
-        static_config.messaging_pattern(),
-        static_config.name()
+        description.pattern,
+        description.name
     );
     fail!(
         from origin,
-        when backend.discovery().announce(DiscoveryEventRef::Added(static_config)),
+        when backend.discovery().announce(DiscoveryUpdateRef::Added(description)),
         with DiscoveryError::DiscoveryAnnouncement,
         "Failed to announce service over backend"
     );
@@ -398,18 +387,18 @@ fn announce_added<S: Service, B: Backend<S>>(
 fn announce_removed<S: Service, B: Backend<S>>(
     node: &Node<S>,
     backend: &B,
-    static_config: &StaticConfig,
+    description: &ServiceDescription,
 ) -> Result<(), DiscoveryError> {
     let origin = format!("Tunnel({})::announce_removed", node.id());
     info!(
         from origin,
         "Announcing removal: {}({})",
-        static_config.messaging_pattern(),
-        static_config.name()
+        description.pattern,
+        description.name
     );
     fail!(
         from origin,
-        when backend.discovery().announce(DiscoveryEventRef::Removed(static_config.service_hash())),
+        when backend.discovery().announce(DiscoveryUpdateRef::Removed(&description.service_hash)),
         with DiscoveryError::DiscoveryAnnouncement,
         "Failed to announce service removal over backend"
     );

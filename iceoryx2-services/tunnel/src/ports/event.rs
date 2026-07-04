@@ -17,9 +17,12 @@ use iceoryx2::{
     node::Node,
     port::{listener::Listener, notifier::Notifier},
     prelude::EventId,
-    service::{Service, static_config::StaticConfig},
+    service::{Service, builder::event, service_name::ServiceName},
 };
 use iceoryx2_log::{fail, trace};
+use iceoryx2_services_tunnel_backend::types::service_description::{
+    EventDescription, EventSettings,
+};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -66,46 +69,46 @@ impl core::error::Error for ReceiveError {}
 
 #[derive(Debug)]
 pub(crate) struct EventPorts<S: Service> {
-    pub(crate) static_config: StaticConfig,
+    pub(crate) name: ServiceName,
     pub(crate) notifier: Notifier<S>,
     pub(crate) listener: Listener<S>,
 }
 
 impl<S: Service> EventPorts<S> {
-    pub(crate) fn new(static_config: &StaticConfig, node: &Node<S>) -> Result<Self, CreationError> {
+    pub(crate) fn new(
+        name: &ServiceName,
+        description: &EventDescription,
+        node: &Node<S>,
+    ) -> Result<Self, CreationError> {
         let origin = format!("EventPorts<{}>::new", core::any::type_name::<S>());
 
-        let event_config = static_config.event();
+        let builder = node.service_builder(name).event();
+        let builder = match &description.settings {
+            Some(settings) => apply_settings(builder, settings),
+            // Use defaults if no settings specified.
+            None => builder,
+        };
+
         let service = fail!(
             from origin,
-            when node
-                .service_builder(static_config.name())
-                .event()
-                .max_nodes(event_config.max_nodes())
-                .max_listeners(event_config.max_listeners())
-                .max_notifiers(event_config.max_notifiers())
-                .event_id_max_value(event_config.event_id_max_value())
-                .open_or_create(),
+            when builder.open_or_create(),
             with CreationError::Service,
-            "Failed to open or create service {}({})", static_config.messaging_pattern(), static_config.name()
+            "Failed to open or create service Event({})", name
         );
-
         let notifier = fail!(
             from origin,
             when service.notifier_builder().create(),
             with CreationError::Notifier,
-            "Failed to create Notifier for {}({})", static_config.messaging_pattern(), static_config.name()
+            "Failed to create Notifier for Event({})", name
         );
-
         let listener = fail!(
             from origin,
             when service.listener_builder().create(),
             with CreationError::Listener,
-            "Failed to create Listener for {}({})", static_config.messaging_pattern(), static_config.name()
+            "Failed to create Listener for Event({})", name
         );
-
         Ok(EventPorts {
-            static_config: static_config.clone(),
+            name: *name,
             notifier,
             listener,
         })
@@ -129,12 +132,7 @@ impl<S: Service> EventPorts<S> {
 
             match event_id {
                 Some(event_id) => {
-                    trace!(
-                        from self,
-                        "Sending {}({})",
-                        self.static_config.messaging_pattern(),
-                        self.static_config.name()
-                    );
+                    trace!(from self, "Sending Event({})", self.name);
 
                     fail!(
                         from self,
@@ -173,12 +171,7 @@ impl<S: Service> EventPorts<S> {
 
         // Notify all ids once
         for event_id in received_ids {
-            trace!(
-                from self,
-                "Received {}({})",
-                self.static_config.messaging_pattern(),
-                self.static_config.name()
-            );
+            trace!(from self, "Received Event({})", self.name);
             fail!(
                 from self,
                 when propagate(event_id),
@@ -190,5 +183,32 @@ impl<S: Service> EventPorts<S> {
         }
 
         Ok(propagated)
+    }
+}
+
+fn apply_settings<S: Service>(
+    builder: event::Builder<S>,
+    settings: &EventSettings,
+) -> event::Builder<S> {
+    let builder = builder
+        .max_nodes(settings.max_nodes)
+        .max_listeners(settings.max_listeners)
+        .max_notifiers(settings.max_notifiers)
+        .event_id_max_value(settings.event_id_max_value);
+    let builder = match settings.deadline {
+        Some(deadline) => builder.deadline(deadline),
+        None => builder.disable_deadline(),
+    };
+    let builder = match settings.notifier_created_event {
+        Some(value) => builder.notifier_created_event(EventId::new(value)),
+        None => builder.disable_notifier_created_event(),
+    };
+    let builder = match settings.notifier_dropped_event {
+        Some(value) => builder.notifier_dropped_event(EventId::new(value)),
+        None => builder.disable_notifier_dropped_event(),
+    };
+    match settings.notifier_dead_event {
+        Some(value) => builder.notifier_dead_event(EventId::new(value)),
+        None => builder.disable_notifier_dead_event(),
     }
 }

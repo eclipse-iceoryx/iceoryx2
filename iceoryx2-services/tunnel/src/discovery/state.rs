@@ -13,7 +13,7 @@
 use alloc::collections::BTreeMap;
 
 use iceoryx2::service::service_hash::ServiceHash;
-use iceoryx2::service::static_config::StaticConfig;
+use iceoryx2_services_tunnel_backend::types::service_description::ServiceDescription;
 
 /// Side of the system that a discovery event refers to.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -26,7 +26,7 @@ pub(crate) enum Origin {
 
 #[derive(Debug)]
 struct OfferedService {
-    static_config: StaticConfig,
+    description: ServiceDescription,
     last_seen: u64,
 }
 
@@ -44,50 +44,50 @@ impl OfferedServices {
         self.epoch
     }
 
-    /// Records `config` as offered, stamping it with `epoch`. The caller passes
-    /// its session epoch so all updates in a session share one stamp.
-    fn insert(&mut self, config: StaticConfig, epoch: u64) {
+    /// Records `description` as offered, stamping it with `epoch`. The caller
+    /// passes its session epoch so all updates in a session share one stamp.
+    fn insert(&mut self, description: ServiceDescription, epoch: u64) {
         self.offered.insert(
-            *config.service_hash(),
+            description.service_hash,
             OfferedService {
-                static_config: config,
+                description,
                 last_seen: epoch,
             },
         );
     }
 
-    /// Removes `hash`, returning its [`StaticConfig`] if it was offered.
-    fn remove(&mut self, hash: &ServiceHash) -> Option<StaticConfig> {
-        self.offered.remove(hash).map(|o| o.static_config)
+    /// Removes `hash`, returning its [`ServiceDescription`] if it was offered.
+    fn remove(&mut self, hash: &ServiceHash) -> Option<ServiceDescription> {
+        self.offered.remove(hash).map(|o| o.description)
     }
 
     fn contains(&self, hash: &ServiceHash) -> bool {
         self.offered.contains_key(hash)
     }
 
-    fn iter(&self) -> impl Iterator<Item = (&ServiceHash, &StaticConfig)> {
+    fn iter(&self) -> impl Iterator<Item = (&ServiceHash, &ServiceDescription)> {
         self.offered
             .iter()
-            .map(|(hash, offered_service)| (hash, &offered_service.static_config))
+            .map(|(hash, offered_service)| (hash, &offered_service.description))
     }
 
     /// Reconciles the offered services, taking an external collection as the
     /// target.
-    fn reconcile<'c, E>(
+    fn reconcile<E>(
         &mut self,
-        target: impl Iterator<Item = &'c StaticConfig>,
-        mut on_added: impl FnMut(&StaticConfig) -> Result<(), E>,
-        mut on_removed: impl FnMut(&StaticConfig) -> Result<(), E>,
+        target: impl Iterator<Item = ServiceDescription>,
+        mut on_added: impl FnMut(&ServiceDescription) -> Result<(), E>,
+        mut on_removed: impl FnMut(&ServiceDescription) -> Result<(), E>,
     ) -> Result<(), E> {
         let epoch = self.next_epoch();
 
-        for static_config in target {
-            let hash = *static_config.service_hash();
+        for description in target {
+            let hash = description.service_hash;
             if let Some(offered_service) = self.offered.get_mut(&hash) {
                 offered_service.last_seen = epoch;
             } else {
-                on_added(static_config)?;
-                self.insert(static_config.clone(), epoch);
+                on_added(&description)?;
+                self.insert(description, epoch);
             }
         }
 
@@ -97,7 +97,7 @@ impl OfferedServices {
                 true
             } else {
                 if result.is_ok() {
-                    result = on_removed(&offered_service.static_config);
+                    result = on_removed(&offered_service.description);
                 }
                 false
             }
@@ -115,7 +115,7 @@ pub(crate) struct Snapshot<'a> {
 impl<'a> Snapshot<'a> {
     /// All offered services. A service offered by both sides
     /// appears only once.
-    pub(crate) fn iter(&self) -> impl Iterator<Item = (&'a ServiceHash, &'a StaticConfig)> {
+    pub(crate) fn iter(&self) -> impl Iterator<Item = (&'a ServiceHash, &'a ServiceDescription)> {
         let local = self.local;
         local.iter().chain(
             self.remote
@@ -149,14 +149,14 @@ impl DeltaUpdate<'_> {
         self.offered_services.contains(hash)
     }
 
-    /// Records `static_config` as offered, stamped with this handle's epoch.
-    pub(crate) fn set_offered(&mut self, static_config: StaticConfig) {
-        self.offered_services.insert(static_config, self.epoch);
+    /// Records `description` as offered, stamped with this handle's epoch.
+    pub(crate) fn set_offered(&mut self, description: ServiceDescription) {
+        self.offered_services.insert(description, self.epoch);
     }
 
-    /// Marks `hash` as no longer offered, returning its [`StaticConfig`] if it
-    /// was offered.
-    pub(crate) fn set_not_offered(&mut self, hash: &ServiceHash) -> Option<StaticConfig> {
+    /// Marks `hash` as no longer offered, returning its [`ServiceDescription`]
+    /// if it was offered.
+    pub(crate) fn set_not_offered(&mut self, hash: &ServiceHash) -> Option<ServiceDescription> {
         self.offered_services.remove(hash)
     }
 }
@@ -187,12 +187,12 @@ impl DiscoveryState {
 
     /// Forces `origin`'s offerings to match an external target set, calling
     /// the provided callbacks on addition or removal.
-    pub(crate) fn force_update<'c, E>(
+    pub(crate) fn force_update<E>(
         &mut self,
         origin: Origin,
-        target: impl Iterator<Item = &'c StaticConfig>,
-        on_added: impl FnMut(&StaticConfig) -> Result<(), E>,
-        on_removed: impl FnMut(&StaticConfig) -> Result<(), E>,
+        target: impl Iterator<Item = ServiceDescription>,
+        on_added: impl FnMut(&ServiceDescription) -> Result<(), E>,
+        on_removed: impl FnMut(&ServiceDescription) -> Result<(), E>,
     ) -> Result<(), E> {
         match origin {
             Origin::Local => self.local.reconcile(target, on_added, on_removed),

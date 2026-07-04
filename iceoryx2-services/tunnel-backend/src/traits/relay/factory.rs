@@ -13,10 +13,11 @@
 use core::error::Error;
 use core::fmt::Debug;
 
-use iceoryx2::service::{Service, static_config::StaticConfig};
+use iceoryx2::service::Service;
 
 use crate::traits::EventRelay;
 use crate::traits::PublishSubscribeRelay;
+use crate::types::service_description::ServiceDescription;
 
 /// Builder pattern for constructing relay instances.
 ///
@@ -89,7 +90,7 @@ pub trait RelayBuilder {
 /// Factory for creating relay builders for supported messaging patterns.
 ///
 /// [`RelayFactory`] produces [`RelayBuilder`]s for the supported [`MessagingPattern`](iceoryx2::service::messaging_pattern::MessagingPattern)s.
-/// Each [`RelayBuilder`] is configured with the [`Service`]'s [`StaticConfig`] and can be further customized before
+/// Each [`RelayBuilder`] is configured with the [`Service`]'s [`ServiceDescription`] and can be further customized before
 /// creating the relay.
 ///
 /// # Type Parameters
@@ -102,13 +103,14 @@ pub trait RelayBuilder {
 /// [`MessagingPattern::PublishSubscribe`](iceoryx2::service::messaging_pattern::MessagingPattern::PublishSubscribe) relay:
 ///
 /// ```no_run
-/// # use iceoryx2::service::{Service, static_config::StaticConfig};
+/// # use iceoryx2::service::Service;
 /// # use iceoryx2_services_tunnel_backend::traits::{RelayFactory, RelayBuilder};
+/// # use iceoryx2_services_tunnel_backend::types::service_description::ServiceDescription;
 /// # fn example<'a, S: Service, F: RelayFactory<S>>(
 /// #     factory: &F,
-/// #     static_config: &'a StaticConfig
+/// #     description: &'a ServiceDescription
 /// # ) -> Result<F::PublishSubscribeRelay, <<F as RelayFactory<S>>::PublishSubscribeBuilder<'a> as RelayBuilder>::CreationError> {
-/// let builder = factory.publish_subscribe(static_config);
+/// let builder = factory.publish_subscribe(description);
 /// let relay = builder.create()?;
 /// # Ok(relay)
 /// # }
@@ -117,13 +119,14 @@ pub trait RelayBuilder {
 /// Creating an [`MessagingPattern::Event`](iceoryx2::service::messaging_pattern::MessagingPattern::Event) relay:
 ///
 /// ```no_run
-/// # use iceoryx2::service::{Service, static_config::StaticConfig};
+/// # use iceoryx2::service::Service;
 /// # use iceoryx2_services_tunnel_backend::traits::{RelayFactory, RelayBuilder};
+/// # use iceoryx2_services_tunnel_backend::types::service_description::ServiceDescription;
 /// # fn example<'a, S: Service, F: RelayFactory<S>>(
 /// #     factory: &F,
-/// #     config: &'a StaticConfig
+/// #     description: &'a ServiceDescription
 /// # ) -> Result<F::EventRelay, <<F as RelayFactory<S>>::EventBuilder<'a> as RelayBuilder>::CreationError> {
-/// let builder = factory.event(config);
+/// let builder = factory.event(description);
 /// let relay = builder.create()?;
 /// # Ok(relay)
 /// # }
@@ -154,16 +157,16 @@ pub trait RelayFactory<S: Service> {
     ///
     /// # Parameters
     ///
-    /// * `static_config` - The [`Service`]'s [`StaticConfig`] for which a builder will be created
+    /// * `description` - The [`Service`]'s [`ServiceDescription`] for which a builder will be created
     ///
     /// # Returns
     ///
-    /// A [`RelayBuilder`] configured with the [`Service`]'s [`StaticConfig`].
+    /// A [`RelayBuilder`] configured with the [`Service`]'s [`ServiceDescription`].
     /// The [`RelayBuilder`] can be further customized before calling [`RelayBuilder::create()`].
     ///
     fn publish_subscribe<'a>(
         &self,
-        static_config: &'a StaticConfig,
+        description: &'a ServiceDescription,
     ) -> Self::PublishSubscribeBuilder<'a>
     where
         Self: 'a;
@@ -173,13 +176,13 @@ pub trait RelayFactory<S: Service> {
     ///
     /// # Parameters
     ///
-    /// * `static_config` - The [`Service`]'s [`StaticConfig`] for which a builder will be created
+    /// * `description` - The [`Service`]'s [`ServiceDescription`] for which a builder will be created
     ///
     /// # Returns
     ///
-    /// A [`RelayBuilder`] configured with the [`Service`]'s [`StaticConfig`].
+    /// A [`RelayBuilder`] configured with the [`Service`]'s [`ServiceDescription`].
     /// The [`RelayBuilder`] can be further customized before calling [`RelayBuilder::create()`].
-    fn event<'a>(&self, static_config: &'a StaticConfig) -> Self::EventBuilder<'a>
+    fn event<'a>(&self, description: &'a ServiceDescription) -> Self::EventBuilder<'a>
     where
         Self: 'a;
 }

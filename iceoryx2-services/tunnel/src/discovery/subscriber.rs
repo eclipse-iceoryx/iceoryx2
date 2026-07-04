@@ -15,10 +15,12 @@ use alloc::format;
 use iceoryx2::node::Node;
 use iceoryx2::prelude::ServiceName;
 use iceoryx2::{port::subscriber::Subscriber, service::Service};
+use iceoryx2_log::debug;
 use iceoryx2_log::fail;
-
-use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
+use iceoryx2_services_common::DiscoveryEvent;
 use iceoryx2_services_tunnel_backend::traits::Discovery;
+use iceoryx2_services_tunnel_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
+use iceoryx2_services_tunnel_backend::types::service_description::ServiceDescription;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -90,37 +92,56 @@ impl<S: Service> Discovery for DiscoverySubscriber<S> {
     type DiscoveryError = DiscoveryError;
     type AnnouncementError = AnnouncementError;
 
-    fn announce(&self, _event: DiscoveryEventRef<'_>) -> Result<(), Self::AnnouncementError> {
+    fn announce(&self, _update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError> {
         // Nothing to do - local announcement handled by creating `iceoryx2`
         // [`Service`](iceoryx2::service::Service)s.
         Ok(())
     }
 
-    fn discover<E: core::error::Error, F: FnMut(DiscoveryEvent) -> Result<(), E>>(
+    fn discover<E: core::error::Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
         &self,
         mut process_discovery: F,
     ) -> Result<(), Self::DiscoveryError> {
         let subscriber = &self.0;
+
         loop {
-            match subscriber.receive() {
-                Ok(Some(sample)) => {
-                    // Clone: Owning copy to allow the sample to be freed.
-                    fail!(
-                        from self,
-                        when process_discovery(sample.payload().clone()),
-                        with DiscoveryError::DiscoveryProcessing,
-                        "Failed to process discovery event"
-                    );
-                }
-                Ok(None) => break Ok(()),
-                Err(_) => {
-                    fail!(
-                        from self,
-                        with DiscoveryError::ReceivingFromIceoryx,
-                        "Failed to receive from discovery subscriber"
-                    );
-                }
-            }
+            let sample = fail!(
+                from self,
+                when subscriber.receive(),
+                with DiscoveryError::ReceivingFromIceoryx,
+                "Failed to receive from discovery subscriber"
+            );
+            let Some(sample) = sample else {
+                return Ok(());
+            };
+            let Some(update) = to_discovery_update(sample.payload()) else {
+                continue;
+            };
+
+            fail!(
+                from self,
+                when process_discovery(update),
+                with DiscoveryError::DiscoveryProcessing,
+                "Failed to process discovery event"
+            );
         }
+    }
+}
+
+// TODO: Consider merging these structs
+/// Converts a discovery-service event into a tunnel [`DiscoveryUpdate`].
+fn to_discovery_update(event: &DiscoveryEvent) -> Option<DiscoveryUpdate> {
+    match event {
+        DiscoveryEvent::Added(static_config) => match ServiceDescription::try_from(static_config) {
+            Ok(description) => Some(DiscoveryUpdate::Added(description)),
+            Err(_) => {
+                debug!(
+                    "Skipping service with unsupported messaging pattern: {}",
+                    static_config.name()
+                );
+                None
+            }
+        },
+        DiscoveryEvent::Removed(hash) => Some(DiscoveryUpdate::Removed(*hash)),
     }
 }
