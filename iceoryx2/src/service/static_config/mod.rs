@@ -115,32 +115,6 @@ impl StaticConfig {
         }
     }
 
-    /// Creates the [`StaticConfig`] of a publish-subscribe
-    /// [`Service`](crate::service::Service) with the provided message type
-    /// details; all other values are taken from the defaults in `config`,
-    /// but this might need to be revised to be more precise.
-    ///
-    /// Intended for infrastructure that describes services it does not
-    /// create itself, e.g. tunnels. Not part of the stable public API.
-    #[doc(hidden)]
-    pub fn __internal_new_publish_subscribe_with_details<Hasher: Hash>(
-        service_name: &ServiceName,
-        config: &config::Config,
-        payload: message_type_details::TypeDetail,
-        user_header: message_type_details::TypeDetail,
-    ) -> Self {
-        let mut new_self = Self::new_publish_subscribe::<Hasher>(service_name, config);
-        match &mut new_self.messaging_pattern {
-            MessagingPattern::PublishSubscribe(pattern_config) => {
-                pattern_config.message_type_details.user_header = user_header;
-                pattern_config.message_type_details.payload = payload;
-            }
-            // new_publish_subscribe always creates this pattern
-            _ => unreachable!(),
-        }
-        new_self
-    }
-
     pub(crate) fn new_blackboard<Hasher: Hash>(
         service_name: &ServiceName,
         config: &config::Config,
