@@ -17,6 +17,7 @@
 use alloc::rc::Rc;
 use iceoryx2::service::Service;
 use iceoryx2_services_tunnel_backend::traits::RelayFactory;
+use iceoryx2_services_tunnel_backend::types::service_description::ServiceDescription;
 
 use crate::backend::{
     relays::{event, publish_subscribe},
@@ -53,21 +54,18 @@ impl<S: Service> RelayFactory<S> for Factory<S> {
 
     fn publish_subscribe<'a>(
         &self,
-        static_config: &'a iceoryx2::service::static_config::StaticConfig,
+        description: &'a ServiceDescription,
     ) -> Self::PublishSubscribeBuilder<'a>
     where
         Self: 'a,
     {
-        publish_subscribe::Builder::new(self.session.clone(), static_config)
+        publish_subscribe::Builder::new(self.session.clone(), description)
     }
 
-    fn event<'a>(
-        &self,
-        static_config: &'a iceoryx2::service::static_config::StaticConfig,
-    ) -> Self::EventBuilder<'a>
+    fn event<'a>(&self, description: &'a ServiceDescription) -> Self::EventBuilder<'a>
     where
         Self: 'a,
     {
-        event::Builder::new(self.session.clone(), static_config)
+        event::Builder::new(self.session.clone(), description)
     }
 }

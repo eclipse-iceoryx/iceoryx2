@@ -22,7 +22,6 @@ use serde::{Deserialize, Serialize};
 
 use iceoryx2::prelude::SemanticStringError;
 use iceoryx2::service::service_hash::ServiceHash;
-use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_bb_elementary::math::ToB64;
 use iceoryx2_bb_posix::creation_mode::CreationMode;
@@ -45,6 +44,7 @@ use iceoryx2_bb_posix::unix_datagram_socket::{
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_services_tunnel_backend::types::service_description::ServiceDescription;
 
 use crate::backend::settings::{
     LOCKFILE_NAME, MAX_DATAGRAM, ROOT_DIR, SERVICES_DIR_NAME, SESSIONS_DIR_NAME, SOCKET_NAME,
@@ -118,7 +118,7 @@ type SessionId = String;
 
 #[derive(Debug, Default)]
 struct PendingDiscovery {
-    added: Vec<StaticConfig>,
+    added: Vec<ServiceDescription>,
     removed: Vec<ServiceHash>,
 }
 
@@ -275,9 +275,9 @@ impl Session {
     }
 
     /// Make a service offered by this session discoverable to peers.
-    pub fn announce_added(&self, static_config: &StaticConfig) -> Result<(), AnnounceError> {
+    pub fn announce_added(&self, description: &ServiceDescription) -> Result<(), AnnounceError> {
         let path = file_path_in_directory(
-            static_config.service_hash().as_str().as_bytes(),
+            description.service_hash.as_str().as_bytes(),
             &self.services_dir_path,
         )
         .map_err(AnnounceError::Path)?;
@@ -293,7 +293,7 @@ impl Session {
             .create()
             .map_err(AnnounceError::FileCreate)?;
 
-        let bytes = postcard::to_allocvec(static_config).map_err(|_| AnnounceError::Encode)?;
+        let bytes = postcard::to_allocvec(description).map_err(|_| AnnounceError::Encode)?;
         file.write(&bytes).map_err(AnnounceError::FileWrite)?;
 
         Ok(())
@@ -343,7 +343,7 @@ impl Session {
 
     /// Drain (added, removed) service-discovery events accumulated since the
     /// last call.
-    pub fn pending_discoveries(&self) -> (Vec<StaticConfig>, Vec<ServiceHash>) {
+    pub fn pending_discoveries(&self) -> (Vec<ServiceDescription>, Vec<ServiceHash>) {
         let mut pending = self.pending_discoveries.borrow_mut();
         let added = core::mem::take(&mut pending.added);
         let removed = core::mem::take(&mut pending.removed);
@@ -544,7 +544,9 @@ impl Session {
     }
 
     /// Return the services a peer is currently announcing.
-    fn discover_peer_services(services_dir_path: &Path) -> BTreeMap<ServiceHash, StaticConfig> {
+    fn discover_peer_services(
+        services_dir_path: &Path,
+    ) -> BTreeMap<ServiceHash, ServiceDescription> {
         let mut discovered_services = BTreeMap::new();
 
         let services_dir = match Directory::new(services_dir_path) {
@@ -570,11 +572,11 @@ impl Session {
             if file.read_to_vector(&mut bytes).is_err() {
                 continue;
             }
-            let static_config: StaticConfig = match postcard::from_bytes(&bytes) {
+            let description: ServiceDescription = match postcard::from_bytes(&bytes) {
                 Ok(c) => c,
                 Err(_) => continue,
             };
-            discovered_services.insert(*static_config.service_hash(), static_config);
+            discovered_services.insert(description.service_hash, description);
         }
 
         discovered_services
