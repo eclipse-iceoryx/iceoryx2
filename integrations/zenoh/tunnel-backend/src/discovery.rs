@@ -12,10 +12,11 @@
 
 use std::collections::BTreeMap;
 
-use iceoryx2::service::{service_hash::ServiceHash, static_config::StaticConfig};
+use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_log::{error, fail, warn};
-use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
+use iceoryx2_services_tunnel_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
+use iceoryx2_services_tunnel_backend::types::service_description::ServiceDescription;
 
 use zenoh::{
     Session, Wait,
@@ -121,14 +122,14 @@ impl iceoryx2_services_tunnel_backend::traits::Discovery for Discovery {
     type DiscoveryError = DiscoveryError;
     type AnnouncementError = AnnouncementError;
 
-    fn announce(&self, event: DiscoveryEventRef<'_>) -> Result<(), Self::AnnouncementError> {
-        match event {
-            DiscoveryEventRef::Added(static_config) => self.announce_added(static_config),
-            DiscoveryEventRef::Removed(service_hash) => self.announce_removed(service_hash),
+    fn announce(&self, update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError> {
+        match update {
+            DiscoveryUpdateRef::Added(description) => self.announce_added(description),
+            DiscoveryUpdateRef::Removed(service_hash) => self.announce_removed(service_hash),
         }
     }
 
-    fn discover<E: core::error::Error, F: FnMut(DiscoveryEvent) -> Result<(), E>>(
+    fn discover<E: core::error::Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
         &self,
         mut process_discovery: F,
     ) -> Result<(), DiscoveryError> {
@@ -145,7 +146,7 @@ impl iceoryx2_services_tunnel_backend::traits::Discovery for Discovery {
 
             fail!(
                 from self,
-                when process_discovery(DiscoveryEvent::Removed(*service_hash)),
+                when process_discovery(DiscoveryUpdate::Removed(*service_hash)),
                 with DiscoveryError::DiscoveryProcessing,
                 "Failed to process Removed discovery event for {}", service_hash.as_str()
             );
@@ -156,11 +157,11 @@ impl iceoryx2_services_tunnel_backend::traits::Discovery for Discovery {
 
         // Adds a service to the tunnel. Called once the reply with the
         // service details of a discovered remote service has been received.
-        let on_service_details = |static_config: StaticConfig| {
-            let service_hash = *static_config.service_hash();
+        let on_service_details = |description: ServiceDescription| {
+            let service_hash = description.service_hash;
             fail!(
                 from self,
-                when process_discovery(DiscoveryEvent::Added(static_config)),
+                when process_discovery(DiscoveryUpdate::Added(description)),
                 with DiscoveryError::DiscoveryProcessing,
                 "Failed to process Added discovery event for {}", service_hash.as_str()
             );
@@ -178,8 +179,8 @@ impl Discovery {
     /// its details and a liveliness token at its key.
     ///
     /// No-op if the service has already been announced.
-    fn announce_added(&self, static_config: &StaticConfig) -> Result<(), AnnouncementError> {
-        let service_hash = *static_config.service_hash();
+    fn announce_added(&self, description: &ServiceDescription) -> Result<(), AnnouncementError> {
+        let service_hash = description.service_hash;
 
         if self.announced.borrow().contains_key(&service_hash) {
             return Ok(());
@@ -188,7 +189,7 @@ impl Discovery {
         let key = keys::service_details(&service_hash);
         let serialized = fail!(
             from self,
-            when serde_json::to_string(static_config),
+            when serde_json::to_string(description),
             with AnnouncementError::Serialization,
             "Failed to serialize service config"
         );
@@ -216,7 +217,7 @@ impl Discovery {
     }
 
     /// Declares a queryable that responds to remote peers' `get` requests for
-    /// a service's StaticConfig with the pre-serialised JSON payload.
+    /// a service's ServiceDescription with the pre-serialised JSON payload.
     fn declare_queryable(
         &self,
         key: &str,
@@ -299,7 +300,7 @@ impl Discovery {
         Ok(())
     }
 
-    /// Issues a Zenoh `get` for the service's StaticConfig and queues the
+    /// Issues a Zenoh `get` for the service's ServiceDescription and queues the
     /// reply handler under `pending`. Returns immediately; replies are
     /// processed by [`Discovery::process_service_details`] on subsequent calls.
     fn request_service_details(&self, service_hash: &ServiceHash) -> Result<(), DiscoveryError> {
@@ -318,7 +319,7 @@ impl Discovery {
     }
 
     /// Drains the cached handlers for replies received over the network and
-    /// dispatches each resolved [`StaticConfig`] to `on_service_details`.
+    /// dispatches each resolved [`ServiceDescription`] to `on_service_details`.
     /// Re-issues the query for any handler whose channel closed without a
     /// usable reply.
     fn process_service_details<OnServiceDetails>(
@@ -326,9 +327,9 @@ impl Discovery {
         mut on_service_details: OnServiceDetails,
     ) -> Result<(), DiscoveryError>
     where
-        OnServiceDetails: FnMut(StaticConfig) -> Result<(), DiscoveryError>,
+        OnServiceDetails: FnMut(ServiceDescription) -> Result<(), DiscoveryError>,
     {
-        let mut resolved: Vec<StaticConfig> = Vec::new();
+        let mut resolved: Vec<ServiceDescription> = Vec::new();
         let mut failed: Vec<ServiceHash> = Vec::new();
 
         // Check status of pending queries.
@@ -336,7 +337,7 @@ impl Discovery {
             let pending = self.pending.borrow();
             for (hash, handler) in pending.iter() {
                 match check_pending(hash, handler) {
-                    Ok(Some(static_config)) => resolved.push(static_config),
+                    Ok(Some(description)) => resolved.push(description),
                     Ok(None) => {}
                     Err(_) => failed.push(*hash),
                 }
@@ -346,8 +347,8 @@ impl Discovery {
         // Drop resolved entries from pending.
         {
             let mut pending = self.pending.borrow_mut();
-            for static_config in &resolved {
-                pending.remove(static_config.service_hash());
+            for description in &resolved {
+                pending.remove(&description.service_hash);
             }
         }
 
@@ -357,8 +358,8 @@ impl Discovery {
         }
 
         // Processed received service details.
-        for static_config in resolved {
-            on_service_details(static_config)?;
+        for description in resolved {
+            on_service_details(description)?;
         }
 
         Ok(())
@@ -371,7 +372,7 @@ struct Disconnected;
 fn check_pending(
     hash: &ServiceHash,
     handler: &FifoChannelHandler<Reply>,
-) -> Result<Option<StaticConfig>, Disconnected> {
+) -> Result<Option<ServiceDescription>, Disconnected> {
     loop {
         let Some(reply) = handler.try_recv().map_err(|_| Disconnected)? else {
             return Ok(None);
@@ -389,8 +390,8 @@ fn check_pending(
             }
         };
 
-        match serde_json::from_slice::<StaticConfig>(&sample.payload().to_bytes()) {
-            Ok(static_config) => return Ok(Some(static_config)),
+        match serde_json::from_slice::<ServiceDescription>(&sample.payload().to_bytes()) {
+            Ok(description) => return Ok(Some(description)),
             Err(e) => warn!(
                 "Skipping unparseable reply for service {}: {}",
                 hash.as_str(),

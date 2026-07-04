@@ -12,7 +12,8 @@
 
 use std::sync::Arc;
 
-use iceoryx2::service::{Service, local_threadsafe, static_config::StaticConfig};
+use iceoryx2::service::{Service, local_threadsafe};
+use iceoryx2_services_tunnel_backend::types::service_description::ServiceDescription;
 use iceoryx2_services_tunnel_backend::{traits::RelayFactory, types::wake::WakeHandle};
 
 use zenoh::Session;
@@ -61,18 +62,21 @@ impl<S: Service> RelayFactory<S> for Factory<'_, S> {
 
     fn publish_subscribe<'config>(
         &self,
-        static_config: &'config StaticConfig,
+        description: &'config ServiceDescription,
     ) -> Self::PublishSubscribeBuilder<'config>
     where
         Self: 'config,
     {
-        publish_subscribe::Builder::new(self.session, static_config, self.wake.clone())
+        publish_subscribe::Builder::new(self.session, description, self.wake.clone())
     }
 
-    fn event<'config>(&self, static_config: &'config StaticConfig) -> Self::EventBuilder<'config>
+    fn event<'config>(
+        &self,
+        description: &'config ServiceDescription,
+    ) -> Self::EventBuilder<'config>
     where
         Self: 'config,
     {
-        event::Builder::new(self.session, static_config, self.wake.clone())
+        event::Builder::new(self.session, description, self.wake.clone())
     }
 }

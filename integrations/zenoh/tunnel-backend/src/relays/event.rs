@@ -15,9 +15,9 @@ use std::sync::Arc;
 use iceoryx2::prelude::EventId;
 use iceoryx2::service::Service;
 use iceoryx2::service::local_threadsafe;
-use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2_log::{fail, trace};
 use iceoryx2_services_tunnel_backend::traits::{EventRelay, RelayBuilder};
+use iceoryx2_services_tunnel_backend::types::service_description::ServiceDescription;
 use iceoryx2_services_tunnel_backend::types::wake::WakeHandle;
 
 use zenoh::pubsub::{Publisher, Subscriber};
@@ -73,7 +73,7 @@ impl core::error::Error for ReceiveError {}
 #[derive(Debug)]
 pub struct Builder<'a, S: Service> {
     session: &'a Session,
-    static_config: &'a StaticConfig,
+    description: &'a ServiceDescription,
     wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     _phantom: core::marker::PhantomData<S>,
 }
@@ -81,12 +81,12 @@ pub struct Builder<'a, S: Service> {
 impl<'a, S: Service> Builder<'a, S> {
     pub fn new(
         session: &'a Session,
-        static_config: &'a StaticConfig,
+        description: &'a ServiceDescription,
         wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     ) -> Builder<'a, S> {
         Builder {
             session,
-            static_config,
+            description,
             wake,
             _phantom: core::marker::PhantomData,
         }
@@ -99,7 +99,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
 
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
         let origin = "event::Builder::create";
-        let key = keys::event(self.static_config.service_hash());
+        let key = keys::event(&self.description.service_hash);
 
         let notifier = fail!(
             from origin,
@@ -125,7 +125,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
         );
 
         Ok(Relay {
-            static_config: self.static_config.clone(),
+            description: self.description.clone(),
             notifier,
             listener,
             _phantom: core::marker::PhantomData,
@@ -135,7 +135,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
 
 #[derive(Debug)]
 pub struct Relay<S: Service> {
-    static_config: StaticConfig,
+    description: ServiceDescription,
     notifier: Publisher<'static>,
     listener: Subscriber<WakeAwareReceiver<Sample>>,
     _phantom: core::marker::PhantomData<S>,
@@ -149,8 +149,8 @@ impl<S: Service> EventRelay<S> for Relay<S> {
         trace!(
             from self,
             "Sending {}({})",
-            self.static_config.messaging_pattern(),
-            self.static_config.name()
+            self.description.pattern,
+            self.description.name
         );
 
         fail!(
@@ -176,8 +176,8 @@ impl<S: Service> EventRelay<S> for Relay<S> {
                 trace!(
                     from self,
                     "Ingesting {}({})",
-                    self.static_config.messaging_pattern(),
-                    self.static_config.name()
+                    self.description.pattern,
+                    self.description.name
                 );
                 let payload = sample.payload();
                 if payload.len() == std::mem::size_of::<usize>() {

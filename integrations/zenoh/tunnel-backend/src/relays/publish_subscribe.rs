@@ -15,12 +15,12 @@ use std::sync::Arc;
 use iceoryx2::service::{
     Service, local_threadsafe,
     marker::{CustomHeaderMarker, CustomPayloadMarker},
-    static_config::StaticConfig,
 };
 use iceoryx2_log::{fail, trace};
 use iceoryx2_services_tunnel_backend::{
     traits::{PublishSubscribeRelay, RelayBuilder},
     types::publish_subscribe::{LoanFn, SampleMut},
+    types::service_description::{PatternDescription, ServiceDescription},
     types::wake::WakeHandle,
 };
 
@@ -80,7 +80,7 @@ impl core::error::Error for ReceiveError {}
 #[derive(Debug)]
 pub struct Builder<'a, S: Service> {
     session: &'a Session,
-    static_config: &'a StaticConfig,
+    description: &'a ServiceDescription,
     wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     _phantom: core::marker::PhantomData<S>,
 }
@@ -88,12 +88,12 @@ pub struct Builder<'a, S: Service> {
 impl<'a, S: Service> Builder<'a, S> {
     pub fn new(
         session: &'a Session,
-        static_config: &'a StaticConfig,
+        description: &'a ServiceDescription,
         wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     ) -> Builder<'a, S> {
         Builder {
             session,
-            static_config,
+            description,
             wake,
             _phantom: core::marker::PhantomData,
         }
@@ -106,7 +106,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
 
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
         let origin = "publish_subscribe::Builder::create";
-        let key = keys::publish_subscribe(self.static_config.service_hash());
+        let key = keys::publish_subscribe(&self.description.service_hash);
 
         let publisher = fail!(
             from origin,
@@ -132,7 +132,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
         );
 
         Ok(Relay {
-            static_config: self.static_config.clone(),
+            description: self.description.clone(),
             publisher,
             subscriber,
             _phantom: core::marker::PhantomData,
@@ -142,7 +142,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
 
 #[derive(Debug)]
 pub struct Relay<S: Service> {
-    static_config: StaticConfig,
+    description: ServiceDescription,
     publisher: Publisher<'static>,
     subscriber: Subscriber<WakeAwareReceiver<Sample>>,
     _phantom: core::marker::PhantomData<S>,
@@ -159,8 +159,8 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         trace!(
             from self,
             "Sending {}({})",
-            self.static_config.messaging_pattern(),
-            self.static_config.name()
+            self.description.pattern,
+            self.description.name
         );
 
         let user_header = sample.user_header();
@@ -170,7 +170,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         writer.append(unsafe {
             core::slice::from_raw_parts(
                 user_header as *const CustomHeaderMarker as *const u8,
-                user_header_size(&self.static_config),
+                user_header_size(&self.description),
             )
             .into()
         });
@@ -203,13 +203,13 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
             trace!(
                 from self,
                 "Ingesting {}({})",
-                self.static_config.messaging_pattern(),
-                self.static_config.name()
+                self.description.pattern,
+                self.description.name
             );
 
             let bytes_received = zenoh_sample.payload().to_bytes();
 
-            let user_header_size = user_header_size(&self.static_config);
+            let user_header_size = user_header_size(&self.description);
             let user_header_received = &bytes_received[0..user_header_size];
             let payload_received = &bytes_received[user_header_size..];
 
@@ -252,10 +252,9 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
     }
 }
 
-fn user_header_size(static_config: &StaticConfig) -> usize {
-    static_config
-        .publish_subscribe()
-        .message_type_details()
-        .user_header
-        .size()
+fn user_header_size(description: &ServiceDescription) -> usize {
+    let PatternDescription::PublishSubscribe(description) = &description.pattern else {
+        unreachable!("relay is only built for publish-subscribe descriptions")
+    };
+    description.user_header.size
 }
