@@ -14,9 +14,9 @@ use std::sync::Arc;
 
 use iceoryx2::prelude::EventId;
 use iceoryx2::service::{Service, local_threadsafe};
-use iceoryx2_services_tunnel_backend::types::service_description::ServiceDescription;
 use iceoryx2_log::warn;
 use iceoryx2_services_tunnel_backend::traits::{EventRelay, RelayBuilder};
+use iceoryx2_services_tunnel_backend::types::service_description::ServiceDescription;
 use iceoryx2_services_tunnel_backend::types::wake::WakeHandle;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
