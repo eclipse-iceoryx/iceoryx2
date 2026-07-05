@@ -714,7 +714,7 @@ pub mod internal {
             let unique_service_id = service_config.unique_service_id();
             let service_hash = service_config.service_hash();
 
-            match remove_stale_service_resources::<S>(config, service_config) {
+            match unsafe { remove_stale_service_resources::<S>(config, service_config) } {
                 Ok(()) => (),
                 Err(RemoveStaleResourcesError::InterruptedBySignal) => {
                     fail!(from origin, with ServiceRemoveError::Interrupt,

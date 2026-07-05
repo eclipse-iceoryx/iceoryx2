@@ -15,19 +15,14 @@ extern crate alloc;
 pub mod blackboard;
 pub mod publish_subscribe;
 
-use alloc::format;
 use alloc::string::ToString;
 use core::fmt::Debug;
 use core::ptr::NonNull;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-use iceoryx2_bb_posix::{
-    directory::{Directory, DirectoryCreateError, DirectoryRemoveError},
-    file::Permission,
-};
 use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_log::{fail, fatal_panic};
+use iceoryx2_log::fatal_panic;
 
 use crate::{
     config,
@@ -39,19 +34,19 @@ use crate::{
     },
 };
 
-pub fn remove_stale_service_resources<ServiceType: service::Service>(
+pub unsafe fn remove_stale_service_resources<ServiceType: service::Service>(
     config: &config::Config,
     static_config: &StaticConfig,
 ) -> Result<(), RemoveStaleResourcesError> {
     match static_config.messaging_pattern() {
-        MessagingPattern::Blackboard(_) => {
+        MessagingPattern::Blackboard(_) => unsafe {
             BlackboardResources::<ServiceType>::remove_stale_resources(config, static_config)
-        }
+        },
         MessagingPattern::RequestResponse(_) => Ok(()),
         MessagingPattern::Event(_) => Ok(()),
-        MessagingPattern::PublishSubscribe(_) => {
+        MessagingPattern::PublishSubscribe(_) => unsafe {
             PublishSubscribeResources::<ServiceType>::remove_stale_resources(config, static_config)
-        }
+        },
     }
 }
 
@@ -80,40 +75,6 @@ pub trait ServiceResource: Abandonable + Debug + Send {
         root
     }
 
-    fn create_service_resource_directory(
-        config: &config::Config,
-        static_config: &StaticConfig,
-    ) -> Result<Directory, ServiceCreateError> {
-        let origin = "ServiceResource::create_service_resource_directory()";
-        let dir = Self::service_resource_directory(config, static_config);
-        let msg = format!("Unable to create service resource directory \"{dir}\"");
-        match Directory::create(&dir, Permission::OWNER_ALL | Permission::GROUP_ALL) {
-            Ok(dir) => Ok(dir),
-            Err(DirectoryCreateError::InsufficientPermissions) => {
-                fail!(from origin, with ServiceCreateError::InsufficientPermissions,
-                "{msg} due to insufficient permissions.");
-            }
-            Err(e) => {
-                fail!(from origin, with ServiceCreateError::InternalFailure,
-                    "{msg} due to an internal failure. [{e:?}]");
-            }
-        }
-    }
-
-    fn remove_service_resource_directory(
-        config: &config::Config,
-        static_config: &StaticConfig,
-    ) -> Result<(), DirectoryRemoveError> {
-        let origin = "ServiceResource::create_service_resource_directory()";
-        let dir = Self::service_resource_directory(config, static_config);
-        if let Err(e) = Directory::remove(&dir) {
-            fail!(from origin, with e,
-                "Unable to remove service resource directory \"{dir}\". [{e:?}]");
-        }
-
-        Ok(())
-    }
-
     fn create(
         static_config: &StaticConfig,
         resource_config: &Self::Config,
@@ -124,7 +85,7 @@ pub trait ServiceResource: Abandonable + Debug + Send {
         resource_config: &Self::Config,
     ) -> Result<Self, ServiceOpenError>;
 
-    fn remove_stale_resources(
+    unsafe fn remove_stale_resources(
         config: &config::Config,
         static_config: &StaticConfig,
     ) -> Result<(), RemoveStaleResourcesError>;
@@ -155,7 +116,7 @@ impl ServiceResource for NoResource {
 
     fn acquire_ownership(&self) {}
 
-    fn remove_stale_resources(
+    unsafe fn remove_stale_resources(
         _config: &config::Config,
         _static_config: &StaticConfig,
     ) -> Result<(), RemoveStaleResourcesError> {

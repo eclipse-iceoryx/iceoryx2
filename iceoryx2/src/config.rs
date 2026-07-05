@@ -155,6 +155,8 @@ pub struct Service {
     pub blackboard_mgmt_suffix: FileName,
     /// The suffix of the blackboard payload data segment
     pub blackboard_data_suffix: FileName,
+    /// The suffix of the type definition file
+    pub type_definition_suffix: FileName,
     /// Whenever an existing [`Service`](crate::service::Service) is opened the builder will
     /// scan for dead nodes and clean up the stale resources that might block another process.
     pub cleanup_dead_nodes_on_open: bool,
@@ -172,6 +174,7 @@ impl Default for Service {
             event_connection_suffix: unsafe { FileName::new_unchecked_const(b".event") },
             blackboard_mgmt_suffix: unsafe { FileName::new_unchecked_const(b".blackboard_mgmt") },
             blackboard_data_suffix: unsafe { FileName::new_unchecked_const(b".blackboard_data") },
+            type_definition_suffix: unsafe { FileName::new_unchecked_const(b".type_definition") },
             cleanup_dead_nodes_on_open: true,
         }
     }

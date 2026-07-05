@@ -204,7 +204,7 @@ impl<ServiceType: service::Service> ServiceResource for BlackboardResources<Serv
         self.mgmt.acquire_ownership();
     }
 
-    fn remove_stale_resources(
+    unsafe fn remove_stale_resources(
         config: &config::Config,
         static_config: &StaticConfig,
     ) -> Result<(), RemoveStaleResourcesError> {

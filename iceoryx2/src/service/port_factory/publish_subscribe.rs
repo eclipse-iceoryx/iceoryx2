@@ -58,7 +58,6 @@ use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 /// The factory for
@@ -220,10 +219,7 @@ impl<Service: service::Service, Payload, UserHeader: Debug + ZeroCopySend>
     PortFactory<Service, Flatbuffer<Payload>, UserHeader>
 {
     /// Returns the [`FilePath`] where the type definition file is stored.
-    pub fn type_definition_file(&self) -> FilePath {
-        PublishSubscribeResources::<Service>::type_definition_path(
-            self.service.shared_node().config(),
-            self.service.static_config(),
-        )
+    pub fn type_definition(&self) -> Option<&Service::StaticStorage> {
+        self.service.additional_resource().type_definition()
     }
 }

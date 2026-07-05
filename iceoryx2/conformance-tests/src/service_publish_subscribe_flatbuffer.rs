@@ -17,15 +17,15 @@ use iceoryx2_bb_testing_macros::conformance_tests;
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod service_publish_subscribe_flatbuffer {
-    use alloc::vec::Vec;
     use iceoryx2::service::builder::publish_subscribe::{
         PublishSubscribeCreateError, PublishSubscribeOpenError,
     };
     use iceoryx2::service::{Service, marker::Flatbuffer};
-    use iceoryx2_bb_posix::file::{AccessMode, CreationMode, File, FileBuilder};
+    use iceoryx2_bb_posix::file::{CreationMode, File, FileBuilder};
     use iceoryx2_bb_posix::testing::*;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
+    use iceoryx2_cal::static_storage::StaticStorage;
     use iceoryx2_testing::*;
 
     const SCHEMA: &str = "
@@ -175,11 +175,10 @@ pub mod service_publish_subscribe_flatbuffer {
             .create()
             .unwrap();
 
-        let mut buffer = Vec::new();
-        let file = FileBuilder::new(&sut.type_definition_file())
-            .open_existing(AccessMode::Read)
-            .unwrap();
-        file.read_to_vector(&mut buffer).unwrap();
+        let type_definition = sut.type_definition().unwrap();
+
+        let mut buffer = vec![0u8; type_definition.len() as usize];
+        type_definition.read(&mut buffer).unwrap();
 
         assert_that!(SCHEMA.as_bytes(), eq buffer.as_slice());
     }
