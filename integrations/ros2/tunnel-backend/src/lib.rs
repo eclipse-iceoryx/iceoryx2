@@ -21,6 +21,7 @@ pub mod backend;
 pub mod config;
 pub mod discovery;
 pub(crate) mod mapping;
+pub mod qos;
 pub mod relays;
 pub mod ros_header;
 
@@ -33,6 +34,7 @@ pub(crate) mod typesupport;
 
 pub use backend::*;
 pub use config::*;
+pub use qos::*;
 
 /// The name of the ROS 2 node representing the tunnel.
 #[allow(unsafe_code)]

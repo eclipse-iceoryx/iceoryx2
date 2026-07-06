@@ -21,8 +21,9 @@ use r2r_rcl::{
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_log::fail;
 
+use crate::qos::QosProfile;
 use crate::rcl::node::RclNode;
-use crate::rcl::{RclError, TopicName};
+use crate::rcl::{RclError, TopicName, qos};
 use crate::typesupport::TypeSupport;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -57,6 +58,7 @@ pub struct RclPublisherBuilder<'a> {
     node: Rc<RclNode>,
     topic: &'a TopicName,
     type_support: Rc<TypeSupport>,
+    qos: QosProfile,
 }
 
 impl<'a> RclPublisherBuilder<'a> {
@@ -67,7 +69,14 @@ impl<'a> RclPublisherBuilder<'a> {
             node,
             topic,
             type_support,
+            qos: QosProfile::default(),
         }
+    }
+
+    /// Sets the QoS profile of the publisher.
+    pub fn qos(mut self, qos: QosProfile) -> Self {
+        self.qos = qos;
+        self
     }
 
     pub fn create(self) -> Result<RclPublisher, CreationError> {
@@ -75,7 +84,8 @@ impl<'a> RclPublisherBuilder<'a> {
 
         unsafe {
             let publisher = Box::new(UnsafeCell::new(rcl_get_zero_initialized_publisher()));
-            let options = rcl_publisher_get_default_options();
+            let mut options = rcl_publisher_get_default_options();
+            qos::apply(&self.qos, &mut options.qos);
 
             let ret = rcl_publisher_init(
                 publisher.get(),

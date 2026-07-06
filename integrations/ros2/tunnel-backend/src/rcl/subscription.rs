@@ -24,8 +24,9 @@ use r2r_rcl::{
 
 use iceoryx2_log::fail;
 
+use crate::qos::QosProfile;
 use crate::rcl::node::RclNode;
-use crate::rcl::{RclError, TopicName};
+use crate::rcl::{RclError, TopicName, qos};
 use crate::typesupport::TypeSupport;
 
 /// A callback invoked with the number of newly-arrived messages. The RMW
@@ -100,6 +101,7 @@ pub struct RclSubscriptionBuilder<'a> {
     node: Rc<RclNode>,
     topic: &'a TopicName,
     type_support: Rc<TypeSupport>,
+    qos: QosProfile,
 }
 
 impl<'a> RclSubscriptionBuilder<'a> {
@@ -110,7 +112,14 @@ impl<'a> RclSubscriptionBuilder<'a> {
             node,
             topic,
             type_support,
+            qos: QosProfile::default(),
         }
+    }
+
+    /// Sets the QoS profile of the subscription.
+    pub fn qos(mut self, qos: QosProfile) -> Self {
+        self.qos = qos;
+        self
     }
 
     pub fn create(self) -> Result<RclSubscription, CreationError> {
@@ -119,6 +128,7 @@ impl<'a> RclSubscriptionBuilder<'a> {
         unsafe {
             let mut subscription = Box::new(rcl_get_zero_initialized_subscription());
             let mut options = rcl_subscription_get_default_options();
+            qos::apply(&self.qos, &mut options.qos);
             // Prevent loopback.
             options.rmw_subscription_options.ignore_local_publications = true;
             let ret = rcl_subscription_init(

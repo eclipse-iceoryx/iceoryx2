@@ -17,6 +17,7 @@ pub(crate) mod error;
 pub(crate) mod names;
 pub(crate) mod node;
 pub(crate) mod publisher;
+pub(crate) mod qos;
 pub(crate) mod subscription;
 
 pub(crate) use error::RclError;
