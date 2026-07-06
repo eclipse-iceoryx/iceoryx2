@@ -45,7 +45,7 @@ pub fn camel_to_snake_case(input: &str) -> String {
     for c in input.chars() {
         if c.is_uppercase() {
             if let Some(prev) = prev_char {
-                if prev.is_lowercase() || prev.is_numeric() {
+                if prev != '_' {
                     result.push('_');
                 }
             }

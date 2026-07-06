@@ -28,7 +28,7 @@ pub fn snake_case_conversion_works() {
 
     assert_that!(
         camel_to_snake_case("LickAToad"), eq
-        "lick_atoad"
+        "lick_a_toad"
     );
 
     assert_that!(
@@ -63,7 +63,7 @@ pub fn snake_case_conversion_works() {
 
     assert_that!(
         camel_to_snake_case("SCREAM"), eq
-        "scream"
+        "s_c_r_e_a_m"
     );
 }
 
