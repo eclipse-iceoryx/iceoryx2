@@ -38,8 +38,14 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
 
 use super::blackboard::PortFactory;
+use crate::port::port_name::PortName;
 use crate::port::writer::{Writer, WriterCreateError};
 use crate::service;
+
+#[derive(Debug, Clone)]
+pub(crate) struct WriterConfig {
+    pub(crate) port_name: PortName,
+}
 
 /// Factory to create a new [`Writer`] port/endpoint for
 /// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard)
@@ -51,6 +57,7 @@ pub struct PortFactoryWriter<
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > {
     pub(crate) factory: &'factory PortFactory<Service, KeyType>,
+    config: WriterConfig,
 }
 
 impl<
@@ -60,14 +67,25 @@ impl<
 > PortFactoryWriter<'factory, Service, KeyType>
 {
     pub(crate) fn new(factory: &'factory PortFactory<Service, KeyType>) -> Self {
-        Self { factory }
+        Self {
+            factory,
+            config: WriterConfig {
+                port_name: PortName::new_empty(),
+            },
+        }
+    }
+
+    /// Sets the [`PortName`] of the  [`Writer`].
+    pub fn name(mut self, name: &PortName) -> Self {
+        self.config.port_name = *name;
+        self
     }
 
     /// Creates a new [`Writer`] or returns a [`WriterCreateError`] on failure.
     pub fn create(self) -> Result<Writer<Service, KeyType>, WriterCreateError> {
         let origin = format!("{self:?}");
         Ok(
-            fail!(from origin, when Writer::new(self.factory.service.clone()),"Failed to create new Writer port."),
+            fail!(from origin, when Writer::new(self.factory.service.clone(), self.config.clone()),"Failed to create new Writer port."),
         )
     }
 }

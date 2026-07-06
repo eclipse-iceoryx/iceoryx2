@@ -29,6 +29,7 @@
 use crate::{
     identifiers::{UniqueNodeId, UniquePortId, UniquePublisherId, UniqueSubscriberId},
     port::details::data_segment::DataSegmentType,
+    port::port_name::PortName,
 };
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
@@ -53,6 +54,8 @@ pub(crate) struct DynamicConfigSettings {
 pub struct PublisherDetails {
     /// The [`UniquePublisherId`] of the [`Publisher`](crate::port::publisher::Publisher).
     pub publisher_id: UniquePublisherId,
+    /// The [`PortName`] of the [`Publisher`](crate::port::publisher::Publisher).
+    pub publisher_name: PortName,
     /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Publisher`](crate::port::publisher::Publisher) was created.
     pub node_id: UniqueNodeId,
@@ -77,6 +80,8 @@ pub struct PublisherDetails {
 pub struct SubscriberDetails {
     /// The [`UniqueSubscriberId`] of the [`Subscriber`](crate::port::subscriber::Subscriber).
     pub subscriber_id: UniqueSubscriberId,
+    /// The [`PortName`] of the [`Subscriber`](crate::port::subscriber::Subscriber).
+    pub subscriber_name: PortName,
     /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Subscriber`](crate::port::subscriber::Subscriber) was created.
     pub node_id: UniqueNodeId,
@@ -190,7 +195,10 @@ impl DynamicConfig {
         state.for_each(|_, details| callback(details));
     }
 
-    pub(crate) fn add_subscriber_id(&self, details: SubscriberDetails) -> Option<ContainerHandle> {
+    pub(crate) fn add_subscriber_id(
+        &self,
+        details: SubscriberDetails,
+    ) -> Option<(*const SubscriberDetails, ContainerHandle)> {
         unsafe {
             self.subscribers
                 .add(details, details.node_id.owner_id())
@@ -204,7 +212,10 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn add_publisher_id(&self, details: PublisherDetails) -> Option<ContainerHandle> {
+    pub(crate) fn add_publisher_id(
+        &self,
+        details: PublisherDetails,
+    ) -> Option<(*const PublisherDetails, ContainerHandle)> {
         unsafe {
             self.publishers
                 .add(details, details.node_id.owner_id())

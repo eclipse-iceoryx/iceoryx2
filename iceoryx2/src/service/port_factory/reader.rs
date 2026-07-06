@@ -38,8 +38,14 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
 
 use super::blackboard::PortFactory;
+use crate::port::port_name::PortName;
 use crate::port::reader::{Reader, ReaderCreateError};
 use crate::service;
+
+#[derive(Debug, Clone)]
+pub(crate) struct ReaderConfig {
+    pub(crate) port_name: PortName,
+}
 
 /// Factory to create a new [`Reader`] port/endpoint for
 /// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard)
@@ -51,6 +57,7 @@ pub struct PortFactoryReader<
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > {
     pub(crate) factory: &'factory PortFactory<Service, KeyType>,
+    config: ReaderConfig,
 }
 
 impl<
@@ -60,14 +67,25 @@ impl<
 > PortFactoryReader<'factory, Service, KeyType>
 {
     pub(crate) fn new(factory: &'factory PortFactory<Service, KeyType>) -> Self {
-        Self { factory }
+        Self {
+            factory,
+            config: ReaderConfig {
+                port_name: PortName::new_empty(),
+            },
+        }
+    }
+
+    /// Sets the [`PortName`] of the  [`Reader`].
+    pub fn name(mut self, name: &PortName) -> Self {
+        self.config.port_name = *name;
+        self
     }
 
     /// Creates a new [`Reader`] or returns a [`ReaderCreateError`] on failure.
     pub fn create(self) -> Result<Reader<Service, KeyType>, ReaderCreateError> {
         let origin = format!("{self:?}");
         Ok(
-            fail!(from origin, when Reader::new(self.factory.service.clone()),"Failed to create new Reader port."),
+            fail!(from origin, when Reader::new(self.factory.service.clone(), self.config.clone()),"Failed to create new Reader port."),
         )
     }
 }

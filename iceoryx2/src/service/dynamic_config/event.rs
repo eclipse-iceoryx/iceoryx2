@@ -36,6 +36,7 @@ use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_log::{error, fatal_panic};
 
 use crate::identifiers::{UniqueListenerId, UniqueNodeId, UniqueNotifierId, UniquePortId};
+use crate::port::port_name::PortName;
 
 use super::PortCleanupAction;
 
@@ -63,6 +64,8 @@ pub struct DynamicConfig {
 pub struct ListenerDetails {
     /// The [`UniqueListenerId`] of the [`Listener`](crate::port::listener::Listener).
     pub listener_id: UniqueListenerId,
+    /// The [`PortName`] of the [`Listener`](crate::port::listener::Listener).
+    pub listener_name: PortName,
     /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Listener`](crate::port::listener::Listener) was created.
     pub node_id: UniqueNodeId,
@@ -75,6 +78,8 @@ pub struct ListenerDetails {
 pub struct NotifierDetails {
     /// The [`UniqueNotifierId`] of the [`Notifier`](crate::port::notifier::Notifier).
     pub notifier_id: UniqueNotifierId,
+    /// The [`PortName`] of the [`Notifier`](crate::port::notifier::Notifier).
+    pub notifier_name: PortName,
     /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Notifier`](crate::port::notifier::Notifier) was created.
     pub node_id: UniqueNodeId,
@@ -175,7 +180,10 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn add_listener_id(&self, details: ListenerDetails) -> Option<ContainerHandle> {
+    pub(crate) fn add_listener_id(
+        &self,
+        details: ListenerDetails,
+    ) -> Option<(*const ListenerDetails, ContainerHandle)> {
         unsafe { self.listeners.add(details, details.node_id.owner_id()).ok() }
     }
 
@@ -185,7 +193,10 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn add_notifier_id(&self, details: NotifierDetails) -> Option<ContainerHandle> {
+    pub(crate) fn add_notifier_id(
+        &self,
+        details: NotifierDetails,
+    ) -> Option<(*const NotifierDetails, ContainerHandle)> {
         unsafe { self.notifiers.add(details, details.node_id.owner_id()).ok() }
     }
 

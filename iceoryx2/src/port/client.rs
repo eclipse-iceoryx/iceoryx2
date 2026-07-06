@@ -98,7 +98,10 @@ use crate::active_request::RequestId;
 use crate::{
     identifiers::UniqueClientId,
     pending_response::PendingResponse,
-    port::{details::data_segment::DataSegment, update_connections::UpdateConnections},
+    port::{
+        details::data_segment::DataSegment, port_name::PortName,
+        update_connections::UpdateConnections,
+    },
     prelude::{BackpressureStrategy, PortFactory},
     raw_sample::RawSampleMut,
     request_mut::RequestMut,
@@ -324,8 +327,8 @@ pub struct Client<
     ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
-    client_id: UniqueClientId,
     client_shared_state: Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
+    client_details: &'static ClientDetails,
     request_id_counter: AtomicU64,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
@@ -486,6 +489,7 @@ impl<
             data_segment_type,
             max_number_of_segments,
             max_active_requests,
+            client_name: client_factory.config.port_name,
         };
 
         let request_sender = Sender {
@@ -586,22 +590,8 @@ impl<
             }
         };
 
-        let new_self = Self {
-            request_id_counter: AtomicU64::new(0),
-            client_shared_state,
-            client_id,
-            _request_payload: PhantomData,
-            _request_header: PhantomData,
-            _response_payload: PhantomData,
-            _response_header: PhantomData,
-        };
-
-        if let Err(e) = new_self
-            .client_shared_state
-            .lock()
-            .force_update_connections()
-        {
-            warn!(from new_self,
+        if let Err(e) = client_shared_state.lock().force_update_connections() {
+            warn!(from origin,
                 "The new Client port is unable to connect to every Server port, caused by {:?}.", e);
         }
 
@@ -609,29 +599,42 @@ impl<
 
         // !MUST! be the last task otherwise a client is added to the dynamic config without the
         // creation of all required resources
-        unsafe {
-            *new_self.client_shared_state.lock().client_handle.get() = match service
-                .dynamic_storage()
-                .get()
-                .request_response()
-                .add_client_id(client_details)
-            {
-                Some(handle) => Some(handle),
-                None => {
-                    fail!(from origin,
+        let (details, handle) = match service
+            .dynamic_storage()
+            .get()
+            .request_response()
+            .add_client_id(client_details)
+        {
+            Some(v) => v,
+            None => {
+                fail!(from origin,
                       with ClientCreateError::ExceedsMaxSupportedClients,
                       "{} since it would exceed the maximum support amount of clients of {}.",
                       msg, service.static_config().request_response().max_clients());
-                }
             }
         };
 
-        Ok(new_self)
+        unsafe { *client_shared_state.lock().client_handle.get() = Some(handle) };
+
+        Ok(Self {
+            request_id_counter: AtomicU64::new(0),
+            client_shared_state,
+            client_details: unsafe { &*details },
+            _request_payload: PhantomData,
+            _request_header: PhantomData,
+            _response_payload: PhantomData,
+            _response_header: PhantomData,
+        })
     }
 
     /// Returns the [`UniqueClientId`] of the [`Client`]
     pub fn id(&self) -> UniqueClientId {
-        self.client_id
+        self.client_details.client_id
+    }
+
+    /// Returns the [`PortName`] of the [`Client`]
+    pub fn name(&self) -> &PortName {
+        &self.client_details.client_name
     }
 
     fn next_request_id(&self) -> RequestId {

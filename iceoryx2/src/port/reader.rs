@@ -37,10 +37,12 @@
 
 use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
 use crate::identifiers::UniqueReaderId;
+use crate::port::port_name::PortName;
 use crate::prelude::EventId;
 use crate::service::builder::CustomKeyMarker;
 use crate::service::builder::blackboard::{BlackboardResources, KeyMemory};
 use crate::service::dynamic_config::blackboard::ReaderDetails;
+use crate::service::port_factory::reader::ReaderConfig;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, SharedServiceState};
 use core::alloc::Layout;
@@ -164,8 +166,8 @@ pub struct Reader<
     KeyType: Send + Sync + Eq + Clone + Copy + Debug + 'static + Hash + ZeroCopySend,
 > {
     shared_state: Service::ArcThreadSafetyPolicy<ReaderSharedState<Service, KeyType>>,
-    dynamic_reader_handle: Option<ContainerHandle>,
-    reader_id: UniqueReaderId,
+    dynamic_reader_handle: ContainerHandle,
+    reader_details: &'static ReaderDetails,
 }
 
 impl<
@@ -189,15 +191,13 @@ impl<
 > Drop for Reader<Service, KeyType>
 {
     fn drop(&mut self) {
-        if let Some(handle) = self.dynamic_reader_handle {
-            self.shared_state
-                .lock()
-                .service_state
-                .dynamic_storage()
-                .get()
-                .blackboard()
-                .release_reader_handle(handle)
-        }
+        self.shared_state
+            .lock()
+            .service_state
+            .dynamic_storage()
+            .get()
+            .blackboard()
+            .release_reader_handle(self.dynamic_reader_handle)
     }
 }
 
@@ -208,6 +208,7 @@ impl<
 {
     pub(crate) fn new(
         service: SharedServiceState<Service, BlackboardResources<Service>>,
+        config: ReaderConfig,
     ) -> Result<Self, ReaderCreateError> {
         let origin = "Reader::new()";
         let msg = "Unable to create Reader port";
@@ -240,25 +241,18 @@ impl<
             }
         };
 
-        let mut new_self = Self {
-            shared_state,
-            reader_id,
-            dynamic_reader_handle: None,
-        };
-
         core::sync::atomic::compiler_fence(Ordering::SeqCst);
 
         // !MUST! be the last task otherwise a reader is added to the dynamic config without the
         // creation of all required resources
-        let dynamic_reader_handle = match service
-            .dynamic_storage()
-            .get()
-            .blackboard()
-            .add_reader_id(ReaderDetails {
+        let (details, handle) = match service.dynamic_storage().get().blackboard().add_reader_id(
+            ReaderDetails {
                 reader_id,
+                reader_name: config.port_name,
                 node_id: *service.shared_node().id(),
-            }) {
-            Some(unique_index) => unique_index,
+            },
+        ) {
+            Some(v) => v,
             None => {
                 fail!(from origin, with ReaderCreateError::ExceedsMaxSupportedReaders,
                             "{} since it would exceed the maximum supported amount of readers of {}.",
@@ -266,13 +260,21 @@ impl<
             }
         };
 
-        new_self.dynamic_reader_handle = Some(dynamic_reader_handle);
-        Ok(new_self)
+        Ok(Self {
+            shared_state,
+            reader_details: unsafe { &*details },
+            dynamic_reader_handle: handle,
+        })
     }
 
     /// Returns the [`UniqueReaderId`] of the [`Reader`]
     pub fn id(&self) -> UniqueReaderId {
-        self.reader_id
+        self.reader_details.reader_id
+    }
+
+    /// Returns the [`PortName`] of the [`Reader`]
+    pub fn name(&self) -> &PortName {
+        &self.reader_details.reader_name
     }
 
     /// Creates a [`EntryHandle`] for direct read access to the value.

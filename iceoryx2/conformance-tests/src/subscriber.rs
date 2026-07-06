@@ -18,7 +18,9 @@ pub mod subscriber {
     use alloc::collections::BTreeSet;
     use alloc::{format, vec};
     use iceoryx2::port::ReceiveError;
-    use iceoryx2::{port::subscriber::SubscriberCreateError, service::Service};
+    use iceoryx2::{
+        port::port_name::PortName, port::subscriber::SubscriberCreateError, service::Service,
+    };
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_testing::*;
@@ -59,6 +61,46 @@ pub mod subscriber {
             assert_that!(subscriber_id_set.insert(subscriber.id()), eq true);
             subscribers.push(subscriber);
         }
+    }
+
+    #[conformance_test]
+    pub fn subscriber_name_is_empty_by_default<Sut: Service>()
+    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        let test = Test::<Sut>::new();
+        let service_name = generate_service_name();
+        let node = test.create_node();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create()?;
+
+        let sut = service.subscriber_builder().create()?;
+
+        assert_that!(sut.name(), eq "");
+
+        Ok(())
+    }
+
+    #[conformance_test]
+    pub fn subscriber_name_can_be_set<Sut: Service>()
+    -> core::result::Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        let test = Test::<Sut>::new();
+        let service_name = generate_service_name();
+        let node = test.create_node();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create()?;
+
+        let subscriber_name = PortName::new("brainslug").unwrap();
+        let sut = service
+            .subscriber_builder()
+            .name(&subscriber_name)
+            .create()?;
+
+        assert_that!(*sut.name(), eq subscriber_name);
+
+        Ok(())
     }
 
     #[conformance_test]

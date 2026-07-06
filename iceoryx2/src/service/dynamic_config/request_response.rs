@@ -24,6 +24,7 @@ use iceoryx2_log::{error, fatal_panic};
 use crate::{
     identifiers::{UniqueClientId, UniqueNodeId, UniquePortId, UniqueServerId},
     port::details::data_segment::DataSegmentType,
+    port::port_name::PortName,
 };
 
 use super::PortCleanupAction;
@@ -35,6 +36,8 @@ use super::PortCleanupAction;
 pub struct ServerDetails {
     /// The [`UniqueServerId`] of the [`Server`](crate::port::server::Server).
     pub server_id: UniqueServerId,
+    /// The [`PortName`] of the [`Server`](crate::port::server::Server).
+    pub server_name: PortName,
     /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Server`](crate::port::server::Server) was created.
     pub node_id: UniqueNodeId,
@@ -61,6 +64,8 @@ pub struct ServerDetails {
 pub struct ClientDetails {
     /// The [`UniqueClientId`] of the [`Client`](crate::port::client::Client).
     pub client_id: UniqueClientId,
+    /// The [`PortName`] of the [`Clinet`](crate::port::client::Client).
+    pub client_name: PortName,
     /// The [`UniqueNodeId`] of the [`Node`](crate::node::Node) under which the
     /// [`Client`](crate::port::client::Client) was created.
     pub node_id: UniqueNodeId,
@@ -166,7 +171,10 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn add_client_id(&self, details: ClientDetails) -> Option<ContainerHandle> {
+    pub(crate) fn add_client_id(
+        &self,
+        details: ClientDetails,
+    ) -> Option<(*const ClientDetails, ContainerHandle)> {
         unsafe { self.clients.add(details, details.node_id.owner_id()).ok() }
     }
 
@@ -176,7 +184,10 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn add_server_id(&self, details: ServerDetails) -> Option<ContainerHandle> {
+    pub(crate) fn add_server_id(
+        &self,
+        details: ServerDetails,
+    ) -> Option<(*const ServerDetails, ContainerHandle)> {
         unsafe { self.servers.add(details, details.node_id.owner_id()).ok() }
     }
 

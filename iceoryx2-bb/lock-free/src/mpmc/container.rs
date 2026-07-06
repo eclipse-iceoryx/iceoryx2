@@ -316,7 +316,7 @@ impl<T: Copy + Debug> Container<T> {
         &self,
         value: T,
         owner_id: OwnerId,
-    ) -> Result<ContainerHandle, ContainerAddFailure> {
+    ) -> Result<(*const T, ContainerHandle), ContainerAddFailure> {
         self.verify_init("add()");
 
         unsafe {
@@ -362,11 +362,15 @@ impl<T: Copy + Debug> Container<T> {
 
             // MUST HAPPEN AFTER all other operations
             self.change_counter.fetch_add(1, Ordering::Release);
-            Ok(ContainerHandle {
-                index,
-                owner_id,
-                container_id: self.container_id.value(),
-            })
+
+            Ok((
+                (*self.data_ptr.as_ptr().add(index as _)).get().cast(),
+                ContainerHandle {
+                    index,
+                    owner_id,
+                    container_id: self.container_id.value(),
+                },
+            ))
         }
     }
 
@@ -727,7 +731,7 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     /// let owner_id = OwnerId::new(91230).unwrap();
     ///
     /// match unsafe { container.add(1234567, owner_id) } {
-    ///     Ok(index) => {
+    ///     Ok((ptr_to_element, index)) => {
     ///         println!("added at index {:?}", index);
     ///         unsafe { container.remove(index, ReleaseMode::Default) };
     ///     },
@@ -741,7 +745,11 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///  * Use [`FixedSizeContainer::remove()`] to release the acquired index again. Otherwise,
     ///    the element will leak.
     ///
-    pub fn add(&self, value: T, owner_id: OwnerId) -> Result<ContainerHandle, ContainerAddFailure> {
+    pub fn add(
+        &self,
+        value: T,
+        owner_id: OwnerId,
+    ) -> Result<(*const T, ContainerHandle), ContainerAddFailure> {
         unsafe { self.container.add(value, owner_id) }
     }
 

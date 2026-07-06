@@ -311,7 +311,7 @@ use iceoryx2_cal::static_storage::*;
 use iceoryx2_cal::zero_copy_connection::ZeroCopyConnection;
 use iceoryx2_log::error;
 use iceoryx2_log::{debug, fail, trace, warn};
-use port_factory::PortFactory;
+use port_factory::{PortFactory, notifier::NotifierConfig};
 use service_hash::ServiceHash;
 
 use self::dynamic_config::DeregisterNodeState;
@@ -567,7 +567,9 @@ impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
 
 #[doc(hidden)]
 pub mod internal {
-    use crate::service::stale_resource_cleanup::ServiceRemoveTagError;
+    use crate::{
+        port::port_name::PortName, service::stale_resource_cleanup::ServiceRemoveTagError,
+    };
 
     use super::*;
     fn send_dead_node_signal<S: Service>(service_hash: &ServiceHash, config: &config::Config) {
@@ -623,7 +625,10 @@ pub mod internal {
 
         let notifier = match Notifier::new_without_auto_event_emission(
             service.service,
-            EventId::new(0),
+            NotifierConfig {
+                default_event_id: EventId::new(0),
+                port_name: PortName::new_empty(),
+            },
         ) {
             Ok(notifier) => notifier,
             Err(e) => {

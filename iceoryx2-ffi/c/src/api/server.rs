@@ -56,7 +56,7 @@ impl ServerUnion {
 #[repr(C)]
 #[repr(align(16))] // alignment of Option<ServerUnion>
 pub struct iox2_server_storage_t {
-    internal: [u8; 248], // magic number obtained with size_of::<Option<ServerUnion>>()
+    internal: [u8; 40], // magic number obtained with size_of::<Option<ServerUnion>>()
 }
 
 #[repr(C)]

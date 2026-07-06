@@ -26,6 +26,9 @@ pub const MAX_ATTRIBUTE_VALUE_LENGTH: usize = 256;
 /// Defines the maximum length of a [`NodeName`](crate::node::node_name::NodeName)
 pub const MAX_NODE_NAME_LENGTH: usize = 128;
 
+/// Defines the maximum length of a [`PortName`](crate::port::port_name::PortName)
+pub const MAX_PORT_NAME_LENGTH: usize = 64;
+
 /// Defines the maximum length of a [`TypeName`](crate::service::static_config::message_type_details::TypeName)
 pub const MAX_TYPE_NAME_LENGTH: usize = 256;
 
