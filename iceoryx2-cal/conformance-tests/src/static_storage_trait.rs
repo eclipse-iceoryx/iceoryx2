@@ -256,6 +256,27 @@ pub mod static_storage_trait {
     }
 
     #[conformance_test]
+    pub fn read_from_created_storage_works<Sut: StaticStorage>() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let mut content = "the mushroom asked for a web".to_string();
+        let storage = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .create(unsafe { content.as_mut_vec() }.as_slice())
+            .unwrap();
+
+        for _ in 0..2 {
+            assert_that!(storage.len(), eq content.len() as _);
+            let mut read_content = String::from_utf8(vec![b' '; storage.len() as usize]).unwrap();
+            storage
+                .read(unsafe { read_content.as_mut_vec() }.as_mut_slice())
+                .unwrap();
+            assert_that!(read_content, eq content);
+        }
+    }
+
+    #[conformance_test]
     pub fn read_with_insufficient_buffer_fails<Sut: StaticStorage>() {
         let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
