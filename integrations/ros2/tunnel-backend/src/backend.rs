@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::rc::Rc;
 use std::sync::Arc;
 
 use iceoryx2::service::{Service, local_threadsafe};
@@ -21,7 +22,7 @@ use crate::NODE_NAME;
 use crate::config::Config;
 use crate::{
     discovery::Discovery,
-    rcl,
+    rcl::{RclNode, RclNodeBuilder},
     relays::{Factory, event, publish_subscribe},
     typesupport::TypeSupportRegistry,
 };
@@ -42,7 +43,7 @@ impl core::error::Error for CreationError {}
 
 #[derive(Debug)]
 pub struct Ros2Backend<S: Service> {
-    node: rcl::NodeHandle,
+    node: Rc<RclNode>,
     /// Typesupport for all configured topics, loaded on initialization.
     type_registry: TypeSupportRegistry,
     discovery: Discovery<S>,
@@ -76,7 +77,11 @@ impl<S: Service> Backend<S> for Ros2Backend<S> {
     }
 
     fn relay_builder(&self) -> Self::RelayFactory<'_> {
-        Factory::new(self.node.clone(), &self.type_registry, self.wake.clone())
+        Factory::new(
+            Rc::clone(&self.node),
+            &self.type_registry,
+            self.wake.clone(),
+        )
     }
 
     fn discovery(&self) -> &impl iceoryx2_services_tunnel_backend::traits::Discovery {
@@ -109,11 +114,11 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
     fn create(self) -> Result<Self::Backend, Self::CreationError> {
         let origin = "Ros2Backend::create";
 
-        let node = fail!(from origin,
-            when rcl::NodeHandle::new(NODE_NAME).create(),
+        let node = Rc::new(fail!(from origin,
+            when RclNodeBuilder::new(NODE_NAME).create(),
             with CreationError::Node,
             "Failed to create ROS 2 node"
-        );
+        ));
 
         // Load all typesupport libraries for configured topics during
         // initialization.
@@ -127,7 +132,7 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
             );
         }
 
-        let discovery = Discovery::new(node.clone(), &self.config.topics);
+        let discovery = Discovery::new(Rc::clone(&node), &self.config.topics);
 
         Ok(Ros2Backend {
             node,
