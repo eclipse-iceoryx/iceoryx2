@@ -434,8 +434,18 @@ impl Directory {
             }
         };
 
-        let contents = fail!(from origin, when dir.contents(),
-                            "{} since the directory contents of {} could not be read.", msg, path);
+        let contents = match dir.contents() {
+            Ok(contents) => contents,
+            Err(DirectoryReadError::DirectoryDoesNoLongerExist) => return Ok(()),
+            Err(DirectoryReadError::InsufficientPermissions) => {
+                fail!(from origin, with DirectoryRemoveError::InsufficientPermissions,
+                    "{msg} due to insufficient permissions to list the directory contents.");
+            }
+            Err(e) => {
+                fail!(from origin, with e.into(),
+                    "{msg} since the directory contents of {path} could not be read. [{e:?}]");
+            }
+        };
 
         for entry in contents {
             let mut sub_path = *path;
