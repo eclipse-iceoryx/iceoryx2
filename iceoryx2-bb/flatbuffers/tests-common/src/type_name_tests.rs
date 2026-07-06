@@ -62,3 +62,17 @@ pub fn type_with_lifetime_arg_and_extra_namespace_works() {
     assert_that!(sut.name, eq "TypeWithLifetimeArgAndNamespace");
     assert_that!(sut.namespace, eq "another_namespace");
 }
+
+pub mod nested_ns {
+    pub mod flausch_rakete {
+        pub struct Leckerli {}
+    }
+}
+
+#[test]
+pub fn type_with_nested_namespace_works() {
+    let sut = TypeName::new::<nested_ns::flausch_rakete::Leckerli>();
+
+    assert_that!(sut.name, eq "Leckerli");
+    assert_that!(sut.namespace, eq "flausch_rakete");
+}

@@ -376,3 +376,32 @@ pub fn remove_non_empty_directory_works() {
 
     assert_that!(Directory::does_exist(&sut_name).unwrap(), eq false);
 }
+
+#[test]
+pub fn directory_is_removed_when_it_goes_out_of_scope_and_has_ownership() {
+    let mut test = TestFixture::new();
+
+    create_test_directory();
+    let sut_name = test.generate_path_in_test_directory();
+
+    let sut = Directory::create(&sut_name, Permission::OWNER_ALL).unwrap();
+    sut.acquire_ownership();
+    drop(sut);
+
+    assert_that!(Directory::does_exist(&sut_name).unwrap(), eq false);
+}
+
+#[test]
+pub fn directory_is_not_removed_when_it_goes_out_of_scope_and_has_no_ownership() {
+    let mut test = TestFixture::new();
+
+    create_test_directory();
+    let sut_name = test.generate_path_in_test_directory();
+
+    let sut = Directory::create(&sut_name, Permission::OWNER_ALL).unwrap();
+    sut.release_ownership();
+    drop(sut);
+
+    assert_that!(Directory::does_exist(&sut_name).unwrap(), eq true);
+    Directory::remove(&sut_name).unwrap();
+}

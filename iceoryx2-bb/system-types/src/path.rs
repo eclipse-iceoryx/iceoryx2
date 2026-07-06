@@ -118,7 +118,7 @@ semantic_string! {
 impl Path {
     /// Returns a [`str`] reference to the contained value.
     pub fn as_str(&self) -> &str {
-        // safety: a file name contains only valid utf8 characters
+        // safety: a path contains only valid utf8 characters
         unsafe { core::str::from_utf8_unchecked(self.as_bytes()) }
     }
 

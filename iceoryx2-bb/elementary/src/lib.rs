@@ -22,8 +22,8 @@ extern crate alloc;
 #[macro_use]
 pub mod enum_gen;
 
-pub mod alignment;
 /// A strong type that represents the alignment part of [`core::alloc::Layout`]
+pub mod alignment;
 pub mod bump_allocator;
 pub mod code_style;
 pub mod cyclic_tagger;

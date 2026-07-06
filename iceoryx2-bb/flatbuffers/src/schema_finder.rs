@@ -72,6 +72,14 @@ fn is_namespace(file_name: &FileName, type_name: &TypeName) -> bool {
 
 /// Returns the best fitting schema file for a given [`TypeName`]. If no schema file could be found
 /// [`None`] is returned.
+///
+/// The best fitting schema file in descending order:
+///
+/// 1. `namespace/name.fbs`
+/// 2. `name.fbs`
+/// 3. `something/namespace/name.fbs`
+/// 4. `something/name.fbs`
+///
 pub fn find_best_fitting_schema_file(
     type_name: &TypeName,
     root_path: &Path,

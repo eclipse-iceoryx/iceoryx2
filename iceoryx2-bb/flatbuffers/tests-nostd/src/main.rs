@@ -13,7 +13,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(not(feature = "std"), no_main)]
 
-extern crate iceoryx2_bb_linux_tests_common;
+extern crate iceoryx2_bb_flatbuffers_tests_common;
 extern crate iceoryx2_bb_loggers;
 
 use core::{
