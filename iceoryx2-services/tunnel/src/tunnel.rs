@@ -24,7 +24,7 @@ use iceoryx2::service::Service;
 use iceoryx2::service::ServiceDetails;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2_log::{fail, info};
-use iceoryx2_services_tunnel_backend::traits::{Backend, Discovery};
+use iceoryx2_services_tunnel_backend::traits::{Backend, Discovery, Mapping};
 use iceoryx2_services_tunnel_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
 use iceoryx2_services_tunnel_backend::types::service_description::ServiceDescription;
 
@@ -247,6 +247,7 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
         let node = &self.node;
         let backend = &self.backend;
         let services_filter = &self.services_filter;
+        let mapping = backend.mapping();
         let discovery_state = &mut self.discovery_state;
 
         // Force the discovery local state to match the tracker snapshot.
@@ -256,7 +257,8 @@ impl<S: Service, B: for<'a> Backend<S> + Debug> Tunnel<S, B> {
                 .iter()
                 .filter(|details| is_locally_offered(details, node.id()))
                 .filter_map(|details| ServiceDescription::try_from(&details.static_details).ok())
-                .filter(|description| allowed(description, services_filter)),
+                .filter(|description| allowed(description, services_filter))
+                .filter(|description| mapping.remote(description).is_some()),
             |description| announce_added::<S, B>(node, backend, description),
             |description| announce_removed::<S, B>(node, backend, description),
         )
@@ -326,6 +328,9 @@ fn on_discovery_update<S: Service, B: Backend<S>>(
     match update {
         DiscoveryUpdate::Added(description) => {
             if !allowed(&description, allowlist) {
+                return Ok(());
+            }
+            if backend.mapping().remote(&description).is_none() {
                 return Ok(());
             }
 
