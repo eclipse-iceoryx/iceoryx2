@@ -19,14 +19,13 @@ use r2r_rcl::{
 
 use crate::qos::{Durability, History, Liveliness, QosProfile, Reliability};
 
-/// `RMW_DURATION_INFINITE`; reported by the RMW for unbounded policies.
+/// Matches `RMW_DURATION_INFINITE`. Represents unbounded.
 const INFINITE: rmw_time_s = rmw_time_s {
     sec: 9223372036,
     nsec: 854775807,
 };
 
-/// Writes `profile` onto an rcl-provided default QoS. `None` durations keep
-/// the rcl defaults.
+/// Applies a QosProfile onto the rcl representation.
 pub(crate) fn apply(profile: &QosProfile, qos: &mut rmw_qos_profile_t) {
     match profile.history {
         History::SystemDefault => {
@@ -87,17 +86,8 @@ pub(crate) fn apply(profile: &QosProfile, qos: &mut rmw_qos_profile_t) {
     }
 }
 
-fn time(duration: Duration) -> rmw_time_s {
-    rmw_time_s {
-        sec: duration.as_secs(),
-        nsec: duration.subsec_nanos() as u64,
-    }
-}
-
-/// Reads a reported QoS into a [`QosProfile`]. Unknown (and deprecated)
-/// policies fall back to `SystemDefault`; unset or infinite durations to
-/// `None`.
-pub(crate) fn read(qos: &rmw_qos_profile_t) -> QosProfile {
+// Parses an rcl representation of QoS into a QosProfile.
+pub(crate) fn parse(qos: &rmw_qos_profile_t) -> QosProfile {
     QosProfile {
         history: match qos.history {
             rmw_qos_history_policy_e::RMW_QOS_POLICY_HISTORY_KEEP_LAST => {
@@ -143,6 +133,13 @@ pub(crate) fn read(qos: &rmw_qos_profile_t) -> QosProfile {
             _ => Liveliness::SystemDefault,
         },
         liveliness_lease_duration: duration(&qos.liveliness_lease_duration),
+    }
+}
+
+fn time(duration: Duration) -> rmw_time_s {
+    rmw_time_s {
+        sec: duration.as_secs(),
+        nsec: duration.subsec_nanos() as u64,
     }
 }
 
