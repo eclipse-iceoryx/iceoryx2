@@ -31,6 +31,7 @@
 //! - [`RelayBuilder`](traits::RelayBuilder): Builder pattern for configuring relays
 //! - [`PublishSubscribeRelay`](traits::PublishSubscribeRelay): Bidirectional pub-sub data tunneling
 //! - [`EventRelay`](traits::EventRelay): Bidirectional event notification tunneling
+//! - [`Mapping`](traits::Mapping): Name and QoS mapping strategy between iceoryx2 services and backend endpoints
 //! - [`Translator`](traits::Translator): Payload translation strategy applied as data crosses the backend
 //!
 //! # Architecture
