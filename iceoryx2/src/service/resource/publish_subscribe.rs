@@ -10,10 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate alloc;
+
 use crate::service;
 use crate::service::builder::ServiceOpenError;
 use crate::service::resource::{RemoveStaleResourcesError, ServiceResource};
 use crate::{node::SharedNode, service::builder::ServiceCreateError};
+use alloc::vec;
+use alloc::vec::Vec;
 use core::marker::PhantomData;
 use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};

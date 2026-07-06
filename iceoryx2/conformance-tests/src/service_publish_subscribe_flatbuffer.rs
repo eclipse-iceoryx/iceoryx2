@@ -177,6 +177,7 @@ pub mod service_publish_subscribe_flatbuffer {
 
         let type_definition = sut.type_definition().unwrap();
 
+        assert_that!(type_definition.len(), eq SCHEMA.len() as u64);
         let mut buffer = vec![0u8; type_definition.len() as usize];
         type_definition.read(&mut buffer).unwrap();
 
