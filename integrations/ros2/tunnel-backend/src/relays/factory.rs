@@ -14,45 +14,50 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use iceoryx2::service::{Service, local_threadsafe};
+use iceoryx2_services_tunnel_backend::traits::Mapping;
 use iceoryx2_services_tunnel_backend::types::service_description::ServiceDescription;
 use iceoryx2_services_tunnel_backend::{traits::RelayFactory, types::wake::WakeHandle};
 
+use crate::mapping::TopicDescription;
 use crate::rcl::RclNode;
 use crate::relays::{event, publish_subscribe};
 use crate::typesupport::TypeSupportRegistry;
 
 /// Factory for creating relay builders.
 #[derive(Debug)]
-pub struct Factory<'a, S: Service> {
+pub struct Factory<'a, S: Service, M: Mapping<EndpointDescription = TopicDescription>> {
     node: Rc<RclNode>,
     type_registry: &'a TypeSupportRegistry,
-    /// Wake handle to be signaled by relays when new data arrives.
-    /// `None` when the backend was constructed in polled mode.
+    mapping: &'a M,
     wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
-impl<'a, S: Service> Factory<'a, S> {
+impl<'a, S: Service, M: Mapping<EndpointDescription = TopicDescription>> Factory<'a, S, M> {
     pub fn new(
         node: Rc<RclNode>,
         type_registry: &'a TypeSupportRegistry,
+        mapping: &'a M,
         wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     ) -> Self {
         Factory {
             node,
             type_registry,
+            mapping,
             wake,
             _phantom: core::marker::PhantomData,
         }
     }
 }
 
-impl<S: Service> RelayFactory<S> for Factory<'_, S> {
+impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>> RelayFactory<S>
+    for Factory<'_, S, M>
+{
     type PublishSubscribeRelay = publish_subscribe::Relay<S>;
     type EventRelay = event::Relay<S>;
 
     type PublishSubscribeBuilder<'a>
-        = publish_subscribe::Builder<'a, S>
+        = publish_subscribe::Builder<'a, S, M>
     where
         Self: 'a;
 
@@ -69,9 +74,10 @@ impl<S: Service> RelayFactory<S> for Factory<'_, S> {
         Self: 'a,
     {
         publish_subscribe::Builder::new(
+            description,
             Rc::clone(&self.node),
             self.type_registry,
-            description,
+            self.mapping,
             self.wake.clone(),
         )
     }

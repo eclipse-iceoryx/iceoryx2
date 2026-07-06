@@ -16,27 +16,19 @@ use std::rc::Rc;
 use core::error::Error;
 
 use iceoryx2::service::Service;
-use iceoryx2::service::messaging_pattern::MessagingPattern;
 use iceoryx2::service::service_hash::ServiceHash;
-use iceoryx2::service::service_name::ServiceName;
-use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_log::fail;
+use iceoryx2_services_tunnel_backend::traits::Mapping;
 use iceoryx2_services_tunnel_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
-use iceoryx2_services_tunnel_backend::types::service_description::{
-    PatternDescription, PatternSettings, PublishSubscribeDescription, ServiceDescription,
-    TypeDescription,
-};
 
-use crate::config::TopicConfig;
-use crate::mapping;
-use crate::rcl::{RclNode, TopicName, TypeName};
-use crate::ros_header::RosHeader;
+use crate::config::{TopicConfig, TopicName, TypeName};
+use crate::mapping::TopicDescription;
+use crate::rcl::RclNode;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
     Graph,
-    InvalidServiceName,
     Processing,
 }
 
@@ -61,36 +53,34 @@ impl core::error::Error for AnnouncementError {}
 
 /// Reports liveness status of the configured topics in the ROS graph.
 #[derive(Debug)]
-pub struct Discovery<S: Service> {
+pub struct Discovery<S: Service, M: Mapping<EndpointDescription = TopicDescription>> {
     node: Rc<RclNode>,
-    /// The configured allowlist.
     allowlist: HashMap<TopicName, TypeName>,
+    mapping: Rc<M>,
     /// Configured topics detected as live in the ROS graph, with the service
     /// hash they were reported under.
     discovered: RefCell<HashMap<TopicName, ServiceHash>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
-impl<S: Service> Discovery<S> {
-    pub(crate) fn new(node: Rc<RclNode>, topics: &[TopicConfig]) -> Self {
+impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>> Discovery<S, M> {
+    pub(crate) fn new(node: Rc<RclNode>, topics: &[TopicConfig], mapping: Rc<M>) -> Self {
         Self {
             node,
             allowlist: topics
                 .iter()
-                .map(|topic| {
-                    (
-                        TopicName::from(&topic.topic),
-                        TypeName::from(&topic.type_name),
-                    )
-                })
+                .map(|topic| (topic.topic.clone(), topic.type_name.clone()))
                 .collect(),
+            mapping,
             discovered: RefCell::new(HashMap::new()),
             _phantom: core::marker::PhantomData,
         }
     }
 }
 
-impl<S: Service> iceoryx2_services_tunnel_backend::traits::Discovery for Discovery<S> {
+impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>>
+    iceoryx2_services_tunnel_backend::traits::Discovery for Discovery<S, M>
+{
     type DiscoveryError = DiscoveryError;
     type AnnouncementError = AnnouncementError;
 
@@ -115,15 +105,33 @@ impl<S: Service> iceoryx2_services_tunnel_backend::traits::Discovery for Discove
         );
 
         for (topic, type_name) in &self.allowlist {
-            let live = graph.iter().any(|(name, _)| name == topic);
+            let live = graph
+                .iter()
+                .any(|(name, _)| name.as_str() == topic.as_str());
             let discovered = self.discovered.borrow().contains_key(topic);
 
             if live && !discovered {
-                let description = fail!(from origin,
-                    when service_description::<S>(topic, type_name),
-                    "Failed to describe the service for topic '{}'",
+                let profiles = fail!(from origin,
+                    when self.node.publisher_qos_profiles(&topic.into()),
+                    with DiscoveryError::Graph,
+                    "Failed to query publisher QoS for topic '{}'",
                     topic.as_str()
                 );
+
+                // The description carries one profile; take the first
+                // publisher's, defaulting when only subscribers exist.
+                let qos = profiles.into_iter().next().unwrap_or_default();
+
+                let remote = TopicDescription {
+                    topic: topic.clone(),
+                    type_name: type_name.clone(),
+                    qos,
+                };
+
+                // Skip topics not mapped.
+                let Some(description) = self.mapping.local::<S>(&remote) else {
+                    continue;
+                };
 
                 let service_hash = description.service_hash;
                 fail!(from origin,
@@ -151,45 +159,4 @@ impl<S: Service> iceoryx2_services_tunnel_backend::traits::Discovery for Discove
 
         Ok(())
     }
-}
-
-/// The [`ServiceDescription`] of the service bridging a discovered ROS
-/// topic. Settings are left unset; the tunnel applies local defaults.
-fn service_description<S: Service>(
-    topic: &TopicName,
-    type_name: &TypeName,
-) -> Result<ServiceDescription, DiscoveryError> {
-    let origin = "discovery::service_description";
-
-    let service_name: ServiceName = fail!(from origin,
-        when mapping::service_name(topic.as_str()).as_str().try_into(),
-        with DiscoveryError::InvalidServiceName,
-        "Invalid service name derived from topic '{}'",
-        topic.as_str()
-    );
-
-    // TODO: Define configuration per-topic in configuration file; apply here.
-
-    // The payload is a dynamically-sized CDR stream; its type name carries
-    // the ROS 2 type name.
-    let payload = TypeDescription {
-        variant: TypeVariant::Dynamic,
-        type_name: type_name.as_str().to_string(),
-        size: 1,
-        alignment: 1,
-    };
-    let user_header = TypeDescription::from(&RosHeader::type_detail());
-
-    Ok(ServiceDescription {
-        service_hash: ServiceHash::new::<S::ServiceNameHasher>(
-            &service_name,
-            MessagingPattern::PublishSubscribe,
-        ),
-        name: service_name,
-        pattern: PatternDescription::PublishSubscribe(PublishSubscribeDescription {
-            payload,
-            user_header,
-            settings: PatternSettings::UnknownApplyDefaults,
-        }),
-    })
 }

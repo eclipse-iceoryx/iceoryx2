@@ -146,6 +146,5 @@ fn time(duration: Duration) -> rmw_time_s {
 fn duration(time: &rmw_time_s) -> Option<Duration> {
     let unset = time.sec == 0 && time.nsec == 0;
     let infinite = (time.sec, time.nsec) >= (INFINITE.sec, INFINITE.nsec);
-    (!unset && !infinite)
-        .then(|| Duration::from_secs(time.sec) + Duration::from_nanos(time.nsec))
+    (!unset && !infinite).then(|| Duration::from_secs(time.sec) + Duration::from_nanos(time.nsec))
 }

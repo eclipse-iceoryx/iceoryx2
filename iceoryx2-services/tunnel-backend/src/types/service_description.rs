@@ -27,8 +27,7 @@ use serde::{Deserialize, Serialize};
 pub struct ServiceDescription {
     /// The service's identity: keys bridges, discovery state and backend
     /// wire entries. Computed from (name, pattern) via
-    /// [`ServiceHash::new()`] with the
-    /// [`Service`](iceoryx2::service::Service)'s name hasher.
+    /// [`ServiceHash::new()`] with the [`Service`]'s name hasher.
     pub service_hash: ServiceHash,
     pub name: ServiceName,
     pub pattern: PatternDescription,
