@@ -30,7 +30,9 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_cal::event::{NamedConceptBuilder, NamedConceptMgmt};
-use iceoryx2_cal::named_concept::{NamedConceptConfiguration, NamedConceptRemoveError};
+use iceoryx2_cal::named_concept::{
+    NamedConceptConfiguration, NamedConceptPathHintRemoveError, NamedConceptRemoveError,
+};
 use iceoryx2_cal::static_storage::{
     StaticStorage, StaticStorageBuilder, StaticStorageCreateError, StaticStorageOpenError,
     StaticStorageReadError,
@@ -100,6 +102,7 @@ impl<ServiceType: service::Service> Abandonable for PublishSubscribeResources<Se
 impl<ServiceType: service::Service> Drop for PublishSubscribeResources<ServiceType> {
     fn drop(&mut self) {
         if let Some(path_hint) = &self.path_hint {
+            drop(self.type_definition.take());
             if self.has_ownership.load(Ordering::Relaxed) {
                 if let Err(e) =
                     <ServiceType::StaticStorage as NamedConceptMgmt>::remove_path_hint(path_hint)
@@ -117,6 +120,9 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
 
     fn acquire_ownership(&self) {
         self.has_ownership.store(true, Ordering::Relaxed);
+        if let Some(s) = &self.type_definition {
+            s.acquire_ownership();
+        }
     }
 
     fn create(
@@ -230,6 +236,8 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
                     "{msg} since the payload defined in the provided type definition is not equal to the type definition of the service.");
             }
 
+            static_storage.release_ownership();
+
             Ok(Self {
                 has_ownership: AtomicBool::new(false),
                 type_definition: Some(static_storage),
@@ -252,13 +260,13 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
     ) -> Result<(), RemoveStaleResourcesError> {
         let origin = "PublishSubscribeResources::remove_stale_resources()";
         let msg = "Unable to remove stale publish subscribe resources";
-        let config = Self::type_definition_static_storage_config(config, static_config);
+        let storage_config = Self::type_definition_static_storage_config(config, static_config);
         match unsafe {
             <ServiceType::StaticStorage as iceoryx2_cal::named_concept::NamedConceptMgmt>::remove_cfg(
-            &PAYLOAD_TYPE_DEFINITION, &config,
+            &PAYLOAD_TYPE_DEFINITION, &storage_config,
         )
         } {
-            Ok(_) => Ok(()),
+            Ok(_) => (),
             Err(NamedConceptRemoveError::Interrupt) => {
                 fail!(from origin, with RemoveStaleResourcesError::InterruptedBySignal,
                     "{msg} since it was interrupted by a signal.");
@@ -270,6 +278,19 @@ impl<ServiceType: service::Service> ServiceResource for PublishSubscribeResource
             Err(NamedConceptRemoveError::InternalError) => {
                 fail!(from origin, with RemoveStaleResourcesError::InternalFailure,
                     "{msg} due to an internal failure.");
+            }
+        }
+
+        let dir = Self::service_resource_directory(config, static_config);
+        match <ServiceType::StaticStorage as NamedConceptMgmt>::remove_path_hint(&dir) {
+            Ok(()) => Ok(()),
+            Err(NamedConceptPathHintRemoveError::InsufficientPermissions) => {
+                fail!(from origin, with RemoveStaleResourcesError::InsufficientPermissions,
+                    "{msg} since the resource directory could not be removed due to insufficient permissions.");
+            }
+            Err(NamedConceptPathHintRemoveError::InternalError) => {
+                fail!(from origin, with RemoveStaleResourcesError::InternalFailure,
+                    "{msg} since the resource directory could not be removed due to an internal failure.");
             }
         }
     }
