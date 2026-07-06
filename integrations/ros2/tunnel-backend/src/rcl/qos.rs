@@ -19,6 +19,12 @@ use r2r_rcl::{
 
 use crate::qos::{Durability, History, Liveliness, QosProfile, Reliability};
 
+/// `RMW_DURATION_INFINITE`; reported by the RMW for unbounded policies.
+const INFINITE: rmw_time_s = rmw_time_s {
+    sec: 9223372036,
+    nsec: 854775807,
+};
+
 /// Writes `profile` onto an rcl-provided default QoS. `None` durations keep
 /// the rcl defaults.
 pub(crate) fn apply(profile: &QosProfile, qos: &mut rmw_qos_profile_t) {
@@ -86,4 +92,63 @@ fn time(duration: Duration) -> rmw_time_s {
         sec: duration.as_secs(),
         nsec: duration.subsec_nanos() as u64,
     }
+}
+
+/// Reads a reported QoS into a [`QosProfile`]. Unknown (and deprecated)
+/// policies fall back to `SystemDefault`; unset or infinite durations to
+/// `None`.
+pub(crate) fn read(qos: &rmw_qos_profile_t) -> QosProfile {
+    QosProfile {
+        history: match qos.history {
+            rmw_qos_history_policy_e::RMW_QOS_POLICY_HISTORY_KEEP_LAST => {
+                History::KeepLast(qos.depth)
+            }
+            rmw_qos_history_policy_e::RMW_QOS_POLICY_HISTORY_KEEP_ALL => History::KeepAll,
+            _ => History::SystemDefault,
+        },
+        reliability: match qos.reliability {
+            rmw_qos_reliability_policy_e::RMW_QOS_POLICY_RELIABILITY_RELIABLE => {
+                Reliability::Reliable
+            }
+            rmw_qos_reliability_policy_e::RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT => {
+                Reliability::BestEffort
+            }
+            rmw_qos_reliability_policy_e::RMW_QOS_POLICY_RELIABILITY_BEST_AVAILABLE => {
+                Reliability::BestAvailable
+            }
+            _ => Reliability::SystemDefault,
+        },
+        durability: match qos.durability {
+            rmw_qos_durability_policy_e::RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL => {
+                Durability::TransientLocal
+            }
+            rmw_qos_durability_policy_e::RMW_QOS_POLICY_DURABILITY_VOLATILE => Durability::Volatile,
+            rmw_qos_durability_policy_e::RMW_QOS_POLICY_DURABILITY_BEST_AVAILABLE => {
+                Durability::BestAvailable
+            }
+            _ => Durability::SystemDefault,
+        },
+        deadline: duration(&qos.deadline),
+        lifespan: duration(&qos.lifespan),
+        liveliness: match qos.liveliness {
+            rmw_qos_liveliness_policy_e::RMW_QOS_POLICY_LIVELINESS_AUTOMATIC => {
+                Liveliness::Automatic
+            }
+            rmw_qos_liveliness_policy_e::RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC => {
+                Liveliness::ManualByTopic
+            }
+            rmw_qos_liveliness_policy_e::RMW_QOS_POLICY_LIVELINESS_BEST_AVAILABLE => {
+                Liveliness::BestAvailable
+            }
+            _ => Liveliness::SystemDefault,
+        },
+        liveliness_lease_duration: duration(&qos.liveliness_lease_duration),
+    }
+}
+
+fn duration(time: &rmw_time_s) -> Option<Duration> {
+    let unset = time.sec == 0 && time.nsec == 0;
+    let infinite = (time.sec, time.nsec) >= (INFINITE.sec, INFINITE.nsec);
+    (!unset && !infinite)
+        .then(|| Duration::from_secs(time.sec) + Duration::from_nanos(time.nsec))
 }
