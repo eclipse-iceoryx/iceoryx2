@@ -59,3 +59,13 @@ zenoh = { version = "1.9.0", default-features = false, features = [
     "transport_unixsock-stream",
     "transport_ws",
 ] }
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+codegen-units = 1
+strip = true
+lto = true
+# opt-level = "z"
+panic = "abort"

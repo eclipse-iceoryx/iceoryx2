@@ -41,3 +41,13 @@ iceoryx2-services-tunnel-backend = { version = "0.9.999", path = "../../iceoryx2
 libloading = { version = "0.8" }
 r2r_rcl = { version = "0.9.5" }
 serde = { version = "1.0.203", default-features = false, features = ["alloc", "derive"] }
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+codegen-units = 1
+strip = true
+lto = true
+# opt-level = "z"
+panic = "abort"
