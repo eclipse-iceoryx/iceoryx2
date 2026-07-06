@@ -466,21 +466,25 @@ impl crate::static_storage::StaticStorageBuilder<Storage> for Builder {
     }
 
     fn create_locked(self) -> Result<Locked, StaticStorageCreateError> {
-        let msg = format!("Unable to create target directory \"{}\"", self.config.path);
-        if !fail!(from self, when Directory::does_exist(&self.config.path),
-            with StaticStorageCreateError::Creation,
-               "{} since the system is unable to determine if the directory even exists.", msg)
-        {
+        // create root directory before File
+        let msg = format!("Unable to create root directory \"{}\"", self.config.path);
+        let Ok(root_dir_exist) = Directory::does_exist(&self.config.path) else {
+            fail!(from self, with StaticStorageCreateError::RootDirectoryCreationFailure,
+                "{} since the system is unable to determine if the directory even exists.", msg);
+        };
+
+        if !root_dir_exist {
             match Directory::create(&self.config.path, DIR_PERMISSIONS) {
                 Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => (),
                 Err(e) => {
-                    fail!(from self, with StaticStorageCreateError::Creation,
+                    fail!(from self, with StaticStorageCreateError::RootDirectoryCreationFailure,
                         "{} due to a failure while creating the service root directory ({:?}).", msg, e);
                 }
             }
             trace!(from self, "Created service root directory \"{}\" since it did not exist before.", self.config.path);
         }
 
+        // create File
         let file = match FileBuilder::new(&self.config.path_for(&self.storage_name))
             .creation_mode(CreationMode::CreateExclusive)
             .permission(Permission::OWNER_ALL)

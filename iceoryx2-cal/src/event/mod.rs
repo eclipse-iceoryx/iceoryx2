@@ -98,6 +98,7 @@ impl core::error::Error for ListenerWaitError {}
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum ListenerCreateError {
     AlreadyExists,
+    RootDirectoryCreationFailure,
     InsufficientPermissions,
     Interrupt,
     InternalFailure,

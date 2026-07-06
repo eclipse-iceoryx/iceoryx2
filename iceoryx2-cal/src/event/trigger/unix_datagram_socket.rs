@@ -20,10 +20,12 @@ use crate::{
     },
     named_concept::NamedConceptRemoveError,
 };
+use alloc::format;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
 use iceoryx2_bb_elementary_traits::{non_null::NonNullCompat, testing::abandonable::Abandonable};
 use iceoryx2_bb_posix::{
+    directory::*,
     file::{CreationMode, File, FileRemoveError},
     file_descriptor::FileDescriptorBased,
     file_descriptor_set::SynchronousMultiplexing,
@@ -35,15 +37,22 @@ use iceoryx2_bb_posix::{
     },
 };
 use iceoryx2_bb_system_types::file_name::FileName;
-use iceoryx2_log::fail;
+use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_log::{fail, trace};
 
 const RECEIVE_BUFFER_SIZE: u64 = 32;
 
 #[cfg(not(feature = "dev_permissions"))]
 const SOCKET_PERMISSIONS: Permission = Permission::OWNER_ALL;
+#[cfg(not(feature = "dev_permissions"))]
+const DIR_PERMISSIONS: Permission = Permission::OWNER_ALL
+    .const_bitor(Permission::GROUP_READ)
+    .const_bitor(Permission::GROUP_EXEC);
 
 #[cfg(feature = "dev_permissions")]
 const SOCKET_PERMISSIONS: Permission = Permission::ALL;
+#[cfg(feature = "dev_permissions")]
+const DIR_PERMISSIONS: Permission = Permission::ALL;
 
 #[derive(Debug)]
 pub struct UnixDatagramHandle<E: EventState, Storage: DynamicStorage<State<E, ()>>> {
@@ -202,6 +211,12 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
         }
     }
 
+    fn remove_path_hint(
+        value: &Path,
+    ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
+        crate::named_concept::remove_path_hint(value)
+    }
+
     fn empty_buffer(&self) -> Result<(), ListenerWaitError> {
         let msg = "Unable to empty notification buffer";
         loop {
@@ -230,6 +245,26 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> WaiterInterface<E, ()
     ) -> Result<Self, ListenerCreateError> {
         let origin = "UnixDatagramWaiter::create()";
         let msg = "Unable to create unix datagram socket trigger";
+
+        // create root directory before the Unix Datagram Receiver
+        let dir_msg = format!("Unable to create root directory \"{}\"", config.path_hint);
+        let Ok(root_dir_exist) = Directory::does_exist(&config.path_hint) else {
+            fail!(from origin, with ListenerCreateError::RootDirectoryCreationFailure,
+                "{} since the system is unable to determine if the directory even exists.", dir_msg);
+        };
+
+        if !root_dir_exist {
+            match Directory::create(&config.path_hint, DIR_PERMISSIONS) {
+                Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => (),
+                Err(e) => {
+                    fail!(from origin, with ListenerCreateError::RootDirectoryCreationFailure,
+                        "{} due to a failure while creating the service root directory ({:?}).", dir_msg, e);
+                }
+            }
+            trace!(from origin, "Created service root directory \"{}\" since it did not exist before.", config.path_hint);
+        }
+
+        // create Unix Datagram Receiver
         let full_path = config.path_for(name);
         let receiver = match UnixDatagramReceiverBuilder::new(&full_path)
             .creation_mode(CreationMode::CreateExclusive)

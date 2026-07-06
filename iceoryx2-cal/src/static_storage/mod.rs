@@ -30,7 +30,7 @@ use crate::named_concept::{
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum StaticStorageCreateError {
     AlreadyExists,
-    Creation,
+    RootDirectoryCreationFailure,
     Write,
     InsufficientPermissions,
     Interrupt,

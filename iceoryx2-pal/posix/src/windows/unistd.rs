@@ -17,7 +17,8 @@
 use windows_sys::Win32::{
     Foundation::{
         CloseHandle, DUPLICATE_SAME_ACCESS, DuplicateHandle, ERROR_ACCESS_DENIED,
-        ERROR_FILE_NOT_FOUND, ERROR_NO_MORE_FILES, FALSE, HANDLE, INVALID_HANDLE_VALUE, TRUE,
+        ERROR_FILE_NOT_FOUND, ERROR_NO_MORE_FILES, ERROR_PATH_NOT_FOUND, FALSE, HANDLE,
+        INVALID_HANDLE_VALUE, TRUE,
     },
     Networking::WinSock::{
         INVALID_SOCKET, SOCKET_ERROR, WSADuplicateSocketA, WSAPROTOCOL_INFOA, WSASocketA,
@@ -312,7 +313,7 @@ pub unsafe fn write(fd: int, buf: *const void, count: size_t) -> ssize_t {
 
 pub unsafe fn access(pathname: *const c_char, mode: int) -> int {
     let (attributes, _) = unsafe {
-        win32call! {GetFileAttributesA(pathname as *const u8) , ignore ERROR_FILE_NOT_FOUND}
+        win32call! {GetFileAttributesA(pathname as *const u8) , ignore ERROR_FILE_NOT_FOUND, ERROR_PATH_NOT_FOUND}
     };
 
     if attributes == INVALID_FILE_ATTRIBUTES {

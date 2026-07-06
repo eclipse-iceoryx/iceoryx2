@@ -208,7 +208,8 @@ impl<
     fn remove_path_hint(
         value: &Path,
     ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
-        Storage::remove_path_hint(value)
+        let _ = Storage::remove_path_hint(value);
+        W::remove_path_hint(value)
     }
 }
 
@@ -694,6 +695,10 @@ impl<
             Err(DynamicStorageCreateError::AlreadyExists) => {
                 fail!(from self, with ListenerCreateError::AlreadyExists,
                     "{msg} since it already exists.");
+            }
+            Err(DynamicStorageCreateError::RootDirectoryCreationFailure,) => {
+                fail!(from self, with ListenerCreateError::RootDirectoryCreationFailure,
+                    "{msg} since the creation of the underlying iceoryx2 root directory failed.");
             }
             Err(DynamicStorageCreateError::InsufficientPermissions) => {
                 fail!(from self, with ListenerCreateError::InsufficientPermissions,

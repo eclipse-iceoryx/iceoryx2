@@ -701,7 +701,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                         fail!(from self, with ServiceCreateError::AlreadyExists,
                            "{} since the service already exists.", msg);
                     }
-                    Err(StaticStorageCreateError::Creation) => {
+                    Err(StaticStorageCreateError::RootDirectoryCreationFailure) => {
                         fail!(from self, with ServiceCreateError::IsBeingCreatedByAnotherInstance,
                             "{} since the service is being created by another instance.", msg);
                     }
@@ -738,6 +738,10 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     Err(DynamicStorageCreateError::AlreadyExists) => {
                         fail!(from self, with ServiceCreateError::ServiceInCorruptedState,
                             "This should never happen! {} since the unique dynamic service management segment already exists.", msg);
+                    }
+                    Err(DynamicStorageCreateError::RootDirectoryCreationFailure) => {
+                        fail!(from self, with ServiceCreateError::InternalFailure,
+                            "This should never happen! {} since the creation of the underlying iceoryx2 root directory failed.", msg);
                     }
                     Err(DynamicStorageCreateError::InsufficientPermissions) => {
                         fail!(from self, with ServiceCreateError::InsufficientPermissions,

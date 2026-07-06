@@ -265,6 +265,10 @@ pub mod details {
                     fail!(from self, with SharedMemoryCreateError::AlreadyExists,
                         "{} since a shared memory with that name already exists.", msg);
                 }
+                Err(DynamicStorageCreateError::RootDirectoryCreationFailure) => {
+                    fail!(from self, with SharedMemoryCreateError::InternalError,
+                        "{} due to a failure while creating the underlying iceoryx2 root directory.", msg);
+                }
                 Err(DynamicStorageCreateError::InsufficientPermissions) => {
                     fail!(from self, with SharedMemoryCreateError::InsufficientPermissions,
                         "{} due to insufficient permissions.", msg);
@@ -407,8 +411,11 @@ pub mod details {
         }
 
         fn remove_path_hint(
-            _value: &Path,
+            value: &Path,
         ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
+            let _: () = fail!(from "shared_memory::posix::remove_path_hint()",
+            when Storage::remove_path_hint(value),
+            "Unable to remove path hint for shared memory concept \"{}\".", value);
             Ok(())
         }
     }

@@ -22,7 +22,7 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_posix::testing::generate_file_path;
-use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::conformance_test;
 use iceoryx2_bb_testing_macros::conformance_tests;
@@ -303,6 +303,9 @@ impl<T: Monitoring + 'static> NamedConceptTest for MonitoringTest<T> {
 #[allow(clippy::module_inception)]
 #[conformance_tests]
 pub mod named_concept_trait {
+
+    use iceoryx2_bb_posix::directory::*;
+
     use super::*;
 
     #[conformance_test]
@@ -462,5 +465,36 @@ pub mod named_concept_trait {
         let config = generate_isolated_config::<T::Sut>();
 
         assert_that!(T::open(&name, &config), is_err);
+    }
+
+    #[conformance_test]
+    pub fn creation_with_custom_path_hint_works<T: NamedConceptTest>() {
+        // generate random file path hint
+        let test_dir: Path = generate_file_path().into();
+        // prefix name can be hardcoded since we use already a random path
+        let name = FileName::new(b"test_prefix").unwrap();
+
+        let config = generate_custom_config::<T::Sut>(&name, &test_dir);
+
+        assert_that!(T::create(&name, &config), is_ok);
+    }
+
+    #[conformance_test]
+    pub fn custom_path_hint_deleted_after_drop_and_removal<T: NamedConceptTest>() {
+        // generate random file path hint
+        let test_dir: Path = generate_file_path().into();
+        // prefix name can be hardcoded since we use already a random path
+        let name = FileName::new(b"test_prefix").unwrap();
+
+        let config = generate_custom_config::<T::Sut>(&name, &test_dir);
+        let sut = T::create(&name, &config);
+
+        drop(sut);
+
+        assert_that!(T::Sut::remove_path_hint(&test_dir), is_ok);
+
+        let test_dir_removed = Directory::does_exist(&test_dir);
+        assert_that!(test_dir_removed, is_ok);
+        assert_that!(test_dir_removed.unwrap(), eq(false));
     }
 }
