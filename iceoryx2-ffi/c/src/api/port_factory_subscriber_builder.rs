@@ -15,8 +15,8 @@
 use crate::api::{
     AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, PayloadFfi, SubscriberUnion,
     UnsafeCallbackContextSendWorkaround, UserHeaderFfi, c_size_t, degradation_info_cast,
-    iox2_callback_context, iox2_degradation_handler, iox2_service_type_e, iox2_subscriber_h,
-    iox2_subscriber_t,
+    iox2_callback_context, iox2_degradation_handler, iox2_port_name_ptr, iox2_service_type_e,
+    iox2_subscriber_h, iox2_subscriber_t,
 };
 
 use iceoryx2::port::subscriber::SubscriberCreateError;
@@ -310,6 +310,45 @@ pub unsafe extern "C" fn iox2_port_factory_subscriber_builder_set_degradation_ha
                         let ctx = ctx;
                         handler(cause.into(), degradation_info_cast(info), ctx.ctx).into()
                     }),
+                ));
+            }
+        }
+    }
+}
+
+/// Sets the port name for the `Subscriber`
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_subscriber_builder_h_ref`]
+///   obtained by [`iox2_port_factory_pub_sub_subscriber_builder`](crate::iox2_port_factory_pub_sub_subscriber_builder).
+/// * `port_name_ptr` - Must be a valid [`iox2_port_name_ptr`], e.g. obtained by [`iox2_port_name_new`](crate::iox2_port_name_new) and converted
+///   by [`iox2_cast_port_name_ptr`](crate::iox2_cast_port_name_ptr)
+/// # Safety
+///
+/// * `port_factory_handle` as well as `port_name_ptr` must be valid handles
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_port_factory_subscriber_builder_set_name(
+    port_factory_handle: iox2_port_factory_subscriber_builder_h_ref,
+    port_name_ptr: iox2_port_name_ptr,
+) {
+    port_factory_handle.assert_non_null();
+    unsafe {
+        let port_factory_struct = &mut *port_factory_handle.as_type();
+        match port_factory_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
+
+                port_factory_struct.set(PortFactorySubscriberBuilderUnion::new_ipc(
+                    port_factory.name(&*port_name_ptr),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let port_factory =
+                    ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
+
+                port_factory_struct.set(PortFactorySubscriberBuilderUnion::new_local(
+                    port_factory.name(&*port_name_ptr),
                 ));
             }
         }

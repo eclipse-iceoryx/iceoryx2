@@ -14,8 +14,8 @@
 
 use crate::api::{
     AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, PayloadFfi, SampleUnion, UserHeaderFfi,
-    c_size_t, iox2_sample_h, iox2_sample_t, iox2_service_type_e, iox2_unique_subscriber_id_h,
-    iox2_unique_subscriber_id_t,
+    c_size_t, iox2_port_name_ptr, iox2_sample_h, iox2_sample_t, iox2_service_type_e,
+    iox2_unique_subscriber_id_h, iox2_unique_subscriber_id_t,
 };
 
 use iceoryx2::port::ReceiveError;
@@ -271,7 +271,30 @@ pub unsafe extern "C" fn iox2_subscriber_id(
     }
 }
 
-// TODO [#210] add all the other setter methods
+/// Returns the [`iox2_port_name_ptr`](crate::iox2_port_name_ptr), an immutable pointer to the port name.
+///
+/// # Arguments
+///
+/// * `subscriber_handle` must be a valid [`iox2_subscriber_h_ref`]
+///   obtained by [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create)
+///
+/// # Safety
+///
+/// * `subscriber_handle` is valid, non-null and was obtained via [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create).
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_subscriber_name(
+    subscriber_handle: iox2_subscriber_h_ref,
+) -> iox2_port_name_ptr {
+    subscriber_handle.assert_non_null();
+    unsafe {
+        let subscriber = &mut *subscriber_handle.as_type();
+
+        match subscriber.service_type {
+            iox2_service_type_e::IPC => subscriber.value.as_ref().ipc.name(),
+            iox2_service_type_e::LOCAL => subscriber.value.as_ref().local.name(),
+        }
+    }
+}
 
 /// Takes a sample ouf of the subscriber queue.
 ///

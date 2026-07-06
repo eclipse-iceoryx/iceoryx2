@@ -33,6 +33,7 @@ use super::UserHeaderFfi;
 use super::iox2_backpressure_strategy_e;
 use super::iox2_pending_response_h;
 use super::iox2_pending_response_t;
+use super::iox2_port_name_ptr;
 use super::iox2_request_mut_h;
 use super::iox2_request_mut_t;
 use super::iox2_request_send_error_e;
@@ -229,6 +230,29 @@ pub unsafe extern "C" fn iox2_client_id(
 
         (*storage_ptr).init(id, deleter);
         *id_handle_ptr = (*storage_ptr).as_handle();
+    }
+}
+
+/// Returns the [`iox2_port_name_ptr`](crate::iox2_port_name_ptr), an immutable pointer to the port name.
+///
+/// # Arguments
+///
+/// * `handle` must be a valid [`iox2_client_h_ref`]
+///   obtained by [`iox2_port_factory_client_builder_create`](crate::iox2_port_factory_client_builder_create)
+///
+/// # Safety
+///
+/// * `handle` is valid, non-null and was obtained via [`iox2_port_factory_client_builder_create`](crate::iox2_port_factory_client_builder_create).
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_client_name(handle: iox2_client_h_ref) -> iox2_port_name_ptr {
+    handle.assert_non_null();
+    unsafe {
+        let client = &mut *handle.as_type();
+
+        match client.service_type {
+            iox2_service_type_e::IPC => client.value.as_ref().ipc.name(),
+            iox2_service_type_e::LOCAL => client.value.as_ref().local.name(),
+        }
     }
 }
 

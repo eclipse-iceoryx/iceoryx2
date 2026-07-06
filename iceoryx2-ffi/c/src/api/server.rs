@@ -17,7 +17,7 @@ use crate::api::{ActiveRequestUnion, IntoCInt};
 
 use super::{
     AssertNonNullHandle, HandleToType, c_size_t, iox2_active_request_h, iox2_active_request_t,
-    iox2_service_type_e, iox2_unique_server_id_h, iox2_unique_server_id_t,
+    iox2_port_name_ptr, iox2_service_type_e, iox2_unique_server_id_h, iox2_unique_server_id_t,
 };
 use super::{PayloadFfi, UserHeaderFfi};
 use core::ffi::c_int;
@@ -161,6 +161,29 @@ pub unsafe extern "C" fn iox2_server_id(
 
         (*storage_ptr).init(id, deleter);
         *id_handle_ptr = (*storage_ptr).as_handle();
+    }
+}
+
+/// Returns the [`iox2_port_name_ptr`](crate::iox2_port_name_ptr), an immutable pointer to the port name.
+///
+/// # Arguments
+///
+/// * `handle` must be a valid [`iox2_server_h_ref`]
+///   obtained by [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create).
+///
+/// # Safety
+///
+/// * `handle` is valid, non-null and was obtained via [`iox2_port_factory_server_builder_create`](crate::iox2_port_factory_server_builder_create).
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_server_name(handle: iox2_server_h_ref) -> iox2_port_name_ptr {
+    handle.assert_non_null();
+    unsafe {
+        let server = &mut *handle.as_type();
+
+        match server.service_type {
+            iox2_service_type_e::IPC => server.value.as_ref().ipc.name(),
+            iox2_service_type_e::LOCAL => server.value.as_ref().local.name(),
+        }
     }
 }
 

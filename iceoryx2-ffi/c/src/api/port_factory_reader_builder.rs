@@ -13,8 +13,8 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, KeyFfi, ReaderUnion, iox2_reader_h,
-    iox2_reader_t, iox2_service_type_e,
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, KeyFfi, ReaderUnion, iox2_port_name_ptr,
+    iox2_reader_h, iox2_reader_t, iox2_service_type_e,
 };
 
 use iceoryx2::port::reader::ReaderCreateError;
@@ -161,6 +161,46 @@ pub unsafe extern "C" fn iox2_reader_create_error_string(
     error: iox2_reader_create_error_e,
 ) -> *const c_char {
     error.as_const_cstr().as_ptr() as *const c_char
+}
+
+/// Sets the port name for the `Reader`
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_reader_builder_h_ref`]
+///   obtained by [`iox2_port_factory_blackboard_reader_builder`](crate::iox2_port_factory_blackboard_reader_builder).
+/// * `port_name_ptr` - Must be a valid [`iox2_port_name_ptr`], e.g. obtained by [`iox2_port_name_new`](crate::iox2_port_name_new) and converted
+///   by [`iox2_cast_port_name_ptr`](crate::iox2_cast_port_name_ptr)
+/// # Safety
+///
+/// * `port_factory_handle` as well as `port_name_ptr` must be valid handles
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_port_factory_reader_builder_set_name(
+    port_factory_handle: iox2_port_factory_reader_builder_h_ref,
+    port_name_ptr: iox2_port_name_ptr,
+) {
+    port_factory_handle.assert_non_null();
+    debug_assert!(!port_name_ptr.is_null());
+    unsafe {
+        let port_factory_struct = &mut *port_factory_handle.as_type();
+        match port_factory_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
+
+                port_factory_struct.set(PortFactoryReaderBuilderUnion::new_ipc(
+                    port_factory.name(&*port_name_ptr),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let port_factory =
+                    ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
+
+                port_factory_struct.set(PortFactoryReaderBuilderUnion::new_local(
+                    port_factory.name(&*port_name_ptr),
+                ));
+            }
+        }
+    }
 }
 
 /// Creates a reader and consumes the builder

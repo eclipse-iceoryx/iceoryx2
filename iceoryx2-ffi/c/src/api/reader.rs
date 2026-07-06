@@ -18,8 +18,8 @@ use crate::{
     IOX2_OK,
     api::{
         AssertNonNullHandle, EntryHandleUnion, HandleToType, IntoCInt, KeyFfi, c_size_t,
-        iox2_entry_handle_h, iox2_entry_handle_t, iox2_service_type_e, iox2_unique_reader_id_h,
-        iox2_unique_reader_id_t,
+        iox2_entry_handle_h, iox2_entry_handle_t, iox2_port_name_ptr, iox2_service_type_e,
+        iox2_unique_reader_id_h, iox2_unique_reader_id_t,
     },
 };
 use core::ffi::{c_char, c_int, c_void};
@@ -192,6 +192,29 @@ pub unsafe extern "C" fn iox2_reader_id(
 
         (*storage_ptr).init(id, deleter);
         *id_handle_ptr = (*storage_ptr).as_handle();
+    }
+}
+
+/// Returns the [`iox2_port_name_ptr`](crate::iox2_port_name_ptr), an immutable pointer to the port name.
+///
+/// # Arguments
+///
+/// * `reader_handle` must be a valid [`iox2_reader_h_ref`]
+///   obtained by [`iox2_port_factory_reader_builder_create`](crate::iox2_port_factory_reader_builder_create)
+///
+/// # Safety
+///
+/// * `reader_handle` is valid, non-null and was obtained via [`iox2_port_factory_reader_builder_create`](crate::iox2_port_factory_reader_builder_create).
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_rader_name(reader_handle: iox2_reader_h_ref) -> iox2_port_name_ptr {
+    reader_handle.assert_non_null();
+    unsafe {
+        let reader = &mut *reader_handle.as_type();
+
+        match reader.service_type {
+            iox2_service_type_e::IPC => reader.value.as_ref().ipc.name(),
+            iox2_service_type_e::LOCAL => reader.value.as_ref().local.name(),
+        }
     }
 }
 
