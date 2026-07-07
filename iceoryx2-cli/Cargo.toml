@@ -60,7 +60,7 @@ colored = { workspace = true }
 enum-iterator = { workspace = true }
 human-panic = { workspace = true }
 serde = { workspace = true }
-serde_yaml = { workspace = true }
+yaml_serde = { workspace = true }
 serde_json = { workspace = true }
 ron = { workspace = true }
 toml = { workspace = true }

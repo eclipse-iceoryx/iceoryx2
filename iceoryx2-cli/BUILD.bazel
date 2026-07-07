@@ -38,7 +38,7 @@ rust_library(
         "@crate_index//:clap",
         "@crate_index//:colored",
         "@crate_index//:serde",
-        "@crate_index//:serde_yaml",
+        "@crate_index//:yaml_serde",
         "@crate_index//:serde_json",
         "@crate_index//:ron",
     ],
