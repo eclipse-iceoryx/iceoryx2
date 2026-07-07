@@ -63,8 +63,6 @@
 //!
 
 use iceoryx2::service::Service;
-use iceoryx2::service::messaging_pattern::MessagingPattern;
-use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_services_tunnel_backend::traits::Mapping;
@@ -124,18 +122,14 @@ impl Mapping for PrefixMapping {
         };
         let user_header = TypeDescription::from(&RosHeader::type_detail());
 
-        Some(ServiceDescription {
-            service_hash: ServiceHash::new::<S::ServiceNameHasher>(
-                &name,
-                MessagingPattern::PublishSubscribe,
-            ),
+        Some(ServiceDescription::new::<S>(
             name,
-            pattern: PatternDescription::PublishSubscribe(PublishSubscribeDescription {
+            PatternDescription::PublishSubscribe(PublishSubscribeDescription {
                 payload,
                 user_header,
                 settings: PatternSettings::Value((&remote.qos).into()),
             }),
-        })
+        ))
     }
 }
 

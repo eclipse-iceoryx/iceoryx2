@@ -13,6 +13,7 @@
 use alloc::string::String;
 use core::time::Duration;
 
+use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::static_config::StaticConfig;
@@ -31,6 +32,24 @@ pub struct ServiceDescription {
     pub service_hash: ServiceHash,
     pub name: ServiceName,
     pub pattern: PatternDescription,
+}
+
+impl ServiceDescription {
+    pub fn new<S: Service>(name: ServiceName, pattern: PatternDescription) -> Self {
+        let messaging_pattern = match &pattern {
+            PatternDescription::PublishSubscribe(_) => {
+                iceoryx2::service::messaging_pattern::MessagingPattern::PublishSubscribe
+            }
+            PatternDescription::Event(_) => {
+                iceoryx2::service::messaging_pattern::MessagingPattern::Event
+            }
+        };
+        Self {
+            service_hash: ServiceHash::new::<S::ServiceNameHasher>(&name, messaging_pattern),
+            name,
+            pattern,
+        }
+    }
 }
 
 /// Description of a services messaging pattern.
