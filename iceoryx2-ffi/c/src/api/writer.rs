@@ -14,8 +14,8 @@
 
 use crate::api::{
     AssertNonNullHandle, EntryHandleMutUnion, HandleToType, IOX2_OK, IntoCInt, KeyFfi, c_size_t,
-    iox2_entry_handle_mut_h, iox2_entry_handle_mut_t, iox2_service_type_e, iox2_type_variant_e,
-    iox2_unique_writer_id_h, iox2_unique_writer_id_t,
+    iox2_entry_handle_mut_h, iox2_entry_handle_mut_t, iox2_port_name_ptr, iox2_service_type_e,
+    iox2_type_variant_e, iox2_unique_writer_id_h, iox2_unique_writer_id_t,
 };
 use crate::create_type_details;
 use core::ffi::{c_char, c_int, c_void};
@@ -194,6 +194,29 @@ pub unsafe extern "C" fn iox2_writer_id(
 
         (*storage_ptr).init(id, deleter);
         *id_handle_ptr = (*storage_ptr).as_handle();
+    }
+}
+
+/// Returns the [`iox2_port_name_ptr`](crate::iox2_port_name_ptr), an immutable pointer to the port name.
+///
+/// # Arguments
+///
+/// * `writer_handle` must be a valid [`iox2_writer_h_ref`]
+///   obtained by [`iox2_port_factory_writer_builder_create`](crate::iox2_port_factory_writer_builder_create)
+///
+/// # Safety
+///
+/// * `writer_handle` is valid, non-null and was obtained via [`iox2_port_factory_writer_builder_create`](crate::iox2_port_factory_writer_builder_create).
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_writer_name(writer_handle: iox2_writer_h_ref) -> iox2_port_name_ptr {
+    writer_handle.assert_non_null();
+    unsafe {
+        let writer = &mut *writer_handle.as_type();
+
+        match writer.service_type {
+            iox2_service_type_e::IPC => writer.value.as_ref().ipc.name(),
+            iox2_service_type_e::LOCAL => writer.value.as_ref().local.name(),
+        }
     }
 }
 

@@ -1795,4 +1795,26 @@ TYPED_TEST(ServiceBlackboardTest, new_value_can_be_written_using_value_mut) {
     entry_handle_mut.update_with_copy(VALUE_3);
     ASSERT_THAT(*entry_handle.get(), Eq(VALUE_3));
 }
+
+TYPED_TEST(ServiceBlackboardTest, port_names_can_be_set) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<uint64_t>(0)
+                       .create()
+                       .value();
+
+    const auto reader_name = PortName::create("scheherazade").value();
+    const auto writer_name = PortName::create("homer").value();
+
+    auto reader = service.reader_builder().name(reader_name).create().value();
+    auto writer = service.writer_builder().name(writer_name).create().value();
+
+    ASSERT_THAT(reader.name().to_string(), reader_name.to_string());
+    ASSERT_THAT(writer.name().to_string(), writer_name.to_string());
+}
 } // namespace

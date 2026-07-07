@@ -70,6 +70,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/notifier_details.cpp
     src/port_factory_event.cpp
     src/port_factory_notifier.cpp
+    src/port_name.cpp
     src/publisher_details.cpp
     src/reader_details.cpp
     src/server_details.cpp

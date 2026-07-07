@@ -13,7 +13,9 @@
 #ifndef IOX2_PORTFACTORY_WRITER_HPP
 #define IOX2_PORTFACTORY_WRITER_HPP
 
+#include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
+#include "iox2/port_name.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/writer.hpp"
 #include "iox2/writer_error.hpp"
@@ -23,6 +25,16 @@ namespace iox2 {
 /// based communication.
 template <ServiceType S, typename KeyType>
 class PortFactoryWriter {
+  public:
+/// The [`PortName`] that shall be assigned to the [`Writer`]. It does not
+/// have to be unique. If no [`PortName`] is defined then the [`Writer`]
+/// does not have a name.
+#ifdef DOXYGEN_MACRO_FIX
+    auto name(const PortName value) -> decltype(auto);
+#else
+    IOX2_BUILDER_OPTIONAL(PortName, name);
+#endif
+
   public:
     PortFactoryWriter(PortFactoryWriter&&) noexcept = default;
     auto operator=(PortFactoryWriter&&) noexcept -> PortFactoryWriter& = default;
@@ -50,6 +62,11 @@ inline PortFactoryWriter<S, KeyType>::PortFactoryWriter(iox2_port_factory_writer
 
 template <ServiceType S, typename KeyType>
 inline auto PortFactoryWriter<S, KeyType>::create() && -> bb::Expected<Writer<S, KeyType>, WriterCreateError> {
+    if (m_name.has_value()) {
+        const auto* name_ptr = m_name.value().as_view().native_ptr();
+        iox2_port_factory_writer_builder_set_name(&m_handle, name_ptr);
+    }
+
     iox2_writer_h writer_handle {};
     auto result = iox2_port_factory_writer_builder_create(m_handle, nullptr, &writer_handle);
 

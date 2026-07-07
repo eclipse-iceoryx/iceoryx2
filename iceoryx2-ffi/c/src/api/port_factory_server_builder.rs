@@ -22,7 +22,8 @@ use super::{
     IntoCInt, PayloadFfi, UnsafeCallbackContextSendWorkaround, UserHeaderFfi,
     backpressure_info_cast, c_size_t, degradation_info_cast, iox2_allocation_strategy_e,
     iox2_backpressure_handler, iox2_backpressure_strategy_e, iox2_callback_context,
-    iox2_degradation_handler, iox2_server_h, iox2_server_t, iox2_service_type_e,
+    iox2_degradation_handler, iox2_port_name_ptr, iox2_server_h, iox2_server_t,
+    iox2_service_type_e,
 };
 use core::ffi::{c_char, c_int};
 use iceoryx2::service::port_factory::server::{PortFactoryServer, ServerCreateError};
@@ -575,6 +576,44 @@ pub unsafe extern "C" fn iox2_port_factory_server_builder_backpressure_strategy(
 
                 handle.set(PortFactoryServerBuilderUnion::new_local(
                     builder.backpressure_strategy(value.into()),
+                ));
+            }
+        }
+    }
+}
+
+/// Sets the port name for the `Server`
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_server_builder_h_ref`]
+///   obtained by [`iox2_port_factory_request_response_server_builder`](crate::iox2_port_factory_request_response_server_builder).
+/// * `port_name_ptr` - Must be a valid [`iox2_port_name_ptr`], e.g. obtained by [`iox2_port_name_new`](crate::iox2_port_name_new) and converted
+///   by [`iox2_cast_port_name_ptr`](crate::iox2_cast_port_name_ptr)
+/// # Safety
+///
+/// * `port_factory_handle` as well as `port_name_ptr` must be valid handles
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_port_factory_server_builder_set_name(
+    port_factory_handle: iox2_port_factory_server_builder_h_ref,
+    port_name_ptr: iox2_port_name_ptr,
+) {
+    port_factory_handle.assert_non_null();
+    unsafe {
+        let handle = &mut *port_factory_handle.as_type();
+        match handle.service_type {
+            iox2_service_type_e::IPC => {
+                let builder = ManuallyDrop::take(&mut handle.value.as_mut().ipc);
+
+                handle.set(PortFactoryServerBuilderUnion::new_ipc(
+                    builder.name(&*port_name_ptr),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let builder = ManuallyDrop::take(&mut handle.value.as_mut().local);
+
+                handle.set(PortFactoryServerBuilderUnion::new_local(
+                    builder.name(&*port_name_ptr),
                 ));
             }
         }

@@ -18,6 +18,7 @@
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/notifier.hpp"
 #include "iox2/notifier_error.hpp"
+#include "iox2/port_name.hpp"
 #include "iox2/service_type.hpp"
 
 namespace iox2 {
@@ -32,6 +33,15 @@ class PortFactoryNotifier {
     auto default_event_id(const EventId value) -> decltype(auto);
 #else
     IOX2_BUILDER_OPTIONAL(EventId, default_event_id);
+#endif
+
+/// The [`PortName`] that shall be assigned to the [`Notifier`]. It does not
+/// have to be unique. If no [`PortName`] is defined then the [`Notifier`]
+/// does not have a name.
+#ifdef DOXYGEN_MACRO_FIX
+    auto name(const PortName value) -> decltype(auto);
+#else
+    IOX2_BUILDER_OPTIONAL(PortName, name);
 #endif
 
   public:

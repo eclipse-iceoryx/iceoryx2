@@ -13,7 +13,9 @@
 #ifndef IOX2_PORTFACTORY_READER_HPP
 #define IOX2_PORTFACTORY_READER_HPP
 
+#include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
+#include "iox2/port_name.hpp"
 #include "iox2/reader.hpp"
 #include "iox2/reader_error.hpp"
 #include "iox2/service_type.hpp"
@@ -23,6 +25,16 @@ namespace iox2 {
 /// based communication.
 template <ServiceType S, typename KeyType>
 class PortFactoryReader {
+  public:
+/// The [`PortName`] that shall be assigned to the [`Reader`]. It does not
+/// have to be unique. If no [`PortName`] is defined then the [`Reader`]
+/// does not have a name.
+#ifdef DOXYGEN_MACRO_FIX
+    auto name(const PortName value) -> decltype(auto);
+#else
+    IOX2_BUILDER_OPTIONAL(PortName, name);
+#endif
+
   public:
     PortFactoryReader(PortFactoryReader&&) noexcept = default;
     auto operator=(PortFactoryReader&&) noexcept -> PortFactoryReader& = default;
@@ -50,6 +62,11 @@ inline PortFactoryReader<S, KeyType>::PortFactoryReader(iox2_port_factory_reader
 
 template <ServiceType S, typename KeyType>
 inline auto PortFactoryReader<S, KeyType>::create() && -> bb::Expected<Reader<S, KeyType>, ReaderCreateError> {
+    if (m_name.has_value()) {
+        const auto* name_ptr = m_name.value().as_view().native_ptr();
+        iox2_port_factory_reader_builder_set_name(&m_handle, name_ptr);
+    }
+
     iox2_reader_h reader_handle {};
     auto result = iox2_port_factory_reader_builder_create(m_handle, nullptr, &reader_handle);
 

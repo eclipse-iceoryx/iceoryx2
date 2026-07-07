@@ -48,6 +48,12 @@ auto Notifier<S>::id() const -> UniqueNotifierId {
 }
 
 template <ServiceType S>
+auto Notifier<S>::name() const -> PortNameView {
+    const auto* port_name_ptr = iox2_notifier_name(&m_handle);
+    return PortNameView::from_native_ptr(port_name_ptr);
+}
+
+template <ServiceType S>
 auto Notifier<S>::notify() const -> bb::Expected<size_t, NotifierNotifyError> {
     size_t number_of_notified_listeners = 0;
     auto result = iox2_notifier_notify(&m_handle, &number_of_notified_listeners);

@@ -18,6 +18,7 @@
 #include "iox2/connection_failure.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/port_name.hpp"
 #include "iox2/sample.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/subscriber_error.hpp"
@@ -37,6 +38,9 @@ class Subscriber {
 
     /// Returns the [`UniqueSubscriberId`] of the [`Subscriber`]
     auto id() const -> UniqueSubscriberId;
+
+    /// Returns the [`PortNameView`] of the [`Subscriber`]
+    auto name() const -> PortNameView;
 
     /// Returns the internal buffer size of the [`Subscriber`].
     auto buffer_size() const -> uint64_t;
@@ -110,6 +114,12 @@ inline auto Subscriber<S, Payload, UserHeader>::id() const -> UniqueSubscriberId
 
     iox2_subscriber_id(&m_handle, nullptr, &id_handle);
     return UniqueSubscriberId { id_handle };
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto Subscriber<S, Payload, UserHeader>::name() const -> PortNameView {
+    const auto* port_name_ptr = iox2_subscriber_name(&m_handle);
+    return PortNameView::from_native_ptr(port_name_ptr);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

@@ -19,6 +19,7 @@
 #include "iox2/event_id.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/notifier_error.hpp"
+#include "iox2/port_name.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
 
@@ -36,6 +37,9 @@ class Notifier {
 
     /// Returns the [`UniqueNotifierId`] of the [`Notifier`]
     auto id() const -> UniqueNotifierId;
+
+    /// Returns the [`PortNameView`] of the [`Notifier`]
+    auto name() const -> PortNameView;
 
     /// Notifies all [`Listener`] connected to the service with the default
     /// event id provided on creation.

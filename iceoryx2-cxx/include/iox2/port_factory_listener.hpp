@@ -13,9 +13,11 @@
 #ifndef IOX2_PORTFACTORY_LISTENER_HPP
 #define IOX2_PORTFACTORY_LISTENER_HPP
 
+#include "iox2/bb/detail/builder.hpp"
 #include "iox2/bb/expected.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/listener.hpp"
+#include "iox2/port_name.hpp"
 #include "iox2/service_type.hpp"
 
 namespace iox2 {
@@ -23,6 +25,16 @@ namespace iox2 {
 /// communication.
 template <ServiceType S>
 class PortFactoryListener {
+  public:
+/// The [`PortName`] that shall be assigned to the [`Listener`]. It does not
+/// have to be unique. If no [`PortName`] is defined then the [`Listener`]
+/// does not have a name.
+#ifdef DOXYGEN_MACRO_FIX
+    auto name(const PortName value) -> decltype(auto);
+#else
+    IOX2_BUILDER_OPTIONAL(PortName, name);
+#endif
+
   public:
     PortFactoryListener(PortFactoryListener&&) noexcept = default;
     auto operator=(PortFactoryListener&&) noexcept -> PortFactoryListener& = default;
@@ -50,6 +62,11 @@ inline PortFactoryListener<S>::PortFactoryListener(iox2_port_factory_listener_bu
 
 template <ServiceType S>
 inline auto PortFactoryListener<S>::create() && -> bb::Expected<Listener<S>, ListenerCreateError> {
+    if (m_name.has_value()) {
+        const auto* name_ptr = m_name.value().as_view().native_ptr();
+        iox2_port_factory_listener_builder_set_name(&m_handle, name_ptr);
+    }
+
     iox2_listener_h listener_handle { nullptr };
     auto result = iox2_port_factory_listener_builder_create(m_handle, nullptr, &listener_handle);
 

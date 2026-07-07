@@ -17,6 +17,7 @@
 #include "iox2/bb/slice.hpp"
 #include "iox2/internal/helper.hpp"
 #include "iox2/payload_info.hpp"
+#include "iox2/port_name.hpp"
 #include "iox2/request_mut_uninit.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
@@ -41,6 +42,9 @@ class Client {
 
     /// Returns the [`UniqueClientId`] of the [`Client`]
     auto id() const -> UniqueClientId;
+
+    /// Returns the [`PortNameView`] of the [`Client`]
+    auto name() const -> PortNameView;
 
     /// Returns the strategy the [`Client`] follows when a [`RequestMut`] cannot be delivered
     /// if the [`Server`]s buffer is full.
@@ -153,6 +157,17 @@ inline auto Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, 
     iox2_unique_client_id_h id_handle = nullptr;
     iox2_client_id(&m_handle, nullptr, &id_handle);
     return UniqueClientId { id_handle };
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+inline auto Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::name() const
+    -> PortNameView {
+    const auto* port_name_ptr = iox2_client_name(&m_handle);
+    return PortNameView::from_native_ptr(port_name_ptr);
 }
 
 template <ServiceType Service,

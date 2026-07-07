@@ -1860,4 +1860,22 @@ TYPED_TEST(ServicePublishSubscribeTest, custom_header_payload_marker_send_receiv
 }
 // NOLINTEND(readability-function-cognitive-complexity)
 
+TYPED_TEST(ServicePublishSubscribeTest, port_names_can_be_set) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().value();
+
+    const auto publisher_name = PortName::create("hypnotoad").value();
+    const auto subscriber_name = PortName::create("brainslug").value();
+
+    auto publisher = service.publisher_builder().name(publisher_name).create().value();
+    auto subscriber = service.subscriber_builder().name(subscriber_name).create().value();
+
+    ASSERT_THAT(publisher.name().to_string(), publisher_name.to_string());
+    ASSERT_THAT(subscriber.name().to_string(), subscriber_name.to_string());
+}
+
 } // namespace

@@ -15,7 +15,7 @@
 
 use crate::api::{
     AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, iox2_callback_context, iox2_event_id_t,
-    iox2_service_type_e, iox2_unique_listener_id_h, iox2_unique_listener_id_t,
+    iox2_port_name_ptr, iox2_service_type_e, iox2_unique_listener_id_h, iox2_unique_listener_id_t,
 };
 use crate::iox2_file_descriptor_ptr;
 
@@ -398,6 +398,31 @@ pub unsafe extern "C" fn iox2_listener_id(
 
         (*storage_ptr).init(id, deleter);
         *id_handle_ptr = (*storage_ptr).as_handle();
+    }
+}
+
+/// Returns the [`iox2_port_name_ptr`](crate::iox2_port_name_ptr), an immutable pointer to the port name.
+///
+/// # Arguments
+///
+/// * `listener_handle` must be a valid [`iox2_listener_h_ref`]
+///   obtained by [`iox2_port_factory_listener_builder_create`](crate::iox2_port_factory_listener_builder_create)
+///
+/// # Safety
+///
+/// * `listener_handle` is valid, non-null and was obtained via [`iox2_port_factory_listener_builder_create`](crate::iox2_port_factory_listener_builder_create).
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_listener_name(
+    listener_handle: iox2_listener_h_ref,
+) -> iox2_port_name_ptr {
+    listener_handle.assert_non_null();
+    unsafe {
+        let listener = &mut *listener_handle.as_type();
+
+        match listener.service_type {
+            iox2_service_type_e::IPC => listener.value.as_ref().ipc.name(),
+            iox2_service_type_e::LOCAL => listener.value.as_ref().local.name(),
+        }
     }
 }
 

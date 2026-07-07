@@ -43,7 +43,7 @@ NodeName::NodeName(iox2_node_name_h handle)
     : m_handle { handle } {
 }
 
-NodeName::~NodeName() {
+NodeName::~NodeName() noexcept {
     drop();
 }
 

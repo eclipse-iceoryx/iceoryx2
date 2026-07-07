@@ -14,8 +14,8 @@
 
 use crate::api::{
     AssertNonNullHandle, HandleToType, IOX2_OK, PayloadFfi, SampleMutUninitUnion, UserHeaderFfi,
-    iox2_backpressure_strategy_e, iox2_service_type_e, iox2_unique_publisher_id_h,
-    iox2_unique_publisher_id_t,
+    iox2_backpressure_strategy_e, iox2_port_name_ptr, iox2_service_type_e,
+    iox2_unique_publisher_id_h, iox2_unique_publisher_id_t,
 };
 
 use iceoryx2::port::LoanError;
@@ -391,6 +391,31 @@ pub unsafe extern "C" fn iox2_publisher_id(
 
         (*storage_ptr).init(id, deleter);
         *id_handle_ptr = (*storage_ptr).as_handle();
+    }
+}
+
+/// Returns the [`iox2_port_name_ptr`](crate::iox2_port_name_ptr), an immutable pointer to the port name.
+///
+/// # Arguments
+///
+/// * `publisher_handle` must be a valid [`iox2_publisher_h_ref`]
+///   obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create)
+///
+/// # Safety
+///
+/// * `publisher_handle` is valid, non-null and was obtained via [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create).
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_publisher_name(
+    publisher_handle: iox2_publisher_h_ref,
+) -> iox2_port_name_ptr {
+    publisher_handle.assert_non_null();
+    unsafe {
+        let publisher = &mut *publisher_handle.as_type();
+
+        match publisher.service_type {
+            iox2_service_type_e::IPC => publisher.value.as_ref().ipc.name(),
+            iox2_service_type_e::LOCAL => publisher.value.as_ref().local.name(),
+        }
     }
 }
 

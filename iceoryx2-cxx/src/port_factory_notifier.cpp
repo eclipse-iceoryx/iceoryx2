@@ -24,6 +24,11 @@ auto PortFactoryNotifier<S>::create() && -> bb::Expected<Notifier<S>, NotifierCr
         iox2_port_factory_notifier_builder_set_default_event_id(&m_handle, &m_default_event_id.value().m_value);
     }
 
+    if (m_name.has_value()) {
+        const auto* name_ptr = m_name.value().as_view().native_ptr();
+        iox2_port_factory_notifier_builder_set_name(&m_handle, name_ptr);
+    }
+
     iox2_notifier_h notifier_handle {};
     auto result = iox2_port_factory_notifier_builder_create(m_handle, nullptr, &notifier_handle);
 

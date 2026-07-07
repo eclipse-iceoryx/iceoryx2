@@ -14,7 +14,7 @@
 
 use crate::api::{
     AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, NotifierUnion, iox2_event_id_t,
-    iox2_notifier_h, iox2_notifier_t, iox2_service_type_e,
+    iox2_notifier_h, iox2_notifier_t, iox2_port_name_ptr, iox2_service_type_e,
 };
 
 use iceoryx2::port::notifier::NotifierCreateError;
@@ -198,6 +198,46 @@ pub unsafe extern "C" fn iox2_port_factory_notifier_builder_set_default_event_id
 
                 port_factory_struct.set(PortFactoryNotifierBuilderUnion::new_local(
                     port_factory.default_event_id(value),
+                ));
+            }
+        }
+    }
+}
+
+/// Sets the port name for the `Notifier`
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_notifier_builder_h_ref`]
+///   obtained by [`iox2_port_factory_event_notifier_builder`](crate::iox2_port_factory_event_notifier_builder).
+/// * `port_name_ptr` - Must be a valid [`iox2_port_name_ptr`], e.g. obtained by [`iox2_port_name_new`](crate::iox2_port_name_new) and converted
+///   by [`iox2_cast_port_name_ptr`](crate::iox2_cast_port_name_ptr)
+/// # Safety
+///
+/// * `port_factory_handle` as well as `port_name_ptr` must be valid handles
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_port_factory_notifier_builder_set_name(
+    port_factory_handle: iox2_port_factory_notifier_builder_h_ref,
+    port_name_ptr: iox2_port_name_ptr,
+) {
+    port_factory_handle.assert_non_null();
+    debug_assert!(!port_name_ptr.is_null());
+    unsafe {
+        let port_factory_struct = &mut *port_factory_handle.as_type();
+        match port_factory_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
+
+                port_factory_struct.set(PortFactoryNotifierBuilderUnion::new_ipc(
+                    port_factory.name(&*port_name_ptr),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let port_factory =
+                    ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
+
+                port_factory_struct.set(PortFactoryNotifierBuilderUnion::new_local(
+                    port_factory.name(&*port_name_ptr),
                 ));
             }
         }

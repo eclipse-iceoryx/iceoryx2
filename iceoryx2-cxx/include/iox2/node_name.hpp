@@ -32,11 +32,11 @@ class NodeName;
 /// Non-owning view of a [`NodeName`].
 class NodeNameView {
   public:
-    NodeNameView(NodeNameView&&) = default;
+    NodeNameView(NodeNameView&&) noexcept = default;
     NodeNameView(const NodeNameView&) = default;
-    auto operator=(NodeNameView&&) -> NodeNameView& = default;
+    auto operator=(NodeNameView&&) noexcept -> NodeNameView& = default;
     auto operator=(const NodeNameView&) -> NodeNameView& = default;
-    ~NodeNameView() = default;
+    ~NodeNameView() noexcept = default;
 
     /// Returns a [`iox2::bb::StaticString`] containing the [`NodeName`].
     auto to_string() const -> iox2::bb::StaticString<IOX2_NODE_NAME_LENGTH>;
@@ -67,7 +67,7 @@ class NodeName {
     auto operator=(NodeName&&) noexcept -> NodeName&;
     NodeName(const NodeName&);
     auto operator=(const NodeName&) -> NodeName&;
-    ~NodeName();
+    ~NodeName() noexcept;
 
     /// Creates a [`NodeNameView`]
     auto as_view() const -> NodeNameView;

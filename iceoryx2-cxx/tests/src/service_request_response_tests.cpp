@@ -2483,4 +2483,22 @@ TYPED_TEST(ServiceRequestResponseTest, communication_works_when_client_sets_max_
     ASSERT_THAT(response.value().payload(), Eq(1));
 }
 
+TYPED_TEST(ServiceRequestResponseTest, port_names_can_be_set) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).template request_response<Payload, Payload>().create().value();
+
+    const auto client_name = PortName::create("bruce").value();
+    const auto server_name = PortName::create("alfred").value();
+
+    auto client = service.client_builder().name(client_name).create().value();
+    auto server = service.server_builder().name(server_name).create().value();
+
+    ASSERT_THAT(client.name().to_string(), client_name.to_string());
+    ASSERT_THAT(server.name().to_string(), server_name.to_string());
+}
+
 } // namespace

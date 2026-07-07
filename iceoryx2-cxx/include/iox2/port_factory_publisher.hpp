@@ -22,6 +22,7 @@
 #include "iox2/degradation_handler.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/port_name.hpp"
 #include "iox2/publisher.hpp"
 #include "iox2/service_type.hpp"
 
@@ -46,6 +47,15 @@ class PortFactoryPublisher {
     auto max_loaned_samples(const uint64_t value) -> decltype(auto);
 #else
     IOX2_BUILDER_OPTIONAL(uint64_t, max_loaned_samples);
+#endif
+
+/// The [`PortName`] that shall be assigned to the [`Publisher`]. It does not
+/// have to be unique. If no [`PortName`] is defined then the [`Publisher`]
+/// does not have a name.
+#ifdef DOXYGEN_MACRO_FIX
+    auto name(const PortName value) -> decltype(auto);
+#else
+    IOX2_BUILDER_OPTIONAL(PortName, name);
 #endif
 
   public:
@@ -196,6 +206,10 @@ inline auto PortFactoryPublisher<S, Payload, UserHeader>::create() && -> bb::Exp
             &m_handle, internal::override_callback, static_cast<void*>(ctx));
     }
 
+    if (m_name.has_value()) {
+        const auto* name_ptr = m_name.value().as_view().native_ptr();
+        iox2_port_factory_publisher_builder_set_name(&m_handle, name_ptr);
+    }
 
     iox2_publisher_h pub_handle {};
 
