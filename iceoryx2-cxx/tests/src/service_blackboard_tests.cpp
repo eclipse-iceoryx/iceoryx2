@@ -1817,4 +1817,37 @@ TYPED_TEST(ServiceBlackboardTest, port_names_can_be_set) {
     ASSERT_THAT(reader.name().to_string(), reader_name.to_string());
     ASSERT_THAT(writer.name().to_string(), writer_name.to_string());
 }
+
+TYPED_TEST(ServiceBlackboardTest, key_can_be_found_in_opener) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    auto key_1 = Foo(2, -3, 0, bb::StaticString<STRING_CAPACITY>::from_utf8("hatschu").value());
+    auto key_2 = Foo(2, -3, 0, bb::StaticString<STRING_CAPACITY>::from_utf8("hatschuu").value());
+    constexpr int32_t VALUE_1 = 5;
+    constexpr int32_t VALUE_2 = 10;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto sut_creator = node.service_builder(service_name)
+                           .template blackboard_creator<Foo>()
+                           .template add<int32_t>(key_1, 0)
+                           .template add<int32_t>(key_2, 0)
+                           .create()
+                           .value();
+
+    auto writer = sut_creator.writer_builder().create().value();
+    auto entry_handle_mut_1 = writer.template entry<int32_t>(key_1).value();
+    auto entry_handle_mut_2 = writer.template entry<int32_t>(key_2).value();
+    entry_handle_mut_1.update_with_copy(VALUE_1);
+    entry_handle_mut_2.update_with_copy(VALUE_2);
+
+    auto sut_opener = node.service_builder(service_name).template blackboard_opener<Foo>().open().value();
+    auto reader = sut_opener.reader_builder().create().value();
+    auto entry_handle_1 = reader.template entry<int32_t>(key_1).value();
+    auto entry_handle_2 = reader.template entry<int32_t>(key_2).value();
+
+    ASSERT_THAT(*entry_handle_1.get(), Eq(VALUE_1));
+    ASSERT_THAT(*entry_handle_2.get(), Eq(VALUE_2));
+}
 } // namespace

@@ -1004,3 +1004,40 @@ def test_port_names_can_be_set(
 
     assert reader.name == reader_name
     assert writer.name == writer_name
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_key_can_be_found_in_opener(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    service_name = iox2.testing.generate_service_name()
+
+    key_1 = Foo(a=9, b=99, c=9.9)
+    value_1 = ctypes.c_int32(0)
+    key_2 = Foo(a=9, b=99, c=9.99)
+    value_2 = ctypes.c_int32(0)
+
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    sut_creator = (
+        node.service_builder(service_name)
+        .blackboard_creator(Foo)
+        .add(key_1, value_1)
+        .add(key_2, value_2)
+        .create()
+    )
+
+    writer = sut_creator.writer_builder().create()
+    entry_handle_mut_1 = writer.entry(key_1, ctypes.c_int32)
+    entry_handle_mut_2 = writer.entry(key_2, ctypes.c_int32)
+    entry_handle_mut_1.update_with_copy(ctypes.c_int32(5))
+    entry_handle_mut_2.update_with_copy(ctypes.c_int32(10))
+
+    sut_opener = node.service_builder(service_name).blackboard_opener(Foo).open()
+
+    reader = sut_opener.reader_builder().create()
+    entry_handle_1 = reader.entry(key_1, ctypes.c_int32)
+    entry_handle_2 = reader.entry(key_2, ctypes.c_int32)
+
+    assert entry_handle_1.get().decode_as(ctypes.c_int32).value == 5
+    assert entry_handle_2.get().decode_as(ctypes.c_int32).value == 10
