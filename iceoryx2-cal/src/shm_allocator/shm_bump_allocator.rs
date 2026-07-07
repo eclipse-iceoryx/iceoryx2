@@ -162,8 +162,21 @@ impl ShmAllocator for BumpAllocator {
         // diff
         if old_layout.size() + offset.offset() == self.allocator.used_space() {
             let additional_size = new_layout.size() - old_layout.size();
-            self.allocator
-                .allocate(unsafe { Layout::from_size_align_unchecked(additional_size, 1) });
+            match self
+                .allocator
+                .allocate(unsafe { Layout::from_size_align_unchecked(additional_size, 1) })
+            {
+                Ok(_) => (),
+                Err(AllocationError::OutOfMemory) | Err(AllocationError::SizeTooLarge) => {
+                    fail!(from self,
+                        with ShmAllocatorGrowError::AllocationGrowError(AllocationGrowError::OutOfMemory),
+                        "{} since the allocator is out-of-memory.", msg);
+                }
+                Err(e) => {
+                    fatal_panic!(from self,
+                        "This should never happen! Failed to allocate memory to grow the memory chunk. [{e:?}]");
+                }
+            }
 
             if placement == ContentPlacement::Back {
                 let src = self.allocator.start_address() + offset.offset();
@@ -171,8 +184,36 @@ impl ShmAllocator for BumpAllocator {
                 unsafe { core::ptr::copy(src as *const u8, dst as *mut u8, old_layout.size()) };
             }
         } else {
-            let offset = match unsafe { self.allocate(new_layout) } {
-                Ok(offset) => offset,
+            match unsafe { self.allocate(new_layout) } {
+                Ok(new_offset) => {
+                    let src = self.allocator.start_address() + offset.offset();
+                    match placement {
+                        ContentPlacement::Front => {
+                            let dst = self.allocator.start_address() + new_offset.offset();
+                            unsafe {
+                                core::ptr::copy_nonoverlapping(
+                                    src as *const u8,
+                                    dst as *mut u8,
+                                    old_layout.size(),
+                                )
+                            };
+                        }
+                        ContentPlacement::Back => {
+                            let dst = self.allocator.start_address()
+                                + new_offset.offset()
+                                + new_layout.size()
+                                - old_layout.size();
+                            unsafe {
+                                core::ptr::copy_nonoverlapping(
+                                    src as *const u8,
+                                    dst as *mut u8,
+                                    old_layout.size(),
+                                )
+                            };
+                        }
+                    };
+                    offset
+                }
                 Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory))
                 | Err(ShmAllocationError::AllocationError(AllocationError::SizeTooLarge)) => {
                     fail!(from self,
@@ -181,7 +222,7 @@ impl ShmAllocator for BumpAllocator {
                 }
                 Err(e) => {
                     fatal_panic!(from self,
-                        "This should never happen! Failed to ")
+                        "This should never happen! Failed to allocate memory to grow the memory chunk. [{e:?}]");
                 }
             };
         }

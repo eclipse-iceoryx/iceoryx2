@@ -34,7 +34,7 @@ impl core::fmt::Display for AllocationError {
 impl core::error::Error for AllocationError {}
 
 /// Failures caused by [`Allocator::grow()`] or [`Allocator::grow_zeroed()`].
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 pub enum AllocationGrowError {
     GrowWouldShrink,
     SizeIsZero,
