@@ -24,6 +24,7 @@ pub mod mapping;
 pub mod qos;
 pub mod relays;
 pub mod ros_header;
+pub mod testing;
 
 #[allow(unsafe_code)]
 pub(crate) mod payload;
