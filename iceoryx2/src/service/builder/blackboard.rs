@@ -767,4 +767,13 @@ impl<ServiceType: service::Service> Opener<CustomKeyMarker, ServiceType> {
         self.builder.config.override_key_type = Some(*value);
         self
     }
+
+    #[doc(hidden)]
+    pub unsafe fn __internal_set_key_eq_cmp_func(
+        mut self,
+        key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool + Send + Sync>,
+    ) -> Self {
+        self.builder.key_eq_func = Arc::new(key_eq_func);
+        self
+    }
 }

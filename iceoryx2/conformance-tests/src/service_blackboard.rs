@@ -2529,6 +2529,9 @@ pub mod service_blackboard {
             node.service_builder(&service_name)
                 .blackboard_opener::<CustomKeyMarker>()
                 .__internal_set_key_type_details(&key_type_details)
+                .__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &cmp_for_foo)
+                }))
                 .open()
                 .unwrap()
         };

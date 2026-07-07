@@ -242,6 +242,10 @@ inline void ServiceBuilderBlackboardOpener<KeyType, S>::set_parameters() {
     if (key_type_result != IOX2_OK) {
         IOX2_PANIC("This should never happen! Implementation failure while setting the Key-Type.");
     }
+
+    // key eq comparison function
+    iox2_service_builder_blackboard_opener_set_key_eq_comparison_function(&m_handle,
+                                                                           internal::default_key_eq_cmp_func<KeyType>);
 }
 
 template <typename KeyType, ServiceType S>

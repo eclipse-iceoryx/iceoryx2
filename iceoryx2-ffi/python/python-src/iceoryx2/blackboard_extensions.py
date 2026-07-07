@@ -81,13 +81,15 @@ def blackboard_opener(
     result = self.__blackboard_opener()
     result.__set_key_type(key)
 
-    return result.__set_key_type_details(
+    result = result.__set_key_type_details(
         TypeDetail.new()
         .type_variant(type_variant)
         .type_name(TypeName.new(type_name))
         .size(type_size)
         .alignment(type_align)
     )
+
+    return result.__set_key_eq_cmp_func(get_key_cmp_func(result.__key_type_details))
 
 
 def add(
