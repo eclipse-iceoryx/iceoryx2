@@ -19,6 +19,7 @@ use core::{alloc::Layout, fmt::Debug, ptr::NonNull};
 use iceoryx2_bb_elementary::enum_gen;
 pub use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_elementary_traits::{allocator::BaseAllocator, zero_copy_send::ZeroCopySend};
+use iceoryx2_bb_memory::pool_allocator::AllocationGrowError;
 pub use pointer_offset::*;
 use serde::{Deserialize, Serialize};
 
@@ -32,6 +33,24 @@ enum_gen! {
     ExceedsMaxSupportedAlignment
   mapping:
     AllocationError
+}
+
+enum_gen! {
+/// Describes the errors that can occur when [`ShmAllocator::grow()`] is called.
+    ShmAllocatorGrowError
+  entry:
+    ExceedsMaxSupportedAlignment
+  mapping:
+    AllocationGrowError
+}
+
+/// Defines where the existing content is copied when the user calls
+/// [`ShmAllocator::grow()`].
+#[derive(Clone, Copy, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
+pub enum ContentPlacement {
+    #[default]
+    Front,
+    Back,
 }
 
 /// Describes generically an [`AllocationStrategy`], meaning how the memory is increased when the
@@ -144,6 +163,20 @@ pub trait ShmAllocator: Debug + Send + Sync + 'static + ZeroCopySend {
     /// * [`ShmAllocator::init()`] must have been called before using this method
     ///
     unsafe fn allocate(&self, layout: Layout) -> Result<PointerOffset, ShmAllocationError>;
+
+    /// Grows an allocated memory cell to a new increased size.
+    ///
+    /// # Safety
+    ///
+    /// * [`ShmAllocator::init()`] must have been called before using this method
+    ///
+    unsafe fn grow(
+        &self,
+        offset: PointerOffset,
+        old_layout: Layout,
+        new_layout: Layout,
+        placement: ContentPlacement,
+    ) -> Result<PointerOffset, ShmAllocatorGrowError>;
 
     /// Deallocates a previously allocated pointer offset
     ///
