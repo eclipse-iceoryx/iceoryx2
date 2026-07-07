@@ -35,7 +35,7 @@ pub(crate) mod typesupport;
 
 pub use backend::*;
 pub use config::*;
-pub use mapping::{PrefixMapping, TopicDescription};
+pub use mapping::{PrefixMapping, StaticMapping, TopicDescription};
 pub use qos::*;
 
 /// The name of the ROS 2 node representing the tunnel.

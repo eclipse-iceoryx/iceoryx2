@@ -12,9 +12,11 @@
 
 //! Mapping between iceoryx2 services and their ROS 2 representation.
 
-mod prefix_mapping;
+pub mod prefix_mapping;
+pub mod static_mapping;
 
 pub use prefix_mapping::PrefixMapping;
+pub use static_mapping::StaticMapping;
 
 use crate::config::{TopicName, TypeName};
 use crate::qos::QosProfile;

@@ -100,6 +100,7 @@ pub struct TypeDescription {
 
 /// Settings for publish-subscribe services.
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct PublishSubscribeSettings {
     pub max_subscribers: usize,
     pub max_publishers: usize,
@@ -108,6 +109,23 @@ pub struct PublishSubscribeSettings {
     pub subscriber_max_buffer_size: usize,
     pub subscriber_max_borrowed_samples: usize,
     pub safe_overflow: bool,
+}
+
+impl Default for PublishSubscribeSettings {
+    fn default() -> Self {
+        let defaults = iceoryx2::config::Config::default()
+            .defaults
+            .publish_subscribe;
+        Self {
+            max_subscribers: defaults.max_subscribers,
+            max_publishers: defaults.max_publishers,
+            max_nodes: defaults.max_nodes,
+            history_size: defaults.publisher_history_size,
+            subscriber_max_buffer_size: defaults.subscriber_max_buffer_size,
+            subscriber_max_borrowed_samples: defaults.subscriber_max_borrowed_samples,
+            safe_overflow: defaults.enable_safe_overflow,
+        }
+    }
 }
 
 /// Settings for event services.
