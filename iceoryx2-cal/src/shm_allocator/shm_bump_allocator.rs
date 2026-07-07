@@ -183,6 +183,8 @@ impl ShmAllocator for BumpAllocator {
                 let dst = src + (new_layout.size() - old_layout.size());
                 unsafe { core::ptr::copy(src as *const u8, dst as *mut u8, old_layout.size()) };
             }
+
+            Ok(offset)
         } else {
             match unsafe { self.allocate(new_layout) } {
                 Ok(new_offset) => {
@@ -197,6 +199,8 @@ impl ShmAllocator for BumpAllocator {
                                     old_layout.size(),
                                 )
                             };
+
+                            Ok(new_offset)
                         }
                         ContentPlacement::Back => {
                             let dst = self.allocator.start_address()
@@ -210,9 +214,10 @@ impl ShmAllocator for BumpAllocator {
                                     old_layout.size(),
                                 )
                             };
+
+                            Ok(new_offset)
                         }
-                    };
-                    offset
+                    }
                 }
                 Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory))
                 | Err(ShmAllocationError::AllocationError(AllocationError::SizeTooLarge)) => {
@@ -224,10 +229,8 @@ impl ShmAllocator for BumpAllocator {
                     fatal_panic!(from self,
                         "This should never happen! Failed to allocate memory to grow the memory chunk. [{e:?}]");
                 }
-            };
+            }
         }
-
-        todo!()
     }
 
     unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
