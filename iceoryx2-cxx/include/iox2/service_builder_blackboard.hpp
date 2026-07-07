@@ -245,7 +245,7 @@ inline void ServiceBuilderBlackboardOpener<KeyType, S>::set_parameters() {
 
     // key eq comparison function
     iox2_service_builder_blackboard_opener_set_key_eq_comparison_function(&m_handle,
-                                                                           internal::default_key_eq_cmp_func<KeyType>);
+                                                                          internal::default_key_eq_cmp_func<KeyType>);
 }
 
 template <typename KeyType, ServiceType S>

@@ -2449,7 +2449,6 @@ pub mod service_blackboard {
 
     #[conformance_test]
     pub fn key_can_be_found_in_opener_with_custom_key_type<S: Service>() {
-        set_log_level_from_env_or(LogLevel::Trace);
         let test = Test::<S>::new();
         let node = test.create_node();
 
