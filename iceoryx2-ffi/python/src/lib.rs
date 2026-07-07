@@ -59,6 +59,7 @@ pub mod port_factory_request_response;
 pub mod port_factory_server;
 pub mod port_factory_subscriber;
 pub mod port_factory_writer;
+pub mod port_name;
 pub mod publisher;
 pub mod reader;
 pub mod request_header;
@@ -175,6 +176,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::port_factory_server::PortFactoryServer>()?;
     m.add_class::<crate::port_factory_subscriber::PortFactorySubscriber>()?;
     m.add_class::<crate::port_factory_writer::PortFactoryWriter>()?;
+    m.add_class::<crate::port_name::PortName>()?;
     m.add_class::<crate::publisher::Publisher>()?;
     m.add_class::<crate::reader::Reader>()?;
     m.add_class::<crate::request_header::RequestHeader>()?;
