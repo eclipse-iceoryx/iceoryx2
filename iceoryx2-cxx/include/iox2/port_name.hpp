@@ -24,11 +24,11 @@ class PortName;
 /// Non-owning view of a [`PortName`].
 class PortNameView {
   public:
-    PortNameView(PortNameView&&) = default;
+    PortNameView(PortNameView&&) noexcept = default;
     PortNameView(const PortNameView&) = default;
-    auto operator=(PortNameView&&) -> PortNameView& = default;
+    auto operator=(PortNameView&&) noexcept -> PortNameView& = default;
     auto operator=(const PortNameView&) -> PortNameView& = default;
-    ~PortNameView() = default;
+    ~PortNameView() noexcept = default;
 
     /// Creates a [`PortNameView`] from a native [`iox2_port_name_ptr`]
     static auto from_native_ptr(iox2_port_name_ptr m_ptr) -> PortNameView;
@@ -55,7 +55,7 @@ class PortName {
     auto operator=(PortName&&) noexcept -> PortName&;
     PortName(const PortName&);
     auto operator=(const PortName&) -> PortName&;
-    ~PortName();
+    ~PortName() noexcept;
 
     /// Creates a [`PortNameView`]
     auto as_view() const -> PortNameView;

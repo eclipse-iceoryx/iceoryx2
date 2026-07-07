@@ -51,7 +51,7 @@ PortName::PortName(iox2_port_name_h handle)
     : m_handle { handle } {
 }
 
-PortName::~PortName() {
+PortName::~PortName() noexcept {
     drop();
 }
 
