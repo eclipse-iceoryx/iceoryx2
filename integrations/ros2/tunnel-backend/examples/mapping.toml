@@ -1,9 +1,4 @@
-# Example mapping configuration for `StaticMapping`.
-#
-# Each `[[mapping]]` entry pairs one iceoryx2 service with one ROS 2 topic.
-# Both sides are applied verbatim: nothing is derived and no cross-side
-# compatibility is checked. Service names and topics must be unique across
-# entries.
+# Example configurations for `StaticMapping`.
 
 # Minimal mapping: only the names and types. Unset service settings and QoS
 # fall back to the iceoryx2 and ROS 2 defaults.
