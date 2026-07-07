@@ -89,8 +89,6 @@
 use std::collections::HashMap;
 
 use iceoryx2::service::Service;
-use iceoryx2::service::messaging_pattern::MessagingPattern;
-use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_log::fail;
@@ -257,18 +255,14 @@ impl Mapping for StaticMapping {
         let user_header = TypeDescription::from(&RosHeader::type_detail());
 
         let name = entry.iceoryx2.service_name.clone();
-        Some(ServiceDescription {
-            service_hash: ServiceHash::new::<S::ServiceNameHasher>(
-                &name,
-                MessagingPattern::PublishSubscribe,
-            ),
+        Some(ServiceDescription::new::<S>(
             name,
-            pattern: PatternDescription::PublishSubscribe(PublishSubscribeDescription {
+            PatternDescription::PublishSubscribe(PublishSubscribeDescription {
                 payload,
                 user_header,
                 settings: settings(&entry.iceoryx2.settings),
             }),
-        })
+        ))
     }
 }
 

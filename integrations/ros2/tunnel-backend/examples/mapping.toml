@@ -1,0 +1,35 @@
+# Example mapping configuration for `StaticMapping`.
+#
+# Each `[[mapping]]` entry pairs one iceoryx2 service with one ROS 2 topic.
+# Both sides are applied verbatim: nothing is derived and no cross-side
+# compatibility is checked. Service names and topics must be unique across
+# entries.
+
+# Minimal mapping: only the names and types. Unset service settings and QoS
+# fall back to the iceoryx2 and ROS 2 defaults.
+[[mapping]]
+iceoryx2.service_name = "CmdVel"
+iceoryx2.payload_type = "geometry_msgs/msg/Twist"
+ros2.topic = "/cmd_vel"
+ros2.type = "geometry_msgs/msg/Twist"
+
+# Full mapping: every available option.
+[[mapping]]
+iceoryx2.service_name = "LidarFront"
+iceoryx2.payload_type = "foxglove::PointCloud"
+iceoryx2.settings.max_subscribers = 8
+iceoryx2.settings.max_publishers = 2
+iceoryx2.settings.max_nodes = 20
+iceoryx2.settings.history_size = 0
+iceoryx2.settings.subscriber_max_buffer_size = 4
+iceoryx2.settings.subscriber_max_borrowed_samples = 2
+iceoryx2.settings.safe_overflow = true
+ros2.topic = "/Lidar/Front"
+ros2.type = "sensor_msgs/msg/PointCloud2"
+ros2.qos.history = { KeepLast = 10 }       # or "KeepAll", "SystemDefault"
+ros2.qos.reliability = "Reliable"          # or "BestEffort", "SystemDefault", "BestAvailable"
+ros2.qos.durability = "Volatile"           # or "TransientLocal", "SystemDefault", "BestAvailable"
+ros2.qos.liveliness = "Automatic"          # or "ManualByTopic", "SystemDefault", "BestAvailable"
+ros2.qos.deadline = "500ms"                # <value><unit>; units: ns, us, ms, s
+ros2.qos.lifespan = "2s"                   # unset = no bound
+ros2.qos.liveliness_lease_duration = "1s"

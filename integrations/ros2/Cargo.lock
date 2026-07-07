@@ -414,6 +414,7 @@ dependencies = [
  "libloading",
  "r2r_rcl",
  "serde",
+ "toml",
 ]
 
 [[package]]
