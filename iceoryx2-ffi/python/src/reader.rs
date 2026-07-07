@@ -17,6 +17,7 @@ use pyo3::prelude::*;
 use crate::entry_handle::{EntryHandle, EntryHandleType, InternalValueStorage};
 use crate::error::EntryHandleError;
 use crate::parc::Parc;
+use crate::port_name::PortName;
 use crate::type_detail::TypeDetail;
 use crate::type_storage::TypeStorage;
 use crate::unique_reader_id::UniqueReaderId;
@@ -48,6 +49,17 @@ impl Reader {
             ReaderType::Local(Some(v)) => UniqueReaderId(v.id()),
             _ => fatal_panic!(from "Reader::id()",
                     "Accessing a deleted reader."),
+        }
+    }
+
+    #[getter]
+    /// Returns the `PortName` of the `Reader`
+    pub fn name(&self) -> PortName {
+        match &*self.value.lock() {
+            ReaderType::Ipc(Some(v)) => PortName(*v.name()),
+            ReaderType::Local(Some(v)) => PortName(*v.name()),
+            _ => fatal_panic!(from "Reader::name()",
+                              "Accessing a released reader."),
         }
     }
 

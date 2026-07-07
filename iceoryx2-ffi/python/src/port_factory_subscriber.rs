@@ -17,6 +17,7 @@ use crate::{
     error::SubscriberCreateError,
     parc::Parc,
     port_factory_publish_subscribe::PortFactoryPublishSubscribeType,
+    port_name::PortName,
     subscriber::{Subscriber, SubscriberType},
     type_storage::TypeStorage,
 };
@@ -133,6 +134,25 @@ impl PortFactorySubscriber {
             PortFactorySubscriberType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.history_request(value);
+                self.clone_local(this)
+            }
+        }
+    }
+
+    /// The `PortName` that shall be assigned to the `Subscriber`. It does not
+    /// have to be unique. If no `PortName` is defined then the `Subscriber`
+    /// does not have a name.
+    pub fn name(&mut self, value: &PortName) -> Self {
+        let _guard = self.factory.lock();
+        match &self.value {
+            PortFactorySubscriberType::Ipc(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = this.name(&value.0);
+                self.clone_ipc(this)
+            }
+            PortFactorySubscriberType::Local(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = this.name(&value.0);
                 self.clone_local(this)
             }
         }

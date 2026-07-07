@@ -17,6 +17,7 @@ use pyo3::prelude::*;
 use crate::error::ReaderCreateError;
 use crate::parc::Parc;
 use crate::port_factory_blackboard::PortFactoryBlackboardType;
+use crate::port_name::PortName;
 use crate::reader::{Reader, ReaderType};
 use crate::type_storage::TypeStorage;
 
@@ -72,10 +73,45 @@ impl PortFactoryReader {
             key_type_storage,
         }
     }
+
+    fn clone_ipc(&self, value: IpcPortFactoryReader<'static>) -> Self {
+        Self {
+            factory: self.factory.clone(),
+            value: PortFactoryReaderType::Ipc(Parc::new(value)),
+            key_type_storage: self.key_type_storage.clone(),
+        }
+    }
+
+    fn clone_local(&self, value: LocalPortFactoryReader<'static>) -> Self {
+        Self {
+            factory: self.factory.clone(),
+            value: PortFactoryReaderType::Local(Parc::new(value)),
+            key_type_storage: self.key_type_storage.clone(),
+        }
+    }
 }
 
 #[pymethods]
 impl PortFactoryReader {
+    /// The `PortName` that shall be assigned to the `Reader`. It does not
+    /// have to be unique. If no `PortName` is defined then the `Reader`
+    /// does not have a name.
+    pub fn name(&mut self, value: &PortName) -> Self {
+        let _guard = self.factory.lock();
+        match &self.value {
+            PortFactoryReaderType::Ipc(v) => {
+                let this = (*v.lock()).clone();
+                let this = this.name(&value.0);
+                self.clone_ipc(this)
+            }
+            PortFactoryReaderType::Local(v) => {
+                let this = (*v.lock()).clone();
+                let this = this.name(&value.0);
+                self.clone_local(this)
+            }
+        }
+    }
+
     /// Creates a new `Reader` or emits a `ReaderCreateError` on failure.
     pub fn create(&self) -> PyResult<Reader> {
         let _guard = self.factory.lock();

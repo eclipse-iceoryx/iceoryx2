@@ -17,6 +17,7 @@ use pyo3::prelude::*;
 use crate::entry_handle_mut::{EntryHandleMut, EntryHandleMutType};
 use crate::error::EntryHandleMutError;
 use crate::parc::Parc;
+use crate::port_name::PortName;
 use crate::type_detail::TypeDetail;
 use crate::type_storage::TypeStorage;
 use crate::unique_writer_id::UniqueWriterId;
@@ -49,6 +50,17 @@ impl Writer {
             WriterType::Local(Some(v)) => UniqueWriterId(v.id()),
             _ => fatal_panic!(from "Writer::id()",
                     "Accessing a deleted writer."),
+        }
+    }
+
+    #[getter]
+    /// Returns the `PortName` of the `Writer`
+    pub fn name(&self) -> PortName {
+        match &*self.value.lock() {
+            WriterType::Ipc(Some(v)) => PortName(*v.name()),
+            WriterType::Local(Some(v)) => PortName(*v.name()),
+            _ => fatal_panic!(from "WriterType::name()",
+                              "Accessing a released writer."),
         }
     }
 

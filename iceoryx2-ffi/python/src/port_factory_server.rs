@@ -19,6 +19,7 @@ use crate::{
     error::ServerCreateError,
     parc::Parc,
     port_factory_request_response::PortFactoryRequestResponseType,
+    port_name::PortName,
     server::{Server, ServerType},
     type_storage::TypeStorage,
 };
@@ -196,6 +197,25 @@ impl PortFactoryServer {
             PortFactoryServerType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.max_loaned_responses_per_request(value);
+                self.clone_local(this)
+            }
+        }
+    }
+
+    /// The `PortName` that shall be assigned to the `Server`. It does not
+    /// have to be unique. If no `PortName` is defined then the `Server`
+    /// does not have a name.
+    pub fn name(&mut self, value: &PortName) -> Self {
+        let _guard = self.factory.lock();
+        match &self.value {
+            PortFactoryServerType::Ipc(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = this.name(&value.0);
+                self.clone_ipc(this)
+            }
+            PortFactoryServerType::Local(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = this.name(&value.0);
                 self.clone_local(this)
             }
         }

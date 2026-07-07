@@ -19,17 +19,18 @@ use crate::{
     listener::{Listener, ListenerType},
     parc::Parc,
     port_factory_event::PortFactoryEventType,
+    port_name::PortName,
 };
+
+type IpcPortFactoryListener<'a> =
+    iceoryx2::service::port_factory::listener::PortFactoryListener<'static, crate::IpcService>;
+type LocalPortFactoryListener<'a> =
+    iceoryx2::service::port_factory::listener::PortFactoryListener<'static, crate::LocalService>;
 
 #[derive(Clone)]
 pub(crate) enum PortFactoryListenerType {
-    Ipc(iceoryx2::service::port_factory::listener::PortFactoryListener<'static, crate::IpcService>),
-    Local(
-        iceoryx2::service::port_factory::listener::PortFactoryListener<
-            'static,
-            crate::LocalService,
-        >,
-    ),
+    Ipc(IpcPortFactoryListener<'static>),
+    Local(LocalPortFactoryListener<'static>),
 }
 
 #[pyclass]
@@ -69,10 +70,43 @@ impl PortFactoryListener {
             },
         }
     }
+
+    fn clone_ipc(&self, value: IpcPortFactoryListener<'static>) -> Self {
+        Self {
+            factory: self.factory.clone(),
+            value: PortFactoryListenerType::Ipc(value),
+        }
+    }
+
+    fn clone_local(&self, value: LocalPortFactoryListener<'static>) -> Self {
+        Self {
+            factory: self.factory.clone(),
+            value: PortFactoryListenerType::Local(value),
+        }
+    }
 }
 
 #[pymethods]
 impl PortFactoryListener {
+    /// The `PortName` that shall be assigned to the `Listener`. It does not
+    /// have to be unique. If no `PortName` is defined then the `Listener`
+    /// does not have a name.
+    pub fn name(&mut self, value: &PortName) -> Self {
+        let _guard = self.factory.lock();
+        match &self.value {
+            PortFactoryListenerType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.name(&value.0);
+                self.clone_ipc(this)
+            }
+            PortFactoryListenerType::Local(v) => {
+                let this = v.clone();
+                let this = this.name(&value.0);
+                self.clone_local(this)
+            }
+        }
+    }
+
     /// Creates the `Listener` port or emits a `ListenerCreateError` on failure.
     pub fn create(&self) -> PyResult<Listener> {
         let _guard = self.factory.lock();

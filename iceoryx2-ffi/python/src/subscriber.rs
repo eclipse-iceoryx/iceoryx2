@@ -17,6 +17,7 @@ use pyo3::prelude::*;
 use crate::{
     error::{ConnectionFailure, ReceiveError},
     parc::Parc,
+    port_name::PortName,
     sample::{Sample, SampleType},
     type_storage::TypeStorage,
     unique_subscriber_id::UniqueSubscriberId,
@@ -61,6 +62,17 @@ impl Subscriber {
             SubscriberType::Local(Some(v)) => UniqueSubscriberId(v.id()),
             _ => fatal_panic!(from "Subscriber::id()",
                     "Accessing a released Subscriber."),
+        }
+    }
+
+    #[getter]
+    /// Returns the `PortName` of the `Subscriber`
+    pub fn name(&self) -> PortName {
+        match &*self.value.lock() {
+            SubscriberType::Ipc(Some(v)) => PortName(*v.name()),
+            SubscriberType::Local(Some(v)) => PortName(*v.name()),
+            _ => fatal_panic!(from "Subscriber::name()",
+                              "Accessing a released Subscriber."),
         }
     }
 
