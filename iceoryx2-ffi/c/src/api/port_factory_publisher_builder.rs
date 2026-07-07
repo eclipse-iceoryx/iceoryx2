@@ -569,7 +569,7 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_backpressure_strate
 ///
 /// * `port_factory_handle` as well as `port_name_ptr` must be valid handles
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_port_factory_publisher_set_name(
+pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_name(
     port_factory_handle: iox2_port_factory_publisher_builder_h_ref,
     port_name_ptr: iox2_port_name_ptr,
 ) {

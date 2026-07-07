@@ -23,6 +23,7 @@
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/listener_error.hpp"
+#include "iox2/port_name.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
 
@@ -43,6 +44,9 @@ class Listener {
 
     /// Returns the [`UniqueListenerId`] of the [`Listener`]
     auto id() const -> UniqueListenerId;
+
+    /// Returns the [`PortNameView`] of the [`Listener`]
+    auto name() const -> PortNameView;
 
     /// Non-blocking wait for new [`EventId`]s. Collects either all [`EventId`]s that were received
     /// until the call of [`Listener::try_wait()`] or a reasonable batch that represent the
@@ -149,6 +153,12 @@ inline auto Listener<S>::id() const -> UniqueListenerId {
 
     iox2_listener_id(&m_handle, nullptr, &id_handle);
     return UniqueListenerId { id_handle };
+}
+
+template <ServiceType S>
+inline auto Listener<S>::name() const -> PortNameView {
+    const auto* port_name_ptr = iox2_listener_name(&m_handle);
+    return PortNameView::from_native_ptr(port_name_ptr);
 }
 
 template <ServiceType S>

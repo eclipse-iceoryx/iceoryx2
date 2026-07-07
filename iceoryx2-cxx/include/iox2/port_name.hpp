@@ -30,15 +30,20 @@ class PortNameView {
     auto operator=(const PortNameView&) -> PortNameView& = default;
     ~PortNameView() = default;
 
+    /// Creates a [`PortNameView`] from a native [`iox2_port_name_ptr`]
+    static auto from_native_ptr(iox2_port_name_ptr m_ptr) -> PortNameView;
+
+    /// Returns the native [`iox2_port_name_ptr`]
+    auto native_ptr() const -> iox2_port_name_ptr;
+
     /// Returns a [`iox2::bb::StaticString`] containing the [`PortName`].
     auto to_string() const -> iox2::bb::StaticString<IOX2_PORT_NAME_LENGTH>;
 
     /// Creates a copy of the corresponding [`PortName`] and returns it.
     auto to_owned() const -> PortName;
 
-  private:
-    friend class PortName;
 
+  private:
     explicit PortNameView(iox2_port_name_ptr ptr);
     iox2_port_name_ptr m_ptr = nullptr;
 };

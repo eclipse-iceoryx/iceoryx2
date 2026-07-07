@@ -23,6 +23,7 @@
 #include "iox2/degradation_handler.hpp"
 #include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/port_name.hpp"
 #include "iox2/service_type.hpp"
 
 namespace iox2 {
@@ -49,6 +50,15 @@ class PortFactoryClient {
     auto max_active_requests(const uint64_t value) -> decltype(auto);
 #else
     IOX2_BUILDER_OPTIONAL(uint64_t, max_active_requests);
+#endif
+
+/// The [`PortName`] that shall be assigned to the [`Client`]. It does not
+/// have to be unique. If no [`PortName`] is defined then the [`Client`]
+/// does not have a name.
+#ifdef DOXYGEN_MACRO_FIX
+    auto name(const PortName value) -> decltype(auto);
+#else
+    IOX2_BUILDER_OPTIONAL(PortName, name);
 #endif
 
   public:
@@ -245,6 +255,11 @@ inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, Respon
 
     if (m_max_active_requests.has_value()) {
         iox2_port_factory_client_builder_set_max_active_requests(&m_handle, m_max_active_requests.value());
+    }
+
+    if (m_name.has_value()) {
+        const auto* name_ptr = m_name.value().as_view().native_ptr();
+        iox2_port_factory_client_builder_set_name(&m_handle, name_ptr);
     }
 
     iox2_client_h client_handle {};

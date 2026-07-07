@@ -17,6 +17,7 @@
 #include "iox2/bb/expected.hpp"
 #include "iox2/bb/optional.hpp"
 #include "iox2/bb/slice.hpp"
+#include "iox2/port_name.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
 
@@ -50,6 +51,9 @@ class Server {
 
     /// Returns the [`UniqueServerId`] of the [`Server`]
     auto id() const -> UniqueServerId;
+
+    /// Returns the [`PortNameView`] of the [`Server`]
+    auto name() const -> PortNameView;
 
     /// Returns true if the [`Server`] has [`RequestMut`]s in its buffer.
     auto has_requests() const -> bb::Expected<bool, ConnectionFailure>;
@@ -146,6 +150,17 @@ inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, Resp
     iox2_unique_server_id_h id_handle = nullptr;
     iox2_server_id(&m_handle, nullptr, &id_handle);
     return UniqueServerId { id_handle };
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::name() const
+    -> PortNameView {
+    const auto* port_name_ptr = iox2_server_name(&m_handle);
+    return PortNameView::from_native_ptr(port_name_ptr);
 }
 
 template <ServiceType Service,

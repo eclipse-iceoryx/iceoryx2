@@ -824,4 +824,22 @@ TYPED_TEST(ServiceEventTest, only_max_listeners_can_be_created) {
     auto sut = service.listener_builder().create();
     ASSERT_TRUE(sut.has_value());
 }
+
+TYPED_TEST(ServiceEventTest, port_names_can_be_set) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().value();
+    auto service = node.service_builder(service_name).event().max_listeners(1).create().value();
+
+    const auto notifier_name = PortName::create("yell").value();
+    const auto listener_name = PortName::create("wiretap").value();
+
+    auto notifer = service.notifier_builder().name(notifier_name).create().value();
+    auto listener = service.listener_builder().name(listener_name).create().value();
+
+    ASSERT_THAT(notifer.name().to_string(), notifier_name.to_string());
+    ASSERT_THAT(listener.name().to_string(), listener_name.to_string());
+}
 } // namespace

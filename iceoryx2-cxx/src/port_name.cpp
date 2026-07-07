@@ -35,6 +35,14 @@ auto PortNameView::to_owned() const -> PortName {
     return port_name.value();
 }
 
+auto PortNameView::from_native_ptr(iox2_port_name_ptr ptr) -> PortNameView {
+    return PortNameView(ptr);
+}
+
+auto PortNameView::native_ptr() const -> iox2_port_name_ptr {
+    return m_ptr;
+}
+
 PortNameView::PortNameView(iox2_port_name_ptr ptr)
     : m_ptr { ptr } {
 }
@@ -110,7 +118,7 @@ auto PortName::to_string() const -> iox2::bb::StaticString<IOX2_PORT_NAME_LENGTH
 }
 
 auto PortName::as_view() const -> PortNameView {
-    return PortNameView(iox2_cast_port_name_ptr(m_handle));
+    return PortNameView::from_native_ptr(iox2_cast_port_name_ptr(m_handle));
 }
 
 } // namespace iox2

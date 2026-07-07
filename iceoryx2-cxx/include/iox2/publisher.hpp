@@ -19,6 +19,7 @@
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/helper.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/port_name.hpp"
 #include "iox2/publisher_error.hpp"
 #include "iox2/sample_mut.hpp"
 #include "iox2/sample_mut_uninit.hpp"
@@ -44,6 +45,9 @@ class Publisher {
 
     /// Returns the [`UniquePublisherId`] of the [`Publisher`]
     auto id() const -> UniquePublisherId;
+
+    /// Returns the [`PortNameView`] of the [`Publisher`]
+    auto name() const -> PortNameView;
 
     /// Returns the strategy the [`Publisher`] follows when a [`SampleMut`] cannot be delivered
     /// since the [`Subscriber`]s buffer is full.
@@ -163,6 +167,12 @@ inline auto Publisher<S, Payload, UserHeader>::id() const -> UniquePublisherId {
 
     iox2_publisher_id(&m_handle, nullptr, &id_handle);
     return UniquePublisherId { id_handle };
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto Publisher<S, Payload, UserHeader>::name() const -> PortNameView {
+    const auto* port_name_ptr = iox2_publisher_name(&m_handle);
+    return PortNameView::from_native_ptr(port_name_ptr);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

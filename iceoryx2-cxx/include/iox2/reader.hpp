@@ -18,6 +18,7 @@
 #include "iox2/entry_handle.hpp"
 #include "iox2/entry_handle_error.hpp"
 #include "iox2/internal/service_builder_internal.hpp"
+#include "iox2/port_name.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
 
@@ -35,6 +36,9 @@ class Reader {
 
     /// Returns the [`UniqueReaderId`] of the [`Reader`].
     auto id() const -> UniqueReaderId;
+
+    /// Returns the [`PortNameView`] of the [`Reader`]
+    auto name() const -> PortNameView;
 
     /// Creates an [`EntryHandle`] for direct read access to the value.
     template <typename ValueType>
@@ -98,6 +102,12 @@ inline auto Reader<S, KeyType>::id() const -> UniqueReaderId {
 
     iox2_reader_id(&m_handle, nullptr, &id_handle);
     return UniqueReaderId { id_handle };
+}
+
+template <ServiceType S, typename KeyType>
+inline auto Reader<S, KeyType>::name() const -> PortNameView {
+    const auto* port_name_ptr = iox2_reader_name(&m_handle);
+    return PortNameView::from_native_ptr(port_name_ptr);
 }
 
 template <ServiceType S, typename KeyType>

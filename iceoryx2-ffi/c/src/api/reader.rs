@@ -206,7 +206,7 @@ pub unsafe extern "C" fn iox2_reader_id(
 ///
 /// * `reader_handle` is valid, non-null and was obtained via [`iox2_port_factory_reader_builder_create`](crate::iox2_port_factory_reader_builder_create).
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn iox2_rader_name(reader_handle: iox2_reader_h_ref) -> iox2_port_name_ptr {
+pub unsafe extern "C" fn iox2_reader_name(reader_handle: iox2_reader_h_ref) -> iox2_port_name_ptr {
     reader_handle.assert_non_null();
     unsafe {
         let reader = &mut *reader_handle.as_type();

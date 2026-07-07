@@ -17,6 +17,7 @@
 #include "iox2/entry_handle_mut.hpp"
 #include "iox2/entry_handle_mut_error.hpp"
 #include "iox2/internal/service_builder_internal.hpp"
+#include "iox2/port_name.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
 
@@ -34,6 +35,9 @@ class Writer {
 
     /// Returns the [`UniqueWriterId`] of the [`Writer`]
     auto id() const -> UniqueWriterId;
+
+    /// Returns the [`PortNameView`] of the [`Writer`]
+    auto name() const -> PortNameView;
 
     /// Creates an [`EntryHandleMut`] for direct write access to the value. There can be only one
     /// [`EntryHandleMut`] per value.
@@ -90,6 +94,12 @@ inline auto Writer<S, KeyType>::id() const -> UniqueWriterId {
 
     iox2_writer_id(&m_handle, nullptr, &id_handle);
     return UniqueWriterId { id_handle };
+}
+
+template <ServiceType S, typename KeyType>
+inline auto Writer<S, KeyType>::name() const -> PortNameView {
+    const auto* port_name_ptr = iox2_writer_name(&m_handle);
+    return PortNameView::from_native_ptr(port_name_ptr);
 }
 
 template <ServiceType S, typename KeyType>
