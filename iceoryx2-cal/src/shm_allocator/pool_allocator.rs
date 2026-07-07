@@ -20,6 +20,7 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_memory::pool_allocator::AllocationGrowError;
 use iceoryx2_log::fail;
 
 use super::{
@@ -220,14 +221,14 @@ impl ShmAllocator for PoolAllocator {
         }
 
         if new_layout.size() < old_layout.size() {
-            fail!(from self, with ShmAllocatorGrowError::AllocationGrowError(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::GrowWouldShrink),
+            fail!(from self, with ShmAllocatorGrowError::AllocationGrowError(AllocationGrowError::GrowWouldShrink),
                 "{} since new layout has a smaller size of {} than the old layout with {}.",
                 msg, new_layout.size(), old_layout.size());
         }
 
         if new_layout.size() > self.bucket_size() {
             fail!(from self,
-                    with ShmAllocatorGrowError::AllocationGrowError(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::OutOfMemory),
+                    with ShmAllocatorGrowError::AllocationGrowError(AllocationGrowError::OutOfMemory),
                     "{} since the requested size {} exceeds the maximum supported size of {}.",
                     msg, new_layout.size(), self.bucket_size());
         }
