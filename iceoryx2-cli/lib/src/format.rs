@@ -34,7 +34,7 @@ impl Format {
             Format::Json => {
                 serde_json::to_string_pretty(data).context("failed to serialize to JSON format")
             }
-            Format::Yaml => serde_yaml::to_string(data).context("failed to serialize to YAML"),
+            Format::Yaml => yaml_serde::to_string(data).context("failed to serialize to YAML"),
         }
     }
 }
