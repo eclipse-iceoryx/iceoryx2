@@ -40,10 +40,6 @@
 * [#1718](https://github.com/eclipse-iceoryx/iceoryx2/issues/1718) Protect `ProcessState` from accidental file lock release.
 * [#1739](https://github.com/eclipse-iceoryx/iceoryx2/issues/1739) Make sure MSVC defines __cplusplus with accurate value
 * [#1746](https://github.com/eclipse-iceoryx/iceoryx2/issues/1746) Disable `POSIX_SUPPORT_FILE_LOCK_FOR_SHARED_MEMORY` on FreeBSD and move CI job for FreeBSD to main pipeline
-* [#1757](https://github.com/eclipse-iceoryx/iceoryx2/issues/1757) Enable running multiple iceoryx2 versions in distinct domains in parallel by adding a version suffix to the global mgmt segment
-* [#1763](https://github.com/eclipse-iceoryx/iceoryx2/issues/1763) Close `ActiveRequest-PendingResponse` connection when dead process is cleaned up.
-* [#1765](https://github.com/eclipse-iceoryx/iceoryx2/issues/1765) Remove unnecessary `fsync` on file open
-* [#1770](https://github.com/eclipse-iceoryx/iceoryx2/issues/1770) Fix logging in python module.
 * [#1777](https://github.com/eclipse-iceoryx/iceoryx2/issues/1777) Fix service root folder creation named concept of iceoryx2-cal fixing execution on Windows platform.
 * [#1786](https://github.com/eclipse-iceoryx/iceoryx2/issues/1786) Disable transport_compression feature in Zenoh.
 
