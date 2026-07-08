@@ -16,7 +16,7 @@ use core::{alloc::Layout, ptr::NonNull};
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 use iceoryx2_cal::shm_allocator::{
-    AllocationStrategy, PointerOffset, ShmAllocator, shm_bump_allocator::*,
+    AllocationStrategy, PointerOffset, ShmAllocator, ShmAllocatorGrowError, shm_bump_allocator::*,
 };
 
 const MAX_SUPPORTED_ALIGNMENT: usize = 4096;
@@ -219,7 +219,7 @@ fn growing_middle_chunk_and_keep_content_at_front_works() {
 }
 
 #[test]
-fn growing_middle_chunk_and_keep_content_at_front_works() {
+fn growing_middle_chunk_and_keep_content_at_back_works() {
     let mut test = Test::new();
     let old_layout = Test::generate_layout(6);
     let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
@@ -243,16 +243,16 @@ fn growing_middle_chunk_and_keep_content_at_front_works() {
                 offset,
                 old_layout,
                 new_layout,
-                iceoryx2_cal::shm_allocator::ContentPlacement::Front,
+                iceoryx2_cal::shm_allocator::ContentPlacement::Back,
             )
             .unwrap()
     };
     let ptr = test.offset_to_ptr(offset);
 
-    for n in 0..6 {
-        assert_that!(unsafe { *ptr.add(n) }, eq n as u8 * 2u8);
+    for n in 4..10 {
+        assert_that!(unsafe { *ptr.add(n) }, eq(n - 4) as u8 * 2u8);
     }
-    for n in 7..10 {
+    for n in 0..6 {
         unsafe { *ptr.add(n) = 41u8 };
     }
 
@@ -261,4 +261,105 @@ fn growing_middle_chunk_and_keep_content_at_front_works() {
     for n in 0..7 {
         assert_that!(unsafe { *ptr.add(n) }, eq 123u8);
     }
+}
+
+#[test]
+fn growing_chunk_larger_than_available_memory_fails() {
+    let mut test = Test::new();
+    let old_layout = Test::generate_layout(6);
+    let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
+    let ptr = test.offset_to_ptr(offset);
+
+    for n in 0..6 {
+        unsafe { *ptr.add(n) = n as u8 * 2u8 };
+    }
+
+    let new_layout = Test::generate_layout(10 + MEM_SIZE);
+    let offset = unsafe {
+        test.sut.grow(
+            offset,
+            old_layout,
+            new_layout,
+            iceoryx2_cal::shm_allocator::ContentPlacement::Back,
+        )
+    };
+
+    assert_that!(offset.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::OutOfMemory)));
+}
+
+#[test]
+fn growing_and_increasing_alignment_fails() {
+    let test = Test::new();
+    let old_layout = Test::generate_layout(6);
+    let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
+
+    let new_layout = unsafe { Layout::from_size_align_unchecked(16, 8) };
+    let offset = unsafe {
+        test.sut.grow(
+            offset,
+            old_layout,
+            new_layout,
+            iceoryx2_cal::shm_allocator::ContentPlacement::Back,
+        )
+    };
+
+    assert_that!(offset.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::AlignmentFailure)));
+}
+
+#[test]
+fn growing_and_decreasing_size_fails() {
+    let test = Test::new();
+    let old_layout = Test::generate_layout(6);
+    let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
+
+    let new_layout = Test::generate_layout(4);
+    let offset = unsafe {
+        test.sut.grow(
+            offset,
+            old_layout,
+            new_layout,
+            iceoryx2_cal::shm_allocator::ContentPlacement::Back,
+        )
+    };
+
+    assert_that!(offset.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::GrowWouldShrink)));
+}
+
+#[test]
+fn growing_and_decreasing_alignment_works() {
+    let test = Test::new();
+    let old_layout = unsafe { Layout::from_size_align_unchecked(16, 8) };
+    let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
+
+    let new_layout = unsafe { Layout::from_size_align_unchecked(32, 4) };
+    let offset = unsafe {
+        test.sut.grow(
+            offset,
+            old_layout,
+            new_layout,
+            iceoryx2_cal::shm_allocator::ContentPlacement::Front,
+        )
+    };
+
+    assert_that!(offset, is_ok);
+}
+
+#[test]
+fn growing_with_same_size_returns_same_offset() {
+    let test = Test::new();
+    let old_layout = unsafe { Layout::from_size_align_unchecked(16, 8) };
+    let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
+
+    let new_offset = unsafe {
+        test.sut
+            .grow(
+                offset,
+                old_layout,
+                old_layout,
+                iceoryx2_cal::shm_allocator::ContentPlacement::Front,
+            )
+            .unwrap()
+    };
+
+    assert_that!(offset, eq new_offset);
 }

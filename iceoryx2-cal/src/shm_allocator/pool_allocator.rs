@@ -243,7 +243,7 @@ impl ShmAllocator for PoolAllocator {
             unsafe { core::ptr::copy(src as *const u8, dst as *mut u8, old_layout.size()) };
         }
 
-        todo!()
+        Ok(offset)
     }
 
     unsafe fn allocate(&self, layout: Layout) -> Result<PointerOffset, ShmAllocationError> {
