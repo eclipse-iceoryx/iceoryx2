@@ -29,8 +29,9 @@ pub mod shm_allocator_trait {
     const MGMT_SIZE: usize = 4096;
     const CHUNK_SIZE: usize = 128;
     const MAX_ALIGNMENT: usize = 512;
+    const SOME_OFFSET: usize = 13;
 
-    struct TestFixture<Sut: ShmAllocator> {
+    struct Test<Sut: ShmAllocator> {
         memory: [u8; MEMORY_SIZE],
         mgmt_memory: [u8; MGMT_SIZE],
         required_mgmt_size: usize,
@@ -38,7 +39,7 @@ pub mod shm_allocator_trait {
         sut: Option<Sut>,
     }
 
-    impl<Sut: ShmAllocator> TestFixture<Sut> {
+    impl<Sut: ShmAllocator> Test<Sut> {
         fn new() -> Self {
             Self {
                 memory: [0u8; MEMORY_SIZE],
@@ -77,7 +78,7 @@ pub mod shm_allocator_trait {
             self.sut = Some(unsafe {
                 Sut::new_uninit(
                     MAX_ALIGNMENT,
-                    NonNull::new_unchecked(&mut self.memory.as_mut_slice()[13..4096]),
+                    NonNull::new_unchecked(&mut self.memory.as_mut_slice()[SOME_OFFSET..4096]),
                     &Sut::Configuration::default(),
                 )
             });
@@ -88,11 +89,20 @@ pub mod shm_allocator_trait {
                 assert_that!(self.mgmt_memory[i], eq 252u8);
             }
         }
+
+        fn offset_to_ptr(&mut self, offset: PointerOffset) -> *mut u8 {
+            unsafe {
+                self.memory
+                    .as_mut()
+                    .as_mut_ptr()
+                    .add(offset.offset() + SOME_OFFSET + self.sut().relative_start_address())
+            }
+        }
     }
 
     #[conformance_test]
     pub fn allocate_and_free_works<Sut: ShmAllocator>() {
-        let mut test = TestFixture::<Sut>::new();
+        let mut test = Test::<Sut>::new();
         test.init();
 
         let layout = unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, 1) };
@@ -106,7 +116,7 @@ pub mod shm_allocator_trait {
 
     #[conformance_test]
     pub fn first_allocated_offset_must_start_at_zero<Sut: ShmAllocator>() {
-        let mut test = TestFixture::<Sut>::new();
+        let mut test = Test::<Sut>::new();
         test.init();
 
         let layout = unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, 1) };
@@ -118,7 +128,7 @@ pub mod shm_allocator_trait {
 
     #[conformance_test]
     pub fn allocate_max_alignment_works<Sut: ShmAllocator>() {
-        let mut test = TestFixture::<Sut>::new();
+        let mut test = Test::<Sut>::new();
         test.init();
 
         let layout =
@@ -133,7 +143,7 @@ pub mod shm_allocator_trait {
 
     #[conformance_test]
     pub fn allocate_more_than_max_alignment_fails<Sut: ShmAllocator>() {
-        let mut test = TestFixture::<Sut>::new();
+        let mut test = Test::<Sut>::new();
         test.init();
 
         let layout = unsafe {
@@ -154,7 +164,7 @@ pub mod shm_allocator_trait {
     pub fn init_fails_when_supported_memory_alignment_is_smaller_than_required<
         Sut: ShmAllocator,
     >() {
-        let mut test = TestFixture::<Sut>::new();
+        let mut test = Test::<Sut>::new();
         test.prepare();
 
         let mut sut = unsafe {
@@ -187,5 +197,175 @@ pub mod shm_allocator_trait {
         let mut guard = ALLOCATOR_IDS.lock().unwrap();
         assert_that!(!guard.contains(&uid), eq true);
         guard.insert(uid);
+    }
+
+    #[conformance_test]
+    pub fn growing_and_keep_content_at_front_works<Sut: ShmAllocator>() {
+        let chunk_size = CHUNK_SIZE / 8;
+        let mut test = Test::<Sut>::new();
+        test.init();
+
+        let old_layout = unsafe { Layout::from_size_align_unchecked(chunk_size, 1) };
+        let offset = unsafe { test.sut().allocate(old_layout).unwrap() };
+        let ptr = test.offset_to_ptr(offset);
+
+        for n in 0..chunk_size {
+            unsafe { *ptr.add(n) = n as u8 };
+        }
+
+        let new_layout = unsafe { Layout::from_size_align_unchecked(chunk_size * 2, 1) };
+        let offset = unsafe {
+            test.sut()
+                .grow(offset, old_layout, new_layout, ContentPlacement::Front)
+                .unwrap()
+        };
+        let ptr = test.offset_to_ptr(offset);
+
+        for n in 0..chunk_size {
+            assert_that!(unsafe {*ptr.add(n)}, eq n as u8);
+        }
+    }
+
+    #[conformance_test]
+    pub fn growing_and_keep_content_at_back_works<Sut: ShmAllocator>() {
+        let chunk_size = CHUNK_SIZE / 8;
+        let mut test = Test::<Sut>::new();
+        test.init();
+
+        let old_layout = unsafe { Layout::from_size_align_unchecked(chunk_size, 1) };
+        let offset = unsafe { test.sut().allocate(old_layout).unwrap() };
+        let ptr = test.offset_to_ptr(offset);
+
+        for n in 0..chunk_size {
+            unsafe { *ptr.add(n) = n as u8 };
+        }
+
+        let new_layout = unsafe { Layout::from_size_align_unchecked(chunk_size * 2, 1) };
+        let offset = unsafe {
+            test.sut()
+                .grow(offset, old_layout, new_layout, ContentPlacement::Back)
+                .unwrap()
+        };
+        let ptr = test.offset_to_ptr(offset);
+
+        for n in chunk_size..chunk_size * 2 {
+            assert_that!(unsafe { *ptr.add(n) }, eq(n - chunk_size) as u8);
+        }
+    }
+
+    #[conformance_test]
+    pub fn growing_not_last_chunk_and_keep_content_at_front_works<Sut: ShmAllocator>() {
+        let chunk_size = CHUNK_SIZE / 8;
+        let mut test = Test::<Sut>::new();
+        test.init();
+
+        let old_layout = unsafe { Layout::from_size_align_unchecked(chunk_size, 1) };
+        let offset = unsafe { test.sut().allocate(old_layout).unwrap() };
+        let ptr = test.offset_to_ptr(offset);
+
+        for n in 0..chunk_size {
+            unsafe { *ptr.add(n) = n as u8 * 2 };
+        }
+
+        let middle_layout = unsafe { Layout::from_size_align_unchecked(128, 1) };
+        let middle_chunk = unsafe { test.sut().allocate(middle_layout).unwrap() };
+        let ptr = test.offset_to_ptr(middle_chunk);
+
+        for n in 0..middle_layout.size() {
+            unsafe { *ptr.add(n) = 91 };
+        }
+
+        let new_layout = unsafe { Layout::from_size_align_unchecked(chunk_size * 2, 1) };
+        let offset = unsafe {
+            test.sut()
+                .grow(offset, old_layout, new_layout, ContentPlacement::Front)
+                .unwrap()
+        };
+        let ptr = test.offset_to_ptr(offset);
+
+        for n in 0..chunk_size {
+            assert_that!(unsafe {*ptr.add(n)}, eq n as u8 * 2);
+        }
+
+        let ptr = test.offset_to_ptr(middle_chunk);
+        for n in 0..middle_layout.size() {
+            assert_that!(unsafe{*ptr.add(n)}, eq 91);
+        }
+    }
+
+    #[conformance_test]
+    pub fn growing_not_last_chunk_and_keep_content_at_back_works<Sut: ShmAllocator>() {
+        let chunk_size = CHUNK_SIZE / 8;
+        let mut test = Test::<Sut>::new();
+        test.init();
+
+        let old_layout = unsafe { Layout::from_size_align_unchecked(chunk_size, 1) };
+        let offset = unsafe { test.sut().allocate(old_layout).unwrap() };
+        let ptr = test.offset_to_ptr(offset);
+
+        for n in 0..chunk_size {
+            unsafe { *ptr.add(n) = n as u8 };
+        }
+
+        let middle_layout = unsafe { Layout::from_size_align_unchecked(128, 1) };
+        let middle_chunk = unsafe { test.sut().allocate(middle_layout).unwrap() };
+        let ptr = test.offset_to_ptr(middle_chunk);
+
+        for n in 0..middle_layout.size() {
+            unsafe { *ptr.add(n) = 47 };
+        }
+
+        let new_layout = unsafe { Layout::from_size_align_unchecked(chunk_size * 2, 1) };
+        let offset = unsafe {
+            test.sut()
+                .grow(offset, old_layout, new_layout, ContentPlacement::Back)
+                .unwrap()
+        };
+        let ptr = test.offset_to_ptr(offset);
+
+        for n in chunk_size..chunk_size * 2 {
+            assert_that!(unsafe { *ptr.add(n) }, eq(n - chunk_size) as u8);
+        }
+
+        let ptr = test.offset_to_ptr(middle_chunk);
+        for n in 0..middle_layout.size() {
+            assert_that!(unsafe{*ptr.add(n)}, eq 47);
+        }
+    }
+
+    #[conformance_test]
+    pub fn growing_larger_than_memory_is_available_fails<Sut: ShmAllocator>() {
+        let chunk_size = CHUNK_SIZE / 8;
+        let mut test = Test::<Sut>::new();
+        test.init();
+
+        let old_layout = unsafe { Layout::from_size_align_unchecked(chunk_size, 1) };
+        let offset = unsafe { test.sut().allocate(old_layout).unwrap() };
+
+        let new_layout = unsafe { Layout::from_size_align_unchecked(MEMORY_SIZE * 2, 1) };
+        let offset = unsafe {
+            test.sut()
+                .grow(offset, old_layout, new_layout, ContentPlacement::Back)
+        };
+
+        assert_that!(offset.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::OutOfMemory)));
+    }
+
+    #[conformance_test]
+    pub fn growing_with_smaller_size_fails<Sut: ShmAllocator>() {
+        let chunk_size = CHUNK_SIZE / 8;
+        let mut test = Test::<Sut>::new();
+        test.init();
+
+        let old_layout = unsafe { Layout::from_size_align_unchecked(chunk_size, 1) };
+        let offset = unsafe { test.sut().allocate(old_layout).unwrap() };
+
+        let new_layout = unsafe { Layout::from_size_align_unchecked(chunk_size - 1, 1) };
+        let offset = unsafe {
+            test.sut()
+                .grow(offset, old_layout, new_layout, ContentPlacement::Back)
+        };
+
+        assert_that!(offset.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::GrowWouldShrink)));
     }
 }
