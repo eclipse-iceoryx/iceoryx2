@@ -439,3 +439,23 @@ def test_history_request_reduces_delivered_history(
         assert received_sample.payload().contents.data == 85 + i
 
     assert not subscriber.has_samples()
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_port_names_can_be_set(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = node.service_builder(service_name).publish_subscribe(Payload).create()
+
+    publisher_name = iox2.PortName.new("hypnotoad")
+    subscriber_name = iox2.PortName.new("brainslug")
+
+    publisher = service.publisher_builder().name(publisher_name).create()
+    subscriber = service.subscriber_builder().name(subscriber_name).create()
+
+    assert publisher.name == publisher_name
+    assert subscriber.name == subscriber_name

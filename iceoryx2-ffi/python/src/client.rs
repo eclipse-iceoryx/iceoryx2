@@ -18,6 +18,7 @@ use crate::{
     backpressure_strategy::BackpressureStrategy,
     error::LoanError,
     parc::Parc,
+    port_name::PortName,
     request_mut_uninit::{RequestMutUninit, RequestMutUninitType},
     type_storage::TypeStorage,
     unique_client_id::UniqueClientId,
@@ -82,6 +83,17 @@ impl Client {
             ClientType::Ipc(Some(v)) => UniqueClientId(v.id()),
             ClientType::Local(Some(v)) => UniqueClientId(v.id()),
             _ => fatal_panic!(from "Client::id()", "Accessing a released client."),
+        }
+    }
+
+    #[getter]
+    /// Returns the `PortName` of the `Client`
+    pub fn name(&self) -> PortName {
+        match &self.value {
+            ClientType::Ipc(Some(v)) => PortName(*v.name()),
+            ClientType::Local(Some(v)) => PortName(*v.name()),
+            _ => fatal_panic!(from "Client::name()",
+                              "Accessing a released client."),
         }
     }
 

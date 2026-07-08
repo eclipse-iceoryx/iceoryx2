@@ -21,6 +21,7 @@ use crate::{
     backpressure_strategy::BackpressureStrategy,
     error::{ConnectionFailure, LoanError},
     parc::Parc,
+    port_name::PortName,
     sample_mut_uninit::{SampleMutUninit, SampleMutUninitType},
     type_storage::TypeStorage,
     unique_publisher_id::UniquePublisherId,
@@ -70,6 +71,17 @@ impl Publisher {
             PublisherType::Local(Some(v)) => UniquePublisherId(v.id()),
             _ => fatal_panic!(from "Publisher::id()",
                 "Accessing a deleted publisher."),
+        }
+    }
+
+    #[getter]
+    /// Returns the `PortName` of the `Publisher`
+    pub fn name(&self) -> PortName {
+        match &*self.value.lock() {
+            PublisherType::Ipc(Some(v)) => PortName(*v.name()),
+            PublisherType::Local(Some(v)) => PortName(*v.name()),
+            _ => fatal_panic!(from "Publisher::name()",
+                              "Accessing a deleted publisher."),
         }
     }
 

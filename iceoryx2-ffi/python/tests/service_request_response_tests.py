@@ -607,3 +607,25 @@ def test_communication_works_when_client_sets_max_active_requests(
 
     response = pending_response.receive()
     assert response.payload().contents.data == 1
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_port_names_can_be_set(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name).request_response(Payload, Payload).create()
+    )
+
+    client_name = iox2.PortName.new("bruce")
+    server_name = iox2.PortName.new("alfred")
+
+    client = service.client_builder().name(client_name).create()
+    server = service.server_builder().name(server_name).create()
+
+    assert client.name == client_name
+    assert server.name == server_name

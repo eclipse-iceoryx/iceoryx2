@@ -18,17 +18,18 @@ use crate::{
     notifier::{Notifier, NotifierType},
     parc::Parc,
     port_factory_event::PortFactoryEventType,
+    port_name::PortName,
 };
+
+type IpcPortFactoryNotifier<'a> =
+    iceoryx2::service::port_factory::notifier::PortFactoryNotifier<'static, crate::IpcService>;
+type LocalPortFactoryNotifier<'a> =
+    iceoryx2::service::port_factory::notifier::PortFactoryNotifier<'static, crate::LocalService>;
 
 #[derive(Clone)]
 pub(crate) enum PortFactoryNotifierType {
-    Ipc(iceoryx2::service::port_factory::notifier::PortFactoryNotifier<'static, crate::IpcService>),
-    Local(
-        iceoryx2::service::port_factory::notifier::PortFactoryNotifier<
-            'static,
-            crate::LocalService,
-        >,
-    ),
+    Ipc(IpcPortFactoryNotifier<'static>),
+    Local(LocalPortFactoryNotifier<'static>),
 }
 
 #[pyclass]
@@ -68,10 +69,43 @@ impl PortFactoryNotifier {
             },
         }
     }
+
+    fn clone_ipc(&self, value: IpcPortFactoryNotifier<'static>) -> Self {
+        Self {
+            factory: self.factory.clone(),
+            value: PortFactoryNotifierType::Ipc(value),
+        }
+    }
+
+    fn clone_local(&self, value: LocalPortFactoryNotifier<'static>) -> Self {
+        Self {
+            factory: self.factory.clone(),
+            value: PortFactoryNotifierType::Local(value),
+        }
+    }
 }
 
 #[pymethods]
 impl PortFactoryNotifier {
+    /// The `PortName` that shall be assigned to the `Notifier`. It does not
+    /// have to be unique. If no `PortName` is defined then the `Notifier`
+    /// does not have a name.
+    pub fn name(&mut self, value: &PortName) -> Self {
+        let _guard = self.factory.lock();
+        match &self.value {
+            PortFactoryNotifierType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.name(&value.0);
+                self.clone_ipc(this)
+            }
+            PortFactoryNotifierType::Local(v) => {
+                let this = v.clone();
+                let this = this.name(&value.0);
+                self.clone_local(this)
+            }
+        }
+    }
+
     /// Creates a new `Notifier` port or emits a `NotifierCreateError` on failure.
     pub fn create(&self) -> PyResult<Notifier> {
         let _guard = self.factory.lock();

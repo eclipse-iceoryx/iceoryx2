@@ -14,7 +14,7 @@ use iceoryx2_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::{
-    duration::Duration, error::NotifierNotifyError, event_id::EventId,
+    duration::Duration, error::NotifierNotifyError, event_id::EventId, port_name::PortName,
     unique_notifier_id::UniqueNotifierId,
 };
 
@@ -38,6 +38,17 @@ impl Notifier {
             NotifierType::Local(Some(v)) => UniqueNotifierId(v.id()),
             _ => fatal_panic!(from "Notifier::id()",
                 "Accessing a released notifier."),
+        }
+    }
+
+    #[getter]
+    /// Returns the `PortName` of the `Notifier`
+    pub fn name(&self) -> PortName {
+        match &self.0 {
+            NotifierType::Ipc(Some(v)) => PortName(*v.name()),
+            NotifierType::Local(Some(v)) => PortName(*v.name()),
+            _ => fatal_panic!(from "Notifier::name()",
+                              "Accessing a released notifier."),
         }
     }
 

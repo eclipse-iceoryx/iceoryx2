@@ -17,7 +17,7 @@ use pyo3::prelude::*;
 
 use crate::{
     duration::Duration, error::ListenerWaitError, event_activation::EventActivation,
-    unique_listener_id::UniqueListenerId,
+    port_name::PortName, unique_listener_id::UniqueListenerId,
 };
 
 #[allow(clippy::large_enum_variant)] // used purely for python and there it will reside always in
@@ -115,6 +115,17 @@ impl Listener {
             ListenerType::Local(Some(v)) => UniqueListenerId(v.id()),
             _ => fatal_panic!(from "Listener::id()",
                     "Accessing a released listener."),
+        }
+    }
+
+    #[getter]
+    /// Returns the `PortName` of the `Listener`
+    pub fn name(&self) -> PortName {
+        match &self.0 {
+            ListenerType::Ipc(Some(v)) => PortName(*v.name()),
+            ListenerType::Local(Some(v)) => PortName(*v.name()),
+            _ => fatal_panic!(from "Listener::name()",
+                              "Accessing a released listener."),
         }
     }
 

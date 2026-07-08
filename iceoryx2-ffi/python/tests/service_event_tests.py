@@ -158,3 +158,23 @@ def test_listener_blocking_wait_works(
     assert events[0].count == 1
     assert events[1].id == event_id_2
     assert events[1].count == 1
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_port_names_can_be_set(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = node.service_builder(service_name).event().create()
+
+    notifier_name = iox2.PortName.new("yell")
+    listener_name = iox2.PortName.new("wiretap")
+
+    notifier = service.notifier_builder().name(notifier_name).create()
+    listener = service.listener_builder().name(listener_name).create()
+
+    assert notifier.name == notifier_name
+    assert listener.name == listener_name

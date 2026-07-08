@@ -17,6 +17,7 @@ use pyo3::prelude::*;
 use crate::error::WriterCreateError;
 use crate::parc::Parc;
 use crate::port_factory_blackboard::PortFactoryBlackboardType;
+use crate::port_name::PortName;
 use crate::type_storage::TypeStorage;
 use crate::writer::{Writer, WriterType};
 
@@ -72,10 +73,45 @@ impl PortFactoryWriter {
             key_type_storage,
         }
     }
+
+    fn clone_ipc(&self, value: IpcPortFactoryWriter<'static>) -> Self {
+        Self {
+            factory: self.factory.clone(),
+            value: PortFactoryWriterType::Ipc(Parc::new(value)),
+            key_type_storage: self.key_type_storage.clone(),
+        }
+    }
+
+    fn clone_local(&self, value: LocalPortFactoryWriter<'static>) -> Self {
+        Self {
+            factory: self.factory.clone(),
+            value: PortFactoryWriterType::Local(Parc::new(value)),
+            key_type_storage: self.key_type_storage.clone(),
+        }
+    }
 }
 
 #[pymethods]
 impl PortFactoryWriter {
+    /// The `PortName` that shall be assigned to the `Writer`. It does not
+    /// have to be unique. If no `PortName` is defined then the `Writer`
+    /// does not have a name.
+    pub fn name(&mut self, value: &PortName) -> Self {
+        let _guard = self.factory.lock();
+        match &self.value {
+            PortFactoryWriterType::Ipc(v) => {
+                let this = (*v.lock()).clone();
+                let this = this.name(&value.0);
+                self.clone_ipc(this)
+            }
+            PortFactoryWriterType::Local(v) => {
+                let this = (*v.lock()).clone();
+                let this = this.name(&value.0);
+                self.clone_local(this)
+            }
+        }
+    }
+
     /// Creates a new `Writer` or returns a `WriterCreateError` on failure.
     pub fn create(&self) -> PyResult<Writer> {
         let _guard = self.factory.lock();

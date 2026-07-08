@@ -19,6 +19,7 @@ use crate::{
     backpressure_strategy::BackpressureStrategy,
     error::{ConnectionFailure, ReceiveError},
     parc::Parc,
+    port_name::PortName,
     type_storage::TypeStorage,
     unique_server_id::UniqueServerId,
 };
@@ -83,6 +84,17 @@ impl Server {
             ServerType::Local(Some(v)) => UniqueServerId(v.id()),
             _ => fatal_panic!(from "Server::id()",
                 "Accessing a released server."),
+        }
+    }
+
+    #[getter]
+    /// Returns the `PortName` of the `Server`
+    pub fn name(&self) -> PortName {
+        match &self.value {
+            ServerType::Ipc(Some(v)) => PortName(*v.name()),
+            ServerType::Local(Some(v)) => PortName(*v.name()),
+            _ => fatal_panic!(from "Server::name()",
+                              "Accessing a released server."),
         }
     }
 

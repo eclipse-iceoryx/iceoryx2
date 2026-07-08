@@ -977,3 +977,30 @@ def test_new_value_can_be_written_using_value_mut(
     new_value_3 = ctypes.c_uint16(4567)
     entry_handle_mut.update_with_copy(new_value_3)
     assert entry_handle.get().decode_as(ctypes.c_uint16).value == new_value_3.value
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_port_names_can_be_set(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    service_name = iox2.testing.generate_service_name()
+    key = ctypes.c_uint64(0)
+    value = ctypes.c_uint16(0)
+
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service = (
+        node.service_builder(service_name)
+        .blackboard_creator(ctypes.c_uint64)
+        .add(key, value)
+        .create()
+    )
+
+    reader_name = iox2.PortName.new("scheherazade")
+    writer_name = iox2.PortName.new("homer")
+
+    reader = service.reader_builder().name(reader_name).create()
+    writer = service.writer_builder().name(writer_name).create()
+
+    assert reader.name == reader_name
+    assert writer.name == writer_name
