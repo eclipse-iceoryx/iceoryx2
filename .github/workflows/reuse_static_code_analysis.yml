@@ -27,6 +27,7 @@ jobs:
         with:
           toolchain: stable
           components: clippy
+          targets: 'x86_64-unknown-linux-musl'
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@bafd42bd91680affe190f697cac6ef3ad958ecba # version: v0.0.9
@@ -68,6 +69,12 @@ jobs:
                 -- \
                 --exclude iceoryx2-ffi-c \
                 --exclude iceoryx2-cli
+
+      - name: Run cargo clippy with default features for target x86_64-unknown-linux-musl in debug mode
+        if: ${{ runner.os == 'Linux' }}
+        run: |
+          just verify sdk clippy --target x86_64-unknown-linux-musl
+          just verify integrations-zenoh clippy --target x86_64-unknown-linux-musl
 
       - name: Setup miri
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # version: v1
