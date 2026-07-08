@@ -15,19 +15,21 @@ use core::{alloc::Layout, ptr::NonNull};
 
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
-use iceoryx2_cal::shm_allocator::{AllocationStrategy, ShmAllocator, shm_bump_allocator::*};
+use iceoryx2_cal::shm_allocator::{
+    AllocationStrategy, PointerOffset, ShmAllocator, shm_bump_allocator::*,
+};
 
 const MAX_SUPPORTED_ALIGNMENT: usize = 4096;
 const MEM_SIZE: usize = 16384 * 10;
 const PAYLOAD_SIZE: usize = 8192;
 
-struct TestContext {
+struct Test {
     _payload_memory: Box<[u8; MEM_SIZE]>,
-    _base_address: NonNull<[u8]>,
+    base_address: NonNull<[u8]>,
     sut: Box<BumpAllocator>,
 }
 
-impl TestContext {
+impl Test {
     fn new() -> Self {
         let mut payload_memory = Box::new([0u8; MEM_SIZE]);
         let base_address =
@@ -45,9 +47,17 @@ impl TestContext {
 
         Self {
             _payload_memory: payload_memory,
-            _base_address: base_address,
+            base_address,
             sut,
         }
+    }
+
+    fn generate_layout(size: usize) -> Layout {
+        unsafe { Layout::from_size_align_unchecked(size, 1) }
+    }
+
+    fn offset_to_ptr(&mut self, offset: PointerOffset) -> *mut u8 {
+        unsafe { self.base_address.as_mut().as_mut_ptr().add(offset.offset()) }
     }
 }
 
@@ -61,7 +71,7 @@ fn initial_setup_hint_is_layout_times_number_of_chunks() {
 }
 
 fn no_new_resize_hint_when_there_is_memory_available(strategy: AllocationStrategy) {
-    let test_context = TestContext::new();
+    let test_context = Test::new();
     let hint = test_context
         .sut
         .resize_hint(Layout::from_size_align(8, 2).unwrap(), strategy);
@@ -81,7 +91,7 @@ fn no_new_resize_hint_with_best_fit_when_there_is_memory_available() {
 
 #[test]
 fn new_resize_hint_with_power_of_two_when_there_is_not_enough_memory_available() {
-    let test_context = TestContext::new();
+    let test_context = Test::new();
     let layout = Layout::from_size_align(test_context.sut.total_space() + 1, 1).unwrap();
     let hint = test_context
         .sut
@@ -94,7 +104,7 @@ fn new_resize_hint_with_power_of_two_when_there_is_not_enough_memory_available()
 
 #[test]
 fn new_resize_hint_with_best_fit_when_there_is_not_enough_memory_available() {
-    let test_context = TestContext::new();
+    let test_context = Test::new();
     let layout = Layout::from_size_align(test_context.sut.total_space() + 1, 1).unwrap();
     let hint = test_context
         .sut
@@ -103,4 +113,152 @@ fn new_resize_hint_with_best_fit_when_there_is_not_enough_memory_available() {
         hint.payload_size,
         eq(test_context.sut.total_space() + layout.size())
     );
+}
+
+#[test]
+fn growing_last_chunk_and_keep_content_at_front_works() {
+    let mut test = Test::new();
+    let old_layout = Test::generate_layout(4);
+    let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
+    let ptr = test.offset_to_ptr(offset);
+
+    for n in 0..4 {
+        unsafe { *ptr.add(n) = n as u8 };
+    }
+
+    let new_layout = Test::generate_layout(9);
+    let offset = unsafe {
+        test.sut
+            .grow(
+                offset,
+                old_layout,
+                new_layout,
+                iceoryx2_cal::shm_allocator::ContentPlacement::Front,
+            )
+            .unwrap()
+    };
+    let ptr = test.offset_to_ptr(offset);
+
+    for n in 0..4 {
+        assert_that!(unsafe { *ptr.add(n) }, eq n as u8);
+    }
+}
+
+#[test]
+fn growing_last_chunk_and_keep_content_at_back_works() {
+    let mut test = Test::new();
+    let old_layout = Test::generate_layout(4);
+    let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
+    let ptr = test.offset_to_ptr(offset);
+
+    for n in 0..4 {
+        unsafe { *ptr.add(n) = n as u8 + 5u8 };
+    }
+
+    let new_layout = Test::generate_layout(9);
+    let offset = unsafe {
+        test.sut
+            .grow(
+                offset,
+                old_layout,
+                new_layout,
+                iceoryx2_cal::shm_allocator::ContentPlacement::Back,
+            )
+            .unwrap()
+    };
+    let ptr = test.offset_to_ptr(offset);
+
+    for n in 5..9 {
+        assert_that!(unsafe { *ptr.add(n) }, eq n as u8);
+    }
+}
+
+#[test]
+fn growing_middle_chunk_and_keep_content_at_front_works() {
+    let mut test = Test::new();
+    let old_layout = Test::generate_layout(6);
+    let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
+    let ptr = test.offset_to_ptr(offset);
+
+    for n in 0..6 {
+        unsafe { *ptr.add(n) = n as u8 * 2u8 };
+    }
+
+    let middle_chunk = unsafe { test.sut.allocate(Test::generate_layout(7)).unwrap() };
+    let ptr = test.offset_to_ptr(middle_chunk);
+
+    for n in 0..7 {
+        unsafe { *ptr.add(n) = 123u8 };
+    }
+
+    let new_layout = Test::generate_layout(10);
+    let offset = unsafe {
+        test.sut
+            .grow(
+                offset,
+                old_layout,
+                new_layout,
+                iceoryx2_cal::shm_allocator::ContentPlacement::Front,
+            )
+            .unwrap()
+    };
+    let ptr = test.offset_to_ptr(offset);
+
+    for n in 0..6 {
+        assert_that!(unsafe { *ptr.add(n) }, eq n as u8 * 2u8);
+    }
+    for n in 7..10 {
+        unsafe { *ptr.add(n) = 41u8 };
+    }
+
+    let ptr = test.offset_to_ptr(middle_chunk);
+
+    for n in 0..7 {
+        assert_that!(unsafe { *ptr.add(n) }, eq 123u8);
+    }
+}
+
+#[test]
+fn growing_middle_chunk_and_keep_content_at_front_works() {
+    let mut test = Test::new();
+    let old_layout = Test::generate_layout(6);
+    let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
+    let ptr = test.offset_to_ptr(offset);
+
+    for n in 0..6 {
+        unsafe { *ptr.add(n) = n as u8 * 2u8 };
+    }
+
+    let middle_chunk = unsafe { test.sut.allocate(Test::generate_layout(7)).unwrap() };
+    let ptr = test.offset_to_ptr(middle_chunk);
+
+    for n in 0..7 {
+        unsafe { *ptr.add(n) = 123u8 };
+    }
+
+    let new_layout = Test::generate_layout(10);
+    let offset = unsafe {
+        test.sut
+            .grow(
+                offset,
+                old_layout,
+                new_layout,
+                iceoryx2_cal::shm_allocator::ContentPlacement::Front,
+            )
+            .unwrap()
+    };
+    let ptr = test.offset_to_ptr(offset);
+
+    for n in 0..6 {
+        assert_that!(unsafe { *ptr.add(n) }, eq n as u8 * 2u8);
+    }
+    for n in 7..10 {
+        unsafe { *ptr.add(n) = 41u8 };
+    }
+
+    let ptr = test.offset_to_ptr(middle_chunk);
+
+    for n in 0..7 {
+        assert_that!(unsafe { *ptr.add(n) }, eq 123u8);
+    }
 }
