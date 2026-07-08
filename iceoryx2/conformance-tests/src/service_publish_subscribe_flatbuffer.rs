@@ -117,7 +117,7 @@ pub mod service_publish_subscribe_flatbuffer {
     }
 
     #[conformance_test]
-    pub fn open_fails_when_no_schema_is_not_the_same<Sut: Service>() {
+    pub fn open_fails_when_schema_is_not_the_same<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
         let service_name = generate_service_name();
