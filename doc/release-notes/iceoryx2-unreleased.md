@@ -42,6 +42,7 @@
 * [#1746](https://github.com/eclipse-iceoryx/iceoryx2/issues/1746) Disable `POSIX_SUPPORT_FILE_LOCK_FOR_SHARED_MEMORY` on FreeBSD and move CI job for FreeBSD to main pipeline
 * [#1777](https://github.com/eclipse-iceoryx/iceoryx2/issues/1777) Fix service root folder creation named concept of iceoryx2-cal fixing execution on Windows platform.
 * [#1786](https://github.com/eclipse-iceoryx/iceoryx2/issues/1786) Disable transport_compression feature in Zenoh.
+* [#1800](https://github.com/eclipse-iceoryx/iceoryx2/issues/1800) iceoryx2-cxx: CleanupState is defined in global namespace
 
 ### Refactoring
 
@@ -183,6 +184,16 @@
             // ...
         }
     }
+    ```
+
+1. In iceoryx2-cxx `CleanupState` was moved to the `iox2` namespace.
+
+    ```c++
+    // old
+    CleanupState cleanup = node.try_cleanup_dead_nodes();
+
+    // new
+    iox2::CleanupState cleanup = node.try_cleanup_dead_nodes();
     ```
 
 <!-- markdownlint-enable MD013 -->

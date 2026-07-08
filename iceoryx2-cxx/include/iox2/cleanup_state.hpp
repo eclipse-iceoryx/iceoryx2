@@ -15,6 +15,7 @@
 
 #include <cstdint>
 
+namespace iox2 {
 /// Returned by [`Node::try_cleanup_dead_nodes()`]. Contains the cleanup report of the call
 /// and contains the number of dead nodes that were successfully cleaned up and how many
 /// could not be cleaned up.
@@ -26,5 +27,6 @@ struct CleanupState {
     /// The number of failed dead node cleanups
     uint64_t failed_cleanups;
 };
+} // namespace iox2
 
 #endif
