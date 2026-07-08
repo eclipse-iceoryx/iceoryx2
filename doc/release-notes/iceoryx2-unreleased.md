@@ -23,6 +23,7 @@
 * [#1707](https://github.com/eclipse-iceoryx/iceoryx2/issues/1707) Expose `CustomHeaderMarker` and `CustomPayloadMarker` in C++ bindings
 * [#1722](https://github.com/eclipse-iceoryx/iceoryx2/issues/1722) Remove allocations in tunnel hot path
 * [#1773](https://github.com/eclipse-iceoryx/iceoryx2/issues/1773) Make ports identifiable by name
+* [#1798](https://github.com/eclipse-iceoryx/iceoryx2/issues/1798) Add musl support
 
 ### Bugfixes
 

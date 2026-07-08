@@ -251,19 +251,18 @@ impl UdsMsgHeader {
 
 impl Default for SocketAncillary {
     fn default() -> Self {
+        let mut message = posix::msghdr::new_zeroed();
+        message.msg_name = core::ptr::null_mut::<posix::void>();
+        message.msg_iov = core::ptr::null_mut();
+        message.msg_iovlen = IOVEC_BUFFER_CAPACITY as _;
+        message.msg_control = core::ptr::null_mut::<posix::void>();
+        message.msg_controllen = buffer_capacity() as _;
+
         let mut new_self = Self {
             message_buffer: [0u8; BUFFER_CAPACITY],
             iovec_buffer: [0u8; IOVEC_BUFFER_CAPACITY],
             iovec: unsafe { core::mem::zeroed() },
-            message: posix::msghdr {
-                msg_name: core::ptr::null_mut::<posix::void>(),
-                msg_namelen: 0,
-                msg_iov: core::ptr::null_mut(),
-                msg_iovlen: IOVEC_BUFFER_CAPACITY as _,
-                msg_control: core::ptr::null_mut::<posix::void>(),
-                msg_controllen: buffer_capacity() as _,
-                msg_flags: 0,
-            },
+            message,
             file_descriptors: vec![],
             credentials: None,
             is_prepared_for_send: false,
