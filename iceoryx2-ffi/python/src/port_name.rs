@@ -15,7 +15,7 @@ use pyo3::prelude::*;
 
 #[pyclass(str = "{0:?}", eq)]
 #[derive(PartialEq)]
-/// Represent the name for a `Node`.
+/// Represent the name for a port.
 pub struct PortName(pub(crate) iceoryx2::prelude::PortName);
 
 #[pymethods]

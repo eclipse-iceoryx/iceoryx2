@@ -42,7 +42,7 @@ impl Notifier {
     }
 
     #[getter]
-    /// Returns the `PortName` of the `Server`
+    /// Returns the `PortName` of the `Notifier`
     pub fn name(&self) -> PortName {
         match &self.0 {
             NotifierType::Ipc(Some(v)) => PortName(*v.name()),
