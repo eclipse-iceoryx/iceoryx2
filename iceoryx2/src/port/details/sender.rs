@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::alloc::Layout;
+use core::marker::PhantomData;
 use core::ptr::NonNull;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 
@@ -37,9 +38,10 @@ use crate::port::{
     DegradationInfo, LoanError, SendError,
 };
 use crate::prelude::BackpressureStrategy;
+use crate::service::SharedServiceState;
 use crate::service::config_scheme::connection_config;
+use crate::service::resource::ServiceResource;
 use crate::service::static_config::message_type_details::{MessageTypeDetails, TypeVariant};
-use crate::service::{NoResource, SharedServiceState};
 use crate::{service, service::naming_scheme::connection_name};
 
 use super::chunk::ChunkMut;
@@ -53,13 +55,16 @@ pub(crate) struct ReceiverDetails {
 }
 
 #[derive(Debug)]
-pub(crate) struct Connection<Service: service::Service> {
+pub(crate) struct Connection<Service: service::Service, Resource: ServiceResource> {
     pub(crate) sender: <Service::Connection as ZeroCopyConnection>::Sender,
     pub(crate) receiver_port_id: u128,
     tag: Tag,
+    _resource: PhantomData<Resource>,
 }
 
-impl<Service: service::Service> Abandonable for Connection<Service> {
+impl<Service: service::Service, Resource: ServiceResource> Abandonable
+    for Connection<Service, Resource>
+{
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe {
@@ -70,15 +75,17 @@ impl<Service: service::Service> Abandonable for Connection<Service> {
     }
 }
 
-impl<Service: service::Service> Taggable for Connection<Service> {
+impl<Service: service::Service, Resource: ServiceResource> Taggable
+    for Connection<Service, Resource>
+{
     fn tag(&self) -> &Tag {
         &self.tag
     }
 }
 
-impl<Service: service::Service> Connection<Service> {
+impl<Service: service::Service, Resource: ServiceResource> Connection<Service, Resource> {
     fn new(
-        this: &Sender<Service>,
+        this: &Sender<Service, Resource>,
         receiver_port_id: u128,
         buffer_size: usize,
         number_of_samples: usize,
@@ -113,15 +120,16 @@ impl<Service: service::Service> Connection<Service> {
             sender,
             receiver_port_id,
             tag,
+            _resource: PhantomData,
         })
     }
 }
 
 #[derive(Debug)]
-pub(crate) struct Sender<Service: service::Service> {
+pub(crate) struct Sender<Service: service::Service, Resource: ServiceResource> {
     pub(crate) segment_states: Vec<SegmentState>,
     pub(crate) data_segment: DataSegment<Service>,
-    pub(crate) connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
+    pub(crate) connections: Vec<UnsafeCell<Option<Connection<Service, Resource>>>>,
     pub(crate) sender_port_id: u128,
     pub(crate) shared_node: SharedNode<Service>,
     pub(crate) receiver_max_buffer_size: usize,
@@ -132,7 +140,7 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) max_number_of_segments: u8,
     pub(crate) degradation_handler: DegradationHandler<'static>,
     pub(crate) backpressure_handler: Option<BackpressureHandler<'static>>,
-    pub(crate) service_state: SharedServiceState<Service, NoResource>,
+    pub(crate) service_state: SharedServiceState<Service, Resource>,
     pub(crate) tagger: CyclicTagger,
     pub(crate) loan_counter: AtomicUsize,
     pub(crate) backpressure_strategy: BackpressureStrategy,
@@ -141,7 +149,9 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) initial_channel_state: ChannelState,
 }
 
-impl<Service: service::Service> Abandonable for Sender<Service> {
+impl<Service: service::Service, Resource: ServiceResource> Abandonable
+    for Sender<Service, Resource>
+{
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe {
@@ -156,20 +166,22 @@ impl<Service: service::Service> Abandonable for Sender<Service> {
 
         for connection in &mut this.connections {
             if let Some(c) = connection.get_mut() {
-                unsafe { Connection::<Service>::abandon_in_place(NonNull::iox2_from_mut(c)) };
+                unsafe {
+                    Connection::<Service, Resource>::abandon_in_place(NonNull::iox2_from_mut(c))
+                };
             }
         }
     }
 }
 
-impl<Service: service::Service> Sender<Service> {
-    fn get(&self, index: usize) -> &Option<Connection<Service>> {
+impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resource> {
+    fn get(&self, index: usize) -> &Option<Connection<Service, Resource>> {
         unsafe { &(*self.connections[index].get()) }
     }
 
     // only used internally as convinience function
     #[allow(clippy::mut_from_ref)]
-    fn get_mut(&self, index: usize) -> &mut Option<Connection<Service>> {
+    fn get_mut(&self, index: usize) -> &mut Option<Connection<Service, Resource>> {
         #[deny(clippy::mut_from_ref)]
         unsafe {
             &mut (*self.connections[index].get())
@@ -537,7 +549,7 @@ impl<Service: service::Service> Sender<Service> {
         self.tagger.next_cycle();
     }
 
-    pub(crate) fn update_connection<E: Fn(&Connection<Service>)>(
+    pub(crate) fn update_connection<E: Fn(&Connection<Service, Resource>)>(
         &self,
         index: usize,
         receiver_details: ReceiverDetails,

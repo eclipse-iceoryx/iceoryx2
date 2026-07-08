@@ -82,6 +82,14 @@ semantic_string! {
   normalize: normalize
 }
 
+impl FileName {
+    /// Returns a [`str`] reference to the contained value.
+    pub fn as_str(&self) -> &str {
+        // safety: a file name contains only valid utf8 characters
+        unsafe { core::str::from_utf8_unchecked(self.as_bytes()) }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Eq, Ord, PartialOrd, ZeroCopySend)]
 #[repr(C)]
 pub struct RestrictedFileName<const CAPACITY: usize> {
@@ -197,6 +205,12 @@ impl<const CAPACITY: usize> iceoryx2_bb_container::semantic_string::SemanticStri
 }
 
 impl<const CAPACITY: usize> RestrictedFileName<CAPACITY> {
+    /// Returns a [`str`] reference to the contained value.
+    pub fn as_str(&self) -> &str {
+        // safety: a file name contains only valid utf8 characters
+        unsafe { core::str::from_utf8_unchecked(self.as_bytes()) }
+    }
+
     /// Creates a new instance.
     ///
     /// # Safety

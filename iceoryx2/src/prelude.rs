@@ -16,6 +16,7 @@ pub use crate::port::{
     EventActivation, backpressure_strategy::BackpressureStrategy, event_id::EventId,
     port_name::PortName,
 };
+pub use crate::service::marker::Flatbuffer;
 pub use crate::service::messaging_pattern::MessagingPattern;
 pub use crate::service::{
     Service, ServiceDetails, attribute::AttributeSet, attribute::AttributeSpecifier,

@@ -73,6 +73,11 @@ enum class PublishSubscribeOpenError : uint8_t {
     UnableToCreateServiceTag,
     /// The iceoryx2 service version does not match the one of the [`Service`].
     VersionMismatch,
+    /// When using a serialized format such as FlatBuffers, the iceoryx2 service
+    /// requires the type definition. By default, it uses the lookup path defined in
+    /// the config. If no type definition file was specified in the service builder
+    /// and no file could be found, this error is returned.
+    UnableToAcquireTypeDefinition,
 };
 
 /// Errors that can occur when a new [`MessagingPattern::PublishSubscribe`] [`Service`] shall be created.
@@ -104,6 +109,11 @@ enum class PublishSubscribeCreateError : uint8_t {
     UnableToCreateServiceTag,
     /// The [`Service`]s config could not be created and written to the static service configuration.
     ServiceConfigCouldNotBeCreated,
+    /// When using a serialized format such as FlatBuffers, the iceoryx2 service
+    /// requires the type definition. By default, it uses the lookup path defined in
+    /// the config. If no type definition file was specified in the service builder
+    /// and no file could be found, this error is returned.
+    UnableToAcquireTypeDefinition,
 };
 
 /// Errors that can occur when a [`MessagingPattern::PublishSubscribe`] [`Service`] shall be
@@ -163,6 +173,11 @@ enum class PublishSubscribeOpenOrCreateError : uint8_t {
     OpenUnableToCreateServiceTag,
     /// The iceoryx2 service version does not match the one of the [`Service`].
     OpenVersionMismatch,
+    /// When using a serialized format such as FlatBuffers, the iceoryx2 service
+    /// requires the type definition. By default, it uses the lookup path defined in
+    /// the config. If no type definition file was specified in the service builder
+    /// and no file could be found, this error is returned.
+    OpenUnableToAcquireTypeDefinition,
 
     /// An interrupt signal was raised.
     CreateInterrupt,
@@ -191,6 +206,11 @@ enum class PublishSubscribeOpenOrCreateError : uint8_t {
     CreateUnableToCreateServiceTag,
     /// The [`Service`]s config could not be created and written to the static service configuration.
     CreateServiceConfigCouldNotBeCreated,
+    /// When using a serialized format such as FlatBuffers, the iceoryx2 service
+    /// requires the type definition. By default, it uses the lookup path defined in
+    /// the config. If no type definition file was specified in the service builder
+    /// and no file could be found, this error is returned.
+    CreateUnableToAcquireTypeDefinition,
     /// Can occur when another process creates and removes the same [`Service`] repeatedly with a
     /// high frequency.
     SystemInFlux,

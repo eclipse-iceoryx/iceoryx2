@@ -250,8 +250,14 @@ pub mod ipc;
 /// [`Send`] but at the cost of an additional internal mutex.
 pub mod ipc_threadsafe;
 
+/// Contains marker types to enable additional API features.
+pub mod marker;
+
 pub(crate) mod config_scheme;
 pub(crate) mod naming_scheme;
+
+#[doc(hidden)]
+pub mod resource;
 
 use core::fmt::Debug;
 use core::ptr::NonNull;
@@ -276,8 +282,8 @@ use crate::service::config_scheme::dynamic_config_storage_config;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::naming_scheme::dynamic_config_name;
 use crate::service::naming_scheme::static_config_name;
+use crate::service::resource::ServiceResource;
 use crate::service::stale_resource_cleanup::{
-    remove_additional_blackboard_resources,
     remove_sender_and_receiver_connections_and_data_segment,
     remove_sender_connection_and_data_segment,
 };
@@ -568,7 +574,9 @@ impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
 #[doc(hidden)]
 pub mod internal {
     use crate::{
-        port::port_name::PortName, service::stale_resource_cleanup::ServiceRemoveTagError,
+        port::port_name::PortName, service::resource::RemoveStaleResourcesError,
+        service::resource::remove_stale_service_resources,
+        service::stale_resource_cleanup::ServiceRemoveTagError,
     };
 
     use super::*;
@@ -665,13 +673,7 @@ pub mod internal {
                 ServiceHash::new::<S::ServiceNameHasher>(service_name, messaging_pattern);
             match read_static_service_config::<S>(config, &service_hash) {
                 Ok(Some(static_config)) => {
-                    unsafe {
-                        S::__internal_remove_service(
-                            &service_hash,
-                            static_config.unique_service_id(),
-                            config,
-                        )?
-                    };
+                    unsafe { S::__internal_remove_service(&static_config, config)? };
 
                     Ok(true)
                 }
@@ -704,40 +706,28 @@ pub mod internal {
         ///
         #[doc(hidden)]
         unsafe fn __internal_remove_service(
-            service_hash: &ServiceHash,
-            unique_service_id: UniqueServiceId,
+            service_config: &StaticConfig,
             config: &config::Config,
         ) -> Result<(), ServiceRemoveError> {
             let origin = "Service::remove()";
             let msg = "Unable to remove all service resources";
+            let unique_service_id = service_config.unique_service_id();
+            let service_hash = service_config.service_hash();
 
-            // check if service was a blackboard service to remove its additional resources
-            let blackboard_name = crate::service::naming_scheme::blackboard_name(unique_service_id);
-            let blackboard_payload_config =
-                crate::service::config_scheme::blackboard_data_config::<S>(config);
-            let blackboard_payload = <S::BlackboardPayload as NamedConceptMgmt>::does_exist_cfg(
-                &blackboard_name,
-                &blackboard_payload_config,
-            );
-            if let Ok(true) = blackboard_payload {
-                match __internal_details::<S>(config, service_hash) {
-                    Ok(Some(details)) => {
-                        let blackboard_mgmt_name =
-                            details.static_details.blackboard().type_details.type_name;
-
-                        remove_additional_blackboard_resources::<S>(
-                            config,
-                            unique_service_id,
-                            &blackboard_mgmt_name,
-                            origin,
-                            msg,
-                        );
-                    }
-                    _ => {
-                        warn!(from origin,
-                            "{} for {service_hash} due to a failure while acquiring the service details", msg);
-                    }
-                };
+            match unsafe { remove_stale_service_resources::<S>(config, service_config) } {
+                Ok(()) => (),
+                Err(RemoveStaleResourcesError::InterruptedBySignal) => {
+                    fail!(from origin, with ServiceRemoveError::Interrupt,
+                       "{msg} since the service resources could not be removed since the operation was interrupted by a signal.");
+                }
+                Err(RemoveStaleResourcesError::InsufficientPermissions) => {
+                    fail!(from origin, with ServiceRemoveError::InsufficientPermissions,
+                        "{msg} since the service resources could not be removed due to insufficient permissions.");
+                }
+                Err(RemoveStaleResourcesError::InternalFailure) => {
+                    fail!(from origin, with ServiceRemoveError::InternalError,
+                        "{msg} since the service resources could not be removed due to an internal failure.");
+                }
             }
 
             let segment_name = dynamic_config_name(unique_service_id);
@@ -834,13 +824,7 @@ pub mod internal {
                 Ok(None) => {
                     warn!(from origin,
                         "Found corrupted service {service_hash}. Trying to remove it completely");
-                    match unsafe {
-                        Self::__internal_remove_service(
-                            service_hash,
-                            static_config.unique_service_id(),
-                            config,
-                        )
-                    } {
+                    match unsafe { Self::__internal_remove_service(&static_config, config) } {
                         Ok(()) => {
                             return remove_service_tag();
                         }
@@ -938,13 +922,7 @@ pub mod internal {
             };
 
             if remove_service {
-                unsafe {
-                    Self::__internal_remove_service(
-                        service_hash,
-                        static_config.unique_service_id(),
-                        config,
-                    )?
-                };
+                unsafe { Self::__internal_remove_service(&static_config, config)? };
             } else if number_of_dead_node_notifications != 0 {
                 send_dead_node_signal::<S>(service_hash, config);
             }
@@ -954,30 +932,12 @@ pub mod internal {
     }
 }
 
-/// Represents additional resources a service could use and have to be cleaned up when no owners
-/// are left
-pub trait ServiceResource: Abandonable {
-    /// Acquires the ownership of the additional resources. When the objects go out of scope the
-    /// underlying resources will be removed.
-    fn acquire_ownership(&self);
-}
-
-#[derive(Debug)]
-pub(crate) struct NoResource;
-impl ServiceResource for NoResource {
-    fn acquire_ownership(&self) {}
-}
-
-impl Abandonable for NoResource {
-    unsafe fn abandon_in_place(_this: NonNull<Self>) {}
-}
-
 /// Represents a service. Used to create or open new services with the
 /// [`crate::node::Node::service_builder()`].
 /// Contains the building blocks a [`Service`] requires to create the underlying resources and
 /// establish communication.
 #[allow(private_bounds)]
-pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
+pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone + Send + Sync {
     /// Every service name will be hashed, to allow arbitrary [`ServiceName`]s with as less
     /// restrictions as possible. The hash of the [`ServiceName`] is the [`Service`]s uuid.
     type ServiceNameHasher: Hash;

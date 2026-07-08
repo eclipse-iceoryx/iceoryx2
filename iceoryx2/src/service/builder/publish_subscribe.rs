@@ -20,17 +20,21 @@ use alloc::format;
 
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_flatbuffers::TypeName;
 use iceoryx2_log::{fail, fatal_panic, warn};
 
+use super::ServiceState;
 use crate::service::builder::{DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError};
 use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;
 use crate::service::header::publish_subscribe::Header;
+use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker, Flatbuffer};
 use crate::service::port_factory::publish_subscribe;
+use crate::service::resource::publish_subscribe::{
+    PublishSubscribeResourceConfig, PublishSubscribeResources,
+};
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
 use crate::service::{self, dynamic_config::MessagingPatternSettings};
-
-use super::{CustomHeaderMarker, CustomPayloadMarker, ServiceState};
 
 use self::{
     attribute::{AttributeSpecifier, AttributeVerifier},
@@ -83,6 +87,11 @@ pub enum PublishSubscribeOpenError {
     UnableToCreateServiceTag,
     /// The iceoryx2 service version does not match the one of the [`Service`].
     VersionMismatch,
+    /// When using a serialized format such as FlatBuffers, the iceoryx2 service
+    /// requires the type definition. By default, it uses the lookup path defined in
+    /// the config. If no type definition file was specified in the service builder
+    /// and no file could be found, this error is returned.
+    UnableToAcquireTypeDefinition,
 }
 
 impl core::fmt::Display for PublishSubscribeOpenError {
@@ -139,6 +148,9 @@ impl From<ServiceOpenError> for PublishSubscribeOpenError {
             }
             ServiceOpenError::VersionMismatch => PublishSubscribeOpenError::VersionMismatch,
             ServiceOpenError::Interrupt => PublishSubscribeOpenError::Interrupt,
+            ServiceOpenError::UnableToAcquireTypeDefinition => {
+                PublishSubscribeOpenError::UnableToAcquireTypeDefinition
+            }
         }
     }
 }
@@ -180,6 +192,9 @@ impl From<PublishSubscribeOpenError> for ServiceOpenError {
             | PublishSubscribeOpenError::IncompatibleOverflowBehavior => {
                 ServiceOpenError::InternalFailure
             }
+            PublishSubscribeOpenError::UnableToAcquireTypeDefinition => {
+                ServiceOpenError::UnableToAcquireTypeDefinition
+            }
         }
     }
 }
@@ -210,6 +225,11 @@ pub enum PublishSubscribeCreateError {
     UnableToCreateServiceTag,
     /// The [`Service`]s config could not be created and written to the static service configuration.
     ServiceConfigCouldNotBeCreated,
+    /// When using a serialized format such as FlatBuffers, the iceoryx2 service
+    /// requires the type definition. By default, it uses the lookup path defined in
+    /// the config. If no type definition file was specified in the service builder
+    /// and no file could be found, this error is returned.
+    UnableToAcquireTypeDefinition,
 }
 
 impl core::fmt::Display for PublishSubscribeCreateError {
@@ -241,6 +261,9 @@ impl From<ServiceCreateError> for PublishSubscribeCreateError {
                 PublishSubscribeCreateError::UnableToCreateServiceTag
             }
             ServiceCreateError::Interrupt => PublishSubscribeCreateError::Interrupt,
+            ServiceCreateError::UnableToAcquireTypeDefinition => {
+                PublishSubscribeCreateError::UnableToAcquireTypeDefinition
+            }
         }
     }
 }
@@ -269,6 +292,9 @@ impl From<PublishSubscribeCreateError> for ServiceCreateError {
             | PublishSubscribeCreateError::HangsInCreation
             | PublishSubscribeCreateError::SubscriberBufferMustBeLargerThanHistorySize => {
                 ServiceCreateError::InternalFailure
+            }
+            PublishSubscribeCreateError::UnableToAcquireTypeDefinition => {
+                ServiceCreateError::UnableToAcquireTypeDefinition
             }
         }
     }
@@ -356,6 +382,7 @@ pub struct Builder<
     override_alignment: Option<usize>,
     override_payload_type: Option<TypeDetail>,
     override_user_header_type: Option<TypeDetail>,
+    flatbuffer_schema_path: Option<FilePath>,
     verify: Verify,
     _data: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
@@ -373,6 +400,7 @@ impl<
             override_alignment: self.override_alignment,
             override_payload_type: self.override_payload_type,
             override_user_header_type: self.override_user_header_type,
+            flatbuffer_schema_path: self.flatbuffer_schema_path,
             verify: self.verify,
             _data: PhantomData,
             _user_header: PhantomData,
@@ -386,6 +414,10 @@ impl<
     ServiceType: service::Service,
 > Builder<Payload, UserHeader, ServiceType>
 {
+    fn has_flatbuffer_payload() -> bool {
+        unsafe { Payload::type_name() == Flatbuffer::<()>::type_name() }
+    }
+
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         let mut new_self = Self {
             base,
@@ -393,6 +425,7 @@ impl<
             override_alignment: None,
             override_payload_type: None,
             override_user_header_type: None,
+            flatbuffer_schema_path: None,
             _data: PhantomData,
             _user_header: PhantomData,
         };
@@ -681,7 +714,17 @@ impl<
             || self.is_service_available(msg),
             |_| Ok(()),
             generate_dynamic_config,
-            |_| Ok(NoResource),
+            |service_config| {
+                PublishSubscribeResources::create(
+                    service_config,
+                    &PublishSubscribeResourceConfig::<ServiceType> {
+                        use_type_definition: Self::has_flatbuffer_payload(),
+                        schema_path: self.flatbuffer_schema_path,
+                        shared_node: self.base.shared_node.clone(),
+                        type_name: TypeName::new::<Payload>(),
+                    },
+                )
+            },
             |_| {},
         )?;
 
@@ -703,7 +746,17 @@ impl<
             |existing_service_config| -> Result<(), PublishSubscribeOpenError> {
                 self.verify_service_configuration(msg, existing_service_config, required_attributes)
             },
-            |_| Ok(NoResource),
+            |service_config| {
+                PublishSubscribeResources::open(
+                    service_config,
+                    &PublishSubscribeResourceConfig::<ServiceType> {
+                        use_type_definition: Self::has_flatbuffer_payload(),
+                        schema_path: self.flatbuffer_schema_path,
+                        shared_node: self.base.shared_node.clone(),
+                        type_name: TypeName::new::<Payload>(),
+                    },
+                )
+            },
         )?;
 
         Ok(publish_subscribe::PortFactory::new(service_state))
@@ -855,6 +908,18 @@ impl<Payload: Debug + ZeroCopySend, UserHeader: Debug + ZeroCopySend, ServiceTyp
         self.adjust_configuration_to_meaningful_values();
         self.prepare_config_details();
         self.create_impl(attributes)
+    }
+}
+
+impl<Payload: Debug, UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
+    Builder<Flatbuffer<Payload>, UserHeader, ServiceType>
+{
+    /// Sets the path to the flatbuffer schema file. If this is not explicitly defined, iceoryx2
+    /// will try to find the best fitting schema file in the configured filebuffer schema paths
+    /// defined in the config.
+    pub fn flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
+        self.flatbuffer_schema_path = Some(*path);
+        self
     }
 }
 

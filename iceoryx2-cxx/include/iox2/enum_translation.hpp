@@ -741,6 +741,8 @@ constexpr auto from<int, iox2::PublishSubscribeOpenOrCreateError>(const int valu
         return iox2::PublishSubscribeOpenOrCreateError::OpenUnableToCreateServiceTag;
     case iox2_pub_sub_open_or_create_error_e_O_VERSION_MISMATCH:
         return iox2::PublishSubscribeOpenOrCreateError::OpenVersionMismatch;
+    case iox2_pub_sub_open_or_create_error_e_O_UNABLE_TO_ACQUIRE_TYPE_DEFINITION:
+        return iox2::PublishSubscribeOpenOrCreateError::OpenUnableToAcquireTypeDefinition;
 
     case iox2_pub_sub_open_or_create_error_e_C_INTERRUPT:
         return iox2::PublishSubscribeOpenOrCreateError::CreateInterrupt;
@@ -762,6 +764,8 @@ constexpr auto from<int, iox2::PublishSubscribeOpenOrCreateError>(const int valu
         return iox2::PublishSubscribeOpenOrCreateError::CreateServiceConfigCouldNotBeCreated;
     case iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_CREATE_SERVICE_TAG:
         return iox2::PublishSubscribeOpenOrCreateError::CreateUnableToCreateServiceTag;
+    case iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION:
+        return iox2::PublishSubscribeOpenOrCreateError::CreateUnableToAcquireTypeDefinition;
 
     case iox2_pub_sub_open_or_create_error_e_SYSTEM_IN_FLUX:
         return iox2::PublishSubscribeOpenOrCreateError::SystemInFlux;
@@ -814,6 +818,8 @@ constexpr auto from<int, iox2::PublishSubscribeOpenError>(const int value) noexc
         return iox2::PublishSubscribeOpenError::UnableToCreateServiceTag;
     case iox2_pub_sub_open_or_create_error_e_O_VERSION_MISMATCH:
         return iox2::PublishSubscribeOpenError::VersionMismatch;
+    case iox2_pub_sub_open_or_create_error_e_O_UNABLE_TO_ACQUIRE_TYPE_DEFINITION:
+        return iox2::PublishSubscribeOpenError::UnableToAcquireTypeDefinition;
 
     // NOLINTBEGIN(bugprone-branch-clone) ignored so that enum changes are detected as a compiler warning and not cause a panic with IOX2_UNREACHABLE
     case iox2_pub_sub_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE:
@@ -838,6 +844,9 @@ constexpr auto from<int, iox2::PublishSubscribeOpenError>(const int value) noexc
         IOX2_UNREACHABLE();
     case iox2_pub_sub_open_or_create_error_e_SYSTEM_IN_FLUX:
         IOX2_UNREACHABLE();
+    case iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION:
+        IOX2_UNREACHABLE();
+
         // NOLINTEND(bugprone-branch-clone)
     }
     IOX2_UNREACHABLE();
@@ -887,6 +896,8 @@ constexpr auto from<iox2::PublishSubscribeOpenError, iox2_pub_sub_open_or_create
         return iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_CREATE_SERVICE_TAG;
     case iox2::PublishSubscribeOpenError::VersionMismatch:
         return iox2_pub_sub_open_or_create_error_e_O_VERSION_MISMATCH;
+    case iox2::PublishSubscribeOpenError::UnableToAcquireTypeDefinition:
+        return iox2_pub_sub_open_or_create_error_e_O_UNABLE_TO_ACQUIRE_TYPE_DEFINITION;
     }
 
     IOX2_UNREACHABLE();
@@ -923,6 +934,8 @@ constexpr auto from<int, iox2::PublishSubscribeCreateError>(const int value) noe
         return iox2::PublishSubscribeCreateError::UnableToCreateServiceTag;
     case iox2_pub_sub_open_or_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED:
         return iox2::PublishSubscribeCreateError::ServiceConfigCouldNotBeCreated;
+    case iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION:
+        return iox2::PublishSubscribeCreateError::UnableToAcquireTypeDefinition;
 
     // NOLINTBEGIN(bugprone-branch-clone) ignored so that enum changes are detected as a compiler warning and not cause a panic with IOX2_UNREACHABLE
     case iox2_pub_sub_open_or_create_error_e_SYSTEM_IN_FLUX:
@@ -967,6 +980,8 @@ constexpr auto from<int, iox2::PublishSubscribeCreateError>(const int value) noe
         IOX2_UNREACHABLE();
     case iox2_pub_sub_open_or_create_error_e_O_INTERRUPT:
         IOX2_UNREACHABLE();
+    case iox2_pub_sub_open_or_create_error_e_O_UNABLE_TO_ACQUIRE_TYPE_DEFINITION:
+        IOX2_UNREACHABLE();
         // NOLINTEND(bugprone-branch-clone)
     }
     IOX2_UNREACHABLE();
@@ -996,6 +1011,8 @@ constexpr auto from<iox2::PublishSubscribeCreateError, iox2_pub_sub_open_or_crea
         return iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_CREATE_SERVICE_TAG;
     case iox2::PublishSubscribeCreateError::ServiceConfigCouldNotBeCreated:
         return iox2_pub_sub_open_or_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED;
+    case iox2::PublishSubscribeCreateError::UnableToAcquireTypeDefinition:
+        return iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION;
     }
 
     IOX2_UNREACHABLE();
@@ -1051,6 +1068,8 @@ constexpr auto from<iox2::PublishSubscribeOpenOrCreateError, iox2_pub_sub_open_o
         return iox2_pub_sub_open_or_create_error_e_O_UNABLE_TO_CREATE_SERVICE_TAG;
     case iox2::PublishSubscribeOpenOrCreateError::OpenVersionMismatch:
         return iox2_pub_sub_open_or_create_error_e_O_VERSION_MISMATCH;
+    case iox2::PublishSubscribeOpenOrCreateError::OpenUnableToAcquireTypeDefinition:
+        return iox2_pub_sub_open_or_create_error_e_O_UNABLE_TO_ACQUIRE_TYPE_DEFINITION;
 
     case iox2::PublishSubscribeOpenOrCreateError::SystemInFlux:
         return iox2_pub_sub_open_or_create_error_e_SYSTEM_IN_FLUX;
@@ -1075,6 +1094,8 @@ constexpr auto from<iox2::PublishSubscribeOpenOrCreateError, iox2_pub_sub_open_o
         return iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_CREATE_SERVICE_TAG;
     case iox2::PublishSubscribeOpenOrCreateError::CreateServiceConfigCouldNotBeCreated:
         return iox2_pub_sub_open_or_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED;
+    case iox2::PublishSubscribeOpenOrCreateError::CreateUnableToAcquireTypeDefinition:
+        return iox2_pub_sub_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION;
     }
 
     IOX2_UNREACHABLE();
@@ -1110,6 +1131,8 @@ constexpr auto from<int, iox2::RequestResponseCreateError>(const int value) noex
         return iox2::RequestResponseCreateError::UnableToCreateServiceTag;
     case iox2_request_response_open_or_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED:
         return iox2::RequestResponseCreateError::ServiceConfigCouldNotBeCreated;
+    case iox2_request_response_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION:
+        return iox2::RequestResponseCreateError::UnableToAcquireTypeDefinition;
 
     // NOLINTBEGIN(bugprone-branch-clone) ignored so that enum changes are detected as a compiler warning and not cause a panic with IOX2_UNREACHABLE
     case iox2_request_response_open_or_create_error_e_O_DOES_NOT_EXIST:
@@ -1160,6 +1183,8 @@ constexpr auto from<int, iox2::RequestResponseCreateError>(const int value) noex
         IOX2_UNREACHABLE();
     case iox2_request_response_open_or_create_error_e_SYSTEM_IN_FLUX:
         IOX2_UNREACHABLE();
+    case iox2_request_response_open_or_create_error_e_O_UNABLE_TO_ACQUIRE_TYPE_DEFINITION:
+        IOX2_UNREACHABLE();
 
         // NOLINTEND(bugprone-branch-clone)
     }
@@ -1188,6 +1213,8 @@ constexpr auto from<iox2::RequestResponseCreateError, iox2_request_response_open
         return iox2_request_response_open_or_create_error_e_C_UNABLE_TO_CREATE_SERVICE_TAG;
     case iox2::RequestResponseCreateError::ServiceConfigCouldNotBeCreated:
         return iox2_request_response_open_or_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED;
+    case iox2::RequestResponseCreateError::UnableToAcquireTypeDefinition:
+        return iox2_request_response_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION;
     }
 
     IOX2_UNREACHABLE();
@@ -1250,6 +1277,8 @@ constexpr auto from<int, iox2::RequestResponseOpenError>(const int value) noexce
         return iox2::RequestResponseOpenError::UnableToCreateServiceTag;
     case iox2_request_response_open_or_create_error_e_O_VERSION_MISMATCH:
         return iox2::RequestResponseOpenError::VersionMismatch;
+    case iox2_request_response_open_or_create_error_e_O_UNABLE_TO_ACQUIRE_TYPE_DEFINITION:
+        return iox2::RequestResponseOpenError::UnableToAcquireTypeDefinition;
 
     // NOLINTBEGIN(bugprone-branch-clone) ignored so that enum changes are detected as a compiler warning and not cause a panic with IOX2_UNREACHABLE
     case iox2_request_response_open_or_create_error_e_SYSTEM_IN_FLUX:
@@ -1271,6 +1300,8 @@ constexpr auto from<int, iox2::RequestResponseOpenError>(const int value) noexce
     case iox2_request_response_open_or_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED:
         IOX2_UNREACHABLE();
     case iox2_request_response_open_or_create_error_e_C_INTERRUPT:
+        IOX2_UNREACHABLE();
+    case iox2_request_response_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION:
         IOX2_UNREACHABLE();
         // NOLINTEND(bugprone-branch-clone)
     }
@@ -1327,6 +1358,8 @@ constexpr auto from<iox2::RequestResponseOpenError, iox2_request_response_open_o
         return iox2_request_response_open_or_create_error_e_O_UNABLE_TO_CREATE_SERVICE_TAG;
     case iox2::RequestResponseOpenError::VersionMismatch:
         return iox2_request_response_open_or_create_error_e_O_VERSION_MISMATCH;
+    case iox2::RequestResponseOpenError::UnableToAcquireTypeDefinition:
+        return iox2_request_response_open_or_create_error_e_O_UNABLE_TO_ACQUIRE_TYPE_DEFINITION;
     }
 
     IOX2_UNREACHABLE();
@@ -1391,6 +1424,8 @@ constexpr auto from<int, iox2::RequestResponseOpenOrCreateError>(const int value
         return iox2::RequestResponseOpenOrCreateError::OpenUnableToCreateServiceTag;
     case iox2_request_response_open_or_create_error_e_O_VERSION_MISMATCH:
         return iox2::RequestResponseOpenOrCreateError::OpenVersionMismatch;
+    case iox2_request_response_open_or_create_error_e_O_UNABLE_TO_ACQUIRE_TYPE_DEFINITION:
+        return iox2::RequestResponseOpenOrCreateError::OpenUnableToAcquireTypeDefinition;
 
     case iox2_request_response_open_or_create_error_e_C_INTERRUPT:
         return iox2::RequestResponseOpenOrCreateError::CreateInterrupt;
@@ -1410,6 +1445,8 @@ constexpr auto from<int, iox2::RequestResponseOpenOrCreateError>(const int value
         return iox2::RequestResponseOpenOrCreateError::CreateUnableToCreateServiceTag;
     case iox2_request_response_open_or_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED:
         return iox2::RequestResponseOpenOrCreateError::CreateServiceConfigCouldNotBeCreated;
+    case iox2_request_response_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION:
+        return iox2::RequestResponseOpenOrCreateError::CreateUnableToAcquireTypeDefinition;
 
     case iox2_request_response_open_or_create_error_e_SYSTEM_IN_FLUX:
         return iox2::RequestResponseOpenOrCreateError::SystemInFlux;
@@ -1468,6 +1505,8 @@ constexpr auto from<iox2::RequestResponseOpenOrCreateError, iox2_request_respons
         return iox2_request_response_open_or_create_error_e_O_UNABLE_TO_CREATE_SERVICE_TAG;
     case iox2::RequestResponseOpenOrCreateError::OpenVersionMismatch:
         return iox2_request_response_open_or_create_error_e_O_VERSION_MISMATCH;
+    case iox2::RequestResponseOpenOrCreateError::OpenUnableToAcquireTypeDefinition:
+        return iox2_request_response_open_or_create_error_e_O_UNABLE_TO_ACQUIRE_TYPE_DEFINITION;
 
     case iox2::RequestResponseOpenOrCreateError::CreateInterrupt:
         return iox2_request_response_open_or_create_error_e_C_INTERRUPT;
@@ -1487,6 +1526,8 @@ constexpr auto from<iox2::RequestResponseOpenOrCreateError, iox2_request_respons
         return iox2_request_response_open_or_create_error_e_C_UNABLE_TO_CREATE_SERVICE_TAG;
     case iox2::RequestResponseOpenOrCreateError::CreateServiceConfigCouldNotBeCreated:
         return iox2_request_response_open_or_create_error_e_C_SERVICE_CONFIG_COULD_NOT_BE_CREATED;
+    case iox2::RequestResponseOpenOrCreateError::CreateUnableToAcquireTypeDefinition:
+        return iox2_request_response_open_or_create_error_e_C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION;
 
 
     case iox2::RequestResponseOpenOrCreateError::SystemInFlux:

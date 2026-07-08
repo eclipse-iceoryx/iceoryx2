@@ -65,9 +65,25 @@ pub use crate::creation_mode::CreationMode;
 use crate::file_descriptor::{FileDescriptor, FileDescriptorBased, FileDescriptorManagement};
 use crate::group::Gid;
 use crate::group::GroupError;
+use crate::memory_mapping::MemoryMappingCreationError;
 use crate::ownership::OwnershipBuilder;
 use crate::user::{Uid, UserError};
 pub use crate::{access_mode::AccessMode, permission::*};
+
+enum_gen! { FileCopyError
+  mapping:
+    FileOpenError,
+    FileCreationError,
+    FileStatError,
+    MemoryMappingCreationError
+}
+
+enum_gen! { FileCompareError
+  mapping:
+    FileOpenError,
+    FileStatError,
+    MemoryMappingCreationError
+}
 
 enum_gen! { FileRemoveError
   entry:

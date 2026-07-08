@@ -212,6 +212,12 @@ pub fn extract_path_from_path_consisting_only_of_a_file_works() {
     assert_that!(sut.path(), eq b"");
 }
 
+#[test]
+pub fn can_be_converted_to_str() {
+    let sut = FilePath::new(b"i-have-a-belly-button").unwrap();
+    assert_that!(sut.as_str(), eq "i-have-a-belly-button");
+}
+
 #[cfg(target_os = "windows")]
 pub use windows::*;
 

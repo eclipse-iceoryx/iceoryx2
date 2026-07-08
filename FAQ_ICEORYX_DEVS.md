@@ -62,6 +62,7 @@ Assuming a new crate `bar` located in directory `iceoryx2-foo`, the end of the
 error message will be in the form:
 
 ```ascii
+ERROR: Couldn't execute `cargo metadata` with manifest ...
 Caused by:
         failed to read `/home/runner/.bazel/sandbox/processwrapper-sandbox/2/execroot/_main/iceoryx2-foo/bar/Cargo.toml`\n\nCaused by:\n  No such file or directory (os error 2)\n"
 ```

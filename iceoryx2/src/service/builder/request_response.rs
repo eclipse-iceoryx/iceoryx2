@@ -20,18 +20,21 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic, warn};
 
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
-use crate::service::builder::{DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError};
+use crate::service::builder::{
+    DynamicConfigCreationArgs, ServiceCreateError, ServiceOpenError, ServiceState,
+};
 use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::dynamic_config::request_response::DynamicConfigSettings;
 use crate::service::port_factory::request_response;
+use crate::service::resource::NoResource;
 use crate::service::static_config::StaticConfig;
 use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
-use crate::service::{NoResource, header, static_config};
 use crate::service::{Service, builder, dynamic_config};
+use crate::service::{header, static_config};
 
 use super::message_type_details::{MessageTypeDetails, TypeVariant};
-use super::{CustomHeaderMarker, CustomPayloadMarker, ServiceState};
+use crate::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
 
 /// Errors that can occur when an existing [`MessagingPattern::RequestResponse`] [`Service`] shall
 /// be opened.
@@ -87,6 +90,11 @@ pub enum RequestResponseOpenError {
     UnableToCreateServiceTag,
     /// The iceoryx2 service version does not match the one of the [`Service`].
     VersionMismatch,
+    /// When using a serialized format such as FlatBuffers, the iceoryx2 service
+    /// requires the type definition. By default, it uses the lookup path defined in
+    /// the config. If no type definition file was specified in the service builder
+    /// and no file could be found, this error is returned.
+    UnableToAcquireTypeDefinition,
 }
 
 impl core::fmt::Display for RequestResponseOpenError {
@@ -147,6 +155,9 @@ impl From<ServiceOpenError> for RequestResponseOpenError {
             }
             ServiceOpenError::VersionMismatch => RequestResponseOpenError::VersionMismatch,
             ServiceOpenError::Interrupt => RequestResponseOpenError::Interrupt,
+            ServiceOpenError::UnableToAcquireTypeDefinition => {
+                RequestResponseOpenError::UnableToAcquireTypeDefinition
+            }
         }
     }
 }
@@ -192,6 +203,7 @@ impl From<RequestResponseOpenError> for ServiceOpenError {
             | RequestResponseOpenError::IncompatibleBehaviorForFireAndForgetRequests
             | RequestResponseOpenError::IncompatibleOverflowBehaviorForRequests
             | RequestResponseOpenError::IncompatibleOverflowBehaviorForResponses => ServiceOpenError::InternalFailure,
+            RequestResponseOpenError::UnableToAcquireTypeDefinition => ServiceOpenError::UnableToAcquireTypeDefinition
         }
     }
 }
@@ -218,6 +230,11 @@ pub enum RequestResponseCreateError {
     UnableToCreateServiceTag,
     /// The [`Service`]s config could not be created and written to the static service configuration.
     ServiceConfigCouldNotBeCreated,
+    /// When using a serialized format such as FlatBuffers, the iceoryx2 service
+    /// requires the type definition. By default, it uses the lookup path defined in
+    /// the config. If no type definition file was specified in the service builder
+    /// and no file could be found, this error is returned.
+    UnableToAcquireTypeDefinition,
 }
 
 impl core::fmt::Display for RequestResponseCreateError {
@@ -266,6 +283,9 @@ impl From<ServiceCreateError> for RequestResponseCreateError {
                 RequestResponseCreateError::UnableToCreateServiceTag
             }
             ServiceCreateError::Interrupt => RequestResponseCreateError::Interrupt,
+            ServiceCreateError::UnableToAcquireTypeDefinition => {
+                RequestResponseCreateError::UnableToAcquireTypeDefinition
+            }
         }
     }
 }

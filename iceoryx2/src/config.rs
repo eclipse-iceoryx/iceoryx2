@@ -135,6 +135,10 @@ impl core::error::Error for ConfigCreationError {}
 #[serde(rename_all = "kebab-case")]
 #[serde(default)]
 pub struct Service {
+    /// A list of directories where iceoryx2 will look for `.fbs` flatbuffer schemas. If no path is
+    /// provided, iceoryx2 will perform no lookup and the user must explicitly define the path to
+    /// the flatbuffer schemas.
+    pub flatbuffer_schema_path: Option<Path>,
     /// The directory in which all service files are stored
     pub directory: Path,
     /// The suffix of the ports data segment
@@ -151,6 +155,8 @@ pub struct Service {
     pub blackboard_mgmt_suffix: FileName,
     /// The suffix of the blackboard payload data segment
     pub blackboard_data_suffix: FileName,
+    /// The suffix of the type definition file
+    pub type_definition_suffix: FileName,
     /// Whenever an existing [`Service`](crate::service::Service) is opened the builder will
     /// scan for dead nodes and clean up the stale resources that might block another process.
     pub cleanup_dead_nodes_on_open: bool,
@@ -159,14 +165,16 @@ pub struct Service {
 impl Default for Service {
     fn default() -> Self {
         Self {
-            directory: Path::new(b"services").unwrap(),
-            data_segment_suffix: FileName::new(b".data").unwrap(),
-            static_config_storage_suffix: FileName::new(b".service").unwrap(),
-            dynamic_config_storage_suffix: FileName::new(b".dynamic").unwrap(),
-            connection_suffix: FileName::new(b".connection").unwrap(),
-            event_connection_suffix: FileName::new(b".event").unwrap(),
-            blackboard_mgmt_suffix: FileName::new(b".blackboard_mgmt").unwrap(),
-            blackboard_data_suffix: FileName::new(b".blackboard_data").unwrap(),
+            flatbuffer_schema_path: None,
+            directory: unsafe { Path::new_unchecked_const(b"services") },
+            data_segment_suffix: unsafe { FileName::new_unchecked_const(b".data") },
+            static_config_storage_suffix: unsafe { FileName::new_unchecked_const(b".service") },
+            dynamic_config_storage_suffix: unsafe { FileName::new_unchecked_const(b".dynamic") },
+            connection_suffix: unsafe { FileName::new_unchecked_const(b".connection") },
+            event_connection_suffix: unsafe { FileName::new_unchecked_const(b".event") },
+            blackboard_mgmt_suffix: unsafe { FileName::new_unchecked_const(b".blackboard_mgmt") },
+            blackboard_data_suffix: unsafe { FileName::new_unchecked_const(b".blackboard_data") },
+            type_definition_suffix: unsafe { FileName::new_unchecked_const(b".type_definition") },
             cleanup_dead_nodes_on_open: true,
         }
     }
@@ -203,12 +211,12 @@ pub struct Node {
 impl Default for Node {
     fn default() -> Self {
         Self {
-            directory: Path::new(b"nodes").unwrap(),
-            monitor_suffix: FileName::new(b".node_monitor").unwrap(),
-            global_mgmt_suffix: FileName::new(b".global_mgmt").unwrap(),
-            static_config_suffix: FileName::new(b".details").unwrap(),
-            service_tag_suffix: FileName::new(b".service_tag").unwrap(),
-            port_tag_suffix: FileName::new(b".port_tag").unwrap(),
+            directory: unsafe { Path::new_unchecked_const(b"nodes") },
+            monitor_suffix: unsafe { FileName::new_unchecked_const(b".node_monitor") },
+            global_mgmt_suffix: unsafe { FileName::new_unchecked_const(b".global_mgmt") },
+            static_config_suffix: unsafe { FileName::new_unchecked_const(b".details") },
+            service_tag_suffix: unsafe { FileName::new_unchecked_const(b".service_tag") },
+            port_tag_suffix: unsafe { FileName::new_unchecked_const(b".port_tag") },
             cleanup_dead_nodes_on_creation: true,
             cleanup_dead_nodes_on_destruction: true,
         }
@@ -236,11 +244,11 @@ pub struct Global {
 impl Default for Global {
     fn default() -> Self {
         Self {
-            root_path: Path::new(ICEORYX2_ROOT_PATH).unwrap(),
+            root_path: unsafe { Path::new_unchecked_const(ICEORYX2_ROOT_PATH) },
             #[cfg(feature = "std")]
-            prefix: FileName::new(b"iox2_").unwrap(),
+            prefix: unsafe { FileName::new_unchecked_const(b"iox2_") },
             #[cfg(not(feature = "std"))]
-            prefix: FileName::new(b"iox2_no_std_").unwrap(),
+            prefix: unsafe { FileName::new_unchecked_const(b"iox2_no_std_") },
             service: Service::default(),
             node: Node::default(),
             creation_timeout: Duration::from_secs(1),
@@ -251,14 +259,16 @@ impl Global {
     /// The absolute path to the service directory where all static service infos are stored
     pub fn service_dir(&self) -> Path {
         let mut path = *self.root_path();
-        path.add_path_entry(&self.service.directory).unwrap();
+        path.add_path_entry(&self.service.directory)
+            .expect("Service directory is always valid.");
         path
     }
 
     /// The absolute path to the node directory where all node details are stored
     pub fn node_dir(&self) -> Path {
         let mut path = *self.root_path();
-        path.add_path_entry(&self.node.directory).unwrap();
+        path.add_path_entry(&self.node.directory)
+            .expect("Node directory is always valid.");
         path
     }
 

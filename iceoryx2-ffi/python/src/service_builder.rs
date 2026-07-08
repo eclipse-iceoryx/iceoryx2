@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::service::builder::{CustomHeaderMarker, CustomKeyMarker, CustomPayloadMarker};
+use iceoryx2::service::marker::{CustomHeaderMarker, CustomKeyMarker, CustomPayloadMarker};
 use pyo3::prelude::*;
 
 use crate::service_builder_blackboard::{

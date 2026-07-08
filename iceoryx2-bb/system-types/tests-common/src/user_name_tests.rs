@@ -44,3 +44,9 @@ pub fn new_with_legal_name_works() {
     let sut = UserName::new(b"_fuu_bar_");
     assert_that!(sut, is_ok);
 }
+
+#[test]
+pub fn can_be_converted_to_str() {
+    let sut = UserName::new(b"chandler-bing").unwrap();
+    assert_that!(sut.as_str(), eq "chandler-bing");
+}

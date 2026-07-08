@@ -1,5 +1,5 @@
 {
-  "checksum": "1863a77597f411e2638b9eb58c341118b6df509fdc56c32ee9a3400a1bff8bf3",
+  "checksum": "e99730161183ad0cf0e7fd2d1ec6f1e8b485f259f4df645ea69262df7e7146cc",
   "crates": {
     "addr2line 0.25.1": {
       "name": "addr2line",
@@ -2992,6 +2992,15 @@
         "compile_data_glob": [
           "**"
         ],
+        "deps": {
+          "common": [
+            {
+              "id": "flatbuffers 25.12.19",
+              "target": "flatbuffers"
+            }
+          ],
+          "selects": {}
+        },
         "deps_dev": {
           "common": [
             {
@@ -3057,6 +3066,89 @@
         "MIT"
       ],
       "license_file": "LICENSE-APACHE"
+    },
+    "flatbuffers 25.12.19": {
+      "name": "flatbuffers",
+      "version": "25.12.19",
+      "package_url": "https://github.com/google/flatbuffers",
+      "repository": {
+        "Http": {
+          "url": "https://static.crates.io/crates/flatbuffers/25.12.19/download",
+          "sha256": "35f6839d7b3b98adde531effaf34f0c2badc6f4735d26fe74709d8e513a96ef3"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "flatbuffers",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        },
+        {
+          "BuildScript": {
+            "crate_name": "build_script_build",
+            "crate_root": "build.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "flatbuffers",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "bitflags 2.11.0",
+              "target": "bitflags"
+            },
+            {
+              "id": "flatbuffers 25.12.19",
+              "target": "build_script_build"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2018",
+        "version": "25.12.19"
+      },
+      "build_script_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "compile_data_glob_excludes": [
+          "**/*.rs"
+        ],
+        "data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "rustc_version 0.4.1",
+              "target": "rustc_version"
+            }
+          ],
+          "selects": {}
+        }
+      },
+      "license": "Apache-2.0",
+      "license_ids": [
+        "Apache-2.0"
+      ],
+      "license_file": null
     },
     "foldhash 0.1.5": {
       "name": "foldhash",
@@ -3805,6 +3897,10 @@
         "deps": {
           "common": [
             {
+              "id": "flatbuffers 25.12.19",
+              "target": "flatbuffers"
+            },
+            {
               "id": "serde 1.0.228",
               "target": "serde"
             },
@@ -4351,6 +4447,88 @@
         "compile_data_glob": [
           "**"
         ],
+        "edition": "2024",
+        "version": "0.9.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-flatbuffers 0.9.999": {
+      "name": "iceoryx2-bb-flatbuffers",
+      "version": "0.9.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_bb_flatbuffers",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_bb_flatbuffers",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2024",
+        "version": "0.9.999"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-flatbuffers-tests-common 0.9.999": {
+      "name": "iceoryx2-bb-flatbuffers-tests-common",
+      "version": "0.9.999",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_bb_flatbuffers_tests_common",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_bb_flatbuffers_tests_common",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
         "edition": "2024",
         "version": "0.9.999"
       },
@@ -9876,6 +10054,54 @@
         "version": "2.1.1"
       },
       "license": "Apache-2.0 OR MIT",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": "LICENSE-APACHE"
+    },
+    "rustc_version 0.4.1": {
+      "name": "rustc_version",
+      "version": "0.4.1",
+      "package_url": "https://github.com/djc/rustc-version-rs",
+      "repository": {
+        "Http": {
+          "url": "https://static.crates.io/crates/rustc_version/0.4.1/download",
+          "sha256": "cfcb3a22ef46e85b45de6ee7e79d063319ebb6594faafcf1c225ea92ab6e9b92"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "rustc_version",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "rustc_version",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "semver 1.0.23",
+              "target": "semver"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2018",
+        "version": "0.4.1"
+      },
+      "license": "MIT OR Apache-2.0",
       "license_ids": [
         "Apache-2.0",
         "MIT"
@@ -16460,6 +16686,8 @@
     "iceoryx2-bb-elementary-tests-common 0.9.999": "iceoryx2-bb/elementary/tests-common",
     "iceoryx2-bb-elementary-tests-nostd 0.9.999": "iceoryx2-bb/elementary/tests-nostd",
     "iceoryx2-bb-elementary-traits 0.9.999": "iceoryx2-bb/elementary-traits",
+    "iceoryx2-bb-flatbuffers 0.9.999": "iceoryx2-bb/flatbuffers",
+    "iceoryx2-bb-flatbuffers-tests-common 0.9.999": "iceoryx2-bb/flatbuffers/tests-common",
     "iceoryx2-bb-linux 0.9.999": "iceoryx2-bb/linux",
     "iceoryx2-bb-linux-tests-common 0.9.999": "iceoryx2-bb/linux/tests-common",
     "iceoryx2-bb-linux-tests-nostd 0.9.999": "iceoryx2-bb/linux/tests-nostd",
@@ -16663,6 +16891,7 @@
     "dialoguer 0.8.0",
     "dirs 5.0.1",
     "enum-iterator 2.1.0",
+    "flatbuffers 25.12.19",
     "human-panic 2.0.5",
     "inventory 0.3.24",
     "libc 0.2.183",

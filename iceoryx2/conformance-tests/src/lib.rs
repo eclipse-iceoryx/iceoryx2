@@ -33,6 +33,7 @@ pub mod service;
 pub mod service_blackboard;
 pub mod service_event;
 pub mod service_publish_subscribe;
+pub mod service_publish_subscribe_flatbuffer;
 pub mod service_request_response;
 pub mod service_request_response_builder;
 pub mod subscriber;

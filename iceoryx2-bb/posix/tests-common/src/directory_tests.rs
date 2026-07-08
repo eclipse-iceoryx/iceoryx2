@@ -306,3 +306,102 @@ pub fn list_contents_works() {
         }
     }
 }
+
+#[test]
+pub fn remove_non_existing_directory_does_not_fail() {
+    assert_that!(
+        Directory::remove(&Path::new(b"non_existing_dir").unwrap()),
+        is_ok
+    );
+
+    assert_that!(
+        Directory::remove_empty(&Path::new(b"non_existing_dir").unwrap()),
+        is_ok
+    );
+}
+
+#[test]
+pub fn remove_directory_works() {
+    let mut test = TestFixture::new();
+
+    create_test_directory();
+    let sut_name_1 = test.generate_path_in_test_directory();
+    let sut_name_2 = test.generate_path_in_test_directory();
+
+    Directory::create(&sut_name_1, Permission::OWNER_ALL).unwrap();
+    Directory::create(&sut_name_2, Permission::OWNER_ALL).unwrap();
+
+    assert_that!(Directory::does_exist(&sut_name_1).unwrap(), eq true);
+    assert_that!(Directory::does_exist(&sut_name_2).unwrap(), eq true);
+
+    Directory::remove(&sut_name_1).unwrap();
+    Directory::remove_empty(&sut_name_2).unwrap();
+
+    assert_that!(Directory::does_exist(&sut_name_1).unwrap(), eq false);
+    assert_that!(Directory::does_exist(&sut_name_2).unwrap(), eq false);
+}
+
+#[test]
+pub fn remove_non_empty_directory_works() {
+    let mut test = TestFixture::new();
+
+    create_test_directory();
+    let sut_name = test.generate_path_in_test_directory();
+
+    let sut = Directory::create(&sut_name, Permission::OWNER_ALL);
+    assert_that!(sut, is_ok);
+    let sut = sut.unwrap();
+
+    let mut dir_vec = vec![];
+    const NUMBER_OF_DIRECTORIES: usize = 10;
+    for _i in 0..NUMBER_OF_DIRECTORIES {
+        let dir = test.create_test_directory_at_path(sut.path());
+        dir_vec.push(dir.path().to_string());
+    }
+
+    let mut file_vec = vec![];
+    const NUMBER_OF_FILES: usize = 10;
+    for _i in 0..NUMBER_OF_FILES {
+        let file = test.create_test_file_at_path(sut.path());
+        file_vec.push(file.path().unwrap().to_string());
+    }
+
+    assert_that!(Directory::does_exist(&sut_name).unwrap(), eq true);
+
+    assert_that!(Directory::remove_empty(&sut_name).err(), eq Some(DirectoryRemoveError::NotEmptyOrHardLinksPointingToTheDirectory));
+
+    assert_that!(Directory::does_exist(&sut_name).unwrap(), eq true);
+
+    Directory::remove(&sut_name).unwrap();
+
+    assert_that!(Directory::does_exist(&sut_name).unwrap(), eq false);
+}
+
+#[test]
+pub fn directory_is_removed_when_it_goes_out_of_scope_and_has_ownership() {
+    let mut test = TestFixture::new();
+
+    create_test_directory();
+    let sut_name = test.generate_path_in_test_directory();
+
+    let sut = Directory::create(&sut_name, Permission::OWNER_ALL).unwrap();
+    sut.acquire_ownership();
+    drop(sut);
+
+    assert_that!(Directory::does_exist(&sut_name).unwrap(), eq false);
+}
+
+#[test]
+pub fn directory_is_not_removed_when_it_goes_out_of_scope_and_has_no_ownership() {
+    let mut test = TestFixture::new();
+
+    create_test_directory();
+    let sut_name = test.generate_path_in_test_directory();
+
+    let sut = Directory::create(&sut_name, Permission::OWNER_ALL).unwrap();
+    sut.release_ownership();
+    drop(sut);
+
+    assert_that!(Directory::does_exist(&sut_name).unwrap(), eq true);
+    Directory::remove(&sut_name).unwrap();
+}

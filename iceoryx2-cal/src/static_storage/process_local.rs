@@ -52,6 +52,7 @@ use core::ptr::NonNull;
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
+use iceoryx2_bb_concurrency::spin_lock::SpinLock;
 use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::mutex::*;
@@ -59,8 +60,8 @@ use iceoryx2_log::{fail, fatal_panic};
 
 #[derive(Debug)]
 struct StorageContent {
-    is_locked: bool,
-    value: Vec<u8>,
+    is_locked: AtomicBool,
+    value: SpinLock<Vec<u8>>,
 }
 
 #[derive(Debug)]
@@ -149,27 +150,22 @@ impl NamedConcept for Locked {
 impl StaticStorageLocked<Storage> for Locked {
     fn unlock(self, contents: &[u8]) -> Result<Storage, StaticStorageUnlockError> {
         let msg = "Failed to unlock storage";
-        let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
+        let guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
                 with StaticStorageUnlockError::InternalError,
                 "{} due to a failure while acquiring the lock.", msg);
 
         let name = self.storage.config.path_for(&self.storage.name);
-        let entry = guard.get(&name);
-        if entry.is_none() {
-            fatal_panic!(from self,
+        match guard.get(&name) {
+            Some(entry) => {
+                entry.content.is_locked.store(false, Ordering::Relaxed);
+                *entry.content.value.blocking_lock() = Vec::from(contents);
+            }
+            None => {
+                fatal_panic!(from self,
                 "{} since a storage with the name \"{}\" does not exists. The internal data structure seems to be corrupted.",
                 msg, self.storage.name());
+            }
         }
-
-        guard.insert(
-            name,
-            StorageEntry {
-                content: Arc::new(StorageContent {
-                    is_locked: false,
-                    value: Vec::from(contents),
-                }),
-            },
-        );
 
         Ok(self.storage)
     }
@@ -246,7 +242,7 @@ impl NamedConceptMgmt for Storage {
                         when PROCESS_LOCAL_STORAGE.lock(), "{} since the lock could not be acquired.", msg);
 
         match guard.get(&config.path_for(storage_name)) {
-            Some(v) => match v.content.is_locked {
+            Some(v) => match v.content.is_locked.load(Ordering::Relaxed) {
                 true => Err(NamedConceptDoesExistError::UnderlyingResourcesBeingSetUp),
                 false => Ok(true),
             },
@@ -270,22 +266,23 @@ impl StaticStorage for Storage {
     type Locked = Locked;
 
     fn len(&self) -> u64 {
-        self.content.value.len() as u64
+        self.content.value.blocking_lock().len() as u64
     }
 
     fn is_empty(&self) -> bool {
-        self.content.value.is_empty()
+        self.content.value.blocking_lock().is_empty()
     }
 
     fn read(&self, content: &mut [u8]) -> Result<(), StaticStorageReadError> {
         let msg = "Failed to read from storage";
-        if self.content.value.len() > content.len() {
+        let value = self.content.value.blocking_lock();
+        if value.len() > content.len() {
             fail!(from self, with StaticStorageReadError::BufferTooSmall,
                     "{} since the provided buffer with a size of {} bytes is too small. Require at least a size of {} bytes.",
-                    msg, content.len(), self.content.value.len() );
+                    msg, content.len(), value.len() );
         }
 
-        content.clone_from_slice(self.content.value.as_slice());
+        content.clone_from_slice(value.as_slice());
 
         Ok(())
     }
@@ -348,7 +345,7 @@ impl StaticStorageBuilder<Storage> for Builder {
             }
 
             let entry = entry.unwrap();
-            if entry.content.is_locked {
+            if entry.content.is_locked.load(Ordering::Relaxed) {
                 if elapsed_time > timeout {
                     fail!(from self, with StaticStorageOpenError::InitializationNotYetFinalized,
                         "{} since the static storage is still being created (in locked state), try later.", msg);
@@ -384,8 +381,8 @@ impl StaticStorageBuilder<Storage> for Builder {
         }
 
         let content = Arc::new(StorageContent {
-            is_locked: true,
-            value: vec![],
+            is_locked: AtomicBool::new(true),
+            value: SpinLock::new(vec![]),
         });
 
         guard.insert(

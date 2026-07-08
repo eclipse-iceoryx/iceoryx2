@@ -61,7 +61,7 @@ use crate::{
         port_name::PortName,
         publisher::{Publisher, PublisherCreateError},
     },
-    service,
+    service::{self, marker::Flatbuffer},
 };
 use alloc::format;
 use core::fmt::Debug;
@@ -264,6 +264,24 @@ impl<Service: service::Service, Payload: Debug + ZeroCopySend, UserHeader: Debug
     /// [`PortFactoryPublisher::initial_max_slice_len()`] is exhausted. This happens when the user
     /// acquires a more than max slice len in [`Publisher::loan_slice()`] or
     /// [`Publisher::loan_slice_uninit()`].
+    pub fn allocation_strategy(mut self, value: AllocationStrategy) -> Self {
+        self.config.allocation_strategy = value;
+        self
+    }
+}
+
+impl<Service: service::Service, Payload: Debug, UserHeader: Debug + ZeroCopySend>
+    PortFactoryPublisher<'_, Service, Flatbuffer<Payload>, UserHeader>
+{
+    /// Sets the maximum initial reserved memory that the underlying allocator reserves
+    /// for the flatbuffer builder.
+    pub fn initial_reserved_memory(mut self, value: usize) -> Self {
+        self.config.initial_max_slice_len = value;
+        self
+    }
+
+    /// Defines the [`AllocationStrategy`] that is used when the underlying flatbuffer builder
+    /// requires more memory and reallocates.
     pub fn allocation_strategy(mut self, value: AllocationStrategy) -> Self {
         self.config.allocation_strategy = value;
         self

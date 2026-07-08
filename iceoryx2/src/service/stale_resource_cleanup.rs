@@ -15,28 +15,21 @@ use alloc::string::ToString;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_container::string::StaticString;
-use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_system_types::file_name::FileName;
-use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::NamedConceptMgmt;
 use iceoryx2_cal::named_concept::NamedConceptListError;
 use iceoryx2_cal::named_concept::NamedConceptRemoveError;
 use iceoryx2_cal::zero_copy_connection::{ZeroCopyConnection, ZeroCopyPortRemoveError};
-use iceoryx2_log::{debug, error, fail, trace};
+use iceoryx2_log::{debug, fail};
 
 use crate::config;
-use crate::constants::MAX_TYPE_NAME_LENGTH;
 use crate::identifiers::UniqueNodeId;
-use crate::identifiers::UniqueServiceId;
 use crate::service;
 use crate::service::Service;
-use crate::service::config_scheme;
 use crate::service::config_scheme::port_tag_config;
 use crate::service::config_scheme::service_tag_config;
 use crate::service::config_scheme::static_config_storage_config;
 use crate::service::config_scheme::{data_segment_config, resizable_data_segment_config};
-use crate::service::naming_scheme;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::naming_scheme::static_config_name;
 use crate::service::service_hash::ServiceHash;
@@ -136,58 +129,6 @@ pub fn remove_sender_and_receiver_connections_and_data_segment<S: Service>(
     })?;
 
     Ok(())
-}
-
-pub fn remove_additional_blackboard_resources<S: Service>(
-    config: &config::Config,
-    service_id: UniqueServiceId,
-    blackboard_mgmt_name: &StaticString<MAX_TYPE_NAME_LENGTH>,
-    origin: &str,
-    msg: &str,
-) {
-    let blackboard_name = naming_scheme::blackboard_name(service_id);
-    let blackboard_payload_config = config_scheme::blackboard_data_config::<S>(config);
-
-    match unsafe {
-        <S::BlackboardPayload as NamedConceptMgmt>::remove_cfg(
-            &blackboard_name,
-            &blackboard_payload_config,
-        )
-    } {
-        Ok(true) => {
-            trace!(from origin, "Remove blackboard payload segment.");
-        }
-        _ => {
-            error!(from origin,
-                              "{} since the blackboard payload segment cannot be removed - service seems to be in a corrupted state.", msg);
-        }
-    }
-
-    // u64 is just a placeholder needed for the DynamicStorageConfiguration; it is
-    // overwritten right below
-    let mut blackboard_mgmt_config =
-        crate::service::config_scheme::blackboard_mgmt_config::<S, u64>(config);
-    // Safe since the same type name is set when creating the BlackboardMgmt in
-    // Creator::create_impl so we can safely remove the concept.
-    unsafe {
-        <S::BlackboardMgmt<u64> as DynamicStorage<u64>>::__internal_set_type_name_in_config(
-            &mut blackboard_mgmt_config,
-            blackboard_mgmt_name.as_str(),
-        )
-    };
-    match unsafe {
-        <S::BlackboardMgmt<u64> as NamedConceptMgmt>::remove_cfg(
-            &blackboard_name,
-            &blackboard_mgmt_config,
-        )
-    } {
-        Ok(true) => {
-            trace!(from origin, "Remove blackboard mgmt segment.");
-        }
-        _ => {
-            error!(from origin, "{} since the blackboard mgmt segment cannot be removed - service seems to be in a corrupted state.", msg);
-        }
-    }
 }
 
 pub fn remove_service_tag<S: Service>(

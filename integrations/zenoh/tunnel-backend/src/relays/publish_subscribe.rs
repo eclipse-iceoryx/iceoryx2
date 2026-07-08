@@ -13,9 +13,8 @@
 use std::sync::Arc;
 
 use iceoryx2::service::{
-    Service,
-    builder::{CustomHeaderMarker, CustomPayloadMarker},
-    local_threadsafe,
+    Service, local_threadsafe,
+    marker::{CustomHeaderMarker, CustomPayloadMarker},
     static_config::StaticConfig,
 };
 use iceoryx2_log::{fail, trace};

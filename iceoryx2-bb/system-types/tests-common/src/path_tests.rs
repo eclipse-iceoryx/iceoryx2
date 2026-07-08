@@ -223,6 +223,12 @@ mod unix {
         let sut = Path::new(b"what/ever/").unwrap();
         assert_that!(sut.is_absolute(), eq false);
     }
+
+    #[test]
+    pub fn can_be_converted_to_str() {
+        let sut = Path::new(b"/dev/null").unwrap();
+        assert_that!(sut.as_str(), eq "/dev/null");
+    }
 }
 
 #[cfg(target_os = "windows")]

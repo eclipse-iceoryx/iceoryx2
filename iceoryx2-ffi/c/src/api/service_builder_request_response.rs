@@ -100,6 +100,8 @@ pub enum iox2_request_response_open_or_create_error_e {
     O_SERVICE_IN_CORRUPTED_STATE,
     #[CStr = "interrupt"]
     O_INTERRUPT,
+    #[CStr = "unable to acquire type definition"]
+    O_UNABLE_TO_ACQUIRE_TYPE_DEFINITION,
     #[CStr = "already exists"]
     C_ALREADY_EXISTS,
     #[CStr = "internal failure"]
@@ -118,6 +120,8 @@ pub enum iox2_request_response_open_or_create_error_e {
     C_SERVICE_CONFIG_COULD_NOT_BE_CREATED,
     #[CStr = "interrupt"]
     C_INTERRUPT,
+    #[CStr = "unable to acquire type definition"]
+    C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION,
     #[CStr = "system in flux"]
     SYSTEM_IN_FLUX,
 }
@@ -147,7 +151,8 @@ impl IntoCInt for RequestResponseOpenError {
             RequestResponseOpenError::IsMarkedForDestruction => iox2_request_response_open_or_create_error_e::O_IS_MARKED_FOR_DESTRUCTION,
             RequestResponseOpenError::ServiceInCorruptedState => iox2_request_response_open_or_create_error_e::O_SERVICE_IN_CORRUPTED_STATE,
             RequestResponseOpenError::UnableToCreateServiceTag => iox2_request_response_open_or_create_error_e::O_UNABLE_TO_CREATE_SERVICE_TAG,
-            RequestResponseOpenError::VersionMismatch => iox2_request_response_open_or_create_error_e::O_VERSION_MISMATCH
+            RequestResponseOpenError::VersionMismatch => iox2_request_response_open_or_create_error_e::O_VERSION_MISMATCH,
+            RequestResponseOpenError::UnableToAcquireTypeDefinition => iox2_request_response_open_or_create_error_e::O_UNABLE_TO_ACQUIRE_TYPE_DEFINITION
         }) as c_int
     }
 }
@@ -181,6 +186,9 @@ impl IntoCInt for RequestResponseCreateError {
             }
             RequestResponseCreateError::UnableToCreateServiceTag => {
                 iox2_request_response_open_or_create_error_e::C_UNABLE_TO_CREATE_SERVICE_TAG
+            }
+            RequestResponseCreateError::UnableToAcquireTypeDefinition => {
+                iox2_request_response_open_or_create_error_e::C_UNABLE_TO_ACQUIRE_TYPE_DEFINITION
             }
         }) as c_int
     }

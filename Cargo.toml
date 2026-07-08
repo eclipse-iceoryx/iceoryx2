@@ -26,6 +26,7 @@ members = [
     "iceoryx2-bb/elementary/tests-common",
     "iceoryx2-bb/elementary/tests-nostd",
     "iceoryx2-bb/elementary-traits",
+    "iceoryx2-bb/flatbuffers",
     "iceoryx2-bb/linux",
     "iceoryx2-bb/linux/tests-common",
     "iceoryx2-bb/linux/tests-nostd",
@@ -125,6 +126,7 @@ iceoryx2-bb-container = { version = "0.9.999", path = "iceoryx2-bb/container/" }
 iceoryx2-bb-derive-macros = { version = "0.9.999", path = "iceoryx2-bb/derive-macros/" }
 iceoryx2-bb-elementary = { version = "0.9.999", path = "iceoryx2-bb/elementary/" }
 iceoryx2-bb-elementary-traits = { version = "0.9.999", path = "iceoryx2-bb/elementary-traits/" }
+iceoryx2-bb-flatbuffers = { version = "0.9.999", path = "iceoryx2-bb/flatbuffers/" }
 iceoryx2-bb-linux = { version = "0.9.999", path = "iceoryx2-bb/linux/" }
 iceoryx2-bb-memory = { version = "0.9.999", path = "iceoryx2-bb/memory/" }
 iceoryx2-bb-posix = { version = "0.9.999", path = "iceoryx2-bb/posix/" }
@@ -165,6 +167,8 @@ iceoryx2-bb-concurrency-tests-common = { path = "iceoryx2-bb/concurrency/tests-c
 iceoryx2-bb-concurrency-tests-nostd = { path = "iceoryx2-bb/concurrency/tests-nostd/" }
 iceoryx2-bb-elementary-tests-common = { path = "iceoryx2-bb/elementary/tests-common" }
 iceoryx2-bb-elementary-tests-nostd = { path = "iceoryx2-bb/elementary/tests-nostd" }
+iceoryx2-bb-flatbuffers-tests-common = { path = "iceoryx2-bb/flatbuffers/tests-common" }
+iceoryx2-bb-flatbuffers-tests-nostd = { path = "iceoryx2-bb/flatbuffers/tests-nostd" }
 iceoryx2-bb-lock-free-tests-common = { path = "iceoryx2-bb/lock-free/tests-common" }
 iceoryx2-bb-lock-free-tests-nostd = { path = "iceoryx2-bb/lock-free/tests-nostd" }
 iceoryx2-bb-linux-tests-common = { path = "iceoryx2-bb/linux/tests-common" }
@@ -204,6 +208,7 @@ clap = { version = "4.6.1", features = ["derive"] }
 enum-iterator = { version = "2.1.0" }
 better-panic = { version = "0.3.0" }
 colored = { version = "2.1" }
+flatbuffers = { version = "25.12.19", default-features = false }
 generic-tests = { version = "0.1.2" }
 human-panic = { version = "2.0.5" }
 libc = { version = "0.2.183", default-features = false, features = ['extra_traits'] }

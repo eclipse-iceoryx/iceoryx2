@@ -22,7 +22,7 @@ pub mod publisher {
     use iceoryx2::port::{LoanError, publisher::PublisherCreateError};
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
-    use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
+    use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2_bb_concurrency::atomic::{AtomicBool, Ordering};
     use iceoryx2_bb_posix::barrier::*;

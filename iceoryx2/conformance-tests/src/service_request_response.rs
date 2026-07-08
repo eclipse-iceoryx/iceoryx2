@@ -22,7 +22,7 @@ pub mod service_request_response {
     use iceoryx2::port::client::{Client, RequestSendError};
     use iceoryx2::port::server::Server;
     use iceoryx2::prelude::{PortFactory, *};
-    use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
+    use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
     use iceoryx2::service::port_factory::client::ClientCreateError;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2_bb_testing::assert_that;

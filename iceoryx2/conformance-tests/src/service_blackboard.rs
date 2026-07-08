@@ -25,10 +25,9 @@ pub mod service_blackboard {
     use iceoryx2::port::writer::*;
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
-    use iceoryx2::service::builder::CustomKeyMarker;
-    use iceoryx2::service::builder::blackboard::{
-        BlackboardCreateError, BlackboardOpenError, KeyMemory, KeyMemoryError,
-    };
+    use iceoryx2::service::builder::blackboard::{BlackboardCreateError, BlackboardOpenError};
+    use iceoryx2::service::marker::CustomKeyMarker;
+    use iceoryx2::service::resource::blackboard::{KeyMemory, KeyMemoryError};
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2_bb_concurrency::atomic::Ordering;
     use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};

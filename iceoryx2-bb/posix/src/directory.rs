@@ -40,6 +40,8 @@ use alloc::format;
 use alloc::vec;
 use alloc::vec::Vec;
 
+use iceoryx2_bb_concurrency::atomic::AtomicBool;
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::string::strnlen;
 use iceoryx2_bb_elementary::enum_gen;
@@ -195,17 +197,18 @@ pub struct Directory {
     path: Path,
     directory_stream: *mut posix::DIR,
     file_descriptor: FileDescriptor,
+    has_ownership: AtomicBool,
 }
 
 impl Drop for Directory {
     fn drop(&mut self) {
+        let msg = "Unable to close directory stream";
         let mut counter = 0;
         loop {
             if unsafe { posix::closedir(self.directory_stream) } == 0 {
                 break;
             }
 
-            let msg = "Unable to close directory stream";
             match Errno::get() {
                 Errno::EBADF => {
                     fatal_panic!(from self, "This should never happen! {} due to an invalid file-descriptor.", msg);
@@ -226,11 +229,35 @@ impl Drop for Directory {
             }
         }
 
+        if self.has_ownership() {
+            if let Err(e) = Directory::remove(&self.path) {
+                error!(from self, "{} and remove it. [{e:?}]", msg);
+            }
+        }
+
         trace!(from self, "closed");
     }
 }
 
 impl Directory {
+    /// Returns true if the object has the ownership of the directory, otherwise false.
+    pub fn has_ownership(&self) -> bool {
+        self.has_ownership.load(Ordering::Relaxed)
+    }
+
+    /// Acquires the ownership of the [`Directory`] object. If it goes out-of-scope the directory
+    /// is removed.
+    pub fn acquire_ownership(&self) {
+        self.has_ownership.store(true, Ordering::Relaxed);
+    }
+
+    /// Releases the ownership of the [`Directory`] object. If it goes out-of-scope the directory
+    /// is not removed.
+    pub fn release_ownership(&self) {
+        self.has_ownership.store(false, Ordering::Relaxed);
+    }
+
+    /// Instantiates a new [`Directory`] from an existing [`Path`].
     pub fn new(path: &Path) -> Result<Self, DirectoryOpenError> {
         let directory_stream = unsafe { posix::opendir(path.as_c_str()) };
 
@@ -257,6 +284,7 @@ impl Directory {
         let new_self = Directory {
             path: *path,
             directory_stream,
+            has_ownership: AtomicBool::new(false),
             file_descriptor: file_descriptor.unwrap(),
         };
 
@@ -397,10 +425,27 @@ impl Directory {
         let msg = format!("Unable to remove directory \"{path}\"");
         let origin = "Directory::remove()";
 
-        let dir = fail!(from origin, when Directory::new(path),
-                            "{} since the directory {} could not be opened.", msg, path);
-        let contents = fail!(from origin, when dir.contents(),
-                            "{} since the directory contents of {} could not be read.", msg, path);
+        let dir = match Directory::new(path) {
+            Ok(dir) => dir,
+            Err(DirectoryOpenError::DoesNotExist) => return Ok(()),
+            Err(e) => {
+                fail!(from origin, with e.into(),
+                     "{} since the directory {} could not be opened.", msg, path);
+            }
+        };
+
+        let contents = match dir.contents() {
+            Ok(contents) => contents,
+            Err(DirectoryReadError::DirectoryDoesNoLongerExist) => return Ok(()),
+            Err(DirectoryReadError::InsufficientPermissions) => {
+                fail!(from origin, with DirectoryRemoveError::InsufficientPermissions,
+                    "{msg} due to insufficient permissions to list the directory contents.");
+            }
+            Err(e) => {
+                fail!(from origin, with e.into(),
+                    "{msg} since the directory contents of {path} could not be read. [{e:?}]");
+            }
+        };
 
         for entry in contents {
             let mut sub_path = *path;

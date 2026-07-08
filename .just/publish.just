@@ -38,6 +38,7 @@ SDK_CRATES_TO_PUBLISH := `echo \
     iceoryx2-bb-container               \
     iceoryx2-bb-system-types            \
     iceoryx2-bb-posix                   \
+    iceoryx2-bb-flatbuffers             \
     iceoryx2-bb-linux                   \
     iceoryx2-bb-lock-free               \
     iceoryx2-bb-threadsafe              \
@@ -92,6 +93,7 @@ SDK_CRATES_TO_IGNORE := `echo \
     iceoryx2-bb-system-types-tests-nostd   \
     iceoryx2-bb-posix-tests-common         \
     iceoryx2-bb-posix-tests-nostd          \
+    iceoryx2-bb-flatbuffers-tests-common   \
     iceoryx2-cal-conformance-tests-common  \
     iceoryx2-cal-conformance-tests-nostd   \
     iceoryx2-cal-tests-common              \
@@ -140,7 +142,7 @@ _publish-dispatch workspace *flags:
     NO_VERIFY="false"
     REGISTRY=""
 
-    set -- {{flags}}
+    set -- {{ flags }}
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --dry-run)       DRY_RUN="true";       shift ;;
@@ -153,7 +155,7 @@ _publish-dispatch workspace *flags:
         esac
     done
 
-    if [ -z "{{workspace}}" ]; then
+    if [ -z "{{ workspace }}" ]; then
         echo "Usage: just publish <workspace> [flags]"
         echo ""
         echo "Workspace:"
@@ -173,11 +175,11 @@ _publish-dispatch workspace *flags:
     fi
 
     if [ "$LIST" = "true" ]; then
-        just _publish-list "{{workspace}}"
+        just _publish-list "{{ workspace }}"
     elif [ "$SANITY_CHECKS" = "true" ]; then
-        just _publish-sanity-checks "{{workspace}}"
+        just _publish-sanity-checks "{{ workspace }}"
     else
-        just _publish "{{workspace}}" "$DRY_RUN" "$ALLOW_DIRTY" "$NO_VERIFY" "$REGISTRY"
+        just _publish "{{ workspace }}" "$DRY_RUN" "$ALLOW_DIRTY" "$NO_VERIFY" "$REGISTRY"
     fi
 
 # -----------------------------------------------------------------------------
@@ -187,19 +189,19 @@ _publish-dispatch workspace *flags:
 [private]
 _publish-crates-to-publish workspace:
     #!/usr/bin/env bash
-    case "{{workspace}}" in
-        sdk)                echo "{{SDK_CRATES_TO_PUBLISH}}" ;;
-        integrations-zenoh) echo "{{INTEGRATIONS_ZENOH_CRATES_TO_PUBLISH}}" ;;
-        integrations-ros2)  echo "{{INTEGRATIONS_ROS2_CRATES_TO_PUBLISH}}" ;;
+    case "{{ workspace }}" in
+        sdk)                echo "{{ SDK_CRATES_TO_PUBLISH }}" ;;
+        integrations-zenoh) echo "{{ INTEGRATIONS_ZENOH_CRATES_TO_PUBLISH }}" ;;
+        integrations-ros2)  echo "{{ INTEGRATIONS_ROS2_CRATES_TO_PUBLISH }}" ;;
     esac
 
 [private]
 _publish-crates-to-ignore workspace:
     #!/usr/bin/env bash
-    case "{{workspace}}" in
-        sdk)                echo "{{SDK_CRATES_TO_IGNORE}}" ;;
-        integrations-zenoh) echo "{{INTEGRATIONS_ZENOH_CRATES_TO_IGNORE}}" ;;
-        integrations-ros2)  echo "{{INTEGRATIONS_ROS2_CRATES_TO_IGNORE}}" ;;
+    case "{{ workspace }}" in
+        sdk)                echo "{{ SDK_CRATES_TO_IGNORE }}" ;;
+        integrations-zenoh) echo "{{ INTEGRATIONS_ZENOH_CRATES_TO_IGNORE }}" ;;
+        integrations-ros2)  echo "{{ INTEGRATIONS_ROS2_CRATES_TO_IGNORE }}" ;;
     esac
 
 # -----------------------------------------------------------------------------
@@ -211,7 +213,7 @@ _publish-list workspace:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    WORKSPACES=$(just _parse-workspace "{{workspace}}")
+    WORKSPACES=$(just _parse-workspace "{{ workspace }}")
 
     for WS in $WORKSPACES; do
         PUBLISH=$(just _publish-crates-to-publish "$WS")
@@ -231,7 +233,7 @@ _publish-sanity-checks workspace:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    WORKSPACES=$(just _parse-workspace "{{workspace}}")
+    WORKSPACES=$(just _parse-workspace "{{ workspace }}")
 
     for WS in $WORKSPACES; do
         echo "Running sanity checks for '$WS'..."
@@ -245,7 +247,7 @@ _publish-check-completeness workspace:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    MANIFEST_FLAG=$(just _workspace-manifest-arg "{{workspace}}")
+    MANIFEST_FLAG=$(just _workspace-manifest-arg "{{ workspace }}")
 
     WORKSPACE_CRATES=$(cargo tree --workspace --depth 1 --prefix none $MANIFEST_FLAG \
         | grep -v '(\*)' \
@@ -253,8 +255,8 @@ _publish-check-completeness workspace:
         | awk '{print $1}' \
         | sort | uniq)
 
-    PUBLISH=$(just _publish-crates-to-publish "{{workspace}}")
-    IGNORE=$(just _publish-crates-to-ignore "{{workspace}}")
+    PUBLISH=$(just _publish-crates-to-publish "{{ workspace }}")
+    IGNORE=$(just _publish-crates-to-ignore "{{ workspace }}")
 
     HAS_ERROR=false
     for CRATE in $WORKSPACE_CRATES; do
@@ -264,7 +266,7 @@ _publish-check-completeness workspace:
         if [[ " $PUBLISH " =~ " ${CRATE} " ]]; then
             continue
         fi
-        echo "ERROR: Crate '$CRATE' is neither in the publish nor ignore list for '{{workspace}}'."
+        echo "ERROR: Crate '$CRATE' is neither in the publish nor ignore list for '{{ workspace }}'."
         HAS_ERROR=true
     done
 
@@ -277,8 +279,8 @@ _publish-check-cyclic-deps workspace:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    MANIFEST_FLAG=$(just _workspace-manifest-arg "{{workspace}}")
-    PUBLISH=$(just _publish-crates-to-publish "{{workspace}}")
+    MANIFEST_FLAG=$(just _workspace-manifest-arg "{{ workspace }}")
+    PUBLISH=$(just _publish-crates-to-publish "{{ workspace }}")
 
     ALLOWED=""
     HAS_ERROR=false
@@ -318,22 +320,22 @@ _publish workspace dry_run allow_dirty no_verify registry:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    WORKSPACES=$(just _parse-workspace "{{workspace}}")
+    WORKSPACES=$(just _parse-workspace "{{ workspace }}")
 
     for WS in $WORKSPACES; do
-        if [ "{{workspace}}" = "all" ]; then
+        if [ "{{ workspace }}" = "all" ]; then
             echo "=== $WS ==="
         fi
 
         just _publish-sanity-checks "$WS"
 
-        if [ "{{dry_run}}" = "true" ]; then
-            just _publish-dry-run "$WS" "{{allow_dirty}}" "{{no_verify}}" "{{registry}}"
+        if [ "{{ dry_run }}" = "true" ]; then
+            just _publish-dry-run "$WS" "{{ allow_dirty }}" "{{ no_verify }}" "{{ registry }}"
         else
-            just _publish-run "$WS" "{{allow_dirty}}" "{{no_verify}}" "{{registry}}"
+            just _publish-run "$WS" "{{ allow_dirty }}" "{{ no_verify }}" "{{ registry }}"
         fi
 
-        if [ "{{workspace}}" = "all" ]; then
+        if [ "{{ workspace }}" = "all" ]; then
             echo ""
         fi
     done
@@ -343,8 +345,8 @@ _publish-exclude-args workspace:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    MANIFEST_FLAG=$(just _workspace-manifest-arg "{{workspace}}")
-    IGNORE=$(just _publish-crates-to-ignore "{{workspace}}")
+    MANIFEST_FLAG=$(just _workspace-manifest-arg "{{ workspace }}")
+    IGNORE=$(just _publish-crates-to-ignore "{{ workspace }}")
 
     MEMBERS=$(cargo metadata --format-version=1 --no-deps $MANIFEST_FLAG \
         | jq -r '.packages[].name')
@@ -362,25 +364,25 @@ _publish-dry-run workspace allow_dirty no_verify registry:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    MANIFEST_FLAG=$(just _workspace-manifest-arg "{{workspace}}")
-    EXCLUDE_ARGS=$(just _publish-exclude-args "{{workspace}}")
+    MANIFEST_FLAG=$(just _workspace-manifest-arg "{{ workspace }}")
+    EXCLUDE_ARGS=$(just _publish-exclude-args "{{ workspace }}")
 
     DIRTY_FLAG=""
-    if [ "{{allow_dirty}}" = "true" ]; then
+    if [ "{{ allow_dirty }}" = "true" ]; then
         DIRTY_FLAG="--allow-dirty"
     fi
 
     NO_VERIFY_FLAG=""
-    if [ "{{no_verify}}" = "true" ]; then
+    if [ "{{ no_verify }}" = "true" ]; then
         NO_VERIFY_FLAG="--no-verify"
     fi
 
     REGISTRY_FLAG=""
-    if [ -n "{{registry}}" ]; then
-        REGISTRY_FLAG="--registry {{registry}}"
+    if [ -n "{{ registry }}" ]; then
+        REGISTRY_FLAG="--registry {{ registry }}"
     fi
 
-    echo "Publishing '{{workspace}}' (dry-run)..."
+    echo "Publishing '{{ workspace }}' (dry-run)..."
     cargo publish --dry-run --workspace \
         $MANIFEST_FLAG $REGISTRY_FLAG $EXCLUDE_ARGS $DIRTY_FLAG $NO_VERIFY_FLAG
     echo "Done."
@@ -390,24 +392,24 @@ _publish-run workspace allow_dirty no_verify registry:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    MANIFEST_FLAG=$(just _workspace-manifest-arg "{{workspace}}")
-    EXCLUDE_ARGS=$(just _publish-exclude-args "{{workspace}}")
+    MANIFEST_FLAG=$(just _workspace-manifest-arg "{{ workspace }}")
+    EXCLUDE_ARGS=$(just _publish-exclude-args "{{ workspace }}")
 
     DIRTY_FLAG=""
-    if [ "{{allow_dirty}}" = "true" ]; then
+    if [ "{{ allow_dirty }}" = "true" ]; then
         DIRTY_FLAG="--allow-dirty"
     fi
 
     NO_VERIFY_FLAG=""
-    if [ "{{no_verify}}" = "true" ]; then
+    if [ "{{ no_verify }}" = "true" ]; then
         NO_VERIFY_FLAG="--no-verify"
     fi
 
     REGISTRY_FLAG=""
-    if [ -n "{{registry}}" ]; then
-        REGISTRY_FLAG="--registry {{registry}}"
+    if [ -n "{{ registry }}" ]; then
+        REGISTRY_FLAG="--registry {{ registry }}"
     fi
 
-    echo "Publishing '{{workspace}}'..."
+    echo "Publishing '{{ workspace }}'..."
     cargo publish --workspace $MANIFEST_FLAG $REGISTRY_FLAG $EXCLUDE_ARGS $DIRTY_FLAG $NO_VERIFY_FLAG
     echo "Done."

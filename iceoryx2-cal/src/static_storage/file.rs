@@ -410,6 +410,11 @@ impl crate::static_storage::StaticStorage for Storage {
                 msg, len, content.len());
         }
 
+        if let Err(e) = self.file.seek(0) {
+            fail!(from self, with StaticStorageReadError::InternalError,
+                "{msg} since the file position could not be set to 0. [{e:?}]");
+        }
+
         let bytes_read = match self.file.read(content) {
             Ok(bytes_read) => bytes_read,
             Err(FileReadError::Interrupt) => {

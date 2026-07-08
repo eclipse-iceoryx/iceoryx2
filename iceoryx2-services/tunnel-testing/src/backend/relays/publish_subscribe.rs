@@ -16,7 +16,7 @@
 
 use alloc::rc::Rc;
 use alloc::vec::Vec;
-use iceoryx2::service::builder::CustomHeaderMarker;
+use iceoryx2::service::marker::CustomHeaderMarker;
 use iceoryx2::service::{Service, static_config::StaticConfig};
 use iceoryx2_services_tunnel_backend::traits::{PublishSubscribeRelay, RelayBuilder};
 

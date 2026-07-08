@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::prelude::{CallbackProgression, PortFactory};
-use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
+use iceoryx2::service::marker::{CustomHeaderMarker, CustomPayloadMarker};
 use pyo3::prelude::*;
 
 use crate::attribute_set::AttributeSet;

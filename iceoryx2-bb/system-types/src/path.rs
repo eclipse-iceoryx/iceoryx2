@@ -116,6 +116,12 @@ semantic_string! {
 }
 
 impl Path {
+    /// Returns a [`str`] reference to the contained value.
+    pub fn as_str(&self) -> &str {
+        // safety: a path contains only valid utf8 characters
+        unsafe { core::str::from_utf8_unchecked(self.as_bytes()) }
+    }
+
     /// Adds a new file or directory entry to the path. It adds it in a fashion that a slash is
     /// added when the path does not end with a slash - except when it is empty.
     pub fn add_path_entry(&mut self, entry: &Path) -> Result<(), SemanticStringError> {

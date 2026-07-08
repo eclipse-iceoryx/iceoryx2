@@ -12,7 +12,7 @@
 
 use iceoryx2::{
     port::update_connections::UpdateConnections,
-    service::builder::{CustomHeaderMarker, CustomPayloadMarker},
+    service::marker::{CustomHeaderMarker, CustomPayloadMarker},
 };
 use iceoryx2_log::fatal_panic;
 use pyo3::prelude::*;

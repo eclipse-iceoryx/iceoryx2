@@ -41,7 +41,7 @@ impl RequestHeader {
     /// Returns how many elements are stored inside the requests's payload.
     ///
     /// # Details when using
-    /// [`CustomPayloadMarker`](crate::service::builder::CustomPayloadMarker)
+    /// [`CustomPayloadMarker`](crate::service::marker::CustomPayloadMarker)
     ///
     /// In this case the number of elements relates to the element defined in the
     /// [`MessageTypeDetails`](crate::service::static_config::message_type_details::MessageTypeDetails).
@@ -86,7 +86,7 @@ impl ResponseHeader {
     /// payload.
     ///
     /// # Details when using
-    /// [`CustomPayloadMarker`](crate::service::builder::CustomPayloadMarker)
+    /// [`CustomPayloadMarker`](crate::service::marker::CustomPayloadMarker)
     ///
     /// In this case the number of elements relates to the element defined in the
     /// [`MessageTypeDetails`](crate::service::static_config::message_type_details::MessageTypeDetails).
