@@ -6,13 +6,13 @@ For released versions of `iceoryx2`, you may use `pip` to install the released
 Python bindings. e.g.
 
 ```console
-pip install iceoryx2==0.9.2
+pip install iceoryx2==0.9.3
 ```
 
 Be sure to switch to the matching release tag to ensure compatability:
 
 ```console
-git checkout v0.9.2
+git checkout v0.9.3
 ```
 
 ## Install Dependencies

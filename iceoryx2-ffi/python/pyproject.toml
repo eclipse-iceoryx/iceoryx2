@@ -1,6 +1,6 @@
 [project]
 name = "iceoryx2"
-version = "0.9.2"
+version = "0.9.3"
 description = "Lock-Free Zero-Copy Inter-process Communication"
 readme = "README.md"
 requires-python = ">=3.8,<4.0"
