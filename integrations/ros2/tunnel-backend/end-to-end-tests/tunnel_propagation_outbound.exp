@@ -1,0 +1,72 @@
+#!/usr/bin/expect
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+#### Common Setup
+
+set REPO_ROOT [exec git rev-parse --show-toplevel]
+cd ${REPO_ROOT}
+
+source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
+
+#### Test Setup
+
+# CDR of std_msgs/msg/String { data: "hello" }, as hex bytes:
+#
+#   00 01 00 00        CDR_LE encapsulation
+#   06 00 00 00        string length (incl. NUL)
+#   68 65 6c 6c 6f 00  "hello\0"
+set HELLO_CDR "00 01 00 00 06 00 00 00 68 65 6c 6c 6f 00"
+
+exec cargo build --bin iox2-service 2>@1
+exec cargo build --manifest-path integrations/ros2/Cargo.toml \
+    -p iceoryx2-integrations-ros2-tunnel-backend --example tunnel_polled 2>@1
+
+#### Test
+
+set timeout 30
+
+spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
+    -p iceoryx2-integrations-ros2-tunnel-backend --example tunnel_polled
+set id_tunnel $spawn_id
+expect_output_from $id_tunnel "Local Discovery via Tracker"
+
+spawn ros2 topic echo /chatter std_msgs/msg/String
+set id_echo $spawn_id
+
+spawn cargo run --bin iox2-service -- publish ros2://topics/chatter \
+    --type-name std_msgs/msg/String --type-variant DYNAMIC \
+    --type-size 1 --type-alignment 1 \
+    --data-representation HUMANREADABLE \
+    --message $HELLO_CDR \
+    --repetitions 0 --time-between-messages 200
+set id_publish $spawn_id
+
+#### Test Assertion
+
+expect_output_from $id_tunnel "Opening bridge"
+expect_output_from $id_tunnel "Propagated PublishSubscribe"
+expect_output_from $id_echo "data: hello"
+
+#### Shutdown
+
+send -i $id_publish $SIGINT
+expect -i $id_publish eof
+
+send -i $id_echo $SIGINT
+expect -i $id_echo eof
+
+send -i $id_tunnel $SIGINT
+expect_output_from $id_tunnel "exit"
+expect -i $id_tunnel eof
+
+show_test_passed
