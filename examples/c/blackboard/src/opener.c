@@ -109,6 +109,9 @@ int main(void) {
         goto end;
     }
 
+    // set key eq comparison function
+    iox2_service_builder_blackboard_opener_set_key_eq_comparison_function(&service_builder_blackboard, key_cmp);
+
     // open service
     iox2_port_factory_blackboard_h service = NULL;
     ret_val = iox2_service_builder_blackboard_open(service_builder_blackboard, NULL, &service);

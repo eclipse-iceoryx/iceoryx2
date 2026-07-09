@@ -367,7 +367,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_key_type_det
     }
 }
 
-/// Sets the key eqaulity comparison function.
+/// Sets the key equality comparison function for the creator.
 ///
 /// # Arguments
 ///
@@ -414,6 +414,66 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_key_eq_comp
 
                 let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
                 service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
+                    service_builder.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                        iceoryx2::service::resource::blackboard::KeyMemory::<
+                                    MAX_BLACKBOARD_KEY_SIZE,
+                                >::key_eq_comparison(
+                                    lhs, rhs, &*eq_func
+                                )
+                    })),
+                ));
+            }
+        }
+    }
+}
+
+/// Sets the key equality comparison function for the opener.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_blackboard_opener_h_ref`]
+///   obtained by
+///   [`iox2_service_builder_blackboard_opener`](crate::iox2_service_builder_blackboard_opener).
+/// * `key_eq_func` - The function to compare blackboard keys.
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be a valid handle
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_key_eq_comparison_function(
+    service_builder_handle: iox2_service_builder_blackboard_opener_h_ref,
+    key_eq_func: iox2_service_blackboard_key_eq_cmp_func,
+) {
+    service_builder_handle.assert_non_null();
+    unsafe {
+        let service_builder_struct = &mut *service_builder_handle.as_type();
+
+        let eq_func = Box::new(move |lhs: *const u8, rhs: *const u8| {
+            key_eq_func(lhs as *const c_void, rhs as *const c_void)
+        });
+
+        match service_builder_struct.service_type {
+            iox2_service_type_e::IPC => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
+                service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_opener(
+                    service_builder.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                        iceoryx2::service::resource::blackboard::KeyMemory::<
+                                    MAX_BLACKBOARD_KEY_SIZE,
+                                >::key_eq_comparison(
+                                    lhs, rhs, &*eq_func
+                                )
+                    })),
+                ));
+            }
+            iox2_service_type_e::LOCAL => {
+                let service_builder =
+                    ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+                let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
+                service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_opener(
                     service_builder.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
                         iceoryx2::service::resource::blackboard::KeyMemory::<
                                     MAX_BLACKBOARD_KEY_SIZE,

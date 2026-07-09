@@ -340,6 +340,47 @@ impl ServiceBuilderBlackboardOpener {
         }
     }
 
+    /// Defines the key eq comparison function needed to store and retrieve keys in the
+    /// blackboard.
+    pub fn __set_key_eq_cmp_func(&mut self, key_eq_func: Py<PyAny>) -> Self {
+        match &mut *self.value.lock() {
+            ServiceBuilderBlackboardOpenerType::Ipc(v) => {
+                let this = v.take().unwrap();
+                let eq_func = Box::new(move |lhs: *const u8, rhs: *const u8| -> bool {
+                    Python::attach(|py| {
+                        let result = key_eq_func.call1(py, (lhs as usize, rhs as usize)).unwrap();
+                        result
+                            .extract::<bool>(py)
+                            .expect("Return type of key eq comparison function must be bool.")
+                    })
+                });
+                let this = unsafe {
+                    this.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                        KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &*eq_func)
+                    }))
+                };
+                self.clone_ipc(this)
+            }
+            ServiceBuilderBlackboardOpenerType::Local(v) => {
+                let this = v.take().unwrap();
+                let eq_func = Box::new(move |lhs: *const u8, rhs: *const u8| -> bool {
+                    Python::attach(|py| {
+                        let result = key_eq_func.call1(py, (lhs as usize, rhs as usize)).unwrap();
+                        result
+                            .extract::<bool>(py)
+                            .expect("Return type of key eq comparison function must be bool.")
+                    })
+                });
+                let this = unsafe {
+                    this.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                        KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &*eq_func)
+                    }))
+                };
+                self.clone_local(this)
+            }
+        }
+    }
+
     /// Defines how many `Reader`s must be at least supported.
     pub fn max_readers(&mut self, value: usize) -> Self {
         match &mut *self.value.lock() {

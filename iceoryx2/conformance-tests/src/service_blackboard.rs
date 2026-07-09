@@ -1720,6 +1720,7 @@ pub mod service_blackboard {
         unsafe {
             (*lhs.cast::<Foo>()).a == (*rhs.cast::<Foo>()).a
                 && (*lhs.cast::<Foo>()).b == (*rhs.cast::<Foo>()).b
+                && (*lhs.cast::<Foo>()).c == (*rhs.cast::<Foo>()).c
         }
     }
 
@@ -2397,5 +2398,178 @@ pub mod service_blackboard {
 
         entry_handle_mut.update_with_copy(4567);
         assert_that!(*entry_handle.get(), eq 4567);
+    }
+
+    #[conformance_test]
+    pub fn key_can_be_found_in_opener<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+
+        let key_1 = Foo {
+            a: 9,
+            b: 99,
+            c: StaticString::try_from("NalalalaWolf").unwrap(),
+        };
+        let value_1 = 5;
+        let key_2 = Foo {
+            a: 9,
+            b: 99,
+            c: StaticString::try_from("NalalalaWooolf").unwrap(),
+        };
+        let value_2 = 10;
+
+        let sut_creator = node
+            .service_builder(&service_name)
+            .blackboard_creator::<Foo>()
+            .add::<i32>(key_1, value_1)
+            .add::<i32>(key_2, value_2)
+            .create()
+            .unwrap();
+
+        let writer = sut_creator.writer_builder().create().unwrap();
+        let entry_handle_mut_1 = writer.entry::<i32>(&key_1).unwrap();
+        let entry_handle_mut_2 = writer.entry::<i32>(&key_2).unwrap();
+        entry_handle_mut_1.update_with_copy(value_1);
+        entry_handle_mut_2.update_with_copy(value_2);
+
+        let sut_opener = node
+            .service_builder(&service_name)
+            .blackboard_opener::<Foo>()
+            .open()
+            .unwrap();
+
+        let reader = sut_opener.reader_builder().create().unwrap();
+        let entry_handle_1 = reader.entry::<i32>(&key_1).unwrap();
+        let entry_handle_2 = reader.entry::<i32>(&key_2).unwrap();
+
+        assert_that!(*entry_handle_1.get(), eq value_1);
+        assert_that!(*entry_handle_2.get(), eq value_2);
+    }
+
+    #[conformance_test]
+    pub fn key_can_be_found_in_opener_with_custom_key_type<S: Service>() {
+        let test = Test::<S>::new();
+        let node = test.create_node();
+
+        type KeyType = Foo;
+        let key_type_details = TypeDetail::new::<KeyType>(TypeVariant::FixedSize);
+        type ValueType = i32;
+        let value_type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
+
+        let key_1 = Foo {
+            a: 3,
+            b: 17,
+            c: StaticString::try_from("yeeehaw").unwrap(),
+        };
+        let key_ptr_1: *const KeyType = &key_1;
+        let default_value_1 = ValueType::default();
+        let value_ptr_1: *const ValueType = &default_value_1;
+        let new_value_1 = 5;
+        let key_2 = Foo {
+            a: 3,
+            b: 17,
+            c: StaticString::try_from("yeeehaw!").unwrap(),
+        };
+        let key_ptr_2: *const KeyType = &key_2;
+        let default_value_2 = ValueType::default();
+        let value_ptr_2: *const ValueType = &default_value_2;
+        let new_value_2 = 10;
+
+        let service_name = generate_service_name();
+        let sut_creator = unsafe {
+            node.service_builder(&service_name)
+                .blackboard_creator::<CustomKeyMarker>()
+                .__internal_set_key_type_details(&key_type_details)
+                .__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &cmp_for_foo)
+                }))
+                .__internal_add(
+                    key_ptr_1 as *const u8,
+                    value_ptr_1 as *mut u8,
+                    value_type_details,
+                    Box::new(|| {}),
+                )
+                .__internal_add(
+                    key_ptr_2 as *const u8,
+                    value_ptr_2 as *mut u8,
+                    value_type_details,
+                    Box::new(|| {}),
+                )
+                .create()
+                .unwrap()
+        };
+
+        let writer = sut_creator.writer_builder().create().unwrap();
+        let entry_handle_mut_1 = unsafe {
+            writer
+                .__internal_entry(key_ptr_1 as *const u8, &value_type_details)
+                .unwrap()
+        };
+        let entry_value_uninit_1 = entry_handle_mut_1
+            .loan_uninit(value_type_details.size(), value_type_details.alignment());
+        let write_ptr_1 = entry_value_uninit_1.write_cell();
+        unsafe {
+            *(write_ptr_1 as *mut ValueType) = new_value_1;
+        }
+        let _ = entry_value_uninit_1.update();
+        let entry_handle_mut_2 = unsafe {
+            writer
+                .__internal_entry(key_ptr_2 as *const u8, &value_type_details)
+                .unwrap()
+        };
+        let entry_value_uninit_2 = entry_handle_mut_2
+            .loan_uninit(value_type_details.size(), value_type_details.alignment());
+        let write_ptr_2 = entry_value_uninit_2.write_cell();
+        unsafe {
+            *(write_ptr_2 as *mut ValueType) = new_value_2;
+        }
+        let _ = entry_value_uninit_2.update();
+
+        let sut_opener = unsafe {
+            node.service_builder(&service_name)
+                .blackboard_opener::<CustomKeyMarker>()
+                .__internal_set_key_type_details(&key_type_details)
+                .__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
+                    KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &cmp_for_foo)
+                }))
+                .open()
+                .unwrap()
+        };
+
+        let reader = sut_opener.reader_builder().create().unwrap();
+        let entry_handle_1 = unsafe {
+            reader
+                .__internal_entry(key_ptr_1 as *const u8, &value_type_details)
+                .unwrap()
+        };
+        let mut read_value_1: ValueType = 0;
+        let read_value_ptr_1: *mut ValueType = &mut read_value_1;
+        unsafe {
+            entry_handle_1.get(
+                read_value_ptr_1 as *mut u8,
+                value_type_details.size(),
+                value_type_details.alignment(),
+                core::ptr::null_mut::<u64>(),
+            );
+        }
+        let entry_handle_2 = unsafe {
+            reader
+                .__internal_entry(key_ptr_2 as *const u8, &value_type_details)
+                .unwrap()
+        };
+        let mut read_value_2: ValueType = 0;
+        let read_value_ptr_2: *mut ValueType = &mut read_value_2;
+        unsafe {
+            entry_handle_2.get(
+                read_value_ptr_2 as *mut u8,
+                value_type_details.size(),
+                value_type_details.alignment(),
+                core::ptr::null_mut::<u64>(),
+            );
+        }
+
+        assert_that!(read_value_1, eq new_value_1);
+        assert_that!(read_value_2, eq new_value_2);
     }
 }
