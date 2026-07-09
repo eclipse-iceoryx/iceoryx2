@@ -13,6 +13,7 @@
 import '.just/common.just'
 import '.just/build.just'
 import '.just/test.just'
+import '.just/test-e2e.just'
 import '.just/doc.just'
 import '.just/bundle.just'
 import '.just/verify.just'
@@ -30,6 +31,7 @@ default:
     @echo "  setup           - Setup dependencies"
     @echo "  build           - Build workspace or a specific package"
     @echo "  test            - Run tests for workspace or a specific package"
+    @echo "  test-e2e        - Run end-to-end tests for a workspace"
     @echo "  doc             - Build API documentation"
     @echo "  bundle          - Bundle tests for deployment"
     @echo "  verify          - Run verification checks"
@@ -45,6 +47,9 @@ build what="" *flags:
 
 test what="" *flags:
     @just _test-dispatch "{{what}}" {{flags}}
+
+test-e2e what="" *flags:
+    @just _test-e2e-dispatch "{{what}}" {{flags}}
 
 doc workspace="" target="" *flags:
     @just _doc-dispatch "{{workspace}}" "{{target}}" {{flags}}
