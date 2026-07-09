@@ -773,7 +773,7 @@ impl<ServiceType: service::Service> Opener<CustomKeyMarker, ServiceType> {
         mut self,
         key_eq_func: Box<dyn Fn(*const u8, *const u8) -> bool + Send + Sync>,
     ) -> Self {
-        self.builder.key_eq_func = Arc::new(key_eq_func);
+        self.builder.config.key_eq_func = Arc::new(key_eq_func);
         self
     }
 }

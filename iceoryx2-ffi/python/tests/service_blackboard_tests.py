@@ -1014,24 +1014,26 @@ def test_key_can_be_found_in_opener(
     service_name = iox2.testing.generate_service_name()
 
     key_1 = Foo(a=9, b=99, c=9.9)
-    value_1 = ctypes.c_int32(0)
+    init_value_1 = ctypes.c_int32(0)
+    new_value_1 = ctypes.c_int32(5)
     key_2 = Foo(a=9, b=99, c=9.99)
-    value_2 = ctypes.c_int32(0)
+    init_value_2 = ctypes.c_int32(0)
+    new_value_2 = ctypes.c_int32(10)
 
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     sut_creator = (
         node.service_builder(service_name)
         .blackboard_creator(Foo)
-        .add(key_1, value_1)
-        .add(key_2, value_2)
+        .add(key_1, init_value_1)
+        .add(key_2, init_value_2)
         .create()
     )
 
     writer = sut_creator.writer_builder().create()
     entry_handle_mut_1 = writer.entry(key_1, ctypes.c_int32)
     entry_handle_mut_2 = writer.entry(key_2, ctypes.c_int32)
-    entry_handle_mut_1.update_with_copy(ctypes.c_int32(5))
-    entry_handle_mut_2.update_with_copy(ctypes.c_int32(10))
+    entry_handle_mut_1.update_with_copy(new_value_1)
+    entry_handle_mut_2.update_with_copy(new_value_2)
 
     sut_opener = node.service_builder(service_name).blackboard_opener(Foo).open()
 
@@ -1039,5 +1041,5 @@ def test_key_can_be_found_in_opener(
     entry_handle_1 = reader.entry(key_1, ctypes.c_int32)
     entry_handle_2 = reader.entry(key_2, ctypes.c_int32)
 
-    assert entry_handle_1.get().decode_as(ctypes.c_int32).value == 5
-    assert entry_handle_2.get().decode_as(ctypes.c_int32).value == 10
+    assert entry_handle_1.get().decode_as(ctypes.c_int32).value == new_value_1.value
+    assert entry_handle_2.get().decode_as(ctypes.c_int32).value == new_value_2.value

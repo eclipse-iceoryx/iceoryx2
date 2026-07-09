@@ -460,7 +460,11 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_key_eq_compa
                 let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
                 service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_opener(
                     service_builder.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
-                        KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &*eq_func)
+                        iceoryx2::service::resource::blackboard::KeyMemory::<
+                                    MAX_BLACKBOARD_KEY_SIZE,
+                                >::key_eq_comparison(
+                                    lhs, rhs, &*eq_func
+                                )
                     })),
                 ));
             }
@@ -471,7 +475,11 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_key_eq_compa
                 let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
                 service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_opener(
                     service_builder.__internal_set_key_eq_cmp_func(Box::new(move |lhs, rhs| {
-                        KeyMemory::<MAX_BLACKBOARD_KEY_SIZE>::key_eq_comparison(lhs, rhs, &*eq_func)
+                        iceoryx2::service::resource::blackboard::KeyMemory::<
+                                    MAX_BLACKBOARD_KEY_SIZE,
+                                >::key_eq_comparison(
+                                    lhs, rhs, &*eq_func
+                                )
                     })),
                 ));
             }

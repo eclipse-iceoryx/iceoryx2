@@ -2465,6 +2465,7 @@ pub mod service_blackboard {
         let key_ptr_1: *const KeyType = &key_1;
         let default_value_1 = ValueType::default();
         let value_ptr_1: *const ValueType = &default_value_1;
+        let new_value_1 = 5;
         let key_2 = Foo {
             a: 3,
             b: 17,
@@ -2473,6 +2474,7 @@ pub mod service_blackboard {
         let key_ptr_2: *const KeyType = &key_2;
         let default_value_2 = ValueType::default();
         let value_ptr_2: *const ValueType = &default_value_2;
+        let new_value_2 = 10;
 
         let service_name = generate_service_name();
         let sut_creator = unsafe {
@@ -2508,7 +2510,7 @@ pub mod service_blackboard {
             .loan_uninit(value_type_details.size(), value_type_details.alignment());
         let write_ptr_1 = entry_value_uninit_1.write_cell();
         unsafe {
-            *(write_ptr_1 as *mut ValueType) = 5;
+            *(write_ptr_1 as *mut ValueType) = new_value_1;
         }
         let _ = entry_value_uninit_1.update();
         let entry_handle_mut_2 = unsafe {
@@ -2520,7 +2522,7 @@ pub mod service_blackboard {
             .loan_uninit(value_type_details.size(), value_type_details.alignment());
         let write_ptr_2 = entry_value_uninit_2.write_cell();
         unsafe {
-            *(write_ptr_2 as *mut ValueType) = 10;
+            *(write_ptr_2 as *mut ValueType) = new_value_2;
         }
         let _ = entry_value_uninit_2.update();
 
@@ -2567,7 +2569,7 @@ pub mod service_blackboard {
             );
         }
 
-        assert_that!(read_value_1, eq 5);
-        assert_that!(read_value_2, eq 10);
+        assert_that!(read_value_1, eq new_value_1);
+        assert_that!(read_value_2, eq new_value_2);
     }
 }
