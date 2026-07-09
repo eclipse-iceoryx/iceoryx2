@@ -50,7 +50,7 @@ pub fn iceoryx2_ffi(args: TokenStream, input: TokenStream) -> TokenStream {
     if !has_repr_c {
         panic!(
             "The 'repr(C)' attribute is missing from '{}'!",
-            &my_struct.ident.to_string()
+            my_struct.ident
         );
     }
 
