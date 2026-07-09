@@ -41,7 +41,7 @@ jobs:
           # e.g. rmw_cyclonedds_cpp -> ros-<distro>-rmw-cyclonedds-cpp.
           RMW_PKG="ros-${{ inputs.ros-distro }}-$(echo '${{ inputs.rmw }}' | tr '_' '-')"
           apt-get update
-          apt-get install -y build-essential ca-certificates curl pkg-config libclang-dev "$RMW_PKG"
+          apt-get install -y build-essential ca-certificates curl pkg-config libclang-dev expect "$RMW_PKG"
 
       - name: Install just
         uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
@@ -72,22 +72,29 @@ jobs:
         with:
           profile: ${{ inputs.profile }}
 
-      - name: Build ros2 workspace
+      - name: Build workspace
         shell: bash
         run: |
           source /opt/ros/${{ inputs.ros-distro }}/setup.bash
           rustc --version
           just build integrations-ros2 +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets
 
-      - name: Test ros2 workspace
+      - name: Check clippy
+        shell: bash
+        run: |
+          source /opt/ros/${{ inputs.ros-distro }}/setup.bash
+          just verify integrations-ros2 clippy ${{ steps.set-build-flags.outputs.cargo-build-mode }}
+
+      - name: Test workspace
         shell: bash
         run: |
           source /opt/ros/${{ inputs.ros-distro }}/setup.bash
           echo "Using RMW: $RMW_IMPLEMENTATION"
           just test integrations-ros2 +${{ inputs.toolchain }} ${{ steps.set-build-flags.outputs.cargo-build-mode }} -- --all-targets --no-fail-fast
 
-      - name: Run clippy on ros2 workspace
+      - name: End-to-end test workspace
         shell: bash
         run: |
           source /opt/ros/${{ inputs.ros-distro }}/setup.bash
-          just verify integrations-ros2 clippy ${{ steps.set-build-flags.outputs.cargo-build-mode }}
+          echo "Using RMW: $RMW_IMPLEMENTATION"
+          just test-e2e integrations-ros2
