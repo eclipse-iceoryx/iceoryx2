@@ -192,7 +192,7 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
         old_layout: Layout,
         new_layout: Layout,
         placement: ContentPlacement,
-    ) -> Result<PointerOffset, ShmAllocatorGrowError>;
+    ) -> Result<ShmPointer, ShmAllocatorGrowError>;
 
     /// Release previously allocated memory
     ///

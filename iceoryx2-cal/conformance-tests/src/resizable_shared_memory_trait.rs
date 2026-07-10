@@ -30,7 +30,7 @@ pub mod resizable_shared_memory_trait {
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::resizable_shared_memory::*;
     use iceoryx2_cal::shared_memory::SharedMemory;
-    use iceoryx2_cal::shm_allocator::{AllocationError, AllocationStrategy, ShmAllocationError};
+    use iceoryx2_cal::shm_allocator::AllocationStrategy;
     use iceoryx2_cal::testing::*;
 
     use super::*;
@@ -445,7 +445,7 @@ pub mod resizable_shared_memory_trait {
 
         let result = sut.allocate(Layout::new::<u8>());
         assert_that!(result, is_err);
-        assert_that!(result.err().unwrap(), eq ResizableShmAllocationError::ShmAllocationError(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)));
+        assert_that!(result.err().unwrap(), eq ResizableShmAllocationError::MaxReallocationsReached);
     }
 
     #[conformance_test]

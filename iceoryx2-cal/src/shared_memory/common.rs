@@ -463,14 +463,19 @@ pub mod details {
             old_layout: Layout,
             new_layout: Layout,
             placement: ContentPlacement,
-        ) -> Result<PointerOffset, ShmAllocatorGrowError> {
-            unsafe {
+        ) -> Result<ShmPointer, ShmAllocatorGrowError> {
+            let offset = unsafe {
                 self.storage
                     .get()
                     .allocator
                     .assume_init_ref()
-                    .grow(offset, old_layout, new_layout, placement)
-            }
+                    .grow(offset, old_layout, new_layout, placement)?
+            };
+
+            Ok(ShmPointer {
+                offset,
+                data_ptr: (offset.offset() + self.payload_start_address) as *mut u8,
+            })
         }
 
         fn allocate(&self, layout: core::alloc::Layout) -> Result<ShmPointer, ShmAllocationError> {
