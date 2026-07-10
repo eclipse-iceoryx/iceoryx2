@@ -100,11 +100,11 @@ impl ThreadStates {
         self.lock();
         for state in &self.states {
             unsafe {
-                if let Some(ref v) = *state.get() {
-                    if v.id == t {
-                        thread_state = v;
-                        break;
-                    }
+                if let Some(ref v) = *state.get()
+                    && v.id == t
+                {
+                    thread_state = v;
+                    break;
                 }
             }
         }
@@ -120,11 +120,11 @@ impl ThreadStates {
         self.lock();
         for state in &self.states {
             unsafe {
-                if let Some(ref mut v) = *state.get() {
-                    if v.id == t {
-                        thread_state = v;
-                        break;
-                    }
+                if let Some(ref mut v) = *state.get()
+                    && v.id == t
+                {
+                    thread_state = v;
+                    break;
                 }
             }
         }
@@ -138,11 +138,11 @@ impl ThreadStates {
         self.lock();
         for state in &self.states {
             unsafe {
-                if let Some(ref v) = *state.get() {
-                    if v.id == t {
-                        *state.get() = None;
-                        break;
-                    }
+                if let Some(ref v) = *state.get()
+                    && v.id == t
+                {
+                    *state.get() = None;
+                    break;
                 }
             }
         }

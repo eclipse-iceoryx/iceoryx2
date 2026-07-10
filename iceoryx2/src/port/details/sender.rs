@@ -190,10 +190,10 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
 
     pub(crate) fn get_connection_id_of(&self, receiver_port_id: u128) -> Option<usize> {
         for i in 0..self.len() {
-            if let Some(connection) = self.get(i) {
-                if connection.receiver_port_id == receiver_port_id {
-                    return Some(i);
-                }
+            if let Some(connection) = self.get(i)
+                && connection.receiver_port_id == receiver_port_id
+            {
+                return Some(i);
             }
         }
 
@@ -608,10 +608,10 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
 
     pub(crate) fn finish_update_connection_cycle(&self) {
         for n in 0..self.len() {
-            if let Some(connection) = self.get(n) {
-                if !connection.was_tagged_by(&self.tagger) {
-                    self.remove_connection(n);
-                }
+            if let Some(connection) = self.get(n)
+                && !connection.was_tagged_by(&self.tagger)
+            {
+                self.remove_connection(n);
             }
         }
     }

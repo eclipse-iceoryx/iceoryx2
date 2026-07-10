@@ -310,11 +310,11 @@ impl<Service: service::Service> Abandonable for Notifier<Service> {
 
 impl<Service: service::Service> Drop for Notifier<Service> {
     fn drop(&mut self) {
-        if let Some(event_id) = self.on_drop_notification {
-            if let Err(e) = self.notify_with_custom_event_id(event_id) {
-                warn!(from self, "Unable to send notifier_dropped_event {:?} due to ({:?}).",
+        if let Some(event_id) = self.on_drop_notification
+            && let Err(e) = self.notify_with_custom_event_id(event_id)
+        {
+            warn!(from self, "Unable to send notifier_dropped_event {:?} due to ({:?}).",
                     event_id, e);
-            }
         }
 
         self.listener_connections
@@ -513,19 +513,19 @@ impl<Service: service::Service> Notifier<Service> {
         }
 
         for i in 0..listener_connections.len() {
-            if let Some(connection) = listener_connections.get(i) {
-                if !(skip_self_deliver && connection.node_id == self.notifier_details.node_id) {
-                    match connection.notifier.notify(value) {
-                        Err(iceoryx2_cal::event::NotifierNotifyError::Disconnected) => {
-                            listener_connections.remove(i);
-                        }
-                        Err(e) => {
-                            warn!(from self, "Unable to send notification via connection {:?} due to {:?}.",
+            if let Some(connection) = listener_connections.get(i)
+                && !(skip_self_deliver && connection.node_id == self.notifier_details.node_id)
+            {
+                match connection.notifier.notify(value) {
+                    Err(iceoryx2_cal::event::NotifierNotifyError::Disconnected) => {
+                        listener_connections.remove(i);
+                    }
+                    Err(e) => {
+                        warn!(from self, "Unable to send notification via connection {:?} due to {:?}.",
                                     connection, e)
-                        }
-                        Ok(_) => {
-                            number_of_triggered_listeners += 1;
-                        }
+                    }
+                    Ok(_) => {
+                        number_of_triggered_listeners += 1;
                     }
                 }
             }

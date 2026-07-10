@@ -189,10 +189,10 @@ impl Abandonable for Storage {
 
 impl Drop for Storage {
     fn drop(&mut self) {
-        if self.has_ownership.load(Ordering::Relaxed) {
-            if let Err(v) = unsafe { Self::remove_cfg(&self.name, &self.config) } {
-                fatal_panic!(from self, "This should never happen! Failed to remove underlying storage ({:?})", v);
-            }
+        if self.has_ownership.load(Ordering::Relaxed)
+            && let Err(v) = unsafe { Self::remove_cfg(&self.name, &self.config) }
+        {
+            fatal_panic!(from self, "This should never happen! Failed to remove underlying storage ({:?})", v);
         }
     }
 }

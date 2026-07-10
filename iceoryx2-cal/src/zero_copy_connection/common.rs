@@ -698,7 +698,7 @@ pub mod details {
             segment_details
                 .sample_size
                 .store(sample_size, Ordering::Relaxed);
-            debug_assert!(ptr.offset() % sample_size == 0);
+            debug_assert!(ptr.offset().is_multiple_of(sample_size));
             let index = ptr.offset() / sample_size;
 
             debug_assert!(segment_id < storage.number_of_segments as usize);
@@ -718,9 +718,9 @@ pub mod details {
                     let segment_details =
                         storage.get_segment_details(segment_id, channel_id.value());
                     debug_assert!(
-                        pointer_offset.offset()
-                            % segment_details.sample_size.load(Ordering::Relaxed)
-                            == 0
+                        pointer_offset
+                            .offset()
+                            .is_multiple_of(segment_details.sample_size.load(Ordering::Relaxed))
                     );
                     let index = pointer_offset.offset()
                         / segment_details.sample_size.load(Ordering::Relaxed);
@@ -849,9 +849,9 @@ pub mod details {
                     let segment_details =
                         storage.get_segment_details(segment_id, channel_id.value());
                     debug_assert!(
-                        pointer_offset.offset()
-                            % segment_details.sample_size.load(Ordering::Relaxed)
-                            == 0
+                        pointer_offset
+                            .offset()
+                            .is_multiple_of(segment_details.sample_size.load(Ordering::Relaxed))
                     );
                     let index = pointer_offset.offset()
                         / segment_details.sample_size.load(Ordering::Relaxed);

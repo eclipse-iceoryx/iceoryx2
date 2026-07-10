@@ -85,10 +85,10 @@ impl Environment for HostEnvironment {
         let target_dir = Self::target_dir()?;
         let build_paths: Vec<PathBuf> = fs::read_dir(target_dir)?
             .filter_map(|entry| {
-                if let Ok(entry) = entry {
-                    if entry.path().is_dir() {
-                        return Some(entry.path());
-                    }
+                if let Ok(entry) = entry
+                    && entry.path().is_dir()
+                {
+                    return Some(entry.path());
                 }
                 None
             })
@@ -153,15 +153,14 @@ where
                                 // Thus, the build type is appended as a suffix.
                                 // e.g. foo-debug or foo-release
                                 let mut command_name = parsed_name.to_string();
-                                if command_type == CommandType::Development {
-                                    if let Some(build_type) =
+                                if command_type == CommandType::Development
+                                    && let Some(build_type) =
                                         path.file_name().and_then(|os_str| os_str.to_str())
-                                    {
-                                        const NAME_SEPARATOR: &str = "-";
-                                        command_name.push_str(NAME_SEPARATOR);
-                                        command_name.push_str(build_type);
-                                    }
-                                };
+                                {
+                                    const NAME_SEPARATOR: &str = "-";
+                                    command_name.push_str(NAME_SEPARATOR);
+                                    command_name.push_str(build_type);
+                                }
 
                                 CommandInfo {
                                     name: command_name,

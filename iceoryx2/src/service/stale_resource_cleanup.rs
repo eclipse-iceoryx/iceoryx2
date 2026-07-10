@@ -252,18 +252,18 @@ pub unsafe fn remove_sender_port_from_all_connections<Service: service::Service>
 
     let mut ret_val = Ok(());
     for connection in connection_list {
-        if let Some(sender_port_id) = extract_sender_port_id_from_connection(&connection) {
-            if sender_port_id == port_id {
-                let result = handle_port_remove_error(
-                    unsafe { Service::Connection::remove_sender(&connection, &connection_config) },
-                    &origin,
-                    msg,
-                    &connection,
-                );
+        if let Some(sender_port_id) = extract_sender_port_id_from_connection(&connection)
+            && sender_port_id == port_id
+        {
+            let result = handle_port_remove_error(
+                unsafe { Service::Connection::remove_sender(&connection, &connection_config) },
+                &origin,
+                msg,
+                &connection,
+            );
 
-                if ret_val.is_ok() {
-                    ret_val = result;
-                }
+            if ret_val.is_ok() {
+                ret_val = result;
             }
         }
     }
@@ -287,20 +287,18 @@ pub unsafe fn remove_receiver_port_from_all_connections<Service: service::Servic
 
     let mut ret_val = Ok(());
     for connection in connection_list {
-        if let Some(receiver_port_id) = extract_receiver_port_id_from_connection(&connection) {
-            if receiver_port_id == port_id {
-                let result = handle_port_remove_error(
-                    unsafe {
-                        Service::Connection::remove_receiver(&connection, &connection_config)
-                    },
-                    &origin,
-                    msg,
-                    &connection,
-                );
+        if let Some(receiver_port_id) = extract_receiver_port_id_from_connection(&connection)
+            && receiver_port_id == port_id
+        {
+            let result = handle_port_remove_error(
+                unsafe { Service::Connection::remove_receiver(&connection, &connection_config) },
+                &origin,
+                msg,
+                &connection,
+            );
 
-                if ret_val.is_ok() {
-                    ret_val = result;
-                }
+            if ret_val.is_ok() {
+                ret_val = result;
             }
         }
     }

@@ -103,13 +103,12 @@ impl<ServiceType: service::Service> Drop for PublishSubscribeResources<ServiceTy
     fn drop(&mut self) {
         if let Some(path_hint) = &self.path_hint {
             drop(self.type_definition.take());
-            if self.has_ownership.load(Ordering::Relaxed) {
-                if let Err(e) =
+            if self.has_ownership.load(Ordering::Relaxed)
+                && let Err(e) =
                     <ServiceType::StaticStorage as NamedConceptMgmt>::remove_path_hint(path_hint)
-                {
-                    warn!(from self,
+            {
+                warn!(from self,
                         "Failed to remove the resource directory: \"{path_hint}\". [{e:?}]");
-                }
             }
         }
     }

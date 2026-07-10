@@ -827,7 +827,7 @@ pub mod generic {
                         for n in 0..REPETITIONS {
                             barrier.wait();
 
-                            if (thread_number + n) % 2 == 0 {
+                            if (thread_number + n).is_multiple_of(2) {
                                 add_elements();
                             } else {
                                 recover();

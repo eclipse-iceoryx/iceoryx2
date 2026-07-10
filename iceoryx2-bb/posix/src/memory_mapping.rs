@@ -598,12 +598,12 @@ impl ProtectBuilder {
     ) -> Result<(), MemoryMappingPermissionUpdateError> {
         let msg = "Failed to adjust the permissions of the memory mapping";
         let page_size = SystemInfo::PageSize.value();
-        if self.region_size % page_size != 0 {
+        if !self.region_size.is_multiple_of(page_size) {
             fail!(from self, with MemoryMappingPermissionUpdateError::SizeNotAlignedToPageSize,
                 "{msg} since the region size is not aligned to the page size of {page_size}.");
         }
 
-        if self.region_offset % page_size != 0 {
+        if !self.region_offset.is_multiple_of(page_size) {
             fail!(from self, with MemoryMappingPermissionUpdateError::RegionOffsetNotAlignedToPageSize,
                 "{msg} since the region offset {} is not aligned to the page size of {page_size}.",
                 self.region_offset);

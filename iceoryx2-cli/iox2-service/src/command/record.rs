@@ -65,16 +65,16 @@ pub(crate) fn record(options: RecordOptions, _format: Format) -> Result<()> {
             print!(".");
             std::io::stdout().flush()?;
             msg_counter += 1;
-            if let Some(max_messages) = options.max_messages {
-                if msg_counter >= max_messages {
-                    break 'node_loop;
-                }
+            if let Some(max_messages) = options.max_messages
+                && msg_counter >= max_messages
+            {
+                break 'node_loop;
             }
 
-            if let Some(timeout) = options.timeout_in_sec {
-                if start.elapsed().as_secs() >= timeout as _ {
-                    break 'node_loop;
-                }
+            if let Some(timeout) = options.timeout_in_sec
+                && start.elapsed().as_secs() >= timeout as _
+            {
+                break 'node_loop;
             }
         }
 

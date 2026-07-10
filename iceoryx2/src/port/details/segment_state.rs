@@ -44,7 +44,7 @@ impl SegmentState {
     }
 
     pub(crate) fn sample_index(&self, distance_to_chunk: usize) -> usize {
-        debug_assert!(distance_to_chunk % self.payload_size() == 0);
+        debug_assert!(distance_to_chunk.is_multiple_of(self.payload_size()));
         distance_to_chunk / self.payload_size()
     }
 

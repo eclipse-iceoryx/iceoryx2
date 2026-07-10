@@ -340,10 +340,10 @@ fn on_discovery_update<S: Service, B: Backend<S>>(
         DiscoveryUpdate::Removed(hash) => {
             // Announce on local 1 → 0 transitions.
             let removed_description = state.set_not_offered(&hash);
-            if state.origin() == Origin::Local {
-                if let Some(description) = &removed_description {
-                    announce_removed::<S, B>(node, backend, description)?;
-                }
+            if state.origin() == Origin::Local
+                && let Some(description) = &removed_description
+            {
+                announce_removed::<S, B>(node, backend, description)?;
             }
         }
     }

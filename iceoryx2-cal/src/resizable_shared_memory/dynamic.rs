@@ -360,10 +360,10 @@ where
         }
 
         let old_key = SlotMapKey::new(old_idx);
-        if let Some(shm) = shared_memory_map.get(old_key) {
-            if shm.chunk_count.load(Ordering::Relaxed) == 0 {
-                shared_memory_map.remove(old_key);
-            }
+        if let Some(shm) = shared_memory_map.get(old_key)
+            && shm.chunk_count.load(Ordering::Relaxed) == 0
+        {
+            shared_memory_map.remove(old_key);
         }
     }
 }
@@ -490,12 +490,12 @@ where
         };
 
         for raw_name in &raw_names {
-            if let Some((extracted_name, _)) = Self::extract_name_and_segment_id(raw_name) {
-                if *name == extracted_name {
-                    fail!(from origin, when unsafe { Shm::remove_cfg(raw_name, config)},
+            if let Some((extracted_name, _)) = Self::extract_name_and_segment_id(raw_name)
+                && *name == extracted_name
+            {
+                fail!(from origin, when unsafe { Shm::remove_cfg(raw_name, config)},
                         "{msg} since the underlying SharedMemory could not be removed.");
-                    shm_removed = true;
-                }
+                shm_removed = true;
             }
         }
 
@@ -553,10 +553,10 @@ where
 
     fn extract_name_from_management_segment(name: &FileName) -> Option<FileName> {
         let mut name = *name;
-        if let Ok(true) = name.strip_suffix(MANAGEMENT_SUFFIX) {
-            if let Ok(true) = name.strip_suffix(SEGMENT_ID_SEPARATOR) {
-                return Some(name);
-            }
+        if let Ok(true) = name.strip_suffix(MANAGEMENT_SUFFIX)
+            && let Ok(true) = name.strip_suffix(SEGMENT_ID_SEPARATOR)
+        {
+            return Some(name);
         }
 
         None

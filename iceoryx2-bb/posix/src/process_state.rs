@@ -196,10 +196,10 @@ impl<'a> Drop for TrackerGuard<'a> {
         if self.has_ownership.load(Ordering::Relaxed) {
             self.state.remove(self.path);
         } else {
-            if let Some(entry) = self.state.get(self.path) {
-                if !entry.owned_by_process {
-                    self.state.remove(self.path);
-                }
+            if let Some(entry) = self.state.get(self.path)
+                && !entry.owned_by_process
+            {
+                self.state.remove(self.path);
             }
         }
     }
@@ -682,13 +682,13 @@ impl Abandonable for StateFiles {
             when PROCESS_STATE_TRACKING.lock(),
             "This should never happen. {msg} since the global mutex could not be locked.");
 
-        if let Some(path) = this.state.as_ref().and_then(|f| f.path()) {
-            if let Some(entry) = lock_guard.get_mut(path) {
-                if !entry.owned_by_process {
-                    lock_guard.remove(path);
-                } else {
-                    entry.state = ProcessState::Dead;
-                }
+        if let Some(path) = this.state.as_ref().and_then(|f| f.path())
+            && let Some(entry) = lock_guard.get_mut(path)
+        {
+            if !entry.owned_by_process {
+                lock_guard.remove(path);
+            } else {
+                entry.state = ProcessState::Dead;
             }
         }
 
@@ -1050,10 +1050,10 @@ impl ProcessMonitor {
             let lock_state = fail!(from self,
                                     when owner_lock_file.get_lock_state(),
                                     "{} since the lock state of the owner_lock file could not be acquired.", msg);
-            if let Some(l) = lock_state {
-                if l.lock_type() == LockType::Write {
-                    return Ok(ProcessState::CleaningUp);
-                }
+            if let Some(l) = lock_state
+                && l.lock_type() == LockType::Write
+            {
+                return Ok(ProcessState::CleaningUp);
             }
         } else {
             match File::does_exist(&self.state_path) {
@@ -1253,11 +1253,11 @@ impl ProcessCleaner {
             with ProcessCleanerCreateError::FailedToAcquireLockState,
             "{} since the lock state could not be acquired.", msg);
 
-        if let Some(l) = lock_state {
-            if l.lock_type() == LockType::Write {
-                fail!(from origin, with ProcessCleanerCreateError::ProcessIsStillAlive,
+        if let Some(l) = lock_state
+            && l.lock_type() == LockType::Write
+        {
+            fail!(from origin, with ProcessCleanerCreateError::ProcessIsStillAlive,
                 "{} since the corresponding process is still alive.", msg);
-            }
         }
 
         match unsafe { owner_lock_file.try_lock(LockType::Write) } {

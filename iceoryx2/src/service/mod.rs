@@ -1087,10 +1087,10 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone + Sen
                     continue;
                 }
             };
-            if let Ok(Some(service_details)) = __internal_details::<Self>(config, &hash) {
-                if callback(service_details) == CallbackProgression::Stop {
-                    break;
-                }
+            if let Ok(Some(service_details)) = __internal_details::<Self>(config, &hash)
+                && callback(service_details) == CallbackProgression::Stop
+            {
+                break;
             }
         }
 

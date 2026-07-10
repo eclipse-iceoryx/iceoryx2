@@ -417,12 +417,11 @@ impl<Service: service::Service, Resource: ServiceResource> Receiver<Service, Res
     pub(crate) fn has_samples_in_active_connection(&self, channel_id: ChannelId) -> bool {
         let connection_storage = unsafe { &mut *self.connection_storage.get() };
         for connection_key in self.connections.iter() {
-            if let Some(connection_key) = unsafe { &*connection_key.get() } {
-                if let Some(connection) = connection_storage.get(*connection_key) {
-                    if connection.receiver.has_data(channel_id) {
-                        return true;
-                    }
-                }
+            if let Some(connection_key) = unsafe { &*connection_key.get() }
+                && let Some(connection) = connection_storage.get(*connection_key)
+                && connection.receiver.has_data(channel_id)
+            {
+                return true;
             }
         }
         false
@@ -650,12 +649,11 @@ impl<Service: service::Service, Resource: ServiceResource> Receiver<Service, Res
     pub(crate) fn finish_update_connection_cycle(&self) {
         let connection_storage = unsafe { &mut *self.connection_storage.get() };
         for (n, connection_key) in self.connections.iter().enumerate() {
-            if let Some(connection_key) = unsafe { &*connection_key.get() } {
-                if let Some(connection) = connection_storage.get(*connection_key) {
-                    if !connection.was_tagged_by(&self.tagger) {
-                        self.remove_connection(n);
-                    }
-                }
+            if let Some(connection_key) = unsafe { &*connection_key.get() }
+                && let Some(connection) = connection_storage.get(*connection_key)
+                && !connection.was_tagged_by(&self.tagger)
+            {
+                self.remove_connection(n);
             }
         }
     }
