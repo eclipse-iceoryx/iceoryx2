@@ -46,6 +46,7 @@
 * [#1792](https://github.com/eclipse-iceoryx/iceoryx2/issues/1792) Set key eq comparison function in language bindings for blackboard opener.
 * [#1800](https://github.com/eclipse-iceoryx/iceoryx2/issues/1800) iceoryx2-cxx: CleanupState is defined in global namespace
 * [#1807](https://github.com/eclipse-iceoryx/iceoryx2/issues/1807) Fix generated C FFI strings for `UPPER_SNAKE_CASE` enum variants.
+* [#1810](https://github.com/eclipse-iceoryx/iceoryx2/issues/1810) make mgmt segment globally accessible
 
 ### Refactoring
 

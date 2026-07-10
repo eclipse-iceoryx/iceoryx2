@@ -74,6 +74,7 @@ pub struct Builder<'builder, T: Send + Sync + Debug + ZeroCopySend> {
     storage_name: FileName,
     supplementary_size: usize,
     has_ownership: bool,
+    enable_global_access: bool,
     config: Configuration<T>,
     timeout: Duration,
     initializer: Initializer<'builder, T>,
@@ -168,6 +169,7 @@ impl<T: Send + Sync + Debug + ZeroCopySend> NamedConceptBuilder<Storage<T>> for 
             has_ownership: true,
             storage_name: *storage_name,
             supplementary_size: 0,
+            enable_global_access: false,
             config: Configuration::default(),
             timeout: Duration::ZERO,
             initializer: Initializer::new(|_, _| false),
@@ -417,7 +419,13 @@ impl<T: Send + Sync + Debug + ZeroCopySend> Builder<'_, T> {
         //////////////////////////////////////////
         unsafe { (*version_ptr).store(PackageVersion::get().to_u64(), Ordering::SeqCst) };
 
-        if let Err(e) = storage.file.set_permission(FINAL_PERMISSIONS) {
+        let final_permissions = if self.enable_global_access {
+            Permission::ALL
+        } else {
+            FINAL_PERMISSIONS
+        };
+
+        if let Err(e) = storage.file.set_permission(final_permissions) {
             storage.file.acquire_ownership();
             fail!(from origin, with DynamicStorageCreateError::InternalError,
                 "{} since the final permissions could not be applied to the underlying file ({:?}).",
@@ -433,6 +441,11 @@ impl<'builder, T: Send + Sync + Debug + ZeroCopySend> DynamicStorageBuilder<'bui
 {
     fn has_ownership(mut self, value: bool) -> Self {
         self.has_ownership = value;
+        self
+    }
+
+    fn enable_global_access(mut self, value: bool) -> Self {
+        self.enable_global_access = value;
         self
     }
 

@@ -141,6 +141,10 @@ pub trait DynamicStorageBuilder<'builder, T: Send + Sync + ZeroCopySend, D: Dyna
     /// is [`true`].
     fn has_ownership(self, value: bool) -> Self;
 
+    /// Creates a [`DynamicStorage`] without any access restriction that can be access by any
+    /// instance of the system.
+    fn enable_global_access(self, value: bool) -> Self;
+
     /// Sets the size of the supplementary data. Only relevant when it is newly created otherwise
     /// the already initialized [`DynamicStorage`] with the full size is used.
     fn supplementary_size(self, value: usize) -> Self;

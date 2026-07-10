@@ -51,6 +51,7 @@ impl<S: Service> GlobalManagementSegment<S> {
         .has_ownership(false)
         .config(&config)
         .timeout(global_config.global.creation_timeout)
+        .enable_global_access(true)
         .initializer(|_, _| true)
         .open_or_create()
         {
