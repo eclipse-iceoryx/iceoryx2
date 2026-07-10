@@ -13,7 +13,7 @@
 use crate::shm_allocator::*;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_log::fail;
+use iceoryx2_log::{fail, fatal_panic};
 
 #[derive(Default, Clone, Copy, Debug)]
 pub struct Config {}
@@ -132,6 +132,105 @@ impl ShmAllocator for BumpAllocator {
         Ok(PointerOffset::new(
             (chunk.as_ptr() as *const u8) as usize - self.base_address,
         ))
+    }
+
+    unsafe fn grow(
+        &self,
+        offset: PointerOffset,
+        old_layout: Layout,
+        new_layout: Layout,
+        placement: ContentPlacement,
+    ) -> Result<PointerOffset, ShmAllocatorGrowError> {
+        let msg = "Unable to grow memory";
+        if new_layout.size() < old_layout.size() {
+            fail!(from self, with ShmAllocatorGrowError::AllocationGrowError(AllocationGrowError::GrowWouldShrink),
+                "{} since new layout has a smaller size of {} than the old layout with {}.",
+                msg, new_layout.size(), old_layout.size());
+        }
+
+        if new_layout.align() > old_layout.align() {
+            fail!(from self, with ShmAllocatorGrowError::AllocationGrowError(AllocationGrowError::AlignmentFailure),
+                "{} since new layout alignment increased which is not supported - from {} to {}.",
+                msg, old_layout.align(), new_layout.align());
+        }
+
+        if new_layout.size() == old_layout.size() {
+            return Ok(offset);
+        }
+
+        // this chunk is located at the end of the managed memory range and we need to allocate just the size
+        // diff
+        if old_layout.size() + offset.offset() == self.allocator.used_space() {
+            let additional_size = new_layout.size() - old_layout.size();
+            match self
+                .allocator
+                .allocate(unsafe { Layout::from_size_align_unchecked(additional_size, 1) })
+            {
+                Ok(_) => (),
+                Err(AllocationError::OutOfMemory) | Err(AllocationError::SizeTooLarge) => {
+                    fail!(from self,
+                        with ShmAllocatorGrowError::AllocationGrowError(AllocationGrowError::OutOfMemory),
+                        "{} since the allocator is out-of-memory.", msg);
+                }
+                Err(e) => {
+                    fatal_panic!(from self,
+                        "This should never happen! Failed to allocate memory to grow the memory chunk. [{e:?}]");
+                }
+            }
+
+            if placement == ContentPlacement::Back {
+                let src = self.allocator.start_address() + offset.offset();
+                let dst = src + (new_layout.size() - old_layout.size());
+                unsafe { core::ptr::copy(src as *const u8, dst as *mut u8, old_layout.size()) };
+            }
+
+            Ok(offset)
+        } else {
+            match unsafe { self.allocate(new_layout) } {
+                Ok(new_offset) => {
+                    let src = self.allocator.start_address() + offset.offset();
+                    match placement {
+                        ContentPlacement::Front => {
+                            let dst = self.allocator.start_address() + new_offset.offset();
+                            unsafe {
+                                core::ptr::copy_nonoverlapping(
+                                    src as *const u8,
+                                    dst as *mut u8,
+                                    old_layout.size(),
+                                )
+                            };
+
+                            Ok(new_offset)
+                        }
+                        ContentPlacement::Back => {
+                            let dst = self.allocator.start_address()
+                                + new_offset.offset()
+                                + new_layout.size()
+                                - old_layout.size();
+                            unsafe {
+                                core::ptr::copy_nonoverlapping(
+                                    src as *const u8,
+                                    dst as *mut u8,
+                                    old_layout.size(),
+                                )
+                            };
+
+                            Ok(new_offset)
+                        }
+                    }
+                }
+                Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory))
+                | Err(ShmAllocationError::AllocationError(AllocationError::SizeTooLarge)) => {
+                    fail!(from self,
+                        with ShmAllocatorGrowError::AllocationGrowError(AllocationGrowError::OutOfMemory),
+                        "{} since the allocator is out-of-memory.", msg);
+                }
+                Err(e) => {
+                    fatal_panic!(from self,
+                        "This should never happen! Failed to allocate memory to grow the memory chunk. [{e:?}]");
+                }
+            }
+        }
     }
 
     unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
