@@ -15,13 +15,14 @@ use alloc::format;
 use iceoryx2::identifiers::UniqueNodeId;
 use iceoryx2::node::Node;
 use iceoryx2::service::Service;
-use iceoryx2::service::static_config::StaticConfig;
-use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2_log::{fail, info};
 use iceoryx2_services_tunnel_backend::traits::{
     Backend, EventRelay, PublishSubscribeRelay, RelayBuilder, RelayFactory,
 };
 use iceoryx2_services_tunnel_backend::types::publish_subscribe::LoanFn;
+use iceoryx2_services_tunnel_backend::types::service_description::{
+    PatternDescription, ServiceDescription,
+};
 
 use crate::ports::event::EventPorts;
 use crate::ports::publish_subscribe::PublishSubscribePorts;
@@ -44,51 +45,44 @@ pub(crate) enum Bridge<S: Service, B: Backend<S>> {
 
 impl<S: Service, B: Backend<S>> Bridge<S, B> {
     /// Creates the ports and relay matching the messaging pattern of
-    /// `static_config`.
+    /// `description`.
     pub(crate) fn open(
         node: &Node<S>,
         backend: &B,
-        static_config: &StaticConfig,
+        description: &ServiceDescription,
     ) -> Result<Self, DiscoveryError> {
         let origin = "Bridge::open";
 
-        match static_config.messaging_pattern() {
-            MessagingPattern::PublishSubscribe(_) => {
+        match &description.pattern {
+            PatternDescription::PublishSubscribe(pattern_description) => {
                 let ports = fail!(
                     from origin,
-                    when PublishSubscribePorts::new(static_config, node),
+                    when PublishSubscribePorts::new(&description.name, pattern_description, node),
                     with DiscoveryError::PublishSubscribePortCreation,
                     "Failed to create publish-subscribe ports"
                 );
                 let relay = fail!(
                     from origin,
-                    when backend.relay_builder().publish_subscribe(static_config).create(),
+                    when backend.relay_builder().publish_subscribe(description).create(),
                     with DiscoveryError::PublishSubscribeRelayCreation,
                     "Failed to create publish-subscribe relay"
                 );
                 Ok(Bridge::PublishSubscribe { ports, relay })
             }
-            MessagingPattern::Event(_) => {
+            PatternDescription::Event(pattern_description) => {
                 let ports = fail!(
                     from origin,
-                    when EventPorts::new(static_config, node),
+                    when EventPorts::new(&description.name, pattern_description, node),
                     with DiscoveryError::EventPortsCreation,
                     "Failed to create event ports"
                 );
                 let relay = fail!(
                     from origin,
-                    when backend.relay_builder().event(static_config).create(),
+                    when backend.relay_builder().event(description).create(),
                     with DiscoveryError::EventRelayCreation,
                     "Failed to create event relay"
                 );
                 Ok(Bridge::Event { ports, relay })
-            }
-            pattern => {
-                fail!(
-                    from origin,
-                    with DiscoveryError::UnsupportedMessagingPattern,
-                    "Cannot open bridge for unsupported messaging pattern: {}", pattern
-                );
             }
         }
     }
@@ -120,12 +114,7 @@ fn propagate_publish_subscribe_payloads<S: Service, B: Backend<S>>(
         "Failed to receive publish-subscribe payload for propagation"
     );
     if propagated {
-        info!(
-            from origin,
-            "Propagated {}({})",
-            port.static_config.messaging_pattern(),
-            port.static_config.name()
-        );
+        info!(from origin, "Propagated PublishSubscribe({})", port.name);
     }
 
     let ingested = fail!(
@@ -138,12 +127,7 @@ fn propagate_publish_subscribe_payloads<S: Service, B: Backend<S>>(
         "Failed to ingest publish-subscribe payload received from backend"
     );
     if ingested {
-        info!(
-            from origin,
-            "Ingested {}({})",
-            port.static_config.messaging_pattern(),
-            port.static_config.name()
-        );
+        info!(from origin, "Ingested PublishSubscribe({})", port.name);
     }
 
     Ok(())
@@ -165,12 +149,7 @@ fn propagate_events<S: Service, B: Backend<S>>(
         "Failed to receive events for propagation"
     );
     if propagated {
-        info!(
-            from origin,
-            "Propagated {}({})",
-            port.static_config.messaging_pattern(),
-            port.static_config.name()
-        );
+        info!(from origin, "Propagated Event({})", port.name);
     }
 
     let ingested = fail!(
@@ -182,12 +161,7 @@ fn propagate_events<S: Service, B: Backend<S>>(
         "Failed to ingest event received from backend"
     );
     if ingested {
-        info!(
-            from origin,
-            "Ingested {}({})",
-            port.static_config.messaging_pattern(),
-            port.static_config.name()
-        );
+        info!(from origin, "Ingested Event({})", port.name);
     }
 
     Ok(())

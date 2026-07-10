@@ -12,7 +12,7 @@
 
 use core::error::Error;
 
-use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
+use crate::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
 
 /// Service discovery interface for discoverying and announcing
 /// [`Service`](iceoryx2::service::Service)s over the [`Backend`](crate::traits::Backend)
@@ -23,8 +23,9 @@ use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
 /// [`Backend`](crate::traits::Backend) and announce local services
 /// so they can be discovered remotely. Implementations query the
 /// [`Backend`](crate::traits::Backend)'s communication layer to find active
-/// [`Service`](iceoryx2::service::Service) and provide their
-/// [`iceoryx2::service::static_config::StaticConfig`]s to be processed by the caller.
+/// [`Service`](iceoryx2::service::Service)s and provide their
+/// [`ServiceDescription`](crate::types::service_description::ServiceDescription)s
+/// to be processed by the caller.
 ///
 /// # Examples
 ///
@@ -55,7 +56,7 @@ use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
 ///
 /// ```no_run
 /// use iceoryx2_services_tunnel_backend::traits::Discovery;
-/// use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
+/// use iceoryx2_services_tunnel_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
 ///
 /// struct MyDiscovery {
 ///     // Discovery state
@@ -83,20 +84,19 @@ use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
 ///     type DiscoveryError = MyDiscoveryError;
 ///     type AnnouncementError = MyAnnouncementError;
 ///
-///     fn announce(&self, discovery: DiscoveryEventRef<'_>)
+///     fn announce(&self, update: DiscoveryUpdateRef<'_>)
 ///         -> Result<(), Self::AnnouncementError> {
-///         // Make the service described by the provided static config
-///         // discoverable over the backend
+///         // Make the described service discoverable over the backend
 ///         Ok(())
 ///     }
 ///
-///     fn discover<E: core::error::Error, F: FnMut(DiscoveryEvent) -> Result<(), E>>(
+///     fn discover<E: core::error::Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
 ///         &self,
 ///         process_discovery: F,
 ///     ) -> Result<(), Self::DiscoveryError> {
 ///         // Query backend for available services
 ///         // For each service found, call process_discovery with the
-///         // corresponding discovery event
+///         // corresponding discovery update
 ///         Ok(())
 ///     }
 /// }
@@ -117,24 +117,24 @@ pub trait Discovery {
     ///
     /// # Parameters
     ///
-    /// * `event` - The [`DiscoveryEventRef`] to announce over the
+    /// * `update` - The [`DiscoveryUpdateRef`] to announce over the
     ///   [`crate::traits::Backend`].
-    fn announce(&self, event: DiscoveryEventRef<'_>) -> Result<(), Self::AnnouncementError>;
+    fn announce(&self, update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError>;
 
     /// Discovers services available remotely and processes each one with the
     /// provided callback.
     ///
     /// This method queries the backend's communication mechanism for all
     /// available [`Service`](iceoryx2::service::Service)s, then invokes
-    /// `process_discovery` for [`DiscoveryEvent`]s.
+    /// `process_discovery` for [`DiscoveryUpdate`]s.
     ///
     /// Discovery continues until all services are processed or an error occurs.
     ///
     /// # Parameters
     ///
     /// * `process_discovery` - Callback provided by the caller to process
-    ///   [`DiscoveryEvent`]s received over the [`crate::traits::Backend`].
-    fn discover<E: Error, F: FnMut(DiscoveryEvent) -> Result<(), E>>(
+    ///   [`DiscoveryUpdate`]s received over the [`crate::traits::Backend`].
+    fn discover<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
         &self,
         process_discovery: F,
     ) -> Result<(), Self::DiscoveryError>;

@@ -13,7 +13,8 @@
 use std::rc::Rc;
 use std::sync::Arc;
 
-use iceoryx2::service::{Service, local_threadsafe, static_config::StaticConfig};
+use iceoryx2::service::{Service, local_threadsafe};
+use iceoryx2_services_tunnel_backend::types::service_description::ServiceDescription;
 use iceoryx2_services_tunnel_backend::{traits::RelayFactory, types::wake::WakeHandle};
 
 use crate::rcl::RclNode;
@@ -62,7 +63,7 @@ impl<S: Service> RelayFactory<S> for Factory<'_, S> {
 
     fn publish_subscribe<'a>(
         &self,
-        static_config: &'a StaticConfig,
+        description: &'a ServiceDescription,
     ) -> Self::PublishSubscribeBuilder<'a>
     where
         Self: 'a,
@@ -70,15 +71,15 @@ impl<S: Service> RelayFactory<S> for Factory<'_, S> {
         publish_subscribe::Builder::new(
             Rc::clone(&self.node),
             self.type_registry,
-            static_config,
+            description,
             self.wake.clone(),
         )
     }
 
-    fn event<'a>(&self, static_config: &'a StaticConfig) -> Self::EventBuilder<'a>
+    fn event<'a>(&self, description: &'a ServiceDescription) -> Self::EventBuilder<'a>
     where
         Self: 'a,
     {
-        event::Builder::new(static_config, self.wake.clone())
+        event::Builder::new(description, self.wake.clone())
     }
 }

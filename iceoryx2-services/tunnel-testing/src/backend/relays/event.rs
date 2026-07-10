@@ -17,9 +17,10 @@
 use alloc::rc::Rc;
 use iceoryx2::{
     port::event_id::EventId,
-    service::{Service, service_hash::ServiceHash, static_config::StaticConfig},
+    service::{Service, service_hash::ServiceHash},
 };
 use iceoryx2_services_tunnel_backend::traits::{EventRelay, RelayBuilder};
+use iceoryx2_services_tunnel_backend::types::service_description::ServiceDescription;
 
 use crate::backend::session::{self, Session};
 
@@ -63,15 +64,15 @@ impl core::error::Error for ReceiveError {}
 #[derive(Debug)]
 pub struct Builder<'a, S: Service> {
     session: Rc<Session>,
-    static_config: &'a StaticConfig,
+    description: &'a ServiceDescription,
     _phantom: core::marker::PhantomData<S>,
 }
 
 impl<'a, S: Service> Builder<'a, S> {
-    pub fn new(session: Rc<Session>, static_config: &'a StaticConfig) -> Self {
+    pub fn new(session: Rc<Session>, description: &'a ServiceDescription) -> Self {
         Self {
             session,
-            static_config,
+            description,
             _phantom: core::marker::PhantomData,
         }
     }
@@ -84,7 +85,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
         Ok(Relay {
             session: self.session,
-            service_hash: *self.static_config.service_hash(),
+            service_hash: self.description.service_hash,
             _phantom: core::marker::PhantomData,
         })
     }

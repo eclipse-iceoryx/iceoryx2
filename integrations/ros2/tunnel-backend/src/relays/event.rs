@@ -13,9 +13,10 @@
 use std::sync::Arc;
 
 use iceoryx2::prelude::EventId;
-use iceoryx2::service::{Service, local_threadsafe, static_config::StaticConfig};
+use iceoryx2::service::{Service, local_threadsafe};
 use iceoryx2_log::warn;
 use iceoryx2_services_tunnel_backend::traits::{EventRelay, RelayBuilder};
+use iceoryx2_services_tunnel_backend::types::service_description::ServiceDescription;
 use iceoryx2_services_tunnel_backend::types::wake::WakeHandle;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -74,18 +75,18 @@ impl<S: Service> EventRelay<S> for Relay<S> {
 /// Builder for event [`Relay`]s.
 #[derive(Debug)]
 pub struct Builder<'config, S: Service> {
-    static_config: &'config StaticConfig,
+    description: &'config ServiceDescription,
     wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
 impl<'config, S: Service> Builder<'config, S> {
     pub fn new(
-        static_config: &'config StaticConfig,
+        description: &'config ServiceDescription,
         wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     ) -> Self {
         Self {
-            static_config,
+            description,
             wake,
             _phantom: core::marker::PhantomData,
         }
@@ -99,7 +100,7 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
         warn!(
             "ROS 2 has no equivalent to iceoryx2 events; events of '{}' will not be tunneled",
-            self.static_config.name()
+            self.description.name
         );
         Ok(Relay {
             _phantom: core::marker::PhantomData,

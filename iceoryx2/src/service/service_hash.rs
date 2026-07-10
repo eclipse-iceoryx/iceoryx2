@@ -39,7 +39,10 @@ impl Display for ServiceHash {
 }
 
 impl ServiceHash {
-    pub(crate) fn new<Hasher: Hash>(
+    /// Creates the [`ServiceHash`] which identifies a
+    /// service name and messaging pattern pair used by a
+    /// [`Service`](crate::service::Service).
+    pub fn new<Hasher: Hash>(
         service_name: &ServiceName,
         messaging_pattern: MessagingPattern,
     ) -> Self {

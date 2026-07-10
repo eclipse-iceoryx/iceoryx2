@@ -13,11 +13,14 @@
 use std::rc::Rc;
 use std::sync::Arc;
 
-use iceoryx2::service::{Service, local_threadsafe, static_config::StaticConfig};
+use iceoryx2::service::{Service, local_threadsafe};
 use iceoryx2_log::fail;
 use iceoryx2_services_tunnel_backend::traits::{PublishSubscribeRelay, RelayBuilder};
 use iceoryx2_services_tunnel_backend::types::publish_subscribe::{
     LoanFn, Sample, SampleMut, SampleMutUninit,
+};
+use iceoryx2_services_tunnel_backend::types::service_description::{
+    PatternDescription, ServiceDescription, TypeDescription,
 };
 use iceoryx2_services_tunnel_backend::types::wake::WakeHandle;
 
@@ -32,7 +35,6 @@ use crate::{mapping, payload};
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum CreationError {
     InvalidServiceName,
-    InvalidTypeName,
     InvalidTopic,
     TypeSupport,
     Publisher,
@@ -149,7 +151,7 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
 pub struct Builder<'a, S: Service> {
     node: Rc<RclNode>,
     type_registry: &'a TypeSupportRegistry,
-    static_config: &'a StaticConfig,
+    description: &'a ServiceDescription,
     wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     _phantom: core::marker::PhantomData<S>,
 }
@@ -158,13 +160,13 @@ impl<'a, S: Service> Builder<'a, S> {
     pub fn new(
         node: Rc<RclNode>,
         type_registry: &'a TypeSupportRegistry,
-        static_config: &'a StaticConfig,
+        description: &'a ServiceDescription,
         wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     ) -> Self {
         Self {
             node,
             type_registry,
-            static_config,
+            description,
             wake,
             _phantom: core::marker::PhantomData,
         }
@@ -179,23 +181,18 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
         let origin = "publish_subscribe::Relay::create";
 
+        let PatternDescription::PublishSubscribe(pattern_description) = &self.description.pattern
+        else {
+            unreachable!("relay is only built for publish-subscribe descriptions")
+        };
+
         let topic = fail!(from origin,
-            when mapping::topic(self.static_config.name().as_str()).ok_or(CreationError::InvalidServiceName),
+            when mapping::topic(self.description.name.as_str()).ok_or(CreationError::InvalidServiceName),
             "Failed to map service name to a ROS 2 topic"
         );
 
         // The payload type name carries the ROS 2 type name.
-        let type_name = fail!(from origin,
-            when core::str::from_utf8(
-                self.static_config
-                    .publish_subscribe()
-                    .message_type_details()
-                    .payload
-                    .type_name(),
-            ),
-            with CreationError::InvalidTypeName,
-            "Failed to read the payload type name as UTF-8"
-        );
+        let type_name = pattern_description.payload.type_name.as_str();
 
         let type_support = fail!(from origin,
             when self.type_registry.load(type_name),
@@ -235,12 +232,8 @@ impl<S: Service> RelayBuilder for Builder<'_, S> {
         // Only services declaring the RosHeader user header receive the
         // remote origin; anything else (e.g. a header-less local service)
         // must not be written to.
-        let write_ros_header = self
-            .static_config
-            .publish_subscribe()
-            .message_type_details()
-            .user_header
-            == RosHeader::type_detail();
+        let write_ros_header =
+            pattern_description.user_header == TypeDescription::from(&RosHeader::type_detail());
 
         Ok(Relay {
             publisher,

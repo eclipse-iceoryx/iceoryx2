@@ -15,7 +15,7 @@
 #![warn(clippy::std_instead_of_core)]
 
 use alloc::rc::Rc;
-use iceoryx2_services_common::{DiscoveryEvent, DiscoveryEventRef};
+use iceoryx2_services_tunnel_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
 
 use crate::backend::session::Session;
 
@@ -62,32 +62,32 @@ impl iceoryx2_services_tunnel_backend::traits::Discovery for Discovery {
 
     type AnnouncementError = AnnouncementError;
 
-    fn announce(&self, event: DiscoveryEventRef<'_>) -> Result<(), Self::AnnouncementError> {
-        match event {
-            DiscoveryEventRef::Added(static_config) => self
+    fn announce(&self, update: DiscoveryUpdateRef<'_>) -> Result<(), Self::AnnouncementError> {
+        match update {
+            DiscoveryUpdateRef::Added(description) => self
                 .session
-                .announce_added(static_config)
+                .announce_added(description)
                 .map_err(AnnouncementError::AnnounceAdded),
-            DiscoveryEventRef::Removed(service_hash) => self
+            DiscoveryUpdateRef::Removed(service_hash) => self
                 .session
                 .announce_removed(service_hash)
                 .map_err(AnnouncementError::AnnounceRemoved),
         }
     }
 
-    fn discover<E: core::error::Error, F: FnMut(DiscoveryEvent) -> Result<(), E>>(
+    fn discover<E: core::error::Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
         &self,
         mut process_discovery: F,
     ) -> Result<(), Self::DiscoveryError> {
         self.session.discover();
         let (added, removed) = self.session.pending_discoveries();
 
-        for static_config in added {
-            process_discovery(DiscoveryEvent::Added(static_config))
+        for description in added {
+            process_discovery(DiscoveryUpdate::Added(description))
                 .map_err(|_| DiscoveryError::Processing)?;
         }
         for service_hash in removed {
-            process_discovery(DiscoveryEvent::Removed(service_hash))
+            process_discovery(DiscoveryUpdate::Removed(service_hash))
                 .map_err(|_| DiscoveryError::Processing)?;
         }
 
