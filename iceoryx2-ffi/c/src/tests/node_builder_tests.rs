@@ -10,6 +10,31 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+mod node_creation_failure_string {
+    use crate::api::*;
+    use core::ffi::CStr;
+    use iceoryx2_bb_testing::assert_that;
+
+    #[test]
+    fn converts_upper_snake_case_to_words() {
+        unsafe {
+            let internal_error = CStr::from_ptr(iox2_node_creation_failure_string(
+                iox2_node_creation_failure_e::INTERNAL_ERROR,
+            ))
+            .to_str()
+            .unwrap();
+            assert_that!(internal_error, eq("internal error"));
+
+            let insufficient_permissions = CStr::from_ptr(iox2_node_creation_failure_string(
+                iox2_node_creation_failure_e::INSUFFICIENT_PERMISSIONS,
+            ))
+            .to_str()
+            .unwrap();
+            assert_that!(insufficient_permissions, eq("insufficient permissions"));
+        }
+    }
+}
+
 #[generic_tests::define]
 mod node_builder {
     use crate::api::*;

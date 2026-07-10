@@ -280,16 +280,9 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
                     })
                     .unwrap_or_else(|| {
                         // No explicity `CStr` is provided.
-                        // Convert variant name from 'UpperCamelCase' to 'lowercase with spaces'.
-                        let enum_string = enum_name.to_string()
-                            .char_indices()
-                            .fold(String::new(), |mut acc, (i, c)| {
-                                if i > 0 && c.is_uppercase() {
-                                    acc.push(' ');
-                                }
-                                acc.push(c.to_ascii_lowercase());
-                                acc
-                            });
+                        // Convert variant name from 'UpperCamelCase' or 'UPPER_SNAKE_CASE'
+                        // to 'lowercase with spaces'.
+                        let enum_string = variant_name_to_string(&enum_name.to_string());
                         null_terminated(&enum_string)
                     });
 
@@ -320,4 +313,85 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
             #as_cstr_impl
         }
     })
+}
+
+fn variant_name_to_string(name: &str) -> String {
+    let chars = name.chars().collect::<Vec<_>>();
+    let mut result = String::with_capacity(name.len());
+
+    for (i, &c) in chars.iter().enumerate() {
+        if c == '_' {
+            // Treat underscores as word separators and collapse repeated underscores.
+            if !result.ends_with(' ') {
+                result.push(' ');
+            }
+            continue;
+        }
+
+        let prev = i.checked_sub(1).and_then(|prev| chars.get(prev)).copied();
+        let next = chars.get(i + 1).copied();
+        // Split before uppercase letters that start new CamelCase words.
+        let starts_camel_word = c.is_uppercase()
+            && i > 0
+            && prev != Some('_')
+            && (prev.is_some_and(|prev| prev.is_lowercase() || prev.is_ascii_digit())
+                || next.is_some_and(|next| next.is_lowercase()));
+
+        if starts_camel_word && !result.ends_with(' ') {
+            result.push(' ');
+        }
+        result.push(c.to_ascii_lowercase());
+    }
+
+    // Leading or trailing underscores may have produced outer spaces.
+    result.trim().to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::variant_name_to_string;
+
+    #[test]
+    fn variant_name_to_string_converts_upper_camel_case() {
+        assert_eq!(variant_name_to_string("VariantTwo"), "variant two");
+        assert_eq!(variant_name_to_string("InternalError"), "internal error");
+    }
+
+    #[test]
+    fn variant_name_to_string_converts_upper_snake_case() {
+        assert_eq!(variant_name_to_string("INTERNAL_ERROR"), "internal error");
+        assert_eq!(
+            variant_name_to_string("INSUFFICIENT_PERMISSIONS"),
+            "insufficient permissions"
+        );
+    }
+
+    #[test]
+    fn variant_name_to_string_keeps_acronyms_together() {
+        assert_eq!(variant_name_to_string("URLParseError"), "url parse error");
+        assert_eq!(variant_name_to_string("HTTP_REQUEST"), "http request");
+    }
+
+    #[test]
+    fn variant_name_to_string_trims_outer_separators() {
+        assert_eq!(
+            variant_name_to_string("__INTERNAL_ERROR__"),
+            "internal error"
+        );
+        assert_eq!(variant_name_to_string("__INTERNAL_ERROR"), "internal error");
+        assert_eq!(variant_name_to_string("INTERNAL_ERROR__"), "internal error");
+    }
+
+    #[test]
+    fn variant_name_to_string_collapses_repeated_separators() {
+        assert_eq!(variant_name_to_string("INTERNAL__ERROR"), "internal error");
+        assert_eq!(variant_name_to_string("__"), "");
+    }
+
+    #[test]
+    fn variant_name_to_string_handles_short_names() {
+        assert_eq!(variant_name_to_string("A"), "a");
+        assert_eq!(variant_name_to_string("AB"), "ab");
+        assert_eq!(variant_name_to_string("A_B"), "a b");
+    }
 }
