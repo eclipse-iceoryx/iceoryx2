@@ -24,7 +24,8 @@ use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_log::fail;
 use iceoryx2_services_tunnel_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
 use iceoryx2_services_tunnel_backend::types::service_description::{
-    PatternDescription, PublishSubscribeDescription, ServiceDescription, TypeDescription,
+    PatternDescription, PatternSettings, PublishSubscribeDescription, ServiceDescription,
+    TypeDescription,
 };
 
 use crate::config::TopicConfig;
@@ -188,7 +189,7 @@ fn service_description<S: Service>(
         pattern: PatternDescription::PublishSubscribe(PublishSubscribeDescription {
             payload,
             user_header,
-            settings: None,
+            settings: PatternSettings::UnknownApplyDefaults,
         }),
     })
 }
