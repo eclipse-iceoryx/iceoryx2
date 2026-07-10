@@ -17,9 +17,8 @@ pub mod shm_bump_allocator;
 use core::{alloc::Layout, fmt::Debug, ptr::NonNull};
 
 use iceoryx2_bb_elementary::enum_gen;
-pub use iceoryx2_bb_elementary_traits::allocator::AllocationError;
+pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, AllocationGrowError};
 use iceoryx2_bb_elementary_traits::{allocator::BaseAllocator, zero_copy_send::ZeroCopySend};
-use iceoryx2_bb_memory::pool_allocator::AllocationGrowError;
 pub use pointer_offset::*;
 use serde::{Deserialize, Serialize};
 

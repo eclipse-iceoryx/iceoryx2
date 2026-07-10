@@ -174,7 +174,7 @@ fn growing_last_chunk_and_keep_content_at_back_works() {
 }
 
 #[test]
-fn growing_middle_chunk_and_keep_content_at_front_works() {
+fn growing_with_existing_middle_chunk_and_keep_content_at_front_works() {
     let mut test = Test::new();
     let old_layout = Test::generate_layout(6);
     let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
@@ -219,7 +219,7 @@ fn growing_middle_chunk_and_keep_content_at_front_works() {
 }
 
 #[test]
-fn growing_middle_chunk_and_keep_content_at_back_works() {
+fn growing_with_existing_middle_chunk_and_keep_content_at_back_works() {
     let mut test = Test::new();
     let old_layout = Test::generate_layout(6);
     let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
