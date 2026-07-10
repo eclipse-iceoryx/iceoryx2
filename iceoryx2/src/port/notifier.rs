@@ -108,6 +108,10 @@ pub enum NotifierNotifyError {
     /// The notification was delivered but the elapsed system time could not be acquired.
     /// Therefore, it is unknown if the deadline was missed or not.
     UnableToAcquireElapsedTime,
+    /// The [`ListenerKey`], used to notify a specific [`Listener`](crate::port::listener::Listener)
+    /// with [`Notifier::notify_single_listener()`] is invalid. This can occur when the connection
+    /// to the corresponding `Listener` was closed.
+    InvalidListenerKey,
 }
 
 impl core::fmt::Display for NotifierNotifyError {
@@ -202,6 +206,10 @@ impl<Service: service::Service> ListenerConnections<Service> {
         unsafe { &(*self.connections[index].get()) }
     }
 
+    fn get_details(&self, index: usize) -> Option<&ListenerDetails> {
+        unsafe { (*self.list_state.get()).get(index) }
+    }
+
     #[allow(clippy::mut_from_ref)]
     fn get_mut(&self, index: usize) -> &mut Option<Connection<Service>> {
         unsafe { &mut (*self.connections[index].get()) }
@@ -260,6 +268,41 @@ impl<Service: service::Service> ListenerConnections<Service> {
                 None => self.remove(i),
             }
         }
+    }
+}
+
+/// The key to notify a single listener with the [`Notifier`]
+#[derive(Debug, Clone, Copy)]
+pub struct ListenerKey {
+    connection_index: usize,
+    listener_id: UniqueListenerId,
+}
+
+/// The point notifier for a single listener. This is used with
+/// [`Notifier::for_each_listener()`].
+#[derive(Debug)]
+pub struct PointNotifier<'a, Service: service::Service> {
+    notifier: &'a Notifier<Service>,
+    listener_key: ListenerKey,
+}
+
+impl<Service: service::Service> PointNotifier<'_, Service> {
+    /// Returns the [`ListenerKey`] of the [`Listener`](crate::port::listener::Listener),
+    /// the [`PointNotifier`] would notify
+    pub fn listener_key(&self) -> ListenerKey {
+        self.listener_key
+    }
+
+    /// Notifies the [`Listener`](crate::port::listener::Listener), the [`PointNotifier`] correlates to.
+    pub fn notify(&self) -> Result<(), NotifierNotifyError> {
+        self.notifier.notify_single_listener(&self.listener_key)
+    }
+
+    /// Notifies the [`Listener`](crate::port::listener::Listener), the [`PointNotifier`] correlates to,
+    /// with a custom [`EventId`].
+    pub fn notify_with_custom_event_id(&self, value: EventId) -> Result<(), NotifierNotifyError> {
+        self.notifier
+            .notify_single_listener_with_custom_event_id(&self.listener_key, value)
     }
 }
 
@@ -448,15 +491,6 @@ impl<Service: service::Service> Notifier<Service> {
         &self.notifier_details.notifier_name
     }
 
-    /// Notifies all [`crate::port::listener::Listener`] connected to the service with the default
-    /// event id provided on creation.
-    /// On success the number of
-    /// [`crate::port::listener::Listener`]s that were notified otherwise it returns
-    /// [`NotifierNotifyError`].
-    pub fn notify(&self) -> Result<usize, NotifierNotifyError> {
-        self.notify_with_custom_event_id(self.default_event_id)
-    }
-
     /// Returns the deadline of the corresponding [`Service`](crate::service::Service).
     pub fn deadline(&self) -> Option<Duration> {
         self.listener_connections
@@ -469,6 +503,15 @@ impl<Service: service::Service> Notifier<Service> {
             .into()
     }
 
+    /// Notifies all [`crate::port::listener::Listener`] connected to the service with the default
+    /// event id provided on creation.
+    /// On success the number of
+    /// [`crate::port::listener::Listener`]s that were notified otherwise it returns
+    /// [`NotifierNotifyError`].
+    pub fn notify(&self) -> Result<usize, NotifierNotifyError> {
+        self.notify_with_custom_event_id(self.default_event_id)
+    }
+
     /// Notifies all [`crate::port::listener::Listener`] connected to the service with a custom
     /// [`EventId`].
     /// On success the number of
@@ -479,6 +522,129 @@ impl<Service: service::Service> Notifier<Service> {
         value: EventId,
     ) -> Result<usize, NotifierNotifyError> {
         self.__internal_notify(value, false)
+    }
+
+    /// Notifies the [`Listener`](crate::port::listener::Listener), the [`ListenerKey`] corresponds to.
+    /// If the key is invalid, e.g. because the corresponding `Listener` is gone, an error is returned.
+    pub fn notify_single_listener(
+        &self,
+        listener_key: &ListenerKey,
+    ) -> Result<(), NotifierNotifyError> {
+        self.notify_single_listener_with_custom_event_id(listener_key, self.default_event_id)
+    }
+
+    /// Notifies the [`Listener`](crate::port::listener::Listener), the [`ListenerKey`] corresponds to,
+    /// with a custom [`EventId`].
+    /// If the key is invalid, e.g. because the corresponding `Listener` is gone, an error is returned.
+    pub fn notify_single_listener_with_custom_event_id(
+        &self,
+        listener_key: &ListenerKey,
+        value: EventId,
+    ) -> Result<(), NotifierNotifyError> {
+        use iceoryx2_cal::event::Notifier;
+        let msg = "Unable to notify single listener";
+
+        if self.event_id_max_value < value.as_value() {
+            fail!(from self, with NotifierNotifyError::EventIdOutOfBounds,
+                  "{} since the EventId {:?} exceeds the maximum supported EventId value of {}.",
+                  msg, value, self.event_id_max_value);
+        }
+
+        let listener_connections = self.listener_connections.lock();
+
+        if let Some(connection) = listener_connections.get(listener_key.connection_index)
+            && connection.listener_id == listener_key.listener_id
+        {
+            match connection.notifier.notify(value) {
+                Err(iceoryx2_cal::event::NotifierNotifyError::Disconnected) => {
+                    listener_connections.remove(listener_key.connection_index);
+                }
+                Err(e) => {
+                    warn!(from self, "Unable to send notification to single listener via connection {:?} due to {:?}.",
+                              connection, e)
+                }
+                Ok(_) => {}
+            }
+        } else {
+            fail!(from self, with NotifierNotifyError::InvalidListenerKey,
+                  "{} since the listener key is invalid.",
+                  msg);
+        }
+
+        self.handle_deadline(&listener_connections)?;
+
+        Ok(())
+    }
+
+    /// Iterates over all connected [`Listener`](crate::port::listener::Listener) and executes the callback
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let event = node.service_builder(&"MyEventName".try_into()?)
+    /// #     .event()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let notifier = event
+    /// #     .notifier_builder()
+    /// #     .create()?;
+    ///
+    /// let listener_name = PortName::new("hypnotoad")?;
+    /// notifier.for_each_listener(|point_notifier, details| {
+    ///     // NOTE: use `details.listener_name.starts_with("hypnotoad")` for a more fuzzy match
+    ///     if details.listener_name == listener_name {
+    ///         let _ = point_notifier.notify();
+    ///         // NOTE: use CallbackProgression::Continue to notify all listener that match the name
+    ///         return CallbackProgression::Stop;
+    ///     }
+    ///     CallbackProgression::Continue
+    /// });
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn for_each_listener<
+        F: FnMut(&PointNotifier<Service>, &ListenerDetails) -> CallbackProgression,
+    >(
+        &self,
+        mut callback: F,
+    ) {
+        let listener_connections = self.listener_connections.lock();
+        listener_connections.update_connections();
+
+        for i in 0..listener_connections.len() {
+            let connection = listener_connections.get(i).as_ref();
+            let details = listener_connections.get_details(i);
+            match (connection, details) {
+                (Some(connection), Some(details)) => {
+                    let listener_key = ListenerKey {
+                        connection_index: i,
+                        listener_id: connection.listener_id,
+                    };
+                    let point_notifier = PointNotifier {
+                        notifier: self,
+                        listener_key,
+                    };
+
+                    let callback_result = callback(&point_notifier, details);
+                    if callback_result == CallbackProgression::Stop {
+                        break;
+                    }
+                }
+                (Some(connection), None) => {
+                    warn!(from self, "Inconsistency detected! No listener details but connection for id: {:?}.",
+                          connection.listener_id);
+                }
+                (None, Some(details)) => {
+                    warn!(from self, "Inconsistency detected! No connection but listener id: {:?}.",
+                          details.listener_id);
+                }
+                (None, None) => { /* nothing to do */ }
+            }
+        }
     }
 
     /// Notifies all [`crate::port::listener::Listener`] connected to the service with a custom
@@ -528,6 +694,15 @@ impl<Service: service::Service> Notifier<Service> {
             }
         }
 
+        self.handle_deadline(&listener_connections)?;
+
+        Ok(number_of_triggered_listeners)
+    }
+
+    fn handle_deadline(
+        &self,
+        listener_connections: &ListenerConnections<Service>,
+    ) -> Result<(), NotifierNotifyError> {
         if let Some(deadline) = listener_connections
             .service_state
             .static_config()
@@ -560,6 +735,6 @@ impl<Service: service::Service> Notifier<Service> {
             }
         }
 
-        Ok(number_of_triggered_listeners)
+        Ok(())
     }
 }

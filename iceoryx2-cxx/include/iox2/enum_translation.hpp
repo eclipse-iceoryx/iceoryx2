@@ -1999,6 +1999,8 @@ constexpr auto from<int, iox2::NotifierNotifyError>(const int value) noexcept ->
         return iox2::NotifierNotifyError::MissedDeadline;
     case iox2_notifier_notify_error_e_UNABLE_TO_ACQUIRE_ELAPSED_TIME:
         return iox2::NotifierNotifyError::UnableToAcquireElapsedTime;
+    case iox2_notifier_notify_error_e_INVALID_LISTENER_KEY:
+        return iox2::NotifierNotifyError::InvalidListenerKey;
     }
 
     IOX2_UNREACHABLE();
@@ -2015,6 +2017,8 @@ from<iox2::NotifierNotifyError, iox2_notifier_notify_error_e>(const iox2::Notifi
         return iox2_notifier_notify_error_e_MISSED_DEADLINE;
     case iox2::NotifierNotifyError::UnableToAcquireElapsedTime:
         return iox2_notifier_notify_error_e_UNABLE_TO_ACQUIRE_ELAPSED_TIME;
+    case iox2::NotifierNotifyError::InvalidListenerKey:
+        return iox2_notifier_notify_error_e_INVALID_LISTENER_KEY;
     }
 
     IOX2_UNREACHABLE();
