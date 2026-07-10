@@ -66,6 +66,7 @@ use core::{fmt::Debug, time::Duration};
 
 pub use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
+use core::alloc::Layout;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::*;
@@ -182,7 +183,16 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
 
     /// Allocates memory. The alignment in the layout must be smaller or equal
     /// [`SharedMemory::max_alignment()`] otherwise the method will fail.
-    fn allocate(&self, layout: core::alloc::Layout) -> Result<ShmPointer, ShmAllocationError>;
+    fn allocate(&self, layout: Layout) -> Result<ShmPointer, ShmAllocationError>;
+
+    /// Grows allocated memory to a new increased size.
+    fn grow(
+        &self,
+        offset: PointerOffset,
+        old_layout: Layout,
+        new_layout: Layout,
+        placement: ContentPlacement,
+    ) -> Result<PointerOffset, ShmAllocatorGrowError>;
 
     /// Release previously allocated memory
     ///
@@ -191,7 +201,7 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
     ///  * the offset must be acquired with [`SharedMemory::allocate()`] - extracted from the
     ///    [`ShmPointer`]
     ///  * the layout must be identical to the one used in [`SharedMemory::allocate()`]
-    unsafe fn deallocate(&self, offset: PointerOffset, layout: core::alloc::Layout);
+    unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout);
 
     /// Returns if the [`SharedMemory`] supports persistency, meaning that the underlying OS
     /// resource remain even when every [`SharedMemory`] instance in every process was removed.

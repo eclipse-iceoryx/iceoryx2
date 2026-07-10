@@ -457,6 +457,22 @@ pub mod details {
             unsafe { self.storage.get().allocator.assume_init_ref() }.max_alignment()
         }
 
+        fn grow(
+            &self,
+            offset: PointerOffset,
+            old_layout: Layout,
+            new_layout: Layout,
+            placement: ContentPlacement,
+        ) -> Result<PointerOffset, ShmAllocatorGrowError> {
+            unsafe {
+                self.storage
+                    .get()
+                    .allocator
+                    .assume_init_ref()
+                    .grow(offset, old_layout, new_layout, placement)
+            }
+        }
+
         fn allocate(&self, layout: core::alloc::Layout) -> Result<ShmPointer, ShmAllocationError> {
             let offset = fail!(from self, when unsafe { self.storage.get().allocator.assume_init_ref().allocate(layout) },
             "Failed to allocate shared memory due to an internal allocator failure.");
