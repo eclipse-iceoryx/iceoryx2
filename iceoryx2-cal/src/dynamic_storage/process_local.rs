@@ -464,6 +464,10 @@ impl<'builder, T: Send + Sync + Debug + 'static + ZeroCopySend>
         self
     }
 
+    fn enable_global_access(self, _value: bool) -> Self {
+        self
+    }
+
     fn initializer<F: FnMut(&mut MaybeUninit<T>, &mut BumpAllocator) -> bool + 'builder>(
         mut self,
         value: F,
