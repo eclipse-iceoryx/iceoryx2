@@ -14,7 +14,6 @@ use core::alloc::Layout;
 use core::ptr::NonNull;
 
 use iceoryx2_bb_derive_macros::ZeroCopySend;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::file::AccessMode;
@@ -76,10 +75,10 @@ impl<Service: service::Service> Abandonable for DataSegment<Service> {
         let this = unsafe { this.as_mut() };
         match &mut this.memory {
             MemoryType::Static(shm) => {
-                unsafe { Service::SharedMemory::abandon_in_place(NonNull::iox2_from_mut(shm)) };
+                unsafe { Service::SharedMemory::abandon_in_place(NonNull::from_mut(shm)) };
             }
             MemoryType::Dynamic(shm) => unsafe {
-                Service::ResizableSharedMemory::abandon_in_place(NonNull::iox2_from_mut(shm));
+                Service::ResizableSharedMemory::abandon_in_place(NonNull::from_mut(shm));
             },
         }
     }
@@ -218,10 +217,10 @@ impl<Service: service::Service> Abandonable for DataSegmentView<Service> {
                 <Service::ResizableSharedMemory as ResizableSharedMemory<
                     PoolAllocator,
                     Service::SharedMemory,
-                >>::View::abandon_in_place(NonNull::iox2_from_mut(shm))
+                >>::View::abandon_in_place(NonNull::from_mut(shm))
             },
             MemoryViewType::Static(shm) => unsafe {
-                Service::SharedMemory::abandon_in_place(NonNull::iox2_from_mut(shm));
+                Service::SharedMemory::abandon_in_place(NonNull::from_mut(shm));
             },
         }
     }

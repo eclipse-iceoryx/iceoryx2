@@ -23,7 +23,7 @@ use crate::{
 use alloc::format;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
-use iceoryx2_bb_elementary_traits::{non_null::NonNullCompat, testing::abandonable::Abandonable};
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::{
     directory::*,
     file::{CreationMode, File, FileRemoveError},
@@ -79,7 +79,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> Abandonable
 {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { UnixDatagramSender::abandon_in_place(NonNull::iox2_from_mut(&mut this.sender)) };
+        unsafe { UnixDatagramSender::abandon_in_place(NonNull::from_mut(&mut this.sender)) };
     }
 }
 
@@ -180,9 +180,7 @@ impl<E: EventState, Storage: DynamicStorage<State<E, ()>>> Abandonable
 {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe {
-            UnixDatagramReceiver::abandon_in_place(NonNull::iox2_from_mut(&mut this.receiver))
-        };
+        unsafe { UnixDatagramReceiver::abandon_in_place(NonNull::from_mut(&mut this.receiver)) };
     }
 }
 

@@ -35,7 +35,7 @@ use iceoryx2_bb_container::{flatmap::RelocatableFlatMap, vector::RelocatableVec}
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::static_assert::static_assert_eq;
 use iceoryx2_bb_elementary_traits::{
-    non_null::NonNullCompat, testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
+    testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
 };
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_posix::file::AccessMode;
@@ -186,12 +186,10 @@ impl<ServiceType: service::Service> Abandonable for BlackboardResources<ServiceT
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe {
-            ServiceType::BlackboardMgmt::<Mgmt>::abandon_in_place(NonNull::iox2_from_mut(
-                &mut this.mgmt,
-            ))
+            ServiceType::BlackboardMgmt::<Mgmt>::abandon_in_place(NonNull::from_mut(&mut this.mgmt))
         };
         unsafe {
-            ServiceType::BlackboardPayload::abandon_in_place(NonNull::iox2_from_mut(&mut this.data))
+            ServiceType::BlackboardPayload::abandon_in_place(NonNull::from_mut(&mut this.data))
         };
     }
 }

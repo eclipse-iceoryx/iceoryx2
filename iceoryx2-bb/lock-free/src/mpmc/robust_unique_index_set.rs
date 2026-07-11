@@ -35,13 +35,12 @@
 //! use iceoryx2_bb_elementary::bump_allocator::*;
 //! use iceoryx2_bb_lock_free::mpmc::robust_unique_index_set::*;
 //! use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::*;
-//! use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 //! use iceoryx2_bb_elementary_traits::relocatable_container::*;
 //!
 //! const CAPACITY: usize = 128;
 //! let mut memory = [0u8; RobustUniqueIndexSet::const_memory_size(CAPACITY)];
 //! let allocator = BumpAllocator::new(
-//!     NonNull::<u8>::iox2_from_ref(&memory[0]),
+//!     NonNull::<u8>::from_ref(&memory[0]),
 //!     RobustUniqueIndexSet::const_memory_size(CAPACITY),
 //! );
 //!

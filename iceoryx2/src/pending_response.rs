@@ -59,7 +59,6 @@ use core::ops::Deref;
 use core::{fmt::Debug, marker::PhantomData};
 
 use iceoryx2_bb_concurrency::atomic::Ordering;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
@@ -105,9 +104,7 @@ impl<
 {
     unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe {
-            RequestMut::abandon_in_place(core::ptr::NonNull::iox2_from_mut(&mut this.request))
-        };
+        unsafe { RequestMut::abandon_in_place(core::ptr::NonNull::from_mut(&mut this.request)) };
     }
 }
 

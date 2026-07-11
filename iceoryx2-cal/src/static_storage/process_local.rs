@@ -53,7 +53,6 @@ use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
 use iceoryx2_bb_concurrency::spin_lock::SpinLock;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_log::{fail, fatal_panic};
@@ -137,7 +136,7 @@ pub struct Locked {
 impl Abandonable for Locked {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { Storage::abandon_in_place(NonNull::iox2_from_mut(&mut this.storage)) };
+        unsafe { Storage::abandon_in_place(NonNull::from_mut(&mut this.storage)) };
     }
 }
 

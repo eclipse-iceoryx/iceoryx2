@@ -44,7 +44,6 @@ use alloc::vec::Vec;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::CallbackProgression;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
@@ -137,9 +136,7 @@ struct ListenerConnections<Service: service::Service> {
 impl<Service: service::Service> Abandonable for ListenerConnections<Service> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe {
-            SharedServiceState::abandon_in_place(NonNull::iox2_from_mut(&mut this.service_state))
-        };
+        unsafe { SharedServiceState::abandon_in_place(NonNull::from_mut(&mut this.service_state)) };
     }
 }
 
@@ -298,12 +295,12 @@ impl<Service: service::Service> Abandonable for Notifier<Service> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe {
-            Service::ArcThreadSafetyPolicy::abandon_in_place(NonNull::iox2_from_mut(
+            Service::ArcThreadSafetyPolicy::abandon_in_place(NonNull::from_mut(
                 &mut this.listener_connections,
             ))
         };
         unsafe {
-            Service::StaticStorage::abandon_in_place(NonNull::iox2_from_mut(&mut this.port_tag));
+            Service::StaticStorage::abandon_in_place(NonNull::from_mut(&mut this.port_tag));
         }
     }
 }

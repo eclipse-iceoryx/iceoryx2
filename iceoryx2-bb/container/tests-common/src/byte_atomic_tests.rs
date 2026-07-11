@@ -17,7 +17,6 @@ use iceoryx2_bb_container::string::StaticString;
 use iceoryx2_bb_derive_macros::AtomicCopy;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::thread::thread_scope;
 use iceoryx2_bb_testing::assert_that;
@@ -57,7 +56,7 @@ pub fn new_creates_byte_atomic_containing_passed_value() {
 
     const MEM_SIZE: usize = RelocatableByteAtomic::<u64>::const_memory_size();
     let memory = [0u8; MEM_SIZE];
-    let allocator = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
+    let allocator = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
     unsafe {
         let mut relocatable_sut = RelocatableByteAtomic::new_uninit();
         relocatable_sut
@@ -84,7 +83,7 @@ pub fn new_creates_fixed_size_byte_atomic_containing_passed_complex_value() {
 
     const MEM_SIZE: usize = RelocatableByteAtomic::<ComplexType>::const_memory_size();
     let memory = [0u8; MEM_SIZE];
-    let allocator = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
+    let allocator = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
     unsafe {
         let mut relocatable_sut = RelocatableByteAtomic::new_uninit();
         relocatable_sut
@@ -108,7 +107,7 @@ pub fn byte_atomic_contains_passed_value_after_write() {
 
     const MEM_SIZE: usize = RelocatableByteAtomic::<u64>::const_memory_size();
     let memory = [0u8; MEM_SIZE];
-    let allocator = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
+    let allocator = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
     unsafe {
         let mut relocatable_sut = RelocatableByteAtomic::new_uninit();
         relocatable_sut
@@ -144,7 +143,7 @@ pub fn byte_atomic_contains_passed_complex_value_after_write() {
 
     const MEM_SIZE: usize = RelocatableByteAtomic::<ComplexType>::const_memory_size();
     let memory = [0u8; MEM_SIZE];
-    let allocator = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
+    let allocator = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
     unsafe {
         let mut relocatable_sut = RelocatableByteAtomic::new_uninit();
         relocatable_sut
@@ -176,7 +175,7 @@ pub fn concurrent_read_without_write_always_returns_correct_data() {
 
     const MEM_SIZE: usize = RelocatableByteAtomic::<u64>::const_memory_size();
     let memory = [0u8; MEM_SIZE];
-    let allocator = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
+    let allocator = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
     let mut relocatable_sut = unsafe { RelocatableByteAtomic::new_uninit() };
     unsafe {
         relocatable_sut
@@ -222,7 +221,7 @@ pub fn concurrent_write_does_not_trigger_ub() {
 
     const MEM_SIZE: usize = RelocatableByteAtomic::<u64>::const_memory_size();
     let memory = [0u8; MEM_SIZE];
-    let allocator = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
+    let allocator = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
     let mut relocatable_sut = unsafe { RelocatableByteAtomic::new_uninit() };
     unsafe {
         relocatable_sut
@@ -273,7 +272,7 @@ pub fn concurrent_read_and_write_does_not_trigger_ub() {
 
     const MEM_SIZE: usize = RelocatableByteAtomic::<u64>::const_memory_size();
     let memory = [0u8; MEM_SIZE];
-    let allocator = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
+    let allocator = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
     let mut relocatable_sut = unsafe { RelocatableByteAtomic::new_uninit() };
     unsafe {
         relocatable_sut
@@ -324,7 +323,7 @@ pub fn concurrent_read_and_write_does_not_trigger_ub() {
 pub fn double_init_call_causes_panic() {
     const MEM_SIZE: usize = RelocatableByteAtomic::<u64>::const_memory_size();
     let memory = [0u8; MEM_SIZE];
-    let bump_allocator = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
+    let bump_allocator = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
 
     unsafe {
         let mut sut = RelocatableByteAtomic::<u64>::new_uninit();

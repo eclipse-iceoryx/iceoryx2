@@ -114,7 +114,6 @@ use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
@@ -200,12 +199,10 @@ impl<Service: service::Service> Abandonable for PublisherSharedState<Service> {
         let this = unsafe { this.as_mut() };
         unsafe {
             Sender::<Service, PublishSubscribeResources<Service>>::abandon_in_place(
-                NonNull::iox2_from_mut(&mut this.sender),
+                NonNull::from_mut(&mut this.sender),
             )
         }
-        unsafe {
-            Service::StaticStorage::abandon_in_place(NonNull::iox2_from_mut(&mut this.port_tag))
-        }
+        unsafe { Service::StaticStorage::abandon_in_place(NonNull::from_mut(&mut this.port_tag)) }
     }
 }
 
@@ -375,7 +372,7 @@ impl<
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe {
-            Service::ArcThreadSafetyPolicy::abandon_in_place(NonNull::iox2_from_mut(
+            Service::ArcThreadSafetyPolicy::abandon_in_place(NonNull::from_mut(
                 &mut this.publisher_shared_state,
             ))
         };

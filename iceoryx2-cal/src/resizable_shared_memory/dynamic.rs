@@ -27,7 +27,6 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::slotmap::{SlotMap, SlotMapKey};
 use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -94,7 +93,7 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Abandonable
 {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { SlotMap::abandon_in_place(NonNull::iox2_from_mut(&mut this.shared_memory_map)) };
+        unsafe { SlotMap::abandon_in_place(NonNull::from_mut(&mut this.shared_memory_map)) };
     }
 }
 
@@ -110,7 +109,7 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Abandonable
 {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { Shm::abandon_in_place(NonNull::iox2_from_mut(&mut this.shm)) };
+        unsafe { Shm::abandon_in_place(NonNull::from_mut(&mut this.shm)) };
     }
 }
 
@@ -340,10 +339,8 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Abandonable
 {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { Shm::abandon_in_place(NonNull::iox2_from_mut(&mut this.mgmt_segment)) };
-        unsafe {
-            SlotMap::abandon_in_place(NonNull::iox2_from_mut(this.shared_memory_map.get_mut()))
-        };
+        unsafe { Shm::abandon_in_place(NonNull::from_mut(&mut this.mgmt_segment)) };
+        unsafe { SlotMap::abandon_in_place(NonNull::from_mut(this.shared_memory_map.get_mut())) };
     }
 }
 
@@ -447,7 +444,7 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Abandonable
 {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { Shm::abandon_in_place(NonNull::iox2_from_mut(&mut this.mgmt_segment)) };
+        unsafe { Shm::abandon_in_place(NonNull::from_mut(&mut this.mgmt_segment)) };
     }
 }
 

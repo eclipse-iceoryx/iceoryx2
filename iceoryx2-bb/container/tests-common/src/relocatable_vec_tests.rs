@@ -13,7 +13,6 @@
 use core::ptr::NonNull;
 use iceoryx2_bb_container::vector::relocatable_vec::*;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
@@ -23,7 +22,7 @@ pub fn double_init_call_causes_panic() {
     const CAPACITY: usize = 12;
     const MEM_SIZE: usize = RelocatableVec::<u128>::const_memory_size(CAPACITY);
     let memory = [0u8; MEM_SIZE];
-    let bump_allocator = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
+    let bump_allocator = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
     let mut sut = unsafe { RelocatableVec::<u128>::new_uninit(CAPACITY) };
     unsafe { sut.init(&bump_allocator).expect("sut init failed") };
 
@@ -46,9 +45,9 @@ pub fn two_vectors_with_same_content_are_equal() {
     let memory_1 = [0u8; MEM_SIZE];
     let memory_2 = [0u8; MEM_SIZE];
     let bump_allocator_1 =
-        BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory_1[0]), memory_1.len());
+        BumpAllocator::new(NonNull::<u8>::from_ref(&memory_1[0]), memory_1.len());
     let bump_allocator_2 =
-        BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory_2[0]), memory_2.len());
+        BumpAllocator::new(NonNull::<u8>::from_ref(&memory_2[0]), memory_2.len());
     let mut sut_1 = unsafe { RelocatableVec::<usize>::new_uninit(SUT_CAPACITY) };
     unsafe { sut_1.init(&bump_allocator_1).unwrap() };
     let mut sut_2 = unsafe { RelocatableVec::<usize>::new_uninit(SUT_CAPACITY) };
@@ -69,9 +68,9 @@ pub fn two_vectors_with_different_content_are_not_equal() {
     let memory_1 = [0u8; MEM_SIZE];
     let memory_2 = [0u8; MEM_SIZE];
     let bump_allocator_1 =
-        BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory_1[0]), memory_1.len());
+        BumpAllocator::new(NonNull::<u8>::from_ref(&memory_1[0]), memory_1.len());
     let bump_allocator_2 =
-        BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory_2[0]), memory_2.len());
+        BumpAllocator::new(NonNull::<u8>::from_ref(&memory_2[0]), memory_2.len());
     let mut sut_1 = unsafe { RelocatableVec::<usize>::new_uninit(SUT_CAPACITY) };
     unsafe { sut_1.init(&bump_allocator_1).unwrap() };
     let mut sut_2 = unsafe { RelocatableVec::<usize>::new_uninit(SUT_CAPACITY) };
@@ -94,9 +93,9 @@ pub fn two_vectors_with_different_len_are_not_equal() {
     let memory_1 = [0u8; MEM_SIZE];
     let memory_2 = [0u8; MEM_SIZE];
     let bump_allocator_1 =
-        BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory_1[0]), memory_1.len());
+        BumpAllocator::new(NonNull::<u8>::from_ref(&memory_1[0]), memory_1.len());
     let bump_allocator_2 =
-        BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory_2[0]), memory_2.len());
+        BumpAllocator::new(NonNull::<u8>::from_ref(&memory_2[0]), memory_2.len());
     let mut sut_1 = unsafe { RelocatableVec::<usize>::new_uninit(SUT_CAPACITY) };
     unsafe { sut_1.init(&bump_allocator_1).unwrap() };
     let mut sut_2 = unsafe { RelocatableVec::<usize>::new_uninit(SUT_CAPACITY) };

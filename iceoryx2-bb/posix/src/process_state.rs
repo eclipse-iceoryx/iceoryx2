@@ -139,7 +139,6 @@ use alloc::collections::BTreeMap;
 use alloc::format;
 use core::fmt::Debug;
 use core::ptr::NonNull;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
 
@@ -788,7 +787,7 @@ impl Abandonable for ProcessGuard {
             fatal_panic!(from this, "{msg} since the state file could not be overridden with zeros. [{e:?}]");
         }
 
-        unsafe { StateFiles::abandon_in_place(NonNull::iox2_from_mut(&mut this.files)) };
+        unsafe { StateFiles::abandon_in_place(NonNull::from_mut(&mut this.files)) };
     }
 }
 
@@ -1150,7 +1149,7 @@ impl Abandonable for ProcessCleaner {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
 
-        unsafe { StateFiles::abandon_in_place(NonNull::iox2_from_mut(&mut this.files)) };
+        unsafe { StateFiles::abandon_in_place(NonNull::from_mut(&mut this.files)) };
     }
 }
 

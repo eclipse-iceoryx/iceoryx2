@@ -14,7 +14,6 @@ use core::ptr::NonNull;
 use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::counting_bit_set::{
     CountingBitSet, FixedSizeCountingBitSet, RelocatableCountingBitSet,
@@ -219,7 +218,7 @@ pub fn concurrent_set_and_reset_works() {
 pub fn initializing_the_bitset_twice_causes_panic() {
     const CAPACITY: usize = 10;
     let memory = [0u8; RelocatableCountingBitSet::const_memory_size(CAPACITY)];
-    let allocator = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), CAPACITY);
+    let allocator = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), CAPACITY);
     let mut sut = unsafe { RelocatableCountingBitSet::new_uninit(CAPACITY) };
     unsafe { assert_that!(sut.init(&allocator), is_ok) };
 

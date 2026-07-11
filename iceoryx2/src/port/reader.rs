@@ -53,7 +53,6 @@ use core::ops::Deref;
 use core::ptr::NonNull;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary::math::align;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
@@ -126,12 +125,8 @@ impl<
 {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe {
-            SharedServiceState::abandon_in_place(NonNull::iox2_from_mut(&mut this.service_state))
-        };
-        unsafe {
-            Service::StaticStorage::abandon_in_place(NonNull::iox2_from_mut(&mut this.port_tag))
-        };
+        unsafe { SharedServiceState::abandon_in_place(NonNull::from_mut(&mut this.service_state)) };
+        unsafe { Service::StaticStorage::abandon_in_place(NonNull::from_mut(&mut this.port_tag)) };
     }
 }
 
@@ -178,7 +173,7 @@ impl<
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe {
-            Service::ArcThreadSafetyPolicy::abandon_in_place(NonNull::iox2_from_mut(
+            Service::ArcThreadSafetyPolicy::abandon_in_place(NonNull::from_mut(
                 &mut this.shared_state,
             ))
         };

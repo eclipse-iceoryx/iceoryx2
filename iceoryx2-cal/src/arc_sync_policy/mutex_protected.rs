@@ -16,7 +16,6 @@ use core::{fmt::Debug, ops::Deref};
 use alloc::format;
 use alloc::sync::Arc;
 
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::mutex::{
     Handle, Mutex, MutexBuilder, MutexCreationError, MutexGuard, MutexHandle, MutexType,
@@ -61,9 +60,7 @@ impl<T: Send + Debug + Abandonable> Abandonable for MutexProtected<T> {
         let origin = format!("{this:?}");
         if let Some(v) = Arc::get_mut(&mut this.handle) {
             match unsafe { Mutex::from_handle(v) }.lock() {
-                Ok(mut guard) => unsafe {
-                    T::abandon_in_place(NonNull::iox2_from_mut(&mut *guard))
-                },
+                Ok(mut guard) => unsafe { T::abandon_in_place(NonNull::from_mut(&mut *guard)) },
                 Err(e) => {
                     fatal_panic!(from origin,
                         "This should never happen! Failed to lock the underlying mutex ({e:?}).")

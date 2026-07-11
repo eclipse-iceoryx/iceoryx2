@@ -24,7 +24,6 @@ pub mod details {
     use iceoryx2_bb_concurrency::cell::UnsafeCell;
     use iceoryx2_bb_container::vector::relocatable_vec::*;
     use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
-    use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
     use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
     use iceoryx2_bb_lock_free::spsc::{
         index_queue::RelocatableIndexQueue,
@@ -625,7 +624,7 @@ pub mod details {
     impl<Storage: DynamicStorage<SharedManagementData>> Abandonable for Sender<Storage> {
         unsafe fn abandon_in_place(mut this: NonNull<Self>) {
             let this = unsafe { this.as_mut() };
-            unsafe { Storage::abandon_in_place(NonNull::iox2_from_mut(&mut this.storage)) };
+            unsafe { Storage::abandon_in_place(NonNull::from_mut(&mut this.storage)) };
         }
     }
 
@@ -921,7 +920,7 @@ pub mod details {
     impl<Storage: DynamicStorage<SharedManagementData>> Abandonable for Receiver<Storage> {
         unsafe fn abandon_in_place(mut this: NonNull<Self>) {
             let this = unsafe { this.as_mut() };
-            unsafe { Storage::abandon_in_place(NonNull::iox2_from_mut(&mut this.storage)) };
+            unsafe { Storage::abandon_in_place(NonNull::from_mut(&mut this.storage)) };
         }
     }
 

@@ -28,7 +28,6 @@ pub mod generic {
     use iceoryx2_bb_concurrency::atomic::{AtomicU32, AtomicU64, Ordering};
     use iceoryx2_bb_elementary::CallbackProgression;
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-    use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
     use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
     use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
     use iceoryx2_bb_lock_free::mpmc::container::ContainerAddFailure;
@@ -171,7 +170,7 @@ pub mod generic {
         // TestType is the largest test type so it is safe to acquire this memory for every test
         // case - hack required since `T` cannot be used in const operations
         let memory = [0u8; Container::<TestType>::const_memory_size(129_usize)];
-        let allocator = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
+        let allocator = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
         let mut sut = unsafe { Container::<T>::new_uninit(CAPACITY) };
         unsafe { assert_that!(sut.init(&allocator), is_ok) };
 

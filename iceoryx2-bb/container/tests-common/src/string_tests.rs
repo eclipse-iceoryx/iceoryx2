@@ -30,7 +30,6 @@ pub mod generic {
     use iceoryx2_bb_concurrency::cell::UnsafeCell;
     use iceoryx2_bb_container::string::{RelocatableString, *};
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-    use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
     use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
     use iceoryx2_bb_testing::assert_that;
 
@@ -71,7 +70,7 @@ pub mod generic {
             unsafe {
                 if (*self.allocator.get()).is_none() {
                     *self.allocator.get() = Some(Box::new(BumpAllocator::new(
-                        NonNull::<u8>::iox2_from_ref(&(*self.raw_memory.get())[0]),
+                        NonNull::<u8>::from_ref(&(*self.raw_memory.get())[0]),
                         RELOCATABLE_STRING_MEM_SIZE,
                     )))
                 }
@@ -109,7 +108,7 @@ pub mod generic {
             unsafe {
                 if (*self.allocator.get()).is_none() {
                     *self.allocator.get() = Some(Box::new(BumpAllocator::new(
-                        NonNull::<u8>::iox2_from_ref(&(*self.raw_memory.get())[0]),
+                        NonNull::<u8>::from_ref(&(*self.raw_memory.get())[0]),
                         POLYMORPHIC_STRING_MEM_SIZE,
                     )))
                 }

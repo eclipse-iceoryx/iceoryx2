@@ -269,7 +269,6 @@ use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
@@ -466,13 +465,11 @@ impl<S: Service, R: ServiceResource> Abandonable for ServiceState<S, R> {
         let this = unsafe { this.as_mut() };
 
         unsafe {
-            S::DynamicStorage::abandon_in_place(NonNull::iox2_from_mut(&mut this.dynamic_storage))
+            S::DynamicStorage::abandon_in_place(NonNull::from_mut(&mut this.dynamic_storage))
         };
-        unsafe { R::abandon_in_place(NonNull::iox2_from_mut(&mut this.additional_resource)) };
-        unsafe { SharedNode::<S>::abandon_in_place(NonNull::iox2_from_mut(&mut this.shared_node)) };
-        unsafe {
-            S::StaticStorage::abandon_in_place(NonNull::iox2_from_mut(&mut this.static_storage))
-        };
+        unsafe { R::abandon_in_place(NonNull::from_mut(&mut this.additional_resource)) };
+        unsafe { SharedNode::<S>::abandon_in_place(NonNull::from_mut(&mut this.shared_node)) };
+        unsafe { S::StaticStorage::abandon_in_place(NonNull::from_mut(&mut this.static_storage)) };
     }
 }
 
@@ -493,7 +490,7 @@ impl<S: Service, R: ServiceResource> Abandonable for SharedServiceState<S, R> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         if let Some(state) = Arc::get_mut(&mut this.state) {
-            unsafe { ServiceState::abandon_in_place(NonNull::iox2_from_mut(state)) };
+            unsafe { ServiceState::abandon_in_place(NonNull::from_mut(state)) };
         } else {
             unsafe { core::ptr::drop_in_place(&mut this.state) };
         }

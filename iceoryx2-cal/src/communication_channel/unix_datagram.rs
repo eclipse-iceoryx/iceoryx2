@@ -20,7 +20,6 @@ use alloc::format;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_posix::{
     directory::*, file::*, system_configuration::SystemInfo, unix_datagram_socket::*,
 };
@@ -376,7 +375,7 @@ pub struct Sender<T> {
 impl<T: Copy + Debug> Abandonable for Sender<T> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { UnixDatagramSender::abandon_in_place(NonNull::iox2_from_mut(&mut this.sender)) };
+        unsafe { UnixDatagramSender::abandon_in_place(NonNull::from_mut(&mut this.sender)) };
     }
 }
 
@@ -446,9 +445,7 @@ pub struct Receiver<T: Debug> {
 impl<T: Copy + Debug> Abandonable for Receiver<T> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe {
-            UnixDatagramReceiver::abandon_in_place(NonNull::iox2_from_mut(&mut this.receiver))
-        };
+        unsafe { UnixDatagramReceiver::abandon_in_place(NonNull::from_mut(&mut this.receiver)) };
     }
 }
 

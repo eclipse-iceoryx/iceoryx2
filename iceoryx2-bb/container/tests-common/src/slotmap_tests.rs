@@ -14,7 +14,6 @@ use alloc::vec;
 use core::ptr::NonNull;
 
 use iceoryx2_bb_container::slotmap::*;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_testing::abandon_tracker::AbandonTacker;
@@ -246,7 +245,7 @@ pub fn double_init_call_causes_panic() {
 
     const MEM_SIZE: usize = RelocatableSlotMap::<usize>::const_memory_size(SUT_CAPACITY);
     let memory = [0u8; MEM_SIZE];
-    let bump_allocator = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
+    let bump_allocator = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
 
     let mut sut = unsafe { RelocatableSlotMap::<usize>::new_uninit(SUT_CAPACITY) };
     unsafe { sut.init(&bump_allocator).expect("sut init failed") };

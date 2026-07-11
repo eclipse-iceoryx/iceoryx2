@@ -14,7 +14,6 @@ use core::alloc::Layout;
 use core::ptr::NonNull;
 
 use iceoryx2_bb_elementary::{bump_allocator::*, math::align};
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 
@@ -25,7 +24,7 @@ pub fn start_position_is_correctly_used() {
     const MEM_SIZE: usize = 91;
     const MEM_ALIGN: usize = 1;
 
-    let sut = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
+    let sut = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
 
     let memory = sut
         .allocate(Layout::from_size_align(MEM_SIZE, MEM_ALIGN).unwrap())
@@ -41,7 +40,7 @@ pub fn allocated_memory_is_correctly_aligned() {
     let start_position: *const u8 = &memory[1] as *const _;
     const MEM_SIZE: usize = 128;
     const MEM_ALIGN: usize = 64;
-    let sut = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[1]), memory.len() - 1);
+    let sut = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[1]), memory.len() - 1);
 
     let memory = sut
         .allocate(Layout::from_size_align(MEM_SIZE, MEM_ALIGN).unwrap())
@@ -55,7 +54,7 @@ pub fn allocated_memory_is_correctly_aligned() {
 pub fn allocating_many_aligned_chunks_work() {
     let memory = [0u8; 8192];
     const ITERATIONS: u32 = 5;
-    let sut = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[1]), memory.len());
+    let sut = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[1]), memory.len());
 
     let mut last_size = 0;
     let mut last_position = 0;
@@ -82,7 +81,7 @@ pub fn deallocating_releases_everything() {
     let start_position: *const u8 = &memory[3] as *const _;
     const MEM_SIZE: usize = 128;
     const MEM_ALIGN: usize = 1;
-    let sut = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[3]), memory.len() - 3);
+    let sut = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[3]), memory.len() - 3);
 
     let layout = Layout::from_size_align(MEM_SIZE, MEM_ALIGN).unwrap();
     let mut memory = sut.allocate(layout).unwrap();
@@ -105,7 +104,7 @@ pub fn deallocating_releases_everything() {
 #[test]
 pub fn allocating_too_much_fails_with_out_of_memory() {
     let memory = [0u8; 8192];
-    let sut = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
+    let sut = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
 
     let sample = sut.allocate(unsafe { Layout::from_size_align_unchecked(8192 * 2, 1) });
 
@@ -116,7 +115,7 @@ pub fn allocating_too_much_fails_with_out_of_memory() {
 #[test]
 pub fn allocating_all_memory_works() {
     let memory = [0u8; 8192];
-    let sut = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
+    let sut = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
 
     let number_of_samples = 8;
     let sample_size = 8192 / number_of_samples;
@@ -137,7 +136,7 @@ pub fn allocating_all_memory_works() {
 #[test]
 pub fn after_deallocate_allocating_all_memory_works() {
     let mut memory = [0u8; 8192];
-    let sut = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
+    let sut = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
 
     let number_of_samples = 8;
     let sample_size = 8192 / number_of_samples;
@@ -162,7 +161,7 @@ pub fn after_deallocate_allocating_all_memory_works() {
 #[test]
 pub fn used_free_and_total_space_work() {
     let memory = [0u8; 8192];
-    let sut = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
+    let sut = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
 
     let mut space_used = 331;
     while space_used < 8192 {
@@ -181,7 +180,7 @@ pub fn used_free_and_total_space_work() {
 #[test]
 pub fn allocating_with_different_alignments_works() {
     let memory = [0u8; 8192];
-    let sut = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
+    let sut = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
 
     for i in [
         [32, 8],

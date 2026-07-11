@@ -29,7 +29,7 @@ use core::{marker::PhantomData, mem::MaybeUninit, ptr::NonNull, time::Duration};
 use iceoryx2_bb_concurrency::atomic::{AtomicU8, Ordering};
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary_traits::{
-    non_null::NonNullCompat, testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
+    testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
 };
 use iceoryx2_bb_posix::{
     file::AccessMode, file_descriptor::FileDescriptorBased,
@@ -275,8 +275,8 @@ impl<
 {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { H::abandon_in_place(NonNull::iox2_from_mut(&mut this.handle)) };
-        unsafe { Storage::abandon_in_place(NonNull::iox2_from_mut(&mut this.storage)) };
+        unsafe { H::abandon_in_place(NonNull::from_mut(&mut this.handle)) };
+        unsafe { Storage::abandon_in_place(NonNull::from_mut(&mut this.storage)) };
     }
 }
 
@@ -400,8 +400,8 @@ impl<
 {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { W::abandon_in_place(NonNull::iox2_from_mut(&mut this.waiter)) };
-        unsafe { Storage::abandon_in_place(NonNull::iox2_from_mut(&mut this.storage)) };
+        unsafe { W::abandon_in_place(NonNull::from_mut(&mut this.waiter)) };
+        unsafe { Storage::abandon_in_place(NonNull::from_mut(&mut this.storage)) };
     }
 }
 

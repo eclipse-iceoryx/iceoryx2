@@ -55,7 +55,6 @@ use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
 use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::owning_pointer::GenericOwningPointer;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
@@ -140,7 +139,7 @@ impl<T: Abandonable, Ptr: GenericPointer> Abandonable for MetaSlotMap<T, Ptr> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         for element in this.data.iter_mut().flatten() {
-            unsafe { T::abandon_in_place(NonNull::iox2_from_mut(element)) };
+            unsafe { T::abandon_in_place(NonNull::from_mut(element)) };
         }
     }
 }
