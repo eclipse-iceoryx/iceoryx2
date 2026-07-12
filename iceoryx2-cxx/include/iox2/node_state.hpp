@@ -95,6 +95,9 @@ class NodeState {
     auto operator=(NodeState&&) -> NodeState& = default;
     ~NodeState() = default;
 
+    /// Returns the [`UniqueNodeId`] of the corresponding [`Node`].
+    auto node_id() const -> const UniqueNodeId&;
+
     /// If the [`Node`] is alive the provided callback is called with an [`AliveNodeView`]
     /// as argument.
     auto alive(const iox2::bb::StaticFunction<void(AliveNodeView<T>&)>& callback) -> NodeState&;

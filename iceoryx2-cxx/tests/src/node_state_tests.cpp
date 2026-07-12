@@ -37,6 +37,7 @@ TYPED_TEST(NodeStateTest, alive_node_works) {
     bool has_invalid_state = false;
     Node<SERVICE_TYPE>::list(node.config(), [&](auto state) -> auto {
         state.alive([&](auto& view) -> auto {
+            EXPECT_EQ(state.node_id(), node_id);
             alive_node_found = view.details()->name().to_string() == node_name.to_string();
         });
         state.dead([&](auto& view) -> auto {
