@@ -113,7 +113,7 @@ impl core::error::Error for SharedMemoryOpenError {}
 /// Represents a pointer pointing to some [`SharedMemory`]. Consists of the actual data pointer and
 /// an [`PointerOffset`] which can be used in combination with a
 /// [`crate::zero_copy_connection::ZeroCopyConnection`]
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct ShmPointer {
     pub offset: PointerOffset,
     pub data_ptr: *mut u8,
@@ -188,7 +188,7 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
     /// Grows allocated memory to a new increased size.
     fn grow(
         &self,
-        offset: PointerOffset,
+        ptr: ShmPointer,
         old_layout: Layout,
         new_layout: Layout,
         placement: ContentPlacement,

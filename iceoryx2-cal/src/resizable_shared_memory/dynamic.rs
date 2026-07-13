@@ -829,7 +829,7 @@ where
 
         match current_segment
             .shm
-            .grow(old_pointer.offset, old_layout, new_layout, placement)
+            .grow(old_pointer, old_layout, new_layout, placement)
         {
             Ok(mut ptr) => {
                 ptr.offset

@@ -459,7 +459,7 @@ pub mod details {
 
         fn grow(
             &self,
-            offset: PointerOffset,
+            ptr: ShmPointer,
             old_layout: Layout,
             new_layout: Layout,
             placement: ContentPlacement,
@@ -469,7 +469,7 @@ pub mod details {
                     .get()
                     .allocator
                     .assume_init_ref()
-                    .grow(offset, old_layout, new_layout, placement)?
+                    .grow(ptr.offset, old_layout, new_layout, placement)?
             };
 
             Ok(ShmPointer {

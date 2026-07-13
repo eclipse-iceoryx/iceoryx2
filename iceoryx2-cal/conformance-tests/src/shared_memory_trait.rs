@@ -329,4 +329,133 @@ pub mod shared_memory_trait {
 
         assert_that!(unsafe { Sut::remove_cfg(&name, &config) }, eq Ok(true));
     }
+
+    #[conformance_test]
+    pub fn allocated_memory_chunk_can_grow_with_content_at_front<
+        Sut: SharedMemory<DefaultAllocator>,
+    >() {
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::Builder::new(&name)
+            .size(DEFAULT_SIZE)
+            .config(&config)
+            .create(&SHM_CONFIG)
+            .unwrap();
+
+        let small_layout =
+            Layout::from_size_align(DEFAULT_LAYOUT.size() / 4, DEFAULT_LAYOUT.align()).unwrap();
+        let med_layout =
+            Layout::from_size_align(DEFAULT_LAYOUT.size() / 2, DEFAULT_LAYOUT.align()).unwrap();
+        let large_layout =
+            Layout::from_size_align(DEFAULT_LAYOUT.size(), DEFAULT_LAYOUT.align()).unwrap();
+
+        let chunk = sut.allocate(small_layout).unwrap();
+
+        for n in 0..small_layout.size() {
+            unsafe { *chunk.data_ptr.add(n) = 1u8 };
+        }
+
+        let chunk = sut
+            .grow(chunk, small_layout, med_layout, ContentPlacement::Front)
+            .unwrap();
+
+        for n in 0..small_layout.size() {
+            assert_that!(unsafe {*chunk.data_ptr.add(n)}, eq 1u8);
+        }
+
+        for n in small_layout.size()..med_layout.size() {
+            unsafe { *chunk.data_ptr.add(n) = 2u8 };
+        }
+
+        let chunk = sut
+            .grow(chunk, med_layout, large_layout, ContentPlacement::Front)
+            .unwrap();
+
+        for n in 0..small_layout.size() {
+            assert_that!(unsafe {*chunk.data_ptr.add(n)}, eq 1u8);
+        }
+
+        for n in small_layout.size()..med_layout.size() {
+            assert_that!(unsafe {*chunk.data_ptr.add(n)}, eq 2u8);
+        }
+    }
+
+    #[conformance_test]
+    pub fn allocated_memory_chunk_can_grow_with_content_at_back<
+        Sut: SharedMemory<DefaultAllocator>,
+    >() {
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::Builder::new(&name)
+            .size(DEFAULT_SIZE)
+            .config(&config)
+            .create(&SHM_CONFIG)
+            .unwrap();
+
+        let small_layout =
+            Layout::from_size_align(DEFAULT_LAYOUT.size() / 4, DEFAULT_LAYOUT.align()).unwrap();
+        let med_layout =
+            Layout::from_size_align(DEFAULT_LAYOUT.size() / 2, DEFAULT_LAYOUT.align()).unwrap();
+        let large_layout =
+            Layout::from_size_align(DEFAULT_LAYOUT.size(), DEFAULT_LAYOUT.align()).unwrap();
+
+        let chunk = sut.allocate(small_layout).unwrap();
+
+        for n in 0..small_layout.size() {
+            unsafe { *chunk.data_ptr.add(n) = 3u8 };
+        }
+
+        let chunk = sut
+            .grow(chunk, small_layout, med_layout, ContentPlacement::Back)
+            .unwrap();
+
+        let old_med_data_start = med_layout.size() - small_layout.size();
+        for n in old_med_data_start..med_layout.size() {
+            assert_that!(unsafe {*chunk.data_ptr.add(n)}, eq 3u8);
+        }
+
+        for n in 0..old_med_data_start {
+            unsafe { *chunk.data_ptr.add(n) = 4u8 };
+        }
+
+        let chunk = sut
+            .grow(chunk, med_layout, large_layout, ContentPlacement::Back)
+            .unwrap();
+
+        let old_large_data_start = large_layout.size() - small_layout.size();
+        for n in old_large_data_start..large_layout.size() {
+            assert_that!(unsafe {*chunk.data_ptr.add(n)}, eq 3u8);
+        }
+
+        let old_med_data_start = large_layout.size() - med_layout.size();
+        for n in old_med_data_start..old_large_data_start {
+            assert_that!(unsafe {*chunk.data_ptr.add(n)}, eq 4u8);
+        }
+    }
+
+    #[conformance_test]
+    pub fn allocated_memory_chunk_cannot_grow_beyond_max_capacity<
+        Sut: SharedMemory<DefaultAllocator>,
+    >() {
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::Builder::new(&name)
+            .size(DEFAULT_SIZE)
+            .config(&config)
+            .create(&SHM_CONFIG)
+            .unwrap();
+
+        let chunk = sut.allocate(DEFAULT_LAYOUT).unwrap();
+        let chunk = sut.grow(
+            chunk,
+            DEFAULT_LAYOUT,
+            unsafe { Layout::from_size_align_unchecked(DEFAULT_SIZE + 1, DEFAULT_LAYOUT.align()) },
+            ContentPlacement::Back,
+        );
+
+        assert_that!(chunk.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(AllocationGrowError::OutOfMemory)));
+    }
 }
