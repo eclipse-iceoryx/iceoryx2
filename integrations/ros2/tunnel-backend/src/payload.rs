@@ -40,6 +40,18 @@ pub fn uninit_bytes_ptr(payload: &mut [MaybeUninit<CustomPayloadMarker>]) -> *mu
     payload.as_mut_ptr().cast()
 }
 
+/// Zero-initializes an uninitialized untyped payload and returns it as a
+/// writable byte slice.
+pub fn zeroed_bytes(payload: &mut [MaybeUninit<CustomPayloadMarker>]) -> &mut [u8] {
+    // SAFETY: the marker is a single byte (asserted above), so length and
+    // alignment carry over; the region is initialized by the zero-write.
+    #[allow(unsafe_code)]
+    unsafe {
+        core::ptr::write_bytes(payload.as_mut_ptr(), 0, payload.len());
+        core::slice::from_raw_parts_mut(payload.as_mut_ptr().cast::<u8>(), payload.len())
+    }
+}
+
 /// Writes `header` into an untyped user header location.
 ///
 /// The caller must ensure that the service's user-header type detail

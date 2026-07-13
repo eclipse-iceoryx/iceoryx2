@@ -53,10 +53,9 @@ pub struct Ros2Backend<
     node: Rc<RclNode>,
     /// Typesupport for all configured topics, loaded on initialization.
     type_registry: TypeSupportRegistry,
-    discovery: Discovery<S, M>,
+    discovery: Discovery<S, M, T>,
     mapping: Rc<M>,
-    #[allow(dead_code)]
-    translator: T,
+    translator: Rc<T>,
     wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     _phantom: core::marker::PhantomData<S>,
 }
@@ -77,13 +76,13 @@ impl<
     where
         Self::Config: 'a;
 
-    type Discovery = Discovery<S, M>;
+    type Discovery = Discovery<S, M, T>;
 
-    type PublishSubscribeRelay = publish_subscribe::Relay<S>;
+    type PublishSubscribeRelay = publish_subscribe::Relay<S, T>;
     type EventRelay = event::Relay<S>;
 
     type RelayFactory<'b>
-        = Factory<'b, S, M>
+        = Factory<'b, S, M, T>
     where
         Self: 'b;
 
@@ -96,6 +95,7 @@ impl<
             Rc::clone(&self.node),
             &self.type_registry,
             &self.mapping,
+            Rc::clone(&self.translator),
             self.wake.clone(),
         )
     }
@@ -183,14 +183,20 @@ impl<
         }
 
         let mapping = Rc::new(self.mapping);
-        let discovery = Discovery::new(Rc::clone(&node), &self.config.topics, Rc::clone(&mapping));
+        let translator = Rc::new(self.translator);
+        let discovery = Discovery::new(
+            Rc::clone(&node),
+            &self.config.topics,
+            Rc::clone(&mapping),
+            Rc::clone(&translator),
+        );
 
         Ok(Ros2Backend {
             node,
             type_registry,
             discovery,
             mapping,
-            translator: self.translator,
+            translator,
             wake: self.wake.map(Arc::new),
             _phantom: core::marker::PhantomData,
         })

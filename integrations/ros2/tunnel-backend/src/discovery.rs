@@ -17,10 +17,12 @@ use core::error::Error;
 
 use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
+use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_log::fail;
-use iceoryx2_services_tunnel_backend::traits::Mapping;
+use iceoryx2_services_tunnel_backend::traits::{Mapping, TranslationMode, Translator};
 use iceoryx2_services_tunnel_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
+use iceoryx2_services_tunnel_backend::types::service_description::PatternDescription;
 
 use crate::config::{TopicConfig, TopicName, TypeName};
 use crate::mapping::TopicDescription;
@@ -30,6 +32,7 @@ use crate::rcl::RclNode;
 pub enum DiscoveryError {
     Graph,
     Processing,
+    Translator,
 }
 
 impl core::fmt::Display for DiscoveryError {
@@ -53,20 +56,35 @@ impl core::error::Error for AnnouncementError {}
 
 /// Reports liveness status of the configured topics in the ROS graph.
 #[derive(Debug)]
-pub struct Discovery<S: Service, M: Mapping<EndpointDescription = TopicDescription>> {
+pub struct Discovery<
+    S: Service,
+    M: Mapping<EndpointDescription = TopicDescription>,
+    T: Translator<EndpointDescription = TopicDescription>,
+> {
     node: Rc<RclNode>,
     allowlist: HashMap<TopicName, TypeName>,
     mapping: Rc<M>,
+    translator: Rc<T>,
     /// Configured topics detected as live in the ROS graph, with the service
     /// hash they were reported under.
     discovered: RefCell<HashMap<TopicName, ServiceHash>>,
     _phantom: core::marker::PhantomData<S>,
 }
 
-impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>> Discovery<S, M> {
+impl<
+    S: Service,
+    M: Mapping<EndpointDescription = TopicDescription>,
+    T: Translator<EndpointDescription = TopicDescription>,
+> Discovery<S, M, T>
+{
     /// Creates a `Discovery` instance to track `topics` on the ROS graph
     /// via the provided `node`.
-    pub(crate) fn new(node: Rc<RclNode>, topics: &[TopicConfig], mapping: Rc<M>) -> Self {
+    pub(crate) fn new(
+        node: Rc<RclNode>,
+        topics: &[TopicConfig],
+        mapping: Rc<M>,
+        translator: Rc<T>,
+    ) -> Self {
         Self {
             node,
             allowlist: topics
@@ -74,6 +92,7 @@ impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>> Discovery<S
                 .map(|topic| (topic.topic.clone(), topic.type_name.clone()))
                 .collect(),
             mapping,
+            translator,
             discovered: RefCell::new(HashMap::new()),
             _phantom: core::marker::PhantomData,
         }
@@ -136,9 +155,26 @@ impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>> Discovery<S
         // These could be topics not following the conventions of the mapping (e.g. prefix)
         // or those explicitly not configured (e.g. static).
         let topic_description = self.topic_description(topic, type_name)?;
-        let Some(service_description) = self.mapping.local::<S>(&topic_description) else {
+        let Some(mut service_description) = self.mapping.local::<S>(&topic_description) else {
             return Ok(());
         };
+
+        // Translated topics carry the native payload layout, which only the
+        // translator knows; the local service is created from it.
+        let mode = fail!(from origin,
+            when self.translator.resolve(&service_description, &topic_description),
+            with DiscoveryError::Translator,
+            "Translator failed to resolve topic '{}'",
+            topic.as_str()
+        );
+        if let TranslationMode::Translate { native_layout } = mode
+            && let PatternDescription::PublishSubscribe(pattern_description) =
+                &mut service_description.pattern
+        {
+            pattern_description.payload.variant = TypeVariant::FixedSize;
+            pattern_description.payload.size = native_layout.size();
+            pattern_description.payload.alignment = native_layout.align();
+        }
 
         // Run discovery logic provided by the caller for the service discovered
         // as added.
@@ -186,8 +222,11 @@ impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>> Discovery<S
     }
 }
 
-impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>>
-    iceoryx2_services_tunnel_backend::traits::Discovery for Discovery<S, M>
+impl<
+    S: Service,
+    M: Mapping<EndpointDescription = TopicDescription>,
+    T: Translator<EndpointDescription = TopicDescription>,
+> iceoryx2_services_tunnel_backend::traits::Discovery for Discovery<S, M, T>
 {
     type DiscoveryError = DiscoveryError;
     type AnnouncementError = AnnouncementError;
