@@ -36,17 +36,17 @@ pub trait Testing {
                 Ok(_) => return Ok(()),
                 Err(failure) => {
                     errors.insert(failure);
-                    if let Some(max_attempts) = max_attempts {
-                        if attempt >= max_attempts {
-                            errors.insert("Retry attempts exceeded.");
+                    if let Some(max_attempts) = max_attempts
+                        && attempt >= max_attempts
+                    {
+                        errors.insert("Retry attempts exceeded.");
 
-                            let errors_formatted = errors
-                                .iter()
-                                .map(|e| format!("  - {}", e))
-                                .collect::<Vec<_>>()
-                                .join("\n");
-                            return Err(errors_formatted);
-                        }
+                        let errors_formatted = errors
+                            .iter()
+                            .map(|e| format!("  - {}", e))
+                            .collect::<Vec<_>>()
+                            .join("\n");
+                        return Err(errors_formatted);
                     }
                 }
             }

@@ -13,7 +13,7 @@
 use core::ptr::NonNull;
 use iceoryx2_bb_container::queue::*;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-use iceoryx2_bb_elementary_traits::{non_null::NonNullCompat, placement_default::PlacementDefault};
+use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
 use iceoryx2_bb_testing::{assert_that, memory::RawMemory};
 use iceoryx2_bb_testing_macros::test;
@@ -24,7 +24,7 @@ type Sut = FixedSizeQueue<usize, SUT_CAPACITY>;
 #[test]
 pub fn relocatable_push_pop_works_with_uninitialized_memory() {
     let memory = [0u8; 1024];
-    let allocator = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
+    let allocator = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
 
     let mut sut = unsafe { RelocatableQueue::<usize>::new_uninit(SUT_CAPACITY) };
     unsafe { assert_that!(sut.init(&allocator), is_ok) };
@@ -53,7 +53,7 @@ pub fn relocatable_push_pop_works_with_uninitialized_memory() {
 #[test]
 pub fn relocatable_clear_empties_queue() {
     let memory = [0u8; 1024];
-    let allocator = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
+    let allocator = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
 
     let mut sut = unsafe { RelocatableQueue::<usize>::new_uninit(SUT_CAPACITY) };
     unsafe { assert_that!(sut.init(&allocator), is_ok) };
@@ -332,7 +332,7 @@ pub fn peek_works() {
 pub fn double_init_call_causes_panic() {
     const MEM_SIZE: usize = RelocatableQueue::<usize>::const_memory_size(SUT_CAPACITY);
     let memory = [0u8; MEM_SIZE];
-    let bump_allocator = BumpAllocator::new(NonNull::<u8>::iox2_from_ref(&memory[0]), memory.len());
+    let bump_allocator = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
 
     let mut sut = unsafe { RelocatableQueue::<usize>::new_uninit(SUT_CAPACITY) };
     unsafe { sut.init(&bump_allocator).expect("sut init failed") };

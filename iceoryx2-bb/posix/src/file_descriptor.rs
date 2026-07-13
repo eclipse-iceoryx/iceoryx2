@@ -384,11 +384,11 @@ pub trait FileDescriptorManagement: FileDescriptorBased + Debug + Sized {
 
         let errno = Errno::get();
 
-        if let Ok(metadata) = self.metadata() {
-            if metadata.number_of_links() == 0 {
-                fail!(from self, with FileTryLockError::FileRemovedFromFileSystem,
+        if let Ok(metadata) = self.metadata()
+            && metadata.number_of_links() == 0
+        {
+            fail!(from self, with FileTryLockError::FileRemovedFromFileSystem,
                     "{msg} since the file was removed from the file system.");
-            }
         }
 
         match errno {

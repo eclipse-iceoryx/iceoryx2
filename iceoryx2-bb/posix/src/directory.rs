@@ -229,10 +229,10 @@ impl Drop for Directory {
             }
         }
 
-        if self.has_ownership() {
-            if let Err(e) = Directory::remove(&self.path) {
-                error!(from self, "{} and remove it. [{e:?}]", msg);
-            }
+        if self.has_ownership()
+            && let Err(e) = Directory::remove(&self.path)
+        {
+            error!(from self, "{} and remove it. [{e:?}]", msg);
         }
 
         trace!(from self, "closed");

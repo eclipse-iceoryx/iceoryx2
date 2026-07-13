@@ -37,7 +37,7 @@ git_override(
 rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
 rust.toolchain(
     edition = "2024",
-    versions = ["1.87.0"],
+    versions = ["1.89.0"],
 )
 ```
 

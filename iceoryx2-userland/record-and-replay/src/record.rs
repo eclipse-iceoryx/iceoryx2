@@ -90,7 +90,9 @@ impl RecordReader {
         if (self.header.types.payload.variant() == TypeVariant::FixedSize
             && payload.len() != self.header.types.payload.size())
             || (self.header.types.payload.variant() == TypeVariant::Dynamic
-                && payload.len() % self.header.types.payload.size() != 0)
+                && !payload
+                    .len()
+                    .is_multiple_of(self.header.types.payload.size()))
         {
             fail!(from self, with ReplayerOpenError::CorruptedPayloadRecord,
                                 "{error_msg} since the payload record is corrupted (has wrong size {}, expected {}).",

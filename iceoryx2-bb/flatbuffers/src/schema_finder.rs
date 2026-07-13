@@ -163,10 +163,10 @@ pub fn find_best_fitting_schema_file(
         }
     }
 
-    if let Some(dir) = &namespace_subdirectory {
-        if let Ok(Some(file)) = find_best_fitting_schema_file(type_name, dir) {
-            return Ok(Some(file));
-        }
+    if let Some(dir) = &namespace_subdirectory
+        && let Ok(Some(file)) = find_best_fitting_schema_file(type_name, dir)
+    {
+        return Ok(Some(file));
     }
 
     if let Some(file) = schema_file {
@@ -174,12 +174,11 @@ pub fn find_best_fitting_schema_file(
     }
 
     for entry in &contents {
-        if entry.metadata().file_type() == FileType::Directory {
-            if let Ok(Some(file)) =
+        if entry.metadata().file_type() == FileType::Directory
+            && let Ok(Some(file)) =
                 find_best_fitting_schema_file(type_name, &create_sub_path(root_path, entry.name())?)
-            {
-                return Ok(Some(file));
-            }
+        {
+            return Ok(Some(file));
         }
     }
 

@@ -56,6 +56,7 @@
 -->
 
 * [#996](https://github.com/eclipse-iceoryx/iceoryx2/issues/996) Move BumpAllocator from iceoryx2-bb-memory into iceoryx2-bb-elementary
+* [#1613](https://github.com/eclipse-iceoryx/iceoryx2/issues/1613) Remove `NonNullCompat` after moving to Rust 1.89
 * [#1776](https://github.com/eclipse-iceoryx/iceoryx2/issues/1776) Rename AtomicCopy::__for_each_field() to for_each_field()
 
 ### Workflow
@@ -68,6 +69,7 @@
 * [#1610](https://github.com/eclipse-iceoryx/iceoryx2/issues/1610) Add `no_std` tests for tunnel
 * [#1712](https://github.com/eclipse-iceoryx/iceoryx2/issues/1712) Add iceoryx2 version to static service config
 * [#1714](https://github.com/eclipse-iceoryx/iceoryx2/issues/1714) Add locking for all file descriptor based constructs
+* [#1815](https://github.com/eclipse-iceoryx/iceoryx2/issues/1815) Set Rust minimum required version (MSRV) to version 1.89.0
 
 ### New API features
 
@@ -99,11 +101,10 @@
     use core::ptr::NonNull;
 
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-    use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 
     let memory = [0u8; 8192];
     let sut = BumpAllocator::new(
-        NonNull::<u8>::iox2_from_ref(&memory[0]),
+        NonNull::<u8>::from_ref(&memory[0]),
         memory.len(),
     );
     ```

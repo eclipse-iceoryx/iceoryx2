@@ -21,7 +21,6 @@ use alloc::vec::Vec;
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
@@ -69,7 +68,7 @@ impl<Service: service::Service, Resource: ServiceResource> Abandonable
         let this = unsafe { this.as_mut() };
         unsafe {
             <Service::Connection as ZeroCopyConnection>::Sender::abandon_in_place(
-                NonNull::iox2_from_mut(&mut this.sender),
+                NonNull::from_mut(&mut this.sender),
             )
         };
     }
@@ -155,20 +154,16 @@ impl<Service: service::Service, Resource: ServiceResource> Abandonable
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe {
-            SharedNode::<Service>::abandon_in_place(NonNull::iox2_from_mut(&mut this.shared_node))
+            SharedNode::<Service>::abandon_in_place(NonNull::from_mut(&mut this.shared_node))
         };
+        unsafe { SharedServiceState::abandon_in_place(NonNull::from_mut(&mut this.service_state)) };
         unsafe {
-            SharedServiceState::abandon_in_place(NonNull::iox2_from_mut(&mut this.service_state))
-        };
-        unsafe {
-            DataSegment::<Service>::abandon_in_place(NonNull::iox2_from_mut(&mut this.data_segment))
+            DataSegment::<Service>::abandon_in_place(NonNull::from_mut(&mut this.data_segment))
         };
 
         for connection in &mut this.connections {
             if let Some(c) = connection.get_mut() {
-                unsafe {
-                    Connection::<Service, Resource>::abandon_in_place(NonNull::iox2_from_mut(c))
-                };
+                unsafe { Connection::<Service, Resource>::abandon_in_place(NonNull::from_mut(c)) };
             }
         }
     }
@@ -190,10 +185,10 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
 
     pub(crate) fn get_connection_id_of(&self, receiver_port_id: u128) -> Option<usize> {
         for i in 0..self.len() {
-            if let Some(connection) = self.get(i) {
-                if connection.receiver_port_id == receiver_port_id {
-                    return Some(i);
-                }
+            if let Some(connection) = self.get(i)
+                && connection.receiver_port_id == receiver_port_id
+            {
+                return Some(i);
             }
         }
 
@@ -608,10 +603,10 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
 
     pub(crate) fn finish_update_connection_cycle(&self) {
         for n in 0..self.len() {
-            if let Some(connection) = self.get(n) {
-                if !connection.was_tagged_by(&self.tagger) {
-                    self.remove_connection(n);
-                }
+            if let Some(connection) = self.get(n)
+                && !connection.was_tagged_by(&self.tagger)
+            {
+                self.remove_connection(n);
             }
         }
     }

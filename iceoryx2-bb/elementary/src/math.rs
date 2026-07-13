@@ -21,7 +21,7 @@ pub const fn unaligned_mem_size<T>(array_capacity: usize) -> usize {
 
 /// Aligns value to alignment. It increments value to the next multiple of alignment.
 pub const fn align(value: usize, alignment: usize) -> usize {
-    if value % alignment == 0 {
+    if value.is_multiple_of(alignment) {
         value
     } else {
         value + alignment - value % alignment

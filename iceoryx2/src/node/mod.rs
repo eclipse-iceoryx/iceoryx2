@@ -163,7 +163,6 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
@@ -954,14 +953,14 @@ impl<Service: service::Service> Abandonable for SharedNodeState<Service> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe {
-            <Service::StaticStorage as Abandonable>::abandon_in_place(NonNull::iox2_from_mut(
+            <Service::StaticStorage as Abandonable>::abandon_in_place(NonNull::from_mut(
                 &mut this.details_storage,
             ))
         };
         if let Some(token) = this.monitoring_token.get_mut() {
             unsafe {
                 <<Service::Monitoring as Monitoring>::Token as Abandonable>::abandon_in_place(
-                    NonNull::iox2_from_mut(token),
+                    NonNull::from_mut(token),
                 )
             };
         }
@@ -1033,7 +1032,7 @@ impl<Service: service::Service> Abandonable for SharedNode<Service> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         if let Some(state) = Arc::get_mut(&mut this.state) {
-            unsafe { SharedNodeState::abandon_in_place(NonNull::iox2_from_mut(state)) };
+            unsafe { SharedNodeState::abandon_in_place(NonNull::from_mut(state)) };
         } else {
             unsafe { core::ptr::drop_in_place(&mut this.state) };
         }
@@ -1121,7 +1120,7 @@ unsafe impl<Service: service::Service> Send for Node<Service> {}
 impl<Service: service::Service> Abandonable for Node<Service> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { SharedNode::abandon_in_place(NonNull::iox2_from_mut(&mut this.shared)) };
+        unsafe { SharedNode::abandon_in_place(NonNull::from_mut(&mut this.shared)) };
     }
 }
 

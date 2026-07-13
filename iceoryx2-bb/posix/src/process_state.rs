@@ -139,7 +139,6 @@ use alloc::collections::BTreeMap;
 use alloc::format;
 use core::fmt::Debug;
 use core::ptr::NonNull;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zeroable::Zeroable;
 
@@ -196,10 +195,10 @@ impl<'a> Drop for TrackerGuard<'a> {
         if self.has_ownership.load(Ordering::Relaxed) {
             self.state.remove(self.path);
         } else {
-            if let Some(entry) = self.state.get(self.path) {
-                if !entry.owned_by_process {
-                    self.state.remove(self.path);
-                }
+            if let Some(entry) = self.state.get(self.path)
+                && !entry.owned_by_process
+            {
+                self.state.remove(self.path);
             }
         }
     }
@@ -682,13 +681,13 @@ impl Abandonable for StateFiles {
             when PROCESS_STATE_TRACKING.lock(),
             "This should never happen. {msg} since the global mutex could not be locked.");
 
-        if let Some(path) = this.state.as_ref().and_then(|f| f.path()) {
-            if let Some(entry) = lock_guard.get_mut(path) {
-                if !entry.owned_by_process {
-                    lock_guard.remove(path);
-                } else {
-                    entry.state = ProcessState::Dead;
-                }
+        if let Some(path) = this.state.as_ref().and_then(|f| f.path())
+            && let Some(entry) = lock_guard.get_mut(path)
+        {
+            if !entry.owned_by_process {
+                lock_guard.remove(path);
+            } else {
+                entry.state = ProcessState::Dead;
             }
         }
 
@@ -788,7 +787,7 @@ impl Abandonable for ProcessGuard {
             fatal_panic!(from this, "{msg} since the state file could not be overridden with zeros. [{e:?}]");
         }
 
-        unsafe { StateFiles::abandon_in_place(NonNull::iox2_from_mut(&mut this.files)) };
+        unsafe { StateFiles::abandon_in_place(NonNull::from_mut(&mut this.files)) };
     }
 }
 
@@ -1050,10 +1049,10 @@ impl ProcessMonitor {
             let lock_state = fail!(from self,
                                     when owner_lock_file.get_lock_state(),
                                     "{} since the lock state of the owner_lock file could not be acquired.", msg);
-            if let Some(l) = lock_state {
-                if l.lock_type() == LockType::Write {
-                    return Ok(ProcessState::CleaningUp);
-                }
+            if let Some(l) = lock_state
+                && l.lock_type() == LockType::Write
+            {
+                return Ok(ProcessState::CleaningUp);
             }
         } else {
             match File::does_exist(&self.state_path) {
@@ -1150,7 +1149,7 @@ impl Abandonable for ProcessCleaner {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
 
-        unsafe { StateFiles::abandon_in_place(NonNull::iox2_from_mut(&mut this.files)) };
+        unsafe { StateFiles::abandon_in_place(NonNull::from_mut(&mut this.files)) };
     }
 }
 
@@ -1253,11 +1252,11 @@ impl ProcessCleaner {
             with ProcessCleanerCreateError::FailedToAcquireLockState,
             "{} since the lock state could not be acquired.", msg);
 
-        if let Some(l) = lock_state {
-            if l.lock_type() == LockType::Write {
-                fail!(from origin, with ProcessCleanerCreateError::ProcessIsStillAlive,
+        if let Some(l) = lock_state
+            && l.lock_type() == LockType::Write
+        {
+            fail!(from origin, with ProcessCleanerCreateError::ProcessIsStillAlive,
                 "{} since the corresponding process is still alive.", msg);
-            }
         }
 
         match unsafe { owner_lock_file.try_lock(LockType::Write) } {

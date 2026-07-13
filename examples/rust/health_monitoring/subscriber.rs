@@ -122,10 +122,10 @@ fn handle_incoming_event(
                 coutln!("{service_name}: publisher connected!");
             } else if event.id == PubSubEvent::PublisherDisconnected.into() {
                 coutln!("{service_name}: publisher disconnected!");
-            } else if event.id == PubSubEvent::SentSample.into() {
-                if let Some(sample) = subscriber.receive().expect("") {
-                    coutln!("{}: Received sample {} ...", service_name, *sample)
-                }
+            } else if event.id == PubSubEvent::SentSample.into()
+                && let Some(sample) = subscriber.receive().expect("")
+            {
+                coutln!("{}: Received sample {} ...", service_name, *sample)
             }
         })
         .expect("");

@@ -642,17 +642,17 @@ impl Config {
         }
 
         // prio 2: lookup user config file
-        if let Ok(user_config) = Self::load_user_config_path(origin, msg) {
-            if callback(user_config) == CallbackProgression::Stop {
-                return Ok(());
-            }
+        if let Ok(user_config) = Self::load_user_config_path(origin, msg)
+            && callback(user_config) == CallbackProgression::Stop
+        {
+            return Ok(());
         }
 
         // prio 3: lookup global config file
-        if let Ok(global_config) = Self::load_global_config_path(origin, msg) {
-            if callback(global_config) == CallbackProgression::Stop {
-                return Ok(());
-            }
+        if let Ok(global_config) = Self::load_global_config_path(origin, msg)
+            && callback(global_config) == CallbackProgression::Stop
+        {
+            return Ok(());
         }
 
         Ok(())

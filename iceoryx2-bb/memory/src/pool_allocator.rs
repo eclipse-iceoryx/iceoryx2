@@ -178,7 +178,7 @@ impl PoolAllocator {
         debug_assert!(
             !(position < self.start
                 || position > self.start + self.size
-                || (position - self.start) % self.bucket_size != 0),
+                || !(position - self.start).is_multiple_of(self.bucket_size)),
             "The pointer {ptr:?} is not managed by this allocator."
         );
     }

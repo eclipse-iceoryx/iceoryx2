@@ -307,7 +307,10 @@ impl Recorder {
         }
 
         if self.header.details.types.payload.variant() == TypeVariant::Dynamic
-            && record.payload.len() % self.header.details.types.payload.size() != 0
+            && !record
+                .payload
+                .len()
+                .is_multiple_of(self.header.details.types.payload.size())
         {
             fail!(from self, with RecorderWriteError::CorruptedPayloadRecord,
                 "{msg} since the payload entry is corrupted. Expected a size which is a multiple of {} but provided a size of {}.",

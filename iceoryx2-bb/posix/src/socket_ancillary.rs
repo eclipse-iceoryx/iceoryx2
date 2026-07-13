@@ -360,7 +360,7 @@ impl SocketAncillary {
             match unsafe { (*cmsghdr).cmsg_type } {
                 posix::SCM_RIGHTS => {
                     let mut i = 0;
-                    if self.len() % SIZE_OF_FD != 0 {
+                    if !self.len().is_multiple_of(SIZE_OF_FD) {
                         warn!(from receiver, "Received an incomplete set of file descriptors.")
                     }
 

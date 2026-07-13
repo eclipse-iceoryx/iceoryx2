@@ -71,7 +71,6 @@ use alloc::format;
 use core::ptr::NonNull;
 use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::Ordering;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
@@ -165,16 +164,10 @@ impl<Service: service::Service> Abandonable for Listener<Service> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe {
-            Service::ArcThreadSafetyPolicy::abandon_in_place(NonNull::iox2_from_mut(
-                &mut this.listener,
-            ))
+            Service::ArcThreadSafetyPolicy::abandon_in_place(NonNull::from_mut(&mut this.listener))
         };
-        unsafe {
-            SharedServiceState::abandon_in_place(NonNull::iox2_from_mut(&mut this.service_state))
-        };
-        unsafe {
-            Service::StaticStorage::abandon_in_place(NonNull::iox2_from_mut(&mut this.port_tag))
-        };
+        unsafe { SharedServiceState::abandon_in_place(NonNull::from_mut(&mut this.service_state)) };
+        unsafe { Service::StaticStorage::abandon_in_place(NonNull::from_mut(&mut this.port_tag)) };
     }
 }
 

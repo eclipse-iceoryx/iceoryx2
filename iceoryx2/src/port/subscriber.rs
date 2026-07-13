@@ -42,7 +42,6 @@ use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
@@ -118,10 +117,8 @@ pub(crate) struct SubscriberSharedState<Service: service::Service> {
 impl<Service: service::Service> Abandonable for SubscriberSharedState<Service> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { Receiver::abandon_in_place(NonNull::iox2_from_mut(&mut this.receiver)) };
-        unsafe {
-            Service::StaticStorage::abandon_in_place(NonNull::iox2_from_mut(&mut this.port_tag))
-        };
+        unsafe { Receiver::abandon_in_place(NonNull::from_mut(&mut this.receiver)) };
+        unsafe { Service::StaticStorage::abandon_in_place(NonNull::from_mut(&mut this.port_tag)) };
     }
 }
 
@@ -169,7 +166,7 @@ impl<
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe {
-            Service::ArcThreadSafetyPolicy::abandon_in_place(NonNull::iox2_from_mut(
+            Service::ArcThreadSafetyPolicy::abandon_in_place(NonNull::from_mut(
                 &mut this.subscriber_shared_state,
             ))
         };

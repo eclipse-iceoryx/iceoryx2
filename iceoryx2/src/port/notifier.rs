@@ -44,7 +44,6 @@ use alloc::vec::Vec;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::CallbackProgression;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_lock_free::mpmc::counting_bit_set::RelocatableCountingBitSet;
@@ -137,9 +136,7 @@ struct ListenerConnections<Service: service::Service> {
 impl<Service: service::Service> Abandonable for ListenerConnections<Service> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe {
-            SharedServiceState::abandon_in_place(NonNull::iox2_from_mut(&mut this.service_state))
-        };
+        unsafe { SharedServiceState::abandon_in_place(NonNull::from_mut(&mut this.service_state)) };
     }
 }
 
@@ -298,23 +295,23 @@ impl<Service: service::Service> Abandonable for Notifier<Service> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         unsafe {
-            Service::ArcThreadSafetyPolicy::abandon_in_place(NonNull::iox2_from_mut(
+            Service::ArcThreadSafetyPolicy::abandon_in_place(NonNull::from_mut(
                 &mut this.listener_connections,
             ))
         };
         unsafe {
-            Service::StaticStorage::abandon_in_place(NonNull::iox2_from_mut(&mut this.port_tag));
+            Service::StaticStorage::abandon_in_place(NonNull::from_mut(&mut this.port_tag));
         }
     }
 }
 
 impl<Service: service::Service> Drop for Notifier<Service> {
     fn drop(&mut self) {
-        if let Some(event_id) = self.on_drop_notification {
-            if let Err(e) = self.notify_with_custom_event_id(event_id) {
-                warn!(from self, "Unable to send notifier_dropped_event {:?} due to ({:?}).",
+        if let Some(event_id) = self.on_drop_notification
+            && let Err(e) = self.notify_with_custom_event_id(event_id)
+        {
+            warn!(from self, "Unable to send notifier_dropped_event {:?} due to ({:?}).",
                     event_id, e);
-            }
         }
 
         self.listener_connections
@@ -513,19 +510,19 @@ impl<Service: service::Service> Notifier<Service> {
         }
 
         for i in 0..listener_connections.len() {
-            if let Some(connection) = listener_connections.get(i) {
-                if !(skip_self_deliver && connection.node_id == self.notifier_details.node_id) {
-                    match connection.notifier.notify(value) {
-                        Err(iceoryx2_cal::event::NotifierNotifyError::Disconnected) => {
-                            listener_connections.remove(i);
-                        }
-                        Err(e) => {
-                            warn!(from self, "Unable to send notification via connection {:?} due to {:?}.",
+            if let Some(connection) = listener_connections.get(i)
+                && !(skip_self_deliver && connection.node_id == self.notifier_details.node_id)
+            {
+                match connection.notifier.notify(value) {
+                    Err(iceoryx2_cal::event::NotifierNotifyError::Disconnected) => {
+                        listener_connections.remove(i);
+                    }
+                    Err(e) => {
+                        warn!(from self, "Unable to send notification via connection {:?} due to {:?}.",
                                     connection, e)
-                        }
-                        Ok(_) => {
-                            number_of_triggered_listeners += 1;
-                        }
+                    }
+                    Ok(_) => {
+                        number_of_triggered_listeners += 1;
                     }
                 }
             }

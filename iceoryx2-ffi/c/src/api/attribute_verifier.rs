@@ -280,14 +280,15 @@ pub unsafe extern "C" fn iox2_attribute_verifier_verify_requirements(
         let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
 
         let write_key = |incompatible_key: AttributeKey| {
-            if let Ok(incompatible_key) = CString::new(incompatible_key.as_bytes()) {
-                if incompatible_key_buffer_len != 0 && !incompatible_key_buffer.is_null() {
-                    core::ptr::copy_nonoverlapping(
-                        incompatible_key.as_bytes_with_nul().as_ptr(),
-                        incompatible_key_buffer.cast(),
-                        incompatible_key_buffer_len.min(incompatible_key.as_bytes_with_nul().len()),
-                    );
-                }
+            if let Ok(incompatible_key) = CString::new(incompatible_key.as_bytes())
+                && incompatible_key_buffer_len != 0
+                && !incompatible_key_buffer.is_null()
+            {
+                core::ptr::copy_nonoverlapping(
+                    incompatible_key.as_bytes_with_nul().as_ptr(),
+                    incompatible_key_buffer.cast(),
+                    incompatible_key_buffer_len.min(incompatible_key.as_bytes_with_nul().len()),
+                );
             }
         };
 

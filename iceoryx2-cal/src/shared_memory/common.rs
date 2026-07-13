@@ -35,7 +35,6 @@ pub mod details {
     use alloc::vec::Vec;
 
     use iceoryx2_bb_derive_macros::ZeroCopySend;
-    use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use pool_allocator::PoolAllocator;
 
@@ -357,7 +356,7 @@ pub mod details {
     {
         unsafe fn abandon_in_place(mut this: NonNull<Self>) {
             let this = unsafe { this.as_mut() };
-            unsafe { Storage::abandon_in_place(NonNull::iox2_from_mut(&mut this.storage)) };
+            unsafe { Storage::abandon_in_place(NonNull::from_mut(&mut this.storage)) };
         }
     }
 

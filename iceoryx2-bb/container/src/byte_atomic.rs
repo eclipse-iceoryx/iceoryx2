@@ -57,7 +57,6 @@
 //! use iceoryx2_bb_derive_macros::AtomicCopy;
 //! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 //! use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
-//! use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 //!
 //! #[repr(C)]
 //! #[derive(AtomicCopy, Clone, Copy)]
@@ -72,7 +71,7 @@
 //! const SIZE: usize = RelocatableByteAtomic::<Foo>::const_memory_size();
 //! let memory = [0u8; SIZE];
 //! let allocator = BumpAllocator::new(
-//!     core::ptr::NonNull::<u8>::iox2_from_ref(&memory[0]),
+//!     core::ptr::NonNull::<u8>::from_ref(&memory[0]),
 //!     memory.len(),
 //! );
 //! unsafe {

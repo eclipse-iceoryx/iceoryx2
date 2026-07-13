@@ -27,7 +27,6 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::slotmap::{SlotMap, SlotMapKey};
 use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -94,7 +93,7 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Abandonable
 {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { SlotMap::abandon_in_place(NonNull::iox2_from_mut(&mut this.shared_memory_map)) };
+        unsafe { SlotMap::abandon_in_place(NonNull::from_mut(&mut this.shared_memory_map)) };
     }
 }
 
@@ -110,7 +109,7 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Abandonable
 {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { Shm::abandon_in_place(NonNull::iox2_from_mut(&mut this.shm)) };
+        unsafe { Shm::abandon_in_place(NonNull::from_mut(&mut this.shm)) };
     }
 }
 
@@ -340,10 +339,8 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Abandonable
 {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { Shm::abandon_in_place(NonNull::iox2_from_mut(&mut this.mgmt_segment)) };
-        unsafe {
-            SlotMap::abandon_in_place(NonNull::iox2_from_mut(this.shared_memory_map.get_mut()))
-        };
+        unsafe { Shm::abandon_in_place(NonNull::from_mut(&mut this.mgmt_segment)) };
+        unsafe { SlotMap::abandon_in_place(NonNull::from_mut(this.shared_memory_map.get_mut())) };
     }
 }
 
@@ -360,10 +357,10 @@ where
         }
 
         let old_key = SlotMapKey::new(old_idx);
-        if let Some(shm) = shared_memory_map.get(old_key) {
-            if shm.chunk_count.load(Ordering::Relaxed) == 0 {
-                shared_memory_map.remove(old_key);
-            }
+        if let Some(shm) = shared_memory_map.get(old_key)
+            && shm.chunk_count.load(Ordering::Relaxed) == 0
+        {
+            shared_memory_map.remove(old_key);
         }
     }
 }
@@ -447,7 +444,7 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Abandonable
 {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { Shm::abandon_in_place(NonNull::iox2_from_mut(&mut this.mgmt_segment)) };
+        unsafe { Shm::abandon_in_place(NonNull::from_mut(&mut this.mgmt_segment)) };
     }
 }
 
@@ -490,12 +487,12 @@ where
         };
 
         for raw_name in &raw_names {
-            if let Some((extracted_name, _)) = Self::extract_name_and_segment_id(raw_name) {
-                if *name == extracted_name {
-                    fail!(from origin, when unsafe { Shm::remove_cfg(raw_name, config)},
+            if let Some((extracted_name, _)) = Self::extract_name_and_segment_id(raw_name)
+                && *name == extracted_name
+            {
+                fail!(from origin, when unsafe { Shm::remove_cfg(raw_name, config)},
                         "{msg} since the underlying SharedMemory could not be removed.");
-                    shm_removed = true;
-                }
+                shm_removed = true;
             }
         }
 
@@ -553,10 +550,10 @@ where
 
     fn extract_name_from_management_segment(name: &FileName) -> Option<FileName> {
         let mut name = *name;
-        if let Ok(true) = name.strip_suffix(MANAGEMENT_SUFFIX) {
-            if let Ok(true) = name.strip_suffix(SEGMENT_ID_SEPARATOR) {
-                return Some(name);
-            }
+        if let Ok(true) = name.strip_suffix(MANAGEMENT_SUFFIX)
+            && let Ok(true) = name.strip_suffix(SEGMENT_ID_SEPARATOR)
+        {
+            return Some(name);
         }
 
         None

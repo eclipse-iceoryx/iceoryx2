@@ -51,18 +51,18 @@ impl WaitSetAttachmentId {
     pub fn has_event_from(&self, other: &WaitSetGuard) -> bool {
         match &self.0 {
             WaitSetAttachmentIdType::Ipc(v) => {
-                if let WaitSetGuardType::Ipc(guard) = &other.0 {
-                    if let Some(guard) = &guard.guard {
-                        return v.has_event_from(guard);
-                    }
+                if let WaitSetGuardType::Ipc(guard) = &other.0
+                    && let Some(guard) = &guard.guard
+                {
+                    return v.has_event_from(guard);
                 }
                 false
             }
             WaitSetAttachmentIdType::Local(v) => {
-                if let WaitSetGuardType::Local(guard) = &other.0 {
-                    if let Some(guard) = &guard.guard {
-                        return v.has_event_from(guard);
-                    }
+                if let WaitSetGuardType::Local(guard) = &other.0
+                    && let Some(guard) = &guard.guard
+                {
+                    return v.has_event_from(guard);
                 }
                 false
             }
@@ -73,18 +73,18 @@ impl WaitSetAttachmentId {
     pub fn has_missed_deadline(&self, other: &WaitSetGuard) -> bool {
         match &self.0 {
             WaitSetAttachmentIdType::Ipc(v) => {
-                if let WaitSetGuardType::Ipc(guard) = &other.0 {
-                    if let Some(guard) = &guard.guard {
-                        return v.has_missed_deadline(guard);
-                    }
+                if let WaitSetGuardType::Ipc(guard) = &other.0
+                    && let Some(guard) = &guard.guard
+                {
+                    return v.has_missed_deadline(guard);
                 }
                 false
             }
             WaitSetAttachmentIdType::Local(v) => {
-                if let WaitSetGuardType::Local(guard) = &other.0 {
-                    if let Some(guard) = &guard.guard {
-                        return v.has_missed_deadline(guard);
-                    }
+                if let WaitSetGuardType::Local(guard) = &other.0
+                    && let Some(guard) = &guard.guard
+                {
+                    return v.has_missed_deadline(guard);
                 }
                 false
             }

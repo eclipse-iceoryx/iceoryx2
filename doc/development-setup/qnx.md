@@ -234,7 +234,7 @@ source ${QNX_TOOLCHAIN}/qnxsdp-env.sh
 
 # Clone Rust source
 export RUSTDIR=~/source/rust
-git clone https://github.com/rust-lang/rust.git -b 1.88.0 --depth 1 $RUSTDIR
+git clone https://github.com/rust-lang/rust.git -b 1.89.0 --depth 1 $RUSTDIR
 
 # Configure the build
 echo -e "[build]\nextended = true" > $RUSTDIR/config.toml

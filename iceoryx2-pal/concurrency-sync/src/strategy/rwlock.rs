@@ -294,7 +294,7 @@ impl RwLockWriterPreference {
 
             if !keep_running {
                 loop {
-                    if state % 2 != 0 && state != WRITE_LOCKED {
+                    if !state.is_multiple_of(2) && state != WRITE_LOCKED {
                         match self.state.compare_exchange(
                             state,
                             state - 1,
@@ -315,7 +315,7 @@ impl RwLockWriterPreference {
                 }
             }
 
-            if state % 2 == 0 {
+            if state.is_multiple_of(2) {
                 let _ = self.state.compare_exchange(
                     state,
                     state + 1,

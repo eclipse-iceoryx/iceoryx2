@@ -29,7 +29,6 @@ use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::AtomicU64;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_posix::adaptive_wait::{AdaptiveWaitBuilder, AdaptiveWaitStrategy};
 use iceoryx2_bb_posix::directory::*;
 use iceoryx2_bb_posix::file::File;
@@ -509,7 +508,7 @@ unsafe impl<T: Debug + Send + Sync + ZeroCopySend> Sync for Storage<T> {}
 impl<T: Debug + Send + Sync + ZeroCopySend> Abandonable for Storage<T> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { File::abandon_in_place(NonNull::iox2_from_mut(&mut this.file)) };
+        unsafe { File::abandon_in_place(NonNull::from_mut(&mut this.file)) };
         unsafe {
             core::ptr::drop_in_place(&mut this.memory_mapping);
         }

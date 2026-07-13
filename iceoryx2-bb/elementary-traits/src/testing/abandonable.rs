@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::non_null::NonNullCompat;
 use core::ptr::NonNull;
 
 /// **Only for testing purposes!**
@@ -24,7 +23,7 @@ use core::ptr::NonNull;
 /// * ...
 pub trait Abandonable: Sized {
     fn abandon(mut self) {
-        unsafe { Self::abandon_in_place(NonNull::iox2_from_mut(&mut self)) };
+        unsafe { Self::abandon_in_place(NonNull::from_mut(&mut self)) };
         core::mem::forget(self);
     }
 

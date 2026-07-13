@@ -19,7 +19,6 @@ use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::slotmap::SlotMapKey;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
-use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
@@ -66,12 +65,10 @@ impl<Service: service::Service, Resource: ServiceResource> Abandonable
 
         unsafe {
             <Service::Connection as ZeroCopyConnection>::Receiver::abandon_in_place(
-                NonNull::iox2_from_mut(&mut this.receiver),
+                NonNull::from_mut(&mut this.receiver),
             )
         };
-        unsafe {
-            DataSegmentView::abandon_in_place(NonNull::iox2_from_mut(&mut this.data_segment))
-        };
+        unsafe { DataSegmentView::abandon_in_place(NonNull::from_mut(&mut this.data_segment)) };
     }
 }
 
@@ -162,9 +159,7 @@ impl<Service: service::Service, Resource: ServiceResource> Abandonable
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
 
-        unsafe {
-            SharedServiceState::abandon_in_place(NonNull::iox2_from_mut(&mut this.service_state))
-        };
+        unsafe { SharedServiceState::abandon_in_place(NonNull::from_mut(&mut this.service_state)) };
     }
 }
 
@@ -417,12 +412,11 @@ impl<Service: service::Service, Resource: ServiceResource> Receiver<Service, Res
     pub(crate) fn has_samples_in_active_connection(&self, channel_id: ChannelId) -> bool {
         let connection_storage = unsafe { &mut *self.connection_storage.get() };
         for connection_key in self.connections.iter() {
-            if let Some(connection_key) = unsafe { &*connection_key.get() } {
-                if let Some(connection) = connection_storage.get(*connection_key) {
-                    if connection.receiver.has_data(channel_id) {
-                        return true;
-                    }
-                }
+            if let Some(connection_key) = unsafe { &*connection_key.get() }
+                && let Some(connection) = connection_storage.get(*connection_key)
+                && connection.receiver.has_data(channel_id)
+            {
+                return true;
             }
         }
         false
@@ -650,12 +644,11 @@ impl<Service: service::Service, Resource: ServiceResource> Receiver<Service, Res
     pub(crate) fn finish_update_connection_cycle(&self) {
         let connection_storage = unsafe { &mut *self.connection_storage.get() };
         for (n, connection_key) in self.connections.iter().enumerate() {
-            if let Some(connection_key) = unsafe { &*connection_key.get() } {
-                if let Some(connection) = connection_storage.get(*connection_key) {
-                    if !connection.was_tagged_by(&self.tagger) {
-                        self.remove_connection(n);
-                    }
-                }
+            if let Some(connection_key) = unsafe { &*connection_key.get() }
+                && let Some(connection) = connection_storage.get(*connection_key)
+                && !connection.was_tagged_by(&self.tagger)
+            {
+                self.remove_connection(n);
             }
         }
     }

@@ -465,10 +465,10 @@ impl<S: ServiceType> Service<S> {
             return Err(e);
         }
 
-        if let Some(notifier) = &mut self.notifier {
-            if changes_detected {
-                notifier.notify()?;
-            }
+        if let Some(notifier) = &mut self.notifier
+            && changes_detected
+        {
+            notifier.notify()?;
         }
 
         self.handle_discovery_requests()?;

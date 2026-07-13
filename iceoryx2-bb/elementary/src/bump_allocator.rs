@@ -20,7 +20,6 @@
 //! use core::ptr::NonNull;
 //!
 //! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-//! use iceoryx2_bb_elementary_traits::non_null::NonNullCompat;
 //! use crate::iceoryx2_bb_elementary::bump_allocator::BaseAllocator;
 //! extern crate iceoryx2_bb_loggers;
 //!
@@ -30,7 +29,7 @@
 //! let layout = Layout::from_size_align(MEM_SIZE, MEM_ALIGN).unwrap();
 //!
 //! let allocator = BumpAllocator::new(
-//!     NonNull::<u8>::iox2_from_ref(&memory[0]),
+//!     NonNull::<u8>::from_ref(&memory[0]),
 //!     memory.len(),
 //! );
 //!

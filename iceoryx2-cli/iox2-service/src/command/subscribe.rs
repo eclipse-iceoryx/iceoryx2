@@ -117,16 +117,16 @@ pub(crate) fn subscribe(options: SubscribeOptions, format: Format) -> Result<()>
             }
 
             msg_counter += 1;
-            if let Some(max_messages) = options.max_messages {
-                if msg_counter >= max_messages {
-                    break 'node_loop;
-                }
+            if let Some(max_messages) = options.max_messages
+                && msg_counter >= max_messages
+            {
+                break 'node_loop;
             }
 
-            if let Some(timeout) = options.timeout {
-                if start.elapsed().as_millis() >= timeout as _ {
-                    break 'node_loop;
-                }
+            if let Some(timeout) = options.timeout
+                && start.elapsed().as_millis() >= timeout as _
+            {
+                break 'node_loop;
             }
         }
     }
