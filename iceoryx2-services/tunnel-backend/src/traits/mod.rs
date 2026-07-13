@@ -14,6 +14,7 @@ mod backend;
 mod discovery;
 mod mapping;
 mod relay;
+mod resizable_buffer;
 mod translator;
 
 pub mod testing;
@@ -22,4 +23,5 @@ pub use backend::*;
 pub use discovery::*;
 pub use mapping::*;
 pub use relay::*;
+pub use resizable_buffer::*;
 pub use translator::*;

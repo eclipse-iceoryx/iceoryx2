@@ -94,9 +94,8 @@ where
         self
     }
 
-    /// Sets the payload translation strategy applied by the backend. Defaults
-    /// to [`Passthrough`](iceoryx2_services_tunnel_backend::traits::Passthrough)
-    /// when not set.
+    /// Sets the payload translation strategy applied by the backend. Falls
+    /// back to the strategy's default when not set.
     pub fn translator(mut self, translator: <B as Backend<S>>::Translator) -> Self {
         self.translator = Some(translator);
         self

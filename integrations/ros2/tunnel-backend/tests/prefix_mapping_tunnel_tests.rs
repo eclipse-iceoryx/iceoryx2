@@ -22,7 +22,9 @@ use iceoryx2::testing::generate_isolated_config;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_integrations_ros2_tunnel_backend::ros_header::RosHeader;
 use iceoryx2_integrations_ros2_tunnel_backend::testing::{TestPeer, Testing};
-use iceoryx2_integrations_ros2_tunnel_backend::{Config, PrefixMapping, Ros2Backend, TopicConfig};
+use iceoryx2_integrations_ros2_tunnel_backend::{
+    Config, PrefixMapping, Ros2Backend, TopicConfig, TopicDescription,
+};
 use iceoryx2_services_tunnel::Tunnel;
 use iceoryx2_services_tunnel_backend::traits::Passthrough;
 use iceoryx2_services_tunnel_backend::traits::testing::Testing as _;
@@ -45,7 +47,9 @@ fn maps_iceoryx_services_onto_ros_topics() {
         .create()
         .unwrap();
 
-    let mut tunnel = Tunnel::<Service, Ros2Backend<Service, PrefixMapping, Passthrough>>::new()
+    let mut tunnel =
+        Tunnel::<Service, Ros2Backend<Service, PrefixMapping, Passthrough<TopicDescription>>>::new(
+        )
         .iceoryx_config(config)
         .backend_config(Config::default())
         .polled()
@@ -92,7 +96,9 @@ fn does_not_map_unprefixed_services() {
         .create()
         .unwrap();
 
-    let mut tunnel = Tunnel::<Service, Ros2Backend<Service, PrefixMapping, Passthrough>>::new()
+    let mut tunnel =
+        Tunnel::<Service, Ros2Backend<Service, PrefixMapping, Passthrough<TopicDescription>>>::new(
+        )
         .iceoryx_config(config)
         .backend_config(Config::default())
         .polled()
@@ -141,7 +147,9 @@ fn does_not_map_event_services() {
         .create()
         .unwrap();
 
-    let mut tunnel = Tunnel::<Service, Ros2Backend<Service, PrefixMapping, Passthrough>>::new()
+    let mut tunnel =
+        Tunnel::<Service, Ros2Backend<Service, PrefixMapping, Passthrough<TopicDescription>>>::new(
+        )
         .iceoryx_config(config)
         .backend_config(Config::default())
         .polled()
@@ -174,16 +182,17 @@ fn maps_ros_topics_onto_iceoryx2_services() {
     );
 
     let config = generate_isolated_config();
-    let mut tunnel = Tunnel::<Service, Ros2Backend<Service, PrefixMapping, Passthrough>>::new()
-        .iceoryx_config(config.clone())
-        .backend_config(Config {
-            topics: vec![
-                TopicConfig::new(&topic, "std_msgs/msg/String").expect("valid topic config"),
-            ],
-        })
-        .polled()
-        .create()
-        .unwrap();
+    let mut tunnel = Tunnel::<
+        Service,
+        Ros2Backend<Service, PrefixMapping, Passthrough<TopicDescription>>,
+    >::new()
+    .iceoryx_config(config.clone())
+    .backend_config(Config {
+        topics: vec![TopicConfig::new(&topic, "std_msgs/msg/String").expect("valid topic config")],
+    })
+    .polled()
+    .create()
+    .unwrap();
 
     let peer = TestPeer::create();
     let _publisher = peer.create_publisher(&topic, "std_msgs/msg/String");

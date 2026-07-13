@@ -48,7 +48,7 @@ impl core::error::Error for CreationError {}
 pub struct Ros2Backend<
     S: Service,
     M: Mapping<EndpointDescription = TopicDescription> = PrefixMapping,
-    T: Translator = Passthrough,
+    T: Translator<EndpointDescription = TopicDescription> = Passthrough<TopicDescription>,
 > {
     node: Rc<RclNode>,
     /// Typesupport for all configured topics, loaded on initialization.
@@ -61,8 +61,11 @@ pub struct Ros2Backend<
     _phantom: core::marker::PhantomData<S>,
 }
 
-impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>, T: Translator> Backend<S>
-    for Ros2Backend<S, M, T>
+impl<
+    S: Service,
+    M: Mapping<EndpointDescription = TopicDescription>,
+    T: Translator<EndpointDescription = TopicDescription>,
+> Backend<S> for Ros2Backend<S, M, T>
 {
     type Config = Config;
     type Translator = T;
@@ -112,7 +115,7 @@ pub struct Builder<
     'a,
     S: Service,
     M: Mapping<EndpointDescription = TopicDescription> = PrefixMapping,
-    T: Translator = Passthrough,
+    T: Translator<EndpointDescription = TopicDescription> = Passthrough<TopicDescription>,
 > {
     config: &'a Config,
     mapping: M,
@@ -121,8 +124,12 @@ pub struct Builder<
     _phantom: core::marker::PhantomData<S>,
 }
 
-impl<'a, S: Service, M: Mapping<EndpointDescription = TopicDescription>, T: Translator>
-    Builder<'a, S, M, T>
+impl<
+    'a,
+    S: Service,
+    M: Mapping<EndpointDescription = TopicDescription>,
+    T: Translator<EndpointDescription = TopicDescription>,
+> Builder<'a, S, M, T>
 {
     pub fn new(config: &'a Config) -> Self {
         Self {
@@ -135,8 +142,11 @@ impl<'a, S: Service, M: Mapping<EndpointDescription = TopicDescription>, T: Tran
     }
 }
 
-impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>, T: Translator>
-    BackendBuilder<S> for Builder<'_, S, M, T>
+impl<
+    S: Service,
+    M: Mapping<EndpointDescription = TopicDescription>,
+    T: Translator<EndpointDescription = TopicDescription>,
+> BackendBuilder<S> for Builder<'_, S, M, T>
 {
     type Backend = Ros2Backend<S, M, T>;
     type CreationError = CreationError;
@@ -187,8 +197,11 @@ impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>, T: Translat
     }
 }
 
-impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>, T: Translator>
-    ReactiveBackendBuilder<S> for Builder<'_, S, M, T>
+impl<
+    S: Service,
+    M: Mapping<EndpointDescription = TopicDescription>,
+    T: Translator<EndpointDescription = TopicDescription>,
+> ReactiveBackendBuilder<S> for Builder<'_, S, M, T>
 {
     type WakeService = local_threadsafe::Service;
 

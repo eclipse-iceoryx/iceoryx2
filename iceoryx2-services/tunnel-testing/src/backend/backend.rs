@@ -43,7 +43,13 @@ impl core::fmt::Display for CreationError {
 impl core::error::Error for CreationError {}
 
 #[derive(Debug)]
-pub struct TestBackend<S: Service, M: Mapping = Identity, T: Translator = Passthrough> {
+pub struct TestBackend<
+    S: Service,
+    M: Mapping = Identity,
+    T: Translator<EndpointDescription = <M as Mapping>::EndpointDescription> = Passthrough<
+        <M as Mapping>::EndpointDescription,
+    >,
+> {
     session: Rc<Session>,
     discovery: Discovery,
     #[allow(dead_code)]
@@ -52,7 +58,9 @@ pub struct TestBackend<S: Service, M: Mapping = Identity, T: Translator = Passth
     _phantom: core::marker::PhantomData<S>,
 }
 
-impl<S: Service, M: Mapping, T: Translator> Backend<S> for TestBackend<S, M, T> {
+impl<S: Service, M: Mapping, T: Translator<EndpointDescription = M::EndpointDescription>> Backend<S>
+    for TestBackend<S, M, T>
+{
     type Config = Config;
     type Translator = T;
     type Mapping = M;
@@ -91,14 +99,23 @@ impl<S: Service, M: Mapping, T: Translator> Backend<S> for TestBackend<S, M, T> 
 
 /// Builder for [`TestBackend`].
 #[derive(Debug)]
-pub struct Builder<'config, S: Service, M: Mapping = Identity, T: Translator = Passthrough> {
+pub struct Builder<
+    'config,
+    S: Service,
+    M: Mapping = Identity,
+    T: Translator<EndpointDescription = <M as Mapping>::EndpointDescription> = Passthrough<
+        <M as Mapping>::EndpointDescription,
+    >,
+> {
     _config: &'config Config,
     translator: T,
     mapping: M,
     _phantom: core::marker::PhantomData<S>,
 }
 
-impl<'config, S: Service, M: Mapping, T: Translator> Builder<'config, S, M, T> {
+impl<'config, S: Service, M: Mapping, T: Translator<EndpointDescription = M::EndpointDescription>>
+    Builder<'config, S, M, T>
+{
     pub fn new(config: &'config Config) -> Self {
         Self {
             _config: config,
@@ -109,7 +126,9 @@ impl<'config, S: Service, M: Mapping, T: Translator> Builder<'config, S, M, T> {
     }
 }
 
-impl<S: Service, M: Mapping, T: Translator> BackendBuilder<S> for Builder<'_, S, M, T> {
+impl<S: Service, M: Mapping, T: Translator<EndpointDescription = M::EndpointDescription>>
+    BackendBuilder<S> for Builder<'_, S, M, T>
+{
     type Backend = TestBackend<S, M, T>;
     type CreationError = CreationError;
 
