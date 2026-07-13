@@ -95,6 +95,10 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
     fn send(&self, sample: Sample<S>) -> Result<(), Self::SendError> {
         let origin = "publish_subscribe::Relay::send";
 
+        // TRANSLATION GOES HERE
+        // Instead of publishing the payload bytes directly:
+        //  1. Translate into intermediate buffer
+        //  2. Publish intermediate buffer
         fail!(from origin,
             when self.publisher.publish(payload::as_bytes(sample.payload())),
             with SendError::Publish,
@@ -109,6 +113,11 @@ impl<S: Service> PublishSubscribeRelay<S> for Relay<S> {
         loan: &mut LoanFn<'_, S, LoanError>,
     ) -> Result<Option<SampleMut<S>>, Self::ReceiveError> {
         let mut loaned: Option<SampleMutUninit<S>> = None;
+
+        // TRANSLATION GOES HERE
+        // Instead of taking directly into an iceoryx2 buffer:
+        //  1. Take into an intermediate buffer
+        //  2. Translate from intermediate buffer into iceoryx2 buffer
         let result = self.subscription.take_into(|size| match loan(size) {
             Ok(mut sample) => {
                 let buffer = payload::uninit_bytes_ptr(sample.payload_mut());

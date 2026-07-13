@@ -15,7 +15,9 @@ use std::sync::Arc;
 
 use iceoryx2::service::{Service, local_threadsafe};
 use iceoryx2_log::fail;
-use iceoryx2_services_tunnel_backend::traits::{Backend, BackendBuilder, ReactiveBackendBuilder};
+use iceoryx2_services_tunnel_backend::traits::{
+    Backend, BackendBuilder, Passthrough, ReactiveBackendBuilder, Translator,
+};
 use iceoryx2_services_tunnel_backend::types::wake::WakeHandle;
 
 use crate::NODE_NAME;
@@ -42,7 +44,7 @@ impl core::fmt::Display for CreationError {
 impl core::error::Error for CreationError {}
 
 #[derive(Debug)]
-pub struct Ros2Backend<S: Service> {
+pub struct Ros2Backend<S: Service, T: Translator = Passthrough> {
     node: Rc<RclNode>,
     /// Typesupport for all configured topics, loaded on initialization.
     type_registry: TypeSupportRegistry,
@@ -50,15 +52,18 @@ pub struct Ros2Backend<S: Service> {
     /// `Some` when constructed in reactive mode. Cloned into each relay so
     /// that incoming ROS 2 data signals the wake.
     wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
+    #[allow(dead_code)]
+    translator: T,
     _phantom: core::marker::PhantomData<S>,
 }
 
-impl<S: Service> Backend<S> for Ros2Backend<S> {
+impl<S: Service, T: Translator> Backend<S> for Ros2Backend<S, T> {
     type Config = Config;
+    type Translator = T;
     type CreationError = CreationError;
 
     type Builder<'a>
-        = Builder<'a, S>
+        = Builder<'a, S, T>
     where
         Self::Config: 'a;
 
@@ -91,25 +96,32 @@ impl<S: Service> Backend<S> for Ros2Backend<S> {
 
 /// Builder for [`Ros2Backend`].
 #[derive(Debug)]
-pub struct Builder<'a, S: Service> {
+pub struct Builder<'a, S: Service, T: Translator = Passthrough> {
     config: &'a Config,
     wake: Option<WakeHandle<local_threadsafe::Service>>,
+    translator: T,
     _phantom: core::marker::PhantomData<S>,
 }
 
-impl<'a, S: Service> Builder<'a, S> {
+impl<'a, S: Service, T: Translator> Builder<'a, S, T> {
     pub fn new(config: &'a Config) -> Self {
         Self {
             config,
             wake: None,
+            translator: T::default(),
             _phantom: core::marker::PhantomData,
         }
     }
 }
 
-impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
-    type Backend = Ros2Backend<S>;
+impl<S: Service, T: Translator> BackendBuilder<S> for Builder<'_, S, T> {
+    type Backend = Ros2Backend<S, T>;
     type CreationError = CreationError;
+
+    fn translator(mut self, translator: T) -> Self {
+        self.translator = translator;
+        self
+    }
 
     fn create(self) -> Result<Self::Backend, Self::CreationError> {
         let origin = "Ros2Backend::create";
@@ -139,12 +151,13 @@ impl<S: Service> BackendBuilder<S> for Builder<'_, S> {
             type_registry,
             discovery,
             wake: self.wake.map(Arc::new),
+            translator: self.translator,
             _phantom: core::marker::PhantomData,
         })
     }
 }
 
-impl<S: Service> ReactiveBackendBuilder<S> for Builder<'_, S> {
+impl<S: Service, T: Translator> ReactiveBackendBuilder<S> for Builder<'_, S, T> {
     type WakeService = local_threadsafe::Service;
 
     fn reactive(mut self, wake: WakeHandle<local_threadsafe::Service>) -> Self {

@@ -65,6 +65,7 @@ where
     tunnel_config: Option<Config>,
     iceoryx_config: Option<iceoryx2::config::Config>,
     backend_config: Option<<B as Backend<S>>::Config>,
+    translator: Option<<B as Backend<S>>::Translator>,
     _phantom: PhantomData<(S, B, M)>,
 }
 
@@ -91,6 +92,14 @@ where
         self.backend_config = Some(config);
         self
     }
+
+    /// Sets the payload translation strategy applied by the backend. Defaults
+    /// to [`Passthrough`](iceoryx2_services_tunnel_backend::traits::Passthrough)
+    /// when not set.
+    pub fn translator(mut self, translator: <B as Backend<S>>::Translator) -> Self {
+        self.translator = Some(translator);
+        self
+    }
 }
 
 impl<S, B> TunnelBuilder<S, B, Unconfigured>
@@ -105,6 +114,7 @@ where
             tunnel_config: None,
             iceoryx_config: None,
             backend_config: None,
+            translator: None,
             _phantom: PhantomData,
         }
     }
@@ -116,6 +126,7 @@ where
             tunnel_config: self.tunnel_config,
             iceoryx_config: self.iceoryx_config,
             backend_config: self.backend_config,
+            translator: self.translator,
             _phantom: PhantomData,
         }
     }
@@ -134,6 +145,7 @@ where
             tunnel_config: self.tunnel_config,
             iceoryx_config: self.iceoryx_config,
             backend_config: self.backend_config,
+            translator: self.translator,
             _phantom: PhantomData,
         }
     }
@@ -160,6 +172,7 @@ where
             self.tunnel_config.unwrap_or_default(),
             self.iceoryx_config.unwrap_or_default(),
             self.backend_config.unwrap_or_default(),
+            self.translator.unwrap_or_default(),
         )
     }
 }
@@ -180,6 +193,7 @@ where
             self.tunnel_config.unwrap_or_default(),
             self.iceoryx_config.unwrap_or_default(),
             self.backend_config.unwrap_or_default(),
+            self.translator.unwrap_or_default(),
         )
     }
 }
@@ -189,6 +203,7 @@ fn create_polled<S, B>(
     tunnel_config: Config,
     iceoryx_config: iceoryx2::config::Config,
     backend_config: <B as Backend<S>>::Config,
+    translator: <B as Backend<S>>::Translator,
 ) -> Result<Tunnel<S, B>, CreationError>
 where
     S: Service,
@@ -198,7 +213,7 @@ where
 
     let backend = fail!(
         from origin,
-        when B::builder(&backend_config).create(),
+        when B::builder(&backend_config).translator(translator).create(),
         with CreationError::Backend,
         "Failed to create backend"
     );
@@ -211,6 +226,7 @@ fn create_reactive<S, B, W>(
     tunnel_config: Config,
     iceoryx_config: iceoryx2::config::Config,
     backend_config: <B as Backend<S>>::Config,
+    translator: <B as Backend<S>>::Translator,
 ) -> Result<(Tunnel<S, B>, Listener<W>), CreationError>
 where
     S: Service,
@@ -265,7 +281,7 @@ where
 
     let backend = fail!(
         from origin,
-        when B::builder(&backend_config).reactive(wake).create(),
+        when B::builder(&backend_config).translator(translator).reactive(wake).create(),
         with CreationError::Backend,
         "Failed to create reactive backend"
     );
