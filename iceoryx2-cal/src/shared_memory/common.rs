@@ -457,7 +457,7 @@ pub mod details {
             unsafe { self.storage.get().allocator.assume_init_ref() }.max_alignment()
         }
 
-        fn grow(
+        unsafe fn grow(
             &self,
             ptr: ShmPointer,
             old_layout: Layout,

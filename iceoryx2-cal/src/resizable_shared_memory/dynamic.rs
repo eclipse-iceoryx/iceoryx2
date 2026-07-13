@@ -827,10 +827,11 @@ where
 
         let current_segment = self.current_segment(msg);
 
-        match current_segment
-            .shm
-            .grow(old_pointer, old_layout, new_layout, placement)
-        {
+        match unsafe {
+            current_segment
+                .shm
+                .grow(old_pointer, old_layout, new_layout, placement)
+        } {
             Ok(mut ptr) => {
                 ptr.offset
                     .set_segment_id(SegmentId::new(state.current_idx.value() as u8));

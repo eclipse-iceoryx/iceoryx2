@@ -186,7 +186,14 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
     fn allocate(&self, layout: Layout) -> Result<ShmPointer, ShmAllocationError>;
 
     /// Grows allocated memory to a new increased size.
-    fn grow(
+    ///
+    /// # Safety
+    ///
+    ///  * the offset must be acquired with [`SharedMemory::allocate()`] - extracted from the
+    ///    [`ShmPointer`]
+    ///  * the `old_layout` must be identical to the one used in [`SharedMemory::allocate()`]
+    ///
+    unsafe fn grow(
         &self,
         ptr: ShmPointer,
         old_layout: Layout,
