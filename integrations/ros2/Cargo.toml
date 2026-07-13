@@ -39,6 +39,7 @@ iceoryx2-services-common = { version = "0.9.999", path = "../../iceoryx2-service
 iceoryx2-services-tunnel = { version = "0.9.999", path = "../../iceoryx2-services/tunnel", features = ["std"] }
 iceoryx2-services-tunnel-backend = { version = "0.9.999", path = "../../iceoryx2-services/tunnel-backend", features = ["std"] }
 
+cdr = { version = "0.2.4" }
 libloading = { version = "0.8" }
 r2r_rcl = { version = "0.9.5" }
 serde = { version = "1.0.203", default-features = false, features = ["alloc", "derive"] }

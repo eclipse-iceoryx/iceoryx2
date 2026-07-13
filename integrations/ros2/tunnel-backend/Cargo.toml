@@ -24,4 +24,18 @@ serde = { workspace = true }
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }
 iceoryx2-services-tunnel = { workspace = true }
+
+cdr = { workspace = true }
 toml = { workspace = true }
+
+[[example]]
+name = "translation_twist_tunnel"
+path = "examples/translation/twist_tunnel.rs"
+
+[[example]]
+name = "translation_twist_talker"
+path = "examples/translation/twist_talker.rs"
+
+[[example]]
+name = "translation_twist_listener"
+path = "examples/translation/twist_listener.rs"
