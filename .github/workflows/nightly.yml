@@ -129,3 +129,34 @@ jobs:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
       profile: ${{ matrix.profile }}
+
+  freebsd:
+    needs: [static-code-analysis-rust-nightly]
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      matrix:
+        freebsd_version: ["15.0"]
+        toolchain: ["stable"]
+        mode: ["debug"]
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
+
+      - name: Save disk space
+        uses: ./.github/actions/save-disk-space
+        with:
+          mode: "remove-unneeded-software-from-runner"
+
+      - name: Build and Test
+        uses: vmactions/freebsd-vm@5a72679103d223925653750faa878a143340fbd0 # version v1.5.0
+        with:
+          release: ${{ matrix.freebsd_version }}
+          mem: 16384
+          copyback: false
+          usesh: true
+          prepare: pkg install -y cmake curl gcc git llvm
+          run: |
+            git config --global --add safe.directory /home/runner/work/iceoryx2/iceoryx2
+            ./internal/scripts/ci_prepare_freebsd.sh
+            bash internal/scripts/ci_build_and_test_freebsd.bash --toolchain ${{ matrix.toolchain }} --mode ${{ matrix.mode }}
