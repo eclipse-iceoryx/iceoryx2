@@ -374,7 +374,7 @@ struct Verify {
 /// See [`crate::service`]
 #[derive(Debug)]
 pub struct Builder<
-    Payload: Debug + ?Sized + ZeroCopySend,
+    Payload: Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
     ServiceType: service::Service,
 > {
@@ -388,11 +388,8 @@ pub struct Builder<
     _user_header: PhantomData<UserHeader>,
 }
 
-impl<
-    Payload: Debug + ?Sized + ZeroCopySend,
-    UserHeader: Debug + ZeroCopySend,
-    ServiceType: service::Service,
-> Clone for Builder<Payload, UserHeader, ServiceType>
+impl<Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend, ServiceType: service::Service> Clone
+    for Builder<Payload, UserHeader, ServiceType>
 {
     fn clone(&self) -> Self {
         Self {
@@ -408,11 +405,8 @@ impl<
     }
 }
 
-impl<
-    Payload: Debug + ?Sized + ZeroCopySend,
-    UserHeader: Debug + ZeroCopySend,
-    ServiceType: service::Service,
-> Builder<Payload, UserHeader, ServiceType>
+impl<Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
+    Builder<Payload, UserHeader, ServiceType>
 {
     fn has_flatbuffer_payload() -> bool {
         unsafe {
@@ -820,7 +814,7 @@ impl<Payload: Debug + ?Sized + ZeroCopySend, ServiceType: service::Service>
     }
 }
 
-impl<Payload: Debug + ZeroCopySend, UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
+impl<Payload: Debug, UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
     Builder<Payload, UserHeader, ServiceType>
 {
     fn prepare_config_details(&mut self) {

@@ -68,7 +68,7 @@ pub struct TypeDetail {
 impl TypeDetail {
     /// Creates a new [`TypeDetail`] from the provided `T`. The [`TypeVariant`] defines if
     /// the type is part of a slice or directly contained.
-    pub fn new<T: ZeroCopySend>(variant: TypeVariant) -> Self {
+    pub fn new<T>(variant: TypeVariant) -> Self {
         Self {
             variant,
             type_name: unsafe {
@@ -143,7 +143,7 @@ pub struct MessageTypeDetails {
 }
 
 impl MessageTypeDetails {
-    pub(crate) fn from<Header: ZeroCopySend, UserHeader: ZeroCopySend, Payload: ZeroCopySend>(
+    pub(crate) fn from<Header: ZeroCopySend, UserHeader: ZeroCopySend, Payload>(
         payload_variant: TypeVariant,
     ) -> Self {
         Self {

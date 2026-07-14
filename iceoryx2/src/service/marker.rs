@@ -42,9 +42,3 @@ impl<T> Debug for Flatbuffer<T> {
         write!(f, "Flatbuffer<{}>", core::any::type_name::<T>())
     }
 }
-
-unsafe impl<T> ZeroCopySend for Flatbuffer<T> {
-    unsafe fn type_name() -> &'static str {
-        "iox2::Flatbuffer"
-    }
-}

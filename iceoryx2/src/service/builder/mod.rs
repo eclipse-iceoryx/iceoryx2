@@ -221,7 +221,7 @@ impl<S: Service> Builder<S> {
 
     /// Create a new builder to create a
     /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) [`Service`].
-    pub fn publish_subscribe<PayloadType: Debug + ?Sized + ZeroCopySend>(
+    pub fn publish_subscribe<PayloadType: Debug + ?Sized>(
         self,
     ) -> publish_subscribe::Builder<PayloadType, (), S> {
         BuilderWithServiceType::new(
@@ -305,7 +305,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         request_response::Builder::new(self)
     }
 
-    fn publish_subscribe<PayloadType: Debug + ?Sized + ZeroCopySend>(
+    fn publish_subscribe<PayloadType: Debug + ?Sized>(
         self,
     ) -> publish_subscribe::Builder<PayloadType, (), ServiceType> {
         publish_subscribe::Builder::new(self)
