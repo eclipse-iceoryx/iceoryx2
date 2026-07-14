@@ -76,6 +76,90 @@ impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>> Discovery<S
             _phantom: core::marker::PhantomData,
         }
     }
+
+    fn is_present_on_graph(
+        graph: &[(crate::rcl::TopicName, Vec<crate::rcl::TypeName>)],
+        topic: &TopicName,
+    ) -> bool {
+        graph
+            .iter()
+            .any(|(name, _)| name.as_str() == topic.as_str())
+    }
+
+    /// Builds the topic description for a live `topic`.
+    fn topic_description(
+        &self,
+        topic: &TopicName,
+        type_name: &TypeName,
+    ) -> Result<TopicDescription, DiscoveryError> {
+        let origin = "Discovery::describe_remote";
+
+        let profiles = fail!(from origin,
+            when self.node.publisher_qos_profiles(&topic.into()),
+            with DiscoveryError::Graph,
+            "Failed to query publisher QoS for topic '{}'",
+            topic.as_str()
+        );
+
+        // Assume a single publisher: take its QoS, defaulting when only
+        // subscribers exist. Any further publishers' QoS is ignored.
+        // TODO: reconcile QoS across multiple publishers on the same topic.
+        let qos = profiles.into_iter().next().unwrap_or_default();
+
+        Ok(TopicDescription {
+            topic: topic.clone(),
+            type_name: type_name.clone(),
+            qos,
+        })
+    }
+
+    fn on_discovered<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
+        &self,
+        topic: &TopicName,
+        type_name: &TypeName,
+        process_discovery: &mut F,
+    ) -> Result<(), DiscoveryError> {
+        let origin = "Discovery::discover_added";
+
+        let topic_description = self.topic_description(topic, type_name)?;
+        let Some(service_description) = self.mapping.local::<S>(&topic_description) else {
+            return Ok(());
+        };
+
+        let service_hash = service_description.service_hash;
+        fail!(from origin,
+            when process_discovery(DiscoveryUpdate::Added(service_description)),
+            with DiscoveryError::Processing,
+            "Failed to process discovery 'Added' event for topic '{}'",
+            topic.as_str()
+        );
+
+        self.discovered
+            .borrow_mut()
+            .insert(topic.clone(), service_hash);
+
+        Ok(())
+    }
+
+    fn on_removed<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
+        &self,
+        topic: &TopicName,
+        process_discovery: &mut F,
+    ) -> Result<(), DiscoveryError> {
+        let origin = "Discovery::discover_removed";
+
+        let service_hash = self.discovered.borrow()[topic];
+        fail!(from origin,
+            when process_discovery(DiscoveryUpdate::Removed(service_hash)),
+            with DiscoveryError::Processing,
+            "Failed to process discovery 'Removed' event for topic '{}'",
+            topic.as_str()
+        );
+
+        self.discovered.borrow_mut().remove(topic);
+
+        Ok(())
+    }
 }
 
 impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>>
@@ -105,55 +189,13 @@ impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>>
         );
 
         for (topic, type_name) in &self.allowlist {
-            let live = graph
-                .iter()
-                .any(|(name, _)| name.as_str() == topic.as_str());
+            let live = Self::is_present_on_graph(&graph, topic);
             let discovered = self.discovered.borrow().contains_key(topic);
 
             if live && !discovered {
-                let profiles = fail!(from origin,
-                    when self.node.publisher_qos_profiles(&topic.into()),
-                    with DiscoveryError::Graph,
-                    "Failed to query publisher QoS for topic '{}'",
-                    topic.as_str()
-                );
-
-                // The description carries one profile; take the first
-                // publisher's, defaulting when only subscribers exist.
-                let qos = profiles.into_iter().next().unwrap_or_default();
-
-                let remote = TopicDescription {
-                    topic: topic.clone(),
-                    type_name: type_name.clone(),
-                    qos,
-                };
-
-                // Skip topics not mapped.
-                let Some(description) = self.mapping.local::<S>(&remote) else {
-                    continue;
-                };
-
-                let service_hash = description.service_hash;
-                fail!(from origin,
-                    when process_discovery(DiscoveryUpdate::Added(description)),
-                    with DiscoveryError::Processing,
-                    "Failed to process discovery 'Added' event for topic '{}'",
-                    topic.as_str()
-                );
-
-                self.discovered
-                    .borrow_mut()
-                    .insert(topic.clone(), service_hash);
+                self.on_discovered(topic, type_name, &mut process_discovery)?;
             } else if !live && discovered {
-                let service_hash = self.discovered.borrow()[topic];
-                fail!(from origin,
-                    when process_discovery(DiscoveryUpdate::Removed(service_hash)),
-                    with DiscoveryError::Processing,
-                    "Failed to process discovery 'Removed' event for topic '{}'",
-                    topic.as_str()
-                );
-
-                self.discovered.borrow_mut().remove(topic);
+                self.on_removed(topic, &mut process_discovery)?;
             }
         }
 
