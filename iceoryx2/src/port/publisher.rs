@@ -332,7 +332,7 @@ impl<Service: service::Service> PublisherSharedState<Service> {
 #[derive(Debug)]
 pub struct Publisher<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized + 'static,
+    Payload: Debug + ?Sized + 'static,
     UserHeader: Debug + ZeroCopySend,
 > {
     pub(crate) publisher_shared_state:
@@ -343,31 +343,22 @@ pub struct Publisher<
     _user_header: PhantomData<UserHeader>,
 }
 
-unsafe impl<
-    Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: Debug + ZeroCopySend,
-> Send for Publisher<Service, Payload, UserHeader>
+unsafe impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
+    Send for Publisher<Service, Payload, UserHeader>
 where
     Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>: Send + Sync,
 {
 }
 
-unsafe impl<
-    Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: Debug + ZeroCopySend,
-> Sync for Publisher<Service, Payload, UserHeader>
+unsafe impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
+    Sync for Publisher<Service, Payload, UserHeader>
 where
     Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>: Send + Sync,
 {
 }
 
-impl<
-    Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: Debug + ZeroCopySend,
-> Abandonable for Publisher<Service, Payload, UserHeader>
+impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
+    Abandonable for Publisher<Service, Payload, UserHeader>
 {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
@@ -379,11 +370,8 @@ impl<
     }
 }
 
-impl<
-    Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: Debug + ZeroCopySend,
-> Drop for Publisher<Service, Payload, UserHeader>
+impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend> Drop
+    for Publisher<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
         let shared_state = self.publisher_shared_state.lock();
@@ -398,11 +386,8 @@ impl<
     }
 }
 
-impl<
-    Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: Debug + ZeroCopySend,
-> Publisher<Service, Payload, UserHeader>
+impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
+    Publisher<Service, Payload, UserHeader>
 {
     pub(crate) fn new(
         publisher_factory: PortFactoryPublisher<Service, Payload, UserHeader>,
@@ -598,11 +583,8 @@ impl<
 ////////////////////////
 // BEGIN: typed API
 ////////////////////////
-impl<
-    Service: service::Service,
-    Payload: Debug + ZeroCopySend + Sized,
-    UserHeader: Default + Debug + ZeroCopySend,
-> Publisher<Service, Payload, UserHeader>
+impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Default + Debug + ZeroCopySend>
+    Publisher<Service, Payload, UserHeader>
 {
     /// Copies the input `value` into a [`crate::sample_mut::SampleMut`] and delivers it.
     /// On success it returns the number of [`crate::port::subscriber::Subscriber`]s that received
@@ -626,7 +608,10 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn send_copy(&self, value: Payload) -> Result<usize, SendError> {
+    pub fn send_copy(&self, value: Payload) -> Result<usize, SendError>
+    where
+        Payload: ZeroCopySend,
+    {
         let msg = "Unable to send copy of payload";
         let sample = fail!(from self, when self.loan_uninit(),
                                     "{} since the loan of a sample failed.", msg);
@@ -686,14 +671,7 @@ impl<
             ),
         )
     }
-}
 
-impl<
-    Service: service::Service,
-    Payload: Default + Debug + ZeroCopySend + Sized,
-    UserHeader: Default + Debug + ZeroCopySend,
-> Publisher<Service, Payload, UserHeader>
-{
     /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`]
     /// and initialize it with the default value. This can be a performance hit and [`Publisher::loan_uninit`]
     /// can be used to loan a [`core::mem::MaybeUninit<Payload>`].
@@ -721,7 +699,10 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn loan(&self) -> Result<SampleMut<Service, Payload, UserHeader>, LoanError> {
+    pub fn loan(&self) -> Result<SampleMut<Service, Payload, UserHeader>, LoanError>
+    where
+        Payload: ZeroCopySend + Default,
+    {
         Ok(self.loan_uninit()?.write_payload(Payload::default()))
     }
 }

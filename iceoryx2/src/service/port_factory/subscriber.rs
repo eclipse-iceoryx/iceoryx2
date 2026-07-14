@@ -61,25 +61,22 @@ pub(crate) struct SubscriberConfig {
 pub struct PortFactorySubscriber<
     'factory,
     Service: service::Service,
-    PayloadType: Debug + ZeroCopySend + ?Sized,
+    PayloadType: Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > {
     config: SubscriberConfig,
     pub(crate) factory: &'factory PortFactory<Service, PayloadType, UserHeader>,
 }
 
-unsafe impl<
-    Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: Debug + ZeroCopySend,
-> Send for PortFactorySubscriber<'_, Service, Payload, UserHeader>
+unsafe impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
+    Send for PortFactorySubscriber<'_, Service, Payload, UserHeader>
 {
 }
 
 impl<
     'factory,
     Service: service::Service,
-    PayloadType: Debug + ZeroCopySend + ?Sized,
+    PayloadType: Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > PortFactorySubscriber<'factory, Service, PayloadType, UserHeader>
 {

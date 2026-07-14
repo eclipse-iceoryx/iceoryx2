@@ -110,7 +110,7 @@ pub(crate) struct LocalPublisherConfig {
 pub struct PortFactoryPublisher<
     'factory,
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > {
     pub(crate) config: LocalPublisherConfig,
@@ -120,19 +120,13 @@ pub struct PortFactoryPublisher<
     pub(crate) factory: &'factory PortFactory<Service, Payload, UserHeader>,
 }
 
-unsafe impl<
-    Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: Debug + ZeroCopySend,
-> Send for PortFactoryPublisher<'_, Service, Payload, UserHeader>
+unsafe impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
+    Send for PortFactoryPublisher<'_, Service, Payload, UserHeader>
 {
 }
 
-impl<
-    Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: Debug + ZeroCopySend,
-> PortFactoryPublisher<'_, Service, Payload, UserHeader>
+impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
+    PortFactoryPublisher<'_, Service, Payload, UserHeader>
 {
     #[doc(hidden)]
     /// # Safety
@@ -149,12 +143,8 @@ impl<
     }
 }
 
-impl<
-    'factory,
-    Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: Debug + ZeroCopySend,
-> PortFactoryPublisher<'factory, Service, Payload, UserHeader>
+impl<'factory, Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
+    PortFactoryPublisher<'factory, Service, Payload, UserHeader>
 {
     pub(crate) fn new(factory: &'factory PortFactory<Service, Payload, UserHeader>) -> Self {
         let defaults = &factory

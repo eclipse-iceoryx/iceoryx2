@@ -126,7 +126,7 @@ impl<Service: service::Service> Abandonable for SubscriberSharedState<Service> {
 #[derive(Debug)]
 pub struct Subscriber<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized + 'static,
+    Payload: Debug + ?Sized + 'static,
     UserHeader: Debug + ZeroCopySend,
 > {
     dynamic_subscriber_handle: ContainerHandle,
@@ -137,31 +137,22 @@ pub struct Subscriber<
     _user_header: PhantomData<UserHeader>,
 }
 
-unsafe impl<
-    Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: Debug + ZeroCopySend,
-> Send for Subscriber<Service, Payload, UserHeader>
+unsafe impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
+    Send for Subscriber<Service, Payload, UserHeader>
 where
     Service::ArcThreadSafetyPolicy<SubscriberSharedState<Service>>: Send + Sync,
 {
 }
 
-unsafe impl<
-    Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: Debug + ZeroCopySend,
-> Sync for Subscriber<Service, Payload, UserHeader>
+unsafe impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
+    Sync for Subscriber<Service, Payload, UserHeader>
 where
     Service::ArcThreadSafetyPolicy<SubscriberSharedState<Service>>: Send + Sync,
 {
 }
 
-impl<
-    Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: Debug + ZeroCopySend,
-> Abandonable for Subscriber<Service, Payload, UserHeader>
+impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
+    Abandonable for Subscriber<Service, Payload, UserHeader>
 {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
@@ -173,11 +164,8 @@ impl<
     }
 }
 
-impl<
-    Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: Debug + ZeroCopySend,
-> Drop for Subscriber<Service, Payload, UserHeader>
+impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend> Drop
+    for Subscriber<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
         self.subscriber_shared_state
@@ -191,11 +179,8 @@ impl<
     }
 }
 
-impl<
-    Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: Debug + ZeroCopySend,
-> Subscriber<Service, Payload, UserHeader>
+impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
+    Subscriber<Service, Payload, UserHeader>
 {
     pub(crate) fn new(
         service: SharedServiceState<Service, PublishSubscribeResources<Service>>,
@@ -426,11 +411,8 @@ impl<
     }
 }
 
-impl<
-    Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: Debug + ZeroCopySend,
-> UpdateConnections for Subscriber<Service, Payload, UserHeader>
+impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
+    UpdateConnections for Subscriber<Service, Payload, UserHeader>
 {
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
         let subscriber_shared_state = self.subscriber_shared_state.lock();
@@ -452,7 +434,7 @@ impl<
     }
 }
 
-impl<Service: service::Service, Payload: Debug + ZeroCopySend, UserHeader: Debug + ZeroCopySend>
+impl<Service: service::Service, Payload: Debug, UserHeader: Debug + ZeroCopySend>
     Subscriber<Service, Payload, UserHeader>
 {
     /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
