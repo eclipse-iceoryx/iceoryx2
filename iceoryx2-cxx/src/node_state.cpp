@@ -111,6 +111,22 @@ NodeState<T>::NodeState(iox2_node_state_e node_state, const UniqueNodeId& node_i
 }
 
 template <ServiceType T>
+auto NodeState<T>::node_id() const -> const UniqueNodeId& {
+    switch (m_state.index()) {
+    case ALIVE_STATE:
+        return m_state.template get_at_index<ALIVE_STATE>()->id();
+    case DEAD_STATE:
+        return m_state.template get_at_index<DEAD_STATE>()->id();
+    case INACCESSIBLE_STATE:
+        return *m_state.template get_at_index<INACCESSIBLE_STATE>();
+    case UNDEFINED_STATE:
+        return *m_state.template get_at_index<UNDEFINED_STATE>();
+    default:
+        IOX2_UNREACHABLE();
+    }
+}
+
+template <ServiceType T>
 auto NodeState<T>::alive(const iox2::bb::StaticFunction<void(AliveNodeView<T>&)>& callback) -> NodeState& {
     if (m_state.index() == ALIVE_STATE) {
         callback(*m_state.template get_at_index<ALIVE_STATE>());
