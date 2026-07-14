@@ -469,7 +469,7 @@ jobs:
           mode: "remove-unneeded-software-from-runner"
 
       - name: Build and Test
-        uses: vmactions/freebsd-vm@bac9cda6a14057f08e3793f6a5e037292b59868f # version v1.4.7
+        uses: vmactions/freebsd-vm@5a72679103d223925653750faa878a143340fbd0 # version v1.5.0
         with:
           release: ${{ matrix.freebsd_version }}
           mem: 16384
@@ -478,7 +478,12 @@ jobs:
           run: |
             git config --global --add safe.directory /home/runner/work/iceoryx2/iceoryx2
             ./internal/scripts/ci_prepare_freebsd.sh
-            ./internal/scripts/ci_build_and_test_freebsd.sh --toolchain ${{ matrix.toolchain }} --mode ${{ matrix.mode }}
+            bash internal/scripts/ci_build_and_test_freebsd.bash \
+              --toolchain ${{ matrix.toolchain }} \
+              --mode ${{ matrix.mode }} \
+              --build-args "-p iceoryx2" \
+              --test-args "-p iceoryx2 -p iceoryx2-bb-posix --no-fail-fast" \
+              --no-cmake
 
   # NOTE: No Bazel build for zenoh workspace. This is on purpose.
   Bazel:

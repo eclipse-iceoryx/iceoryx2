@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Copyright (c) 2024 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
@@ -16,6 +16,9 @@ set -e
 RUST_TOOLCHAIN="stable"
 RUST_BUILD_TYPE_FLAG=""
 CMAKE_BUILD_TYPE_FLAG="-DCMAKE_BUILD_TYPE=Debug"
+BUILD_ARGS="--workspace --all-targets"
+TEST_ARGS="--workspace --all-targets --no-fail-fast"
+CMAKE_BUILD=true
 
 while (( "$#" )); do
   case "$1" in
@@ -29,6 +32,18 @@ while (( "$#" )); do
     --toolchain)
         RUST_TOOLCHAIN="$2"
         shift 2
+        ;;
+    --build-args)
+        BUILD_ARGS="$2"
+        shift 2
+        ;;
+    --test-args)
+        TEST_ARGS="$2"
+        shift 2
+        ;;
+    --no-cmake)
+        CMAKE_BUILD=false
+        shift
         ;;
     "help")
         echo "Build script for the 32-64 bit mixed mode PoC."
@@ -78,46 +93,49 @@ rustup default $RUST_TOOLCHAIN
 echo "###################"
 echo "# Run cargo build #"
 echo "###################"
-
-cargo build --workspace --all-targets $RUST_BUILD_TYPE_FLAG
+echo "BUILD_ARGS: $BUILD_ARGS"
+cargo build $RUST_BUILD_TYPE_FLAG $BUILD_ARGS
 
 echo "######################"
 echo "# Run cargo nextest #"
 echo "#####################"
+echo "TEST_ARGS: $TEST_ARGS"
+cargo nextest run $RUST_BUILD_TYPE_FLAG $TEST_ARGS
 
-cargo nextest run --workspace --all-targets --no-fail-fast $RUST_BUILD_TYPE_FLAG
+if [ "$CMAKE_BUILD" = true ]
+then
+    echo "###########################################################"
+    echo "# Clean the target directory to reduce memory usage on VM #"
+    echo "###########################################################"
 
-echo "###########################################################"
-echo "# Clean the target directory to reduce memory usage on VM #"
-echo "###########################################################"
+    cargo clean
 
-cargo clean
+    echo "###########################"
+    echo "# Build language bindings #"
+    echo "###########################"
 
-echo "###########################"
-echo "# Build language bindings #"
-echo "###########################"
+    # Build examples only in out-of-tree, else we are running out of disk space on the VM
+    cmake -S . -B target/ff/cc/build $CMAKE_BUILD_TYPE_FLAG -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ff/cc/install
+    cmake --build target/ff/cc/build
+    cmake --install target/ff/cc/build
 
-# Build examples only in out-of-tree, else we are running out of disk space on the VM
-cmake -S . -B target/ff/cc/build $CMAKE_BUILD_TYPE_FLAG -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ff/cc/install
-cmake --build target/ff/cc/build
-cmake --install target/ff/cc/build
+    echo "##############################"
+    echo "# Run language binding tests #"
+    echo "##############################"
 
-echo "##############################"
-echo "# Run language binding tests #"
-echo "##############################"
+    target/ff/cc/build/tests/iceoryx2-c-tests
+    target/ff/cc/build/tests/iceoryx2-cxx-tests
 
-target/ff/cc/build/tests/iceoryx2-c-tests
-target/ff/cc/build/tests/iceoryx2-cxx-tests
+    echo "################################################################"
+    echo "# Build language binding examples in out-of-tree configuration #"
+    echo "################################################################"
 
-echo "################################################################"
-echo "# Build language binding examples in out-of-tree configuration #"
-echo "################################################################"
+    rm -rf target/ff/cc/build
+    cmake -S examples/c -B target/ff/out-of-tree-c $CMAKE_BUILD_TYPE_FLAG -DCMAKE_PREFIX_PATH="$(pwd)/target/ff/cc/install"
+    cmake --build target/ff/out-of-tree-c
+    rm -rf target/ff/out-of-tree-c
 
-rm -rf target/ff/cc/build
-cmake -S examples/c -B target/ff/out-of-tree-c $CMAKE_BUILD_TYPE_FLAG -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install"
-cmake --build target/ff/out-of-tree-c
-rm -rf target/ff/out-of-tree-c
-
-cmake -S examples/cxx -B target/ff/out-of-tree-cxx $CMAKE_BUILD_TYPE_FLAG -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install"
-cmake --build target/ff/out-of-tree-cxx
-rm -rf target/ff/out-of-tree-cxx
+    cmake -S examples/cxx -B target/ff/out-of-tree-cxx $CMAKE_BUILD_TYPE_FLAG -DCMAKE_PREFIX_PATH="$(pwd)/target/ff/cc/install"
+    cmake --build target/ff/out-of-tree-cxx
+    rm -rf target/ff/out-of-tree-cxx
+fi
