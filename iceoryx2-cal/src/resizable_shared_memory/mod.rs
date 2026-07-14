@@ -249,8 +249,7 @@ pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Alloc
     ///
     /// # Safety
     ///
-    ///  * the offset must be acquired with [`SharedMemory::allocate()`] - extracted from the
-    ///    [`ShmPointer`]
+    ///  * the `old_pointer` must be acquired with [`SharedMemory::allocate()`]
     ///  * the layout must be identical to the one used in [`ResizableSharedMemory::allocate()`]
     unsafe fn grow(
         &self,

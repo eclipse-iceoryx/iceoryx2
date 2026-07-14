@@ -26,9 +26,8 @@ use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::slotmap::{SlotMap, SlotMapKey};
 use iceoryx2_bb_container::string::String;
-use iceoryx2_bb_elementary_traits::allocator::AllocationError;
+use iceoryx2_bb_elementary_traits::allocator::{AllocationError, AllocationGrowError};
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-use iceoryx2_bb_memory::pool_allocator::AllocationGrowError;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
@@ -734,6 +733,16 @@ where
                         "This should never happen! Unable to deallocate {:?} since the corresponding shared memory segment is not available!", offset),
         }
     }
+
+    fn current_segment(&self, msg: &str) -> &ShmEntry<Allocator, Shm> {
+        match self.state().shared_memory_map.get(self.state().current_idx) {
+            Some(entry) => entry,
+            None => {
+                fatal_panic!(from self,
+                             "This should never happen! {msg} since the current shared memory segment is not available!");
+            }
+        }
+    }
 }
 
 impl<Shm: SharedMemoryForPoolAllocator> ResizableSharedMemoryForPoolAllocator<Shm>
@@ -754,21 +763,6 @@ where
             None => fatal_panic!(from self,
                         "This should never happen! Unable to acquire bucket size since the segment {:?} does not exist.",
                         segment_id),
-        }
-    }
-}
-
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicMemory<Allocator, Shm>
-where
-    Shm::Builder: Debug,
-{
-    fn current_segment(&self, msg: &str) -> &ShmEntry<Allocator, Shm> {
-        match self.state().shared_memory_map.get(self.state().current_idx) {
-            Some(entry) => entry,
-            None => {
-                fatal_panic!(from self,
-                             "This should never happen! {msg} since the current shared memory segment is not available!");
-            }
         }
     }
 }

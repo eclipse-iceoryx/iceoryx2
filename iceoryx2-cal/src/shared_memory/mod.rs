@@ -189,8 +189,7 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
     ///
     /// # Safety
     ///
-    ///  * the offset must be acquired with [`SharedMemory::allocate()`] - extracted from the
-    ///    [`ShmPointer`]
+    ///  * the `ptr` must be acquired with [`SharedMemory::allocate()`]
     ///  * the `old_layout` must be identical to the one used in [`SharedMemory::allocate()`]
     ///
     unsafe fn grow(
