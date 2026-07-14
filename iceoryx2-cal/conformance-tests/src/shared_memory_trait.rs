@@ -464,4 +464,57 @@ pub mod shared_memory_trait {
 
         assert_that!(chunk.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(AllocationGrowError::OutOfMemory)));
     }
+
+    #[conformance_test]
+    pub fn shrinking_chunk_with_grow_fails<Sut: SharedMemory<DefaultAllocator>>() {
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::Builder::new(&name)
+            .size(DEFAULT_SIZE)
+            .config(&config)
+            .create(&SHM_CONFIG)
+            .unwrap();
+
+        let small_layout =
+            Layout::from_size_align(DEFAULT_LAYOUT.size() / 4, DEFAULT_LAYOUT.align()).unwrap();
+
+        let chunk = sut.allocate(DEFAULT_LAYOUT).unwrap();
+        let result =
+            unsafe { sut.grow(chunk, DEFAULT_LAYOUT, small_layout, ContentPlacement::Front) };
+
+        assert_that!(result.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(AllocationGrowError::GrowWouldShrink)));
+    }
+
+    #[conformance_test]
+    pub fn grow_chunk_to_same_size_works<Sut: SharedMemory<DefaultAllocator>>() {
+        let name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::Builder::new(&name)
+            .size(DEFAULT_SIZE)
+            .config(&config)
+            .create(&SHM_CONFIG)
+            .unwrap();
+
+        let chunk = sut.allocate(DEFAULT_LAYOUT).unwrap();
+
+        for n in 0..DEFAULT_LAYOUT.size() {
+            unsafe { *chunk.data_ptr.add(n) = 113 };
+        }
+
+        let chunk = unsafe {
+            sut.grow(
+                chunk,
+                DEFAULT_LAYOUT,
+                DEFAULT_LAYOUT,
+                ContentPlacement::Back,
+            )
+            .unwrap()
+        };
+
+        for n in 0..DEFAULT_LAYOUT.size() {
+            assert_that!( unsafe { *chunk.data_ptr.add(n) }, eq 113);
+        }
+    }
 }
