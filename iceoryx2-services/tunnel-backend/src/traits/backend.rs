@@ -15,7 +15,9 @@ use core::fmt::Debug;
 
 use iceoryx2::service::Service;
 
-use crate::traits::{Discovery, EventRelay, PublishSubscribeRelay, RelayFactory, Translator};
+use crate::traits::{
+    Discovery, EventRelay, Mapping, PublishSubscribeRelay, RelayFactory, Translator,
+};
 use crate::types::wake::WakeHandle;
 
 /// Core interface for tunnel backends that extend iceoryx2 over another
@@ -41,6 +43,7 @@ use crate::types::wake::WakeHandle;
 /// Backend
 ///   ├── Config
 ///   ├── Translator
+///   ├── Mapping
 ///   ├── Builder (BackendBuilder)
 ///   ├── Discovery
 ///   ├── RelayFactory
@@ -53,6 +56,7 @@ use crate::types::wake::WakeHandle;
 ///
 /// Each component has specific responsibilities:
 /// - **Config**: Backend-specific connection and initialization settings
+/// - **Mapping**: Name and QoS mapping strategy between iceoryx2 services and backend endpoints.
 /// - **Translator**: Payload transformation strategy applied to payloads crossing the backend.
 /// - **Builder**: Constructs the [`Backend`] from its [`Backend::Config`]
 /// - **Discovery**: Mechanisms to query the backend communication mechanism for remote services and announce local [`Service`]s
@@ -65,6 +69,9 @@ use crate::types::wake::WakeHandle;
 pub trait Backend<S: Service>: Sized {
     /// Configuration type for the backend initialization
     type Config: Default + Debug;
+
+    /// Name and QoS mapping strategy applied by this backend.
+    type Mapping: Mapping;
 
     /// Payload translation strategy applied by this backend.
     type Translator: Translator;
@@ -102,6 +109,9 @@ pub trait Backend<S: Service>: Sized {
     /// Returns a reference to the [`Discovery`] implementation.
     fn discovery(&self) -> &impl Discovery;
 
+    /// Returns a reference to the [`Mapping`] strategy.
+    fn mapping(&self) -> &Self::Mapping;
+
     /// Creates a new [`RelayFactory`] instance.
     ///
     /// The [`RelayFactory`] is used to create specific builder instances for
@@ -120,6 +130,9 @@ pub trait BackendBuilder<S: Service> {
 
     /// Sets the payload translation strategy the backend will apply.
     fn translator(self, translator: <Self::Backend as Backend<S>>::Translator) -> Self;
+
+    /// Sets the name and QoS mapping strategy the backend will apply.
+    fn mapping(self, mapping: <Self::Backend as Backend<S>>::Mapping) -> Self;
 
     /// Consumes the builder, producing a configured [`Backend`].
     fn create(self) -> Result<Self::Backend, Self::CreationError>;

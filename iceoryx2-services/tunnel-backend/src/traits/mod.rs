@@ -12,6 +12,7 @@
 
 mod backend;
 mod discovery;
+mod mapping;
 mod relay;
 mod translator;
 
@@ -19,5 +20,6 @@ pub mod testing;
 
 pub use backend::*;
 pub use discovery::*;
+pub use mapping::*;
 pub use relay::*;
 pub use translator::*;
