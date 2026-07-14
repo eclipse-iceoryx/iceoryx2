@@ -48,7 +48,7 @@ use crate::service::header::publish_subscribe::Header;
 /// [`Subscriber::receive()`](crate::port::subscriber::Subscriber::receive()).
 pub struct Sample<
     Service: crate::service::Service,
-    Payload: Debug + ?Sized + ZeroCopySend,
+    Payload: Debug + ?Sized,
     UserHeader: ZeroCopySend,
 > {
     pub(crate) ptr: RawSample<Header, UserHeader, Payload>,
@@ -57,21 +57,15 @@ pub struct Sample<
     pub(crate) details: ChunkDetails,
 }
 
-unsafe impl<
-    Service: crate::service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: ZeroCopySend,
-> Send for Sample<Service, Payload, UserHeader>
+unsafe impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader: ZeroCopySend>
+    Send for Sample<Service, Payload, UserHeader>
 where
     Service::ArcThreadSafetyPolicy<SubscriberSharedState<Service>>: Send + Sync,
 {
 }
 
-impl<
-    Service: crate::service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: ZeroCopySend,
-> Debug for Sample<Service, Payload, UserHeader>
+impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader: ZeroCopySend> Debug
+    for Sample<Service, Payload, UserHeader>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
@@ -98,11 +92,8 @@ impl<
     }
 }
 
-impl<
-    Service: crate::service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: ZeroCopySend,
-> Drop for Sample<Service, Payload, UserHeader>
+impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader: ZeroCopySend> Drop
+    for Sample<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
         self.subscriber_shared_state
@@ -112,14 +103,14 @@ impl<
     }
 }
 
-impl<
-    Service: crate::service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: ZeroCopySend,
-> Sample<Service, Payload, UserHeader>
+impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader: ZeroCopySend>
+    Sample<Service, Payload, UserHeader>
 {
     /// Returns a reference to the payload of the [`Sample`]
-    pub fn payload(&self) -> &Payload {
+    pub fn payload(&self) -> &Payload
+    where
+        Payload: ZeroCopySend,
+    {
         self.ptr.as_payload_ref()
     }
 

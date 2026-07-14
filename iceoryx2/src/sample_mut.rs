@@ -83,7 +83,7 @@ use core::ops::{Deref, DerefMut};
 /// it will release the loaned memory when going out of scope.
 pub struct SampleMut<
     Service: crate::service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: Debug + ?Sized,
     UserHeader: ZeroCopySend,
 > {
     pub(crate) publisher_shared_state:
@@ -93,11 +93,8 @@ pub struct SampleMut<
     pub(crate) sample_size: usize,
 }
 
-unsafe impl<
-    Service: crate::service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: ZeroCopySend,
-> Send for SampleMut<Service, Payload, UserHeader>
+unsafe impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader: ZeroCopySend>
+    Send for SampleMut<Service, Payload, UserHeader>
 where
     Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>: Send + Sync,
 {
@@ -126,11 +123,8 @@ impl<
     }
 }
 
-impl<
-    Service: crate::service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: ZeroCopySend,
-> Debug for SampleMut<Service, Payload, UserHeader>
+impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader: ZeroCopySend> Debug
+    for SampleMut<Service, Payload, UserHeader>
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         write!(
@@ -146,11 +140,8 @@ impl<
     }
 }
 
-impl<
-    Service: crate::service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: ZeroCopySend,
-> Drop for SampleMut<Service, Payload, UserHeader>
+impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader: ZeroCopySend> Drop
+    for SampleMut<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
         self.publisher_shared_state
@@ -162,7 +153,7 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    M: Debug + ZeroCopySend + ?Sized, // `M` is either a `Payload` or a `MaybeUninit<Payload>`
+    M: Debug + ?Sized, // `M` is either a `Payload` or a `MaybeUninit<Payload>`
     UserHeader: ZeroCopySend,
 > SampleMut<Service, M, UserHeader>
 {
@@ -269,7 +260,10 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn payload(&self) -> &M {
+    pub fn payload(&self) -> &M
+    where
+        M: ZeroCopySend,
+    {
         self.ptr.as_payload_ref()
     }
 
@@ -299,7 +293,10 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn payload_mut(&mut self) -> &mut M {
+    pub fn payload_mut(&mut self) -> &mut M
+    where
+        M: ZeroCopySend,
+    {
         self.ptr.as_payload_mut()
     }
 

@@ -112,18 +112,15 @@ use crate::{
 /// it will release the loaned memory when going out of scope.
 pub struct SampleMutUninit<
     Service: crate::service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: Debug + ?Sized,
     UserHeader: ZeroCopySend,
 > {
     sample: SampleMut<Service, Payload, UserHeader>,
     flatbuffer_builder: Option<FlatBufferBuilder<'static>>,
 }
 
-unsafe impl<
-    Service: crate::service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: ZeroCopySend,
-> Send for SampleMutUninit<Service, Payload, UserHeader>
+unsafe impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader: ZeroCopySend>
+    Send for SampleMutUninit<Service, Payload, UserHeader>
 where
     Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>: Send + Sync,
 {
@@ -143,11 +140,8 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
     }
 }
 
-impl<
-    Service: crate::service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
-    UserHeader: ZeroCopySend,
-> SampleMutUninit<Service, Payload, UserHeader>
+impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader: ZeroCopySend>
+    SampleMutUninit<Service, Payload, UserHeader>
 {
     /// Returns a reference to the [`Header`] of the [`SampleMutUninit`].
     ///
@@ -252,7 +246,10 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn payload(&self) -> &Payload {
+    pub fn payload(&self) -> &Payload
+    where
+        Payload: ZeroCopySend,
+    {
         self.sample.payload()
     }
 
@@ -281,12 +278,15 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn payload_mut(&mut self) -> &mut Payload {
+    pub fn payload_mut(&mut self) -> &mut Payload
+    where
+        Payload: ZeroCopySend,
+    {
         self.sample.payload_mut()
     }
 }
 
-impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader: ZeroCopySend>
+impl<Service: crate::service::Service, Payload: Debug, UserHeader: ZeroCopySend>
     SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>
 {
     pub(crate) fn new(
@@ -329,7 +329,10 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
     /// # Ok(())
     /// # }
     /// ```
-    pub fn write_payload(mut self, value: Payload) -> SampleMut<Service, Payload, UserHeader> {
+    pub fn write_payload(mut self, value: Payload) -> SampleMut<Service, Payload, UserHeader>
+    where
+        Payload: ZeroCopySend,
+    {
         self.payload_mut().write(value);
         unsafe { self.assume_init() }
     }
