@@ -22,6 +22,7 @@ pub mod resizable_shared_memory_trait {
     use core::alloc::Layout;
     use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
     use iceoryx2_bb_posix::file::AccessMode;
+    use iceoryx2_cal::shm_allocator::ShmAllocatorGrowError;
     use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
     use iceoryx2_bb_posix::testing::generate_file_path;
@@ -30,7 +31,7 @@ pub mod resizable_shared_memory_trait {
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::resizable_shared_memory::*;
     use iceoryx2_cal::shared_memory::SharedMemory;
-    use iceoryx2_cal::shm_allocator::{AllocationError, AllocationStrategy, ShmAllocationError};
+    use iceoryx2_cal::shm_allocator::AllocationStrategy;
     use iceoryx2_cal::testing::*;
 
     use super::*;
@@ -445,7 +446,7 @@ pub mod resizable_shared_memory_trait {
 
         let result = sut.allocate(Layout::new::<u8>());
         assert_that!(result, is_err);
-        assert_that!(result.err().unwrap(), eq ResizableShmAllocationError::ShmAllocationError(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)));
+        assert_that!(result.err().unwrap(), eq ResizableShmAllocationError::MaxReallocationsReached);
     }
 
     #[conformance_test]
@@ -1003,5 +1004,231 @@ pub mod resizable_shared_memory_trait {
         assert_that!(Sut::does_exist_cfg(&storage_name, &config).unwrap(), eq true);
         drop(sut_creator);
         assert_that!(Sut::does_exist_cfg(&storage_name, &config).unwrap(), eq false);
+    }
+
+    #[conformance_test]
+    pub fn resizing_chunks_in_same_segment_with_content_at_front_works<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .allocation_strategy(AllocationStrategy::Static)
+            .max_chunk_layout_hint(Layout::new::<u128>())
+            .max_number_of_chunks_hint(8)
+            .create()
+            .unwrap();
+
+        let small_layout = Layout::from_size_align(4, 1).unwrap();
+        let large_layout = Layout::from_size_align(8, 1).unwrap();
+
+        let ptr = sut.allocate(small_layout).unwrap();
+        for n in 0..4 {
+            unsafe { *ptr.data_ptr.add(n) = 123u8 };
+        }
+
+        let ptr = unsafe {
+            sut.grow(
+                ptr,
+                small_layout,
+                large_layout,
+                iceoryx2_cal::shm_allocator::ContentPlacement::Front,
+            )
+            .unwrap()
+        };
+
+        for n in 0..4 {
+            assert_that!(unsafe{*ptr.data_ptr.add(n)}, eq 123u8);
+        }
+    }
+
+    #[conformance_test]
+    pub fn resizing_chunks_in_same_segment_with_content_at_back_works<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .allocation_strategy(AllocationStrategy::Static)
+            .max_chunk_layout_hint(Layout::new::<u128>())
+            .max_number_of_chunks_hint(8)
+            .create()
+            .unwrap();
+
+        let small_layout = Layout::from_size_align(4, 1).unwrap();
+        let large_layout = Layout::from_size_align(8, 1).unwrap();
+
+        let ptr = sut.allocate(small_layout).unwrap();
+        for n in 0..4 {
+            unsafe { *ptr.data_ptr.add(n) = 31u8 };
+        }
+
+        let ptr = unsafe {
+            sut.grow(
+                ptr,
+                small_layout,
+                large_layout,
+                iceoryx2_cal::shm_allocator::ContentPlacement::Back,
+            )
+            .unwrap()
+        };
+
+        for n in 4..8 {
+            assert_that!(unsafe{*ptr.data_ptr.add(n)}, eq 31u8);
+        }
+    }
+
+    #[conformance_test]
+    pub fn resizing_chunks_accross_segments_with_content_at_front_works<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .allocation_strategy(AllocationStrategy::PowerOfTwo)
+            .max_chunk_layout_hint(Layout::new::<u16>())
+            .max_number_of_chunks_hint(8)
+            .create()
+            .unwrap();
+
+        let small_layout = Layout::from_size_align(8, 1).unwrap();
+        let large_layout = Layout::from_size_align(32, 1).unwrap();
+
+        let ptr = sut.allocate(small_layout).unwrap();
+        for n in 0..8 {
+            unsafe { *ptr.data_ptr.add(n) = 221u8 };
+        }
+
+        let ptr = unsafe {
+            sut.grow(
+                ptr,
+                small_layout,
+                large_layout,
+                iceoryx2_cal::shm_allocator::ContentPlacement::Front,
+            )
+            .unwrap()
+        };
+
+        for n in 0..8 {
+            assert_that!(unsafe{*ptr.data_ptr.add(n)}, eq 221u8);
+        }
+    }
+
+    #[conformance_test]
+    pub fn resizing_chunks_accross_segments_with_content_at_back_works<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .allocation_strategy(AllocationStrategy::PowerOfTwo)
+            .max_chunk_layout_hint(Layout::new::<u16>())
+            .max_number_of_chunks_hint(8)
+            .create()
+            .unwrap();
+
+        let small_layout = Layout::from_size_align(8, 1).unwrap();
+        let large_layout = Layout::from_size_align(32, 1).unwrap();
+
+        let ptr = sut.allocate(small_layout).unwrap();
+        for n in 0..8 {
+            unsafe { *ptr.data_ptr.add(n) = 212u8 };
+        }
+
+        let ptr = unsafe {
+            sut.grow(
+                ptr,
+                small_layout,
+                large_layout,
+                iceoryx2_cal::shm_allocator::ContentPlacement::Back,
+            )
+            .unwrap()
+        };
+
+        for n in 24..32 {
+            assert_that!(unsafe{*ptr.data_ptr.add(n)}, eq 212u8);
+        }
+    }
+
+    #[conformance_test]
+    pub fn shrinking_chunk_with_grow_fails<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .allocation_strategy(AllocationStrategy::Static)
+            .max_chunk_layout_hint(Layout::new::<u128>())
+            .max_number_of_chunks_hint(8)
+            .create()
+            .unwrap();
+
+        let small_layout = Layout::from_size_align(4, 1).unwrap();
+        let large_layout = Layout::from_size_align(8, 1).unwrap();
+
+        let ptr = sut.allocate(large_layout).unwrap();
+        let result = unsafe {
+            sut.grow(
+                ptr,
+                large_layout,
+                small_layout,
+                iceoryx2_cal::shm_allocator::ContentPlacement::Front,
+            )
+        };
+
+        assert_that!(result.err(), eq Some(ResizableShmGrowError::ShmAllocatorGrowError(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_cal::shm_allocator::AllocationGrowError::GrowWouldShrink))));
+    }
+
+    #[conformance_test]
+    pub fn grow_chunk_to_same_size_works<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .allocation_strategy(AllocationStrategy::Static)
+            .max_chunk_layout_hint(Layout::new::<u128>())
+            .max_number_of_chunks_hint(8)
+            .create()
+            .unwrap();
+
+        let layout = Layout::from_size_align(8, 1).unwrap();
+
+        let ptr = sut.allocate(layout).unwrap();
+        for n in 0..layout.size() {
+            unsafe { *ptr.data_ptr.add(n) = 73 };
+        }
+
+        let ptr = unsafe {
+            sut.grow(
+                ptr,
+                layout,
+                layout,
+                iceoryx2_cal::shm_allocator::ContentPlacement::Front,
+            )
+            .unwrap()
+        };
+
+        for n in 0..layout.size() {
+            assert_that!(unsafe { *ptr.data_ptr.add(n) }, eq 73);
+        }
     }
 }

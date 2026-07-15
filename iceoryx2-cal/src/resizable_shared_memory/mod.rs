@@ -102,7 +102,8 @@ use iceoryx2_bb_posix::file::AccessMode;
 
 use crate::named_concept::*;
 use crate::shared_memory::{
-    SegmentId, SharedMemory, SharedMemoryCreateError, SharedMemoryOpenError, ShmPointer,
+    ContentPlacement, SegmentId, SharedMemory, SharedMemoryCreateError, SharedMemoryOpenError,
+    ShmAllocatorGrowError, ShmPointer,
 };
 use crate::shm_allocator::{PointerOffset, ShmAllocationError, ShmAllocator};
 
@@ -119,6 +120,15 @@ enum_gen! {
   mapping:
     ShmAllocationError,
     SharedMemoryCreateError
+}
+
+enum_gen! {
+/// Defines all erros that can occur when calling [`ResizableSharedMemory::grow()`]
+    ResizableShmGrowError
+  mapping:
+    ShmAllocationError,
+    ShmAllocatorGrowError,
+    ResizableShmAllocationError
 }
 
 /// Creates a [`ResizableSharedMemoryView`] to an existing [`ResizableSharedMemory`] and maps the
@@ -235,13 +245,27 @@ pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Alloc
         layout: core::alloc::Layout,
     ) -> Result<ShmPointer, ResizableShmAllocationError>;
 
+    /// Grows allocated memory to a new increased size.
+    ///
+    /// # Safety
+    ///
+    ///  * the `old_pointer` must be acquired with [`SharedMemory::allocate()`]
+    ///  * the layout must be identical to the one used in [`ResizableSharedMemory::allocate()`]
+    unsafe fn grow(
+        &self,
+        old_pointer: ShmPointer,
+        old_layout: Layout,
+        new_layout: Layout,
+        placement: ContentPlacement,
+    ) -> Result<ShmPointer, ResizableShmGrowError>;
+
     /// Release previously allocated memory
     ///
     /// # Safety
     ///
     ///  * the offset must be acquired with [`SharedMemory::allocate()`] - extracted from the
     ///    [`ShmPointer`]
-    ///  * the layout must be identical to the one used in [`SharedMemory::allocate()`]
+    ///  * the layout must be identical to the one used in [`ResizableSharedMemory::allocate()`]
     unsafe fn deallocate(&self, offset: PointerOffset, layout: core::alloc::Layout);
 }
 

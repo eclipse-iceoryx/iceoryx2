@@ -66,6 +66,7 @@ use core::{fmt::Debug, time::Duration};
 
 pub use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
+use core::alloc::Layout;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::*;
@@ -112,7 +113,7 @@ impl core::error::Error for SharedMemoryOpenError {}
 /// Represents a pointer pointing to some [`SharedMemory`]. Consists of the actual data pointer and
 /// an [`PointerOffset`] which can be used in combination with a
 /// [`crate::zero_copy_connection::ZeroCopyConnection`]
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct ShmPointer {
     pub offset: PointerOffset,
     pub data_ptr: *mut u8,
@@ -182,7 +183,22 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
 
     /// Allocates memory. The alignment in the layout must be smaller or equal
     /// [`SharedMemory::max_alignment()`] otherwise the method will fail.
-    fn allocate(&self, layout: core::alloc::Layout) -> Result<ShmPointer, ShmAllocationError>;
+    fn allocate(&self, layout: Layout) -> Result<ShmPointer, ShmAllocationError>;
+
+    /// Grows allocated memory to a new increased size.
+    ///
+    /// # Safety
+    ///
+    ///  * the `ptr` must be acquired with [`SharedMemory::allocate()`]
+    ///  * the `old_layout` must be identical to the one used in [`SharedMemory::allocate()`]
+    ///
+    unsafe fn grow(
+        &self,
+        ptr: ShmPointer,
+        old_layout: Layout,
+        new_layout: Layout,
+        placement: ContentPlacement,
+    ) -> Result<ShmPointer, ShmAllocatorGrowError>;
 
     /// Release previously allocated memory
     ///
@@ -191,7 +207,7 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
     ///  * the offset must be acquired with [`SharedMemory::allocate()`] - extracted from the
     ///    [`ShmPointer`]
     ///  * the layout must be identical to the one used in [`SharedMemory::allocate()`]
-    unsafe fn deallocate(&self, offset: PointerOffset, layout: core::alloc::Layout);
+    unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout);
 
     /// Returns if the [`SharedMemory`] supports persistency, meaning that the underlying OS
     /// resource remain even when every [`SharedMemory`] instance in every process was removed.
