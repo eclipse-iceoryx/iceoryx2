@@ -27,7 +27,6 @@ pub enum Reliability {
     SystemDefault,
     Reliable,
     BestEffort,
-    BestAvailable,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
@@ -35,7 +34,6 @@ pub enum Durability {
     SystemDefault,
     TransientLocal,
     Volatile,
-    BestAvailable,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
@@ -43,7 +41,6 @@ pub enum Liveliness {
     SystemDefault,
     Automatic,
     ManualByTopic,
-    BestAvailable,
 }
 
 /// QoS profile for a ROS 2 endpoint pair created by the tunnel.
@@ -117,7 +114,7 @@ impl From<&QosProfile> for PublishSubscribeSettings {
             max_nodes: defaults.max_nodes,
             history_size: match profile.durability {
                 Durability::TransientLocal => depth,
-                Durability::SystemDefault | Durability::Volatile | Durability::BestAvailable => {
+                Durability::SystemDefault | Durability::Volatile => {
                     defaults.publisher_history_size
                 }
             },

@@ -22,9 +22,9 @@ iceoryx2.settings.safe_overflow = true
 ros2.topic = "/Lidar/Front"
 ros2.type = "sensor_msgs/msg/PointCloud2"
 ros2.qos.history = { KeepLast = 10 }       # or "KeepAll", "SystemDefault"
-ros2.qos.reliability = "Reliable"          # or "BestEffort", "SystemDefault", "BestAvailable"
-ros2.qos.durability = "Volatile"           # or "TransientLocal", "SystemDefault", "BestAvailable"
-ros2.qos.liveliness = "Automatic"          # or "ManualByTopic", "SystemDefault", "BestAvailable"
+ros2.qos.reliability = "Reliable"          # or "BestEffort", "SystemDefault"
+ros2.qos.durability = "Volatile"           # or "TransientLocal", "SystemDefault"
+ros2.qos.liveliness = "Automatic"          # or "ManualByTopic", "SystemDefault"
 ros2.qos.deadline = "500ms"                # <value><unit>; units: ns, us, ms, s
 ros2.qos.lifespan = "2s"                   # unset = no bound
 ros2.qos.liveliness_lease_duration = "1s"

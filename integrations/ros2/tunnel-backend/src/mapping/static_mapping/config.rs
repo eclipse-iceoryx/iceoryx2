@@ -58,15 +58,15 @@
 //!
 //! ## `ros2.qos` — endpoint QoS
 //!
-//! | Policy                      | Value                                                                  |
-//! |-----------------------------|------------------------------------------------------------------------|
-//! | `history`                   | `"SystemDefault"`, `"KeepAll"`, `{ KeepLast = <n> }`                   |
-//! | `reliability`               | `"SystemDefault"`, `"Reliable"`, `"BestEffort"`, `"BestAvailable"`     |
-//! | `durability`                | `"SystemDefault"`, `"Volatile"`, `"TransientLocal"`, `"BestAvailable"` |
-//! | `liveliness`                | `"SystemDefault"`, `"Automatic"`, `"ManualByTopic"`, `"BestAvailable"` |
-//! | `deadline`                  | duration                                                               |
-//! | `lifespan`                  | duration                                                               |
-//! | `liveliness_lease_duration` | duration                                                               |
+//! | Policy                      | Value                                                |
+//! |-----------------------------|------------------------------------------------------|
+//! | `history`                   | `"SystemDefault"`, `"KeepAll"`, `{ KeepLast = <n> }` |
+//! | `reliability`               | `"SystemDefault"`, `"Reliable"`, `"BestEffort"`      |
+//! | `durability`                | `"SystemDefault"`, `"Volatile"`, `"TransientLocal"`  |
+//! | `liveliness`                | `"SystemDefault"`, `"Automatic"`, `"ManualByTopic"`  |
+//! | `deadline`                  | duration                                             |
+//! | `lifespan`                  | duration                                             |
+//! | `liveliness_lease_duration` | duration                                             |
 //!
 //! Durations are strings of the form `"<value><unit>"` (units `ns`, `us`,
 //! `ms`, `s`), e.g. `"500ms"`; unset means no bound.

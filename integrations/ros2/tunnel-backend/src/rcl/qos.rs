@@ -47,9 +47,6 @@ pub(crate) fn apply(profile: &QosProfile, qos: &mut rmw_qos_profile_t) {
         Reliability::BestEffort => {
             rmw_qos_reliability_policy_e::RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT
         }
-        Reliability::BestAvailable => {
-            rmw_qos_reliability_policy_e::RMW_QOS_POLICY_RELIABILITY_BEST_AVAILABLE
-        }
     };
     qos.durability = match profile.durability {
         Durability::SystemDefault => {
@@ -59,9 +56,6 @@ pub(crate) fn apply(profile: &QosProfile, qos: &mut rmw_qos_profile_t) {
             rmw_qos_durability_policy_e::RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL
         }
         Durability::Volatile => rmw_qos_durability_policy_e::RMW_QOS_POLICY_DURABILITY_VOLATILE,
-        Durability::BestAvailable => {
-            rmw_qos_durability_policy_e::RMW_QOS_POLICY_DURABILITY_BEST_AVAILABLE
-        }
     };
     qos.liveliness = match profile.liveliness {
         Liveliness::SystemDefault => {
@@ -70,9 +64,6 @@ pub(crate) fn apply(profile: &QosProfile, qos: &mut rmw_qos_profile_t) {
         Liveliness::Automatic => rmw_qos_liveliness_policy_e::RMW_QOS_POLICY_LIVELINESS_AUTOMATIC,
         Liveliness::ManualByTopic => {
             rmw_qos_liveliness_policy_e::RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC
-        }
-        Liveliness::BestAvailable => {
-            rmw_qos_liveliness_policy_e::RMW_QOS_POLICY_LIVELINESS_BEST_AVAILABLE
         }
     };
     if let Some(deadline) = profile.deadline {
@@ -103,9 +94,6 @@ pub(crate) fn parse(qos: &rmw_qos_profile_t) -> QosProfile {
             rmw_qos_reliability_policy_e::RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT => {
                 Reliability::BestEffort
             }
-            rmw_qos_reliability_policy_e::RMW_QOS_POLICY_RELIABILITY_BEST_AVAILABLE => {
-                Reliability::BestAvailable
-            }
             _ => Reliability::SystemDefault,
         },
         durability: match qos.durability {
@@ -113,9 +101,6 @@ pub(crate) fn parse(qos: &rmw_qos_profile_t) -> QosProfile {
                 Durability::TransientLocal
             }
             rmw_qos_durability_policy_e::RMW_QOS_POLICY_DURABILITY_VOLATILE => Durability::Volatile,
-            rmw_qos_durability_policy_e::RMW_QOS_POLICY_DURABILITY_BEST_AVAILABLE => {
-                Durability::BestAvailable
-            }
             _ => Durability::SystemDefault,
         },
         deadline: duration(&qos.deadline),
@@ -126,9 +111,6 @@ pub(crate) fn parse(qos: &rmw_qos_profile_t) -> QosProfile {
             }
             rmw_qos_liveliness_policy_e::RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC => {
                 Liveliness::ManualByTopic
-            }
-            rmw_qos_liveliness_policy_e::RMW_QOS_POLICY_LIVELINESS_BEST_AVAILABLE => {
-                Liveliness::BestAvailable
             }
             _ => Liveliness::SystemDefault,
         },
