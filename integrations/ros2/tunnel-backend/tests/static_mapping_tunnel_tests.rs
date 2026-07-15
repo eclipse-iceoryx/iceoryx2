@@ -32,7 +32,9 @@ use iceoryx2_integrations_ros2_tunnel_backend::{
 };
 use iceoryx2_services_tunnel::Tunnel;
 use iceoryx2_services_tunnel_backend::traits::Passthrough;
-use iceoryx2_services_tunnel_backend::types::service_description::PublishSubscribeSettings;
+use iceoryx2_services_tunnel_backend::types::service_description::{
+    PortSettings, PublishSubscribeSettings,
+};
 
 #[test]
 fn maps_iceoryx_services_onto_ros_topics() {
@@ -57,7 +59,7 @@ fn maps_iceoryx_services_onto_ros_topics() {
             iceoryx2: IceoryxSettings {
                 service_name: service_name(&chatter_service),
                 payload_type: payload_type.to_string(),
-                settings: None,
+                settings: PortSettings::LocalDefaults,
             },
             ros2: RosSettings {
                 topic: TopicName::new(&chatter_topic).expect("valid topic name"),
@@ -119,7 +121,7 @@ fn does_not_map_iceoryx_services_without_an_entry() {
             iceoryx2: IceoryxSettings {
                 service_name: service_name(&chatter_service),
                 payload_type: payload_type.to_string(),
-                settings: None,
+                settings: PortSettings::LocalDefaults,
             },
             ros2: RosSettings {
                 topic: TopicName::new(&chatter_topic).expect("valid topic name"),
@@ -161,7 +163,7 @@ fn maps_ros_topics_onto_iceoryx_services() {
             iceoryx2: IceoryxSettings {
                 service_name: service_name(&chatter_service),
                 payload_type: payload_type.to_string(),
-                settings: None,
+                settings: PortSettings::LocalDefaults,
             },
             ros2: RosSettings {
                 topic: TopicName::new(&chatter_topic).expect("valid topic name"),
@@ -245,7 +247,7 @@ fn applies_specified_qos_to_ros_endpoints() {
             iceoryx2: IceoryxSettings {
                 service_name: service_name(&chatter_service),
                 payload_type: payload_type.to_string(),
-                settings: None,
+                settings: PortSettings::LocalDefaults,
             },
             ros2: RosSettings {
                 topic: TopicName::new(&chatter_topic).expect("valid topic name"),
@@ -303,7 +305,7 @@ fn applies_specified_settings_to_iceoryx_services() {
             iceoryx2: IceoryxSettings {
                 service_name: service_name(&chatter_service),
                 payload_type: iox_payload_type.to_string(),
-                settings: Some(PublishSubscribeSettings {
+                settings: PortSettings::Value(PublishSubscribeSettings {
                     max_subscribers: MAX_SUBSCRIBERS,
                     subscriber_max_buffer_size: SUBSCRIBER_MAX_BUFFER_SIZE,
                     safe_overflow: false,

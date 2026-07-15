@@ -67,7 +67,7 @@ use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_services_tunnel_backend::traits::Mapping;
 use iceoryx2_services_tunnel_backend::types::service_description::{
-    PatternDescription, PatternSettings, PublishSubscribeDescription, ServiceDescription,
+    PatternDescription, PortSettings, PublishSubscribeDescription, ServiceDescription,
     TypeDescription,
 };
 
@@ -100,8 +100,8 @@ impl Mapping for PrefixMapping {
             topic,
             type_name,
             qos: match &pattern.settings {
-                PatternSettings::Value(settings) => QosProfile::from(settings),
-                PatternSettings::UnknownApplyDefaults => QosProfile::default(),
+                PortSettings::Value(settings) => QosProfile::from(settings),
+                PortSettings::LocalDefaults => QosProfile::default(),
             },
         })
     }
@@ -127,7 +127,7 @@ impl Mapping for PrefixMapping {
             PatternDescription::PublishSubscribe(PublishSubscribeDescription {
                 payload,
                 user_header,
-                settings: PatternSettings::Value((&remote.qos).into()),
+                settings: PortSettings::Value((&remote.qos).into()),
             }),
         ))
     }

@@ -21,7 +21,7 @@ use iceoryx2::{
 };
 use iceoryx2_log::{fail, trace};
 use iceoryx2_services_tunnel_backend::types::service_description::{
-    EventDescription, EventSettings, PatternSettings,
+    EventDescription, EventSettings, PortSettings,
 };
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -84,8 +84,8 @@ impl<S: Service> EventPorts<S> {
 
         let builder = node.service_builder(name).event();
         let builder = match &description.settings {
-            PatternSettings::Value(settings) => apply_settings(builder, settings),
-            PatternSettings::UnknownApplyDefaults => builder,
+            PortSettings::Value(settings) => apply_settings(builder, settings),
+            PortSettings::LocalDefaults => builder,
         };
 
         let service = fail!(

@@ -20,7 +20,7 @@ use iceoryx2_integrations_ros2_tunnel_backend::{
 };
 use iceoryx2_services_tunnel_backend::traits::Mapping;
 use iceoryx2_services_tunnel_backend::types::service_description::{
-    PatternDescription, PatternSettings, PublishSubscribeDescription, PublishSubscribeSettings,
+    PatternDescription, PortSettings, PublishSubscribeDescription, PublishSubscribeSettings,
     ServiceDescription,
 };
 
@@ -29,7 +29,7 @@ fn entry(service_name: &str, topic: &str) -> Entry {
         iceoryx2: IceoryxSettings {
             service_name: service_name.try_into().unwrap(),
             payload_type: "foxglove::PointCloud".to_string(),
-            settings: None,
+            settings: PortSettings::LocalDefaults,
         },
         ros2: RosSettings {
             topic: TopicName::new(topic).unwrap(),
@@ -150,7 +150,7 @@ fn rejects_unmapped_services() {
         PatternDescription::PublishSubscribe(PublishSubscribeDescription {
             user_header: (&TypeDetail::new::<()>(TypeVariant::FixedSize)).into(),
             payload: (&TypeDetail::new::<u8>(TypeVariant::FixedSize)).into(),
-            settings: PatternSettings::UnknownApplyDefaults,
+            settings: PortSettings::LocalDefaults,
         }),
     );
 
@@ -160,7 +160,7 @@ fn rejects_unmapped_services() {
 #[test]
 fn specified_settings_override_defaults() {
     let mut mapping_with_overrides = entry("LidarFront", "/Lidar/Front");
-    mapping_with_overrides.iceoryx2.settings = Some(PublishSubscribeSettings {
+    mapping_with_overrides.iceoryx2.settings = PortSettings::Value(PublishSubscribeSettings {
         subscriber_max_buffer_size: 4,
         safe_overflow: false,
         ..PublishSubscribeSettings::default()
@@ -178,7 +178,7 @@ fn specified_settings_override_defaults() {
     let defaults = iceoryx2::config::Config::default()
         .defaults
         .publish_subscribe;
-    let PatternSettings::Value(settings) = pattern_description.settings else {
+    let PortSettings::Value(settings) = pattern_description.settings else {
         panic!("expected explicit settings");
     };
 
@@ -200,7 +200,7 @@ fn entries_without_settings_apply_defaults() {
         panic!("expected a publish-subscribe pattern description");
     };
 
-    assert_eq!(description.settings, PatternSettings::UnknownApplyDefaults);
+    assert_eq!(description.settings, PortSettings::LocalDefaults);
 }
 
 #[test]

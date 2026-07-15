@@ -70,9 +70,9 @@ impl core::fmt::Display for PatternDescription {
 
 /// Settings for a messaging pattern, either known or absent.
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
-pub enum PatternSettings<T> {
+pub enum PortSettings<T> {
     Value(T),
-    UnknownApplyDefaults,
+    LocalDefaults,
 }
 
 /// Description of a publish-subscribe service.
@@ -80,13 +80,13 @@ pub enum PatternSettings<T> {
 pub struct PublishSubscribeDescription {
     pub user_header: TypeDescription,
     pub payload: TypeDescription,
-    pub settings: PatternSettings<PublishSubscribeSettings>,
+    pub settings: PortSettings<PublishSubscribeSettings>,
 }
 
 /// Description of an event service.
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct EventDescription {
-    pub settings: PatternSettings<EventSettings>,
+    pub settings: PortSettings<EventSettings>,
 }
 
 /// Description of a services type(s).
@@ -166,7 +166,7 @@ impl TryFrom<&StaticConfig> for ServiceDescription {
                 PatternDescription::PublishSubscribe(PublishSubscribeDescription {
                     payload: (&types.payload).into(),
                     user_header: (&types.user_header).into(),
-                    settings: PatternSettings::Value(PublishSubscribeSettings {
+                    settings: PortSettings::Value(PublishSubscribeSettings {
                         max_subscribers: config.max_subscribers(),
                         max_publishers: config.max_publishers(),
                         max_nodes: config.max_nodes(),
@@ -178,7 +178,7 @@ impl TryFrom<&StaticConfig> for ServiceDescription {
                 })
             }
             MessagingPattern::Event(config) => PatternDescription::Event(EventDescription {
-                settings: PatternSettings::Value(EventSettings {
+                settings: PortSettings::Value(EventSettings {
                     max_notifiers: config.max_notifiers(),
                     max_listeners: config.max_listeners(),
                     max_nodes: config.max_nodes(),
@@ -323,7 +323,7 @@ mod tests {
             eq PatternDescription::PublishSubscribe(PublishSubscribeDescription {
                 user_header: (&TypeDetail::new::<()>(TypeVariant::FixedSize)).into(),
                 payload: (&TypeDetail::new::<u64>(TypeVariant::FixedSize)).into(),
-                settings: PatternSettings::Value(PublishSubscribeSettings {
+                settings: PortSettings::Value(PublishSubscribeSettings {
                     max_subscribers: MAX_SUBSCRIBERS,
                     max_publishers: MAX_PUBLISHERS,
                     max_nodes: MAX_NODES,
@@ -379,7 +379,7 @@ mod tests {
         assert_that!(
             sut.pattern,
             eq PatternDescription::Event(EventDescription {
-                settings: PatternSettings::Value(EventSettings {
+                settings: PortSettings::Value(EventSettings {
                     max_notifiers: MAX_NOTIFIERS,
                     max_listeners: MAX_LISTENERS,
                     max_nodes: MAX_NODES,
@@ -421,7 +421,7 @@ mod tests {
         let PatternDescription::Event(description) = sut.pattern else {
             panic!("expected an event pattern description");
         };
-        let PatternSettings::Value(settings) = description.settings else {
+        let PortSettings::Value(settings) = description.settings else {
             panic!("expected provided event settings");
         };
         assert_that!(settings.deadline, eq None);

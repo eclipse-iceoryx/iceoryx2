@@ -17,7 +17,7 @@ use iceoryx2_integrations_ros2_tunnel_backend::{
 };
 use iceoryx2_services_tunnel_backend::traits::Mapping;
 use iceoryx2_services_tunnel_backend::types::service_description::{
-    EventDescription, PatternDescription, PatternSettings, PublishSubscribeDescription,
+    EventDescription, PatternDescription, PortSettings, PublishSubscribeDescription,
     PublishSubscribeSettings, ServiceDescription, TypeDescription,
 };
 
@@ -32,7 +32,7 @@ fn service_description_with_default_settings(name: &str, type_name: &str) -> Ser
                 size: 1,
                 alignment: 1,
             },
-            settings: PatternSettings::UnknownApplyDefaults,
+            settings: PortSettings::LocalDefaults,
         }),
     )
 }
@@ -52,7 +52,7 @@ fn service_description_with_settings(
                 size: 1,
                 alignment: 1,
             },
-            settings: PatternSettings::Value(settings),
+            settings: PortSettings::Value(settings),
         }),
     )
 }
@@ -92,7 +92,7 @@ fn ignores_event_services() {
     let description = ServiceDescription::new::<Service>(
         "ros2://topics/chatter".try_into().unwrap(),
         PatternDescription::Event(EventDescription {
-            settings: PatternSettings::UnknownApplyDefaults,
+            settings: PortSettings::LocalDefaults,
         }),
     );
 
@@ -207,7 +207,7 @@ fn maps_durability_qos_to_history_setting() {
     let PatternDescription::PublishSubscribe(description) = &local.pattern else {
         panic!("expected a publish-subscribe pattern description");
     };
-    let PatternSettings::Value(settings) = &description.settings else {
+    let PortSettings::Value(settings) = &description.settings else {
         panic!("settings must be derived");
     };
 
@@ -236,7 +236,7 @@ fn maps_keep_all_qos_to_non_overflowing_setting() {
     let PatternDescription::PublishSubscribe(description) = &local.pattern else {
         panic!("expected a publish-subscribe pattern description");
     };
-    let PatternSettings::Value(settings) = &description.settings else {
+    let PortSettings::Value(settings) = &description.settings else {
         panic!("settings must be derived");
     };
 

@@ -94,7 +94,7 @@ use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_log::fail;
 use iceoryx2_services_tunnel_backend::traits::Mapping;
 use iceoryx2_services_tunnel_backend::types::service_description::{
-    PatternDescription, PatternSettings, PublishSubscribeDescription, PublishSubscribeSettings,
+    PatternDescription, PortSettings, PublishSubscribeDescription, PublishSubscribeSettings,
     ServiceDescription, TypeDescription,
 };
 use serde::{Deserialize, Serialize};
@@ -104,6 +104,39 @@ use crate::mapping::TopicDescription;
 use crate::qos::QosProfile;
 use crate::ros_header::RosHeader;
 
+/// Inline representation of [`service_description::PortSettings`]:
+/// `Value` is the bare settings table; `LocalDefaults` is the absence
+/// of the field.
+mod port_settings_inline {
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    use super::PortSettings;
+
+    pub fn serialize<S: Serializer, T: Serialize>(
+        settings: &PortSettings<T>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        match settings {
+            PortSettings::Value(value) => value.serialize(serializer),
+            PortSettings::LocalDefaults => serializer.serialize_unit(),
+        }
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
+        deserializer: D,
+    ) -> Result<PortSettings<T>, D::Error> {
+        T::deserialize(deserializer).map(PortSettings::Value)
+    }
+
+    pub fn local_defaults<T>() -> PortSettings<T> {
+        PortSettings::LocalDefaults
+    }
+
+    pub fn is_local_defaults<T>(settings: &PortSettings<T>) -> bool {
+        matches!(settings, PortSettings::LocalDefaults)
+    }
+}
+
 /// The iceoryx2 half of an [`Entry`]: the local service and its
 /// settings. Omitted settings let the tunnel apply its local defaults; a
 /// partial `settings` table fills the rest from the iceoryx2 defaults.
@@ -112,8 +145,12 @@ pub struct IceoryxSettings {
     pub service_name: ServiceName,
     /// Payload type name of the local service.
     pub payload_type: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub settings: Option<PublishSubscribeSettings>,
+    #[serde(
+        default = "port_settings_inline::local_defaults",
+        skip_serializing_if = "port_settings_inline::is_local_defaults",
+        with = "port_settings_inline"
+    )]
+    pub settings: PortSettings<PublishSubscribeSettings>,
 }
 
 /// The ROS 2 half of an [`Entry`]: the topic, its message type and
@@ -260,19 +297,8 @@ impl Mapping for StaticMapping {
             PatternDescription::PublishSubscribe(PublishSubscribeDescription {
                 payload,
                 user_header,
-                settings: settings(&entry.iceoryx2.settings),
+                settings: entry.iceoryx2.settings.clone(),
             }),
         ))
-    }
-}
-
-/// Wraps the entry's service settings; an absent `settings` table tells the
-/// tunnel to apply its local defaults.
-fn settings(
-    settings: &Option<PublishSubscribeSettings>,
-) -> PatternSettings<PublishSubscribeSettings> {
-    match settings {
-        Some(settings) => PatternSettings::Value(settings.clone()),
-        None => PatternSettings::UnknownApplyDefaults,
     }
 }
