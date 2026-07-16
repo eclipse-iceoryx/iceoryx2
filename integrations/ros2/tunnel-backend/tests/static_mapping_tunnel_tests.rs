@@ -14,7 +14,7 @@ mod common;
 
 use core::time::Duration;
 
-use common::{DISCOVERY_RETRY_ATTEMPTS, DISCOVERY_RETRY_PERIOD, RosString, service_name};
+use common::{DISCOVERY_RETRY_ATTEMPTS, DISCOVERY_RETRY_PERIOD, service_name};
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::Service as _;
@@ -38,6 +38,11 @@ use iceoryx2_services_tunnel_backend::traits::testing::Testing as _;
 use iceoryx2_services_tunnel_backend::types::service_description::{
     PortSettings, PublishSubscribeSettings,
 };
+
+#[derive(Debug, ZeroCopySend)]
+#[type_name("std_msgs/msg/String")]
+#[repr(C)]
+struct RosString(u8);
 
 #[test]
 fn maps_iceoryx_services_onto_ros_topics() {
