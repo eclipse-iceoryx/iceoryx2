@@ -14,10 +14,6 @@
 ///
 /// The backing storage could be scratch memory, shared memory or anything
 /// else. It is owned by the caller.
-///
-/// Resizing preserves already-written bytes but may relocate them: regions
-/// returned by earlier [`resize`](ResizableBuffer::resize) calls are
-/// invalidated (realloc semantics).
 pub trait ResizableBuffer {
     /// Ensures at least `min_capacity` writable bytes and returns the whole
     /// writable region.

@@ -19,7 +19,8 @@ use iceoryx2::service::{Service, local_threadsafe};
 use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_log::fail;
 use iceoryx2_services_tunnel_backend::traits::{
-    Mapping, PublishSubscribeRelay, RelayBuilder, ResizableBuffer, TranslationMode, Translator,
+    Mapping, PayloadLayout, PublishSubscribeRelay, RelayBuilder, ResizableBuffer, Transcoder,
+    Translation, Translator,
 };
 use iceoryx2_services_tunnel_backend::types::publish_subscribe::{
     LoanFn, Sample, SampleMut, SampleMutUninit,
@@ -85,15 +86,22 @@ impl core::fmt::Display for ReceiveError {
 
 impl core::error::Error for ReceiveError {}
 
-/// Translation state of a relayed service.
+/// The path a relayed service's payloads take across the boundary.
 #[derive(Debug)]
-struct Translation<T> {
-    translator: Rc<T>,
-    service: ServiceDescription,
-    endpoint: TopicDescription,
-    native_layout: Layout,
-    /// Reused wire-byte scratch; grows to the largest message seen.
-    scratch: RefCell<Vec<u8>>,
+enum PayloadPath<C> {
+    /// Bytes cross unmodified, on the relay's zero-copy path.
+    Passthrough,
+    /// Bytes are translated through `transcoder`, reusing scratch buffers.
+    Transcode {
+        transcoder: C,
+        payload_layout: PayloadLayout,
+        /// Reused wire-byte scratch; grows to the largest message seen.
+        wire_scratch: RefCell<Vec<u8>>,
+        /// Reused payload-byte scratch for dynamic layouts, where the loan
+        /// can only be sized after translation; grows to the largest message
+        /// seen.
+        payload_scratch: RefCell<Vec<u8>>,
+    },
 }
 
 // TODO: Consider moving somewhere else?
@@ -122,7 +130,7 @@ pub struct Relay<S: Service, T: Translator<EndpointDescription = TopicDescriptio
     /// Whether the service's user-header type is [`RosHeader`], i.e. the
     /// relay may write the remote origin into received samples.
     write_ros_header: bool,
-    translation: Option<Translation<T>>,
+    payload_path: PayloadPath<T::Transcoder>,
     _phantom: core::marker::PhantomData<S>,
 }
 
@@ -144,24 +152,20 @@ impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> Relay<S,
     /// publishes the wire bytes.
     fn send_translated(
         &self,
-        translation: &Translation<T>,
+        transcoder: &T::Transcoder,
+        wire_scratch: &RefCell<Vec<u8>>,
         payload: &[u8],
     ) -> Result<(), SendError> {
         let origin = "publish_subscribe::Relay::send";
 
-        let mut scratch = translation.scratch.borrow_mut();
+        let mut wire_scratch = wire_scratch.borrow_mut();
         let written = fail!(from origin,
-            when translation.translator.to_wire(
-                &translation.service,
-                &translation.endpoint,
-                payload,
-                &mut *scratch
-            ),
+            when transcoder.to_wire(payload, &mut *wire_scratch),
             with SendError::Translation,
             "Failed to translate payload to the wire"
         );
         fail!(from origin,
-            when self.publisher.publish(&scratch[..written]),
+            when self.publisher.publish(&wire_scratch[..written]),
             with SendError::Publish,
             "Failed to relay translated sample to ROS 2"
         );
@@ -212,53 +216,40 @@ impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> Relay<S,
         }
     }
 
-    /// The buffered path: takes the wire bytes into the scratch, then
-    /// translates them into a loaned payload of the native layout.
+    /// The buffered path: takes the wire bytes into the wire scratch, then
+    /// translates them into a loaned payload of the resolved layout.
     fn receive_translated<LoanError>(
         &self,
-        translation: &Translation<T>,
+        transcoder: &T::Transcoder,
+        payload_layout: PayloadLayout,
+        wire_scratch: &RefCell<Vec<u8>>,
+        payload_scratch: &RefCell<Vec<u8>>,
         loan: &mut LoanFn<'_, S, LoanError>,
     ) -> Result<Option<SampleMut<S>>, ReceiveError> {
-        let origin = "publish_subscribe::Relay::receive";
-
-        // The scratch is rcl's take destination here, the translator
-        // reads it and writes the translation into the loan.
-        let mut scratch = translation.scratch.borrow_mut();
+        // The wire scratch is rcl's take destination here, the transcoder reads
+        // it and writes the translation towards the loan.
+        let mut wire_scratch = wire_scratch.borrow_mut();
         let result = self.subscription.take_into(|size| {
-            if scratch.len() < size {
-                scratch.resize(size, 0);
+            if wire_scratch.len() < size {
+                wire_scratch.resize(size, 0);
             }
-            Some(scratch.as_mut_ptr())
+            Some(wire_scratch.as_mut_ptr())
         });
 
         match result {
             Ok(Some((size, message_info))) => {
-                let mut sample = match loan(translation.native_layout.size()) {
-                    Ok(sample) => sample,
-                    Err(_) => return Err(ReceiveError::Loan),
+                let mut sample = match payload_layout {
+                    PayloadLayout::FixedSize(layout) => {
+                        self.translate_into_loan(transcoder, &wire_scratch[..size], layout, loan)?
+                    }
+                    PayloadLayout::Dynamic { element } => self.translate_via_scratch(
+                        transcoder,
+                        payload_scratch,
+                        &wire_scratch[..size],
+                        element,
+                        loan,
+                    )?,
                 };
-
-                let mut destination = LoanBuffer {
-                    bytes: payload::zeroed_bytes(sample.payload_mut()),
-                };
-                let written = fail!(from origin,
-                    when translation.translator.from_wire(
-                        &translation.service,
-                        &translation.endpoint,
-                        &scratch[..size],
-                        &mut destination
-                    ),
-                    with ReceiveError::Translation,
-                    "Failed to translate received payload from the wire"
-                );
-                if written != translation.native_layout.size() {
-                    fail!(from origin,
-                        with ReceiveError::Translation,
-                        "Translated payload ({} bytes) does not fill the native layout ({} bytes)",
-                        written,
-                        translation.native_layout.size()
-                    );
-                }
 
                 if self.write_ros_header {
                     payload::write_user_header(
@@ -274,6 +265,78 @@ impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> Relay<S,
             Err(TakeError::Take) => Err(ReceiveError::Take),
         }
     }
+
+    /// Translates wire bytes directly into a loaned payload of the fixed
+    /// layout, which the transcoder must fill exactly.
+    fn translate_into_loan<LoanError>(
+        &self,
+        transcoder: &T::Transcoder,
+        wire: &[u8],
+        layout: Layout,
+        loan: &mut LoanFn<'_, S, LoanError>,
+    ) -> Result<SampleMutUninit<S>, ReceiveError> {
+        let origin = "publish_subscribe::Relay::receive";
+
+        let mut sample = match loan(layout.size()) {
+            Ok(sample) => sample,
+            Err(_) => return Err(ReceiveError::Loan),
+        };
+
+        let mut loan_buffer = LoanBuffer {
+            bytes: payload::zeroed_bytes(sample.payload_mut()),
+        };
+        let written = fail!(from origin,
+            when transcoder.from_wire(wire, &mut loan_buffer),
+            with ReceiveError::Translation,
+            "Failed to translate received payload from the wire"
+        );
+        if written != layout.size() {
+            fail!(from origin,
+                with ReceiveError::Translation,
+                "Translated payload ({} bytes) does not fill the fixed payload layout ({} bytes)",
+                written,
+                layout.size()
+            );
+        }
+
+        Ok(sample)
+    }
+
+    /// Translates wire bytes into the payload scratch, then loans a payload
+    /// sized to the translated length and copies the translation into it.
+    fn translate_via_scratch<LoanError>(
+        &self,
+        transcoder: &T::Transcoder,
+        payload_scratch: &RefCell<Vec<u8>>,
+        wire: &[u8],
+        element: Layout,
+        loan: &mut LoanFn<'_, S, LoanError>,
+    ) -> Result<SampleMutUninit<S>, ReceiveError> {
+        let origin = "publish_subscribe::Relay::receive";
+
+        let mut payload_scratch = payload_scratch.borrow_mut();
+        let written = fail!(from origin,
+            when transcoder.from_wire(wire, &mut *payload_scratch),
+            with ReceiveError::Translation,
+            "Failed to translate received payload from the wire"
+        );
+        if !written.is_multiple_of(element.size()) {
+            fail!(from origin,
+                with ReceiveError::Translation,
+                "Translated payload ({} bytes) is not a whole number of {}-byte elements",
+                written,
+                element.size()
+            );
+        }
+
+        let mut sample = match loan(written) {
+            Ok(sample) => sample,
+            Err(_) => return Err(ReceiveError::Loan),
+        };
+        payload::copy_into_uninit(sample.payload_mut(), &payload_scratch[..written]);
+
+        Ok(sample)
+    }
 }
 
 impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> PublishSubscribeRelay<S>
@@ -284,9 +347,11 @@ impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> PublishS
 
     fn send(&self, sample: Sample<S>) -> Result<(), Self::SendError> {
         let payload = payload::as_bytes(sample.payload());
-        match &self.translation {
-            None => self.send_passthrough(payload),
-            Some(translation) => self.send_translated(translation, payload),
+        match &self.payload_path {
+            PayloadPath::Passthrough => self.send_passthrough(payload),
+            PayloadPath::Transcode {
+                transcoder, wire_scratch, ..
+            } => self.send_translated(transcoder, wire_scratch, payload),
         }
     }
 
@@ -294,9 +359,20 @@ impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> PublishS
         &self,
         loan: &mut LoanFn<'_, S, LoanError>,
     ) -> Result<Option<SampleMut<S>>, Self::ReceiveError> {
-        match &self.translation {
-            None => self.receive_passthrough(loan),
-            Some(translation) => self.receive_translated(translation, loan),
+        match &self.payload_path {
+            PayloadPath::Passthrough => self.receive_passthrough(loan),
+            PayloadPath::Transcode {
+                transcoder,
+                payload_layout,
+                wire_scratch,
+                payload_scratch,
+            } => self.receive_translated(
+                transcoder,
+                *payload_layout,
+                wire_scratch,
+                payload_scratch,
+                loan,
+            ),
         }
     }
 }
@@ -313,7 +389,7 @@ pub struct Builder<
     type_registry: &'a TypeSupportRegistry,
     mapping: &'a M,
     translator: Rc<T>,
-    description: &'a ServiceDescription,
+    service_description: &'a ServiceDescription,
     wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     _phantom: core::marker::PhantomData<S>,
 }
@@ -326,7 +402,7 @@ impl<
 > Builder<'a, S, M, T>
 {
     pub fn new(
-        description: &'a ServiceDescription,
+        service_description: &'a ServiceDescription,
         node: Rc<RclNode>,
         type_registry: &'a TypeSupportRegistry,
         mapping: &'a M,
@@ -338,7 +414,7 @@ impl<
             type_registry,
             mapping,
             translator,
-            description,
+            service_description,
             wake,
             _phantom: core::marker::PhantomData,
         }
@@ -358,23 +434,24 @@ impl<
     fn create(self) -> Result<Self::Relay, Self::CreationError> {
         let origin = "publish_subscribe::Relay::create";
 
-        let PatternDescription::PublishSubscribe(pattern_description) = &self.description.pattern
+        let PatternDescription::PublishSubscribe(pattern_description) =
+            &self.service_description.pattern
         else {
             unreachable!("relay is only built for publish-subscribe descriptions")
         };
 
-        let Some(topic_description) = self.mapping.remote(self.description) else {
+        let Some(topic_description) = self.mapping.remote(self.service_description) else {
             fail!(from origin, with CreationError::Mapping,
                 "Mapping does not map service '{}' to a ROS 2 topic",
-                self.description.name
+                self.service_description.name
             );
         };
 
-        let mode = fail!(from origin,
-            when self.translator.resolve(self.description, &topic_description),
+        let translation = fail!(from origin,
+            when self.translator.create(self.service_description, &topic_description),
             with CreationError::Translator,
-            "Translator failed to resolve service '{}'",
-            self.description.name
+            "Translator failed to create translation for service '{}'",
+            self.service_description.name
         );
 
         let type_name = topic_description.type_name.as_str();
@@ -420,22 +497,34 @@ impl<
         let write_ros_header =
             pattern_description.user_header == TypeDescription::from(&RosHeader::type_detail());
 
-        let translation = match mode {
-            TranslationMode::Passthrough => None,
-            TranslationMode::Translate { native_layout } => Some(Translation {
-                translator: Rc::clone(&self.translator),
-                service: self.description.clone(),
-                endpoint: topic_description.clone(),
-                native_layout,
-                scratch: RefCell::new(Vec::new()),
-            }),
+        let payload_path = match translation {
+            Translation::Passthrough => PayloadPath::Passthrough,
+            Translation::Transcode {
+                payload_layout,
+                transcoder,
+            } => {
+                if let PayloadLayout::Dynamic { element } = payload_layout
+                    && element.size() == 0
+                {
+                    fail!(from origin, with CreationError::Translator,
+                        "Translator produced a dynamic payload with a zero-sized element for service '{}'",
+                        self.service_description.name
+                    );
+                }
+                PayloadPath::Transcode {
+                    transcoder,
+                    payload_layout,
+                    wire_scratch: RefCell::new(Vec::new()),
+                    payload_scratch: RefCell::new(Vec::new()),
+                }
+            }
         };
 
         Ok(Relay {
             publisher,
             subscription,
             write_ros_header,
-            translation,
+            payload_path,
             _phantom: core::marker::PhantomData,
         })
     }

@@ -20,7 +20,9 @@ use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_bb_concurrency::cell::RefCell;
 use iceoryx2_log::fail;
-use iceoryx2_services_tunnel_backend::traits::{Mapping, TranslationMode, Translator};
+use iceoryx2_services_tunnel_backend::traits::{
+    Mapping, PayloadLayout, Translation, Translator,
+};
 use iceoryx2_services_tunnel_backend::types::discovery::{DiscoveryUpdate, DiscoveryUpdateRef};
 use iceoryx2_services_tunnel_backend::types::service_description::PatternDescription;
 
@@ -159,21 +161,30 @@ impl<
             return Ok(());
         };
 
-        // Translated topics carry the native payload layout, which only the
+        // Translated topics carry the payload layout, which only the
         // translator knows; the local service is created from it.
-        let mode = fail!(from origin,
-            when self.translator.resolve(&service_description, &topic_description),
+        let translation = fail!(from origin,
+            when self.translator.create(&service_description, &topic_description),
             with DiscoveryError::Translator,
-            "Translator failed to resolve topic '{}'",
+            "Translator failed to create translation for topic '{}'",
             topic.as_str()
         );
-        if let TranslationMode::Translate { native_layout } = mode
+        if let Translation::Transcode { payload_layout, .. } = translation
             && let PatternDescription::PublishSubscribe(pattern_description) =
                 &mut service_description.pattern
         {
-            pattern_description.payload.variant = TypeVariant::FixedSize;
-            pattern_description.payload.size = native_layout.size();
-            pattern_description.payload.alignment = native_layout.align();
+            match payload_layout {
+                PayloadLayout::FixedSize(layout) => {
+                    pattern_description.payload.variant = TypeVariant::FixedSize;
+                    pattern_description.payload.size = layout.size();
+                    pattern_description.payload.alignment = layout.align();
+                }
+                PayloadLayout::Dynamic { element } => {
+                    pattern_description.payload.variant = TypeVariant::Dynamic;
+                    pattern_description.payload.size = element.size();
+                    pattern_description.payload.alignment = element.align();
+                }
+            }
         }
 
         // Run discovery logic provided by the caller for the service discovered
