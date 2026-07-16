@@ -74,7 +74,7 @@ impl TypeDetail {
             type_name: unsafe {
                 fatal_panic!(
                     from "TypeDetail::__internal_new::<T>()",
-                    when TypeName::try_from(T::type_name()),
+                    when TypeName::try_from(<T as iceoryx2_bb_elementary_traits::type_name::TypeName>::type_name()),
                     "Name of type T does not fit into fixed-size TypeNameString"
                 )
             },

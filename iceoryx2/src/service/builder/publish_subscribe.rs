@@ -415,7 +415,10 @@ impl<
 > Builder<Payload, UserHeader, ServiceType>
 {
     fn has_flatbuffer_payload() -> bool {
-        unsafe { Payload::type_name() == Flatbuffer::<()>::type_name() }
+        unsafe {
+            <Payload as iceoryx2_bb_elementary_traits::type_name::TypeName>::type_name()
+                == Flatbuffer::<()>::type_name()
+        }
     }
 
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
