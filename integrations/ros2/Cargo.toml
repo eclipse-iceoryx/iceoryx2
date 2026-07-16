@@ -5,6 +5,7 @@
 resolver = "2"
 members = [
     "tunnel-backend",
+    "tunnel-cli",
 ]
 # The examples are `ament_cargo` packages built individually by colcon, which
 # patches their dependencies in the install space; they are their own
@@ -34,12 +35,17 @@ version = "0.9.999"
 iceoryx2 = { version = "0.9.999", path = "../../iceoryx2/", features = ["std"] }
 iceoryx2-bb-concurrency = { version = "0.9.999", path = "../../iceoryx2-bb/concurrency/", features = ["std"] }
 iceoryx2-bb-testing = { version = "0.9.999", path = "../../iceoryx2-bb/testing/", features = ["std"] }
+iceoryx2-cli = { version = "0.9.999", path = "../../iceoryx2-cli/" }
 iceoryx2-log = { version = "0.9.999", path = "../../iceoryx2-log/log/", features = ["std"] }
 iceoryx2-services-common = { version = "0.9.999", path = "../../iceoryx2-services/common", features = ["std"] }
 iceoryx2-services-tunnel = { version = "0.9.999", path = "../../iceoryx2-services/tunnel", features = ["std"] }
 iceoryx2-services-tunnel-backend = { version = "0.9.999", path = "../../iceoryx2-services/tunnel-backend", features = ["std"] }
 
+anyhow = { version = "1.0.86" }
+better-panic = { version = "0.3.0" }
 cdr = { version = "0.2.4" }
+clap = { version = "4.6.1", features = ["derive"] }
+human-panic = { version = "2.0.5" }
 libloading = { version = "0.8" }
 r2r_rcl = { version = "0.9.5" }
 serde = { version = "1.0.203", default-features = false, features = ["alloc", "derive"] }
