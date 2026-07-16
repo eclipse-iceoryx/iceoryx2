@@ -42,19 +42,20 @@ impl core::error::Error for LoadError {}
 /// A resolved ROS 2 *typesupport* handle.
 ///
 /// In ROS 2 a "typesupport" is the per-message-type descriptor that rcl and
-/// the underlying middleware (DDS) need in order to work with a type: its
-/// fully-qualified name, a type hash used to match endpoints, and the function
-/// table to (de)serialize it. The `rosidl` code generator emits one for every
-/// `.msg` definition.
+/// the underlying middleware (DDS) need in order to work with a type. It
+/// comes in flavors sharing one handle type, where the regular flavor carries
+/// the function table to (de)serialize the type and the introspection flavor
+/// its member table. The `rosidl` code generator emits both for every `.msg`
+/// definition.
 ///
 /// The tunnel must handle whatever message types the user bridges, known only
 /// by *name* (a string from config or graph discovery) at runtime, never at
 /// compile time. ROS ships each package's typesupport as a compiled shared
-/// object (`lib<pkg>__rosidl_typesupport_c.so`) exporting a C getter function
-/// per type, so the only way to obtain the handle for a given name is to
-/// `dlopen` that library and resolve the getter symbol at runtime. Without
-/// the handle, rcl cannot create a publisher or subscription that DDS peers
-/// will match.
+/// object per flavor (`lib<pkg>__rosidl_typesupport_c.so`, ...) exporting a
+/// C getter function per type, so the only way to obtain the handle for a
+/// given name is to `dlopen` that library and resolve the getter symbol at
+/// runtime. Without the handle, rcl cannot create a publisher or
+/// subscription that DDS peers will match.
 ///
 /// The handle points into the loaded library's memory, so the `Library` is
 /// kept alive here. The typesupport is shared: the registry cache and every
@@ -72,6 +73,10 @@ impl TypeSupport {
     }
 }
 
+// SAFETY: the handle points at immutable static data inside the loaded
+// library, which `_library` keeps alive.
+unsafe impl Send for TypeSupport {}
+
 /// Resolves and caches typesupport handles. Entries are never evicted; the
 /// registry must outlive all endpoints created from its handles.
 #[derive(Debug, Default)]
@@ -85,7 +90,7 @@ impl TypeSupportRegistry {
             return Ok(Rc::clone(type_support));
         }
 
-        let type_support = Rc::new(load_typesupport_library(type_name)?);
+        let type_support = Rc::new(load_typesupport(type_name)?);
         self.entries
             .borrow_mut()
             .insert(type_name.to_string(), Rc::clone(&type_support));
@@ -94,9 +99,22 @@ impl TypeSupportRegistry {
     }
 }
 
-/// Loads the typesupport library of the type's package and looks up the
-/// type's handle in it.
-fn load_typesupport_library(type_name: &str) -> Result<TypeSupport, LoadError> {
+const TYPESUPPORT: &str = "rosidl_typesupport_c";
+const TYPESUPPORT_INTROSPECTION: &str = "rosidl_typesupport_introspection_c";
+
+/// Loads the regular typesupport handle of `type_name`.
+pub(crate) fn load_typesupport(type_name: &str) -> Result<TypeSupport, LoadError> {
+    load_typesupport_handle(type_name, TYPESUPPORT)
+}
+
+/// Loads the introspection typesupport handle of `type_name`.
+pub(crate) fn load_typesupport_introspection(type_name: &str) -> Result<TypeSupport, LoadError> {
+    load_typesupport_handle(type_name, TYPESUPPORT_INTROSPECTION)
+}
+
+/// Loads the `flavor` typesupport library of the type's package and retrieves
+/// the handle pointer.
+fn load_typesupport_handle(type_name: &str, flavor: &str) -> Result<TypeSupport, LoadError> {
     let origin = "TypeSupportRegistry::load";
 
     let (package, message) = fail!(
@@ -105,9 +123,9 @@ fn load_typesupport_library(type_name: &str) -> Result<TypeSupport, LoadError> {
         "Invalid ROS 2 type name '{}'",
         type_name
     );
-    let library_name = format!("lib{package}__rosidl_typesupport_c.so");
+    let library_name = format!("lib{package}__{flavor}.so");
     let symbol_name =
-        format!("rosidl_typesupport_c__get_message_type_support_handle__{package}__msg__{message}");
+        format!("{flavor}__get_message_type_support_handle__{package}__msg__{message}");
 
     // Load the typesupport library, found via the sourced environment's
     // LD_LIBRARY_PATH.
