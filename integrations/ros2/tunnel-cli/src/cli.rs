@@ -20,17 +20,37 @@ use iceoryx2_cli::help_template;
 #[command(
     name = "iox2 tunnel ros2",
     bin_name = "iox2 tunnel ros2",
-    about = "Launch an iceoryx2 tunnel bridging to ROS 2.",
+    about = "Launch an iceoryx2 tunnel to ROS 2.",
     long_about = None,
     version = env!("CARGO_PKG_VERSION"),
     help_template = help_template().build(),
 )]
 pub struct Cli {
     #[clap(
-        long = "static",
+        long = "service",
+        short = 's',
+        value_name = "NAME",
+        action = clap::ArgAction::Append,
+        help = "Restrict tunneling to the listed service names. May be repeated. When omitted, all discovered services are tunneled."
+    )]
+    pub services: Vec<String>,
+
+    #[clap(
+        long = "topic",
+        short = 't',
+        value_name = "TOPIC:TYPE",
+        action = clap::ArgAction::Append,
+        conflicts_with = "static_mapping",
+        help = "Enable discovery of specified topics via ROS 2. When omitted, no ROS 2 discovery occurs. Only relevant for prefix mappings. Can be repeated."
+    )]
+    pub topics: Vec<String>,
+
+    #[clap(
+        long,
         value_name = "TOML",
-        help = "Path to a static mapping TOML file; services are mapped by the \
-                'ros2://topics/' name prefix when omitted"
+        help = "Specify a static mapping between iceoryx2 services and ROS 2 topics to use.\n\
+                If not set, prefix mapping is used: services with names in the form \
+                ros2://topics/{NAMESPACE}/{TOPIC} are mapped to topics /{NAMESPACE}/{TOPIC}."
     )]
     static_mapping: Option<PathBuf>,
 
@@ -38,7 +58,7 @@ pub struct Cli {
         long,
         value_enum,
         default_value_t = Translator::Passthrough,
-        help = "Payload treatment for tunneled services"
+        help = "Payload translation strategy."
     )]
     pub translator: Translator,
 
@@ -48,15 +68,6 @@ pub struct Cli {
         help = "Name of a service providing discovery updates to connect to"
     )]
     pub discovery_service: Option<String>,
-
-    #[clap(
-        long = "service",
-        short = 's',
-        value_name = "NAME",
-        action = clap::ArgAction::Append,
-        help = "Restrict tunneling to the listed service names. May be repeated. When omitted, all discovered services are tunneled."
-    )]
-    pub services: Vec<String>,
 
     #[clap(
         long,
@@ -102,9 +113,10 @@ pub enum Mapping {
 
 #[derive(ValueEnum, Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Translator {
-    /// Payload bytes cross unmodified (serialized CDR on the iceoryx2 side).
+    /// Payload bytes cross unmodified.
     Passthrough,
-    /// Fixed-size payloads cross as their rosidl C structs, transcoded to
-    /// and from CDR via the type's introspection data.
+    /// (De)serializes payloads at the boundary to ROS 2 using
+    /// the ROS 2 typesupport libraries. Only supports fixed-sized structs
+    /// that can be placed in shared memory.
     Introspection,
 }

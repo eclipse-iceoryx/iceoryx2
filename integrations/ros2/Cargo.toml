@@ -36,6 +36,7 @@ iceoryx2 = { version = "0.9.999", path = "../../iceoryx2/", features = ["std"] }
 iceoryx2-bb-concurrency = { version = "0.9.999", path = "../../iceoryx2-bb/concurrency/", features = ["std"] }
 iceoryx2-bb-testing = { version = "0.9.999", path = "../../iceoryx2-bb/testing/", features = ["std"] }
 iceoryx2-cli = { version = "0.9.999", path = "../../iceoryx2-cli/" }
+iceoryx2-integrations-ros2-tunnel-backend = { version = "0.9.999", path = "tunnel-backend" }
 iceoryx2-log = { version = "0.9.999", path = "../../iceoryx2-log/log/", features = ["std"] }
 iceoryx2-services-common = { version = "0.9.999", path = "../../iceoryx2-services/common", features = ["std"] }
 iceoryx2-services-tunnel = { version = "0.9.999", path = "../../iceoryx2-services/tunnel", features = ["std"] }

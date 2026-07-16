@@ -839,8 +839,13 @@ dependencies = [
  "better-panic",
  "clap",
  "human-panic",
+ "iceoryx2",
  "iceoryx2-cli",
+ "iceoryx2-integrations-ros2-tunnel-backend",
  "iceoryx2-log",
+ "iceoryx2-services-tunnel",
+ "iceoryx2-services-tunnel-backend",
+ "toml 0.9.12+spec-1.1.0",
 ]
 
 [[package]]
