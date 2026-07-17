@@ -10,7 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-/// Trait for types that can be uniquely identified by their [`TypeName::type_name()`].
+//! Trait for types that can be uniquely identified by their [`TypeName::type_name()`].
+/// # Safety
+///
+/// See Safety section of [`TypeName::type_name()`].
 pub unsafe trait TypeName {
     /// The unique identifier of the type. It shall be used to identify a specific type across
     /// processes and languages.

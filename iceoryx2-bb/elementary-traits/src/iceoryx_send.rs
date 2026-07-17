@@ -10,6 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#[doc(hidden)]
+/// Trait to prevent the IceoryxSend trait from being implemented outside the crate.
 pub(crate) unsafe trait NoTouchyFishy {}
 
+#[doc(hidden)]
+/// Marker trait that identifies types that can be transmitted via iceoryx2.
+#[allow(private_bounds)]
 pub unsafe trait IceoryxSend: NoTouchyFishy {}
+
+/// ``` compile_fail
+/// use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
+///
+/// struct Foo(u32);
+/// unsafe impl IceoryxSend for Foo {};
+/// ```
+#[cfg(doctest)]
+fn iceoryx_send_cannot_be_implemented() {}

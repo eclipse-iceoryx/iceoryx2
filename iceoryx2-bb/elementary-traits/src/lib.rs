@@ -22,6 +22,7 @@ mod as_cstr;
 pub use crate::as_cstr::*;
 pub mod atomic_copy;
 pub mod generic_pointer;
+#[doc(hidden)]
 pub mod iceoryx_send;
 pub mod owning_pointer;
 pub mod placement_default;
