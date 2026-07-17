@@ -13,6 +13,8 @@
 use core::fmt::Debug;
 use core::marker::PhantomData;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::iceoryx_send::{__InternalNoTouchyFishy, IceoryxSend};
+use iceoryx2_bb_elementary_traits::type_name::TypeName;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
 #[repr(C)]
@@ -40,5 +42,14 @@ pub struct Flatbuffer<T> {
 impl<T> Debug for Flatbuffer<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Flatbuffer<{}>", core::any::type_name::<T>())
+    }
+}
+
+unsafe impl<T> __InternalNoTouchyFishy for Flatbuffer<T> {}
+impl<T> IceoryxSend for Flatbuffer<T> {}
+
+unsafe impl<T> TypeName for Flatbuffer<T> {
+    unsafe fn type_name() -> &'static str {
+        "iox2::Flatbuffer"
     }
 }

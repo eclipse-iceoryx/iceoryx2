@@ -68,7 +68,9 @@ pub struct TypeDetail {
 impl TypeDetail {
     /// Creates a new [`TypeDetail`] from the provided `T`. The [`TypeVariant`] defines if
     /// the type is part of a slice or directly contained.
-    pub fn new<T>(variant: TypeVariant) -> Self {
+    pub fn new<T: iceoryx2_bb_elementary_traits::type_name::TypeName>(
+        variant: TypeVariant,
+    ) -> Self {
         Self {
             variant,
             type_name: unsafe {
@@ -143,7 +145,11 @@ pub struct MessageTypeDetails {
 }
 
 impl MessageTypeDetails {
-    pub(crate) fn from<Header: ZeroCopySend, UserHeader: ZeroCopySend, Payload>(
+    pub(crate) fn from<
+        Header: ZeroCopySend,
+        UserHeader: ZeroCopySend,
+        Payload: iceoryx2_bb_elementary_traits::type_name::TypeName,
+    >(
         payload_variant: TypeVariant,
     ) -> Self {
         Self {

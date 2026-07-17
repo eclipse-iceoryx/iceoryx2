@@ -35,6 +35,7 @@ use crate::service::resource::publish_subscribe::{
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
 use crate::service::{self, dynamic_config::MessagingPatternSettings};
+use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 
 use self::{
     attribute::{AttributeSpecifier, AttributeVerifier},
@@ -374,7 +375,7 @@ struct Verify {
 /// See [`crate::service`]
 #[derive(Debug)]
 pub struct Builder<
-    Payload: Debug + ?Sized,
+    Payload: Debug + IceoryxSend + ?Sized,
     UserHeader: Debug + ZeroCopySend,
     ServiceType: service::Service,
 > {
@@ -388,8 +389,11 @@ pub struct Builder<
     _user_header: PhantomData<UserHeader>,
 }
 
-impl<Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend, ServiceType: service::Service> Clone
-    for Builder<Payload, UserHeader, ServiceType>
+impl<
+    Payload: Debug + IceoryxSend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+    ServiceType: service::Service,
+> Clone for Builder<Payload, UserHeader, ServiceType>
 {
     fn clone(&self) -> Self {
         Self {
@@ -405,10 +409,14 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend, ServiceType: ser
     }
 }
 
-impl<Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
-    Builder<Payload, UserHeader, ServiceType>
+impl<
+    Payload: Debug + IceoryxSend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+    ServiceType: service::Service,
+> Builder<Payload, UserHeader, ServiceType>
 {
     fn has_flatbuffer_payload() -> bool {
+        use iceoryx2_bb_elementary_traits::type_name::TypeName;
         unsafe {
             <Payload as iceoryx2_bb_elementary_traits::type_name::TypeName>::type_name()
                 == Flatbuffer::<()>::type_name()
@@ -804,7 +812,7 @@ impl<UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
     }
 }
 
-impl<Payload: Debug + ?Sized + ZeroCopySend, ServiceType: service::Service>
+impl<Payload: Debug + ?Sized + IceoryxSend + ZeroCopySend, ServiceType: service::Service>
     Builder<Payload, CustomHeaderMarker, ServiceType>
 {
     #[doc(hidden)]
@@ -814,7 +822,7 @@ impl<Payload: Debug + ?Sized + ZeroCopySend, ServiceType: service::Service>
     }
 }
 
-impl<Payload: Debug, UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
+impl<Payload: IceoryxSend + Debug, UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
     Builder<Payload, UserHeader, ServiceType>
 {
     fn prepare_config_details(&mut self) {
@@ -908,7 +916,7 @@ impl<Payload: Debug, UserHeader: Debug + ZeroCopySend, ServiceType: service::Ser
     }
 }
 
-impl<Payload: Debug, UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
+impl<Payload: Debug + IceoryxSend, UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
     Builder<Flatbuffer<Payload>, UserHeader, ServiceType>
 {
     /// Sets the path to the flatbuffer schema file. If this is not explicitly defined, iceoryx2
@@ -920,8 +928,11 @@ impl<Payload: Debug, UserHeader: Debug + ZeroCopySend, ServiceType: service::Ser
     }
 }
 
-impl<Payload: Debug + ZeroCopySend, UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
-    Builder<[Payload], UserHeader, ServiceType>
+impl<
+    Payload: Debug + IceoryxSend + ZeroCopySend,
+    UserHeader: Debug + ZeroCopySend,
+    ServiceType: service::Service,
+> Builder<[Payload], UserHeader, ServiceType>
 {
     fn prepare_config_details(&mut self) {
         self.config_details_mut().message_type_details =
