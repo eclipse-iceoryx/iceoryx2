@@ -146,8 +146,8 @@ pub struct MessageTypeDetails {
 
 impl MessageTypeDetails {
     pub(crate) fn from<
-        Header: ZeroCopySend,
-        UserHeader: ZeroCopySend,
+        Header: iceoryx2_bb_elementary_traits::type_name::TypeName,
+        UserHeader: iceoryx2_bb_elementary_traits::type_name::TypeName,
         Payload: iceoryx2_bb_elementary_traits::type_name::TypeName,
     >(
         payload_variant: TypeVariant,

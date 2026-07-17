@@ -32,7 +32,7 @@ use core::fmt::Debug;
 
 use alloc::format;
 
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
 use iceoryx2_log::fail;
 
 use crate::{
@@ -61,22 +61,25 @@ pub(crate) struct SubscriberConfig {
 pub struct PortFactorySubscriber<
     'factory,
     Service: service::Service,
-    PayloadType: Debug + ?Sized,
+    PayloadType: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > {
     config: SubscriberConfig,
     pub(crate) factory: &'factory PortFactory<Service, PayloadType, UserHeader>,
 }
 
-unsafe impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
-    Send for PortFactorySubscriber<'_, Service, Payload, UserHeader>
+unsafe impl<
+    Service: service::Service,
+    Payload: IceoryxSend + Debug + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Send for PortFactorySubscriber<'_, Service, Payload, UserHeader>
 {
 }
 
 impl<
     'factory,
     Service: service::Service,
-    PayloadType: Debug + ?Sized,
+    PayloadType: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > PortFactorySubscriber<'factory, Service, PayloadType, UserHeader>
 {

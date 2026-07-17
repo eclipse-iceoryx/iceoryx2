@@ -114,6 +114,7 @@ use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
+use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
@@ -332,7 +333,7 @@ impl<Service: service::Service> PublisherSharedState<Service> {
 #[derive(Debug)]
 pub struct Publisher<
     Service: service::Service,
-    Payload: Debug + ?Sized + 'static,
+    Payload: IceoryxSend + Debug + ?Sized + 'static,
     UserHeader: Debug + ZeroCopySend,
 > {
     pub(crate) publisher_shared_state:
@@ -343,22 +344,31 @@ pub struct Publisher<
     _user_header: PhantomData<UserHeader>,
 }
 
-unsafe impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
-    Send for Publisher<Service, Payload, UserHeader>
+unsafe impl<
+    Service: service::Service,
+    Payload: IceoryxSend + Debug + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Send for Publisher<Service, Payload, UserHeader>
 where
     Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>: Send + Sync,
 {
 }
 
-unsafe impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
-    Sync for Publisher<Service, Payload, UserHeader>
+unsafe impl<
+    Service: service::Service,
+    Payload: IceoryxSend + Debug + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Sync for Publisher<Service, Payload, UserHeader>
 where
     Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>: Send + Sync,
 {
 }
 
-impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
-    Abandonable for Publisher<Service, Payload, UserHeader>
+impl<
+    Service: service::Service,
+    Payload: IceoryxSend + Debug + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Abandonable for Publisher<Service, Payload, UserHeader>
 {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
@@ -370,8 +380,11 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + Zer
     }
 }
 
-impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend> Drop
-    for Publisher<Service, Payload, UserHeader>
+impl<
+    Service: service::Service,
+    Payload: IceoryxSend + Debug + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Drop for Publisher<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
         let shared_state = self.publisher_shared_state.lock();
@@ -386,8 +399,11 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + Zer
     }
 }
 
-impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
-    Publisher<Service, Payload, UserHeader>
+impl<
+    Service: service::Service,
+    Payload: IceoryxSend + Debug + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Publisher<Service, Payload, UserHeader>
 {
     pub(crate) fn new(
         publisher_factory: PortFactoryPublisher<Service, Payload, UserHeader>,
@@ -583,8 +599,11 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + Zer
 ////////////////////////
 // BEGIN: typed API
 ////////////////////////
-impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Default + Debug + ZeroCopySend>
-    Publisher<Service, Payload, UserHeader>
+impl<
+    Service: service::Service,
+    Payload: IceoryxSend + Debug + Sized,
+    UserHeader: Default + Debug + ZeroCopySend,
+> Publisher<Service, Payload, UserHeader>
 {
     /// Copies the input `value` into a [`crate::sample_mut::SampleMut`] and delivers it.
     /// On success it returns the number of [`crate::port::subscriber::Subscriber`]s that received
@@ -891,7 +910,7 @@ impl<Service: service::Service> Publisher<Service, [CustomPayloadMarker], Custom
 
 impl<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > UpdateConnections for Publisher<Service, Payload, UserHeader>
 {

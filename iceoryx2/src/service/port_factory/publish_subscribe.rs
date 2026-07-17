@@ -41,6 +41,7 @@
 //! ```
 extern crate alloc;
 use alloc::sync::Arc;
+use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 
 use super::nodes;
 use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
@@ -67,7 +68,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 #[derive(Debug)]
 pub struct PortFactory<
     Service: service::Service,
-    Payload: Debug + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > {
     pub(crate) service: SharedServiceState<Service, PublishSubscribeResources<Service>>,
@@ -75,17 +76,26 @@ pub struct PortFactory<
     _user_header: PhantomData<UserHeader>,
 }
 
-unsafe impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
-    Send for PortFactory<Service, Payload, UserHeader>
+unsafe impl<
+    Service: service::Service,
+    Payload: IceoryxSend + Debug + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Send for PortFactory<Service, Payload, UserHeader>
 {
 }
-unsafe impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
-    Sync for PortFactory<Service, Payload, UserHeader>
+unsafe impl<
+    Service: service::Service,
+    Payload: IceoryxSend + Debug + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Sync for PortFactory<Service, Payload, UserHeader>
 {
 }
 
-impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
-    Abandonable for PortFactory<Service, Payload, UserHeader>
+impl<
+    Service: service::Service,
+    Payload: IceoryxSend + Debug + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Abandonable for PortFactory<Service, Payload, UserHeader>
 {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
@@ -93,8 +103,11 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + Zer
     }
 }
 
-impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
-    crate::service::port_factory::PortFactory for PortFactory<Service, Payload, UserHeader>
+impl<
+    Service: service::Service,
+    Payload: IceoryxSend + Debug + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> crate::service::port_factory::PortFactory for PortFactory<Service, Payload, UserHeader>
 {
     type Service = Service;
     type StaticConfig = static_config::publish_subscribe::StaticConfig;
@@ -136,8 +149,11 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + Zer
     }
 }
 
-impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
-    PortFactory<Service, Payload, UserHeader>
+impl<
+    Service: service::Service,
+    Payload: IceoryxSend + Debug + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> PortFactory<Service, Payload, UserHeader>
 {
     pub(crate) fn new(service: ServiceState<Service, PublishSubscribeResources<Service>>) -> Self {
         Self {

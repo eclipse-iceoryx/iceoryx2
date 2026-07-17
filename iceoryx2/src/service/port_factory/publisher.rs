@@ -65,7 +65,7 @@ use crate::{
 };
 use alloc::format;
 use core::fmt::Debug;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
 use iceoryx2_cal::shm_allocator::AllocationStrategy;
 use iceoryx2_log::fail;
 use tiny_fn::tiny_fn;
@@ -110,7 +110,7 @@ pub(crate) struct LocalPublisherConfig {
 pub struct PortFactoryPublisher<
     'factory,
     Service: service::Service,
-    Payload: Debug + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > {
     pub(crate) config: LocalPublisherConfig,
@@ -120,13 +120,19 @@ pub struct PortFactoryPublisher<
     pub(crate) factory: &'factory PortFactory<Service, Payload, UserHeader>,
 }
 
-unsafe impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
-    Send for PortFactoryPublisher<'_, Service, Payload, UserHeader>
+unsafe impl<
+    Service: service::Service,
+    Payload: IceoryxSend + Debug + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> Send for PortFactoryPublisher<'_, Service, Payload, UserHeader>
 {
 }
 
-impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
-    PortFactoryPublisher<'_, Service, Payload, UserHeader>
+impl<
+    Service: service::Service,
+    Payload: IceoryxSend + Debug + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> PortFactoryPublisher<'_, Service, Payload, UserHeader>
 {
     #[doc(hidden)]
     /// # Safety
@@ -143,8 +149,12 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + Zer
     }
 }
 
-impl<'factory, Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug + ZeroCopySend>
-    PortFactoryPublisher<'factory, Service, Payload, UserHeader>
+impl<
+    'factory,
+    Service: service::Service,
+    Payload: IceoryxSend + Debug + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
+> PortFactoryPublisher<'factory, Service, Payload, UserHeader>
 {
     pub(crate) fn new(factory: &'factory PortFactory<Service, Payload, UserHeader>) -> Self {
         let defaults = &factory
