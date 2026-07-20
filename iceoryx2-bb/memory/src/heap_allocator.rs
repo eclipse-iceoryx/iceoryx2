@@ -15,7 +15,9 @@
 use core::{alloc::Layout, ptr::NonNull};
 
 use iceoryx2_bb_elementary_traits::{
-    allocator::{AllocationGrowError, AllocationShrinkError, ReallocGrow, ReallocShrink},
+    allocator::{
+        AllocationGrowError, AllocationShrinkError, ContentPlacement, ReallocGrow, ReallocShrink,
+    },
     pointer_family::NonNullFamily,
 };
 use iceoryx2_bb_posix::memory::heap;
@@ -63,6 +65,7 @@ impl ReallocGrow<NonNullFamily> for HeapAllocator {
         ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
+        content_placement: ContentPlacement,
     ) -> Result<NonNull<u8>, AllocationGrowError> {
         if old_layout.size() >= new_layout.size() {
             fail!(from self, with AllocationGrowError::GrowWouldShrink,
@@ -71,7 +74,7 @@ impl ReallocGrow<NonNullFamily> for HeapAllocator {
 
         let mut ptr = unsafe {
             fail!(from self,
-                    when heap::resize(ptr, old_layout, new_layout),
+                    when heap::resize(ptr, old_layout, new_layout, content_placement),
                     "Failed to grow memory from (size: {}, align: {}) to (size: {}, align: {}).",
                     old_layout.size(),old_layout.align(), new_layout.size(), new_layout.align())
         };
@@ -94,7 +97,7 @@ impl ReallocShrink<NonNullFamily> for HeapAllocator {
 
         let mut ptr = unsafe {
             fail!(from self,
-                      when heap::resize(ptr, old_layout, new_layout),
+                      when heap::resize(ptr, old_layout, new_layout, ContentPlacement::Front),
                       "Failed to shrink memory from (size: {}, align: {}) to (size: {}, align: {}).",
                       old_layout.size(),old_layout.align(), new_layout.size(), new_layout.align())
         };

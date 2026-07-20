@@ -188,7 +188,7 @@ pub fn shrink_non_allocated_chunk_fails() {
 }
 
 #[test]
-pub fn grow_works() {
+pub fn grow_with_content_at_front_works() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
     let mut test = TestFixture::new();
@@ -212,6 +212,7 @@ pub fn grow_works() {
             memory,
             Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
             Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
+            ContentPlacement::Front,
         )
     };
 
@@ -219,7 +220,7 @@ pub fn grow_works() {
 }
 
 #[test]
-pub fn grow_zeroed_works() {
+pub fn grow_zeroed_with_content_at_front_works() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
     let mut test = TestFixture::new();
@@ -243,6 +244,7 @@ pub fn grow_zeroed_works() {
             memory,
             Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
             Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
+            ContentPlacement::Front,
         )
         .expect("")
     };
@@ -253,6 +255,45 @@ pub fn grow_zeroed_works() {
 
     for i in CHUNK_SIZE / 2..CHUNK_SIZE {
         assert_that!(unsafe { *memory.as_ptr().add(i) }, eq 0);
+    }
+}
+
+#[test]
+pub fn grow_zeroed_with_content_at_back_works() {
+    const CHUNK_SIZE: usize = 128;
+    const CHUNK_ALIGNMENT: usize = 1;
+    let mut test = TestFixture::new();
+    let sut = test.create_one_chunk_allocator();
+
+    let memory = sut
+        .allocate(unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT) })
+        .expect("");
+
+    let memory = unsafe {
+        sut.shrink(
+            memory,
+            Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
+            Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
+        )
+        .expect("")
+    };
+
+    let memory = unsafe {
+        sut.grow_zeroed(
+            memory,
+            Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
+            Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
+            ContentPlacement::Back,
+        )
+        .expect("")
+    };
+
+    for i in 0..CHUNK_SIZE / 2 {
+        assert_that!(unsafe { *memory.as_ptr().add(i) }, eq 0);
+    }
+
+    for i in CHUNK_SIZE / 2..CHUNK_SIZE {
+        assert_that!(unsafe { *memory.as_ptr().add(i) }, eq 255);
     }
 }
 
@@ -282,6 +323,7 @@ pub fn grow_with_decreased_size_fails() {
                 memory,
                 Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
                 Layout::from_size_align_unchecked(CHUNK_SIZE / 4, CHUNK_ALIGNMENT),
+                ContentPlacement::Front,
             )
         },
         is_err
@@ -314,6 +356,7 @@ pub fn grow_with_increased_alignment_fails() {
                 memory,
                 Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
                 Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT * 2),
+                ContentPlacement::Front,
             )
         },
         is_err
@@ -334,6 +377,7 @@ pub fn grow_with_non_allocated_chunk_fails() {
             NonNull::new(123 as *mut u8).unwrap(),
             Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
             Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
+            ContentPlacement::Front,
         );
     }
 }

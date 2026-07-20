@@ -258,6 +258,7 @@ pub fn grow_works() {
             memory,
             Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT),
             Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT),
+            ContentPlacement::Front,
         )
     };
     assert_that!(memory, is_ok);
@@ -281,6 +282,7 @@ pub fn grow_with_size_larger_bucket_fails() {
                 memory,
                 Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT),
                 Layout::from_size_align_unchecked(BUCKET_SIZE + 1, BUCKET_ALIGNMENT),
+                ContentPlacement::Front,
             )
         },
         is_err
@@ -305,6 +307,7 @@ pub fn grow_with_size_decrease_fails() {
                 memory,
                 Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT),
                 Layout::from_size_align_unchecked(BUCKET_SIZE / 4, BUCKET_ALIGNMENT),
+                ContentPlacement::Front,
             )
         },
         is_err
@@ -326,6 +329,7 @@ pub fn grow_with_non_allocated_chunk_fails() {
             NonNull::new(431 as *mut u8).unwrap(),
             Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT),
             Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT),
+            ContentPlacement::Front,
         );
     }
 }
@@ -348,6 +352,7 @@ pub fn grow_with_too_alignment_larger_bucket_alignment_fails() {
                 memory,
                 Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT),
                 Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT * 8),
+                ContentPlacement::Front,
             )
         },
         is_err
@@ -355,7 +360,7 @@ pub fn grow_with_too_alignment_larger_bucket_alignment_fails() {
 }
 
 #[test]
-pub fn grow_zeroed_works() {
+pub fn grow_zeroed_with_content_at_front_works() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 1;
@@ -371,6 +376,7 @@ pub fn grow_zeroed_works() {
             memory,
             Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT),
             Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT),
+            ContentPlacement::Front,
         )
         .expect("")
     };
@@ -381,6 +387,37 @@ pub fn grow_zeroed_works() {
 
     for i in BUCKET_SIZE / 2..BUCKET_SIZE {
         assert_that!(unsafe { *memory.as_ptr().add(i) }, eq 0);
+    }
+}
+
+#[test]
+pub fn grow_zeroed_with_content_at_back_works() {
+    let mut test = TestFixture::new();
+    const BUCKET_SIZE: usize = 128;
+    const BUCKET_ALIGNMENT: usize = 1;
+
+    let sut = test.create_pool_allocator(BUCKET_SIZE, BUCKET_ALIGNMENT);
+
+    let memory = sut
+        .allocate(unsafe { Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT) })
+        .expect("failed to get memory");
+
+    let memory = unsafe {
+        sut.grow_zeroed(
+            memory,
+            Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT),
+            Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT),
+            ContentPlacement::Back,
+        )
+        .expect("")
+    };
+
+    for i in 0..BUCKET_SIZE / 2 {
+        assert_that!(unsafe { *memory.as_ptr().add(i) }, eq 0);
+    }
+
+    for i in BUCKET_SIZE / 2..BUCKET_SIZE {
+        assert_that!(unsafe { *memory.as_ptr().add(i) }, eq 255);
     }
 }
 

@@ -51,6 +51,7 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_elementary::math::align;
+use iceoryx2_bb_elementary_traits::pointer::Pointer;
 use iceoryx2_bb_elementary_traits::pointer_family::NonNullFamily;
 use iceoryx2_log::fail;
 
@@ -126,9 +127,10 @@ impl BaseAllocator<NonNullFamily> for OneChunkAllocator {
 impl ReallocGrow<NonNullFamily> for OneChunkAllocator {
     unsafe fn grow(
         &self,
-        ptr: NonNull<u8>,
+        mut ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
+        content_placement: ContentPlacement,
     ) -> Result<NonNull<u8>, AllocationGrowError> {
         let msg = "Unable to grow memory chunk";
         self.verify_ptr_is_managed_by_allocator(ptr);
@@ -149,6 +151,17 @@ impl ReallocGrow<NonNullFamily> for OneChunkAllocator {
         if available_size < new_layout.size() {
             fail!(from self, with AllocationGrowError::OutOfMemory,
                 "{} since the size of {} exceeds the available memory size of {}.", msg, new_layout.size(), available_size);
+        }
+
+        if content_placement == ContentPlacement::Back {
+            let offset = new_layout.size() - old_layout.size();
+            unsafe {
+                core::ptr::copy(
+                    ptr.as_ptr(),
+                    ptr.as_mut_ptr().add(offset),
+                    old_layout.size(),
+                )
+            };
         }
 
         Ok(ptr)

@@ -239,9 +239,10 @@ impl ReallocGrow<NonNullFamily> for PoolAllocator {
     /// always returns the input ptr on success but with an increased size
     unsafe fn grow(
         &self,
-        ptr: NonNull<u8>,
+        mut ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
+        content_placement: ContentPlacement,
     ) -> Result<NonNull<u8>, AllocationGrowError> {
         self.verify_init("grow");
 
@@ -261,6 +262,17 @@ impl ReallocGrow<NonNullFamily> for PoolAllocator {
         if self.bucket_size < new_layout.size() {
             fail!(from self, with AllocationGrowError::OutOfMemory,
                 "{} since the new size {} exceeds the maximum supported size.", msg, new_layout.size());
+        }
+
+        if content_placement == ContentPlacement::Back {
+            let offset = new_layout.size() - old_layout.size();
+            unsafe {
+                core::ptr::copy(
+                    ptr.as_ptr(),
+                    ptr.as_mut_ptr().add(offset),
+                    old_layout.size(),
+                )
+            };
         }
 
         Ok(ptr)
@@ -396,8 +408,12 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> ReallocGrow<NonNullFamily>
         ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
+        content_placement: ContentPlacement,
     ) -> Result<NonNull<u8>, AllocationGrowError> {
-        unsafe { self.state.grow(ptr, old_layout, new_layout) }
+        unsafe {
+            self.state
+                .grow(ptr, old_layout, new_layout, content_placement)
+        }
     }
 }
 

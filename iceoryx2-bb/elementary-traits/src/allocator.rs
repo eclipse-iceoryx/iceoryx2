@@ -71,6 +71,14 @@ impl core::fmt::Display for AllocationShrinkError {
 
 impl core::error::Error for AllocationShrinkError {}
 
+/// Defines the position of the existing content when the allocator grows the memory.
+#[derive(Clone, Copy, Eq, PartialEq, Debug, Default)]
+pub enum ContentPlacement {
+    #[default]
+    Front,
+    Back,
+}
+
 /// The most minimalistic requirement for an allocator
 pub trait BaseAllocator<P: PointerFamily> {
     /// Allocates a memory chunk with the properties provided in layout and either
@@ -119,6 +127,7 @@ pub trait ReallocGrow<P: PointerFamily> {
         ptr: P::Pointer<u8>,
         old_layout: Layout,
         new_layout: Layout,
+        content_placement: ContentPlacement,
     ) -> Result<P::Pointer<u8>, AllocationGrowError>;
 
     /// Increases the size of an previously allocated chunk of memory or allocates a new chunk
@@ -138,16 +147,27 @@ pub trait ReallocGrow<P: PointerFamily> {
         ptr: P::Pointer<u8>,
         old_layout: Layout,
         new_layout: Layout,
+        content_placement: ContentPlacement,
     ) -> Result<P::Pointer<u8>, AllocationGrowError> {
-        let mut ptr = unsafe { self.grow(ptr, old_layout, new_layout)? };
+        let mut ptr = unsafe { self.grow(ptr, old_layout, new_layout, content_placement)? };
         let raw_ptr = ptr.as_mut_ptr();
-        unsafe {
-            core::ptr::write_bytes(
-                raw_ptr.add(old_layout.size()),
-                0,
-                new_layout.size() - old_layout.size(),
-            )
-        };
+
+        match content_placement {
+            ContentPlacement::Front => {
+                unsafe {
+                    core::ptr::write_bytes(
+                        raw_ptr.add(old_layout.size()),
+                        0,
+                        new_layout.size() - old_layout.size(),
+                    )
+                };
+            }
+            ContentPlacement::Back => {
+                unsafe {
+                    core::ptr::write_bytes(raw_ptr, 0, new_layout.size() - old_layout.size())
+                };
+            }
+        }
         Ok(ptr)
     }
 }
