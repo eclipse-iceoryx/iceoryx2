@@ -295,14 +295,17 @@ impl<Service: service::Service> PointNotifier<'_, Service> {
 
     /// Notifies the [`Listener`](crate::port::listener::Listener), the [`PointNotifier`] correlates to.
     pub fn notify(&self) -> Result<(), NotifierNotifyError> {
-        self.notifier.notify_single_listener(&self.listener_key)
+        self.notify_with_custom_event_id(self.notifier.default_event_id)
     }
 
     /// Notifies the [`Listener`](crate::port::listener::Listener), the [`PointNotifier`] correlates to,
     /// with a custom [`EventId`].
     pub fn notify_with_custom_event_id(&self, value: EventId) -> Result<(), NotifierNotifyError> {
         self.notifier
-            .notify_single_listener_with_custom_event_id(&self.listener_key, value)
+            .notify_single_listener_with_custom_event_id_no_update_connections(
+                &self.listener_key,
+                value,
+            )
     }
 }
 
@@ -537,6 +540,17 @@ impl<Service: service::Service> Notifier<Service> {
     /// with a custom [`EventId`].
     /// If the key is invalid, e.g. because the corresponding `Listener` is gone, an error is returned.
     pub fn notify_single_listener_with_custom_event_id(
+        &self,
+        listener_key: &ListenerKey,
+        value: EventId,
+    ) -> Result<(), NotifierNotifyError> {
+        let listener_connections = self.listener_connections.lock();
+        listener_connections.update_connections();
+
+        self.notify_single_listener_with_custom_event_id_no_update_connections(listener_key, value)
+    }
+
+    fn notify_single_listener_with_custom_event_id_no_update_connections(
         &self,
         listener_key: &ListenerKey,
         value: EventId,
