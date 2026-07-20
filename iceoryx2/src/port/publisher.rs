@@ -129,7 +129,7 @@ use iceoryx2_log::{fail, warn};
 use crate::port::details::sender::*;
 use crate::port::port_name::PortName;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
-use crate::prelude::BackpressureStrategy;
+use crate::prelude::{BackpressureStrategy, Flatbuffer};
 use crate::raw_sample::RawSampleMut;
 use crate::sample_mut::SampleMut;
 use crate::sample_mut_uninit::SampleMutUninit;
@@ -601,7 +601,7 @@ impl<
 ////////////////////////
 impl<
     Service: service::Service,
-    Payload: IceoryxSend + Debug + Sized,
+    Payload: IceoryxSend + ZeroCopySend + Debug + Sized,
     UserHeader: Default + Debug + ZeroCopySend,
 > Publisher<Service, Payload, UserHeader>
 {
@@ -728,6 +728,36 @@ impl<
 ////////////////////////
 // END: typed API
 ////////////////////////
+
+impl<Service: service::Service, Payload: Debug, UserHeader: Default + Debug + ZeroCopySend>
+    Publisher<Service, Flatbuffer<Payload>, UserHeader>
+{
+    pub fn loan_flatbuffer(
+        &self,
+    ) -> Result<SampleMutUninit<Service, Flatbuffer<Payload>, UserHeader>, LoanError> {
+        let shared_state = self.publisher_shared_state.lock();
+        let chunk = shared_state
+            .sender
+            .allocate(shared_state.sender.sample_layout(1))?;
+        let node_id = shared_state.sender.service_state.shared_node().id();
+        let header_ptr = chunk.header as *mut Header;
+        let user_header_ptr: *mut UserHeader = chunk.user_header.cast();
+        unsafe { header_ptr.write(Header::new(*node_id, self.id(), 1)) };
+        unsafe { user_header_ptr.write(UserHeader::default()) };
+
+        let sample = unsafe {
+            RawSampleMut::new_unchecked(header_ptr, user_header_ptr, chunk.payload.cast())
+        };
+        Ok(
+            SampleMutUninit::<Service, Flatbuffer<Payload>, UserHeader>::new_flatbuffer(
+                &self.publisher_shared_state,
+                sample,
+                chunk.offset,
+                chunk.size,
+            ),
+        )
+    }
+}
 
 ////////////////////////
 // BEGIN: sliced API

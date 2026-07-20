@@ -53,7 +53,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     while node.wait(CYCLE_TIME).is_ok() {
         counter += 1;
-        let mut sample = publisher.loan_uninit()?;
+        let mut sample = publisher.loan_flatbuffer()?;
         sample.flatbuffer_builder();
 
         coutln!("Send sample {counter} ...");

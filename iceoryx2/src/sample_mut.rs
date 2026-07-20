@@ -67,6 +67,7 @@ use crate::{
     port::SendError, port::publisher::PublisherSharedState, raw_sample::RawSampleMut,
     service::header::publish_subscribe::Header,
 };
+use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::shared_memory::*;
@@ -99,7 +100,7 @@ impl<Service: crate::service::Service> Drop for SampleMutSharedState<Service> {
 /// it will release the loaned memory when going out of scope.
 pub struct SampleMut<
     Service: crate::service::Service,
-    Payload: Debug + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: ZeroCopySend,
 > {
     pub(crate) shared_state: SampleMutSharedState<Service>,
@@ -107,8 +108,11 @@ pub struct SampleMut<
     pub(crate) sample_size: usize,
 }
 
-unsafe impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader: ZeroCopySend>
-    Send for SampleMut<Service, Payload, UserHeader>
+unsafe impl<
+    Service: crate::service::Service,
+    Payload: IceoryxSend + Debug + ?Sized,
+    UserHeader: ZeroCopySend,
+> Send for SampleMut<Service, Payload, UserHeader>
 where
     Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>: Send + Sync,
 {
@@ -116,7 +120,7 @@ where
 
 impl<
     Service: crate::service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ZeroCopySend + ?Sized,
     UserHeader: ZeroCopySend,
 > Deref for SampleMut<Service, Payload, UserHeader>
 {
@@ -128,7 +132,7 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ZeroCopySend + ?Sized,
     UserHeader: ZeroCopySend,
 > DerefMut for SampleMut<Service, Payload, UserHeader>
 {
@@ -137,8 +141,11 @@ impl<
     }
 }
 
-impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader: ZeroCopySend> Debug
-    for SampleMut<Service, Payload, UserHeader>
+impl<
+    Service: crate::service::Service,
+    Payload: IceoryxSend + Debug + ?Sized,
+    UserHeader: ZeroCopySend,
+> Debug for SampleMut<Service, Payload, UserHeader>
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         write!(
@@ -155,9 +162,9 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader: Zero
 
 impl<
     Service: crate::service::Service,
-    M: Debug + ?Sized, // `M` is either a `Payload` or a `MaybeUninit<Payload>`
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: ZeroCopySend,
-> SampleMut<Service, M, UserHeader>
+> SampleMut<Service, Payload, UserHeader>
 {
     /// Returns a reference to the header of the sample.
     ///
@@ -262,9 +269,9 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn payload(&self) -> &M
+    pub fn payload(&self) -> &Payload
     where
-        M: ZeroCopySend,
+        Payload: ZeroCopySend,
     {
         self.ptr.as_payload_ref()
     }
@@ -295,9 +302,9 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn payload_mut(&mut self) -> &mut M
+    pub fn payload_mut(&mut self) -> &mut Payload
     where
-        M: ZeroCopySend,
+        Payload: ZeroCopySend,
     {
         self.ptr.as_payload_mut()
     }

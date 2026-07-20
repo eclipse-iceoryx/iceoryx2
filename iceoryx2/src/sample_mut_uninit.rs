@@ -93,7 +93,7 @@
 use core::{fmt::Debug, mem::MaybeUninit};
 
 use flatbuffers::FlatBufferBuilder;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
 use iceoryx2_cal::shm_allocator::PointerOffset;
 
 use crate::{
@@ -112,7 +112,7 @@ use crate::{
 /// it will release the loaned memory when going out of scope.
 pub struct SampleMutUninit<
     Service: crate::service::Service,
-    Payload: Debug + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: ZeroCopySend,
 > {
     shared_state: SampleMutSharedState<Service>,
@@ -121,16 +121,36 @@ pub struct SampleMutUninit<
     flatbuffer_builder: Option<FlatBufferBuilder<'static>>,
 }
 
-unsafe impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader: ZeroCopySend>
-    Send for SampleMutUninit<Service, Payload, UserHeader>
+unsafe impl<
+    Service: crate::service::Service,
+    Payload: IceoryxSend + Debug + ?Sized,
+    UserHeader: ZeroCopySend,
+> Send for SampleMutUninit<Service, Payload, UserHeader>
 where
     Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>: Send + Sync,
 {
 }
 
 impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
-    SampleMutUninit<Service, MaybeUninit<Flatbuffer<Payload>>, UserHeader>
+    SampleMutUninit<Service, Flatbuffer<Payload>, UserHeader>
 {
+    pub(crate) fn new_flatbuffer(
+        publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
+        ptr: RawSampleMut<Header, UserHeader, Flatbuffer<Payload>>,
+        offset_to_chunk: PointerOffset,
+        sample_size: usize,
+    ) -> Self {
+        Self {
+            flatbuffer_builder: None,
+            shared_state: SampleMutSharedState {
+                publisher_shared_state: publisher_shared_state.clone(),
+                offset_to_chunk,
+            },
+            ptr,
+            sample_size,
+        }
+    }
+
     /// Returns the internal [`FlatBufferBuilder`] that was constructed with the internal iceoryx2
     /// allocator to enable true zero-copy data transfer.
     pub fn flatbuffer_builder(&mut self) -> &FlatBufferBuilder<'static> {
@@ -142,8 +162,11 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
     }
 }
 
-impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader: ZeroCopySend>
-    SampleMutUninit<Service, Payload, UserHeader>
+impl<
+    Service: crate::service::Service,
+    Payload: IceoryxSend + Debug + ?Sized,
+    UserHeader: ZeroCopySend,
+> SampleMutUninit<Service, Payload, UserHeader>
 {
     /// Returns a reference to the [`Header`] of the [`SampleMutUninit`].
     ///
@@ -288,8 +311,11 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader: Zero
     }
 }
 
-impl<Service: crate::service::Service, Payload: Debug, UserHeader: ZeroCopySend>
-    SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>
+impl<
+    Service: crate::service::Service,
+    Payload: IceoryxSend + ZeroCopySend + Debug,
+    UserHeader: ZeroCopySend,
+> SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>
 {
     pub(crate) fn new(
         publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
