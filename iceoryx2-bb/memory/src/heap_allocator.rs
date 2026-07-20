@@ -15,7 +15,7 @@
 use core::{alloc::Layout, ptr::NonNull};
 
 use iceoryx2_bb_elementary_traits::{
-    allocator::{AllocationGrowError, AllocationShrinkError},
+    allocator::{AllocationGrowError, AllocationShrinkError, ReallocGrow, ReallocShrink},
     generic_pointer::NonNullFamily,
 };
 use iceoryx2_bb_posix::memory::heap;
@@ -57,7 +57,7 @@ impl BaseAllocator<NonNullFamily> for HeapAllocator {
     }
 }
 
-impl Allocator<NonNullFamily> for HeapAllocator {
+impl ReallocGrow<NonNullFamily> for HeapAllocator {
     unsafe fn grow(
         &self,
         ptr: NonNull<u8>,
@@ -78,7 +78,9 @@ impl Allocator<NonNullFamily> for HeapAllocator {
 
         Ok(unsafe { NonNull::new_unchecked(ptr.as_mut().as_mut_ptr()) })
     }
+}
 
+impl ReallocShrink<NonNullFamily> for HeapAllocator {
     unsafe fn shrink(
         &self,
         ptr: NonNull<u8>,

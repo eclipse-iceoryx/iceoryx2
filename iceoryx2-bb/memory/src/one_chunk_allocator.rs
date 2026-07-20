@@ -123,7 +123,7 @@ impl BaseAllocator<NonNullFamily> for OneChunkAllocator {
     }
 }
 
-impl Allocator<NonNullFamily> for OneChunkAllocator {
+impl ReallocGrow<NonNullFamily> for OneChunkAllocator {
     unsafe fn grow(
         &self,
         ptr: NonNull<u8>,
@@ -153,7 +153,9 @@ impl Allocator<NonNullFamily> for OneChunkAllocator {
 
         Ok(ptr)
     }
+}
 
+impl ReallocShrink<NonNullFamily> for OneChunkAllocator {
     unsafe fn shrink(
         &self,
         ptr: NonNull<u8>,

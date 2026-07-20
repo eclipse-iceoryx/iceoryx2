@@ -101,8 +101,8 @@ pub trait BaseAllocator<P: PointerFamily> {
     unsafe fn deallocate(&self, ptr: P::Pointer<u8>, layout: Layout);
 }
 
-/// Allocator with grow and shrink features.
-pub trait Allocator<P: PointerFamily>: BaseAllocator<P> {
+/// Allocator that allows growing a previously allocated memory chunk.
+pub trait ReallocGrow<P: PointerFamily> {
     /// Increases the size of an previously allocated chunk of memory or allocates a new chunk
     /// with the provided properties.
     /// It returns a failure when the size decreases.
@@ -150,7 +150,10 @@ pub trait Allocator<P: PointerFamily>: BaseAllocator<P> {
         };
         Ok(ptr)
     }
+}
 
+/// Allocator that allows shrinking a previously allocated memory chunk.
+pub trait ReallocShrink<P: PointerFamily> {
     /// Decreases the size of an previously allocated chunk of memory. If the size increases it
     /// fails.
     ///
@@ -168,3 +171,11 @@ pub trait Allocator<P: PointerFamily>: BaseAllocator<P> {
         new_layout: Layout,
     ) -> Result<P::Pointer<u8>, AllocationShrinkError>;
 }
+
+/// Allocator with all features.
+pub trait Allocator<P: PointerFamily>:
+    BaseAllocator<P> + ReallocGrow<P> + ReallocShrink<P>
+{
+}
+
+impl<P: PointerFamily, A: BaseAllocator<P> + ReallocGrow<P> + ReallocShrink<P>> Allocator<P> for A {}
