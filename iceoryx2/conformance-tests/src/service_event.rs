@@ -763,9 +763,9 @@ pub mod service_event {
 
         let mut notifications_sent = 0;
 
-        notifier.for_each_listener(|point_notifier, listener_details| {
+        notifier.for_each_listener(|monofier, listener_details| {
             if listener_details.listener_name == name_a {
-                assert_that!(point_notifier.notify(), is_ok);
+                assert_that!(monofier.notify(), is_ok);
                 notifications_sent += 1;
                 CallbackProgression::Stop
             } else {
@@ -824,9 +824,9 @@ pub mod service_event {
 
         let mut notifications_sent = 0;
 
-        notifier.for_each_listener(|point_notifier, listener_details| {
+        notifier.for_each_listener(|monofier, listener_details| {
             if listener_details.listener_name == name_a {
-                assert_that!(point_notifier.notify(), is_ok);
+                assert_that!(monofier.notify(), is_ok);
                 notifications_sent += 1;
             }
             CallbackProgression::Continue
@@ -884,9 +884,9 @@ pub mod service_event {
             .unwrap();
 
         let mut listener_key = None;
-        notifier.for_each_listener(|point_notifier, listener_details| {
+        notifier.for_each_listener(|monofier, listener_details| {
             if listener_details.listener_name == name_b {
-                listener_key = Some(point_notifier.listener_key());
+                listener_key = Some(monofier.listener_key());
                 CallbackProgression::Stop
             } else {
                 CallbackProgression::Continue
@@ -940,9 +940,9 @@ pub mod service_event {
         let notifier = sut2.notifier_builder().create().unwrap();
 
         let mut listener_key = None;
-        notifier.for_each_listener(|point_notifier, listener_details| {
+        notifier.for_each_listener(|monofier, listener_details| {
             if listener_details.listener_name == name_b {
-                listener_key = Some(point_notifier.listener_key());
+                listener_key = Some(monofier.listener_key());
                 CallbackProgression::Stop
             } else {
                 CallbackProgression::Continue
@@ -1004,9 +1004,9 @@ pub mod service_event {
             .unwrap();
 
         let mut listener_key = None;
-        notifier.for_each_listener(|point_notifier, listener_details| {
+        notifier.for_each_listener(|monofier, listener_details| {
             if listener_details.listener_name == name {
-                listener_key = Some(point_notifier.listener_key());
+                listener_key = Some(monofier.listener_key());
                 CallbackProgression::Stop
             } else {
                 CallbackProgression::Continue

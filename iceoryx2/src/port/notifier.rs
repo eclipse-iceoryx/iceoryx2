@@ -278,27 +278,27 @@ pub struct ListenerKey {
     listener_id: UniqueListenerId,
 }
 
-/// The point notifier for a single listener. This is used with
+/// The mono notifier for a single listener. This is used with
 /// [`Notifier::for_each_listener()`].
 #[derive(Debug)]
-pub struct PointNotifier<'a, Service: service::Service> {
+pub struct Monofier<'a, Service: service::Service> {
     notifier: &'a Notifier<Service>,
     listener_key: ListenerKey,
 }
 
-impl<Service: service::Service> PointNotifier<'_, Service> {
+impl<Service: service::Service> Monofier<'_, Service> {
     /// Returns the [`ListenerKey`] of the [`Listener`](crate::port::listener::Listener),
-    /// the [`PointNotifier`] would notify
+    /// the [`Monofier`] would notify
     pub fn listener_key(&self) -> ListenerKey {
         self.listener_key
     }
 
-    /// Notifies the [`Listener`](crate::port::listener::Listener), the [`PointNotifier`] correlates to.
+    /// Notifies the [`Listener`](crate::port::listener::Listener), the [`Monofier`] correlates to.
     pub fn notify(&self) -> Result<(), NotifierNotifyError> {
         self.notify_with_custom_event_id(self.notifier.default_event_id)
     }
 
-    /// Notifies the [`Listener`](crate::port::listener::Listener), the [`PointNotifier`] correlates to,
+    /// Notifies the [`Listener`](crate::port::listener::Listener), the [`Monofier`] correlates to,
     /// with a custom [`EventId`].
     pub fn notify_with_custom_event_id(&self, value: EventId) -> Result<(), NotifierNotifyError> {
         self.notifier
@@ -607,10 +607,10 @@ impl<Service: service::Service> Notifier<Service> {
     /// #     .create()?;
     ///
     /// let listener_name = PortName::new("hypnotoad")?;
-    /// notifier.for_each_listener(|point_notifier, details| {
+    /// notifier.for_each_listener(|monofier, details| {
     ///     // NOTE: use `details.listener_name.starts_with("hypnotoad")` for a more fuzzy match
     ///     if details.listener_name == listener_name {
-    ///         let _ = point_notifier.notify();
+    ///         let _ = monofier.notify();
     ///         // NOTE: use CallbackProgression::Continue to notify all listener that match the name
     ///         return CallbackProgression::Stop;
     ///     }
@@ -621,7 +621,7 @@ impl<Service: service::Service> Notifier<Service> {
     /// # }
     /// ```
     pub fn for_each_listener<
-        F: FnMut(&PointNotifier<Service>, &ListenerDetails) -> CallbackProgression,
+        F: FnMut(&Monofier<Service>, &ListenerDetails) -> CallbackProgression,
     >(
         &self,
         mut callback: F,
@@ -638,12 +638,12 @@ impl<Service: service::Service> Notifier<Service> {
                         connection_index: i,
                         listener_id: connection.listener_id,
                     };
-                    let point_notifier = PointNotifier {
+                    let monofier = Monofier {
                         notifier: self,
                         listener_key,
                     };
 
-                    let callback_result = callback(&point_notifier, details);
+                    let callback_result = callback(&monofier, details);
                     if callback_result == CallbackProgression::Stop {
                         break;
                     }
