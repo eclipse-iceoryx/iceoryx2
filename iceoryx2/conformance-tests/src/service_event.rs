@@ -737,6 +737,292 @@ pub mod service_event {
     }
 
     #[conformance_test]
+    pub fn notifying_single_specific_listener_works<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let event_id = EventId::new(32);
+
+        let sut = node
+            .service_builder(&service_name)
+            .event()
+            .create()
+            .unwrap();
+        let name_a = PortName::new("hypnotoad").unwrap();
+        let name_b = PortName::new("brainslug").unwrap();
+        let listener1 = sut.listener_builder().name(&name_a).create().unwrap();
+        let listener2 = sut.listener_builder().name(&name_b).create().unwrap();
+        let listener3 = sut.listener_builder().name(&name_a).create().unwrap();
+
+        let sut2 = node.service_builder(&service_name).event().open().unwrap();
+        let notifier = sut2
+            .notifier_builder()
+            .default_event_id(event_id)
+            .create()
+            .unwrap();
+
+        let mut notifications_sent = 0;
+
+        notifier.for_each_listener(|point_notifier, listener_details| {
+            if listener_details.listener_name == name_a {
+                assert_that!(point_notifier.notify(), is_ok);
+                notifications_sent += 1;
+                CallbackProgression::Stop
+            } else {
+                CallbackProgression::Continue
+            }
+        });
+
+        assert_that!(notifications_sent, eq(1));
+
+        let mut received_events = 0;
+        listener1
+            .try_wait(|event| {
+                received_events += event.count;
+                assert_that!(event.id, eq event_id);
+            })
+            .unwrap();
+        assert_that!(received_events, eq 1);
+
+        listener2
+            .try_wait(|event| {
+                panic!("No event should be received but got: {:?}", event);
+            })
+            .unwrap();
+
+        listener3
+            .try_wait(|event| {
+                panic!("No event should be received but got: {:?}", event);
+            })
+            .unwrap();
+    }
+
+    #[conformance_test]
+    pub fn notifying_multiple_specific_listener_works<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let event_id = EventId::new(32);
+
+        let sut = node
+            .service_builder(&service_name)
+            .event()
+            .create()
+            .unwrap();
+        let name_a = PortName::new("hypnotoad").unwrap();
+        let name_b = PortName::new("brainslug").unwrap();
+        let listener1 = sut.listener_builder().name(&name_a).create().unwrap();
+        let listener2 = sut.listener_builder().name(&name_b).create().unwrap();
+        let listener3 = sut.listener_builder().name(&name_a).create().unwrap();
+
+        let sut2 = node.service_builder(&service_name).event().open().unwrap();
+        let notifier = sut2
+            .notifier_builder()
+            .default_event_id(event_id)
+            .create()
+            .unwrap();
+
+        let mut notifications_sent = 0;
+
+        notifier.for_each_listener(|point_notifier, listener_details| {
+            if listener_details.listener_name == name_a {
+                assert_that!(point_notifier.notify(), is_ok);
+                notifications_sent += 1;
+            }
+            CallbackProgression::Continue
+        });
+
+        assert_that!(notifications_sent, eq(2));
+
+        let mut received_events = 0;
+        listener1
+            .try_wait(|event| {
+                received_events += event.count;
+                assert_that!(event.id, eq event_id);
+            })
+            .unwrap();
+        assert_that!(received_events, eq 1);
+
+        listener2
+            .try_wait(|event| {
+                panic!("No event should be received but got: {:?}", event);
+            })
+            .unwrap();
+
+        let mut received_events = 0;
+        listener3
+            .try_wait(|event| {
+                received_events += event.count;
+                assert_that!(event.id, eq event_id);
+            })
+            .unwrap();
+    }
+
+    #[conformance_test]
+    pub fn notifying_with_listener_key_works<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let event_id = EventId::new(32);
+
+        let sut = node
+            .service_builder(&service_name)
+            .event()
+            .create()
+            .unwrap();
+        let name_a = PortName::new("hypnotoad").unwrap();
+        let name_b = PortName::new("brainslug").unwrap();
+        let listener1 = sut.listener_builder().name(&name_a).create().unwrap();
+        let listener2 = sut.listener_builder().name(&name_b).create().unwrap();
+        let listener3 = sut.listener_builder().name(&name_a).create().unwrap();
+
+        let sut2 = node.service_builder(&service_name).event().open().unwrap();
+        let notifier = sut2
+            .notifier_builder()
+            .default_event_id(event_id)
+            .create()
+            .unwrap();
+
+        let mut listener_key = None;
+        notifier.for_each_listener(|point_notifier, listener_details| {
+            if listener_details.listener_name == name_b {
+                listener_key = Some(point_notifier.listener_key());
+                CallbackProgression::Stop
+            } else {
+                CallbackProgression::Continue
+            }
+        });
+
+        let listener_key = listener_key.unwrap();
+
+        assert_that!(notifier.notify_single_listener(&listener_key), is_ok);
+
+        listener1
+            .try_wait(|event| {
+                panic!("No event should be received but got: {:?}", event);
+            })
+            .unwrap();
+
+        let mut received_events = 0;
+        listener2
+            .try_wait(|event| {
+                received_events += event.count;
+                assert_that!(event.id, eq event_id);
+            })
+            .unwrap();
+        assert_that!(received_events, eq 1);
+
+        listener3
+            .try_wait(|event| {
+                panic!("No event should be received but got: {:?}", event);
+            })
+            .unwrap();
+    }
+
+    #[conformance_test]
+    pub fn notifying_with_listener_key_repeatedly_works<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+
+        let sut = node
+            .service_builder(&service_name)
+            .event()
+            .create()
+            .unwrap();
+        let name_a = PortName::new("hypnotoad").unwrap();
+        let name_b = PortName::new("brainslug").unwrap();
+        let listener1 = sut.listener_builder().name(&name_a).create().unwrap();
+        let listener2 = sut.listener_builder().name(&name_b).create().unwrap();
+        let listener3 = sut.listener_builder().name(&name_a).create().unwrap();
+
+        let sut2 = node.service_builder(&service_name).event().open().unwrap();
+        let notifier = sut2.notifier_builder().create().unwrap();
+
+        let mut listener_key = None;
+        notifier.for_each_listener(|point_notifier, listener_details| {
+            if listener_details.listener_name == name_b {
+                listener_key = Some(point_notifier.listener_key());
+                CallbackProgression::Stop
+            } else {
+                CallbackProgression::Continue
+            }
+        });
+
+        let listener_key = listener_key.unwrap();
+
+        for i in 37..42 {
+            let event_id = EventId::new(i);
+            assert_that!(
+                notifier.notify_single_listener_with_custom_event_id(&listener_key, event_id),
+                is_ok
+            );
+
+            listener1
+                .try_wait(|event| {
+                    panic!("No event should be received but got: {:?}", event);
+                })
+                .unwrap();
+
+            let mut received_events = 0;
+            listener2
+                .try_wait(|event| {
+                    received_events += event.count;
+                    assert_that!(event.id, eq event_id);
+                })
+                .unwrap();
+            assert_that!(received_events, eq 1);
+
+            listener3
+                .try_wait(|event| {
+                    panic!("No event should be received but got: {:?}", event);
+                })
+                .unwrap();
+        }
+    }
+
+    #[conformance_test]
+    pub fn notifying_with_outdated_listener_key_results_in_error<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let event_id = EventId::new(32);
+
+        let sut = node
+            .service_builder(&service_name)
+            .event()
+            .create()
+            .unwrap();
+        let name = PortName::new("brainslug").unwrap();
+        let listener = sut.listener_builder().name(&name).create().unwrap();
+
+        let sut2 = node.service_builder(&service_name).event().open().unwrap();
+        let notifier = sut2
+            .notifier_builder()
+            .default_event_id(event_id)
+            .create()
+            .unwrap();
+
+        let mut listener_key = None;
+        notifier.for_each_listener(|point_notifier, listener_details| {
+            if listener_details.listener_name == name {
+                listener_key = Some(point_notifier.listener_key());
+                CallbackProgression::Stop
+            } else {
+                CallbackProgression::Continue
+            }
+        });
+
+        let listener_key = listener_key.unwrap();
+        drop(listener);
+
+        assert_that!(
+            notifier.notify_single_listener(&listener_key),
+            eq(Err(NotifierNotifyError::InvalidListenerKey))
+        );
+    }
+
+    #[conformance_test]
     pub fn concurrent_reconnecting_notifier_can_trigger_waiting_listener<Sut: Service>() {
         let test = Test::<Sut>::new_with_custom_watchdog(Watchdog::new_with_timeout(
             Duration::from_secs(120),
