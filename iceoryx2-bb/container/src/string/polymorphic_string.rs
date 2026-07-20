@@ -66,7 +66,8 @@ use core::{
 
 use iceoryx2_bb_elementary_traits::{
     allocator::{AllocationError, BaseAllocator},
-    pointer_trait::NonNullFamily,
+    generic_pointer::NonNullFamily,
+    pointer::Pointer,
 };
 
 use crate::string::*;
@@ -217,7 +218,7 @@ impl<'a, Allocator: BaseAllocator<NonNullFamily>> PolymorphicString<'a, Allocato
         };
 
         Ok(Self {
-            data_ptr: unsafe { data_ptr.as_mut() }.as_mut_ptr().cast(),
+            data_ptr: data_ptr.as_mut_ptr().cast(),
             len: 0,
             capacity: capacity as _,
             allocator,
@@ -243,7 +244,7 @@ impl<'a, Allocator: BaseAllocator<NonNullFamily>> PolymorphicString<'a, Allocato
         };
 
         let mut new_self = Self {
-            data_ptr: unsafe { data_ptr.as_mut() }.as_mut_ptr().cast(),
+            data_ptr: data_ptr.as_mut_ptr().cast(),
             len: 0,
             capacity: self.capacity,
             allocator: self.allocator,

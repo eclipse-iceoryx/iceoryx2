@@ -61,6 +61,7 @@ use core::ptr::NonNull;
 
 pub use crate::mpmc::robust_unique_index_set::OwnerId;
 pub use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_elementary_traits::generic_pointer::NonNullFamily;
 
 use crate::mpmc::robust_unique_index_set::{RobustUniqueIndexSet, StaticRobustUniqueIndexSetData};
 use crate::mpmc::unique_index_set_enums::{
@@ -81,7 +82,7 @@ use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
 use iceoryx2_bb_elementary::unique_id::UniqueId;
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
-use iceoryx2_bb_elementary_traits::pointer_trait::{NonNullFamily, Pointer};
+use iceoryx2_bb_elementary_traits::pointer::Pointer;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic};
@@ -568,8 +569,7 @@ impl<T: Copy + Debug> Container<T> {
         // must be set once here, if the current_change_counter changes in the loop below
         // the previous_state is updated again with the next clone_state iteration
         previous_state.current_change_counter = current_change_counter;
-        let element_generation_counter_ptr =
-            unsafe { self.element_generation_counter_ptr.as_ptr() };
+        let element_generation_counter_ptr = self.element_generation_counter_ptr.as_ptr();
 
         for i in 0..self.capacity {
             let element_generation_counter = unsafe { &*element_generation_counter_ptr.add(i) };

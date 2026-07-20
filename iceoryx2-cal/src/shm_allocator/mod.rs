@@ -19,7 +19,7 @@ use core::{alloc::Layout, fmt::Debug, ptr::NonNull};
 use iceoryx2_bb_elementary::enum_gen;
 pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, AllocationGrowError};
 use iceoryx2_bb_elementary_traits::{
-    allocator::BaseAllocator, pointer_trait::NonNullFamily, zero_copy_send::ZeroCopySend,
+    allocator::BaseAllocator, generic_pointer::NonNullFamily, zero_copy_send::ZeroCopySend,
 };
 pub use pointer_offset::*;
 use serde::{Deserialize, Serialize};

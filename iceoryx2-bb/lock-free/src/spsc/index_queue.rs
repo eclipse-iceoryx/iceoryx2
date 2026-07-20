@@ -53,8 +53,7 @@ use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::{bump_allocator::BumpAllocator, relocatable_ptr::RelocatablePointer};
 use iceoryx2_bb_elementary_traits::{
-    owning_pointer::OwningPointer, pointer_trait::Pointer,
-    relocatable_container::RelocatableContainer,
+    owning_pointer::OwningPointer, pointer::Pointer, relocatable_container::RelocatableContainer,
 };
 use iceoryx2_log::{fail, fatal_panic};
 
@@ -106,9 +105,8 @@ pub type IndexQueue = details::IndexQueue<OwningPointer<UnsafeCell<u64>>>;
 pub type RelocatableIndexQueue = details::IndexQueue<RelocatablePointer<UnsafeCell<u64>>>;
 
 pub mod details {
-
     use iceoryx2_bb_elementary_traits::{
-        pointer_trait::NonNullFamily, zero_copy_send::ZeroCopySend,
+        generic_pointer::NonNullFamily, zero_copy_send::ZeroCopySend,
     };
 
     use super::*;

@@ -124,10 +124,10 @@ use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::relocatable_ptr::{GenericRelocatablePointer, RelocatablePointer};
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
-use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
+use iceoryx2_bb_elementary_traits::generic_pointer::{NonNullFamily, PointerFamily};
 use iceoryx2_bb_elementary_traits::owning_pointer::{GenericOwningPointer, OwningPointer};
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
-use iceoryx2_bb_elementary_traits::pointer_trait::{NonNullFamily, Pointer};
+use iceoryx2_bb_elementary_traits::pointer::Pointer;
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic};
@@ -142,8 +142,8 @@ pub type RelocatableQueue<T> = MetaQueue<T, GenericRelocatablePointer>;
 /// **Non-movable** relocatable queue with runtime fixed size capacity.
 #[repr(C)]
 #[derive(Debug)]
-pub struct MetaQueue<T, Ptr: GenericPointer> {
-    data_ptr: Ptr::Type<MaybeUninit<T>>,
+pub struct MetaQueue<T, Ptr: PointerFamily> {
+    data_ptr: Ptr::Pointer<MaybeUninit<T>>,
     start: usize,
     len: usize,
     capacity: usize,
@@ -151,7 +151,7 @@ pub struct MetaQueue<T, Ptr: GenericPointer> {
     _phantom_data: PhantomData<T>,
 }
 
-unsafe impl<T: Send, Ptr: GenericPointer> Send for MetaQueue<T, Ptr> {}
+unsafe impl<T: Send, Ptr: PointerFamily> Send for MetaQueue<T, Ptr> {}
 
 impl<T> Queue<T> {
     /// Creates a new [`Queue`] with the provided capacity
@@ -200,7 +200,7 @@ impl<T> Queue<T> {
     }
 }
 
-impl<T: Copy + Debug, Ptr: GenericPointer + Debug> MetaQueue<T, Ptr> {
+impl<T: Copy + Debug, Ptr: PointerFamily + Debug> MetaQueue<T, Ptr> {
     /// Returns a copy of the element stored at index. The index is starting by 0 for the first
     /// element until [`Queue::len()`].
     ///
@@ -344,7 +344,7 @@ impl<T> RelocatableQueue<T> {
     }
 }
 
-impl<T, Ptr: GenericPointer> MetaQueue<T, Ptr> {
+impl<T, Ptr: PointerFamily> MetaQueue<T, Ptr> {
     #[inline(always)]
     fn verify_init(&self, source: &str) {
         debug_assert!(
@@ -461,7 +461,7 @@ impl<T, Ptr: GenericPointer> MetaQueue<T, Ptr> {
     }
 }
 
-impl<T, Ptr: GenericPointer> Drop for MetaQueue<T, Ptr> {
+impl<T, Ptr: PointerFamily> Drop for MetaQueue<T, Ptr> {
     fn drop(&mut self) {
         if self
             .is_initialized

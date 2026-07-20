@@ -51,14 +51,14 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_elementary::math::align;
-use iceoryx2_bb_elementary_traits::pointer_trait::NonNullFamily;
+use iceoryx2_bb_elementary_traits::generic_pointer::NonNullFamily;
 use iceoryx2_log::fail;
 
 pub use iceoryx2_bb_elementary_traits::allocator::*;
 
 #[derive(Debug)]
 pub struct OneChunkAllocator {
-    start: usize,
+    start: *mut u8,
     size: usize,
     allocated_chunk_start: AtomicUsize,
 }
@@ -66,7 +66,7 @@ pub struct OneChunkAllocator {
 impl OneChunkAllocator {
     pub fn new(ptr: NonNull<u8>, size: usize) -> OneChunkAllocator {
         OneChunkAllocator {
-            start: ptr.as_ptr() as usize,
+            start: ptr.as_ptr(),
             size,
             allocated_chunk_start: AtomicUsize::new(0),
         }
@@ -87,7 +87,7 @@ impl OneChunkAllocator {
         self.allocated_chunk_start.store(0, Ordering::Relaxed)
     }
 
-    pub fn start_address(&self) -> usize {
+    pub fn start_address(&self) -> *const u8 {
         self.start
     }
 
@@ -97,8 +97,8 @@ impl OneChunkAllocator {
 }
 
 impl BaseAllocator<NonNullFamily> for OneChunkAllocator {
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocationError> {
-        let adjusted_start = align(self.start, layout.align());
+    fn allocate(&self, layout: Layout) -> Result<NonNull<u8>, AllocationError> {
+        let adjusted_start = align(self.start as usize, layout.align());
         let msg = "Unable to allocate chunk";
 
         if !self.has_chunk_available() {
@@ -106,7 +106,7 @@ impl BaseAllocator<NonNullFamily> for OneChunkAllocator {
                 "{} since there is no more chunk available.", msg);
         }
 
-        let available_size = self.size - (adjusted_start - self.start);
+        let available_size = self.size - (adjusted_start - self.start as usize);
         if available_size <= layout.size() {
             fail!(from self, with AllocationError::OutOfMemory,
                 "{} due to insufficient available memory.", msg);
@@ -114,11 +114,7 @@ impl BaseAllocator<NonNullFamily> for OneChunkAllocator {
 
         self.allocated_chunk_start
             .store(adjusted_start, Ordering::Relaxed);
-        Ok(NonNull::new(core::ptr::slice_from_raw_parts_mut(
-            adjusted_start as *mut u8,
-            available_size,
-        ))
-        .unwrap())
+        Ok(unsafe { NonNull::new_unchecked(self.start.add(adjusted_start - self.start as usize)) })
     }
 
     unsafe fn deallocate(&self, ptr: NonNull<u8>, _layout: Layout) {
@@ -133,7 +129,7 @@ impl Allocator<NonNullFamily> for OneChunkAllocator {
         ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocationGrowError> {
+    ) -> Result<NonNull<u8>, AllocationGrowError> {
         let msg = "Unable to grow memory chunk";
         self.verify_ptr_is_managed_by_allocator(ptr);
 
@@ -148,18 +144,14 @@ impl Allocator<NonNullFamily> for OneChunkAllocator {
         }
 
         let available_size =
-            self.size - (self.allocated_chunk_start.load(Ordering::Relaxed) - self.start);
+            self.size - (self.allocated_chunk_start.load(Ordering::Relaxed) - self.start as usize);
 
         if available_size < new_layout.size() {
             fail!(from self, with AllocationGrowError::OutOfMemory,
                 "{} since the size of {} exceeds the available memory size of {}.", msg, new_layout.size(), available_size);
         }
 
-        Ok(NonNull::new(core::ptr::slice_from_raw_parts_mut(
-            ptr.as_ptr(),
-            available_size,
-        ))
-        .unwrap())
+        Ok(ptr)
     }
 
     unsafe fn shrink(
@@ -167,7 +159,7 @@ impl Allocator<NonNullFamily> for OneChunkAllocator {
         ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocationShrinkError> {
+    ) -> Result<NonNull<u8>, AllocationShrinkError> {
         let msg = "Unable to shrink memory chunk";
         self.verify_ptr_is_managed_by_allocator(ptr);
 
@@ -181,10 +173,6 @@ impl Allocator<NonNullFamily> for OneChunkAllocator {
                 "{} since this allocator does not support to any alignment increase in this operation.", msg);
         }
 
-        Ok(NonNull::new(core::ptr::slice_from_raw_parts_mut(
-            ptr.as_ptr(),
-            new_layout.size(),
-        ))
-        .unwrap())
+        Ok(ptr)
     }
 }

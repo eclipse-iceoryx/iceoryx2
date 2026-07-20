@@ -64,9 +64,8 @@ pub fn acquire_works() {
     let memory = sut
         .allocate(unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT) })
         .expect("");
-    assert_that!(unsafe { memory.as_ref() }, len TestFixture::memory_size());
     assert_that!(
-        unsafe { memory.as_ref() }.as_ptr() as usize, eq
+        memory.as_ptr() as usize, eq
         test.get_memory() as usize
     );
 }
@@ -83,11 +82,7 @@ pub fn acquire_with_alignment_works() {
         .expect("");
     let start = test.get_memory() as usize;
     let aligned_start = align(start, CHUNK_ALIGNMENT);
-    assert_that!(
-        unsafe { memory.as_ref() }.len(), eq
-        TestFixture::memory_size() - (aligned_start - start)
-    );
-    assert_that!(unsafe { memory.as_ref() }.as_ptr() as usize, eq aligned_start);
+    assert_that!(memory.as_ptr() as usize, eq aligned_start);
 }
 
 #[test]
@@ -102,7 +97,7 @@ pub fn allocate_zeroed_works() {
         .expect("");
 
     for i in 0..CHUNK_SIZE {
-        assert_that!(unsafe { memory.as_ref().to_vec()[i] }, eq 0);
+        assert_that!(unsafe { *memory.as_ptr().add(i) }, eq 0);
     }
 }
 
@@ -113,20 +108,19 @@ pub fn shrink_works() {
     let mut test = TestFixture::new();
     let sut = test.create_one_chunk_allocator();
 
-    let mut memory = sut
+    let memory = sut
         .allocate(unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT) })
         .expect("");
 
     let memory = unsafe {
         sut.shrink(
-            NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+            memory,
             Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
             Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
         )
-        .expect("")
     };
 
-    assert_that!(unsafe { memory.as_ref() }, len CHUNK_SIZE / 2);
+    assert_that!(memory, is_ok);
 }
 
 #[test]
@@ -136,14 +130,14 @@ pub fn shrink_fails_when_size_increases() {
     let mut test = TestFixture::new();
     let sut = test.create_one_chunk_allocator();
 
-    let mut memory = sut
+    let memory = sut
         .allocate(unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT) })
         .expect("");
 
     assert_that!(
         unsafe {
             sut.shrink(
-                NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+                memory,
                 Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
                 Layout::from_size_align_unchecked(CHUNK_SIZE * 2, CHUNK_ALIGNMENT),
             )
@@ -159,14 +153,14 @@ pub fn shrink_fails_when_alignment_increases() {
     let mut test = TestFixture::new();
     let sut = test.create_one_chunk_allocator();
 
-    let mut memory = sut
+    let memory = sut
         .allocate(unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT) })
         .expect("");
 
     assert_that!(
         unsafe {
             sut.shrink(
-                NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+                memory,
                 Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
                 Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT * 2),
             )
@@ -200,13 +194,13 @@ pub fn grow_works() {
     let mut test = TestFixture::new();
     let sut = test.create_one_chunk_allocator();
 
-    let mut memory = sut
+    let memory = sut
         .allocate(unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT) })
         .expect("");
 
-    let mut memory = unsafe {
+    let memory = unsafe {
         sut.shrink(
-            NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+            memory,
             Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
             Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
         )
@@ -215,14 +209,13 @@ pub fn grow_works() {
 
     let memory = unsafe {
         sut.grow(
-            NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+            memory,
             Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
             Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
         )
-        .expect("")
     };
 
-    assert_that!(unsafe { memory.as_ref() }, len TestFixture::memory_size());
+    assert_that!(memory, is_ok);
 }
 
 #[test]
@@ -232,13 +225,13 @@ pub fn grow_zeroed_works() {
     let mut test = TestFixture::new();
     let sut = test.create_one_chunk_allocator();
 
-    let mut memory = sut
+    let memory = sut
         .allocate(unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT) })
         .expect("");
 
-    let mut memory = unsafe {
+    let memory = unsafe {
         sut.shrink(
-            NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+            memory,
             Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
             Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
         )
@@ -247,7 +240,7 @@ pub fn grow_zeroed_works() {
 
     let memory = unsafe {
         sut.grow_zeroed(
-            NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+            memory,
             Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
             Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
         )
@@ -255,14 +248,12 @@ pub fn grow_zeroed_works() {
     };
 
     for i in 0..CHUNK_SIZE / 2 {
-        assert_that!(unsafe { memory.as_ref() }.to_vec()[i], eq 255);
+        assert_that!(unsafe { *memory.as_ptr().add(i) }, eq 255);
     }
 
     for i in CHUNK_SIZE / 2..CHUNK_SIZE {
-        assert_that!(unsafe { memory.as_ref() }.to_vec()[i], eq 0);
+        assert_that!(unsafe { *memory.as_ptr().add(i) }, eq 0);
     }
-
-    assert_that!(unsafe { memory.as_ref() }, len TestFixture::memory_size());
 }
 
 #[test]
@@ -272,13 +263,13 @@ pub fn grow_with_decreased_size_fails() {
     let mut test = TestFixture::new();
     let sut = test.create_one_chunk_allocator();
 
-    let mut memory = sut
+    let memory = sut
         .allocate(unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT) })
         .expect("");
 
-    let mut memory = unsafe {
+    let memory = unsafe {
         sut.shrink(
-            NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+            memory,
             Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
             Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
         )
@@ -288,7 +279,7 @@ pub fn grow_with_decreased_size_fails() {
     assert_that!(
         unsafe {
             sut.grow(
-                NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+                memory,
                 Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
                 Layout::from_size_align_unchecked(CHUNK_SIZE / 4, CHUNK_ALIGNMENT),
             )
@@ -304,13 +295,13 @@ pub fn grow_with_increased_alignment_fails() {
     let mut test = TestFixture::new();
     let sut = test.create_one_chunk_allocator();
 
-    let mut memory = sut
+    let memory = sut
         .allocate(unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT) })
         .expect("");
 
-    let mut memory = unsafe {
+    let memory = unsafe {
         sut.shrink(
-            NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+            memory,
             Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
             Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
         )
@@ -320,7 +311,7 @@ pub fn grow_with_increased_alignment_fails() {
     assert_that!(
         unsafe {
             sut.grow(
-                NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+                memory,
                 Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
                 Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT * 2),
             )

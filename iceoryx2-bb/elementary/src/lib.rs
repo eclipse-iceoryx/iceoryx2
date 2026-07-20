@@ -33,6 +33,7 @@ pub mod package_version;
 pub mod relocatable_ptr;
 pub mod scope_guard;
 pub mod static_assert;
+pub mod sync_ptr;
 pub mod unique_id;
 pub mod unsendable_marker;
 

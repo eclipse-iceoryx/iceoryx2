@@ -31,7 +31,7 @@ pub mod details {
 
     use iceoryx2_bb_elementary::math::unaligned_mem_size;
     use iceoryx2_bb_elementary_traits::{
-        owning_pointer::OwningPointer, pointer_trait::NonNullFamily, zero_copy_send::ZeroCopySend,
+        generic_pointer::NonNullFamily, owning_pointer::OwningPointer, zero_copy_send::ZeroCopySend,
     };
 
     use super::*;

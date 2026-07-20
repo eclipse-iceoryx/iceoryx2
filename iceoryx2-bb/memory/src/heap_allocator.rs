@@ -16,7 +16,7 @@ use core::{alloc::Layout, ptr::NonNull};
 
 use iceoryx2_bb_elementary_traits::{
     allocator::{AllocationGrowError, AllocationShrinkError},
-    pointer_trait::NonNullFamily,
+    generic_pointer::NonNullFamily,
 };
 use iceoryx2_bb_posix::memory::heap;
 use iceoryx2_log::fail;
@@ -44,9 +44,10 @@ impl HeapAllocator {
 }
 
 impl BaseAllocator<NonNullFamily> for HeapAllocator {
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocationError> {
-        Ok(fail!(from self, when heap::allocate(layout),
-                "Failed to allocate {} bytes with an alignment of {}.", layout.size(), layout.align()))
+    fn allocate(&self, layout: Layout) -> Result<NonNull<u8>, AllocationError> {
+        let mut ptr = fail!(from self, when heap::allocate(layout),
+                "Failed to allocate {} bytes with an alignment of {}.", layout.size(), layout.align());
+        Ok(unsafe { NonNull::new_unchecked(ptr.as_mut().as_mut_ptr()) })
     }
 
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
@@ -62,17 +63,20 @@ impl Allocator<NonNullFamily> for HeapAllocator {
         ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocationGrowError> {
+    ) -> Result<NonNull<u8>, AllocationGrowError> {
         if old_layout.size() >= new_layout.size() {
             fail!(from self, with AllocationGrowError::GrowWouldShrink,
                 "Failed to grow memory from (size: {}, align: {}) to (size: {}, align: {}).", old_layout.size(),old_layout.align(), new_layout.size(), new_layout.align());
         }
-        unsafe {
-            Ok(
-                fail!(from self, when heap::resize(ptr, old_layout, new_layout),
-                "Failed to grow memory from (size: {}, align: {}) to (size: {}, align: {}).", old_layout.size(),old_layout.align(), new_layout.size(), new_layout.align()),
-            )
-        }
+
+        let mut ptr = unsafe {
+            fail!(from self,
+                    when heap::resize(ptr, old_layout, new_layout),
+                    "Failed to grow memory from (size: {}, align: {}) to (size: {}, align: {}).",
+                    old_layout.size(),old_layout.align(), new_layout.size(), new_layout.align())
+        };
+
+        Ok(unsafe { NonNull::new_unchecked(ptr.as_mut().as_mut_ptr()) })
     }
 
     unsafe fn shrink(
@@ -80,16 +84,19 @@ impl Allocator<NonNullFamily> for HeapAllocator {
         ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocationShrinkError> {
+    ) -> Result<NonNull<u8>, AllocationShrinkError> {
         if old_layout.size() <= new_layout.size() {
             fail!(from self, with AllocationShrinkError::ShrinkWouldGrow,
                 "Failed to shrink memory from (size: {}, align: {}) to (size: {}, align: {}).", old_layout.size(),old_layout.align(), new_layout.size(), new_layout.align());
         }
-        unsafe {
-            Ok(
-                fail!(from self, when heap::resize(ptr, old_layout, new_layout),
-                "Failed to shrink memory from (size: {}, align: {}) to (size: {}, align: {}).", old_layout.size(),old_layout.align(), new_layout.size(), new_layout.align()),
-            )
-        }
+
+        let mut ptr = unsafe {
+            fail!(from self,
+                      when heap::resize(ptr, old_layout, new_layout),
+                      "Failed to shrink memory from (size: {}, align: {}) to (size: {}, align: {}).",
+                      old_layout.size(),old_layout.align(), new_layout.size(), new_layout.align())
+        };
+
+        Ok(unsafe { NonNull::new_unchecked(ptr.as_mut().as_mut_ptr()) })
     }
 }

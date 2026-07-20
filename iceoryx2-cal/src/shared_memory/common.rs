@@ -200,6 +200,7 @@ pub mod details {
             details.payload_start_offset = (memory.as_ptr() as *const u8) as usize
                 - (details as *const AllocatorDetails<Allocator>) as usize;
 
+            let memory = NonNull::slice_from_raw_parts(memory, self.size);
             details.allocator.write(unsafe {
                 Allocator::new_uninit(SystemInfo::PageSize.value(), memory, allocator_config)
             });

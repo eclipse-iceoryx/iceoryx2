@@ -26,7 +26,7 @@ pub mod iceoryx_send;
 pub mod owning_pointer;
 pub mod placement_default;
 pub mod plain_old_data_without_padding;
-pub mod pointer_trait;
+pub mod pointer;
 pub mod relocatable_container;
 pub mod testing;
 pub mod type_name;

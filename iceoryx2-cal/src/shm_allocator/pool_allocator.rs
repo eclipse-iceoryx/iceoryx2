@@ -19,7 +19,7 @@ use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::allocator::{AllocationGrowError, BaseAllocator};
-use iceoryx2_bb_elementary_traits::pointer_trait::NonNullFamily;
+use iceoryx2_bb_elementary_traits::generic_pointer::NonNullFamily;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
 
@@ -71,7 +71,7 @@ impl PoolAllocator {
         self.number_of_used_buckets.fetch_sub(1, Ordering::Relaxed);
         unsafe {
             self.allocator.deallocate_bucket(NonNull::new_unchecked(
-                (offset.offset() + self.allocator.start_address()) as *mut u8,
+                (offset.offset() + self.allocator.start_address() as usize) as *mut u8,
             ));
         }
     }
@@ -158,7 +158,7 @@ impl ShmAllocator for PoolAllocator {
     }
 
     fn relative_start_address(&self) -> usize {
-        self.allocator.start_address() - self.base_address
+        self.allocator.start_address() as usize - self.base_address
     }
 
     unsafe fn new_uninit(
@@ -238,7 +238,7 @@ impl ShmAllocator for PoolAllocator {
         }
 
         if placement == ContentPlacement::Back {
-            let src = self.allocator.start_address() + offset.offset();
+            let src = self.allocator.start_address() as usize + offset.offset();
             let dst = src + (new_layout.size() - old_layout.size());
             unsafe { core::ptr::copy(src as *const u8, dst as *mut u8, old_layout.size()) };
         }
@@ -257,7 +257,7 @@ impl ShmAllocator for PoolAllocator {
         let chunk = fail!(from self, when self.allocator.allocate(layout), "{}.", msg);
         self.number_of_used_buckets.fetch_add(1, Ordering::Relaxed);
         Ok(PointerOffset::new(
-            (chunk.as_ptr() as *const u8) as usize - self.allocator.start_address(),
+            (chunk.as_ptr() as *const u8) as usize - self.allocator.start_address() as usize,
         ))
     }
 

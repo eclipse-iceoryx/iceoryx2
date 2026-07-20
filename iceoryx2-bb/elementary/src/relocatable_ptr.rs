@@ -66,11 +66,9 @@
 
 use core::{fmt::Debug, marker::PhantomData, ptr::NonNull};
 
-pub use iceoryx2_bb_elementary_traits::pointer_trait::Pointer;
+pub use iceoryx2_bb_elementary_traits::pointer::Pointer;
 
-use iceoryx2_bb_elementary_traits::{
-    generic_pointer::GenericPointer, zero_copy_send::ZeroCopySend,
-};
+use iceoryx2_bb_elementary_traits::{generic_pointer::PointerFamily, zero_copy_send::ZeroCopySend};
 use iceoryx2_pal_concurrency_sync::atomic::{AtomicIsize, Ordering};
 
 #[derive(Debug)]
@@ -91,14 +89,14 @@ pub struct GenericRelocatablePointer;
 ///      the distance to the memory destination is off.
 #[repr(C)]
 #[derive(Debug)]
-pub struct RelocatablePointer<T> {
+pub struct RelocatablePointer<T: Debug> {
     distance: AtomicIsize,
     _phantom: PhantomData<T>,
 }
 
-unsafe impl<T: ZeroCopySend> ZeroCopySend for RelocatablePointer<T> {}
+unsafe impl<T: Debug + ZeroCopySend> ZeroCopySend for RelocatablePointer<T> {}
 
-impl<T> RelocatablePointer<T> {
+impl<T: Debug> RelocatablePointer<T> {
     /// Creates a new [`RelocatablePointer`]. The distance is the relative distance to the memory
     /// destination starting from the memory location of this [`RelocatablePointer`].
     pub fn new(distance: isize) -> Self {
@@ -130,7 +128,7 @@ impl<T> RelocatablePointer<T> {
     ///  * ptr has a size which is an multiple of [`core::mem::size_of<T>()`]
     ///  * It must be called exactly once before using the [`RelocatablePointer`]
     ///
-    pub unsafe fn init(&self, ptr: NonNull<[u8]>) {
+    pub unsafe fn init(&self, ptr: NonNull<u8>) {
         self.distance.store(
             (ptr.as_ptr() as *const u8) as isize - (self as *const Self) as isize,
             core::sync::atomic::Ordering::Relaxed,
@@ -138,14 +136,14 @@ impl<T> RelocatablePointer<T> {
     }
 }
 
-impl<T> Pointer<T> for RelocatablePointer<T> {
-    unsafe fn as_ptr(&self) -> *const T {
+impl<T: Debug> Pointer<T> for RelocatablePointer<T> {
+    fn as_ptr(&self) -> *const T {
         let base = (self as *const Self).expose_provenance();
         let dist = self.distance.load(Ordering::Relaxed);
         core::ptr::with_exposed_provenance(base.wrapping_add_signed(dist))
     }
 
-    unsafe fn as_mut_ptr(&mut self) -> *mut T {
+    fn as_mut_ptr(&mut self) -> *mut T {
         let base = (self as *mut Self).expose_provenance();
         let dist = self.distance.load(Ordering::Relaxed);
         core::ptr::with_exposed_provenance_mut(base.wrapping_add_signed(dist))
@@ -156,6 +154,6 @@ impl<T> Pointer<T> for RelocatablePointer<T> {
     }
 }
 
-impl GenericPointer for GenericRelocatablePointer {
-    type Type<T: Debug> = RelocatablePointer<T>;
+impl PointerFamily for GenericRelocatablePointer {
+    type Pointer<T: Debug> = RelocatablePointer<T>;
 }

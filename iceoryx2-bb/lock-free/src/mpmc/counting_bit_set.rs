@@ -107,7 +107,7 @@ pub type RelocatableCountingBitSet = details::CountingBitSet<RelocatablePointer<
 
 #[doc(hidden)]
 pub mod details {
-    use iceoryx2_bb_elementary_traits::pointer_trait::NonNullFamily;
+    use iceoryx2_bb_elementary_traits::generic_pointer::NonNullFamily;
 
     use super::*;
 

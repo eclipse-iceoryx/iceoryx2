@@ -62,7 +62,7 @@ pub type RelocatableBitSet = details::BitSet<RelocatablePointer<details::BitsetE
 pub mod details {
 
     use iceoryx2_bb_elementary_traits::{
-        pointer_trait::NonNullFamily, zero_copy_send::ZeroCopySend,
+        generic_pointer::NonNullFamily, zero_copy_send::ZeroCopySend,
     };
 
     use super::*;

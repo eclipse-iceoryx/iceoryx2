@@ -15,7 +15,8 @@
 
 pub use core::{alloc::Layout, ptr::NonNull};
 
-use crate::pointer_trait::{Pointer, PointerFamily};
+use crate::generic_pointer::PointerFamily;
+use crate::pointer::Pointer;
 
 /// Failures caused by [`BaseAllocator::allocate()`] or [`BaseAllocator::allocate_zeroed()`].
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -74,16 +75,16 @@ impl core::error::Error for AllocationShrinkError {}
 pub trait BaseAllocator<P: PointerFamily> {
     /// Allocates a memory chunk with the properties provided in layout and either
     /// returns a slice or an allocation error on failure.
-    fn allocate(&self, layout: Layout) -> Result<P::Pointer<[u8]>, AllocationError>;
+    fn allocate(&self, layout: Layout) -> Result<P::Pointer<u8>, AllocationError>;
 
     /// Allocates a memory chunk with the properties provided in layout and zeroes the memory
     /// On success it returns a slice or an allocation error on failure.
     fn allocate_zeroed(
         &self,
         layout: core::alloc::Layout,
-    ) -> Result<P::Pointer<[u8]>, AllocationError> {
+    ) -> Result<P::Pointer<u8>, AllocationError> {
         let mut ptr = self.allocate(layout)?;
-        let raw_ptr = unsafe { &mut *ptr.as_mut_ptr() }.as_mut_ptr();
+        let raw_ptr = ptr.as_mut_ptr();
         unsafe { core::ptr::write_bytes(raw_ptr, 0, layout.size()) };
         Ok(ptr)
     }
@@ -118,7 +119,7 @@ pub trait Allocator<P: PointerFamily>: BaseAllocator<P> {
         ptr: P::Pointer<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<P::Pointer<[u8]>, AllocationGrowError>;
+    ) -> Result<P::Pointer<u8>, AllocationGrowError>;
 
     /// Increases the size of an previously allocated chunk of memory or allocates a new chunk
     /// with the provided properties. If the chunk can be resized only the difference in size
@@ -137,15 +138,14 @@ pub trait Allocator<P: PointerFamily>: BaseAllocator<P> {
         ptr: P::Pointer<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<P::Pointer<[u8]>, AllocationGrowError> {
+    ) -> Result<P::Pointer<u8>, AllocationGrowError> {
         let mut ptr = unsafe { self.grow(ptr, old_layout, new_layout)? };
-        let slice = unsafe { &mut *ptr.as_mut_ptr() };
-        let raw_ptr = slice.as_mut_ptr();
+        let raw_ptr = ptr.as_mut_ptr();
         unsafe {
             core::ptr::write_bytes(
                 raw_ptr.add(old_layout.size()),
                 0,
-                slice.len() - old_layout.size(),
+                new_layout.size() - old_layout.size(),
             )
         };
         Ok(ptr)
@@ -166,5 +166,5 @@ pub trait Allocator<P: PointerFamily>: BaseAllocator<P> {
         ptr: P::Pointer<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<P::Pointer<[u8]>, AllocationShrinkError>;
+    ) -> Result<P::Pointer<u8>, AllocationShrinkError>;
 }

@@ -95,9 +95,8 @@ pub fn acquire_all_memory_works() {
             .expect("");
 
         let addr = start_addr + i as usize * BUCKET_SIZE;
-        assert_that!((unsafe { memory.as_ref() }.as_ptr()) as usize, eq addr);
+        assert_that!(memory.as_ptr() as usize, eq addr);
         assert_that!(addr, mod BUCKET_ALIGNMENT, is 0);
-        assert_that!(unsafe { memory.as_ref() }, len CHUNK_SIZE);
     }
 
     let memory = sut.allocate(unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, 1) });
@@ -172,7 +171,6 @@ pub fn acquire_and_release_works() {
         let memory = sut
             .allocate(unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, 1) })
             .expect("");
-        assert_that!(unsafe { memory.as_ref() }, len CHUNK_SIZE);
         memory_storage.push(memory);
     }
     let memory = sut.allocate(unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, 1) });
@@ -180,18 +178,14 @@ pub fn acquire_and_release_works() {
 
     for memory in memory_storage {
         unsafe {
-            sut.deallocate(
-                NonNull::new(memory.as_ref().as_ptr() as *mut u8).unwrap(),
-                Layout::from_size_align_unchecked(CHUNK_SIZE, 1),
-            );
+            sut.deallocate(memory, Layout::from_size_align_unchecked(CHUNK_SIZE, 1));
         }
     }
 
     for _ in 0..sut.number_of_buckets() {
-        let memory = sut
+        let _memory = sut
             .allocate(unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE + 2, 1) })
             .expect("");
-        assert_that!(unsafe { memory.as_ref() }, len CHUNK_SIZE + 2);
     }
     let memory = sut.allocate(unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, 1) });
     assert_that!(memory, is_err);
@@ -243,7 +237,7 @@ pub fn allocate_zeroed_works() {
         .expect("failed to get memory");
 
     for i in 0..BUCKET_SIZE {
-        assert_that!(unsafe { memory.as_ref().to_vec()[i] }, eq 0);
+        assert_that!(unsafe { *memory.as_ptr().add(i) }, eq 0);
     }
 }
 
@@ -255,20 +249,18 @@ pub fn grow_works() {
 
     let sut = test.create_pool_allocator(BUCKET_SIZE, BUCKET_ALIGNMENT);
 
-    let mut memory = sut
+    let memory = sut
         .allocate(unsafe { Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT) })
         .expect("failed to get memory");
-    assert_that!(unsafe { memory.as_ref() }, len BUCKET_SIZE / 2);
 
     let memory = unsafe {
         sut.grow(
-            NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+            memory,
             Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT),
             Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT),
         )
-        .expect("")
     };
-    assert_that!(unsafe { memory.as_ref() }, len BUCKET_SIZE);
+    assert_that!(memory, is_ok);
 }
 
 #[test]
@@ -279,14 +271,14 @@ pub fn grow_with_size_larger_bucket_fails() {
 
     let sut = test.create_pool_allocator(BUCKET_SIZE, BUCKET_ALIGNMENT);
 
-    let mut memory = sut
+    let memory = sut
         .allocate(unsafe { Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT) })
         .expect("failed to get memory");
 
     assert_that!(
         unsafe {
             sut.grow(
-                NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+                memory,
                 Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT),
                 Layout::from_size_align_unchecked(BUCKET_SIZE + 1, BUCKET_ALIGNMENT),
             )
@@ -303,14 +295,14 @@ pub fn grow_with_size_decrease_fails() {
 
     let sut = test.create_pool_allocator(BUCKET_SIZE, BUCKET_ALIGNMENT);
 
-    let mut memory = sut
+    let memory = sut
         .allocate(unsafe { Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT) })
         .expect("failed to get memory");
 
     assert_that!(
         unsafe {
             sut.grow(
-                NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+                memory,
                 Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT),
                 Layout::from_size_align_unchecked(BUCKET_SIZE / 4, BUCKET_ALIGNMENT),
             )
@@ -346,14 +338,14 @@ pub fn grow_with_too_alignment_larger_bucket_alignment_fails() {
 
     let sut = test.create_pool_allocator(BUCKET_SIZE, BUCKET_ALIGNMENT);
 
-    let mut memory = sut
+    let memory = sut
         .allocate(unsafe { Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT) })
         .expect("failed to get memory");
 
     assert_that!(
         unsafe {
             sut.grow(
-                NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+                memory,
                 Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT),
                 Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT * 8),
             )
@@ -370,13 +362,13 @@ pub fn grow_zeroed_works() {
 
     let sut = test.create_pool_allocator(BUCKET_SIZE, BUCKET_ALIGNMENT);
 
-    let mut memory = sut
+    let memory = sut
         .allocate(unsafe { Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT) })
         .expect("failed to get memory");
 
     let memory = unsafe {
         sut.grow_zeroed(
-            NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+            memory,
             Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT),
             Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT),
         )
@@ -384,11 +376,11 @@ pub fn grow_zeroed_works() {
     };
 
     for i in 0..BUCKET_SIZE / 2 {
-        assert_that!(unsafe { memory.as_ref() }.to_vec()[i], eq 255);
+        assert_that!(unsafe { *memory.as_ptr().add(i) }, eq 255);
     }
 
     for i in BUCKET_SIZE / 2..BUCKET_SIZE {
-        assert_that!(unsafe { memory.as_ref() }.to_vec()[i], eq 0);
+        assert_that!(unsafe { *memory.as_ptr().add(i) }, eq 0);
     }
 }
 
@@ -400,20 +392,19 @@ pub fn shrink_works() {
 
     let sut = test.create_pool_allocator(BUCKET_SIZE, BUCKET_ALIGNMENT);
 
-    let mut memory = sut
+    let memory = sut
         .allocate(unsafe { Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT) })
         .expect("failed to get memory");
 
     let memory = unsafe {
         sut.shrink(
-            NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+            memory,
             Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT),
             Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT),
         )
-        .expect("")
     };
 
-    assert_that!(unsafe { memory.as_ref() }, len BUCKET_SIZE / 2);
+    assert_that!(memory, is_ok);
 }
 
 #[test]
@@ -424,14 +415,14 @@ pub fn shrink_with_increased_size_fails() {
 
     let sut = test.create_pool_allocator(BUCKET_SIZE, BUCKET_ALIGNMENT);
 
-    let mut memory = sut
+    let memory = sut
         .allocate(unsafe { Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT) })
         .expect("failed to get memory");
 
     assert_that!(
         unsafe {
             sut.shrink(
-                NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+                memory,
                 Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT),
                 Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT),
             )
@@ -448,14 +439,14 @@ pub fn shrink_with_alignment_larger_than_bucket_alignment_fails() {
 
     let sut = test.create_pool_allocator(BUCKET_SIZE, BUCKET_ALIGNMENT);
 
-    let mut memory = sut
+    let memory = sut
         .allocate(unsafe { Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT) })
         .expect("failed to get memory");
 
     assert_that!(
         unsafe {
             sut.shrink(
-                NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+                memory,
                 Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT),
                 Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT * 32),
             )
@@ -518,13 +509,12 @@ pub fn relocatable_acquire_all_memory_works() {
 
     let start_addr = align(test.get_memory() as usize, BUCKET_ALIGNMENT);
     for i in 0..sut.number_of_buckets() {
-        let memory = sut
+        let ptr = sut
             .allocate(unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, 1) })
-            .expect("");
+            .unwrap();
         let addr = start_addr + i as usize * BUCKET_SIZE;
-        assert_that!((unsafe { memory.as_ref() }.as_ptr()) as usize, eq addr);
+        assert_that!(ptr.as_ptr() as usize, eq addr);
         assert_that!(addr, mod BUCKET_ALIGNMENT, is 0);
-        assert_that!(unsafe { memory.as_ref() }, len CHUNK_SIZE);
     }
 
     let memory = sut.allocate(unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, 1) });

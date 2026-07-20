@@ -14,7 +14,7 @@
 
 use crate::{
     allocator::{AllocationError, BaseAllocator},
-    pointer_trait::NonNullFamily,
+    generic_pointer::NonNullFamily,
 };
 
 /// Describes a container which can shared between processes. Since the shared memory is often

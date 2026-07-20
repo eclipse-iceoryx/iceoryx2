@@ -13,26 +13,17 @@
 //! Trait which describes a form of pointer. Required to distinguish normal pointers from
 //! relocatable pointers.
 
-use core::ptr::NonNull;
+use core::{fmt::Debug, ptr::NonNull};
 
 /// Trait which describes a form of pointer. Required to distinguish normal pointers from
 /// relocatable pointers.
-pub trait Pointer<T: ?Sized> {
+pub trait Pointer<T: Debug>: Debug {
     /// Return a pointer to the underlying const type
     ///
-    /// # Safety
-    ///
-    ///  * Do not call this method when the pointer contains a null pointer.
-    ///
-    unsafe fn as_ptr(&self) -> *const T;
+    fn as_ptr(&self) -> *const T;
 
     /// Return a pointer to the underlying mutable type
-    ///
-    /// # Safety
-    ///
-    ///  * Do not call this method when the pointer contains a null pointer.
-    ///
-    unsafe fn as_mut_ptr(&mut self) -> *mut T;
+    fn as_mut_ptr(&mut self) -> *mut T;
 
     /// Indicates whether the pointer has been initialized.
     ///
@@ -43,22 +34,12 @@ pub trait Pointer<T: ?Sized> {
     }
 }
 
-pub trait PointerFamily {
-    type Pointer<T: ?Sized>: Pointer<T>;
-}
-
-impl<T: ?Sized> Pointer<T> for NonNull<T> {
-    unsafe fn as_ptr(&self) -> *const T {
+impl<T: Debug> Pointer<T> for NonNull<T> {
+    fn as_ptr(&self) -> *const T {
         NonNull::as_ptr(*self)
     }
 
-    unsafe fn as_mut_ptr(&mut self) -> *mut T {
+    fn as_mut_ptr(&mut self) -> *mut T {
         unsafe { NonNull::as_mut(self) }
     }
-}
-
-pub struct NonNullFamily;
-
-impl PointerFamily for NonNullFamily {
-    type Pointer<T: ?Sized> = NonNull<T>;
 }
