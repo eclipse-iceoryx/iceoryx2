@@ -17,18 +17,18 @@ use iceoryx2_bb_elementary_traits::pointer::Pointer;
 #[derive(Debug)]
 /// Helper struct to keep [`Send`] and [`Sync`] auto implementation in structs that
 /// use pointers and are otherwise threadsafe.
-pub struct SyncPtr<T: Debug>(*mut T);
+pub struct SyncPointer<T: Debug>(*mut T);
 
-unsafe impl<T: Debug> Send for SyncPtr<T> {}
-unsafe impl<T: Debug> Sync for SyncPtr<T> {}
+unsafe impl<T: Debug> Send for SyncPointer<T> {}
+unsafe impl<T: Debug> Sync for SyncPointer<T> {}
 
-impl<T: Debug> SyncPtr<T> {
+impl<T: Debug> SyncPointer<T> {
     pub fn new(ptr: *mut T) -> Self {
         Self(ptr)
     }
 }
 
-impl<T: Debug> Pointer<T> for SyncPtr<T> {
+impl<T: Debug> Pointer<T> for SyncPointer<T> {
     fn as_ptr(&self) -> *const T {
         self.0
     }

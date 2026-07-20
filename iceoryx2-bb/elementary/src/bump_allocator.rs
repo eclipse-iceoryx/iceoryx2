@@ -46,11 +46,11 @@
 use core::{fmt::Display, ptr::NonNull};
 
 use crate::math::align;
-use crate::sync_ptr::SyncPtr;
+use crate::sync_pointer::SyncPointer;
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
-use iceoryx2_bb_elementary_traits::pointer_family::NonNullFamily;
 use iceoryx2_bb_elementary_traits::pointer::Pointer;
+use iceoryx2_bb_elementary_traits::pointer_family::NonNullFamily;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
 
@@ -59,7 +59,7 @@ pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocato
 #[derive(Debug)]
 #[repr(C)]
 pub struct BumpAllocator {
-    pub(crate) start: SyncPtr<u8>,
+    pub(crate) start: SyncPointer<u8>,
     addr_next_free_memory: AtomicUsize,
     full_memory_size: usize,
 }
@@ -82,7 +82,7 @@ impl Display for BumpAllocator {
 impl BumpAllocator {
     pub fn new(start: NonNull<u8>, full_memory_size: usize) -> Self {
         Self {
-            start: SyncPtr::new(start.as_ptr()),
+            start: SyncPointer::new(start.as_ptr()),
             addr_next_free_memory: AtomicUsize::new(0),
             full_memory_size,
         }

@@ -51,9 +51,12 @@ use iceoryx2_bb_concurrency::atomic::AtomicU64;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
-use iceoryx2_bb_elementary::{bump_allocator::BumpAllocator, relocatable_ptr::RelocatablePointer};
+use iceoryx2_bb_elementary::owning_pointer::OwningPointer;
+use iceoryx2_bb_elementary::{
+    bump_allocator::BumpAllocator, relocatable_pointer::RelocatablePointer,
+};
 use iceoryx2_bb_elementary_traits::{
-    owning_pointer::OwningPointer, pointer::Pointer, relocatable_container::RelocatableContainer,
+    pointer::Pointer, relocatable_container::RelocatableContainer,
 };
 use iceoryx2_log::{fail, fatal_panic};
 

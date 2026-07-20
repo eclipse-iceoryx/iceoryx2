@@ -91,7 +91,7 @@ use core::alloc::Layout;
 use core::marker::PhantomData;
 use core::mem::MaybeUninit;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU8, Ordering};
-use iceoryx2_bb_elementary::relocatable_ptr::{Pointer, RelocatablePointer};
+use iceoryx2_bb_elementary::relocatable_pointer::{Pointer, RelocatablePointer};
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary_traits::pointer_family::NonNullFamily;
 use iceoryx2_bb_elementary_traits::{atomic_copy::AtomicCopy, zero_copy_send::ZeroCopySend};

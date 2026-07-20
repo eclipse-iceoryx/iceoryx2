@@ -55,7 +55,7 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::align;
-use iceoryx2_bb_elementary::sync_ptr::SyncPtr;
+use iceoryx2_bb_elementary::sync_pointer::SyncPointer;
 pub use iceoryx2_bb_elementary_traits::allocator::*;
 use iceoryx2_bb_elementary_traits::pointer::Pointer;
 use iceoryx2_bb_elementary_traits::pointer_family::NonNullFamily;
@@ -72,7 +72,7 @@ pub struct PoolAllocator {
     buckets: UniqueIndexSet,
     bucket_size: usize,
     bucket_alignment: usize,
-    start: SyncPtr<u8>,
+    start: SyncPointer<u8>,
     size: usize,
     is_memory_initialized: AtomicBool,
 }
@@ -136,7 +136,7 @@ impl PoolAllocator {
             },
             bucket_size: bucket_layout.size(),
             bucket_alignment: bucket_layout.align(),
-            start: SyncPtr::new(unsafe {
+            start: SyncPointer::new(unsafe {
                 ptr.as_ptr().add(adjusted_start - ptr.as_ptr() as usize)
             }),
             size,
@@ -343,7 +343,7 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> FixedSizePoolAllocator<MAX_NUMBER_OF_BU
                 },
                 bucket_size: bucket_layout.size(),
                 bucket_alignment: bucket_layout.align(),
-                start: SyncPtr::new(unsafe {
+                start: SyncPointer::new(unsafe {
                     ptr.as_ptr().add(adjusted_start - ptr.as_ptr() as usize)
                 }),
                 size,

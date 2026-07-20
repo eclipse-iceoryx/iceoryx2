@@ -17,7 +17,7 @@ use core::{
 };
 
 use flatbuffers::Allocator;
-use iceoryx2_bb_elementary::relocatable_ptr::Pointer;
+use iceoryx2_bb_elementary::relocatable_pointer::Pointer;
 
 #[derive(Clone, Copy, Eq, PartialEq, Debug, Default)]
 pub enum ContentPlacement {

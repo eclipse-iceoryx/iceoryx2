@@ -14,13 +14,12 @@ use core::alloc::Layout;
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_elementary::owning_pointer::OwningPointer;
 use iceoryx2_bb_elementary::{
     bump_allocator::BumpAllocator,
-    relocatable_ptr::{Pointer, RelocatablePointer},
+    relocatable_pointer::{Pointer, RelocatablePointer},
 };
-use iceoryx2_bb_elementary_traits::{
-    owning_pointer::OwningPointer, relocatable_container::RelocatableContainer,
-};
+use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_log::{fail, fatal_panic};
 
 pub type UsedChunkList = details::UsedChunkList<OwningPointer<AtomicBool>>;
@@ -31,7 +30,7 @@ pub mod details {
 
     use iceoryx2_bb_elementary::math::unaligned_mem_size;
     use iceoryx2_bb_elementary_traits::{
-        pointer_family::NonNullFamily, owning_pointer::OwningPointer, zero_copy_send::ZeroCopySend,
+        pointer_family::NonNullFamily, zero_copy_send::ZeroCopySend,
     };
 
     use super::*;

@@ -29,11 +29,12 @@ pub mod code_style;
 pub mod cyclic_tagger;
 pub mod lazy_singleton;
 pub mod math;
+pub mod owning_pointer;
 pub mod package_version;
-pub mod relocatable_ptr;
+pub mod relocatable_pointer;
 pub mod scope_guard;
 pub mod static_assert;
-pub mod sync_ptr;
+pub mod sync_pointer;
 pub mod unique_id;
 pub mod unsendable_marker;
 

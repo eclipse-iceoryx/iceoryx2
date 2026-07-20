@@ -46,13 +46,13 @@ use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU16, AtomicU32, AtomicU6
 use iceoryx2_bb_concurrency::atomic::{AtomicU8, Ordering};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+use iceoryx2_bb_elementary::owning_pointer::OwningPointer;
 use iceoryx2_bb_elementary::{
     math::unaligned_mem_size,
-    relocatable_ptr::{Pointer, RelocatablePointer},
+    relocatable_pointer::{Pointer, RelocatablePointer},
 };
 use iceoryx2_bb_elementary_traits::{
-    owning_pointer::OwningPointer, relocatable_container::RelocatableContainer,
-    zero_copy_send::ZeroCopySend,
+    relocatable_container::RelocatableContainer, zero_copy_send::ZeroCopySend,
 };
 use iceoryx2_log::fail;
 use iceoryx2_log::fatal_panic;

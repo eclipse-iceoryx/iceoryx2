@@ -113,7 +113,7 @@ use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_bb_elementary::relocatable_ptr::{Pointer, RelocatablePointer};
+use iceoryx2_bb_elementary::relocatable_pointer::{Pointer, RelocatablePointer};
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_elementary_traits::pointer_family::NonNullFamily;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;

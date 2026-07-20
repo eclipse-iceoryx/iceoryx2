@@ -78,7 +78,7 @@ use iceoryx2_bb_concurrency::cell::{Cell, UnsafeCell};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
-use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
+use iceoryx2_bb_elementary::relocatable_pointer::RelocatablePointer;
 use iceoryx2_bb_elementary::unique_id::UniqueId;
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;

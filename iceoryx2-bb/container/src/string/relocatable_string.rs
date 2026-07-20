@@ -82,7 +82,7 @@ use core::hash::Hash;
 use core::mem::MaybeUninit;
 use core::ops::{Deref, DerefMut};
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
-use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
+use iceoryx2_bb_elementary::relocatable_pointer::RelocatablePointer;
 use iceoryx2_bb_elementary_traits::pointer::Pointer;
 use iceoryx2_bb_elementary_traits::pointer_family::NonNullFamily;
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;

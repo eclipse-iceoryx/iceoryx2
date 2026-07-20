@@ -16,9 +16,8 @@
 use alloc::alloc::{alloc, dealloc};
 use core::alloc::Layout;
 use core::fmt::Debug;
-
-use crate::pointer_family::PointerFamily;
-use crate::pointer::Pointer;
+use iceoryx2_bb_elementary_traits::pointer::Pointer;
+use iceoryx2_bb_elementary_traits::pointer_family::PointerFamily;
 
 #[derive(Debug)]
 pub struct GenericOwningPointer;

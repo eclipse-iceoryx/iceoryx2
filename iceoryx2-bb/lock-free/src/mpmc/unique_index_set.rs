@@ -101,7 +101,7 @@ use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
+use iceoryx2_bb_elementary::relocatable_pointer::RelocatablePointer;
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary_traits::pointer::Pointer;
 use iceoryx2_bb_elementary_traits::pointer_family::NonNullFamily;

@@ -18,16 +18,18 @@ use core::{
     ops::{Deref, DerefMut},
 };
 
-use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
-use iceoryx2_bb_elementary_traits::{
+use iceoryx2_bb_elementary::{
     owning_pointer::{GenericOwningPointer, OwningPointer},
+    relocatable_pointer::GenericRelocatablePointer,
+};
+use iceoryx2_bb_elementary_traits::{
     pointer::Pointer,
     pointer_family::{NonNullFamily, PointerFamily},
     relocatable_container::RelocatableContainer,
     zero_copy_send::ZeroCopySend,
 };
 
-use iceoryx2_bb_elementary::{math::unaligned_mem_size, relocatable_ptr::RelocatablePointer};
+use iceoryx2_bb_elementary::{math::unaligned_mem_size, relocatable_pointer::RelocatablePointer};
 
 use iceoryx2_log::{fail, fatal_panic};
 
