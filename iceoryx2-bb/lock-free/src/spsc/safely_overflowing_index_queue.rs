@@ -120,7 +120,7 @@ pub type RelocatableSafelyOverflowingIndexQueue =
 
 pub mod details {
     use iceoryx2_bb_elementary_traits::{
-        generic_pointer::NonNullFamily, zero_copy_send::ZeroCopySend,
+        pointer_family::NonNullFamily, zero_copy_send::ZeroCopySend,
     };
 
     use super::*;

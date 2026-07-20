@@ -15,8 +15,8 @@
 
 pub use core::{alloc::Layout, ptr::NonNull};
 
-use crate::generic_pointer::PointerFamily;
 use crate::pointer::Pointer;
+use crate::pointer_family::PointerFamily;
 
 /// Failures caused by [`BaseAllocator::allocate()`] or [`BaseAllocator::allocate_zeroed()`].
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]

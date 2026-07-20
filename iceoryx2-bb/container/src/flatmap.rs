@@ -41,8 +41,8 @@ use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
-use iceoryx2_bb_elementary_traits::generic_pointer::{NonNullFamily, PointerFamily};
 use iceoryx2_bb_elementary_traits::owning_pointer::GenericOwningPointer;
+use iceoryx2_bb_elementary_traits::pointer_family::{NonNullFamily, PointerFamily};
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::{
     placement_default::PlacementDefault, zero_copy_send::ZeroCopySend,

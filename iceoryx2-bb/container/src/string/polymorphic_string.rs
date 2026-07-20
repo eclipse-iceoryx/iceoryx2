@@ -66,8 +66,8 @@ use core::{
 
 use iceoryx2_bb_elementary_traits::{
     allocator::{AllocationError, BaseAllocator},
-    generic_pointer::NonNullFamily,
     pointer::Pointer,
+    pointer_family::NonNullFamily,
 };
 
 use crate::string::*;

@@ -61,7 +61,7 @@ use core::ptr::NonNull;
 
 pub use crate::mpmc::robust_unique_index_set::OwnerId;
 pub use iceoryx2_bb_elementary::CallbackProgression;
-use iceoryx2_bb_elementary_traits::generic_pointer::NonNullFamily;
+use iceoryx2_bb_elementary_traits::pointer_family::NonNullFamily;
 
 use crate::mpmc::robust_unique_index_set::{RobustUniqueIndexSet, StaticRobustUniqueIndexSetData};
 use crate::mpmc::unique_index_set_enums::{

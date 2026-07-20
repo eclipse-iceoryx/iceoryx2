@@ -51,7 +51,7 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_elementary::math::align;
-use iceoryx2_bb_elementary_traits::generic_pointer::NonNullFamily;
+use iceoryx2_bb_elementary_traits::pointer_family::NonNullFamily;
 use iceoryx2_log::fail;
 
 pub use iceoryx2_bb_elementary_traits::allocator::*;

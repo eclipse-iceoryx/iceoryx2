@@ -20,9 +20,9 @@ use core::{
 
 use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
 use iceoryx2_bb_elementary_traits::{
-    generic_pointer::{NonNullFamily, PointerFamily},
     owning_pointer::{GenericOwningPointer, OwningPointer},
     pointer::Pointer,
+    pointer_family::{NonNullFamily, PointerFamily},
     relocatable_container::RelocatableContainer,
     zero_copy_send::ZeroCopySend,
 };

@@ -19,7 +19,7 @@ use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::allocator::{AllocationGrowError, BaseAllocator};
-use iceoryx2_bb_elementary_traits::generic_pointer::NonNullFamily;
+use iceoryx2_bb_elementary_traits::pointer_family::NonNullFamily;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
 

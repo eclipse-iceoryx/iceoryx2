@@ -17,7 +17,7 @@ use alloc::alloc::{alloc, dealloc};
 use core::alloc::Layout;
 use core::fmt::Debug;
 
-use crate::generic_pointer::PointerFamily;
+use crate::pointer_family::PointerFamily;
 use crate::pointer::Pointer;
 
 #[derive(Debug)]

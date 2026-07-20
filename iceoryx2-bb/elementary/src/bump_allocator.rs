@@ -49,7 +49,7 @@ use crate::math::align;
 use crate::sync_ptr::SyncPtr;
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
-use iceoryx2_bb_elementary_traits::generic_pointer::NonNullFamily;
+use iceoryx2_bb_elementary_traits::pointer_family::NonNullFamily;
 use iceoryx2_bb_elementary_traits::pointer::Pointer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
