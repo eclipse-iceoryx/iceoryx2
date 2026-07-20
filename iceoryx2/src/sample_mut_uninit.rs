@@ -99,7 +99,7 @@ use iceoryx2_cal::shm_allocator::PointerOffset;
 use crate::{
     port::publisher::PublisherSharedState,
     raw_sample::RawSampleMut,
-    sample_mut::SampleMut,
+    sample_mut::{SampleMut, SampleMutSharedState},
     service::{header::publish_subscribe::Header, marker::Flatbuffer},
 };
 
@@ -115,7 +115,9 @@ pub struct SampleMutUninit<
     Payload: Debug + ?Sized,
     UserHeader: ZeroCopySend,
 > {
-    sample: SampleMut<Service, Payload, UserHeader>,
+    shared_state: SampleMutSharedState<Service>,
+    ptr: RawSampleMut<Header, UserHeader, Payload>,
+    sample_size: usize,
     flatbuffer_builder: Option<FlatBufferBuilder<'static>>,
 }
 
@@ -165,7 +167,7 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader: Zero
     /// # }
     /// ```
     pub fn header(&self) -> &Header {
-        self.sample.header()
+        self.ptr.as_header_ref()
     }
 
     /// Returns a reference to the user_header of the sample.
@@ -191,7 +193,7 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader: Zero
     /// # }
     /// ```
     pub fn user_header(&self) -> &UserHeader {
-        self.sample.user_header()
+        self.ptr.as_user_header_ref()
     }
 
     /// Returns a mutable reference to the user_header of the sample.
@@ -217,7 +219,7 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader: Zero
     /// # }
     /// ```
     pub fn user_header_mut(&mut self) -> &mut UserHeader {
-        self.sample.user_header_mut()
+        self.ptr.as_user_header_mut()
     }
 
     /// Returns a reference to the payload of the sample.
@@ -250,7 +252,7 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader: Zero
     where
         Payload: ZeroCopySend,
     {
-        self.sample.payload()
+        self.ptr.as_payload_ref()
     }
 
     /// Returns a mutable reference to the payload of the sample.
@@ -282,7 +284,7 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader: Zero
     where
         Payload: ZeroCopySend,
     {
-        self.sample.payload_mut()
+        self.ptr.as_payload_mut()
     }
 }
 
@@ -297,12 +299,12 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader: ZeroCopySend>
     ) -> Self {
         Self {
             flatbuffer_builder: None,
-            sample: SampleMut {
+            shared_state: SampleMutSharedState {
                 publisher_shared_state: publisher_shared_state.clone(),
-                ptr,
                 offset_to_chunk,
-                sample_size,
             },
+            ptr,
+            sample_size,
         }
     }
 
@@ -368,9 +370,11 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader: ZeroCopySend>
     /// ```
     pub unsafe fn assume_init(self) -> SampleMut<Service, Payload, UserHeader> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
-        let initialized_sample = unsafe { core::mem::transmute_copy(&self.sample) };
-        core::mem::forget(self);
-        initialized_sample
+        SampleMut {
+            shared_state: self.shared_state,
+            sample_size: self.sample_size,
+            ptr: unsafe { self.ptr.assume_init() },
+        }
     }
 }
 
@@ -385,12 +389,12 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
     ) -> Self {
         Self {
             flatbuffer_builder: None,
-            sample: SampleMut {
+            shared_state: SampleMutSharedState {
                 publisher_shared_state: publisher_shared_state.clone(),
-                ptr,
                 offset_to_chunk,
-                sample_size,
             },
+            ptr,
+            sample_size,
         }
     }
 
@@ -432,9 +436,11 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
     /// ```
     pub unsafe fn assume_init(self) -> SampleMut<Service, [Payload], UserHeader> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
-        let initialized_sample = unsafe { core::mem::transmute_copy(&self.sample) };
-        core::mem::forget(self);
-        initialized_sample
+        SampleMut {
+            shared_state: self.shared_state,
+            sample_size: self.sample_size,
+            ptr: unsafe { self.ptr.assume_init() },
+        }
     }
 
     /// Writes the payload to the sample and labels the sample as initialized
