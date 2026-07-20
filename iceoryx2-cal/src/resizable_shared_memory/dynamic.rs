@@ -811,7 +811,7 @@ where
 
     unsafe fn grow(
         &self,
-        old_pointer: ShmPointer,
+        old_pointer: &ShmPointer,
         old_layout: Layout,
         new_layout: Layout,
         placement: ContentPlacement,

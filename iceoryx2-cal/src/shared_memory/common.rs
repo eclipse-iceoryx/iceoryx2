@@ -459,7 +459,7 @@ pub mod details {
 
         unsafe fn grow(
             &self,
-            ptr: ShmPointer,
+            ptr: &ShmPointer,
             old_layout: Layout,
             new_layout: Layout,
             placement: ContentPlacement,

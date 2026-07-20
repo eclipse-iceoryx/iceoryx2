@@ -1032,7 +1032,7 @@ pub mod resizable_shared_memory_trait {
 
         let ptr = unsafe {
             sut.grow(
-                ptr,
+                &ptr,
                 small_layout,
                 large_layout,
                 iceoryx2_cal::shm_allocator::ContentPlacement::Front,
@@ -1071,7 +1071,7 @@ pub mod resizable_shared_memory_trait {
 
         let ptr = unsafe {
             sut.grow(
-                ptr,
+                &ptr,
                 small_layout,
                 large_layout,
                 iceoryx2_cal::shm_allocator::ContentPlacement::Back,
@@ -1110,7 +1110,7 @@ pub mod resizable_shared_memory_trait {
 
         let ptr = unsafe {
             sut.grow(
-                ptr,
+                &ptr,
                 small_layout,
                 large_layout,
                 iceoryx2_cal::shm_allocator::ContentPlacement::Front,
@@ -1149,7 +1149,7 @@ pub mod resizable_shared_memory_trait {
 
         let ptr = unsafe {
             sut.grow(
-                ptr,
+                &ptr,
                 small_layout,
                 large_layout,
                 iceoryx2_cal::shm_allocator::ContentPlacement::Back,
@@ -1184,7 +1184,7 @@ pub mod resizable_shared_memory_trait {
         let ptr = sut.allocate(large_layout).unwrap();
         let result = unsafe {
             sut.grow(
-                ptr,
+                &ptr,
                 large_layout,
                 small_layout,
                 iceoryx2_cal::shm_allocator::ContentPlacement::Front,
@@ -1219,7 +1219,7 @@ pub mod resizable_shared_memory_trait {
 
         let ptr = unsafe {
             sut.grow(
-                ptr,
+                &ptr,
                 layout,
                 layout,
                 iceoryx2_cal::shm_allocator::ContentPlacement::Front,

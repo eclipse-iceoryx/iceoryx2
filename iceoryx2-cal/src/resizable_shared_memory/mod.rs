@@ -253,7 +253,7 @@ pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Alloc
     ///  * the layout must be identical to the one used in [`ResizableSharedMemory::allocate()`]
     unsafe fn grow(
         &self,
-        old_pointer: ShmPointer,
+        old_pointer: &ShmPointer,
         old_layout: Layout,
         new_layout: Layout,
         placement: ContentPlacement,
