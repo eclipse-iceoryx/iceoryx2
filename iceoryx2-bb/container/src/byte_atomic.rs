@@ -91,8 +91,9 @@ use core::alloc::Layout;
 use core::marker::PhantomData;
 use core::mem::MaybeUninit;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU8, Ordering};
-use iceoryx2_bb_elementary::relocatable_ptr::{PointerTrait, RelocatablePointer};
+use iceoryx2_bb_elementary::relocatable_ptr::{Pointer, RelocatablePointer};
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
+use iceoryx2_bb_elementary_traits::pointer_trait::NonNullFamily;
 use iceoryx2_bb_elementary_traits::{atomic_copy::AtomicCopy, zero_copy_send::ZeroCopySend};
 use iceoryx2_log::fail;
 use iceoryx2_log::fatal_panic;
@@ -150,7 +151,7 @@ impl<T: AtomicCopy> RelocatableByteAtomic<T> {
     ///   * Must be called exactly once before any other method is called.
     ///   * Shall be only used when the RelocatableByteAtomic was created with
     ///     [`RelocatableByteAtomic::new_uninit()`].
-    pub unsafe fn init<Allocator: BaseAllocator>(
+    pub unsafe fn init<Allocator: BaseAllocator<NonNullFamily>>(
         &mut self,
         allocator: &Allocator,
         value: T,

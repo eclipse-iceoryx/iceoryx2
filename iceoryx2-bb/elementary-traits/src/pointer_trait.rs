@@ -13,9 +13,11 @@
 //! Trait which describes a form of pointer. Required to distinguish normal pointers from
 //! relocatable pointers.
 
+use core::ptr::NonNull;
+
 /// Trait which describes a form of pointer. Required to distinguish normal pointers from
 /// relocatable pointers.
-pub trait PointerTrait<T> {
+pub trait Pointer<T: ?Sized> {
     /// Return a pointer to the underlying const type
     ///
     /// # Safety
@@ -39,4 +41,24 @@ pub trait PointerTrait<T> {
     fn is_initialized(&self) -> bool {
         true
     }
+}
+
+pub trait PointerFamily {
+    type Pointer<T: ?Sized>: Pointer<T>;
+}
+
+impl<T: ?Sized> Pointer<T> for NonNull<T> {
+    unsafe fn as_ptr(&self) -> *const T {
+        NonNull::as_ptr(*self)
+    }
+
+    unsafe fn as_mut_ptr(&mut self) -> *mut T {
+        unsafe { NonNull::as_mut(self) }
+    }
+}
+
+pub struct NonNullFamily;
+
+impl PointerFamily for NonNullFamily {
+    type Pointer<T: ?Sized> = NonNull<T>;
 }

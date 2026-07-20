@@ -18,7 +18,7 @@ use core::alloc::Layout;
 use core::fmt::Debug;
 
 use crate::generic_pointer::GenericPointer;
-use crate::pointer_trait::PointerTrait;
+use crate::pointer_trait::Pointer;
 
 #[derive(Debug)]
 pub struct GenericOwningPointer;
@@ -59,7 +59,7 @@ impl<T> Drop for OwningPointer<T> {
     }
 }
 
-impl<T> PointerTrait<T> for OwningPointer<T> {
+impl<T> Pointer<T> for OwningPointer<T> {
     unsafe fn as_ptr(&self) -> *const T {
         self.ptr as *const T
     }

@@ -66,7 +66,7 @@
 
 use core::{fmt::Debug, marker::PhantomData, ptr::NonNull};
 
-pub use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
+pub use iceoryx2_bb_elementary_traits::pointer_trait::Pointer;
 
 use iceoryx2_bb_elementary_traits::{
     generic_pointer::GenericPointer, zero_copy_send::ZeroCopySend,
@@ -138,7 +138,7 @@ impl<T> RelocatablePointer<T> {
     }
 }
 
-impl<T> PointerTrait<T> for RelocatablePointer<T> {
+impl<T> Pointer<T> for RelocatablePointer<T> {
     unsafe fn as_ptr(&self) -> *const T {
         let base = (self as *const Self).expose_provenance();
         let dist = self.distance.load(Ordering::Relaxed);

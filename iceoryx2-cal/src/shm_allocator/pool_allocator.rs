@@ -19,6 +19,7 @@ use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::allocator::{AllocationGrowError, BaseAllocator};
+use iceoryx2_bb_elementary_traits::pointer_trait::NonNullFamily;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
 
@@ -183,7 +184,7 @@ impl ShmAllocator for PoolAllocator {
         self.allocator.max_alignment()
     }
 
-    unsafe fn init<Allocator: BaseAllocator>(
+    unsafe fn init<Allocator: BaseAllocator<NonNullFamily>>(
         &mut self,
         mgmt_allocator: &Allocator,
     ) -> Result<(), ShmAllocatorInitError> {

@@ -63,7 +63,10 @@ use core::{
     ptr::NonNull,
 };
 
-use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
+use iceoryx2_bb_elementary_traits::{
+    allocator::{AllocationError, BaseAllocator},
+    pointer_trait::NonNullFamily,
+};
 use iceoryx2_log::fail;
 
 pub use crate::vector::Vector;
@@ -72,14 +75,14 @@ use crate::vector::internal;
 /// Runtime fixed-size vector variant with a polymorphic allocator, meaning an
 /// allocator with a state can be attached to the vector instead of using a
 /// stateless allocator like the heap-allocator.
-pub struct PolymorphicVec<'a, T, Allocator: BaseAllocator> {
+pub struct PolymorphicVec<'a, T, Allocator: BaseAllocator<NonNullFamily>> {
     data_ptr: *mut MaybeUninit<T>,
     len: u64,
     capacity: u64,
     allocator: &'a Allocator,
 }
 
-impl<T: Debug, Allocator: BaseAllocator> Debug for PolymorphicVec<'_, T, Allocator> {
+impl<T: Debug, Allocator: BaseAllocator<NonNullFamily>> Debug for PolymorphicVec<'_, T, Allocator> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
@@ -102,7 +105,7 @@ impl<T: Debug, Allocator: BaseAllocator> Debug for PolymorphicVec<'_, T, Allocat
     }
 }
 
-impl<T, Allocator: BaseAllocator> Drop for PolymorphicVec<'_, T, Allocator> {
+impl<T, Allocator: BaseAllocator<NonNullFamily>> Drop for PolymorphicVec<'_, T, Allocator> {
     fn drop(&mut self) {
         self.clear();
         unsafe {
@@ -114,7 +117,7 @@ impl<T, Allocator: BaseAllocator> Drop for PolymorphicVec<'_, T, Allocator> {
     }
 }
 
-impl<T, Allocator: BaseAllocator> Deref for PolymorphicVec<'_, T, Allocator> {
+impl<T, Allocator: BaseAllocator<NonNullFamily>> Deref for PolymorphicVec<'_, T, Allocator> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
@@ -122,13 +125,15 @@ impl<T, Allocator: BaseAllocator> Deref for PolymorphicVec<'_, T, Allocator> {
     }
 }
 
-impl<T, Allocator: BaseAllocator> DerefMut for PolymorphicVec<'_, T, Allocator> {
+impl<T, Allocator: BaseAllocator<NonNullFamily>> DerefMut for PolymorphicVec<'_, T, Allocator> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.as_mut_slice()
     }
 }
 
-impl<T: PartialEq, Allocator: BaseAllocator> PartialEq for PolymorphicVec<'_, T, Allocator> {
+impl<T: PartialEq, Allocator: BaseAllocator<NonNullFamily>> PartialEq
+    for PolymorphicVec<'_, T, Allocator>
+{
     fn eq(&self, other: &Self) -> bool {
         if self.len != other.len {
             return false;
@@ -144,11 +149,14 @@ impl<T: PartialEq, Allocator: BaseAllocator> PartialEq for PolymorphicVec<'_, T,
     }
 }
 
-impl<T: Eq, Allocator: BaseAllocator> Eq for PolymorphicVec<'_, T, Allocator> {}
+impl<T: Eq, Allocator: BaseAllocator<NonNullFamily>> Eq for PolymorphicVec<'_, T, Allocator> {}
 
-unsafe impl<T: Send, Allocator: BaseAllocator> Send for PolymorphicVec<'_, T, Allocator> {}
+unsafe impl<T: Send, Allocator: BaseAllocator<NonNullFamily>> Send
+    for PolymorphicVec<'_, T, Allocator>
+{
+}
 
-impl<'a, T, Allocator: BaseAllocator> PolymorphicVec<'a, T, Allocator> {
+impl<'a, T, Allocator: BaseAllocator<NonNullFamily>> PolymorphicVec<'a, T, Allocator> {
     /// Creates a new [`PolymorphicVec`].
     pub fn new(allocator: &'a Allocator, capacity: usize) -> Result<Self, AllocationError> {
         let layout = Layout::array::<MaybeUninit<T>>(capacity as _)
@@ -191,7 +199,7 @@ impl<'a, T, Allocator: BaseAllocator> PolymorphicVec<'a, T, Allocator> {
     }
 }
 
-impl<T: Clone, Allocator: BaseAllocator> PolymorphicVec<'_, T, Allocator> {
+impl<T: Clone, Allocator: BaseAllocator<NonNullFamily>> PolymorphicVec<'_, T, Allocator> {
     /// Same as clone but it can fail when the required memory could not be
     /// allocated from the [`BaseAllocator`].
     pub fn try_clone(&self) -> Result<Self, AllocationError> {
@@ -223,7 +231,9 @@ impl<T: Clone, Allocator: BaseAllocator> PolymorphicVec<'_, T, Allocator> {
     }
 }
 
-impl<T, Allocator: BaseAllocator> internal::VectorView<T> for PolymorphicVec<'_, T, Allocator> {
+impl<T, Allocator: BaseAllocator<NonNullFamily>> internal::VectorView<T>
+    for PolymorphicVec<'_, T, Allocator>
+{
     fn data(&self) -> &[MaybeUninit<T>] {
         unsafe { core::slice::from_raw_parts(self.data_ptr, self.capacity()) }
     }
@@ -237,7 +247,7 @@ impl<T, Allocator: BaseAllocator> internal::VectorView<T> for PolymorphicVec<'_,
     }
 }
 
-impl<T, Allocator: BaseAllocator> Vector<T> for PolymorphicVec<'_, T, Allocator> {
+impl<T, Allocator: BaseAllocator<NonNullFamily>> Vector<T> for PolymorphicVec<'_, T, Allocator> {
     fn capacity(&self) -> usize {
         self.capacity as _
     }

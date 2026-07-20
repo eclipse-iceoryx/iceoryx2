@@ -48,6 +48,7 @@ use core::{fmt::Display, ptr::NonNull};
 use crate::math::align;
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_elementary_traits::pointer_trait::NonNullFamily;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
 
@@ -102,7 +103,7 @@ impl BumpAllocator {
     }
 }
 
-impl BaseAllocator for BumpAllocator {
+impl BaseAllocator<NonNullFamily> for BumpAllocator {
     fn allocate(&self, layout: core::alloc::Layout) -> Result<NonNull<[u8]>, AllocationError> {
         let msg = "Unable to allocate chunk with";
         let mut next_aligned_free_address;

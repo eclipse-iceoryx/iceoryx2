@@ -18,7 +18,9 @@ use core::{alloc::Layout, fmt::Debug, ptr::NonNull};
 
 use iceoryx2_bb_elementary::enum_gen;
 pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, AllocationGrowError};
-use iceoryx2_bb_elementary_traits::{allocator::BaseAllocator, zero_copy_send::ZeroCopySend};
+use iceoryx2_bb_elementary_traits::{
+    allocator::BaseAllocator, pointer_trait::NonNullFamily, zero_copy_send::ZeroCopySend,
+};
 pub use pointer_offset::*;
 use serde::{Deserialize, Serialize};
 
@@ -139,7 +141,7 @@ pub trait ShmAllocator: Debug + Send + Sync + 'static + ZeroCopySend {
     /// * must be called only once
     /// * must be called before any other method is called
     ///
-    unsafe fn init<Allocator: BaseAllocator>(
+    unsafe fn init<Allocator: BaseAllocator<NonNullFamily>>(
         &mut self,
         mgmt_allocator: &Allocator,
     ) -> Result<(), ShmAllocatorInitError>;

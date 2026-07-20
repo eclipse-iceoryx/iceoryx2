@@ -45,7 +45,7 @@ use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU8, AtomicUsize};
 use iceoryx2_bb_elementary::{
     bump_allocator::BumpAllocator,
     math::unaligned_mem_size,
-    relocatable_ptr::{PointerTrait, RelocatablePointer},
+    relocatable_ptr::{Pointer, RelocatablePointer},
 };
 use iceoryx2_bb_elementary_traits::{
     owning_pointer::OwningPointer, relocatable_container::RelocatableContainer,
@@ -61,7 +61,9 @@ pub type RelocatableBitSet = details::BitSet<RelocatablePointer<details::BitsetE
 #[doc(hidden)]
 pub mod details {
 
-    use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+    use iceoryx2_bb_elementary_traits::{
+        pointer_trait::NonNullFamily, zero_copy_send::ZeroCopySend,
+    };
 
     use super::*;
 
@@ -84,7 +86,7 @@ pub mod details {
 
     #[derive(Debug)]
     #[repr(C)]
-    pub struct BitSet<PointerType: PointerTrait<BitsetElement>> {
+    pub struct BitSet<PointerType: Pointer<BitsetElement>> {
         data_ptr: PointerType,
         capacity: usize,
         array_capacity: usize,
@@ -92,12 +94,12 @@ pub mod details {
         is_memory_initialized: AtomicBool,
     }
 
-    unsafe impl<PointerType: PointerTrait<BitsetElement> + ZeroCopySend> ZeroCopySend
+    unsafe impl<PointerType: Pointer<BitsetElement> + ZeroCopySend> ZeroCopySend
         for BitSet<PointerType>
     {
     }
-    unsafe impl<PointerType: PointerTrait<BitsetElement>> Send for BitSet<PointerType> {}
-    unsafe impl<PointerType: PointerTrait<BitsetElement>> Sync for BitSet<PointerType> {}
+    unsafe impl<PointerType: Pointer<BitsetElement>> Send for BitSet<PointerType> {}
+    unsafe impl<PointerType: Pointer<BitsetElement>> Sync for BitSet<PointerType> {}
 
     impl BitSet<OwningPointer<BitsetElement>> {
         /// Create a new [`BitSet`] with data located in the heap.
@@ -139,7 +141,9 @@ pub mod details {
             }
         }
 
-        unsafe fn init<T: iceoryx2_bb_elementary_traits::allocator::BaseAllocator>(
+        unsafe fn init<
+            T: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNullFamily>,
+        >(
             &mut self,
             allocator: &T,
         ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
@@ -174,7 +178,7 @@ pub mod details {
         }
     }
 
-    impl<PointerType: PointerTrait<BitsetElement> + Debug> BitSet<PointerType> {
+    impl<PointerType: Pointer<BitsetElement> + Debug> BitSet<PointerType> {
         pub(super) const fn array_capacity(capacity: usize) -> usize {
             capacity.div_ceil(BITSET_ELEMENT_BITSIZE)
         }

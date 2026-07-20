@@ -51,6 +51,7 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_elementary::math::align;
+use iceoryx2_bb_elementary_traits::pointer_trait::NonNullFamily;
 use iceoryx2_log::fail;
 
 pub use iceoryx2_bb_elementary_traits::allocator::*;
@@ -95,7 +96,7 @@ impl OneChunkAllocator {
     }
 }
 
-impl BaseAllocator for OneChunkAllocator {
+impl BaseAllocator<NonNullFamily> for OneChunkAllocator {
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocationError> {
         let adjusted_start = align(self.start, layout.align());
         let msg = "Unable to allocate chunk";
@@ -126,7 +127,7 @@ impl BaseAllocator for OneChunkAllocator {
     }
 }
 
-impl Allocator for OneChunkAllocator {
+impl Allocator<NonNullFamily> for OneChunkAllocator {
     unsafe fn grow(
         &self,
         ptr: NonNull<u8>,

@@ -12,10 +12,10 @@
 
 use core::fmt::Debug;
 
-use crate::pointer_trait::PointerTrait;
+use crate::pointer_trait::Pointer;
 
 /// Trait that allows to use typed pointers as generic arguments for structs.
 pub trait GenericPointer {
     /// The underlying pointer type.
-    type Type<T: Debug>: PointerTrait<T> + Debug;
+    type Type<T: Debug>: Pointer<T> + Debug;
 }

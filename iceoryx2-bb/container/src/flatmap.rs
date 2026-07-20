@@ -43,6 +43,7 @@ use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
 use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
 use iceoryx2_bb_elementary_traits::owning_pointer::GenericOwningPointer;
+use iceoryx2_bb_elementary_traits::pointer_trait::NonNullFamily;
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::{
     placement_default::PlacementDefault, zero_copy_send::ZeroCopySend,
@@ -412,7 +413,9 @@ impl<K: Eq, V: Clone> RelocatableContainer for RelocatableFlatMap<K, V> {
         }
     }
 
-    unsafe fn init<Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator>(
+    unsafe fn init<
+        Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNullFamily>,
+    >(
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {

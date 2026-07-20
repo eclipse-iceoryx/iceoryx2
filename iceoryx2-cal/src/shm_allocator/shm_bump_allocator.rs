@@ -101,7 +101,7 @@ impl ShmAllocator for BumpAllocator {
         8
     }
 
-    unsafe fn init<Allocator: BaseAllocator>(
+    unsafe fn init<Allocator: BaseAllocator<NonNullFamily>>(
         &mut self,
         _mgmt_allocator: &Allocator,
     ) -> Result<(), ShmAllocatorInitError> {

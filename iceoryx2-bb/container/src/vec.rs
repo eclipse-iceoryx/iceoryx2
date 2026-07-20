@@ -20,9 +20,11 @@ use core::{
 
 use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
 use iceoryx2_bb_elementary_traits::{
-    generic_pointer::GenericPointer, owning_pointer::GenericOwningPointer,
-    owning_pointer::OwningPointer, pointer_trait::PointerTrait,
-    relocatable_container::RelocatableContainer, zero_copy_send::ZeroCopySend,
+    generic_pointer::GenericPointer,
+    owning_pointer::{GenericOwningPointer, OwningPointer},
+    pointer_trait::{NonNullFamily, Pointer},
+    relocatable_container::RelocatableContainer,
+    zero_copy_send::ZeroCopySend,
 };
 
 use iceoryx2_bb_elementary::{math::unaligned_mem_size, relocatable_ptr::RelocatablePointer};
@@ -86,7 +88,9 @@ impl<T> RelocatableContainer for RelocatableVec<T> {
         }
     }
 
-    unsafe fn init<Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator>(
+    unsafe fn init<
+        Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNullFamily>,
+    >(
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {

@@ -12,7 +12,10 @@
 
 //! Describes a container which can shared between processes.
 
-use crate::{allocator::AllocationError, allocator::BaseAllocator};
+use crate::{
+    allocator::{AllocationError, BaseAllocator},
+    pointer_trait::NonNullFamily,
+};
 
 /// Describes a container which can shared between processes. Since the shared memory is often
 /// mapped at a different virtual memory position the underlying constructs must be relocatable in
@@ -38,7 +41,10 @@ pub trait RelocatableContainer {
     ///  * Shall be only used when the [`RelocatableContainer`] was created with
     ///    [`RelocatableContainer::new_uninit()`]
     ///
-    unsafe fn init<T: BaseAllocator>(&mut self, allocator: &T) -> Result<(), AllocationError>;
+    unsafe fn init<T: BaseAllocator<NonNullFamily>>(
+        &mut self,
+        allocator: &T,
+    ) -> Result<(), AllocationError>;
 
     /// Returns the amount of additional memory the object requires from the
     /// [`BaseAllocator`] in the [`RelocatableContainer::init()`] call. The returned value

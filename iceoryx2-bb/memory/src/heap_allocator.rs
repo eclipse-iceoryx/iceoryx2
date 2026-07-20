@@ -14,7 +14,10 @@
 
 use core::{alloc::Layout, ptr::NonNull};
 
-use iceoryx2_bb_elementary_traits::allocator::{AllocationGrowError, AllocationShrinkError};
+use iceoryx2_bb_elementary_traits::{
+    allocator::{AllocationGrowError, AllocationShrinkError},
+    pointer_trait::NonNullFamily,
+};
 use iceoryx2_bb_posix::memory::heap;
 use iceoryx2_log::fail;
 
@@ -40,7 +43,7 @@ impl HeapAllocator {
     }
 }
 
-impl BaseAllocator for HeapAllocator {
+impl BaseAllocator<NonNullFamily> for HeapAllocator {
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocationError> {
         Ok(fail!(from self, when heap::allocate(layout),
                 "Failed to allocate {} bytes with an alignment of {}.", layout.size(), layout.align()))
@@ -53,7 +56,7 @@ impl BaseAllocator for HeapAllocator {
     }
 }
 
-impl Allocator for HeapAllocator {
+impl Allocator<NonNullFamily> for HeapAllocator {
     unsafe fn grow(
         &self,
         ptr: NonNull<u8>,

@@ -16,7 +16,7 @@ use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_elementary::{
     bump_allocator::BumpAllocator,
-    relocatable_ptr::{PointerTrait, RelocatablePointer},
+    relocatable_ptr::{Pointer, RelocatablePointer},
 };
 use iceoryx2_bb_elementary_traits::{
     owning_pointer::OwningPointer, relocatable_container::RelocatableContainer,
@@ -31,25 +31,25 @@ pub mod details {
 
     use iceoryx2_bb_elementary::math::unaligned_mem_size;
     use iceoryx2_bb_elementary_traits::{
-        owning_pointer::OwningPointer, zero_copy_send::ZeroCopySend,
+        owning_pointer::OwningPointer, pointer_trait::NonNullFamily, zero_copy_send::ZeroCopySend,
     };
 
     use super::*;
 
     #[derive(Debug)]
     #[repr(C)]
-    pub struct UsedChunkList<PointerType: PointerTrait<AtomicBool>> {
+    pub struct UsedChunkList<PointerType: Pointer<AtomicBool>> {
         data_ptr: PointerType,
         capacity: usize,
         is_memory_initialized: AtomicBool,
     }
 
-    unsafe impl<PointerType: PointerTrait<AtomicBool> + ZeroCopySend> ZeroCopySend
+    unsafe impl<PointerType: Pointer<AtomicBool> + ZeroCopySend> ZeroCopySend
         for UsedChunkList<PointerType>
     {
     }
-    unsafe impl<PointerType: PointerTrait<AtomicBool>> Send for UsedChunkList<PointerType> {}
-    unsafe impl<PointerType: PointerTrait<AtomicBool>> Sync for UsedChunkList<PointerType> {}
+    unsafe impl<PointerType: Pointer<AtomicBool>> Send for UsedChunkList<PointerType> {}
+    unsafe impl<PointerType: Pointer<AtomicBool>> Sync for UsedChunkList<PointerType> {}
 
     impl UsedChunkList<OwningPointer<AtomicBool>> {
         pub fn new(capacity: usize) -> Self {
@@ -76,7 +76,9 @@ pub mod details {
             }
         }
 
-        unsafe fn init<T: iceoryx2_bb_elementary_traits::allocator::BaseAllocator>(
+        unsafe fn init<
+            T: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNullFamily>,
+        >(
             &mut self,
             allocator: &T,
         ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
@@ -115,7 +117,7 @@ pub mod details {
         }
     }
 
-    impl<PointerType: PointerTrait<AtomicBool> + Debug> UsedChunkList<PointerType> {
+    impl<PointerType: Pointer<AtomicBool> + Debug> UsedChunkList<PointerType> {
         pub const fn const_memory_size(capacity: usize) -> usize {
             unaligned_mem_size::<AtomicBool>(capacity)
         }

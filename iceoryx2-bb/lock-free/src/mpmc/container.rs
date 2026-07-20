@@ -81,7 +81,7 @@ use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
 use iceoryx2_bb_elementary::unique_id::UniqueId;
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
-use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
+use iceoryx2_bb_elementary_traits::pointer_trait::{NonNullFamily, Pointer};
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic};
@@ -219,7 +219,7 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
         }
     }
 
-    unsafe fn init<Allocator: BaseAllocator>(
+    unsafe fn init<Allocator: BaseAllocator<NonNullFamily>>(
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), AllocationError> {

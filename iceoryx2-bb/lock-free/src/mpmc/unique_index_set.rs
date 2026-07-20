@@ -103,7 +103,8 @@ use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
-use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
+use iceoryx2_bb_elementary_traits::pointer_trait::NonNullFamily;
+use iceoryx2_bb_elementary_traits::pointer_trait::Pointer;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic};
@@ -267,7 +268,10 @@ impl RelocatableContainer for UniqueIndexSet {
         }
     }
 
-    unsafe fn init<T: BaseAllocator>(&mut self, allocator: &T) -> Result<(), AllocationError> {
+    unsafe fn init<T: BaseAllocator<NonNullFamily>>(
+        &mut self,
+        allocator: &T,
+    ) -> Result<(), AllocationError> {
         let msg = "Failed to initialize";
 
         if self.is_memory_initialized.load(Ordering::Relaxed) {

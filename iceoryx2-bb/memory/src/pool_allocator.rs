@@ -57,6 +57,7 @@ use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::align;
 pub use iceoryx2_bb_elementary_traits::allocator::*;
+use iceoryx2_bb_elementary_traits::pointer_trait::NonNullFamily;
 use iceoryx2_bb_elementary_traits::relocatable_container::*;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
@@ -142,7 +143,7 @@ impl PoolAllocator {
     ///
     ///  * must be called exactly once before any other method can be called
     ///
-    pub unsafe fn init<Allocator: BaseAllocator>(
+    pub unsafe fn init<Allocator: BaseAllocator<NonNullFamily>>(
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), AllocationError> {
@@ -191,7 +192,7 @@ impl PoolAllocator {
     }
 }
 
-impl BaseAllocator for PoolAllocator {
+impl BaseAllocator<NonNullFamily> for PoolAllocator {
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocationError> {
         self.verify_init("allocate");
 
@@ -227,7 +228,7 @@ impl BaseAllocator for PoolAllocator {
     }
 }
 
-impl Allocator for PoolAllocator {
+impl Allocator<NonNullFamily> for PoolAllocator {
     /// always returns the input ptr on success but with an increased size
     unsafe fn grow(
         &self,
@@ -369,7 +370,7 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> FixedSizePoolAllocator<MAX_NUMBER_OF_BU
     }
 }
 
-impl<const MAX_NUMBER_OF_BUCKETS: usize> BaseAllocator
+impl<const MAX_NUMBER_OF_BUCKETS: usize> BaseAllocator<NonNullFamily>
     for FixedSizePoolAllocator<MAX_NUMBER_OF_BUCKETS>
 {
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocationError> {
@@ -383,7 +384,7 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> BaseAllocator
     }
 }
 
-impl<const MAX_NUMBER_OF_BUCKETS: usize> Allocator
+impl<const MAX_NUMBER_OF_BUCKETS: usize> Allocator<NonNullFamily>
     for FixedSizePoolAllocator<MAX_NUMBER_OF_BUCKETS>
 {
     /// always returns the input ptr on success but with an increased size
