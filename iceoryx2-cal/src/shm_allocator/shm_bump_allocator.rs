@@ -12,6 +12,7 @@
 
 use crate::shm_allocator::*;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic};
 

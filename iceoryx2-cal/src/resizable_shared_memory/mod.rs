@@ -90,12 +90,13 @@
 pub mod dynamic;
 pub mod recommended;
 
-pub use crate::shm_allocator::{AllocationStrategy, pool_allocator::PoolAllocator};
+pub use crate::shm_allocator::pool_allocator::PoolAllocator;
 
 use core::alloc::Layout;
 use core::fmt::Debug;
 use core::time::Duration;
 
+use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::file::AccessMode;

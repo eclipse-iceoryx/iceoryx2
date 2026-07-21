@@ -26,6 +26,7 @@ use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::slotmap::{SlotMap, SlotMapKey};
 use iceoryx2_bb_container::string::String;
+use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, AllocationGrowError};
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::file::AccessMode;
@@ -36,8 +37,7 @@ use iceoryx2_log::{fail, warn};
 
 use crate::resizable_shared_memory::ResizableShmGrowError;
 use crate::shared_memory::{
-    AllocationStrategy, ContentPlacement, SegmentId, SharedMemoryForPoolAllocator,
-    ShmAllocatorGrowError, ShmPointer,
+    ContentPlacement, SegmentId, SharedMemoryForPoolAllocator, ShmAllocatorGrowError, ShmPointer,
 };
 use crate::shared_memory::{
     PointerOffset, SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError,

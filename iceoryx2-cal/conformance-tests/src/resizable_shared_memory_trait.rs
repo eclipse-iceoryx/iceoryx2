@@ -25,13 +25,13 @@ pub mod resizable_shared_memory_trait {
     use iceoryx2_cal::shm_allocator::ShmAllocatorGrowError;
     use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
+    use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::resizable_shared_memory::*;
     use iceoryx2_cal::shared_memory::SharedMemory;
-    use iceoryx2_cal::shm_allocator::AllocationStrategy;
     use iceoryx2_cal::testing::*;
 
     use super::*;

@@ -16,7 +16,7 @@ pub mod shm_bump_allocator;
 
 use core::{alloc::Layout, fmt::Debug, ptr::NonNull};
 
-use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_elementary::{allocation_strategy::AllocationStrategy, enum_gen};
 pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, AllocationGrowError};
 use iceoryx2_bb_elementary_traits::{
     allocator::BaseAllocator, pointer_family::NonNullFamily, zero_copy_send::ZeroCopySend,
@@ -52,21 +52,6 @@ pub enum ContentPlacement {
     #[default]
     Front,
     Back,
-}
-
-/// Describes generically an [`AllocationStrategy`], meaning how the memory is increased when the
-/// available memory is insufficient.
-#[derive(Clone, Copy, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
-pub enum AllocationStrategy {
-    /// Increases the memory so that it perfectly fits the new size requirements. This may lead
-    /// to a lot of reallocations but has the benefit that no byte is wasted.
-    BestFit,
-    /// Increases the memory by rounding the increased memory size up to the next power of two.
-    /// Reduces reallocations a lot at the cost of increased memory usage.
-    PowerOfTwo,
-    /// The memory is not increased. This may lead to an out-of-memory error when allocating.
-    #[default]
-    Static,
 }
 
 /// Describes error that may occur when a [`ShmAllocator`] is initialized.

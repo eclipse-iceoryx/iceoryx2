@@ -31,6 +31,7 @@ pub use iceoryx2_bb_derive_macros::PlacementDefault;
 pub use iceoryx2_bb_derive_macros::ZeroCopySend;
 pub use iceoryx2_bb_elementary::CallbackProgression;
 pub use iceoryx2_bb_elementary::alignment::Alignment;
+pub use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 pub use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 pub use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 pub use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
@@ -38,7 +39,6 @@ pub use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
 pub use iceoryx2_bb_posix::process::ProcessId;
 pub use iceoryx2_bb_print::{cerr, cerrln, cout, coutln};
 pub use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
-pub use iceoryx2_cal::shm_allocator::AllocationStrategy;
 pub use iceoryx2_log::LogLevel;
 pub use iceoryx2_log::set_log_level;
 #[cfg(feature = "std")]

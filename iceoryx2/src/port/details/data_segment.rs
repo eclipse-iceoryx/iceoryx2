@@ -14,6 +14,7 @@ use core::alloc::Layout;
 use core::ptr::NonNull;
 
 use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::file::AccessMode;
@@ -26,7 +27,7 @@ use iceoryx2_cal::{
         SharedMemoryOpenError, ShmPointer,
     },
     shm_allocator::{
-        self, AllocationError, AllocationStrategy, PointerOffset, SegmentId, ShmAllocationError,
+        self, AllocationError, PointerOffset, SegmentId, ShmAllocationError,
         pool_allocator::PoolAllocator,
     },
 };

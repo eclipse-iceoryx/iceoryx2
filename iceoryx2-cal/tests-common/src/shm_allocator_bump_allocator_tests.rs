@@ -12,11 +12,12 @@
 
 use alloc::boxed::Box;
 use core::{alloc::Layout, ptr::NonNull};
+use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 use iceoryx2_cal::shm_allocator::{
-    AllocationStrategy, PointerOffset, ShmAllocator, ShmAllocatorGrowError, shm_bump_allocator::*,
+    PointerOffset, ShmAllocator, ShmAllocatorGrowError, shm_bump_allocator::*,
 };
 
 const MAX_SUPPORTED_ALIGNMENT: usize = 4096;

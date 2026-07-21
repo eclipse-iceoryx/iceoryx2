@@ -40,8 +40,8 @@ use crate::{
 };
 use alloc::format;
 use core::fmt::Debug;
+use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::shm_allocator::AllocationStrategy;
 use iceoryx2_log::fail;
 use tiny_fn::tiny_fn;
 

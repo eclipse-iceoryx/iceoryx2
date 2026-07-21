@@ -113,6 +113,7 @@ use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
@@ -120,7 +121,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
-use iceoryx2_cal::shm_allocator::{AllocationStrategy, PointerOffset};
+use iceoryx2_cal::shm_allocator::PointerOffset;
 use iceoryx2_cal::zero_copy_connection::{
     CHANNEL_STATE_OPEN, ChannelId, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySender,
 };

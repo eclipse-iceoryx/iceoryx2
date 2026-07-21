@@ -13,16 +13,14 @@
 use alloc::boxed::Box;
 use alloc::collections::btree_set::BTreeSet;
 use core::{alloc::Layout, ptr::NonNull};
+use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 use iceoryx2_cal::{
-    shm_allocator::{
-        AllocationStrategy, ShmAllocationError, ShmAllocator, ShmAllocatorGrowError,
-        pool_allocator::*,
-    },
+    shm_allocator::{ShmAllocationError, ShmAllocator, ShmAllocatorGrowError, pool_allocator::*},
     zero_copy_connection::PointerOffset,
 };
 

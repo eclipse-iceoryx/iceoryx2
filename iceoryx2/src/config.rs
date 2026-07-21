@@ -74,7 +74,9 @@ use core::time::Duration;
 use alloc::string::String;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_elementary::{CallbackProgression, lazy_singleton::*};
+use iceoryx2_bb_elementary::{
+    CallbackProgression, allocation_strategy::AllocationStrategy, lazy_singleton::*,
+};
 use iceoryx2_bb_posix::{
     file::{FileBuilder, FileOpenError},
     shared_memory::AccessMode,
@@ -88,7 +90,6 @@ use serde::{Deserialize, Serialize};
 use iceoryx2_log::{debug, fail, fatal_panic, info, trace, warn};
 
 use crate::port::backpressure_strategy::BackpressureStrategy;
-use iceoryx2_cal::shm_allocator::AllocationStrategy;
 
 use iceoryx2_pal_configuration::ICEORYX2_ROOT_PATH;
 
