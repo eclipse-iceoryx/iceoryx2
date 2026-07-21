@@ -12,20 +12,39 @@
 
 use core::{
     alloc::Layout,
+    fmt::Debug,
     ops::{Deref, DerefMut},
 };
 
 use flatbuffers::Allocator;
-use iceoryx2_bb_elementary::relocatable_pointer::Pointer;
+use iceoryx2_bb_elementary::{
+    allocation_strategy::AllocationStrategy, relocatable_pointer::Pointer,
+};
 use iceoryx2_bb_elementary_traits::{
     allocator::{AllocationGrowError, ContentPlacement, ReallocGrow},
     pointer_family::PointerFamily,
 };
+use iceoryx2_log::fail;
 
 pub struct ResizableMemory<P: PointerFamily, A: ReallocGrow<P>> {
     ptr: P::Pointer<u8>,
+    strategy: AllocationStrategy,
     allocator: A,
     current_layout: Layout,
+}
+
+impl<P: PointerFamily, A: ReallocGrow<P>> Debug for ResizableMemory<P, A> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "ResizableMemory<{}, {}> {{ ptr: {:?}, strategy: {:?}, current_layout: {:?} }}",
+            core::any::type_name::<P>(),
+            core::any::type_name::<A>(),
+            self.ptr,
+            self.strategy,
+            self.current_layout
+        )
+    }
 }
 
 impl<P: PointerFamily, A: ReallocGrow<P>> Deref for ResizableMemory<P, A> {
@@ -46,15 +65,33 @@ unsafe impl<P: PointerFamily, A: ReallocGrow<P>> Allocator for ResizableMemory<P
     type Error = AllocationGrowError;
 
     fn grow_downwards(&mut self) -> Result<(), Self::Error> {
+        let msg = "Unable to grow memory";
+        let new_layout = match self.strategy {
+            AllocationStrategy::Static => {
+                fail!(from self, with AllocationGrowError::OutOfMemory,
+                    "{msg} since the allocation strategy is static.");
+            }
+            AllocationStrategy::PowerOfTwo => unsafe {
+                let size = (self.current_layout.size() + 1).next_power_of_two();
+                Layout::from_size_align_unchecked(size, self.current_layout.align())
+            },
+            AllocationStrategy::BestFit => {
+                let size =
+                    (self.current_layout.size() + 1).next_multiple_of(self.current_layout.align());
+                unsafe { Layout::from_size_align_unchecked(size, self.current_layout.align()) }
+            }
+        };
+
         self.ptr = unsafe {
             self.allocator.grow(
                 self.ptr.clone(),
                 self.current_layout,
-                self.current_layout,
+                new_layout,
                 ContentPlacement::Back,
             )?
         };
 
+        self.current_layout = new_layout;
         Ok(())
     }
 

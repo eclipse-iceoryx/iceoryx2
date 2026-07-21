@@ -20,6 +20,7 @@ pub trait PointerFamily {
     type Pointer<T: Debug>: Pointer<T>;
 }
 
+#[derive(Debug)]
 pub struct NonNullFamily;
 
 impl PointerFamily for NonNullFamily {
