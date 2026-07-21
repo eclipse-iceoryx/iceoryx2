@@ -26,6 +26,7 @@ pub mod resizable_shared_memory_trait {
     use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
     use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
+    use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
     use iceoryx2_bb_posix::testing::generate_file_path;
     use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_bb_testing_macros::conformance_test;
@@ -1031,13 +1032,8 @@ pub mod resizable_shared_memory_trait {
         }
 
         let ptr = unsafe {
-            sut.grow(
-                &ptr,
-                small_layout,
-                large_layout,
-                iceoryx2_cal::shm_allocator::ContentPlacement::Front,
-            )
-            .unwrap()
+            sut.grow(&ptr, small_layout, large_layout, ContentPlacement::Front)
+                .unwrap()
         };
 
         for n in 0..4 {
@@ -1070,13 +1066,8 @@ pub mod resizable_shared_memory_trait {
         }
 
         let ptr = unsafe {
-            sut.grow(
-                &ptr,
-                small_layout,
-                large_layout,
-                iceoryx2_cal::shm_allocator::ContentPlacement::Back,
-            )
-            .unwrap()
+            sut.grow(&ptr, small_layout, large_layout, ContentPlacement::Back)
+                .unwrap()
         };
 
         for n in 4..8 {
@@ -1109,13 +1100,8 @@ pub mod resizable_shared_memory_trait {
         }
 
         let ptr = unsafe {
-            sut.grow(
-                &ptr,
-                small_layout,
-                large_layout,
-                iceoryx2_cal::shm_allocator::ContentPlacement::Front,
-            )
-            .unwrap()
+            sut.grow(&ptr, small_layout, large_layout, ContentPlacement::Front)
+                .unwrap()
         };
 
         for n in 0..8 {
@@ -1148,13 +1134,8 @@ pub mod resizable_shared_memory_trait {
         }
 
         let ptr = unsafe {
-            sut.grow(
-                &ptr,
-                small_layout,
-                large_layout,
-                iceoryx2_cal::shm_allocator::ContentPlacement::Back,
-            )
-            .unwrap()
+            sut.grow(&ptr, small_layout, large_layout, ContentPlacement::Back)
+                .unwrap()
         };
 
         for n in 24..32 {
@@ -1182,14 +1163,7 @@ pub mod resizable_shared_memory_trait {
         let large_layout = Layout::from_size_align(8, 1).unwrap();
 
         let ptr = sut.allocate(large_layout).unwrap();
-        let result = unsafe {
-            sut.grow(
-                &ptr,
-                large_layout,
-                small_layout,
-                iceoryx2_cal::shm_allocator::ContentPlacement::Front,
-            )
-        };
+        let result = unsafe { sut.grow(&ptr, large_layout, small_layout, ContentPlacement::Front) };
 
         assert_that!(result.err(), eq Some(ResizableShmGrowError::ShmAllocatorGrowError(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_cal::shm_allocator::AllocationGrowError::GrowWouldShrink))));
     }
@@ -1218,13 +1192,8 @@ pub mod resizable_shared_memory_trait {
         }
 
         let ptr = unsafe {
-            sut.grow(
-                &ptr,
-                layout,
-                layout,
-                iceoryx2_cal::shm_allocator::ContentPlacement::Front,
-            )
-            .unwrap()
+            sut.grow(&ptr, layout, layout, ContentPlacement::Front)
+                .unwrap()
         };
 
         for n in 0..layout.size() {

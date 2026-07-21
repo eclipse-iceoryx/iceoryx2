@@ -16,6 +16,7 @@ use core::ptr::NonNull;
 use core::{alloc::Layout, fmt::Debug};
 
 use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
+use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_system_types::file_name::FileName;

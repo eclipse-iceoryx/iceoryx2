@@ -103,10 +103,11 @@ use iceoryx2_bb_posix::file::AccessMode;
 
 use crate::named_concept::*;
 use crate::shared_memory::{
-    ContentPlacement, SegmentId, SharedMemory, SharedMemoryCreateError, SharedMemoryOpenError,
-    ShmAllocatorGrowError, ShmPointer,
+    SegmentId, SharedMemory, SharedMemoryCreateError, SharedMemoryOpenError, ShmAllocatorGrowError,
+    ShmPointer,
 };
 use crate::shm_allocator::{PointerOffset, ShmAllocationError, ShmAllocator};
+use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
 
 enum_gen! {
 /// Defines all erros that can occur when calling [`ResizableSharedMemory::allocate()`]

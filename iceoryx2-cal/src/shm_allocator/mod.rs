@@ -19,8 +19,8 @@ use core::{alloc::Layout, fmt::Debug, ptr::NonNull};
 use iceoryx2_bb_elementary::{allocation_strategy::AllocationStrategy, enum_gen};
 pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, AllocationGrowError};
 use iceoryx2_bb_elementary_traits::{allocator::BaseAllocator, zero_copy_send::ZeroCopySend};
+use iceoryx2_bb_memory::pool_allocator::ContentPlacement;
 pub use pointer_offset::*;
-use serde::{Deserialize, Serialize};
 
 /// Trait that identifies a configuration of a [`ShmAllocator`].
 pub trait ShmAllocatorConfig: Copy + Default + Debug + Send {}
@@ -41,15 +41,6 @@ enum_gen! {
     ExceedsMaxSupportedAlignment
   mapping:
     AllocationGrowError
-}
-
-/// Defines where the existing content is copied when the user calls
-/// [`ShmAllocator::grow()`].
-#[derive(Clone, Copy, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
-pub enum ContentPlacement {
-    #[default]
-    Front,
-    Back,
 }
 
 /// Describes error that may occur when a [`ShmAllocator`] is initialized.

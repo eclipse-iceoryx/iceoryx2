@@ -16,6 +16,7 @@ use core::{alloc::Layout, ptr::NonNull};
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
+use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
@@ -322,12 +323,7 @@ fn growing_and_keep_content_at_front_works() {
     let new_layout = Test::generate_layout(23);
     let offset = unsafe {
         test.sut
-            .grow(
-                offset,
-                old_layout,
-                new_layout,
-                iceoryx2_cal::shm_allocator::ContentPlacement::Front,
-            )
+            .grow(offset, old_layout, new_layout, ContentPlacement::Front)
             .unwrap()
     };
 
@@ -352,12 +348,7 @@ fn growing_and_keep_content_at_back_works() {
     let new_layout = Test::generate_layout(23);
     let offset = unsafe {
         test.sut
-            .grow(
-                offset,
-                old_layout,
-                new_layout,
-                iceoryx2_cal::shm_allocator::ContentPlacement::Back,
-            )
+            .grow(offset, old_layout, new_layout, ContentPlacement::Back)
             .unwrap()
     };
 
@@ -376,12 +367,8 @@ fn growning_larger_than_bucket_size_fails() {
 
     let new_layout = Test::generate_layout(BUCKET_CONFIG.size() + 324);
     let offset = unsafe {
-        test.sut.grow(
-            offset,
-            old_layout,
-            new_layout,
-            iceoryx2_cal::shm_allocator::ContentPlacement::Back,
-        )
+        test.sut
+            .grow(offset, old_layout, new_layout, ContentPlacement::Back)
     };
 
     assert_that!(offset.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::OutOfMemory)));
@@ -396,12 +383,8 @@ fn growing_and_increasing_alignment_to_bucket_alignment_succeeds() {
 
     let new_layout = unsafe { Layout::from_size_align_unchecked(16, BUCKET_CONFIG.align()) };
     let offset = unsafe {
-        test.sut.grow(
-            offset,
-            old_layout,
-            new_layout,
-            iceoryx2_cal::shm_allocator::ContentPlacement::Front,
-        )
+        test.sut
+            .grow(offset, old_layout, new_layout, ContentPlacement::Front)
     };
 
     assert_that!(offset, is_ok);
@@ -416,12 +399,8 @@ fn growing_and_increasing_alignment_to_more_than_bucket_alignment_fails() {
 
     let new_layout = unsafe { Layout::from_size_align_unchecked(16, BUCKET_CONFIG.align() * 2) };
     let offset = unsafe {
-        test.sut.grow(
-            offset,
-            old_layout,
-            new_layout,
-            iceoryx2_cal::shm_allocator::ContentPlacement::Front,
-        )
+        test.sut
+            .grow(offset, old_layout, new_layout, ContentPlacement::Front)
     };
 
     assert_that!(offset.err(), eq Some(ShmAllocatorGrowError::ExceedsMaxSupportedAlignment));
@@ -436,12 +415,8 @@ fn growing_and_decreasing_size_fails() {
 
     let new_layout = Test::generate_layout(6);
     let offset = unsafe {
-        test.sut.grow(
-            offset,
-            old_layout,
-            new_layout,
-            iceoryx2_cal::shm_allocator::ContentPlacement::Front,
-        )
+        test.sut
+            .grow(offset, old_layout, new_layout, ContentPlacement::Front)
     };
 
     assert_that!(offset.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::GrowWouldShrink)));
@@ -456,12 +431,7 @@ fn growing_to_same_size_returns_same_offset() {
 
     let new_offset = unsafe {
         test.sut
-            .grow(
-                offset,
-                old_layout,
-                old_layout,
-                iceoryx2_cal::shm_allocator::ContentPlacement::Front,
-            )
+            .grow(offset, old_layout, old_layout, ContentPlacement::Front)
             .unwrap()
     };
 

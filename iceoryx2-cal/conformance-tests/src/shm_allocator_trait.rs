@@ -18,6 +18,7 @@ pub mod shm_allocator_trait {
     use alloc::collections::btree_set::BTreeSet;
     use core::{alloc::Layout, ptr::NonNull};
     use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
+    use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::mutex::{Mutex, MutexBuilder, MutexHandle};

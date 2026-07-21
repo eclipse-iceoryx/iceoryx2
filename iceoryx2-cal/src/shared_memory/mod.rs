@@ -67,6 +67,7 @@ use core::{fmt::Debug, time::Duration};
 pub use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 use core::alloc::Layout;
+use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
 use iceoryx2_bb_elementary_traits::{pointer::Pointer, testing::abandonable::Abandonable};
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::*;
