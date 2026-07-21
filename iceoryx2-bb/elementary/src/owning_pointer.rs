@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! Represents a normal non-null pointer. It was introduced to distinguish normal pointers from
-//! `iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer`. It implements the [`PointerTrait`].
+//! `iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer`. It implements the [`Pointer`].
 
 use alloc::alloc::{alloc, dealloc};
 use core::alloc::Layout;
