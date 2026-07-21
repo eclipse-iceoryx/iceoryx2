@@ -17,7 +17,7 @@ use core::{fmt::Debug, ptr::NonNull};
 
 /// Trait which describes a form of pointer. Required to distinguish normal pointers from
 /// relocatable pointers.
-pub trait Pointer<T: Debug>: Debug {
+pub trait Pointer<T: Debug>: Debug + Clone + Eq + PartialEq {
     /// Return a pointer to the underlying const type
     ///
     fn as_ptr(&self) -> *const T;

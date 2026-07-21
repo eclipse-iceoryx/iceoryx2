@@ -58,6 +58,23 @@ impl<T: Debug> Drop for OwningPointer<T> {
     }
 }
 
+impl<T: Debug> Clone for OwningPointer<T> {
+    fn clone(&self) -> Self {
+        Self {
+            ptr: self.ptr,
+            layout: self.layout,
+        }
+    }
+}
+
+impl<T: Debug> PartialEq for OwningPointer<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.ptr == other.ptr && self.layout == other.layout
+    }
+}
+
+impl<T: Debug> Eq for OwningPointer<T> {}
+
 impl<T: Debug> Pointer<T> for OwningPointer<T> {
     fn as_ptr(&self) -> *const T {
         self.ptr

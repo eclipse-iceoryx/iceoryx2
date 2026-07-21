@@ -19,6 +19,22 @@ use iceoryx2_bb_elementary_traits::pointer::Pointer;
 /// use pointers and are otherwise threadsafe.
 pub struct SyncPointer<T: Debug>(*mut T);
 
+impl<T: Debug> Clone for SyncPointer<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<T: Debug> Copy for SyncPointer<T> {}
+
+impl<T: Debug> PartialEq for SyncPointer<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl<T: Debug> Eq for SyncPointer<T> {}
+
 unsafe impl<T: Debug> Send for SyncPointer<T> {}
 unsafe impl<T: Debug> Sync for SyncPointer<T> {}
 
