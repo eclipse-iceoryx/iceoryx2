@@ -255,7 +255,7 @@ pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Alloc
     ///  * the layout must be identical to the one used in [`ResizableSharedMemory::allocate()`]
     unsafe fn grow(
         &self,
-        old_pointer: &ShmPointer,
+        old_pointer: ShmPointer,
         old_layout: Layout,
         new_layout: Layout,
         placement: ContentPlacement,
@@ -268,7 +268,7 @@ pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Alloc
     ///  * the offset must be acquired with [`SharedMemory::allocate()`] - extracted from the
     ///    [`ShmPointer`]
     ///  * the layout must be identical to the one used in [`ResizableSharedMemory::allocate()`]
-    unsafe fn deallocate(&self, offset: PointerOffset, layout: core::alloc::Layout);
+    unsafe fn deallocate(&self, ptr: ShmPointer, layout: core::alloc::Layout);
 }
 
 pub trait ResizableSharedMemoryForPoolAllocator<Shm: SharedMemory<PoolAllocator>>:

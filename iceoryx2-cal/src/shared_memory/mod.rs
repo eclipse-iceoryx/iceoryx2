@@ -209,7 +209,7 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
     ///
     unsafe fn grow(
         &self,
-        ptr: &ShmPointer,
+        ptr: ShmPointer,
         old_layout: Layout,
         new_layout: Layout,
         placement: ContentPlacement,
@@ -222,7 +222,7 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
     ///  * the offset must be acquired with [`SharedMemory::allocate()`] - extracted from the
     ///    [`ShmPointer`]
     ///  * the layout must be identical to the one used in [`SharedMemory::allocate()`]
-    unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout);
+    unsafe fn deallocate(&self, ptr: ShmPointer, layout: Layout);
 
     /// Returns if the [`SharedMemory`] supports persistency, meaning that the underlying OS
     /// resource remain even when every [`SharedMemory`] instance in every process was removed.

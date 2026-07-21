@@ -170,7 +170,7 @@ pub mod shared_memory_trait {
         );
 
         unsafe {
-            sut_create.deallocate(chunks[0].offset, DEFAULT_LAYOUT);
+            sut_create.deallocate(chunks[0], DEFAULT_LAYOUT);
         }
 
         let chunk = sut_create.allocate(DEFAULT_LAYOUT);
@@ -213,7 +213,7 @@ pub mod shared_memory_trait {
         );
 
         unsafe {
-            sut_create.deallocate(chunks[0].offset, DEFAULT_LAYOUT);
+            sut_create.deallocate(chunks[0], DEFAULT_LAYOUT);
         }
 
         let chunk = sut_open.allocate(DEFAULT_LAYOUT);
@@ -358,7 +358,7 @@ pub mod shared_memory_trait {
         }
 
         let chunk = unsafe {
-            sut.grow(&chunk, small_layout, med_layout, ContentPlacement::Front)
+            sut.grow(chunk, small_layout, med_layout, ContentPlacement::Front)
                 .unwrap()
         };
 
@@ -371,7 +371,7 @@ pub mod shared_memory_trait {
         }
 
         let chunk = unsafe {
-            sut.grow(&chunk, med_layout, large_layout, ContentPlacement::Front)
+            sut.grow(chunk, med_layout, large_layout, ContentPlacement::Front)
                 .unwrap()
         };
 
@@ -411,7 +411,7 @@ pub mod shared_memory_trait {
         }
 
         let chunk = unsafe {
-            sut.grow(&chunk, small_layout, med_layout, ContentPlacement::Back)
+            sut.grow(chunk, small_layout, med_layout, ContentPlacement::Back)
                 .unwrap()
         };
 
@@ -425,7 +425,7 @@ pub mod shared_memory_trait {
         }
 
         let chunk = unsafe {
-            sut.grow(&chunk, med_layout, large_layout, ContentPlacement::Back)
+            sut.grow(chunk, med_layout, large_layout, ContentPlacement::Back)
                 .unwrap()
         };
 
@@ -456,7 +456,7 @@ pub mod shared_memory_trait {
         let chunk = sut.allocate(DEFAULT_LAYOUT).unwrap();
         let chunk = unsafe {
             sut.grow(
-                &chunk,
+                chunk,
                 DEFAULT_LAYOUT,
                 Layout::from_size_align_unchecked(DEFAULT_SIZE + 1, DEFAULT_LAYOUT.align()),
                 ContentPlacement::Back,
@@ -481,14 +481,8 @@ pub mod shared_memory_trait {
             Layout::from_size_align(DEFAULT_LAYOUT.size() / 4, DEFAULT_LAYOUT.align()).unwrap();
 
         let chunk = sut.allocate(DEFAULT_LAYOUT).unwrap();
-        let result = unsafe {
-            sut.grow(
-                &chunk,
-                DEFAULT_LAYOUT,
-                small_layout,
-                ContentPlacement::Front,
-            )
-        };
+        let result =
+            unsafe { sut.grow(chunk, DEFAULT_LAYOUT, small_layout, ContentPlacement::Front) };
 
         assert_that!(result.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(AllocationGrowError::GrowWouldShrink)));
     }
@@ -512,7 +506,7 @@ pub mod shared_memory_trait {
 
         let chunk = unsafe {
             sut.grow(
-                &chunk,
+                chunk,
                 DEFAULT_LAYOUT,
                 DEFAULT_LAYOUT,
                 ContentPlacement::Back,

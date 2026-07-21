@@ -461,7 +461,7 @@ pub mod details {
 
         unsafe fn grow(
             &self,
-            ptr: &ShmPointer,
+            ptr: ShmPointer,
             old_layout: Layout,
             new_layout: Layout,
             placement: ContentPlacement,
@@ -490,13 +490,13 @@ pub mod details {
             })
         }
 
-        unsafe fn deallocate(&self, offset: PointerOffset, layout: core::alloc::Layout) {
+        unsafe fn deallocate(&self, ptr: ShmPointer, layout: core::alloc::Layout) {
             unsafe {
                 self.storage
                     .get()
                     .allocator
                     .assume_init_ref()
-                    .deallocate(offset, layout);
+                    .deallocate(ptr.offset, layout);
             }
         }
 

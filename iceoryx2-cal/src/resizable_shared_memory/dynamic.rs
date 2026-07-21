@@ -812,7 +812,7 @@ where
 
     unsafe fn grow(
         &self,
-        old_pointer: &ShmPointer,
+        old_pointer: ShmPointer,
         old_layout: Layout,
         new_layout: Layout,
         placement: ContentPlacement,
@@ -874,14 +874,14 @@ where
             },
         }
 
-        unsafe { self.deallocate(old_pointer.offset, old_layout) };
+        unsafe { self.deallocate(old_pointer, old_layout) };
 
         Ok(new_pointer)
     }
 
-    unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
+    unsafe fn deallocate(&self, ptr: ShmPointer, layout: Layout) {
         unsafe {
-            self.perform_deallocation(offset, |entry| entry.shm.deallocate(offset, layout));
+            self.perform_deallocation(ptr.offset, |entry| entry.shm.deallocate(ptr, layout));
         }
     }
 }

@@ -189,7 +189,7 @@ pub mod resizable_shared_memory_trait {
         let _ptr_creator_2 = sut_creator.allocate(Layout::new::<u64>()).unwrap();
         assert_that!(sut_creator.number_of_active_segments(), eq 2);
 
-        unsafe { sut_creator.deallocate(ptr_creator_1.offset, Layout::new::<u64>()) };
+        unsafe { sut_creator.deallocate(ptr_creator_1, Layout::new::<u64>()) };
         assert_that!(sut_creator.number_of_active_segments(), eq 1);
     }
 
@@ -214,7 +214,7 @@ pub mod resizable_shared_memory_trait {
         let _ptr_creator_2 = sut_creator.allocate(Layout::new::<u64>()).unwrap();
         assert_that!(sut_creator.number_of_active_segments(), eq 2);
 
-        unsafe { sut_creator.deallocate(ptr_creator_1.offset, Layout::new::<u64>()) };
+        unsafe { sut_creator.deallocate(ptr_creator_1, Layout::new::<u64>()) };
         assert_that!(sut_creator.number_of_active_segments(), eq 1);
     }
 
@@ -651,7 +651,7 @@ pub mod resizable_shared_memory_trait {
             .unwrap();
 
         let chunk = sut_creator.allocate(Layout::new::<u16>()).unwrap();
-        unsafe { sut_creator.deallocate(chunk.offset, Layout::new::<u16>()) };
+        unsafe { sut_creator.deallocate(chunk, Layout::new::<u16>()) };
         let chunk = sut_creator.allocate(Layout::new::<u32>()).unwrap();
         sut_creator.allocate(Layout::new::<u64>()).unwrap();
         unsafe { (chunk.data_ptr as *mut u32).write(TEST_VALUE) };
@@ -1032,7 +1032,7 @@ pub mod resizable_shared_memory_trait {
         }
 
         let ptr = unsafe {
-            sut.grow(&ptr, small_layout, large_layout, ContentPlacement::Front)
+            sut.grow(ptr, small_layout, large_layout, ContentPlacement::Front)
                 .unwrap()
         };
 
@@ -1066,7 +1066,7 @@ pub mod resizable_shared_memory_trait {
         }
 
         let ptr = unsafe {
-            sut.grow(&ptr, small_layout, large_layout, ContentPlacement::Back)
+            sut.grow(ptr, small_layout, large_layout, ContentPlacement::Back)
                 .unwrap()
         };
 
@@ -1100,7 +1100,7 @@ pub mod resizable_shared_memory_trait {
         }
 
         let ptr = unsafe {
-            sut.grow(&ptr, small_layout, large_layout, ContentPlacement::Front)
+            sut.grow(ptr, small_layout, large_layout, ContentPlacement::Front)
                 .unwrap()
         };
 
@@ -1134,7 +1134,7 @@ pub mod resizable_shared_memory_trait {
         }
 
         let ptr = unsafe {
-            sut.grow(&ptr, small_layout, large_layout, ContentPlacement::Back)
+            sut.grow(ptr, small_layout, large_layout, ContentPlacement::Back)
                 .unwrap()
         };
 
@@ -1163,7 +1163,7 @@ pub mod resizable_shared_memory_trait {
         let large_layout = Layout::from_size_align(8, 1).unwrap();
 
         let ptr = sut.allocate(large_layout).unwrap();
-        let result = unsafe { sut.grow(&ptr, large_layout, small_layout, ContentPlacement::Front) };
+        let result = unsafe { sut.grow(ptr, large_layout, small_layout, ContentPlacement::Front) };
 
         assert_that!(result.err(), eq Some(ResizableShmGrowError::ShmAllocatorGrowError(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_cal::shm_allocator::AllocationGrowError::GrowWouldShrink))));
     }
@@ -1192,7 +1192,7 @@ pub mod resizable_shared_memory_trait {
         }
 
         let ptr = unsafe {
-            sut.grow(&ptr, layout, layout, ContentPlacement::Front)
+            sut.grow(ptr, layout, layout, ContentPlacement::Front)
                 .unwrap()
         };
 
