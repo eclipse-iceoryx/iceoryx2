@@ -12,15 +12,10 @@
 
 //! A **threadsafe** and **lock-free** [`Allocator`] which acquires the memory from the heap.
 
-use core::{alloc::Layout, ptr::NonNull};
-
-use iceoryx2_bb_elementary_traits::allocator::{
-    AllocationGrowError, AllocationShrinkError, ContentPlacement, ReallocGrow, ReallocShrink,
-};
 use iceoryx2_bb_posix::memory::heap;
 use iceoryx2_log::fail;
 
-pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, Allocator, BaseAllocator};
+pub use iceoryx2_bb_elementary_traits::allocator::*;
 
 #[derive(Debug)]
 pub struct HeapAllocator {}
@@ -48,7 +43,9 @@ impl BaseAllocator<NonNull<u8>> for HeapAllocator {
                 "Failed to allocate {} bytes with an alignment of {}.", layout.size(), layout.align());
         Ok(unsafe { NonNull::new_unchecked(ptr.as_mut().as_mut_ptr()) })
     }
+}
 
+impl Dealloc<NonNull<u8>> for HeapAllocator {
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
         unsafe {
             heap::deallocate(ptr, layout);
@@ -102,3 +99,5 @@ impl ReallocShrink<NonNull<u8>> for HeapAllocator {
         Ok(unsafe { NonNull::new_unchecked(ptr.as_mut().as_mut_ptr()) })
     }
 }
+
+impl ZeroableAllocator<NonNull<u8>> for HeapAllocator {}

@@ -83,16 +83,11 @@ pub trait BaseAllocator<P: Pointer<u8>> {
     /// Allocates a memory chunk with the properties provided in layout and either
     /// returns a slice or an allocation error on failure.
     fn allocate(&self, layout: Layout) -> Result<P, AllocationError>;
+}
 
-    /// Allocates a memory chunk with the properties provided in layout and zeroes the memory
-    /// On success it returns a slice or an allocation error on failure.
-    fn allocate_zeroed(&self, layout: Layout) -> Result<P, AllocationError> {
-        let mut ptr = self.allocate(layout)?;
-        let raw_ptr = ptr.as_mut_ptr();
-        unsafe { core::ptr::write_bytes(raw_ptr, 0, layout.size()) };
-        Ok(ptr)
-    }
-
+/// An allocator that allows also deallocation. A bump allocator for instance does
+/// not fall into this category.
+pub trait Dealloc<P: Pointer<u8>> {
     /// Releases an previously allocated chunk of memory.
     ///
     /// # Safety
@@ -125,6 +120,37 @@ pub trait ReallocGrow<P: Pointer<u8>> {
         new_layout: Layout,
         content_placement: ContentPlacement,
     ) -> Result<P, AllocationGrowError>;
+}
+
+/// Allocator that allows shrinking a previously allocated memory chunk.
+pub trait ReallocShrink<P: Pointer<u8>> {
+    /// Decreases the size of an previously allocated chunk of memory. If the size increases it
+    /// fails.
+    ///
+    /// # Safety
+    ///
+    ///  * `ptr` must be allocated previously with [`BaseAllocator::allocate()`] or
+    ///    [`BaseAllocator::allocate_zeroed()`]
+    ///  * `old_layout` must have the same value as in the allocation or, when the memory was
+    ///    resized, the same value as it was resized to
+    ///
+    unsafe fn shrink(
+        &self,
+        ptr: P,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<P, AllocationShrinkError>;
+}
+
+pub trait ZeroableAllocator<P: Pointer<u8>>: ReallocGrow<P> + BaseAllocator<P> {
+    /// Allocates a memory chunk with the properties provided in layout and zeroes the memory
+    /// On success it returns a slice or an allocation error on failure.
+    fn allocate_zeroed(&self, layout: core::alloc::Layout) -> Result<P, AllocationError> {
+        let mut ptr = self.allocate(layout)?;
+        let raw_ptr = ptr.as_mut_ptr();
+        unsafe { core::ptr::write_bytes(raw_ptr, 0, layout.size()) };
+        Ok(ptr)
+    }
 
     /// Increases the size of an previously allocated chunk of memory or allocates a new chunk
     /// with the provided properties. If the chunk can be resized only the difference in size
@@ -168,27 +194,13 @@ pub trait ReallocGrow<P: Pointer<u8>> {
     }
 }
 
-/// Allocator that allows shrinking a previously allocated memory chunk.
-pub trait ReallocShrink<P: Pointer<u8>> {
-    /// Decreases the size of an previously allocated chunk of memory. If the size increases it
-    /// fails.
-    ///
-    /// # Safety
-    ///
-    ///  * `ptr` must be allocated previously with [`BaseAllocator::allocate()`] or
-    ///    [`BaseAllocator::allocate_zeroed()`]
-    ///  * `old_layout` must have the same value as in the allocation or, when the memory was
-    ///    resized, the same value as it was resized to
-    ///
-    unsafe fn shrink(
-        &self,
-        ptr: P,
-        old_layout: Layout,
-        new_layout: Layout,
-    ) -> Result<P, AllocationShrinkError>;
+/// Allocator with all features.
+pub trait Allocator<P: Pointer<u8>>:
+    BaseAllocator<P> + ReallocGrow<P> + ReallocShrink<P> + Dealloc<P>
+{
 }
 
-/// Allocator with all features.
-pub trait Allocator<P: Pointer<u8>>: BaseAllocator<P> + ReallocGrow<P> + ReallocShrink<P> {}
-
-impl<P: Pointer<u8>, A: BaseAllocator<P> + ReallocGrow<P> + ReallocShrink<P>> Allocator<P> for A {}
+impl<P: Pointer<u8>, A: BaseAllocator<P> + ReallocGrow<P> + ReallocShrink<P> + Dealloc<P>>
+    Allocator<P> for A
+{
+}

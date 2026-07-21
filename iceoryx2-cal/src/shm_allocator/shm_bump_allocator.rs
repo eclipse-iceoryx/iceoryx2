@@ -235,11 +235,6 @@ impl ShmAllocator for BumpAllocator {
     }
 
     unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
-        unsafe {
-            self.allocator.deallocate(
-                NonNull::new_unchecked((offset.offset() + self.base_address) as *mut u8),
-                layout,
-            );
-        }
+        todo!()
     }
 }

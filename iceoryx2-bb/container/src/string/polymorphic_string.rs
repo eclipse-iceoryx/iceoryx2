@@ -66,7 +66,7 @@ use core::{
 };
 
 use iceoryx2_bb_elementary_traits::{
-    allocator::{AllocationError, BaseAllocator},
+    allocator::{AllocationError, BaseAllocator, Dealloc},
     pointer::Pointer,
 };
 
@@ -75,14 +75,28 @@ use crate::string::*;
 /// Runtime fixed-size string variant with a polymorphic allocator, meaning an
 /// allocator with a state can be attached to the string instead of using a
 /// stateless allocator like the heap-allocator.
-pub struct PolymorphicString<'a, Allocator: BaseAllocator<NonNull<u8>>> {
+pub struct PolymorphicString<'a, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> {
     data_ptr: *mut MaybeUninit<u8>,
     len: u64,
     capacity: u64,
     allocator: &'a Allocator,
 }
 
-impl<Allocator: BaseAllocator<NonNull<u8>>> internal::StringView
+impl<Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Drop
+    for PolymorphicString<'_, Allocator>
+{
+    fn drop(&mut self) {
+        unsafe {
+            self.allocator.deallocate(
+                NonNull::new_unchecked(self.data_ptr.cast()),
+                Layout::array::<MaybeUninit<u8>>(self.capacity as usize + 1)
+                    .expect("Memory size for the array is smaller than isize::MAX"),
+            )
+        };
+    }
+}
+
+impl<Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> internal::StringView
     for PolymorphicString<'_, Allocator>
 {
     fn data(&self) -> &[MaybeUninit<u8>] {
@@ -98,7 +112,9 @@ impl<Allocator: BaseAllocator<NonNull<u8>>> internal::StringView
     }
 }
 
-impl<Allocator: BaseAllocator<NonNull<u8>>> Debug for PolymorphicString<'_, Allocator> {
+impl<Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Debug
+    for PolymorphicString<'_, Allocator>
+{
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
@@ -111,29 +127,38 @@ impl<Allocator: BaseAllocator<NonNull<u8>>> Debug for PolymorphicString<'_, Allo
     }
 }
 
-unsafe impl<Allocator: BaseAllocator<NonNull<u8>>> Send for PolymorphicString<'_, Allocator> {}
-
-impl<Allocator: BaseAllocator<NonNull<u8>>> PartialOrd<PolymorphicString<'_, Allocator>>
+unsafe impl<Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Send
     for PolymorphicString<'_, Allocator>
+{
+}
+
+impl<Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>>
+    PartialOrd<PolymorphicString<'_, Allocator>> for PolymorphicString<'_, Allocator>
 {
     fn partial_cmp(&self, other: &PolymorphicString<'_, Allocator>) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<Allocator: BaseAllocator<NonNull<u8>>> Ord for PolymorphicString<'_, Allocator> {
+impl<Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Ord
+    for PolymorphicString<'_, Allocator>
+{
     fn cmp(&self, other: &Self) -> Ordering {
         self.as_bytes().cmp(other.as_bytes())
     }
 }
 
-impl<Allocator: BaseAllocator<NonNull<u8>>> Hash for PolymorphicString<'_, Allocator> {
+impl<Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Hash
+    for PolymorphicString<'_, Allocator>
+{
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         state.write(self.as_bytes())
     }
 }
 
-impl<Allocator: BaseAllocator<NonNull<u8>>> Deref for PolymorphicString<'_, Allocator> {
+impl<Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Deref
+    for PolymorphicString<'_, Allocator>
+{
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
@@ -141,41 +166,52 @@ impl<Allocator: BaseAllocator<NonNull<u8>>> Deref for PolymorphicString<'_, Allo
     }
 }
 
-impl<Allocator: BaseAllocator<NonNull<u8>>> DerefMut for PolymorphicString<'_, Allocator> {
+impl<Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> DerefMut
+    for PolymorphicString<'_, Allocator>
+{
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.as_mut_bytes()
     }
 }
 
-impl<Allocator: BaseAllocator<NonNull<u8>>> PartialEq<PolymorphicString<'_, Allocator>>
-    for PolymorphicString<'_, Allocator>
+impl<Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>>
+    PartialEq<PolymorphicString<'_, Allocator>> for PolymorphicString<'_, Allocator>
 {
     fn eq(&self, other: &PolymorphicString<'_, Allocator>) -> bool {
         *self.as_bytes() == *other.as_bytes()
     }
 }
 
-impl<Allocator: BaseAllocator<NonNull<u8>>> Eq for PolymorphicString<'_, Allocator> {}
+impl<Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Eq
+    for PolymorphicString<'_, Allocator>
+{
+}
 
-impl<Allocator: BaseAllocator<NonNull<u8>>> PartialEq<&[u8]> for PolymorphicString<'_, Allocator> {
+impl<Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> PartialEq<&[u8]>
+    for PolymorphicString<'_, Allocator>
+{
     fn eq(&self, other: &&[u8]) -> bool {
         *self.as_bytes() == **other
     }
 }
 
-impl<Allocator: BaseAllocator<NonNull<u8>>> PartialEq<&str> for PolymorphicString<'_, Allocator> {
+impl<Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> PartialEq<&str>
+    for PolymorphicString<'_, Allocator>
+{
     fn eq(&self, other: &&str) -> bool {
         *self.as_bytes() == *other.as_bytes()
     }
 }
 
-impl<Allocator: BaseAllocator<NonNull<u8>>> PartialEq<PolymorphicString<'_, Allocator>> for &str {
+impl<Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>>
+    PartialEq<PolymorphicString<'_, Allocator>> for &str
+{
     fn eq(&self, other: &PolymorphicString<'_, Allocator>) -> bool {
         *self.as_bytes() == *other.as_bytes()
     }
 }
 
-impl<const OTHER_CAPACITY: usize, Allocator: BaseAllocator<NonNull<u8>>>
+impl<const OTHER_CAPACITY: usize, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>>
     PartialEq<[u8; OTHER_CAPACITY]> for PolymorphicString<'_, Allocator>
 {
     fn eq(&self, other: &[u8; OTHER_CAPACITY]) -> bool {
@@ -183,7 +219,7 @@ impl<const OTHER_CAPACITY: usize, Allocator: BaseAllocator<NonNull<u8>>>
     }
 }
 
-impl<const OTHER_CAPACITY: usize, Allocator: BaseAllocator<NonNull<u8>>>
+impl<const OTHER_CAPACITY: usize, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>>
     PartialEq<&[u8; OTHER_CAPACITY]> for PolymorphicString<'_, Allocator>
 {
     fn eq(&self, other: &&[u8; OTHER_CAPACITY]) -> bool {
@@ -191,13 +227,17 @@ impl<const OTHER_CAPACITY: usize, Allocator: BaseAllocator<NonNull<u8>>>
     }
 }
 
-impl<Allocator: BaseAllocator<NonNull<u8>>> Display for PolymorphicString<'_, Allocator> {
+impl<Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Display
+    for PolymorphicString<'_, Allocator>
+{
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", as_escaped_string(self.as_bytes()))
     }
 }
 
-impl<'a, Allocator: BaseAllocator<NonNull<u8>>> PolymorphicString<'a, Allocator> {
+impl<'a, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>>
+    PolymorphicString<'a, Allocator>
+{
     /// Creates a new [`PolymorphicString`].
     pub fn new(allocator: &'a Allocator, capacity: usize) -> Result<Self, AllocationError> {
         let layout = Layout::array::<MaybeUninit<u8>>(capacity + 1)
@@ -214,6 +254,9 @@ impl<'a, Allocator: BaseAllocator<NonNull<u8>>> PolymorphicString<'a, Allocator>
                     "Failed to create new PolymorphicString due to a failure while allocating memory ({e:?}).");
             }
         };
+
+        // zero the first byte to signal an empty string
+        unsafe { *data_ptr.as_mut_ptr() = 0 };
 
         Ok(Self {
             data_ptr: data_ptr.as_mut_ptr().cast(),
@@ -253,7 +296,9 @@ impl<'a, Allocator: BaseAllocator<NonNull<u8>>> PolymorphicString<'a, Allocator>
     }
 }
 
-impl<Allocator: BaseAllocator<NonNull<u8>>> String for PolymorphicString<'_, Allocator> {
+impl<Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> String
+    for PolymorphicString<'_, Allocator>
+{
     fn capacity(&self) -> usize {
         self.capacity as usize
     }

@@ -117,7 +117,9 @@ impl BaseAllocator<NonNull<u8>> for OneChunkAllocator {
             .store(adjusted_start, Ordering::Relaxed);
         Ok(unsafe { NonNull::new_unchecked(self.start.add(adjusted_start - self.start as usize)) })
     }
+}
 
+impl Dealloc<NonNull<u8>> for OneChunkAllocator {
     unsafe fn deallocate(&self, ptr: NonNull<u8>, _layout: Layout) {
         self.verify_ptr_is_managed_by_allocator(ptr);
         self.release_chunk();
@@ -191,3 +193,5 @@ impl ReallocShrink<NonNull<u8>> for OneChunkAllocator {
         Ok(ptr)
     }
 }
+
+impl ZeroableAllocator<NonNull<u8>> for OneChunkAllocator {}

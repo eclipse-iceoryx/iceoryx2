@@ -64,7 +64,7 @@ use core::{
 };
 
 use iceoryx2_bb_elementary_traits::{
-    allocator::{AllocationError, BaseAllocator},
+    allocator::{AllocationError, BaseAllocator, Dealloc},
     pointer::Pointer,
 };
 use iceoryx2_log::fail;
@@ -75,14 +75,16 @@ use crate::vector::internal;
 /// Runtime fixed-size vector variant with a polymorphic allocator, meaning an
 /// allocator with a state can be attached to the vector instead of using a
 /// stateless allocator like the heap-allocator.
-pub struct PolymorphicVec<'a, T, Allocator: BaseAllocator<NonNull<u8>>> {
+pub struct PolymorphicVec<'a, T, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> {
     data_ptr: *mut MaybeUninit<T>,
     len: u64,
     capacity: u64,
     allocator: &'a Allocator,
 }
 
-impl<T: Debug, Allocator: BaseAllocator<NonNull<u8>>> Debug for PolymorphicVec<'_, T, Allocator> {
+impl<T: Debug, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Debug
+    for PolymorphicVec<'_, T, Allocator>
+{
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
@@ -105,19 +107,24 @@ impl<T: Debug, Allocator: BaseAllocator<NonNull<u8>>> Debug for PolymorphicVec<'
     }
 }
 
-impl<T, Allocator: BaseAllocator<NonNull<u8>>> Drop for PolymorphicVec<'_, T, Allocator> {
+impl<T, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Drop
+    for PolymorphicVec<'_, T, Allocator>
+{
     fn drop(&mut self) {
         self.clear();
         unsafe {
             self.allocator.deallocate(
                 NonNull::new_unchecked(self.data_ptr.cast()),
-                Layout::array::<MaybeUninit<T>>(self.capacity as _).unwrap(),
+                Layout::array::<MaybeUninit<T>>(self.capacity as _)
+                    .expect("Memory size for the array is smaller than isize::MAX"),
             )
         };
     }
 }
 
-impl<T, Allocator: BaseAllocator<NonNull<u8>>> Deref for PolymorphicVec<'_, T, Allocator> {
+impl<T, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Deref
+    for PolymorphicVec<'_, T, Allocator>
+{
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
@@ -125,13 +132,15 @@ impl<T, Allocator: BaseAllocator<NonNull<u8>>> Deref for PolymorphicVec<'_, T, A
     }
 }
 
-impl<T, Allocator: BaseAllocator<NonNull<u8>>> DerefMut for PolymorphicVec<'_, T, Allocator> {
+impl<T, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> DerefMut
+    for PolymorphicVec<'_, T, Allocator>
+{
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.as_mut_slice()
     }
 }
 
-impl<T: PartialEq, Allocator: BaseAllocator<NonNull<u8>>> PartialEq
+impl<T: PartialEq, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> PartialEq
     for PolymorphicVec<'_, T, Allocator>
 {
     fn eq(&self, other: &Self) -> bool {
@@ -149,14 +158,19 @@ impl<T: PartialEq, Allocator: BaseAllocator<NonNull<u8>>> PartialEq
     }
 }
 
-impl<T: Eq, Allocator: BaseAllocator<NonNull<u8>>> Eq for PolymorphicVec<'_, T, Allocator> {}
-
-unsafe impl<T: Send, Allocator: BaseAllocator<NonNull<u8>>> Send
+impl<T: Eq, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Eq
     for PolymorphicVec<'_, T, Allocator>
 {
 }
 
-impl<'a, T, Allocator: BaseAllocator<NonNull<u8>>> PolymorphicVec<'a, T, Allocator> {
+unsafe impl<T: Send, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Send
+    for PolymorphicVec<'_, T, Allocator>
+{
+}
+
+impl<'a, T, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>>
+    PolymorphicVec<'a, T, Allocator>
+{
     /// Creates a new [`PolymorphicVec`].
     pub fn new(allocator: &'a Allocator, capacity: usize) -> Result<Self, AllocationError> {
         let layout = Layout::array::<MaybeUninit<T>>(capacity as _)
@@ -199,7 +213,9 @@ impl<'a, T, Allocator: BaseAllocator<NonNull<u8>>> PolymorphicVec<'a, T, Allocat
     }
 }
 
-impl<T: Clone, Allocator: BaseAllocator<NonNull<u8>>> PolymorphicVec<'_, T, Allocator> {
+impl<T: Clone, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>>
+    PolymorphicVec<'_, T, Allocator>
+{
     /// Same as clone but it can fail when the required memory could not be
     /// allocated from the [`BaseAllocator`].
     pub fn try_clone(&self) -> Result<Self, AllocationError> {
@@ -231,7 +247,7 @@ impl<T: Clone, Allocator: BaseAllocator<NonNull<u8>>> PolymorphicVec<'_, T, Allo
     }
 }
 
-impl<T, Allocator: BaseAllocator<NonNull<u8>>> internal::VectorView<T>
+impl<T, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> internal::VectorView<T>
     for PolymorphicVec<'_, T, Allocator>
 {
     fn data(&self) -> &[MaybeUninit<T>] {
@@ -247,7 +263,9 @@ impl<T, Allocator: BaseAllocator<NonNull<u8>>> internal::VectorView<T>
     }
 }
 
-impl<T, Allocator: BaseAllocator<NonNull<u8>>> Vector<T> for PolymorphicVec<'_, T, Allocator> {
+impl<T, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Vector<T>
+    for PolymorphicVec<'_, T, Allocator>
+{
     fn capacity(&self) -> usize {
         self.capacity as _
     }

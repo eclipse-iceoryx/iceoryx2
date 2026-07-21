@@ -61,7 +61,7 @@ use alloc::vec::Vec;
 
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
-use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
+use iceoryx2_bb_elementary_traits::allocator::{BaseAllocator, Dealloc};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_system_types::file_name::FileName;

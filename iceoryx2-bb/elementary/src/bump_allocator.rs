@@ -143,9 +143,4 @@ impl BaseAllocator<NonNull<u8>> for BumpAllocator {
             )
         })
     }
-
-    unsafe fn deallocate(&self, _ptr: NonNull<u8>, _layout: core::alloc::Layout) {
-        self.addr_next_free_memory
-            .store(0, core::sync::atomic::Ordering::Relaxed);
-    }
 }
