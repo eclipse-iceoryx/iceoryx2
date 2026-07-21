@@ -35,6 +35,18 @@ impl core::fmt::Display for AllocationError {
 
 impl core::error::Error for AllocationError {}
 
+impl From<AllocationError> for AllocationGrowError {
+    fn from(value: AllocationError) -> Self {
+        match value {
+            AllocationError::AlignmentFailure => AllocationGrowError::AlignmentFailure,
+            AllocationError::InternalError => AllocationGrowError::InternalError,
+            AllocationError::OutOfMemory => AllocationGrowError::OutOfMemory,
+            AllocationError::SizeIsZero => AllocationGrowError::SizeIsZero,
+            AllocationError::SizeTooLarge => AllocationGrowError::InternalError,
+        }
+    }
+}
+
 /// Failures caused by [`ReallocGrow::grow()`] or [`ReallocGrow::grow_zeroed()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 pub enum AllocationGrowError {

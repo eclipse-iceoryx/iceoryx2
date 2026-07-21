@@ -14,11 +14,10 @@ use alloc::boxed::Box;
 use core::{alloc::Layout, ptr::NonNull};
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
+use iceoryx2_bb_memory::{bump_allocator::BaseAllocator, pool_allocator::ReallocGrow};
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
-use iceoryx2_cal::shm_allocator::{
-    PointerOffset, ShmAllocator, ShmAllocatorGrowError, shm_bump_allocator::*,
-};
+use iceoryx2_cal::shm_allocator::{PointerOffset, ShmAllocator, shm_bump_allocator::*};
 
 const MAX_SUPPORTED_ALIGNMENT: usize = 4096;
 const MEM_SIZE: usize = 16384 * 10;
@@ -120,7 +119,7 @@ fn new_resize_hint_with_best_fit_when_there_is_not_enough_memory_available() {
 fn growing_last_chunk_and_keep_content_at_front_works() {
     let mut test = Test::new();
     let old_layout = Test::generate_layout(4);
-    let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
+    let offset = unsafe { test.sut.assume_init().allocate(old_layout) }.unwrap();
     let ptr = test.offset_to_ptr(offset);
 
     for n in 0..4 {
@@ -130,6 +129,7 @@ fn growing_last_chunk_and_keep_content_at_front_works() {
     let new_layout = Test::generate_layout(9);
     let offset = unsafe {
         test.sut
+            .assume_init()
             .grow(offset, old_layout, new_layout, ContentPlacement::Front)
             .unwrap()
     };
@@ -144,7 +144,7 @@ fn growing_last_chunk_and_keep_content_at_front_works() {
 fn growing_last_chunk_and_keep_content_at_back_works() {
     let mut test = Test::new();
     let old_layout = Test::generate_layout(4);
-    let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
+    let offset = unsafe { test.sut.assume_init().allocate(old_layout) }.unwrap();
     let ptr = test.offset_to_ptr(offset);
 
     for n in 0..4 {
@@ -154,6 +154,7 @@ fn growing_last_chunk_and_keep_content_at_back_works() {
     let new_layout = Test::generate_layout(9);
     let offset = unsafe {
         test.sut
+            .assume_init()
             .grow(offset, old_layout, new_layout, ContentPlacement::Back)
             .unwrap()
     };
@@ -168,14 +169,19 @@ fn growing_last_chunk_and_keep_content_at_back_works() {
 fn growing_with_existing_middle_chunk_and_keep_content_at_front_works() {
     let mut test = Test::new();
     let old_layout = Test::generate_layout(6);
-    let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
+    let offset = unsafe { test.sut.assume_init().allocate(old_layout) }.unwrap();
     let ptr = test.offset_to_ptr(offset);
 
     for n in 0..6 {
         unsafe { *ptr.add(n) = n as u8 * 2u8 };
     }
 
-    let middle_chunk = unsafe { test.sut.allocate(Test::generate_layout(7)).unwrap() };
+    let middle_chunk = unsafe {
+        test.sut
+            .assume_init()
+            .allocate(Test::generate_layout(7))
+            .unwrap()
+    };
     let ptr = test.offset_to_ptr(middle_chunk);
 
     for n in 0..7 {
@@ -185,6 +191,7 @@ fn growing_with_existing_middle_chunk_and_keep_content_at_front_works() {
     let new_layout = Test::generate_layout(10);
     let offset = unsafe {
         test.sut
+            .assume_init()
             .grow(offset, old_layout, new_layout, ContentPlacement::Front)
             .unwrap()
     };
@@ -208,14 +215,19 @@ fn growing_with_existing_middle_chunk_and_keep_content_at_front_works() {
 fn growing_with_existing_middle_chunk_and_keep_content_at_back_works() {
     let mut test = Test::new();
     let old_layout = Test::generate_layout(6);
-    let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
+    let offset = unsafe { test.sut.assume_init().allocate(old_layout) }.unwrap();
     let ptr = test.offset_to_ptr(offset);
 
     for n in 0..6 {
         unsafe { *ptr.add(n) = n as u8 * 2u8 };
     }
 
-    let middle_chunk = unsafe { test.sut.allocate(Test::generate_layout(7)).unwrap() };
+    let middle_chunk = unsafe {
+        test.sut
+            .assume_init()
+            .allocate(Test::generate_layout(7))
+            .unwrap()
+    };
     let ptr = test.offset_to_ptr(middle_chunk);
 
     for n in 0..7 {
@@ -225,6 +237,7 @@ fn growing_with_existing_middle_chunk_and_keep_content_at_back_works() {
     let new_layout = Test::generate_layout(10);
     let offset = unsafe {
         test.sut
+            .assume_init()
             .grow(offset, old_layout, new_layout, ContentPlacement::Back)
             .unwrap()
     };
@@ -248,7 +261,7 @@ fn growing_with_existing_middle_chunk_and_keep_content_at_back_works() {
 fn growing_chunk_larger_than_available_memory_fails() {
     let mut test = Test::new();
     let old_layout = Test::generate_layout(6);
-    let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
+    let offset = unsafe { test.sut.assume_init().allocate(old_layout) }.unwrap();
     let ptr = test.offset_to_ptr(offset);
 
     for n in 0..6 {
@@ -258,51 +271,55 @@ fn growing_chunk_larger_than_available_memory_fails() {
     let new_layout = Test::generate_layout(10 + MEM_SIZE);
     let offset = unsafe {
         test.sut
+            .assume_init()
             .grow(offset, old_layout, new_layout, ContentPlacement::Back)
     };
 
-    assert_that!(offset.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::OutOfMemory)));
+    assert_that!(offset.err(), eq Some(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::OutOfMemory));
 }
 
 #[test]
 fn growing_and_increasing_alignment_fails() {
     let test = Test::new();
     let old_layout = Test::generate_layout(6);
-    let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
+    let offset = unsafe { test.sut.assume_init().allocate(old_layout) }.unwrap();
 
     let new_layout = unsafe { Layout::from_size_align_unchecked(16, 8) };
     let offset = unsafe {
         test.sut
+            .assume_init()
             .grow(offset, old_layout, new_layout, ContentPlacement::Back)
     };
 
-    assert_that!(offset.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::AlignmentFailure)));
+    assert_that!(offset.err(), eq Some(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::AlignmentFailure));
 }
 
 #[test]
 fn growing_and_decreasing_size_fails() {
     let test = Test::new();
     let old_layout = Test::generate_layout(6);
-    let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
+    let offset = unsafe { test.sut.assume_init().allocate(old_layout) }.unwrap();
 
     let new_layout = Test::generate_layout(4);
     let offset = unsafe {
         test.sut
+            .assume_init()
             .grow(offset, old_layout, new_layout, ContentPlacement::Back)
     };
 
-    assert_that!(offset.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::GrowWouldShrink)));
+    assert_that!(offset.err(), eq Some(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::GrowWouldShrink));
 }
 
 #[test]
 fn growing_and_decreasing_alignment_works() {
     let test = Test::new();
     let old_layout = unsafe { Layout::from_size_align_unchecked(16, 8) };
-    let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
+    let offset = unsafe { test.sut.assume_init().allocate(old_layout) }.unwrap();
 
     let new_layout = unsafe { Layout::from_size_align_unchecked(32, 4) };
     let offset = unsafe {
         test.sut
+            .assume_init()
             .grow(offset, old_layout, new_layout, ContentPlacement::Front)
     };
 
@@ -313,10 +330,11 @@ fn growing_and_decreasing_alignment_works() {
 fn growing_with_same_size_returns_same_offset() {
     let test = Test::new();
     let old_layout = unsafe { Layout::from_size_align_unchecked(16, 8) };
-    let offset = unsafe { test.sut.allocate(old_layout) }.unwrap();
+    let offset = unsafe { test.sut.assume_init().allocate(old_layout) }.unwrap();
 
     let new_offset = unsafe {
         test.sut
+            .assume_init()
             .grow(offset, old_layout, old_layout, ContentPlacement::Front)
             .unwrap()
     };

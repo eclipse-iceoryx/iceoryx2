@@ -23,7 +23,7 @@ use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
-use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
+use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset};
 use iceoryx2_cal::zero_copy_connection::{
     BackpressureToReceiverAction, ChannelId, ChannelState, ZeroCopyConnection,
     ZeroCopyConnectionBuilder, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySendError,
@@ -456,12 +456,11 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
 
         let shm_pointer = match self.data_segment.allocate(layout) {
             Ok(chunk) => chunk,
-            Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)) => {
+            Err(AllocationError::OutOfMemory) => {
                 fail!(from self, with LoanError::OutOfMemory,
                     "{} {:?} since the underlying shared memory is out of memory.", msg, layout);
             }
-            Err(ShmAllocationError::AllocationError(AllocationError::SizeTooLarge))
-            | Err(ShmAllocationError::AllocationError(AllocationError::AlignmentFailure)) => {
+            Err(AllocationError::SizeTooLarge) | Err(AllocationError::AlignmentFailure) => {
                 fatal_panic!(from self, "{} {:?} since the system seems to be corrupted.", msg, layout);
             }
             Err(v) => {

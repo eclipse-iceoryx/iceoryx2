@@ -37,7 +37,7 @@ use iceoryx2_bb_elementary::static_assert::static_assert_eq;
 use iceoryx2_bb_elementary_traits::{
     testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
 };
-use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_bb_memory::bump_allocator::{BaseAllocator, BumpAllocator};
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_cal::dynamic_storage::{DynamicStorage, DynamicStorageBuilder};
 use iceoryx2_cal::event::NamedConceptMgmt;

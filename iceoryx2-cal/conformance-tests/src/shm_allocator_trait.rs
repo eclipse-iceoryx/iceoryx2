@@ -19,7 +19,8 @@ pub mod shm_allocator_trait {
     use core::{alloc::Layout, ptr::NonNull};
     use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
     use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
-    use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+    use iceoryx2_bb_memory::bump_allocator::{BaseAllocator, BumpAllocator};
+    use iceoryx2_bb_memory::pool_allocator::{Dealloc, ReallocGrow};
     use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::mutex::{Mutex, MutexBuilder, MutexHandle};
     use iceoryx2_bb_testing::assert_that;
@@ -107,11 +108,13 @@ pub mod shm_allocator_trait {
         test.init();
 
         let layout = unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, 1) };
-        let distance = unsafe { test.sut().allocate(layout) };
+        let distance = unsafe { test.sut().assume_init().allocate(layout) };
         assert_that!(distance, is_ok);
 
         unsafe {
-            test.sut().deallocate(distance.unwrap(), layout);
+            test.sut()
+                .assume_init()
+                .deallocate(distance.unwrap(), layout);
         }
     }
 
@@ -121,10 +124,10 @@ pub mod shm_allocator_trait {
         test.init();
 
         let layout = unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, 1) };
-        let distance = unsafe { test.sut().allocate(layout).unwrap() };
+        let distance = unsafe { test.sut().assume_init().allocate(layout).unwrap() };
         assert_that!(distance.offset(), eq 0);
 
-        unsafe { test.sut().deallocate(distance, layout) };
+        unsafe { test.sut().assume_init().deallocate(distance, layout) };
     }
 
     #[conformance_test]
@@ -134,11 +137,13 @@ pub mod shm_allocator_trait {
 
         let layout =
             unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, test.sut().max_alignment()) };
-        let distance = unsafe { test.sut().allocate(layout) };
+        let distance = unsafe { test.sut().assume_init().allocate(layout) };
         assert_that!(distance, is_ok);
 
         unsafe {
-            test.sut().deallocate(distance.unwrap(), layout);
+            test.sut()
+                .assume_init()
+                .deallocate(distance.unwrap(), layout);
         }
     }
 
@@ -153,11 +158,11 @@ pub mod shm_allocator_trait {
                 (test.sut().max_alignment() + 1).next_power_of_two(),
             )
         };
-        let distance = unsafe { test.sut().allocate(layout) };
+        let distance = unsafe { test.sut().assume_init().allocate(layout) };
         assert_that!(distance, is_err);
         assert_that!(
             distance.err().unwrap(), eq
-            ShmAllocationError::ExceedsMaxSupportedAlignment
+            AllocationError::AlignmentFailure
         );
     }
 
@@ -207,7 +212,7 @@ pub mod shm_allocator_trait {
         test.init();
 
         let old_layout = unsafe { Layout::from_size_align_unchecked(chunk_size, 1) };
-        let offset = unsafe { test.sut().allocate(old_layout).unwrap() };
+        let offset = unsafe { test.sut().assume_init().allocate(old_layout).unwrap() };
         let ptr = test.offset_to_ptr(offset);
 
         for n in 0..chunk_size {
@@ -217,6 +222,7 @@ pub mod shm_allocator_trait {
         let new_layout = unsafe { Layout::from_size_align_unchecked(chunk_size * 2, 1) };
         let offset = unsafe {
             test.sut()
+                .assume_init()
                 .grow(offset, old_layout, new_layout, ContentPlacement::Front)
                 .unwrap()
         };
@@ -234,7 +240,7 @@ pub mod shm_allocator_trait {
         test.init();
 
         let old_layout = unsafe { Layout::from_size_align_unchecked(chunk_size, 1) };
-        let offset = unsafe { test.sut().allocate(old_layout).unwrap() };
+        let offset = unsafe { test.sut().assume_init().allocate(old_layout).unwrap() };
         let ptr = test.offset_to_ptr(offset);
 
         for n in 0..chunk_size {
@@ -244,6 +250,7 @@ pub mod shm_allocator_trait {
         let new_layout = unsafe { Layout::from_size_align_unchecked(chunk_size * 2, 1) };
         let offset = unsafe {
             test.sut()
+                .assume_init()
                 .grow(offset, old_layout, new_layout, ContentPlacement::Back)
                 .unwrap()
         };
@@ -261,7 +268,7 @@ pub mod shm_allocator_trait {
         test.init();
 
         let old_layout = unsafe { Layout::from_size_align_unchecked(chunk_size, 1) };
-        let offset = unsafe { test.sut().allocate(old_layout).unwrap() };
+        let offset = unsafe { test.sut().assume_init().allocate(old_layout).unwrap() };
         let ptr = test.offset_to_ptr(offset);
 
         for n in 0..chunk_size {
@@ -269,7 +276,7 @@ pub mod shm_allocator_trait {
         }
 
         let middle_layout = unsafe { Layout::from_size_align_unchecked(128, 1) };
-        let middle_chunk = unsafe { test.sut().allocate(middle_layout).unwrap() };
+        let middle_chunk = unsafe { test.sut().assume_init().allocate(middle_layout).unwrap() };
         let ptr = test.offset_to_ptr(middle_chunk);
 
         for n in 0..middle_layout.size() {
@@ -279,6 +286,7 @@ pub mod shm_allocator_trait {
         let new_layout = unsafe { Layout::from_size_align_unchecked(chunk_size * 2, 1) };
         let offset = unsafe {
             test.sut()
+                .assume_init()
                 .grow(offset, old_layout, new_layout, ContentPlacement::Front)
                 .unwrap()
         };
@@ -301,7 +309,7 @@ pub mod shm_allocator_trait {
         test.init();
 
         let old_layout = unsafe { Layout::from_size_align_unchecked(chunk_size, 1) };
-        let offset = unsafe { test.sut().allocate(old_layout).unwrap() };
+        let offset = unsafe { test.sut().assume_init().allocate(old_layout).unwrap() };
         let ptr = test.offset_to_ptr(offset);
 
         for n in 0..chunk_size {
@@ -309,7 +317,7 @@ pub mod shm_allocator_trait {
         }
 
         let middle_layout = unsafe { Layout::from_size_align_unchecked(128, 1) };
-        let middle_chunk = unsafe { test.sut().allocate(middle_layout).unwrap() };
+        let middle_chunk = unsafe { test.sut().assume_init().allocate(middle_layout).unwrap() };
         let ptr = test.offset_to_ptr(middle_chunk);
 
         for n in 0..middle_layout.size() {
@@ -319,6 +327,7 @@ pub mod shm_allocator_trait {
         let new_layout = unsafe { Layout::from_size_align_unchecked(chunk_size * 2, 1) };
         let offset = unsafe {
             test.sut()
+                .assume_init()
                 .grow(offset, old_layout, new_layout, ContentPlacement::Back)
                 .unwrap()
         };
@@ -341,15 +350,16 @@ pub mod shm_allocator_trait {
         test.init();
 
         let old_layout = unsafe { Layout::from_size_align_unchecked(chunk_size, 1) };
-        let offset = unsafe { test.sut().allocate(old_layout).unwrap() };
+        let offset = unsafe { test.sut().assume_init().allocate(old_layout).unwrap() };
 
         let new_layout = unsafe { Layout::from_size_align_unchecked(MEMORY_SIZE * 2, 1) };
         let offset = unsafe {
             test.sut()
+                .assume_init()
                 .grow(offset, old_layout, new_layout, ContentPlacement::Back)
         };
 
-        assert_that!(offset.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::OutOfMemory)));
+        assert_that!(offset.err(), eq Some(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::OutOfMemory));
     }
 
     #[conformance_test]
@@ -359,14 +369,15 @@ pub mod shm_allocator_trait {
         test.init();
 
         let old_layout = unsafe { Layout::from_size_align_unchecked(chunk_size, 1) };
-        let offset = unsafe { test.sut().allocate(old_layout).unwrap() };
+        let offset = unsafe { test.sut().assume_init().allocate(old_layout).unwrap() };
 
         let new_layout = unsafe { Layout::from_size_align_unchecked(chunk_size - 1, 1) };
         let offset = unsafe {
             test.sut()
+                .assume_init()
                 .grow(offset, old_layout, new_layout, ContentPlacement::Back)
         };
 
-        assert_that!(offset.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::GrowWouldShrink)));
+        assert_that!(offset.err(), eq Some(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::GrowWouldShrink));
     }
 }

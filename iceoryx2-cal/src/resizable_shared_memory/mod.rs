@@ -98,41 +98,16 @@ use core::fmt::Debug;
 use core::time::Duration;
 
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
-use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_bb_memory::bump_allocator::BaseAllocator;
+use iceoryx2_bb_memory::pool_allocator::{Dealloc, ReallocGrow};
 use iceoryx2_bb_posix::file::AccessMode;
 
 use crate::named_concept::*;
 use crate::shared_memory::{
-    SegmentId, SharedMemory, SharedMemoryCreateError, SharedMemoryOpenError, ShmAllocatorGrowError,
-    ShmPointer,
+    SegmentId, SharedMemory, SharedMemoryCreateError, SharedMemoryOpenError, ShmPointer,
 };
-use crate::shm_allocator::{PointerOffset, ShmAllocationError, ShmAllocator};
-use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
-
-enum_gen! {
-/// Defines all erros that can occur when calling [`ResizableSharedMemory::allocate()`]
-///
-/// The [`ResizableSharedMemory`] cannot be resized indefinitely. If the resize limit is hit
-/// this error will be returned. It can be mitigated by providing a better
-/// [`ResizableSharedMemoryBuilder::max_number_of_chunks_hint()`] or
-/// [`ResizableSharedMemoryBuilder::max_chunk_layout_hint()`].
-    ResizableShmAllocationError
-  entry:
-    MaxReallocationsReached
-  mapping:
-    ShmAllocationError,
-    SharedMemoryCreateError
-}
-
-enum_gen! {
-/// Defines all erros that can occur when calling [`ResizableSharedMemory::grow()`]
-    ResizableShmGrowError
-  mapping:
-    ShmAllocationError,
-    ShmAllocatorGrowError,
-    ResizableShmAllocationError
-}
+use crate::shm_allocator::{PointerOffset, ShmAllocator};
 
 /// Creates a [`ResizableSharedMemoryView`] to an existing [`ResizableSharedMemory`] and maps the
 /// [`ResizableSharedMemory`] read-only into the process space.
@@ -218,7 +193,15 @@ pub trait ResizableSharedMemoryView<Allocator: ShmAllocator, Shm: SharedMemory<A
 /// [`ResizableSharedMemory::allocate()`] memory and distribute the memory to all
 /// [`ResizableSharedMemoryView`]s.
 pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>:
-    Sized + NamedConcept + NamedConceptMgmt + Debug + Send + Abandonable
+    Sized
+    + NamedConcept
+    + NamedConceptMgmt
+    + Debug
+    + Send
+    + Abandonable
+    + BaseAllocator<ShmPointer>
+    + Dealloc<ShmPointer>
+    + ReallocGrow<ShmPointer>
 {
     /// Type alias to the [`ResizableSharedMemoryViewBuilder`] to open a
     /// [`ResizableSharedMemoryView`] to an existing [`ResizableSharedMemory`].
@@ -238,38 +221,6 @@ pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Alloc
 
     /// Returns the number of active [`SharedMemory`] segments.
     fn number_of_active_segments(&self) -> usize;
-
-    /// Allocates a new piece of [`SharedMemory`] if the provided [`Layout`] exceeds the current
-    /// supported [`Layout`], the memory would be out-of-memory or the number of chunks exceeds the
-    /// current supported amount of chunks, a new [`SharedMemory`] segment will be created. If this
-    /// fails an [`SharedMemoryCreateError`] will be returned.
-    fn allocate(
-        &self,
-        layout: core::alloc::Layout,
-    ) -> Result<ShmPointer, ResizableShmAllocationError>;
-
-    /// Grows allocated memory to a new increased size.
-    ///
-    /// # Safety
-    ///
-    ///  * the `old_pointer` must be acquired with [`SharedMemory::allocate()`]
-    ///  * the layout must be identical to the one used in [`ResizableSharedMemory::allocate()`]
-    unsafe fn grow(
-        &self,
-        old_pointer: ShmPointer,
-        old_layout: Layout,
-        new_layout: Layout,
-        placement: ContentPlacement,
-    ) -> Result<ShmPointer, ResizableShmGrowError>;
-
-    /// Release previously allocated memory
-    ///
-    /// # Safety
-    ///
-    ///  * the offset must be acquired with [`SharedMemory::allocate()`] - extracted from the
-    ///    [`ShmPointer`]
-    ///  * the layout must be identical to the one used in [`ResizableSharedMemory::allocate()`]
-    unsafe fn deallocate(&self, ptr: ShmPointer, layout: core::alloc::Layout);
 }
 
 pub trait ResizableSharedMemoryForPoolAllocator<Shm: SharedMemory<PoolAllocator>>:

@@ -35,8 +35,147 @@ impl BumpAllocator {
     }
 }
 
+pub struct InitializedBumpAllocator<'shm_allocator>(&'shm_allocator BumpAllocator);
+
+impl<'shm_allocator> BaseAllocator<PointerOffset> for InitializedBumpAllocator<'shm_allocator> {
+    fn allocate(&self, layout: Layout) -> Result<PointerOffset, AllocationError> {
+        let msg = "Unable to allocate memory";
+        if layout.align() > self.0.max_alignment() {
+            fail!(from self.0, with AllocationError::AlignmentFailure,
+                    "{} since an alignment of {} exceeds the maximum supported alignment of {}.",
+                    msg, layout.align(), self.0.max_alignment());
+        }
+
+        let chunk = fail!(from self.0, when self.0.allocator.allocate(layout),
+                                            "{}.", msg);
+        Ok(PointerOffset::new(
+            (chunk.as_ptr() as *const u8) as usize - self.0.base_address,
+        ))
+    }
+}
+
+impl<'shm_allocator> Dealloc<PointerOffset> for InitializedBumpAllocator<'shm_allocator> {
+    unsafe fn deallocate(&self, _ptr: PointerOffset, _layout: Layout) {
+        todo!()
+    }
+}
+
+impl<'shm_allocator> ReallocGrow<PointerOffset> for InitializedBumpAllocator<'shm_allocator> {
+    unsafe fn grow(
+        &self,
+        offset: PointerOffset,
+        old_layout: Layout,
+        new_layout: Layout,
+        content_placement: ContentPlacement,
+    ) -> Result<PointerOffset, AllocationGrowError> {
+        let msg = "Unable to grow memory";
+        if new_layout.size() < old_layout.size() {
+            fail!(from self.0, with AllocationGrowError::GrowWouldShrink,
+                        "{} since new layout has a smaller size of {} than the old layout with {}.",
+                        msg, new_layout.size(), old_layout.size());
+        }
+
+        if new_layout.align() > old_layout.align() {
+            fail!(from self.0, with AllocationGrowError::AlignmentFailure,
+                        "{} since new layout alignment increased which is not supported - from {} to {}.",
+                        msg, old_layout.align(), new_layout.align());
+        }
+
+        if new_layout.size() == old_layout.size() {
+            return Ok(offset);
+        }
+
+        // this chunk is located at the end of the managed memory range and we need to allocate just the size
+        // diff
+        if old_layout.size() + offset.offset() == self.0.allocator.used_space() {
+            let additional_size = new_layout.size() - old_layout.size();
+            match self
+                .0
+                .allocator
+                .allocate(unsafe { Layout::from_size_align_unchecked(additional_size, 1) })
+            {
+                Ok(_) => (),
+                Err(AllocationError::OutOfMemory) | Err(AllocationError::SizeTooLarge) => {
+                    fail!(from self.0,
+                                with AllocationGrowError::OutOfMemory,
+                                "{} since the allocator is out-of-memory.", msg);
+                }
+                Err(e) => {
+                    fatal_panic!(from self.0,
+                                "This should never happen! Failed to allocate memory to grow the memory chunk. [{e:?}]");
+                }
+            }
+
+            if content_placement == ContentPlacement::Back {
+                let src = self.0.allocator.start_address() as usize + offset.offset();
+                let dst = src + (new_layout.size() - old_layout.size());
+                unsafe { core::ptr::copy(src as *const u8, dst as *mut u8, old_layout.size()) };
+            }
+
+            Ok(offset)
+        } else {
+            match self.allocate(new_layout) {
+                Ok(new_offset) => {
+                    let src = self.0.allocator.start_address() as usize + offset.offset();
+                    match content_placement {
+                        ContentPlacement::Front => {
+                            let dst =
+                                self.0.allocator.start_address() as usize + new_offset.offset();
+                            unsafe {
+                                core::ptr::copy_nonoverlapping(
+                                    src as *const u8,
+                                    dst as *mut u8,
+                                    old_layout.size(),
+                                )
+                            };
+
+                            Ok(new_offset)
+                        }
+                        ContentPlacement::Back => {
+                            let dst = self.0.allocator.start_address() as usize
+                                + new_offset.offset()
+                                + new_layout.size()
+                                - old_layout.size();
+                            unsafe {
+                                core::ptr::copy_nonoverlapping(
+                                    src as *const u8,
+                                    dst as *mut u8,
+                                    old_layout.size(),
+                                )
+                            };
+
+                            Ok(new_offset)
+                        }
+                    }
+                }
+                Err(AllocationError::OutOfMemory) | Err(AllocationError::SizeTooLarge) => {
+                    fail!(from self.0,
+                                with AllocationGrowError::OutOfMemory,
+                                "{} since the allocator is out-of-memory.", msg);
+                }
+                Err(e) => {
+                    fatal_panic!(from self.0,
+                                "This should never happen! Failed to allocate memory to grow the memory chunk. [{e:?}]");
+                }
+            }
+        }
+    }
+}
+
+impl<'shm_allocator> InitializedShmAllocator<'shm_allocator>
+    for InitializedBumpAllocator<'shm_allocator>
+{
+}
+
 impl ShmAllocator for BumpAllocator {
     type Configuration = Config;
+    type Initialized<'shm_allocator> = InitializedBumpAllocator<'shm_allocator>;
+
+    unsafe fn assume_init<'shm_allocator>(
+        &'shm_allocator self,
+    ) -> Self::Initialized<'shm_allocator> {
+        InitializedBumpAllocator(self)
+    }
 
     fn resize_hint(
         &self,
@@ -118,123 +257,5 @@ impl ShmAllocator for BumpAllocator {
 
     fn unique_id() -> u8 {
         1
-    }
-
-    unsafe fn allocate(&self, layout: Layout) -> Result<PointerOffset, ShmAllocationError> {
-        let msg = "Unable to allocate memory";
-        if layout.align() > self.max_alignment() {
-            fail!(from self, with ShmAllocationError::ExceedsMaxSupportedAlignment,
-                "{} since an alignment of {} exceeds the maximum supported alignment of {}.",
-                msg, layout.align(), self.max_alignment());
-        }
-
-        let chunk = fail!(from self, when self.allocator.allocate(layout),
-                                        "{}.", msg);
-        Ok(PointerOffset::new(
-            (chunk.as_ptr() as *const u8) as usize - self.base_address,
-        ))
-    }
-
-    unsafe fn grow(
-        &self,
-        offset: PointerOffset,
-        old_layout: Layout,
-        new_layout: Layout,
-        placement: ContentPlacement,
-    ) -> Result<PointerOffset, ShmAllocatorGrowError> {
-        let msg = "Unable to grow memory";
-        if new_layout.size() < old_layout.size() {
-            fail!(from self, with ShmAllocatorGrowError::AllocationGrowError(AllocationGrowError::GrowWouldShrink),
-                "{} since new layout has a smaller size of {} than the old layout with {}.",
-                msg, new_layout.size(), old_layout.size());
-        }
-
-        if new_layout.align() > old_layout.align() {
-            fail!(from self, with ShmAllocatorGrowError::AllocationGrowError(AllocationGrowError::AlignmentFailure),
-                "{} since new layout alignment increased which is not supported - from {} to {}.",
-                msg, old_layout.align(), new_layout.align());
-        }
-
-        if new_layout.size() == old_layout.size() {
-            return Ok(offset);
-        }
-
-        // this chunk is located at the end of the managed memory range and we need to allocate just the size
-        // diff
-        if old_layout.size() + offset.offset() == self.allocator.used_space() {
-            let additional_size = new_layout.size() - old_layout.size();
-            match self
-                .allocator
-                .allocate(unsafe { Layout::from_size_align_unchecked(additional_size, 1) })
-            {
-                Ok(_) => (),
-                Err(AllocationError::OutOfMemory) | Err(AllocationError::SizeTooLarge) => {
-                    fail!(from self,
-                        with ShmAllocatorGrowError::AllocationGrowError(AllocationGrowError::OutOfMemory),
-                        "{} since the allocator is out-of-memory.", msg);
-                }
-                Err(e) => {
-                    fatal_panic!(from self,
-                        "This should never happen! Failed to allocate memory to grow the memory chunk. [{e:?}]");
-                }
-            }
-
-            if placement == ContentPlacement::Back {
-                let src = self.allocator.start_address() as usize + offset.offset();
-                let dst = src + (new_layout.size() - old_layout.size());
-                unsafe { core::ptr::copy(src as *const u8, dst as *mut u8, old_layout.size()) };
-            }
-
-            Ok(offset)
-        } else {
-            match unsafe { self.allocate(new_layout) } {
-                Ok(new_offset) => {
-                    let src = self.allocator.start_address() as usize + offset.offset();
-                    match placement {
-                        ContentPlacement::Front => {
-                            let dst = self.allocator.start_address() as usize + new_offset.offset();
-                            unsafe {
-                                core::ptr::copy_nonoverlapping(
-                                    src as *const u8,
-                                    dst as *mut u8,
-                                    old_layout.size(),
-                                )
-                            };
-
-                            Ok(new_offset)
-                        }
-                        ContentPlacement::Back => {
-                            let dst = self.allocator.start_address() as usize
-                                + new_offset.offset()
-                                + new_layout.size()
-                                - old_layout.size();
-                            unsafe {
-                                core::ptr::copy_nonoverlapping(
-                                    src as *const u8,
-                                    dst as *mut u8,
-                                    old_layout.size(),
-                                )
-                            };
-
-                            Ok(new_offset)
-                        }
-                    }
-                }
-                Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory))
-                | Err(ShmAllocationError::AllocationError(AllocationError::SizeTooLarge)) => {
-                    fail!(from self,
-                        with ShmAllocatorGrowError::AllocationGrowError(AllocationGrowError::OutOfMemory),
-                        "{} since the allocator is out-of-memory.", msg);
-                }
-                Err(e) => {
-                    fatal_panic!(from self,
-                        "This should never happen! Failed to allocate memory to grow the memory chunk. [{e:?}]");
-                }
-            }
-        }
-    }
-
-    unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
-        todo!()
     }
 }
