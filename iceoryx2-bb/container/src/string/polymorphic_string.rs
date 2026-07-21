@@ -30,11 +30,11 @@
 //! #     }
 //! # }
 //! #
-//! # impl BaseAllocator for SomeAllocator {
+//! # impl BaseAllocator<NonNull<u8>> for SomeAllocator {
 //! #     fn allocate(
 //! #         &self,
 //! #         layout: core::alloc::Layout,
-//! #     ) -> Result<NonNull<[u8]>, AllocationError> {
+//! #     ) -> Result<NonNull<u8>, AllocationError> {
 //! #         todo!()
 //! #     }
 //! #

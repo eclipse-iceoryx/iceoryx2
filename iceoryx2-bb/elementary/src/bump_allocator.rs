@@ -36,10 +36,7 @@
 //! let mut memory = allocator.allocate(layout).unwrap();
 //!
 //! unsafe {
-//!     allocator.deallocate(
-//!         NonNull::new(memory.as_mut().as_mut_ptr().cast()).unwrap(),
-//!         layout,
-//!     )
+//!     allocator.deallocate(memory, layout)
 //! };
 //! ```
 

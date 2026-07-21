@@ -34,18 +34,19 @@
 //!                           .expect("failed to allocate");
 //!
 //! let mut grown_memory = unsafe { allocator.grow_zeroed(
-//!                             NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+//!                             memory,
 //!                             Layout::from_size_align_unchecked(48, 4),
-//!                             Layout::from_size_align_unchecked(64, 4)
+//!                             Layout::from_size_align_unchecked(64, 4),
+//!                             ContentPlacement::Front
 //!                         ).expect("failed to grow memory")};
 //!
 //! let mut shrink_memory = unsafe { allocator.shrink(
-//!                             NonNull::new(grown_memory.as_mut().as_mut_ptr()).unwrap(),
+//!                             grown_memory,
 //!                             Layout::from_size_align_unchecked(64, 4),
 //!                             Layout::from_size_align_unchecked(32, 4)
 //!                         ).expect("failed to shrink memory")};
 //!
-//! unsafe{ allocator.deallocate(NonNull::new(shrink_memory.as_mut().as_mut_ptr()).unwrap(),
+//! unsafe{ allocator.deallocate(shrink_memory,
 //!                              Layout::from_size_align_unchecked(32, 4))};
 //! ```
 

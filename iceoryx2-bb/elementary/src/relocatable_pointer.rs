@@ -18,7 +18,7 @@
 //! # Example
 //!
 //! ```
-//! use iceoryx2_bb_elementary::relocatable_ptr::*;
+//! use iceoryx2_bb_elementary::relocatable_pointer::*;
 //! use iceoryx2_bb_elementary::math::align_to;
 //!
 //! #[repr(C)]

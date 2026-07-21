@@ -29,19 +29,20 @@
 //!
 //! // will always return the same pointer but shrink the underlying memory
 //! let mut shrink_memory = unsafe { allocator.shrink(
-//!                             NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+//!                             memory,
 //!                             Layout::from_size_align_unchecked(64, 4),
 //!                             Layout::from_size_align_unchecked(32, 4)
 //!                         ).expect("failed to shrink memory")};
 //!
 //! // will always return the same pointer but grow the underlying memory
 //! let mut grown_memory = unsafe { allocator.grow_zeroed(
-//!                             NonNull::new(shrink_memory.as_mut().as_mut_ptr()).unwrap(),
+//!                             shrink_memory,
 //!                             Layout::from_size_align_unchecked(48, 4),
-//!                             Layout::from_size_align_unchecked(64, 4)
+//!                             Layout::from_size_align_unchecked(64, 4),
+//!                             ContentPlacement::Front
 //!                         ).expect("failed to grow memory")};
 //!
-//! unsafe{ allocator.deallocate(NonNull::new(grown_memory.as_mut().as_mut_ptr()).unwrap(),
+//! unsafe{ allocator.deallocate(grown_memory,
 //!                              Layout::from_size_align_unchecked(32, 4))};
 //! ```
 

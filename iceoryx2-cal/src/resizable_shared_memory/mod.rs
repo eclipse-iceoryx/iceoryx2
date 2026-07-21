@@ -35,6 +35,7 @@
 //! use iceoryx2_cal::shm_allocator::ShmAllocator;
 //! use iceoryx2_cal::shared_memory::SharedMemory;
 //! use iceoryx2_cal::named_concept::*;
+//! use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 //! use core::alloc::Layout;
 //! use core::time::Duration;
 //!
@@ -66,7 +67,7 @@
 //!     // following the provided allocation strategy
 //!     let another_chunk = memory.allocate(Layout::new::<u64>()).unwrap();
 //!     // release allocated chunk
-//!     unsafe { memory.deallocate(another_chunk.offset, Layout::new::<u64>()) };
+//!     unsafe { memory.deallocate(another_chunk, Layout::new::<u64>()) };
 //!
 //!
 //!     let view = Memory::ViewBuilder::new(name)
