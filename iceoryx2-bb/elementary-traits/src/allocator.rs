@@ -70,6 +70,8 @@ impl core::fmt::Display for AllocationShrinkError {
 
 impl core::error::Error for AllocationShrinkError {}
 
+pub trait AllocatorToken {}
+
 /// Defines the position of the existing content when the allocator grows the memory.
 #[derive(Clone, Copy, Eq, PartialEq, Debug, Default)]
 pub enum ContentPlacement {
@@ -79,7 +81,7 @@ pub enum ContentPlacement {
 }
 
 /// The most minimalistic requirement for an allocator
-pub trait BaseAllocator<P: Pointer<u8>> {
+pub trait BaseAllocator<P: AllocatorToken> {
     /// Allocates a memory chunk with the properties provided in layout and either
     /// returns a slice or an allocation error on failure.
     fn allocate(&self, layout: Layout) -> Result<P, AllocationError>;
@@ -87,7 +89,7 @@ pub trait BaseAllocator<P: Pointer<u8>> {
 
 /// An allocator that allows also deallocation. A bump allocator for instance does
 /// not fall into this category.
-pub trait Dealloc<P: Pointer<u8>> {
+pub trait Dealloc<P: AllocatorToken> {
     /// Releases an previously allocated chunk of memory.
     ///
     /// # Safety
@@ -101,7 +103,7 @@ pub trait Dealloc<P: Pointer<u8>> {
 }
 
 /// Allocator that allows growing a previously allocated memory chunk.
-pub trait ReallocGrow<P: Pointer<u8>> {
+pub trait ReallocGrow<P: AllocatorToken> {
     /// Increases the size of an previously allocated chunk of memory or allocates a new chunk
     /// with the provided properties.
     /// It returns a failure when the size decreases.
@@ -123,7 +125,7 @@ pub trait ReallocGrow<P: Pointer<u8>> {
 }
 
 /// Allocator that allows shrinking a previously allocated memory chunk.
-pub trait ReallocShrink<P: Pointer<u8>> {
+pub trait ReallocShrink<P: AllocatorToken> {
     /// Decreases the size of an previously allocated chunk of memory. If the size increases it
     /// fails.
     ///
@@ -142,7 +144,9 @@ pub trait ReallocShrink<P: Pointer<u8>> {
     ) -> Result<P, AllocationShrinkError>;
 }
 
-pub trait ZeroableAllocator<P: Pointer<u8>>: ReallocGrow<P> + BaseAllocator<P> {
+pub trait ZeroableAllocator<P: AllocatorToken + Pointer<u8>>:
+    ReallocGrow<P> + BaseAllocator<P>
+{
     /// Allocates a memory chunk with the properties provided in layout and zeroes the memory
     /// On success it returns a slice or an allocation error on failure.
     fn allocate_zeroed(&self, layout: core::alloc::Layout) -> Result<P, AllocationError> {
@@ -195,12 +199,12 @@ pub trait ZeroableAllocator<P: Pointer<u8>>: ReallocGrow<P> + BaseAllocator<P> {
 }
 
 /// Allocator with all features.
-pub trait Allocator<P: Pointer<u8>>:
+pub trait Allocator<P: AllocatorToken>:
     BaseAllocator<P> + ReallocGrow<P> + ReallocShrink<P> + Dealloc<P>
 {
 }
 
-impl<P: Pointer<u8>, A: BaseAllocator<P> + ReallocGrow<P> + ReallocShrink<P> + Dealloc<P>>
+impl<P: AllocatorToken, A: BaseAllocator<P> + ReallocGrow<P> + ReallocShrink<P> + Dealloc<P>>
     Allocator<P> for A
 {
 }

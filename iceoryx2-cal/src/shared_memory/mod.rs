@@ -69,6 +69,7 @@ use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConcep
 use core::alloc::Layout;
 use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
 use iceoryx2_bb_elementary_traits::{pointer::Pointer, testing::abandonable::Abandonable};
+use iceoryx2_bb_memory::pool_allocator::AllocatorToken;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::*;
 use pool_allocator::PoolAllocator;
@@ -119,6 +120,8 @@ pub struct ShmPointer {
     pub offset: PointerOffset,
     pub data_ptr: *mut u8,
 }
+
+impl AllocatorToken for ShmPointer {}
 
 impl Pointer<u8> for ShmPointer {
     fn as_mut_ptr(&mut self) -> *mut u8 {

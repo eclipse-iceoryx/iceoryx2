@@ -15,7 +15,9 @@ extern crate alloc;
 use std::alloc::Layout;
 
 use iceoryx2_bb_elementary_traits::pointer::Pointer;
-use iceoryx2_bb_flatbuffers::*;
+use iceoryx2_bb_flatbuffers::{
+    AllocationStrategy, Allocator, ResizableMemoryBuilder, ResizableMemoryError,
+};
 use iceoryx2_bb_memory::{heap_allocator::*, pool_allocator::AllocationGrowError};
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
