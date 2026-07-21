@@ -733,6 +733,7 @@ impl<
 impl<Service: service::Service, Payload: Debug, UserHeader: Default + Debug + ZeroCopySend>
     Publisher<Service, Flatbuffer<Payload>, UserHeader>
 {
+    /// Acquires a [`SampleMutUninit`] with an integrated flatbuffer builder.
     pub fn loan_flatbuffer(
         &self,
     ) -> Result<SampleMutUninit<Service, Flatbuffer<Payload>, UserHeader>, LoanError> {
