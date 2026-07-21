@@ -628,10 +628,7 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn send_copy(&self, value: Payload) -> Result<usize, SendError>
-    where
-        Payload: ZeroCopySend,
-    {
+    pub fn send_copy(&self, value: Payload) -> Result<usize, SendError> {
         let msg = "Unable to send copy of payload";
         let sample = fail!(from self, when self.loan_uninit(),
                                     "{} since the loan of a sample failed.", msg);
@@ -721,7 +718,7 @@ impl<
     /// ```
     pub fn loan(&self) -> Result<SampleMut<Service, Payload, UserHeader>, LoanError>
     where
-        Payload: ZeroCopySend + Default,
+        Payload: Default,
     {
         Ok(self.loan_uninit()?.write_payload(Payload::default()))
     }

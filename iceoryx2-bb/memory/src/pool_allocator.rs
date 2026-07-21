@@ -179,7 +179,7 @@ impl PoolAllocator {
         (ptr.as_ptr() as usize + size - adjusted_start) / bucket_size
     }
 
-    fn verify_ptr_is_managaed_by_allocator(&self, ptr: NonNull<u8>) {
+    fn verify_ptr_is_managed_by_allocator(&self, ptr: NonNull<u8>) {
         let position = ptr.as_ptr() as usize;
         debug_assert!(
             !(position < (self.start.as_ptr() as usize)
@@ -190,7 +190,7 @@ impl PoolAllocator {
     }
 
     fn get_index(&self, ptr: NonNull<u8>) -> u32 {
-        self.verify_ptr_is_managaed_by_allocator(ptr);
+        self.verify_ptr_is_managed_by_allocator(ptr);
         let position = ptr.as_ptr() as usize;
 
         ((position - self.start.as_ptr() as usize) / self.bucket_size) as u32
@@ -247,7 +247,7 @@ impl ReallocGrow<NonNull<u8>> for PoolAllocator {
         self.verify_init("grow");
 
         let msg = "Unable to grow memory chunk";
-        self.verify_ptr_is_managaed_by_allocator(ptr);
+        self.verify_ptr_is_managed_by_allocator(ptr);
 
         if old_layout.size() >= new_layout.size() {
             fail!(from self, with AllocationGrowError::GrowWouldShrink,
@@ -289,7 +289,7 @@ impl ReallocShrink<NonNull<u8>> for PoolAllocator {
         self.verify_init("shrink");
 
         let msg = "Unable to shrink memory chunk";
-        self.verify_ptr_is_managaed_by_allocator(ptr);
+        self.verify_ptr_is_managed_by_allocator(ptr);
 
         if old_layout.size() <= new_layout.size() {
             fail!(from self, with AllocationShrinkError::ShrinkWouldGrow,

@@ -219,7 +219,7 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
     ///
     /// # Safety
     ///
-    ///  * the offset must be acquired with [`SharedMemory::allocate()`] - extracted from the
+    ///  * the pointer must be acquired with [`SharedMemory::allocate()`] - extracted from the
     ///    [`ShmPointer`]
     ///  * the layout must be identical to the one used in [`SharedMemory::allocate()`]
     unsafe fn deallocate(&self, ptr: ShmPointer, layout: Layout);

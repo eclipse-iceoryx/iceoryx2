@@ -86,7 +86,7 @@ pub trait BaseAllocator<P: Pointer<u8>> {
 
     /// Allocates a memory chunk with the properties provided in layout and zeroes the memory
     /// On success it returns a slice or an allocation error on failure.
-    fn allocate_zeroed(&self, layout: core::alloc::Layout) -> Result<P, AllocationError> {
+    fn allocate_zeroed(&self, layout: Layout) -> Result<P, AllocationError> {
         let mut ptr = self.allocate(layout)?;
         let raw_ptr = ptr.as_mut_ptr();
         unsafe { core::ptr::write_bytes(raw_ptr, 0, layout.size()) };

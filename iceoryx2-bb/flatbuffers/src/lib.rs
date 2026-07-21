@@ -13,6 +13,7 @@
 //! An iceoryx2 support library that helps to find schema files, to deduce type names and more
 
 #![no_std]
+/// Memory that can be resized and that has a flatbuffer allocator interface.
 pub mod resizable_memory;
 /// Schema file finder.
 pub mod schema_finder;
