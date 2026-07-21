@@ -75,12 +75,13 @@ use alloc::format;
 use core::{
     alloc::Layout,
     ops::{Deref, DerefMut},
+    ptr::NonNull,
 };
 use core::{fmt::Debug, mem::MaybeUninit};
 
 use iceoryx2_bb_elementary::{math::unaligned_mem_size, relocatable_pointer::*};
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
-use iceoryx2_bb_elementary_traits::{pointer_family::NonNullFamily, zero_copy_send::ZeroCopySend};
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic};
 
 pub use crate::vector::Vector;
@@ -189,7 +190,7 @@ impl<T> RelocatableContainer for RelocatableVec<T> {
     }
 
     unsafe fn init<
-        Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNullFamily>,
+        Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNull<u8>>,
     >(
         &mut self,
         allocator: &Allocator,

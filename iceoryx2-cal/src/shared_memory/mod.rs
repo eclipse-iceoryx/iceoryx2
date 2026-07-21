@@ -67,7 +67,7 @@ use core::{fmt::Debug, time::Duration};
 pub use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 use core::alloc::Layout;
-use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_bb_elementary_traits::{pointer::Pointer, testing::abandonable::Abandonable};
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::*;
 use pool_allocator::PoolAllocator;
@@ -113,10 +113,24 @@ impl core::error::Error for SharedMemoryOpenError {}
 /// Represents a pointer pointing to some [`SharedMemory`]. Consists of the actual data pointer and
 /// an [`PointerOffset`] which can be used in combination with a
 /// [`crate::zero_copy_connection::ZeroCopyConnection`]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct ShmPointer {
     pub offset: PointerOffset,
     pub data_ptr: *mut u8,
+}
+
+impl Pointer<u8> for ShmPointer {
+    fn as_mut_ptr(&mut self) -> *mut u8 {
+        todo!()
+    }
+
+    fn as_ptr(&self) -> *const u8 {
+        todo!()
+    }
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
 }
 
 #[doc(hidden)]

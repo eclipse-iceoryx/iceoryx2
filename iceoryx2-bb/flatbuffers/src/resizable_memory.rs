@@ -20,20 +20,19 @@ use flatbuffers::Allocator;
 use iceoryx2_bb_elementary::{
     allocation_strategy::AllocationStrategy, relocatable_pointer::Pointer,
 };
-use iceoryx2_bb_elementary_traits::{
-    allocator::{AllocationGrowError, ContentPlacement, ReallocGrow},
-    pointer_family::PointerFamily,
+use iceoryx2_bb_elementary_traits::allocator::{
+    AllocationGrowError, ContentPlacement, ReallocGrow,
 };
 use iceoryx2_log::fail;
 
-pub struct ResizableMemory<P: PointerFamily, A: ReallocGrow<P>> {
-    ptr: P::Pointer<u8>,
+pub struct ResizableMemory<P: Pointer<u8>, A: ReallocGrow<P>> {
+    ptr: P,
     strategy: AllocationStrategy,
     allocator: A,
     current_layout: Layout,
 }
 
-impl<P: PointerFamily, A: ReallocGrow<P>> Debug for ResizableMemory<P, A> {
+impl<P: Pointer<u8>, A: ReallocGrow<P>> Debug for ResizableMemory<P, A> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
@@ -47,7 +46,7 @@ impl<P: PointerFamily, A: ReallocGrow<P>> Debug for ResizableMemory<P, A> {
     }
 }
 
-impl<P: PointerFamily, A: ReallocGrow<P>> Deref for ResizableMemory<P, A> {
+impl<P: Pointer<u8>, A: ReallocGrow<P>> Deref for ResizableMemory<P, A> {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
@@ -55,13 +54,13 @@ impl<P: PointerFamily, A: ReallocGrow<P>> Deref for ResizableMemory<P, A> {
     }
 }
 
-impl<P: PointerFamily, A: ReallocGrow<P>> DerefMut for ResizableMemory<P, A> {
+impl<P: Pointer<u8>, A: ReallocGrow<P>> DerefMut for ResizableMemory<P, A> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { core::slice::from_raw_parts_mut(self.ptr.as_mut_ptr(), self.len()) }
     }
 }
 
-unsafe impl<P: PointerFamily, A: ReallocGrow<P>> Allocator for ResizableMemory<P, A> {
+unsafe impl<P: Pointer<u8>, A: ReallocGrow<P>> Allocator for ResizableMemory<P, A> {
     type Error = AllocationGrowError;
 
     fn grow_downwards(&mut self) -> Result<(), Self::Error> {

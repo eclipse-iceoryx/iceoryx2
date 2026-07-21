@@ -16,7 +16,6 @@
 pub use core::{alloc::Layout, ptr::NonNull};
 
 use crate::pointer::Pointer;
-use crate::pointer_family::PointerFamily;
 
 /// Failures caused by [`BaseAllocator::allocate()`] or [`BaseAllocator::allocate_zeroed()`].
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -80,17 +79,14 @@ pub enum ContentPlacement {
 }
 
 /// The most minimalistic requirement for an allocator
-pub trait BaseAllocator<P: PointerFamily> {
+pub trait BaseAllocator<P: Pointer<u8>> {
     /// Allocates a memory chunk with the properties provided in layout and either
     /// returns a slice or an allocation error on failure.
-    fn allocate(&self, layout: Layout) -> Result<P::Pointer<u8>, AllocationError>;
+    fn allocate(&self, layout: Layout) -> Result<P, AllocationError>;
 
     /// Allocates a memory chunk with the properties provided in layout and zeroes the memory
     /// On success it returns a slice or an allocation error on failure.
-    fn allocate_zeroed(
-        &self,
-        layout: core::alloc::Layout,
-    ) -> Result<P::Pointer<u8>, AllocationError> {
+    fn allocate_zeroed(&self, layout: core::alloc::Layout) -> Result<P, AllocationError> {
         let mut ptr = self.allocate(layout)?;
         let raw_ptr = ptr.as_mut_ptr();
         unsafe { core::ptr::write_bytes(raw_ptr, 0, layout.size()) };
@@ -106,11 +102,11 @@ pub trait BaseAllocator<P: PointerFamily> {
     ///  * `layout` must have the same value as in the allocation or, when the memory was
     ///    resized, the same value as it was resized to
     ///
-    unsafe fn deallocate(&self, ptr: P::Pointer<u8>, layout: Layout);
+    unsafe fn deallocate(&self, ptr: P, layout: Layout);
 }
 
 /// Allocator that allows growing a previously allocated memory chunk.
-pub trait ReallocGrow<P: PointerFamily> {
+pub trait ReallocGrow<P: Pointer<u8>> {
     /// Increases the size of an previously allocated chunk of memory or allocates a new chunk
     /// with the provided properties.
     /// It returns a failure when the size decreases.
@@ -124,11 +120,11 @@ pub trait ReallocGrow<P: PointerFamily> {
     ///
     unsafe fn grow(
         &self,
-        ptr: P::Pointer<u8>,
+        ptr: P,
         old_layout: Layout,
         new_layout: Layout,
         content_placement: ContentPlacement,
-    ) -> Result<P::Pointer<u8>, AllocationGrowError>;
+    ) -> Result<P, AllocationGrowError>;
 
     /// Increases the size of an previously allocated chunk of memory or allocates a new chunk
     /// with the provided properties. If the chunk can be resized only the difference in size
@@ -144,11 +140,11 @@ pub trait ReallocGrow<P: PointerFamily> {
     ///
     unsafe fn grow_zeroed(
         &self,
-        ptr: P::Pointer<u8>,
+        ptr: P,
         old_layout: Layout,
         new_layout: Layout,
         content_placement: ContentPlacement,
-    ) -> Result<P::Pointer<u8>, AllocationGrowError> {
+    ) -> Result<P, AllocationGrowError> {
         let mut ptr = unsafe { self.grow(ptr, old_layout, new_layout, content_placement)? };
         let raw_ptr = ptr.as_mut_ptr();
 
@@ -173,7 +169,7 @@ pub trait ReallocGrow<P: PointerFamily> {
 }
 
 /// Allocator that allows shrinking a previously allocated memory chunk.
-pub trait ReallocShrink<P: PointerFamily> {
+pub trait ReallocShrink<P: Pointer<u8>> {
     /// Decreases the size of an previously allocated chunk of memory. If the size increases it
     /// fails.
     ///
@@ -186,16 +182,13 @@ pub trait ReallocShrink<P: PointerFamily> {
     ///
     unsafe fn shrink(
         &self,
-        ptr: P::Pointer<u8>,
+        ptr: P,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<P::Pointer<u8>, AllocationShrinkError>;
+    ) -> Result<P, AllocationShrinkError>;
 }
 
 /// Allocator with all features.
-pub trait Allocator<P: PointerFamily>:
-    BaseAllocator<P> + ReallocGrow<P> + ReallocShrink<P>
-{
-}
+pub trait Allocator<P: Pointer<u8>>: BaseAllocator<P> + ReallocGrow<P> + ReallocShrink<P> {}
 
-impl<P: PointerFamily, A: BaseAllocator<P> + ReallocGrow<P> + ReallocShrink<P>> Allocator<P> for A {}
+impl<P: Pointer<u8>, A: BaseAllocator<P> + ReallocGrow<P> + ReallocShrink<P>> Allocator<P> for A {}

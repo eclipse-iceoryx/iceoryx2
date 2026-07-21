@@ -94,6 +94,7 @@
 
 use core::alloc::Layout;
 use core::fmt::Debug;
+use core::ptr::NonNull;
 
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::atomic::fence;
@@ -104,7 +105,6 @@ use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_pointer::RelocatablePointer;
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary_traits::pointer::Pointer;
-use iceoryx2_bb_elementary_traits::pointer_family::NonNullFamily;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic};
@@ -268,7 +268,7 @@ impl RelocatableContainer for UniqueIndexSet {
         }
     }
 
-    unsafe fn init<T: BaseAllocator<NonNullFamily>>(
+    unsafe fn init<T: BaseAllocator<NonNull<u8>>>(
         &mut self,
         allocator: &T,
     ) -> Result<(), AllocationError> {

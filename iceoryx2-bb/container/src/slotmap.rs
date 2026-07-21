@@ -56,7 +56,7 @@ use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::owning_pointer::GenericOwningPointer;
 use iceoryx2_bb_elementary::relocatable_pointer::GenericRelocatablePointer;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
-use iceoryx2_bb_elementary_traits::pointer_family::{NonNullFamily, PointerFamily};
+use iceoryx2_bb_elementary_traits::pointer_family::PointerFamily;
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -369,7 +369,7 @@ impl<T> RelocatableContainer for RelocatableSlotMap<T> {
     }
 
     unsafe fn init<
-        Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNullFamily>,
+        Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNull<u8>>,
     >(
         &mut self,
         allocator: &Allocator,

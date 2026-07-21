@@ -58,7 +58,6 @@ use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary::sync_pointer::SyncPointer;
 pub use iceoryx2_bb_elementary_traits::allocator::*;
 use iceoryx2_bb_elementary_traits::pointer::Pointer;
-use iceoryx2_bb_elementary_traits::pointer_family::NonNullFamily;
 use iceoryx2_bb_elementary_traits::relocatable_container::*;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
@@ -148,7 +147,7 @@ impl PoolAllocator {
     ///
     ///  * must be called exactly once before any other method can be called
     ///
-    pub unsafe fn init<Allocator: BaseAllocator<NonNullFamily>>(
+    pub unsafe fn init<Allocator: BaseAllocator<NonNull<u8>>>(
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), AllocationError> {
@@ -197,7 +196,7 @@ impl PoolAllocator {
     }
 }
 
-impl BaseAllocator<NonNullFamily> for PoolAllocator {
+impl BaseAllocator<NonNull<u8>> for PoolAllocator {
     fn allocate(&self, layout: Layout) -> Result<NonNull<u8>, AllocationError> {
         self.verify_init("allocate");
 
@@ -235,7 +234,7 @@ impl BaseAllocator<NonNullFamily> for PoolAllocator {
     }
 }
 
-impl ReallocGrow<NonNullFamily> for PoolAllocator {
+impl ReallocGrow<NonNull<u8>> for PoolAllocator {
     /// always returns the input ptr on success but with an increased size
     unsafe fn grow(
         &self,
@@ -279,7 +278,7 @@ impl ReallocGrow<NonNullFamily> for PoolAllocator {
     }
 }
 
-impl ReallocShrink<NonNullFamily> for PoolAllocator {
+impl ReallocShrink<NonNull<u8>> for PoolAllocator {
     unsafe fn shrink(
         &self,
         ptr: NonNull<u8>,
@@ -385,7 +384,7 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> FixedSizePoolAllocator<MAX_NUMBER_OF_BU
     }
 }
 
-impl<const MAX_NUMBER_OF_BUCKETS: usize> BaseAllocator<NonNullFamily>
+impl<const MAX_NUMBER_OF_BUCKETS: usize> BaseAllocator<NonNull<u8>>
     for FixedSizePoolAllocator<MAX_NUMBER_OF_BUCKETS>
 {
     fn allocate(&self, layout: Layout) -> Result<NonNull<u8>, AllocationError> {
@@ -399,7 +398,7 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> BaseAllocator<NonNullFamily>
     }
 }
 
-impl<const MAX_NUMBER_OF_BUCKETS: usize> ReallocGrow<NonNullFamily>
+impl<const MAX_NUMBER_OF_BUCKETS: usize> ReallocGrow<NonNull<u8>>
     for FixedSizePoolAllocator<MAX_NUMBER_OF_BUCKETS>
 {
     /// always returns the input ptr on success but with an increased size
@@ -417,7 +416,7 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> ReallocGrow<NonNullFamily>
     }
 }
 
-impl<const MAX_NUMBER_OF_BUCKETS: usize> ReallocShrink<NonNullFamily>
+impl<const MAX_NUMBER_OF_BUCKETS: usize> ReallocShrink<NonNull<u8>>
     for FixedSizePoolAllocator<MAX_NUMBER_OF_BUCKETS>
 {
     unsafe fn shrink(

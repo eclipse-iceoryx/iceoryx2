@@ -24,7 +24,6 @@ pub mod details {
     use iceoryx2_bb_concurrency::cell::UnsafeCell;
     use iceoryx2_bb_container::vector::relocatable_vec::*;
     use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
-    use iceoryx2_bb_elementary_traits::pointer_family::NonNullFamily;
     use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
     use iceoryx2_bb_lock_free::spsc::{
         index_queue::RelocatableIndexQueue,
@@ -157,7 +156,7 @@ pub mod details {
             RelocatableUsedChunkList::const_memory_size(number_of_samples)
         }
 
-        unsafe fn init<T: BaseAllocator<NonNullFamily>>(
+        unsafe fn init<T: BaseAllocator<NonNull<u8>>>(
             &mut self,
             allocator: &T,
         ) -> Result<(), AllocationError> {

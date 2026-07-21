@@ -16,6 +16,7 @@ use core::{
     marker::PhantomData,
     mem::MaybeUninit,
     ops::{Deref, DerefMut},
+    ptr::NonNull,
 };
 
 use iceoryx2_bb_elementary::{
@@ -23,9 +24,7 @@ use iceoryx2_bb_elementary::{
     relocatable_pointer::GenericRelocatablePointer,
 };
 use iceoryx2_bb_elementary_traits::{
-    pointer::Pointer,
-    pointer_family::{NonNullFamily, PointerFamily},
-    relocatable_container::RelocatableContainer,
+    pointer::Pointer, pointer_family::PointerFamily, relocatable_container::RelocatableContainer,
     zero_copy_send::ZeroCopySend,
 };
 
@@ -91,7 +90,7 @@ impl<T> RelocatableContainer for RelocatableVec<T> {
     }
 
     unsafe fn init<
-        Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNullFamily>,
+        Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNull<u8>>,
     >(
         &mut self,
         allocator: &Allocator,

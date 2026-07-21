@@ -107,7 +107,7 @@ pub type RelocatableCountingBitSet = details::CountingBitSet<RelocatablePointer<
 
 #[doc(hidden)]
 pub mod details {
-    use iceoryx2_bb_elementary_traits::pointer_family::NonNullFamily;
+    use core::ptr::NonNull;
 
     use super::*;
 
@@ -161,7 +161,7 @@ pub mod details {
             }
         }
 
-        unsafe fn init<T: iceoryx2_bb_elementary::bump_allocator::BaseAllocator<NonNullFamily>>(
+        unsafe fn init<T: iceoryx2_bb_elementary::bump_allocator::BaseAllocator<NonNull<u8>>>(
             &mut self,
             allocator: &T,
         ) -> Result<(), iceoryx2_bb_elementary::bump_allocator::AllocationError> {

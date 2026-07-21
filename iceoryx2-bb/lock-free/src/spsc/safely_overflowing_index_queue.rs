@@ -122,9 +122,8 @@ pub type RelocatableSafelyOverflowingIndexQueue =
     details::SafelyOverflowingIndexQueue<RelocatablePointer<UnsafeCell<u64>>>;
 
 pub mod details {
-    use iceoryx2_bb_elementary_traits::{
-        pointer_family::NonNullFamily, zero_copy_send::ZeroCopySend,
-    };
+    use core::ptr::NonNull;
+    use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
     use super::*;
 
@@ -191,9 +190,7 @@ pub mod details {
             }
         }
 
-        unsafe fn init<
-            T: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNullFamily>,
-        >(
+        unsafe fn init<T: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNull<u8>>>(
             &mut self,
             allocator: &T,
         ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {

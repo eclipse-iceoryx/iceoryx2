@@ -14,11 +14,8 @@
 
 use core::{alloc::Layout, ptr::NonNull};
 
-use iceoryx2_bb_elementary_traits::{
-    allocator::{
-        AllocationGrowError, AllocationShrinkError, ContentPlacement, ReallocGrow, ReallocShrink,
-    },
-    pointer_family::NonNullFamily,
+use iceoryx2_bb_elementary_traits::allocator::{
+    AllocationGrowError, AllocationShrinkError, ContentPlacement, ReallocGrow, ReallocShrink,
 };
 use iceoryx2_bb_posix::memory::heap;
 use iceoryx2_log::fail;
@@ -45,7 +42,7 @@ impl HeapAllocator {
     }
 }
 
-impl BaseAllocator<NonNullFamily> for HeapAllocator {
+impl BaseAllocator<NonNull<u8>> for HeapAllocator {
     fn allocate(&self, layout: Layout) -> Result<NonNull<u8>, AllocationError> {
         let mut ptr = fail!(from self, when heap::allocate(layout),
                 "Failed to allocate {} bytes with an alignment of {}.", layout.size(), layout.align());
@@ -59,7 +56,7 @@ impl BaseAllocator<NonNullFamily> for HeapAllocator {
     }
 }
 
-impl ReallocGrow<NonNullFamily> for HeapAllocator {
+impl ReallocGrow<NonNull<u8>> for HeapAllocator {
     unsafe fn grow(
         &self,
         ptr: NonNull<u8>,
@@ -83,7 +80,7 @@ impl ReallocGrow<NonNullFamily> for HeapAllocator {
     }
 }
 
-impl ReallocShrink<NonNullFamily> for HeapAllocator {
+impl ReallocShrink<NonNull<u8>> for HeapAllocator {
     unsafe fn shrink(
         &self,
         ptr: NonNull<u8>,

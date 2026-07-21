@@ -118,6 +118,7 @@
 //! ```
 //!
 use core::marker::PhantomData;
+use core::ptr::NonNull;
 use core::{alloc::Layout, fmt::Debug, mem::MaybeUninit};
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
@@ -127,7 +128,7 @@ use iceoryx2_bb_elementary::relocatable_pointer::{GenericRelocatablePointer, Rel
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary_traits::pointer::Pointer;
-use iceoryx2_bb_elementary_traits::pointer_family::{NonNullFamily, PointerFamily};
+use iceoryx2_bb_elementary_traits::pointer_family::PointerFamily;
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic};
@@ -240,7 +241,7 @@ impl<T> RelocatableContainer for RelocatableQueue<T> {
         }
     }
 
-    unsafe fn init<Allocator: BaseAllocator<NonNullFamily>>(
+    unsafe fn init<Allocator: BaseAllocator<NonNull<u8>>>(
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), AllocationError> {

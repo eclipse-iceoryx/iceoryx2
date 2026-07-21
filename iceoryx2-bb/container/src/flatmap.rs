@@ -37,12 +37,13 @@ use crate::slotmap::FreeListEntry;
 use crate::slotmap::{MetaSlotMap, RelocatableSlotMap};
 use core::fmt::Debug;
 use core::mem::MaybeUninit;
+use core::ptr::NonNull;
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::owning_pointer::GenericOwningPointer;
 use iceoryx2_bb_elementary::relocatable_pointer::GenericRelocatablePointer;
-use iceoryx2_bb_elementary_traits::pointer_family::{NonNullFamily, PointerFamily};
+use iceoryx2_bb_elementary_traits::pointer_family::PointerFamily;
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::{
     placement_default::PlacementDefault, zero_copy_send::ZeroCopySend,
@@ -413,7 +414,7 @@ impl<K: Eq, V: Clone> RelocatableContainer for RelocatableFlatMap<K, V> {
     }
 
     unsafe fn init<
-        Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNullFamily>,
+        Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNull<u8>>,
     >(
         &mut self,
         allocator: &Allocator,
