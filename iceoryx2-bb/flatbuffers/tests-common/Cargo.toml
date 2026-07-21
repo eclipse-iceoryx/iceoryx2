@@ -19,6 +19,7 @@ std = [
   "iceoryx2-bb-container/std",
   "iceoryx2-bb-flatbuffers/std",
   "iceoryx2-bb-loggers/std",
+  "iceoryx2-bb-memory/std",
   "iceoryx2-bb-posix/std",
   "iceoryx2-bb-system-types/std",
   "iceoryx2-bb-testing/std",
@@ -28,8 +29,10 @@ std = [
 
 [dependencies]
 iceoryx2-bb-container = { workspace = true }
+iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-flatbuffers = { workspace = true }
 iceoryx2-bb-loggers = { workspace = true }
+iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }

@@ -16,14 +16,14 @@ use core::{
     ops::{Deref, DerefMut},
 };
 
-use flatbuffers::Allocator;
-use iceoryx2_bb_elementary::{
-    allocation_strategy::AllocationStrategy, enum_gen, relocatable_pointer::Pointer,
-};
+use iceoryx2_bb_elementary::{enum_gen, relocatable_pointer::Pointer};
 use iceoryx2_bb_elementary_traits::allocator::{
     AllocationGrowError, ContentPlacement, ReallocGrow,
 };
 use iceoryx2_log::fail;
+
+pub use flatbuffers::Allocator;
+pub use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 
 enum_gen! {
     ResizableMemoryError
@@ -112,13 +112,20 @@ impl<P: Pointer<u8>, A: ReallocGrow<P>> Deref for ResizableMemory<P, A> {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
-        unsafe { core::slice::from_raw_parts(self.ptr.as_ptr(), self.len()) }
+        unsafe {
+            core::slice::from_raw_parts(self.ptr.as_ptr().add(self.reserved_header_len), self.len())
+        }
     }
 }
 
 impl<P: Pointer<u8>, A: ReallocGrow<P>> DerefMut for ResizableMemory<P, A> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { core::slice::from_raw_parts_mut(self.ptr.as_mut_ptr(), self.len()) }
+        unsafe {
+            core::slice::from_raw_parts_mut(
+                self.ptr.as_mut_ptr().add(self.reserved_header_len),
+                self.len(),
+            )
+        }
     }
 }
 
