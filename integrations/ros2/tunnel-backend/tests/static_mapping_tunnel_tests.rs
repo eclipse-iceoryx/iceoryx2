@@ -21,6 +21,7 @@ use iceoryx2::service::Service as _;
 use iceoryx2::service::local::Service;
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use iceoryx2::testing::generate_isolated_config;
+use iceoryx2_bb_testing::assert_that;
 use iceoryx2_integrations_ros2_tunnel_backend::Config as BackendConfig;
 use iceoryx2_integrations_ros2_tunnel_backend::mapping::static_mapping::{
     Config, Entry, IceoryxSettings, RosSettings,
@@ -156,8 +157,8 @@ fn does_not_map_iceoryx_services_without_an_entry() {
     )
     .expect("chatter topic did not appear");
 
-    assert!(peer.topic_types(&status_topic).is_empty());
-    assert_eq!(tunnel.tunneled_services().len(), 1);
+    assert_that!(peer.topic_types(&status_topic), is_empty);
+    assert_that!(tunnel.tunneled_services(), len 1);
 }
 
 #[test]
@@ -220,11 +221,11 @@ fn maps_ros_topics_onto_iceoryx_services() {
         .publish_subscribe()
         .message_type_details();
 
-    assert_eq!(*message_types.payload.type_name(), payload_type);
-    assert_eq!(message_types.payload.variant(), TypeVariant::Dynamic);
-    assert_eq!(
+    assert_that!(*message_types.payload.type_name(), eq payload_type);
+    assert_that!(message_types.payload.variant(), eq TypeVariant::Dynamic);
+    assert_that!(
         message_types.user_header,
-        TypeDetail::new::<RosHeader>(TypeVariant::FixedSize)
+        eq TypeDetail::new::<RosHeader>(TypeVariant::FixedSize)
     );
 }
 
@@ -297,9 +298,9 @@ fn applies_specified_qos_to_ros_endpoints() {
     let publishers = peer.publisher_qos(&chatter_topic);
     let subscriptions = peer.subscription_qos(&chatter_topic);
     for profile in publishers.iter().chain(subscriptions.iter()) {
-        assert_eq!(profile.reliability, Reliability::BestEffort);
-        assert_eq!(profile.durability, Durability::TransientLocal);
-        assert_eq!(profile.deadline, Some(QOS_DEADLINE));
+        assert_that!(profile.reliability, eq Reliability::BestEffort);
+        assert_that!(profile.durability, eq Durability::TransientLocal);
+        assert_that!(profile.deadline, eq Some(QOS_DEADLINE));
     }
 }
 
@@ -370,14 +371,14 @@ fn applies_specified_settings_to_iceoryx_services() {
         .expect("service exists");
     let static_config = details.static_details.publish_subscribe();
 
-    assert_eq!(static_config.max_subscribers(), MAX_SUBSCRIBERS);
-    assert_eq!(
+    assert_that!(static_config.max_subscribers(), eq MAX_SUBSCRIBERS);
+    assert_that!(
         static_config.subscriber_max_buffer_size(),
-        SUBSCRIBER_MAX_BUFFER_SIZE
+        eq SUBSCRIBER_MAX_BUFFER_SIZE
     );
-    assert!(!static_config.has_safe_overflow());
-    assert_eq!(
+    assert_that!(static_config.has_safe_overflow(), eq false);
+    assert_that!(
         *static_config.message_type_details().payload.type_name(),
-        iox_payload_type
+        eq iox_payload_type
     );
 }

@@ -12,6 +12,7 @@
 
 use iceoryx2::service::local::Service;
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
+use iceoryx2_bb_testing::assert_that;
 use iceoryx2_integrations_ros2_tunnel_backend::{
     Durability, History, PrefixMapping, QosProfile, TopicDescription, TopicName, TypeName,
 };
@@ -63,7 +64,7 @@ fn maps_prefixed_publish_subscribe_services() {
     let description =
         service_description_with_default_settings("ros2://topics/chatter", "std_msgs/msg/String");
 
-    assert!(sut.remote(&description).is_some());
+    assert_that!(sut.remote(&description), is_some);
 }
 
 #[test]
@@ -79,10 +80,9 @@ fn ignores_unprefixed_names_and_invalid_type_names() {
         ("ros2://topics/chatter", "NotARosTypeName"),
         ("ros2://some/thing", "std_msgs/msg/String"),
     ] {
-        assert!(
-            sut.remote(&service_description_with_default_settings(name, type_name))
-                .is_none(),
-            "{name}"
+        assert_that!(
+            sut.remote(&service_description_with_default_settings(name, type_name)),
+            is_none
         );
     }
 }
@@ -97,7 +97,7 @@ fn ignores_event_services() {
         }),
     );
 
-    assert!(sut.remote(&description).is_none());
+    assert_that!(sut.remote(&description), is_none);
 }
 
 #[test]
@@ -112,13 +112,10 @@ fn maps_service_description_to_topic_description() {
         .remote(&service_description)
         .expect("service maps to a topic");
 
-    assert_eq!(topic_description.topic.as_str(), "/Camera/FrontRight");
-    assert_eq!(
-        topic_description.type_name.as_str(),
-        "sensor_msgs/msg/Image"
-    );
+    assert_that!(topic_description.topic.as_str(), eq "/Camera/FrontRight");
+    assert_that!(topic_description.type_name.as_str(), eq "sensor_msgs/msg/Image");
 
-    assert_eq!(topic_description.qos, QosProfile::default());
+    assert_that!(topic_description.qos, eq QosProfile::default());
 }
 
 #[test]
@@ -145,9 +142,9 @@ fn maps_history_setting_to_durability_qos() {
         .remote(&service_description)
         .expect("service maps to a topic");
 
-    assert_eq!(
+    assert_that!(
         topic_description.qos,
-        QosProfile {
+        eq QosProfile {
             history: History::KeepLast(SUBSCRIBER_MAX_BUFFER_SIZE),
             durability: Durability::TransientLocal,
             ..QosProfile::default()
@@ -176,9 +173,9 @@ fn maps_non_overflowing_setting_to_keep_all_qos() {
         .remote(&service_description)
         .expect("service maps to a topic");
 
-    assert_eq!(
+    assert_that!(
         topic_description.qos,
-        QosProfile {
+        eq QosProfile {
             history: History::KeepAll,
             durability: Durability::Volatile,
             ..QosProfile::default()
@@ -212,9 +209,9 @@ fn maps_durability_qos_to_history_setting() {
         panic!("settings must be derived");
     };
 
-    assert_eq!(settings.subscriber_max_buffer_size, DEPTH);
-    assert_eq!(settings.history_size, DEPTH);
-    assert!(settings.safe_overflow);
+    assert_that!(settings.subscriber_max_buffer_size, eq DEPTH);
+    assert_that!(settings.history_size, eq DEPTH);
+    assert_that!(settings.safe_overflow, eq true);
 }
 
 #[test]
@@ -241,7 +238,7 @@ fn maps_keep_all_qos_to_non_overflowing_setting() {
         panic!("settings must be derived");
     };
 
-    assert!(!settings.safe_overflow);
+    assert_that!(settings.safe_overflow, eq false);
 }
 
 #[test]
@@ -257,11 +254,11 @@ fn roundtrip_default_qos() {
         .local::<Service>(&topic_description)
         .expect("topic maps to a service");
 
-    assert_eq!(service_description.name.as_str(), "ros2://topics/chatter");
-    assert_eq!(
+    assert_that!(service_description.name.as_str(), eq "ros2://topics/chatter");
+    assert_that!(
         sut.remote(&service_description)
             .expect("service maps to a topic"),
-        topic_description
+        eq topic_description
     );
 }
 
@@ -290,10 +287,10 @@ fn roundtrip_derived_qos() {
             .local::<Service>(&topic_description)
             .expect("topic maps to a service");
 
-        assert_eq!(
+        assert_that!(
             sut.remote(&service_description)
                 .expect("service maps to a topic"),
-            topic_description
+            eq topic_description
         );
     }
 }

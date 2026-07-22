@@ -12,6 +12,7 @@
 
 use iceoryx2::service::local::Service;
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
+use iceoryx2_bb_testing::assert_that;
 use iceoryx2_integrations_ros2_tunnel_backend::mapping::static_mapping::{
     Config, CreationError, Entry, IceoryxSettings, RosSettings,
 };
@@ -58,8 +59,8 @@ fn topic_description(topic: &str) -> TopicDescription {
 fn validate_config_used_for_examples() {
     let config: Config = toml::from_str(include_str!("../examples/mapping.toml")).unwrap();
 
-    assert!(!config.entries.is_empty());
-    assert!(StaticMapping::new(config).is_ok());
+    assert_that!(config.entries, is_not_empty);
+    assert_that!(StaticMapping::new(config), is_ok);
 }
 
 #[test]
@@ -83,29 +84,29 @@ fn parses_toml() {
         "#,
     )
     .unwrap();
-    assert_eq!(config.entries.len(), 2);
+    assert_that!(config.entries, len 2);
 
     let sut = StaticMapping::new(config).unwrap();
 
     let full = sut
         .local::<Service>(&topic_description("/Lidar/Front"))
         .expect("topic maps to a service");
-    assert_eq!(full.name.as_str(), "LidarFront");
+    assert_that!(full.name.as_str(), eq "LidarFront");
     let details = sut.remote(&full).expect("service maps to a topic");
-    assert_eq!(details.type_name.as_str(), "sensor_msgs/msg/PointCloud2");
-    assert_eq!(details.qos.reliability, Reliability::Reliable);
-    assert_eq!(
+    assert_that!(details.type_name.as_str(), eq "sensor_msgs/msg/PointCloud2");
+    assert_that!(details.qos.reliability, eq Reliability::Reliable);
+    assert_that!(
         details.qos.deadline,
-        Some(core::time::Duration::from_millis(500))
+        eq Some(core::time::Duration::from_millis(500))
     );
 
     let minimal = sut
         .local::<Service>(&topic_description("/cmd_vel"))
         .expect("topic maps to a service");
-    assert_eq!(minimal.name.as_str(), "CmdVel");
-    assert_eq!(
+    assert_that!(minimal.name.as_str(), eq "CmdVel");
+    assert_that!(
         sut.remote(&minimal).expect("service maps to a topic").qos,
-        QosProfile::default()
+        eq QosProfile::default()
     );
 }
 
@@ -118,14 +119,14 @@ fn maps_topic_description_to_service_description() {
         .local::<Service>(&topic_description)
         .expect("topic maps to a service");
 
-    assert_eq!(service_description.name.as_str(), "LidarFront");
-    assert!(sut.remote(&service_description).is_some());
+    assert_that!(service_description.name.as_str(), eq "LidarFront");
+    assert_that!(sut.remote(&service_description), is_some);
 
     let round_tripped = sut
         .remote(&service_description)
         .expect("service maps to a topic");
-    assert_eq!(round_tripped.topic, topic_description.topic);
-    assert_eq!(round_tripped.type_name, topic_description.type_name);
+    assert_that!(round_tripped.topic, eq topic_description.topic);
+    assert_that!(round_tripped.type_name, eq topic_description.type_name);
 }
 
 #[test]
@@ -133,12 +134,12 @@ fn rejects_duplicate_service_names_and_topics() {
     let result = StaticMapping::new(Config {
         entries: vec![entry("LidarFront", "/A"), entry("LidarFront", "/B")],
     });
-    assert_eq!(result.unwrap_err(), CreationError::DuplicateServiceName);
+    assert_that!(result.unwrap_err(), eq CreationError::DuplicateServiceName);
 
     let result = StaticMapping::new(Config {
         entries: vec![entry("A", "/Lidar/Front"), entry("B", "/Lidar/Front")],
     });
-    assert_eq!(result.unwrap_err(), CreationError::DuplicateTopic);
+    assert_that!(result.unwrap_err(), eq CreationError::DuplicateTopic);
 }
 
 #[test]
@@ -154,7 +155,7 @@ fn rejects_unmapped_services() {
         }),
     );
 
-    assert!(sut.remote(&unmapped).is_none());
+    assert_that!(sut.remote(&unmapped), is_none);
 }
 
 #[test]
@@ -182,10 +183,10 @@ fn specified_settings_override_defaults() {
         panic!("expected explicit settings");
     };
 
-    assert_eq!(settings.subscriber_max_buffer_size, 4);
-    assert!(!settings.safe_overflow);
-    assert_eq!(settings.max_subscribers, defaults.max_subscribers);
-    assert_eq!(settings.history_size, defaults.publisher_history_size);
+    assert_that!(settings.subscriber_max_buffer_size, eq 4);
+    assert_that!(settings.safe_overflow, eq false);
+    assert_that!(settings.max_subscribers, eq defaults.max_subscribers);
+    assert_that!(settings.history_size, eq defaults.publisher_history_size);
 }
 
 #[test]
@@ -200,7 +201,7 @@ fn entries_without_settings_apply_defaults() {
         panic!("expected a publish-subscribe pattern description");
     };
 
-    assert_eq!(description.settings, PortSettings::LocalDefaults);
+    assert_that!(description.settings, eq PortSettings::LocalDefaults);
 }
 
 #[test]
@@ -209,7 +210,7 @@ fn mapped_topics_can_be_listed() {
 
     let topics = sut.topics();
 
-    assert_eq!(topics.len(), 2);
-    assert_eq!(topics[0].topic.as_str(), "/a");
-    assert_eq!(topics[1].topic.as_str(), "/b");
+    assert_that!(topics, len 2);
+    assert_that!(topics[0].topic.as_str(), eq "/a");
+    assert_that!(topics[1].topic.as_str(), eq "/b");
 }

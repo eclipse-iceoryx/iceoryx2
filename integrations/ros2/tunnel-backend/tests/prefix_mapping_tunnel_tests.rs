@@ -19,6 +19,7 @@ use iceoryx2::service::Service as _;
 use iceoryx2::service::local::Service;
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use iceoryx2::testing::generate_isolated_config;
+use iceoryx2_bb_testing::assert_that;
 use iceoryx2_integrations_ros2_tunnel_backend::ros_header::RosHeader;
 use iceoryx2_integrations_ros2_tunnel_backend::testing::{TestPeer, Testing};
 use iceoryx2_integrations_ros2_tunnel_backend::{Config, PrefixMapping, Ros2Backend, TopicConfig};
@@ -112,7 +113,7 @@ fn does_not_map_unprefixed_services() {
     )
     .expect("publish_subscribe topic did not appear");
 
-    assert_eq!(tunnel.tunneled_services().len(), 1);
+    assert_that!(tunnel.tunneled_services(), len 1);
 }
 
 #[test]
@@ -161,8 +162,8 @@ fn does_not_map_event_services() {
     )
     .expect("publish_subscribe topic did not appear");
 
-    assert!(peer.topic_types(&event_topic).is_empty());
-    assert_eq!(tunnel.tunneled_services().len(), 1);
+    assert_that!(peer.topic_types(&event_topic), is_empty);
+    assert_that!(tunnel.tunneled_services(), len 1);
 }
 
 #[test]
@@ -209,10 +210,10 @@ fn maps_ros_topics_onto_iceoryx2_services() {
         .static_details
         .publish_subscribe()
         .message_type_details();
-    assert_eq!(*message_types.payload.type_name(), "std_msgs/msg/String");
-    assert_eq!(message_types.payload.variant(), TypeVariant::Dynamic);
-    assert_eq!(
+    assert_that!(*message_types.payload.type_name(), eq "std_msgs/msg/String");
+    assert_that!(message_types.payload.variant(), eq TypeVariant::Dynamic);
+    assert_that!(
         message_types.user_header,
-        TypeDetail::new::<RosHeader>(TypeVariant::FixedSize)
+        eq TypeDetail::new::<RosHeader>(TypeVariant::FixedSize)
     );
 }
