@@ -15,7 +15,7 @@ extern crate alloc;
 use crate::unbounded_data_generated::example::UnboundedData;
 use alloc::boxed::Box;
 use core::time::Duration;
-use iceoryx2::{prelude::*, service::marker::Flatbuffer};
+use iceoryx2::prelude::*;
 
 #[path = "unbounded_data_generated.rs"]
 #[allow(clippy::all)]
@@ -50,7 +50,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(sample) = subscriber.receive()? {
-            let data = sample.payload_root().unwrap();
+            let data = sample.payload_root()?;
 
             coutln!("user header: {}", sample.user_header());
             coutln!("title: {}", data.title().unwrap_or_default());

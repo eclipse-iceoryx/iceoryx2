@@ -17,7 +17,7 @@ use crate::unbounded_data_generated::example::{
 };
 use alloc::boxed::Box;
 use core::time::Duration;
-use iceoryx2::{prelude::*, service::marker::Flatbuffer};
+use iceoryx2::prelude::*;
 
 #[path = "unbounded_data_generated.rs"]
 #[allow(clippy::all)]
@@ -86,12 +86,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
         // calls builder.finish(unbounded_data, None) and sets the payload offset
         let mut sample = sample.assume_init(unbounded_data);
-
         *sample.user_header_mut() = counter;
 
-        sample.send()?;
-
         coutln!("Send sample {counter} ...");
+        sample.send()?;
     }
 
     coutln!("exit");

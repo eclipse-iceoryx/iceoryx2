@@ -74,6 +74,7 @@ use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicUsize, Ordering};
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_flatbuffers::FlatbufferError;
 use iceoryx2_bb_memory::pool_allocator::ReallocGrow;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::shared_memory::*;
@@ -290,11 +291,11 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader: ZeroCopySend>
     }
 
     /// Returns the root of the flatbuffer.
-    pub fn payload_root<'a>(&'a self) -> Result<Payload::Inner, InvalidFlatbuffer>
+    pub fn payload_root<'a>(&'a self) -> Result<Payload::Inner, FlatbufferError<InvalidFlatbuffer>>
     where
         Payload: flatbuffers::Follow<'a> + flatbuffers::Verifiable,
     {
-        flatbuffers::root::<Payload>(self.payload_bytes())
+        Ok(flatbuffers::root::<Payload>(self.payload_bytes())?)
     }
 }
 

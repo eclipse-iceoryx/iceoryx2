@@ -35,6 +35,7 @@ use core::{fmt::Debug, ops::Deref};
 use flatbuffers::InvalidFlatbuffer;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_flatbuffers::FlatbufferError;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
@@ -128,11 +129,11 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader: ZeroCopySend>
     }
 
     /// Returns the root of the flatbuffer.
-    pub fn payload_root<'a>(&'a self) -> Result<Payload::Inner, InvalidFlatbuffer>
+    pub fn payload_root<'a>(&'a self) -> Result<Payload::Inner, FlatbufferError<InvalidFlatbuffer>>
     where
         Payload: flatbuffers::Follow<'a> + flatbuffers::Verifiable,
     {
-        flatbuffers::root::<Payload>(self.payload_bytes())
+        Ok(flatbuffers::root::<Payload>(self.payload_bytes())?)
     }
 }
 
