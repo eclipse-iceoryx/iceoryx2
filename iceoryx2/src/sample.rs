@@ -119,7 +119,7 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader: ZeroCopySend>
 {
     /// Returns the serialized flatbuffer data.
     pub fn serialized_flatbuffer(&self) -> &[u8] {
-        let payload_offset = self.ptr.as_header_ref().metadata as usize;
+        let payload_offset = self.ptr.as_header_ref().payload_offset as usize;
         let payload_ptr = self.ptr.as_payload_ref() as *const Flatbuffer<Payload> as *const u8;
         let payload_len = self.ptr.as_header_ref().number_of_elements as usize;
 

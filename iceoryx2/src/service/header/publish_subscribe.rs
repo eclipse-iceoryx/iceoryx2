@@ -44,7 +44,7 @@ pub struct Header {
     node_id: UniqueNodeId,
     publisher_port_id: UniquePublisherId,
     pub(crate) number_of_elements: u64,
-    pub(crate) metadata: u64,
+    pub(crate) payload_offset: u64,
 }
 
 impl Header {
@@ -57,7 +57,7 @@ impl Header {
             node_id,
             publisher_port_id,
             number_of_elements,
-            metadata: 0,
+            payload_offset: 0,
         }
     }
 
@@ -86,8 +86,8 @@ impl Header {
         self.number_of_elements
     }
 
-    /// Returns additional metadata information that depends on the payload type variant.
-    pub fn metadata(&self) -> u64 {
-        self.metadata
+    /// Returns the payload offset.
+    pub fn payload_offset(&self) -> u64 {
+        self.payload_offset
     }
 }

@@ -131,7 +131,6 @@ use crate::port::details::sender::*;
 use crate::port::port_name::PortName;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
 use crate::prelude::{BackpressureStrategy, Flatbuffer};
-use crate::raw_sample::RawSampleMut;
 use crate::sample_mut::SampleMut;
 use crate::sample_mut_uninit::SampleMutUninit;
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
@@ -676,15 +675,10 @@ impl<
         unsafe { header_ptr.write(Header::new(*node_id, self.id(), 1)) };
         unsafe { user_header_ptr.write(UserHeader::default()) };
 
-        let sample = unsafe {
-            RawSampleMut::new_unchecked(header_ptr, user_header_ptr, chunk.payload.cast())
-        };
         Ok(
             SampleMutUninit::<Service, MaybeUninit<Payload>, UserHeader>::new(
                 &self.publisher_shared_state,
-                sample,
-                chunk.to_shm_pointer(),
-                chunk.layout().size(),
+                chunk,
             ),
         )
     }
@@ -743,14 +737,10 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Default + Debug + Ze
         unsafe { header_ptr.write(Header::new(*node_id, self.id(), 1)) };
         unsafe { user_header_ptr.write(UserHeader::default()) };
 
-        let sample = unsafe {
-            RawSampleMut::new_unchecked(header_ptr, user_header_ptr, chunk.payload.cast())
-        };
         Ok(
             SampleMutUninit::<Service, Flatbuffer<Payload>, UserHeader>::new_flatbuffer(
                 &self.publisher_shared_state,
                 chunk,
-                sample,
             ),
         )
     }
@@ -852,54 +842,42 @@ impl<
     /// ```
     pub fn loan_slice_uninit(
         &self,
-        slice_len: usize,
+        number_of_elements: usize,
     ) -> Result<SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>, LoanError> {
         // required since Rust does not support generic specializations or negative traits
         debug_assert!(TypeId::of::<Payload>() != TypeId::of::<CustomPayloadMarker>());
 
-        self.loan_slice_uninit_impl(slice_len, slice_len)
+        self.loan_slice_uninit_impl(number_of_elements, number_of_elements)
     }
 
     fn loan_slice_uninit_impl(
         &self,
-        slice_len: usize,
-        underlying_number_of_slice_elements: usize,
+        number_of_elements: usize,
+        underlying_slice_len: usize,
     ) -> Result<SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>, LoanError> {
         let shared_state = self.publisher_shared_state.lock();
         let max_slice_len = shared_state.config.initial_max_slice_len;
         if shared_state.config.allocation_strategy == AllocationStrategy::Static
-            && max_slice_len < slice_len
+            && max_slice_len < number_of_elements
         {
             fail!(from self, with LoanError::ExceedsMaxLoanSize,
                 "Unable to loan slice with {} elements since it would exceed the max supported slice length of {}.",
-                slice_len, max_slice_len);
+                number_of_elements, max_slice_len);
         }
 
-        let sample_layout = shared_state.sender.sample_layout(slice_len);
+        let sample_layout = shared_state.sender.sample_layout(number_of_elements);
         let chunk = shared_state.sender.allocate(sample_layout)?;
         let user_header_ptr: *mut UserHeader = chunk.user_header.cast();
         let header_ptr = chunk.header as *mut Header;
         let node_id = shared_state.sender.service_state.shared_node().id();
-        unsafe { header_ptr.write(Header::new(*node_id, self.id(), slice_len as _)) };
+        unsafe { header_ptr.write(Header::new(*node_id, self.id(), number_of_elements as _)) };
         unsafe { user_header_ptr.write(UserHeader::default()) };
-
-        let sample = unsafe {
-            RawSampleMut::new_unchecked(
-                header_ptr,
-                user_header_ptr,
-                core::ptr::slice_from_raw_parts_mut(
-                    chunk.payload.cast(),
-                    underlying_number_of_slice_elements,
-                ),
-            )
-        };
 
         Ok(
             SampleMutUninit::<Service, [MaybeUninit<Payload>], UserHeader>::new(
                 &self.publisher_shared_state,
-                sample,
-                chunk.to_shm_pointer(),
-                chunk.layout().size(),
+                chunk,
+                underlying_slice_len,
             ),
         )
     }
