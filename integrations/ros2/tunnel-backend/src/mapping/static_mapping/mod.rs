@@ -31,7 +31,7 @@ use std::collections::HashMap;
 
 use iceoryx2::service::Service;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
-use iceoryx2_log::fail;
+use iceoryx2_log::{fail, warn};
 use iceoryx2_services_tunnel_backend::traits::Mapping;
 use iceoryx2_services_tunnel_backend::types::service_description::{
     PatternDescription, PublishSubscribeDescription, ServiceDescription, TypeDescription,
@@ -137,10 +137,17 @@ impl Mapping for StaticMapping {
         &self,
         topic_description: &TopicDescription,
     ) -> Option<ServiceDescription> {
-        let entry = self
+        let Some(entry) = self
             .by_topic
             .get(&topic_description.topic)
-            .map(|&index| &self.entries[index])?;
+            .map(|&index| &self.entries[index])
+        else {
+            warn!(
+                "Topic '{}' has no static mapping entry and will not be tunneled",
+                topic_description.topic.as_str()
+            );
+            return None;
+        };
 
         // The payload is a dynamically-sized CDR stream carrying the
         // configured type name.
