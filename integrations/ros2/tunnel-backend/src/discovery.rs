@@ -121,11 +121,17 @@ impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>> Discovery<S
     ) -> Result<(), DiscoveryError> {
         let origin = "Discovery::discover_added";
 
+        // Skip topic descriptions that the mapping is unable to map
+        // to a local iceoryx2 service.
+        // These could be topics not following the conventions of the mapping (e.g. prefix)
+        // or those explicitly not configured (e.g. static).
         let topic_description = self.topic_description(topic, type_name)?;
         let Some(service_description) = self.mapping.local::<S>(&topic_description) else {
             return Ok(());
         };
 
+        // Run discovery logic provided by the caller for the service discovered
+        // as added.
         let service_hash = service_description.service_hash;
         fail!(from origin,
             when process_discovery(DiscoveryUpdate::Added(service_description)),
@@ -134,6 +140,7 @@ impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>> Discovery<S
             topic.as_str()
         );
 
+        // Keep track of the discovered service for later discovery iterations.
         self.discovered
             .borrow_mut()
             .insert(topic.clone(), service_hash);
@@ -148,6 +155,8 @@ impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>> Discovery<S
     ) -> Result<(), DiscoveryError> {
         let origin = "Discovery::discover_removed";
 
+        // Run discovery logic provided by the caller for the service discovered
+        // as removed.
         let service_hash = self.discovered.borrow()[topic];
         fail!(from origin,
             when process_discovery(DiscoveryUpdate::Removed(service_hash)),
@@ -156,6 +165,7 @@ impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>> Discovery<S
             topic.as_str()
         );
 
+        // Stop tracking the service as discovered.
         self.discovered.borrow_mut().remove(topic);
 
         Ok(())
