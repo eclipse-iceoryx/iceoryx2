@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::alloc::Layout;
+
 use iceoryx2_cal::{shared_memory::ShmPointer, shm_allocator::PointerOffset};
 
 use crate::service::static_config::message_type_details::MessageTypeDetails;
@@ -38,7 +40,7 @@ pub(crate) struct ChunkMut {
     pub(crate) header: *mut u8,
     pub(crate) user_header: *mut u8,
     pub(crate) payload: *mut u8,
-    pub(crate) size: usize,
+    layout: Layout,
 }
 
 impl ChunkMut {
@@ -56,8 +58,37 @@ impl ChunkMut {
                 .cast_mut(),
             header: shm_pointer.data_ptr,
             offset: shm_pointer.offset,
-            size,
+            layout: unsafe {
+                Layout::from_size_align_unchecked(
+                    size,
+                    message_type_details.sample_layout(1).align(),
+                )
+            },
         }
+    }
+
+    pub(crate) fn header_ptr(&self) -> *const u8 {
+        self.header
+    }
+
+    pub(crate) fn header_mut_ptr(&mut self) -> *mut u8 {
+        self.header
+    }
+
+    pub(crate) fn user_header_ptr(&self) -> *const u8 {
+        self.user_header
+    }
+
+    pub(crate) fn user_header_mut_ptr(&mut self) -> *mut u8 {
+        self.user_header
+    }
+
+    pub(crate) fn payload_ptr(&self) -> *const u8 {
+        self.payload
+    }
+
+    pub(crate) fn payload_mut_ptr(&mut self) -> *mut u8 {
+        self.payload
     }
 
     pub(crate) fn to_shm_pointer(&self) -> ShmPointer {
@@ -65,5 +96,9 @@ impl ChunkMut {
             offset: self.offset,
             data_ptr: self.header,
         }
+    }
+
+    pub(crate) fn layout(&self) -> Layout {
+        self.layout
     }
 }

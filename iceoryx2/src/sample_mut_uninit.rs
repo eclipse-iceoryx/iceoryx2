@@ -90,7 +90,6 @@
 //! # }
 //! ```
 
-use core::alloc::Layout;
 use core::{fmt::Debug, mem::MaybeUninit};
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_flatbuffers::{ResizableMemory, ResizableMemoryBuilder};
@@ -100,6 +99,7 @@ use flatbuffers::{FlatBufferBuilder, WIPOffset};
 use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
 use iceoryx2_cal::shared_memory::ShmPointer;
 
+use crate::port::details::chunk::ChunkMut;
 use crate::service::static_config::message_type_details::{MessageTypeDetails, TypeVariant};
 use crate::{
     port::publisher::PublisherSharedState,
@@ -146,15 +146,13 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
 {
     pub(crate) fn new_flatbuffer(
         publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
+        chunk: ChunkMut,
         ptr: RawSampleMut<Header, UserHeader, Flatbuffer<Payload>>,
-        pointer_to_chunk: ShmPointer,
-        initial_layout: Layout,
-        sample_size: usize,
     ) -> Self {
         let shared_state = SampleMutSharedState::new(
             publisher_shared_state,
-            pointer_to_chunk,
-            initial_layout.size(),
+            chunk.to_shm_pointer(),
+            chunk.layout().size(),
         );
         let allocation_strategy = publisher_shared_state
             .lock()
@@ -168,9 +166,9 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
         >(TypeVariant::Dynamic)
         .all_headers_len();
 
-        let resizable_memory = ResizableMemoryBuilder::new(pointer_to_chunk)
+        let resizable_memory = ResizableMemoryBuilder::new(chunk.to_shm_pointer())
             .allocation_strategy(allocation_strategy)
-            .initial_layout(initial_layout)
+            .initial_layout(chunk.layout())
             .reserved_header_len(reserved_header_len)
             .create(shared_state.clone())
             .unwrap();
@@ -179,7 +177,7 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
             flatbuffer_builder: Some(FlatBufferBuilder::new_in(resizable_memory)),
             shared_state,
             ptr,
-            sample_size,
+            sample_size: chunk.layout().size(),
         }
     }
 

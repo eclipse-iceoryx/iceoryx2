@@ -684,7 +684,7 @@ impl<
                 &self.publisher_shared_state,
                 sample,
                 chunk.to_shm_pointer(),
-                chunk.size,
+                chunk.layout().size(),
             ),
         )
     }
@@ -749,10 +749,8 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Default + Debug + Ze
         Ok(
             SampleMutUninit::<Service, Flatbuffer<Payload>, UserHeader>::new_flatbuffer(
                 &self.publisher_shared_state,
+                chunk,
                 sample,
-                chunk.to_shm_pointer(),
-                initial_layout,
-                chunk.size,
             ),
         )
     }
@@ -901,7 +899,7 @@ impl<
                 &self.publisher_shared_state,
                 sample,
                 chunk.to_shm_pointer(),
-                chunk.size,
+                chunk.layout().size(),
             ),
         )
     }
