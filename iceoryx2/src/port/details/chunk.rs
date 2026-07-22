@@ -59,4 +59,11 @@ impl ChunkMut {
             size,
         }
     }
+
+    pub(crate) fn to_shm_pointer(&self) -> ShmPointer {
+        ShmPointer {
+            offset: self.offset,
+            data_ptr: self.header,
+        }
+    }
 }

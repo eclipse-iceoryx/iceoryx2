@@ -221,6 +221,9 @@ pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Alloc
 
     /// Returns the number of active [`SharedMemory`] segments.
     fn number_of_active_segments(&self) -> usize;
+
+    /// Returns the configured [`AllocationStrategy`].
+    fn allocation_strategy(&self) -> AllocationStrategy;
 }
 
 pub trait ResizableSharedMemoryForPoolAllocator<Shm: SharedMemory<PoolAllocator>>:

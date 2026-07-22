@@ -53,7 +53,7 @@ impl SampleMutUninitUnion {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<SampleMutUninitUnion>
 pub struct iox2_sample_mut_storage_t {
-    internal: [u8; 184], // magic number obtained with size_of::<Option<SampleMutUninitUnion>>()
+    internal: [u8; 224], // magic number obtained with size_of::<Option<SampleMutUninitUnion>>()
 }
 
 #[repr(C)]

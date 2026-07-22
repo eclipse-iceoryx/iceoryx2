@@ -90,12 +90,18 @@
 //! # }
 //! ```
 
+use alloc::sync::Arc;
+use core::alloc::Layout;
 use core::{fmt::Debug, mem::MaybeUninit};
+use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_flatbuffers::{ResizableMemory, ResizableMemoryBuilder};
+use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 
 use flatbuffers::FlatBufferBuilder;
 use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
-use iceoryx2_cal::shm_allocator::PointerOffset;
+use iceoryx2_cal::{shared_memory::ShmPointer, shm_allocator::PointerOffset};
 
+use crate::service::static_config::message_type_details::{MessageTypeDetails, TypeVariant};
 use crate::{
     port::publisher::PublisherSharedState,
     raw_sample::RawSampleMut,
@@ -118,7 +124,9 @@ pub struct SampleMutUninit<
     shared_state: SampleMutSharedState<Service>,
     ptr: RawSampleMut<Header, UserHeader, Payload>,
     sample_size: usize,
-    flatbuffer_builder: Option<FlatBufferBuilder<'static>>,
+    flatbuffer_builder: Option<
+        FlatBufferBuilder<'static, ResizableMemory<ShmPointer, SampleMutSharedState<Service>>>,
+    >,
 }
 
 unsafe impl<
@@ -131,21 +139,45 @@ where
 {
 }
 
+/// The memory used inside the [`FlatbufferBuilder`].
+pub type FlatbufferMemory<Service> = ResizableMemory<ShmPointer, SampleMutSharedState<Service>>;
+
 impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
     SampleMutUninit<Service, Flatbuffer<Payload>, UserHeader>
 {
     pub(crate) fn new_flatbuffer(
         publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
         ptr: RawSampleMut<Header, UserHeader, Flatbuffer<Payload>>,
-        offset_to_chunk: PointerOffset,
+        pointer_to_chunk: ShmPointer,
+        initial_layout: Layout,
         sample_size: usize,
     ) -> Self {
+        let shared_state = SampleMutSharedState {
+            publisher_shared_state: publisher_shared_state.clone(),
+            offset_to_chunk: Arc::new(AtomicU64::new(pointer_to_chunk.offset.as_value())),
+        };
+        let allocation_strategy = publisher_shared_state
+            .lock()
+            .sender
+            .data_segment
+            .allocation_strategy();
+        let reserved_header_len = MessageTypeDetails::from::<
+            crate::service::header::publish_subscribe::Header,
+            UserHeader,
+            u8,
+        >(TypeVariant::Dynamic)
+        .all_headers_len();
+
+        let resizable_memory = ResizableMemoryBuilder::new(pointer_to_chunk)
+            .allocation_strategy(allocation_strategy)
+            .initial_layout(initial_layout)
+            .reserved_header_len(reserved_header_len)
+            .create(shared_state.clone())
+            .unwrap();
+
         Self {
-            flatbuffer_builder: None,
-            shared_state: SampleMutSharedState {
-                publisher_shared_state: publisher_shared_state.clone(),
-                offset_to_chunk,
-            },
+            flatbuffer_builder: Some(FlatBufferBuilder::new_in(resizable_memory)),
+            shared_state,
             ptr,
             sample_size,
         }
@@ -153,12 +185,10 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
 
     /// Returns the internal [`FlatBufferBuilder`] that was constructed with the internal iceoryx2
     /// allocator to enable true zero-copy data transfer.
-    pub fn flatbuffer_builder(&mut self) -> &FlatBufferBuilder<'static> {
-        self.flatbuffer_builder.get_or_insert(unsafe {
-            core::mem::transmute::<FlatBufferBuilder<'_>, FlatBufferBuilder<'static>>(
-                FlatBufferBuilder::new(),
-            )
-        })
+    pub fn flatbuffer_builder(
+        &mut self,
+    ) -> &mut FlatBufferBuilder<'static, FlatbufferMemory<Service>> {
+        self.flatbuffer_builder.as_mut().unwrap()
     }
 }
 
@@ -327,7 +357,7 @@ impl<
             flatbuffer_builder: None,
             shared_state: SampleMutSharedState {
                 publisher_shared_state: publisher_shared_state.clone(),
-                offset_to_chunk,
+                offset_to_chunk: Arc::new(AtomicU64::new(offset_to_chunk.as_value())),
             },
             ptr,
             sample_size,
@@ -417,7 +447,7 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
             flatbuffer_builder: None,
             shared_state: SampleMutSharedState {
                 publisher_shared_state: publisher_shared_state.clone(),
-                offset_to_chunk,
+                offset_to_chunk: Arc::new(AtomicU64::new(offset_to_chunk.as_value())),
             },
             ptr,
             sample_size,

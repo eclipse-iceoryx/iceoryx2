@@ -784,6 +784,10 @@ where
     fn number_of_active_segments(&self) -> usize {
         self.state().shared_memory_map.len()
     }
+
+    fn allocation_strategy(&self) -> AllocationStrategy {
+        self.state().shared_state.allocation_strategy
+    }
 }
 
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> BaseAllocator<ShmPointer>

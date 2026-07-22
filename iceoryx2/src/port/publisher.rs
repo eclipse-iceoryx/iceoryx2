@@ -735,9 +735,8 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Default + Debug + Ze
         &self,
     ) -> Result<SampleMutUninit<Service, Flatbuffer<Payload>, UserHeader>, LoanError> {
         let shared_state = self.publisher_shared_state.lock();
-        let chunk = shared_state
-            .sender
-            .allocate(shared_state.sender.sample_layout(1))?;
+        let initial_layout = shared_state.sender.sample_layout(1);
+        let chunk = shared_state.sender.allocate(initial_layout)?;
         let node_id = shared_state.sender.service_state.shared_node().id();
         let header_ptr = chunk.header as *mut Header;
         let user_header_ptr: *mut UserHeader = chunk.user_header.cast();
@@ -751,7 +750,8 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Default + Debug + Ze
             SampleMutUninit::<Service, Flatbuffer<Payload>, UserHeader>::new_flatbuffer(
                 &self.publisher_shared_state,
                 sample,
-                chunk.offset,
+                chunk.to_shm_pointer(),
+                initial_layout,
                 chunk.size,
             ),
         )
