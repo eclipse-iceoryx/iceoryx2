@@ -55,7 +55,7 @@ fn topic_description(topic: &str) -> TopicDescription {
 }
 
 #[test]
-fn example_config_is_valid() {
+fn validate_config_used_for_examples() {
     let config: Config = toml::from_str(include_str!("../examples/mapping.toml")).unwrap();
 
     assert!(!config.entries.is_empty());
