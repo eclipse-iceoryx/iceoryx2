@@ -5,19 +5,27 @@ runs:
     - name: Install iceoryx dependencies and clang-tidy
       shell: bash
       run: |
-        sudo wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-        sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main"
+        export UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME)
+        sudo mkdir -p /etc/apt/keyrings
+        sudo wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/llvm-snapshot.gpg
+        sudo touch /etc/apt/sources.list.d/llvm-snapshot.sources
+        echo "Types: deb" | sudo tee -a /etc/apt/sources.list.d/llvm-snapshot.sources
+        echo "Architectures: amd64 arm64" | sudo tee -a /etc/apt/sources.list.d/llvm-snapshot.sources
+        echo "Signed-By: /etc/apt/keyrings/llvm-snapshot.gpg" | sudo tee -a /etc/apt/sources.list.d/llvm-snapshot.sources
+        echo "URIs: http://apt.llvm.org/$UBUNTU_CODENAME/" | sudo tee -a /etc/apt/sources.list.d/llvm-snapshot.sources
+        echo "Suites: llvm-toolchain-$UBUNTU_CODENAME-21" | sudo tee -a /etc/apt/sources.list.d/llvm-snapshot.sources
+        echo "Components: main" | sudo tee -a /etc/apt/sources.list.d/llvm-snapshot.sources
         sudo apt-get update
         sudo apt-get install -y libacl1-dev
-        sudo apt-get install -y clang-format-19 clang-tidy-19 clang-tools-19 clang-19 lld
+        sudo apt-get install -y clang-format-21 clang-tidy-21 clang-tools-21 clang-21 lld
         sudo rm /usr/bin/clang
         sudo rm /usr/bin/clang++
         sudo rm /usr/bin/clang-tidy
         sudo rm /usr/bin/clang-format
-        sudo ln -s /usr/bin/clang-19 /usr/bin/clang
-        sudo ln -s /usr/bin/clang++-19 /usr/bin/clang++
-        sudo ln -s /usr/bin/clang-tidy-19 /usr/bin/clang-tidy
-        sudo ln -s /usr/bin/clang-format-19 /usr/bin/clang-format
-        sudo ln -s /usr/bin/llvm-19 /usr/bin/llvm
-        sudo ln -s /usr/bin/llvm-cov-19 /usr/bin/llvm-cov
-        sudo ln -s /usr/bin/llvm-profdata-19 /usr/bin/llvm-profdata
+        sudo ln -s /usr/bin/clang-21 /usr/bin/clang
+        sudo ln -s /usr/bin/clang++-21 /usr/bin/clang++
+        sudo ln -s /usr/bin/clang-tidy-21 /usr/bin/clang-tidy
+        sudo ln -s /usr/bin/clang-format-21 /usr/bin/clang-format
+        sudo ln -s /usr/bin/llvm-21 /usr/bin/llvm
+        sudo ln -s /usr/bin/llvm-cov-21 /usr/bin/llvm-cov
+        sudo ln -s /usr/bin/llvm-profdata-21 /usr/bin/llvm-profdata
