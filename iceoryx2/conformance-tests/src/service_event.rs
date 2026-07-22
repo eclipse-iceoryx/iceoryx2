@@ -798,6 +798,63 @@ pub mod service_event {
     }
 
     #[conformance_test]
+    pub fn notifying_single_specific_listener_with_custom_event_id_works<Sut: Service>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let event_id = EventId::new(42);
+
+        let sut = node
+            .service_builder(&service_name)
+            .event()
+            .create()
+            .unwrap();
+        let name_a = PortName::new("hypnotoad").unwrap();
+        let name_b = PortName::new("brainslug").unwrap();
+        let listener1 = sut.listener_builder().name(&name_a).create().unwrap();
+        let listener2 = sut.listener_builder().name(&name_b).create().unwrap();
+        let listener3 = sut.listener_builder().name(&name_a).create().unwrap();
+
+        let sut2 = node.service_builder(&service_name).event().open().unwrap();
+        let notifier = sut2.notifier_builder().create().unwrap();
+
+        let mut notifications_sent = 0;
+
+        notifier.for_each_listener(|monofier, listener_details| {
+            if listener_details.listener_name == name_a {
+                assert_that!(monofier.notify_with_custom_event_id(event_id), is_ok);
+                notifications_sent += 1;
+                CallbackProgression::Stop
+            } else {
+                CallbackProgression::Continue
+            }
+        });
+
+        assert_that!(notifications_sent, eq(1));
+
+        let mut received_events = 0;
+        listener1
+            .try_wait(|event| {
+                received_events += event.count;
+                assert_that!(event.id, eq event_id);
+            })
+            .unwrap();
+        assert_that!(received_events, eq 1);
+
+        listener2
+            .try_wait(|event| {
+                panic!("No event should be received but got: {:?}", event);
+            })
+            .unwrap();
+
+        listener3
+            .try_wait(|event| {
+                panic!("No event should be received but got: {:?}", event);
+            })
+            .unwrap();
+    }
+
+    #[conformance_test]
     pub fn notifying_multiple_specific_listener_works<Sut: Service>() {
         let test = Test::<Sut>::new();
         let node = test.create_node();
@@ -1020,6 +1077,63 @@ pub mod service_event {
             notifier.notify_single_listener(&listener_key),
             eq(Err(NotifierNotifyError::InvalidListenerKey))
         );
+    }
+
+    #[conformance_test]
+    pub fn notifying_single_specific_listener_with_invalid_event_id_results_in_error<
+        Sut: Service,
+    >() {
+        const EVENT_ID_MAX: usize = 10;
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let event_id = EventId::new(3);
+
+        let sut = node
+            .service_builder(&service_name)
+            .event()
+            .event_id_max_value(EVENT_ID_MAX)
+            .create()
+            .unwrap();
+        let listener = sut.listener_builder().create().unwrap();
+
+        let sut2 = node
+            .service_builder(&service_name)
+            .event()
+            .event_id_max_value(EVENT_ID_MAX)
+            .open()
+            .unwrap();
+        let notifier = sut2
+            .notifier_builder()
+            .default_event_id(event_id)
+            .create()
+            .unwrap();
+
+        let mut listener_key = None;
+        notifier.for_each_listener(|monofier, _| {
+            assert_that!(
+                monofier.notify_with_custom_event_id(EventId::new(EVENT_ID_MAX + 1)),
+                eq(Err(NotifierNotifyError::EventIdOutOfBounds))
+            );
+            listener_key = Some(monofier.listener_key());
+            CallbackProgression::Stop
+        });
+
+        let listener_key = listener_key.unwrap();
+
+        assert_that!(
+            notifier.notify_single_listener_with_custom_event_id(
+                &listener_key,
+                EventId::new(EVENT_ID_MAX + 1)
+            ),
+            eq(Err(NotifierNotifyError::EventIdOutOfBounds))
+        );
+
+        listener
+            .try_wait(|event| {
+                panic!("No event should be received but got: {:?}", event);
+            })
+            .unwrap();
     }
 
     #[conformance_test]
