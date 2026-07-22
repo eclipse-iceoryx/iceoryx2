@@ -41,6 +41,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let service = node
         .service_builder(&"My/Flatbuffer/Service".try_into()?)
         .publish_subscribe::<Flatbuffer<UnboundedData>>()
+        .user_header::<u64>()
         .open_or_create()?;
 
     let subscriber = service.subscriber_builder().create()?;
@@ -51,7 +52,9 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         while let Some(sample) = subscriber.receive()? {
             let data = root_as_unbounded_data(sample.serialized_flatbuffer()).unwrap();
 
+            coutln!("user header: {}", sample.user_header());
             coutln!("title: {}", data.title().unwrap_or_default());
+
             if let Some(entries) = data.entries() {
                 for (index, entry) in entries.iter().enumerate() {
                     coutln!(

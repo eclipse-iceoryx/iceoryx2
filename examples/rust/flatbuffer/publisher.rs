@@ -43,40 +43,35 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let service = node
         .service_builder(&"My/Flatbuffer/Service".try_into()?)
         .publish_subscribe::<Flatbuffer<UnboundedData>>()
+        .user_header::<u64>()
         .open_or_create()?;
 
     let publisher = service
         .publisher_builder()
-        .initial_reserved_memory(1024)
+        .initial_reserved_memory(32)
         .allocation_strategy(AllocationStrategy::PowerOfTwo)
         .create()?;
 
     let mut counter: u64 = 0;
 
     while node.wait(CYCLE_TIME).is_ok() {
-        if service.dynamic_config().number_of_subscribers() == 0 {
-            coutln!("Wait for subscribers.");
-            continue;
-        }
-
         counter += 1;
         let mut sample = publisher.loan_flatbuffer()?;
         let builder = sample.flatbuffer_builder();
         let title = builder.create_string("Hello World!");
 
-        let mut buffer = vec![];
-
-        for i in 0..10 {
-            buffer.push(Entry::create(
+        let mut entries = vec![];
+        for i in 0..(counter % 15) {
+            entries.push(Entry::create(
                 builder,
                 &EntryArgs {
-                    data_1: 6 * i + 5,
-                    data_2: (6 * i + 7) as u64,
+                    data_1: (6 * i + 5) as i32,
+                    data_2: 6 * i + 7,
                 },
             ));
         }
 
-        let entries = builder.create_vector(&buffer);
+        let entries = builder.create_vector(&entries);
 
         let unbounded_data = UnboundedData::create(
             builder,
@@ -86,7 +81,9 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             },
         );
 
-        let sample = sample.assume_init(unbounded_data);
+        let mut sample = sample.assume_init(unbounded_data);
+        *sample.user_header_mut() = counter;
+
         sample.send()?;
 
         coutln!("Send sample {counter} ...");
