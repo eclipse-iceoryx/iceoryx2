@@ -63,8 +63,9 @@
 //!
 
 use iceoryx2::service::Service;
-use iceoryx2::service::service_name::ServiceName;
+use iceoryx2::service::service_name::{ServiceName, ServiceNameError};
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
+use iceoryx2_log::warn;
 use iceoryx2_services_tunnel_backend::traits::Mapping;
 use iceoryx2_services_tunnel_backend::types::service_description::{
     PatternDescription, PortSettings, PublishSubscribeDescription, ServiceDescription,
@@ -107,10 +108,17 @@ impl Mapping for PrefixMapping {
     }
 
     fn local<S: Service>(&self, remote: &TopicDescription) -> Option<ServiceDescription> {
-        let name: ServiceName = service_name(remote.topic.as_str())
-            .as_str()
-            .try_into()
-            .expect("prefixed topic names are valid service names");
+        let name = match service_name(remote.topic.as_str()) {
+            Ok(name) => name,
+            Err(error) => {
+                warn!(
+                    "Topic '{}' cannot be mapped to a valid iceoryx2 service name and will not be tunneled: {}",
+                    remote.topic.as_str(),
+                    error
+                );
+                return None;
+            }
+        };
 
         // The payload is a dynamically-sized CDR stream; its type name
         // carries the ROS 2 type name.
@@ -143,6 +151,6 @@ fn topic(service_name: &str) -> Option<TopicName> {
 }
 
 /// Convert a ROS 2 topic name into a conventional iceoryx2 service name.
-fn service_name(topic: &str) -> String {
-    format!("{TOPIC_PREFIX}{topic}")
+fn service_name(topic: &str) -> Result<ServiceName, ServiceNameError> {
+    format!("{TOPIC_PREFIX}{topic}").as_str().try_into()
 }
