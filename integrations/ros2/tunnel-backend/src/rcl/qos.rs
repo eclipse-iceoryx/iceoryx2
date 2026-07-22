@@ -20,6 +20,10 @@ use r2r_rcl::{
 use crate::qos::{Durability, History, Liveliness, QosProfile, Reliability};
 
 /// Matches `RMW_DURATION_INFINITE`. Represents unbounded.
+///
+/// These values are `i64::MAX` (9223372036854775807) split into a
+/// nanosecond duration. The lower 9 decimal digits are the nsec, the remaining
+/// digits the sec. This makes infinity representable as `i64::MAX` nanoseconds.
 const INFINITE: rmw_time_s = rmw_time_s {
     sec: 9223372036,
     nsec: 854775807,
