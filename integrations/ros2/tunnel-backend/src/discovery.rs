@@ -64,6 +64,8 @@ pub struct Discovery<S: Service, M: Mapping<EndpointDescription = TopicDescripti
 }
 
 impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>> Discovery<S, M> {
+    /// Creates a `Discovery` instance to track `topics` on the ROS graph
+    /// via the provided `node`.
     pub(crate) fn new(node: Rc<RclNode>, topics: &[TopicConfig], mapping: Rc<M>) -> Self {
         Self {
             node,
@@ -77,6 +79,7 @@ impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>> Discovery<S
         }
     }
 
+    /// Returns true when `topic` currently appears in a ROS graph snapshot.
     fn is_present_on_graph(
         graph: &[(crate::rcl::TopicName, Vec<crate::rcl::TypeName>)],
         topic: &TopicName,
@@ -113,6 +116,13 @@ impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>> Discovery<S
         })
     }
 
+    /// Handles a configured topic that has become live.
+    ///
+    /// Topics the active mapping does not resolve to a local service are
+    /// skipped.
+    ///
+    /// Returns `Ok` when the topic was processed or skipped, or `Err` if
+    /// querying its QoS or running `process_discovery` failed.
     fn on_discovered<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
         &self,
         topic: &TopicName,
@@ -148,6 +158,10 @@ impl<S: Service, M: Mapping<EndpointDescription = TopicDescription>> Discovery<S
         Ok(())
     }
 
+    /// Handles a previously discovered topic that is no longer live.
+    ///
+    /// Returns `Ok` when the removal was processed, or `Err` if
+    /// `process_discovery` failed.
     fn on_removed<E: Error, F: FnMut(DiscoveryUpdate) -> Result<(), E>>(
         &self,
         topic: &TopicName,
