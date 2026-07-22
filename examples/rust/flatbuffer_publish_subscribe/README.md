@@ -14,5 +14,7 @@
 ## Usage
 
 ```sh
+export IOX2_FLATBUFFER_SCHEMA_PATH=${pwd}/examples/rust/flatbuffer_publish_subscribe
+
 flatc --rust unbounded_data.fbs
 ```
