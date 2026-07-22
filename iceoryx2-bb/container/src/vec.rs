@@ -16,16 +16,19 @@ use core::{
     marker::PhantomData,
     mem::MaybeUninit,
     ops::{Deref, DerefMut},
+    ptr::NonNull,
 };
 
-use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
+use iceoryx2_bb_elementary::{
+    owning_pointer::{GenericOwningPointer, OwningPointer},
+    relocatable_pointer::GenericRelocatablePointer,
+};
 use iceoryx2_bb_elementary_traits::{
-    generic_pointer::GenericPointer, owning_pointer::GenericOwningPointer,
-    owning_pointer::OwningPointer, pointer_trait::PointerTrait,
-    relocatable_container::RelocatableContainer, zero_copy_send::ZeroCopySend,
+    pointer::Pointer, pointer_family::PointerFamily, relocatable_container::RelocatableContainer,
+    zero_copy_send::ZeroCopySend,
 };
 
-use iceoryx2_bb_elementary::{math::unaligned_mem_size, relocatable_ptr::RelocatablePointer};
+use iceoryx2_bb_elementary::{math::unaligned_mem_size, relocatable_pointer::RelocatablePointer};
 
 use iceoryx2_log::{fail, fatal_panic};
 
@@ -35,14 +38,14 @@ pub(crate) type RelocatableVec<T> = MetaVec<T, GenericRelocatablePointer>;
 
 #[doc(hidden)]
 #[repr(C)]
-pub struct MetaVec<T, Ptr: GenericPointer> {
-    data_ptr: Ptr::Type<MaybeUninit<T>>,
+pub struct MetaVec<T, Ptr: PointerFamily> {
+    data_ptr: Ptr::Pointer<MaybeUninit<T>>,
     capacity: usize,
     len: usize,
     _phantom_data: PhantomData<T>,
 }
 
-impl<T: Debug, Ptr: GenericPointer> Debug for MetaVec<T, Ptr> {
+impl<T: Debug, Ptr: PointerFamily> Debug for MetaVec<T, Ptr> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
@@ -66,9 +69,9 @@ impl<T: Debug, Ptr: GenericPointer> Debug for MetaVec<T, Ptr> {
     }
 }
 
-unsafe impl<T: Send, Ptr: GenericPointer> Send for MetaVec<T, Ptr> {}
+unsafe impl<T: Send, Ptr: PointerFamily> Send for MetaVec<T, Ptr> {}
 
-impl<T, Ptr: GenericPointer> Drop for MetaVec<T, Ptr> {
+impl<T, Ptr: PointerFamily> Drop for MetaVec<T, Ptr> {
     fn drop(&mut self) {
         if self.data_ptr.is_initialized() {
             unsafe { self.clear_impl() };
@@ -86,7 +89,9 @@ impl<T> RelocatableContainer for RelocatableVec<T> {
         }
     }
 
-    unsafe fn init<Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator>(
+    unsafe fn init<
+        Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNull<u8>>,
+    >(
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
@@ -109,7 +114,7 @@ impl<T> RelocatableContainer for RelocatableVec<T> {
     }
 }
 
-impl<T, Ptr: GenericPointer> Deref for MetaVec<T, Ptr> {
+impl<T, Ptr: PointerFamily> Deref for MetaVec<T, Ptr> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
@@ -118,14 +123,14 @@ impl<T, Ptr: GenericPointer> Deref for MetaVec<T, Ptr> {
     }
 }
 
-impl<T, Ptr: GenericPointer> DerefMut for MetaVec<T, Ptr> {
+impl<T, Ptr: PointerFamily> DerefMut for MetaVec<T, Ptr> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.verify_init("deref_mut()");
         unsafe { self.as_mut_slice_impl() }
     }
 }
 
-impl<T: PartialEq, Ptr: GenericPointer> PartialEq for MetaVec<T, Ptr> {
+impl<T: PartialEq, Ptr: PointerFamily> PartialEq for MetaVec<T, Ptr> {
     fn eq(&self, other: &Self) -> bool {
         if other.len() != self.len() {
             return false;
@@ -141,9 +146,9 @@ impl<T: PartialEq, Ptr: GenericPointer> PartialEq for MetaVec<T, Ptr> {
     }
 }
 
-impl<T: Eq, Ptr: GenericPointer> Eq for MetaVec<T, Ptr> {}
+impl<T: Eq, Ptr: PointerFamily> Eq for MetaVec<T, Ptr> {}
 
-impl<T, Ptr: GenericPointer> MetaVec<T, Ptr> {
+impl<T, Ptr: PointerFamily> MetaVec<T, Ptr> {
     #[inline(always)]
     fn verify_init(&self, source: &str) {
         debug_assert!(

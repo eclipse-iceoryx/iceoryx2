@@ -419,8 +419,8 @@ pub mod dynamic_storage_trait {
                 let layout = Layout::from_size_align(134, 1).unwrap();
                 let mem = allocator.allocate(layout).unwrap();
 
-                value.supplementary_ptr = mem.as_ptr() as *mut u8;
-                value.supplementary_len = mem.len();
+                value.supplementary_ptr = mem.as_ptr();
+                value.supplementary_len = layout.size();
 
                 for i in 0..134 {
                     unsafe {

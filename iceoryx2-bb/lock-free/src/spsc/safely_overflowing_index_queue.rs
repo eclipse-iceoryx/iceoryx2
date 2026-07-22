@@ -52,21 +52,23 @@ use iceoryx2_bb_concurrency::atomic::AtomicU64;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
-use iceoryx2_bb_elementary::{bump_allocator::BumpAllocator, relocatable_ptr::RelocatablePointer};
+use iceoryx2_bb_elementary::owning_pointer::OwningPointer;
+use iceoryx2_bb_elementary::{
+    bump_allocator::BumpAllocator, relocatable_pointer::RelocatablePointer,
+};
 use iceoryx2_bb_elementary_traits::{
-    owning_pointer::OwningPointer, pointer_trait::PointerTrait,
-    relocatable_container::RelocatableContainer,
+    pointer::Pointer, relocatable_container::RelocatableContainer,
 };
 use iceoryx2_log::{fail, fatal_panic};
 
 /// The [`Producer`] of the [`SafelyOverflowingIndexQueue`]/[`FixedSizeSafelyOverflowingIndexQueue`]
 /// which can add values to it via [`Producer::push()`].
 #[derive(Debug)]
-pub struct Producer<'a, PointerType: PointerTrait<UnsafeCell<u64>>> {
+pub struct Producer<'a, PointerType: Pointer<UnsafeCell<u64>>> {
     queue: &'a details::SafelyOverflowingIndexQueue<PointerType>,
 }
 
-impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Producer<'_, PointerType> {
+impl<PointerType: Pointer<UnsafeCell<u64>> + Debug> Producer<'_, PointerType> {
     /// Adds a new value to the [`SafelyOverflowingIndexQueue`]/[`FixedSizeSafelyOverflowingIndexQueue`].
     /// If the queue is full it returns the oldest index.
     pub fn push(&mut self, t: u64) -> Option<u64> {
@@ -74,7 +76,7 @@ impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Producer<'_, PointerTyp
     }
 }
 
-impl<PointerType: PointerTrait<UnsafeCell<u64>>> Drop for Producer<'_, PointerType> {
+impl<PointerType: Pointer<UnsafeCell<u64>>> Drop for Producer<'_, PointerType> {
     fn drop(&mut self) {
         self.queue.has_producer.store(
             true,
@@ -88,11 +90,11 @@ impl<PointerType: PointerTrait<UnsafeCell<u64>>> Drop for Producer<'_, PointerTy
 /// The [`Consumer`] of the [`SafelyOverflowingIndexQueue`]/[`FixedSizeSafelyOverflowingIndexQueue`]
 /// which can acquire values from it via [`Consumer::pop()`].
 #[derive(Debug)]
-pub struct Consumer<'a, PointerType: PointerTrait<UnsafeCell<u64>>> {
+pub struct Consumer<'a, PointerType: Pointer<UnsafeCell<u64>>> {
     queue: &'a details::SafelyOverflowingIndexQueue<PointerType>,
 }
 
-impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Consumer<'_, PointerType> {
+impl<PointerType: Pointer<UnsafeCell<u64>> + Debug> Consumer<'_, PointerType> {
     /// Acquires a value from the [`SafelyOverflowingIndexQueue`]/[`FixedSizeSafelyOverflowingIndexQueue`].
     /// If the queue is empty it returns [`None`] otherwise the value.
     pub fn pop(&mut self) -> Option<u64> {
@@ -100,7 +102,7 @@ impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Consumer<'_, PointerTyp
     }
 }
 
-impl<PointerType: PointerTrait<UnsafeCell<u64>>> Drop for Consumer<'_, PointerType> {
+impl<PointerType: Pointer<UnsafeCell<u64>>> Drop for Consumer<'_, PointerType> {
     fn drop(&mut self) {
         self.queue.has_consumer.store(
             true,
@@ -120,6 +122,7 @@ pub type RelocatableSafelyOverflowingIndexQueue =
     details::SafelyOverflowingIndexQueue<RelocatablePointer<UnsafeCell<u64>>>;
 
 pub mod details {
+    use core::ptr::NonNull;
     use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
     use super::*;
@@ -129,7 +132,7 @@ pub mod details {
     /// and overridden with the newest element.
     #[derive(Debug)]
     #[repr(C)]
-    pub struct SafelyOverflowingIndexQueue<PointerType: PointerTrait<UnsafeCell<u64>>> {
+    pub struct SafelyOverflowingIndexQueue<PointerType: Pointer<UnsafeCell<u64>>> {
         data_ptr: PointerType,
         pub(super) has_producer: AtomicBool,
         pub(super) has_consumer: AtomicBool,
@@ -139,15 +142,15 @@ pub mod details {
         read_position: AtomicU64,
     }
 
-    unsafe impl<PointerType: PointerTrait<UnsafeCell<u64>> + ZeroCopySend> ZeroCopySend
+    unsafe impl<PointerType: Pointer<UnsafeCell<u64>> + ZeroCopySend> ZeroCopySend
         for SafelyOverflowingIndexQueue<PointerType>
     {
     }
-    unsafe impl<PointerType: PointerTrait<UnsafeCell<u64>>> Sync
+    unsafe impl<PointerType: Pointer<UnsafeCell<u64>>> Sync
         for SafelyOverflowingIndexQueue<PointerType>
     {
     }
-    unsafe impl<PointerType: PointerTrait<UnsafeCell<u64>>> Send
+    unsafe impl<PointerType: Pointer<UnsafeCell<u64>>> Send
         for SafelyOverflowingIndexQueue<PointerType>
     {
     }
@@ -187,7 +190,7 @@ pub mod details {
             }
         }
 
-        unsafe fn init<T: iceoryx2_bb_elementary_traits::allocator::BaseAllocator>(
+        unsafe fn init<T: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNull<u8>>>(
             &mut self,
             allocator: &T,
         ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
@@ -216,7 +219,7 @@ pub mod details {
         }
     }
 
-    impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> SafelyOverflowingIndexQueue<PointerType> {
+    impl<PointerType: Pointer<UnsafeCell<u64>> + Debug> SafelyOverflowingIndexQueue<PointerType> {
         #[inline(always)]
         fn verify_init(&self, source: &str) {
             debug_assert!(

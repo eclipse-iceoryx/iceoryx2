@@ -113,13 +113,15 @@ use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicUsize};
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
+use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
-use iceoryx2_cal::shm_allocator::{AllocationStrategy, PointerOffset};
+use iceoryx2_cal::shm_allocator::PointerOffset;
 use iceoryx2_cal::zero_copy_connection::{
     CHANNEL_STATE_OPEN, ChannelId, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySender,
 };
@@ -128,7 +130,7 @@ use iceoryx2_log::{fail, warn};
 use crate::port::details::sender::*;
 use crate::port::port_name::PortName;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
-use crate::prelude::BackpressureStrategy;
+use crate::prelude::{BackpressureStrategy, Flatbuffer};
 use crate::raw_sample::RawSampleMut;
 use crate::sample_mut::SampleMut;
 use crate::sample_mut_uninit::SampleMutUninit;
@@ -332,7 +334,7 @@ impl<Service: service::Service> PublisherSharedState<Service> {
 #[derive(Debug)]
 pub struct Publisher<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized + 'static,
+    Payload: IceoryxSend + Debug + ?Sized + 'static,
     UserHeader: Debug + ZeroCopySend,
 > {
     pub(crate) publisher_shared_state:
@@ -345,7 +347,7 @@ pub struct Publisher<
 
 unsafe impl<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > Send for Publisher<Service, Payload, UserHeader>
 where
@@ -355,7 +357,7 @@ where
 
 unsafe impl<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > Sync for Publisher<Service, Payload, UserHeader>
 where
@@ -365,7 +367,7 @@ where
 
 impl<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > Abandonable for Publisher<Service, Payload, UserHeader>
 {
@@ -381,7 +383,7 @@ impl<
 
 impl<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > Drop for Publisher<Service, Payload, UserHeader>
 {
@@ -400,7 +402,7 @@ impl<
 
 impl<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > Publisher<Service, Payload, UserHeader>
 {
@@ -600,7 +602,7 @@ impl<
 ////////////////////////
 impl<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + Sized,
+    Payload: IceoryxSend + ZeroCopySend + Debug + Sized,
     UserHeader: Default + Debug + ZeroCopySend,
 > Publisher<Service, Payload, UserHeader>
 {
@@ -686,14 +688,7 @@ impl<
             ),
         )
     }
-}
 
-impl<
-    Service: service::Service,
-    Payload: Default + Debug + ZeroCopySend + Sized,
-    UserHeader: Default + Debug + ZeroCopySend,
-> Publisher<Service, Payload, UserHeader>
-{
     /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`]
     /// and initialize it with the default value. This can be a performance hit and [`Publisher::loan_uninit`]
     /// can be used to loan a [`core::mem::MaybeUninit<Payload>`].
@@ -721,13 +716,47 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn loan(&self) -> Result<SampleMut<Service, Payload, UserHeader>, LoanError> {
+    pub fn loan(&self) -> Result<SampleMut<Service, Payload, UserHeader>, LoanError>
+    where
+        Payload: Default,
+    {
         Ok(self.loan_uninit()?.write_payload(Payload::default()))
     }
 }
 ////////////////////////
 // END: typed API
 ////////////////////////
+
+impl<Service: service::Service, Payload: Debug, UserHeader: Default + Debug + ZeroCopySend>
+    Publisher<Service, Flatbuffer<Payload>, UserHeader>
+{
+    /// Acquires a [`SampleMutUninit`] with an integrated flatbuffer builder.
+    pub fn loan_flatbuffer(
+        &self,
+    ) -> Result<SampleMutUninit<Service, Flatbuffer<Payload>, UserHeader>, LoanError> {
+        let shared_state = self.publisher_shared_state.lock();
+        let chunk = shared_state
+            .sender
+            .allocate(shared_state.sender.sample_layout(1))?;
+        let node_id = shared_state.sender.service_state.shared_node().id();
+        let header_ptr = chunk.header as *mut Header;
+        let user_header_ptr: *mut UserHeader = chunk.user_header.cast();
+        unsafe { header_ptr.write(Header::new(*node_id, self.id(), 1)) };
+        unsafe { user_header_ptr.write(UserHeader::default()) };
+
+        let sample = unsafe {
+            RawSampleMut::new_unchecked(header_ptr, user_header_ptr, chunk.payload.cast())
+        };
+        Ok(
+            SampleMutUninit::<Service, Flatbuffer<Payload>, UserHeader>::new_flatbuffer(
+                &self.publisher_shared_state,
+                sample,
+                chunk.offset,
+                chunk.size,
+            ),
+        )
+    }
+}
 
 ////////////////////////
 // BEGIN: sliced API
@@ -910,7 +939,7 @@ impl<Service: service::Service> Publisher<Service, [CustomPayloadMarker], Custom
 
 impl<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > UpdateConnections for Publisher<Service, Payload, UserHeader>
 {

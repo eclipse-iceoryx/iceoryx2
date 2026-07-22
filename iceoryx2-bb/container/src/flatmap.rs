@@ -37,12 +37,13 @@ use crate::slotmap::FreeListEntry;
 use crate::slotmap::{MetaSlotMap, RelocatableSlotMap};
 use core::fmt::Debug;
 use core::mem::MaybeUninit;
+use core::ptr::NonNull;
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
-use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
-use iceoryx2_bb_elementary_traits::owning_pointer::GenericOwningPointer;
+use iceoryx2_bb_elementary::owning_pointer::GenericOwningPointer;
+use iceoryx2_bb_elementary::relocatable_pointer::GenericRelocatablePointer;
+use iceoryx2_bb_elementary_traits::pointer_family::PointerFamily;
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::{
     placement_default::PlacementDefault, zero_copy_send::ZeroCopySend,
@@ -75,12 +76,12 @@ pub type RelocatableFlatMap<K, V> = MetaFlatMap<K, V, GenericRelocatablePointer>
 
 #[doc(hidden)]
 #[repr(C)]
-pub struct MetaFlatMap<K: Eq, V: Clone, Ptr: GenericPointer> {
+pub struct MetaFlatMap<K: Eq, V: Clone, Ptr: PointerFamily> {
     map: MetaSlotMap<Entry<K, V>, Ptr>,
     is_initialized: AtomicBool,
 }
 
-impl<K: Eq + Debug, V: Clone + Debug, Ptr: GenericPointer> Debug for MetaFlatMap<K, V, Ptr> {
+impl<K: Eq + Debug, V: Clone + Debug, Ptr: PointerFamily> Debug for MetaFlatMap<K, V, Ptr> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
@@ -95,7 +96,7 @@ impl<K: Eq + Debug, V: Clone + Debug, Ptr: GenericPointer> Debug for MetaFlatMap
     }
 }
 
-impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
+impl<K: Eq, V: Clone, Ptr: PointerFamily> MetaFlatMap<K, V, Ptr> {
     #[inline(always)]
     fn verify_init(&self, source: &str) {
         debug_assert!(
@@ -412,7 +413,9 @@ impl<K: Eq, V: Clone> RelocatableContainer for RelocatableFlatMap<K, V> {
         }
     }
 
-    unsafe fn init<Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator>(
+    unsafe fn init<
+        Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNull<u8>>,
+    >(
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {

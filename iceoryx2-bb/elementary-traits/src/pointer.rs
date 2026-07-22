@@ -13,24 +13,17 @@
 //! Trait which describes a form of pointer. Required to distinguish normal pointers from
 //! relocatable pointers.
 
+use core::{fmt::Debug, ptr::NonNull};
+
 /// Trait which describes a form of pointer. Required to distinguish normal pointers from
 /// relocatable pointers.
-pub trait PointerTrait<T> {
+pub trait Pointer<T: Debug>: Debug + Clone + Eq + PartialEq {
     /// Return a pointer to the underlying const type
     ///
-    /// # Safety
-    ///
-    ///  * Do not call this method when the pointer contains a null pointer.
-    ///
-    unsafe fn as_ptr(&self) -> *const T;
+    fn as_ptr(&self) -> *const T;
 
     /// Return a pointer to the underlying mutable type
-    ///
-    /// # Safety
-    ///
-    ///  * Do not call this method when the pointer contains a null pointer.
-    ///
-    unsafe fn as_mut_ptr(&mut self) -> *mut T;
+    fn as_mut_ptr(&mut self) -> *mut T;
 
     /// Indicates whether the pointer has been initialized.
     ///
@@ -38,5 +31,15 @@ pub trait PointerTrait<T> {
     /// point to itself; it is allowed to report false negatives in this case.
     fn is_initialized(&self) -> bool {
         true
+    }
+}
+
+impl<T: Debug> Pointer<T> for NonNull<T> {
+    fn as_ptr(&self) -> *const T {
+        NonNull::as_ptr(*self)
+    }
+
+    fn as_mut_ptr(&mut self) -> *mut T {
+        unsafe { NonNull::as_mut(self) }
     }
 }

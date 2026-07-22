@@ -79,8 +79,10 @@ unsafe impl<T: ZeroCopySend> ZeroCopySend for core::mem::MaybeUninit<T> {}
 // Note: `ZeroCopySend` cannot be implemented for tuples because `#[repr(C)]` can only be applied
 // to structs, enums, and unions.
 
-unsafe impl<T: ZeroCopySend> NoTouchyFishy for T {}
-unsafe impl<T: ZeroCopySend> IceoryxSend for T {}
+unsafe impl<T: ZeroCopySend> __InternalNoTouchyFishy for T {}
+unsafe impl<T: ZeroCopySend> __InternalNoTouchyFishy for [T] {}
+impl<T: ZeroCopySend> IceoryxSend for T {}
+impl<T: ZeroCopySend> IceoryxSend for [T] {}
 
 unsafe impl<T: ZeroCopySend + ?Sized> TypeName for T {
     unsafe fn type_name() -> &'static str {

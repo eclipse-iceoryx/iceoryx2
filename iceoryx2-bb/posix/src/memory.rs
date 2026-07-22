@@ -64,6 +64,7 @@ enum_gen! { MemoryError
 
 /// Performs heap allocations. Basis for a heap allocator.
 pub mod heap {
+    use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
     use iceoryx2_log::fail;
 
     use super::*;
@@ -152,15 +153,17 @@ pub mod heap {
     ///  * `old_layout` must be the same layout it was either acquired with in [`heap::allocate()`]
     ///    or [`heap::allocate_zeroed()`] or when it was resized the current layout
     pub unsafe fn resize(
-        ptr: NonNull<u8>,
+        old_ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
+        content_placement: ContentPlacement,
     ) -> Result<NonNull<[u8]>, MemoryError> {
         let msg = "Unable to resize heap memory to";
+        let origin = "heap::resize()";
         check_precondition(msg, new_layout)?;
 
         if old_layout.align() < new_layout.align() {
-            fail!(from "heap::resize", with MemoryError::AlignmentFailure,
+            fail!(from origin, with MemoryError::AlignmentFailure,
                 "{} {} since the new layouts alignment was increased from {} to {}.",
                 msg,
                 new_layout.size(),
@@ -170,15 +173,33 @@ pub mod heap {
         }
 
         let alignment_adjustment_buffer = new_layout.align() - 1;
-        unsafe {
-            let current_unaligned_start = extract_address(ptr.as_ptr() as usize);
-            let new_unaligned_start = posix::realloc(
+        let current_unaligned_start = unsafe { extract_address(old_ptr.as_ptr() as usize) };
+        let new_unaligned_start = unsafe {
+            posix::realloc(
                 current_unaligned_start as *mut posix::void,
                 new_layout.size() + alignment_adjustment_buffer + MEMORY_START_STORAGE_SPACE,
-            ) as usize;
+            ) as usize
+        };
 
-            setup_and_align(msg, new_unaligned_start, new_layout)
+        if new_unaligned_start == 0 {
+            fail!(from origin,
+                  with MemoryError::OutOfMemory,
+                  "{msg} since the system is out of memory.");
         }
+        let mut new_ptr = setup_and_align(msg, new_unaligned_start, new_layout)?;
+
+        if old_layout.size() < new_layout.size() && content_placement == ContentPlacement::Back {
+            let offset = new_layout.size() - old_layout.size();
+            unsafe {
+                core::ptr::copy(
+                    new_ptr.as_ref().as_ptr(),
+                    new_ptr.as_mut().as_mut_ptr().add(offset),
+                    old_layout.size(),
+                )
+            }
+        }
+
+        Ok(new_ptr)
     }
 
     /// Deallocates a previously allocated piece of memory.

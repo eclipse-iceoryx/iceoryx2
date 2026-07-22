@@ -36,18 +36,17 @@
 //! let mut memory = allocator.allocate(layout).unwrap();
 //!
 //! unsafe {
-//!     allocator.deallocate(
-//!         NonNull::new(memory.as_mut().as_mut_ptr().cast()).unwrap(),
-//!         layout,
-//!     )
+//!     allocator.deallocate(memory, layout)
 //! };
 //! ```
 
 use core::{fmt::Display, ptr::NonNull};
 
 use crate::math::align;
+use crate::sync_pointer::SyncPointer;
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_elementary_traits::pointer::Pointer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
 
@@ -56,7 +55,7 @@ pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocato
 #[derive(Debug)]
 #[repr(C)]
 pub struct BumpAllocator {
-    pub(crate) start: usize,
+    pub(crate) start: SyncPointer<u8>,
     addr_next_free_memory: AtomicUsize,
     full_memory_size: usize,
 }
@@ -67,7 +66,7 @@ impl Display for BumpAllocator {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "BumpAllocator {{ start: {}, current_position: {}, size: {} }}",
+            "BumpAllocator {{ start: {:?}, current_position: {}, size: {} }}",
             self.start,
             self.addr_next_free_memory
                 .load(core::sync::atomic::Ordering::Relaxed),
@@ -79,14 +78,14 @@ impl Display for BumpAllocator {
 impl BumpAllocator {
     pub fn new(start: NonNull<u8>, full_memory_size: usize) -> Self {
         Self {
-            start: start.as_ptr() as usize,
+            start: SyncPointer::new(start.as_ptr()),
             addr_next_free_memory: AtomicUsize::new(0),
             full_memory_size,
         }
     }
 
-    pub fn start_address(&self) -> usize {
-        self.start
+    pub fn start_address(&self) -> *const u8 {
+        self.start.as_ptr()
     }
 
     pub fn used_space(&self) -> usize {
@@ -102,8 +101,8 @@ impl BumpAllocator {
     }
 }
 
-impl BaseAllocator for BumpAllocator {
-    fn allocate(&self, layout: core::alloc::Layout) -> Result<NonNull<[u8]>, AllocationError> {
+impl BaseAllocator<NonNull<u8>> for BumpAllocator {
+    fn allocate(&self, layout: core::alloc::Layout) -> Result<NonNull<u8>, AllocationError> {
         let msg = "Unable to allocate chunk with";
         let mut next_aligned_free_address;
 
@@ -111,13 +110,14 @@ impl BaseAllocator for BumpAllocator {
             fail!(from self, with AllocationError::SizeIsZero,
                 "{} {:?} since the requested size was zero.", msg, layout);
         }
-
+        let start = self.start.as_ptr() as usize;
         let mut current_addr_next_free_memory = self
             .addr_next_free_memory
             .load(core::sync::atomic::Ordering::Relaxed);
+
         loop {
             next_aligned_free_address =
-                align(self.start + current_addr_next_free_memory, layout.align()) - self.start;
+                align(start + current_addr_next_free_memory, layout.align()) - start;
             if next_aligned_free_address + layout.size() > self.full_memory_size {
                 fail!(from self, with AllocationError::OutOfMemory,
                     "{} {:?} since there is not enough memory available.", msg, layout);
@@ -135,10 +135,12 @@ impl BaseAllocator for BumpAllocator {
         }
 
         Ok(unsafe {
-            NonNull::new_unchecked(core::ptr::slice_from_raw_parts_mut(
-                (self.start + next_aligned_free_address) as *mut u8,
-                layout.size(),
-            ))
+            NonNull::new_unchecked(
+                self.start
+                    .as_ptr()
+                    .cast_mut()
+                    .add(next_aligned_free_address),
+            )
         })
     }
 

@@ -35,6 +35,7 @@
 //! use iceoryx2_cal::shm_allocator::ShmAllocator;
 //! use iceoryx2_cal::shared_memory::SharedMemory;
 //! use iceoryx2_cal::named_concept::*;
+//! use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 //! use core::alloc::Layout;
 //! use core::time::Duration;
 //!
@@ -66,7 +67,7 @@
 //!     // following the provided allocation strategy
 //!     let another_chunk = memory.allocate(Layout::new::<u64>()).unwrap();
 //!     // release allocated chunk
-//!     unsafe { memory.deallocate(another_chunk.offset, Layout::new::<u64>()) };
+//!     unsafe { memory.deallocate(another_chunk, Layout::new::<u64>()) };
 //!
 //!
 //!     let view = Memory::ViewBuilder::new(name)
@@ -90,22 +91,24 @@
 pub mod dynamic;
 pub mod recommended;
 
-pub use crate::shm_allocator::{AllocationStrategy, pool_allocator::PoolAllocator};
+pub use crate::shm_allocator::pool_allocator::PoolAllocator;
 
 use core::alloc::Layout;
 use core::fmt::Debug;
 use core::time::Duration;
 
+use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::file::AccessMode;
 
 use crate::named_concept::*;
 use crate::shared_memory::{
-    ContentPlacement, SegmentId, SharedMemory, SharedMemoryCreateError, SharedMemoryOpenError,
-    ShmAllocatorGrowError, ShmPointer,
+    SegmentId, SharedMemory, SharedMemoryCreateError, SharedMemoryOpenError, ShmAllocatorGrowError,
+    ShmPointer,
 };
 use crate::shm_allocator::{PointerOffset, ShmAllocationError, ShmAllocator};
+use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
 
 enum_gen! {
 /// Defines all erros that can occur when calling [`ResizableSharedMemory::allocate()`]
@@ -266,7 +269,7 @@ pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Alloc
     ///  * the offset must be acquired with [`SharedMemory::allocate()`] - extracted from the
     ///    [`ShmPointer`]
     ///  * the layout must be identical to the one used in [`ResizableSharedMemory::allocate()`]
-    unsafe fn deallocate(&self, offset: PointerOffset, layout: core::alloc::Layout);
+    unsafe fn deallocate(&self, ptr: ShmPointer, layout: core::alloc::Layout);
 }
 
 pub trait ResizableSharedMemoryForPoolAllocator<Shm: SharedMemory<PoolAllocator>>:

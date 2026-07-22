@@ -26,6 +26,8 @@ use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::slotmap::{SlotMap, SlotMapKey};
 use iceoryx2_bb_container::string::String;
+use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
+use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, AllocationGrowError};
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_posix::file::AccessMode;
@@ -36,12 +38,11 @@ use iceoryx2_log::{fail, warn};
 
 use crate::resizable_shared_memory::ResizableShmGrowError;
 use crate::shared_memory::{
-    AllocationStrategy, ContentPlacement, SegmentId, SharedMemoryForPoolAllocator,
-    ShmAllocatorGrowError, ShmPointer,
-};
-use crate::shared_memory::{
     PointerOffset, SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError,
     SharedMemoryOpenError, ShmAllocator,
+};
+use crate::shared_memory::{
+    SegmentId, SharedMemoryForPoolAllocator, ShmAllocatorGrowError, ShmPointer,
 };
 use crate::shm_allocator::ShmAllocationError;
 use crate::shm_allocator::pool_allocator::PoolAllocator;
@@ -873,14 +874,14 @@ where
             },
         }
 
-        unsafe { self.deallocate(old_pointer.offset, old_layout) };
+        unsafe { self.deallocate(old_pointer, old_layout) };
 
         Ok(new_pointer)
     }
 
-    unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
+    unsafe fn deallocate(&self, ptr: ShmPointer, layout: Layout) {
         unsafe {
-            self.perform_deallocation(offset, |entry| entry.shm.deallocate(offset, layout));
+            self.perform_deallocation(ptr.offset, |entry| entry.shm.deallocate(ptr, layout));
         }
     }
 }

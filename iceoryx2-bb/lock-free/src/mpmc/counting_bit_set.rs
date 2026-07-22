@@ -46,13 +46,13 @@ use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU16, AtomicU32, AtomicU6
 use iceoryx2_bb_concurrency::atomic::{AtomicU8, Ordering};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+use iceoryx2_bb_elementary::owning_pointer::OwningPointer;
 use iceoryx2_bb_elementary::{
     math::unaligned_mem_size,
-    relocatable_ptr::{PointerTrait, RelocatablePointer},
+    relocatable_pointer::{Pointer, RelocatablePointer},
 };
 use iceoryx2_bb_elementary_traits::{
-    owning_pointer::OwningPointer, relocatable_container::RelocatableContainer,
-    zero_copy_send::ZeroCopySend,
+    relocatable_container::RelocatableContainer, zero_copy_send::ZeroCopySend,
 };
 use iceoryx2_log::fail;
 use iceoryx2_log::fatal_panic;
@@ -107,22 +107,24 @@ pub type RelocatableCountingBitSet = details::CountingBitSet<RelocatablePointer<
 
 #[doc(hidden)]
 pub mod details {
+    use core::ptr::NonNull;
+
     use super::*;
 
     #[derive(Debug)]
     #[repr(C)]
-    pub struct CountingBitSet<PointerType: PointerTrait<AtomicBaseType>> {
+    pub struct CountingBitSet<PointerType: Pointer<AtomicBaseType>> {
         data_ptr: PointerType,
         capacity: usize,
         is_memory_initialized: AtomicBool,
     }
 
-    unsafe impl<PointerType: PointerTrait<AtomicBaseType> + ZeroCopySend> ZeroCopySend
+    unsafe impl<PointerType: Pointer<AtomicBaseType> + ZeroCopySend> ZeroCopySend
         for CountingBitSet<PointerType>
     {
     }
-    unsafe impl<PointerType: PointerTrait<AtomicBaseType>> Send for CountingBitSet<PointerType> {}
-    unsafe impl<PointerType: PointerTrait<AtomicBaseType>> Sync for CountingBitSet<PointerType> {}
+    unsafe impl<PointerType: Pointer<AtomicBaseType>> Send for CountingBitSet<PointerType> {}
+    unsafe impl<PointerType: Pointer<AtomicBaseType>> Sync for CountingBitSet<PointerType> {}
 
     impl CountingBitSet<OwningPointer<AtomicBaseType>> {
         /// Create a new [`CountingBitSet`] with data located in the heap.
@@ -159,7 +161,7 @@ pub mod details {
             }
         }
 
-        unsafe fn init<T: iceoryx2_bb_elementary::bump_allocator::BaseAllocator>(
+        unsafe fn init<T: iceoryx2_bb_elementary::bump_allocator::BaseAllocator<NonNull<u8>>>(
             &mut self,
             allocator: &T,
         ) -> Result<(), iceoryx2_bb_elementary::bump_allocator::AllocationError> {
@@ -194,7 +196,7 @@ pub mod details {
         }
     }
 
-    impl<PointerType: PointerTrait<AtomicBaseType>> CountingBitSet<PointerType> {
+    impl<PointerType: Pointer<AtomicBaseType>> CountingBitSet<PointerType> {
         /// Returns the required memory size for a [`CountingBitSet`] with a specified capacity.
         pub const fn const_memory_size(capacity: usize) -> usize {
             unaligned_mem_size::<AtomicBaseType>(capacity)

@@ -12,6 +12,7 @@
 
 use crate::shm_allocator::*;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic};
 
@@ -79,7 +80,7 @@ impl ShmAllocator for BumpAllocator {
     }
 
     fn relative_start_address(&self) -> usize {
-        self.allocator.start_address() - self.base_address
+        self.allocator.start_address() as usize - self.base_address
     }
 
     unsafe fn new_uninit(
@@ -101,7 +102,7 @@ impl ShmAllocator for BumpAllocator {
         8
     }
 
-    unsafe fn init<Allocator: BaseAllocator>(
+    unsafe fn init<Allocator: BaseAllocator<NonNull<u8>>>(
         &mut self,
         _mgmt_allocator: &Allocator,
     ) -> Result<(), ShmAllocatorInitError> {
@@ -179,7 +180,7 @@ impl ShmAllocator for BumpAllocator {
             }
 
             if placement == ContentPlacement::Back {
-                let src = self.allocator.start_address() + offset.offset();
+                let src = self.allocator.start_address() as usize + offset.offset();
                 let dst = src + (new_layout.size() - old_layout.size());
                 unsafe { core::ptr::copy(src as *const u8, dst as *mut u8, old_layout.size()) };
             }
@@ -188,10 +189,10 @@ impl ShmAllocator for BumpAllocator {
         } else {
             match unsafe { self.allocate(new_layout) } {
                 Ok(new_offset) => {
-                    let src = self.allocator.start_address() + offset.offset();
+                    let src = self.allocator.start_address() as usize + offset.offset();
                     match placement {
                         ContentPlacement::Front => {
-                            let dst = self.allocator.start_address() + new_offset.offset();
+                            let dst = self.allocator.start_address() as usize + new_offset.offset();
                             unsafe {
                                 core::ptr::copy_nonoverlapping(
                                     src as *const u8,
@@ -203,7 +204,7 @@ impl ShmAllocator for BumpAllocator {
                             Ok(new_offset)
                         }
                         ContentPlacement::Back => {
-                            let dst = self.allocator.start_address()
+                            let dst = self.allocator.start_address() as usize
                                 + new_offset.offset()
                                 + new_layout.size()
                                 - old_layout.size();

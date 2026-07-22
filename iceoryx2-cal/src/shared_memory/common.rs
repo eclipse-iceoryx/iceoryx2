@@ -16,6 +16,7 @@ use core::ptr::NonNull;
 use core::{alloc::Layout, fmt::Debug};
 
 use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
+use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -200,6 +201,7 @@ pub mod details {
             details.payload_start_offset = (memory.as_ptr() as *const u8) as usize
                 - (details as *const AllocatorDetails<Allocator>) as usize;
 
+            let memory = NonNull::slice_from_raw_parts(memory, self.size);
             details.allocator.write(unsafe {
                 Allocator::new_uninit(SystemInfo::PageSize.value(), memory, allocator_config)
             });
@@ -488,13 +490,13 @@ pub mod details {
             })
         }
 
-        unsafe fn deallocate(&self, offset: PointerOffset, layout: core::alloc::Layout) {
+        unsafe fn deallocate(&self, ptr: ShmPointer, layout: core::alloc::Layout) {
             unsafe {
                 self.storage
                     .get()
                     .allocator
                     .assume_init_ref()
-                    .deallocate(offset, layout);
+                    .deallocate(ptr.offset, layout);
             }
         }
 

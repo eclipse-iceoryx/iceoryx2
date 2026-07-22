@@ -34,18 +34,19 @@
 //!                           .expect("failed to allocate");
 //!
 //! let mut grown_memory = unsafe { allocator.grow_zeroed(
-//!                             NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+//!                             memory,
 //!                             Layout::from_size_align_unchecked(48, 4),
-//!                             Layout::from_size_align_unchecked(64, 4)
+//!                             Layout::from_size_align_unchecked(64, 4),
+//!                             ContentPlacement::Front
 //!                         ).expect("failed to grow memory")};
 //!
 //! let mut shrink_memory = unsafe { allocator.shrink(
-//!                             NonNull::new(grown_memory.as_mut().as_mut_ptr()).unwrap(),
+//!                             grown_memory,
 //!                             Layout::from_size_align_unchecked(64, 4),
 //!                             Layout::from_size_align_unchecked(32, 4)
 //!                         ).expect("failed to shrink memory")};
 //!
-//! unsafe{ allocator.deallocate(NonNull::new(shrink_memory.as_mut().as_mut_ptr()).unwrap(),
+//! unsafe{ allocator.deallocate(shrink_memory,
 //!                              Layout::from_size_align_unchecked(32, 4))};
 //! ```
 
@@ -53,10 +54,11 @@ pub use core::alloc::Layout;
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
-use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::align;
+use iceoryx2_bb_elementary::sync_pointer::SyncPointer;
 pub use iceoryx2_bb_elementary_traits::allocator::*;
+use iceoryx2_bb_elementary_traits::pointer::Pointer;
 use iceoryx2_bb_elementary_traits::relocatable_container::*;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
@@ -64,16 +66,18 @@ use iceoryx2_bb_lock_free::mpmc::unique_index_set_enums::ReleaseMode;
 use iceoryx2_log::fail;
 use iceoryx2_log::fatal_panic;
 
-#[derive(Debug, ZeroCopySend)]
+#[derive(Debug)]
 #[repr(C)]
 pub struct PoolAllocator {
     buckets: UniqueIndexSet,
     bucket_size: usize,
     bucket_alignment: usize,
-    start: usize,
+    start: SyncPointer<u8>,
     size: usize,
     is_memory_initialized: AtomicBool,
 }
+
+unsafe impl ZeroCopySend for PoolAllocator {}
 
 impl PoolAllocator {
     fn verify_init(&self, source: &str) {
@@ -95,8 +99,8 @@ impl PoolAllocator {
         self.size
     }
 
-    pub fn start_address(&self) -> usize {
-        self.start
+    pub fn start_address(&self) -> *const u8 {
+        self.start.as_ptr()
     }
 
     pub fn max_alignment(&self) -> usize {
@@ -132,7 +136,9 @@ impl PoolAllocator {
             },
             bucket_size: bucket_layout.size(),
             bucket_alignment: bucket_layout.align(),
-            start: adjusted_start,
+            start: SyncPointer::new(unsafe {
+                ptr.as_ptr().add(adjusted_start - ptr.as_ptr() as usize)
+            }),
             size,
             is_memory_initialized: AtomicBool::new(false),
         }
@@ -142,7 +148,7 @@ impl PoolAllocator {
     ///
     ///  * must be called exactly once before any other method can be called
     ///
-    pub unsafe fn init<Allocator: BaseAllocator>(
+    pub unsafe fn init<Allocator: BaseAllocator<NonNull<u8>>>(
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), AllocationError> {
@@ -173,26 +179,26 @@ impl PoolAllocator {
         (ptr.as_ptr() as usize + size - adjusted_start) / bucket_size
     }
 
-    fn verify_ptr_is_managaed_by_allocator(&self, ptr: NonNull<u8>) {
+    fn verify_ptr_is_managed_by_allocator(&self, ptr: NonNull<u8>) {
         let position = ptr.as_ptr() as usize;
         debug_assert!(
-            !(position < self.start
-                || position > self.start + self.size
-                || !(position - self.start).is_multiple_of(self.bucket_size)),
+            !(position < (self.start.as_ptr() as usize)
+                || position > (self.start.as_ptr() as usize) + self.size
+                || !(position - self.start.as_ptr() as usize).is_multiple_of(self.bucket_size)),
             "The pointer {ptr:?} is not managed by this allocator."
         );
     }
 
     fn get_index(&self, ptr: NonNull<u8>) -> u32 {
-        self.verify_ptr_is_managaed_by_allocator(ptr);
+        self.verify_ptr_is_managed_by_allocator(ptr);
         let position = ptr.as_ptr() as usize;
 
-        ((position - self.start) / self.bucket_size) as u32
+        ((position - self.start.as_ptr() as usize) / self.bucket_size) as u32
     }
 }
 
-impl BaseAllocator for PoolAllocator {
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocationError> {
+impl BaseAllocator<NonNull<u8>> for PoolAllocator {
+    fn allocate(&self, layout: Layout) -> Result<NonNull<u8>, AllocationError> {
         self.verify_init("allocate");
 
         if layout.size() > self.bucket_size {
@@ -207,10 +213,12 @@ impl BaseAllocator for PoolAllocator {
 
         match unsafe { self.buckets.acquire_raw_index() } {
             Ok(v) => Ok(unsafe {
-                NonNull::new_unchecked(core::ptr::slice_from_raw_parts_mut(
-                    (self.start + v as usize * self.bucket_size) as *mut u8,
-                    layout.size(),
-                ))
+                NonNull::new_unchecked(
+                    self.start
+                        .as_ptr()
+                        .cast_mut()
+                        .add(v as usize * self.bucket_size),
+                )
             }),
             Err(_) => {
                 fail!(from self, with AllocationError::OutOfMemory,
@@ -227,18 +235,19 @@ impl BaseAllocator for PoolAllocator {
     }
 }
 
-impl Allocator for PoolAllocator {
+impl ReallocGrow<NonNull<u8>> for PoolAllocator {
     /// always returns the input ptr on success but with an increased size
     unsafe fn grow(
         &self,
-        ptr: NonNull<u8>,
+        mut ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocationGrowError> {
+        content_placement: ContentPlacement,
+    ) -> Result<NonNull<u8>, AllocationGrowError> {
         self.verify_init("grow");
 
         let msg = "Unable to grow memory chunk";
-        self.verify_ptr_is_managaed_by_allocator(ptr);
+        self.verify_ptr_is_managed_by_allocator(ptr);
 
         if old_layout.size() >= new_layout.size() {
             fail!(from self, with AllocationGrowError::GrowWouldShrink,
@@ -255,23 +264,32 @@ impl Allocator for PoolAllocator {
                 "{} since the new size {} exceeds the maximum supported size.", msg, new_layout.size());
         }
 
-        Ok(NonNull::new(core::ptr::slice_from_raw_parts_mut(
-            ptr.as_ptr(),
-            new_layout.size(),
-        ))
-        .unwrap())
-    }
+        if content_placement == ContentPlacement::Back {
+            let offset = new_layout.size() - old_layout.size();
+            unsafe {
+                core::ptr::copy(
+                    ptr.as_ptr(),
+                    ptr.as_mut_ptr().add(offset),
+                    old_layout.size(),
+                )
+            };
+        }
 
+        Ok(ptr)
+    }
+}
+
+impl ReallocShrink<NonNull<u8>> for PoolAllocator {
     unsafe fn shrink(
         &self,
         ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocationShrinkError> {
+    ) -> Result<NonNull<u8>, AllocationShrinkError> {
         self.verify_init("shrink");
 
         let msg = "Unable to shrink memory chunk";
-        self.verify_ptr_is_managaed_by_allocator(ptr);
+        self.verify_ptr_is_managed_by_allocator(ptr);
 
         if old_layout.size() <= new_layout.size() {
             fail!(from self, with AllocationShrinkError::ShrinkWouldGrow,
@@ -283,11 +301,7 @@ impl Allocator for PoolAllocator {
                 "{} since the new alignment {} exceeds the maximum supported alignment.", msg, new_layout.align() );
         }
 
-        Ok(NonNull::new(core::ptr::slice_from_raw_parts_mut(
-            ptr.as_ptr(),
-            new_layout.size(),
-        ))
-        .unwrap())
+        Ok(ptr)
     }
 }
 
@@ -341,7 +355,9 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> FixedSizePoolAllocator<MAX_NUMBER_OF_BU
                 },
                 bucket_size: bucket_layout.size(),
                 bucket_alignment: bucket_layout.align(),
-                start: adjusted_start,
+                start: SyncPointer::new(unsafe {
+                    ptr.as_ptr().add(adjusted_start - ptr.as_ptr() as usize)
+                }),
                 size,
                 is_memory_initialized: AtomicBool::new(true),
             },
@@ -369,10 +385,10 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> FixedSizePoolAllocator<MAX_NUMBER_OF_BU
     }
 }
 
-impl<const MAX_NUMBER_OF_BUCKETS: usize> BaseAllocator
+impl<const MAX_NUMBER_OF_BUCKETS: usize> BaseAllocator<NonNull<u8>>
     for FixedSizePoolAllocator<MAX_NUMBER_OF_BUCKETS>
 {
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocationError> {
+    fn allocate(&self, layout: Layout) -> Result<NonNull<u8>, AllocationError> {
         self.state.allocate(layout)
     }
 
@@ -383,7 +399,7 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> BaseAllocator
     }
 }
 
-impl<const MAX_NUMBER_OF_BUCKETS: usize> Allocator
+impl<const MAX_NUMBER_OF_BUCKETS: usize> ReallocGrow<NonNull<u8>>
     for FixedSizePoolAllocator<MAX_NUMBER_OF_BUCKETS>
 {
     /// always returns the input ptr on success but with an increased size
@@ -392,16 +408,24 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> Allocator
         ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocationGrowError> {
-        unsafe { self.state.grow(ptr, old_layout, new_layout) }
+        content_placement: ContentPlacement,
+    ) -> Result<NonNull<u8>, AllocationGrowError> {
+        unsafe {
+            self.state
+                .grow(ptr, old_layout, new_layout, content_placement)
+        }
     }
+}
 
+impl<const MAX_NUMBER_OF_BUCKETS: usize> ReallocShrink<NonNull<u8>>
+    for FixedSizePoolAllocator<MAX_NUMBER_OF_BUCKETS>
+{
     unsafe fn shrink(
         &self,
         ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocationShrinkError> {
+    ) -> Result<NonNull<u8>, AllocationShrinkError> {
         unsafe { self.state.shrink(ptr, old_layout, new_layout) }
     }
 }

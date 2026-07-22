@@ -77,11 +77,11 @@ use iceoryx2_bb_concurrency::cell::{Cell, UnsafeCell};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
-use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
+use iceoryx2_bb_elementary::relocatable_pointer::RelocatablePointer;
 use iceoryx2_bb_elementary::unique_id::UniqueId;
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
-use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
+use iceoryx2_bb_elementary_traits::pointer::Pointer;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic};
@@ -219,7 +219,7 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
         }
     }
 
-    unsafe fn init<Allocator: BaseAllocator>(
+    unsafe fn init<Allocator: BaseAllocator<NonNull<u8>>>(
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), AllocationError> {
@@ -568,8 +568,7 @@ impl<T: Copy + Debug> Container<T> {
         // must be set once here, if the current_change_counter changes in the loop below
         // the previous_state is updated again with the next clone_state iteration
         previous_state.current_change_counter = current_change_counter;
-        let element_generation_counter_ptr =
-            unsafe { self.element_generation_counter_ptr.as_ptr() };
+        let element_generation_counter_ptr = self.element_generation_counter_ptr.as_ptr();
 
         for i in 0..self.capacity {
             let element_generation_counter = unsafe { &*element_generation_counter_ptr.add(i) };

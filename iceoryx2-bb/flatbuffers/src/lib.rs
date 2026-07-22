@@ -13,10 +13,13 @@
 //! An iceoryx2 support library that helps to find schema files, to deduce type names and more
 
 #![no_std]
+/// Memory that can be resized and that has a flatbuffer allocator interface.
+pub mod resizable_memory;
 /// Schema file finder.
 pub mod schema_finder;
 /// Deduce a flatbuffer type name and namespace from a rust type name.
 pub mod type_name;
 
+pub use resizable_memory::*;
 pub use schema_finder::*;
 pub use type_name::*;

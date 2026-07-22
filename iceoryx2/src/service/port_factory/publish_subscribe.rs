@@ -41,6 +41,7 @@
 //! ```
 extern crate alloc;
 use alloc::sync::Arc;
+use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 
 use super::nodes;
 use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
@@ -67,7 +68,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 #[derive(Debug)]
 pub struct PortFactory<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > {
     pub(crate) service: SharedServiceState<Service, PublishSubscribeResources<Service>>,
@@ -77,14 +78,14 @@ pub struct PortFactory<
 
 unsafe impl<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > Send for PortFactory<Service, Payload, UserHeader>
 {
 }
 unsafe impl<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > Sync for PortFactory<Service, Payload, UserHeader>
 {
@@ -92,7 +93,7 @@ unsafe impl<
 
 impl<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > Abandonable for PortFactory<Service, Payload, UserHeader>
 {
@@ -104,7 +105,7 @@ impl<
 
 impl<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > crate::service::port_factory::PortFactory for PortFactory<Service, Payload, UserHeader>
 {
@@ -150,7 +151,7 @@ impl<
 
 impl<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > PortFactory<Service, Payload, UserHeader>
 {

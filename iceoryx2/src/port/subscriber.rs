@@ -42,6 +42,7 @@ use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
+use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
@@ -126,8 +127,8 @@ impl<Service: service::Service> Abandonable for SubscriberSharedState<Service> {
 #[derive(Debug)]
 pub struct Subscriber<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized + 'static,
-    UserHeader: Debug + ZeroCopySend,
+    Payload: IceoryxSend + Debug + ?Sized + 'static,
+    UserHeader: ZeroCopySend + Debug,
 > {
     dynamic_subscriber_handle: ContainerHandle,
     subscriber_details: &'static SubscriberDetails,
@@ -139,7 +140,7 @@ pub struct Subscriber<
 
 unsafe impl<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > Send for Subscriber<Service, Payload, UserHeader>
 where
@@ -149,7 +150,7 @@ where
 
 unsafe impl<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > Sync for Subscriber<Service, Payload, UserHeader>
 where
@@ -159,7 +160,7 @@ where
 
 impl<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > Abandonable for Subscriber<Service, Payload, UserHeader>
 {
@@ -175,7 +176,7 @@ impl<
 
 impl<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > Drop for Subscriber<Service, Payload, UserHeader>
 {
@@ -193,7 +194,7 @@ impl<
 
 impl<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > Subscriber<Service, Payload, UserHeader>
 {
@@ -428,7 +429,7 @@ impl<
 
 impl<
     Service: service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > UpdateConnections for Subscriber<Service, Payload, UserHeader>
 {
@@ -452,7 +453,7 @@ impl<
     }
 }
 
-impl<Service: service::Service, Payload: Debug + ZeroCopySend, UserHeader: Debug + ZeroCopySend>
+impl<Service: service::Service, Payload: IceoryxSend + Debug, UserHeader: Debug + ZeroCopySend>
     Subscriber<Service, Payload, UserHeader>
 {
     /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be

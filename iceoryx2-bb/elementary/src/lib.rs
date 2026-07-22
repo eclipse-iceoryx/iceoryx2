@@ -24,15 +24,18 @@ pub mod enum_gen;
 
 /// A strong type that represents the alignment part of [`core::alloc::Layout`]
 pub mod alignment;
+pub mod allocation_strategy;
 pub mod bump_allocator;
 pub mod code_style;
 pub mod cyclic_tagger;
 pub mod lazy_singleton;
 pub mod math;
+pub mod owning_pointer;
 pub mod package_version;
-pub mod relocatable_ptr;
+pub mod relocatable_pointer;
 pub mod scope_guard;
 pub mod static_assert;
+pub mod sync_pointer;
 pub mod unique_id;
 pub mod unsendable_marker;
 

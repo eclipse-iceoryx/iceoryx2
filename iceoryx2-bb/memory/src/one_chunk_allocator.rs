@@ -29,19 +29,20 @@
 //!
 //! // will always return the same pointer but shrink the underlying memory
 //! let mut shrink_memory = unsafe { allocator.shrink(
-//!                             NonNull::new(memory.as_mut().as_mut_ptr()).unwrap(),
+//!                             memory,
 //!                             Layout::from_size_align_unchecked(64, 4),
 //!                             Layout::from_size_align_unchecked(32, 4)
 //!                         ).expect("failed to shrink memory")};
 //!
 //! // will always return the same pointer but grow the underlying memory
 //! let mut grown_memory = unsafe { allocator.grow_zeroed(
-//!                             NonNull::new(shrink_memory.as_mut().as_mut_ptr()).unwrap(),
+//!                             shrink_memory,
 //!                             Layout::from_size_align_unchecked(48, 4),
-//!                             Layout::from_size_align_unchecked(64, 4)
+//!                             Layout::from_size_align_unchecked(64, 4),
+//!                             ContentPlacement::Front
 //!                         ).expect("failed to grow memory")};
 //!
-//! unsafe{ allocator.deallocate(NonNull::new(grown_memory.as_mut().as_mut_ptr()).unwrap(),
+//! unsafe{ allocator.deallocate(grown_memory,
 //!                              Layout::from_size_align_unchecked(32, 4))};
 //! ```
 
@@ -51,13 +52,14 @@ use iceoryx2_bb_concurrency::atomic::Ordering;
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_elementary::math::align;
+use iceoryx2_bb_elementary_traits::pointer::Pointer;
 use iceoryx2_log::fail;
 
 pub use iceoryx2_bb_elementary_traits::allocator::*;
 
 #[derive(Debug)]
 pub struct OneChunkAllocator {
-    start: usize,
+    start: *mut u8,
     size: usize,
     allocated_chunk_start: AtomicUsize,
 }
@@ -65,7 +67,7 @@ pub struct OneChunkAllocator {
 impl OneChunkAllocator {
     pub fn new(ptr: NonNull<u8>, size: usize) -> OneChunkAllocator {
         OneChunkAllocator {
-            start: ptr.as_ptr() as usize,
+            start: ptr.as_ptr(),
             size,
             allocated_chunk_start: AtomicUsize::new(0),
         }
@@ -86,7 +88,7 @@ impl OneChunkAllocator {
         self.allocated_chunk_start.store(0, Ordering::Relaxed)
     }
 
-    pub fn start_address(&self) -> usize {
+    pub fn start_address(&self) -> *const u8 {
         self.start
     }
 
@@ -95,9 +97,9 @@ impl OneChunkAllocator {
     }
 }
 
-impl BaseAllocator for OneChunkAllocator {
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocationError> {
-        let adjusted_start = align(self.start, layout.align());
+impl BaseAllocator<NonNull<u8>> for OneChunkAllocator {
+    fn allocate(&self, layout: Layout) -> Result<NonNull<u8>, AllocationError> {
+        let adjusted_start = align(self.start as usize, layout.align());
         let msg = "Unable to allocate chunk";
 
         if !self.has_chunk_available() {
@@ -105,7 +107,7 @@ impl BaseAllocator for OneChunkAllocator {
                 "{} since there is no more chunk available.", msg);
         }
 
-        let available_size = self.size - (adjusted_start - self.start);
+        let available_size = self.size - (adjusted_start - self.start as usize);
         if available_size <= layout.size() {
             fail!(from self, with AllocationError::OutOfMemory,
                 "{} due to insufficient available memory.", msg);
@@ -113,11 +115,7 @@ impl BaseAllocator for OneChunkAllocator {
 
         self.allocated_chunk_start
             .store(adjusted_start, Ordering::Relaxed);
-        Ok(NonNull::new(core::ptr::slice_from_raw_parts_mut(
-            adjusted_start as *mut u8,
-            available_size,
-        ))
-        .unwrap())
+        Ok(unsafe { NonNull::new_unchecked(self.start.add(adjusted_start - self.start as usize)) })
     }
 
     unsafe fn deallocate(&self, ptr: NonNull<u8>, _layout: Layout) {
@@ -126,13 +124,14 @@ impl BaseAllocator for OneChunkAllocator {
     }
 }
 
-impl Allocator for OneChunkAllocator {
+impl ReallocGrow<NonNull<u8>> for OneChunkAllocator {
     unsafe fn grow(
         &self,
-        ptr: NonNull<u8>,
+        mut ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocationGrowError> {
+        content_placement: ContentPlacement,
+    ) -> Result<NonNull<u8>, AllocationGrowError> {
         let msg = "Unable to grow memory chunk";
         self.verify_ptr_is_managed_by_allocator(ptr);
 
@@ -147,26 +146,35 @@ impl Allocator for OneChunkAllocator {
         }
 
         let available_size =
-            self.size - (self.allocated_chunk_start.load(Ordering::Relaxed) - self.start);
+            self.size - (self.allocated_chunk_start.load(Ordering::Relaxed) - self.start as usize);
 
         if available_size < new_layout.size() {
             fail!(from self, with AllocationGrowError::OutOfMemory,
                 "{} since the size of {} exceeds the available memory size of {}.", msg, new_layout.size(), available_size);
         }
 
-        Ok(NonNull::new(core::ptr::slice_from_raw_parts_mut(
-            ptr.as_ptr(),
-            available_size,
-        ))
-        .unwrap())
-    }
+        if content_placement == ContentPlacement::Back {
+            let offset = new_layout.size() - old_layout.size();
+            unsafe {
+                core::ptr::copy(
+                    ptr.as_ptr(),
+                    ptr.as_mut_ptr().add(offset),
+                    old_layout.size(),
+                )
+            };
+        }
 
+        Ok(ptr)
+    }
+}
+
+impl ReallocShrink<NonNull<u8>> for OneChunkAllocator {
     unsafe fn shrink(
         &self,
         ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocationShrinkError> {
+    ) -> Result<NonNull<u8>, AllocationShrinkError> {
         let msg = "Unable to shrink memory chunk";
         self.verify_ptr_is_managed_by_allocator(ptr);
 
@@ -180,10 +188,6 @@ impl Allocator for OneChunkAllocator {
                 "{} since this allocator does not support to any alignment increase in this operation.", msg);
         }
 
-        Ok(NonNull::new(core::ptr::slice_from_raw_parts_mut(
-            ptr.as_ptr(),
-            new_layout.size(),
-        ))
-        .unwrap())
+        Ok(ptr)
     }
 }

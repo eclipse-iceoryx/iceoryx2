@@ -21,13 +21,11 @@ pub mod allocator;
 mod as_cstr;
 pub use crate::as_cstr::*;
 pub mod atomic_copy;
-pub mod generic_pointer;
-#[doc(hidden)]
 pub mod iceoryx_send;
-pub mod owning_pointer;
 pub mod placement_default;
 pub mod plain_old_data_without_padding;
-pub mod pointer_trait;
+pub mod pointer;
+pub mod pointer_family;
 pub mod relocatable_container;
 pub mod testing;
 pub mod type_name;

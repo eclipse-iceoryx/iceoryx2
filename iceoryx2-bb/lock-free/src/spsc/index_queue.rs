@@ -51,20 +51,22 @@ use iceoryx2_bb_concurrency::atomic::AtomicU64;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
-use iceoryx2_bb_elementary::{bump_allocator::BumpAllocator, relocatable_ptr::RelocatablePointer};
+use iceoryx2_bb_elementary::owning_pointer::OwningPointer;
+use iceoryx2_bb_elementary::{
+    bump_allocator::BumpAllocator, relocatable_pointer::RelocatablePointer,
+};
 use iceoryx2_bb_elementary_traits::{
-    owning_pointer::OwningPointer, pointer_trait::PointerTrait,
-    relocatable_container::RelocatableContainer,
+    pointer::Pointer, relocatable_container::RelocatableContainer,
 };
 use iceoryx2_log::{fail, fatal_panic};
 
 /// The [`Producer`] of the [`IndexQueue`]/[`FixedSizeIndexQueue`] which can add values to it
 /// via [`Producer::push()`].
-pub struct Producer<'a, PointerType: PointerTrait<UnsafeCell<u64>> + Debug> {
+pub struct Producer<'a, PointerType: Pointer<UnsafeCell<u64>> + Debug> {
     queue: &'a details::IndexQueue<PointerType>,
 }
 
-impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Producer<'_, PointerType> {
+impl<PointerType: Pointer<UnsafeCell<u64>> + Debug> Producer<'_, PointerType> {
     /// Adds a new value to the [`IndexQueue`]/[`FixedSizeIndexQueue`]. If the queue is full
     /// it returns false, otherwise true.
     pub fn push(&mut self, t: u64) -> bool {
@@ -72,7 +74,7 @@ impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Producer<'_, PointerTyp
     }
 }
 
-impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Drop for Producer<'_, PointerType> {
+impl<PointerType: Pointer<UnsafeCell<u64>> + Debug> Drop for Producer<'_, PointerType> {
     fn drop(&mut self) {
         // SYNC POINT: producer
         // sync the internal state with the next producer in another thread
@@ -82,11 +84,11 @@ impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Drop for Producer<'_, P
 
 /// The [`Consumer`] of the [`IndexQueue`]/[`FixedSizeIndexQueue`] which can acquire values from it
 /// via [`Consumer::pop()`].
-pub struct Consumer<'a, PointerType: PointerTrait<UnsafeCell<u64>> + Debug> {
+pub struct Consumer<'a, PointerType: Pointer<UnsafeCell<u64>> + Debug> {
     queue: &'a details::IndexQueue<PointerType>,
 }
 
-impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Consumer<'_, PointerType> {
+impl<PointerType: Pointer<UnsafeCell<u64>> + Debug> Consumer<'_, PointerType> {
     /// Acquires a value from the [`IndexQueue`]/[`FixedSizeIndexQueue`]. If the queue is empty
     /// it returns [`None`] otherwise the value.
     pub fn pop(&mut self) -> Option<u64> {
@@ -94,7 +96,7 @@ impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Consumer<'_, PointerTyp
     }
 }
 
-impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Drop for Consumer<'_, PointerType> {
+impl<PointerType: Pointer<UnsafeCell<u64>> + Debug> Drop for Consumer<'_, PointerType> {
     fn drop(&mut self) {
         // SYNC POINT: consumer
         // sync the internal state with the next consumer in another thread
@@ -106,7 +108,7 @@ pub type IndexQueue = details::IndexQueue<OwningPointer<UnsafeCell<u64>>>;
 pub type RelocatableIndexQueue = details::IndexQueue<RelocatablePointer<UnsafeCell<u64>>>;
 
 pub mod details {
-
+    use core::ptr::NonNull;
     use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
     use super::*;
@@ -115,7 +117,7 @@ pub mod details {
     /// queue is created.
     #[repr(C)]
     #[derive(Debug)]
-    pub struct IndexQueue<PointerType: PointerTrait<UnsafeCell<u64>>> {
+    pub struct IndexQueue<PointerType: Pointer<UnsafeCell<u64>>> {
         write_position: AtomicU64,
         read_position: AtomicU64,
         pub(super) has_producer: AtomicBool,
@@ -125,12 +127,12 @@ pub mod details {
         data_ptr: PointerType,
     }
 
-    unsafe impl<PointerType: PointerTrait<UnsafeCell<u64>> + ZeroCopySend> ZeroCopySend
+    unsafe impl<PointerType: Pointer<UnsafeCell<u64>> + ZeroCopySend> ZeroCopySend
         for IndexQueue<PointerType>
     {
     }
-    unsafe impl<PointerType: PointerTrait<UnsafeCell<u64>>> Sync for IndexQueue<PointerType> {}
-    unsafe impl<PointerType: PointerTrait<UnsafeCell<u64>>> Send for IndexQueue<PointerType> {}
+    unsafe impl<PointerType: Pointer<UnsafeCell<u64>>> Sync for IndexQueue<PointerType> {}
+    unsafe impl<PointerType: Pointer<UnsafeCell<u64>>> Send for IndexQueue<PointerType> {}
 
     impl IndexQueue<OwningPointer<UnsafeCell<u64>>> {
         pub fn new(capacity: usize) -> Self {
@@ -165,7 +167,7 @@ pub mod details {
             }
         }
 
-        unsafe fn init<T: iceoryx2_bb_elementary_traits::allocator::BaseAllocator>(
+        unsafe fn init<T: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNull<u8>>>(
             &mut self,
             allocator: &T,
         ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
@@ -194,7 +196,7 @@ pub mod details {
         }
     }
 
-    impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> IndexQueue<PointerType> {
+    impl<PointerType: Pointer<UnsafeCell<u64>> + Debug> IndexQueue<PointerType> {
         #[inline(always)]
         fn verify_init(&self, source: &str) {
             debug_assert!(

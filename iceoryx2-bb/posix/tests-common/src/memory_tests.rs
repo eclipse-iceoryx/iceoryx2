@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
 use iceoryx2_bb_posix::memory::*;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
@@ -81,7 +82,7 @@ pub fn allocating_zeroed_memory_with_size_of_zero_fails() {
 }
 
 #[test]
-pub fn increasing_memory_keeps_content() -> Result<(), MemoryError> {
+pub fn increasing_memory_keeps_with_content_at_front() -> Result<(), MemoryError> {
     const MEM_SIZE: usize = 1024;
     const MEM_ALIGN: usize = 1;
     let layout = unsafe { Layout::from_size_align_unchecked(MEM_SIZE, MEM_ALIGN) };
@@ -101,6 +102,7 @@ pub fn increasing_memory_keeps_content() -> Result<(), MemoryError> {
             NonNull::new(memory.as_ref().as_ptr() as *mut u8).unwrap(),
             layout,
             Layout::from_size_align_unchecked(MEM_SIZE * 3, MEM_ALIGN),
+            ContentPlacement::Front,
         )?
     };
     assert_that!(unsafe { memory.as_ref() }, len MEM_SIZE * 3);
@@ -108,6 +110,48 @@ pub fn increasing_memory_keeps_content() -> Result<(), MemoryError> {
     assert_that!(address, mod MEM_ALIGN, is 0);
 
     for i in 0..MEM_SIZE {
+        assert_that!(unsafe { memory.as_ref()[i] }, eq 255)
+    }
+
+    unsafe {
+        heap::deallocate(
+            NonNull::new(memory.as_ref().as_ptr() as *mut u8).unwrap(),
+            layout,
+        )
+    };
+
+    Ok(())
+}
+
+#[test]
+pub fn increasing_memory_keeps_with_content_at_back() -> Result<(), MemoryError> {
+    const MEM_SIZE: usize = 1024;
+    const MEM_ALIGN: usize = 1;
+    let layout = unsafe { Layout::from_size_align_unchecked(MEM_SIZE, MEM_ALIGN) };
+    let mut memory = heap::allocate(layout)?;
+
+    assert_that!(unsafe { memory.as_ref() }, len MEM_SIZE);
+    let address = unsafe { memory.as_ref() }.as_ptr() as usize;
+    assert_that!(address, mod MEM_ALIGN, is 0);
+
+    for i in 0..MEM_SIZE {
+        unsafe { memory.as_mut()[i] = 255 };
+    }
+
+    // resize
+    let memory = unsafe {
+        heap::resize(
+            NonNull::new(memory.as_ref().as_ptr() as *mut u8).unwrap(),
+            layout,
+            Layout::from_size_align_unchecked(MEM_SIZE * 3, MEM_ALIGN),
+            ContentPlacement::Back,
+        )?
+    };
+    assert_that!(unsafe { memory.as_ref() }, len MEM_SIZE * 3);
+    let address = unsafe { memory.as_ref() }.as_ptr() as usize;
+    assert_that!(address, mod MEM_ALIGN, is 0);
+
+    for i in MEM_SIZE * 2..MEM_SIZE * 3 {
         assert_that!(unsafe { memory.as_ref()[i] }, eq 255)
     }
 
@@ -142,6 +186,7 @@ pub fn decreasing_memory_keeps_content() -> Result<(), MemoryError> {
             NonNull::new(memory.as_ref().as_ptr() as *mut u8).unwrap(),
             layout,
             Layout::from_size_align_unchecked(MEM_SIZE / 2, MEM_ALIGN),
+            ContentPlacement::Front,
         )?
     };
     assert_that!(unsafe { memory.as_ref() }, len MEM_SIZE / 2);
@@ -180,6 +225,7 @@ pub fn decreasing_memory_to_zero_fails() -> Result<(), MemoryError> {
                 NonNull::new(memory.as_ref().as_ptr() as *mut u8).unwrap(),
                 layout,
                 Layout::from_size_align_unchecked(0, MEM_ALIGN),
+                ContentPlacement::Front,
             )
         },
         is_err
@@ -205,6 +251,7 @@ pub fn resize_memory_with_increased_alignment_fails() -> Result<(), MemoryError>
                 NonNull::new(memory.as_ref().as_ptr() as *mut u8).unwrap(),
                 layout,
                 Layout::from_size_align_unchecked(MEM_SIZE * 2, MEM_ALIGN * 2),
+                ContentPlacement::Front,
             )
         },
         is_err

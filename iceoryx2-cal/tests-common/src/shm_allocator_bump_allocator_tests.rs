@@ -12,11 +12,12 @@
 
 use alloc::boxed::Box;
 use core::{alloc::Layout, ptr::NonNull};
-
+use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
+use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 use iceoryx2_cal::shm_allocator::{
-    AllocationStrategy, PointerOffset, ShmAllocator, ShmAllocatorGrowError, shm_bump_allocator::*,
+    PointerOffset, ShmAllocator, ShmAllocatorGrowError, shm_bump_allocator::*,
 };
 
 const MAX_SUPPORTED_ALIGNMENT: usize = 4096;
@@ -129,12 +130,7 @@ fn growing_last_chunk_and_keep_content_at_front_works() {
     let new_layout = Test::generate_layout(9);
     let offset = unsafe {
         test.sut
-            .grow(
-                offset,
-                old_layout,
-                new_layout,
-                iceoryx2_cal::shm_allocator::ContentPlacement::Front,
-            )
+            .grow(offset, old_layout, new_layout, ContentPlacement::Front)
             .unwrap()
     };
     let ptr = test.offset_to_ptr(offset);
@@ -158,12 +154,7 @@ fn growing_last_chunk_and_keep_content_at_back_works() {
     let new_layout = Test::generate_layout(9);
     let offset = unsafe {
         test.sut
-            .grow(
-                offset,
-                old_layout,
-                new_layout,
-                iceoryx2_cal::shm_allocator::ContentPlacement::Back,
-            )
+            .grow(offset, old_layout, new_layout, ContentPlacement::Back)
             .unwrap()
     };
     let ptr = test.offset_to_ptr(offset);
@@ -194,12 +185,7 @@ fn growing_with_existing_middle_chunk_and_keep_content_at_front_works() {
     let new_layout = Test::generate_layout(10);
     let offset = unsafe {
         test.sut
-            .grow(
-                offset,
-                old_layout,
-                new_layout,
-                iceoryx2_cal::shm_allocator::ContentPlacement::Front,
-            )
+            .grow(offset, old_layout, new_layout, ContentPlacement::Front)
             .unwrap()
     };
     let ptr = test.offset_to_ptr(offset);
@@ -239,12 +225,7 @@ fn growing_with_existing_middle_chunk_and_keep_content_at_back_works() {
     let new_layout = Test::generate_layout(10);
     let offset = unsafe {
         test.sut
-            .grow(
-                offset,
-                old_layout,
-                new_layout,
-                iceoryx2_cal::shm_allocator::ContentPlacement::Back,
-            )
+            .grow(offset, old_layout, new_layout, ContentPlacement::Back)
             .unwrap()
     };
     let ptr = test.offset_to_ptr(offset);
@@ -276,12 +257,8 @@ fn growing_chunk_larger_than_available_memory_fails() {
 
     let new_layout = Test::generate_layout(10 + MEM_SIZE);
     let offset = unsafe {
-        test.sut.grow(
-            offset,
-            old_layout,
-            new_layout,
-            iceoryx2_cal::shm_allocator::ContentPlacement::Back,
-        )
+        test.sut
+            .grow(offset, old_layout, new_layout, ContentPlacement::Back)
     };
 
     assert_that!(offset.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::OutOfMemory)));
@@ -295,12 +272,8 @@ fn growing_and_increasing_alignment_fails() {
 
     let new_layout = unsafe { Layout::from_size_align_unchecked(16, 8) };
     let offset = unsafe {
-        test.sut.grow(
-            offset,
-            old_layout,
-            new_layout,
-            iceoryx2_cal::shm_allocator::ContentPlacement::Back,
-        )
+        test.sut
+            .grow(offset, old_layout, new_layout, ContentPlacement::Back)
     };
 
     assert_that!(offset.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::AlignmentFailure)));
@@ -314,12 +287,8 @@ fn growing_and_decreasing_size_fails() {
 
     let new_layout = Test::generate_layout(4);
     let offset = unsafe {
-        test.sut.grow(
-            offset,
-            old_layout,
-            new_layout,
-            iceoryx2_cal::shm_allocator::ContentPlacement::Back,
-        )
+        test.sut
+            .grow(offset, old_layout, new_layout, ContentPlacement::Back)
     };
 
     assert_that!(offset.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::GrowWouldShrink)));
@@ -333,12 +302,8 @@ fn growing_and_decreasing_alignment_works() {
 
     let new_layout = unsafe { Layout::from_size_align_unchecked(32, 4) };
     let offset = unsafe {
-        test.sut.grow(
-            offset,
-            old_layout,
-            new_layout,
-            iceoryx2_cal::shm_allocator::ContentPlacement::Front,
-        )
+        test.sut
+            .grow(offset, old_layout, new_layout, ContentPlacement::Front)
     };
 
     assert_that!(offset, is_ok);
@@ -352,12 +317,7 @@ fn growing_with_same_size_returns_same_offset() {
 
     let new_offset = unsafe {
         test.sut
-            .grow(
-                offset,
-                old_layout,
-                old_layout,
-                iceoryx2_cal::shm_allocator::ContentPlacement::Front,
-            )
+            .grow(offset, old_layout, old_layout, ContentPlacement::Front)
             .unwrap()
     };
 

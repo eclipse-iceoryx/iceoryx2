@@ -10,12 +10,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::fmt::Debug;
+use core::{fmt::Debug, ptr::NonNull};
 
-use crate::pointer_trait::PointerTrait;
+use crate::pointer::Pointer;
 
 /// Trait that allows to use typed pointers as generic arguments for structs.
-pub trait GenericPointer {
+pub trait PointerFamily {
     /// The underlying pointer type.
-    type Type<T: Debug>: PointerTrait<T> + Debug;
+    type Pointer<T: Debug>: Pointer<T>;
+}
+
+#[derive(Debug)]
+pub struct NonNullFamily;
+
+impl PointerFamily for NonNullFamily {
+    type Pointer<T: Debug> = NonNull<T>;
 }

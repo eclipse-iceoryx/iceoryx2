@@ -113,7 +113,7 @@ use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_bb_elementary::relocatable_ptr::{PointerTrait, RelocatablePointer};
+use iceoryx2_bb_elementary::relocatable_pointer::{Pointer, RelocatablePointer};
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -181,7 +181,7 @@ impl RelocatableContainer for RobustUniqueIndexSet {
         }
     }
 
-    unsafe fn init<T: iceoryx2_bb_elementary_traits::allocator::BaseAllocator>(
+    unsafe fn init<T: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNull<u8>>>(
         &mut self,
         allocator: &T,
     ) -> Result<(), AllocationError> {
@@ -313,7 +313,7 @@ impl RobustUniqueIndexSet {
     pub unsafe fn acquire(&self, owner_id: OwnerId) -> Result<usize, UniqueIndexSetAcquireFailure> {
         let msg = "Unable to acquire another index";
         self.verify_init("acquire()");
-        let cell_ptr = unsafe { self.cell_ptr.as_ptr() };
+        let cell_ptr = self.cell_ptr.as_ptr();
 
         //////////////////////////////////////
         // SYNC POINT enforce order of:
@@ -436,7 +436,7 @@ impl RobustUniqueIndexSet {
             return ReleaseState::Locked;
         }
 
-        let cell_ptr = unsafe { self.cell_ptr.as_ptr() };
+        let cell_ptr = self.cell_ptr.as_ptr();
 
         for n in 0..self.capacity {
             let cell = unsafe { &*cell_ptr.add(n) };
@@ -513,7 +513,7 @@ impl RobustUniqueIndexSet {
     /// `cell`s != `OwnerId::EMPTY` combined with the generation counter at that
     /// time.
     fn borrowed_indices_and_generation_counter(&self) -> SetState {
-        let cell_ptr = unsafe { self.cell_ptr.as_ptr() };
+        let cell_ptr = self.cell_ptr.as_ptr();
         loop {
             //////////////////////////////////////
             // SYNC POINT enforce order of:

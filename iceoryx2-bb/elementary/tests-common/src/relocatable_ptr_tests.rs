@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
-use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
+use iceoryx2_bb_elementary::relocatable_pointer::RelocatablePointer;
+use iceoryx2_bb_elementary_traits::pointer::Pointer;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 

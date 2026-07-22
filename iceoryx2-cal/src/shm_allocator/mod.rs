@@ -16,11 +16,11 @@ pub mod shm_bump_allocator;
 
 use core::{alloc::Layout, fmt::Debug, ptr::NonNull};
 
-use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_elementary::{allocation_strategy::AllocationStrategy, enum_gen};
 pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, AllocationGrowError};
 use iceoryx2_bb_elementary_traits::{allocator::BaseAllocator, zero_copy_send::ZeroCopySend};
+use iceoryx2_bb_memory::pool_allocator::ContentPlacement;
 pub use pointer_offset::*;
-use serde::{Deserialize, Serialize};
 
 /// Trait that identifies a configuration of a [`ShmAllocator`].
 pub trait ShmAllocatorConfig: Copy + Default + Debug + Send {}
@@ -41,30 +41,6 @@ enum_gen! {
     ExceedsMaxSupportedAlignment
   mapping:
     AllocationGrowError
-}
-
-/// Defines where the existing content is copied when the user calls
-/// [`ShmAllocator::grow()`].
-#[derive(Clone, Copy, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
-pub enum ContentPlacement {
-    #[default]
-    Front,
-    Back,
-}
-
-/// Describes generically an [`AllocationStrategy`], meaning how the memory is increased when the
-/// available memory is insufficient.
-#[derive(Clone, Copy, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
-pub enum AllocationStrategy {
-    /// Increases the memory so that it perfectly fits the new size requirements. This may lead
-    /// to a lot of reallocations but has the benefit that no byte is wasted.
-    BestFit,
-    /// Increases the memory by rounding the increased memory size up to the next power of two.
-    /// Reduces reallocations a lot at the cost of increased memory usage.
-    PowerOfTwo,
-    /// The memory is not increased. This may lead to an out-of-memory error when allocating.
-    #[default]
-    Static,
 }
 
 /// Describes error that may occur when a [`ShmAllocator`] is initialized.
@@ -139,7 +115,7 @@ pub trait ShmAllocator: Debug + Send + Sync + 'static + ZeroCopySend {
     /// * must be called only once
     /// * must be called before any other method is called
     ///
-    unsafe fn init<Allocator: BaseAllocator>(
+    unsafe fn init<Allocator: BaseAllocator<NonNull<u8>>>(
         &mut self,
         mgmt_allocator: &Allocator,
     ) -> Result<(), ShmAllocatorInitError>;

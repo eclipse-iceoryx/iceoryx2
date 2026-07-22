@@ -67,12 +67,29 @@ use crate::{
     port::SendError, port::publisher::PublisherSharedState, raw_sample::RawSampleMut,
     service::header::publish_subscribe::Header,
 };
+use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::shared_memory::*;
 
 use core::fmt::{Debug, Formatter};
 use core::ops::{Deref, DerefMut};
+
+#[derive(Debug)]
+pub(crate) struct SampleMutSharedState<Service: crate::service::Service> {
+    pub(crate) publisher_shared_state:
+        Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
+    pub(crate) offset_to_chunk: PointerOffset,
+}
+
+impl<Service: crate::service::Service> Drop for SampleMutSharedState<Service> {
+    fn drop(&mut self) {
+        self.publisher_shared_state
+            .lock()
+            .sender
+            .return_loaned_sample(self.offset_to_chunk);
+    }
+}
 
 /// Acquired by a [`crate::port::publisher::Publisher`] via
 ///  * [`crate::port::publisher::Publisher::loan()`],
@@ -83,19 +100,17 @@ use core::ops::{Deref, DerefMut};
 /// it will release the loaned memory when going out of scope.
 pub struct SampleMut<
     Service: crate::service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: ZeroCopySend,
 > {
-    pub(crate) publisher_shared_state:
-        Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
+    pub(crate) shared_state: SampleMutSharedState<Service>,
     pub(crate) ptr: RawSampleMut<Header, UserHeader, Payload>,
-    pub(crate) offset_to_chunk: PointerOffset,
     pub(crate) sample_size: usize,
 }
 
 unsafe impl<
     Service: crate::service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: ZeroCopySend,
 > Send for SampleMut<Service, Payload, UserHeader>
 where
@@ -105,7 +120,7 @@ where
 
 impl<
     Service: crate::service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ZeroCopySend + ?Sized,
     UserHeader: ZeroCopySend,
 > Deref for SampleMut<Service, Payload, UserHeader>
 {
@@ -117,7 +132,7 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ZeroCopySend + ?Sized,
     UserHeader: ZeroCopySend,
 > DerefMut for SampleMut<Service, Payload, UserHeader>
 {
@@ -128,19 +143,18 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: ZeroCopySend,
 > Debug for SampleMut<Service, Payload, UserHeader>
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "SampleMut<{}, {}, {}> {{ publisher_shared_state: {:?}, offset_to_chunk: {:?}, sample_size: {} }}",
+            "SampleMut<{}, {}, {}> {{ shared_state: {:?}, sample_size: {} }}",
             core::any::type_name::<Service>(),
             core::any::type_name::<Payload>(),
             core::any::type_name::<UserHeader>(),
-            self.publisher_shared_state,
-            self.offset_to_chunk,
+            self.shared_state,
             self.sample_size
         )
     }
@@ -148,23 +162,9 @@ impl<
 
 impl<
     Service: crate::service::Service,
-    Payload: Debug + ZeroCopySend + ?Sized,
+    Payload: IceoryxSend + Debug + ?Sized,
     UserHeader: ZeroCopySend,
-> Drop for SampleMut<Service, Payload, UserHeader>
-{
-    fn drop(&mut self) {
-        self.publisher_shared_state
-            .lock()
-            .sender
-            .return_loaned_sample(self.offset_to_chunk);
-    }
-}
-
-impl<
-    Service: crate::service::Service,
-    M: Debug + ZeroCopySend + ?Sized, // `M` is either a `Payload` or a `MaybeUninit<Payload>`
-    UserHeader: ZeroCopySend,
-> SampleMut<Service, M, UserHeader>
+> SampleMut<Service, Payload, UserHeader>
 {
     /// Returns a reference to the header of the sample.
     ///
@@ -269,7 +269,10 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn payload(&self) -> &M {
+    pub fn payload(&self) -> &Payload
+    where
+        Payload: ZeroCopySend,
+    {
         self.ptr.as_payload_ref()
     }
 
@@ -299,7 +302,10 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn payload_mut(&mut self) -> &mut M {
+    pub fn payload_mut(&mut self) -> &mut Payload
+    where
+        Payload: ZeroCopySend,
+    {
         self.ptr.as_payload_mut()
     }
 
@@ -332,8 +338,9 @@ impl<
     /// # }
     /// ```
     pub fn send(self) -> Result<usize, SendError> {
-        self.publisher_shared_state
+        self.shared_state
+            .publisher_shared_state
             .lock()
-            .send_sample(self.offset_to_chunk, self.sample_size)
+            .send_sample(self.shared_state.offset_to_chunk, self.sample_size)
     }
 }

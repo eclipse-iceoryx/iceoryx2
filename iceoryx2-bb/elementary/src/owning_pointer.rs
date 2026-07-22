@@ -11,14 +11,13 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! Represents a normal non-null pointer. It was introduced to distinguish normal pointers from
-//! `iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer`. It implements the [`PointerTrait`].
+//! `iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer`. It implements the [`Pointer`].
 
 use alloc::alloc::{alloc, dealloc};
 use core::alloc::Layout;
 use core::fmt::Debug;
-
-use crate::generic_pointer::GenericPointer;
-use crate::pointer_trait::PointerTrait;
+use iceoryx2_bb_elementary_traits::pointer::Pointer;
+use iceoryx2_bb_elementary_traits::pointer_family::PointerFamily;
 
 #[derive(Debug)]
 pub struct GenericOwningPointer;
@@ -26,12 +25,12 @@ pub struct GenericOwningPointer;
 /// Representation of a pointer which owns its memory.
 #[repr(C)]
 #[derive(Debug)]
-pub struct OwningPointer<T> {
+pub struct OwningPointer<T: Debug> {
     ptr: *mut T,
     layout: Layout,
 }
 
-impl<T> OwningPointer<T> {
+impl<T: Debug> OwningPointer<T> {
     /// Allocates memory for T and number_of_elements. If the number_of_elements is zero it still
     /// allocates memory for one element.
     pub fn new_with_alloc(mut number_of_elements: usize) -> OwningPointer<T> {
@@ -47,28 +46,45 @@ impl<T> OwningPointer<T> {
         };
 
         Self {
-            ptr: unsafe { alloc(layout) as *mut T },
+            ptr: unsafe { alloc(layout) } as *mut T,
             layout,
         }
     }
 }
 
-impl<T> Drop for OwningPointer<T> {
+impl<T: Debug> Drop for OwningPointer<T> {
     fn drop(&mut self) {
-        unsafe { dealloc(self.ptr as *mut u8, self.layout) }
+        unsafe { dealloc(self.ptr.cast(), self.layout) }
     }
 }
 
-impl<T> PointerTrait<T> for OwningPointer<T> {
-    unsafe fn as_ptr(&self) -> *const T {
-        self.ptr as *const T
+impl<T: Debug> Clone for OwningPointer<T> {
+    fn clone(&self) -> Self {
+        Self {
+            ptr: self.ptr,
+            layout: self.layout,
+        }
+    }
+}
+
+impl<T: Debug> PartialEq for OwningPointer<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.ptr == other.ptr && self.layout == other.layout
+    }
+}
+
+impl<T: Debug> Eq for OwningPointer<T> {}
+
+impl<T: Debug> Pointer<T> for OwningPointer<T> {
+    fn as_ptr(&self) -> *const T {
+        self.ptr
     }
 
-    unsafe fn as_mut_ptr(&mut self) -> *mut T {
+    fn as_mut_ptr(&mut self) -> *mut T {
         self.ptr
     }
 }
 
-impl GenericPointer for GenericOwningPointer {
-    type Type<T: Debug> = OwningPointer<T>;
+impl PointerFamily for GenericOwningPointer {
+    type Pointer<T: Debug> = OwningPointer<T>;
 }

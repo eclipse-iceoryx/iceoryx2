@@ -15,6 +15,8 @@
 
 pub use core::{alloc::Layout, ptr::NonNull};
 
+use crate::pointer::Pointer;
+
 /// Failures caused by [`BaseAllocator::allocate()`] or [`BaseAllocator::allocate_zeroed()`].
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum AllocationError {
@@ -33,7 +35,7 @@ impl core::fmt::Display for AllocationError {
 
 impl core::error::Error for AllocationError {}
 
-/// Failures caused by [`Allocator::grow()`] or [`Allocator::grow_zeroed()`].
+/// Failures caused by [`ReallocGrow::grow()`] or [`ReallocGrow::grow_zeroed()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 pub enum AllocationGrowError {
     GrowWouldShrink,
@@ -51,7 +53,7 @@ impl core::fmt::Display for AllocationGrowError {
 
 impl core::error::Error for AllocationGrowError {}
 
-/// Failures caused by [`Allocator::shrink()`].
+/// Failures caused by [`ReallocShrink::shrink()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum AllocationShrinkError {
     ShrinkWouldGrow,
@@ -68,24 +70,27 @@ impl core::fmt::Display for AllocationShrinkError {
 
 impl core::error::Error for AllocationShrinkError {}
 
+/// Defines the position of the existing content when the allocator grows the memory.
+#[derive(Clone, Copy, Eq, PartialEq, Debug, Default)]
+pub enum ContentPlacement {
+    #[default]
+    Front,
+    Back,
+}
+
 /// The most minimalistic requirement for an allocator
-pub trait BaseAllocator {
+pub trait BaseAllocator<P: Pointer<u8>> {
     /// Allocates a memory chunk with the properties provided in layout and either
     /// returns a slice or an allocation error on failure.
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocationError>;
+    fn allocate(&self, layout: Layout) -> Result<P, AllocationError>;
 
     /// Allocates a memory chunk with the properties provided in layout and zeroes the memory
     /// On success it returns a slice or an allocation error on failure.
-    fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocationError> {
-        let memory = self.allocate(layout)?;
-        unsafe {
-            core::ptr::write_bytes(
-                memory.as_ref().as_ptr() as *mut u8,
-                0,
-                memory.as_ref().len(),
-            )
-        };
-        Ok(memory)
+    fn allocate_zeroed(&self, layout: Layout) -> Result<P, AllocationError> {
+        let mut ptr = self.allocate(layout)?;
+        let raw_ptr = ptr.as_mut_ptr();
+        unsafe { core::ptr::write_bytes(raw_ptr, 0, layout.size()) };
+        Ok(ptr)
     }
 
     /// Releases an previously allocated chunk of memory.
@@ -97,11 +102,11 @@ pub trait BaseAllocator {
     ///  * `layout` must have the same value as in the allocation or, when the memory was
     ///    resized, the same value as it was resized to
     ///
-    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout);
+    unsafe fn deallocate(&self, ptr: P, layout: Layout);
 }
 
-/// Allocator with grow and shrink features.
-pub trait Allocator: BaseAllocator {
+/// Allocator that allows growing a previously allocated memory chunk.
+pub trait ReallocGrow<P: Pointer<u8>> {
     /// Increases the size of an previously allocated chunk of memory or allocates a new chunk
     /// with the provided properties.
     /// It returns a failure when the size decreases.
@@ -115,10 +120,11 @@ pub trait Allocator: BaseAllocator {
     ///
     unsafe fn grow(
         &self,
-        ptr: NonNull<u8>,
+        ptr: P,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocationGrowError>;
+        content_placement: ContentPlacement,
+    ) -> Result<P, AllocationGrowError>;
 
     /// Increases the size of an previously allocated chunk of memory or allocates a new chunk
     /// with the provided properties. If the chunk can be resized only the difference in size
@@ -134,21 +140,36 @@ pub trait Allocator: BaseAllocator {
     ///
     unsafe fn grow_zeroed(
         &self,
-        ptr: NonNull<u8>,
+        ptr: P,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocationGrowError> {
-        unsafe {
-            let memory = self.grow(ptr, old_layout, new_layout)?;
-            core::ptr::write_bytes(
-                memory.as_ref().as_ptr().add(old_layout.size()) as *mut u8,
-                0,
-                memory.as_ref().len() - old_layout.size(),
-            );
-            Ok(memory)
-        }
-    }
+        content_placement: ContentPlacement,
+    ) -> Result<P, AllocationGrowError> {
+        let mut ptr = unsafe { self.grow(ptr, old_layout, new_layout, content_placement)? };
+        let raw_ptr = ptr.as_mut_ptr();
 
+        match content_placement {
+            ContentPlacement::Front => {
+                unsafe {
+                    core::ptr::write_bytes(
+                        raw_ptr.add(old_layout.size()),
+                        0,
+                        new_layout.size() - old_layout.size(),
+                    )
+                };
+            }
+            ContentPlacement::Back => {
+                unsafe {
+                    core::ptr::write_bytes(raw_ptr, 0, new_layout.size() - old_layout.size())
+                };
+            }
+        }
+        Ok(ptr)
+    }
+}
+
+/// Allocator that allows shrinking a previously allocated memory chunk.
+pub trait ReallocShrink<P: Pointer<u8>> {
     /// Decreases the size of an previously allocated chunk of memory. If the size increases it
     /// fails.
     ///
@@ -161,8 +182,13 @@ pub trait Allocator: BaseAllocator {
     ///
     unsafe fn shrink(
         &self,
-        ptr: NonNull<u8>,
+        ptr: P,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocationShrinkError>;
+    ) -> Result<P, AllocationShrinkError>;
 }
+
+/// Allocator with all features.
+pub trait Allocator<P: Pointer<u8>>: BaseAllocator<P> + ReallocGrow<P> + ReallocShrink<P> {}
+
+impl<P: Pointer<u8>, A: BaseAllocator<P> + ReallocGrow<P> + ReallocShrink<P>> Allocator<P> for A {}

@@ -26,12 +26,11 @@ pub fn start_position_is_correctly_used() {
 
     let sut = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
 
-    let memory = sut
+    let ptr = sut
         .allocate(Layout::from_size_align(MEM_SIZE, MEM_ALIGN).unwrap())
         .unwrap();
 
-    assert_that!(unsafe { memory.as_ref() }.as_ptr() as usize, eq start_position as usize);
-    assert_that!(unsafe { memory.as_ref() }.len(), eq MEM_SIZE);
+    assert_that!(ptr.as_ptr().cast_const(), eq start_position);
 }
 
 #[test]
@@ -42,12 +41,11 @@ pub fn allocated_memory_is_correctly_aligned() {
     const MEM_ALIGN: usize = 64;
     let sut = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[1]), memory.len() - 1);
 
-    let memory = sut
+    let ptr = sut
         .allocate(Layout::from_size_align(MEM_SIZE, MEM_ALIGN).unwrap())
         .unwrap();
 
-    assert_that!(unsafe { memory.as_ref() }.as_ptr() as usize, eq align(start_position as usize, MEM_ALIGN));
-    assert_that!(unsafe { memory.as_ref() }.len(), eq MEM_SIZE);
+    assert_that!(ptr.as_ptr() as usize, eq align(start_position as usize, MEM_ALIGN));
 }
 
 #[test]
@@ -61,13 +59,12 @@ pub fn allocating_many_aligned_chunks_work() {
     for n in 0..ITERATIONS {
         let mem_size = 4_usize.pow(n);
         let mem_align = 2_usize.pow(n);
-        let memory = sut
+        let ptr = sut
             .allocate(Layout::from_size_align(mem_size, mem_align).unwrap())
             .unwrap();
 
-        let new_position = unsafe { memory.as_ref() }.as_ptr() as usize;
-        assert_that!(unsafe { memory.as_ref() }.as_ptr() as usize, eq align(new_position, mem_align));
-        assert_that!(unsafe { memory.as_ref() }.len(), eq mem_size);
+        let new_position = ptr.as_ptr() as usize;
+        assert_that!(new_position, eq align(new_position, mem_align));
         assert_that!(new_position - last_position, ge last_size);
 
         last_position = new_position;
@@ -84,21 +81,15 @@ pub fn deallocating_releases_everything() {
     let sut = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[3]), memory.len() - 3);
 
     let layout = Layout::from_size_align(MEM_SIZE, MEM_ALIGN).unwrap();
-    let mut memory = sut.allocate(layout).unwrap();
+    let memory = sut.allocate(layout).unwrap();
 
-    unsafe {
-        sut.deallocate(
-            NonNull::new(memory.as_mut().as_mut_ptr().cast()).unwrap(),
-            layout,
-        )
-    };
+    unsafe { sut.deallocate(memory, layout) };
 
-    let memory = sut
+    let ptr = sut
         .allocate(Layout::from_size_align(MEM_SIZE, MEM_ALIGN).unwrap())
         .unwrap();
 
-    assert_that!(unsafe { memory.as_ref() }.as_ptr() as usize, eq start_position as usize);
-    assert_that!(unsafe { memory.as_ref() }.len(), eq MEM_SIZE);
+    assert_that!(ptr.as_ptr().cast_const(), eq start_position);
 }
 
 #[test]
@@ -123,7 +114,7 @@ pub fn allocating_all_memory_works() {
         let sample = sut.allocate(unsafe { Layout::from_size_align_unchecked(sample_size, 1) });
         assert_that!(sample, is_ok);
         assert_that!(
-            (sample.unwrap().as_ptr() as *mut u8) as u64, eq
+            (sample.unwrap().as_ptr()) as u64, eq
             memory.as_ptr() as u64 + (i * sample_size) as u64
         );
     }

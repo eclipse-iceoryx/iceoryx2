@@ -156,7 +156,10 @@ pub mod details {
             RelocatableUsedChunkList::const_memory_size(number_of_samples)
         }
 
-        unsafe fn init<T: BaseAllocator>(&mut self, allocator: &T) -> Result<(), AllocationError> {
+        unsafe fn init<T: BaseAllocator<NonNull<u8>>>(
+            &mut self,
+            allocator: &T,
+        ) -> Result<(), AllocationError> {
             unsafe { self.used_chunk_list.init(allocator) }
         }
     }

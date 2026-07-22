@@ -53,10 +53,10 @@ use core::mem::MaybeUninit;
 use iceoryx2_bb_concurrency::atomic::AtomicBool;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
-use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
-use iceoryx2_bb_elementary_traits::owning_pointer::GenericOwningPointer;
+use iceoryx2_bb_elementary::owning_pointer::GenericOwningPointer;
+use iceoryx2_bb_elementary::relocatable_pointer::GenericRelocatablePointer;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
+use iceoryx2_bb_elementary_traits::pointer_family::PointerFamily;
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -99,7 +99,7 @@ const INVALID: usize = usize::MAX;
 
 #[doc(hidden)]
 /// The iterator of a [`SlotMap`], [`RelocatableSlotMap`] or [`FixedSizeSlotMap`].
-pub struct Iter<'slotmap, T, Ptr: GenericPointer> {
+pub struct Iter<'slotmap, T, Ptr: PointerFamily> {
     slotmap: &'slotmap MetaSlotMap<T, Ptr>,
     key: SlotMapKey,
 }
@@ -109,7 +109,7 @@ pub type OwningIter<'slotmap, T> = Iter<'slotmap, T, GenericOwningPointer>;
 #[doc(hidden)]
 pub type RelocatableIter<'slotmap, T> = Iter<'slotmap, T, GenericRelocatablePointer>;
 
-impl<'slotmap, T, Ptr: GenericPointer> Iterator for Iter<'slotmap, T, Ptr> {
+impl<'slotmap, T, Ptr: PointerFamily> Iterator for Iter<'slotmap, T, Ptr> {
     type Item = (SlotMapKey, &'slotmap T);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -125,7 +125,7 @@ impl<'slotmap, T, Ptr: GenericPointer> Iterator for Iter<'slotmap, T, Ptr> {
 #[doc(hidden)]
 #[repr(C)]
 #[derive(Debug)]
-pub struct MetaSlotMap<T, Ptr: GenericPointer> {
+pub struct MetaSlotMap<T, Ptr: PointerFamily> {
     idx_to_data: MetaVec<usize, Ptr>,
     idx_to_data_free_list: MetaVec<FreeListEntry, Ptr>,
     data: MetaVec<Option<T>, Ptr>,
@@ -135,7 +135,7 @@ pub struct MetaSlotMap<T, Ptr: GenericPointer> {
     len: usize,
 }
 
-impl<T: Abandonable, Ptr: GenericPointer> Abandonable for MetaSlotMap<T, Ptr> {
+impl<T: Abandonable, Ptr: PointerFamily> Abandonable for MetaSlotMap<T, Ptr> {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
         for element in this.data.iter_mut().flatten() {
@@ -144,7 +144,7 @@ impl<T: Abandonable, Ptr: GenericPointer> Abandonable for MetaSlotMap<T, Ptr> {
     }
 }
 
-impl<T, Ptr: GenericPointer> MetaSlotMap<T, Ptr> {
+impl<T, Ptr: PointerFamily> MetaSlotMap<T, Ptr> {
     #[inline(always)]
     fn verify_init(&self, source: &str) {
         debug_assert!(
@@ -368,7 +368,9 @@ impl<T> RelocatableContainer for RelocatableSlotMap<T> {
         }
     }
 
-    unsafe fn init<Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator>(
+    unsafe fn init<
+        Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNull<u8>>,
+    >(
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
