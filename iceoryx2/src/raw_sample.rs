@@ -165,6 +165,13 @@ impl<Header, UserHeader, Payload: ?Sized> RawSampleMut<Header, UserHeader, Paylo
         unsafe { &*self.header }
     }
 
+    /// Acquires the underlying header as reference.
+    #[must_use]
+    #[inline(always)]
+    pub(crate) fn as_header_mut(&mut self) -> &mut Header {
+        unsafe { &mut *self.header }
+    }
+
     /// Acquires the underlying payload as reference.
     #[must_use]
     #[inline(always)]

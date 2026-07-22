@@ -67,7 +67,7 @@ use crate::{
     port::SendError, port::publisher::PublisherSharedState, raw_sample::RawSampleMut,
     service::header::publish_subscribe::Header,
 };
-use iceoryx2_bb_concurrency::atomic::{AtomicU64, Ordering};
+use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicUsize, Ordering};
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_memory::pool_allocator::ReallocGrow;
@@ -84,6 +84,7 @@ pub struct SampleMutSharedState<Service: crate::service::Service> {
     pub(crate) publisher_shared_state:
         Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
     pub(crate) offset_to_chunk: Arc<AtomicU64>,
+    pub(crate) shm_raw_ptr: Arc<AtomicUsize>,
 }
 
 impl<Service: crate::service::Service> ReallocGrow<ShmPointer> for SampleMutSharedState<Service> {
@@ -104,6 +105,8 @@ impl<Service: crate::service::Service> ReallocGrow<ShmPointer> for SampleMutShar
 
         self.offset_to_chunk
             .store(ptr.offset.as_value(), Ordering::Relaxed);
+        self.shm_raw_ptr
+            .store(ptr.data_ptr as usize, Ordering::Relaxed);
 
         Ok(ptr)
     }

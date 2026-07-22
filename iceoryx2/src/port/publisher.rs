@@ -683,7 +683,7 @@ impl<
             SampleMutUninit::<Service, MaybeUninit<Payload>, UserHeader>::new(
                 &self.publisher_shared_state,
                 sample,
-                chunk.offset,
+                chunk.to_shm_pointer(),
                 chunk.size,
             ),
         )
@@ -900,7 +900,7 @@ impl<
             SampleMutUninit::<Service, [MaybeUninit<Payload>], UserHeader>::new(
                 &self.publisher_shared_state,
                 sample,
-                chunk.offset,
+                chunk.to_shm_pointer(),
                 chunk.size,
             ),
         )

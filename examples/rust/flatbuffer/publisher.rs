@@ -90,9 +90,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             },
         );
 
-        builder.finish(unbounded_data, None);
-        builder.finished_data();
-        unsafe { sample.assume_init(unbounded_data) };
+        let sample = sample.assume_init(unbounded_data);
+
+        coutln!("header: {:?}", sample.header());
+        sample.send()?;
 
         coutln!("Send sample {counter} ...");
     }

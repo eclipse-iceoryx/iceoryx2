@@ -93,13 +93,13 @@
 use alloc::sync::Arc;
 use core::alloc::Layout;
 use core::{fmt::Debug, mem::MaybeUninit};
-use iceoryx2_bb_concurrency::atomic::AtomicU64;
+use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicUsize, Ordering};
 use iceoryx2_bb_flatbuffers::{ResizableMemory, ResizableMemoryBuilder};
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 
 use flatbuffers::{FlatBufferBuilder, WIPOffset};
 use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
-use iceoryx2_cal::{shared_memory::ShmPointer, shm_allocator::PointerOffset};
+use iceoryx2_cal::shared_memory::ShmPointer;
 
 use crate::service::static_config::message_type_details::{MessageTypeDetails, TypeVariant};
 use crate::{
@@ -155,6 +155,7 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
         let shared_state = SampleMutSharedState {
             publisher_shared_state: publisher_shared_state.clone(),
             offset_to_chunk: Arc::new(AtomicU64::new(pointer_to_chunk.offset.as_value())),
+            shm_raw_ptr: Arc::new(AtomicUsize::new(pointer_to_chunk.data_ptr as usize)),
         };
         let allocation_strategy = publisher_shared_state
             .lock()
@@ -198,17 +199,41 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
         root: WIPOffset<Payload>,
     ) -> SampleMut<Service, Flatbuffer<Payload>, UserHeader> {
         self.flatbuffer_builder().finish(root, None);
+        let message_type_details = MessageTypeDetails::from::<
+            crate::service::header::publish_subscribe::Header,
+            UserHeader,
+            u8,
+        >(TypeVariant::Dynamic);
+
+        let header = self.shared_state.shm_raw_ptr.load(Ordering::Relaxed) as *mut u8;
+        let user_header = message_type_details
+            .user_header_ptr_from_header(header)
+            .cast_mut();
+        let payload = message_type_details
+            .payload_ptr_from_header(header)
+            .cast_mut();
+
+        let payload_offset =
+            self.flatbuffer_builder().finished_data().as_ptr() as usize - payload as usize;
+        let mut ptr: RawSampleMut<Header, UserHeader, Flatbuffer<Payload>> = unsafe {
+            RawSampleMut::new_unchecked(header.cast(), user_header.cast(), payload.cast())
+        };
+
+        ptr.as_header_mut().metadata = payload_offset as u64;
+
         SampleMut {
             shared_state: self.shared_state,
             sample_size: self.sample_size,
-            ptr: self.ptr,
+            ptr,
         }
     }
 }
 
 impl<
     Service: crate::service::Service,
-    Payload: IceoryxSend + Debug + ?Sized,
+    // It is important to restrict the Payload to ZeroCopySend since the flatbuffer builder
+    // modifies the ptr to header and user header when growing.
+    Payload: IceoryxSend + ZeroCopySend + Debug + ?Sized,
     UserHeader: ZeroCopySend,
 > SampleMutUninit<Service, Payload, UserHeader>
 {
@@ -315,10 +340,7 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn payload(&self) -> &Payload
-    where
-        Payload: ZeroCopySend,
-    {
+    pub fn payload(&self) -> &Payload {
         self.ptr.as_payload_ref()
     }
 
@@ -364,14 +386,15 @@ impl<
     pub(crate) fn new(
         publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
         ptr: RawSampleMut<Header, UserHeader, MaybeUninit<Payload>>,
-        offset_to_chunk: PointerOffset,
+        shm_pointer: ShmPointer,
         sample_size: usize,
     ) -> Self {
         Self {
             flatbuffer_builder: None,
             shared_state: SampleMutSharedState {
                 publisher_shared_state: publisher_shared_state.clone(),
-                offset_to_chunk: Arc::new(AtomicU64::new(offset_to_chunk.as_value())),
+                offset_to_chunk: Arc::new(AtomicU64::new(shm_pointer.offset.as_value())),
+                shm_raw_ptr: Arc::new(AtomicUsize::new(shm_pointer.data_ptr as usize)),
             },
             ptr,
             sample_size,
@@ -454,14 +477,15 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
     pub(crate) fn new(
         publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
         ptr: RawSampleMut<Header, UserHeader, [MaybeUninit<Payload>]>,
-        offset_to_chunk: PointerOffset,
+        shm_pointer: ShmPointer,
         sample_size: usize,
     ) -> Self {
         Self {
             flatbuffer_builder: None,
             shared_state: SampleMutSharedState {
                 publisher_shared_state: publisher_shared_state.clone(),
-                offset_to_chunk: Arc::new(AtomicU64::new(offset_to_chunk.as_value())),
+                offset_to_chunk: Arc::new(AtomicU64::new(shm_pointer.offset.as_value())),
+                shm_raw_ptr: Arc::new(AtomicUsize::new(shm_pointer.data_ptr as usize)),
             },
             ptr,
             sample_size,
