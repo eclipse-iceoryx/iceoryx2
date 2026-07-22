@@ -93,7 +93,7 @@ impl Mapping for PrefixMapping {
         };
         let payload = &pattern.payload;
 
-        let topic = TopicName::new(topic(description.name.as_str())?).ok()?;
+        let topic = topic(description.name.as_str())?;
         let type_name = TypeName::new(&payload.type_name).ok()?;
 
         Some(TopicDescription {
@@ -134,12 +134,12 @@ impl Mapping for PrefixMapping {
 }
 
 /// Convert a conventional iceoryx2 service name into a ROS 2 topic name.
-fn topic(service_name: &str) -> Option<&str> {
+fn topic(service_name: &str) -> Option<TopicName> {
     let topic = service_name.strip_prefix(TOPIC_PREFIX)?;
-    if !topic.starts_with('/') || topic.len() == 1 {
+    if !topic.starts_with('/') {
         return None;
     }
-    Some(topic)
+    TopicName::new(topic).ok()
 }
 
 /// Convert a ROS 2 topic name into a conventional iceoryx2 service name.
