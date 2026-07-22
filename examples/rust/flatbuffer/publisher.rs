@@ -12,7 +12,9 @@
 
 extern crate alloc;
 
-use crate::unbounded_data_generated::example::UnboundedData;
+use crate::unbounded_data_generated::example::{
+    Entry, EntryArgs, UnboundedData, UnboundedDataArgs,
+};
 use alloc::boxed::Box;
 use core::time::Duration;
 use iceoryx2::{prelude::*, service::marker::Flatbuffer};
@@ -46,15 +48,51 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let publisher = service
         .publisher_builder()
         .initial_reserved_memory(4096)
-        .allocation_strategy(AllocationStrategy::Static)
+        .allocation_strategy(AllocationStrategy::PowerOfTwo)
         .create()?;
 
     let mut counter: u64 = 0;
 
     while node.wait(CYCLE_TIME).is_ok() {
+        if service.dynamic_config().number_of_subscribers() == 0 {
+            coutln!("Wait for subscribers.");
+            continue;
+        }
+
         counter += 1;
         let mut sample = publisher.loan_flatbuffer()?;
-        sample.flatbuffer_builder();
+        let builder = sample.flatbuffer_builder();
+        let title = builder.create_string("Hello World!");
+
+        let entry_1 = Entry::create(
+            builder,
+            &EntryArgs {
+                data_1: 42,
+                data_2: 1234,
+            },
+        );
+
+        let entry_2 = Entry::create(
+            builder,
+            &EntryArgs {
+                data_1: -992,
+                data_2: 1011,
+            },
+        );
+
+        let entries = builder.create_vector(&[entry_1, entry_2]);
+
+        let unbounded_data = UnboundedData::create(
+            builder,
+            &UnboundedDataArgs {
+                title: Some(title),
+                entries: Some(entries),
+            },
+        );
+
+        builder.finish(unbounded_data, None);
+        builder.finished_data();
+        unsafe { sample.assume_init(unbounded_data) };
 
         coutln!("Send sample {counter} ...");
     }

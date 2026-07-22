@@ -49,7 +49,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(_sample) = subscriber.receive()? {
-            //coutln!("received: {:?}", *sample);
+            coutln!("received something");
         }
     }
 

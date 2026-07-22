@@ -97,7 +97,7 @@ use iceoryx2_bb_concurrency::atomic::AtomicU64;
 use iceoryx2_bb_flatbuffers::{ResizableMemory, ResizableMemoryBuilder};
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 
-use flatbuffers::FlatBufferBuilder;
+use flatbuffers::{FlatBufferBuilder, WIPOffset};
 use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
 use iceoryx2_cal::{shared_memory::ShmPointer, shm_allocator::PointerOffset};
 
@@ -189,6 +189,20 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
         &mut self,
     ) -> &mut FlatBufferBuilder<'static, FlatbufferMemory<Service>> {
         self.flatbuffer_builder.as_mut().unwrap()
+    }
+
+    /// Finalize the Flatbuffer and initialize the sample. After that call the content can no longer be
+    /// modified.
+    pub fn assume_init(
+        mut self,
+        root: WIPOffset<Payload>,
+    ) -> SampleMut<Service, Flatbuffer<Payload>, UserHeader> {
+        self.flatbuffer_builder().finish(root, None);
+        SampleMut {
+            shared_state: self.shared_state,
+            sample_size: self.sample_size,
+            ptr: self.ptr,
+        }
     }
 }
 

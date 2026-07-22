@@ -124,11 +124,11 @@ impl AllocatorToken for ShmPointer {}
 
 impl Pointer<u8> for ShmPointer {
     fn as_mut_ptr(&mut self) -> *mut u8 {
-        todo!()
+        self.data_ptr
     }
 
     fn as_ptr(&self) -> *const u8 {
-        todo!()
+        self.data_ptr
     }
 
     fn is_initialized(&self) -> bool {
