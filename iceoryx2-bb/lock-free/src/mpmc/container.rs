@@ -177,6 +177,15 @@ impl<T: Copy + Debug> ContainerState<T> {
             }
         }
     }
+
+    /// Returns the element at the given index, if occupied
+    pub fn get(&self, index: usize) -> Option<&T> {
+        if Container::<T>::contains_data(self.element_generation_counter[index]) {
+            Some(unsafe { self.data[index].assume_init_ref() })
+        } else {
+            None
+        }
+    }
 }
 
 /// A **threadsafe** and **lock-free** runtime fixed size container. The compile time fixed size

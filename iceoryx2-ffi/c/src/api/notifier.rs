@@ -34,6 +34,7 @@ pub enum iox2_notifier_notify_error_e {
     EVENT_ID_OUT_OF_BOUNDS = IOX2_OK as isize + 1,
     MISSED_DEADLINE,
     UNABLE_TO_ACQUIRE_ELAPSED_TIME,
+    INVALID_LISTENER_KEY,
 }
 
 impl IntoCInt for NotifierNotifyError {
@@ -45,6 +46,9 @@ impl IntoCInt for NotifierNotifyError {
             NotifierNotifyError::MissedDeadline => iox2_notifier_notify_error_e::MISSED_DEADLINE,
             NotifierNotifyError::UnableToAcquireElapsedTime => {
                 iox2_notifier_notify_error_e::UNABLE_TO_ACQUIRE_ELAPSED_TIME
+            }
+            NotifierNotifyError::InvalidListenerKey => {
+                iox2_notifier_notify_error_e::INVALID_LISTENER_KEY
             }
         }) as c_int
     }

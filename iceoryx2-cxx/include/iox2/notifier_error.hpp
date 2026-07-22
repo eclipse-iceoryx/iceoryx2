@@ -43,6 +43,10 @@ enum class NotifierNotifyError : uint8_t {
     /// The notification was delivered but the elapsed system time could not be acquired.
     /// Therefore, it is unknown if the deadline was missed or not.
     UnableToAcquireElapsedTime,
+    /// The [`ListenerKey`], used to notify a specific [`Listener`]
+    /// with [`Notifier::notify_single_listener()`] is invalid. This can occur when the connection
+    /// to the corresponding `Listener` was closed.
+    InvalidListenerKey,
 };
 
 } // namespace iox2
