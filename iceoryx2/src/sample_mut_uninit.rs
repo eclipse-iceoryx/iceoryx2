@@ -90,10 +90,9 @@
 //! # }
 //! ```
 
-use alloc::sync::Arc;
 use core::alloc::Layout;
 use core::{fmt::Debug, mem::MaybeUninit};
-use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
+use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_flatbuffers::{ResizableMemory, ResizableMemoryBuilder};
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 
@@ -152,13 +151,11 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
         initial_layout: Layout,
         sample_size: usize,
     ) -> Self {
-        let shared_state = SampleMutSharedState {
-            publisher_shared_state: publisher_shared_state.clone(),
-            offset_to_chunk: Arc::new(AtomicU64::new(pointer_to_chunk.offset.as_value())),
-            shm_raw_ptr: Arc::new(AtomicUsize::new(pointer_to_chunk.data_ptr as usize)),
-            total_len: Arc::new(AtomicUsize::new(initial_layout.size())),
-            has_data: Arc::new(AtomicBool::new(true)),
-        };
+        let shared_state = SampleMutSharedState::new(
+            publisher_shared_state,
+            pointer_to_chunk,
+            initial_layout.size(),
+        );
         let allocation_strategy = publisher_shared_state
             .lock()
             .sender
@@ -201,13 +198,16 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
         root: WIPOffset<Payload>,
     ) -> SampleMut<Service, Flatbuffer<Payload>, UserHeader> {
         self.flatbuffer_builder().finish(root, None);
+        let flatbuffer_payload_start = self.flatbuffer_builder().finished_data().as_ptr() as usize;
+
         let message_type_details = MessageTypeDetails::from::<
             crate::service::header::publish_subscribe::Header,
             UserHeader,
             u8,
         >(TypeVariant::Dynamic);
 
-        let header = self.shared_state.shm_raw_ptr.load(Ordering::Relaxed) as *mut u8;
+        let state = self.shared_state.state.lock();
+        let header = state.shm_raw_ptr.load(Ordering::Relaxed) as *mut u8;
         let user_header = message_type_details
             .user_header_ptr_from_header(header)
             .cast_mut();
@@ -215,15 +215,15 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
             .payload_ptr_from_header(header)
             .cast_mut();
 
-        let payload_offset =
-            self.flatbuffer_builder().finished_data().as_ptr() as usize - payload as usize;
+        let payload_offset = flatbuffer_payload_start - payload as usize;
         let mut ptr: RawSampleMut<Header, UserHeader, Flatbuffer<Payload>> = unsafe {
             RawSampleMut::new_unchecked(header.cast(), user_header.cast(), payload.cast())
         };
 
         ptr.as_header_mut().metadata = payload_offset as u64;
         ptr.as_header_mut().number_of_elements =
-            self.shared_state.total_len.load(Ordering::Relaxed) as u64;
+            state.number_of_elements.load(Ordering::Relaxed) as u64;
+        drop(state);
 
         SampleMut {
             shared_state: self.shared_state,
@@ -395,13 +395,7 @@ impl<
     ) -> Self {
         Self {
             flatbuffer_builder: None,
-            shared_state: SampleMutSharedState {
-                publisher_shared_state: publisher_shared_state.clone(),
-                offset_to_chunk: Arc::new(AtomicU64::new(shm_pointer.offset.as_value())),
-                shm_raw_ptr: Arc::new(AtomicUsize::new(shm_pointer.data_ptr as usize)),
-                total_len: Arc::new(AtomicUsize::new(1)),
-                has_data: Arc::new(AtomicBool::new(true)),
-            },
+            shared_state: SampleMutSharedState::new(publisher_shared_state, shm_pointer, 1),
             ptr,
             sample_size,
         }
@@ -488,13 +482,11 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
     ) -> Self {
         Self {
             flatbuffer_builder: None,
-            shared_state: SampleMutSharedState {
-                publisher_shared_state: publisher_shared_state.clone(),
-                offset_to_chunk: Arc::new(AtomicU64::new(shm_pointer.offset.as_value())),
-                shm_raw_ptr: Arc::new(AtomicUsize::new(shm_pointer.data_ptr as usize)),
-                total_len: Arc::new(AtomicUsize::new(ptr.as_payload_ref().len())),
-                has_data: Arc::new(AtomicBool::new(true)),
-            },
+            shared_state: SampleMutSharedState::new(
+                publisher_shared_state,
+                shm_pointer,
+                ptr.as_payload_ref().len(),
+            ),
             ptr,
             sample_size,
         }

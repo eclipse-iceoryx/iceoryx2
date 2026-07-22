@@ -68,26 +68,71 @@ use crate::{
     port::SendError, port::publisher::PublisherSharedState, raw_sample::RawSampleMut,
     service::header::publish_subscribe::Header,
 };
-use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
+use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicUsize, Ordering};
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
+use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_memory::pool_allocator::ReallocGrow;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::shared_memory::*;
 
-use alloc::sync::Arc;
 use core::fmt::{Debug, Formatter};
 use core::ops::{Deref, DerefMut};
+
+#[derive(Debug)]
+pub(crate) struct SampleMutInnerSharedState<Service: crate::service::Service> {
+    pub(crate) publisher_shared_state:
+        Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
+    pub(crate) offset_to_chunk: AtomicU64,
+    pub(crate) shm_raw_ptr: AtomicUsize,
+    pub(crate) number_of_elements: AtomicUsize,
+}
+
+unsafe impl<Service: crate::service::Service> Send for SampleMutInnerSharedState<Service> {}
+impl<Service: crate::service::Service> Abandonable for SampleMutInnerSharedState<Service> {
+    unsafe fn abandon_in_place(mut this: core::ptr::NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe {
+            Service::ArcThreadSafetyPolicy::<PublisherSharedState<Service>>::abandon_in_place(
+                core::ptr::NonNull::from_mut(&mut this.publisher_shared_state),
+            )
+        };
+    }
+}
+
+impl<Service: crate::service::Service> Drop for SampleMutInnerSharedState<Service> {
+    fn drop(&mut self) {
+        self.publisher_shared_state
+            .lock()
+            .sender
+            .return_loaned_sample(PointerOffset::from_value(
+                self.offset_to_chunk.load(Ordering::Relaxed),
+            ));
+    }
+}
 
 #[doc(hidden)]
 #[derive(Debug, Clone)]
 pub struct SampleMutSharedState<Service: crate::service::Service> {
-    pub(crate) publisher_shared_state:
-        Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
-    pub(crate) offset_to_chunk: Arc<AtomicU64>,
-    pub(crate) shm_raw_ptr: Arc<AtomicUsize>,
-    pub(crate) total_len: Arc<AtomicUsize>,
-    pub(crate) has_data: Arc<AtomicBool>,
+    pub(crate) state: Service::ArcThreadSafetyPolicy<SampleMutInnerSharedState<Service>>,
+}
+
+impl<Service: crate::service::Service> SampleMutSharedState<Service> {
+    pub(crate) fn new(
+        publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
+        pointer_to_chunk: ShmPointer,
+        number_of_elements: usize,
+    ) -> Self {
+        Self {
+            state: Service::ArcThreadSafetyPolicy::new(SampleMutInnerSharedState {
+                publisher_shared_state: publisher_shared_state.clone(),
+                offset_to_chunk: AtomicU64::new(pointer_to_chunk.offset.as_value()),
+                shm_raw_ptr: AtomicUsize::new(pointer_to_chunk.data_ptr as usize),
+                number_of_elements: AtomicUsize::new(number_of_elements),
+            })
+            .unwrap(),
+        }
+    }
 }
 
 impl<Service: crate::service::Service> ReallocGrow<ShmPointer> for SampleMutSharedState<Service> {
@@ -98,8 +143,9 @@ impl<Service: crate::service::Service> ReallocGrow<ShmPointer> for SampleMutShar
         new_layout: core::alloc::Layout,
         content_placement: iceoryx2_bb_memory::pool_allocator::ContentPlacement,
     ) -> Result<ShmPointer, AllocationGrowError> {
+        let state = self.state.lock();
         let ptr = unsafe {
-            self.publisher_shared_state.lock().sender.grow(
+            state.publisher_shared_state.lock().sender.grow(
                 ptr,
                 old_layout,
                 new_layout,
@@ -107,26 +153,17 @@ impl<Service: crate::service::Service> ReallocGrow<ShmPointer> for SampleMutShar
             )?
         };
 
-        self.offset_to_chunk
+        state
+            .offset_to_chunk
             .store(ptr.offset.as_value(), Ordering::Relaxed);
-        self.shm_raw_ptr
+        state
+            .shm_raw_ptr
             .store(ptr.data_ptr as usize, Ordering::Relaxed);
-        self.total_len.store(new_layout.size(), Ordering::Relaxed);
+        state
+            .number_of_elements
+            .store(new_layout.size(), Ordering::Relaxed);
 
         Ok(ptr)
-    }
-}
-
-impl<Service: crate::service::Service> Drop for SampleMutSharedState<Service> {
-    fn drop(&mut self) {
-        if self.has_data.swap(false, Ordering::Relaxed) {
-            self.publisher_shared_state
-                .lock()
-                .sender
-                .return_loaned_sample(PointerOffset::from_value(
-                    self.offset_to_chunk.load(Ordering::Relaxed),
-                ));
-        }
     }
 }
 
@@ -390,8 +427,9 @@ impl<
     /// # }
     /// ```
     pub fn send(self) -> Result<usize, SendError> {
-        self.shared_state.publisher_shared_state.lock().send_sample(
-            PointerOffset::from_value(self.shared_state.offset_to_chunk.load(Ordering::Relaxed)),
+        let state = self.shared_state.state.lock();
+        state.publisher_shared_state.lock().send_sample(
+            PointerOffset::from_value(state.offset_to_chunk.load(Ordering::Relaxed)),
             self.sample_size,
         )
     }
