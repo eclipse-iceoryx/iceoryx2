@@ -68,7 +68,7 @@ use crate::{
     port::SendError, port::publisher::PublisherSharedState, raw_sample::RawSampleMut,
     service::header::publish_subscribe::Header,
 };
-use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicUsize, Ordering};
+use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_memory::pool_allocator::ReallocGrow;
@@ -87,6 +87,7 @@ pub struct SampleMutSharedState<Service: crate::service::Service> {
     pub(crate) offset_to_chunk: Arc<AtomicU64>,
     pub(crate) shm_raw_ptr: Arc<AtomicUsize>,
     pub(crate) total_len: Arc<AtomicUsize>,
+    pub(crate) has_data: Arc<AtomicBool>,
 }
 
 impl<Service: crate::service::Service> ReallocGrow<ShmPointer> for SampleMutSharedState<Service> {
@@ -98,11 +99,12 @@ impl<Service: crate::service::Service> ReallocGrow<ShmPointer> for SampleMutShar
         content_placement: iceoryx2_bb_memory::pool_allocator::ContentPlacement,
     ) -> Result<ShmPointer, AllocationGrowError> {
         let ptr = unsafe {
-            self.publisher_shared_state
-                .lock()
-                .sender
-                .data_segment
-                .grow(ptr, old_layout, new_layout, content_placement)?
+            self.publisher_shared_state.lock().sender.grow(
+                ptr,
+                old_layout,
+                new_layout,
+                content_placement,
+            )?
         };
 
         self.offset_to_chunk
@@ -117,12 +119,14 @@ impl<Service: crate::service::Service> ReallocGrow<ShmPointer> for SampleMutShar
 
 impl<Service: crate::service::Service> Drop for SampleMutSharedState<Service> {
     fn drop(&mut self) {
-        self.publisher_shared_state
-            .lock()
-            .sender
-            .return_loaned_sample(PointerOffset::from_value(
-                self.offset_to_chunk.load(Ordering::Relaxed),
-            ));
+        if self.has_data.swap(false, Ordering::Relaxed) {
+            self.publisher_shared_state
+                .lock()
+                .sender
+                .return_loaned_sample(PointerOffset::from_value(
+                    self.offset_to_chunk.load(Ordering::Relaxed),
+                ));
+        }
     }
 }
 

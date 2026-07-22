@@ -93,7 +93,7 @@
 use alloc::sync::Arc;
 use core::alloc::Layout;
 use core::{fmt::Debug, mem::MaybeUninit};
-use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicUsize, Ordering};
+use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use iceoryx2_bb_flatbuffers::{ResizableMemory, ResizableMemoryBuilder};
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 
@@ -157,6 +157,7 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
             offset_to_chunk: Arc::new(AtomicU64::new(pointer_to_chunk.offset.as_value())),
             shm_raw_ptr: Arc::new(AtomicUsize::new(pointer_to_chunk.data_ptr as usize)),
             total_len: Arc::new(AtomicUsize::new(initial_layout.size())),
+            has_data: Arc::new(AtomicBool::new(true)),
         };
         let allocation_strategy = publisher_shared_state
             .lock()
@@ -399,6 +400,7 @@ impl<
                 offset_to_chunk: Arc::new(AtomicU64::new(shm_pointer.offset.as_value())),
                 shm_raw_ptr: Arc::new(AtomicUsize::new(shm_pointer.data_ptr as usize)),
                 total_len: Arc::new(AtomicUsize::new(1)),
+                has_data: Arc::new(AtomicBool::new(true)),
             },
             ptr,
             sample_size,
@@ -491,6 +493,7 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
                 offset_to_chunk: Arc::new(AtomicU64::new(shm_pointer.offset.as_value())),
                 shm_raw_ptr: Arc::new(AtomicUsize::new(shm_pointer.data_ptr as usize)),
                 total_len: Arc::new(AtomicUsize::new(ptr.as_payload_ref().len())),
+                has_data: Arc::new(AtomicBool::new(true)),
             },
             ptr,
             sample_size,

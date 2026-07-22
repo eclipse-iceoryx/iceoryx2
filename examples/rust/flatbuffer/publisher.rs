@@ -47,7 +47,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let publisher = service
         .publisher_builder()
-        .initial_reserved_memory(4096)
+        .initial_reserved_memory(1)
         .allocation_strategy(AllocationStrategy::PowerOfTwo)
         .create()?;
 
