@@ -25,7 +25,7 @@ use iceoryx2_services_tunnel_backend::types::publish_subscribe::{
     Header, LoanFn, Payload, Publisher, Sample, SampleMut, Subscriber,
 };
 use iceoryx2_services_tunnel_backend::types::service_description::{
-    PatternSettings, PublishSubscribeDescription, PublishSubscribeSettings,
+    PortSettings, PublishSubscribeDescription, PublishSubscribeSettings,
 };
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -112,8 +112,8 @@ impl<S: Service> PublishSubscribePorts<S> {
                 .__internal_set_payload_type_details(&payload_details)
         };
         let builder = match &description.settings {
-            PatternSettings::Value(settings) => apply_settings(builder, settings),
-            PatternSettings::UnknownApplyDefaults => builder,
+            PortSettings::Value(settings) => apply_settings(builder, settings),
+            PortSettings::LocalDefaults => builder,
         };
 
         let service = fail!(

@@ -10,18 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Safe RAII wrappers around the `r2r_rcl` bindings, exposing only what the
-//! tunnel needs.
+use core::time::Duration;
 
-pub(crate) mod error;
-pub(crate) mod names;
-pub(crate) mod node;
-pub(crate) mod publisher;
-pub(crate) mod qos;
-pub(crate) mod subscription;
+use iceoryx2::prelude::*;
 
-pub(crate) use error::RclError;
-pub(crate) use names::*;
-pub(crate) use node::{RclNode, RclNodeBuilder};
-pub(crate) use publisher::{RclPublisher, RclPublisherBuilder};
-pub(crate) use subscription::{MessageInfo, RclSubscription, RclSubscriptionBuilder};
+pub const DISCOVERY_RETRY_PERIOD: Duration = Duration::from_millis(50);
+pub const DISCOVERY_RETRY_ATTEMPTS: usize = 200;
+
+#[derive(Debug, ZeroCopySend)]
+#[type_name("std_msgs/msg/String")]
+#[repr(C)]
+pub struct RosString(u8);
+
+pub fn service_name(name: &str) -> ServiceName {
+    name.try_into().expect("valid service name")
+}

@@ -10,18 +10,21 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Safe RAII wrappers around the `r2r_rcl` bindings, exposing only what the
-//! tunnel needs.
+//! Mapping between iceoryx2 services and their ROS 2 representation.
 
-pub(crate) mod error;
-pub(crate) mod names;
-pub(crate) mod node;
-pub(crate) mod publisher;
-pub(crate) mod qos;
-pub(crate) mod subscription;
+pub mod prefix_mapping;
+pub mod static_mapping;
 
-pub(crate) use error::RclError;
-pub(crate) use names::*;
-pub(crate) use node::{RclNode, RclNodeBuilder};
-pub(crate) use publisher::{RclPublisher, RclPublisherBuilder};
-pub(crate) use subscription::{MessageInfo, RclSubscription, RclSubscriptionBuilder};
+pub use prefix_mapping::PrefixMapping;
+pub use static_mapping::StaticMapping;
+
+use crate::config::{TopicName, TypeName};
+use crate::qos::QosProfile;
+
+/// The concrete EndpointDescription for ROS 2 endpoints.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct TopicDescription {
+    pub topic: TopicName,
+    pub type_name: TypeName,
+    pub qos: QosProfile,
+}

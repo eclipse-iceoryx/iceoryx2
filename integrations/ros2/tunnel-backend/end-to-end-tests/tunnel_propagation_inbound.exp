@@ -1,0 +1,69 @@
+#!/usr/bin/expect
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+#### Common Setup
+
+set REPO_ROOT [exec git rev-parse --show-toplevel]
+cd ${REPO_ROOT}
+
+source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
+
+#### Test Setup
+
+# CDR of std_msgs/msg/String { data: "hello" }, as hex bytes:
+#
+#   00 01 00 00        CDR_LE encapsulation
+#   06 00 00 00        string length (incl. NUL)
+#   68 65 6c 6c 6f 00  "hello\0"
+set HELLO_CDR "00 01 00 00 06 00 00 00 68 65 6c 6c 6f 00"
+
+exec cargo build --bin iox2-service 2>@1
+exec cargo build --manifest-path integrations/ros2/Cargo.toml \
+    -p iceoryx2-integrations-ros2-tunnel-backend --example tunnel_polled 2>@1
+
+#### Test
+
+set timeout 30
+
+spawn cargo run --manifest-path integrations/ros2/Cargo.toml \
+    -p iceoryx2-integrations-ros2-tunnel-backend --example tunnel_polled
+set id_tunnel $spawn_id
+expect_output_from $id_tunnel "Local Discovery via Tracker"
+
+spawn ros2 topic pub -r 5 /chatter std_msgs/msg/String "{data: hello}"
+set id_pub $spawn_id
+
+expect_output_from $id_tunnel "Opening bridge"
+expect_output_from $id_tunnel "Ingested PublishSubscribe"
+
+spawn cargo run --bin iox2-service -- subscribe ros2://topics/chatter \
+    --data-representation HUMANREADABLE --max-messages 1
+set id_sub $spawn_id
+
+#### Test Assertion
+
+# The delivered payload is the CDR of { data: "hello" }.
+expect_output_from $id_sub $HELLO_CDR
+
+#### Shutdown
+
+expect -i $id_sub eof
+
+send -i $id_pub $SIGINT
+expect -i $id_pub eof
+
+send -i $id_tunnel $SIGINT
+expect_output_from $id_tunnel "exit"
+expect -i $id_tunnel eof
+
+show_test_passed

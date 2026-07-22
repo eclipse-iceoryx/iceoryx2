@@ -1,0 +1,11 @@
+# Mapping to non-default qos settings. Used to verify the mapping is properly
+# applied to ROS endpoints.
+
+[[mapping]]
+iceoryx2.service_name = "QosProbe"
+iceoryx2.payload_type = "std_msgs/msg/String"
+ros2.topic = "/qos_probe"
+ros2.type = "std_msgs/msg/String"
+ros2.qos.reliability = "BestEffort"      # default is Reliable
+ros2.qos.durability = "TransientLocal"   # default is Volatile
+ros2.qos.deadline = "500ms"              # default is Infinite

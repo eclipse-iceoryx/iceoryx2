@@ -13,6 +13,7 @@
 use alloc::string::String;
 use core::time::Duration;
 
+use iceoryx2::service::Service;
 use iceoryx2::service::service_hash::ServiceHash;
 use iceoryx2::service::service_name::ServiceName;
 use iceoryx2::service::static_config::StaticConfig;
@@ -27,11 +28,28 @@ use serde::{Deserialize, Serialize};
 pub struct ServiceDescription {
     /// The service's identity: keys bridges, discovery state and backend
     /// wire entries. Computed from (name, pattern) via
-    /// [`ServiceHash::new()`] with the
-    /// [`Service`](iceoryx2::service::Service)'s name hasher.
+    /// [`ServiceHash::new()`] with the [`Service`]'s name hasher.
     pub service_hash: ServiceHash,
     pub name: ServiceName,
     pub pattern: PatternDescription,
+}
+
+impl ServiceDescription {
+    pub fn new<S: Service>(name: ServiceName, pattern: PatternDescription) -> Self {
+        let messaging_pattern = match &pattern {
+            PatternDescription::PublishSubscribe(_) => {
+                iceoryx2::service::messaging_pattern::MessagingPattern::PublishSubscribe
+            }
+            PatternDescription::Event(_) => {
+                iceoryx2::service::messaging_pattern::MessagingPattern::Event
+            }
+        };
+        Self {
+            service_hash: ServiceHash::new::<S::ServiceNameHasher>(&name, messaging_pattern),
+            name,
+            pattern,
+        }
+    }
 }
 
 /// Description of a services messaging pattern.
@@ -52,9 +70,9 @@ impl core::fmt::Display for PatternDescription {
 
 /// Settings for a messaging pattern, either known or absent.
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
-pub enum PatternSettings<T> {
+pub enum PortSettings<T> {
     Value(T),
-    UnknownApplyDefaults,
+    LocalDefaults,
 }
 
 /// Description of a publish-subscribe service.
@@ -62,13 +80,13 @@ pub enum PatternSettings<T> {
 pub struct PublishSubscribeDescription {
     pub user_header: TypeDescription,
     pub payload: TypeDescription,
-    pub settings: PatternSettings<PublishSubscribeSettings>,
+    pub settings: PortSettings<PublishSubscribeSettings>,
 }
 
 /// Description of an event service.
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct EventDescription {
-    pub settings: PatternSettings<EventSettings>,
+    pub settings: PortSettings<EventSettings>,
 }
 
 /// Description of a services type(s).
@@ -82,6 +100,7 @@ pub struct TypeDescription {
 
 /// Settings for publish-subscribe services.
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct PublishSubscribeSettings {
     pub max_subscribers: usize,
     pub max_publishers: usize,
@@ -90,6 +109,23 @@ pub struct PublishSubscribeSettings {
     pub subscriber_max_buffer_size: usize,
     pub subscriber_max_borrowed_samples: usize,
     pub safe_overflow: bool,
+}
+
+impl Default for PublishSubscribeSettings {
+    fn default() -> Self {
+        let defaults = iceoryx2::config::Config::default()
+            .defaults
+            .publish_subscribe;
+        Self {
+            max_subscribers: defaults.max_subscribers,
+            max_publishers: defaults.max_publishers,
+            max_nodes: defaults.max_nodes,
+            history_size: defaults.publisher_history_size,
+            subscriber_max_buffer_size: defaults.subscriber_max_buffer_size,
+            subscriber_max_borrowed_samples: defaults.subscriber_max_borrowed_samples,
+            safe_overflow: defaults.enable_safe_overflow,
+        }
+    }
 }
 
 /// Settings for event services.
@@ -130,7 +166,7 @@ impl TryFrom<&StaticConfig> for ServiceDescription {
                 PatternDescription::PublishSubscribe(PublishSubscribeDescription {
                     payload: (&types.payload).into(),
                     user_header: (&types.user_header).into(),
-                    settings: PatternSettings::Value(PublishSubscribeSettings {
+                    settings: PortSettings::Value(PublishSubscribeSettings {
                         max_subscribers: config.max_subscribers(),
                         max_publishers: config.max_publishers(),
                         max_nodes: config.max_nodes(),
@@ -142,7 +178,7 @@ impl TryFrom<&StaticConfig> for ServiceDescription {
                 })
             }
             MessagingPattern::Event(config) => PatternDescription::Event(EventDescription {
-                settings: PatternSettings::Value(EventSettings {
+                settings: PortSettings::Value(EventSettings {
                     max_notifiers: config.max_notifiers(),
                     max_listeners: config.max_listeners(),
                     max_nodes: config.max_nodes(),
@@ -287,7 +323,7 @@ mod tests {
             eq PatternDescription::PublishSubscribe(PublishSubscribeDescription {
                 user_header: (&TypeDetail::new::<()>(TypeVariant::FixedSize)).into(),
                 payload: (&TypeDetail::new::<u64>(TypeVariant::FixedSize)).into(),
-                settings: PatternSettings::Value(PublishSubscribeSettings {
+                settings: PortSettings::Value(PublishSubscribeSettings {
                     max_subscribers: MAX_SUBSCRIBERS,
                     max_publishers: MAX_PUBLISHERS,
                     max_nodes: MAX_NODES,
@@ -343,7 +379,7 @@ mod tests {
         assert_that!(
             sut.pattern,
             eq PatternDescription::Event(EventDescription {
-                settings: PatternSettings::Value(EventSettings {
+                settings: PortSettings::Value(EventSettings {
                     max_notifiers: MAX_NOTIFIERS,
                     max_listeners: MAX_LISTENERS,
                     max_nodes: MAX_NODES,
@@ -385,7 +421,7 @@ mod tests {
         let PatternDescription::Event(description) = sut.pattern else {
             panic!("expected an event pattern description");
         };
-        let PatternSettings::Value(settings) = description.settings else {
+        let PortSettings::Value(settings) = description.settings else {
             panic!("expected provided event settings");
         };
         assert_that!(settings.deadline, eq None);

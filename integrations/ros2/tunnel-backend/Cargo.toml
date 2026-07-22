@@ -22,4 +22,6 @@ r2r_rcl = { workspace = true }
 serde = { workspace = true }
 
 [dev-dependencies]
+iceoryx2-bb-testing = { workspace = true }
 iceoryx2-services-tunnel = { workspace = true }
+toml = { workspace = true }
