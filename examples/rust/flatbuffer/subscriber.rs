@@ -12,7 +12,7 @@
 
 extern crate alloc;
 
-use crate::unbounded_data_generated::example::UnboundedData;
+use crate::unbounded_data_generated::example::{UnboundedData, root_as_unbounded_data};
 use alloc::boxed::Box;
 use core::time::Duration;
 use iceoryx2::{prelude::*, service::marker::Flatbuffer};
@@ -49,7 +49,18 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(sample) = subscriber.receive()? {
-            coutln!("received something: {:?}", sample.header());
+            let data = root_as_unbounded_data(sample.serialized_flatbuffer()).unwrap();
+
+            coutln!("title: {}", data.title().unwrap_or_default());
+            if let Some(entries) = data.entries() {
+                for (index, entry) in entries.iter().enumerate() {
+                    coutln!(
+                        "Entry {index}: data_1={}, data_2={}",
+                        entry.data_1(),
+                        entry.data_2()
+                    );
+                }
+            }
         }
     }
 

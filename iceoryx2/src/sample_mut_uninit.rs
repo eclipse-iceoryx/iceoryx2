@@ -156,6 +156,7 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
             publisher_shared_state: publisher_shared_state.clone(),
             offset_to_chunk: Arc::new(AtomicU64::new(pointer_to_chunk.offset.as_value())),
             shm_raw_ptr: Arc::new(AtomicUsize::new(pointer_to_chunk.data_ptr as usize)),
+            total_len: Arc::new(AtomicUsize::new(initial_layout.size())),
         };
         let allocation_strategy = publisher_shared_state
             .lock()
@@ -220,6 +221,8 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
         };
 
         ptr.as_header_mut().metadata = payload_offset as u64;
+        ptr.as_header_mut().number_of_elements =
+            self.shared_state.total_len.load(Ordering::Relaxed) as u64;
 
         SampleMut {
             shared_state: self.shared_state,
@@ -395,6 +398,7 @@ impl<
                 publisher_shared_state: publisher_shared_state.clone(),
                 offset_to_chunk: Arc::new(AtomicU64::new(shm_pointer.offset.as_value())),
                 shm_raw_ptr: Arc::new(AtomicUsize::new(shm_pointer.data_ptr as usize)),
+                total_len: Arc::new(AtomicUsize::new(1)),
             },
             ptr,
             sample_size,
@@ -486,6 +490,7 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
                 publisher_shared_state: publisher_shared_state.clone(),
                 offset_to_chunk: Arc::new(AtomicU64::new(shm_pointer.offset.as_value())),
                 shm_raw_ptr: Arc::new(AtomicUsize::new(shm_pointer.data_ptr as usize)),
+                total_len: Arc::new(AtomicUsize::new(ptr.as_payload_ref().len())),
             },
             ptr,
             sample_size,

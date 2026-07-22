@@ -483,7 +483,7 @@ impl<Service: service::Service, Payload: Debug + ZeroCopySend, UserHeader: Debug
 
         Ok(self.receive_impl()?.map(|(details, chunk)| {
             let header_ptr = chunk.header as *const Header;
-            let number_of_elements = unsafe { (*header_ptr).metadata() };
+            let number_of_elements = unsafe { (*header_ptr).number_of_elements() };
 
             Sample {
                 subscriber_shared_state: self.subscriber_shared_state.clone(),
@@ -521,7 +521,7 @@ impl<Service: service::Service, UserHeader: Debug + ZeroCopySend>
     ) -> Result<Option<Sample<Service, [CustomPayloadMarker], UserHeader>>, ReceiveError> {
         Ok(self.receive_impl()?.map(|(details, chunk)| {
             let header_ptr = chunk.header as *const Header;
-            let number_of_elements = unsafe { (*header_ptr).metadata() };
+            let number_of_elements = unsafe { (*header_ptr).number_of_elements() };
             let number_of_bytes = number_of_elements as usize
                 * self.subscriber_shared_state.lock().receiver.payload_size();
 

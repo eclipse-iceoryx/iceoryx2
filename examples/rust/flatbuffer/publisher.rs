@@ -64,23 +64,19 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         let builder = sample.flatbuffer_builder();
         let title = builder.create_string("Hello World!");
 
-        let entry_1 = Entry::create(
-            builder,
-            &EntryArgs {
-                data_1: 42,
-                data_2: 1234,
-            },
-        );
+        let mut buffer = vec![];
 
-        let entry_2 = Entry::create(
-            builder,
-            &EntryArgs {
-                data_1: -992,
-                data_2: 1011,
-            },
-        );
+        for i in 0..10 {
+            buffer.push(Entry::create(
+                builder,
+                &EntryArgs {
+                    data_1: 6 * i + 5,
+                    data_2: (6 * i + 7) as u64,
+                },
+            ));
+        }
 
-        let entries = builder.create_vector(&[entry_1, entry_2]);
+        let entries = builder.create_vector(&buffer);
 
         let unbounded_data = UnboundedData::create(
             builder,
@@ -91,8 +87,6 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         );
 
         let sample = sample.assume_init(unbounded_data);
-
-        coutln!("header: {:?}", sample.header());
         sample.send()?;
 
         coutln!("Send sample {counter} ...");

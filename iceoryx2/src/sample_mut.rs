@@ -63,6 +63,7 @@
 //! # }
 //! ```
 
+use crate::service::marker::Flatbuffer;
 use crate::{
     port::SendError, port::publisher::PublisherSharedState, raw_sample::RawSampleMut,
     service::header::publish_subscribe::Header,
@@ -85,6 +86,7 @@ pub struct SampleMutSharedState<Service: crate::service::Service> {
         Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
     pub(crate) offset_to_chunk: Arc<AtomicU64>,
     pub(crate) shm_raw_ptr: Arc<AtomicUsize>,
+    pub(crate) total_len: Arc<AtomicUsize>,
 }
 
 impl<Service: crate::service::Service> ReallocGrow<ShmPointer> for SampleMutSharedState<Service> {
@@ -107,6 +109,7 @@ impl<Service: crate::service::Service> ReallocGrow<ShmPointer> for SampleMutShar
             .store(ptr.offset.as_value(), Ordering::Relaxed);
         self.shm_raw_ptr
             .store(ptr.data_ptr as usize, Ordering::Relaxed);
+        self.total_len.store(new_layout.size(), Ordering::Relaxed);
 
         Ok(ptr)
     }
@@ -189,6 +192,19 @@ impl<
             self.shared_state,
             self.sample_size
         )
+    }
+}
+
+impl<Service: crate::service::Service, Payload: Debug, UserHeader: ZeroCopySend>
+    SampleMut<Service, Flatbuffer<Payload>, UserHeader>
+{
+    /// Returns the serialized flatbuffer data.
+    pub fn serialized_flatbuffer(&self) -> &[u8] {
+        let payload_offset = self.ptr.as_header_ref().metadata as usize;
+        let payload_ptr = self.ptr.as_payload_ref() as *const Flatbuffer<Payload> as *const u8;
+        let payload_len = self.ptr.as_header_ref().number_of_elements as usize;
+
+        unsafe { core::slice::from_raw_parts(payload_ptr.add(payload_offset), payload_len) }
     }
 }
 

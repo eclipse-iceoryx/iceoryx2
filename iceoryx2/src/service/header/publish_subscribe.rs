@@ -43,6 +43,7 @@ use crate::identifiers::{UniqueNodeId, UniquePublisherId};
 pub struct Header {
     node_id: UniqueNodeId,
     publisher_port_id: UniquePublisherId,
+    pub(crate) number_of_elements: u64,
     pub(crate) metadata: u64,
 }
 
@@ -50,12 +51,13 @@ impl Header {
     pub(crate) fn new(
         node_id: UniqueNodeId,
         publisher_port_id: UniquePublisherId,
-        metadata: u64,
+        number_of_elements: u64,
     ) -> Self {
         Self {
             node_id,
             publisher_port_id,
-            metadata,
+            number_of_elements,
+            metadata: 0,
         }
     }
 
@@ -71,7 +73,21 @@ impl Header {
         self.publisher_port_id
     }
 
-    pub(crate) fn metadata(&self) -> u64 {
+    /// Returns how many elements are stored inside the [`Sample`](crate::sample::Sample)'s payload.
+    ///
+    /// # Details when using
+    /// [`CustomPayloadMarker`](crate::service::marker::CustomPayloadMarker)
+    ///
+    /// In this case the number of elements relates to the element defined in the
+    /// [`MessageTypeDetails`](crate::service::static_config::message_type_details::MessageTypeDetails).
+    /// When the element has a `payload.size == 40` and the `Sample::payload().len() == 120` it
+    /// means that it contains 3 elements (3 * 40 == 120).
+    pub fn number_of_elements(&self) -> u64 {
+        self.number_of_elements
+    }
+
+    /// Returns additional metadata information that depends on the payload type variant.
+    pub fn metadata(&self) -> u64 {
         self.metadata
     }
 }
