@@ -58,6 +58,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         counter += 1;
         let mut sample = publisher.loan_flatbuffer()?;
         let builder = sample.flatbuffer_builder();
+
+        // BEGIN: standard flatbuffer API
         let title = builder.create_string("Hello World!");
 
         let mut entries = vec![];
@@ -80,8 +82,11 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                 entries: Some(entries),
             },
         );
+        // END: standard flatbuffer API
 
+        // calls builder.finish(unbounded_data, None) and sets the payload offset
         let mut sample = sample.assume_init(unbounded_data);
+
         *sample.user_header_mut() = counter;
 
         sample.send()?;

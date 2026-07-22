@@ -32,6 +32,7 @@
 
 use core::{fmt::Debug, ops::Deref};
 
+use flatbuffers::InvalidFlatbuffer;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -117,13 +118,21 @@ impl<
 impl<Service: crate::service::Service, Payload: Debug, UserHeader: ZeroCopySend>
     Sample<Service, Flatbuffer<Payload>, UserHeader>
 {
-    /// Returns the serialized flatbuffer data.
-    pub fn serialized_flatbuffer(&self) -> &[u8] {
+    /// Returns the serialized flatbuffer data as bytes.
+    pub fn payload_bytes(&self) -> &[u8] {
         let payload_offset = self.ptr.as_header_ref().payload_offset as usize;
         let payload_ptr = self.ptr.as_payload_ref() as *const Flatbuffer<Payload> as *const u8;
         let payload_len = self.ptr.as_header_ref().number_of_elements as usize;
 
         unsafe { core::slice::from_raw_parts(payload_ptr.add(payload_offset), payload_len) }
+    }
+
+    /// Returns the root of the flatbuffer.
+    pub fn payload_root<'a>(&'a self) -> Result<Payload::Inner, InvalidFlatbuffer>
+    where
+        Payload: flatbuffers::Follow<'a> + flatbuffers::Verifiable,
+    {
+        flatbuffers::root::<Payload>(self.payload_bytes())
     }
 }
 

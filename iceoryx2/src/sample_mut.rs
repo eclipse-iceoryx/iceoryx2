@@ -69,6 +69,7 @@ use crate::{
     port::SendError, port::publisher::PublisherSharedState,
     service::header::publish_subscribe::Header,
 };
+use flatbuffers::InvalidFlatbuffer;
 use iceoryx2_bb_concurrency::atomic::{AtomicU64, AtomicUsize, Ordering};
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
@@ -279,13 +280,21 @@ impl<
 impl<Service: crate::service::Service, Payload: Debug, UserHeader: ZeroCopySend>
     SampleMut<Service, Flatbuffer<Payload>, UserHeader>
 {
-    /// Returns the serialized flatbuffer data.
-    pub fn serialized_flatbuffer(&self) -> &[u8] {
+    /// Returns the serialized flatbuffer data as bytes.
+    pub fn payload_bytes(&self) -> &[u8] {
         let payload_offset = self.header().payload_offset() as usize;
         let payload_ptr = self.chunk.payload_ptr();
         let payload_len = self.header().number_of_elements() as usize;
 
         unsafe { core::slice::from_raw_parts(payload_ptr.add(payload_offset), payload_len) }
+    }
+
+    /// Returns the root of the flatbuffer.
+    pub fn payload_root<'a>(&'a self) -> Result<Payload::Inner, InvalidFlatbuffer>
+    where
+        Payload: flatbuffers::Follow<'a> + flatbuffers::Verifiable,
+    {
+        flatbuffers::root::<Payload>(self.payload_bytes())
     }
 }
 
