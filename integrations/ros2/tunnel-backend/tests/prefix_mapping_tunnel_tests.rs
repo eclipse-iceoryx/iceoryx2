@@ -12,7 +12,7 @@
 
 mod common;
 
-use common::{DISCOVERY_TIMEOUT, RosString, service_name};
+use common::{DISCOVERY_RETRY_ATTEMPTS, DISCOVERY_RETRY_PERIOD, RosString, service_name};
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::Service as _;
@@ -20,10 +20,11 @@ use iceoryx2::service::local::Service;
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use iceoryx2::testing::generate_isolated_config;
 use iceoryx2_integrations_ros2_tunnel_backend::ros_header::RosHeader;
-use iceoryx2_integrations_ros2_tunnel_backend::testing::{TestPeer, wait_until};
+use iceoryx2_integrations_ros2_tunnel_backend::testing::{TestPeer, Testing};
 use iceoryx2_integrations_ros2_tunnel_backend::{Config, PrefixMapping, Ros2Backend, TopicConfig};
 use iceoryx2_services_tunnel::Tunnel;
 use iceoryx2_services_tunnel_backend::traits::Passthrough;
+use iceoryx2_services_tunnel_backend::traits::testing::Testing as _;
 
 #[test]
 fn maps_iceoryx_services_onto_ros_topics() {
@@ -51,17 +52,19 @@ fn maps_iceoryx_services_onto_ros_topics() {
         .unwrap();
 
     let peer = TestPeer::create();
-    let appeared = wait_until(DISCOVERY_TIMEOUT, || {
-        tunnel.discover().expect("tunnel discovery failed");
-        peer.topic_types(&topic)
-            .iter()
-            .any(|type_name| type_name == "std_msgs/msg/String")
-    });
-
-    assert!(
-        appeared,
-        "mapped topic '{topic}' did not appear on the ROS 2 graph"
-    );
+    Testing::retry(
+        || {
+            tunnel.discover().expect("tunnel discovery failed");
+            peer.topic_types(&topic)
+                .iter()
+                .any(|type_name| type_name == "std_msgs/msg/String")
+                .then_some(())
+                .ok_or("mapped topic not yet on the ROS 2 graph")
+        },
+        DISCOVERY_RETRY_PERIOD,
+        Some(DISCOVERY_RETRY_ATTEMPTS),
+    )
+    .expect("mapped topic did not appear on the ROS 2 graph");
 }
 
 #[test]
@@ -97,14 +100,17 @@ fn does_not_map_unprefixed_services() {
 
     let peer = TestPeer::create();
 
-    let publish_subscribe_appeared = wait_until(DISCOVERY_TIMEOUT, || {
-        tunnel.discover().expect("tunnel discovery failed");
-        !peer.topic_types(&publish_subscribe_topic).is_empty()
-    });
-    assert!(
-        publish_subscribe_appeared,
-        "publish_subscribe topic did not appear"
-    );
+    Testing::retry(
+        || {
+            tunnel.discover().expect("tunnel discovery failed");
+            (!peer.topic_types(&publish_subscribe_topic).is_empty())
+                .then_some(())
+                .ok_or("publish_subscribe topic not yet on the ROS 2 graph")
+        },
+        DISCOVERY_RETRY_PERIOD,
+        Some(DISCOVERY_RETRY_ATTEMPTS),
+    )
+    .expect("publish_subscribe topic did not appear");
 
     assert_eq!(tunnel.tunneled_services().len(), 1);
 }
@@ -143,14 +149,17 @@ fn does_not_map_event_services() {
 
     let peer = TestPeer::create();
 
-    let publish_subscribe_appeared = wait_until(DISCOVERY_TIMEOUT, || {
-        tunnel.discover().expect("tunnel discovery failed");
-        !peer.topic_types(&publish_subscribe_topic).is_empty()
-    });
-    assert!(
-        publish_subscribe_appeared,
-        "publish_subscribe topic did not appear"
-    );
+    Testing::retry(
+        || {
+            tunnel.discover().expect("tunnel discovery failed");
+            (!peer.topic_types(&publish_subscribe_topic).is_empty())
+                .then_some(())
+                .ok_or("publish_subscribe topic not yet on the ROS 2 graph")
+        },
+        DISCOVERY_RETRY_PERIOD,
+        Some(DISCOVERY_RETRY_ATTEMPTS),
+    )
+    .expect("publish_subscribe topic did not appear");
 
     assert!(peer.topic_types(&event_topic).is_empty());
     assert_eq!(tunnel.tunneled_services().len(), 1);
@@ -179,13 +188,19 @@ fn maps_ros_topics_onto_iceoryx2_services() {
     let _publisher = peer.create_publisher(&topic, "std_msgs/msg/String");
 
     let name = service_name(&format!("ros2://topics{topic}"));
-    let appeared = wait_until(DISCOVERY_TIMEOUT, || {
-        tunnel.discover().expect("tunnel discovery failed");
-        Service::details(&name, &config, MessagingPattern::PublishSubscribe)
-            .expect("failed to query service details")
-            .is_some()
-    });
-    assert!(appeared, "local service for topic '{topic}' did not appear");
+    Testing::retry(
+        || {
+            tunnel.discover().expect("tunnel discovery failed");
+            Service::details(&name, &config, MessagingPattern::PublishSubscribe)
+                .expect("failed to query service details")
+                .is_some()
+                .then_some(())
+                .ok_or("local service not yet created")
+        },
+        DISCOVERY_RETRY_PERIOD,
+        Some(DISCOVERY_RETRY_ATTEMPTS),
+    )
+    .expect("local service for the ROS 2 topic did not appear");
 
     let details = Service::details(&name, &config, MessagingPattern::PublishSubscribe)
         .expect("failed to query service details")

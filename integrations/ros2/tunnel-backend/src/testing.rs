@@ -14,15 +14,12 @@
 //! network side.
 
 use std::rc::Rc;
-use std::time::{Duration, Instant};
 
 use crate::qos::QosProfile;
 use crate::rcl::{NodeName, RclNode, RclNodeBuilder, RclPublisherBuilder, TopicName};
 use crate::typesupport::TypeSupportRegistry;
 
 pub use crate::rcl::publisher::RclPublisher;
-
-const POLL_INTERVAL: Duration = Duration::from_millis(50);
 
 /// A separate ROS 2 peer for observing and validating changes to
 /// ROS 2 graph.
@@ -84,16 +81,8 @@ impl TestPeer {
     }
 }
 
-/// Polls `condition` until it holds or `timeout` elapses.
-pub fn wait_until(timeout: Duration, mut condition: impl FnMut() -> bool) -> bool {
-    let deadline = Instant::now() + timeout;
-    loop {
-        if condition() {
-            return true;
-        }
-        if Instant::now() >= deadline {
-            return false;
-        }
-        std::thread::sleep(POLL_INTERVAL);
-    }
-}
+/// Backend hook exposing the shared tunnel test helpers (`retry`, `sync`) for
+/// use in conformance tests which have no information about the tunnel implementation.
+pub struct Testing;
+
+impl iceoryx2_services_tunnel_backend::traits::testing::Testing for Testing {}

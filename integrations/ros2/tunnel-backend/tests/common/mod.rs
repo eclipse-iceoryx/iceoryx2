@@ -14,7 +14,8 @@ use core::time::Duration;
 
 use iceoryx2::prelude::*;
 
-pub const DISCOVERY_TIMEOUT: Duration = Duration::from_secs(10);
+pub const DISCOVERY_RETRY_PERIOD: Duration = Duration::from_millis(50);
+pub const DISCOVERY_RETRY_ATTEMPTS: usize = 200;
 
 #[derive(Debug, ZeroCopySend)]
 #[type_name("std_msgs/msg/String")]
