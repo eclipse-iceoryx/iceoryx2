@@ -130,3 +130,16 @@ fn duration(time: &rmw_time_s) -> Option<Duration> {
     let infinite = (time.sec, time.nsec) >= (INFINITE.sec, INFINITE.nsec);
     (!unset && !infinite).then(|| Duration::from_secs(time.sec) + Duration::from_nanos(time.nsec))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use r2r_rcl::rcl_publisher_get_default_options;
+
+    #[test]
+    fn default_profile_matches_rmw_default() {
+        let rmw_default = unsafe { rcl_publisher_get_default_options() }.qos;
+        assert_eq!(parse(&rmw_default), QosProfile::default());
+    }
+}
