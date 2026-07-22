@@ -77,6 +77,7 @@ fn ignores_unprefixed_names_and_invalid_type_names() {
         ("iox2://something", "std_msgs/msg/String"),
         ("/chatter", "std_msgs/msg/String"),
         ("ros2://topics/chatter", "NotARosTypeName"),
+        ("ros2://some/thing", "std_msgs/msg/String"),
     ] {
         assert!(
             sut.remote(&service_description_with_default_settings(name, type_name))
