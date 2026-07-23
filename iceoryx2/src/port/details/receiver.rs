@@ -280,15 +280,13 @@ impl<Service: service::Service, Resource: ServiceResource> Receiver<Service, Res
                     let msg_disconnect_with_data =
                         "A sender disconnected with undelivered data that will be discarded.";
                     let msg_disconnet_with_borrows = "A sender disconnected with data that is still borrowed. This will lead to segmentation faults when the data is accessed later on.";
-                    let msg_end =
-                        "Increase the expired connection buffer to mitigate the problem.";
+                    let msg_end = "Increase the expired connection buffer to mitigate the problem.";
 
                     // push failed! let's see if there is something that can be removed
-                    let index_and_key_to_remove =
-                        Self::find_connection_without_data_and_borrows(
-                            connection_storage,
-                            to_be_removed_connections,
-                        );
+                    let index_and_key_to_remove = Self::find_connection_without_data_and_borrows(
+                        connection_storage,
+                        to_be_removed_connections,
+                    );
 
                     if let Some((index, key)) = index_and_key_to_remove {
                         // we found a connection without data and borrows which can be removed from the container
