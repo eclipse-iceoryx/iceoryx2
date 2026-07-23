@@ -17,7 +17,7 @@ use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
 use iceoryx2_bb_memory::{bump_allocator::BaseAllocator, pool_allocator::ReallocGrow};
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
-use iceoryx2_cal::shm_allocator::{PointerOffset, ShmAllocator, shm_bump_allocator::*};
+use iceoryx2_cal::shm_allocator::{PointerOffset, ShmAllocator, bump_allocator::*};
 
 const MAX_SUPPORTED_ALIGNMENT: usize = 4096;
 const MEM_SIZE: usize = 16384 * 10;

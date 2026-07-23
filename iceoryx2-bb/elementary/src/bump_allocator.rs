@@ -99,6 +99,10 @@ impl BumpAllocator {
     pub fn total_space(&self) -> usize {
         self.full_memory_size
     }
+
+    pub fn reset(&self) {
+        self.addr_next_free_memory.store(0, Ordering::Relaxed);
+    }
 }
 
 impl BaseAllocator<NonNull<u8>> for BumpAllocator {

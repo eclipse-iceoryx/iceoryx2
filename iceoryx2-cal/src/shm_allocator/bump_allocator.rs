@@ -56,7 +56,7 @@ impl<'shm_allocator> BaseAllocator<PointerOffset> for InitializedBumpAllocator<'
 
 impl<'shm_allocator> Dealloc<PointerOffset> for InitializedBumpAllocator<'shm_allocator> {
     unsafe fn deallocate(&self, _ptr: PointerOffset, _layout: Layout) {
-        todo!()
+        self.0.allocator.reset();
     }
 }
 
