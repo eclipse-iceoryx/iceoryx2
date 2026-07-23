@@ -88,3 +88,6 @@ jobs:
         run: |
           just verify sdk miri
           just verify integrations-zenoh miri
+
+      - name: Check for changed files after CI run
+        uses: ./.github/actions/check-repo-changes

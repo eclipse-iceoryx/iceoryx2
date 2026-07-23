@@ -184,3 +184,6 @@ jobs:
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build target/ff/out-of-tree-cxx ${{ steps.set-build-flags.outputs.cmake-build-config }}
+
+      - name: Check for changed files after CI run
+        uses: ./.github/actions/check-repo-changes
