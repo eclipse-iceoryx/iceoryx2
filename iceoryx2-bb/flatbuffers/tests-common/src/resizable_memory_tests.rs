@@ -12,7 +12,7 @@
 
 extern crate alloc;
 
-use std::alloc::Layout;
+use core::alloc::Layout;
 
 use iceoryx2_bb_elementary_traits::pointer::Pointer;
 use iceoryx2_bb_flatbuffers::{
