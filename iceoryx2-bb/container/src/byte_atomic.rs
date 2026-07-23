@@ -44,7 +44,7 @@
 //! let new_value = Foo { bar: 4, baz: 6 };
 //! unsafe {
 //!     wrapper.write(new_value);
-//!     let read_value = wrapper.read().assume_init();
+//!     let read_value = wrapper.read().assume_consistent();
 //!     assert_eq!(read_value.bar, new_value.bar);
 //!     assert_eq!(read_value.baz, new_value.baz);
 //! }
@@ -81,7 +81,7 @@
 //!         .expect("RelocatableByteAtomic initialized.");
 //!
 //!     wrapper.write(new_value);
-//!     let read_value = wrapper.read().assume_init();
+//!     let read_value = wrapper.read().assume_consistent();
 //!     assert_eq!(read_value.bar, new_value.bar);
 //!     assert_eq!(read_value.baz, new_value.baz);
 //! }
@@ -97,6 +97,35 @@ use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary_traits::{atomic_copy::AtomicCopy, zero_copy_send::ZeroCopySend};
 use iceoryx2_log::fail;
 use iceoryx2_log::fatal_panic;
+
+/// A wrapper representing a value that has been copied byte-wise atomically, but might has
+/// been subject to torn-writes/torn-reads. Use [`MaybeTorn`] in conjunction with
+/// synchronization primitives (like a sequence lock) to verify that the data is consistent
+/// before use.
+#[repr(transparent)]
+pub struct MaybeTorn<T> {
+    inner: MaybeUninit<T>,
+}
+
+impl<T> MaybeTorn<T> {
+    /// Creates a new [`MaybeTorn<T>`] from the passed [`MaybeUninit<T>`].
+    pub fn new(inner: MaybeUninit<T>) -> Self {
+        Self { inner }
+    }
+
+    /// Extracts the value from the [`MaybeTorn`] container.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee that the underlying memory does not contain a torn state,
+    /// otherwise `T` may be "logically" invalid. In the context of [`FixedSizeByteAtomic::read()`],
+    /// this means that the caller must have verified via synchronization primitives that no
+    /// concurrent writes occured during the read operation. If called on a torn value, using the
+    /// resulting `T` may lead to undefined behavior.
+    pub unsafe fn assume_consistent(self) -> T {
+        unsafe { self.inner.assume_init() }
+    }
+}
 
 /// Failures caused by [`FixedSizeByteAtomic::new()`].
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -192,13 +221,13 @@ impl<T: AtomicCopy> RelocatableByteAtomic<T> {
         size_of::<T>()
     }
 
-    /// Copies the stored value byte-wise into a [`MaybeUninit<T>`].
+    /// Copies the stored value byte-wise into a [`MaybeTorn<T>`].
     ///
     /// # Safety
     ///
     /// * When the value is concurrently written to, torn-reads are possible. The user must take
     ///   care of the data integrity.
-    pub unsafe fn read(&self) -> MaybeUninit<T> {
+    pub unsafe fn read(&self) -> MaybeTorn<T> {
         self.verify_init("read()");
         unsafe { read_impl(self.data_ptr.as_ptr()) }
     }
@@ -259,13 +288,13 @@ impl<T: AtomicCopy, const SIZE: usize> FixedSizeByteAtomic<T, SIZE> {
         })
     }
 
-    /// Copies the stored value byte-wise into a [`MaybeUninit<T>`].
+    /// Copies the stored value byte-wise into a [`MaybeTorn<T>`].
     ///
     /// # Safety
     ///
     /// * When the value is concurrently written to, torn-reads are possible. The user must take care
     ///   of the data integrity.
-    pub unsafe fn read(&self) -> MaybeUninit<T> {
+    pub unsafe fn read(&self) -> MaybeTorn<T> {
         unsafe { read_impl(self.data.as_ptr()) }
     }
 
@@ -280,7 +309,7 @@ impl<T: AtomicCopy, const SIZE: usize> FixedSizeByteAtomic<T, SIZE> {
     }
 }
 
-unsafe fn read_impl<T: AtomicCopy>(src_data_ptr: *const AtomicU8) -> MaybeUninit<T> {
+unsafe fn read_impl<T: AtomicCopy>(src_data_ptr: *const AtomicU8) -> MaybeTorn<T> {
     let mut data: MaybeUninit<T> = MaybeUninit::uninit();
     let dest_data_ptr = data.as_mut_ptr() as *mut u8;
     for i in 0..size_of::<T>() {
@@ -288,7 +317,7 @@ unsafe fn read_impl<T: AtomicCopy>(src_data_ptr: *const AtomicU8) -> MaybeUninit
             *dest_data_ptr.add(i) = (*src_data_ptr.add(i)).load(Ordering::Relaxed);
         }
     }
-    data
+    MaybeTorn::new(data)
 }
 
 unsafe fn write_impl<T: AtomicCopy>(dest_data_ptr: *const AtomicU8, value: T) {
