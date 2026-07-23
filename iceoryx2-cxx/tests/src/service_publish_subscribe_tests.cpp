@@ -1834,6 +1834,7 @@ TYPED_TEST(ServicePublishSubscribeTest, custom_header_payload_marker_send_receiv
     auto send_payload = send_sample.payload_mut();
     ASSERT_THAT(send_payload.number_of_bytes(), Eq(PAYLOAD_SIZE));
     for (uint64_t i = 0; i < PAYLOAD_SIZE; ++i) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) bounds are checked
         send_payload[i].value = static_cast<uint8_t>(PAYLOAD_BASE_VALUE + i);
     }
     auto& send_header = send_sample.template user_header_mut<std::array<uint8_t, HEADER_SIZE>>();
@@ -1851,6 +1852,7 @@ TYPED_TEST(ServicePublishSubscribeTest, custom_header_payload_marker_send_receiv
     auto recv_payload = recv_sample.payload();
     ASSERT_THAT(recv_payload.number_of_bytes(), Eq(PAYLOAD_SIZE));
     for (uint64_t i = 0; i < PAYLOAD_SIZE; ++i) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) bounds are checked
         ASSERT_THAT(recv_payload[i].value, Eq(static_cast<uint8_t>(PAYLOAD_BASE_VALUE + i)));
     }
     const auto& recv_header = recv_sample.template user_header<std::array<uint8_t, HEADER_SIZE>>();

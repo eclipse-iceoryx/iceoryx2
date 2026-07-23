@@ -2337,6 +2337,7 @@ TYPED_TEST(ServiceRequestResponseTest, custom_header_payload_marker_send_receive
     auto request_payload = request.payload_mut();
     ASSERT_THAT(request_payload.number_of_bytes(), Eq(PAYLOAD_SIZE));
     for (uint64_t i = 0; i < PAYLOAD_SIZE; ++i) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) bounds are checked
         request_payload[i].value = static_cast<uint8_t>(REQUEST_PAYLOAD_BASE_VALUE + i);
     }
     auto& request_header = request.template user_header_mut<std::array<uint8_t, HEADER_SIZE>>();
@@ -2354,6 +2355,7 @@ TYPED_TEST(ServiceRequestResponseTest, custom_header_payload_marker_send_receive
     auto recv_request_payload = active_request.payload();
     ASSERT_THAT(recv_request_payload.number_of_bytes(), Eq(PAYLOAD_SIZE));
     for (uint64_t i = 0; i < PAYLOAD_SIZE; ++i) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) bounds are checked
         ASSERT_THAT(recv_request_payload[i].value, Eq(static_cast<uint8_t>(REQUEST_PAYLOAD_BASE_VALUE + i)));
     }
     const auto& recv_request_header = active_request.template user_header<std::array<uint8_t, HEADER_SIZE>>();
@@ -2365,6 +2367,7 @@ TYPED_TEST(ServiceRequestResponseTest, custom_header_payload_marker_send_receive
     auto response_payload = response.payload_mut();
     ASSERT_THAT(response_payload.number_of_bytes(), Eq(PAYLOAD_SIZE));
     for (uint64_t i = 0; i < PAYLOAD_SIZE; ++i) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) bounds are checked
         response_payload[i].value = static_cast<uint8_t>(RESPONSE_PAYLOAD_BASE_VALUE + i);
     }
     auto& response_header = response.template user_header_mut<std::array<uint8_t, HEADER_SIZE>>();
@@ -2382,6 +2385,7 @@ TYPED_TEST(ServiceRequestResponseTest, custom_header_payload_marker_send_receive
     auto recv_response_payload = recv_response.payload();
     ASSERT_THAT(recv_response_payload.number_of_bytes(), Eq(PAYLOAD_SIZE));
     for (uint64_t i = 0; i < PAYLOAD_SIZE; ++i) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) bounds are checked
         ASSERT_THAT(recv_response_payload[i].value, Eq(static_cast<uint8_t>(RESPONSE_PAYLOAD_BASE_VALUE + i)));
     }
     const auto& recv_response_header = recv_response.template user_header<std::array<uint8_t, HEADER_SIZE>>();
