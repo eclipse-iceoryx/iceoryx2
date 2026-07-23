@@ -143,7 +143,7 @@ pub(crate) struct Receiver<Service: service::Service, Resource: ServiceResource>
     pub(crate) buffer_size: usize,
     pub(crate) tagger: CyclicTagger,
     pub(crate) to_be_removed_connections:
-        Option<UnsafeCell<PolymorphicVec<'static, SlotMapKey, HeapAllocator>>>,
+        UnsafeCell<PolymorphicVec<'static, SlotMapKey, HeapAllocator>>,
     pub(crate) degradation_handler: DegradationHandler<'static>,
     pub(crate) message_type_details: MessageTypeDetails,
     pub(crate) receiver_max_borrowed_samples: usize,
@@ -258,71 +258,69 @@ impl<Service: service::Service, Resource: ServiceResource> Receiver<Service, Res
     }
 
     pub(crate) fn prepare_connection_removal(&self, index: usize) {
-        if let Some(to_be_removed_connections) = &self.to_be_removed_connections {
-            let key = unsafe { *self.connections[index].get() };
-            let key = match key {
-                None => return,
-                Some(key) => key,
-            };
+        let key = unsafe { *self.connections[index].get() };
+        let key = match key {
+            None => return,
+            Some(key) => key,
+        };
 
-            let connection_storage = unsafe { &mut *self.connection_storage.get() };
+        let connection_storage = unsafe { &mut *self.connection_storage.get() };
 
-            if let Some(connection) = connection_storage.get_mut(key) {
-                let receiver = &connection.receiver;
-                let (connection_has_data, connection_has_borrows) =
-                    Self::receiver_channels_have_data_or_borrows(receiver);
+        if let Some(connection) = connection_storage.get_mut(key) {
+            let receiver = &connection.receiver;
+            let (connection_has_data, connection_has_borrows) =
+                Self::receiver_channels_have_data_or_borrows(receiver);
 
-                let keep_connection = connection_has_data | connection_has_borrows;
-                if keep_connection {
-                    let to_be_removed_connections =
-                        unsafe { &mut *to_be_removed_connections.get() };
-                    if to_be_removed_connections.push(key).is_err() {
-                        let msg_begin = "Expired connection buffer exceeded.";
-                        let msg_disconnect_with_data =
-                            "A sender disconnected with undelivered data that will be discarded.";
-                        let msg_disconnet_with_borrows = "A sender disconnected with data that is still borrowed. This will lead to segmentation faults when the data is accessed later on.";
-                        let msg_end =
-                            "Increase the expired connection buffer to mitigate the problem.";
+            let keep_connection = connection_has_data | connection_has_borrows;
+            if keep_connection {
+                let to_be_removed_connections =
+                    unsafe { &mut *self.to_be_removed_connections.get() };
+                if to_be_removed_connections.push(key).is_err() {
+                    let msg_begin = "Expired connection buffer exceeded.";
+                    let msg_disconnect_with_data =
+                        "A sender disconnected with undelivered data that will be discarded.";
+                    let msg_disconnet_with_borrows = "A sender disconnected with data that is still borrowed. This will lead to segmentation faults when the data is accessed later on.";
+                    let msg_end =
+                        "Increase the expired connection buffer to mitigate the problem.";
 
-                        // push failed! let's see if there is something that can be removed
-                        let index_and_key_to_remove =
-                            Self::find_connection_without_data_and_borrows(
-                                connection_storage,
-                                to_be_removed_connections,
-                            );
+                    // push failed! let's see if there is something that can be removed
+                    let index_and_key_to_remove =
+                        Self::find_connection_without_data_and_borrows(
+                            connection_storage,
+                            to_be_removed_connections,
+                        );
+
+                    if let Some((index, key)) = index_and_key_to_remove {
+                        // we found a connection without data and borrows which can be removed from the container
+                        to_be_removed_connections.remove(index);
+                        connection_storage.remove(key);
+                    } else if connection_has_borrows {
+                        // we did not find a connection that can safely be removed to create some space for the connection with borrows;
+                        // removing a connection with borrows might lead to segfaults -> try to remove a connection without borrows
+                        let index_and_key_to_remove = Self::find_connection_without_borrows(
+                            connection_storage,
+                            to_be_removed_connections,
+                        );
 
                         if let Some((index, key)) = index_and_key_to_remove {
-                            // we found a connection without data and borrows which can be removed from the container
+                            // we found a connection without borrows which can be removed from the container
+                            warn!(from self, "{} {} {}", msg_begin, msg_disconnect_with_data, msg_end);
                             to_be_removed_connections.remove(index);
-                            connection_storage.remove(key);
-                        } else if connection_has_borrows {
-                            // we did not find a connection that can safely be removed to create some space for the connection with borrows;
-                            // removing a connection with borrows might lead to segfaults -> try to remove a connection without borrows
-                            let index_and_key_to_remove = Self::find_connection_without_borrows(
-                                connection_storage,
-                                to_be_removed_connections,
-                            );
-
-                            if let Some((index, key)) = index_and_key_to_remove {
-                                // we found a connection without borrows which can be removed from the container
-                                warn!(from self, "{} {} {}", msg_begin, msg_disconnect_with_data, msg_end);
-                                to_be_removed_connections.remove(index);
-                                connection_storage.remove(key);
-                            }
-                        }
-
-                        if to_be_removed_connections.push(key).is_err() {
-                            if connection_has_borrows {
-                                fatal_panic!(from self, "This should never happen! {} {} {}", msg_begin, msg_disconnet_with_borrows, msg_end);
-                            } else {
-                                warn!(from self, "{} {} {}", msg_begin, msg_disconnect_with_data, msg_end);
-                            }
                             connection_storage.remove(key);
                         }
                     }
-                } else {
-                    connection_storage.remove(key);
+
+                    if to_be_removed_connections.push(key).is_err() {
+                        if connection_has_borrows {
+                            fatal_panic!(from self, "This should never happen! {} {} {}", msg_begin, msg_disconnet_with_borrows, msg_end);
+                        } else {
+                            warn!(from self, "{} {} {}", msg_begin, msg_disconnect_with_data, msg_end);
+                        }
+                        connection_storage.remove(key);
+                    }
                 }
+            } else {
+                connection_storage.remove(key);
             }
         }
     }
@@ -479,62 +477,60 @@ impl<Service: service::Service, Resource: ServiceResource> Receiver<Service, Res
         channel_id: ChannelId,
     ) -> Result<Option<(ChunkDetails, Chunk)>, ReceiveError> {
         let mut ret_val = None;
-        if let Some(to_be_removed_connections) = &self.to_be_removed_connections {
-            let to_be_removed_connections = unsafe { &mut *to_be_removed_connections.get() };
+        let to_be_removed_connections = unsafe { &mut *self.to_be_removed_connections.get() };
 
-            if !to_be_removed_connections.is_empty() {
-                let connection_storage = unsafe { &mut *self.connection_storage.get() };
+        if !to_be_removed_connections.is_empty() {
+            let connection_storage = unsafe { &mut *self.connection_storage.get() };
 
-                let mut indices_to_skip = 0;
-                // loop through all 'to_be_removed_connections' break the for-loop if a connection needs to be removed;
-                // then continue the for-loop but skip the previously looped indices
-                loop {
-                    let mut index_and_key = None;
-                    for (n, connection_key) in to_be_removed_connections
-                        .iter()
-                        .skip(indices_to_skip)
-                        .enumerate()
-                    {
-                        let connection = match connection_storage.get(*connection_key) {
-                            Some(connection) => connection,
-                            None => {
-                                index_and_key = Some((n, *connection_key));
-                                break;
-                            }
-                        };
-                        let receiver = &connection.receiver;
-
-                        if receiver.borrow_count(channel_id) == receiver.max_borrowed_samples() {
-                            continue;
-                        }
-
-                        if let Some((details, absolute_address)) =
-                            self.receive_from_connection(connection, *connection_key, channel_id)?
-                        {
-                            ret_val = Some((details, absolute_address));
+            let mut indices_to_skip = 0;
+            // loop through all 'to_be_removed_connections' break the for-loop if a connection needs to be removed;
+            // then continue the for-loop but skip the previously looped indices
+            loop {
+                let mut index_and_key = None;
+                for (n, connection_key) in to_be_removed_connections
+                    .iter()
+                    .skip(indices_to_skip)
+                    .enumerate()
+                {
+                    let connection = match connection_storage.get(*connection_key) {
+                        Some(connection) => connection,
+                        None => {
+                            index_and_key = Some((n, *connection_key));
                             break;
-                        } else {
-                            let (_has_data, has_borrows) =
-                                Self::receiver_channels_have_data_or_borrows(receiver);
-
-                            if !has_borrows {
-                                index_and_key = Some((n, *connection_key));
-                                break;
-                            }
                         }
-                    }
-                    // there is a connection which has neither data nor borrows nor is it present in the 'connection_storage'
-                    if let Some((index, key)) = index_and_key {
-                        to_be_removed_connections.remove(index);
-                        connection_storage.remove(key);
-                        indices_to_skip = index;
+                    };
+                    let receiver = &connection.receiver;
 
+                    if receiver.borrow_count(channel_id) == receiver.max_borrowed_samples() {
                         continue;
                     }
 
-                    // at this point we either were able to receive a sample or iterated through all connections
-                    break;
+                    if let Some((details, absolute_address)) =
+                        self.receive_from_connection(connection, *connection_key, channel_id)?
+                    {
+                        ret_val = Some((details, absolute_address));
+                        break;
+                    } else {
+                        let (_has_data, has_borrows) =
+                            Self::receiver_channels_have_data_or_borrows(receiver);
+
+                        if !has_borrows {
+                            index_and_key = Some((n, *connection_key));
+                            break;
+                        }
+                    }
                 }
+                // there is a connection which has neither data nor borrows nor is it present in the 'connection_storage'
+                if let Some((index, key)) = index_and_key {
+                    to_be_removed_connections.remove(index);
+                    connection_storage.remove(key);
+                    indices_to_skip = index;
+
+                    continue;
+                }
+
+                // at this point we either were able to receive a sample or iterated through all connections
+                break;
             }
         }
 

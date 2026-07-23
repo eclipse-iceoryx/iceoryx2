@@ -547,10 +547,10 @@ impl<
             service_state: service.clone(),
             buffer_size: static_config.max_response_buffer_size,
             tagger: CyclicTagger::new(),
-            to_be_removed_connections: Some(UnsafeCell::new(
+            to_be_removed_connections: UnsafeCell::new(
                 PolymorphicVec::new(HeapAllocator::global(), number_of_to_be_removed_connections)
                     .expect("Heap allocator provides memory."),
-            )),
+            ),
             degradation_handler: client_factory.response_degradation_handler,
             message_type_details: static_config.response_message_type_details,
             receiver_max_borrowed_samples: static_config

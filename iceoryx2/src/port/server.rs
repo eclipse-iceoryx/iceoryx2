@@ -385,13 +385,10 @@ impl<
             enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
             buffer_size: static_config.max_active_requests_per_client,
             tagger: CyclicTagger::new(),
-            to_be_removed_connections: Some(UnsafeCell::new(
-                PolymorphicVec::new(
-                    HeapAllocator::global(),
-                    number_of_to_be_removed_connections,
-                )
-                .expect("Heap allocator provides memory."),
-            )),
+            to_be_removed_connections: UnsafeCell::new(
+                PolymorphicVec::new(HeapAllocator::global(), number_of_to_be_removed_connections)
+                    .expect("Heap allocator provides memory."),
+            ),
             degradation_handler: server_factory.request_degradation_handler,
             number_of_channels: 1,
             connection_storage: UnsafeCell::new(SlotMap::new(number_of_connections)),
