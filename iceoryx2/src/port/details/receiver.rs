@@ -385,7 +385,7 @@ impl<Service: service::Service, Resource: ServiceResource> Receiver<Service, Res
             let channel_id = ChannelId::new(id);
             has_data |= receiver.has_data(channel_id);
             has_borrows |= receiver.borrow_count(channel_id) > 0;
-            if has_data & has_borrows {
+            if has_data && has_borrows {
                 break;
             }
         }
