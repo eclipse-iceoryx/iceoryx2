@@ -19,7 +19,7 @@
 // NOLINTBEGIN(bugprone-macro-parentheses)
 #define IOX2_BUILDER_SWITCH(name)                                                                                      \
   public:                                                                                                              \
-    auto name()&& noexcept -> decltype(auto) {                                                                         \
+    auto name() && noexcept -> decltype(auto) {                                                                        \
         m_##name = true;                                                                                               \
         return std::move(*this);                                                                                       \
     }                                                                                                                  \
@@ -29,12 +29,12 @@
 
 #define IOX2_BUILDER_PARAMETER(type, name, defaultValue)                                                               \
   public:                                                                                                              \
-    auto name(type const& value)&& noexcept -> decltype(auto) {                                                        \
+    auto name(type const& value) && noexcept -> decltype(auto) {                                                       \
         m_##name = value;                                                                                              \
         return std::move(*this);                                                                                       \
     }                                                                                                                  \
                                                                                                                        \
-    auto name(type&& value)&& noexcept -> decltype(auto) {                                                             \
+    auto name(type&& value) && noexcept -> decltype(auto) {                                                            \
         m_##name = std::move(value);                                                                                   \
         return std::move(*this);                                                                                       \
     }                                                                                                                  \
@@ -46,12 +46,12 @@
 
 #define IOX2_BUILDER_OPTIONAL(type, name)                                                                              \
   public:                                                                                                              \
-    auto name(type const& value)&& -> decltype(auto) {                                                                 \
+    auto name(type const& value) && -> decltype(auto) {                                                                \
         m_##name = iox2::bb::Optional<type>(value);                                                                    \
         return std::move(*this);                                                                                       \
     }                                                                                                                  \
                                                                                                                        \
-    auto name(type&& value)&& -> decltype(auto) {                                                                      \
+    auto name(type&& value) && -> decltype(auto) {                                                                     \
         m_##name = iox2::bb::Optional<type>(std::move(value));                                                         \
         return std::move(*this);                                                                                       \
     }                                                                                                                  \

@@ -19,6 +19,7 @@
 #include "iox2/legacy/type_traits.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -687,14 +688,18 @@ class StaticString {
         m_string[m_size] = '\0';
     }
 
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) private method, only used internally
     auto code_unit_based_substr(SizeType pos, SizeType count) const -> bb::Optional<StaticString> {
         if (pos > m_size) {
             return bb::NULLOPT;
         }
 
-        auto const length = std::min(static_cast<uint64_t>(count), m_size - pos);
+        auto const number_of_chars_to_end = m_size - pos;
+        auto const length = std::min(static_cast<uint64_t>(count), number_of_chars_to_end);
+        auto const substr_end_position = pos + length;
         StaticString sub_str;
-        std::copy(&m_string[pos], &m_string[pos + length], &sub_str.m_string[0]);
+        // NOLINTNEXTLINE(clang-analyzer-security.ArrayBound) false positive; it is ensured that 'substr_end_position' does not exceed the buffer
+        std::copy(&m_string[pos], &m_string[substr_end_position], &sub_str.m_string[0]);
         sub_str.m_string[length] = '\0';
         sub_str.m_size = length;
         return sub_str;

@@ -67,6 +67,7 @@
     conflicts when merging.
 -->
 
+* [#3](https://github.com/eclipse-iceoryx/iceoryx2/issues/3) Use clang 21 in the CI
 * [#1610](https://github.com/eclipse-iceoryx/iceoryx2/issues/1610) Add `no_std` tests for tunnel
 * [#1712](https://github.com/eclipse-iceoryx/iceoryx2/issues/1712) Add iceoryx2 version to static service config
 * [#1714](https://github.com/eclipse-iceoryx/iceoryx2/issues/1714) Add locking for all file descriptor based constructs

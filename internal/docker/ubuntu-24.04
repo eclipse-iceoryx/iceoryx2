@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # Select base image
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 # Disable prompt during packages installation
 ARG DEBIAN_FRONTEND=noninteractive
@@ -17,13 +17,21 @@ RUN echo "#### Installing dependencies" \
        gnupg \
        software-properties-common \
        wget \
-  && wget -P /tmp https://apt.llvm.org/llvm-snapshot.gpg.key \
-  && apt-key add /tmp/llvm-snapshot.gpg.key \
-  && add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" \
+  && mkdir -p /etc/apt/keyrings \
+  && UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) \
+  && wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --dearmor -o /etc/apt/keyrings/llvm-snapshot.gpg \
+  && touch /etc/apt/sources.list.d/llvm-snapshot.sources \
+  && echo "Types: deb" | tee -a /etc/apt/sources.list.d/llvm-snapshot.sources \
+  && echo "Architectures: amd64 arm64" | tee -a /etc/apt/sources.list.d/llvm-snapshot.sources \
+  && echo "Signed-By: /etc/apt/keyrings/llvm-snapshot.gpg" | tee -a /etc/apt/sources.list.d/llvm-snapshot.sources \
+  && echo "URIs: http://apt.llvm.org/$UBUNTU_CODENAME/" | tee -a /etc/apt/sources.list.d/llvm-snapshot.sources \
+  && echo "Suites: llvm-toolchain-$UBUNTU_CODENAME-21" | tee -a /etc/apt/sources.list.d/llvm-snapshot.sources \
+  && echo "Components: main" | tee -a /etc/apt/sources.list.d/llvm-snapshot.sources \
+  && apt update \
   && apt install -y \
-       clang-19 \
-       clang-format-19 \
-       clang-tidy-19 \
+       clang-21 \
+       clang-format-21 \
+       clang-tidy-21 \
        cmake \
        curl \
        gcc \
@@ -31,13 +39,13 @@ RUN echo "#### Installing dependencies" \
        libacl1-dev \
   && rm -rf /var/lib/apt/lists/* \
   && apt clean \
-  && ln -s /usr/bin/clang-19 /usr/bin/clang \
-  && ln -s /usr/bin/clang++-19 /usr/bin/clang++ \
-  && ln -s /usr/bin/clang-tidy-19 /usr/bin/clang-tidy \
-  && ln -s /usr/bin/clang-format-19 /usr/bin/clang-format \
-  && ln -s /usr/bin/llvm-19 /usr/bin/llvm \
-  && ln -s /usr/bin/llvm-cov-19 /usr/bin/llvm-cov \
-  && ln -s /usr/bin/llvm-profdata-19 /usr/bin/llvm-profdata \
+  && ln -s /usr/bin/clang-21 /usr/bin/clang \
+  && ln -s /usr/bin/clang++-21 /usr/bin/clang++ \
+  && ln -s /usr/bin/clang-tidy-21 /usr/bin/clang-tidy \
+  && ln -s /usr/bin/clang-format-21 /usr/bin/clang-format \
+  && ln -s /usr/bin/llvm-21 /usr/bin/llvm \
+  && ln -s /usr/bin/llvm-cov-21 /usr/bin/llvm-cov \
+  && ln -s /usr/bin/llvm-profdata-21 /usr/bin/llvm-profdata \
   && echo "#### Install minimal Rust toolchain" \
   && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-path \
   && echo "#### Adding beta and nightly toolchain" \
@@ -56,6 +64,8 @@ RUN echo "#### Installing dependencies" \
   && cargo install cargo-audit --locked \
   && echo "Installing grcov" \
   && cargo install grcov \
+  && echo "Installing just" \
+  && cargo install just \
   && echo "#### Creating users and groups required for tests" \
   && useradd testuser1 \
   && useradd testuser2 \
