@@ -149,7 +149,7 @@ impl StaticStorageLocked<Storage> for Locked {
     fn unlock(mut self, contents: &[u8]) -> Result<Storage, StaticStorageUnlockError> {
         let msg = "Failed to unlock storage";
 
-        let bytes_written = match self.static_storage.file.write(contents) {
+        let bytes_written = match self.static_storage.view.file.write(contents) {
             Ok(bytes_written) => bytes_written,
             Err(FileWriteError::InsufficientPermissions) => {
                 fail!(from self, with StaticStorageUnlockError::InsufficientPermissions,
@@ -175,7 +175,7 @@ impl StaticStorageLocked<Storage> for Locked {
                 msg, contents.len(), bytes_written);
         }
 
-        match self.static_storage.file.sync_all() {
+        match self.static_storage.view.file.sync_all() {
             Ok(()) => (),
             Err(FileSyncError::Interrupt) => {
                 fail!(from self, with StaticStorageUnlockError::Interrupt,
@@ -187,7 +187,12 @@ impl StaticStorageLocked<Storage> for Locked {
             }
         }
 
-        match self.static_storage.file.set_permission(FINAL_PERMISSIONS) {
+        match self
+            .static_storage
+            .view
+            .file
+            .set_permission(FINAL_PERMISSIONS)
+        {
             Ok(_) => (),
             Err(FileSetPermissionError::InsufficientPermissions) => {
                 fail!(from self, with StaticStorageUnlockError::InsufficientPermissions,
@@ -201,7 +206,7 @@ impl StaticStorageLocked<Storage> for Locked {
             }
         }
 
-        self.static_storage.len = contents.len() as u64;
+        self.static_storage.view.len = contents.len() as u64;
 
         Ok(self.static_storage)
     }
@@ -213,14 +218,13 @@ pub struct Storage {
     name: FileName,
     config: Configuration,
     has_ownership: AtomicBool,
-    file: File,
-    len: u64,
+    view: StorageView,
 }
 
 impl Abandonable for Storage {
     unsafe fn abandon_in_place(mut this: NonNull<Self>) {
         let this = unsafe { this.as_mut() };
-        unsafe { File::abandon_in_place(NonNull::from_mut(&mut this.file)) };
+        unsafe { StorageView::abandon_in_place(NonNull::from_mut(&mut this.view)) };
     }
 }
 
@@ -379,18 +383,20 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
     }
 }
 
-impl crate::static_storage::StaticStorage for Storage {
-    type Builder = Builder;
-    type Locked = Locked;
+#[derive(Debug)]
+pub struct StorageView {
+    file: File,
+    len: u64,
+}
 
-    fn release_ownership(&self) {
-        self.has_ownership.store(false, Ordering::Relaxed);
+impl Abandonable for StorageView {
+    unsafe fn abandon_in_place(mut this: NonNull<Self>) {
+        let this = unsafe { this.as_mut() };
+        unsafe { File::abandon_in_place(NonNull::from_mut(&mut this.file)) };
     }
+}
 
-    fn acquire_ownership(&self) {
-        self.has_ownership.store(true, Ordering::Relaxed);
-    }
-
+impl crate::static_storage::StaticStorageView for StorageView {
     fn len(&self) -> u64 {
         self.len
     }
@@ -435,6 +441,34 @@ impl crate::static_storage::StaticStorage for Storage {
         }
 
         Ok(())
+    }
+}
+
+impl crate::static_storage::StaticStorage for Storage {
+    type Builder = Builder;
+    type Locked = Locked;
+    type View = StorageView;
+
+    fn release_ownership(&self) {
+        self.has_ownership.store(false, Ordering::Relaxed);
+    }
+
+    fn acquire_ownership(&self) {
+        self.has_ownership.store(true, Ordering::Relaxed);
+    }
+}
+
+impl crate::static_storage::StaticStorageView for Storage {
+    fn is_empty(&self) -> bool {
+        self.view.is_empty()
+    }
+
+    fn len(&self) -> u64 {
+        self.view.len()
+    }
+
+    fn read(&self, content: &mut [u8]) -> Result<(), StaticStorageReadError> {
+        self.view.read(content)
     }
 }
 
@@ -522,8 +556,7 @@ impl crate::static_storage::StaticStorageBuilder<Storage> for Builder {
                 name: self.storage_name,
                 config: self.config,
                 has_ownership: AtomicBool::new(self.has_ownership),
-                file,
-                len: 0,
+                view: StorageView { file, len: 0 },
             },
         })
     }
@@ -593,8 +626,10 @@ impl crate::static_storage::StaticStorageBuilder<Storage> for Builder {
                     name: self.storage_name,
                     config: self.config,
                     has_ownership: AtomicBool::new(self.has_ownership),
-                    file,
-                    len: metadata.size(),
+                    view: StorageView {
+                        file,
+                        len: metadata.size(),
+                    },
                 });
             }
         }

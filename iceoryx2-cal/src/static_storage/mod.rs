@@ -141,21 +141,11 @@ pub trait StaticStorageLocked<T: StaticStorage>: Sized + NamedConcept + Abandona
 /// A static storage which owns its underlying resources. When it goes out of scope those resources
 /// shall be removed.
 pub trait StaticStorage:
-    Debug + Sized + NamedConceptMgmt + NamedConcept + Send + Sync + Abandonable
+    Debug + Sized + NamedConceptMgmt + NamedConcept + Send + Sync + Abandonable + StaticStorageView
 {
     type Builder: StaticStorageBuilder<Self> + NamedConceptBuilder<Self>;
     type Locked: StaticStorageLocked<Self>;
-
-    /// Returns the length of the content. Required to provide a buffer in
-    /// [`StaticStorage::read()`] which is large enough.
-    fn len(&self) -> u64;
-
-    /// Returns true if it does not contain any content, otherwise false.
-    fn is_empty(&self) -> bool;
-
-    /// Writes the contents of the [`StaticStorage`] into the provided content buffer. If the
-    /// buffer is too small an error must be returned.
-    fn read(&self, content: &mut [u8]) -> Result<(), StaticStorageReadError>;
+    type View: StaticStorageView;
 
     /// Releases the ownership of the static storage. When the object goes out of scope the
     /// static storage is no longer removed.
@@ -169,4 +159,18 @@ pub trait StaticStorage:
     fn default_suffix() -> FileName {
         unsafe { FileName::new_unchecked(b".static_storage") }
     }
+}
+
+/// The interface to read the static storage contents.
+pub trait StaticStorageView: Debug + Sized + Send + Sync + Abandonable {
+    /// Returns the length of the content. Required to provide a buffer in
+    /// [`StaticStorage::read()`] which is large enough.
+    fn len(&self) -> u64;
+
+    /// Returns true if it does not contain any content, otherwise false.
+    fn is_empty(&self) -> bool;
+
+    /// Writes the contents of the [`StaticStorage`] into the provided content buffer. If the
+    /// buffer is too small an error must be returned.
+    fn read(&self, content: &mut [u8]) -> Result<(), StaticStorageReadError>;
 }

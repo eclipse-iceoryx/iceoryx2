@@ -35,7 +35,7 @@ use iceoryx2_cal::named_concept::{
 };
 use iceoryx2_cal::static_storage::{
     StaticStorage, StaticStorageBuilder, StaticStorageCreateError, StaticStorageOpenError,
-    StaticStorageReadError,
+    StaticStorageReadError, StaticStorageView,
 };
 use iceoryx2_log::{fail, warn};
 
