@@ -389,20 +389,22 @@ pub trait SemanticString<const CAPACITY: usize>:
 /// [`mod@crate::semantic_string`].
 #[macro_export(local_inner_macros)]
 macro_rules! semantic_string {
-    {$(#[$documentation:meta])*
-     /// Name of the struct
-     name: $string_name:ident,
-     /// Capacity of the underlying StaticString
-     capacity: $capacity:expr,
-     /// Callable that gets a [`&[u8]`] as input and shall return true when the slice contains
-     /// invalid content.
-     invalid_content: $invalid_content:expr,
-     /// Callable that gets a [`&[u8]`] as input and shall return true when the slice contains
-     /// invalid characters.
-     invalid_characters: $invalid_characters:expr,
-     /// Normalizes the content. Required when the same semantical content has multiple
-     /// representations like paths for instance (`/tmp` == `/tmp/`)
-     normalize: $normalize:expr} => {
+    {
+        $(#[$documentation:meta])*
+        // Name of the struct
+        name: $string_name:ident,
+        // Capacity of the underlying StaticString
+        capacity: $capacity:expr,
+        // Callable that gets a [`&[u8]`] as input and shall return true when the slice contains
+        // invalid content.
+        invalid_content: $invalid_content:expr,
+        // Callable that gets a [`&[u8]`] as input and shall return true when the slice contains
+        // invalid characters.
+        invalid_characters: $invalid_characters:expr,
+        // Normalizes the content. Required when the same semantical content has multiple
+        // representations like paths for instance (`/tmp` == `/tmp/`)
+        normalize: $normalize:expr
+    } => {
         $(#[$documentation])*
         #[repr(C)]
         #[derive(Debug, Clone, Copy, Eq, PartialOrd, Ord, ZeroCopySend)]
