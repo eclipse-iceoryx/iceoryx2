@@ -1728,4 +1728,39 @@ pub mod service_request_response {
         assert_that!(response, is_some);
         assert_that!(*response.unwrap(), eq 1);
     }
+
+    #[conformance_test]
+    pub fn reconnecting_clients_do_not_exhaust_server_connection_storage_when_fire_and_forget_is_disabled<
+        S: Service,
+    >() {
+        const MAX_CLIENTS: usize = 2;
+        const EXPIRED_CONNECTION_BUFFER: usize = 4;
+        const ITERATIONS: usize = 3 * (MAX_CLIENTS + EXPIRED_CONNECTION_BUFFER);
+
+        let mut test = Test::<S>::new();
+        test.config_mut()
+            .defaults
+            .request_response
+            .server_expired_connection_buffer = EXPIRED_CONNECTION_BUFFER;
+        let node = test.create_node();
+        let service_name = generate_service_name();
+
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<usize, usize>()
+            .enable_fire_and_forget_requests(false)
+            .max_clients(MAX_CLIENTS)
+            .create()
+            .unwrap();
+
+        let server = service.server_builder().create().unwrap();
+
+        for n in 0..ITERATIONS {
+            let client = service.client_builder().create().unwrap();
+            let _pending_response = client.send_copy(n).unwrap();
+            while let Some(active_request) = server.receive().unwrap() {
+                drop(active_request);
+            }
+        }
+    }
 }
