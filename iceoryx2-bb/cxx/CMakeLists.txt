@@ -134,6 +134,52 @@ set(${PROJECT_NAME}_DIR ${PROJECT_SOURCE_DIR}/cmake
 
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/install.cmake)
 
+# package generation using CPack
+
+set(CPACK_PACKAGE_NAME              "iceoryx2-bb-cxx")
+set(CPACK_PACKAGE_VERSION           ${IOX2_VERSION})
+set(CPACK_PACKAGE_VENDOR            "Eclipse Foundation")
+set(CPACK_PACKAGE_CONTACT           "iceoryx2")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
+    "C++ building blocks for the iceoryx2 zero-copy IPC middleware")
+set(CPACK_RESOURCE_FILE_LICENSE     "${PROJECT_SOURCE_DIR}/LICENSE-APACHE")
+
+set(CPACK_GENERATOR                 "DEB;STGZ")
+# Header-only library: only the dev component has content; no component split needed.
+set(CPACK_DEB_COMPONENT_INSTALL     OFF)
+set(CPACK_DEBIAN_PACKAGE_NAME       "libiceoryx2-bb-cxx-dev")
+set(CPACK_DEBIAN_PACKAGE_SECTION    "libdevel")
+set(CPACK_DEBIAN_PACKAGE_PRIORITY   "optional")
+set(CPACK_DEBIAN_PACKAGE_HOMEPAGE   "https://github.com/eclipse-iceoryx/iceoryx2")
+
+# Derive Rust-style target triplet for the package filename.
+if(NOT DEFINED RUST_TARGET_TRIPLET OR "${RUST_TARGET_TRIPLET}" STREQUAL "")
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+        set(_IOX2_ARCH "x86_64")
+    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|ARM64")
+        set(_IOX2_ARCH "aarch64")
+    else()
+        set(_IOX2_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
+    endif()
+
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        set(RUST_TARGET_TRIPLET "${_IOX2_ARCH}-unknown-linux-gnu")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+        set(RUST_TARGET_TRIPLET "${_IOX2_ARCH}-apple-darwin")
+    else()
+        set(RUST_TARGET_TRIPLET "${_IOX2_ARCH}-unknown-${CMAKE_SYSTEM_NAME}")
+    endif()
+    unset(_IOX2_ARCH)
+endif()
+
+# Base filename used by all generators.
+set(CPACK_PACKAGE_FILE_NAME
+    "libiceoryx2-bb-cxx-dev-${IOX2_VERSION}-${RUST_TARGET_TRIPLET}")
+set(CPACK_DEBIAN_FILE_NAME
+    "libiceoryx2-bb-cxx-dev-${IOX2_VERSION}-${RUST_TARGET_TRIPLET}.deb")
+
+include(CPack)
+
 # add tests
 
 if(${BUILD_TESTING})

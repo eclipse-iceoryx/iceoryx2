@@ -157,6 +157,63 @@ target_link_libraries(shared-lib-cxx
 
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/install.cmake)
 
+# package generation using CPack
+
+set(CPACK_PACKAGE_NAME              "iceoryx2-cxx")
+set(CPACK_PACKAGE_VERSION           ${IOX2_VERSION})
+set(CPACK_PACKAGE_VENDOR            "Eclipse Foundation")
+set(CPACK_PACKAGE_CONTACT           "iceoryx2")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
+    "C++ bindings for the iceoryx2 zero-copy IPC middleware")
+set(CPACK_RESOURCE_FILE_LICENSE     "${PROJECT_SOURCE_DIR}/LICENSE-APACHE")
+
+set(CPACK_GENERATOR                 "DEB;STGZ")
+set(CPACK_DEB_COMPONENT_INSTALL     ON)
+set(CPACK_DEBIAN_PACKAGE_SECTION    "libs")
+set(CPACK_DEBIAN_PACKAGE_PRIORITY   "optional")
+set(CPACK_DEBIAN_PACKAGE_HOMEPAGE   "https://github.com/eclipse-iceoryx/iceoryx2")
+
+if(NOT DEFINED RUST_TARGET_TRIPLET OR "${RUST_TARGET_TRIPLET}" STREQUAL "")
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+        set(_IOX2_ARCH "x86_64")
+    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|ARM64")
+        set(_IOX2_ARCH "aarch64")
+    else()
+        set(_IOX2_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
+    endif()
+
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        set(RUST_TARGET_TRIPLET "${_IOX2_ARCH}-unknown-linux-gnu")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+        set(RUST_TARGET_TRIPLET "${_IOX2_ARCH}-apple-darwin")
+    else()
+        set(RUST_TARGET_TRIPLET "${_IOX2_ARCH}-unknown-${CMAKE_SYSTEM_NAME}")
+    endif()
+    unset(_IOX2_ARCH)
+endif()
+
+# Base filename used by all generators (STGZ, TGZ, etc.).
+set(CPACK_PACKAGE_FILE_NAME
+    "libiceoryx2-cxx-${IOX2_VERSION}-${RUST_TARGET_TRIPLET}")
+
+# -- lib component: shared library
+set(CPACK_DEBIAN_LIB_PACKAGE_NAME       "libiceoryx2-cxx")
+set(CPACK_DEBIAN_LIB_PACKAGE_SECTION    "libs")
+set(CPACK_DEBIAN_LIB_FILE_NAME
+    "libiceoryx2-cxx-${IOX2_VERSION}-${RUST_TARGET_TRIPLET}.deb")
+
+# -- dev component: headers, static library, CMake config files, license documents
+set(CPACK_DEBIAN_DEV_PACKAGE_NAME       "libiceoryx2-cxx-dev")
+set(CPACK_DEBIAN_DEV_PACKAGE_SECTION    "libdevel")
+set(CPACK_DEBIAN_DEV_DESCRIPTION
+    "C++ bindings for iceoryx2 - development files (static library, headers, CMake config)")
+set(CPACK_DEBIAN_DEV_PACKAGE_DEPENDS
+    "libiceoryx2-cxx (= ${IOX2_VERSION}), libiceoryx2-bb-cxx-dev (= ${IOX2_VERSION}), libiceoryx2-c-dev (= ${IOX2_VERSION})")
+set(CPACK_DEBIAN_DEV_FILE_NAME
+    "libiceoryx2-cxx-dev-${IOX2_VERSION}-${RUST_TARGET_TRIPLET}.deb")
+
+include(CPack)
+
 # Tests
 if(${BUILD_TESTING})
   enable_testing()
