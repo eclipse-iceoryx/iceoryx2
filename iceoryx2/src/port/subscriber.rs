@@ -297,13 +297,13 @@ impl<
                 enable_safe_overflow: static_config.enable_safe_overflow,
                 buffer_size,
                 tagger: CyclicTagger::new(),
-                to_be_removed_connections: Some(UnsafeCell::new(
+                to_be_removed_connections: UnsafeCell::new(
                     PolymorphicVec::new(
                         HeapAllocator::global(),
                         number_of_to_be_removed_connections,
                     )
                     .expect("Heap allocator provides memory."),
-                )),
+                ),
                 degradation_handler: config.degradation_handler,
                 number_of_channels: 1,
                 connection_storage: UnsafeCell::new(SlotMap::new(number_of_connections)),
