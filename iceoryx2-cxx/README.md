@@ -46,6 +46,15 @@ cmake --build target/ff/c/build
 cmake --install target/ff/c/build --prefix target/ff/cc/install
 ```
 
+- for package generation, use `cpack`. currently `DEB` and `STGZ` configuration are added
+
+- `.deb` and `.sh` will be generated in `target/ff/c/build` folder
+
+```bash
+cd target/ff/c/build
+cpack -G "DEB;STGZ"
+```
+
 ### Build and install `iceoryx2-bb-cxx`
 
 ```bash
@@ -53,6 +62,15 @@ cmake -S iceoryx2-bb/cxx -B target/ff/bb-cxx/build \
       -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install"
 cmake --build target/ff/bb-cxx/build
 cmake --install target/ff/bb-cxx/build --prefix target/ff/cc/install
+```
+
+- for package generation, use `cpack`. currently `DEB` and `STGZ` configuration are added
+
+- `.deb` and `.sh` will be generated in `target/ff/bb-cxx/build` folder
+
+```bash
+cd target/ff/bb-cxx/build
+cpack -G "DEB;STGZ"
 ```
 
 ### Putting it together
@@ -64,8 +82,17 @@ custom projects.
 ```bash
 cmake -S iceoryx2-cxx -B target/ff/cxx/build \
       -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install"
-cmake --build target/ff/cxx/build
+cmake --build target/ff/cxx/build -j$(nproc)
 cmake --install target/ff/cxx/build --prefix target/ff/cc/install
+```
+
+- for package generation, use `cpack`. currently `DEB` and `STGZ` configuration are added
+
+- `.deb` and `.sh` will be generated in `target/ff/cxx/build` folder
+
+```bash
+cd target/ff/cxx/build
+cpack -G "DEB;STGZ"
 ```
 
 The installed libraries can be used for out-of-tree builds of the example or
@@ -74,5 +101,5 @@ custom C++ projects. This are the required steps:
 ```bash
 cmake -S examples/cxx -B target/ff/out-of-tree/examples/cxx \
       -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install"
-cmake --build target/ff/out-of-tree/examples/cxx
+cmake --build target/ff/out-of-tree/examples/cxx -j$(nproc)
 ```
