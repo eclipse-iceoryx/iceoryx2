@@ -49,6 +49,7 @@
 * [#1800](https://github.com/eclipse-iceoryx/iceoryx2/issues/1800) iceoryx2-cxx: CleanupState is defined in global namespace
 * [#1807](https://github.com/eclipse-iceoryx/iceoryx2/issues/1807) Fix generated C FFI strings for `UPPER_SNAKE_CASE` enum variants.
 * [#1810](https://github.com/eclipse-iceoryx/iceoryx2/issues/1810) Make mgmt segment globally accessible
+* [#1844](https://github.com/eclipse-iceoryx/iceoryx2/issues/1844) Fix `semantic_string` macro for `rust-analyzer` auto-completion
 
 ### Refactoring
 
@@ -60,6 +61,7 @@
 * [#996](https://github.com/eclipse-iceoryx/iceoryx2/issues/996) Move BumpAllocator from iceoryx2-bb-memory into iceoryx2-bb-elementary
 * [#1613](https://github.com/eclipse-iceoryx/iceoryx2/issues/1613) Remove `NonNullCompat` after moving to Rust 1.89
 * [#1776](https://github.com/eclipse-iceoryx/iceoryx2/issues/1776) Rename AtomicCopy::__for_each_field() to for_each_field()
+* [#1845](https://github.com/eclipse-iceoryx/iceoryx2/issues/1845) Reduce imports for usage of the `semantic_string` macro
 
 ### Workflow
 

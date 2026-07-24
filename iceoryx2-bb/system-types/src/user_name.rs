@@ -30,10 +30,6 @@
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 
-use core::hash::{Hash, Hasher};
-
-use alloc::string::String;
-
 use iceoryx2_bb_container::semantic_string;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
