@@ -24,7 +24,6 @@
 //! use iceoryx2_bb_derive_macros::ZeroCopySend;
 //! use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 //!
-//! use core::hash::{Hash, Hasher};
 //! use iceoryx2_bb_container::semantic_string;
 //!
 //! const GROUP_NAME_LENGTH: usize = 31;
@@ -509,23 +508,23 @@ macro_rules! semantic_string {
             }
         }
 
-        impl Hash for $string_name {
-            fn hash<H: Hasher>(&self, state: &mut H) {
+        impl core::hash::Hash for $string_name {
+            fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
                 self.normalize().as_bytes().hash(state)
             }
         }
 
-        impl From<$string_name> for String {
-            fn from(value: $string_name) -> String {
+        impl From<$string_name> for alloc::string::String {
+            fn from(value: $string_name) -> alloc::string::String {
                 // SAFETY: It is ensured that the semantic string contains only valid utf-8 strings
-                unsafe { String::from_utf8_unchecked(value.as_bytes().to_vec()) }
+                unsafe { alloc::string::String::from_utf8_unchecked(value.as_bytes().to_vec()) }
             }
         }
 
-        impl From<&$string_name> for String {
-            fn from(value: &$string_name) -> String {
+        impl From<&$string_name> for alloc::string::String {
+            fn from(value: &$string_name) -> alloc::string::String {
                 // SAFETY: It is ensured that the semantic string contains only valid utf-8 strings
-                unsafe { String::from_utf8_unchecked(value.as_bytes().to_vec()) }
+                unsafe { alloc::string::String::from_utf8_unchecked(value.as_bytes().to_vec()) }
             }
         }
 

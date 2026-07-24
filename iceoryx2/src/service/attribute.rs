@@ -109,12 +109,6 @@ use serde::{Deserialize, Serialize};
 use crate::constants::MAX_ATTRIBUTES;
 
 mod key {
-
-    use core::hash::Hash;
-    use core::hash::Hasher;
-
-    use alloc::string::String;
-
     use iceoryx2_bb_container::semantic_string;
     use iceoryx2_bb_container::semantic_string::SemanticString;
     use iceoryx2_bb_derive_macros::ZeroCopySend;
@@ -144,12 +138,6 @@ pub type AttributeKey = key::FixedString;
 
 /// Module containing the value type used for service attributes.
 mod value {
-
-    use core::hash::Hash;
-    use core::hash::Hasher;
-
-    use alloc::string::String;
-
     use iceoryx2_bb_container::semantic_string;
     use iceoryx2_bb_container::semantic_string::SemanticString;
     use iceoryx2_bb_derive_macros::ZeroCopySend;
