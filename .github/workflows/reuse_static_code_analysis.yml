@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
+        with:
+          fetch-depth: 2
 
       - name: Install just
         uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # version: v3.1.0
@@ -88,3 +90,6 @@ jobs:
         run: |
           just verify sdk miri
           just verify integrations-zenoh miri
+
+      - name: Check for changed files after CI run
+        uses: ./.github/actions/check-repo-changes

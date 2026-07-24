@@ -34,6 +34,8 @@ jobs:
 
       - name: Checkout sources
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # version v6.0.1
+        with:
+          fetch-depth: 2
 
       # The workspace mount is owned by the host runner user, not the
       # container user, so git refuses to operate on it without this...
@@ -103,3 +105,6 @@ jobs:
           source /opt/ros/${{ inputs.ros-distro }}/setup.bash
           echo "Using RMW: $RMW_IMPLEMENTATION"
           just test-e2e integrations-ros2
+
+      - name: Check for changed files after CI run
+        uses: ./.github/actions/check-repo-changes
