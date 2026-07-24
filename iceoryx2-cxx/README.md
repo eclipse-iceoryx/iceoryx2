@@ -46,9 +46,10 @@ cmake --build target/ff/c/build
 cmake --install target/ff/c/build --prefix target/ff/cc/install
 ```
 
-- for package generation, use `cpack`. currently `DEB` and `STGZ` configuration are added
+* for package generation, use `cpack`. currently `DEB` and `STGZ` configuration
+are added
 
-- `.deb` and `.sh` will be generated in `target/ff/c/build` folder
+* `.deb` and `.sh` will be generated in `target/ff/c/build` folder
 
 ```bash
 cd target/ff/c/build
@@ -64,9 +65,10 @@ cmake --build target/ff/bb-cxx/build
 cmake --install target/ff/bb-cxx/build --prefix target/ff/cc/install
 ```
 
-- for package generation, use `cpack`. currently `DEB` and `STGZ` configuration are added
+* for package generation, use `cpack`. currently `DEB` and `STGZ` configuration
+are added
 
-- `.deb` and `.sh` will be generated in `target/ff/bb-cxx/build` folder
+* `.deb` and `.sh` will be generated in `target/ff/bb-cxx/build` folder
 
 ```bash
 cd target/ff/bb-cxx/build
@@ -86,9 +88,10 @@ cmake --build target/ff/cxx/build -j$(nproc)
 cmake --install target/ff/cxx/build --prefix target/ff/cc/install
 ```
 
-- for package generation, use `cpack`. currently `DEB` and `STGZ` configuration are added
+* for package generation, use `cpack`. currently `DEB` and `STGZ` configuration
+are added
 
-- `.deb` and `.sh` will be generated in `target/ff/cxx/build` folder
+* `.deb` and `.sh` will be generated in `target/ff/cxx/build` folder
 
 ```bash
 cd target/ff/cxx/build
