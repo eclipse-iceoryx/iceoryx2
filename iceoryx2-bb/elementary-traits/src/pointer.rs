@@ -15,9 +15,11 @@
 
 use core::{fmt::Debug, ptr::NonNull};
 
+use crate::allocator::AllocatorToken;
+
 /// Trait which describes a form of pointer. Required to distinguish normal pointers from
 /// relocatable pointers.
-pub trait Pointer<T: Debug>: Debug + Clone + Eq + PartialEq {
+pub trait Pointer<T: Debug>: AllocatorToken + Debug + Clone + Eq + PartialEq {
     /// Return a pointer to the underlying const type
     ///
     fn as_ptr(&self) -> *const T;
@@ -33,6 +35,8 @@ pub trait Pointer<T: Debug>: Debug + Clone + Eq + PartialEq {
         true
     }
 }
+
+impl<T> AllocatorToken for NonNull<T> {}
 
 impl<T: Debug> Pointer<T> for NonNull<T> {
     fn as_ptr(&self) -> *const T {

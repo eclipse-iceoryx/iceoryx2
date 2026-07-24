@@ -73,26 +73,6 @@ pub fn allocating_many_aligned_chunks_work() {
 }
 
 #[test]
-pub fn deallocating_releases_everything() {
-    let memory = [0u8; 8192];
-    let start_position: *const u8 = &memory[3] as *const _;
-    const MEM_SIZE: usize = 128;
-    const MEM_ALIGN: usize = 1;
-    let sut = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[3]), memory.len() - 3);
-
-    let layout = Layout::from_size_align(MEM_SIZE, MEM_ALIGN).unwrap();
-    let memory = sut.allocate(layout).unwrap();
-
-    unsafe { sut.deallocate(memory, layout) };
-
-    let ptr = sut
-        .allocate(Layout::from_size_align(MEM_SIZE, MEM_ALIGN).unwrap())
-        .unwrap();
-
-    assert_that!(ptr.as_ptr().cast_const(), eq start_position);
-}
-
-#[test]
 pub fn allocating_too_much_fails_with_out_of_memory() {
     let memory = [0u8; 8192];
     let sut = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
@@ -122,31 +102,6 @@ pub fn allocating_all_memory_works() {
     let sample = sut.allocate(unsafe { Layout::from_size_align_unchecked(sample_size, 1) });
     assert_that!(sample, is_err);
     assert_that!(sample.err().unwrap(), eq AllocationError::OutOfMemory);
-}
-
-#[test]
-pub fn after_deallocate_allocating_all_memory_works() {
-    let mut memory = [0u8; 8192];
-    let sut = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
-
-    let number_of_samples = 8;
-    let sample_size = 8192 / number_of_samples;
-    for _ in 0..number_of_samples {
-        let sample = sut.allocate(unsafe { Layout::from_size_align_unchecked(sample_size, 1) });
-        assert_that!(sample, is_ok);
-    }
-
-    unsafe {
-        sut.deallocate(
-            NonNull::new_unchecked(memory.as_mut_ptr()),
-            Layout::from_size_align_unchecked(1, 1),
-        );
-    }
-
-    for _ in 0..number_of_samples {
-        let sample = sut.allocate(unsafe { Layout::from_size_align_unchecked(sample_size, 1) });
-        assert_that!(sample, is_ok);
-    }
 }
 
 #[test]

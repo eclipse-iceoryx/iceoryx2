@@ -34,10 +34,6 @@
 //! );
 //!
 //! let mut memory = allocator.allocate(layout).unwrap();
-//!
-//! unsafe {
-//!     allocator.deallocate(memory, layout)
-//! };
 //! ```
 
 use core::{fmt::Display, ptr::NonNull};
@@ -99,6 +95,10 @@ impl BumpAllocator {
     pub fn total_space(&self) -> usize {
         self.full_memory_size
     }
+
+    pub fn reset(&self) {
+        self.addr_next_free_memory.store(0, Ordering::Relaxed);
+    }
 }
 
 impl BaseAllocator<NonNull<u8>> for BumpAllocator {
@@ -142,10 +142,5 @@ impl BaseAllocator<NonNull<u8>> for BumpAllocator {
                     .add(next_aligned_free_address),
             )
         })
-    }
-
-    unsafe fn deallocate(&self, _ptr: NonNull<u8>, _layout: core::alloc::Layout) {
-        self.addr_next_free_memory
-            .store(0, core::sync::atomic::Ordering::Relaxed);
     }
 }

@@ -13,13 +13,17 @@
 //! An iceoryx2 support library that helps to find schema files, to deduce type names and more
 
 #![no_std]
-/// Memory that can be resized and that has a flatbuffer allocator interface.
+/// Workaround to implement [`core::error::Error`] for flatbuffer error enums that do not implement them
+/// in a `no_std` environment
+pub mod flatbuffer_error;
+/// Resizable memory that can be combined with allocators to provide a allocator backend for flatbuffers.
 pub mod resizable_memory;
 /// Schema file finder.
 pub mod schema_finder;
 /// Deduce a flatbuffer type name and namespace from a rust type name.
 pub mod type_name;
 
+pub use flatbuffer_error::*;
 pub use resizable_memory::*;
 pub use schema_finder::*;
 pub use type_name::*;

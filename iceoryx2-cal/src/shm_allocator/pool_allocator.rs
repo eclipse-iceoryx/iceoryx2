@@ -12,7 +12,7 @@
 
 use core::{alloc::Layout, ptr::NonNull};
 
-use crate::shm_allocator::{ContentPlacement, ShmAllocatorGrowError};
+use crate::shm_allocator::{ContentPlacement, InitializedShmAllocator};
 use crate::shm_allocator::{ShmAllocator, ShmAllocatorConfig};
 
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
@@ -21,9 +21,11 @@ use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::allocator::{AllocationGrowError, BaseAllocator};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_memory::bump_allocator::AllocationError;
+use iceoryx2_bb_memory::pool_allocator::{Dealloc, ReallocGrow};
 use iceoryx2_log::fail;
 
-use super::{PointerOffset, SharedMemorySetupHint, ShmAllocationError, ShmAllocatorInitError};
+use super::{PointerOffset, SharedMemorySetupHint, ShmAllocatorInitError};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Config {
@@ -63,7 +65,7 @@ impl PoolAllocator {
 
     /// # Safety
     ///
-    ///  * provided [`PointerOffset`] must be allocated with [`PoolAllocator::allocate()`]
+    ///  * provided [`PointerOffset`] must be allocated with [`BaseAllocator::allocate()`]
     pub unsafe fn deallocate_bucket(&self, offset: PointerOffset) {
         self.number_of_used_buckets.fetch_sub(1, Ordering::Relaxed);
         unsafe {
@@ -74,8 +76,91 @@ impl PoolAllocator {
     }
 }
 
+pub struct InitializedPoolAllocator<'shm_allocator>(&'shm_allocator PoolAllocator);
+
+impl<'shm_allocator> BaseAllocator<PointerOffset> for InitializedPoolAllocator<'shm_allocator> {
+    fn allocate(&self, layout: Layout) -> Result<PointerOffset, AllocationError> {
+        let msg = "Unable to allocate memory";
+        if layout.align() > self.0.max_alignment() {
+            fail!(from self.0, with AllocationError::AlignmentFailure,
+                    "{} since an alignment of {} exceeds the maximum supported alignment of {}.",
+                    msg, layout.align(), self.0.max_alignment());
+        }
+
+        let chunk = fail!(from self.0, when self.0.allocator.allocate(layout), "{}.", msg);
+        self.0
+            .number_of_used_buckets
+            .fetch_add(1, Ordering::Relaxed);
+        Ok(PointerOffset::new(
+            (chunk.as_ptr() as *const u8) as usize - self.0.allocator.start_address() as usize,
+        ))
+    }
+}
+
+impl<'shm_allocator> Dealloc<PointerOffset> for InitializedPoolAllocator<'shm_allocator> {
+    unsafe fn deallocate(&self, ptr: PointerOffset, _layout: Layout) {
+        unsafe {
+            self.0.deallocate_bucket(ptr);
+        }
+    }
+}
+
+impl<'shm_allocator> ReallocGrow<PointerOffset> for InitializedPoolAllocator<'shm_allocator> {
+    unsafe fn grow(
+        &self,
+        offset: PointerOffset,
+        old_layout: Layout,
+        new_layout: Layout,
+        content_placement: ContentPlacement,
+    ) -> Result<PointerOffset, AllocationGrowError> {
+        let msg = "Unable to grow memory";
+        if new_layout.align() > self.0.max_alignment() {
+            fail!(from self.0, with AllocationGrowError::AlignmentFailure,
+                    "{} since the alignment of {} exceeds the maximum supported alignment of {}.",
+                    msg, new_layout.align(), self.0.max_alignment());
+        }
+
+        if new_layout.size() < old_layout.size() {
+            fail!(from self.0, with AllocationGrowError::GrowWouldShrink,
+                    "{} since new layout has a smaller size of {} than the old layout with {}.",
+                    msg, new_layout.size(), old_layout.size());
+        }
+
+        if new_layout.size() > self.0.bucket_size() {
+            fail!(from self.0,
+                        with AllocationGrowError::OutOfMemory,
+                        "{} since the requested size {} exceeds the maximum supported size of {}.",
+                        msg, new_layout.size(), self.0.bucket_size());
+        }
+
+        if new_layout.size() == old_layout.size() {
+            return Ok(offset);
+        }
+
+        if content_placement == ContentPlacement::Back {
+            let src = self.0.allocator.start_address() as usize + offset.offset();
+            let dst = src + (new_layout.size() - old_layout.size());
+            unsafe { core::ptr::copy(src as *const u8, dst as *mut u8, old_layout.size()) };
+        }
+
+        Ok(offset)
+    }
+}
+
+impl<'shm_allocator> InitializedShmAllocator<'shm_allocator>
+    for InitializedPoolAllocator<'shm_allocator>
+{
+}
+
 impl ShmAllocator for PoolAllocator {
     type Configuration = Config;
+    type Initialized<'shm_allocator> = InitializedPoolAllocator<'shm_allocator>;
+
+    unsafe fn assume_init<'shm_allocator>(
+        &'shm_allocator self,
+    ) -> Self::Initialized<'shm_allocator> {
+        InitializedPoolAllocator(self)
+    }
 
     fn resize_hint(
         &self,
@@ -201,66 +286,5 @@ impl ShmAllocator for PoolAllocator {
 
     fn unique_id() -> u8 {
         0
-    }
-
-    unsafe fn grow(
-        &self,
-        offset: PointerOffset,
-        old_layout: Layout,
-        new_layout: Layout,
-        placement: super::ContentPlacement,
-    ) -> Result<PointerOffset, ShmAllocatorGrowError> {
-        let msg = "Unable to grow memory";
-        if new_layout.align() > self.max_alignment() {
-            fail!(from self, with ShmAllocatorGrowError::ExceedsMaxSupportedAlignment,
-                "{} since the alignment of {} exceeds the maximum supported alignment of {}.",
-                msg, new_layout.align(), self.max_alignment());
-        }
-
-        if new_layout.size() < old_layout.size() {
-            fail!(from self, with ShmAllocatorGrowError::AllocationGrowError(AllocationGrowError::GrowWouldShrink),
-                "{} since new layout has a smaller size of {} than the old layout with {}.",
-                msg, new_layout.size(), old_layout.size());
-        }
-
-        if new_layout.size() > self.bucket_size() {
-            fail!(from self,
-                    with ShmAllocatorGrowError::AllocationGrowError(AllocationGrowError::OutOfMemory),
-                    "{} since the requested size {} exceeds the maximum supported size of {}.",
-                    msg, new_layout.size(), self.bucket_size());
-        }
-
-        if new_layout.size() == old_layout.size() {
-            return Ok(offset);
-        }
-
-        if placement == ContentPlacement::Back {
-            let src = self.allocator.start_address() as usize + offset.offset();
-            let dst = src + (new_layout.size() - old_layout.size());
-            unsafe { core::ptr::copy(src as *const u8, dst as *mut u8, old_layout.size()) };
-        }
-
-        Ok(offset)
-    }
-
-    unsafe fn allocate(&self, layout: Layout) -> Result<PointerOffset, ShmAllocationError> {
-        let msg = "Unable to allocate memory";
-        if layout.align() > self.max_alignment() {
-            fail!(from self, with ShmAllocationError::ExceedsMaxSupportedAlignment,
-                "{} since an alignment of {} exceeds the maximum supported alignment of {}.",
-                msg, layout.align(), self.max_alignment());
-        }
-
-        let chunk = fail!(from self, when self.allocator.allocate(layout), "{}.", msg);
-        self.number_of_used_buckets.fetch_add(1, Ordering::Relaxed);
-        Ok(PointerOffset::new(
-            (chunk.as_ptr() as *const u8) as usize - self.allocator.start_address() as usize,
-        ))
-    }
-
-    unsafe fn deallocate(&self, offset: PointerOffset, _layout: Layout) {
-        unsafe {
-            self.deallocate_bucket(offset);
-        }
     }
 }

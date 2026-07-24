@@ -30,28 +30,26 @@ use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, AllocationGrowError};
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_bb_memory::bump_allocator::BaseAllocator;
+use iceoryx2_bb_memory::pool_allocator::{Dealloc, ReallocGrow};
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_log::fatal_panic;
 use iceoryx2_log::{fail, warn};
 
-use crate::resizable_shared_memory::ResizableShmGrowError;
 use crate::shared_memory::{
     PointerOffset, SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError,
     SharedMemoryOpenError, ShmAllocator,
 };
-use crate::shared_memory::{
-    SegmentId, SharedMemoryForPoolAllocator, ShmAllocatorGrowError, ShmPointer,
-};
-use crate::shm_allocator::ShmAllocationError;
+use crate::shared_memory::{SegmentId, SharedMemoryForPoolAllocator, ShmPointer};
 use crate::shm_allocator::pool_allocator::PoolAllocator;
 
 use super::{
     NamedConcept, NamedConceptBuilder, NamedConceptDoesExistError, NamedConceptListError,
     NamedConceptMgmt, NamedConceptRemoveError, ResizableSharedMemory, ResizableSharedMemoryBuilder,
     ResizableSharedMemoryForPoolAllocator, ResizableSharedMemoryView,
-    ResizableSharedMemoryViewBuilder, ResizableShmAllocationError,
+    ResizableSharedMemoryViewBuilder,
 };
 
 const MAX_NUMBER_OF_REALLOCATIONS: usize = SegmentId::max_segment_id() as usize + 1;
@@ -650,11 +648,7 @@ where
         Shm::Builder::new(&adjusted_name).config(config)
     }
 
-    fn create_resized_segment(
-        &self,
-        shm: &Shm,
-        layout: Layout,
-    ) -> Result<(), ResizableShmAllocationError> {
+    fn create_resized_segment(&self, shm: &Shm, layout: Layout) -> Result<(), AllocationError> {
         let msg = "Unable to create resized segment for";
         let state = self.state_mut();
         let adjusted_segment_setup = shm
@@ -664,17 +658,23 @@ where
         let segment_id = if new_number_of_reallocations < MAX_NUMBER_OF_REALLOCATIONS {
             SlotMapKey::new(new_number_of_reallocations)
         } else {
-            fail!(from self, with ResizableShmAllocationError::MaxReallocationsReached,
+            fail!(from self, with AllocationError::OutOfMemory,
                 "{msg} {:?} since it would exceed the maximum amount of reallocations of {}. With a better configuration hint, this issue can be avoided.",
                 layout, Self::max_number_of_reallocations());
         };
 
         state.builder_config.allocator_config_hint = adjusted_segment_setup.config;
-        let shm = Self::create_segment(
+        let shm = match Self::create_segment(
             &state.builder_config,
             SegmentId::new(segment_id.value() as u8),
             adjusted_segment_setup.payload_size,
-        )?;
+        ) {
+            Ok(shm) => shm,
+            Err(e) => {
+                fail!(from self, with AllocationError::OutOfMemory,
+                    "{msg} and therefore no new memory can be acquired. [{e:?}]");
+            }
+        };
 
         match state.shared_memory_map.get(state.current_idx) {
             Some(segment) => {
@@ -702,10 +702,10 @@ where
         state: &InternalState<Allocator, Shm>,
         layout: Layout,
         shm: &Shm,
-    ) -> Result<(), ResizableShmAllocationError> {
+    ) -> Result<(), AllocationError> {
         let msg = "Unable to allocate memory";
         if state.shared_state.allocation_strategy == AllocationStrategy::Static {
-            fail!(from self, with ResizableShmAllocationError::MaxReallocationsReached,
+            fail!(from self, with AllocationError::OutOfMemory,
                   "{msg} since there is not enough memory left and the allocation strategy {:?} forbids reallocation.",
                   state.shared_state.allocation_strategy);
         } else {
@@ -785,7 +785,17 @@ where
         self.state().shared_memory_map.len()
     }
 
-    fn allocate(&self, layout: Layout) -> Result<ShmPointer, ResizableShmAllocationError> {
+    fn allocation_strategy(&self) -> AllocationStrategy {
+        self.state().shared_state.allocation_strategy
+    }
+}
+
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> BaseAllocator<ShmPointer>
+    for DynamicMemory<Allocator, Shm>
+where
+    Shm::Builder: Debug,
+{
+    fn allocate(&self, layout: Layout) -> Result<ShmPointer, AllocationError> {
         let msg = "Unable to allocate memory";
         let state = self.state_mut();
 
@@ -798,25 +808,31 @@ where
                         .set_segment_id(SegmentId::new(state.current_idx.value() as u8));
                     return Ok(ptr);
                 }
-                Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory))
-                | Err(ShmAllocationError::AllocationError(AllocationError::SizeTooLarge))
-                | Err(ShmAllocationError::ExceedsMaxSupportedAlignment) => {
+                Err(AllocationError::OutOfMemory)
+                | Err(AllocationError::SizeTooLarge)
+                | Err(AllocationError::AlignmentFailure) => {
                     self.handle_reallocation(state, layout, &current_segment.shm)?
                 }
                 Err(e) => {
-                    fail!(from self, with e.into(), "{msg} due to {e:?}.");
+                    fail!(from self, with e, "{msg} due to {e:?}.");
                 }
             }
         }
     }
+}
 
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> ReallocGrow<ShmPointer>
+    for DynamicMemory<Allocator, Shm>
+where
+    Shm::Builder: Debug,
+{
     unsafe fn grow(
         &self,
         old_pointer: ShmPointer,
         old_layout: Layout,
         new_layout: Layout,
         placement: ContentPlacement,
-    ) -> Result<ShmPointer, ResizableShmGrowError> {
+    ) -> Result<ShmPointer, AllocationGrowError> {
         let msg = "Unable to grow memory";
         let state = self.state_mut();
 
@@ -832,11 +848,11 @@ where
                     .set_segment_id(SegmentId::new(state.current_idx.value() as u8));
                 return Ok(ptr);
             }
-            Err(ShmAllocatorGrowError::AllocationGrowError(AllocationGrowError::OutOfMemory)) => {
+            Err(AllocationGrowError::OutOfMemory) => {
                 self.handle_reallocation(state, new_layout, &current_segment.shm)?
             }
             Err(e) => {
-                fail!(from self, with e.into(),
+                fail!(from self, with e,
                         "{msg} due to {e:?}.");
             }
         }
@@ -878,7 +894,13 @@ where
 
         Ok(new_pointer)
     }
+}
 
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Dealloc<ShmPointer>
+    for DynamicMemory<Allocator, Shm>
+where
+    Shm::Builder: Debug,
+{
     unsafe fn deallocate(&self, ptr: ShmPointer, layout: Layout) {
         unsafe {
             self.perform_deallocation(ptr.offset, |entry| entry.shm.deallocate(ptr, layout));

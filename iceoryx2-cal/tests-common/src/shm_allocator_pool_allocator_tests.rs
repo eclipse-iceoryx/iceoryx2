@@ -14,6 +14,9 @@ use alloc::boxed::Box;
 use alloc::collections::btree_set::BTreeSet;
 use core::{alloc::Layout, ptr::NonNull};
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
+use iceoryx2_bb_memory::bump_allocator::BaseAllocator;
+use iceoryx2_bb_memory::pool_allocator::Dealloc;
+use iceoryx2_bb_memory::pool_allocator::ReallocGrow;
 
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
@@ -21,7 +24,7 @@ use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 use iceoryx2_cal::{
-    shm_allocator::{ShmAllocationError, ShmAllocator, ShmAllocatorGrowError, pool_allocator::*},
+    shm_allocator::{ShmAllocator, pool_allocator::*},
     zero_copy_connection::PointerOffset,
 };
 
@@ -149,11 +152,14 @@ fn new_resize_hint_with_power_of_two_when_buckets_are_exhausted() {
     let test_context = Test::new(initial_layout);
 
     for _ in 0..test_context.sut.number_of_buckets() {
-        assert_that!(unsafe { test_context.sut.allocate(initial_layout) }, is_ok);
+        assert_that!(
+            unsafe { test_context.sut.assume_init().allocate(initial_layout) },
+            is_ok
+        );
     }
 
     assert_that!(
-        unsafe { test_context.sut.allocate(increased_layout) },
+        unsafe { test_context.sut.assume_init().allocate(increased_layout) },
         is_err
     );
 
@@ -172,11 +178,14 @@ fn new_resize_hint_with_best_fit_when_buckets_are_exhausted() {
     let test_context = Test::new(initial_layout);
 
     for _ in 0..test_context.sut.number_of_buckets() {
-        assert_that!(unsafe { test_context.sut.allocate(initial_layout) }, is_ok);
+        assert_that!(
+            unsafe { test_context.sut.assume_init().allocate(initial_layout) },
+            is_ok
+        );
     }
 
     assert_that!(
-        unsafe { test_context.sut.allocate(increased_layout) },
+        unsafe { test_context.sut.assume_init().allocate(increased_layout) },
         is_err
     );
 
@@ -196,18 +205,25 @@ fn allocate_and_release_all_buckets_works() {
     for _ in 0..REPETITIONS {
         let mut mem_set = BTreeSet::new();
         for _ in 0..test_context.sut.number_of_buckets() {
-            let memory = unsafe { test_context.sut.allocate(BUCKET_CONFIG).unwrap() };
+            let memory = unsafe {
+                test_context
+                    .sut
+                    .assume_init()
+                    .allocate(BUCKET_CONFIG)
+                    .unwrap()
+            };
             // the returned offset must be a multiple of the bucket size
             assert_that!((memory.offset() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
             assert_that!(mem_set.insert(memory.offset()), eq true);
         }
 
-        assert_that!(unsafe { test_context.sut.allocate(BUCKET_CONFIG) }, eq Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)));
+        assert_that!(unsafe { test_context.sut.assume_init().allocate(BUCKET_CONFIG) }, eq Err(AllocationError::OutOfMemory));
 
         for memory in mem_set {
             unsafe {
                 test_context
                     .sut
+                    .assume_init()
                     .deallocate(PointerOffset::new(memory), BUCKET_CONFIG)
             }
         }
@@ -222,31 +238,53 @@ fn allocate_twice_release_once_until_memory_is_exhausted_works() {
     for _ in 0..REPETITIONS {
         let mut mem_set = BTreeSet::new();
         for _ in 0..(test_context.sut.number_of_buckets() - 1) {
-            let memory_1 = unsafe { test_context.sut.allocate(BUCKET_CONFIG).unwrap() };
+            let memory_1 = unsafe {
+                test_context
+                    .sut
+                    .assume_init()
+                    .allocate(BUCKET_CONFIG)
+                    .unwrap()
+            };
             // the returned offset must be a multiple of the bucket size
             assert_that!((memory_1.offset() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
 
-            let memory_2 = unsafe { test_context.sut.allocate(BUCKET_CONFIG).unwrap() };
+            let memory_2 = unsafe {
+                test_context
+                    .sut
+                    .assume_init()
+                    .allocate(BUCKET_CONFIG)
+                    .unwrap()
+            };
             // the returned offset must be a multiple of the bucket size
             assert_that!((memory_2.offset() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
             assert_that!(mem_set.insert(memory_2.offset()), eq true);
 
             unsafe {
-                test_context.sut.deallocate(memory_1, BUCKET_CONFIG);
+                test_context
+                    .sut
+                    .assume_init()
+                    .deallocate(memory_1, BUCKET_CONFIG);
             }
         }
 
-        let memory = unsafe { test_context.sut.allocate(BUCKET_CONFIG).unwrap() };
+        let memory = unsafe {
+            test_context
+                .sut
+                .assume_init()
+                .allocate(BUCKET_CONFIG)
+                .unwrap()
+        };
         // the returned offset must be a multiple of the bucket size
         assert_that!((memory.offset() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
         assert_that!(mem_set.insert(memory.offset()), eq true);
 
-        assert_that!(unsafe { test_context.sut.allocate(BUCKET_CONFIG) }, eq Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)));
+        assert_that!(unsafe { test_context.sut.assume_init().allocate(BUCKET_CONFIG) }, eq Err(AllocationError::OutOfMemory));
 
         for memory in mem_set {
             unsafe {
                 test_context
                     .sut
+                    .assume_init()
                     .deallocate(PointerOffset::new(memory), BUCKET_CONFIG)
             }
         }
@@ -263,7 +301,7 @@ fn allocated_memory_has_correct_alignment_uniform_alignment_case() {
             let mem_layout =
                 Layout::from_size_align(128.min(2_usize.pow(i)), 2_usize.pow(n)).unwrap();
             let mut counter = 0;
-            while let Ok(memory) = unsafe { test_context.sut.allocate(mem_layout) } {
+            while let Ok(memory) = unsafe { test_context.sut.assume_init().allocate(mem_layout) } {
                 assert_that!(memory.offset() % mem_layout.align(), eq 0 );
                 counter += 1;
             }
@@ -287,7 +325,7 @@ fn allocated_memory_has_correct_alignment_mixed_alignment_case() {
                 let mem_layout =
                     Layout::from_size_align(128.min(2_usize.pow(i)), 2_usize.pow(n)).unwrap();
 
-                if let Ok(memory) = unsafe { test_context.sut.allocate(mem_layout) } {
+                if let Ok(memory) = unsafe { test_context.sut.assume_init().allocate(mem_layout) } {
                     assert_that!(memory.offset() % mem_layout.align(), eq 0 );
                     counter += 1;
                 } else {
@@ -305,7 +343,7 @@ fn allocated_memory_has_correct_alignment_mixed_alignment_case() {
 #[test]
 fn allocate_with_unsupported_alignment_fails() {
     let test_context = Test::new(Layout::from_size_align(BUCKET_CONFIG.size(), 1).unwrap());
-    assert_that!(unsafe { test_context.sut.allocate(BUCKET_CONFIG) }, eq Err(ShmAllocationError::ExceedsMaxSupportedAlignment));
+    assert_that!(unsafe { test_context.sut.assume_init().allocate(BUCKET_CONFIG) }, eq Err(AllocationError::AlignmentFailure));
 }
 
 #[test]
@@ -313,7 +351,7 @@ fn growing_and_keep_content_at_front_works() {
     let mut test = Test::new(BUCKET_CONFIG);
 
     let old_layout = Test::generate_layout(6);
-    let offset = unsafe { test.sut.allocate(old_layout).unwrap() };
+    let offset = unsafe { test.sut.assume_init().allocate(old_layout).unwrap() };
     let ptr = test.offset_to_ptr(offset);
 
     for n in 0..6 {
@@ -323,6 +361,7 @@ fn growing_and_keep_content_at_front_works() {
     let new_layout = Test::generate_layout(23);
     let offset = unsafe {
         test.sut
+            .assume_init()
             .grow(offset, old_layout, new_layout, ContentPlacement::Front)
             .unwrap()
     };
@@ -338,7 +377,7 @@ fn growing_and_keep_content_at_back_works() {
     let mut test = Test::new(BUCKET_CONFIG);
 
     let old_layout = Test::generate_layout(6);
-    let offset = unsafe { test.sut.allocate(old_layout).unwrap() };
+    let offset = unsafe { test.sut.assume_init().allocate(old_layout).unwrap() };
     let ptr = test.offset_to_ptr(offset);
 
     for n in 0..6 {
@@ -348,6 +387,7 @@ fn growing_and_keep_content_at_back_works() {
     let new_layout = Test::generate_layout(23);
     let offset = unsafe {
         test.sut
+            .assume_init()
             .grow(offset, old_layout, new_layout, ContentPlacement::Back)
             .unwrap()
     };
@@ -363,15 +403,15 @@ fn growning_larger_than_bucket_size_fails() {
     let test = Test::new(BUCKET_CONFIG);
 
     let old_layout = Test::generate_layout(8);
-    let offset = unsafe { test.sut.allocate(old_layout).unwrap() };
-
+    let offset = unsafe { test.sut.assume_init().allocate(old_layout).unwrap() };
     let new_layout = Test::generate_layout(BUCKET_CONFIG.size() + 324);
     let offset = unsafe {
         test.sut
+            .assume_init()
             .grow(offset, old_layout, new_layout, ContentPlacement::Back)
     };
 
-    assert_that!(offset.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::OutOfMemory)));
+    assert_that!(offset.err(), eq Some(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::OutOfMemory));
 }
 
 #[test]
@@ -379,11 +419,12 @@ fn growing_and_increasing_alignment_to_bucket_alignment_succeeds() {
     let test = Test::new(BUCKET_CONFIG);
 
     let old_layout = Test::generate_layout(8);
-    let offset = unsafe { test.sut.allocate(old_layout).unwrap() };
+    let offset = unsafe { test.sut.assume_init().allocate(old_layout).unwrap() };
 
     let new_layout = unsafe { Layout::from_size_align_unchecked(16, BUCKET_CONFIG.align()) };
     let offset = unsafe {
         test.sut
+            .assume_init()
             .grow(offset, old_layout, new_layout, ContentPlacement::Front)
     };
 
@@ -395,15 +436,16 @@ fn growing_and_increasing_alignment_to_more_than_bucket_alignment_fails() {
     let test = Test::new(BUCKET_CONFIG);
 
     let old_layout = Test::generate_layout(8);
-    let offset = unsafe { test.sut.allocate(old_layout).unwrap() };
+    let offset = unsafe { test.sut.assume_init().allocate(old_layout).unwrap() };
 
     let new_layout = unsafe { Layout::from_size_align_unchecked(16, BUCKET_CONFIG.align() * 2) };
     let offset = unsafe {
         test.sut
+            .assume_init()
             .grow(offset, old_layout, new_layout, ContentPlacement::Front)
     };
 
-    assert_that!(offset.err(), eq Some(ShmAllocatorGrowError::ExceedsMaxSupportedAlignment));
+    assert_that!(offset.err(), eq Some(iceoryx2_cal::shm_allocator::AllocationGrowError::AlignmentFailure));
 }
 
 #[test]
@@ -411,15 +453,16 @@ fn growing_and_decreasing_size_fails() {
     let test = Test::new(BUCKET_CONFIG);
 
     let old_layout = Test::generate_layout(8);
-    let offset = unsafe { test.sut.allocate(old_layout).unwrap() };
+    let offset = unsafe { test.sut.assume_init().allocate(old_layout).unwrap() };
 
     let new_layout = Test::generate_layout(6);
     let offset = unsafe {
         test.sut
+            .assume_init()
             .grow(offset, old_layout, new_layout, ContentPlacement::Front)
     };
 
-    assert_that!(offset.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::GrowWouldShrink)));
+    assert_that!(offset.err(), eq Some(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::GrowWouldShrink));
 }
 
 #[test]
@@ -427,10 +470,11 @@ fn growing_to_same_size_returns_same_offset() {
     let test = Test::new(BUCKET_CONFIG);
 
     let old_layout = Test::generate_layout(8);
-    let offset = unsafe { test.sut.allocate(old_layout).unwrap() };
+    let offset = unsafe { test.sut.assume_init().allocate(old_layout).unwrap() };
 
     let new_offset = unsafe {
         test.sut
+            .assume_init()
             .grow(offset, old_layout, old_layout, ContentPlacement::Front)
             .unwrap()
     };

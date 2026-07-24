@@ -37,7 +37,7 @@ use iceoryx2_bb_elementary::static_assert::static_assert_eq;
 use iceoryx2_bb_elementary_traits::{
     testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
 };
-use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_bb_memory::bump_allocator::{BaseAllocator, BumpAllocator};
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_cal::dynamic_storage::{DynamicStorage, DynamicStorageBuilder};
 use iceoryx2_cal::event::NamedConceptMgmt;
@@ -314,7 +314,7 @@ impl<ServiceType: service::Service> ServiceResource for BlackboardResources<Serv
 
         let shm_config = blackboard_data_config::<ServiceType>(shared_node.config());
         let payload_shm = match <<ServiceType::BlackboardPayload as SharedMemory<
-            iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator,
+            iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator,
         >>::Builder as NamedConceptBuilder<ServiceType::BlackboardPayload>>::new(
             &name
         )
@@ -357,14 +357,14 @@ impl<ServiceType: service::Service> ServiceResource for BlackboardResources<Serv
             payload_size += i.internal_value_size + i.internal_value_alignment - 1;
         }
         let payload_shm = match <<ServiceType::BlackboardPayload as SharedMemory<
-            iceoryx2_cal::shm_allocator::shm_bump_allocator::BumpAllocator,
+            iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator,
         >>::Builder as NamedConceptBuilder<ServiceType::BlackboardPayload>>::new(
             &name
         )
         .config(&shm_config)
         .has_ownership(true)
         .size(payload_size)
-        .create(&iceoryx2_cal::shared_memory::shm_bump_allocator::Config::default())
+        .create(&iceoryx2_cal::shared_memory::bump_allocator::Config::default())
         {
             Ok(v) => v,
             Err(_) => {

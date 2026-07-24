@@ -159,6 +159,10 @@ impl MessageTypeDetails {
         }
     }
 
+    pub(crate) fn all_headers_len(&self) -> usize {
+        align(self.header.size, self.user_header.alignment) + self.user_header.size
+    }
+
     pub(crate) fn payload_ptr_from_header(&self, header: *const u8) -> *const u8 {
         let user_header = self.user_header_ptr_from_header(header) as usize;
         let payload_start = align(user_header + self.user_header.size, self.payload.alignment);

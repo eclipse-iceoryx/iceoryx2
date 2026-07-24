@@ -14,35 +14,25 @@ use alloc::boxed::Box;
 
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_container::string::*;
-use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
-use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::{allocator::Allocator, assert_that};
 use iceoryx2_bb_testing_macros::test;
 
-const SUT_CAPACITY: usize = 256;
-const BUFFER_SIZE: usize = core::mem::size_of::<u8>() * (SUT_CAPACITY * 3);
-
 struct Test {
-    raw_memory: UnsafeCell<Box<[u8; BUFFER_SIZE]>>,
-    allocator: UnsafeCell<Option<Box<BumpAllocator>>>,
+    allocator: UnsafeCell<Option<Box<Allocator>>>,
 }
 
 impl Test {
     fn new() -> Self {
         Self {
-            raw_memory: UnsafeCell::new(Box::new([0u8; BUFFER_SIZE])),
             allocator: UnsafeCell::new(None),
         }
     }
 
-    fn allocator(&self) -> &BumpAllocator {
+    fn allocator(&self) -> &Allocator {
         unsafe {
             if (*self.allocator.get()).is_none() {
-                *self.allocator.get() = Some(Box::new(BumpAllocator::new(
-                    core::ptr::NonNull::<u8>::new((*self.raw_memory.get()).as_mut_ptr().cast())
-                        .expect("Precondition failed: Pointer to memory is null"),
-                    BUFFER_SIZE,
-                )))
+                *self.allocator.get() = Some(Box::new(Allocator::new()))
             }
         };
 
@@ -52,7 +42,7 @@ impl Test {
     fn create_sut<'a>(
         &'a self,
         capacity: usize,
-    ) -> Result<PolymorphicString<'a, BumpAllocator>, AllocationError> {
+    ) -> Result<PolymorphicString<'a, Allocator>, AllocationError> {
         PolymorphicString::new(self.allocator(), capacity)
     }
 }

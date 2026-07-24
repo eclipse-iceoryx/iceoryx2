@@ -31,13 +31,12 @@ pub mod generic {
     use iceoryx2_bb_container::string::{RelocatableString, *};
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
     use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+    use iceoryx2_bb_testing::allocator::Allocator;
     use iceoryx2_bb_testing::assert_that;
 
     const SUT_CAPACITY: usize = 129;
     const RELOCATABLE_STRING_MEM_SIZE: usize =
         RelocatableString::const_memory_size(SUT_CAPACITY) * 3;
-    const POLYMORPHIC_STRING_MEM_SIZE: usize =
-        core::mem::size_of::<u8>() * ((SUT_CAPACITY + 1) * 3);
 
     pub trait StringTestFactory {
         type Sut: String;
@@ -99,18 +98,14 @@ pub mod generic {
     }
 
     pub struct PolymorphicStringFactory {
-        raw_memory: UnsafeCell<Box<[u8; POLYMORPHIC_STRING_MEM_SIZE]>>,
-        allocator: UnsafeCell<Option<Box<BumpAllocator>>>,
+        allocator: UnsafeCell<Option<Box<Allocator>>>,
     }
 
     impl PolymorphicStringFactory {
-        fn allocator(&self) -> &'static BumpAllocator {
+        fn allocator(&self) -> &'static Allocator {
             unsafe {
                 if (*self.allocator.get()).is_none() {
-                    *self.allocator.get() = Some(Box::new(BumpAllocator::new(
-                        NonNull::<u8>::from_ref(&(*self.raw_memory.get())[0]),
-                        POLYMORPHIC_STRING_MEM_SIZE,
-                    )))
+                    *self.allocator.get() = Some(Box::new(Allocator::new()))
                 }
             };
 
@@ -119,11 +114,10 @@ pub mod generic {
     }
 
     impl StringTestFactory for PolymorphicStringFactory {
-        type Sut = PolymorphicString<'static, BumpAllocator>;
+        type Sut = PolymorphicString<'static, Allocator>;
 
         fn new() -> Self {
             Self {
-                raw_memory: UnsafeCell::new(Box::new([0u8; POLYMORPHIC_STRING_MEM_SIZE])),
                 allocator: UnsafeCell::new(None),
             }
         }

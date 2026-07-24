@@ -22,8 +22,10 @@ use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
+use iceoryx2_bb_memory::pool_allocator::ReallocGrow;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
-use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
+use iceoryx2_cal::shared_memory::ShmPointer;
+use iceoryx2_cal::shm_allocator::{AllocationError, AllocationGrowError, PointerOffset};
 use iceoryx2_cal::zero_copy_connection::{
     BackpressureToReceiverAction, ChannelId, ChannelState, ZeroCopyConnection,
     ZeroCopyConnectionBuilder, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySendError,
@@ -146,6 +148,30 @@ pub(crate) struct Sender<Service: service::Service, Resource: ServiceResource> {
     pub(crate) message_type_details: MessageTypeDetails,
     pub(crate) number_of_channels: usize,
     pub(crate) initial_channel_state: ChannelState,
+}
+
+impl<Service: service::Service, Resource: ServiceResource> ReallocGrow<ShmPointer>
+    for Sender<Service, Resource>
+{
+    unsafe fn grow(
+        &self,
+        ptr: ShmPointer,
+        old_layout: Layout,
+        new_layout: Layout,
+        content_placement: iceoryx2_bb_memory::pool_allocator::ContentPlacement,
+    ) -> Result<ShmPointer, AllocationGrowError> {
+        let new_ptr = unsafe {
+            self.data_segment
+                .grow(ptr, old_layout, new_layout, content_placement)
+        }?;
+
+        if ptr.offset != new_ptr.offset {
+            self.borrow_sample(new_ptr.offset);
+            self.untrack_sample(ptr.offset);
+        }
+
+        Ok(new_ptr)
+    }
 }
 
 impl<Service: service::Service, Resource: ServiceResource> Abandonable
@@ -456,12 +482,11 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
 
         let shm_pointer = match self.data_segment.allocate(layout) {
             Ok(chunk) => chunk,
-            Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)) => {
+            Err(AllocationError::OutOfMemory) => {
                 fail!(from self, with LoanError::OutOfMemory,
                     "{} {:?} since the underlying shared memory is out of memory.", msg, layout);
             }
-            Err(ShmAllocationError::AllocationError(AllocationError::SizeTooLarge))
-            | Err(ShmAllocationError::AllocationError(AllocationError::AlignmentFailure)) => {
+            Err(AllocationError::SizeTooLarge) | Err(AllocationError::AlignmentFailure) => {
                 fatal_panic!(from self, "{} {:?} since the system seems to be corrupted.", msg, layout);
             }
             Err(v) => {
@@ -516,10 +541,12 @@ impl<Service: service::Service, Resource: ServiceResource> Sender<Service, Resou
         }
     }
 
+    pub(crate) fn untrack_sample(&self, offset: PointerOffset) -> u64 {
+        self.segment_states[offset.segment_id().value() as usize].release_sample(offset.offset())
+    }
+
     pub(crate) fn release_sample(&self, offset: PointerOffset) {
-        if self.segment_states[offset.segment_id().value() as usize].release_sample(offset.offset())
-            == 1
-        {
+        if self.untrack_sample(offset) == 1 {
             unsafe {
                 self.data_segment.deallocate_bucket(offset);
             }

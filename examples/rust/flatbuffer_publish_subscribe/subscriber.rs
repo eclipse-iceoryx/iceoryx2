@@ -15,7 +15,7 @@ extern crate alloc;
 use crate::unbounded_data_generated::example::UnboundedData;
 use alloc::boxed::Box;
 use core::time::Duration;
-use iceoryx2::{prelude::*, service::marker::Flatbuffer};
+use iceoryx2::prelude::*;
 
 #[path = "unbounded_data_generated.rs"]
 #[allow(clippy::all)]
@@ -41,22 +41,30 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let service = node
         .service_builder(&"My/Flatbuffer/Service".try_into()?)
         .publish_subscribe::<Flatbuffer<UnboundedData>>()
+        .user_header::<u64>()
         .open_or_create()?;
 
-    let publisher = service
-        .publisher_builder()
-        .initial_reserved_memory(4096)
-        .allocation_strategy(AllocationStrategy::Static)
-        .create()?;
+    let subscriber = service.subscriber_builder().create()?;
 
-    let mut counter: u64 = 0;
+    coutln!("Subscriber ready to receive data!");
 
     while node.wait(CYCLE_TIME).is_ok() {
-        counter += 1;
-        let mut sample = publisher.loan_flatbuffer()?;
-        sample.flatbuffer_builder();
+        while let Some(sample) = subscriber.receive()? {
+            let data = sample.payload_root()?;
 
-        coutln!("Send sample {counter} ...");
+            coutln!("user header: {}", sample.user_header());
+            coutln!("title: {}", data.title().unwrap_or_default());
+
+            if let Some(entries) = data.entries() {
+                for (index, entry) in entries.iter().enumerate() {
+                    coutln!(
+                        "Entry {index}: data_1={}, data_2={}",
+                        entry.data_1(),
+                        entry.data_2()
+                    );
+                }
+            }
+        }
     }
 
     coutln!("exit");

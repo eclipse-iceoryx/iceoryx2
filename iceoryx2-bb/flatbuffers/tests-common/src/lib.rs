@@ -15,5 +15,6 @@
 extern crate alloc;
 extern crate iceoryx2_bb_loggers;
 
+pub mod resizable_memory_tests;
 pub mod schema_finder_tests;
 pub mod type_name_tests;

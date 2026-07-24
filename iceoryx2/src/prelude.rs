@@ -34,6 +34,7 @@ pub use iceoryx2_bb_elementary::alignment::Alignment;
 pub use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 pub use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 pub use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+pub use iceoryx2_bb_flatbuffers::FlatbufferError;
 pub use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
 pub use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
 pub use iceoryx2_bb_posix::process::ProcessId;

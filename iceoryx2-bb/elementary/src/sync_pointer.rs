@@ -12,7 +12,7 @@
 
 use core::fmt::Debug;
 
-use iceoryx2_bb_elementary_traits::pointer::Pointer;
+use iceoryx2_bb_elementary_traits::{allocator::AllocatorToken, pointer::Pointer};
 
 #[derive(Debug)]
 /// Helper struct to keep [`Send`] and [`Sync`] auto implementation in structs that
@@ -43,6 +43,8 @@ impl<T: Debug> SyncPointer<T> {
         Self(ptr)
     }
 }
+
+impl<T: Debug> AllocatorToken for SyncPointer<T> {}
 
 impl<T: Debug> Pointer<T> for SyncPointer<T> {
     fn as_ptr(&self) -> *const T {

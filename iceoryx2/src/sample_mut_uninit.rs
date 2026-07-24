@@ -90,15 +90,20 @@
 //! # }
 //! ```
 
+use core::marker::PhantomData;
 use core::{fmt::Debug, mem::MaybeUninit};
+use iceoryx2_bb_concurrency::atomic::Ordering;
+use iceoryx2_bb_flatbuffers::{ResizableMemory, ResizableMemoryBuilder};
+use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 
-use flatbuffers::FlatBufferBuilder;
+use flatbuffers::{FlatBufferBuilder, WIPOffset};
 use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
-use iceoryx2_cal::shm_allocator::PointerOffset;
+use iceoryx2_cal::shared_memory::ShmPointer;
 
+use crate::port::details::chunk::ChunkMut;
+use crate::service::static_config::message_type_details::{MessageTypeDetails, TypeVariant};
 use crate::{
     port::publisher::PublisherSharedState,
-    raw_sample::RawSampleMut,
     sample_mut::{SampleMut, SampleMutSharedState},
     service::{header::publish_subscribe::Header, marker::Flatbuffer},
 };
@@ -116,9 +121,12 @@ pub struct SampleMutUninit<
     UserHeader: ZeroCopySend,
 > {
     shared_state: SampleMutSharedState<Service>,
-    ptr: RawSampleMut<Header, UserHeader, Payload>,
-    sample_size: usize,
-    flatbuffer_builder: Option<FlatBufferBuilder<'static>>,
+    chunk: ChunkMut,
+    flatbuffer_builder: Option<
+        FlatBufferBuilder<'static, ResizableMemory<ShmPointer, SampleMutSharedState<Service>>>,
+    >,
+    _payload: PhantomData<Payload>,
+    _user_header: PhantomData<UserHeader>,
 }
 
 unsafe impl<
@@ -131,40 +139,105 @@ where
 {
 }
 
+/// The memory used inside the [`FlatBufferBuilder`].
+pub type FlatbufferMemory<Service> = ResizableMemory<ShmPointer, SampleMutSharedState<Service>>;
+
 impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
     SampleMutUninit<Service, Flatbuffer<Payload>, UserHeader>
 {
     pub(crate) fn new_flatbuffer(
         publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
-        ptr: RawSampleMut<Header, UserHeader, Flatbuffer<Payload>>,
-        offset_to_chunk: PointerOffset,
-        sample_size: usize,
+        chunk: ChunkMut,
     ) -> Self {
+        let shared_state = SampleMutSharedState::new(
+            publisher_shared_state,
+            chunk.to_shm_pointer(),
+            chunk.layout().size(),
+        );
+        let allocation_strategy = publisher_shared_state
+            .lock()
+            .sender
+            .data_segment
+            .allocation_strategy();
+        let reserved_header_len = MessageTypeDetails::from::<
+            crate::service::header::publish_subscribe::Header,
+            UserHeader,
+            u8,
+        >(TypeVariant::Dynamic)
+        .all_headers_len();
+
+        let resizable_memory = ResizableMemoryBuilder::new(chunk.to_shm_pointer())
+            .allocation_strategy(allocation_strategy)
+            .initial_layout(chunk.layout())
+            .reserved_header_len(reserved_header_len)
+            .create(shared_state.clone())
+            .unwrap();
+
         Self {
-            flatbuffer_builder: None,
-            shared_state: SampleMutSharedState {
-                publisher_shared_state: publisher_shared_state.clone(),
-                offset_to_chunk,
-            },
-            ptr,
-            sample_size,
+            flatbuffer_builder: Some(FlatBufferBuilder::new_in(resizable_memory)),
+            shared_state,
+            chunk,
+            _payload: PhantomData,
+            _user_header: PhantomData,
         }
     }
 
     /// Returns the internal [`FlatBufferBuilder`] that was constructed with the internal iceoryx2
     /// allocator to enable true zero-copy data transfer.
-    pub fn flatbuffer_builder(&mut self) -> &FlatBufferBuilder<'static> {
-        self.flatbuffer_builder.get_or_insert(unsafe {
-            core::mem::transmute::<FlatBufferBuilder<'_>, FlatBufferBuilder<'static>>(
-                FlatBufferBuilder::new(),
-            )
-        })
+    pub fn flatbuffer_builder(
+        &mut self,
+    ) -> &mut FlatBufferBuilder<'static, FlatbufferMemory<Service>> {
+        self.flatbuffer_builder.as_mut().unwrap()
+    }
+
+    /// Finalize the Flatbuffer and initialize the sample. After that call the content can no longer be
+    /// modified.
+    pub fn assume_init(
+        mut self,
+        root: WIPOffset<Payload>,
+    ) -> SampleMut<Service, Flatbuffer<Payload>, UserHeader> {
+        self.flatbuffer_builder().finish(root, None);
+        let flatbuffer_payload_start = self.flatbuffer_builder().finished_data().as_ptr() as usize;
+
+        let message_type_details = MessageTypeDetails::from::<
+            crate::service::header::publish_subscribe::Header,
+            UserHeader,
+            u8,
+        >(TypeVariant::Dynamic);
+
+        self.chunk.header = self
+            .shared_state
+            .state
+            .lock()
+            .shm_raw_ptr
+            .load(Ordering::Relaxed) as *mut u8;
+        self.chunk.user_header = message_type_details
+            .user_header_ptr_from_header(self.chunk.header)
+            .cast_mut();
+        self.chunk.payload = message_type_details
+            .payload_ptr_from_header(self.chunk.header)
+            .cast_mut();
+
+        let payload_offset = flatbuffer_payload_start - self.chunk.payload_ptr() as usize;
+
+        let header = unsafe { &mut *self.chunk.header_mut_ptr().cast::<Header>() };
+        header.number_of_elements = self.shared_state.slice_len() as u64;
+        header.payload_offset = payload_offset as u64;
+
+        SampleMut {
+            shared_state: self.shared_state,
+            chunk: self.chunk,
+            _payload: PhantomData,
+            _user_header: PhantomData,
+        }
     }
 }
 
 impl<
     Service: crate::service::Service,
-    Payload: IceoryxSend + Debug + ?Sized,
+    // It is important to restrict the Payload to ZeroCopySend since the flatbuffer builder
+    // modifies the ptr to header and user header when growing.
+    Payload: IceoryxSend + ZeroCopySend + Debug + ?Sized,
     UserHeader: ZeroCopySend,
 > SampleMutUninit<Service, Payload, UserHeader>
 {
@@ -190,7 +263,7 @@ impl<
     /// # }
     /// ```
     pub fn header(&self) -> &Header {
-        self.ptr.as_header_ref()
+        unsafe { &*(self.chunk.header_ptr().cast()) }
     }
 
     /// Returns a reference to the user_header of the sample.
@@ -216,7 +289,7 @@ impl<
     /// # }
     /// ```
     pub fn user_header(&self) -> &UserHeader {
-        self.ptr.as_user_header_ref()
+        unsafe { &*(self.chunk.user_header_ptr().cast()) }
     }
 
     /// Returns a mutable reference to the user_header of the sample.
@@ -242,7 +315,31 @@ impl<
     /// # }
     /// ```
     pub fn user_header_mut(&mut self) -> &mut UserHeader {
-        self.ptr.as_user_header_mut()
+        unsafe { &mut *(self.chunk.user_header_mut_ptr().cast()) }
+    }
+}
+
+impl<
+    Service: crate::service::Service,
+    Payload: IceoryxSend + ZeroCopySend + Debug,
+    UserHeader: ZeroCopySend,
+> SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>
+{
+    pub(crate) fn new(
+        publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
+        chunk: ChunkMut,
+    ) -> Self {
+        Self {
+            flatbuffer_builder: None,
+            shared_state: SampleMutSharedState::new(
+                publisher_shared_state,
+                chunk.to_shm_pointer(),
+                1,
+            ),
+            chunk,
+            _payload: PhantomData,
+            _user_header: PhantomData,
+        }
     }
 
     /// Returns a reference to the payload of the sample.
@@ -271,11 +368,8 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn payload(&self) -> &Payload
-    where
-        Payload: ZeroCopySend,
-    {
-        self.ptr.as_payload_ref()
+    pub fn payload(&self) -> &MaybeUninit<Payload> {
+        unsafe { &*(self.chunk.payload_ptr().cast()) }
     }
 
     /// Returns a mutable reference to the payload of the sample.
@@ -303,35 +397,8 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn payload_mut(&mut self) -> &mut Payload
-    where
-        Payload: ZeroCopySend,
-    {
-        self.ptr.as_payload_mut()
-    }
-}
-
-impl<
-    Service: crate::service::Service,
-    Payload: IceoryxSend + ZeroCopySend + Debug,
-    UserHeader: ZeroCopySend,
-> SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>
-{
-    pub(crate) fn new(
-        publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
-        ptr: RawSampleMut<Header, UserHeader, MaybeUninit<Payload>>,
-        offset_to_chunk: PointerOffset,
-        sample_size: usize,
-    ) -> Self {
-        Self {
-            flatbuffer_builder: None,
-            shared_state: SampleMutSharedState {
-                publisher_shared_state: publisher_shared_state.clone(),
-                offset_to_chunk,
-            },
-            ptr,
-            sample_size,
-        }
+    pub fn payload_mut(&mut self) -> &mut MaybeUninit<Payload> {
+        unsafe { &mut *(self.chunk.payload_mut_ptr().cast()) }
     }
 
     /// Writes the payload to the sample and labels the sample as initialized
@@ -398,8 +465,9 @@ impl<
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
         SampleMut {
             shared_state: self.shared_state,
-            sample_size: self.sample_size,
-            ptr: unsafe { self.ptr.assume_init() },
+            chunk: self.chunk,
+            _payload: PhantomData,
+            _user_header: PhantomData,
         }
     }
 }
@@ -409,18 +477,88 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
 {
     pub(crate) fn new(
         publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
-        ptr: RawSampleMut<Header, UserHeader, [MaybeUninit<Payload>]>,
-        offset_to_chunk: PointerOffset,
-        sample_size: usize,
+        chunk: ChunkMut,
+        underyling_slice_len: usize,
     ) -> Self {
         Self {
             flatbuffer_builder: None,
-            shared_state: SampleMutSharedState {
-                publisher_shared_state: publisher_shared_state.clone(),
-                offset_to_chunk,
-            },
-            ptr,
-            sample_size,
+            shared_state: SampleMutSharedState::new(
+                publisher_shared_state,
+                chunk.to_shm_pointer(),
+                underyling_slice_len,
+            ),
+            chunk,
+            _payload: PhantomData,
+            _user_header: PhantomData,
+        }
+    }
+
+    /// Returns a reference to the payload of the sample.
+    ///
+    /// # Notes
+    ///
+    /// The generic parameter `Payload` is packed into a [`core::mem::MaybeUninit<Payload>`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .publish_subscribe::<[u64]>()
+    /// #     .open_or_create()?;
+    /// # let publisher = service.publisher_builder().create()?;
+    ///
+    /// let mut sample = publisher.loan_slice_uninit(1)?;
+    /// sample.payload_mut()[0].write(123);
+    /// println!("Sample current payload {:?}", unsafe { sample.payload().assume_init_ref() });
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn payload(&self) -> &[MaybeUninit<Payload>] {
+        unsafe {
+            &*core::ptr::slice_from_raw_parts(
+                self.chunk.payload_ptr().cast(),
+                self.shared_state.slice_len(),
+            )
+        }
+    }
+
+    /// Returns a mutable reference to the payload of the sample.
+    ///
+    /// # Notes
+    ///
+    /// The generic parameter `Payload` is packed into a [`core::mem::MaybeUninit<Payload>`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .publish_subscribe::<[u64]>()
+    /// #     .open_or_create()?;
+    /// # let publisher = service.publisher_builder().create()?;
+    ///
+    /// let mut sample = publisher.loan_slice_uninit(1)?;
+    /// sample.payload_mut()[0].write(4567);
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn payload_mut(&mut self) -> &mut [MaybeUninit<Payload>] {
+        unsafe {
+            &mut *core::ptr::slice_from_raw_parts_mut(
+                self.chunk.payload_mut_ptr().cast(),
+                self.shared_state.slice_len(),
+            )
         }
     }
 
@@ -464,8 +602,9 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
         SampleMut {
             shared_state: self.shared_state,
-            sample_size: self.sample_size,
-            ptr: unsafe { self.ptr.assume_init() },
+            chunk: self.chunk,
+            _payload: PhantomData,
+            _user_header: PhantomData,
         }
     }
 

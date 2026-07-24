@@ -17,6 +17,7 @@ use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_memory::{bump_allocator::BaseAllocator, pool_allocator::ReallocGrow};
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::{
@@ -27,8 +28,7 @@ use iceoryx2_cal::{
         SharedMemoryOpenError, ShmPointer,
     },
     shm_allocator::{
-        self, AllocationError, PointerOffset, SegmentId, ShmAllocationError,
-        pool_allocator::PoolAllocator,
+        self, AllocationError, PointerOffset, SegmentId, pool_allocator::PoolAllocator,
     },
 };
 use iceoryx2_log::fail;
@@ -81,6 +81,26 @@ impl<Service: service::Service> Abandonable for DataSegment<Service> {
             MemoryType::Dynamic(shm) => unsafe {
                 Service::ResizableSharedMemory::abandon_in_place(NonNull::from_mut(shm));
             },
+        }
+    }
+}
+
+impl<Service: service::Service> ReallocGrow<ShmPointer> for DataSegment<Service> {
+    unsafe fn grow(
+        &self,
+        ptr: ShmPointer,
+        old_layout: Layout,
+        new_layout: Layout,
+        content_placement: iceoryx2_bb_memory::pool_allocator::ContentPlacement,
+    ) -> Result<ShmPointer, shm_allocator::AllocationGrowError> {
+        let msg = "Unable to grow memory cell from the data segment";
+        match &self.memory {
+            MemoryType::Static(memory) => Ok(fail!(from self,
+                    when unsafe { memory.grow(ptr, old_layout, new_layout, content_placement) },
+                    "{msg}.")),
+            MemoryType::Dynamic(memory) => Ok(fail!(from self,
+                    when unsafe { memory.grow(ptr, old_layout, new_layout, content_placement) },
+                    "{msg}.")),
         }
     }
 }
@@ -143,28 +163,21 @@ impl<Service: service::Service> DataSegment<Service> {
         })
     }
 
-    pub(crate) fn allocate(&self, layout: Layout) -> Result<ShmPointer, ShmAllocationError> {
+    pub(crate) fn allocate(&self, layout: Layout) -> Result<ShmPointer, AllocationError> {
         let msg = "Unable to allocate memory from the data segment";
         match &self.memory {
             MemoryType::Static(memory) => Ok(fail!(from self, when memory.allocate(layout),
                                             "{msg}.")),
-            MemoryType::Dynamic(memory) => match memory.allocate(layout) {
-                Ok(ptr) => Ok(ptr),
-                Err(ResizableShmAllocationError::ShmAllocationError(e)) => {
-                    fail!(from self, with e,
-                        "{msg} caused by {:?}.", e);
-                }
-                Err(ResizableShmAllocationError::MaxReallocationsReached) => {
-                    fail!(from self,
-                        with ShmAllocationError::AllocationError(AllocationError::OutOfMemory),
-                        "{msg} since the maxmimum number of reallocations was reached. Try to provide initial_max_slice_len({}) as hint when creating the publisher to have a more fitting initial setup.", layout.size());
-                }
-                Err(ResizableShmAllocationError::SharedMemoryCreateError(e)) => {
-                    fail!(from self,
-                        with ShmAllocationError::AllocationError(AllocationError::InternalError),
-                        "{msg} since the shared memory segment creation failed while resizing the memory due to ({:?}).", e);
-                }
-            },
+            MemoryType::Dynamic(memory) => {
+                Ok(fail!(from self, when memory.allocate(layout), "{msg}."))
+            }
+        }
+    }
+
+    pub(crate) fn allocation_strategy(&self) -> AllocationStrategy {
+        match &self.memory {
+            MemoryType::Static(_) => AllocationStrategy::Static,
+            MemoryType::Dynamic(memory) => memory.allocation_strategy(),
         }
     }
 

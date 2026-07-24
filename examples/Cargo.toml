@@ -152,11 +152,11 @@ path = "rust/event_based_communication/subscriber.rs"
 
 [[example]]
 name = "flatbuffer_publisher"
-path = "rust/flatbuffer/publisher.rs"
+path = "rust/flatbuffer_publish_subscribe/publisher.rs"
 
 [[example]]
 name = "flatbuffer_subscriber"
-path = "rust/flatbuffer/subscriber.rs"
+path = "rust/flatbuffer_publish_subscribe/subscriber.rs"
 
 # health monitoring
 

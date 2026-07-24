@@ -29,7 +29,7 @@ pub mod shared_memory_trait {
     use iceoryx2_bb_testing_macros::conformance_test;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::shared_memory::*;
-    use iceoryx2_cal::shm_allocator::{ShmAllocationError, ShmAllocator};
+    use iceoryx2_cal::shm_allocator::ShmAllocator;
     use iceoryx2_cal::testing::*;
 
     use super::*;
@@ -166,7 +166,7 @@ pub mod shared_memory_trait {
         assert_that!(chunk, is_err);
         assert_that!(
             chunk.err().unwrap(), eq
-            ShmAllocationError::AllocationError(AllocationError::OutOfMemory)
+            AllocationError::OutOfMemory
         );
 
         unsafe {
@@ -209,7 +209,7 @@ pub mod shared_memory_trait {
         assert_that!(chunk, is_err);
         assert_that!(
             chunk.err().unwrap(), eq
-            ShmAllocationError::AllocationError(AllocationError::OutOfMemory)
+            AllocationError::OutOfMemory
         );
 
         unsafe {
@@ -463,7 +463,7 @@ pub mod shared_memory_trait {
             )
         };
 
-        assert_that!(chunk.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(AllocationGrowError::OutOfMemory)));
+        assert_that!(chunk.err(), eq Some(AllocationGrowError::OutOfMemory));
     }
 
     #[conformance_test]
@@ -484,7 +484,7 @@ pub mod shared_memory_trait {
         let result =
             unsafe { sut.grow(chunk, DEFAULT_LAYOUT, small_layout, ContentPlacement::Front) };
 
-        assert_that!(result.err(), eq Some(ShmAllocatorGrowError::AllocationGrowError(AllocationGrowError::GrowWouldShrink)));
+        assert_that!(result.err(), eq Some(AllocationGrowError::GrowWouldShrink));
     }
 
     #[conformance_test]

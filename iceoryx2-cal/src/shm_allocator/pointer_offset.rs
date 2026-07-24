@@ -12,6 +12,8 @@
 
 use core::fmt::Debug;
 
+use iceoryx2_bb_memory::pool_allocator::AllocatorToken;
+
 pub type SegmentIdUnderlyingType = u8;
 
 /// Defines the [`SegmentId`] of a [`SharedMemory`](crate::shared_memory::SharedMemory)
@@ -44,6 +46,8 @@ impl SegmentId {
 /// Contains the offset and the corresponding [`SegmentId`].
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct PointerOffset(u64);
+
+impl AllocatorToken for PointerOffset {}
 
 impl PointerOffset {
     /// Creates a new [`PointerOffset`] from the given offset value with the [`SegmentId`] == 0.

@@ -68,7 +68,9 @@ use core::{fmt::Debug, marker::PhantomData, ptr::NonNull};
 
 pub use iceoryx2_bb_elementary_traits::pointer::Pointer;
 
-use iceoryx2_bb_elementary_traits::{pointer_family::PointerFamily, zero_copy_send::ZeroCopySend};
+use iceoryx2_bb_elementary_traits::{
+    allocator::AllocatorToken, pointer_family::PointerFamily, zero_copy_send::ZeroCopySend,
+};
 use iceoryx2_pal_concurrency_sync::atomic::{AtomicIsize, Ordering};
 
 #[derive(Debug)]
@@ -152,6 +154,8 @@ impl<T: Debug> PartialEq for RelocatablePointer<T> {
 }
 
 impl<T: Debug> Eq for RelocatablePointer<T> {}
+
+impl<T: Debug> AllocatorToken for RelocatablePointer<T> {}
 
 impl<T: Debug> Pointer<T> for RelocatablePointer<T> {
     fn as_ptr(&self) -> *const T {

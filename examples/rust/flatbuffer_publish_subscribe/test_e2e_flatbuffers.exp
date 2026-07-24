@@ -13,24 +13,25 @@
 
 #### Common Setup
 
-### set REPO_ROOT [exec git rev-parse --show-toplevel]
-### cd ${REPO_ROOT}
-###
-### source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
-###
-### #### Test Setup
-###
-### set timeout 10
-###
-### spawn cargo run --example flatbuffer_publisher
-### set id_publisher $spawn_id
-###
-### spawn cargo run --example flatbuffer_subscriber
-###
-### #### Test Assertion
-###
-### expect_output_from $id_publisher "Send sample*"
-### expect_output "received: TransmissionData { x: 3, y: 9, funky: 2436.36 }*"
-###
-### show_test_passed
-###
+set REPO_ROOT [exec git rev-parse --show-toplevel]
+cd ${REPO_ROOT}
+
+set env(IOX2_FLATBUFFER_SCHEMA_PATH) ${REPO_ROOT}/examples/rust/flatbuffer_publish_subscribe
+
+source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
+
+#### Test Setup
+
+set timeout 10
+
+spawn cargo run --example flatbuffer_publisher
+set id_publisher $spawn_id
+
+spawn cargo run --example flatbuffer_subscriber
+
+#### Test Assertion
+
+expect_output_from $id_publisher "Send sample*"
+expect_output "Entry 0: data_1=5, data_2=7"
+
+show_test_passed
