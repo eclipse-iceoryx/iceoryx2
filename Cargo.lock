@@ -1366,6 +1366,7 @@ dependencies = [
 name = "iceoryx2-conformance-tests"
 version = "0.9.999"
 dependencies = [
+ "flatbuffers",
  "iceoryx2",
  "iceoryx2-bb-concurrency",
  "iceoryx2-bb-container",

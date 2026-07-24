@@ -916,7 +916,7 @@ impl<Payload: IceoryxSend + Debug, UserHeader: Debug + ZeroCopySend, ServiceType
     }
 }
 
-impl<Payload: Debug + IceoryxSend, UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
+impl<Payload: Debug, UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
     Builder<Flatbuffer<Payload>, UserHeader, ServiceType>
 {
     /// Sets the path to the flatbuffer schema file. If this is not explicitly defined, iceoryx2

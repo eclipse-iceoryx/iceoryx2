@@ -48,7 +48,19 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let publisher = service
         .publisher_builder()
+        // We start with 32 bytes. The more accurate the initial_reserved_memory
+        // estimate is, the fewer reallocations will be required. Reallocations occur
+        // only at the beginning of communication. Once the publisher's data segment
+        // has been resized appropriately, all subsequent samples will use that size.
         .initial_reserved_memory(32)
+        // By default, the allocation strategy is Static, which does not allow
+        // reallocations when initial_reserved_memory is exhausted. Set it to
+        // PowerOfTwo or BestFit to enable reallocations.
+        //
+        // The maximum number of reallocations is 256. BestFit allocates only the
+        // explicitly requested amount of memory, so this limit can be reached
+        // quickly. Increasing initial_reserved_memory reduces the number of
+        // reallocations.
         .allocation_strategy(AllocationStrategy::PowerOfTwo)
         .create()?;
 
