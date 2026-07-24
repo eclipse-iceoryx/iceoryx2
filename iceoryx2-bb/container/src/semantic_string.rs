@@ -413,11 +413,11 @@ macro_rules! semantic_string {
         }
 
         // BEGIN: serde
-        pub(crate) mod VisitorType {
+        pub(crate) mod semantic_string_visitor_type {
             pub(crate) struct $string_name;
         }
 
-        impl<'de> serde::de::Visitor<'de> for VisitorType::$string_name {
+        impl<'de> serde::de::Visitor<'de> for semantic_string_visitor_type::$string_name {
             type Value = $string_name;
 
             fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
@@ -440,7 +440,7 @@ macro_rules! semantic_string {
             where
                 D: serde::Deserializer<'de>,
             {
-                deserializer.deserialize_str(VisitorType::$string_name)
+                deserializer.deserialize_str(semantic_string_visitor_type::$string_name)
             }
         }
 
@@ -465,13 +465,15 @@ macro_rules! semantic_string {
 
             unsafe fn new_unchecked(bytes: &[u8]) -> Self {
                 Self {
-                    value: iceoryx2_bb_container::string::StaticString::from_bytes_unchecked(bytes),
+                    value: unsafe { iceoryx2_bb_container::string::StaticString::from_bytes_unchecked(bytes) },
                 }
             }
 
             unsafe fn insert_bytes_unchecked(&mut self, idx: usize, bytes: &[u8]) {
                 use iceoryx2_bb_container::string::String;
-                self.value.insert_bytes_unchecked(idx, bytes);
+                unsafe {
+                    self.value.insert_bytes_unchecked(idx, bytes);
+                }
             }
         }
 
@@ -486,7 +488,7 @@ macro_rules! semantic_string {
             pub const unsafe fn new_unchecked_const(value: &[u8]) -> $string_name {
                 core::debug_assert!(value.len() <= $capacity);
                 $string_name {
-                    value: iceoryx2_bb_container::string::StaticString::from_bytes_unchecked(value),
+                    value: unsafe { iceoryx2_bb_container::string::StaticString::from_bytes_unchecked(value) },
                 }
             }
 
@@ -495,6 +497,7 @@ macro_rules! semantic_string {
                 $capacity
             }
 
+            /// Returns a slice to the underlying bytes
             pub const fn as_bytes_const(&self) -> &[u8] {
                 self.value.as_bytes_const()
             }
@@ -631,6 +634,5 @@ macro_rules! semantic_string {
                 $invalid_characters(string)
             }
         }
-
-    };
+    }
 }
