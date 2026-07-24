@@ -139,7 +139,7 @@ where
 {
 }
 
-/// The memory used inside the [`FlatbufferBuilder`].
+/// The memory used inside the [`FlatBufferBuilder`].
 pub type FlatbufferMemory<Service> = ResizableMemory<ShmPointer, SampleMutSharedState<Service>>;
 
 impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
@@ -514,7 +514,7 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
     ///
     /// let mut sample = publisher.loan_slice_uninit(1)?;
     /// sample.payload_mut()[0].write(123);
-    /// println!("Sample current payload {}", unsafe { sample.payload().assume_init_ref() });
+    /// println!("Sample current payload {:?}", unsafe { sample.payload().assume_init_ref() });
     ///
     /// # Ok(())
     /// # }
@@ -543,7 +543,7 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
     /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
-    /// #     .publish_subscribe::<u64>()
+    /// #     .publish_subscribe::<[u64]>()
     /// #     .open_or_create()?;
     /// # let publisher = service.publisher_builder().create()?;
     ///

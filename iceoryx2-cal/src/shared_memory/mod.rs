@@ -227,7 +227,7 @@ pub trait SharedMemoryForPoolAllocator: SharedMemory<PoolAllocator> {
     ///
     /// # Safety
     ///
-    ///  * the offset must be acquired with [`SharedMemory::allocate()`] - extracted from the
+    ///  * the offset must be acquired with [`BaseAllocator::allocate()`] - extracted from the
     ///    [`ShmPointer`]
     unsafe fn deallocate_bucket(&self, offset: PointerOffset);
 

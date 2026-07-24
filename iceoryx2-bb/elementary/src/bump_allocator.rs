@@ -34,10 +34,6 @@
 //! );
 //!
 //! let mut memory = allocator.allocate(layout).unwrap();
-//!
-//! unsafe {
-//!     allocator.deallocate(memory, layout)
-//! };
 //! ```
 
 use core::{fmt::Display, ptr::NonNull};

@@ -17,13 +17,13 @@
 //!
 //! The [`ResizableSharedMemoryView`] never owns the [`ResizableSharedMemory`] and has only
 //! read-only access to it while the [`ResizableSharedMemory`] can use
-//! [`ResizableSharedMemory::allocate()`] to acquire memory and distribute it between the
+//! [`BaseAllocator::allocate()`] to acquire memory and distribute it between the
 //! [`ResizableSharedMemoryView`]s.
 //!
 //! Whenever the [`ResizableSharedMemoryView`] receives an offset it must be registered via
 //! [`ResizableSharedMemoryView::register_and_translate_offset()`] and unregistered via
 //! [`ResizableSharedMemoryView::unregister_offset()`]. As soon as the [`ResizableSharedMemory`]
-//! calls [`ResizableSharedMemory::deallocate()`] unused [`SharedMemory`] segments may be recycled.
+//! calls [`Dealloc::deallocate()`] unused [`SharedMemory`] segments may be recycled.
 //!
 //! # Example
 //!
@@ -190,7 +190,7 @@ pub trait ResizableSharedMemoryView<Allocator: ShmAllocator, Shm: SharedMemory<A
 }
 
 /// The [`ResizableSharedMemory`] can be only owned by exactly one process that is allowed to
-/// [`ResizableSharedMemory::allocate()`] memory and distribute the memory to all
+/// [`BaseAllocator::allocate()`] memory and distribute the memory to all
 /// [`ResizableSharedMemoryView`]s.
 pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>:
     Sized
@@ -215,7 +215,7 @@ pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Alloc
     type View: ResizableSharedMemoryView<Allocator, Shm>;
 
     /// Returns how many reallocations the [`ResizableSharedMemory`] supports. If the number is
-    /// exceeded any call to [`ResizableSharedMemory::allocate()`] that requires a resize of the
+    /// exceeded any call to [`BaseAllocator::allocate()`] that requires a resize of the
     /// underlying [`SharedMemory`] segments will fail.
     fn max_number_of_reallocations() -> usize;
 
@@ -233,7 +233,7 @@ pub trait ResizableSharedMemoryForPoolAllocator<Shm: SharedMemory<PoolAllocator>
     ///
     /// # Safety
     ///
-    ///  * the offset must be acquired with [`SharedMemory::allocate()`] - extracted from the
+    ///  * the offset must be acquired with [`BaseAllocator::allocate()`] - extracted from the
     ///    [`ShmPointer`]
     unsafe fn deallocate_bucket(&self, offset: PointerOffset);
 

@@ -17,37 +17,16 @@
 //! ```no_run
 //! # extern crate iceoryx2_bb_loggers;
 //!
-//! use iceoryx2_bb_elementary_traits::allocator::*;
+//! use iceoryx2_bb_testing::allocator::Allocator;
 //! use iceoryx2_bb_container::string::*;
 //!
 //! # use core::ptr::NonNull;
 //!
-//! # struct SomeAllocator {}
-//!
-//! # impl SomeAllocator {
-//! #     fn new() -> Self {
-//! #          Self {}
-//! #     }
-//! # }
-//! #
-//! # impl BaseAllocator<NonNull<u8>> for SomeAllocator {
-//! #     fn allocate(
-//! #         &self,
-//! #         layout: core::alloc::Layout,
-//! #     ) -> Result<NonNull<u8>, AllocationError> {
-//! #         todo!()
-//! #     }
-//! #
-//! #     unsafe fn deallocate(&self, _ptr: NonNull<u8>, _layout: core::alloc::Layout) {
-//! #         todo!()
-//! #     }
-//! # }
-//!
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
-//! let allocator = SomeAllocator::new();
+//! let allocator = Allocator::new();
 //! let capacity: usize = 123;
 //! let mut my_str =
-//!     PolymorphicString::<SomeAllocator>::new(&allocator, capacity)?;
+//!     PolymorphicString::<Allocator>::new(&allocator, capacity)?;
 //!
 //! my_str.push_bytes(b"all glory to the hypnotoad"); // returns false, when capacity is exceeded
 //! # Ok(())

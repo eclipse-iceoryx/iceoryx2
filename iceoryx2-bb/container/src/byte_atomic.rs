@@ -53,9 +53,11 @@
 //! ## Use the [`RelocatableByteAtomic`](crate::byte_atomic::RelocatableByteAtomic)
 //!
 //! ```
+//! extern crate alloc;
+//!
 //! use iceoryx2_bb_container::byte_atomic::RelocatableByteAtomic;
 //! use iceoryx2_bb_derive_macros::AtomicCopy;
-//! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+//! use iceoryx2_bb_testing::allocator::Allocator;
 //! use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
 //!
 //! #[repr(C)]
@@ -69,11 +71,7 @@
 //! let new_value = Foo { bar: 4, baz: 6 };
 //!
 //! const SIZE: usize = RelocatableByteAtomic::<Foo>::const_memory_size();
-//! let memory = [0u8; SIZE];
-//! let allocator = BumpAllocator::new(
-//!     core::ptr::NonNull::<u8>::from_ref(&memory[0]),
-//!     memory.len(),
-//! );
+//! let allocator = Allocator::new();
 //! unsafe {
 //!     let mut wrapper = RelocatableByteAtomic::new_uninit();
 //!     wrapper

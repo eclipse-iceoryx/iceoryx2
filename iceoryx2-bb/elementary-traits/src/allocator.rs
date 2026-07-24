@@ -17,7 +17,7 @@ pub use core::{alloc::Layout, ptr::NonNull};
 
 use crate::pointer::Pointer;
 
-/// Failures caused by [`BaseAllocator::allocate()`] or [`BaseAllocator::allocate_zeroed()`].
+/// Failures caused by [`BaseAllocator::allocate()`] or [`ZeroableAllocator::allocate_zeroed()`].
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum AllocationError {
     SizeIsZero,
@@ -47,7 +47,7 @@ impl From<AllocationError> for AllocationGrowError {
     }
 }
 
-/// Failures caused by [`ReallocGrow::grow()`] or [`ReallocGrow::grow_zeroed()`].
+/// Failures caused by [`ReallocGrow::grow()`] or [`ZeroableAllocator::grow_zeroed()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 pub enum AllocationGrowError {
     GrowWouldShrink,
@@ -107,7 +107,7 @@ pub trait Dealloc<P: AllocatorToken> {
     /// # Safety
     ///
     ///  * `ptr` must be allocated previously with [`BaseAllocator::allocate()`] or
-    ///    [`BaseAllocator::allocate_zeroed()`]
+    ///    [`ZeroableAllocator::allocate_zeroed()`]
     ///  * `layout` must have the same value as in the allocation or, when the memory was
     ///    resized, the same value as it was resized to
     ///
@@ -123,7 +123,7 @@ pub trait ReallocGrow<P: AllocatorToken> {
     /// # Safety
     ///
     ///  * `ptr` must be allocated previously with [`BaseAllocator::allocate()`] or
-    ///    [`BaseAllocator::allocate_zeroed()`]
+    ///    [`ZeroableAllocator::allocate_zeroed()`]
     ///  * `old_layout` must have the same value as in the allocation or, when the memory was
     ///    resized, the same value as it was resized to
     ///
@@ -144,7 +144,7 @@ pub trait ReallocShrink<P: AllocatorToken> {
     /// # Safety
     ///
     ///  * `ptr` must be allocated previously with [`BaseAllocator::allocate()`] or
-    ///    [`BaseAllocator::allocate_zeroed()`]
+    ///    [`ZeroableAllocator::allocate_zeroed()`]
     ///  * `old_layout` must have the same value as in the allocation or, when the memory was
     ///    resized, the same value as it was resized to
     ///
@@ -176,7 +176,7 @@ pub trait ZeroableAllocator<P: AllocatorToken + Pointer<u8>>:
     /// # Safety
     ///
     ///  * `ptr` must be allocated previously with [`BaseAllocator::allocate()`] or
-    ///    [`BaseAllocator::allocate_zeroed()`]
+    ///    [`ZeroableAllocator::allocate_zeroed()`]
     ///  * `old_layout` must have the same value as in the allocation or, when the memory was
     ///    resized, the same value as it was resized to
     ///

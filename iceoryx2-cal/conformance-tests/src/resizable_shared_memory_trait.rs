@@ -1200,4 +1200,21 @@ pub mod resizable_shared_memory_trait {
             assert_that!(unsafe { *ptr.data_ptr.add(n) }, eq 73);
         }
     }
+
+    #[conformance_test]
+    pub fn allocation_strategy_can_be_obtained<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .create()
+            .unwrap();
+
+        assert_that!(sut.allocation_strategy(), eq AllocationStrategy::BestFit);
+    }
 }

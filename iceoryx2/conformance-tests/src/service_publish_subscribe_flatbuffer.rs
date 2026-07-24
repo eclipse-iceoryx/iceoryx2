@@ -690,4 +690,42 @@ pub mod service_publish_subscribe_flatbuffer {
         // does not support any clean error handling
         let _title = builder.create_string("oh no more memory");
     }
+
+    #[conformance_test]
+    pub fn data_can_be_reconstructed_from_payload_bytes<Sut: Service + 'static>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_schema_file(SCHEMA);
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<UnboundedData>>()
+            .flatbuffer_schema_path(schema_file.path().unwrap())
+            .create()
+            .unwrap();
+
+        let publisher = sut
+            .publisher_builder()
+            .initial_reserved_memory(4096)
+            .create()
+            .unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+
+        let mut sample = publisher.loan_flatbuffer().unwrap();
+        let builder = sample.flatbuffer_builder();
+        let unbounded_data =
+            produce_example_data(builder, "there is a butterfly on nalas nose", 44, 55, 1);
+        sample.assume_init(unbounded_data).send().unwrap();
+
+        let sample = subscriber.receive().unwrap().unwrap();
+        let unbounded_data = root_as_unbounded_data(sample.payload_bytes()).unwrap();
+
+        assert_that!(unbounded_data.title(), eq Some("there is a butterfly on nalas nose"));
+        assert_that!(unbounded_data.entries().unwrap().len(), eq 1);
+        for n in 0..1 {
+            assert_that!(unbounded_data.entries().unwrap().get(n).data_1(), eq 44);
+            assert_that!(unbounded_data.entries().unwrap().get(n).data_2(), eq 55);
+        }
+    }
 }

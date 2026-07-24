@@ -548,7 +548,7 @@ impl<
     /// # let publisher = service.publisher_builder().create()?;
     ///
     /// let mut sample = publisher.loan_slice(1)?;
-    /// *sample.payload_mut()[0] = 4567;
+    /// sample.payload_mut()[0] = 4567;
     ///
     /// # Ok(())
     /// # }

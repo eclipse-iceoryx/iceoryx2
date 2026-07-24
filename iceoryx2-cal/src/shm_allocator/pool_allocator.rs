@@ -65,7 +65,7 @@ impl PoolAllocator {
 
     /// # Safety
     ///
-    ///  * provided [`PointerOffset`] must be allocated with [`PoolAllocator::allocate()`]
+    ///  * provided [`PointerOffset`] must be allocated with [`BaseAllocator::allocate()`]
     pub unsafe fn deallocate_bucket(&self, offset: PointerOffset) {
         self.number_of_used_buckets.fetch_sub(1, Ordering::Relaxed);
         unsafe {
