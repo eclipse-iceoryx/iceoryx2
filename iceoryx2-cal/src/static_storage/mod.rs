@@ -147,6 +147,9 @@ pub trait StaticStorage:
     type Locked: StaticStorageLocked<Self>;
     type View: StaticStorageView;
 
+    /// Returns a [`StaticStorageView`] to the [`StaticStorage`].
+    fn view(&self) -> &Self::View;
+
     /// Releases the ownership of the static storage. When the object goes out of scope the
     /// static storage is no longer removed.
     fn release_ownership(&self);

@@ -315,6 +315,10 @@ impl StaticStorage for Storage {
     type Locked = Locked;
     type View = StorageView;
 
+    fn view(&self) -> &Self::View {
+        &self.view
+    }
+
     fn release_ownership(&self) {
         self.has_ownership.store(false, Ordering::Relaxed);
     }

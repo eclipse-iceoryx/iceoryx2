@@ -42,6 +42,7 @@
 extern crate alloc;
 use alloc::sync::Arc;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
+use iceoryx2_cal::static_storage::StaticStorage;
 
 use super::nodes;
 use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
@@ -219,7 +220,10 @@ impl<Service: service::Service, Payload, UserHeader: Debug + ZeroCopySend>
     PortFactory<Service, Flatbuffer<Payload>, UserHeader>
 {
     /// Returns the [`StaticStorage`](iceoryx2_cal::static_storage::StaticStorage) that contains the type definition.
-    pub fn type_definition(&self) -> Option<&Service::StaticStorage> {
-        self.service.additional_resource().type_definition()
+    pub fn type_definition(&self) -> Option<&<Service::StaticStorage as StaticStorage>::View> {
+        self.service
+            .additional_resource()
+            .type_definition()
+            .map(|v| v.view())
     }
 }
