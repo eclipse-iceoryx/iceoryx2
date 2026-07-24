@@ -11,14 +11,3 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [dependencies]
-
-[dev-dependencies]
-iceoryx2-bb-elementary-traits-tests-common = { workspace = true, features = ["std"] }
-iceoryx2-bb-loggers = { workspace = true, features = ["std"] }
-iceoryx2-bb-testing = { workspace = true, features = ["std"] }
-iceoryx2-bb-testing-macros = { workspace = true, features = ["std"] }
-
-[[test]]
-name = "iceoryx2-bb-elementary-traits-tests"
-path = "tests/tests.rs"
-harness = false
