@@ -42,6 +42,7 @@ auto main() -> int {
 
     auto service = node.service_builder(ServiceName::create("My/Flatbuffer/Service").value())
                        .publish_subscribe<Flatbuffer<Example::UnboundedData>>()
+                       .flatbuffer_schema_path(bb::FilePath::create("/path/to/UnboundedData/schema/file.fbs").value())
                        .user_header<uint64_t>()
                        .open_or_create()
                        .value();
@@ -54,9 +55,9 @@ auto main() -> int {
 
         auto sample = publisher.loan_uninit().value();
 
-        //auto initialized_sample = sample.write_payload(1);
+        // auto initialized_sample = sample.write_payload(1);
 
-        //send(std::move(initialized_sample)).has_value();
+        // send(std::move(initialized_sample)).has_value();
 
         std::cout << "Send sample " << counter << "..." << std::endl;
     }

@@ -23,12 +23,12 @@
 #include "iox2/custom_payload_marker.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/internal/service_builder_internal.hpp"
+#include "iox2/marker.hpp"
 #include "iox2/message_type_details.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/port_factory_publish_subscribe.hpp"
 #include "iox2/service_builder_publish_subscribe_error.hpp"
 #include "iox2/service_type.hpp"
-#include "iox2/type_name.hpp"
 #include "iox2/type_variant.hpp"
 
 #include <cstring>
@@ -141,6 +141,8 @@ class ServiceBuilderPublishSubscribe {
 #endif
 
   public:
+    auto flatbuffer_schema_path(const bb::FilePath& value) && -> ServiceBuilderPublishSubscribe<Payload, UserHeader, S>&&;
+
     /// Sets the user header type of the [`Service`].
     template <typename NewHeader>
     auto user_header() && -> ServiceBuilderPublishSubscribe<Payload, NewHeader, S>&&;
@@ -328,6 +330,16 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::
     // required here since we just change the template header type but the builder structure stays the same
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     return std::move(*reinterpret_cast<ServiceBuilderPublishSubscribe<Payload, NewHeader, S>*>(this));
+}
+
+
+template <typename Payload, typename UserHeader, ServiceType S>
+inline auto
+ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::flatbuffer_schema_path(const bb::FilePath& value) && -> ServiceBuilderPublishSubscribe<Payload, UserHeader, S>&& {
+    static_assert(has_flatbuffer_marker<Payload>(), "The method flatbuffer_schema_path can only be called when using 'Flatbuffer<T>' as payload.");
+
+    iox2_service_builder_pub_sub_set_flatbuffer_schema_path(&m_handle, value.as_string().unchecked_access().c_str());
+    return std::move(*this);
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>

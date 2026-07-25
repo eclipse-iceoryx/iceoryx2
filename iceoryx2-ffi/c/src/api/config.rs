@@ -912,7 +912,8 @@ pub unsafe extern "C" fn iox2_config_global_service_flatbuffer_schema_path(
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`] or a nullptr.
-/// * `value` - A valid path
+/// * `value` - A valid null-terminated string the corresponds to a valid path
+///
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_config_global_service_set_flatbuffer_schema_path(
     handle: iox2_config_h_ref,

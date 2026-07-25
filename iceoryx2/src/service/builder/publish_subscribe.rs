@@ -806,6 +806,12 @@ impl<UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
     Builder<[CustomPayloadMarker], UserHeader, ServiceType>
 {
     #[doc(hidden)]
+    pub unsafe fn __internal_flatbuffer_schema_path(mut self, path: &FilePath) -> Self {
+        self.flatbuffer_schema_path = Some(*path);
+        self
+    }
+
+    #[doc(hidden)]
     pub unsafe fn __internal_set_payload_type_details(mut self, value: &TypeDetail) -> Self {
         self.override_payload_type = Some(*value);
         self
