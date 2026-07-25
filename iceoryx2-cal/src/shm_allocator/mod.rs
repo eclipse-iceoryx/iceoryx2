@@ -18,8 +18,10 @@ use core::{alloc::Layout, fmt::Debug, ptr::NonNull};
 
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, AllocationGrowError};
-use iceoryx2_bb_elementary_traits::{allocator::Allocate, zero_copy_send::ZeroCopySend};
-use iceoryx2_bb_memory::pool_allocator::{ContentPlacement, Deallocate, Grow};
+use iceoryx2_bb_elementary_traits::{
+    allocator::{Allocate, ContentPlacement, Deallocate, Grow},
+    zero_copy_send::ZeroCopySend,
+};
 pub use pointer_offset::*;
 
 /// Trait that identifies a configuration of a [`ShmAllocator`].

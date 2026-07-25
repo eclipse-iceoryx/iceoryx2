@@ -13,8 +13,9 @@
 use alloc::boxed::Box;
 use core::{alloc::Layout, ptr::NonNull};
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
-use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
-use iceoryx2_bb_memory::{bump_allocator::Allocate, pool_allocator::Grow};
+use iceoryx2_bb_elementary_traits::allocator::{
+    Allocate, AllocationGrowError, ContentPlacement, Grow,
+};
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 use iceoryx2_cal::shm_allocator::{PointerOffset, ShmAllocator, bump_allocator::*};
@@ -275,7 +276,7 @@ fn growing_chunk_larger_than_available_memory_fails() {
             .grow(offset, old_layout, new_layout, ContentPlacement::Back)
     };
 
-    assert_that!(offset.err(), eq Some(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::OutOfMemory));
+    assert_that!(offset.err(), eq Some(AllocationGrowError::OutOfMemory));
 }
 
 #[test]
@@ -291,7 +292,7 @@ fn growing_and_increasing_alignment_fails() {
             .grow(offset, old_layout, new_layout, ContentPlacement::Back)
     };
 
-    assert_that!(offset.err(), eq Some(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::AlignmentFailure));
+    assert_that!(offset.err(), eq Some(AllocationGrowError::AlignmentFailure));
 }
 
 #[test]
@@ -307,7 +308,7 @@ fn growing_and_decreasing_size_fails() {
             .grow(offset, old_layout, new_layout, ContentPlacement::Back)
     };
 
-    assert_that!(offset.err(), eq Some(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::GrowWouldShrink));
+    assert_that!(offset.err(), eq Some(AllocationGrowError::GrowWouldShrink));
 }
 
 #[test]

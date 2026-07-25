@@ -18,9 +18,8 @@ pub mod shm_allocator_trait {
     use alloc::collections::btree_set::BTreeSet;
     use core::{alloc::Layout, ptr::NonNull};
     use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
-    use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
-    use iceoryx2_bb_memory::bump_allocator::{Allocate, BumpAllocator};
-    use iceoryx2_bb_memory::pool_allocator::{Deallocate, Grow};
+    use iceoryx2_bb_elementary_traits::allocator::{Allocate, ContentPlacement, Deallocate, Grow};
+    use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::mutex::{Mutex, MutexBuilder, MutexHandle};
     use iceoryx2_bb_testing::assert_that;
@@ -359,7 +358,7 @@ pub mod shm_allocator_trait {
                 .grow(offset, old_layout, new_layout, ContentPlacement::Back)
         };
 
-        assert_that!(offset.err(), eq Some(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::OutOfMemory));
+        assert_that!(offset.err(), eq Some(AllocationGrowError::OutOfMemory));
     }
 
     #[conformance_test]
@@ -378,6 +377,6 @@ pub mod shm_allocator_trait {
                 .grow(offset, old_layout, new_layout, ContentPlacement::Back)
         };
 
-        assert_that!(offset.err(), eq Some(iceoryx2_bb_memory::pool_allocator::AllocationGrowError::GrowWouldShrink));
+        assert_that!(offset.err(), eq Some(AllocationGrowError::GrowWouldShrink));
     }
 }

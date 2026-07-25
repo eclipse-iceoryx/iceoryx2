@@ -27,11 +27,10 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::slotmap::{SlotMap, SlotMapKey};
 use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
-use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
-use iceoryx2_bb_elementary_traits::allocator::{AllocationError, AllocationGrowError};
+use iceoryx2_bb_elementary_traits::allocator::{
+    Allocate, AllocationError, AllocationGrowError, ContentPlacement, Deallocate, Grow,
+};
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-use iceoryx2_bb_memory::bump_allocator::Allocate;
-use iceoryx2_bb_memory::pool_allocator::{Deallocate, Grow};
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
@@ -672,7 +671,7 @@ where
             Ok(shm) => shm,
             Err(e) => {
                 fail!(from self, with AllocationError::OutOfMemory,
-                    "{msg} and therefore no new memory can be acquired. [{e:?}]");
+                    "{msg} {:?} to store the additional requested memory therefore the instance is out-of-memory. [{e:?}]", layout);
             }
         };
 

@@ -66,9 +66,12 @@ use core::{fmt::Debug, time::Duration};
 
 pub use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
-use iceoryx2_bb_elementary_traits::{pointer::Pointer, testing::abandonable::Abandonable};
+use iceoryx2_bb_elementary_traits::{
+    allocator::{Allocation, Deallocate, Grow},
+    pointer::Pointer,
+    testing::abandonable::Abandonable,
+};
 use iceoryx2_bb_memory::bump_allocator::Allocate;
-use iceoryx2_bb_memory::pool_allocator::{Allocation, Deallocate, Grow};
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::*;
 use pool_allocator::PoolAllocator;

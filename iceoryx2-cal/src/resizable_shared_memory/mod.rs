@@ -98,9 +98,8 @@ use core::fmt::Debug;
 use core::time::Duration;
 
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
+use iceoryx2_bb_elementary_traits::allocator::{Allocate, Deallocate, Grow};
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-use iceoryx2_bb_memory::bump_allocator::Allocate;
-use iceoryx2_bb_memory::pool_allocator::{Deallocate, Grow};
 use iceoryx2_bb_posix::file::AccessMode;
 
 use crate::named_concept::*;
