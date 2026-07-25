@@ -96,7 +96,14 @@ impl BumpAllocator {
         self.full_memory_size
     }
 
-    pub fn reset(&self) {
+    /// Resets the allocator and frees all allocated memory. When previously allocated
+    /// memory is used after this call it will cause undefined behavior.
+    ///
+    /// # Safety
+    ///
+    /// * ensure that all previously allocated memory is no longer in use after this call
+    ///
+    pub unsafe fn reset(&self) {
         self.addr_next_free_memory.store(0, Ordering::Relaxed);
     }
 }

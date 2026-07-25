@@ -82,6 +82,11 @@ impl core::fmt::Display for AllocationShrinkError {
 
 impl core::error::Error for AllocationShrinkError {}
 
+/// This is a marker trait that identifies the elements returned by an allocator. Not every allocator
+/// manages memory that it can use for reading or writing. For instance cuda memory can only be written
+/// to by using the cuda API.
+/// To address this, the [`AllocatorToken`] is introduced. If an allocator manages directly read- and
+/// writable memory it can use a [`Pointer`](crate::pointer::Pointer) as [`AllocatorToken`].
 pub trait AllocatorToken {}
 
 /// Defines the position of the existing content when the allocator grows the memory.
@@ -102,7 +107,7 @@ pub trait BaseAllocator<P: AllocatorToken> {
 /// An allocator that allows also deallocation. A bump allocator for instance does
 /// not fall into this category.
 pub trait Dealloc<P: AllocatorToken> {
-    /// Releases an previously allocated chunk of memory.
+    /// Releases a previously allocated chunk of memory.
     ///
     /// # Safety
     ///
@@ -138,7 +143,7 @@ pub trait ReallocGrow<P: AllocatorToken> {
 
 /// Allocator that allows shrinking a previously allocated memory chunk.
 pub trait ReallocShrink<P: AllocatorToken> {
-    /// Decreases the size of an previously allocated chunk of memory. If the size increases it
+    /// Decreases the size of a previously allocated chunk of memory. If the size increases it
     /// fails.
     ///
     /// # Safety

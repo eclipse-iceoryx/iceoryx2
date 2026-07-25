@@ -143,3 +143,45 @@ pub fn allocating_with_different_alignments_works() {
         assert_that!(sample_addr, mod i[1], is 0);
     }
 }
+
+#[test]
+pub fn after_reset_allocating_all_memory_works() {
+    let memory = [0u8; 8192];
+    let sut = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
+
+    let number_of_samples = 8;
+    let sample_size = 8192 / number_of_samples;
+    for _ in 0..number_of_samples {
+        let sample = sut.allocate(unsafe { Layout::from_size_align_unchecked(sample_size, 1) });
+        assert_that!(sample, is_ok);
+    }
+
+    unsafe {
+        sut.reset();
+    }
+
+    for _ in 0..number_of_samples {
+        let sample = sut.allocate(unsafe { Layout::from_size_align_unchecked(sample_size, 1) });
+        assert_that!(sample, is_ok);
+    }
+}
+
+#[test]
+pub fn reset_releases_everything() {
+    let memory = [0u8; 8192];
+    let start_position: *const u8 = &memory[3] as *const _;
+    const MEM_SIZE: usize = 128;
+    const MEM_ALIGN: usize = 1;
+    let sut = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[3]), memory.len() - 3);
+
+    let layout = Layout::from_size_align(MEM_SIZE, MEM_ALIGN).unwrap();
+    let _memory = sut.allocate(layout).unwrap();
+
+    unsafe { sut.reset() };
+
+    let ptr = sut
+        .allocate(Layout::from_size_align(MEM_SIZE, MEM_ALIGN).unwrap())
+        .unwrap();
+
+    assert_that!(ptr.as_ptr().cast_const(), eq start_position);
+}

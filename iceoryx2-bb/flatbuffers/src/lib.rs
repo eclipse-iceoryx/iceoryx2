@@ -16,7 +16,7 @@
 /// Workaround to implement [`core::error::Error`] for flatbuffer error enums that do not implement them
 /// in a `no_std` environment
 pub mod flatbuffer_error;
-/// Resizable memory that can be combined with allocators to provide a allocator backend for flatbuffers.
+/// Resizable memory that can be combined with an allocator to provide a allocator backend for flatbuffers.
 pub mod resizable_memory;
 /// Schema file finder.
 pub mod schema_finder;
