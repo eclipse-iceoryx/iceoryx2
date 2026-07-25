@@ -103,7 +103,7 @@ use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_pointer::RelocatablePointer;
-use iceoryx2_bb_elementary_traits::allocator::{AllocationError, Allocate};
+use iceoryx2_bb_elementary_traits::allocator::{Allocate, AllocationError};
 use iceoryx2_bb_elementary_traits::pointer::Pointer;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;

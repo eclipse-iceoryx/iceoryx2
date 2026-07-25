@@ -14,7 +14,7 @@
 
 use core::ptr::NonNull;
 
-use crate::allocator::{AllocationError, Allocate};
+use crate::allocator::{Allocate, AllocationError};
 
 /// Describes a container which can shared between processes. Since the shared memory is often
 /// mapped at a different virtual memory position the underlying constructs must be relocatable in

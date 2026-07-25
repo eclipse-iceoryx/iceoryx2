@@ -382,7 +382,7 @@ impl<
         unsafe { &mut *self.chunk.user_header_mut_ptr().cast() }
     }
 
-    /// Send a previously loaned [`crate::port::publisher::Publisher::loan_uninit()`] or
+    /// Send a [`SampleMut`], previously loaned with [`crate::port::publisher::Publisher::loan_uninit()`] or
     /// [`crate::port::publisher::Publisher::loan()`] [`SampleMut`] to all connected
     /// [`crate::port::subscriber::Subscriber`]s of the service.
     ///

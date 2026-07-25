@@ -21,11 +21,13 @@ use alloc::vec::Vec;
 use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
+use iceoryx2_bb_elementary_traits::allocator::{
+    AllocationError, AllocationGrowError, ContentPlacement, Grow,
+};
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-use iceoryx2_bb_memory::pool_allocator::Grow;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shared_memory::ShmPointer;
-use iceoryx2_cal::shm_allocator::{AllocationError, AllocationGrowError, PointerOffset};
+use iceoryx2_cal::shm_allocator::PointerOffset;
 use iceoryx2_cal::zero_copy_connection::{
     BackpressureToReceiverAction, ChannelId, ChannelState, ZeroCopyConnection,
     ZeroCopyConnectionBuilder, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySendError,
@@ -158,7 +160,7 @@ impl<Service: service::Service, Resource: ServiceResource> Grow<ShmPointer>
         ptr: ShmPointer,
         old_layout: Layout,
         new_layout: Layout,
-        content_placement: iceoryx2_bb_memory::pool_allocator::ContentPlacement,
+        content_placement: ContentPlacement,
     ) -> Result<ShmPointer, AllocationGrowError> {
         let new_ptr = unsafe {
             self.data_segment

@@ -108,6 +108,9 @@ use crate::{
     service::{header::publish_subscribe::Header, marker::Flatbuffer},
 };
 
+/// The memory used inside the [`FlatBufferBuilder`].
+pub type FlatbufferMemory<Service> = ResizableMemory<ShmPointer, SampleMutSharedState<Service>>;
+
 /// Acquired by a [`crate::port::publisher::Publisher`] via
 ///  * [`crate::port::publisher::Publisher::loan_uninit()`]
 ///  * [`crate::port::publisher::Publisher::loan_slice_uninit()`]
@@ -122,9 +125,7 @@ pub struct SampleMutUninit<
 > {
     shared_state: SampleMutSharedState<Service>,
     chunk: ChunkMut,
-    flatbuffer_builder: Option<
-        FlatBufferBuilder<'static, ResizableMemory<ShmPointer, SampleMutSharedState<Service>>>,
-    >,
+    flatbuffer_builder: Option<FlatBufferBuilder<'static, FlatbufferMemory<Service>>>,
     _payload: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
 }
@@ -138,9 +139,6 @@ where
     Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>: Send + Sync,
 {
 }
-
-/// The memory used inside the [`FlatBufferBuilder`].
-pub type FlatbufferMemory<Service> = ResizableMemory<ShmPointer, SampleMutSharedState<Service>>;
 
 impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
     SampleMutUninit<Service, Flatbuffer<Payload>, UserHeader>

@@ -46,7 +46,7 @@ use iceoryx2_bb_elementary_traits::pointer::Pointer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
 
-pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, Allocate};
+pub use iceoryx2_bb_elementary_traits::allocator::{Allocate, AllocationError};
 
 #[derive(Debug)]
 #[repr(C)]

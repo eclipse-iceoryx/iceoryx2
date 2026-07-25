@@ -15,9 +15,11 @@ use core::ptr::NonNull;
 
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
+use iceoryx2_bb_elementary_traits::allocator::{
+    Allocate, AllocationGrowError, ContentPlacement, Grow,
+};
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_memory::{bump_allocator::Allocate, pool_allocator::Grow};
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::{
@@ -91,8 +93,8 @@ impl<Service: service::Service> Grow<ShmPointer> for DataSegment<Service> {
         ptr: ShmPointer,
         old_layout: Layout,
         new_layout: Layout,
-        content_placement: iceoryx2_bb_memory::pool_allocator::ContentPlacement,
-    ) -> Result<ShmPointer, shm_allocator::AllocationGrowError> {
+        content_placement: ContentPlacement,
+    ) -> Result<ShmPointer, AllocationGrowError> {
         let msg = "Unable to grow memory cell from the data segment";
         match &self.memory {
             MemoryType::Static(memory) => Ok(fail!(from self,

@@ -56,6 +56,13 @@ pub struct SharedMemorySetupHint<Config: ShmAllocatorConfig> {
     pub config: Config,
 }
 
+/// Marker trait for an initialized shm allocator. Since the [`ShmAllocator`] must be initialized
+/// in place, every method on it is `unsafe` since the user must call [`ShmAllocator::init()`]
+/// before using it, otherwise it is undefined behavior.
+///
+/// This changes the allocator interface so that every method becomes unsafe. To prevent this, the
+/// `unsafe` [`ShmAllocator::assume_init()`] method ensures that the contract is satisfied and returns
+/// a reference to an object with a normal allocator interface.
 pub trait InitializedShmAllocator<'shm_allocator>:
     Allocate<PointerOffset> + Deallocate<PointerOffset> + Grow<PointerOffset>
 {

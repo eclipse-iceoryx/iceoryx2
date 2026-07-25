@@ -17,9 +17,7 @@ use core::{
 };
 
 use iceoryx2_bb_elementary::{enum_gen, relocatable_pointer::Pointer};
-use iceoryx2_bb_elementary_traits::allocator::{
-    AllocationGrowError, ContentPlacement, Grow,
-};
+use iceoryx2_bb_elementary_traits::allocator::{AllocationGrowError, ContentPlacement, Grow};
 use iceoryx2_log::fail;
 
 pub use flatbuffers::Allocator;
