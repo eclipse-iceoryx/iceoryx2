@@ -80,6 +80,10 @@ class Node {
 class Service {
   public:
     /// The directory in which all service files are stored
+    auto flatbuffer_schema_path() && -> bb::Optional<const char*>;
+    /// Set the directory in which all service files are stored
+    void set_flatbuffer_schema_path(bb::Optional<bb::Path> value) &&;
+    /// The directory in which all service files are stored
     auto directory() && -> const char*;
     /// Set the directory in which all service files are stored
     void set_directory(const iox2::bb::Path& value) &&;
