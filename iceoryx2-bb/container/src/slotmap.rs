@@ -369,7 +369,7 @@ impl<T> RelocatableContainer for RelocatableSlotMap<T> {
     }
 
     unsafe fn init<
-        Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNull<u8>>,
+        Allocator: iceoryx2_bb_elementary_traits::allocator::Allocate<NonNull<u8>>,
     >(
         &mut self,
         allocator: &Allocator,

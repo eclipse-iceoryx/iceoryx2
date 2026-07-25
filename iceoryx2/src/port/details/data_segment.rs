@@ -17,7 +17,7 @@ use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_memory::{bump_allocator::BaseAllocator, pool_allocator::ReallocGrow};
+use iceoryx2_bb_memory::{bump_allocator::Allocate, pool_allocator::Grow};
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::{
@@ -85,7 +85,7 @@ impl<Service: service::Service> Abandonable for DataSegment<Service> {
     }
 }
 
-impl<Service: service::Service> ReallocGrow<ShmPointer> for DataSegment<Service> {
+impl<Service: service::Service> Grow<ShmPointer> for DataSegment<Service> {
     unsafe fn grow(
         &self,
         ptr: ShmPointer,

@@ -30,8 +30,8 @@ use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, AllocationGrowError};
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-use iceoryx2_bb_memory::bump_allocator::BaseAllocator;
-use iceoryx2_bb_memory::pool_allocator::{Dealloc, ReallocGrow};
+use iceoryx2_bb_memory::bump_allocator::Allocate;
+use iceoryx2_bb_memory::pool_allocator::{Deallocate, Grow};
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
@@ -790,7 +790,7 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> BaseAllocator<ShmPointer>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Allocate<ShmPointer>
     for DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,
@@ -821,7 +821,7 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> ReallocGrow<ShmPointer>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Grow<ShmPointer>
     for DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,
@@ -896,7 +896,7 @@ where
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Dealloc<ShmPointer>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> Deallocate<ShmPointer>
     for DynamicMemory<Allocator, Shm>
 where
     Shm::Builder: Debug,

@@ -37,7 +37,7 @@ impl HeapAllocator {
     }
 }
 
-impl BaseAllocator<NonNull<u8>> for HeapAllocator {
+impl Allocate<NonNull<u8>> for HeapAllocator {
     fn allocate(&self, layout: Layout) -> Result<NonNull<u8>, AllocationError> {
         let mut ptr = fail!(from self, when heap::allocate(layout),
                 "Failed to allocate {} bytes with an alignment of {}.", layout.size(), layout.align());
@@ -45,7 +45,7 @@ impl BaseAllocator<NonNull<u8>> for HeapAllocator {
     }
 }
 
-impl Dealloc<NonNull<u8>> for HeapAllocator {
+impl Deallocate<NonNull<u8>> for HeapAllocator {
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
         unsafe {
             heap::deallocate(ptr, layout);
@@ -53,7 +53,7 @@ impl Dealloc<NonNull<u8>> for HeapAllocator {
     }
 }
 
-impl ReallocGrow<NonNull<u8>> for HeapAllocator {
+impl Grow<NonNull<u8>> for HeapAllocator {
     unsafe fn grow(
         &self,
         ptr: NonNull<u8>,
@@ -77,7 +77,7 @@ impl ReallocGrow<NonNull<u8>> for HeapAllocator {
     }
 }
 
-impl ReallocShrink<NonNull<u8>> for HeapAllocator {
+impl Shrink<NonNull<u8>> for HeapAllocator {
     unsafe fn shrink(
         &self,
         ptr: NonNull<u8>,
@@ -100,4 +100,4 @@ impl ReallocShrink<NonNull<u8>> for HeapAllocator {
     }
 }
 
-impl ZeroableAllocator<NonNull<u8>> for HeapAllocator {}
+impl AllocateZeroed<NonNull<u8>> for HeapAllocator {}

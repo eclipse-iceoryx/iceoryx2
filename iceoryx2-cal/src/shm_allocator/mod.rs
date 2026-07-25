@@ -18,8 +18,8 @@ use core::{alloc::Layout, fmt::Debug, ptr::NonNull};
 
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, AllocationGrowError};
-use iceoryx2_bb_elementary_traits::{allocator::BaseAllocator, zero_copy_send::ZeroCopySend};
-use iceoryx2_bb_memory::pool_allocator::{ContentPlacement, Dealloc, ReallocGrow};
+use iceoryx2_bb_elementary_traits::{allocator::Allocate, zero_copy_send::ZeroCopySend};
+use iceoryx2_bb_memory::pool_allocator::{ContentPlacement, Deallocate, Grow};
 pub use pointer_offset::*;
 
 /// Trait that identifies a configuration of a [`ShmAllocator`].
@@ -55,7 +55,7 @@ pub struct SharedMemorySetupHint<Config: ShmAllocatorConfig> {
 }
 
 pub trait InitializedShmAllocator<'shm_allocator>:
-    BaseAllocator<PointerOffset> + Dealloc<PointerOffset> + ReallocGrow<PointerOffset>
+    Allocate<PointerOffset> + Deallocate<PointerOffset> + Grow<PointerOffset>
 {
 }
 
@@ -114,7 +114,7 @@ pub trait ShmAllocator: Debug + Send + Sync + 'static + ZeroCopySend {
     /// * must be called only once
     /// * must be called before any other method is called
     ///
-    unsafe fn init<Allocator: BaseAllocator<NonNull<u8>>>(
+    unsafe fn init<Allocator: Allocate<NonNull<u8>>>(
         &mut self,
         mgmt_allocator: &Allocator,
     ) -> Result<(), ShmAllocatorInitError>;

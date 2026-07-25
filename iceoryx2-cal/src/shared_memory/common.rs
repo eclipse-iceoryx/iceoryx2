@@ -15,7 +15,7 @@ use core::mem::MaybeUninit;
 use core::ptr::NonNull;
 use core::{alloc::Layout, fmt::Debug};
 
-use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
+use iceoryx2_bb_elementary_traits::allocator::Allocate;
 use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
@@ -465,7 +465,7 @@ pub mod details {
     }
 
     impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
-        ReallocGrow<ShmPointer> for Memory<Allocator, Storage>
+        Grow<ShmPointer> for Memory<Allocator, Storage>
     {
         unsafe fn grow(
             &self,
@@ -491,7 +491,7 @@ pub mod details {
     }
 
     impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
-        BaseAllocator<ShmPointer> for Memory<Allocator, Storage>
+        Allocate<ShmPointer> for Memory<Allocator, Storage>
     {
         fn allocate(&self, layout: core::alloc::Layout) -> Result<ShmPointer, AllocationError> {
             let offset = fail!(from self, when unsafe { self.storage.get().allocator.assume_init_ref().assume_init().allocate(layout) },
@@ -505,7 +505,7 @@ pub mod details {
     }
 
     impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
-        Dealloc<ShmPointer> for Memory<Allocator, Storage>
+        Deallocate<ShmPointer> for Memory<Allocator, Storage>
     {
         unsafe fn deallocate(&self, ptr: ShmPointer, layout: core::alloc::Layout) {
             unsafe {

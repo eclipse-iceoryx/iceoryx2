@@ -413,9 +413,7 @@ impl<K: Eq, V: Clone> RelocatableContainer for RelocatableFlatMap<K, V> {
         }
     }
 
-    unsafe fn init<
-        Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNull<u8>>,
-    >(
+    unsafe fn init<Allocator: iceoryx2_bb_elementary_traits::allocator::Allocate<NonNull<u8>>>(
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {

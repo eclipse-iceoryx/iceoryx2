@@ -22,7 +22,7 @@ use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-use iceoryx2_bb_memory::pool_allocator::ReallocGrow;
+use iceoryx2_bb_memory::pool_allocator::Grow;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shared_memory::ShmPointer;
 use iceoryx2_cal::shm_allocator::{AllocationError, AllocationGrowError, PointerOffset};
@@ -150,7 +150,7 @@ pub(crate) struct Sender<Service: service::Service, Resource: ServiceResource> {
     pub(crate) initial_channel_state: ChannelState,
 }
 
-impl<Service: service::Service, Resource: ServiceResource> ReallocGrow<ShmPointer>
+impl<Service: service::Service, Resource: ServiceResource> Grow<ShmPointer>
     for Sender<Service, Resource>
 {
     unsafe fn grow(

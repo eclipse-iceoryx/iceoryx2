@@ -99,8 +99,8 @@ use core::time::Duration;
 
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
-use iceoryx2_bb_memory::bump_allocator::BaseAllocator;
-use iceoryx2_bb_memory::pool_allocator::{Dealloc, ReallocGrow};
+use iceoryx2_bb_memory::bump_allocator::Allocate;
+use iceoryx2_bb_memory::pool_allocator::{Deallocate, Grow};
 use iceoryx2_bb_posix::file::AccessMode;
 
 use crate::named_concept::*;
@@ -199,9 +199,9 @@ pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Alloc
     + Debug
     + Send
     + Abandonable
-    + BaseAllocator<ShmPointer>
-    + Dealloc<ShmPointer>
-    + ReallocGrow<ShmPointer>
+    + Allocate<ShmPointer>
+    + Deallocate<ShmPointer>
+    + Grow<ShmPointer>
 {
     /// Type alias to the [`ResizableSharedMemoryViewBuilder`] to open a
     /// [`ResizableSharedMemoryView`] to an existing [`ResizableSharedMemory`].

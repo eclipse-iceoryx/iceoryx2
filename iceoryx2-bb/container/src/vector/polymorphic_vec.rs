@@ -43,7 +43,7 @@ use core::{
 };
 
 use iceoryx2_bb_elementary_traits::{
-    allocator::{AllocationError, BaseAllocator, Dealloc},
+    allocator::{Allocate, AllocationError, Deallocate},
     pointer::Pointer,
 };
 use iceoryx2_log::fail;
@@ -54,14 +54,14 @@ use crate::vector::internal;
 /// Runtime fixed-size vector variant with a polymorphic allocator, meaning an
 /// allocator with a state can be attached to the vector instead of using a
 /// stateless allocator like the heap-allocator.
-pub struct PolymorphicVec<'a, T, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> {
+pub struct PolymorphicVec<'a, T, Allocator: Allocate<NonNull<u8>> + Deallocate<NonNull<u8>>> {
     data_ptr: *mut MaybeUninit<T>,
     len: u64,
     capacity: u64,
     allocator: &'a Allocator,
 }
 
-impl<T: Debug, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Debug
+impl<T: Debug, Allocator: Allocate<NonNull<u8>> + Deallocate<NonNull<u8>>> Debug
     for PolymorphicVec<'_, T, Allocator>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -86,7 +86,7 @@ impl<T: Debug, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Deb
     }
 }
 
-impl<T, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Drop
+impl<T, Allocator: Allocate<NonNull<u8>> + Deallocate<NonNull<u8>>> Drop
     for PolymorphicVec<'_, T, Allocator>
 {
     fn drop(&mut self) {
@@ -101,7 +101,7 @@ impl<T, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Drop
     }
 }
 
-impl<T, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Deref
+impl<T, Allocator: Allocate<NonNull<u8>> + Deallocate<NonNull<u8>>> Deref
     for PolymorphicVec<'_, T, Allocator>
 {
     type Target = [T];
@@ -111,7 +111,7 @@ impl<T, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Deref
     }
 }
 
-impl<T, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> DerefMut
+impl<T, Allocator: Allocate<NonNull<u8>> + Deallocate<NonNull<u8>>> DerefMut
     for PolymorphicVec<'_, T, Allocator>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
@@ -119,7 +119,7 @@ impl<T, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> DerefMut
     }
 }
 
-impl<T: PartialEq, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> PartialEq
+impl<T: PartialEq, Allocator: Allocate<NonNull<u8>> + Deallocate<NonNull<u8>>> PartialEq
     for PolymorphicVec<'_, T, Allocator>
 {
     fn eq(&self, other: &Self) -> bool {
@@ -137,17 +137,17 @@ impl<T: PartialEq, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>>
     }
 }
 
-impl<T: Eq, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Eq
+impl<T: Eq, Allocator: Allocate<NonNull<u8>> + Deallocate<NonNull<u8>>> Eq
     for PolymorphicVec<'_, T, Allocator>
 {
 }
 
-unsafe impl<T: Send, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Send
+unsafe impl<T: Send, Allocator: Allocate<NonNull<u8>> + Deallocate<NonNull<u8>>> Send
     for PolymorphicVec<'_, T, Allocator>
 {
 }
 
-impl<'a, T, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>>
+impl<'a, T, Allocator: Allocate<NonNull<u8>> + Deallocate<NonNull<u8>>>
     PolymorphicVec<'a, T, Allocator>
 {
     /// Creates a new [`PolymorphicVec`].
@@ -192,7 +192,7 @@ impl<'a, T, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>>
     }
 }
 
-impl<T: Clone, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>>
+impl<T: Clone, Allocator: Allocate<NonNull<u8>> + Deallocate<NonNull<u8>>>
     PolymorphicVec<'_, T, Allocator>
 {
     /// Same as clone but it can fail when the required memory could not be
@@ -226,7 +226,7 @@ impl<T: Clone, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>>
     }
 }
 
-impl<T, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> internal::VectorView<T>
+impl<T, Allocator: Allocate<NonNull<u8>> + Deallocate<NonNull<u8>>> internal::VectorView<T>
     for PolymorphicVec<'_, T, Allocator>
 {
     fn data(&self) -> &[MaybeUninit<T>] {
@@ -242,7 +242,7 @@ impl<T, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> internal::
     }
 }
 
-impl<T, Allocator: BaseAllocator<NonNull<u8>> + Dealloc<NonNull<u8>>> Vector<T>
+impl<T, Allocator: Allocate<NonNull<u8>> + Deallocate<NonNull<u8>>> Vector<T>
     for PolymorphicVec<'_, T, Allocator>
 {
     fn capacity(&self) -> usize {

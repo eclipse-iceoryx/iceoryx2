@@ -14,9 +14,9 @@ use alloc::boxed::Box;
 use alloc::collections::btree_set::BTreeSet;
 use core::{alloc::Layout, ptr::NonNull};
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
-use iceoryx2_bb_memory::bump_allocator::BaseAllocator;
-use iceoryx2_bb_memory::pool_allocator::Dealloc;
-use iceoryx2_bb_memory::pool_allocator::ReallocGrow;
+use iceoryx2_bb_memory::bump_allocator::Allocate;
+use iceoryx2_bb_memory::pool_allocator::Deallocate;
+use iceoryx2_bb_memory::pool_allocator::Grow;
 
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;

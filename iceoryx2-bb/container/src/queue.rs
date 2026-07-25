@@ -125,7 +125,7 @@ use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::owning_pointer::{GenericOwningPointer, OwningPointer};
 use iceoryx2_bb_elementary::relocatable_pointer::{GenericRelocatablePointer, RelocatablePointer};
-use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
+use iceoryx2_bb_elementary_traits::allocator::{Allocate, AllocationError};
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary_traits::pointer::Pointer;
 use iceoryx2_bb_elementary_traits::pointer_family::PointerFamily;
@@ -241,7 +241,7 @@ impl<T> RelocatableContainer for RelocatableQueue<T> {
         }
     }
 
-    unsafe fn init<Allocator: BaseAllocator<NonNull<u8>>>(
+    unsafe fn init<Allocator: Allocate<NonNull<u8>>>(
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), AllocationError> {

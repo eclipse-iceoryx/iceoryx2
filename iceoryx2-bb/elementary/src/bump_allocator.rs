@@ -46,7 +46,7 @@ use iceoryx2_bb_elementary_traits::pointer::Pointer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
 
-pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
+pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, Allocate};
 
 #[derive(Debug)]
 #[repr(C)]
@@ -108,7 +108,7 @@ impl BumpAllocator {
     }
 }
 
-impl BaseAllocator<NonNull<u8>> for BumpAllocator {
+impl Allocate<NonNull<u8>> for BumpAllocator {
     fn allocate(&self, layout: core::alloc::Layout) -> Result<NonNull<u8>, AllocationError> {
         let msg = "Unable to allocate chunk with";
         let mut next_aligned_free_address;

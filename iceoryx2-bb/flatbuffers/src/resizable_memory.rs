@@ -18,7 +18,7 @@ use core::{
 
 use iceoryx2_bb_elementary::{enum_gen, relocatable_pointer::Pointer};
 use iceoryx2_bb_elementary_traits::allocator::{
-    AllocationGrowError, ContentPlacement, ReallocGrow,
+    AllocationGrowError, ContentPlacement, Grow,
 };
 use iceoryx2_log::fail;
 
@@ -64,7 +64,7 @@ impl<P: Pointer<u8>> ResizableMemoryBuilder<P> {
         self
     }
 
-    pub fn create<A: ReallocGrow<P>>(
+    pub fn create<A: Grow<P>>(
         self,
         allocatable: A,
     ) -> Result<ResizableMemory<P, A>, ResizableMemoryError> {
@@ -85,7 +85,7 @@ impl<P: Pointer<u8>> ResizableMemoryBuilder<P> {
     }
 }
 
-pub struct ResizableMemory<P: Pointer<u8>, A: ReallocGrow<P>> {
+pub struct ResizableMemory<P: Pointer<u8>, A: Grow<P>> {
     ptr: P,
     strategy: AllocationStrategy,
     allocatable: A,
@@ -93,7 +93,7 @@ pub struct ResizableMemory<P: Pointer<u8>, A: ReallocGrow<P>> {
     reserved_header_len: usize,
 }
 
-impl<P: Pointer<u8>, A: ReallocGrow<P>> Debug for ResizableMemory<P, A> {
+impl<P: Pointer<u8>, A: Grow<P>> Debug for ResizableMemory<P, A> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
@@ -108,7 +108,7 @@ impl<P: Pointer<u8>, A: ReallocGrow<P>> Debug for ResizableMemory<P, A> {
     }
 }
 
-impl<P: Pointer<u8>, A: ReallocGrow<P>> Deref for ResizableMemory<P, A> {
+impl<P: Pointer<u8>, A: Grow<P>> Deref for ResizableMemory<P, A> {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
@@ -118,7 +118,7 @@ impl<P: Pointer<u8>, A: ReallocGrow<P>> Deref for ResizableMemory<P, A> {
     }
 }
 
-impl<P: Pointer<u8>, A: ReallocGrow<P>> DerefMut for ResizableMemory<P, A> {
+impl<P: Pointer<u8>, A: Grow<P>> DerefMut for ResizableMemory<P, A> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe {
             core::slice::from_raw_parts_mut(
@@ -129,7 +129,7 @@ impl<P: Pointer<u8>, A: ReallocGrow<P>> DerefMut for ResizableMemory<P, A> {
     }
 }
 
-unsafe impl<P: Pointer<u8>, A: ReallocGrow<P>> Allocator for ResizableMemory<P, A> {
+unsafe impl<P: Pointer<u8>, A: Grow<P>> Allocator for ResizableMemory<P, A> {
     type Error = AllocationGrowError;
 
     fn grow_downwards(&mut self) -> Result<(), Self::Error> {

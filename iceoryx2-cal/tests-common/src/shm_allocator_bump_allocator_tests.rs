@@ -14,7 +14,7 @@ use alloc::boxed::Box;
 use core::{alloc::Layout, ptr::NonNull};
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
-use iceoryx2_bb_memory::{bump_allocator::BaseAllocator, pool_allocator::ReallocGrow};
+use iceoryx2_bb_memory::{bump_allocator::Allocate, pool_allocator::Grow};
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
 use iceoryx2_cal::shm_allocator::{PointerOffset, ShmAllocator, bump_allocator::*};

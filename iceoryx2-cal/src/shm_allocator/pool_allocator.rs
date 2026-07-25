@@ -19,10 +19,10 @@ use iceoryx2_bb_concurrency::atomic::AtomicUsize;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
-use iceoryx2_bb_elementary_traits::allocator::{AllocationGrowError, BaseAllocator};
+use iceoryx2_bb_elementary_traits::allocator::{Allocate, AllocationGrowError};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_memory::bump_allocator::AllocationError;
-use iceoryx2_bb_memory::pool_allocator::{Dealloc, ReallocGrow};
+use iceoryx2_bb_memory::pool_allocator::{Deallocate, Grow};
 use iceoryx2_log::fail;
 
 use super::{PointerOffset, SharedMemorySetupHint, ShmAllocatorInitError};
@@ -78,7 +78,7 @@ impl PoolAllocator {
 
 pub struct InitializedPoolAllocator<'shm_allocator>(&'shm_allocator PoolAllocator);
 
-impl<'shm_allocator> BaseAllocator<PointerOffset> for InitializedPoolAllocator<'shm_allocator> {
+impl<'shm_allocator> Allocate<PointerOffset> for InitializedPoolAllocator<'shm_allocator> {
     fn allocate(&self, layout: Layout) -> Result<PointerOffset, AllocationError> {
         let msg = "Unable to allocate memory";
         if layout.align() > self.0.max_alignment() {
@@ -97,7 +97,7 @@ impl<'shm_allocator> BaseAllocator<PointerOffset> for InitializedPoolAllocator<'
     }
 }
 
-impl<'shm_allocator> Dealloc<PointerOffset> for InitializedPoolAllocator<'shm_allocator> {
+impl<'shm_allocator> Deallocate<PointerOffset> for InitializedPoolAllocator<'shm_allocator> {
     unsafe fn deallocate(&self, ptr: PointerOffset, _layout: Layout) {
         unsafe {
             self.0.deallocate_bucket(ptr);
@@ -105,7 +105,7 @@ impl<'shm_allocator> Dealloc<PointerOffset> for InitializedPoolAllocator<'shm_al
     }
 }
 
-impl<'shm_allocator> ReallocGrow<PointerOffset> for InitializedPoolAllocator<'shm_allocator> {
+impl<'shm_allocator> Grow<PointerOffset> for InitializedPoolAllocator<'shm_allocator> {
     unsafe fn grow(
         &self,
         offset: PointerOffset,
@@ -266,7 +266,7 @@ impl ShmAllocator for PoolAllocator {
         self.allocator.max_alignment()
     }
 
-    unsafe fn init<Allocator: BaseAllocator<NonNull<u8>>>(
+    unsafe fn init<Allocator: Allocate<NonNull<u8>>>(
         &mut self,
         mgmt_allocator: &Allocator,
     ) -> Result<(), ShmAllocatorInitError> {

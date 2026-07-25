@@ -148,7 +148,7 @@ impl PoolAllocator {
     ///
     ///  * must be called exactly once before any other method can be called
     ///
-    pub unsafe fn init<Allocator: BaseAllocator<NonNull<u8>>>(
+    pub unsafe fn init<Allocator: Allocate<NonNull<u8>>>(
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), AllocationError> {
@@ -197,7 +197,7 @@ impl PoolAllocator {
     }
 }
 
-impl BaseAllocator<NonNull<u8>> for PoolAllocator {
+impl Allocate<NonNull<u8>> for PoolAllocator {
     fn allocate(&self, layout: Layout) -> Result<NonNull<u8>, AllocationError> {
         self.verify_init("allocate");
 
@@ -229,7 +229,7 @@ impl BaseAllocator<NonNull<u8>> for PoolAllocator {
     }
 }
 
-impl Dealloc<NonNull<u8>> for PoolAllocator {
+impl Deallocate<NonNull<u8>> for PoolAllocator {
     unsafe fn deallocate(&self, ptr: NonNull<u8>, _layout: Layout) {
         unsafe {
             self.deallocate_bucket(ptr);
@@ -237,7 +237,7 @@ impl Dealloc<NonNull<u8>> for PoolAllocator {
     }
 }
 
-impl ReallocGrow<NonNull<u8>> for PoolAllocator {
+impl Grow<NonNull<u8>> for PoolAllocator {
     /// always returns the input ptr on success but with an increased size
     unsafe fn grow(
         &self,
@@ -281,7 +281,7 @@ impl ReallocGrow<NonNull<u8>> for PoolAllocator {
     }
 }
 
-impl ReallocShrink<NonNull<u8>> for PoolAllocator {
+impl Shrink<NonNull<u8>> for PoolAllocator {
     unsafe fn shrink(
         &self,
         ptr: NonNull<u8>,
@@ -307,7 +307,7 @@ impl ReallocShrink<NonNull<u8>> for PoolAllocator {
     }
 }
 
-impl ZeroableAllocator<NonNull<u8>> for PoolAllocator {}
+impl AllocateZeroed<NonNull<u8>> for PoolAllocator {}
 
 #[derive(Debug)]
 #[repr(C)]
@@ -389,7 +389,7 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> FixedSizePoolAllocator<MAX_NUMBER_OF_BU
     }
 }
 
-impl<const MAX_NUMBER_OF_BUCKETS: usize> BaseAllocator<NonNull<u8>>
+impl<const MAX_NUMBER_OF_BUCKETS: usize> Allocate<NonNull<u8>>
     for FixedSizePoolAllocator<MAX_NUMBER_OF_BUCKETS>
 {
     fn allocate(&self, layout: Layout) -> Result<NonNull<u8>, AllocationError> {
@@ -397,7 +397,7 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> BaseAllocator<NonNull<u8>>
     }
 }
 
-impl<const MAX_NUMBER_OF_BUCKETS: usize> Dealloc<NonNull<u8>>
+impl<const MAX_NUMBER_OF_BUCKETS: usize> Deallocate<NonNull<u8>>
     for FixedSizePoolAllocator<MAX_NUMBER_OF_BUCKETS>
 {
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
@@ -407,7 +407,7 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> Dealloc<NonNull<u8>>
     }
 }
 
-impl<const MAX_NUMBER_OF_BUCKETS: usize> ReallocGrow<NonNull<u8>>
+impl<const MAX_NUMBER_OF_BUCKETS: usize> Grow<NonNull<u8>>
     for FixedSizePoolAllocator<MAX_NUMBER_OF_BUCKETS>
 {
     /// always returns the input ptr on success but with an increased size
@@ -425,7 +425,7 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> ReallocGrow<NonNull<u8>>
     }
 }
 
-impl<const MAX_NUMBER_OF_BUCKETS: usize> ReallocShrink<NonNull<u8>>
+impl<const MAX_NUMBER_OF_BUCKETS: usize> Shrink<NonNull<u8>>
     for FixedSizePoolAllocator<MAX_NUMBER_OF_BUCKETS>
 {
     unsafe fn shrink(
@@ -438,7 +438,7 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> ReallocShrink<NonNull<u8>>
     }
 }
 
-impl<const MAX_NUMBER_OF_BUCKETS: usize> ZeroableAllocator<NonNull<u8>>
+impl<const MAX_NUMBER_OF_BUCKETS: usize> AllocateZeroed<NonNull<u8>>
     for FixedSizePoolAllocator<MAX_NUMBER_OF_BUCKETS>
 {
 }

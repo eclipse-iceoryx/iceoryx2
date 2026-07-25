@@ -67,8 +67,8 @@ use core::{fmt::Debug, time::Duration};
 pub use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 use iceoryx2_bb_elementary_traits::{pointer::Pointer, testing::abandonable::Abandonable};
-use iceoryx2_bb_memory::bump_allocator::BaseAllocator;
-use iceoryx2_bb_memory::pool_allocator::{AllocatorToken, Dealloc, ReallocGrow};
+use iceoryx2_bb_memory::bump_allocator::Allocate;
+use iceoryx2_bb_memory::pool_allocator::{Allocation, Deallocate, Grow};
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_system_types::file_name::*;
 use pool_allocator::PoolAllocator;
@@ -120,7 +120,7 @@ pub struct ShmPointer {
     pub data_ptr: *mut u8,
 }
 
-impl AllocatorToken for ShmPointer {}
+impl Allocation for ShmPointer {}
 
 impl Pointer<u8> for ShmPointer {
     fn as_mut_ptr(&mut self) -> *mut u8 {
@@ -185,9 +185,9 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
     + details::SharedMemoryLowLevelAPI<Allocator>
     + Send
     + Abandonable
-    + BaseAllocator<ShmPointer>
-    + Dealloc<ShmPointer>
-    + ReallocGrow<ShmPointer>
+    + Allocate<ShmPointer>
+    + Deallocate<ShmPointer>
+    + Grow<ShmPointer>
 {
     type Builder: SharedMemoryBuilder<Allocator, Self>;
 

@@ -75,7 +75,7 @@ use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_flatbuffers::FlatbufferError;
-use iceoryx2_bb_memory::pool_allocator::ReallocGrow;
+use iceoryx2_bb_memory::pool_allocator::Grow;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::shared_memory::*;
 
@@ -139,7 +139,7 @@ impl<Service: crate::service::Service> SampleMutSharedState<Service> {
     }
 }
 
-impl<Service: crate::service::Service> ReallocGrow<ShmPointer> for SampleMutSharedState<Service> {
+impl<Service: crate::service::Service> Grow<ShmPointer> for SampleMutSharedState<Service> {
     unsafe fn grow(
         &self,
         ptr: ShmPointer,

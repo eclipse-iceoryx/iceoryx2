@@ -16,7 +16,7 @@ use alloc::alloc::{alloc, dealloc};
 use core::alloc::Layout;
 use core::ptr::NonNull;
 
-use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator, Dealloc};
+use iceoryx2_bb_elementary_traits::allocator::{Allocate, AllocationError, Deallocate};
 
 pub struct Allocator {}
 
@@ -32,14 +32,14 @@ impl Allocator {
     }
 }
 
-impl BaseAllocator<NonNull<u8>> for Allocator {
+impl Allocate<NonNull<u8>> for Allocator {
     fn allocate(&self, layout: Layout) -> Result<NonNull<u8>, AllocationError> {
         let ptr = unsafe { alloc(layout) };
         NonNull::new(ptr).ok_or(AllocationError::OutOfMemory)
     }
 }
 
-impl Dealloc<NonNull<u8>> for Allocator {
+impl Deallocate<NonNull<u8>> for Allocator {
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
         unsafe { dealloc(ptr.as_ptr(), layout) };
     }

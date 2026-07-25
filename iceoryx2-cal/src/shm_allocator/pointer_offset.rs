@@ -12,7 +12,7 @@
 
 use core::fmt::Debug;
 
-use iceoryx2_bb_memory::pool_allocator::AllocatorToken;
+use iceoryx2_bb_memory::pool_allocator::Allocation;
 
 pub type SegmentIdUnderlyingType = u8;
 
@@ -47,7 +47,7 @@ impl SegmentId {
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct PointerOffset(u64);
 
-impl AllocatorToken for PointerOffset {}
+impl Allocation for PointerOffset {}
 
 impl PointerOffset {
     /// Creates a new [`PointerOffset`] from the given offset value with the [`SegmentId`] == 0.

@@ -14,7 +14,7 @@
 
 use core::ptr::NonNull;
 
-use crate::allocator::{AllocationError, BaseAllocator};
+use crate::allocator::{AllocationError, Allocate};
 
 /// Describes a container which can shared between processes. Since the shared memory is often
 /// mapped at a different virtual memory position the underlying constructs must be relocatable in
@@ -40,7 +40,7 @@ pub trait RelocatableContainer {
     ///  * Shall be only used when the [`RelocatableContainer`] was created with
     ///    [`RelocatableContainer::new_uninit()`]
     ///
-    unsafe fn init<T: BaseAllocator<NonNull<u8>>>(
+    unsafe fn init<T: Allocate<NonNull<u8>>>(
         &mut self,
         allocator: &T,
     ) -> Result<(), AllocationError>;

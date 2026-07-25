@@ -37,7 +37,7 @@ impl BumpAllocator {
 
 pub struct InitializedBumpAllocator<'shm_allocator>(&'shm_allocator BumpAllocator);
 
-impl<'shm_allocator> BaseAllocator<PointerOffset> for InitializedBumpAllocator<'shm_allocator> {
+impl<'shm_allocator> Allocate<PointerOffset> for InitializedBumpAllocator<'shm_allocator> {
     fn allocate(&self, layout: Layout) -> Result<PointerOffset, AllocationError> {
         let msg = "Unable to allocate memory";
         if layout.align() > self.0.max_alignment() {
@@ -54,13 +54,13 @@ impl<'shm_allocator> BaseAllocator<PointerOffset> for InitializedBumpAllocator<'
     }
 }
 
-impl<'shm_allocator> Dealloc<PointerOffset> for InitializedBumpAllocator<'shm_allocator> {
+impl<'shm_allocator> Deallocate<PointerOffset> for InitializedBumpAllocator<'shm_allocator> {
     unsafe fn deallocate(&self, _ptr: PointerOffset, _layout: Layout) {
-        self.0.allocator.reset();
+        unsafe { self.0.allocator.reset() };
     }
 }
 
-impl<'shm_allocator> ReallocGrow<PointerOffset> for InitializedBumpAllocator<'shm_allocator> {
+impl<'shm_allocator> Grow<PointerOffset> for InitializedBumpAllocator<'shm_allocator> {
     unsafe fn grow(
         &self,
         offset: PointerOffset,
@@ -241,7 +241,7 @@ impl ShmAllocator for BumpAllocator {
         8
     }
 
-    unsafe fn init<Allocator: BaseAllocator<NonNull<u8>>>(
+    unsafe fn init<Allocator: Allocate<NonNull<u8>>>(
         &mut self,
         _mgmt_allocator: &Allocator,
     ) -> Result<(), ShmAllocatorInitError> {

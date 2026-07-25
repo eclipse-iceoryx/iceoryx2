@@ -16,7 +16,7 @@
 use alloc::alloc::{alloc, dealloc};
 use core::alloc::Layout;
 use core::fmt::Debug;
-use iceoryx2_bb_elementary_traits::allocator::AllocatorToken;
+use iceoryx2_bb_elementary_traits::allocator::Allocation;
 use iceoryx2_bb_elementary_traits::pointer::Pointer;
 use iceoryx2_bb_elementary_traits::pointer_family::PointerFamily;
 
@@ -76,7 +76,7 @@ impl<T: Debug> PartialEq for OwningPointer<T> {
 
 impl<T: Debug> Eq for OwningPointer<T> {}
 
-impl<T: Debug> AllocatorToken for OwningPointer<T> {}
+impl<T: Debug> Allocation for OwningPointer<T> {}
 
 impl<T: Debug> Pointer<T> for OwningPointer<T> {
     fn as_ptr(&self) -> *const T {

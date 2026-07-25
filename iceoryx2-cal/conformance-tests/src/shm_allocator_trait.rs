@@ -19,8 +19,8 @@ pub mod shm_allocator_trait {
     use core::{alloc::Layout, ptr::NonNull};
     use iceoryx2_bb_concurrency::lazy_lock::LazyLock;
     use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
-    use iceoryx2_bb_memory::bump_allocator::{BaseAllocator, BumpAllocator};
-    use iceoryx2_bb_memory::pool_allocator::{Dealloc, ReallocGrow};
+    use iceoryx2_bb_memory::bump_allocator::{Allocate, BumpAllocator};
+    use iceoryx2_bb_memory::pool_allocator::{Deallocate, Grow};
     use iceoryx2_bb_posix::ipc_capable::Handle;
     use iceoryx2_bb_posix::mutex::{Mutex, MutexBuilder, MutexHandle};
     use iceoryx2_bb_testing::assert_that;
