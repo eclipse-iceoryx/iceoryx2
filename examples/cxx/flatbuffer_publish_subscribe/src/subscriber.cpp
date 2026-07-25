@@ -39,7 +39,8 @@ auto main() -> int {
                     .value();
 
     auto service = node.service_builder(ServiceName::create("My/Flatbuffer/Service").value())
-                       .publish_subscribe<uint64_t>()
+                       .publish_subscribe<Flatbuffer<Example::UnboundedData>>()
+                       .user_header<uint64_t>()
                        .open_or_create()
                        .value();
 
@@ -50,7 +51,7 @@ auto main() -> int {
     while (node.wait(CYCLE_TIME).has_value()) {
         auto sample = subscriber.receive().value();
         while (sample.has_value()) {
-            std::cout << "received: " << sample->payload() << std::endl;
+            //std::cout << "received: " << sample->payload() << std::endl;
             sample = subscriber.receive().value();
         }
     }
