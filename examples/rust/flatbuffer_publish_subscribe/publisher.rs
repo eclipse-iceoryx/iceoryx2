@@ -48,7 +48,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         // This method allows us to use a custom schema file path when no schema lookup path was
         // defined or when a custom file is required (maybe outside of the lookup path).
         //
-        // .flatbuffer_schema_path(&"/path/to/UnboundedData/schema/file.fbs".try_into()?)
+        // .flatbuffer_schema_path(&"unbounded_data.fbs".try_into()?)
         .user_header::<u64>()
         .open_or_create()?;
 

@@ -18,6 +18,7 @@ use core::marker::PhantomData;
 
 use alloc::format;
 
+use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_flatbuffers::TypeName;
@@ -415,11 +416,17 @@ impl<
     ServiceType: service::Service,
 > Builder<Payload, UserHeader, ServiceType>
 {
-    fn has_flatbuffer_payload() -> bool {
+    fn has_flatbuffer_payload(&self) -> bool {
         use iceoryx2_bb_elementary_traits::type_name::TypeName;
-        unsafe {
-            <Payload as iceoryx2_bb_elementary_traits::type_name::TypeName>::type_name()
-                == Flatbuffer::<()>::type_name()
+
+        match &self.override_payload_type {
+            Some(payload_type) => unsafe {
+                payload_type.type_name().as_str() == Flatbuffer::<()>::type_name()
+            },
+            None => unsafe {
+                <Payload as iceoryx2_bb_elementary_traits::type_name::TypeName>::type_name()
+                    == Flatbuffer::<()>::type_name()
+            },
         }
     }
 
@@ -723,7 +730,7 @@ impl<
                 PublishSubscribeResources::create(
                     service_config,
                     &PublishSubscribeResourceConfig::<ServiceType> {
-                        use_type_definition: Self::has_flatbuffer_payload(),
+                        use_type_definition: self.has_flatbuffer_payload(),
                         schema_path: self.flatbuffer_schema_path,
                         shared_node: self.base.shared_node.clone(),
                         type_name: TypeName::new::<Payload>(),
@@ -755,7 +762,7 @@ impl<
                 PublishSubscribeResources::open(
                     service_config,
                     &PublishSubscribeResourceConfig::<ServiceType> {
-                        use_type_definition: Self::has_flatbuffer_payload(),
+                        use_type_definition: self.has_flatbuffer_payload(),
                         schema_path: self.flatbuffer_schema_path,
                         shared_node: self.base.shared_node.clone(),
                         type_name: TypeName::new::<Payload>(),

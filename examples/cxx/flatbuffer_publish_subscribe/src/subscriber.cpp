@@ -40,7 +40,7 @@ auto main() -> int {
 
     auto service = node.service_builder(ServiceName::create("My/Flatbuffer/Service").value())
                        .publish_subscribe<Flatbuffer<Example::UnboundedData>>()
-                       .flatbuffer_schema_path(bb::FilePath::create("/path/to/UnboundedData/schema/file.fbs").value())
+                       .flatbuffer_schema_path(bb::FilePath::create("unbounded_data.fbs").value())
                        .user_header<uint64_t>()
                        .open_or_create()
                        .value();
