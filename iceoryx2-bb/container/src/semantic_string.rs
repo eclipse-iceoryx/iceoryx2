@@ -24,7 +24,6 @@
 //! use iceoryx2_bb_derive_macros::ZeroCopySend;
 //! use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 //!
-//! use core::hash::{Hash, Hasher};
 //! use iceoryx2_bb_container::semantic_string;
 //!
 //! const GROUP_NAME_LENGTH: usize = 31;
@@ -389,20 +388,22 @@ pub trait SemanticString<const CAPACITY: usize>:
 /// [`mod@crate::semantic_string`].
 #[macro_export(local_inner_macros)]
 macro_rules! semantic_string {
-    {$(#[$documentation:meta])*
-     /// Name of the struct
-     name: $string_name:ident,
-     /// Capacity of the underlying StaticString
-     capacity: $capacity:expr,
-     /// Callable that gets a [`&[u8]`] as input and shall return true when the slice contains
-     /// invalid content.
-     invalid_content: $invalid_content:expr,
-     /// Callable that gets a [`&[u8]`] as input and shall return true when the slice contains
-     /// invalid characters.
-     invalid_characters: $invalid_characters:expr,
-     /// Normalizes the content. Required when the same semantical content has multiple
-     /// representations like paths for instance (`/tmp` == `/tmp/`)
-     normalize: $normalize:expr} => {
+    {
+        $(#[$documentation:meta])*
+        // Name of the struct
+        name: $string_name:ident,
+        // Capacity of the underlying StaticString
+        capacity: $capacity:expr,
+        // Callable that gets a [`&[u8]`] as input and shall return true when the slice contains
+        // invalid content.
+        invalid_content: $invalid_content:expr,
+        // Callable that gets a [`&[u8]`] as input and shall return true when the slice contains
+        // invalid characters.
+        invalid_characters: $invalid_characters:expr,
+        // Normalizes the content. Required when the same semantical content has multiple
+        // representations like paths for instance (`/tmp` == `/tmp/`)
+        normalize: $normalize:expr
+    } => {
         $(#[$documentation])*
         #[repr(C)]
         #[derive(Debug, Clone, Copy, Eq, PartialOrd, Ord, ZeroCopySend)]
@@ -411,11 +412,11 @@ macro_rules! semantic_string {
         }
 
         // BEGIN: serde
-        pub(crate) mod VisitorType {
+        pub(crate) mod semantic_string_visitor_type {
             pub(crate) struct $string_name;
         }
 
-        impl<'de> serde::de::Visitor<'de> for VisitorType::$string_name {
+        impl<'de> serde::de::Visitor<'de> for semantic_string_visitor_type::$string_name {
             type Value = $string_name;
 
             fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
@@ -438,7 +439,7 @@ macro_rules! semantic_string {
             where
                 D: serde::Deserializer<'de>,
             {
-                deserializer.deserialize_str(VisitorType::$string_name)
+                deserializer.deserialize_str(semantic_string_visitor_type::$string_name)
             }
         }
 
@@ -463,13 +464,15 @@ macro_rules! semantic_string {
 
             unsafe fn new_unchecked(bytes: &[u8]) -> Self {
                 Self {
-                    value: iceoryx2_bb_container::string::StaticString::from_bytes_unchecked(bytes),
+                    value: unsafe { iceoryx2_bb_container::string::StaticString::from_bytes_unchecked(bytes) },
                 }
             }
 
             unsafe fn insert_bytes_unchecked(&mut self, idx: usize, bytes: &[u8]) {
                 use iceoryx2_bb_container::string::String;
-                self.value.insert_bytes_unchecked(idx, bytes);
+                unsafe {
+                    self.value.insert_bytes_unchecked(idx, bytes);
+                }
             }
         }
 
@@ -484,7 +487,7 @@ macro_rules! semantic_string {
             pub const unsafe fn new_unchecked_const(value: &[u8]) -> $string_name {
                 core::debug_assert!(value.len() <= $capacity);
                 $string_name {
-                    value: iceoryx2_bb_container::string::StaticString::from_bytes_unchecked(value),
+                    value: unsafe { iceoryx2_bb_container::string::StaticString::from_bytes_unchecked(value) },
                 }
             }
 
@@ -493,6 +496,7 @@ macro_rules! semantic_string {
                 $capacity
             }
 
+            /// Returns a slice to the underlying bytes
             pub const fn as_bytes_const(&self) -> &[u8] {
                 self.value.as_bytes_const()
             }
@@ -504,23 +508,23 @@ macro_rules! semantic_string {
             }
         }
 
-        impl Hash for $string_name {
-            fn hash<H: Hasher>(&self, state: &mut H) {
+        impl core::hash::Hash for $string_name {
+            fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
                 self.normalize().as_bytes().hash(state)
             }
         }
 
-        impl From<$string_name> for String {
-            fn from(value: $string_name) -> String {
+        impl From<$string_name> for alloc::string::String {
+            fn from(value: $string_name) -> alloc::string::String {
                 // SAFETY: It is ensured that the semantic string contains only valid utf-8 strings
-                unsafe { String::from_utf8_unchecked(value.as_bytes().to_vec()) }
+                unsafe { alloc::string::String::from_utf8_unchecked(value.as_bytes().to_vec()) }
             }
         }
 
-        impl From<&$string_name> for String {
-            fn from(value: &$string_name) -> String {
+        impl From<&$string_name> for alloc::string::String {
+            fn from(value: &$string_name) -> alloc::string::String {
                 // SAFETY: It is ensured that the semantic string contains only valid utf-8 strings
-                unsafe { String::from_utf8_unchecked(value.as_bytes().to_vec()) }
+                unsafe { alloc::string::String::from_utf8_unchecked(value.as_bytes().to_vec()) }
             }
         }
 
@@ -629,6 +633,5 @@ macro_rules! semantic_string {
                 $invalid_characters(string)
             }
         }
-
-    };
+    }
 }

@@ -31,10 +31,7 @@
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 
-use core::hash::{Hash, Hasher};
-
 use alloc::format;
-use alloc::string::String;
 use alloc::vec::Vec;
 
 use iceoryx2_bb_container::semantic_string;
