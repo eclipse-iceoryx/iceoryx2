@@ -47,7 +47,11 @@ auto main() -> int {
                        .open_or_create()
                        .value();
 
-    auto publisher = service.publisher_builder().create().value();
+    auto publisher = service.publisher_builder()
+                         .initial_reserved_memory(32)
+                         .allocation_strategy(AllocationStrategy::PowerOfTwo)
+                         .create()
+                         .value();
 
     auto counter = 0;
     while (node.wait(CYCLE_TIME).has_value()) {

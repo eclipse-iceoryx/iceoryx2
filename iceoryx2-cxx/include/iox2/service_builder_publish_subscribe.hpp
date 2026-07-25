@@ -141,10 +141,8 @@ class ServiceBuilderPublishSubscribe {
 #endif
 
   public:
-    template<typename U = Payload>
-    auto flatbuffer_schema_path(
-        const bb::FilePath& value) && -> std::enable_if_t<has_flatbuffer_marker<U>(),
-                                                          ServiceBuilderPublishSubscribe<U, UserHeader, S>&&>;
+    template <typename U = Payload, typename = std::enable_if_t<has_flatbuffer_marker<U>(), void>>
+    auto flatbuffer_schema_path(const bb::FilePath& value) && -> ServiceBuilderPublishSubscribe<U, UserHeader, S>&&;
 
     /// Sets the user header type of the [`Service`].
     template <typename NewHeader>
@@ -337,10 +335,9 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::
 
 
 template <typename Payload, typename UserHeader, ServiceType S>
-template<typename U>
+template <typename U, typename>
 inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::flatbuffer_schema_path(
-    const bb::FilePath& value) && -> std::enable_if_t<has_flatbuffer_marker<U>(),
-                                                      ServiceBuilderPublishSubscribe<U, UserHeader, S>&&> {
+    const bb::FilePath& value) && -> ServiceBuilderPublishSubscribe<U, UserHeader, S>&& {
     iox2_service_builder_pub_sub_set_flatbuffer_schema_path(&m_handle, value.as_string().unchecked_access().c_str());
     return std::move(*this);
 }
