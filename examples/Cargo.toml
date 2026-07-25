@@ -236,6 +236,16 @@ path = "rust/request_response_dynamic_data/server.rs"
 name = "request_response_dyn_client"
 path = "rust/request_response_dynamic_data/client.rs"
 
+# request_response_with_events
+
+[[example]]
+name = "request_response_with_events_server"
+path = "rust/request_response_with_events/server.rs"
+
+[[example]]
+name = "request_response_with_events_client"
+path = "rust/request_response_with_events/client.rs"
+
 # service attributes
 
 [[example]]
