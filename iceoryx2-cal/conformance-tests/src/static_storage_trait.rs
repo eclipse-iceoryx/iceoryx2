@@ -65,6 +65,35 @@ pub mod static_storage_trait {
     }
 
     #[conformance_test]
+    pub fn create_and_read_via_view_works<Sut: StaticStorage>() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let mut content = "where is my plumbus?".to_string();
+
+        let _storage_guard = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .create(unsafe { content.as_mut_vec() }.as_slice())
+            .unwrap();
+
+        let storage_reader = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open(Duration::ZERO)
+            .unwrap();
+
+        let storage_view = storage_reader.view();
+
+        let content_len = content.len() as u64;
+        assert_that!(storage_view, len content_len);
+
+        let mut read_content = String::from_utf8(vec![b' '; content.len()]).unwrap();
+        storage_reader
+            .read(unsafe { read_content.as_mut_vec() }.as_mut_slice())
+            .unwrap();
+        assert_that!(read_content, eq content);
+    }
+
+    #[conformance_test]
     pub fn open_non_existing_fails<Sut: StaticStorage>() {
         let storage_name = generate_file_path().file_name();
         let config = generate_isolated_config::<Sut>();
