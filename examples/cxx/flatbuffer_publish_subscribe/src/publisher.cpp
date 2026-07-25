@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <utility>
 
@@ -22,7 +23,22 @@ constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 auto main() -> int {
     using namespace iox2;
     set_log_level_from_env_or(LogLevel::Info);
-    auto node = NodeBuilder().create<ServiceType::Ipc>().value();
+
+    const auto* lookup_path = std::getenv("IOX2_FLATBUFFER_SCHEMA_PATH");
+    if (lookup_path == nullptr) {
+        std::cout << "Please define IOX2_FLATBUFFER_SCHEMA_PATH!" << std::endl;
+        return -1;
+    }
+
+    auto config = Config();
+    config.global().service().set_flatbuffer_schema_path(bb::Path::create(lookup_path).value());
+
+    auto node = NodeBuilder()
+                    // Use the config with the defined flatbuffer schema path to enable automatic flatbuffer
+                    // schema file lookup.
+                    .config(config)
+                    .create<ServiceType::Ipc>()
+                    .value();
 
     auto service = node.service_builder(ServiceName::create("My/Flatbuffer/Service").value())
                        .publish_subscribe<uint64_t>()
