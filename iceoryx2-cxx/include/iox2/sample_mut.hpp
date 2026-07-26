@@ -19,6 +19,7 @@
 #include "iox2/header_publish_subscribe.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/marker.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/publisher_error.hpp"
 #include "iox2/service_type.hpp"
@@ -70,11 +71,13 @@ class SampleMut {
     auto user_header_mut() -> T&;
 
     /// Returns a reference to the const payload of the sample.
-    template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto payload() const -> const ValueType&;
 
     /// Returns a reference to the payload of the sample.
-    template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto payload_mut() -> ValueType&;
 
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>

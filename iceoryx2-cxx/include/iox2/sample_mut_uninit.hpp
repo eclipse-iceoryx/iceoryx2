@@ -16,6 +16,7 @@
 #include "iox2/bb/slice.hpp"
 #include "iox2/bb/static_function.hpp"
 #include "iox2/header_publish_subscribe.hpp"
+#include "iox2/marker.hpp"
 #include "iox2/sample_mut.hpp"
 #include "iox2/service_type.hpp"
 
@@ -34,22 +35,29 @@ class SampleMutUninit {
     auto operator=(const SampleMutUninit&) -> SampleMutUninit& = delete;
 
     /// Returns a reference to the [`Header`] of the [`Sample`].
+    template <typename T = Payload, typename = std::enable_if_t<!has_flatbuffer_marker<T>(), void>>
     auto header() const -> HeaderPublishSubscribe;
 
     /// Returns a reference to the user_header of the [`Sample`]
-    template <typename T = UserHeader, typename = std::enable_if_t<!std::is_same<void, UserHeader>::value, T>>
+    template <typename T = UserHeader,
+              typename U = Payload,
+              typename = std::enable_if_t<!std::is_same<void, UserHeader>::value && !has_flatbuffer_marker<U>(), T>>
     auto user_header() const -> const T&;
 
     /// Returns a mutable reference to the user_header of the [`Sample`].
-    template <typename T = UserHeader, typename = std::enable_if_t<!std::is_same<void, UserHeader>::value, T>>
+    template <typename T = UserHeader,
+              typename U = Payload,
+              typename = std::enable_if_t<!std::is_same<void, UserHeader>::value && !has_flatbuffer_marker<U>(), T>>
     auto user_header_mut() -> T&;
 
     /// Returns a reference to the const payload of the sample.
-    template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto payload() const -> const ValueType&;
 
     /// Returns a reference to the payload of the sample.
-    template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto payload_mut() -> ValueType&;
 
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
@@ -59,7 +67,8 @@ class SampleMutUninit {
     auto payload_mut() -> bb::MutableSlice<ValueType>;
 
     /// Writes the payload to the sample
-    template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, T>>
+    template <typename T = Payload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), T>>
     auto write_payload(T&& value) -> SampleMut<S, Payload, UserHeader>;
 
     /// Writes the payload to the sample
@@ -93,18 +102,19 @@ inline auto assume_init(SampleMutUninit<S, Payload, UserHeader>&& self) -> Sampl
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
 inline auto SampleMutUninit<S, Payload, UserHeader>::header() const -> HeaderPublishSubscribe {
     return m_sample.header();
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-template <typename T, typename>
+template <typename T, typename U, typename>
 inline auto SampleMutUninit<S, Payload, UserHeader>::user_header() const -> const T& {
     return m_sample.template user_header<T>();
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-template <typename T, typename>
+template <typename T, typename U, typename>
 inline auto SampleMutUninit<S, Payload, UserHeader>::user_header_mut() -> T& {
     return m_sample.template user_header_mut<T>();
 }

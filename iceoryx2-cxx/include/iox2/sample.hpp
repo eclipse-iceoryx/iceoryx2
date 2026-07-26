@@ -17,6 +17,7 @@
 #include "iox2/custom_payload_marker.hpp"
 #include "iox2/header_publish_subscribe.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/marker.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
@@ -50,7 +51,8 @@ class Sample {
     auto operator=(const Sample&) -> Sample& = delete;
 
     /// Returns a reference to the payload of the [`Sample`]
-    template <typename T = Payload, typename = std::enable_if_t<!bb::IsSlice<T>::VALUE, void>>
+    template <typename T = Payload,
+              typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto payload() const -> const ValueType&;
 
     /// Returns a slice to navigate the payload of the [`Sample`]

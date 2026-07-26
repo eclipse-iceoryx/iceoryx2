@@ -85,8 +85,8 @@ class PortFactoryPublisher {
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto initial_max_slice_len(uint64_t value) && -> PortFactoryPublisher&&;
 
-    /// Sets the maximum slice length that a user can allocate with
-    /// [`Publisher::loan_slice()`] or [`Publisher::loan_slice_uninit()`].
+    /// Sets the maximum initial reserved memory that the underlying allocator reserves
+    /// for the flatbuffer builder.
     template <typename T = Payload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
     auto initial_reserved_memory(uint64_t value) && -> PortFactoryPublisher&&;
 

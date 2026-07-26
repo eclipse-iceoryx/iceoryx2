@@ -12,6 +12,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <flatbuffers/flatbuffers.h>
 #include <iostream>
 #include <utility>
 
@@ -57,7 +58,7 @@ auto main() -> int {
     while (node.wait(CYCLE_TIME).has_value()) {
         counter += 1;
 
-        auto sample = publisher.loan_uninit().value();
+        auto sample = publisher.loan_flatbuffer().value();
 
         // auto initialized_sample = sample.write_payload(1);
 
