@@ -19,7 +19,7 @@ template <ServiceType Service>
 ResizableMemoryPublishSubscribe<Service>::ResizableMemoryPublishSubscribe(
     iox2_resizable_memory_publish_subscribe_h handle)
     : m_handle { handle }
-    , m_ptr { iox2_resizable_memory_publish_subscribe_ptr(&m_handle) } {
+    , m_ptr { iox2_resizable_memory_publish_subscribe_ptr(&handle) } {
 }
 
 template <ServiceType Service>
@@ -27,6 +27,7 @@ void ResizableMemoryPublishSubscribe<Service>::drop() {
     if (m_handle != nullptr) {
         iox2_resizable_memory_publish_subscribe_drop(m_handle);
         m_handle = nullptr;
+        m_ptr = nullptr;
     }
 }
 

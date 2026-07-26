@@ -52,7 +52,7 @@ auto main() -> int {
                        .value();
 
     auto publisher = service.publisher_builder()
-                         .initial_reserved_memory(32)
+                         .initial_reserved_memory(2048)
                          .allocation_strategy(AllocationStrategy::PowerOfTwo)
                          .create()
                          .value();
@@ -64,12 +64,13 @@ auto main() -> int {
         auto& builder = sample.flatbuffer_builder();
 
         // BEGIN: standard flatbuffer API
-        auto title = builder.CreateString("Hello World!");
+        // auto title = builder.CreateString("Hello World!");
+        auto title = builder.CreateString("");
 
         std::vector<flatbuffers::Offset<Entry>> entries;
-        for (uint64_t i = 0; i < (counter % 15); ++i) {                       // NOLINT
-            entries.emplace_back(CreateEntry(builder, 6 * i + 5, 6 * i + 7)); // NOLINT
-        }
+        // for (uint64_t i = 0; i < (counter % 15); ++i) {                       // NOLINT
+        //     entries.emplace_back(CreateEntry(builder, 6 * i + 5, 6 * i + 7)); // NOLINT
+        // }
 
         auto entry_vec = builder.CreateVector(entries);
 
@@ -77,11 +78,9 @@ auto main() -> int {
         // END: standard flatbuffer API
 
         auto initialized_sample = assume_init(std::move(sample), unbounded_data);
-
         initialized_sample.user_header_mut() = counter;
 
         send(std::move(initialized_sample)).has_value();
-
         std::cout << "Send sample " << counter << "..." << std::endl;
     }
 

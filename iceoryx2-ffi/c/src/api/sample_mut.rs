@@ -389,6 +389,30 @@ pub unsafe extern "C" fn iox2_sample_mut_send(
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_sample_mut_finish_serialized(
+    handle: iox2_sample_mut_h_ref,
+    payload_ptr: *const u8,
+    allocation_size: u64,
+) {
+    handle.assert_non_null();
+    unsafe {
+        let sample = &mut *handle.as_type();
+        match sample.service_type {
+            iox2_service_type_e::IPC => sample
+                .value
+                .as_mut()
+                .ipc
+                .__internal_finish_serialized(payload_ptr, allocation_size),
+            iox2_service_type_e::LOCAL => sample
+                .value
+                .as_mut()
+                .local
+                .__internal_finish_serialized(payload_ptr, allocation_size),
+        };
+    }
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_sample_mut_create_resizable_memory_builder(
     handle: iox2_sample_mut_h_ref,
     struct_ptr: *mut iox2_resizable_memory_publish_subscribe_t,
@@ -434,6 +458,8 @@ pub unsafe extern "C" fn iox2_sample_mut_create_resizable_memory_builder(
                 deleter,
             ),
         }
+
+        *handle_ptr = (*struct_ptr).as_handle();
     }
 }
 

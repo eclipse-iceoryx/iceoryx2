@@ -38,6 +38,9 @@ class ResizableMemoryPublishSubscribe : public flatbuffers::Allocator {
         -> uint8_t* override;
 
   private:
+    template <ServiceType, typename, typename>
+    friend class Publisher;
+
     explicit ResizableMemoryPublishSubscribe(iox2_resizable_memory_publish_subscribe_h handle);
     void drop();
 

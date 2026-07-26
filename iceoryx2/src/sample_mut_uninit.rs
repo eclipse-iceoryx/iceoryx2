@@ -172,6 +172,34 @@ impl<
             .reserved_header_len(reserved_header_len)
             .create(self.shared_state.clone())
     }
+
+    #[doc(hidden)]
+    pub fn __internal_finish_serialized(&mut self, payload_ptr: *const u8, allocation_size: u64) {
+        let message_type_details = MessageTypeDetails::from::<
+            crate::service::header::publish_subscribe::Header,
+            UserHeader,
+            u8,
+        >(TypeVariant::Dynamic);
+
+        self.chunk.header = self
+            .shared_state
+            .state
+            .lock()
+            .shm_raw_ptr
+            .load(Ordering::Relaxed) as *mut u8;
+        self.chunk.user_header = message_type_details
+            .user_header_ptr_from_header(self.chunk.header)
+            .cast_mut();
+        self.chunk.payload = message_type_details
+            .payload_ptr_from_header(self.chunk.header)
+            .cast_mut();
+
+        let payload_offset = payload_ptr as usize - self.chunk.payload_ptr() as usize;
+
+        let header = unsafe { &mut *self.chunk.header_mut_ptr().cast::<Header>() };
+        header.number_of_elements = allocation_size;
+        header.payload_offset = payload_offset as u64;
+    }
 }
 
 impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
@@ -215,32 +243,8 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
         root: WIPOffset<Payload>,
     ) -> SampleMut<Service, Flatbuffer<Payload>, UserHeader> {
         self.flatbuffer_builder().finish(root, None);
-        let flatbuffer_payload_start = self.flatbuffer_builder().finished_data().as_ptr() as usize;
-
-        let message_type_details = MessageTypeDetails::from::<
-            crate::service::header::publish_subscribe::Header,
-            UserHeader,
-            u8,
-        >(TypeVariant::Dynamic);
-
-        self.chunk.header = self
-            .shared_state
-            .state
-            .lock()
-            .shm_raw_ptr
-            .load(Ordering::Relaxed) as *mut u8;
-        self.chunk.user_header = message_type_details
-            .user_header_ptr_from_header(self.chunk.header)
-            .cast_mut();
-        self.chunk.payload = message_type_details
-            .payload_ptr_from_header(self.chunk.header)
-            .cast_mut();
-
-        let payload_offset = flatbuffer_payload_start - self.chunk.payload_ptr() as usize;
-
-        let header = unsafe { &mut *self.chunk.header_mut_ptr().cast::<Header>() };
-        header.number_of_elements = self.shared_state.slice_len() as u64;
-        header.payload_offset = payload_offset as u64;
+        let payload_ptr = self.flatbuffer_builder().finished_data().as_ptr();
+        self.__internal_finish_serialized(payload_ptr, self.shared_state.slice_len() as u64);
 
         SampleMut {
             shared_state: self.shared_state,

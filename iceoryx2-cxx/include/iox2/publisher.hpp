@@ -22,6 +22,7 @@
 #include "iox2/marker.hpp"
 #include "iox2/port_name.hpp"
 #include "iox2/publisher_error.hpp"
+#include "iox2/resizable_memory_publish_subscribe.hpp"
 #include "iox2/sample_mut.hpp"
 #include "iox2/sample_mut_uninit.hpp"
 #include "iox2/service_type.hpp"
@@ -230,9 +231,13 @@ inline auto Publisher<S, Payload, UserHeader>::loan_flatbuffer()
 
     auto result = iox2_publisher_loan_slice_uninit(&m_handle, &sample.m_sample.m_sample, &sample.m_sample.m_handle, 1);
 
-    // TODO: important fix this
-    // internal::PlacementDefault<UserHeader>::placement_default(sample);
-    sample.m_flatbuffer_builder = flatbuffers::FlatBufferBuilder();
+    iox2_resizable_memory_publish_subscribe_h resizable_memory_handle {};
+    iox2_sample_mut_create_resizable_memory_builder(&sample.m_sample.m_handle, nullptr, &resizable_memory_handle);
+
+    ResizableMemoryPublishSubscribe<S>* resizable_memory =
+        new ResizableMemoryPublishSubscribe<S>(resizable_memory_handle);
+
+    sample.m_flatbuffer_builder = flatbuffers::FlatBufferBuilder(2048, resizable_memory, true);
 
     if (result == IOX2_OK) {
         return std::move(sample);

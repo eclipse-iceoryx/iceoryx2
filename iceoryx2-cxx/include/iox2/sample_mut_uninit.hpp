@@ -16,6 +16,7 @@
 #include "iox2/bb/slice.hpp"
 #include "iox2/bb/static_function.hpp"
 #include "iox2/header_publish_subscribe.hpp"
+#include "iox2/internal/helper.hpp"
 #include "iox2/marker.hpp"
 #include "iox2/sample_mut.hpp"
 #include "iox2/service_type.hpp"
@@ -100,6 +101,8 @@ class SampleMutUninit {
     // Publisher::loan_slice_uninit()
     explicit SampleMutUninit() = default;
 
+    auto get_handle() -> iox2_sample_mut_h;
+
     SampleMut<S, Payload, UserHeader> m_sample;
     bb::Optional<flatbuffers::FlatBufferBuilder> m_flatbuffer_builder;
 };
@@ -116,9 +119,20 @@ inline auto assume_init(SampleMutUninit<S, Payload, UserHeader>&& self) -> Sampl
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto assume_init(SampleMutUninit<S, Flatbuffer<Payload>, UserHeader>&& self, flatbuffers::Offset<Payload> root)
     -> SampleMut<S, Flatbuffer<Payload>, UserHeader> {
+    // TODO: important fix this
+    // internal::PlacementDefault<UserHeader>::placement_default(self);
+    self.flatbuffer_builder().Finish(root, nullptr);
+    const auto* payload_ptr = self.flatbuffer_builder().GetBufferPointer();
+    auto handle = self.get_handle();
+    iox2_sample_mut_finish_serialized(&handle, payload_ptr, 2048);
+
     return std::move(self.m_sample);
 }
 
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto SampleMutUninit<S, Payload, UserHeader>::get_handle() -> iox2_sample_mut_h {
+    return m_sample.m_handle;
+}
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
