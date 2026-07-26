@@ -167,7 +167,7 @@ pub trait StaticStorage:
 /// The interface to read the static storage contents.
 pub trait StaticStorageView: Debug + Sized + Send + Sync + Abandonable {
     /// Returns the length of the content. Required to provide a buffer in
-    /// [`StaticStorage::read()`] which is large enough.
+    /// [`StaticStorageView::read()`] which is large enough.
     fn len(&self) -> u64;
 
     /// Returns true if it does not contain any content, otherwise false.

@@ -219,7 +219,7 @@ impl<
 impl<Service: service::Service, Payload, UserHeader: Debug + ZeroCopySend>
     PortFactory<Service, Flatbuffer<Payload>, UserHeader>
 {
-    /// Returns the [`StaticStorage`](iceoryx2_cal::static_storage::StaticStorage) that contains the type definition.
+    /// Returns the [`StaticStorageView`](iceoryx2_cal::static_storage::StaticStorageView) that contains the type definition.
     pub fn type_definition(&self) -> Option<&<Service::StaticStorage as StaticStorage>::View> {
         self.service
             .additional_resource()
