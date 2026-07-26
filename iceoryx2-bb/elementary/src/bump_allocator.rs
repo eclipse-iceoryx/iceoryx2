@@ -20,7 +20,7 @@
 //! use core::ptr::NonNull;
 //!
 //! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-//! use crate::iceoryx2_bb_elementary::bump_allocator::BaseAllocator;
+//! use iceoryx2_bb_elementary_traits::allocator::Allocate;
 //! extern crate iceoryx2_bb_loggers;
 //!
 //! let mut memory = [0u8; 8192];

@@ -196,7 +196,7 @@ impl<T: Clone, Allocator: Allocate<NonNull<u8>> + Deallocate<NonNull<u8>>>
     PolymorphicVec<'_, T, Allocator>
 {
     /// Same as clone but it can fail when the required memory could not be
-    /// allocated from the [`BaseAllocator`].
+    /// allocated from the [`Allocate`].
     pub fn try_clone(&self) -> Result<Self, AllocationError> {
         let layout = Layout::array::<MaybeUninit<T>>(self.capacity as _)
             .expect("Memory size for the array is smaller than isize::MAX");

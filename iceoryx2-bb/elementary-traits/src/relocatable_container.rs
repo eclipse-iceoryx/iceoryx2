@@ -46,7 +46,7 @@ pub trait RelocatableContainer {
     ) -> Result<(), AllocationError>;
 
     /// Returns the amount of additional memory the object requires from the
-    /// [`BaseAllocator`] in the [`RelocatableContainer::init()`] call. The returned value
+    /// [`Allocate`] in the [`RelocatableContainer::init()`] call. The returned value
     /// considers the alignment overhead. When implementing this, please use
     /// `iceoryx2_bb_elementary::math::unaligned_mem_size()`.
     /// The whole memory consumption is

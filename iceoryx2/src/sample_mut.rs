@@ -383,7 +383,7 @@ impl<
     }
 
     /// Send a [`SampleMut`], previously loaned with [`crate::port::publisher::Publisher::loan_uninit()`] or
-    /// [`crate::port::publisher::Publisher::loan()`] [`SampleMut`] to all connected
+    /// [`crate::port::publisher::Publisher::loan()`] to all connected
     /// [`crate::port::subscriber::Subscriber`]s of the service.
     ///
     /// On success the number of [`crate::port::subscriber::Subscriber`]s that received

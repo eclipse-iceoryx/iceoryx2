@@ -10,14 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Contains the traits [`BaseAllocator`] which contains the most basic functionality an allocator
-//! requires and [`Allocator`] with more advanced allocation features.
+//! Contains the traits [`Allocate`], [`AllocateZeroed`], [`Deallocate`], [`Grow`] and [`Shrink`]
+//! which contains the functional elements of an allocator and the [`Allocator`] trait with more
+//! which combines most functional elements in one trait.
 
 pub use core::{alloc::Layout, ptr::NonNull};
 
 use crate::pointer::Pointer;
 
-/// Failures caused by [`BaseAllocator::allocate()`] or [`ZeroableAllocator::allocate_zeroed()`].
+/// Failures caused by [`Allocate::allocate()`] or [`AllocateZeroed::allocate_zeroed()`].
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum AllocationError {
     SizeIsZero,
@@ -47,7 +48,7 @@ impl From<AllocationError> for AllocationGrowError {
     }
 }
 
-/// Failures caused by [`ReallocGrow::grow()`] or [`ZeroableAllocator::grow_zeroed()`].
+/// Failures caused by [`Grow::grow()`] or [`AllocateZeroed::grow_zeroed()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 pub enum AllocationGrowError {
     GrowWouldShrink,
@@ -65,7 +66,7 @@ impl core::fmt::Display for AllocationGrowError {
 
 impl core::error::Error for AllocationGrowError {}
 
-/// Failures caused by [`ReallocShrink::shrink()`].
+/// Failures caused by [`Shrink::shrink()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum AllocationShrinkError {
     ShrinkWouldGrow,
@@ -86,7 +87,7 @@ impl core::error::Error for AllocationShrinkError {}
 /// manages memory that it can use for reading or writing. For instance cuda memory can only be written
 /// to by using the cuda API.
 /// To address this, the [`Allocation`] is introduced. If an allocator manages directly read- and
-/// writable memory it can use a [`Pointer`](crate::pointer::Pointer) as [`Allocation`].
+/// writable memory it can use a [`Pointer`] as [`Allocation`].
 pub trait Allocation {}
 
 /// Defines the position of the existing content when the allocator grows the memory.
@@ -111,8 +112,8 @@ pub trait Deallocate<P: Allocation> {
     ///
     /// # Safety
     ///
-    ///  * `ptr` must be allocated previously with [`BaseAllocator::allocate()`] or
-    ///    [`ZeroableAllocator::allocate_zeroed()`]
+    ///  * `ptr` must be allocated previously with [`Allocate::allocate()`] or
+    ///    [`AllocateZeroed::allocate_zeroed()`]
     ///  * `layout` must have the same value as in the allocation or, when the memory was
     ///    resized, the same value as it was resized to
     ///
@@ -127,8 +128,8 @@ pub trait Grow<P: Allocation> {
     ///
     /// # Safety
     ///
-    ///  * `ptr` must be allocated previously with [`BaseAllocator::allocate()`] or
-    ///    [`ZeroableAllocator::allocate_zeroed()`]
+    ///  * `ptr` must be allocated previously with [`Allocate::allocate()`] or
+    ///    [`AllocateZeroed::allocate_zeroed()`]
     ///  * `old_layout` must have the same value as in the allocation or, when the memory was
     ///    resized, the same value as it was resized to
     ///
@@ -148,8 +149,8 @@ pub trait Shrink<P: Allocation> {
     ///
     /// # Safety
     ///
-    ///  * `ptr` must be allocated previously with [`BaseAllocator::allocate()`] or
-    ///    [`ZeroableAllocator::allocate_zeroed()`]
+    ///  * `ptr` must be allocated previously with [`Allocate::allocate()`] or
+    ///    [`AllocateZeroed::allocate_zeroed()`]
     ///  * `old_layout` must have the same value as in the allocation or, when the memory was
     ///    resized, the same value as it was resized to
     ///
@@ -178,8 +179,8 @@ pub trait AllocateZeroed<P: Allocation + Pointer<u8>>: Grow<P> + Allocate<P> {
     ///
     /// # Safety
     ///
-    ///  * `ptr` must be allocated previously with [`BaseAllocator::allocate()`] or
-    ///    [`ZeroableAllocator::allocate_zeroed()`]
+    ///  * `ptr` must be allocated previously with [`Allocate::allocate()`] or
+    ///    [`AllocateZeroed::allocate_zeroed()`]
     ///  * `old_layout` must have the same value as in the allocation or, when the memory was
     ///    resized, the same value as it was resized to
     ///

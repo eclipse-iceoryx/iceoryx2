@@ -246,7 +246,7 @@ impl<'a, Allocator: Allocate<NonNull<u8>> + Deallocate<NonNull<u8>>>
     }
 
     /// Same as clone but it can fail when the required memory could not be
-    /// allocated from the [`BaseAllocator`].
+    /// allocated from the [`Allocate`].
     pub fn try_clone(&self) -> Result<Self, AllocationError> {
         let layout = Layout::array::<MaybeUninit<u8>>(self.capacity as usize + 1)
             .expect("Memory size for the array is smaller than isize::MAX");
