@@ -10,38 +10,22 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub mod bump_allocator;
 pub mod pointer_offset;
 pub mod pool_allocator;
-pub mod shm_bump_allocator;
 
 use core::{alloc::Layout, fmt::Debug, ptr::NonNull};
 
-use iceoryx2_bb_elementary::{allocation_strategy::AllocationStrategy, enum_gen};
+use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, AllocationGrowError};
-use iceoryx2_bb_elementary_traits::{allocator::BaseAllocator, zero_copy_send::ZeroCopySend};
-use iceoryx2_bb_memory::pool_allocator::ContentPlacement;
+use iceoryx2_bb_elementary_traits::{
+    allocator::{Allocate, ContentPlacement, Deallocate, Grow},
+    zero_copy_send::ZeroCopySend,
+};
 pub use pointer_offset::*;
 
 /// Trait that identifies a configuration of a [`ShmAllocator`].
 pub trait ShmAllocatorConfig: Copy + Default + Debug + Send {}
-
-enum_gen! {
-/// Describes the errors that can occur when [`ShmAllocator::allocate()`] is called.
-    ShmAllocationError
-  entry:
-    ExceedsMaxSupportedAlignment
-  mapping:
-    AllocationError
-}
-
-enum_gen! {
-/// Describes the errors that can occur when [`ShmAllocator::grow()`] is called.
-    ShmAllocatorGrowError
-  entry:
-    ExceedsMaxSupportedAlignment
-  mapping:
-    AllocationGrowError
-}
 
 /// Describes error that may occur when a [`ShmAllocator`] is initialized.
 #[derive(Clone, Copy, Eq, PartialEq, Debug)]
@@ -72,11 +56,35 @@ pub struct SharedMemorySetupHint<Config: ShmAllocatorConfig> {
     pub config: Config,
 }
 
+/// Marker trait for an initialized shm allocator. Since the [`ShmAllocator`] must be initialized
+/// in place, every method on it is `unsafe` since the user must call [`ShmAllocator::init()`]
+/// before using it, otherwise it is undefined behavior.
+///
+/// This changes the allocator interface so that every method becomes unsafe. To prevent this, the
+/// `unsafe` [`ShmAllocator::assume_init()`] method ensures that the contract is satisfied and returns
+/// a reference to an object with a normal allocator interface.
+pub trait InitializedShmAllocator<'shm_allocator>:
+    Allocate<PointerOffset> + Deallocate<PointerOffset> + Grow<PointerOffset>
+{
+}
+
 /// Every allocator implementation must be relocatable. The allocator itself must be stored either
 /// in the same shared memory segment or in a separate shared memory segment of a different type
 /// but accessible by all participating processes.
 pub trait ShmAllocator: Debug + Send + Sync + 'static + ZeroCopySend {
     type Configuration: ShmAllocatorConfig;
+    type Initialized<'shm_allocator>: InitializedShmAllocator<'shm_allocator>;
+
+    /// Returns an [`InitializedShmAllocator`] to perform allocation operations.
+    ///
+    /// # Safety
+    ///
+    /// * [`ShmAllocator::init()`] must have been called before using this method
+    ///
+    unsafe fn assume_init<'shm_allocator>(
+        &'shm_allocator self,
+    ) -> Self::Initialized<'shm_allocator>;
+
     /// Suggest a new payload size by considering the current allocation state in combination with
     /// a provided [`AllocationStrategy`] and a `layout` that shall be allocatable.
     fn resize_hint(
@@ -115,7 +123,7 @@ pub trait ShmAllocator: Debug + Send + Sync + 'static + ZeroCopySend {
     /// * must be called only once
     /// * must be called before any other method is called
     ///
-    unsafe fn init<Allocator: BaseAllocator<NonNull<u8>>>(
+    unsafe fn init<Allocator: Allocate<NonNull<u8>>>(
         &mut self,
         mgmt_allocator: &Allocator,
     ) -> Result<(), ShmAllocatorInitError>;
@@ -130,35 +138,4 @@ pub trait ShmAllocator: Debug + Send + Sync + 'static + ZeroCopySend {
     /// Returns the offset to the beginning of the allocator payload. The smallest offset a user
     /// can allocate.
     fn relative_start_address(&self) -> usize;
-
-    /// Allocates memory and returns the pointer offset.
-    ///
-    /// # Safety
-    ///
-    /// * [`ShmAllocator::init()`] must have been called before using this method
-    ///
-    unsafe fn allocate(&self, layout: Layout) -> Result<PointerOffset, ShmAllocationError>;
-
-    /// Grows an allocated memory cell to a new increased size.
-    ///
-    /// # Safety
-    ///
-    /// * [`ShmAllocator::init()`] must have been called before using this method
-    ///
-    unsafe fn grow(
-        &self,
-        offset: PointerOffset,
-        old_layout: Layout,
-        new_layout: Layout,
-        placement: ContentPlacement,
-    ) -> Result<PointerOffset, ShmAllocatorGrowError>;
-
-    /// Deallocates a previously allocated pointer offset
-    ///
-    /// # Safety
-    ///
-    /// * the provided distance must have been allocated before with the same layout
-    /// * [`ShmAllocator::init()`] must have been called before using this method
-    ///
-    unsafe fn deallocate(&self, distance: PointerOffset, layout: Layout);
 }

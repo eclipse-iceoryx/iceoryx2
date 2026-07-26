@@ -22,7 +22,7 @@ pub mod resizable_shared_memory_trait {
     use core::alloc::Layout;
     use iceoryx2_bb_elementary_traits::testing::abandonable::Abandonable;
     use iceoryx2_bb_posix::file::AccessMode;
-    use iceoryx2_cal::shm_allocator::ShmAllocatorGrowError;
+    use iceoryx2_cal::shm_allocator::AllocationError;
     use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
     use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
@@ -447,7 +447,7 @@ pub mod resizable_shared_memory_trait {
 
         let result = sut.allocate(Layout::new::<u8>());
         assert_that!(result, is_err);
-        assert_that!(result.err().unwrap(), eq ResizableShmAllocationError::MaxReallocationsReached);
+        assert_that!(result.err().unwrap(), eq AllocationError::OutOfMemory);
     }
 
     #[conformance_test]
@@ -747,7 +747,7 @@ pub mod resizable_shared_memory_trait {
         assert_that!(result, is_err);
         assert_that!(
             result.err().unwrap(), eq
-            ResizableShmAllocationError::MaxReallocationsReached
+            AllocationError::OutOfMemory
         );
     }
 
@@ -1165,7 +1165,7 @@ pub mod resizable_shared_memory_trait {
         let ptr = sut.allocate(large_layout).unwrap();
         let result = unsafe { sut.grow(ptr, large_layout, small_layout, ContentPlacement::Front) };
 
-        assert_that!(result.err(), eq Some(ResizableShmGrowError::ShmAllocatorGrowError(ShmAllocatorGrowError::AllocationGrowError(iceoryx2_cal::shm_allocator::AllocationGrowError::GrowWouldShrink))));
+        assert_that!(result.err(), eq Some(iceoryx2_cal::shm_allocator::AllocationGrowError::GrowWouldShrink));
     }
 
     #[conformance_test]
@@ -1199,5 +1199,22 @@ pub mod resizable_shared_memory_trait {
         for n in 0..layout.size() {
             assert_that!(unsafe { *ptr.data_ptr.add(n) }, eq 73);
         }
+    }
+
+    #[conformance_test]
+    pub fn allocation_strategy_can_be_obtained<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let storage_name = generate_file_path().file_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .create()
+            .unwrap();
+
+        assert_that!(sut.allocation_strategy(), eq AllocationStrategy::BestFit);
     }
 }

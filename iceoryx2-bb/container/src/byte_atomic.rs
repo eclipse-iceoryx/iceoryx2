@@ -53,9 +53,11 @@
 //! ## Use the [`RelocatableByteAtomic`](crate::byte_atomic::RelocatableByteAtomic)
 //!
 //! ```
+//! extern crate alloc;
+//!
 //! use iceoryx2_bb_container::byte_atomic::RelocatableByteAtomic;
 //! use iceoryx2_bb_derive_macros::AtomicCopy;
-//! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+//! use iceoryx2_bb_testing::allocator::Allocator;
 //! use iceoryx2_bb_elementary_traits::atomic_copy::AtomicCopy;
 //!
 //! #[repr(C)]
@@ -69,11 +71,7 @@
 //! let new_value = Foo { bar: 4, baz: 6 };
 //!
 //! const SIZE: usize = RelocatableByteAtomic::<Foo>::const_memory_size();
-//! let memory = [0u8; SIZE];
-//! let allocator = BumpAllocator::new(
-//!     core::ptr::NonNull::<u8>::from_ref(&memory[0]),
-//!     memory.len(),
-//! );
+//! let allocator = Allocator::new();
 //! unsafe {
 //!     let mut wrapper = RelocatableByteAtomic::new_uninit();
 //!     wrapper
@@ -93,7 +91,7 @@ use core::mem::MaybeUninit;
 use core::ptr::NonNull;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU8, Ordering};
 use iceoryx2_bb_elementary::relocatable_pointer::{Pointer, RelocatablePointer};
-use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
+use iceoryx2_bb_elementary_traits::allocator::{Allocate, AllocationError};
 use iceoryx2_bb_elementary_traits::{atomic_copy::AtomicCopy, zero_copy_send::ZeroCopySend};
 use iceoryx2_log::fail;
 use iceoryx2_log::fatal_panic;
@@ -180,7 +178,7 @@ impl<T: AtomicCopy> RelocatableByteAtomic<T> {
     ///   * Must be called exactly once before any other method is called.
     ///   * Shall be only used when the RelocatableByteAtomic was created with
     ///     [`RelocatableByteAtomic::new_uninit()`].
-    pub unsafe fn init<Allocator: BaseAllocator<NonNull<u8>>>(
+    pub unsafe fn init<Allocator: Allocate<NonNull<u8>>>(
         &mut self,
         allocator: &Allocator,
         value: T,

@@ -12,18 +12,16 @@
 
 #[doc(hidden)]
 pub mod details {
+    use alloc::vec;
+    use alloc::vec::Vec;
     use core::fmt::Debug;
     use core::marker::PhantomData;
     use core::ptr::NonNull;
     use iceoryx2_bb_concurrency::atomic::Ordering;
-
-    use alloc::vec;
-    use alloc::vec::Vec;
-
     use iceoryx2_bb_concurrency::atomic::{AtomicU8, AtomicU64, AtomicUsize};
     use iceoryx2_bb_concurrency::cell::UnsafeCell;
     use iceoryx2_bb_container::vector::relocatable_vec::*;
-    use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
+    use iceoryx2_bb_elementary_traits::allocator::{Allocate, AllocationError};
     use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
     use iceoryx2_bb_lock_free::spsc::{
         index_queue::RelocatableIndexQueue,
@@ -156,7 +154,7 @@ pub mod details {
             RelocatableUsedChunkList::const_memory_size(number_of_samples)
         }
 
-        unsafe fn init<T: BaseAllocator<NonNull<u8>>>(
+        unsafe fn init<T: Allocate<NonNull<u8>>>(
             &mut self,
             allocator: &T,
         ) -> Result<(), AllocationError> {

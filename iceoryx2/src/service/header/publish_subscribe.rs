@@ -43,7 +43,8 @@ use crate::identifiers::{UniqueNodeId, UniquePublisherId};
 pub struct Header {
     node_id: UniqueNodeId,
     publisher_port_id: UniquePublisherId,
-    number_of_elements: u64,
+    pub(crate) number_of_elements: u64,
+    pub(crate) payload_offset: u64,
 }
 
 impl Header {
@@ -56,6 +57,7 @@ impl Header {
             node_id,
             publisher_port_id,
             number_of_elements,
+            payload_offset: 0,
         }
     }
 
@@ -82,5 +84,10 @@ impl Header {
     /// means that it contains 3 elements (3 * 40 == 120).
     pub fn number_of_elements(&self) -> u64 {
         self.number_of_elements
+    }
+
+    /// Returns the payload offset.
+    pub fn payload_offset(&self) -> u64 {
+        self.payload_offset
     }
 }

@@ -15,7 +15,7 @@ use core::alloc::Layout;
 use iceoryx2_bb_elementary_traits::pointer::Pointer;
 use iceoryx2_bb_memory::{
     heap_allocator::*,
-    pool_allocator::{ContentPlacement, ReallocGrow, ReallocShrink},
+    pool_allocator::{ContentPlacement, Grow, Shrink},
 };
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;

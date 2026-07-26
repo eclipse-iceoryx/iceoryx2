@@ -12,15 +12,10 @@
 
 //! A **threadsafe** and **lock-free** [`Allocator`] which acquires the memory from the heap.
 
-use core::{alloc::Layout, ptr::NonNull};
-
-use iceoryx2_bb_elementary_traits::allocator::{
-    AllocationGrowError, AllocationShrinkError, ContentPlacement, ReallocGrow, ReallocShrink,
-};
 use iceoryx2_bb_posix::memory::heap;
 use iceoryx2_log::fail;
 
-pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, Allocator, BaseAllocator};
+pub use iceoryx2_bb_elementary_traits::allocator::*;
 
 #[derive(Debug)]
 pub struct HeapAllocator {}
@@ -42,13 +37,15 @@ impl HeapAllocator {
     }
 }
 
-impl BaseAllocator<NonNull<u8>> for HeapAllocator {
+impl Allocate<NonNull<u8>> for HeapAllocator {
     fn allocate(&self, layout: Layout) -> Result<NonNull<u8>, AllocationError> {
         let mut ptr = fail!(from self, when heap::allocate(layout),
                 "Failed to allocate {} bytes with an alignment of {}.", layout.size(), layout.align());
         Ok(unsafe { NonNull::new_unchecked(ptr.as_mut().as_mut_ptr()) })
     }
+}
 
+impl Deallocate<NonNull<u8>> for HeapAllocator {
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
         unsafe {
             heap::deallocate(ptr, layout);
@@ -56,7 +53,7 @@ impl BaseAllocator<NonNull<u8>> for HeapAllocator {
     }
 }
 
-impl ReallocGrow<NonNull<u8>> for HeapAllocator {
+impl Grow<NonNull<u8>> for HeapAllocator {
     unsafe fn grow(
         &self,
         ptr: NonNull<u8>,
@@ -80,7 +77,7 @@ impl ReallocGrow<NonNull<u8>> for HeapAllocator {
     }
 }
 
-impl ReallocShrink<NonNull<u8>> for HeapAllocator {
+impl Shrink<NonNull<u8>> for HeapAllocator {
     unsafe fn shrink(
         &self,
         ptr: NonNull<u8>,
@@ -102,3 +99,5 @@ impl ReallocShrink<NonNull<u8>> for HeapAllocator {
         Ok(unsafe { NonNull::new_unchecked(ptr.as_mut().as_mut_ptr()) })
     }
 }
+
+impl AllocateZeroed<NonNull<u8>> for HeapAllocator {}

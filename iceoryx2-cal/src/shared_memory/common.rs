@@ -15,7 +15,7 @@ use core::mem::MaybeUninit;
 use core::ptr::NonNull;
 use core::{alloc::Layout, fmt::Debug};
 
-use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
+use iceoryx2_bb_elementary_traits::allocator::Allocate;
 use iceoryx2_bb_elementary_traits::allocator::ContentPlacement;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
@@ -459,18 +459,27 @@ pub mod details {
             unsafe { self.storage.get().allocator.assume_init_ref() }.max_alignment()
         }
 
+        fn payload_start_address(&self) -> usize {
+            self.payload_start_address
+        }
+    }
+
+    impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
+        Grow<ShmPointer> for Memory<Allocator, Storage>
+    {
         unsafe fn grow(
             &self,
             ptr: ShmPointer,
             old_layout: Layout,
             new_layout: Layout,
             placement: ContentPlacement,
-        ) -> Result<ShmPointer, ShmAllocatorGrowError> {
+        ) -> Result<ShmPointer, AllocationGrowError> {
             let offset = unsafe {
                 self.storage
                     .get()
                     .allocator
                     .assume_init_ref()
+                    .assume_init()
                     .grow(ptr.offset, old_layout, new_layout, placement)?
             };
 
@@ -479,9 +488,13 @@ pub mod details {
                 data_ptr: (offset.offset() + self.payload_start_address) as *mut u8,
             })
         }
+    }
 
-        fn allocate(&self, layout: core::alloc::Layout) -> Result<ShmPointer, ShmAllocationError> {
-            let offset = fail!(from self, when unsafe { self.storage.get().allocator.assume_init_ref().allocate(layout) },
+    impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
+        Allocate<ShmPointer> for Memory<Allocator, Storage>
+    {
+        fn allocate(&self, layout: core::alloc::Layout) -> Result<ShmPointer, AllocationError> {
+            let offset = fail!(from self, when unsafe { self.storage.get().allocator.assume_init_ref().assume_init().allocate(layout) },
             "Failed to allocate shared memory due to an internal allocator failure.");
 
             Ok(ShmPointer {
@@ -489,19 +502,20 @@ pub mod details {
                 data_ptr: (offset.offset() + self.payload_start_address) as *mut u8,
             })
         }
+    }
 
+    impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
+        Deallocate<ShmPointer> for Memory<Allocator, Storage>
+    {
         unsafe fn deallocate(&self, ptr: ShmPointer, layout: core::alloc::Layout) {
             unsafe {
                 self.storage
                     .get()
                     .allocator
                     .assume_init_ref()
+                    .assume_init()
                     .deallocate(ptr.offset, layout);
             }
-        }
-
-        fn payload_start_address(&self) -> usize {
-            self.payload_start_address
         }
     }
 

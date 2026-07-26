@@ -19,14 +19,11 @@ pub mod generic {
 
     use iceoryx2_bb_concurrency::cell::UnsafeCell;
     use iceoryx2_bb_container::vector::*;
-    use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-    use iceoryx2_bb_testing::{assert_that, lifetime_tracker::LifetimeTracker};
+    use iceoryx2_bb_testing::{
+        allocator::Allocator, assert_that, lifetime_tracker::LifetimeTracker,
+    };
 
     const SUT_CAPACITY: usize = 10;
-    const RELOCATABLE_VEC_MEMORY_SIZE: usize =
-        RelocatableVec::<LifetimeTracker>::const_memory_size(SUT_CAPACITY);
-    const POLYMORPHIC_VEC_MEMORY_SIZE: usize =
-        core::mem::size_of::<LifetimeTracker>() * SUT_CAPACITY;
 
     pub trait VectorTestFactory {
         type Sut: Vector<LifetimeTracker>;
@@ -49,28 +46,18 @@ pub mod generic {
         }
     }
 
-    pub struct RelocatableVecFactory {
-        raw_memory: UnsafeCell<
-            Box<[u8; RelocatableVec::<LifetimeTracker>::const_memory_size(SUT_CAPACITY)]>,
-        >,
-    }
+    pub struct RelocatableVecFactory {}
 
     impl VectorTestFactory for RelocatableVecFactory {
         type Sut = RelocatableVec<LifetimeTracker>;
 
         fn new() -> Self {
-            Self {
-                raw_memory: UnsafeCell::new(Box::new([0u8; RELOCATABLE_VEC_MEMORY_SIZE])),
-            }
+            Self {}
         }
 
         fn create_sut(&self) -> Box<Self::Sut> {
             let mut sut = Box::new(unsafe { Self::Sut::new_uninit(SUT_CAPACITY) });
-            let bump_allocator = BumpAllocator::new(
-                core::ptr::NonNull::<u8>::new(unsafe { &mut *self.raw_memory.get() }.as_mut_ptr())
-                    .expect("Precondition failed: Pointer to memory is null"),
-                RELOCATABLE_VEC_MEMORY_SIZE,
-            );
+            let bump_allocator = Allocator::new();
 
             unsafe { sut.init(&bump_allocator).unwrap() };
 
@@ -79,16 +66,14 @@ pub mod generic {
     }
 
     pub struct PolymorphicVecFactory {
-        raw_memory: UnsafeCell<Box<[u8; core::mem::size_of::<LifetimeTracker>() * SUT_CAPACITY]>>,
-        allocator: UnsafeCell<Option<Box<BumpAllocator>>>,
+        allocator: UnsafeCell<Option<Box<Allocator>>>,
     }
 
     impl VectorTestFactory for PolymorphicVecFactory {
-        type Sut = PolymorphicVec<'static, LifetimeTracker, BumpAllocator>;
+        type Sut = PolymorphicVec<'static, LifetimeTracker, Allocator>;
 
         fn new() -> Self {
             Self {
-                raw_memory: UnsafeCell::new(Box::new([0u8; POLYMORPHIC_VEC_MEMORY_SIZE])),
                 allocator: UnsafeCell::new(None),
             }
         }
@@ -96,11 +81,7 @@ pub mod generic {
         fn create_sut(&self) -> Box<Self::Sut> {
             unsafe {
                 if (*self.allocator.get()).is_none() {
-                    *self.allocator.get() = Some(Box::new(BumpAllocator::new(
-                        core::ptr::NonNull::<u8>::new({ &mut *self.raw_memory.get() }.as_mut_ptr())
-                            .expect("Precondition failed: Pointer to memory is null"),
-                        POLYMORPHIC_VEC_MEMORY_SIZE,
-                    )))
+                    *self.allocator.get() = Some(Box::new(Allocator::new()))
                 }
             };
 

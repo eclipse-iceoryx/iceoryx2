@@ -97,7 +97,7 @@ impl OneChunkAllocator {
     }
 }
 
-impl BaseAllocator<NonNull<u8>> for OneChunkAllocator {
+impl Allocate<NonNull<u8>> for OneChunkAllocator {
     fn allocate(&self, layout: Layout) -> Result<NonNull<u8>, AllocationError> {
         let adjusted_start = align(self.start as usize, layout.align());
         let msg = "Unable to allocate chunk";
@@ -117,14 +117,16 @@ impl BaseAllocator<NonNull<u8>> for OneChunkAllocator {
             .store(adjusted_start, Ordering::Relaxed);
         Ok(unsafe { NonNull::new_unchecked(self.start.add(adjusted_start - self.start as usize)) })
     }
+}
 
+impl Deallocate<NonNull<u8>> for OneChunkAllocator {
     unsafe fn deallocate(&self, ptr: NonNull<u8>, _layout: Layout) {
         self.verify_ptr_is_managed_by_allocator(ptr);
         self.release_chunk();
     }
 }
 
-impl ReallocGrow<NonNull<u8>> for OneChunkAllocator {
+impl Grow<NonNull<u8>> for OneChunkAllocator {
     unsafe fn grow(
         &self,
         mut ptr: NonNull<u8>,
@@ -168,7 +170,7 @@ impl ReallocGrow<NonNull<u8>> for OneChunkAllocator {
     }
 }
 
-impl ReallocShrink<NonNull<u8>> for OneChunkAllocator {
+impl Shrink<NonNull<u8>> for OneChunkAllocator {
     unsafe fn shrink(
         &self,
         ptr: NonNull<u8>,
@@ -191,3 +193,5 @@ impl ReallocShrink<NonNull<u8>> for OneChunkAllocator {
         Ok(ptr)
     }
 }
+
+impl AllocateZeroed<NonNull<u8>> for OneChunkAllocator {}

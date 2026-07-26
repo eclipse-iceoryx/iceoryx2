@@ -15,7 +15,8 @@ use core::{
     ptr::NonNull,
 };
 
-use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
+use iceoryx2_bb_elementary_traits::allocator::Allocate;
+use iceoryx2_bb_elementary_traits::allocator::Deallocate;
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 
 #[derive(Debug)]

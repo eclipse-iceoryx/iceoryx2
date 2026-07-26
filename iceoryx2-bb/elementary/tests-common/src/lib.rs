@@ -15,6 +15,7 @@
 extern crate iceoryx2_bb_loggers;
 
 pub mod alignment_tests;
+pub mod allocator;
 pub mod bump_allocator_tests;
 pub mod code_style_tests;
 pub mod cyclic_tagger_tests;

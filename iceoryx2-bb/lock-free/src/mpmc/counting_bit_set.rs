@@ -161,7 +161,7 @@ pub mod details {
             }
         }
 
-        unsafe fn init<T: iceoryx2_bb_elementary::bump_allocator::BaseAllocator<NonNull<u8>>>(
+        unsafe fn init<T: iceoryx2_bb_elementary::bump_allocator::Allocate<NonNull<u8>>>(
             &mut self,
             allocator: &T,
         ) -> Result<(), iceoryx2_bb_elementary::bump_allocator::AllocationError> {

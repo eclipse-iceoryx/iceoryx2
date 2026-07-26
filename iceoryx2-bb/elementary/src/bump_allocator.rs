@@ -20,7 +20,7 @@
 //! use core::ptr::NonNull;
 //!
 //! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-//! use crate::iceoryx2_bb_elementary::bump_allocator::BaseAllocator;
+//! use iceoryx2_bb_elementary_traits::allocator::Allocate;
 //! extern crate iceoryx2_bb_loggers;
 //!
 //! let mut memory = [0u8; 8192];
@@ -34,10 +34,6 @@
 //! );
 //!
 //! let mut memory = allocator.allocate(layout).unwrap();
-//!
-//! unsafe {
-//!     allocator.deallocate(memory, layout)
-//! };
 //! ```
 
 use core::{fmt::Display, ptr::NonNull};
@@ -50,7 +46,7 @@ use iceoryx2_bb_elementary_traits::pointer::Pointer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
 
-pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
+pub use iceoryx2_bb_elementary_traits::allocator::{Allocate, AllocationError};
 
 #[derive(Debug)]
 #[repr(C)]
@@ -99,9 +95,20 @@ impl BumpAllocator {
     pub fn total_space(&self) -> usize {
         self.full_memory_size
     }
+
+    /// Resets the allocator and frees all allocated memory. When previously allocated
+    /// memory is used after this call it will cause undefined behavior.
+    ///
+    /// # Safety
+    ///
+    /// * ensure that all previously allocated memory is no longer in use after this call
+    ///
+    pub unsafe fn reset(&self) {
+        self.addr_next_free_memory.store(0, Ordering::Relaxed);
+    }
 }
 
-impl BaseAllocator<NonNull<u8>> for BumpAllocator {
+impl Allocate<NonNull<u8>> for BumpAllocator {
     fn allocate(&self, layout: core::alloc::Layout) -> Result<NonNull<u8>, AllocationError> {
         let msg = "Unable to allocate chunk with";
         let mut next_aligned_free_address;
@@ -142,10 +149,5 @@ impl BaseAllocator<NonNull<u8>> for BumpAllocator {
                     .add(next_aligned_free_address),
             )
         })
-    }
-
-    unsafe fn deallocate(&self, _ptr: NonNull<u8>, _layout: core::alloc::Layout) {
-        self.addr_next_free_memory
-            .store(0, core::sync::atomic::Ordering::Relaxed);
     }
 }

@@ -32,8 +32,10 @@
 
 use core::{fmt::Debug, ops::Deref};
 
+use flatbuffers::InvalidFlatbuffer;
 use iceoryx2_bb_elementary_traits::iceoryx_send::IceoryxSend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_flatbuffers::FlatbufferError;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
@@ -43,6 +45,7 @@ use crate::port::details::chunk_details::ChunkDetails;
 use crate::port::subscriber::SubscriberSharedState;
 use crate::raw_sample::RawSample;
 use crate::service::header::publish_subscribe::Header;
+use crate::service::marker::Flatbuffer;
 
 /// It stores the payload and is acquired by the [`Subscriber`](crate::port::subscriber::Subscriber) whenever
 /// it receives new data from a [`Publisher`](crate::port::publisher::Publisher) via
@@ -110,6 +113,27 @@ impl<
             .lock()
             .receiver
             .release_offset(&self.details, ChannelId::new(0));
+    }
+}
+
+impl<Service: crate::service::Service, Payload: Debug, UserHeader: ZeroCopySend>
+    Sample<Service, Flatbuffer<Payload>, UserHeader>
+{
+    /// Returns the serialized flatbuffer data as bytes.
+    pub fn payload_bytes(&self) -> &[u8] {
+        let payload_offset = self.ptr.as_header_ref().payload_offset as usize;
+        let payload_ptr = self.ptr.as_payload_ref() as *const Flatbuffer<Payload> as *const u8;
+        let payload_len = self.ptr.as_header_ref().number_of_elements as usize;
+
+        unsafe { core::slice::from_raw_parts(payload_ptr.add(payload_offset), payload_len) }
+    }
+
+    /// Returns the root of the flatbuffer.
+    pub fn payload_root<'a>(&'a self) -> Result<Payload::Inner, FlatbufferError<InvalidFlatbuffer>>
+    where
+        Payload: flatbuffers::Follow<'a> + flatbuffers::Verifiable,
+    {
+        Ok(flatbuffers::root::<Payload>(self.payload_bytes())?)
     }
 }
 

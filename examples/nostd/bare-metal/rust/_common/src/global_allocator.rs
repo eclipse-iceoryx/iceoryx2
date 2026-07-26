@@ -16,7 +16,7 @@ use core::alloc::{GlobalAlloc, Layout};
 use core::ptr::{NonNull, from_ref, null_mut};
 
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
-use iceoryx2_bb_memory::bump_allocator::BaseAllocator;
+use iceoryx2_bb_memory::bump_allocator::Allocate;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 
 unsafe extern "C" {

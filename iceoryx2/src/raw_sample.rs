@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::fmt;
-use core::mem::{MaybeUninit, transmute};
 
 /// Contains the pointer to the underlying header and payload of a sample.
 #[repr(C)]
@@ -198,30 +197,6 @@ impl<Header, UserHeader, Payload> Clone for RawSampleMut<Header, UserHeader, Pay
     #[inline(always)]
     fn clone(&self) -> Self {
         *self
-    }
-}
-
-impl<Header, UserHeader, Payload> RawSampleMut<Header, UserHeader, MaybeUninit<Payload>> {
-    #[inline(always)]
-    pub(crate) unsafe fn assume_init(&self) -> RawSampleMut<Header, UserHeader, Payload> {
-        RawSampleMut {
-            header: self.header,
-            user_header: self.user_header,
-            payload: unsafe { transmute::<*mut MaybeUninit<Payload>, *mut Payload>(self.payload) },
-        }
-    }
-}
-
-impl<Header, UserHeader, Payload> RawSampleMut<Header, UserHeader, [MaybeUninit<Payload>]> {
-    #[inline(always)]
-    pub(crate) unsafe fn assume_init(&self) -> RawSampleMut<Header, UserHeader, [Payload]> {
-        RawSampleMut {
-            header: self.header,
-            user_header: self.user_header,
-            payload: unsafe {
-                transmute::<*mut [MaybeUninit<Payload>], *mut [Payload]>(self.payload)
-            },
-        }
     }
 }
 

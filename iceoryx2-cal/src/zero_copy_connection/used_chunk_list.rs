@@ -73,7 +73,7 @@ pub mod details {
             }
         }
 
-        unsafe fn init<T: iceoryx2_bb_elementary_traits::allocator::BaseAllocator<NonNull<u8>>>(
+        unsafe fn init<T: iceoryx2_bb_elementary_traits::allocator::Allocate<NonNull<u8>>>(
             &mut self,
             allocator: &T,
         ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {

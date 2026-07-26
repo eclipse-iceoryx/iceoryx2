@@ -79,8 +79,8 @@ use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::relocatable_pointer::RelocatablePointer;
 use iceoryx2_bb_elementary::unique_id::UniqueId;
+use iceoryx2_bb_elementary_traits::allocator::Allocate;
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
-use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
 use iceoryx2_bb_elementary_traits::pointer::Pointer;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -228,7 +228,7 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
         }
     }
 
-    unsafe fn init<Allocator: BaseAllocator<NonNull<u8>>>(
+    unsafe fn init<Allocator: Allocate<NonNull<u8>>>(
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), AllocationError> {
