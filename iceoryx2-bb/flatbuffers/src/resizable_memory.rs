@@ -127,26 +127,11 @@ impl<P: Pointer<u8>, A: Grow<P>> DerefMut for ResizableMemory<P, A> {
     }
 }
 
-unsafe impl<P: Pointer<u8>, A: Grow<P>> Allocator for ResizableMemory<P, A> {
-    type Error = AllocationGrowError;
-
-    fn grow_downwards(&mut self) -> Result<(), Self::Error> {
-        let msg = "Unable to grow memory";
-        let new_layout = match self.strategy {
-            AllocationStrategy::Static => {
-                fail!(from self, with AllocationGrowError::OutOfMemory,
-                    "{msg} since the allocation strategy is static.");
-            }
-            AllocationStrategy::PowerOfTwo => unsafe {
-                let size = (self.current_layout.size() + 1).next_power_of_two();
-                Layout::from_size_align_unchecked(size, self.current_layout.align())
-            },
-            AllocationStrategy::BestFit => {
-                let size =
-                    (self.current_layout.size() + 1).next_multiple_of(self.current_layout.align());
-                unsafe { Layout::from_size_align_unchecked(size, self.current_layout.align()) }
-            }
-        };
+impl<P: Pointer<u8>, A: Grow<P>> ResizableMemory<P, A> {
+    /// Grows the memory downwards to the specified `new_size`.
+    pub fn grow_downwards_with_size(&mut self, new_size: usize) -> Result<(), AllocationGrowError> {
+        let new_layout =
+            unsafe { Layout::from_size_align_unchecked(new_size, self.current_layout.align()) };
 
         self.ptr = unsafe {
             self.allocatable.grow(
@@ -168,6 +153,26 @@ unsafe impl<P: Pointer<u8>, A: Grow<P>> Allocator for ResizableMemory<P, A> {
 
         self.current_layout = new_layout;
         Ok(())
+    }
+}
+
+unsafe impl<P: Pointer<u8>, A: Grow<P>> Allocator for ResizableMemory<P, A> {
+    type Error = AllocationGrowError;
+
+    fn grow_downwards(&mut self) -> Result<(), Self::Error> {
+        let msg = "Unable to grow memory";
+        let new_size = match self.strategy {
+            AllocationStrategy::Static => {
+                fail!(from self, with AllocationGrowError::OutOfMemory,
+                    "{msg} since the allocation strategy is static.");
+            }
+            AllocationStrategy::PowerOfTwo => (self.current_layout.size() + 1).next_power_of_two(),
+            AllocationStrategy::BestFit => {
+                (self.current_layout.size() + 1).next_multiple_of(self.current_layout.align())
+            }
+        };
+
+        self.grow_downwards_with_size(new_size)
     }
 
     fn len(&self) -> usize {
