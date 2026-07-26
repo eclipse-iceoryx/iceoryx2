@@ -140,19 +140,21 @@ where
 {
 }
 
-impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
-    SampleMutUninit<Service, Flatbuffer<Payload>, UserHeader>
+impl<
+    Service: crate::service::Service,
+    Payload: IceoryxSend + Debug + ?Sized,
+    UserHeader: ZeroCopySend,
+> SampleMutUninit<Service, Payload, UserHeader>
 {
-    pub(crate) fn new_flatbuffer(
-        publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
-        chunk: ChunkMut,
-    ) -> Self {
-        let shared_state = SampleMutSharedState::new(
-            publisher_shared_state,
-            chunk.to_shm_pointer(),
-            chunk.layout().size(),
-        );
-        let allocation_strategy = publisher_shared_state
+    #[doc(hidden)]
+    pub fn __internal_create_resizable_memory_builder(
+        &self,
+    ) -> ResizableMemory<ShmPointer, SampleMutSharedState<Service>> {
+        let allocation_strategy = self
+            .shared_state
+            .state
+            .lock()
+            .publisher_shared_state
             .lock()
             .sender
             .data_segment
@@ -164,20 +166,38 @@ impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
         >(TypeVariant::Dynamic)
         .all_headers_len();
 
-        let resizable_memory = ResizableMemoryBuilder::new(chunk.to_shm_pointer())
+        ResizableMemoryBuilder::new(self.chunk.to_shm_pointer())
             .allocation_strategy(allocation_strategy)
-            .initial_layout(chunk.layout())
+            .initial_layout(self.chunk.layout())
             .reserved_header_len(reserved_header_len)
-            .create(shared_state.clone())
-            .unwrap();
+            .create(self.shared_state.clone())
+    }
+}
 
-        Self {
-            flatbuffer_builder: Some(FlatBufferBuilder::new_in(resizable_memory)),
-            shared_state,
+impl<Service: crate::service::Service, Payload, UserHeader: ZeroCopySend>
+    SampleMutUninit<Service, Flatbuffer<Payload>, UserHeader>
+{
+    pub(crate) fn new_flatbuffer(
+        publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
+        chunk: ChunkMut,
+    ) -> Self {
+        let mut new_self = Self {
+            flatbuffer_builder: None,
+            shared_state: SampleMutSharedState::new(
+                publisher_shared_state,
+                chunk.to_shm_pointer(),
+                chunk.layout().size(),
+            ),
             chunk,
             _payload: PhantomData,
             _user_header: PhantomData,
-        }
+        };
+
+        new_self.flatbuffer_builder = Some(FlatBufferBuilder::new_in(
+            new_self.__internal_create_resizable_memory_builder(),
+        ));
+
+        new_self
     }
 
     /// Returns the internal [`FlatBufferBuilder`] that was constructed with the internal iceoryx2

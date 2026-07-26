@@ -16,18 +16,12 @@ use core::{
     ops::{Deref, DerefMut},
 };
 
-use iceoryx2_bb_elementary::{enum_gen, relocatable_pointer::Pointer};
+use iceoryx2_bb_elementary::{math::align, relocatable_pointer::Pointer};
 use iceoryx2_bb_elementary_traits::allocator::{AllocationGrowError, ContentPlacement, Grow};
 use iceoryx2_log::fail;
 
 pub use flatbuffers::Allocator;
 pub use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
-
-enum_gen! {
-    ResizableMemoryError
-  entry:
-    ReservedHeaderLenExceedsInitialSize
-}
 
 #[derive(Debug)]
 pub struct ResizableMemoryBuilder<P: Pointer<u8>> {
@@ -62,24 +56,24 @@ impl<P: Pointer<u8>> ResizableMemoryBuilder<P> {
         self
     }
 
-    pub fn create<A: Grow<P>>(
-        self,
-        allocatable: A,
-    ) -> Result<ResizableMemory<P, A>, ResizableMemoryError> {
-        let msg = "Unable to create ResizableMemory";
-        if self.reserved_header_len >= self.initial_layout.size() {
-            fail!(from self, with ResizableMemoryError::ReservedHeaderLenExceedsInitialSize,
-                "{msg} since the reserved header len {} exceeds the initial memory size {}.",
-                self.reserved_header_len, self.initial_layout.size());
-        }
+    pub fn create<A: Grow<P>>(mut self, allocatable: A) -> ResizableMemory<P, A> {
+        self.initial_layout = unsafe {
+            Layout::from_size_align_unchecked(
+                align(
+                    self.initial_layout.size().max(self.reserved_header_len + 1),
+                    self.initial_layout.align(),
+                ),
+                self.initial_layout.align(),
+            )
+        };
 
-        Ok(ResizableMemory {
+        ResizableMemory {
             ptr: self.ptr,
             strategy: self.strategy,
             allocatable,
             current_layout: self.initial_layout,
             reserved_header_len: self.reserved_header_len,
-        })
+        }
     }
 }
 

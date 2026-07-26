@@ -16,9 +16,7 @@ use core::alloc::Layout;
 
 use iceoryx2_bb_elementary_traits::allocator::AllocationGrowError;
 use iceoryx2_bb_elementary_traits::pointer::Pointer;
-use iceoryx2_bb_flatbuffers::{
-    AllocationStrategy, Allocator, ResizableMemoryBuilder, ResizableMemoryError,
-};
+use iceoryx2_bb_flatbuffers::{AllocationStrategy, Allocator, ResizableMemoryBuilder};
 use iceoryx2_bb_memory::heap_allocator::*;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing_macros::test;
@@ -33,8 +31,7 @@ pub fn reserved_header_len_is_accounted_for_in_len() {
         .initial_layout(initial_layout)
         .reserved_header_len(HEADER_SIZE)
         .allocation_strategy(AllocationStrategy::Static)
-        .create(heap_allocator)
-        .unwrap();
+        .create(heap_allocator);
 
     assert_that!(sut.len(), eq initial_layout.size() - HEADER_SIZE);
 }
@@ -54,8 +51,7 @@ pub fn reserved_header_cannot_be_accessed() {
         .initial_layout(initial_layout)
         .reserved_header_len(HEADER_SIZE)
         .allocation_strategy(AllocationStrategy::Static)
-        .create(heap_allocator)
-        .unwrap();
+        .create(heap_allocator);
 
     for content in &mut *sut {
         *content = 79;
@@ -67,7 +63,7 @@ pub fn reserved_header_cannot_be_accessed() {
 }
 
 #[test]
-pub fn reserved_header_cannot_be_larger_than_initial_size() {
+pub fn when_reserved_header_is_larger_than_initial_layout_than_the_layout_is_increased() {
     const HEADER_SIZE: usize = 9;
     let heap_allocator = HeapAllocator::new();
     let initial_layout = Layout::new::<u64>();
@@ -79,7 +75,7 @@ pub fn reserved_header_cannot_be_larger_than_initial_size() {
         .allocation_strategy(AllocationStrategy::Static)
         .create(heap_allocator);
 
-    assert_that!(sut.err(), eq Some(ResizableMemoryError::ReservedHeaderLenExceedsInitialSize));
+    assert_that!(sut.len(), gt 0);
 }
 
 #[test]
@@ -91,8 +87,7 @@ pub fn allocation_strategy_static_does_now_allow_growing() {
     let mut sut = ResizableMemoryBuilder::new(memory)
         .initial_layout(initial_layout)
         .allocation_strategy(AllocationStrategy::Static)
-        .create(heap_allocator)
-        .unwrap();
+        .create(heap_allocator);
 
     let result = sut.grow_downwards();
     assert_that!(result.err(), eq Some(AllocationGrowError::OutOfMemory));
@@ -108,8 +103,7 @@ pub fn allocation_strategy_best_fit_grows_with_min_alignment() {
     let mut sut = ResizableMemoryBuilder::new(memory)
         .initial_layout(initial_layout)
         .allocation_strategy(AllocationStrategy::BestFit)
-        .create(heap_allocator)
-        .unwrap();
+        .create(heap_allocator);
 
     for _ in 0..10 {
         let current_size = sut.len();
@@ -129,8 +123,7 @@ pub fn allocation_strategy_power_of_two_grows_exponentially() {
     let mut sut = ResizableMemoryBuilder::new(memory)
         .initial_layout(initial_layout)
         .allocation_strategy(AllocationStrategy::PowerOfTwo)
-        .create(heap_allocator)
-        .unwrap();
+        .create(heap_allocator);
 
     for _ in 0..10 {
         let current_size = sut.len();
@@ -156,8 +149,7 @@ pub fn growing_keeps_header_in_front() {
         .initial_layout(initial_layout)
         .reserved_header_len(HEADER_SIZE)
         .allocation_strategy(AllocationStrategy::PowerOfTwo)
-        .create(heap_allocator)
-        .unwrap();
+        .create(heap_allocator);
 
     for _ in 0..10 {
         sut.grow_downwards().unwrap();
@@ -183,8 +175,7 @@ pub fn growing_keeps_content_at_end() {
         .initial_layout(initial_layout)
         .reserved_header_len(HEADER_SIZE)
         .allocation_strategy(AllocationStrategy::PowerOfTwo)
-        .create(heap_allocator)
-        .unwrap();
+        .create(heap_allocator);
 
     for n in 0..10 {
         for element in &mut *sut {
