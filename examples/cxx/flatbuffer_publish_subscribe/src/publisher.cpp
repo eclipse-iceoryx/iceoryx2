@@ -60,10 +60,10 @@ auto main() -> int {
     uint64_t counter = 0;
     while (node.wait(CYCLE_TIME).has_value()) {
         counter += 1;
-
         auto sample = publisher.loan_flatbuffer().value();
         auto& builder = sample.flatbuffer_builder();
 
+        // BEGIN: standard flatbuffer API
         auto title = builder.CreateString("Hello World!");
 
         std::vector<flatbuffers::Offset<Entry>> entries;
@@ -74,6 +74,8 @@ auto main() -> int {
         auto entry_vec = builder.CreateVector(entries);
 
         auto unbounded_data = CreateUnboundedData(builder, title, entry_vec);
+        // END: standard flatbuffer API
+
         auto initialized_sample = assume_init(std::move(sample), unbounded_data);
 
         initialized_sample.user_header_mut() = counter;
