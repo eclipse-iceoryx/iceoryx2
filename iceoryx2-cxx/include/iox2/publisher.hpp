@@ -28,6 +28,7 @@
 #include "iox2/unique_port_id.hpp"
 
 #include <cstdint>
+#include <flatbuffers/flatbuffer_builder.h>
 #include <type_traits>
 
 namespace iox2 {
@@ -225,6 +226,19 @@ template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline auto Publisher<S, Payload, UserHeader>::loan_flatbuffer()
     -> bb::Expected<SampleMutUninit<S, Payload, UserHeader>, LoanError> {
+    SampleMutUninit<S, Payload, UserHeader> sample;
+
+    auto result = iox2_publisher_loan_slice_uninit(&m_handle, &sample.m_sample.m_sample, &sample.m_sample.m_handle, 1);
+
+    // TODO: important fix this
+    // internal::PlacementDefault<UserHeader>::placement_default(sample);
+    sample.m_flatbuffer_builder = flatbuffers::FlatBufferBuilder();
+
+    if (result == IOX2_OK) {
+        return std::move(sample);
+    }
+
+    return bb::err(iox2::bb::into<LoanError>(result));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

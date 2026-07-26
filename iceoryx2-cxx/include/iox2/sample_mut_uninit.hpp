@@ -19,6 +19,8 @@
 #include "iox2/marker.hpp"
 #include "iox2/sample_mut.hpp"
 #include "iox2/service_type.hpp"
+#include <flatbuffers/buffer.h>
+#include <flatbuffers/flatbuffer_builder.h>
 
 namespace iox2 {
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -80,18 +82,26 @@ class SampleMutUninit {
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, T>>
     auto write_from_slice(bb::ImmutableSlice<ValueType>& value) -> SampleMut<S, Payload, UserHeader>;
 
+    template <typename T = Payload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), T>>
+    auto flatbuffer_builder() -> flatbuffers::FlatBufferBuilder&;
+
   private:
     template <ServiceType, typename, typename>
     friend class Publisher;
 
     template <ServiceType ST, typename PayloadT, typename UserHeaderT>
     friend auto assume_init(SampleMutUninit<ST, PayloadT, UserHeaderT>&& self) -> SampleMut<ST, PayloadT, UserHeaderT>;
+    template <ServiceType ST, typename PayloadT, typename UserHeaderT>
+    friend auto assume_init(SampleMutUninit<ST, Flatbuffer<PayloadT>, UserHeaderT>&& self,
+                            flatbuffers::Offset<PayloadT>) -> SampleMut<ST, Flatbuffer<PayloadT>, UserHeaderT>;
+
 
     // The sample is defaulted since both members are initialized in Publisher::loan_uninit() or
     // Publisher::loan_slice_uninit()
     explicit SampleMutUninit() = default;
 
     SampleMut<S, Payload, UserHeader> m_sample;
+    bb::Optional<flatbuffers::FlatBufferBuilder> m_flatbuffer_builder;
 };
 
 /// Acquires the ownership and converts the uninitialized [`SampleMutUninit`] into the
@@ -99,6 +109,21 @@ class SampleMutUninit {
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto assume_init(SampleMutUninit<S, Payload, UserHeader>&& self) -> SampleMut<S, Payload, UserHeader> {
     return std::move(self.m_sample);
+}
+
+/// Acquires the ownership and converts the uninitialized [`SampleMutUninit`] into the
+/// initialized version [`SampleMut`] containing the root payload.
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto assume_init(SampleMutUninit<S, Flatbuffer<Payload>, UserHeader>&& self, flatbuffers::Offset<Payload> root)
+    -> SampleMut<S, Flatbuffer<Payload>, UserHeader> {
+    return std::move(self.m_sample);
+}
+
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline auto SampleMutUninit<S, Payload, UserHeader>::flatbuffer_builder() -> flatbuffers::FlatBufferBuilder& {
+    return m_flatbuffer_builder.value();
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
