@@ -13,9 +13,11 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, UserHeaderFfi, c_size_t,
-    iox2_publish_subscribe_header_h, iox2_publish_subscribe_header_t, iox2_service_type_e,
+    AssertNonNullHandle, HandleToType, IOX2_OK, IntoCInt, ResizableMemoryPublishSubscribeUnion,
+    UserHeaderFfi, c_size_t, iox2_publish_subscribe_header_h, iox2_publish_subscribe_header_t,
+    iox2_service_type_e,
 };
+use crate::{iox2_resizable_memory_publish_subscribe_h, iox2_resizable_memory_publish_subscribe_t};
 
 use iceoryx2::sample_mut_uninit::SampleMutUninit;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
@@ -384,6 +386,55 @@ pub unsafe extern "C" fn iox2_sample_mut_send(
         }
     }
     IOX2_OK
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_sample_mut_create_resizable_memory_builder(
+    handle: iox2_sample_mut_h_ref,
+    struct_ptr: *mut iox2_resizable_memory_publish_subscribe_t,
+    handle_ptr: *mut iox2_resizable_memory_publish_subscribe_h,
+) {
+    handle.assert_non_null();
+    debug_assert!(!handle_ptr.is_null());
+
+    let mut struct_ptr = struct_ptr;
+    fn no_op(_: *mut iox2_resizable_memory_publish_subscribe_t) {}
+    let mut deleter: fn(*mut iox2_resizable_memory_publish_subscribe_t) = no_op;
+    if struct_ptr.is_null() {
+        struct_ptr = iox2_resizable_memory_publish_subscribe_t::alloc();
+        deleter = iox2_resizable_memory_publish_subscribe_t::dealloc;
+    }
+    debug_assert!(!struct_ptr.is_null());
+
+    unsafe {
+        let sample = &mut *handle.as_type();
+        let service_type = sample.service_type;
+
+        match service_type {
+            iox2_service_type_e::IPC => (*struct_ptr).init(
+                service_type,
+                ResizableMemoryPublishSubscribeUnion::new_ipc(
+                    sample
+                        .value
+                        .as_mut()
+                        .ipc
+                        .__internal_create_resizable_memory_builder(),
+                ),
+                deleter,
+            ),
+            iox2_service_type_e::LOCAL => (*struct_ptr).init(
+                service_type,
+                ResizableMemoryPublishSubscribeUnion::new_local(
+                    sample
+                        .value
+                        .as_mut()
+                        .local
+                        .__internal_create_resizable_memory_builder(),
+                ),
+                deleter,
+            ),
+        }
+    }
 }
 
 /// This function needs to be called to destroy the sample!
