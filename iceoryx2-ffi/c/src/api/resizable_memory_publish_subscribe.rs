@@ -159,4 +159,40 @@ pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_ptr(
         }
     }
 }
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_len(
+    handle: iox2_resizable_memory_publish_subscribe_h_ref,
+) -> usize {
+    handle.assert_non_null();
+    unsafe {
+        let resizable_memory = &mut *handle.as_type();
+
+        match resizable_memory.service_type {
+            iox2_service_type_e::IPC => resizable_memory.value.as_mut().ipc.len(),
+            iox2_service_type_e::LOCAL => resizable_memory.value.as_mut().local.len(),
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_drop(
+    handle: iox2_resizable_memory_publish_subscribe_h,
+) {
+    debug_assert!(!handle.is_null());
+    unsafe {
+        let memory = &mut *handle.as_type();
+
+        match memory.service_type {
+            iox2_service_type_e::IPC => {
+                ManuallyDrop::drop(&mut memory.value.as_mut().ipc);
+            }
+            iox2_service_type_e::LOCAL => {
+                ManuallyDrop::drop(&mut memory.value.as_mut().local);
+            }
+        }
+        (memory.deleter)(memory);
+    }
+}
+
 // END C API

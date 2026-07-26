@@ -73,6 +73,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/port_name.cpp
     src/publisher_details.cpp
     src/reader_details.cpp
+    src/resizable_memory_publish_subscribe.cpp
     src/server_details.cpp
     src/service.cpp
     src/service_builder_event.cpp
