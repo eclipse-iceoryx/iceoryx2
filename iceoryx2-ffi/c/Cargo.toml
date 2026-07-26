@@ -51,6 +51,7 @@ iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-derive-macros = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
+iceoryx2-bb-flatbuffers = { workspace = true }
 iceoryx2-bb-lock-free = { workspace = true }
 iceoryx2-bb-loggers = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
