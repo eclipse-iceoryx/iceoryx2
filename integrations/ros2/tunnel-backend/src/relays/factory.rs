@@ -21,7 +21,6 @@ use iceoryx2_services_tunnel_backend::{traits::RelayFactory, types::wake::WakeHa
 use crate::mapping::TopicDescription;
 use crate::rcl::RclNode;
 use crate::relays::{event, publish_subscribe};
-use crate::typesupport::TypeSupportRegistry;
 
 /// Factory for creating relay builders.
 #[derive(Debug)]
@@ -32,7 +31,6 @@ pub struct Factory<
     T: Translator<EndpointDescription = TopicDescription>,
 > {
     node: Rc<RclNode>,
-    type_registry: &'a TypeSupportRegistry,
     mapping: &'a M,
     translator: Rc<T>,
     wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
@@ -48,14 +46,12 @@ impl<
 {
     pub fn new(
         node: Rc<RclNode>,
-        type_registry: &'a TypeSupportRegistry,
         mapping: &'a M,
         translator: Rc<T>,
         wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     ) -> Self {
         Factory {
             node,
-            type_registry,
             mapping,
             translator,
             wake,
@@ -93,7 +89,6 @@ impl<
         publish_subscribe::Builder::new(
             description,
             Rc::clone(&self.node),
-            self.type_registry,
             self.mapping,
             Rc::clone(&self.translator),
             self.wake.clone(),

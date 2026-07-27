@@ -37,7 +37,7 @@ use crate::rcl::{
     subscription::TakeError,
 };
 use crate::ros_header::RosHeader;
-use crate::typesupport::TypeSupportRegistry;
+use crate::typesupport;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum CreationError {
@@ -352,7 +352,6 @@ pub struct Builder<
     T: Translator<EndpointDescription = TopicDescription>,
 > {
     node: Rc<RclNode>,
-    type_registry: &'a TypeSupportRegistry,
     mapping: &'a M,
     translator: Rc<T>,
     service_description: &'a ServiceDescription,
@@ -370,14 +369,12 @@ impl<
     pub fn new(
         service_description: &'a ServiceDescription,
         node: Rc<RclNode>,
-        type_registry: &'a TypeSupportRegistry,
         mapping: &'a M,
         translator: Rc<T>,
         wake: Option<Arc<WakeHandle<local_threadsafe::Service>>>,
     ) -> Self {
         Self {
             node,
-            type_registry,
             mapping,
             translator,
             service_description,
@@ -422,7 +419,7 @@ impl<
 
         let type_name = topic_description.type_name.as_str();
         let type_support = fail!(from origin,
-            when self.type_registry.load(type_name),
+            when typesupport::load(type_name),
             with CreationError::TypeSupport,
             "Failed to load typesupport for '{}'",
             type_name

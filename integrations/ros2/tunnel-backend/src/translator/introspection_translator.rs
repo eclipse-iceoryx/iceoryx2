@@ -13,6 +13,8 @@
 //! Translation between rosidl C structs and their CDR wire representation,
 //! driven by the type's introspection data loaded at runtime.
 
+use std::rc::Rc;
+
 use core::alloc::Layout;
 use core::ffi::c_void;
 
@@ -102,7 +104,7 @@ impl Translator for IntrospectionTranslator {
         let type_name = topic_description.type_name.as_str();
 
         let introspection = fail!(from origin,
-            when typesupport::load_typesupport_introspection(type_name),
+            when typesupport::load_introspection(type_name),
             with TranslationError::Introspection,
             "Failed to load introspection for type '{}'",
             type_name
@@ -141,7 +143,7 @@ impl Translator for IntrospectionTranslator {
         }
 
         let type_support = fail!(from origin,
-            when typesupport::load_typesupport(type_name),
+            when typesupport::load(type_name),
             with TranslationError::TypeSupport,
             "Failed to load typesupport for type '{}'",
             type_name
@@ -167,7 +169,7 @@ pub struct CdrTranscoder {
     /// ROS 2 type name, for diagnostics.
     type_name: String,
     /// Typesupport handle driving `rmw_serialize`/`rmw_deserialize`.
-    type_support: TypeSupport,
+    type_support: Rc<TypeSupport>,
     /// Layout of the type's rosidl C struct.
     layout: Layout,
 }

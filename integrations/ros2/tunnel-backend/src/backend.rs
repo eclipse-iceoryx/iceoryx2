@@ -27,7 +27,7 @@ use crate::{
     discovery::Discovery,
     rcl::{RclNode, RclNodeBuilder},
     relays::{Factory, event, publish_subscribe},
-    typesupport::TypeSupportRegistry,
+    typesupport,
 };
 
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -51,8 +51,6 @@ pub struct Ros2Backend<
     T: Translator<EndpointDescription = TopicDescription> = Passthrough<TopicDescription>,
 > {
     node: Rc<RclNode>,
-    /// Typesupport for all configured topics, loaded on initialization.
-    type_registry: TypeSupportRegistry,
     discovery: Discovery<S, M, T>,
     mapping: Rc<M>,
     translator: Rc<T>,
@@ -93,7 +91,6 @@ impl<
     fn relay_builder(&self) -> Self::RelayFactory<'_> {
         Factory::new(
             Rc::clone(&self.node),
-            &self.type_registry,
             &self.mapping,
             Rc::clone(&self.translator),
             self.wake.clone(),
@@ -172,11 +169,10 @@ impl<
 
         // Load all typesupport libraries for configured topics during
         // initialization.
-        let type_registry = TypeSupportRegistry::default();
         for topic in &self.config.topics {
             let type_name = topic.type_name.as_str();
             fail!(from origin,
-                when type_registry.load(type_name),
+                when typesupport::load(type_name),
                 with CreationError::TypeSupport,
                 "Failed to load typesupport for configured topic '{}'", type_name
             );
@@ -193,7 +189,6 @@ impl<
 
         Ok(Ros2Backend {
             node,
-            type_registry,
             discovery,
             mapping,
             translator,

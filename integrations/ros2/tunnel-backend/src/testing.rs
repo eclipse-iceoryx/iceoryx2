@@ -19,7 +19,7 @@ use crate::qos::QosProfile;
 use crate::rcl::{
     NodeName, RclNode, RclNodeBuilder, RclPublisherBuilder, RclSubscriptionBuilder, TopicName,
 };
-use crate::typesupport::TypeSupportRegistry;
+use crate::typesupport;
 
 pub use crate::rcl::publisher::RclPublisher;
 pub use crate::rcl::subscription::RclSubscription;
@@ -29,7 +29,6 @@ pub use crate::rcl::subscription::RclSubscription;
 #[derive(Debug)]
 pub struct TestPeer {
     node: Rc<RclNode>,
-    types: TypeSupportRegistry,
 }
 
 impl TestPeer {
@@ -40,17 +39,13 @@ impl TestPeer {
             .expect("failed to create the test peer node");
         Self {
             node: Rc::new(node),
-            types: TypeSupportRegistry::default(),
         }
     }
 
     /// Creates a publisher on `topic` with default QoS.
     pub fn create_publisher(&self, topic: &str, type_name: &str) -> RclPublisher {
         let topic = TopicName::new(topic).expect("valid topic name");
-        let type_support = self
-            .types
-            .load(type_name)
-            .expect("failed to load typesupport");
+        let type_support = typesupport::load(type_name).expect("failed to load typesupport");
         RclPublisherBuilder::new(Rc::clone(&self.node), &topic, type_support)
             .create()
             .expect("failed to create the test peer publisher")
@@ -59,10 +54,7 @@ impl TestPeer {
     /// Creates a subscription on `topic` with default QoS.
     pub fn create_subscription(&self, topic: &str, type_name: &str) -> RclSubscription {
         let topic = TopicName::new(topic).expect("valid topic name");
-        let type_support = self
-            .types
-            .load(type_name)
-            .expect("failed to load typesupport");
+        let type_support = typesupport::load(type_name).expect("failed to load typesupport");
         RclSubscriptionBuilder::new(Rc::clone(&self.node), &topic, type_support)
             .create()
             .expect("failed to create the test peer subscription")
