@@ -12,16 +12,45 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{AssertNonNullHandle, HandleToType, iox2_service_type_e};
+use crate::{
+    IOX2_OK,
+    api::{AssertNonNullHandle, HandleToType, IntoCInt, iox2_service_type_e},
+};
+use core::ffi::c_int;
 use iceoryx2::sample_mut::SampleMutSharedState;
 use iceoryx2_bb_elementary::static_assert::*;
+use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_bb_flatbuffers::ResizableMemory;
-use iceoryx2_cal::shared_memory::ShmPointer;
-use iceoryx2_ffi_macros::iceoryx2_ffi;
+use iceoryx2_cal::{shared_memory::ShmPointer, shm_allocator::AllocationGrowError};
+use iceoryx2_ffi_macros::{CStrRepr, iceoryx2_ffi};
 
 use core::mem::ManuallyDrop;
 
 // BEGIN types definition
+
+#[repr(C)]
+#[derive(Copy, Clone, CStrRepr)]
+pub enum iox2_allocation_grow_error_e {
+    GROW_WOULD_SHRINK = IOX2_OK as isize + 1,
+    SIZE_IS_ZERO,
+    OUT_OF_MEMORY,
+    ALIGNMENT_FAILURE,
+    INTERNAL_ERROR,
+}
+
+impl IntoCInt for AllocationGrowError {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            AllocationGrowError::AlignmentFailure => {
+                iox2_allocation_grow_error_e::ALIGNMENT_FAILURE
+            }
+            AllocationGrowError::GrowWouldShrink => iox2_allocation_grow_error_e::GROW_WOULD_SHRINK,
+            AllocationGrowError::InternalError => iox2_allocation_grow_error_e::INTERNAL_ERROR,
+            AllocationGrowError::OutOfMemory => iox2_allocation_grow_error_e::OUT_OF_MEMORY,
+            AllocationGrowError::SizeIsZero => iox2_allocation_grow_error_e::SIZE_IS_ZERO,
+        }) as c_int
+    }
+}
 
 pub(super) union ResizableMemoryPublishSubscribeUnion {
     ipc: ManuallyDrop<ResizableMemory<ShmPointer, SampleMutSharedState<crate::IpcService>>>,
@@ -115,37 +144,63 @@ impl HandleToType for iox2_resizable_memory_publish_subscribe_h_ref {
 
 // BEGIN C API
 
+/// Resizes the underlying memory downwards. All contents are copied to the end
+/// of the resized memory chunk. When `in_use_front != 0` those first bytes are
+/// copied to the beginning of the resized memory chunk.
+/// The `new_size` argument must be greater than the previous size, otherwise
+/// this function will fail.
+///
+/// # Safety
+///
+/// * `handle` is valid and non-null
+/// * `new_ptr` must be a valid pointer pointing to `*mut u8`
+///
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_grow_downwards(
     handle: iox2_resizable_memory_publish_subscribe_h_ref,
     new_size: usize,
     in_use_front: usize,
-) -> *mut u8 {
+    new_ptr: *mut *mut u8,
+) -> c_int {
     handle.assert_non_null();
     unsafe {
         let resizable_memory = &mut *handle.as_type();
 
         match resizable_memory.service_type {
             iox2_service_type_e::IPC => {
-                resizable_memory
+                if let Err(e) = resizable_memory
                     .value
                     .as_mut()
                     .ipc
-                    .grow_downwards_with_size(new_size, in_use_front);
-                resizable_memory.value.as_mut().ipc.as_mut_ptr()
+                    .grow_downwards_with_size(new_size, in_use_front)
+                {
+                    return e.into_c_int();
+                }
+                *new_ptr = resizable_memory.value.as_mut().ipc.as_mut_ptr();
             }
             iox2_service_type_e::LOCAL => {
-                resizable_memory
+                if let Err(e) = resizable_memory
                     .value
                     .as_mut()
                     .local
-                    .grow_downwards_with_size(new_size, in_use_front);
-                resizable_memory.value.as_mut().local.as_mut_ptr()
+                    .grow_downwards_with_size(new_size, in_use_front)
+                {
+                    return e.into_c_int();
+                }
+                *new_ptr = resizable_memory.value.as_mut().local.as_mut_ptr();
             }
         }
+
+        IOX2_OK
     }
 }
 
+/// Returns the current payload pointer that is managed by the resizable memory.
+///
+/// # Safety
+///
+/// * `handle` is valid and non-null
+///
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_ptr(
     handle: iox2_resizable_memory_publish_subscribe_h_ref,
@@ -161,6 +216,12 @@ pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_ptr(
     }
 }
 
+/// Returns the current length of the memory that is managed by the resizable memory.
+///
+/// # Safety
+///
+/// * `handle` is valid and non-null
+///
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_len(
     handle: iox2_resizable_memory_publish_subscribe_h_ref,
@@ -176,6 +237,13 @@ pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_len(
     }
 }
 
+/// Returns the current reserved header length of the memory that is managed by the
+/// resizable memory.
+///
+/// # Safety
+///
+/// * `handle` is valid and non-null
+///
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_reserved_header_len(
     handle: iox2_resizable_memory_publish_subscribe_h_ref,
@@ -193,6 +261,13 @@ pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_reserved_header
     }
 }
 
+/// Cleans up the resizable memory.
+///
+/// # Safety
+///
+/// * `handle` is valid and non-null
+/// * after this call the `handle` is no longer valid
+///
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_drop(
     handle: iox2_resizable_memory_publish_subscribe_h,

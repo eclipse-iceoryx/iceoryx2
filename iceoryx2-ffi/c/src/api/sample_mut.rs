@@ -388,6 +388,16 @@ pub unsafe extern "C" fn iox2_sample_mut_send(
     IOX2_OK
 }
 
+/// Finalizes a sample that was populated through serialization. Based on the
+/// provided `payload_ptr` and `allocation_size` the offset to the start of the
+/// payload is calculated.
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_publisher_loan_slice_uninit()`](crate::iox2_publisher_loan_slice_uninit())
+/// * `payload_ptr` is a valid pointer into the managed payload of this sample.
+/// * `allocation_size` is the size that was allocated through the resizable memory.
+///
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_sample_mut_finish_serialized(
     handle: iox2_sample_mut_h_ref,
@@ -412,6 +422,17 @@ pub unsafe extern "C" fn iox2_sample_mut_finish_serialized(
     }
 }
 
+/// Returns a resizable memory builder required for dynamic allocation within the sample.
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_publisher_loan_slice_uninit()`](crate::iox2_publisher_loan_slice_uninit())
+/// * `struct_ptr` - Must be either a NULL pointer or a pointer to a valid
+///   [`iox2_resizable_memory_publish_subscribe_t`]. If it is a NULL pointer, the
+///   storage will be allocated on the heap.
+/// * `handle_ptr` - An uninitialized or dangling [`iox2_resizable_memory_publish_subscribe_h`] handle which
+///   will be initialized by this function call.
+///
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_sample_mut_create_resizable_memory_builder(
     handle: iox2_sample_mut_h_ref,

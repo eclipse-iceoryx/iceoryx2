@@ -182,6 +182,16 @@ pub unsafe extern "C" fn iox2_publish_subscribe_header_number_of_elements(
     }
 }
 
+/// Returns the payload offset when it does not start at the beginning.
+///
+/// # Arguments
+///
+/// * `handle` is valid, non-null and was initialized with
+///   [`iox2_sample_header()`](crate::iox2_sample_header)
+///
+/// # Safety
+///
+/// * `header_handle` is valid and non-null
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_publish_subscribe_header_payload_offset(
     header_handle: iox2_publish_subscribe_header_h_ref,
