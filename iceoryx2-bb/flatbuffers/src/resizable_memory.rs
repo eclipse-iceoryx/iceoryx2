@@ -127,7 +127,11 @@ impl<P: Pointer<u8>, A: Grow<P>> ResizableMemory<P, A> {
     }
 
     /// Grows the memory downwards to the specified `new_size`.
-    pub fn grow_downwards_with_size(&mut self, new_size: usize) -> Result<(), AllocationGrowError> {
+    pub fn grow_downwards_with_size(
+        &mut self,
+        new_size: usize,
+        in_use_front: usize,
+    ) -> Result<(), AllocationGrowError> {
         let new_layout =
             unsafe { Layout::from_size_align_unchecked(new_size, self.current_layout.align()) };
 
@@ -145,7 +149,7 @@ impl<P: Pointer<u8>, A: Grow<P>> ResizableMemory<P, A> {
             core::ptr::copy(
                 self.ptr.as_ptr().add(offset),
                 self.ptr.as_mut_ptr(),
-                self.reserved_header_len,
+                self.reserved_header_len + in_use_front,
             )
         };
 
@@ -170,7 +174,7 @@ unsafe impl<P: Pointer<u8>, A: Grow<P>> Allocator for ResizableMemory<P, A> {
             }
         };
 
-        self.grow_downwards_with_size(new_size)
+        self.grow_downwards_with_size(new_size, 0)
     }
 
     fn len(&self) -> usize {

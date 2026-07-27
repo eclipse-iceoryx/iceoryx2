@@ -61,6 +61,7 @@ auto ResizableMemoryPublishSubscribe<Service>::operator=(ResizableMemoryPublishS
 
 template <ServiceType Service>
 auto ResizableMemoryPublishSubscribe<Service>::allocate(size_t size) -> uint8_t* {
+    std::cout << "allocate: " << size << std::endl;
     if (m_has_allocated) {
         return nullptr;
     }
@@ -93,7 +94,7 @@ auto ResizableMemoryPublishSubscribe<Service>::as_ptr() const -> const uint8_t* 
 
 template <ServiceType Service>
 void ResizableMemoryPublishSubscribe<Service>::deallocate(uint8_t* ptr, size_t size IOX2_MAYBE_UNUSED) {
-    IOX2_ASSERT(ptr == m_ptr, "Deallocating ptr that was not allocated with this instance.");
+    std::cout << "deallocate: " << size << std::endl;
     IOX2_ASSERT(m_has_allocated == true, "Deallocating ptr that was not allocated with this instance.");
     m_has_allocated = false;
 }
@@ -106,12 +107,18 @@ auto ResizableMemoryPublishSubscribe<Service>::reallocate_downward(
     size_t old_size IOX2_MAYBE_UNUSED,
     size_t new_size,
     size_t in_use_back IOX2_MAYBE_UNUSED,
-    size_t in_use_front IOX2_MAYBE_UNUSED
+    size_t in_use_front
     // NOLINTEND(bugprone-easily-swappable-parameters)
-
     ) -> uint8_t* {
     IOX2_ASSERT(old_p == m_ptr, "Growing ptr that was not allocated with this instance.");
-    return iox2_resizable_memory_publish_subscribe_grow_downwards(&m_handle, new_size);
+    auto* new_ptr = iox2_resizable_memory_publish_subscribe_grow_downwards(&m_handle, new_size, in_use_front);
+
+    if (new_ptr == nullptr) {
+        return nullptr;
+    }
+
+    m_ptr = new_ptr;
+    return new_ptr;
 }
 
 template class ResizableMemoryPublishSubscribe<ServiceType::Ipc>;

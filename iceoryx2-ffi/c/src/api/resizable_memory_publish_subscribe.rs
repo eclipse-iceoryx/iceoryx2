@@ -119,6 +119,7 @@ impl HandleToType for iox2_resizable_memory_publish_subscribe_h_ref {
 pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_grow_downwards(
     handle: iox2_resizable_memory_publish_subscribe_h_ref,
     new_size: usize,
+    in_use_front: usize,
 ) -> *mut u8 {
     handle.assert_non_null();
     unsafe {
@@ -130,7 +131,7 @@ pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_grow_downwards(
                     .value
                     .as_mut()
                     .ipc
-                    .grow_downwards_with_size(new_size);
+                    .grow_downwards_with_size(new_size, in_use_front);
                 resizable_memory.value.as_mut().ipc.as_mut_ptr()
             }
             iox2_service_type_e::LOCAL => {
@@ -138,7 +139,7 @@ pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_grow_downwards(
                     .value
                     .as_mut()
                     .local
-                    .grow_downwards_with_size(new_size);
+                    .grow_downwards_with_size(new_size, in_use_front);
                 resizable_memory.value.as_mut().local.as_mut_ptr()
             }
         }
