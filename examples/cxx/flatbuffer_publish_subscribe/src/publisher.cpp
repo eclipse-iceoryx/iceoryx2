@@ -52,7 +52,7 @@ auto main() -> int {
                        .value();
 
     auto publisher = service.publisher_builder()
-                         .initial_reserved_memory(2048)
+                         .initial_reserved_memory(1024) // NOLINT
                          .allocation_strategy(AllocationStrategy::PowerOfTwo)
                          .create()
                          .value();
@@ -64,13 +64,12 @@ auto main() -> int {
         auto& builder = sample.flatbuffer_builder();
 
         // BEGIN: standard flatbuffer API
-        // auto title = builder.CreateString("Hello World!");
-        auto title = builder.CreateString("");
+        auto title = builder.CreateString("Hello World!");
 
         std::vector<flatbuffers::Offset<Entry>> entries;
-        // for (uint64_t i = 0; i < (counter % 15); ++i) {                       // NOLINT
-        //     entries.emplace_back(CreateEntry(builder, 6 * i + 5, 6 * i + 7)); // NOLINT
-        // }
+        for (uint64_t i = 0; i < (counter % 15); ++i) {                       // NOLINT
+            entries.emplace_back(CreateEntry(builder, 6 * i + 5, 6 * i + 7)); // NOLINT
+        }
 
         auto entry_vec = builder.CreateVector(entries);
 

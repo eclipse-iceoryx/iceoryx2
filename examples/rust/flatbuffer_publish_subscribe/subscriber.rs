@@ -56,22 +56,20 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(sample) = subscriber.receive()? {
-            coutln!("header: {:?}", sample.header());
+            let data = sample.payload_root()?;
+
+            coutln!("title: {}", data.title().unwrap_or_default());
             coutln!("user header: {}", sample.user_header());
-            //let data = sample.payload_root()?;
 
-            //coutln!("user header: {}", sample.user_header());
-            //coutln!("title: {}", data.title().unwrap_or_default());
-
-            //if let Some(entries) = data.entries() {
-            //    for (index, entry) in entries.iter().enumerate() {
-            //        coutln!(
-            //            "Entry {index}: data_1={}, data_2={}",
-            //            entry.data_1(),
-            //            entry.data_2()
-            //        );
-            //    }
-            //}
+            if let Some(entries) = data.entries() {
+                for (index, entry) in entries.iter().enumerate() {
+                    coutln!(
+                        "Entry {index}: data_1={}, data_2={}",
+                        entry.data_1(),
+                        entry.data_2()
+                    );
+                }
+            }
         }
     }
 

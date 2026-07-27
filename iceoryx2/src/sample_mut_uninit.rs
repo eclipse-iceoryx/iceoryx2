@@ -101,7 +101,6 @@ use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::Z
 use iceoryx2_cal::shared_memory::ShmPointer;
 
 use crate::port::details::chunk::ChunkMut;
-use crate::service::static_config::message_type_details::{MessageTypeDetails, TypeVariant};
 use crate::{
     port::publisher::PublisherSharedState,
     sample_mut::{SampleMut, SampleMutSharedState},
@@ -150,21 +149,10 @@ impl<
     pub fn __internal_create_resizable_memory_builder(
         &self,
     ) -> ResizableMemory<ShmPointer, SampleMutSharedState<Service>> {
-        let allocation_strategy = self
-            .shared_state
-            .state
-            .lock()
-            .publisher_shared_state
-            .lock()
-            .sender
-            .data_segment
-            .allocation_strategy();
-        let reserved_header_len = MessageTypeDetails::from::<
-            crate::service::header::publish_subscribe::Header,
-            UserHeader,
-            u8,
-        >(TypeVariant::Dynamic)
-        .all_headers_len();
+        let shared_state_guard = self.shared_state.state.lock();
+        let guard = shared_state_guard.publisher_shared_state.lock();
+        let allocation_strategy = guard.sender.data_segment.allocation_strategy();
+        let reserved_header_len = guard.sender.message_type_details.all_headers_len();
 
         ResizableMemoryBuilder::new(self.chunk.to_shm_pointer())
             .allocation_strategy(allocation_strategy)
@@ -175,11 +163,14 @@ impl<
 
     #[doc(hidden)]
     pub fn __internal_finish_serialized(&mut self, payload_ptr: *const u8, allocation_size: u64) {
-        let message_type_details = MessageTypeDetails::from::<
-            crate::service::header::publish_subscribe::Header,
-            UserHeader,
-            u8,
-        >(TypeVariant::Dynamic);
+        let message_type_details = self
+            .shared_state
+            .state
+            .lock()
+            .publisher_shared_state
+            .lock()
+            .sender
+            .message_type_details;
 
         self.chunk.header = self
             .shared_state

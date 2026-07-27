@@ -176,6 +176,23 @@ pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_len(
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_reserved_header_len(
+    handle: iox2_resizable_memory_publish_subscribe_h_ref,
+) -> usize {
+    handle.assert_non_null();
+    unsafe {
+        let resizable_memory = &mut *handle.as_type();
+
+        match resizable_memory.service_type {
+            iox2_service_type_e::IPC => resizable_memory.value.as_mut().ipc.reserved_header_len(),
+            iox2_service_type_e::LOCAL => {
+                resizable_memory.value.as_mut().local.reserved_header_len()
+            }
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn iox2_resizable_memory_publish_subscribe_drop(
     handle: iox2_resizable_memory_publish_subscribe_h,
 ) {

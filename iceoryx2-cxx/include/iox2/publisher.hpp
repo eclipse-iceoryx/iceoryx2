@@ -234,10 +234,10 @@ inline auto Publisher<S, Payload, UserHeader>::loan_flatbuffer()
     iox2_resizable_memory_publish_subscribe_h resizable_memory_handle {};
     iox2_sample_mut_create_resizable_memory_builder(&sample.m_sample.m_handle, nullptr, &resizable_memory_handle);
 
-    ResizableMemoryPublishSubscribe<S>* resizable_memory =
-        new ResizableMemoryPublishSubscribe<S>(resizable_memory_handle);
+    sample.m_memory = new ResizableMemoryPublishSubscribe<S>(resizable_memory_handle);
 
-    sample.m_flatbuffer_builder = flatbuffers::FlatBufferBuilder(2048, resizable_memory, true);
+    auto initial_size = sample.m_memory->len();
+    sample.m_flatbuffer_builder = flatbuffers::FlatBufferBuilder(initial_size, sample.m_memory, true);
 
     if (result == IOX2_OK) {
         return std::move(sample);

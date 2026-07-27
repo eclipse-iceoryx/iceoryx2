@@ -122,6 +122,10 @@ impl<P: Pointer<u8>, A: Grow<P>> DerefMut for ResizableMemory<P, A> {
 }
 
 impl<P: Pointer<u8>, A: Grow<P>> ResizableMemory<P, A> {
+    pub fn reserved_header_len(&self) -> usize {
+        self.reserved_header_len
+    }
+
     /// Grows the memory downwards to the specified `new_size`.
     pub fn grow_downwards_with_size(&mut self, new_size: usize) -> Result<(), AllocationGrowError> {
         let new_layout =

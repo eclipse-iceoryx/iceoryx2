@@ -18,6 +18,7 @@
 #include "iox2/header_publish_subscribe.hpp"
 #include "iox2/internal/helper.hpp"
 #include "iox2/marker.hpp"
+#include "iox2/resizable_memory_publish_subscribe.hpp"
 #include "iox2/sample_mut.hpp"
 #include "iox2/service_type.hpp"
 #include <flatbuffers/buffer.h>
@@ -104,6 +105,7 @@ class SampleMutUninit {
     auto get_handle() -> iox2_sample_mut_h;
 
     SampleMut<S, Payload, UserHeader> m_sample;
+    ResizableMemoryPublishSubscribe<S>* m_memory = nullptr;
     bb::Optional<flatbuffers::FlatBufferBuilder> m_flatbuffer_builder;
 };
 
@@ -121,10 +123,12 @@ inline auto assume_init(SampleMutUninit<S, Flatbuffer<Payload>, UserHeader>&& se
     -> SampleMut<S, Flatbuffer<Payload>, UserHeader> {
     // TODO: important fix this
     // internal::PlacementDefault<UserHeader>::placement_default(self);
+    auto final_size = self.m_memory->len() + self.m_memory->reserved_header_len();
     self.flatbuffer_builder().Finish(root, nullptr);
     const auto* payload_ptr = self.flatbuffer_builder().GetBufferPointer();
+    // const auto* payload_ptr = self.m_memory->as_ptr();
     auto handle = self.get_handle();
-    iox2_sample_mut_finish_serialized(&handle, payload_ptr, 2048);
+    iox2_sample_mut_finish_serialized(&handle, payload_ptr, final_size);
 
     return std::move(self.m_sample);
 }

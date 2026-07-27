@@ -67,12 +67,27 @@ auto ResizableMemoryPublishSubscribe<Service>::allocate(size_t size) -> uint8_t*
 
     m_has_allocated = true;
 
-    auto current_size = iox2_resizable_memory_publish_subscribe_len(&m_handle);
+    auto current_size = len();
 
     if (size > current_size) {
         reallocate_downward(m_ptr, current_size, size, 0, 0);
     }
 
+    return m_ptr;
+}
+
+template <ServiceType Service>
+auto ResizableMemoryPublishSubscribe<Service>::len() const -> size_t {
+    return iox2_resizable_memory_publish_subscribe_len(&m_handle);
+}
+
+template <ServiceType Service>
+auto ResizableMemoryPublishSubscribe<Service>::reserved_header_len() const -> size_t {
+    return iox2_resizable_memory_publish_subscribe_reserved_header_len(&m_handle);
+}
+
+template <ServiceType Service>
+auto ResizableMemoryPublishSubscribe<Service>::as_ptr() const -> const uint8_t* {
     return m_ptr;
 }
 

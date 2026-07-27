@@ -58,7 +58,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         // estimate is, the fewer reallocations will be required. Reallocations occur
         // only at the beginning of communication. Once the publisher's data segment
         // has been resized appropriately, all subsequent samples will use that size.
-        .initial_reserved_memory(32)
+        .initial_reserved_memory(1024)
         // By default, the allocation strategy is Static, which does not allow
         // reallocations when initial_reserved_memory is exhausted. Set it to
         // PowerOfTwo or BestFit to enable reallocations.

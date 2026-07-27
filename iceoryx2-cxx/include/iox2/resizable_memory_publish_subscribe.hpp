@@ -37,6 +37,10 @@ class ResizableMemoryPublishSubscribe : public flatbuffers::Allocator {
     auto reallocate_downward(uint8_t* old_p, size_t old_size, size_t new_size, size_t in_use_back, size_t in_use_front)
         -> uint8_t* override;
 
+    auto len() const -> size_t;
+    auto reserved_header_len() const -> size_t;
+    auto as_ptr() const -> const uint8_t*;
+
   private:
     template <ServiceType, typename, typename>
     friend class Publisher;
