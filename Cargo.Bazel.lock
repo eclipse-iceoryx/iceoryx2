@@ -1,5 +1,5 @@
 {
-  "checksum": "e899b697f2b9447987d5988dea3b69472ba065cadb230adb1e5744079ad4440a",
+  "checksum": "35af8ea09eacb8c1245cb31aa2a233be32e608e884060d42bcbbdd8fb342803a",
   "crates": {
     "addr2line 0.25.1": {
       "name": "addr2line",
@@ -5983,6 +5983,15 @@
           "common": [
             "default",
             "std"
+          ],
+          "selects": {}
+        },
+        "deps": {
+          "common": [
+            {
+              "id": "flatbuffers 25.12.19",
+              "target": "flatbuffers"
+            }
           ],
           "selects": {}
         },
