@@ -225,3 +225,39 @@ impl<T, const SIZE: usize> AssertSizeOf<T, SIZE> {
         "T must have size defined by SIZE"
     );
 }
+
+/// A compile time assert to check for the alignment of a type being equal to a value
+///
+/// # Examples
+///
+/// This does compile!
+///
+/// ```
+/// use iceoryx2_bb_elementary::static_assert::*;
+///
+/// static_assert_align_of::<u16, 2>();
+///
+/// ```
+///
+/// This does not compile!
+///
+/// ```compile_fail
+/// use iceoryx2_bb_elementary::static_assert::*;
+///
+/// static_assert_align_of::<u8, 32>();
+///
+/// ```
+pub const fn static_assert_align_of<T, const ALIGNMENT: usize>() {
+    let () = AssertAlignOf::<T, ALIGNMENT>::OK;
+}
+
+struct AssertAlignOf<T, const ALIGNMENT: usize> {
+    _phantom: PhantomData<T>,
+}
+
+impl<T, const ALIGNMENT: usize> AssertAlignOf<T, ALIGNMENT> {
+    const OK: () = assert!(
+        core::mem::align_of::<T>() == ALIGNMENT,
+        "T must have alignment defined by ALIGNMENT"
+    );
+}
