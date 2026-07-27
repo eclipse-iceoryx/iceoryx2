@@ -33,7 +33,7 @@ use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_container::vector::Vector;
 use iceoryx2_bb_container::{flatmap::RelocatableFlatMap, vector::RelocatableVec};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
-use iceoryx2_bb_elementary::static_assert::static_assert_eq;
+use iceoryx2_bb_elementary::static_assert_align_of;
 use iceoryx2_bb_elementary_traits::{
     testing::abandonable::Abandonable, zero_copy_send::ZeroCopySend,
 };
@@ -64,19 +64,19 @@ pub struct KeyMemory<const CAPACITY: usize> {
 
 impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
     pub fn try_from<T: Copy>(value: &T) -> Result<Self, KeyMemoryError> {
-        static_assert_eq::<{ align_of::<KeyMemory<1>>() }, MAX_BLACKBOARD_KEY_ALIGNMENT>();
+        static_assert_align_of!(KeyMemory<1>, MAX_BLACKBOARD_KEY_ALIGNMENT);
 
         let origin = "KeyMemory::try_from()";
         let msg = "Unable to create KeyMemory";
 
         // Replace if block with below compile-time assertion once available for generic parameters
-        // static_assert_le::<{ size_of::<T>() }, CAPACITY>();
+        // static_assert_size_of_le!(T, CAPACITY);
         if size_of::<T>() > CAPACITY {
             fail!(from origin, with KeyMemoryError::ValueTooLarge,
                 "{} since the passed value is too large. Its size must be <= {}.", msg, CAPACITY);
         }
         // Replace if block with below compile-time assertion once available for generic parameters
-        // static_assert_le::<{ align_of::<T>() }, MAX_BLACKBOARD_KEY_ALIGNMENT>();
+        // static_assert_align_of_le!(T, MAX_BLACKBOARD_KEY_ALIGNMENT);
         if align_of::<T>() > MAX_BLACKBOARD_KEY_ALIGNMENT {
             fail!(from origin, with KeyMemoryError::ValueAlignmentTooLarge,
                 "{} since the alignment of the passed value is too large. The alignment must be <= {}.",
@@ -94,7 +94,7 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
     ///
     ///   * see Safety section of core::ptr::copy_nonoverlapping
     pub unsafe fn try_from_ptr(ptr: *const u8, key_layout: Layout) -> Result<Self, KeyMemoryError> {
-        static_assert_eq::<{ align_of::<KeyMemory<1>>() }, MAX_BLACKBOARD_KEY_ALIGNMENT>();
+        static_assert_align_of!(KeyMemory<1>, MAX_BLACKBOARD_KEY_ALIGNMENT);
 
         let origin = "KeyMemory::try_from_ptr()";
         let msg = "Unable to create KeyMemory";
