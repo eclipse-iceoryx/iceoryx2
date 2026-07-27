@@ -37,22 +37,12 @@ struct ComplexType {
 }
 
 #[test]
-pub fn fixed_size_byte_atomic_cannot_be_created_when_sizes_do_not_match() {
-    const SIZE: usize = size_of::<u64>();
-    let value: u8 = 0;
-    let sut = FixedSizeByteAtomic::<u8, SIZE>::new(value);
-    assert_that!(sut, is_err);
-    assert_that!(sut.err().unwrap(), eq ByteAtomicError::SizesDoNotMatch);
-}
-
-#[test]
 pub fn new_creates_byte_atomic_containing_passed_value() {
     let value = 963;
 
     const SIZE: usize = size_of::<u64>();
     let fixed_size_sut = FixedSizeByteAtomic::<u64, SIZE>::new(value);
-    assert_that!(fixed_size_sut, is_ok);
-    let read_value = unsafe { fixed_size_sut.unwrap().read().assume_consistent() };
+    let read_value = unsafe { fixed_size_sut.read().assume_consistent() };
     assert_that!(read_value, eq value);
 
     const MEM_SIZE: usize = RelocatableByteAtomic::<u64>::const_memory_size();
@@ -78,8 +68,7 @@ pub fn new_creates_fixed_size_byte_atomic_containing_passed_complex_value() {
 
     const SIZE: usize = size_of::<ComplexType>();
     let fixed_size_sut = FixedSizeByteAtomic::<ComplexType, SIZE>::new(value);
-    assert_that!(fixed_size_sut, is_ok);
-    let read_value = unsafe { fixed_size_sut.unwrap().read().assume_consistent() };
+    let read_value = unsafe { fixed_size_sut.read().assume_consistent() };
     assert_that!(read_value, eq value);
 
     const MEM_SIZE: usize = RelocatableByteAtomic::<ComplexType>::const_memory_size();
@@ -100,7 +89,7 @@ pub fn byte_atomic_contains_passed_value_after_write() {
     let new_value: u64 = 752389;
 
     const SIZE: usize = size_of::<u64>();
-    let fixed_size_sut = FixedSizeByteAtomic::<u64, SIZE>::new(0).unwrap();
+    let fixed_size_sut = FixedSizeByteAtomic::<u64, SIZE>::new(0);
     fixed_size_sut.write(new_value);
     assert_that!(unsafe { fixed_size_sut.read().assume_consistent() }, eq new_value);
 
@@ -133,7 +122,7 @@ pub fn byte_atomic_contains_passed_complex_value_after_write() {
     };
 
     const SIZE: usize = size_of::<ComplexType>();
-    let fixed_size_sut = FixedSizeByteAtomic::<ComplexType, SIZE>::new(init_value).unwrap();
+    let fixed_size_sut = FixedSizeByteAtomic::<ComplexType, SIZE>::new(init_value);
     fixed_size_sut.write(new_value);
     let read_value = unsafe { fixed_size_sut.read().assume_consistent() };
     assert_that!(read_value, eq new_value);
@@ -168,7 +157,7 @@ pub fn concurrent_read_without_write_always_returns_correct_data() {
         .unwrap();
 
     const SIZE: usize = size_of::<u64>();
-    let fixed_size_sut = FixedSizeByteAtomic::<u64, SIZE>::new(value).unwrap();
+    let fixed_size_sut = FixedSizeByteAtomic::<u64, SIZE>::new(value);
 
     const MEM_SIZE: usize = RelocatableByteAtomic::<u64>::const_memory_size();
     let memory = [0u8; MEM_SIZE];
@@ -212,7 +201,7 @@ pub fn concurrent_write_does_not_trigger_ub() {
         .unwrap();
 
     const SIZE: usize = size_of::<u64>();
-    let fixed_size_sut = FixedSizeByteAtomic::<u64, SIZE>::new(value).unwrap();
+    let fixed_size_sut = FixedSizeByteAtomic::<u64, SIZE>::new(value);
 
     const MEM_SIZE: usize = RelocatableByteAtomic::<u64>::const_memory_size();
     let memory = [0u8; MEM_SIZE];
@@ -261,7 +250,7 @@ pub fn concurrent_read_and_write_does_not_trigger_ub() {
         .unwrap();
 
     const SIZE: usize = size_of::<u64>();
-    let fixed_size_sut = FixedSizeByteAtomic::<u64, SIZE>::new(value).unwrap();
+    let fixed_size_sut = FixedSizeByteAtomic::<u64, SIZE>::new(value);
 
     const MEM_SIZE: usize = RelocatableByteAtomic::<u64>::const_memory_size();
     let memory = [0u8; MEM_SIZE];

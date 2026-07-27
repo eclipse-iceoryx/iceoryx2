@@ -39,7 +39,7 @@
 //! }
 //!
 //! const SIZE: usize = size_of::<Foo>();
-//! let wrapper = FixedSizeByteAtomic::<Foo, SIZE>::new(Foo { bar: 0, baz: 0 }).unwrap();
+//! let wrapper = FixedSizeByteAtomic::<Foo, SIZE>::new(Foo { bar: 0, baz: 0 });
 //!
 //! let new_value = Foo { bar: 4, baz: 6 };
 //! unsafe {
@@ -125,13 +125,6 @@ impl<T> MaybeTorn<T> {
     }
 }
 
-/// Failures caused by [`FixedSizeByteAtomic::new()`].
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum ByteAtomicError {
-    /// The size of the passed value and SIZE do not match.
-    SizesDoNotMatch,
-}
-
 /// A runtime fixed-size, shared-memory compatible [`RelocatableByteAtomic`].
 pub struct RelocatableByteAtomic<T: AtomicCopy> {
     data_ptr: RelocatablePointer<AtomicU8>,
@@ -199,7 +192,7 @@ impl<T: AtomicCopy> RelocatableByteAtomic<T> {
             }
         }
 
-        let value_ptr = (&value as *const T) as *const u8;
+        let value_ptr = (&raw const value).cast::<u8>();
         value.for_each_field(0, &mut |offset, size| {
             for i in offset..offset + size {
                 unsafe {
@@ -234,6 +227,20 @@ impl<T: AtomicCopy> RelocatableByteAtomic<T> {
     }
 }
 
+// TODO #1644: Used to check at compile-time that T and SIZE of FixedSizeByteAtomic are
+// equal. Can be removed once size_of::<T>() can be directly used in the struct definition.
+const fn static_assert_size_of<T, const SIZE: usize>() {
+    let () = AssertSizeOf::<T, SIZE>::OK;
+}
+
+struct AssertSizeOf<T, const SIZE: usize> {
+    _phantom: PhantomData<T>,
+}
+
+impl<T, const SIZE: usize> AssertSizeOf<T, SIZE> {
+    const OK: () = assert!(size_of::<T>() == SIZE, "T must have size defined by SIZE");
+}
+
 /// A compile-time fixed-size, shared-memory compatible [`FixedSizeByteAtomic`].
 #[repr(C)]
 pub struct FixedSizeByteAtomic<T: AtomicCopy, const SIZE: usize> {
@@ -247,19 +254,15 @@ unsafe impl<T: AtomicCopy + ZeroCopySend, const SIZE: usize> ZeroCopySend
 }
 
 impl<T: AtomicCopy, const SIZE: usize> FixedSizeByteAtomic<T, SIZE> {
-    /// Creates a new [`FixedSizeByteAtomic`] that contains the passed value. It fails when
-    /// the size of the value and `SIZE` do not match.
-    pub fn new(value: T) -> Result<Self, ByteAtomicError> {
+    /// Creates a new [`FixedSizeByteAtomic`] that contains the passed value.
+    pub fn new(value: T) -> Self {
         // TODO #1644: The following check and the SIZE parameter can be removed once size_of::<T>()
         // can be directly used in the struct definition. Consider then to remove the
         // RelocatableByteAtomic implementation as well; maybe add a placement_new() to the
         // FixedSizeByteAtomic.
-        if size_of::<T>() != SIZE {
-            fail!(from "ByteAtomic::new()", with ByteAtomicError::SizesDoNotMatch,
-                "size_of::<T>() and SIZE must be equal.");
-        }
+        static_assert_size_of::<T, SIZE>();
 
-        let value_ptr = (&value as *const T) as *const u8;
+        let value_ptr = (&raw const value).cast::<u8>();
 
         // The passed value may contain padding bytes. Reading these padding bytes
         // would lead to undefined behavior. Therefore, we first set all bytes to zero and
@@ -270,10 +273,10 @@ impl<T: AtomicCopy, const SIZE: usize> FixedSizeByteAtomic<T, SIZE> {
                 *byte = unsafe { *value_ptr.add(i) };
             }
         });
-        Ok(Self {
+        Self {
             data: bytes.map(AtomicU8::new),
             _inner_type: PhantomData,
-        })
+        }
     }
 
     /// Copies the stored value byte-wise into a [`MaybeTorn<T>`]. Torn reads are possible when
@@ -301,7 +304,7 @@ fn read_impl<T: AtomicCopy>(src_data_ptr: *const AtomicU8) -> MaybeTorn<T> {
 }
 
 fn write_impl<T: AtomicCopy>(dest_data_ptr: *const AtomicU8, value: T) {
-    let value_ptr = (&value as *const T) as *const u8;
+    let value_ptr = (&raw const value).cast::<u8>();
     value.for_each_field(0, &mut |offset, size| {
         for i in offset..offset + size {
             unsafe {
