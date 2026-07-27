@@ -86,32 +86,23 @@ impl core::fmt::Display for ReceiveError {
 
 impl core::error::Error for ReceiveError {}
 
-/// The path a relayed service's payloads take across the boundary.
-#[derive(Debug)]
-enum PayloadPath<C> {
-    /// Bytes cross unmodified, on the relay's zero-copy path.
-    Passthrough,
-    /// Bytes are translated through `transcoder`, reusing scratch buffers.
-    Transcode {
-        transcoder: C,
-        payload_layout: PayloadLayout,
-        /// Reused wire-byte scratch; grows to the largest message seen.
-        wire_scratch: RefCell<Vec<u8>>,
-        /// Reused payload-byte scratch for dynamic layouts, where the loan
-        /// can only be sized after translation; grows to the largest message
-        /// seen.
-        payload_scratch: RefCell<Vec<u8>>,
-    },
+/// Reused byte buffers for the transcoding paths.
+#[derive(Debug, Default)]
+struct Scratch {
+    /// Reused wire-byte scratch buffer.
+    wire: RefCell<Vec<u8>>,
+    /// Reused payload-byte scratch for dynamic layouts where the loan can
+    /// only be sized after transcoding.
+    payload: RefCell<Vec<u8>>,
 }
 
 // TODO: Consider moving somewhere else?
-/// [`ResizableBuffer`] over a fixed-size loaned payload; refuses to resize
-/// past the loan.
-struct LoanBuffer<'a> {
+/// [`ResizableBuffer`] over a fixed-size loaned payload.
+struct LoanedBuffer<'a> {
     bytes: &'a mut [u8],
 }
 
-impl ResizableBuffer for LoanBuffer<'_> {
+impl ResizableBuffer for LoanedBuffer<'_> {
     fn resize(&mut self, min_capacity: usize) -> &mut [u8] {
         assert!(
             min_capacity <= self.bytes.len(),
@@ -130,12 +121,13 @@ pub struct Relay<S: Service, T: Translator<EndpointDescription = TopicDescriptio
     /// Whether the service's user-header type is [`RosHeader`], i.e. the
     /// relay may write the remote origin into received samples.
     write_ros_header: bool,
-    payload_path: PayloadPath<T::Transcoder>,
+    translation: Translation<T::Transcoder>,
+    scratch: Scratch,
     _phantom: core::marker::PhantomData<S>,
 }
 
 impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> Relay<S, T> {
-    /// The direct path: publishes the payload bytes as they are.
+    /// Propagate bytes without any modification.
     fn send_passthrough(&self, payload: &[u8]) -> Result<(), SendError> {
         let origin = "publish_subscribe::Relay::send";
 
@@ -148,17 +140,11 @@ impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> Relay<S,
         Ok(())
     }
 
-    /// The buffered path: translates the payload into the scratch, then
-    /// publishes the wire bytes.
-    fn send_translated(
-        &self,
-        transcoder: &T::Transcoder,
-        wire_scratch: &RefCell<Vec<u8>>,
-        payload: &[u8],
-    ) -> Result<(), SendError> {
+    /// Transcode bytes into intermediate scratch buffer then propagate.
+    fn send_translated(&self, transcoder: &T::Transcoder, payload: &[u8]) -> Result<(), SendError> {
         let origin = "publish_subscribe::Relay::send";
 
-        let mut wire_scratch = wire_scratch.borrow_mut();
+        let mut wire_scratch = self.scratch.wire.borrow_mut();
         let written = fail!(from origin,
             when transcoder.to_wire(payload, &mut *wire_scratch),
             with SendError::Translation,
@@ -173,7 +159,7 @@ impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> Relay<S,
         Ok(())
     }
 
-    /// The direct path: takes the wire bytes straight into a loaned payload.
+    /// Ingest bytes without modification into loaned payload.
     fn receive_passthrough<LoanError>(
         &self,
         loan: &mut LoanFn<'_, S, LoanError>,
@@ -216,39 +202,31 @@ impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> Relay<S,
         }
     }
 
-    /// The buffered path: takes the wire bytes into the wire scratch, then
-    /// translates them into a loaned payload of the resolved layout.
+    /// Receive bytes into intermediate scratch buffer then transcode into
+    /// shared memory loan.
     fn receive_translated<LoanError>(
         &self,
         transcoder: &T::Transcoder,
         payload_layout: PayloadLayout,
-        wire_scratch: &RefCell<Vec<u8>>,
-        payload_scratch: &RefCell<Vec<u8>>,
         loan: &mut LoanFn<'_, S, LoanError>,
     ) -> Result<Option<SampleMut<S>>, ReceiveError> {
-        // The wire scratch is rcl's take destination here, the transcoder reads
-        // it and writes the translation towards the loan.
-        let mut wire_scratch = wire_scratch.borrow_mut();
+        let mut wire_bytes = self.scratch.wire.borrow_mut();
         let result = self.subscription.take_into(|size| {
-            if wire_scratch.len() < size {
-                wire_scratch.resize(size, 0);
+            if wire_bytes.len() < size {
+                wire_bytes.resize(size, 0);
             }
-            Some(wire_scratch.as_mut_ptr())
+            Some(wire_bytes.as_mut_ptr())
         });
 
         match result {
             Ok(Some((size, message_info))) => {
                 let mut sample = match payload_layout {
                     PayloadLayout::FixedSize(layout) => {
-                        self.translate_into_loan(transcoder, &wire_scratch[..size], layout, loan)?
+                        self.translate_fixed_size(transcoder, &wire_bytes[..size], layout, loan)?
                     }
-                    PayloadLayout::Dynamic { element } => self.translate_via_scratch(
-                        transcoder,
-                        payload_scratch,
-                        &wire_scratch[..size],
-                        element,
-                        loan,
-                    )?,
+                    PayloadLayout::Dynamic { element } => {
+                        self.translate_dynamic_size(transcoder, &wire_bytes[..size], element, loan)?
+                    }
                 };
 
                 if self.write_ros_header {
@@ -266,12 +244,11 @@ impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> Relay<S,
         }
     }
 
-    /// Translates wire bytes directly into a loaned payload of the fixed
-    /// layout, which the transcoder must fill exactly.
-    fn translate_into_loan<LoanError>(
+    /// Transcodes wire bytes directly into a loaned payload.
+    fn translate_fixed_size<LoanError>(
         &self,
         transcoder: &T::Transcoder,
-        wire: &[u8],
+        wire_bytes: &[u8],
         layout: Layout,
         loan: &mut LoanFn<'_, S, LoanError>,
     ) -> Result<SampleMutUninit<S>, ReceiveError> {
@@ -282,11 +259,11 @@ impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> Relay<S,
             Err(_) => return Err(ReceiveError::Loan),
         };
 
-        let mut loan_buffer = LoanBuffer {
+        let mut loan_buffer = LoanedBuffer {
             bytes: payload::zeroed_bytes(sample.payload_mut()),
         };
         let written = fail!(from origin,
-            when transcoder.from_wire(wire, &mut loan_buffer),
+            when transcoder.from_wire(wire_bytes, &mut loan_buffer),
             with ReceiveError::Translation,
             "Failed to translate received payload from the wire"
         );
@@ -302,21 +279,20 @@ impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> Relay<S,
         Ok(sample)
     }
 
-    /// Translates wire bytes into the payload scratch, then loans a payload
-    /// sized to the translated length and copies the translation into it.
-    fn translate_via_scratch<LoanError>(
+    /// Transcodes dynamically-sized wire bytes into intermediate scratch
+    /// buffer, then loans a payload of appropriate size to translate to.
+    fn translate_dynamic_size<LoanError>(
         &self,
         transcoder: &T::Transcoder,
-        payload_scratch: &RefCell<Vec<u8>>,
-        wire: &[u8],
+        wire_bytes: &[u8],
         element: Layout,
         loan: &mut LoanFn<'_, S, LoanError>,
     ) -> Result<SampleMutUninit<S>, ReceiveError> {
         let origin = "publish_subscribe::Relay::receive";
 
-        let mut payload_scratch = payload_scratch.borrow_mut();
+        let mut payload_bytes = self.scratch.payload.borrow_mut();
         let written = fail!(from origin,
-            when transcoder.from_wire(wire, &mut *payload_scratch),
+            when transcoder.from_wire(wire_bytes, &mut *payload_bytes),
             with ReceiveError::Translation,
             "Failed to translate received payload from the wire"
         );
@@ -333,7 +309,7 @@ impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> Relay<S,
             Ok(sample) => sample,
             Err(_) => return Err(ReceiveError::Loan),
         };
-        payload::copy_into_uninit(sample.payload_mut(), &payload_scratch[..written]);
+        payload::copy_into_uninit(sample.payload_mut(), &payload_bytes[..written]);
 
         Ok(sample)
     }
@@ -347,11 +323,9 @@ impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> PublishS
 
     fn send(&self, sample: Sample<S>) -> Result<(), Self::SendError> {
         let payload = payload::as_bytes(sample.payload());
-        match &self.payload_path {
-            PayloadPath::Passthrough => self.send_passthrough(payload),
-            PayloadPath::Transcode {
-                transcoder, wire_scratch, ..
-            } => self.send_translated(transcoder, wire_scratch, payload),
+        match &self.translation {
+            Translation::Passthrough => self.send_passthrough(payload),
+            Translation::Transcode { transcoder, .. } => self.send_translated(transcoder, payload),
         }
     }
 
@@ -359,20 +333,12 @@ impl<S: Service, T: Translator<EndpointDescription = TopicDescription>> PublishS
         &self,
         loan: &mut LoanFn<'_, S, LoanError>,
     ) -> Result<Option<SampleMut<S>>, Self::ReceiveError> {
-        match &self.payload_path {
-            PayloadPath::Passthrough => self.receive_passthrough(loan),
-            PayloadPath::Transcode {
+        match &self.translation {
+            Translation::Passthrough => self.receive_passthrough(loan),
+            Translation::Transcode {
                 transcoder,
                 payload_layout,
-                wire_scratch,
-                payload_scratch,
-            } => self.receive_translated(
-                transcoder,
-                *payload_layout,
-                wire_scratch,
-                payload_scratch,
-                loan,
-            ),
+            } => self.receive_translated(transcoder, *payload_layout, loan),
         }
     }
 }
@@ -497,34 +463,24 @@ impl<
         let write_ros_header =
             pattern_description.user_header == TypeDescription::from(&RosHeader::type_detail());
 
-        let payload_path = match translation {
-            Translation::Passthrough => PayloadPath::Passthrough,
-            Translation::Transcode {
-                payload_layout,
-                transcoder,
-            } => {
-                if let PayloadLayout::Dynamic { element } = payload_layout
-                    && element.size() == 0
-                {
-                    fail!(from origin, with CreationError::Translator,
-                        "Translator produced a dynamic payload with a zero-sized element for service '{}'",
-                        self.service_description.name
-                    );
-                }
-                PayloadPath::Transcode {
-                    transcoder,
-                    payload_layout,
-                    wire_scratch: RefCell::new(Vec::new()),
-                    payload_scratch: RefCell::new(Vec::new()),
-                }
-            }
-        };
+        if let Translation::Transcode {
+            payload_layout: PayloadLayout::Dynamic { element },
+            ..
+        } = &translation
+            && element.size() == 0
+        {
+            fail!(from origin, with CreationError::Translator,
+                "Translator produced a dynamic payload with a zero-sized element for service '{}'",
+                self.service_description.name
+            );
+        }
 
         Ok(Relay {
             publisher,
             subscription,
             write_ros_header,
-            payload_path,
+            translation,
+            scratch: Scratch::default(),
             _phantom: core::marker::PhantomData,
         })
     }
