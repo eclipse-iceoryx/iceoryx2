@@ -46,6 +46,8 @@ auto main() -> int {
 
     auto service = node.service_builder(ServiceName::create("My/Flatbuffer/Service").value())
                        .publish_subscribe<Flatbuffer<UnboundedData>>()
+                       // This method allows us to use a custom schema file path when no schema lookup path was
+                       // defined or when a custom file is required (maybe outside of the lookup path).
                        .flatbuffer_schema_path(bb::FilePath::create("unbounded_data.fbs").value())
                        .user_header<uint64_t>()
                        .open_or_create()
@@ -72,7 +74,6 @@ auto main() -> int {
         }
 
         auto entry_vec = builder.CreateVector(entries);
-
         auto unbounded_data = CreateUnboundedData(builder, title, entry_vec);
         // END: standard flatbuffer API
 

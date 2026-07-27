@@ -22,6 +22,8 @@
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
 
+#include <flatbuffers/flatbuffers.h>
+#include <cstdint>
 #include <type_traits>
 
 namespace iox2 {
@@ -58,6 +60,12 @@ class Sample {
     /// Returns a slice to navigate the payload of the [`Sample`]
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto payload() const -> bb::ImmutableSlice<ValueType>;
+
+    template <typename T = Payload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto payload_bytes() const -> bb::ImmutableSlice<uint8_t>;
+
+    template <typename T = Payload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
+    auto payload_root() const -> const typename T::ValueType*;
 
     /// Returns a reference to the user_header of the [`Sample`]
     template <typename T = UserHeader, typename = std::enable_if_t<!std::is_same<void, UserHeader>::value, T>>
@@ -144,6 +152,25 @@ inline auto Sample<S, Payload, UserHeader>::payload() const -> bb::ImmutableSlic
     }
 
     return bb::ImmutableSlice<ValueType>(static_cast<const ValueType*>(ptr), length);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline auto Sample<S, Payload, UserHeader>::payload_bytes() const -> bb::ImmutableSlice<uint8_t> {
+    const void* ptr = nullptr;
+    size_t number_of_elements = 0;
+
+    iox2_sample_payload(&m_handle, &ptr, &number_of_elements);
+    auto payload_offset = header().payload_offset();
+    auto payload_len = header().number_of_elements();
+
+    return bb::ImmutableSlice<uint8_t>(static_cast<const uint8_t*>(ptr + payload_offset), payload_len);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+auto Sample<S, Payload, UserHeader>::payload_root() const -> const typename T::ValueType* {
+    return flatbuffers::GetRoot<typename T::ValueType>(payload_bytes().data());
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

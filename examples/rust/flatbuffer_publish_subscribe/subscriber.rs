@@ -70,6 +70,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                     );
                 }
             }
+            coutln!("");
         }
     }
 

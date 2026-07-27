@@ -181,4 +181,16 @@ pub unsafe extern "C" fn iox2_publish_subscribe_header_number_of_elements(
         header.value.as_ref().number_of_elements()
     }
 }
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iox2_publish_subscribe_header_payload_offset(
+    header_handle: iox2_publish_subscribe_header_h_ref,
+) -> u64 {
+    header_handle.assert_non_null();
+    unsafe {
+        let header = &mut *header_handle.as_type();
+
+        header.value.as_ref().payload_offset()
+    }
+}
 // END C API

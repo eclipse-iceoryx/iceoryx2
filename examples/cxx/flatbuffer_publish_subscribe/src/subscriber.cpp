@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include <cstdint>
+#include <flatbuffers/flatbuffers.h>
 #include <iostream>
 
 #include "iox2/iceoryx2.hpp"
@@ -20,6 +21,8 @@ constexpr iox2::bb::Duration CYCLE_TIME = iox2::bb::Duration::from_secs(1);
 
 auto main() -> int {
     using namespace iox2;
+    using namespace Example;
+
     set_log_level_from_env_or(LogLevel::Info);
 
     const auto* lookup_path = std::getenv("IOX2_FLATBUFFER_SCHEMA_PATH");
@@ -39,7 +42,9 @@ auto main() -> int {
                     .value();
 
     auto service = node.service_builder(ServiceName::create("My/Flatbuffer/Service").value())
-                       .publish_subscribe<Flatbuffer<Example::UnboundedData>>()
+                       .publish_subscribe<Flatbuffer<UnboundedData>>()
+                       // This method allows us to use a custom schema file path when no schema lookup path was
+                       // defined or when a custom file is required (maybe outside of the lookup path).
                        .flatbuffer_schema_path(bb::FilePath::create("unbounded_data.fbs").value())
                        .user_header<uint64_t>()
                        .open_or_create()
@@ -52,7 +57,16 @@ auto main() -> int {
     while (node.wait(CYCLE_TIME).has_value()) {
         auto sample = subscriber.receive().value();
         while (sample.has_value()) {
-            //std::cout << "received: " << sample->payload() << std::endl;
+            const auto* data = sample->payload_root();
+            std::cout << "title: " << data->title()->c_str() << std::endl;
+            std::cout << "user header: " << sample->user_header() << std::endl;
+
+            for (uint32_t i = 0; i < data->entries()->size(); ++i) {
+                std::cout << "Entry " << i << ": data_1=" << data->entries()->Get(i)->data_1()
+                          << ", data_2=" << data->entries()->Get(i)->data_2() << std::endl;
+            }
+            std::cout << std::endl;
+
             sample = subscriber.receive().value();
         }
     }

@@ -16,25 +16,26 @@
 namespace iox2 {
 template <typename T>
 struct Flatbuffer {
+    using ValueType = T;
     // IOX2_TYPE_NAME is equivalent to the payload type name used on the Rust side
     static constexpr const char* IOX2_TYPE_NAME = "iox2::Flatbuffer";
 };
 
 namespace internal {
-    template<typename Given, template<typename> class Required>
-    struct HasMarker {
-        static const bool value = false;
-    };
+template <typename Given, template <typename> class Required>
+struct HasMarker {
+    static const bool VALUE = false;
+};
 
-    template<typename T, template<typename> class Required>
-    struct HasMarker<Required<T>, Required> {
-        static const bool value = true;
-    };
-}
+template <typename T, template <typename> class Required>
+struct HasMarker<Required<T>, Required> {
+    static const bool VALUE = true;
+};
+} // namespace internal
 
 template <typename T>
 constexpr auto has_flatbuffer_marker() -> bool {
-    return internal::HasMarker<T, Flatbuffer>::value;
+    return internal::HasMarker<T, Flatbuffer>::VALUE;
 }
 } // namespace iox2
 
