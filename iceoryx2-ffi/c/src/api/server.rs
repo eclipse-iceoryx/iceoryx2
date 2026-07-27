@@ -23,7 +23,6 @@ use super::{PayloadFfi, UserHeaderFfi};
 use core::ffi::c_int;
 use core::mem::ManuallyDrop;
 use iceoryx2::port::server::Server;
-use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 // BEGIN types definition

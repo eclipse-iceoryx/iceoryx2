@@ -18,7 +18,6 @@ use crate::api::{
 };
 
 use iceoryx2::sample_mut_uninit::SampleMutUninit;
-use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::{c_int, c_void};

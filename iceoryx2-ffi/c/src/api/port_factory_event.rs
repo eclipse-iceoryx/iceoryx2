@@ -23,7 +23,6 @@ use crate::{IOX2_OK, iox2_node_list_impl};
 
 use iceoryx2::service::dynamic_config::event::{ListenerDetails, NotifierDetails};
 use iceoryx2::service::port_factory::{PortFactory, event::PortFactory as PortFactoryEvent};
-use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::{c_char, c_int};

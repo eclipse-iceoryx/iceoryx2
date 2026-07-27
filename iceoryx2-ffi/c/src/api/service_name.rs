@@ -19,7 +19,6 @@ use crate::c_size_t;
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::service_name::ServiceNameError;
-use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::{CStrRepr, iceoryx2_ffi};
 

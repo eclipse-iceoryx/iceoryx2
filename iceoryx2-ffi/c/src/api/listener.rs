@@ -20,7 +20,6 @@ use crate::api::{
 use crate::iox2_file_descriptor_ptr;
 
 use iceoryx2::port::listener::Listener;
-use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
 use iceoryx2_cal::event::ListenerWaitError;

@@ -20,7 +20,6 @@ use crate::{
 
 use super::{AssertNonNullHandle, HandleToType, iox2_signal_handling_mode_e};
 use iceoryx2::prelude::WaitSetBuilder;
-use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 #[repr(C)]
