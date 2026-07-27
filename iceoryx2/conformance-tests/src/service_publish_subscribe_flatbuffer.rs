@@ -29,7 +29,7 @@ pub mod service_publish_subscribe_flatbuffer {
     use iceoryx2_bb_posix::testing::*;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing_macros::conformance_test;
-    use iceoryx2_cal::static_storage::StaticStorage;
+    use iceoryx2_cal::static_storage::StaticStorageView;
     use iceoryx2_testing::*;
 
     //////////////////////////////
