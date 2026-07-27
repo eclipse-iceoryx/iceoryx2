@@ -91,7 +91,7 @@ use core::mem::MaybeUninit;
 use core::ptr::NonNull;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU8, Ordering};
 use iceoryx2_bb_elementary::relocatable_pointer::{Pointer, RelocatablePointer};
-use iceoryx2_bb_elementary::static_assert::static_assert_size_of;
+use iceoryx2_bb_elementary::static_assert_size_of;
 use iceoryx2_bb_elementary_traits::allocator::{Allocate, AllocationError};
 use iceoryx2_bb_elementary_traits::{atomic_copy::AtomicCopy, zero_copy_send::ZeroCopySend};
 use iceoryx2_log::fail;
@@ -229,6 +229,24 @@ impl<T: AtomicCopy> RelocatableByteAtomic<T> {
 }
 
 /// A compile-time fixed-size, shared-memory compatible [`FixedSizeByteAtomic`].
+///
+/// # Examples
+///
+/// This does compile!
+///
+/// ```
+/// use iceoryx2_bb_container::byte_atomic::FixedSizeByteAtomic;
+///
+/// let _ = FixedSizeByteAtomic::<u64, 8>::new(0);
+/// ```
+///
+/// This does not compile!
+///
+/// ```compile_fail
+/// use iceoryx2_bb_container::byte_atomic::FixedSizeByteAtomic;
+///
+/// let _ = FixedSizeByteAtomic::<u64, 1>::new(0);
+/// ```
 #[repr(C)]
 pub struct FixedSizeByteAtomic<T: AtomicCopy, const SIZE: usize> {
     data: [AtomicU8; SIZE],
@@ -247,7 +265,7 @@ impl<T: AtomicCopy, const SIZE: usize> FixedSizeByteAtomic<T, SIZE> {
         // can be directly used in the struct definition. Consider then to remove the
         // RelocatableByteAtomic implementation as well; maybe add a placement_new() to the
         // FixedSizeByteAtomic.
-        static_assert_size_of::<T, SIZE>();
+        static_assert_size_of!(T, SIZE);
 
         let value_ptr = (&raw const value).cast::<u8>();
 
