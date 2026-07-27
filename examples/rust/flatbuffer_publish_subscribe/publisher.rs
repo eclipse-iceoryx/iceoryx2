@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let publisher = service
         .publisher_builder()
-        // We start with 32 bytes. The more accurate the initial_reserved_memory
+        // We start with 1024 bytes. The more accurate the initial_reserved_memory
         // estimate is, the fewer reallocations will be required. Reallocations occur
         // only at the beginning of communication. Once the publisher's data segment
         // has been resized appropriately, all subsequent samples will use that size.
