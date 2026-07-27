@@ -82,8 +82,8 @@ auto main() -> int {
         auto title = builder.CreateString("Hello World!");
 
         std::vector<flatbuffers::Offset<Entry>> entries;
-        for (uint64_t i = 0; i < (counter % 15); ++i) {                       // NOLINT
-            entries.emplace_back(CreateEntry(builder, 6 * i + 5, 6 * i + 7)); // NOLINT
+        for (uint64_t i = 0; i < (counter % 15); ++i) {                                             // NOLINT
+            entries.emplace_back(CreateEntry(builder, static_cast<int32_t>(6 * i + 5), 6 * i + 7)); // NOLINT
         }
 
         auto entry_vec = builder.CreateVector(entries);

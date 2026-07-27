@@ -22,8 +22,8 @@
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
 
-#include <flatbuffers/flatbuffers.h>
 #include <cstdint>
+#include <flatbuffers/flatbuffers.h>
 #include <type_traits>
 
 namespace iox2 {
@@ -164,7 +164,7 @@ inline auto Sample<S, Payload, UserHeader>::payload_bytes() const -> bb::Immutab
     auto payload_offset = header().payload_offset();
     auto payload_len = header().number_of_elements();
 
-    return bb::ImmutableSlice<uint8_t>(static_cast<const uint8_t*>(ptr + payload_offset), payload_len);
+    return bb::ImmutableSlice<uint8_t>(static_cast<const uint8_t*>(ptr) + payload_offset, payload_len);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
