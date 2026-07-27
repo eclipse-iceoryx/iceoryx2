@@ -39,7 +39,7 @@
 //! }
 //!
 //! const SIZE: usize = size_of::<Foo>();
-//! let wrapper = FixedSizeByteAtomic::<Foo, SIZE>::new(Foo { bar: 0, baz: 0 }).unwrap();
+//! let wrapper = FixedSizeByteAtomic::<Foo, SIZE>::new(Foo { bar: 0, baz: 0 });
 //!
 //! let new_value = Foo { bar: 4, baz: 6 };
 //! unsafe {
@@ -125,13 +125,6 @@ impl<T> MaybeTorn<T> {
     }
 }
 
-/// Failures caused by [`FixedSizeByteAtomic::new()`].
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum ByteAtomicError {
-    /// The size of the passed value and SIZE do not match.
-    SizesDoNotMatch,
-}
-
 /// A runtime fixed-size, shared-memory compatible [`RelocatableByteAtomic`].
 pub struct RelocatableByteAtomic<T: AtomicCopy> {
     data_ptr: RelocatablePointer<AtomicU8>,
@@ -199,7 +192,7 @@ impl<T: AtomicCopy> RelocatableByteAtomic<T> {
             }
         }
 
-        let value_ptr = (&value as *const T) as *const u8;
+        let value_ptr = (&raw const value).cast::<u8>();
         value.for_each_field(0, &mut |offset, size| {
             for i in offset..offset + size {
                 unsafe {
@@ -219,29 +212,33 @@ impl<T: AtomicCopy> RelocatableByteAtomic<T> {
         size_of::<T>()
     }
 
-    /// Copies the stored value byte-wise into a [`MaybeTorn<T>`].
-    ///
-    /// # Safety
-    ///
-    /// * When the value is concurrently written to, torn-reads are possible. The user must take
-    ///   care of the data integrity.
-    pub unsafe fn read(&self) -> MaybeTorn<T> {
+    /// Copies the stored value byte-wise into a [`MaybeTorn<T>`]. Torn reads are possible when
+    /// the value is concurrently written to. The user must take care of the data integrity.
+    pub fn read(&self) -> MaybeTorn<T> {
         self.verify_init("read()");
-        unsafe { read_impl(self.data_ptr.as_ptr()) }
+        read_impl(self.data_ptr.as_ptr())
     }
 
-    /// Stores the passed value byte-wise atomically.
-    ///
-    /// # Safety
-    ///
-    /// * When used concurrently, torn-writes and torn-reads are possible. The user must take
-    ///   care of the data integrity.
-    pub unsafe fn write(&self, value: T) {
+    /// Stores the passed value byte-wise atomically. When used concurrently, torn writes and
+    /// torn reads are possible. The user must take care of the data integrity.
+    pub fn write(&self, value: T) {
         self.verify_init("write()");
-        unsafe {
-            write_impl(self.data_ptr.as_ptr(), value);
-        }
+        write_impl(self.data_ptr.as_ptr(), value);
     }
+}
+
+// TODO #1644: Used to check at compile-time that T and SIZE of FixedSizeByteAtomic are
+// equal. Can be removed once size_of::<T>() can be directly used in the struct definition.
+const fn static_assert_size_of<T, const SIZE: usize>() {
+    let () = AssertSizeOf::<T, SIZE>::OK;
+}
+
+struct AssertSizeOf<T, const SIZE: usize> {
+    _phantom: PhantomData<T>,
+}
+
+impl<T, const SIZE: usize> AssertSizeOf<T, SIZE> {
+    const OK: () = assert!(size_of::<T>() == SIZE, "T must have size defined by SIZE");
 }
 
 /// A compile-time fixed-size, shared-memory compatible [`FixedSizeByteAtomic`].
@@ -257,19 +254,15 @@ unsafe impl<T: AtomicCopy + ZeroCopySend, const SIZE: usize> ZeroCopySend
 }
 
 impl<T: AtomicCopy, const SIZE: usize> FixedSizeByteAtomic<T, SIZE> {
-    /// Creates a new [`FixedSizeByteAtomic`] that contains the passed value. It fails when
-    /// the size of the value and `SIZE` do not match.
-    pub fn new(value: T) -> Result<Self, ByteAtomicError> {
+    /// Creates a new [`FixedSizeByteAtomic`] that contains the passed value.
+    pub fn new(value: T) -> Self {
         // TODO #1644: The following check and the SIZE parameter can be removed once size_of::<T>()
         // can be directly used in the struct definition. Consider then to remove the
         // RelocatableByteAtomic implementation as well; maybe add a placement_new() to the
         // FixedSizeByteAtomic.
-        if size_of::<T>() != SIZE {
-            fail!(from "ByteAtomic::new()", with ByteAtomicError::SizesDoNotMatch,
-                "size_of::<T>() and SIZE must be equal.");
-        }
+        static_assert_size_of::<T, SIZE>();
 
-        let value_ptr = (&value as *const T) as *const u8;
+        let value_ptr = (&raw const value).cast::<u8>();
 
         // The passed value may contain padding bytes. Reading these padding bytes
         // would lead to undefined behavior. Therefore, we first set all bytes to zero and
@@ -280,34 +273,26 @@ impl<T: AtomicCopy, const SIZE: usize> FixedSizeByteAtomic<T, SIZE> {
                 *byte = unsafe { *value_ptr.add(i) };
             }
         });
-        Ok(Self {
+        Self {
             data: bytes.map(AtomicU8::new),
             _inner_type: PhantomData,
-        })
+        }
     }
 
-    /// Copies the stored value byte-wise into a [`MaybeTorn<T>`].
-    ///
-    /// # Safety
-    ///
-    /// * When the value is concurrently written to, torn-reads are possible. The user must take care
-    ///   of the data integrity.
-    pub unsafe fn read(&self) -> MaybeTorn<T> {
-        unsafe { read_impl(self.data.as_ptr()) }
+    /// Copies the stored value byte-wise into a [`MaybeTorn<T>`]. Torn reads are possible when
+    /// the value is concurrently written to. The user must take care of the data integrity.
+    pub fn read(&self) -> MaybeTorn<T> {
+        read_impl(self.data.as_ptr())
     }
 
-    /// Stores the passed value byte-wise atomically.
-    ///
-    /// # Safety
-    ///
-    /// * When used concurrently, torn-writes and torn-reads are possible. The user must take care
-    ///   of the data integrity.
-    pub unsafe fn write(&self, value: T) {
-        unsafe { write_impl(self.data.as_ptr(), value) };
+    /// Stores the passed value byte-wise atomically. When used concurrently, torn writes and
+    /// torn reads are possible. The user must take care of the data integrity.
+    pub fn write(&self, value: T) {
+        write_impl(self.data.as_ptr(), value);
     }
 }
 
-unsafe fn read_impl<T: AtomicCopy>(src_data_ptr: *const AtomicU8) -> MaybeTorn<T> {
+fn read_impl<T: AtomicCopy>(src_data_ptr: *const AtomicU8) -> MaybeTorn<T> {
     let mut data: MaybeUninit<T> = MaybeUninit::uninit();
     let dest_data_ptr = data.as_mut_ptr() as *mut u8;
     for i in 0..size_of::<T>() {
@@ -318,8 +303,8 @@ unsafe fn read_impl<T: AtomicCopy>(src_data_ptr: *const AtomicU8) -> MaybeTorn<T
     MaybeTorn::new(data)
 }
 
-unsafe fn write_impl<T: AtomicCopy>(dest_data_ptr: *const AtomicU8, value: T) {
-    let value_ptr = (&value as *const T) as *const u8;
+fn write_impl<T: AtomicCopy>(dest_data_ptr: *const AtomicU8, value: T) {
+    let value_ptr = (&raw const value).cast::<u8>();
     value.for_each_field(0, &mut |offset, size| {
         for i in offset..offset + size {
             unsafe {

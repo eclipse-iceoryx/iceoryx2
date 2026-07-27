@@ -37,22 +37,12 @@ struct ComplexType {
 }
 
 #[test]
-pub fn fixed_size_byte_atomic_cannot_be_created_when_sizes_do_not_match() {
-    const SIZE: usize = size_of::<u64>();
-    let value: u8 = 0;
-    let sut = FixedSizeByteAtomic::<u8, SIZE>::new(value);
-    assert_that!(sut, is_err);
-    assert_that!(sut.err().unwrap(), eq ByteAtomicError::SizesDoNotMatch);
-}
-
-#[test]
 pub fn new_creates_byte_atomic_containing_passed_value() {
     let value = 963;
 
     const SIZE: usize = size_of::<u64>();
     let fixed_size_sut = FixedSizeByteAtomic::<u64, SIZE>::new(value);
-    assert_that!(fixed_size_sut, is_ok);
-    let read_value = unsafe { fixed_size_sut.unwrap().read().assume_consistent() };
+    let read_value = unsafe { fixed_size_sut.read().assume_consistent() };
     assert_that!(read_value, eq value);
 
     const MEM_SIZE: usize = RelocatableByteAtomic::<u64>::const_memory_size();
@@ -78,21 +68,20 @@ pub fn new_creates_fixed_size_byte_atomic_containing_passed_complex_value() {
 
     const SIZE: usize = size_of::<ComplexType>();
     let fixed_size_sut = FixedSizeByteAtomic::<ComplexType, SIZE>::new(value);
-    assert_that!(fixed_size_sut, is_ok);
-    let read_value = unsafe { fixed_size_sut.unwrap().read().assume_consistent() };
+    let read_value = unsafe { fixed_size_sut.read().assume_consistent() };
     assert_that!(read_value, eq value);
 
     const MEM_SIZE: usize = RelocatableByteAtomic::<ComplexType>::const_memory_size();
     let memory = [0u8; MEM_SIZE];
     let allocator = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
+    let mut relocatable_sut = unsafe { RelocatableByteAtomic::new_uninit() };
     unsafe {
-        let mut relocatable_sut = RelocatableByteAtomic::new_uninit();
         relocatable_sut
             .init(&allocator, value)
             .expect("RelocatableByteAtomic initialized.");
-        let read_value = relocatable_sut.read().assume_consistent();
-        assert_that!(read_value, eq value);
     }
+    let read_value = relocatable_sut.read();
+    assert_that!(unsafe { read_value.assume_consistent() }, eq value);
 }
 
 #[test]
@@ -100,23 +89,21 @@ pub fn byte_atomic_contains_passed_value_after_write() {
     let new_value: u64 = 752389;
 
     const SIZE: usize = size_of::<u64>();
-    let fixed_size_sut = FixedSizeByteAtomic::<u64, SIZE>::new(0).unwrap();
-    unsafe {
-        fixed_size_sut.write(new_value);
-        assert_that!(fixed_size_sut.read().assume_consistent(), eq new_value);
-    }
+    let fixed_size_sut = FixedSizeByteAtomic::<u64, SIZE>::new(0);
+    fixed_size_sut.write(new_value);
+    assert_that!(unsafe { fixed_size_sut.read().assume_consistent() }, eq new_value);
 
     const MEM_SIZE: usize = RelocatableByteAtomic::<u64>::const_memory_size();
     let memory = [0u8; MEM_SIZE];
     let allocator = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
+    let mut relocatable_sut = unsafe { RelocatableByteAtomic::new_uninit() };
     unsafe {
-        let mut relocatable_sut = RelocatableByteAtomic::new_uninit();
         relocatable_sut
             .init(&allocator, 0)
             .expect("RelocatableByteAtomic initialized.");
-        relocatable_sut.write(new_value);
-        assert_that!(relocatable_sut.read().assume_consistent(), eq new_value);
     }
+    relocatable_sut.write(new_value);
+    assert_that!(unsafe { relocatable_sut.read().assume_consistent() }, eq new_value);
 }
 
 #[test]
@@ -135,25 +122,23 @@ pub fn byte_atomic_contains_passed_complex_value_after_write() {
     };
 
     const SIZE: usize = size_of::<ComplexType>();
-    let fixed_size_sut = FixedSizeByteAtomic::<ComplexType, SIZE>::new(init_value).unwrap();
-    unsafe {
-        fixed_size_sut.write(new_value);
-        let read_value = fixed_size_sut.read().assume_consistent();
-        assert_that!(read_value, eq new_value);
-    }
+    let fixed_size_sut = FixedSizeByteAtomic::<ComplexType, SIZE>::new(init_value);
+    fixed_size_sut.write(new_value);
+    let read_value = unsafe { fixed_size_sut.read().assume_consistent() };
+    assert_that!(read_value, eq new_value);
 
     const MEM_SIZE: usize = RelocatableByteAtomic::<ComplexType>::const_memory_size();
     let memory = [0u8; MEM_SIZE];
     let allocator = BumpAllocator::new(NonNull::<u8>::from_ref(&memory[0]), memory.len());
+    let mut relocatable_sut = unsafe { RelocatableByteAtomic::new_uninit() };
     unsafe {
-        let mut relocatable_sut = RelocatableByteAtomic::new_uninit();
         relocatable_sut
             .init(&allocator, init_value)
             .expect("RelocatableByteAtomic initialized.");
-        relocatable_sut.write(new_value);
-        let read_value = relocatable_sut.read().assume_consistent();
-        assert_that!(read_value, eq new_value);
     }
+    relocatable_sut.write(new_value);
+    let read_value = relocatable_sut.read();
+    assert_that!(unsafe { read_value.assume_consistent() }, eq new_value);
 }
 
 // TODO #1601: The following tests should be run with Miri but using
@@ -172,7 +157,7 @@ pub fn concurrent_read_without_write_always_returns_correct_data() {
         .unwrap();
 
     const SIZE: usize = size_of::<u64>();
-    let fixed_size_sut = FixedSizeByteAtomic::<u64, SIZE>::new(value).unwrap();
+    let fixed_size_sut = FixedSizeByteAtomic::<u64, SIZE>::new(value);
 
     const MEM_SIZE: usize = RelocatableByteAtomic::<u64>::const_memory_size();
     let memory = [0u8; MEM_SIZE];
@@ -182,8 +167,8 @@ pub fn concurrent_read_without_write_always_returns_correct_data() {
         relocatable_sut
             .init(&allocator, value)
             .expect("RelocatableByteAtomic initialized.");
-        relocatable_sut.write(value);
     }
+    relocatable_sut.write(value);
 
     thread_scope(|s| {
         for _ in 0..number_of_threads {
@@ -191,13 +176,11 @@ pub fn concurrent_read_without_write_always_returns_correct_data() {
                 .spawn(|| {
                     barrier.wait();
                     for _ in 0..REPETITIONS {
-                        unsafe {
-                            let read_value_fixed_size = fixed_size_sut.read();
-                            assert_that!(read_value_fixed_size.assume_consistent(), eq value);
+                        let read_value_fixed_size = fixed_size_sut.read();
+                        assert_that!(unsafe { read_value_fixed_size.assume_consistent() }, eq value);
 
-                            let read_value_relocatable = relocatable_sut.read();
-                            assert_that!(read_value_relocatable.assume_consistent(), eq value);
-                        }
+                        let read_value_relocatable = relocatable_sut.read();
+                        assert_that!(unsafe { read_value_relocatable.assume_consistent() }, eq value);
                     }
                 })
                 .expect("failed to spawn thread");
@@ -218,7 +201,7 @@ pub fn concurrent_write_does_not_trigger_ub() {
         .unwrap();
 
     const SIZE: usize = size_of::<u64>();
-    let fixed_size_sut = FixedSizeByteAtomic::<u64, SIZE>::new(value).unwrap();
+    let fixed_size_sut = FixedSizeByteAtomic::<u64, SIZE>::new(value);
 
     const MEM_SIZE: usize = RelocatableByteAtomic::<u64>::const_memory_size();
     let memory = [0u8; MEM_SIZE];
@@ -228,8 +211,8 @@ pub fn concurrent_write_does_not_trigger_ub() {
         relocatable_sut
             .init(&allocator, value)
             .expect("RelocatableByteAtomic initialized.");
-        relocatable_sut.write(value);
     }
+    relocatable_sut.write(value);
 
     thread_scope(|s| {
         for _ in 0..number_of_threads {
@@ -237,10 +220,8 @@ pub fn concurrent_write_does_not_trigger_ub() {
                 .spawn(|| {
                     barrier.wait();
                     for _ in 0..REPETITIONS {
-                        unsafe {
-                            fixed_size_sut.write(value);
-                            relocatable_sut.write(value);
-                        }
+                        fixed_size_sut.write(value);
+                        relocatable_sut.write(value);
                     }
                 })
                 .expect("failed to spawn thread");
@@ -249,9 +230,9 @@ pub fn concurrent_write_does_not_trigger_ub() {
     })
     .expect("failed to create scoped thread");
 
+    let read_value_fixed_size = fixed_size_sut.read();
+    let read_value_relocatable = relocatable_sut.read();
     unsafe {
-        let read_value_fixed_size = fixed_size_sut.read();
-        let read_value_relocatable = relocatable_sut.read();
         // safe because the value is a u64
         assert_that!(read_value_fixed_size.assume_consistent(), eq value);
         assert_that!(read_value_relocatable.assume_consistent(), eq value);
@@ -269,7 +250,7 @@ pub fn concurrent_read_and_write_does_not_trigger_ub() {
         .unwrap();
 
     const SIZE: usize = size_of::<u64>();
-    let fixed_size_sut = FixedSizeByteAtomic::<u64, SIZE>::new(value).unwrap();
+    let fixed_size_sut = FixedSizeByteAtomic::<u64, SIZE>::new(value);
 
     const MEM_SIZE: usize = RelocatableByteAtomic::<u64>::const_memory_size();
     let memory = [0u8; MEM_SIZE];
@@ -279,8 +260,8 @@ pub fn concurrent_read_and_write_does_not_trigger_ub() {
         relocatable_sut
             .init(&allocator, value)
             .expect("RelocatableByteAtomic initialized.");
-        relocatable_sut.write(value);
     }
+    relocatable_sut.write(value);
 
     thread_scope(|s| {
         for _ in 0..number_of_threads / 2 {
@@ -288,13 +269,11 @@ pub fn concurrent_read_and_write_does_not_trigger_ub() {
                 .spawn(|| {
                     barrier.wait();
                     for _ in 0..REPETITIONS {
-                        unsafe {
-                            let read_value_fixed_size = fixed_size_sut.read();
-                            let read_value_relocatable = relocatable_sut.read();
-                            // dummy assert to prevent the read operation from being optimized away
-                            assert_that!(core::mem::size_of_val(&read_value_fixed_size), eq SIZE);
-                            assert_that!(core::mem::size_of_val(&read_value_relocatable), eq SIZE);
-                        }
+                        let read_value_fixed_size = fixed_size_sut.read();
+                        let read_value_relocatable = relocatable_sut.read();
+                        // dummy assert to prevent the read operation from being optimized away
+                        assert_that!(core::mem::size_of_val(&read_value_fixed_size), eq SIZE);
+                        assert_that!(core::mem::size_of_val(&read_value_relocatable), eq SIZE);
                     }
                 })
                 .expect("failed to spawn thread");
@@ -305,10 +284,8 @@ pub fn concurrent_read_and_write_does_not_trigger_ub() {
                 .spawn(|| {
                     barrier.wait();
                     for _ in 0..REPETITIONS {
-                        unsafe {
-                            fixed_size_sut.write(value);
-                            relocatable_sut.write(value);
-                        }
+                        fixed_size_sut.write(value);
+                        relocatable_sut.write(value);
                     }
                 })
                 .expect("failed to spawn thread");
@@ -338,10 +315,8 @@ pub fn double_init_call_causes_panic() {
 #[cfg(debug_assertions)]
 #[should_panic]
 pub fn panic_is_called_in_debug_mode_if_relocatable_byte_atomic_is_not_initialized() {
-    unsafe {
-        let sut = RelocatableByteAtomic::<u8>::new_uninit();
-        sut.write(9);
-    }
+    let sut = unsafe { RelocatableByteAtomic::<u8>::new_uninit() };
+    sut.write(9);
 }
 
 #[test]
