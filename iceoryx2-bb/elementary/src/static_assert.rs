@@ -17,15 +17,20 @@
 //! # Example
 //!
 //! ```
-//! use iceoryx2_bb_elementary::static_assert::*;
+//! use iceoryx2_bb_elementary::{
+//!     static_assert_eq, static_assert_ge, static_assert_gt, static_assert_le,
+//!     static_assert_lt, static_assert_size_of, static_assert_align_of,
+//! };
 //!
 //! use core::mem::{align_of, size_of};
 //!
-//! static_assert_eq::<{ size_of::<u64>() }, 8>();
-//! static_assert_ge::<{ size_of::<u64>() }, { size_of::<u32>() }>();
-//! static_assert_gt::<{ size_of::<u64>() }, { size_of::<u32>() }>();
-//! static_assert_le::<{ size_of::<u32>() }, { size_of::<u64>() }>();
-//! static_assert_lt::<{ size_of::<u32>() }, { size_of::<u64>() }>();
+//! static_assert_eq!(size_of::<u64>(), 8);
+//! static_assert_ge!(size_of::<u64>(), size_of::<u32>());
+//! static_assert_gt!(size_of::<u64>(), size_of::<u32>());
+//! static_assert_le!(size_of::<u32>(), size_of::<u64>());
+//! static_assert_lt!(size_of::<u32>(), size_of::<u64>());
+//! static_assert_size_of!(u32, 4);
+//! static_assert_align_of!(u32, 4);
 //! ```
 
 use core::marker::PhantomData;
@@ -37,21 +42,34 @@ use core::marker::PhantomData;
 /// This does compile!
 ///
 /// ```
-/// use iceoryx2_bb_elementary::static_assert::*;
+/// use iceoryx2_bb_elementary::static_assert_eq;
 ///
-/// static_assert_eq::<1, 1>();
-///
+/// static_assert_eq!(1, 1);
 /// ```
 ///
 /// This does not compile!
 ///
 /// ```compile_fail
-/// use iceoryx2_bb_elementary::static_assert::*;
+/// use iceoryx2_bb_elementary::static_assert_eq;
 ///
-/// static_assert_eq::<1, 2>();
-/// static_assert_eq::<2, 1>();
-///
+/// static_assert_eq!(1, 2);
 /// ```
+///
+/// ```compile_fail
+/// use iceoryx2_bb_elementary::static_assert_eq;
+///
+/// static_assert_eq!(2, 1);
+/// ```
+#[macro_export]
+macro_rules! static_assert_eq {
+    ($left:expr, $right:expr) => {
+        let _: () = const {
+            iceoryx2_bb_elementary::static_assert::static_assert_eq::<{ $left }, { $right }>()
+        };
+    };
+}
+
+/// Implementation detail! Use [`static_assert_eq!`] macro instead
 pub const fn static_assert_eq<const L: usize, const R: usize>() {
     let () = AssertEq::<L, R>::OK;
 }
@@ -69,21 +87,29 @@ impl<const L: usize, const R: usize> AssertEq<L, R> {
 /// This does compile!
 ///
 /// ```
-/// use iceoryx2_bb_elementary::static_assert::*;
+/// use iceoryx2_bb_elementary::static_assert_ge;
 ///
-/// static_assert_ge::<1, 1>();
-/// static_assert_ge::<2, 1>();
-///
+/// static_assert_ge!(1, 1);
+/// static_assert_ge!(2, 1);
 /// ```
 ///
 /// This does not compile!
 ///
 /// ```compile_fail
-/// use iceoryx2_bb_elementary::static_assert::*;
+/// use iceoryx2_bb_elementary::static_assert_ge;
 ///
-/// static_assert_ge::<1, 2>();
-///
+/// static_assert_ge!(1, 2);
 /// ```
+#[macro_export]
+macro_rules! static_assert_ge {
+    ($left:expr, $right:expr) => {
+        let _: () = const {
+            iceoryx2_bb_elementary::static_assert::static_assert_ge::<{ $left }, { $right }>()
+        };
+    };
+}
+
+/// Implementation detail! Use [`static_assert_ge!`] macro instead
 pub const fn static_assert_ge<const L: usize, const R: usize>() {
     let () = AssertGe::<L, R>::OK;
 }
@@ -101,21 +127,34 @@ impl<const L: usize, const R: usize> AssertGe<L, R> {
 /// This does compile!
 ///
 /// ```
-/// use iceoryx2_bb_elementary::static_assert::*;
+/// use iceoryx2_bb_elementary::static_assert_gt;
 ///
-/// static_assert_gt::<2, 1>();
-///
+/// static_assert_gt!(2, 1);
 /// ```
 ///
 /// This does not compile!
 ///
 /// ```compile_fail
-/// use iceoryx2_bb_elementary::static_assert::*;
+/// use iceoryx2_bb_elementary::static_assert_gt;
 ///
-/// static_assert_gt::<1, 1>();
-/// static_assert_gt::<1, 2>();
-///
+/// static_assert_gt!(1, 1);
 /// ```
+///
+/// ```compile_fail
+/// use iceoryx2_bb_elementary::static_assert_gt;
+///
+/// static_assert_gt!(1, 2);
+/// ```
+#[macro_export]
+macro_rules! static_assert_gt {
+    ($left:expr, $right:expr) => {
+        let _: () = const {
+            iceoryx2_bb_elementary::static_assert::static_assert_gt::<{ $left }, { $right }>()
+        };
+    };
+}
+
+/// Implementation detail! Use [`static_assert_gt!`] macro instead
 pub const fn static_assert_gt<const L: usize, const R: usize>() {
     let () = AssertGt::<L, R>::OK;
 }
@@ -133,21 +172,29 @@ impl<const L: usize, const R: usize> AssertGt<L, R> {
 /// This does compile!
 ///
 /// ```
-/// use iceoryx2_bb_elementary::static_assert::*;
+/// use iceoryx2_bb_elementary::static_assert_le;
 ///
-/// static_assert_le::<1, 1>();
-/// static_assert_le::<1, 2>();
-///
+/// static_assert_le!(1, 1);
+/// static_assert_le!(1, 2);
 /// ```
 ///
 /// This does not compile!
 ///
 /// ```compile_fail
-/// use iceoryx2_bb_elementary::static_assert::*;
+/// use iceoryx2_bb_elementary::static_assert_le;
 ///
-/// static_assert_le::<2, 1>();
-///
+/// static_assert_le!(2, 1);
 /// ```
+#[macro_export]
+macro_rules! static_assert_le {
+    ($left:expr, $right:expr) => {
+        let _: () = const {
+            iceoryx2_bb_elementary::static_assert::static_assert_le::<{ $left }, { $right }>()
+        };
+    };
+}
+
+/// Implementation detail! Use [`static_assert_le!`] macro instead
 pub const fn static_assert_le<const L: usize, const R: usize>() {
     let () = AssertLe::<L, R>::OK;
 }
@@ -165,21 +212,34 @@ impl<const L: usize, const R: usize> AssertLe<L, R> {
 /// This does compile!
 ///
 /// ```
-/// use iceoryx2_bb_elementary::static_assert::*;
+/// use iceoryx2_bb_elementary::static_assert_lt;
 ///
-/// static_assert_lt::<1, 2>();
-///
+/// static_assert_lt!(1, 2);
 /// ```
 ///
 /// This does not compile!
 ///
 /// ```compile_fail
-/// use iceoryx2_bb_elementary::static_assert::*;
+/// use iceoryx2_bb_elementary::static_assert_lt;
 ///
-/// static_assert_lt::<1, 1>();
-/// static_assert_lt::<2, 1>();
-///
+/// static_assert_lt!(1, 1);
 /// ```
+///
+/// ```compile_fail
+/// use iceoryx2_bb_elementary::static_assert_lt;
+///
+/// static_assert_lt!(2, 1);
+/// ```
+#[macro_export]
+macro_rules! static_assert_lt {
+    ($left:expr, $right:expr) => {
+        let _: () = const {
+            iceoryx2_bb_elementary::static_assert::static_assert_lt::<{ $left }, { $right }>()
+        };
+    };
+}
+
+/// Implementation detail! Use [`static_assert_lt!`] macro instead
 pub const fn static_assert_lt<const L: usize, const R: usize>() {
     let () = AssertLt::<L, R>::OK;
 }
@@ -197,20 +257,30 @@ impl<const L: usize, const R: usize> AssertLt<L, R> {
 /// This does compile!
 ///
 /// ```
-/// use iceoryx2_bb_elementary::static_assert::*;
+/// use iceoryx2_bb_elementary::static_assert_size_of;
 ///
-/// static_assert_size_of::<u32, 4>();
+/// static_assert_size_of!(u32, 4);
 ///
 /// ```
 ///
 /// This does not compile!
 ///
 /// ```compile_fail
-/// use iceoryx2_bb_elementary::static_assert::*;
+/// use iceoryx2_bb_elementary::static_assert_size_of;
 ///
-/// static_assert_size_of::<u8, 16>();
+/// static_assert_size_of!(u8, 16);
 ///
 /// ```
+#[macro_export]
+macro_rules! static_assert_size_of {
+    ($ty:ty, $value:expr) => {
+        let _: () = const {
+            iceoryx2_bb_elementary::static_assert::static_assert_size_of::<$ty, { $value }>()
+        };
+    };
+}
+
+/// Implementation detail! Use [`static_assert_size_of!`] macro instead
 pub const fn static_assert_size_of<T, const SIZE: usize>() {
     let () = AssertSizeOf::<T, SIZE>::OK;
 }
@@ -233,20 +303,30 @@ impl<T, const SIZE: usize> AssertSizeOf<T, SIZE> {
 /// This does compile!
 ///
 /// ```
-/// use iceoryx2_bb_elementary::static_assert::*;
+/// use iceoryx2_bb_elementary::static_assert_align_of;
 ///
-/// static_assert_align_of::<u16, 2>();
+/// static_assert_align_of!(u16, 2);
 ///
 /// ```
 ///
 /// This does not compile!
 ///
 /// ```compile_fail
-/// use iceoryx2_bb_elementary::static_assert::*;
+/// use iceoryx2_bb_elementary::static_assert_align_of;
 ///
-/// static_assert_align_of::<u8, 32>();
+/// static_assert_align_of!(u8, 32);
 ///
 /// ```
+#[macro_export]
+macro_rules! static_assert_align_of {
+    ($ty:ty, $value:expr) => {
+        let _: () = const {
+            iceoryx2_bb_elementary::static_assert::static_assert_align_of::<$ty, { $value }>()
+        };
+    };
+}
+
+/// Implementation detail! Use [`static_assert_align_of!`] macro instead
 pub const fn static_assert_align_of<T, const ALIGNMENT: usize>() {
     let () = AssertAlignOf::<T, ALIGNMENT>::OK;
 }
