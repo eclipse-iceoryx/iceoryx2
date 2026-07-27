@@ -30,8 +30,8 @@ actually receives the response.
 
 The `Client` uses the following approach:
 
-1. A `Notifier` to wake up the `Server` and a `Listener` to wait for its response,
-   is created
+1. A `Notifier` to wake up the `Server` and a `Listener` to wait for its response
+   are created
 2. A `Client` is created from a `Service` with a custom `UserHeader` to transmit
    the `ListenerId` it is waiting on
 3. The `Client` loans memory and sets the request payload and user header
@@ -42,8 +42,8 @@ The `Client` uses the following approach:
 
 The `Server` uses the following approach:
 
-1. A `Notifier` to wake up the `Client` and a `Listener` to wait for its requests,
-   is created
+1. A `Notifier` to wake up the `Client` and a `Listener` to wait for its requests
+   are created
 2. A `Server` is created from a `Service` with a custom `UserHeader` to identify
    the `ListenerId` it needs to notify
 3. The `Server` waits on the `Listener` for new requests

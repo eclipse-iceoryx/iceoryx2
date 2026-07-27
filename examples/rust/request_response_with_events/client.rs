@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Contributors to the Eclipse Foundation
+// Copyright (c) 2026 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -27,20 +27,20 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     let server_event_service = node
-        .service_builder(&"example/request_restponse_with_events/server".try_into()?)
+        .service_builder(&"example/request_response_with_events/server".try_into()?)
         .event()
         .open_or_create()?;
     let server_notifier = server_event_service.notifier_builder().create()?;
 
     let client_event_service = node
-        .service_builder(&"example/request_restponse_with_events/client".try_into()?)
+        .service_builder(&"example/request_response_with_events/client".try_into()?)
         .event()
         .open_or_create()?;
     let client_listener = client_event_service.listener_builder().create()?;
     let listener_id = client_listener.id();
 
     let service = node
-        .service_builder(&"example/request_restponse_with_events".try_into()?)
+        .service_builder(&"example/request_response_with_events".try_into()?)
         .request_response::<u64, TransmissionData>()
         .request_user_header::<u128>()
         .open_or_create()?;
