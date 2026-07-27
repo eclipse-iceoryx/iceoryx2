@@ -91,6 +91,7 @@ use core::mem::MaybeUninit;
 use core::ptr::NonNull;
 use iceoryx2_bb_concurrency::atomic::{AtomicBool, AtomicU8, Ordering};
 use iceoryx2_bb_elementary::relocatable_pointer::{Pointer, RelocatablePointer};
+use iceoryx2_bb_elementary::static_assert::static_assert_size_of;
 use iceoryx2_bb_elementary_traits::allocator::{Allocate, AllocationError};
 use iceoryx2_bb_elementary_traits::{atomic_copy::AtomicCopy, zero_copy_send::ZeroCopySend};
 use iceoryx2_log::fail;
@@ -225,20 +226,6 @@ impl<T: AtomicCopy> RelocatableByteAtomic<T> {
         self.verify_init("write()");
         write_impl(self.data_ptr.as_ptr(), value);
     }
-}
-
-// TODO #1644: Used to check at compile-time that T and SIZE of FixedSizeByteAtomic are
-// equal. Can be removed once size_of::<T>() can be directly used in the struct definition.
-const fn static_assert_size_of<T, const SIZE: usize>() {
-    let () = AssertSizeOf::<T, SIZE>::OK;
-}
-
-struct AssertSizeOf<T, const SIZE: usize> {
-    _phantom: PhantomData<T>,
-}
-
-impl<T, const SIZE: usize> AssertSizeOf<T, SIZE> {
-    const OK: () = assert!(size_of::<T>() == SIZE, "T must have size defined by SIZE");
 }
 
 /// A compile-time fixed-size, shared-memory compatible [`FixedSizeByteAtomic`].

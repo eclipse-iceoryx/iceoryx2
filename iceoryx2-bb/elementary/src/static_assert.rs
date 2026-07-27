@@ -28,6 +28,8 @@
 //! static_assert_lt::<{ size_of::<u32>() }, { size_of::<u64>() }>();
 //! ```
 
+use core::marker::PhantomData;
+
 /// A compile time assert to check for equal values
 ///
 /// # Examples
@@ -186,4 +188,40 @@ struct AssertLt<const L: usize, const R: usize>;
 
 impl<const L: usize, const R: usize> AssertLt<L, R> {
     const OK: () = assert!(L < R, "L must be less than R");
+}
+
+/// A compile time assert to check for the size of a type being equal to a value
+///
+/// # Examples
+///
+/// This does compile!
+///
+/// ```
+/// use iceoryx2_bb_elementary::static_assert::*;
+///
+/// static_assert_size_of::<u32, 4>();
+///
+/// ```
+///
+/// This does not compile!
+///
+/// ```compile_fail
+/// use iceoryx2_bb_elementary::static_assert::*;
+///
+/// static_assert_size_of::<u8, 16>();
+///
+/// ```
+pub const fn static_assert_size_of<T, const SIZE: usize>() {
+    let () = AssertSizeOf::<T, SIZE>::OK;
+}
+
+struct AssertSizeOf<T, const SIZE: usize> {
+    _phantom: PhantomData<T>,
+}
+
+impl<T, const SIZE: usize> AssertSizeOf<T, SIZE> {
+    const OK: () = assert!(
+        core::mem::size_of::<T>() == SIZE,
+        "T must have size defined by SIZE"
+    );
 }
