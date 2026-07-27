@@ -252,6 +252,9 @@ impl<const L: usize, const R: usize> AssertLt<L, R> {
 
 /// A compile time assert to check for the size of a type being equal to a value
 ///
+/// Contrary to [`static_assert_eq!`], the [`static_assert_size_of!`](crate::static_assert_size_of) macro can easily
+/// be used with const generics, avoiding the `cannot perform const operation using 'T'` error.
+///
 /// # Examples
 ///
 /// This does compile!
@@ -259,8 +262,18 @@ impl<const L: usize, const R: usize> AssertLt<L, R> {
 /// ```
 /// use iceoryx2_bb_elementary::static_assert_size_of;
 ///
-/// static_assert_size_of!(u32, 4);
+/// pub struct Hypnotoad<T> {
+///     pub value: T,
+/// }
 ///
+/// impl<T: Default> Hypnotoad<T> {
+///     fn new() -> Self {
+///         static_assert_size_of!(T, 4);
+///         Self { value: T::default() }
+///     }
+/// }
+///
+/// let hypnotoad = Hypnotoad::<u32>::new();
 /// ```
 ///
 /// This does not compile!
@@ -268,8 +281,18 @@ impl<const L: usize, const R: usize> AssertLt<L, R> {
 /// ```compile_fail
 /// use iceoryx2_bb_elementary::static_assert_size_of;
 ///
-/// static_assert_size_of!(u8, 16);
+/// pub struct Hypnotoad<T> {
+///     pub value: T,
+/// }
 ///
+/// impl<T: Default> Hypnotoad<T> {
+///     fn new() -> Self {
+///         static_assert_size_of!(T, 1);
+///         Self { value: T::default() }
+///     }
+/// }
+///
+/// let hypnotoad = Hypnotoad::<u32>::new();
 /// ```
 #[macro_export]
 macro_rules! static_assert_size_of {
@@ -280,7 +303,7 @@ macro_rules! static_assert_size_of {
     };
 }
 
-/// Implementation detail! Use [`static_assert_size_of!`] macro instead
+/// Implementation detail! Use [`static_assert_size_of!`](crate::static_assert_size_of) macro instead
 pub const fn static_assert_size_of<T, const SIZE: usize>() {
     let () = AssertSizeOf::<T, SIZE>::OK;
 }
@@ -296,7 +319,10 @@ impl<T, const SIZE: usize> AssertSizeOf<T, SIZE> {
     );
 }
 
-/// A compile time assert to check for the alignment of a type being equal to a value
+/// A compile time assert to check for the alignment of a type being equal to a value.
+///
+/// Contrary to [`static_assert_eq!`], the [`static_assert_align_of!`](crate::static_assert_align_of) macro can easily
+/// be used with const generics, avoiding the `cannot perform const operation using 'T'` error.
 ///
 /// # Examples
 ///
@@ -305,8 +331,18 @@ impl<T, const SIZE: usize> AssertSizeOf<T, SIZE> {
 /// ```
 /// use iceoryx2_bb_elementary::static_assert_align_of;
 ///
-/// static_assert_align_of!(u16, 2);
+/// pub struct Hypnotoad<T> {
+///     pub value: T,
+/// }
 ///
+/// impl<T: Default> Hypnotoad<T> {
+///     fn new() -> Self {
+///         static_assert_align_of!(T, 4);
+///         Self { value: T::default() }
+///     }
+/// }
+///
+/// let hypnotoad = Hypnotoad::<u32>::new();
 /// ```
 ///
 /// This does not compile!
@@ -314,8 +350,18 @@ impl<T, const SIZE: usize> AssertSizeOf<T, SIZE> {
 /// ```compile_fail
 /// use iceoryx2_bb_elementary::static_assert_align_of;
 ///
-/// static_assert_align_of!(u8, 32);
+/// pub struct Hypnotoad<T> {
+///     pub value: T,
+/// }
 ///
+/// impl<T: Default> Hypnotoad<T> {
+///     fn new() -> Self {
+///         static_assert_align_of!(T, 1);
+///         Self { value: T::default() }
+///     }
+/// }
+///
+/// let hypnotoad = Hypnotoad::<u32>::new();
 /// ```
 #[macro_export]
 macro_rules! static_assert_align_of {
@@ -326,7 +372,7 @@ macro_rules! static_assert_align_of {
     };
 }
 
-/// Implementation detail! Use [`static_assert_align_of!`] macro instead
+/// Implementation detail! Use [`static_assert_align_of!`](crate::static_assert_align_of) macro instead
 pub const fn static_assert_align_of<T, const ALIGNMENT: usize>() {
     let () = AssertAlignOf::<T, ALIGNMENT>::OK;
 }
