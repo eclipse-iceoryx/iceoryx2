@@ -16,8 +16,6 @@
 //!
 use core::marker::PhantomData;
 
-use alloc::format;
-
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_flatbuffers::TypeName;
@@ -562,7 +560,7 @@ impl<
 
     /// Validates configuration and overrides the invalid setting with meaningful values.
     fn adjust_configuration_to_meaningful_values(&mut self) {
-        let origin = format!("{self:?}");
+        let origin = "publish_subscribe::Builder::adjust_configuration_to_meaningful_values()";
         let settings = self.base.service_config.publish_subscribe_mut();
 
         if settings.subscriber_max_borrowed_samples == 0 {

@@ -19,7 +19,6 @@ use core::hash::Hash;
 use core::marker::PhantomData;
 
 use alloc::boxed::Box;
-use alloc::format;
 use alloc::vec::Vec;
 
 use crate::constants::MAX_BLACKBOARD_KEY_SIZE;
@@ -493,7 +492,7 @@ impl<
 
     /// Validates configuration and overrides the invalid setting with meaningful values.
     fn adjust_configuration_to_meaningful_values(&mut self) {
-        let origin = format!("{self:?}");
+        let origin = "blackboard::Builder::adjust_configuration_to_meaningful_values()";
         let settings = self.builder.config.base.service_config.blackboard_mut();
 
         if settings.max_readers == 0 {
@@ -529,7 +528,7 @@ impl<
         mut self,
         attributes: &AttributeSpecifier,
     ) -> Result<blackboard::PortFactory<ServiceType, KeyType>, BlackboardCreateError> {
-        let origin = format!("{self:?}");
+        let origin = "blackboard::Builder::create_impl()";
         let msg = "Unable to create blackboard service";
 
         self.adjust_configuration_to_meaningful_values();

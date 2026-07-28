@@ -30,8 +30,6 @@ pub mod messaging_pattern;
 
 pub mod blackboard;
 
-use alloc::format;
-
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -179,7 +177,7 @@ impl StaticConfig {
     }
 
     pub(crate) fn request_response_mut(&mut self) -> &mut request_response::StaticConfig {
-        let origin = format!("{self:?}");
+        let origin = "StaticConfig::request_response_mut()";
         match &mut self.messaging_pattern {
             MessagingPattern::RequestResponse(v) => v,
             m => {
@@ -199,7 +197,7 @@ impl StaticConfig {
     }
 
     pub(crate) fn event_mut(&mut self) -> &mut event::StaticConfig {
-        let origin = format!("{self:?}");
+        let origin = "StaticConfig::event_mut()";
         match &mut self.messaging_pattern {
             MessagingPattern::Event(v) => v,
             m => {
@@ -219,7 +217,7 @@ impl StaticConfig {
     }
 
     pub(crate) fn publish_subscribe_mut(&mut self) -> &mut publish_subscribe::StaticConfig {
-        let origin = format!("{self:?}");
+        let origin = "StaticConfig::publish_subscribe_mut()";
         match &mut self.messaging_pattern {
             MessagingPattern::PublishSubscribe(v) => v,
             m => {
@@ -239,7 +237,7 @@ impl StaticConfig {
     }
 
     pub(crate) fn blackboard_mut(&mut self) -> &mut blackboard::StaticConfig {
-        let origin = format!("{self:?}");
+        let origin = "StaticConfig::blackboard_mut()";
         match &mut self.messaging_pattern {
             MessagingPattern::Blackboard(v) => v,
             m => {

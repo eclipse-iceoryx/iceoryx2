@@ -17,8 +17,6 @@
 pub use crate::port::event_id::EventId;
 use crate::service::resource::NoResource;
 
-use alloc::format;
-
 use iceoryx2_bb_container::relocatable_option::RelocatableOption;
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_log::{fail, fatal_panic};
@@ -509,7 +507,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         &self,
         attributes: &AttributeSpecifier,
     ) -> Result<event::PortFactory<ServiceType>, EventCreateError> {
-        let origin = format!("{self:?}");
+        let origin = "event::Builder::create_impl()";
         let msg = "Unable to create event service";
 
         let prepare_static_config = |service_config: &mut StaticConfig| {
@@ -554,7 +552,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     }
 
     fn adjust_attributes_to_meaningful_values(&mut self) {
-        let origin = format!("{self:?}");
+        let origin = "event::Builder::adjust_attributes_to_meaningful_values()";
         let settings = self.base.service_config.event_mut();
 
         if settings.max_notifiers == 0 {

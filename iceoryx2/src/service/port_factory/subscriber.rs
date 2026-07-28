@@ -30,8 +30,6 @@
 
 use core::fmt::Debug;
 
-use alloc::format;
-
 use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
 use iceoryx2_log::fail;
 
@@ -143,7 +141,7 @@ impl<
     pub fn create(
         self,
     ) -> Result<Subscriber<Service, PayloadType, UserHeader>, SubscriberCreateError> {
-        let origin = format!("{self:?}");
+        let origin = "PortFactorySubscriber::create()";
         Ok(
             fail!(from origin, when Subscriber::new(self.factory.service.clone(), self.factory.service.static_config().publish_subscribe(), self.config),
                 "Failed to create new Subscriber port."),

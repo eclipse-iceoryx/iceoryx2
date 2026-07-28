@@ -322,7 +322,7 @@ impl EpollBuilder {
             });
         }
 
-        let origin = format!("{self:?}");
+        let origin = "EpollBuilder::create()";
         let signal_fd = match SignalFdBuilder::new(self.signal_set)
             .set_close_on_exec(self.has_close_on_exec_flag)
             .create_non_blocking()

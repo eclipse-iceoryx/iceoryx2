@@ -32,8 +32,6 @@
 use core::fmt::Debug;
 use core::hash::Hash;
 
-use alloc::format;
-
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::fail;
 
@@ -83,7 +81,7 @@ impl<
 
     /// Creates a new [`Reader`] or returns a [`ReaderCreateError`] on failure.
     pub fn create(self) -> Result<Reader<Service, KeyType>, ReaderCreateError> {
-        let origin = format!("{self:?}");
+        let origin = "PortFactoryReader::create()";
         Ok(
             fail!(from origin, when Reader::new(self.factory.service.clone(), self.config.clone()),"Failed to create new Reader port."),
         )

@@ -16,7 +16,6 @@
 //! It uses internally a [`DynamicStorage`] and [`SafelyOverflowingIndexQueue`].
 pub use crate::communication_channel::*;
 
-use alloc::format;
 use alloc::vec::Vec;
 use core::ptr::NonNull;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
@@ -248,7 +247,7 @@ impl CommunicationChannelConnector<u64, Channel> for Connector {
 
     fn open_sender(self) -> Result<Sender, CommunicationChannelOpenError> {
         let msg = "Unable to open communication channel";
-        let origin = format!("{self:?}");
+        let origin = "posix_shared_memory::Connector::open_sender()";
         match self.try_open_sender() {
             Ok(s) => Ok(s),
             Err(CommunicationChannelOpenError::DoesNotExist) => {

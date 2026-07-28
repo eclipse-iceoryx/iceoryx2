@@ -263,7 +263,7 @@ impl<'a> RecordWriter<'a> {
     }
 
     pub(crate) fn write(self, record: RawRecord) -> Result<(), RecorderWriteError> {
-        let origin = format!("{self:?}");
+        let origin = "RecordWriter::write()";
         let mut write_to_file = |data| -> Result<(), RecorderWriteError> {
             match self.file.write(data) {
                 Ok(_) => Ok(()),

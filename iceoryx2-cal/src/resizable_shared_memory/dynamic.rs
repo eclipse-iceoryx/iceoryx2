@@ -186,7 +186,7 @@ where
         self,
         access_mode: AccessMode,
     ) -> Result<DynamicView<Allocator, Shm>, SharedMemoryOpenError> {
-        let origin = format!("{self:?}");
+        let origin = "DynamicViewBuilder::open()";
         let msg = "Unable to open ResizableSharedMemoryView";
 
         let adjusted_name =
@@ -277,7 +277,7 @@ where
 
     fn create(mut self) -> Result<DynamicMemory<Allocator, Shm>, SharedMemoryCreateError> {
         let msg = "Unable to create ResizableSharedMemory";
-        let origin = format!("{self:?}");
+        let origin = "DynamicMemoryBuilder::create()";
 
         let hint = Allocator::initial_setup_hint(Layout::new::<u8>(), 1);
         let adjusted_name =

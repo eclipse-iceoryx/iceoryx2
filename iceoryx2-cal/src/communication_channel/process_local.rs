@@ -20,7 +20,6 @@ use core::fmt::Debug;
 use core::ptr::NonNull;
 
 use alloc::collections::BTreeMap;
-use alloc::format;
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
@@ -198,7 +197,7 @@ impl NamedConceptBuilder<Channel> for Connector {
 impl CommunicationChannelConnector<u64, Channel> for Connector {
     fn open_sender(self) -> Result<Duplex, CommunicationChannelOpenError> {
         let msg = "Failed to open sender";
-        let origin = format!("{self:?}");
+        let origin = "process_local::Connector::open_sender()";
         let name = self.name;
         match self.try_open_sender() {
             Err(CommunicationChannelOpenError::DoesNotExist) => {

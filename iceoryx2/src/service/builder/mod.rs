@@ -31,7 +31,6 @@ use core::hash::Hash;
 use core::marker::PhantomData;
 use core::mem::MaybeUninit;
 
-use alloc::format;
 use alloc::string::String;
 use alloc::vec;
 
@@ -473,7 +472,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         mut verify_service_configuration: F1,
         mut open_service_resource: F2,
     ) -> Result<service::ServiceState<ServiceType, R>, ErrorType> {
-        let origin = format!("{self:?}");
+        let origin = "BuilderWithServiceType::open()";
         let config = self.shared_node.config();
 
         if config.global.service.cleanup_dead_nodes_on_open {

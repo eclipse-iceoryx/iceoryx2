@@ -13,8 +13,6 @@
 use core::fmt::Debug;
 use core::marker::PhantomData;
 
-use alloc::format;
-
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_log::{fail, fatal_panic, warn};
@@ -596,7 +594,7 @@ impl<
     }
 
     fn adjust_configuration_to_meaningful_values(&mut self) {
-        let origin = format!("{self:?}");
+        let origin = "request_response::Builder::adjust_configuration_to_meaningful_values()";
         let settings = self.base.service_config.request_response_mut();
 
         if settings.max_response_buffer_size == 0 {

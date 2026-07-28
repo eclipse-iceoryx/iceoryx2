@@ -55,8 +55,6 @@ use core::{
     ops::{Deref, DerefMut},
 };
 
-use alloc::format;
-
 use iceoryx2_bb_concurrency::cell::UnsafeCell;
 use iceoryx2_bb_elementary::{enum_gen, scope_guard::ScopeGuardBuilder};
 use iceoryx2_log::{fail, fatal_panic, warn};
@@ -142,7 +140,7 @@ impl ReadWriteMutexBuilder {
         mtx: *mut posix::pthread_rwlock_t,
     ) -> Result<Capability, ReadWriteMutexCreationError> {
         let msg = "Failed to create mutex";
-        let origin = format!("{self:?}");
+        let origin = "ReadWriteMutexBuilder::initialize_rw_mutex()";
 
         let mut attributes = ScopeGuardBuilder::new(posix::pthread_rwlockattr_t::new_zeroed()).on_init(|attr| {
             handle_errno!(ReadWriteMutexCreationError, from self,

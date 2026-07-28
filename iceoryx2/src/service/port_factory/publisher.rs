@@ -63,7 +63,6 @@ use crate::{
     },
     service::{self, marker::Flatbuffer},
 };
-use alloc::format;
 use core::fmt::Debug;
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::{iceoryx_send::IceoryxSend, zero_copy_send::ZeroCopySend};
@@ -244,7 +243,7 @@ impl<
 
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
     pub fn create(self) -> Result<Publisher<Service, Payload, UserHeader>, PublisherCreateError> {
-        let origin = format!("{self:?}");
+        let origin = "PortFactoryPublisher::create()";
         Ok(fail!(from origin, when Publisher::new(self),
                 "Failed to create new Publisher port."))
     }

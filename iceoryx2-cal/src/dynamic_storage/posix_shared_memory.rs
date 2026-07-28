@@ -56,7 +56,6 @@ use core::ptr::NonNull;
 use core::time::Duration;
 use iceoryx2_bb_concurrency::atomic::Ordering;
 
-use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec;
@@ -350,7 +349,7 @@ impl<T: Send + Sync + Debug + ZeroCopySend> Builder<'_, T> {
             supplementary_len,
         );
 
-        let origin = format!("{self:?}");
+        let origin = "dynamic_storage::posix_shared_memory::Builder::init_impl()";
         if !self
             .initializer
             .call(unsafe { &mut (*value).data }, &mut allocator)

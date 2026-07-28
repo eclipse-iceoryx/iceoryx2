@@ -171,7 +171,7 @@ impl ReactorBuilder<Epoll> for EpollBuilder {
 
     fn create(self) -> Result<Epoll, ReactorCreateError> {
         let msg = "Unable to create epoll::Reactor";
-        let origin = format!("{self:?}");
+        let origin = "reactor::epoll::EpollBuilder::create()";
         match self.create() {
             Ok(v) => Ok(v),
             Err(EpollCreateError::InsufficientMemory)

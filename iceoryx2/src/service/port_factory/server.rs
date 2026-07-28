@@ -42,7 +42,6 @@ use crate::{
     prelude::BackpressureStrategy,
     service,
 };
-use alloc::format;
 use core::fmt::Debug;
 use iceoryx2_bb_elementary::allocation_strategy::AllocationStrategy;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -309,7 +308,7 @@ impl<
         Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         ServerCreateError,
     > {
-        let origin = format!("{self:?}");
+        let origin = "PortFactoryServer::create()";
         Ok(fail!(from origin,
               when Server::new(self),
               "Failed to create new Server port."))

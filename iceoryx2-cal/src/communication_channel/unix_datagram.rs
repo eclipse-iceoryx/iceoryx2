@@ -337,7 +337,7 @@ impl<T: Copy + Debug> NamedConceptBuilder<Channel<T>> for Connector<T> {
 impl<T: Copy + Debug> CommunicationChannelConnector<T, Channel<T>> for Connector<T> {
     fn open_sender(self) -> Result<Sender<T>, CommunicationChannelOpenError> {
         let msg = "Unable to create sender";
-        let origin = format!("{self:?}");
+        let origin = "unix_datagram::Connector::open_sender()";
 
         let full_name = self.config.path_for(&self.channel_name);
         let sender = UnixDatagramSenderBuilder::new(&full_name).create();

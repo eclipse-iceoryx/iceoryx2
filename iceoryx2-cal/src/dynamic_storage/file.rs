@@ -399,7 +399,7 @@ impl<T: Send + Sync + Debug + ZeroCopySend> Builder<'_, T> {
             supplementary_len,
         );
 
-        let origin = format!("{self:?}");
+        let origin = "dynamic_storage::file::Builder::init_impl()";
         if !self
             .initializer
             .call(unsafe { &mut (*value).data }, &mut allocator)
