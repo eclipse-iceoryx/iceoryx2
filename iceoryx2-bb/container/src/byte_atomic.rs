@@ -232,7 +232,7 @@ impl<T: AtomicCopy> RelocatableByteAtomic<T> {
 ///
 /// # Examples
 ///
-/// This does compile!
+/// This does compile because the size parameter matches the size of the type.
 ///
 /// ```
 /// use iceoryx2_bb_container::byte_atomic::FixedSizeByteAtomic;
@@ -240,7 +240,7 @@ impl<T: AtomicCopy> RelocatableByteAtomic<T> {
 /// let _ = FixedSizeByteAtomic::<u64, 8>::new(0);
 /// ```
 ///
-/// This does not compile!
+/// This does not compile because the size parameter is smaller than the size of the type.
 ///
 /// ```compile_fail
 /// use iceoryx2_bb_container::byte_atomic::FixedSizeByteAtomic;
