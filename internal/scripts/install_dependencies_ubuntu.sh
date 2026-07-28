@@ -33,6 +33,7 @@ packages=(
     libelf-dev
     libunwind-dev
     qemu-system-arm
+    libflatbuffers-dev
 )
 
 echo "Detected arch:$arch"

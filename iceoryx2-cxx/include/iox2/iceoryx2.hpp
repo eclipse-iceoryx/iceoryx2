@@ -84,7 +84,6 @@
 #include "iox2/reader_error.hpp"
 #include "iox2/request_mut.hpp"
 #include "iox2/request_mut_uninit.hpp"
-#include "iox2/resizable_memory_publish_subscribe.hpp"
 #include "iox2/response.hpp"
 #include "iox2/response_mut.hpp"
 #include "iox2/response_mut_uninit.hpp"

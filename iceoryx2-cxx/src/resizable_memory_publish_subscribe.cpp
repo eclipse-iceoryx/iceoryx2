@@ -10,11 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/resizable_memory_publish_subscribe.hpp"
+#include "iox2/internal/resizable_memory_publish_subscribe.hpp"
 #include "iox2/bb/detail/attributes.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {
+namespace internal {
 template <ServiceType Service>
 ResizableMemoryPublishSubscribe<Service>::ResizableMemoryPublishSubscribe(
     iox2_resizable_memory_publish_subscribe_h handle)
@@ -119,4 +120,5 @@ auto ResizableMemoryPublishSubscribe<Service>::reallocate_downward(
 
 template class ResizableMemoryPublishSubscribe<ServiceType::Ipc>;
 template class ResizableMemoryPublishSubscribe<ServiceType::Local>;
+} // namespace internal
 } // namespace iox2

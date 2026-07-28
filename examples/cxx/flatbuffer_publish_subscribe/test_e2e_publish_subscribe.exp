@@ -18,6 +18,8 @@ cd ${REPO_ROOT}
 
 source ${REPO_ROOT}/internal/end-to-end-testing/common.exp
 
+set env(IOX2_FLATBUFFER_SCHEMA_PATH) ${REPO_ROOT}/examples/cxx/flatbuffer_publish_subscribe/src
+
 #### Test Setup
 
 set timeout 10

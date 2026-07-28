@@ -19,7 +19,11 @@
 #include "iox2/service_type.hpp"
 
 namespace iox2 {
+template <ServiceType, typename, typename>
+class Publisher;
 
+namespace internal {
+/// Internal helper class to handle dynamic memory allocations used in e.g. flatbuffers
 template <ServiceType Service>
 class ResizableMemoryPublishSubscribe : public flatbuffers::Allocator {
   public:
@@ -43,7 +47,7 @@ class ResizableMemoryPublishSubscribe : public flatbuffers::Allocator {
 
   private:
     template <ServiceType, typename, typename>
-    friend class Publisher;
+    friend class iox2::Publisher;
 
     explicit ResizableMemoryPublishSubscribe(iox2_resizable_memory_publish_subscribe_h handle);
     void drop();
@@ -52,6 +56,6 @@ class ResizableMemoryPublishSubscribe : public flatbuffers::Allocator {
     bool m_has_allocated = false;
     uint8_t* m_ptr = nullptr;
 };
-
+} // namespace internal
 } // namespace iox2
 #endif

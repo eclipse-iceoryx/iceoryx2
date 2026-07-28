@@ -16,9 +16,8 @@
 #include "iox2/bb/slice.hpp"
 #include "iox2/bb/static_function.hpp"
 #include "iox2/header_publish_subscribe.hpp"
-#include "iox2/internal/helper.hpp"
+#include "iox2/internal/resizable_memory_publish_subscribe.hpp"
 #include "iox2/marker.hpp"
-#include "iox2/resizable_memory_publish_subscribe.hpp"
 #include "iox2/sample_mut.hpp"
 #include "iox2/service_type.hpp"
 #include <flatbuffers/buffer.h>
@@ -64,9 +63,11 @@ class SampleMutUninit {
               typename = std::enable_if_t<!bb::IsSlice<T>::VALUE && !has_flatbuffer_marker<T>(), void>>
     auto payload_mut() -> ValueType&;
 
+    /// Returns an immutable slice to the payload of the sample.
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto payload() const -> bb::ImmutableSlice<ValueType>;
 
+    /// Returns an mutable slice to the payload of the sample.
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> bb::MutableSlice<ValueType>;
 
@@ -84,6 +85,8 @@ class SampleMutUninit {
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, T>>
     auto write_from_slice(bb::ImmutableSlice<ValueType>& value) -> SampleMut<S, Payload, UserHeader>;
 
+    /// Returns the internal [`FlatBufferBuilder`] that was constructed with the internal iceoryx2
+    /// allocator to enable true zero-copy data transfer.
     template <typename T = Payload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), T>>
     auto flatbuffer_builder() -> flatbuffers::FlatBufferBuilder&;
 
@@ -105,7 +108,7 @@ class SampleMutUninit {
     auto get_handle() -> iox2_sample_mut_h;
 
     SampleMut<S, Payload, UserHeader> m_sample;
-    ResizableMemoryPublishSubscribe<S>* m_memory = nullptr;
+    internal::ResizableMemoryPublishSubscribe<S>* m_memory = nullptr;
     bb::Optional<flatbuffers::FlatBufferBuilder> m_flatbuffer_builder;
 };
 

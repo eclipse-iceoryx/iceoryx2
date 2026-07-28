@@ -728,4 +728,39 @@ pub mod service_publish_subscribe_flatbuffer {
             assert_that!(unbounded_data.entries().unwrap().get(n).data_2(), eq 55);
         }
     }
+
+    #[conformance_test]
+    pub fn publisher_can_read_its_own_serialized_data<Sut: Service + 'static>() {
+        let test = Test::<Sut>::new();
+        let node = test.create_node();
+        let service_name = generate_service_name();
+        let schema_file = create_schema_file(SCHEMA);
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<Flatbuffer<UnboundedData>>()
+            .flatbuffer_schema_path(schema_file.path().unwrap())
+            .create()
+            .unwrap();
+
+        let publisher = sut
+            .publisher_builder()
+            .initial_reserved_memory(4096)
+            .create()
+            .unwrap();
+
+        let mut sample = publisher.loan_flatbuffer().unwrap();
+        let builder = sample.flatbuffer_builder();
+        let unbounded_data = produce_example_data(builder, "ouh bailey", 123, 221, 10);
+        let sample = sample.assume_init(unbounded_data);
+
+        let unbounded_data = root_as_unbounded_data(sample.payload_bytes()).unwrap();
+
+        assert_that!(unbounded_data.title(), eq Some("ouh bailey"));
+        assert_that!(unbounded_data.entries().unwrap().len(), eq 10);
+        for n in 0..10 {
+            assert_that!(unbounded_data.entries().unwrap().get(n).data_1(), eq 123);
+            assert_that!(unbounded_data.entries().unwrap().get(n).data_2(), eq 221);
+        }
+    }
 }

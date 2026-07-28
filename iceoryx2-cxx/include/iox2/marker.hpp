@@ -14,10 +14,11 @@
 #define IOX2_MARKER_HPP
 
 namespace iox2 {
+/// Identifies payloads that are serialized via flatbuffer.
 template <typename T>
 struct Flatbuffer {
     using ValueType = T;
-    // IOX2_TYPE_NAME is equivalent to the payload type name used on the Rust side
+    /// IOX2_TYPE_NAME is equivalent to the payload type name used on the Rust side
     static constexpr const char* IOX2_TYPE_NAME = "iox2::Flatbuffer";
 };
 

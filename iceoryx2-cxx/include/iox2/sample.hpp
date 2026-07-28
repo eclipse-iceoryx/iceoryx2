@@ -61,9 +61,11 @@ class Sample {
     template <typename T = Payload, typename = std::enable_if_t<bb::IsSlice<T>::VALUE, void>>
     auto payload() const -> bb::ImmutableSlice<ValueType>;
 
+    /// Returns the serialized flatbuffer data as bytes.
     template <typename T = Payload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
     auto payload_bytes() const -> bb::ImmutableSlice<uint8_t>;
 
+    /// Returns the root of the flatbuffer.
     template <typename T = Payload, typename = std::enable_if_t<has_flatbuffer_marker<T>(), void>>
     auto payload_root() const -> const typename T::ValueType*;
 

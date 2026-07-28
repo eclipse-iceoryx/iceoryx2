@@ -32,6 +32,7 @@ class HeaderPublishSubscribe {
     /// Returns the number of [`Payload`] elements in the received [`Sample`].
     auto number_of_elements() const -> uint64_t;
 
+    /// Returns the payload offset.
     auto payload_offset() const -> uint64_t;
 
   private:

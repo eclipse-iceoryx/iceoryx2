@@ -19,10 +19,10 @@
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/helper.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/internal/resizable_memory_publish_subscribe.hpp"
 #include "iox2/marker.hpp"
 #include "iox2/port_name.hpp"
 #include "iox2/publisher_error.hpp"
-#include "iox2/resizable_memory_publish_subscribe.hpp"
 #include "iox2/sample_mut.hpp"
 #include "iox2/sample_mut_uninit.hpp"
 #include "iox2/service_type.hpp"
@@ -235,7 +235,7 @@ inline auto Publisher<S, Payload, UserHeader>::loan_flatbuffer()
     iox2_sample_mut_create_resizable_memory_builder(&sample.m_sample.m_handle, nullptr, &resizable_memory_handle);
 
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) The FlatBufferBuilder takes the ownership and the external interface requires a raw pointer.
-    sample.m_memory = new ResizableMemoryPublishSubscribe<S>(resizable_memory_handle);
+    sample.m_memory = new internal::ResizableMemoryPublishSubscribe<S>(resizable_memory_handle);
 
     auto initial_size = sample.m_memory->len();
     sample.m_flatbuffer_builder = flatbuffers::FlatBufferBuilder(initial_size, sample.m_memory, true);
